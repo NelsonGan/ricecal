@@ -22,19 +22,17 @@ import { useBack } from '@/lib/navigation'
 import { AppBar, Card, EmptyState, Icon, Screen, Skeleton, StatTile, Text } from '@/ui'
 
 /**
- * A3 / N4: one workout.
+ * One workout.
  *
- * Everything the session measured is one grid of tiles, and the zone chart is
- * the only thing under it. The heart rate used to sit BELOW the chart, so a
- * game whose zones could not be banded put an explanation where the numbers
- * should have been and the numbers below the fold.
+ * Everything the session measured is one grid of tiles, with the zone chart the
+ * only thing under it. The heart rate used to sit below the chart, so a game
+ * whose zones could not be banded put an explanation where the numbers should
+ * have been and the numbers below the fold.
  *
- * NO EMPTY STATE FOR THE ZONE CARD. It carried three of them — one average
- * only, one average from a named app, no pulse at all — and each was a
- * paragraph telling the reader what their watch should have written. Two of the
- * three were wrong on a session an Apple Watch had measured all the way
- * through, because the reason those bands are missing is on the phone rather
- * than in the session. A card with nothing to draw is not drawn.
+ * The zone card has no empty state. It carried three, each a paragraph telling
+ * the reader what their watch should have written, and two of the three were
+ * wrong on a session an Apple Watch had measured all the way through: the reason
+ * those bands are missing is on the phone rather than in the session.
  */
 export default function WorkoutScreen() {
   const { t } = useTranslation(['activity', 'common'])
@@ -72,18 +70,15 @@ export default function WorkoutScreen() {
 
   /**
    * All three read the same `distanceM`, so all three are gated on the same
-   * question first: does this kind have a distance worth showing at all?
+   * question: does this kind have a distance worth showing at all?
    *
-   * `kmh` was not, and the omission was visible on the screen. A badminton game
-   * and a basketball game both carry a distance in the store — the watch counted
-   * a few hundred metres of shuffling — and `showsDistance` exists precisely to
-   * keep that figure off the screen. Computing a speed from it anyway put
-   * "PACE 2.0 km/h" on a basketball session: the same number the app had just
-   * decided was meaningless, divided by time and given a label.
+   * `kmh` was not, and it showed. A badminton or basketball session carries a
+   * distance in the store (the watch counted a few hundred metres of shuffling)
+   * which `showsDistance` exists to keep off the screen; computing a speed from
+   * it anyway put "PACE 2.0 km/h" on a basketball session.
    *
    * So: distance for the kinds that travel, a pace for the ones done on foot, a
-   * speed for the rest of the ones that travel, and nothing at all for a sport
-   * played inside a court.
+   * speed for the rest, and nothing for a sport played inside a court.
    */
   const far = showsDistance(session.kind) ? distance(session.distanceM) : null
   const perKm = showsPace(session.kind) ? pace(session.durationS, session.distanceM) : null

@@ -8,20 +8,18 @@ import android.graphics.RectF
 import android.graphics.Typeface
 
 /**
- * The two things a `RemoteViews` tree cannot draw, drawn into bitmaps.
+ * The two things a `RemoteViews` tree cannot draw, drawn into bitmaps. Everything
+ * else in these widgets is a view with a drawable behind it, which is cheaper and
+ * themes itself.
  *
- * Everything else in these widgets is a view with a drawable behind it, which
- * is cheaper and themes itself. These two are not:
- *
- * - **The ring.** There is no remotable sweep and no arc drawable that takes an
- *   angle, so a ring built out of views would be one drawable per degree.
- * - **The weight bars.** Their heights are the data, and `RemoteViews` cannot
- *   set a child's height below API 31 — laid out as views they would all be the
- *   same size, which is a chart that says nothing.
+ * - The ring: no remotable sweep and no arc drawable takes an angle, so a ring
+ *   built out of views would be one drawable per degree.
+ * - The weight bars: their heights are the data, and `RemoteViews` cannot set a
+ *   child's height below API 31, so as views they would all be the same size.
  *
  * Both read their colours through `context.getColor`, so `values-night/` still
- * decides them: the bitmap is redrawn on every update, and an update is what a
- * configuration change produces.
+ * decides them: the bitmap is redrawn on every update, and a configuration change
+ * produces one.
  */
 object WidgetBitmaps {
   /** How many bars the weight chart is laid out for. See `bars`. */

@@ -37,26 +37,22 @@ const TILE_ICON = 38
 const PLACEHOLDER_ICON = { set: 'food', name: 'empty-plate' } as const
 
 /**
- * What was actually eaten.
+ * What was actually eaten: the biggest plates, heaviest first. Listing the
+ * most-repeated dishes assumes agreement this diary does not provide, since a
+ * scanned plate is named by a model and a searched one by the catalogue, so one
+ * dish eaten four times is often four names counted once each. Calories need no
+ * such agreement; see the header on `review_meals`.
  *
- * THE BIGGEST PLATES, heaviest first. This listed the most-repeated dishes for
- * about a day, and counting repeats turned out to assume something this diary
- * does not provide: a scanned plate is named by a model and a searched one by
- * the catalogue, so one dish eaten four times is often four names counted once
- * each. Calories need no such agreement — see the header on `review_meals`.
+ * Nothing on a row says how many times, for the same reason: a "1x" beside every
+ * line is a column of ones claiming to mean something.
  *
- * Nothing on a row says how many times, for the same reason. A "1x" beside
- * every line is a column of ones claiming to mean something.
+ * The bar under each name is that dish's own macro split and the card under the
+ * list is the period's: the second says where the calories came from overall, and
+ * the first says which plate is responsible.
  *
- * The bar under each name is that dish's own macro split, and the card under
- * the list is the period's. Two readings of one colour scheme: the second says
- * where the calories came from overall, and the first says which plate is
- * responsible for it.
- *
- * EACH ROW LEADS WITH THE PHOTOGRAPH somebody took of it, and falls back to a
- * drawing. This listed drawings alone, which made a camera user's biggest week
- * five copies of the same outline: the photo is the one thing on this screen
- * that says the meal was theirs rather than a row in a catalogue.
+ * Each row leads with the photograph somebody took, falling back to a drawing.
+ * Drawings alone made a camera user's biggest week five copies of the same
+ * outline.
  */
 export function FoodStep({ summary, meals }: FoodStepProps) {
   const { t } = useTranslation(['reviews', 'common'])

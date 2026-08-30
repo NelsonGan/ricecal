@@ -1,23 +1,17 @@
 /**
- * Runs SQL against a Supabase project, over whichever transport this machine
- * actually has.
+ * Runs SQL against a Supabase project, over whichever transport this machine has.
  *
- * The declarative workflow assumes psql and a local Docker stack. On a machine
- * with neither — which is the normal state of this one — there is still a way
- * in: the Management API's query endpoint, the same one the Supabase MCP server
- * and the dashboard SQL editor use, authenticated with the CLI's own access
- * token. That is what makes a bulk loader possible here at all; every other
- * route needs a database password or a service-role key that is not on disk.
+ * The declarative workflow assumes psql and a local Docker stack. With neither,
+ * which is the normal state of this machine, the way in is the Management API's
+ * query endpoint, the same one the dashboard SQL editor uses, authenticated with
+ * the CLI's own access token. Every other route needs a database password or a
+ * service-role key that is not on disk.
  *
- * TWO CONSEQUENCES WORTH KNOWING
- *
- * Statements run through this bypass migrations exactly the way a dashboard
- * edit does, which is what `supabase-drift` exists to catch. Use it for DATA
- * (that is what the loader does) and, for schema, only alongside a committed
- * migration file at the same version.
- *
- * And the endpoint returns the last statement's rows as JSON, so a caller
- * wanting a result should send one statement.
+ * Two consequences. Statements run through this bypass migrations the way a
+ * dashboard edit does, which is what `supabase-drift` catches, so use it for data
+ * and, for schema, only alongside a committed migration file at the same version.
+ * And the endpoint returns the last statement's rows as JSON, so a caller wanting
+ * a result should send one statement.
  */
 
 import { readFileSync } from 'node:fs'

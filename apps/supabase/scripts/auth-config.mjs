@@ -2,18 +2,17 @@
 /**
  * The project's auth settings, written down instead of remembered.
  *
- * Everything in `SETTINGS` below is something a dashboard toggle can change
- * silently, and two of them were wrong in exactly that way: `site_url` was
- * still `http://localhost:3000` and `uri_allow_list` was EMPTY, so Supabase
- * refused every `emailRedirectTo` the app sent and fell back to the site URL.
- * The symptom is a login link that opens `localhost:3000` on somebody's phone,
- * which reads as a bug in the app and is a line in a settings page.
+ * Everything in `SETTINGS` is something a dashboard toggle can change silently,
+ * and two of them were: `site_url` was still `http://localhost:3000` and
+ * `uri_allow_list` was empty, so Supabase refused every `emailRedirectTo` and
+ * fell back to the site URL. The symptom is a login link opening
+ * `localhost:3000` on somebody's phone.
  *
  *   pnpm auth:config           show what differs between here and the project
  *   pnpm auth:config --push    make the project match
  *
- * It never touches the mail templates — those are `pnpm email:push` — so
- * pushing a redirect fix cannot quietly rewrite eight emails, and vice versa.
+ * It never touches the mail templates, which are `pnpm email:push`, so pushing a
+ * redirect fix cannot quietly rewrite eight emails.
  */
 
 import { managementFetch } from './lib/management.mjs'
@@ -88,23 +87,20 @@ const SETTINGS = {
 }
 
 /**
- * NOT in `SETTINGS`, and deliberately.
+ * Deliberately not in `SETTINGS`. `security_captcha_enabled` is the one field
+ * that can lock every user out of the app the moment it is written: with it on,
+ * Supabase rejects any sign-in that arrives without a Turnstile token, and a
+ * build already on somebody's phone has no idea it should send one. So the order
+ * is fixed and the script will not do the last step:
  *
- * `security_captcha_enabled` is the one field here that can lock every user out
- * of the app the moment it is written: with it on, Supabase rejects any sign-in,
- * sign-up or password reset that arrives without a Turnstile token, and a build
- * already on somebody's phone has no idea it is meant to send one. So the order
- * is fixed, and the script will not do the last step for you:
- *
- *   1. Create the Turnstile widget on Cloudflare (see
- *      README.md).
- *   2. `pnpm auth:config --captcha-secret <secret>` stores the SECRET and
- *      selects turnstile, with the gate still open.
+ *   1. Create the Turnstile widget on Cloudflare (see README.md).
+ *   2. `pnpm auth:config --captcha-secret <secret>` stores the secret and selects
+ *      turnstile, with the gate still open.
  *   3. Ship a build carrying EXPO_PUBLIC_TURNSTILE_SITE_KEY.
  *   4. `pnpm auth:config --captcha-on` once that build is the one people run.
  *
- * Step 4 is reversible with `--captcha-off`, which is why it is a flag of its
- * own rather than a line in the table above.
+ * Step 4 is reversible with `--captcha-off`, which is why it is a flag rather
+ * than a line in the table above.
  */
 function captchaChanges(argv) {
   const changes = {}

@@ -1,18 +1,17 @@
 // A smoke test for the three things every other function here depends on, with
-// zero business logic of its own:
+// no business logic of its own:
 //
-//   1. Auth passthrough  — the caller's JWT reaches the function and resolves
-//                          to a user, with no custom authorizer in between.
-//   2. Secrets           — a value set via `supabase secrets set` is readable
-//                          at runtime.
-//   3. R2 presigning     — a presigned PUT URL can be minted.
+//   1. Auth passthrough: the caller's JWT reaches the function and resolves to a
+//      user, with no custom authorizer in between.
+//   2. Secrets: a value set via `supabase secrets set` is readable at runtime.
+//   3. R2 presigning: a presigned PUT URL can be minted.
 //
-// When a deploy goes wrong this says which of the three broke, which is the
-// question the scan and photo endpoints cannot answer about themselves.
+// When a deploy goes wrong this says which of the three broke, which the scan and
+// photo endpoints cannot answer about themselves.
 //
 // `verify_jwt = false` in config.toml is deliberate: this function inspects the
-// Authorization header itself so it can report *why* auth failed, rather than
-// being rejected by the platform with an opaque 401.
+// Authorization header itself so it can report why auth failed, rather than being
+// rejected by the platform with an opaque 401.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'

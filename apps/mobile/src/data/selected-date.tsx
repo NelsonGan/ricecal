@@ -52,31 +52,20 @@ export function SelectedDateProvider({ children }: { children: ReactNode }) {
   })
 
   /**
-   * RE-READ THE DATE WHEN THE APP COMES BACK, because a phone does not close
-   * apps and this key was frozen for the whole life of the process.
+   * Re-read the date when the app comes back, because a phone does not close apps
+   * and this key was frozen for the life of the process.
    *
-   * Fixing it at mount is right for the case it was written for: an app that is
-   * OPEN across midnight should not renumber itself under somebody's thumb.
-   * What it did not survive is the ordinary one. iOS suspends rather than kills,
-   * so a diary opened on Saturday and reopened on Monday still believed it was
-   * Saturday, and every consequence of that was silent:
+   * Fixing it at mount is right for an app open across midnight, which should not
+   * renumber itself under somebody's thumb. It did not survive the ordinary case:
+   * iOS suspends rather than kills, so a diary opened on Saturday and reopened on
+   * Monday still believed it was Saturday. The heading said "Today" over
+   * Saturday, `WeekPicker` built its pages from the stale key so Monday had no
+   * cell at all, and the log button wrote Monday's breakfast into Saturday.
    *
-   * - The heading said "Today" over Saturday, under a ring captioned "from
-   *   moving today".
-   * - `WeekPicker` builds its pages from this key, so the last page was the week
-   *   that ended on Saturday and Monday HAD NO CELL AT ALL. The real today was
-   *   unreachable, and the day either side of the boundary read as "ahead of
-   *   today" and drew no dot.
-   * - Worst of it: `selectedDate` starts life as this key, so the log button
-   *   wrote Monday's breakfast into Saturday's diary.
+   * Only on the transition into `active`, which keeps the midnight case intact.
    *
-   * Only on the transition INTO `active`, which is what keeps the midnight case
-   * intact: an app nobody has left never fires this, so a session running across
-   * 00:00 goes on describing the day it started in.
-   *
-   * The selection follows only when it was parked ON today. A day somebody
-   * picked on purpose is still the day they picked, and moving it would throw
-   * away the thing they came back to look at.
+   * The selection follows only when it was parked on today: a day somebody picked
+   * on purpose is still the day they picked.
    */
   useEffect(() => {
     const listener = AppState.addEventListener('change', (state) => {

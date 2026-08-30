@@ -15,30 +15,20 @@ export type BudgetStripProps = {
 }
 
 /**
- * GOAL − EATEN + BURNED = LEFT.
+ * goal - eaten + burned = left.
  *
- * THE ONE INVARIANT THIS COMPONENT EXISTS FOR
+ * Burned calories extend the budget and never shrink what was eaten. Every app in
+ * this category has at some point shipped the other version, which turns a diary
+ * into a scoreboard people play by moving more and eating less. The arithmetic
+ * here is an addition, laid out as one.
  *
- * Burned calories EXTEND the budget. They never shrink what was eaten. Every
- * app in this category has at some point shipped the other version — quietly
- * subtracting exercise from intake so the day looks better — and it turns a
- * diary into a scoreboard people play against by moving more and eating less.
- * The arithmetic here is an addition, laid out as an addition.
+ * `burned` is active energy rather than total burn, because `goal` is a
+ * Mifflin-St Jeor figure that already contains basal metabolism: adding the
+ * store's resting energy would credit about 1,500 kcal a day for being alive
+ * twice.
  *
- * WHY `burned` IS ACTIVE ENERGY AND NOT TOTAL BURN
- *
- * `goal` is a Mifflin-St Jeor figure that already contains basal metabolism —
- * `compute_targets()` multiplies BMR by an activity factor. Adding the store's
- * resting energy on top would credit roughly 1,500 kcal a day for being alive
- * twice, and a user who did nothing but breathe would gain a second dinner.
- * Only the ACTIVE half is new information, which is why `activity_days` keeps
- * the two in separate columns.
- *
- * WHY THE BAR IS DRAWN AGAINST GOAL + BURNED
- *
- * So that moving lengthens the track rather than emptying it. Drawn against the
- * goal alone, a run would push the fill backwards, which says the opposite of
- * what happened.
+ * The bar is drawn against goal + burned, so moving lengthens the track rather
+ * than emptying it. Against the goal alone, a run pushes the fill backwards.
  */
 export function BudgetStrip({
   goal,

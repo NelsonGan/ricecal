@@ -1,36 +1,30 @@
 /**
- * Brings the catalogue's DERIVED data back in line with its rows.
+ * Brings the catalogue's derived data back in line with its rows.
  *
  *   pnpm foods:reindex            everything that is out of date
  *   pnpm foods:reindex --all      rebuild the full-text indexes from scratch
  *   pnpm foods:reindex --check    say what is stale and change nothing
  *
- * `apps/cloudflare/d1/food-catalogue/schema.sql` creates the tables. This fills in the
- * three things that are computed rather than stored by the loader:
+ * `apps/cloudflare/d1/food-catalogue/schema.sql` creates the tables. This fills
+ * in the three things computed rather than stored by the loader:
  *
  *   food.name_norm         what the exact-name search arm compares against
  *   food_alias.alias_norm  the same, for a dish's other names
  *   food_fts / food_trgm   the two full-text indexes, and the rowid map
  *
- * WHY THEY ARE NOT JUST COLUMNS THE LOADER WRITES
- *
- * They are, for a row the loader wrote. This exists for the rest: rows that
+ * The loader writes those for rows it wrote. This exists for the rest: rows that
  * predate a column, rows written by the Worker's own `/product` cache path, and
- * the full-text indexes, which are CONTENTLESS FTS5 tables and therefore cannot
- * be edited row by row without the original values to hand. Rebuilding them is
- * cheaper to get right than patching them, and the catalogue is small enough
- * (~53,000 searchable rows) that "rebuild" is a few minutes rather than an
- * outage.
+ * the full-text indexes, which are contentless FTS5 tables and cannot be edited
+ * row by row without the original values to hand. The catalogue is small enough
+ * (~53,000 searchable rows) that rebuilding is a few minutes.
  *
- * `--all` IS A WINDOW, THOUGH, and it is a live one. The indexes are truncated
- * and refilled, so for the three or four minutes it runs, search answers off a
- * partial index — and the fuzzy arm is the last one rebuilt, so misspellings go
- * first. Graded halfway through, the search gate scored 26/30 with "nasi lemk"
- * and "ayam gorng" finding nothing at all; the same gate against the finished
- * index scored 29/30. Run it when nobody is typing, and do not read a gate
- * result taken while it is in flight.
+ * `--all` is a live window, though: the indexes are truncated and refilled, so
+ * for the few minutes it runs search answers off a partial index, and the fuzzy
+ * arm is rebuilt last, so misspellings go first. Graded halfway through, the
+ * search gate scored 26/30 against 29/30 on the finished index. Run it when
+ * nobody is typing, and do not read a gate result taken while it is in flight.
  *
- * The normalizer is imported from the WORKER's own source rather than
+ * The normalizer is imported from the Worker's own source rather than
  * reimplemented, because the query and the column have to be folded identically
  * or the arm silently matches nothing.
  */

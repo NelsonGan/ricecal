@@ -7,21 +7,16 @@ import { ThemeProvider } from '@/theme/ThemeProvider'
 import Calculating from '../calculating'
 
 /**
- * The beat between the last question and the number.
+ * The beat between the last question and the number. Two things matter and
+ * neither is the animation: it must advance, because a screen whose only exit is
+ * a timer is a dead end if that timer is dropped in a cleanup, and it must
+ * advance by replacing, because the chevron from the target screen belongs on
+ * the last question.
  *
- * Two things matter and neither is the animation. It must ADVANCE — a screen
- * whose only exit is a timer is a dead end if that timer is ever dropped in a
- * cleanup — and it must advance by REPLACING, because a screen that moves on by
- * itself is one you cannot walk back through: the chevron from the target screen
- * belongs on the last question.
- *
- * Driven through `waitFor` rather than by advancing the clock by hand. The
- * screen books ONE timer at a time and schedules the next from an effect, so the
- * timer for the second line does not exist until React has committed the first —
- * and a single `advanceTimersByTime` past the whole tally fires only the timer
- * that had already been booked when the clock moved. `waitFor` walks fake timers
- * forward in intervals and flushes React between them, which is exactly the
- * alternation the screen needs.
+ * Driven through `waitFor` rather than advancing the clock by hand: the screen
+ * books one timer at a time and schedules the next from an effect, so a single
+ * `advanceTimersByTime` fires only the timer already booked. `waitFor` walks fake
+ * timers forward and flushes React between them.
  */
 
 const mockReplace = jest.fn()

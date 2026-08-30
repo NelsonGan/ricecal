@@ -44,21 +44,15 @@ export function useCurrentWeight(): number | undefined {
 }
 
 /**
- * Records a weigh-in, on any day.
+ * Records a weigh-in, on any day. Keyed on `(user_id, measured_on)`, so weighing
+ * twice in one morning corrects the day rather than adding a second point, and a
+ * past date corrects that day. Writing it recomputes the budget, which is why
+ * the targets are invalidated here.
  *
- * Keyed on `(user_id, measured_on)`, so weighing twice in one morning corrects
- * the day rather than adding a second point to the chart — and passing a past
- * date corrects that day instead, which is what makes the history editable.
- * Writing it also recomputes the budget in the database, which is why the targets
- * are invalidated here.
- *
- * `provider: null` IS THE POINT OF THE WRITE, not a default worth leaving out.
- * Null means "the user typed this", and `sync_weight_readings` refuses to
- * overwrite a row that says so. Omitting the column would leave a corrected
- * weigh-in still marked as the scale's — PostgREST only updates the columns the
- * payload names — and the next foreground would put the scale's number straight
- * back, once a minute, for as long as the app stayed open. The user would watch
- * their own correction undo itself.
+ * `provider: null` is the point of the write rather than a default worth leaving
+ * out: null means the user typed it, and `sync_weight_readings` refuses to
+ * overwrite a row that says so. Omitted, PostgREST leaves the column alone and
+ * the next foreground puts the scale's number straight back.
  */
 export function useLogWeight() {
   const userId = useUserId()

@@ -16,42 +16,25 @@ import {
 import { Button, Card, Text, useToast } from '@/ui'
 
 /**
- * 08 CONNECT HEALTH
+ * Connect health: the first of the two permissions, and first because it gives
+ * the user something rather than asking for something. Movement extends the
+ * budget, so the sentence at the top is a promise about more food.
  *
- * The first of the two permissions, and it is first for a reason: it is the one
- * that gives the user something rather than asking for something. Movement
- * EXTENDS the budget — `goal + active - eaten` — so the sentence at the top is a
- * promise about more food, not a request for data, and it lands better before
- * the reminder ask than after it.
+ * Not `ConnectPanel`, which is the same subject and a different job: there it is
+ * the whole screen and carries its own heading, CTA and failure explanations,
+ * where here the flow's frame already owns those. Rendering the panel inside the
+ * step gave two headings and two connect buttons, so only the read rows are
+ * shared, through `activity:connect.*`.
  *
- * WHY THIS IS NOT `ConnectPanel`
+ * One button, and it says "Continue". Both halves are guideline 5.1.1(iv), which
+ * this app was rejected under: a custom message before a permission request has
+ * to lead to the request, so the "Not now" is gone, and the button may not be
+ * dressed as the ask. Saying no is the sheet's own "Don't Allow".
  *
- * The Activity tab's panel is the same subject and a different job. There it is
- * the whole screen and has to carry its own heading, its own CTA and every
- * failure explanation for a user who came looking for the feature. Here it is
- * one step in a numbered flow whose frame already owns the heading and the
- * button. Rendering the panel inside the step gave two headings and two connect
- * buttons, so the read rows are shared through the copy — `activity:connect.*`
- * — and nothing else is.
- *
- * ONE BUTTON, AND IT SAYS "CONTINUE"
- *
- * Both halves of that are guideline 5.1.1(iv), which this app was rejected
- * under. A custom message shown before a permission request has to lead to the
- * request, so the "Not now" that used to skip it is gone; and the button in
- * front of a system sheet may not be dressed as the ask itself, so it no longer
- * reads "Connect Apple Health". Saying no is the sheet's own "Don't Allow",
- * which is the honest place for it: Apple's dialog is the thing that decides,
- * and ours never was.
- *
- * WHAT HAPPENS WHEN IT FAILS
- *
- * Nothing that stops the flow. An unusable store, a sheet that could not be
- * presented, a read that comes back empty: each says so in a toast and moves to
- * the next step, because there is a whole tab devoted to trying again and no
- * version of this screen should be a wall between a new account and their
- * diary. A refusal is the one that says NOTHING — see `attempt` — because a
- * refusal is an answer rather than a failure.
+ * Nothing here stops the flow. An unusable store, a sheet that could not be
+ * presented and an empty read each say so in a toast and move on, because there
+ * is a whole tab devoted to trying again. A refusal says nothing at all, being an
+ * answer rather than a failure.
  */
 
 /** The session guard, for the same two reasons as `settings/health.tsx`. */
@@ -107,31 +90,22 @@ function HealthStep() {
   const canConnect = availability?.ok ?? false
 
   /**
-   * THE SHEET FIRST, ON ITS OWN, AND THE STEP IS OVER THE MOMENT IT IS ANSWERED.
+   * The sheet first, on its own, and the step is over the moment it is answered.
+   * Two things force that shape.
    *
-   * Two things force this shape, and they are not the same thing.
+   * Guideline 5.1.1(iv) means there is no "Not now" here, so the button must be
+   * able to put the sheet up. That rules out asking through the mutation, since
+   * every write is `networkMode: 'online'` and react-query holds a paused one
+   * without running its body: offline, the old shape drew a spinner and no sheet.
+   * `requestAccess` is local and answers offline like any other day.
    *
-   * App Review, first. Guideline 5.1.1(iv): a custom message shown before a
-   * permission request must always lead to the request. There is no "Not now"
-   * on this screen for that reason, so the button underneath it MUST be able to
-   * put the sheet up — which rules out asking through the mutation, because
-   * every write in this app is `networkMode: 'online'` and react-query holds a
-   * paused mutation without ever running its body. Offline, the old shape drew
-   * a spinner and no sheet, and with the skip gone that is a step nobody can
-   * leave. `requestAccess` is local and answers offline like any other day.
+   * The backfill is a week of reads and nothing on its far side belongs to this
+   * screen, so it is fired and left to run while `next()` moves on.
    *
-   * The backfill, second. It is a week of reads and a handful of upserts, and
-   * nothing on the far side of it belongs to this screen: the user has already
-   * said yes or no by the time it starts. So it is fired and left to run, and
-   * `next()` does not wait for it. Offline it stays paused until a connection
-   * comes back, by which time this component is long gone.
-   *
-   * WHICH IS WHY THE TOASTS HANG OFF `mutateAsync` RATHER THAN OFF `mutate`'s
-   * callbacks. Those callbacks are dropped when the component unmounts, and
-   * this component unmounts a tick after the mutation starts. The promise
-   * settles regardless, and `ToastProvider` sits above the navigator — so the
-   * message lands on whatever screen the user has reached by then, which is the
-   * next step of onboarding and is exactly where they can act on it.
+   * Which is why the toasts hang off `mutateAsync` rather than `mutate`'s
+   * callbacks: those are dropped when the component unmounts, and this one
+   * unmounts a tick after the mutation starts. `ToastProvider` sits above the
+   * navigator, so the message lands wherever the user has got to.
    */
   const attempt = async (provider: ProviderId) => {
     /**
@@ -155,17 +129,13 @@ function HealthStep() {
     }
 
     /**
-     * A NO IS NOT A FAILURE, and it is silent.
+     * A no is not a failure, and it is silent. Android reports a real answer, so
+     * `granted: false` is somebody having read Health Connect's dialog and
+     * declined, and a toast about it would be the app arguing. iOS never says no;
+     * see `requestAccess` in `lib/health/apple.ts`.
      *
-     * Android reports a real answer, so `granted: false` here is somebody
-     * having read Health Connect's dialog and declined — a decision, made in
-     * the system's own words, and a toast about it would be the app arguing
-     * with it. (iOS never says no; see `requestAccess` in `lib/health/apple.ts`
-     * for why, and `emptyToast` below for the only sign it gives.)
-     *
-     * The sync is not fired either. There is no permission to read with, and a
-     * connection row recorded for one would tell the Activity tab it was
-     * connected.
+     * The sync is not fired either: there is no permission to read with, and a
+     * connection row would tell the Activity tab it was connected.
      */
     if (!access.granted) {
       next()

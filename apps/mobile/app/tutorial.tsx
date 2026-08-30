@@ -20,24 +20,17 @@ import {
 } from '@/ui'
 
 /**
- * HOW RICECAL WORKS — four cards, and no longer part of the flow.
+ * How RiceCal works: four cards, and no longer part of the flow.
  *
- * WHAT CHANGED IN THE WRITING
+ * Each card is a mock of the thing it is about, drawn from the same design system
+ * the real screen uses. A reader with the real screen one tap away is checking
+ * whether the picture matches it, so the prose is a line apiece.
  *
- * Each card is now a MOCK of the thing it is about, drawn from the same design
- * system the real screen uses: the four squares from the log sheet, a diary row,
- * the correction chips, the ring with its macro bars. A reader with the real
- * screen one tap away is checking whether the picture matches it, not reading an
- * essay about grams — so the prose is a line apiece and the picture does the
- * teaching.
+ * The mocks are hand-built rather than screenshots, because a picture of last
+ * year's UI is worse than no picture and these are made of the components the
+ * real screens are made of.
  *
- * The mocks are hand-built rather than screenshots for the reason the old
- * example plate was: a picture of last year's UI is worse than no picture, and
- * these are made of the components the real screens are made of, so a redesign
- * of `Card` or `MacroBar` reaches them too.
- *
- * ONE ROUTE, NOT FOUR. The cards are read forwards and never returned to, so as
- * four routes they would be four files and four back-stack entries to unwind.
+ * One route rather than four: the cards are read forwards and never returned to.
  */
 
 const CARDS = ['log', 'read', 'fix', 'day'] as const

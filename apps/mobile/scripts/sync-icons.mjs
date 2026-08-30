@@ -5,21 +5,17 @@
  *
  *   node scripts/sync-icons.mjs
  *
- * This is a developer tool, not a build step. The processed PNGs are committed,
- * so CI and EAS never run it — which is why it is allowed to depend on the
- * design system living at `.secrets/RiceCal Design System` (gitignored) and on a
- * pngquant binary fetched through npx.
+ * A developer tool, not a build step: the processed PNGs are committed, so CI and
+ * EAS never run it, which is why it may depend on the design system living at
+ * `.secrets/RiceCal Design System` (gitignored) and on pngquant through npx.
  *
- * Two transforms, both load-bearing:
+ * Two transforms matter. Downscale 256 -> 192px, since nothing renders an icon
+ * above 64pt, so 192px is @3x for the largest usage. And quantise to a palette:
+ * these are flat illustrations, pngquant cuts them ~70% with no visible
+ * difference, and skipping it triples the bundle.
  *
- * - Downscale 256 -> 192px. Nothing in the system renders an icon above 64pt,
- *   so 192px is @3x for the largest usage and @2x for the 96pt empty-state art.
- * - Quantise to a palette. These are flat illustrations with few colours;
- *   pngquant cuts them ~70% with no visible difference. Skipping it triples the
- *   bundle.
- *
- * Metro only bundles what the generated map requires, so an icon that is
- * deleted from `assets/` and from the map leaves the app entirely.
+ * Metro only bundles what the generated map requires, so an icon deleted from
+ * `assets/` and from the map leaves the app entirely.
  */
 import { execFileSync } from 'node:child_process'
 import {

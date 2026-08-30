@@ -4,25 +4,20 @@ import { fromDbActivity, useEntitlement, useMealTimes, useProfile } from '@/data
 import { setPersonProps, setSuperProps } from '@/lib/analytics'
 
 /**
- * Keeps Mixpanel's picture of WHO this account is in step with the profile.
+ * Keeps Mixpanel's picture of who this account is in step with the profile,
+ * though `finish.tsx` writes all of these when onboarding lands.
  *
- * WHY A HOOK AT ALL, when `finish.tsx` already writes every one of these the
- * moment onboarding lands. Two reasons, and the second is the load-bearing one:
- *
- * 1. A profile is edited afterwards — the activity level on the goals screen,
- *    say — and a segment built on an answer from a year ago is a segment about
- *    somebody who no longer exists.
- * 2. **An account that onboarded on another handset has never run that code.**
- *    Signing in on a new phone, or reinstalling, gives Mixpanel a fresh device
- *    with no profile properties at all, and there is no second onboarding to
- *    fill them in. This runs on every launch into the app.
+ * 1. A profile is edited afterwards, and a segment built on an answer from a
+ *    year ago is a segment about somebody who no longer exists.
+ * 2. An account that onboarded on another handset has never run that code:
+ *    signing in on a new phone gives Mixpanel a fresh device with no profile
+ *    properties, and there is no second onboarding. This runs on every launch.
  *
  * Mounted next to `useReminderSync` and `useHealthAutoSync` in the tabs layout,
- * for the reason those two are: it is a background rule about the account
- * rather than anything a screen owns. Renders nothing.
+ * because it is a background rule about the account. Renders nothing.
  *
- * `features/` rather than `lib/`, because it reads the data layer — the
- * analytics module underneath it deliberately imports nothing at all.
+ * `features/` rather than `lib/`, because it reads the data layer, where the
+ * analytics module underneath imports nothing at all.
  */
 export function useAnalyticsIdentity(): void {
   const { data: profile } = useProfile()

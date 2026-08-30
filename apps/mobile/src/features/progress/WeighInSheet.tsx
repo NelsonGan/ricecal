@@ -23,17 +23,15 @@ const MIN_KG = 25
 const MAX_KG = 300
 
 /**
- * T4 — adding a weigh-in.
+ * Adding a weigh-in.
  *
- * A sheet, not a page, and the design is explicit about it: recording a number
- * you already know should not cost a navigation. The same sheet corrects a past
- * day, because `useLogWeight` upserts on `(user_id, measured_on)` and which day
- * it writes to is the only difference between the two.
+ * A sheet, not a page: recording a number you already know should not cost a
+ * navigation. The same sheet corrects a past day, because `useLogWeight` upserts
+ * on `(user_id, measured_on)` and the day it writes to is the only difference.
  *
- * The draft is held in DISPLAY units rather than in kilograms. Stepping by 0.1
- * has to move the number on screen by 0.1 — a draft kept in kilograms and
- * converted on render steps by 0.22 lb, which is both wrong-looking and
- * impossible to land on a round figure with.
+ * The draft is held in display units rather than kilograms, because stepping by
+ * 0.1 has to move the number on screen by 0.1. Kept in kilograms and converted on
+ * render it steps by 0.22 lb, which no round figure lands on.
  */
 export function WeighInSheet({ date, onClose, unit, onUnitChange }: WeighInSheetProps) {
   const { t } = useTranslation(['progress', 'common'])

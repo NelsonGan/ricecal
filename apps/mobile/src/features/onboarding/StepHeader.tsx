@@ -15,20 +15,14 @@ export type StepHeaderProps = {
 }
 
 /**
- * The chevron and the progress bar, on one row.
+ * The chevron and the progress bar, on one row. The flow has no edge swipe any
+ * more, so it needs a visible way back: the gesture was turned off in
+ * `(onboarding)/_layout.tsx` because half the flow replaces rather than pushes,
+ * and a swipe walked a minute-old account back into a question from before the
+ * account existed.
  *
- * THE FLOW HAS NO EDGE SWIPE ANY MORE, so it needs a visible way back.
- *
- * The gesture was turned off in `(onboarding)/_layout.tsx` because half of this
- * flow REPLACES rather than pushes: after the account, the screen underneath
- * the health step is still a question from before the account existed,
- * and a swipe walked a minute-old account back into "Where did you hear about
- * us?". Turning it off for the questions too is what makes the rule one rule —
- * onboarding moves forwards, and backwards only where this chevron says so.
- *
- * A row rather than a bar above the marks: the two belong together (both answer
- * "where am I"), and stacked they cost a screen of vertical space on the steps
- * that already have the most to fit.
+ * A row rather than a bar above the marks, because the two both answer "where am
+ * I", and stacked they cost vertical space on the steps with the most to fit.
  */
 export function StepHeader({ step, total, tone = 'pandan', onBack, className }: StepHeaderProps) {
   const { t } = useTranslation('common')

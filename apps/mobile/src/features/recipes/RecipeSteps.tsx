@@ -5,15 +5,14 @@ import { Text } from '@/ui'
 /**
  * The steps, as steps.
  *
- * `recipes.steps` is one free-text column and it has to stay that way: it is
- * typed by hand as often as it is filled in from a model, and a cook who wants
- * to write two lines about their mother's version should be able to. So the
- * column holds text, and the LIST is a property of how it is drawn.
+ * `recipes.steps` is one free-text column and has to stay that way: it is typed
+ * by hand as often as filled in from a model. So the column holds text, and the
+ * list is a property of how it is drawn.
  *
  * Which means the numbering lives here rather than in the data. Numbered on the
- * way in, an "1." would be a literal part of the string: it would double up
- * against these numerals, survive into the field the user edits by hand, and
- * renumber nothing when a step was deleted from the middle.
+ * way in, a "1." would be part of the string: it would double up against these
+ * numerals, survive into the field the user edits, and renumber nothing when a
+ * step was deleted from the middle.
  */
 export function RecipeSteps({ steps }: { steps: string }) {
   const rows = keyed(splitSteps(steps))
@@ -57,15 +56,12 @@ const keyed = (lines: string[]): Array<{ line: string; key: string }> => {
 /**
  * Free text into one instruction a line.
  *
- * The server does this to what the model writes (`_shared/recipe.ts`), and this
- * is the same rule applied to what a person types — because a cook who typed
- * their method as one paragraph wants the same list back as one who pressed
- * return between the steps, and neither of them should have to know which they
- * did.
+ * The server does this to what the model writes (`_shared/recipe.ts`); this is
+ * the same rule applied to what a person types, so a cook who wrote their method
+ * as one paragraph gets the same list back as one who pressed return.
  *
- * Leading markers come off for the same reason they come off on the server:
- * somebody who numbered their own steps gets those numbers drawn beside these
- * ones otherwise.
+ * Leading markers come off for the same reason they do on the server: somebody
+ * who numbered their own steps would get those numbers drawn beside these ones.
  */
 export function splitSteps(steps: string): string[] {
   return (

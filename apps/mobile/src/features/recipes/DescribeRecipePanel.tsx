@@ -13,19 +13,14 @@ export type DescribeRecipePanelProps = {
 /**
  * Typing the pot instead of photographing it.
  *
- * NOT `DescribePanel`, which does the same job for a MEAL, and the difference
- * is the shape rather than the words. That one lives in a compact sheet where
- * the send button has to be inside the field because there is nowhere else for
- * it; this one is in a full-height sheet with the whole screen below the field,
- * and an arrow crammed into the field's bottom corner there reads as clipped
- * rather than as an action. A full-width button under the field is what the
- * sibling panel in this same sheet already does — see `IngredientSheet`'s
- * custom ingredient — and it is what README.md prescribes for a sheet at full
- * height.
+ * Not `DescribePanel`, which does the same job for a meal, and the difference is
+ * the shape: that one is a compact sheet where the send button has to be inside
+ * the field, where this is full height with the whole screen below it, and an
+ * arrow crammed into the field's corner reads as clipped. A full-width button is
+ * what the sibling panel in this sheet already does.
  *
  * The hint goes through `TextField`'s own `hint` prop rather than a row built
- * beside it. A hand-built row has to align an icon against a wrapping line, and
- * it was the thing that looked crooked.
+ * beside it, which has to align an icon against a wrapping line.
  */
 export function DescribeRecipePanel({ onSubmit, autoFocus = false }: DescribeRecipePanelProps) {
   const { t } = useTranslation(['recipes', 'common'])

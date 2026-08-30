@@ -7,28 +7,21 @@
  *   pnpm eval:recipe --show             print the full draft for every case
  *   pnpm eval:recipe --save out.json
  *
- * The sibling of `eval:scan`, for the other model path in this app. A recipe is
- * graded differently from a meal because it is a different kind of answer: a
- * scanned meal is a number, and a recipe is a NUMBER AND A SET OF INSTRUCTIONS
- * somebody is going to stand at a stove and follow. So the checks come in two
- * halves.
+ * The sibling of `eval:scan`, for the other model path. A recipe is graded
+ * differently from a meal, because a scanned meal is a number and a recipe is a
+ * number and a set of instructions somebody will stand at a stove and follow.
  *
- * THE ARITHMETIC, which is what the app is for. Every ingredient is priced for
- * the whole pot, so the pot's calories divided by its servings has to land
- * somewhere a person would recognise, and the macros have to agree with the
- * calories the way they do in any composition table.
+ * The arithmetic: every ingredient is priced for the whole pot, so the pot's
+ * calories divided by its servings has to land somewhere a person would
+ * recognise, and the macros have to agree with the calories.
  *
- * THE WRITING, which is what the cook reads. Measured against how recipes are
- * actually written — one action per step, imperative, in order, times and
- * temperatures where they matter, a doneness cue so the cook knows when to move
- * on. Those are checkable: a step that starts with a verb, a line that is one
- * sentence, a `\n` between them, no numbering because the app draws the
- * numerals itself.
+ * The writing: one action per step, imperative, in order, with times and
+ * temperatures where they matter and a doneness cue. Those are checkable, down
+ * to the `\n` between steps and the absence of numbering.
  *
- * What cannot be checked mechanically is whether the method is RIGHT, so the
- * cases carry `must_mention` — the few things a person who has cooked the dish
- * would notice missing. A rendang that never reduces, a carbonara with cream in
- * it, a nasi lemak whose rice never meets coconut milk.
+ * What cannot be checked mechanically is whether the method is right, so the
+ * cases carry `must_mention`: a rendang that never reduces, a carbonara with
+ * cream in it, a nasi lemak whose rice never meets coconut milk.
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
@@ -189,22 +182,17 @@ const VERBS = new Set([
 ])
 
 /**
- * Things a step can name that have to be in the ingredient list.
+ * Things a step can name that have to be in the ingredient list. The prompt
+ * states this rule and the drafts break it most often, because it competes with
+ * an instruction not to pad the list with seasonings: a rendang whose first step
+ * fries a rempah the list never mentions, a banana bread folding in baking soda
+ * that is not there.
  *
- * The prompt already states this rule — "everything your steps name has to
- * appear in the list" — and it is the one the drafts break most often, because
- * it competes with an instruction not to pad the list with seasonings. What
- * comes back is a rendang whose first step fries a rempah the list never
- * mentions, a bak kut teh seasoned with salt and pepper it does not contain,
- * and a banana bread folding in baking soda that is not there.
+ * A cook cannot follow a method whose ingredients are missing, and half of these
+ * carry real calories.
  *
- * It matters twice over. A cook cannot follow a method whose ingredients are
- * missing, and half of these carry real calories — a rempah is chillies,
- * shallots and the oil they are fried in.
- *
- * Deliberately a short curated list rather than a parser. These are the words
- * that actually go missing; a general noun extractor would flag "heat" and
- * "pan".
+ * A short curated list rather than a parser: these are the words that actually go
+ * missing, where a noun extractor would flag "heat" and "pan".
  */
 const NAMEABLE = [
   'salt',

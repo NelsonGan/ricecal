@@ -120,30 +120,21 @@ export type PlateEditorProps = {
 }
 
 /**
- * EDIT THE PLATE: how much of each part of a meal there was, and what else was
- * on it.
+ * Edit the plate: how much of each part of a meal there was, and what else was on
+ * it. Saves one part at a time, because `set_ingredient_quantity` takes one
+ * ingredient; the taps are free and only Save is a round trip.
  *
- * IT SAVES ONE PART AT A TIME, because `set_ingredient_quantity` takes one
- * ingredient. The taps in here are free; only Save is a round trip.
- *
- * That function leaves the PARENT ROW alone, and the note in
- * `34_food_log_ingredients.sql` says why it stopped rescaling it: scaling a parent
- * moves all four of its macros together. The entry's totals follow the parts
+ * That function leaves the parent row alone (see
+ * `34_food_log_ingredients.sql`), and the entry's totals follow the parts
  * anyway, because `food_log_details` sums them whenever an entry has any.
  *
- * THE BODY OF A PAGE, and it was a sheet. Adding a part means leaving for a
- * catalogue search, and a search is a second panel — so as a sheet this had to
- * dismiss itself, hand over, and be reopened by the host on the way back. That
- * works for the path where a food is picked and is wrong for every other way out
- * of the search: closing it dropped the user past the editor entirely, onto the
- * page behind, because nothing was left holding the editor open. A page does not
- * have that problem. The search is a sheet ON it, and dismissing a sheet reveals
- * what it was covering.
+ * The body of a page, where it was a sheet. Adding a part means leaving for a
+ * catalogue search, so as a sheet this had to dismiss itself and be reopened by
+ * the host: that works when a food is picked and drops the user past the editor
+ * on every other way out. The search is a sheet on the page instead.
  *
- * It also drops the state a sheet needed. A `Sheet` is a `Modal` that stays in
- * the tree with `visible={false}`, so the draft and the saving flag had to be
- * re-seeded on every opening or the second visit showed the first one's
- * discarded edits behind a disabled button. A route mounts fresh.
+ * A route also mounts fresh, where a `Sheet` stays in the tree with
+ * `visible={false}` and had to re-seed the draft on every opening.
  */
 export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditorProps) {
   const { t } = useTranslation(['logging', 'common'])

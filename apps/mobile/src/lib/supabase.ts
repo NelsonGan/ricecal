@@ -26,13 +26,12 @@ const readFailures = new Set<string>()
  * Where a session goes when the keychain refuses it.
  *
  * A local simulator build is signed ad-hoc with an empty entitlements
- * dictionary, so every SecureStore write fails with "a required entitlement
- * isn't present" — an ad-hoc-signed local build embeds an empty entitlements
- * dictionary, so the keychain is unreachable. That is a fact about the build, not a
- * runtime failure, and it is the build every developer runs: without a
- * fallback, signing in on a simulator cannot work at all.
+ * dictionary, so the keychain is unreachable and every SecureStore write fails
+ * with "a required entitlement isn't present". That is a fact about the build
+ * every developer runs, and without a fallback signing in on a simulator cannot
+ * work at all.
  *
- * In memory, so it dies with the process. A session that survived a restart
+ * In memory, so it dies with the process: a session that survived a restart
  * without ever reaching the keychain would be the dangerous version of this.
  */
 const memoryStore = new Map<string, string>()
@@ -42,44 +41,36 @@ let keychainUnavailable = false
  * The session as it last went past this adapter, serialised.
  *
  * `getSession()` answers `null` once the access token has expired and the
- * refresh could not be SENT, which is every offline relaunch more than an hour
- * after the last one. Supabase is right not to hand back a credential it could
- * not renew, and it deliberately leaves the session on disk for the next
- * attempt — what it cannot do is tell this app apart from a signed-out one. The
- * router read that null as "no account" and sent a returning user to the
- * welcome screen with their whole cached diary sitting behind it.
+ * refresh could not be sent, which is every offline relaunch more than an hour
+ * after the last one. Supabase leaves the session on disk for the next attempt
+ * but cannot tell this app apart from a signed-out one, so the router read that
+ * null as "no account" and sent a returning user to the welcome screen with
+ * their cached diary behind it.
  *
- * Remembering it here rather than reading the keychain a second time is what
- * keeps this honest. Every read, write and delete supabase performs goes
- * through this adapter, and a session the SERVER has revoked is a non-retryable
- * refresh failure, which supabase answers by deleting the session — through
- * `removeItem` below, before anything could read it back.
+ * Remembering it here rather than reading the keychain again is what keeps it
+ * honest: everything supabase does goes through this adapter, and a session the
+ * server has revoked is deleted through `removeItem` below.
  */
 let seenSession: string | null = null
 
 /**
- * The key the session is filed under, as far as this adapter needs to know.
- *
- * Matched by suffix rather than spelled out: supabase builds it from the project
- * ref in the URL, and keeps a PKCE code verifier under a neighbouring key that
- * is a bare string — one that would parse as no session at all and overwrite
- * this one.
+ * The key the session is filed under. Matched by suffix rather than spelled out,
+ * because supabase builds it from the project ref and keeps a PKCE code verifier
+ * under a neighbouring key that would parse as no session and overwrite this.
  */
 const isSessionKey = (key: string) => key.endsWith('-auth-token')
 
 /**
  * Resolves the first time storage answers about the session, whatever it said.
  *
- * Supabase's own startup is not this quick, and cannot be. `_recoverAndRefresh`
- * reads this key and then, if the access token is within 90 seconds of expiring,
- * spends up to `AUTO_REFRESH_TICK_DURATION_MS` retrying a refresh with
- * exponential backoff before `getSession()` answers anybody — and offline every
- * one of those attempts waits on a request that will not arrive. An hour after
- * the last launch, which is the life of an access token, that is EVERY launch.
+ * Supabase's own startup cannot be this quick: `_recoverAndRefresh` reads the
+ * key and then, for a token within 90 seconds of expiring, spends up to
+ * `AUTO_REFRESH_TICK_DURATION_MS` retrying before `getSession()` answers
+ * anybody. Offline, every attempt waits on a request that will not arrive, and
+ * an hour after the last launch is every launch.
  *
- * The read is the part that says where the launch belongs, and it has already
- * happened by then. See `SessionProvider`, which routes off it and lets the real
- * answer correct it whenever it comes.
+ * The read is what says where the launch belongs, and it has already happened.
+ * See `SessionProvider`, which routes off it and lets the real answer correct it.
  */
 let announceRead: () => void = () => {}
 const storageRead = new Promise<void>((resolve) => {
@@ -87,11 +78,9 @@ const storageRead = new Promise<void>((resolve) => {
 })
 
 /**
- * Who was signed in according to storage, once storage has been asked.
- *
- * Never resolves if nothing ever reads the key — which cannot happen through
- * supabase's own init, and is why the caller races this against `getSession()`
- * rather than waiting on it alone.
+ * Who was signed in according to storage, once storage has been asked. Never
+ * resolves if nothing reads the key, which is why the caller races it against
+ * `getSession()` rather than waiting on it alone.
  */
 export async function whenStoredSession(): Promise<Session | null> {
   await storageRead
@@ -110,13 +99,9 @@ function remember(key: string, value: string | null): string | null {
 }
 
 /**
- * Who was signed in, according to storage alone.
- *
- * For deciding WHERE A LAUNCH BELONGS and nothing else. The access token in it
- * may well be expired — that is the situation it exists for — so it is never a
- * credential, and nothing sends it anywhere. Requests pause rather than run
- * while there is no connection, and the moment one returns supabase refreshes
- * the token and announces the real session.
+ * Who was signed in, according to storage alone. For deciding where a launch
+ * belongs and nothing else: the access token in it may well be expired, so it is
+ * never a credential and nothing sends it anywhere.
  */
 export function storedSession(): Session | null {
   if (!seenSession) return null
@@ -135,16 +120,13 @@ export function storedSession(): Session | null {
 
 const SecureStoreAdapter = {
   /**
-   * Reads never throw.
-   *
-   * Supabase calls this on startup and on every `autoRefreshToken` tick. A
-   * keychain read can fail for reasons that are not bugs — a locked device
-   * during a background refresh, a restored backup, a simulator build with no
-   * entitlements — and letting those reject produces a stream of unhandled
-   * promise rejections and a failed refresh loop.
+   * Reads never throw. Supabase calls this on startup and on every
+   * `autoRefreshToken` tick, and a keychain read can fail for reasons that are
+   * not bugs: a locked device during a background refresh, a restored backup, a
+   * simulator build with no entitlements.
    *
    * "Could not read the token" and "there is no token" are the same thing to a
-   * caller: the user signs in again. So report the second.
+   * caller, so report the second.
    */
   getItem: async (key: string) => {
     if (keychainUnavailable) return remember(key, memoryStore.get(key) ?? null)
@@ -167,14 +149,13 @@ const SecureStoreAdapter = {
   },
 
   /**
-   * Writes and deletes still fail loudly on a build that has a keychain — a
-   * token that could not be stored means the next launch silently signs the
-   * user out, and one that could not be deleted outlives a sign-out.
+   * Writes and deletes still fail loudly on a build that has a keychain: a token
+   * that could not be stored signs the user out next launch, and one that could
+   * not be deleted outlives a sign-out.
    *
-   * The one case that is not a failure is a build with no keychain at all. It
-   * is detected here, on the first write, because that is the first moment it
-   * can be: a read from an empty keychain and a read from an unreachable one
-   * look identical.
+   * A build with no keychain at all is not a failure, and is detected here on the
+   * first write, because a read from an empty keychain and a read from an
+   * unreachable one look identical.
    */
   setItem: async (key: string, value: string) => {
     if (keychainUnavailable) {
@@ -235,9 +216,8 @@ export const supabase = createClient<Database>(
   {
     // Every request the client makes goes through here, which is what makes one
     // watch cover PostgREST, storage and all eight edge functions. Declared
-    // below, after the client it reads: a function declaration is hoisted, and
-    // the guard is easier to follow next to the rest of the revocation handling
-    // than wedged in above the thing it guards.
+    // below, beside the rest of the revocation handling; a function declaration
+    // is hoisted.
     global: { fetch: guardedFetch },
     auth: {
       storage: SecureStoreAdapter,
@@ -245,54 +225,43 @@ export const supabase = createClient<Database>(
       persistSession: true,
       // No URL to detect a session in — this is a native app, not a browser.
       detectSessionInUrl: false,
-      // PKCE, NOT the library's implicit default. A magic link or a reset then
-      // comes back as a one-time `?code=` that only means anything with the
-      // verifier THIS install generated and stored, so a link carrying a
-      // session cannot be replayed onto another device. The implicit flow puts
-      // a usable token pair straight in the URL fragment, and any `ricecal://`
-      // link carrying one would sign the app in — a stranger's crafted link
-      // becomes a login. `completeLoginFromUrl` accepts only the code for the
-      // same reason.
+      // PKCE, not the library's implicit default. A magic link then comes back
+      // as a one-time `?code=` that means nothing without the verifier this
+      // install generated, so it cannot be replayed onto another device. The
+      // implicit flow puts a usable token pair in the URL fragment, which would
+      // make a stranger's crafted `ricecal://` link a login.
       flowType: 'pkce',
     },
   },
 )
 
 /**
- * WHEN THE SERVER STOPS RECOGNISING THIS SESSION.
+ * When the server stops recognising this session.
  *
- * A session can end on the server while this phone still holds a perfectly
- * good-looking access token: signing out every device, an account deleted, a
- * session revoked in the dashboard, GoTrue timing one out. The token stays
- * validly SIGNED until it expires, so the two halves of the project disagree
- * about it for up to an hour:
+ * A session can end on the server while this phone holds a good-looking access
+ * token: signing out every device, a deleted account, a revoked session, GoTrue
+ * timing one out. The token stays validly signed until it expires, so the two
+ * halves of the project disagree for up to an hour:
  *
  * - PostgREST and the catalogue Worker check the signature and nothing else, so
- *   the diary goes on loading and the app looks signed in.
- * - Every edge function calls `auth.getUser()`, which asks GoTrue, which answers
- *   `session_not_found`. The function returns 401 and the action fails.
+ *   the diary loads and the app looks signed in.
+ * - Every edge function calls `auth.getUser()`, which answers
+ *   `session_not_found`, so the function returns 401 and the action fails.
  *
- * So scanning, refining, recipes, suggestions, photos and barcodes all stop
- * working while the app insists there is an account. Nothing used to notice:
- * `refusalFrom` reads 402 and 429 and passes a 401 straight through to a generic
- * "that did not work".
+ * Nothing used to notice: `refusalFrom` reads 402 and 429 and passes a 401
+ * through to a generic "that did not work".
  *
- * AND AUTH-JS WILL NOT CATCH IT EITHER, by design. `_callRefreshToken` keeps the
- * session when a refresh fails while the access token is still valid, on the
- * reasoning that "destroying it now would log out a user whose access token
- * works". That is right for a refresh that failed because the network dropped
- * and wrong for one the server refused: here the token works for exactly the
- * consumers that never ask GoTrue, which is not the same as working.
+ * auth-js will not catch it either, by design: `_callRefreshToken` keeps the
+ * session when a refresh fails while the access token is still valid, which is
+ * right for a dropped network and wrong for a refusal.
  *
  * Hence the probe below. A 401 is the symptom; a refused refresh is the proof.
  */
 
 /**
- * Who wants telling that the session ended without the user asking.
- *
- * An event rather than a call into the UI, because this file is imported by a
- * background task and a widget sync as well as by the app, and neither of those
- * has a toast to show. `SessionEndedNotice` subscribes for the one that does.
+ * Who wants telling that the session ended without the user asking. An event
+ * rather than a call into the UI, because a background task and a widget sync
+ * import this file too and neither has a toast to show.
  */
 const sessionEndedListeners = new Set<() => void>()
 
@@ -304,13 +273,10 @@ export function onSessionEnded(listener: () => void): () => void {
 }
 
 /**
- * One probe at a time.
- *
- * A screen fires several requests at once, so a revoked session produces a
- * handful of 401s within a frame or two of each other and each of them would
- * otherwise start its own refresh. auth-js coalesces concurrent refreshes and
- * caches a recent failure, so the extra ones are cheap rather than harmful, but
- * a single flight also means the sign-out and its announcement happen once.
+ * One probe at a time. A screen fires several requests at once, so a revoked
+ * session produces a handful of 401s within a frame or two. auth-js coalesces
+ * concurrent refreshes anyway; a single flight is what makes the sign-out and
+ * its announcement happen once.
  */
 let probe: Promise<void> | null = null
 
@@ -318,16 +284,14 @@ let probe: Promise<void> | null = null
  * Ends the session locally if, and only if, the server has ended it.
  *
  * `refreshSession()` is the question, because the refresh token is the only
- * credential that can be checked without guessing: hand it over and the server
- * either mints a new pair, in which case the 401 was a stale token and this is
- * already fixed, or refuses it, in which case there is nothing left to be signed
- * in with.
+ * credential that can be checked without guessing: the server either mints a new
+ * pair, in which case the 401 was a stale token, or refuses it, in which case
+ * there is nothing left to be signed in with.
  *
- * `scope: 'local'` for the sign-out. There is no session on the server to
- * revoke, and a global sign-out would be asking to end other devices' sessions,
- * which is not what happened and not ours to do. This forgets our copy.
+ * `scope: 'local'`, because there is no session on the server to revoke and a
+ * global sign-out would end other devices' sessions.
  *
- * Never throws. It is called from inside a fetch, whose caller is expecting a
+ * Never throws: it is called from inside a fetch whose caller is expecting a
  * response and has its own error to handle.
  */
 async function endSessionIfGone(): Promise<void> {
@@ -353,11 +317,9 @@ async function endSessionIfGone(): Promise<void> {
 }
 
 /**
- * The client's fetch, with a 401 watched for on the way past.
- *
- * The response is handed back untouched and the probe is not awaited: whatever
- * asked is still owed its answer, and the request that noticed has already
- * failed. What it gets from this is the NEXT one, and the sign-out.
+ * The client's fetch, with a 401 watched for on the way past. The response is
+ * handed back untouched and the probe is not awaited: the request that noticed
+ * has already failed, and what this buys is the next one, and the sign-out.
  */
 async function guardedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const response = await fetch(input, init)
@@ -366,12 +328,10 @@ async function guardedFetch(input: RequestInfo | URL, init?: RequestInit): Promi
 }
 
 /**
- * The URL out of whichever of the three shapes `fetch` accepts.
- *
- * Structural rather than `instanceof Request`, for the same reason the errors in
- * `revocation.ts` are: the constructor a polyfill installs is not necessarily
- * the one a value was made with. `String()` covers `URL`, whose `toString` is
- * its href.
+ * The URL out of whichever of the three shapes `fetch` accepts. Structural
+ * rather than `instanceof Request`, for the reason `revocation.ts` gives: the
+ * constructor a polyfill installs is not necessarily the one a value was made
+ * with. `String()` covers `URL`.
  */
 function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input

@@ -13,15 +13,14 @@ import { dateOffset, planDirection } from '../props'
 /**
  * The seam, and the two derived properties.
  *
- * Everything here is about the two things that can go wrong QUIETLY. A tracking
- * call that throws is caught by whoever is looking at the screen; a tracking
- * call that silently sends nothing, or sends the last account's events under
- * the next account's name, is found months later by somebody reading a chart
- * that has been wrong the whole time.
+ * Everything here is about the two things that go wrong quietly. A tracking call
+ * that throws is caught by whoever is looking at the screen; one that silently
+ * sends nothing, or sends the last account's events under the next account's
+ * name, is found months later by somebody reading a chart that has been wrong the
+ * whole time.
  *
- * `__DEV__` is true under Jest, and `client.ts` deliberately does not send in
- * development — so these tests flip it off, which is also the only way to
- * exercise the path that ships.
+ * `__DEV__` is true under Jest and `client.ts` does not send in development, so
+ * these tests flip it off, which is the only way to exercise the path that ships.
  */
 
 type Recorded = { event: string; props?: Record<string, unknown> }

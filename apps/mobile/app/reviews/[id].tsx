@@ -34,20 +34,16 @@ import { AppBar, Card, EmptyState, Screen, Skeleton } from '@/ui'
 /**
  * One review, read as a column of cards.
  *
- * THE ID CARRIES EVERYTHING. `week-2026-08-03` names the kind and the first
- * day, and the server works the last day out from those two — so this screen
- * does no date arithmetic at all, and a deep link into a review is a link that
- * still means the same thing next month.
+ * The id carries everything: `week-2026-08-03` names the kind and the first day
+ * and the server works the last day out, so this screen does no date arithmetic
+ * and a deep link still means the same thing next month.
  *
- * Three requests, and the fourth is free: the summary, the chart columns and
- * the dish list are this period's, while the list of every period is the same
- * query the screen behind this one already made, so the comparison chart on the
- * calorie card costs nothing when the review was opened from the list and one
- * small request when it was opened from a link.
+ * Three requests, and the fourth is free: the list of every period is the same
+ * query the screen behind already made, so the comparison chart costs nothing
+ * when the review was opened from the list.
  *
- * HOW MANY SECTIONS THERE ARE IS STILL DATA. `reviewSteps` decides it from what
- * came back, so a month before the watch arrived is three sections rather than
- * four with an empty one at the end.
+ * How many sections there are is data. `reviewSteps` decides from what came back,
+ * so a month before the watch arrived is three sections rather than four.
  */
 export default function ReviewScreen() {
   const { t } = useTranslation(['reviews', 'common'])
@@ -98,25 +94,18 @@ export default function ReviewScreen() {
   }, [start, kind])
 
   /**
-   * The same gate the list applies, applied again here.
+   * The same gate the list applies, applied again here, because the list is not
+   * the only way in: a notification links straight to `month-latest` and a shared
+   * link names a week by date, so a free account could otherwise read a locked
+   * review by tapping a notification.
    *
-   * The list is not the only way in. A monthly report notification links
-   * straight to `month-latest`, a shared link names a week by date, and neither
-   * goes through a row that could have refused it — so a free account would
-   * otherwise read a locked review by tapping a notification.
+   * `replace` rather than `push`: pushed, the back gesture off the paywall lands
+   * here and redirects again.
    *
-   * `replace`, not `push`. Pushed, the back gesture off the paywall lands on
-   * this screen again, which redirects again: a loop the user cannot leave.
-   *
-   * Waits for EVERY answer. `entitled` is false while the subscription query is
-   * in flight and false again when the app is offline with nothing cached, and
-   * acting on either would take a paying user off the review they just opened —
-   * on every cold launch, or every time they read it on a train. `unknown` is
-   * the offline case and it is why this reads all three: "we could not check"
-   * must never be answered with "you have not paid". The same is true of the
-   * period list on the `latest` path, where "is this the newest week" cannot be
-   * answered until it lands — hence `periods.isPending` rather than only
-   * `start`.
+   * Waits for every answer. `entitled` is false while the subscription query is in
+   * flight and again when the app is offline with nothing cached, and acting on
+   * either would take a paying user off the review they just opened. The same is
+   * true of the period list on the `latest` path, hence `periods.isPending`.
    */
   const { entitled, loading: checkingPlan, unknown: planUnknown } = useEntitlement()
   const locked =

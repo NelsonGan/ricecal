@@ -9,41 +9,31 @@ import type { ReportReason } from './types'
 /**
  * The two things a reader can do about somebody else's cooking.
  *
- * App Review guideline 1.2 asks an app whose users can see each other's writing
- * for four things, and the community shelf is exactly that. The filter before
- * anything is posted is `functions/recipes {action:review}`; the published
- * contact is the help row; taking something down is `service_role`'s. These are
- * the two that belong to the reader: report it, and never see that cook again.
+ * App Review guideline 1.2 asks for four things from an app whose users see each
+ * other's writing. The filter before posting is `functions/recipes
+ * {action:review}`, the published contact is the help row, and taking something
+ * down is `service_role`'s; these two belong to the reader.
  *
- * NEITHER WRITE IS WHAT MAKES THE RECIPE DISAPPEAR. A restrictive read policy
- * on `recipes` does that — see `schemas/24_moderation.sql` — so the shelf, the
- * detail screen, the ingredient rows and everything written next all honour it
- * without knowing it exists. All this layer does is insert the row and empty
- * the cache that is still holding the old answer.
+ * Neither write is what makes the recipe disappear. A restrictive read policy on
+ * `recipes` does that (see `schemas/24_moderation.sql`), so every screen honours
+ * it without knowing it exists, and this layer inserts the row and empties the
+ * cache holding the old answer.
  *
- * THE AUTHOR IS NEVER TOLD, and neither table is readable by anyone but the
- * person who wrote the row. A report is an accusation and a block is a
- * judgement about a person; either one visible to its subject turns a
- * moderation tool into a way to start an argument.
+ * The author is never told, and neither table is readable by anybody but the
+ * person who wrote the row: a report is an accusation and a block is a judgement
+ * about a person, and either visible to its subject starts an argument.
  */
 
 /**
- * Report a recipe, which hides it from the reporter immediately.
+ * Report a recipe, which hides it from the reporter immediately. Three people
+ * reporting the same recipe takes it off the shelf for everybody, which is
+ * `report_threshold`'s job; from here it always looks the same.
  *
- * Three separate people reporting the same recipe takes it off the shelf for
- * everybody, and that is the database's job rather than this one's — see
- * `report_threshold`. From here it always looks the same.
- *
- * `ignoreDuplicates`, keyed on the pair, and both halves of that matter.
- * Reporting twice is the same as reporting once, so a duplicate-key error shown
- * to somebody who had already reported this recipe would be a bug report about
- * a feature working. And IGNORE rather than MERGE, because the difference is a
- * grant: PostgREST turns a merging upsert into `on conflict do update`, which
- * needs UPDATE, and `recipe_reports` deliberately has none — so the merging
- * form comes back 403 and the screen says "could not do that" about a report
- * that is simply already filed. Ignoring conflicts needs only INSERT, and it
- * keeps the reason given the FIRST time, which is the right one: a report is a
- * record rather than a setting.
+ * `ignoreDuplicates`, keyed on the pair. Reporting twice is the same as reporting
+ * once, so a duplicate-key error would be a bug report about a feature working.
+ * Ignore rather than merge, because a merging upsert is `on conflict do update`,
+ * which needs an UPDATE grant `recipe_reports` deliberately has none of. It also
+ * keeps the reason given first, which is the right one.
  */
 export function useReportRecipe() {
   const userId = useUserId()

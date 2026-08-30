@@ -2,25 +2,21 @@
 // community.
 //
 // Two actions rather than two functions, for the reason `photos` gives: each
-// function costs a config block, an import map and a full restart of the local
-// stack to appear, and these two share their auth, their body handling and
-// their error shape line for line.
+// function costs a config block, an import map and a restart of the local stack,
+// and these two share their auth, body handling and error shape.
 //
-// The two halves fail in opposite directions, and that is the whole design.
+// The two halves fail in opposite directions, which is the whole design.
 //
-//   `read`   is a CONVENIENCE. It fills a form the user is about to check, so a
+//   `read`   is a convenience. It fills a form the user is about to check, so a
 //            failure answers 200 with `ok: false` and the form opens empty.
-//            Nothing has been written and nothing is lost.
 //
-//   `review` is a GATE. The recipe is already `is_public` and already
-//            `pending` — `set_recipe_public` put it there, and the community
-//            tab reads `approved` only. So every failure path here leaves it
-//            pending, which is invisible. There is no branch in this file that
-//            approves a recipe because something went wrong.
+//   `review` is a gate. The recipe is already `is_public` and `pending`, and the
+//            community tab reads `approved` only, so every failure path leaves
+//            it invisible. No branch here approves a recipe by accident.
 //
-// The model never sees a credential and the client never sees the model. As
-// everywhere else: OPENROUTER_API_KEY unset means mock, so a local stack runs
-// this with no configuration and production can never mock silently.
+// The model never sees a credential and the client never sees the model.
+// OPENROUTER_API_KEY unset means mock, so a local stack runs with no
+// configuration and production can never mock silently.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'

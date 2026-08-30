@@ -24,25 +24,17 @@ export type RingTrioProps = {
 /**
  * The three figures at the top of the Activity tab.
  *
- * WHY BARS RATHER THAN RINGS
+ * Bars rather than the design's concentric rings. Three nested arcs are legible
+ * at 180pt on a watch face and illegible at the 100pt a side-by-side tile gets on
+ * a phone, and they would be borrowing Apple's visual language for a row that has
+ * to render on Android, where the third value is not Stand at all.
  *
- * The design draws Apple's three concentric rings, and this does not. Three
- * nested arcs are legible at 180pt in the middle of a watch face and illegible
- * at the 100pt each of three side-by-side tiles gets on a 393pt phone — the
- * innermost ring ends up four points across. More to the point, the rings would
- * be borrowing Apple's visual language for a row that has to render on Android
- * too, where the third value is not Stand at all.
+ * So each figure gets a tile carrying its own bar, which survives the third stat
+ * changing between platforms and matches the metric tiles on Trends.
  *
- * So each figure gets a tile, and the tile carries its own bar. It is the same
- * information, it survives the third stat changing between platforms, and it
- * matches the metric tiles on Trends — which is the row directly one tab over.
- *
- * WHY THE THIRD TILE IS A PROP AND NOT A CONDITIONAL
- *
- * Apple reports stand hours and Health Connect has no such record type. The
- * caller decides what the third tile is, so this component never learns which
- * platform it is on, and the screen that DOES know says so in a footnote
- * naming the app responsible.
+ * The third tile is a prop rather than a conditional, so this component never
+ * learns which platform it is on; the screen that does know says so in a
+ * footnote.
  */
 export function RingTrio({ stats, className }: RingTrioProps) {
   return (

@@ -6,11 +6,9 @@ import { formatPortion } from '@/lib/portions'
  * them.
  *
  * Apart from the screens so it can be tested without a device, and shared
- * because two of them read it: the detail screen prices the entry from the
- * staged plate, and the sheet that edits the plate has to show the same rows
- * before either has been written. Imported from the narrow data module rather
- * than the `@/data` barrel, and as a TYPE, so nothing here pulls a native module
- * into a test.
+ * because the detail screen and the sheet that edits the plate have to show the
+ * same rows before either has been written. Imported as a type from the narrow
+ * data module, so nothing here pulls a native module into a test.
  */
 
 /**
@@ -30,12 +28,10 @@ const tenth = (value: number) => Math.round(value * 10) / 10
  * The plate as a screen shows it: what the scan found, with the staged changes
  * laid over it.
  *
- * EVERYTHING on a row scales with its amount, not only the calories. The card's
- * total and the entry's macros are a sum of these, so moving kcal alone would
- * show a plate that disagreed with its own total right up until Save — the same
- * reasoning as the optimistic patch in `useUpdateIngredient`, applied to an edit
- * that has not been sent yet. The weight moves too: half a portion still reading
- * 180 g is a preview of a row the server will not write.
+ * Everything on a row scales, not only the calories. The card's total is a sum
+ * of these, so moving kcal alone would show a plate disagreeing with its own
+ * total until Save, and half a portion still reading 180 g would be a preview of
+ * a row the server will not write.
  */
 export function stagedParts(
   ingredients: readonly EntryIngredient[],
@@ -83,33 +79,26 @@ export function partChanges(
 /**
  * Quarters, whatever the part is sitting at.
  *
- * This used to step in whole units for a counted part and quarters only below
- * one, on the reasoning that a quarter of a satay skewer is not a thing anyone
- * put on a plate. True of skewers, and wrong about everything else the scan
- * decomposes: a scoop of rice, a ladle of curry and a piece of fried chicken are
- * all "× 1" and all routinely eaten by half. Under the old rule the only way
- * down from 1 was to 0.25, and there was no way at all to say "a bit more than
- * one" — the step you needed depended on where you already were, which is not
- * something a pair of buttons can explain.
+ * Whole units above one was the old rule, on the reasoning that nobody eats a
+ * quarter of a satay skewer. True of skewers and wrong about the scoop of rice,
+ * the ladle of curry and the piece of chicken, which are all "× 1" and all
+ * routinely eaten by half. It also left no way to say "a bit more than one".
  */
 export const PART_STEP = 0.25
 export const PART_MAX = 10
 
 /**
- * How much a part moves per tap once it is being edited BY WEIGHT.
- *
- * Ten grams, flat, rather than a fraction of the portion. A proportional step
- * reads as arbitrary — "why did that go up by 37" — where a round number in the
- * unit on screen is a thing you can count in.
+ * How much a part moves per tap when it is edited by weight. Ten grams flat
+ * rather than a fraction of the portion, which reads as arbitrary: "why did
+ * that go up by 37".
  */
 export const GRAM_STEP = 10
 
 /**
- * What ONE of a part weighs, recovered from a row that has already been scaled.
- *
- * `food_log_ingredients.grams` is stored per unit and the view multiplies it by
+ * What one of a part weighs, recovered from a row that has already been scaled.
+ * `food_log_ingredients.grams` is stored per unit and the view multiplies by
  * the quantity, so this divides it back out. `null` for a part nobody weighed,
- * which is the whole reason the amount controls have a second shape.
+ * which is why the amount controls have a second shape.
  */
 export function perUnitGrams(ingredient: Pick<EntryIngredient, 'grams' | 'quantity'>) {
   if (ingredient.grams === null || ingredient.quantity <= 0) return null
@@ -119,16 +108,14 @@ export function perUnitGrams(ingredient: Pick<EntryIngredient, 'grams' | 'quanti
 /**
  * The quantity that weighs about this much, which is what actually gets written.
  *
- * GRAMS ARE A FACE ON A MULTIPLIER. `set_ingredient_quantity` takes a quantity
+ * Grams are a face on a multiplier: `set_ingredient_quantity` takes a quantity
  * and `food_log_ingredients.quantity` is `numeric(6, 2)`, so the finest weight
- * the row can express is a hundredth of one unit — a gram or two on a typical
- * portion. Ask for 200 g of something that comes in 220 g units and the row
- * settles at 202; the number on screen is always what the row actually weighs
- * rather than what was asked for, which is the honest way round.
+ * a row can express is a hundredth of a unit. Ask for 200 g of something that
+ * comes in 220 g units and the row settles at 202, and the screen shows what the
+ * row weighs rather than what was asked for.
  *
  * Clamped to the range the function accepts. The floor is why the minus button
- * removes a part rather than shrinking it forever: below a quarter of one unit
- * there is no quantity left to write.
+ * removes a part rather than shrinking it forever.
  */
 export function quantityForGrams(grams: number, perUnit: number): number {
   const raw = grams / perUnit
@@ -137,12 +124,9 @@ export function quantityForGrams(grams: number, perUnit: number): number {
 }
 
 /**
- * Where the minus and plus buttons take a part being edited by weight, and
- * `null` is off the plate.
- *
- * Stepping stops where `PART_STEP` does, for the reason above: a part cannot
- * weigh less than a quarter of one of itself, so the step below that is removal
- * — which is the same answer the multiplier gives, said in grams.
+ * Where the minus and plus buttons take a part edited by weight; `null` is off
+ * the plate. Stepping stops where `PART_STEP` does, so the step below a quarter
+ * of a unit is removal, which is the multiplier's answer said in grams.
  */
 export function stepGrams(grams: number, perUnit: number, direction: 1 | -1): number | null {
   const floor = PART_STEP * perUnit
@@ -152,11 +136,9 @@ export function stepGrams(grams: number, perUnit: number, direction: 1 | -1): nu
 }
 
 /**
- * Where the minus button takes a part, and `null` is off the plate.
- *
- * At the smallest amount the minus removes the row. A quarter of a thing and
- * "there wasn't any" are different answers, and only one of them used to be
- * reachable — the stepper simply stopped, with nothing to say the row could go.
+ * Where the minus button takes a part; `null` is off the plate. At the smallest
+ * amount it removes the row: a quarter of a thing and "there wasn't any" are
+ * different answers, and the stepper used to simply stop at the first.
  */
 export function stepPart(quantity: number, direction: 1 | -1): number | null {
   if (direction === -1 && quantity <= PART_STEP) return null
@@ -168,20 +150,17 @@ export function stepPart(quantity: number, direction: 1 | -1): number | null {
 /**
  * How many of a part its weight comes to, said in quarters.
  *
- * READ ONLY. The quantity a row stores stays exactly what the weight divides
- * out to, and this rounds a COPY of it for the line that reads it back. That
- * asymmetry is the whole design: grams are the thing somebody can check against
- * the plate in front of them, so typing 200 has to leave the row weighing 200,
- * and the quarter is there to answer the other question — is that about one
- * piece, or about two.
+ * Read only: the stored quantity stays exactly what the weight divides out to,
+ * and this rounds a copy for the line that reads it back. Typing 200 has to
+ * leave the row weighing 200, and the quarter answers the other question, which
+ * is whether that is about one piece or two.
  *
- * Rounding the stored amount instead would cost the weight its resolution: a
- * 180 g part could then only ever be 45, 90, 135, 180 or 225 g, and `GRAM_STEP`
- * would be a no-op, since 190 g rounds straight back to the 1x it started from.
+ * Rounding the stored amount would cost the weight its resolution: a 180 g part
+ * could only be 45, 90, 135, 180 or 225 g, and `GRAM_STEP` would be a no-op.
  *
- * `exact` is false where the two readings have parted company, which is what the
- * "~" on screen is for. A scan lands on whole counts, so a freshly scanned plate
- * says "2" and only a hand-typed weight says "~2".
+ * `exact` is false where the two readings have parted company, which is what
+ * the "~" on screen is for. A scan lands on whole counts, so only a hand-typed
+ * weight says "~2".
  */
 export function roundedCount(quantity: number): { amount: number; exact: boolean } {
   const amount = Math.max(PART_STEP, Math.round(quantity / PART_STEP) * PART_STEP)
@@ -191,13 +170,10 @@ export function roundedCount(quantity: number): { amount: number; exact: boolean
 }
 
 /**
- * The count as a row prints it: "1", "¾", "~1¼".
- *
- * The "~" and the quarter glyphs are symbols rather than copy, which is why they
- * are here and not in `en/logging.ts` — the same place and for the same reason
- * `formatPortion` keeps ¼, ½ and ¾. The × that follows this on screen is a
- * symbol too, and it stays in the screens because it is set smaller than the
- * text either side of it and so has to be its own run.
+ * The count as a row prints it: "1", "¾", "~1¼". The "~" and the quarter glyphs
+ * are symbols rather than copy, which is why they live here rather than in
+ * `en/logging.ts`, as `formatPortion`'s fractions do. The × that follows on
+ * screen stays in the screens because it is set smaller and needs its own run.
  */
 export const countLabel = (quantity: number): string => {
   const { amount, exact } = roundedCount(quantity)

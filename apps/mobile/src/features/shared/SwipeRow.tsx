@@ -49,22 +49,17 @@ export type SwipeRowProps = {
  * A row that slides left to reveal one button: delete.
  *
  * The swipe never deletes by itself. It uncovers the control and stops there,
- * and the delete happens when that button is pressed — a gesture that removes
- * a meal on release is a gesture that removes a meal by accident, and there is
- * no undo behind it.
+ * because a gesture that removes a meal on release removes a meal by accident and
+ * there is no undo behind it.
  *
- * Settling is a timed slide rather than a spring. A row that bounces past its
- * stop and back reads as slack in the interface, and this one has a button
- * parked at a fixed offset: overshooting it means the button moves after the
- * finger has left.
+ * Settling is a timed slide rather than a spring: the button is parked at a fixed
+ * offset, so overshooting means it moves after the finger has left.
  *
- * Two things had to be true before any of this worked, and neither announced
- * itself: the scrolling ancestor has to be gesture-handler's `ScrollView`, or
- * this pan never activates at all; and the detector's own child has to be a
- * plain view rather than an animated one, or the gesture attaches to nothing.
- * The revealed button is drawn AFTER the row for the same family of reason —
- * the row's box keeps its full width while its contents slide, so a button
- * underneath it is visible and unpressable.
+ * Two things had to be true first, and neither announced itself: the scrolling
+ * ancestor has to be gesture-handler's `ScrollView`, or this pan never activates,
+ * and the detector's own child has to be a plain view, or the gesture attaches to
+ * nothing. The revealed button is drawn after the row for a related reason: the
+ * row's box keeps its full width while its contents slide.
  */
 export function SwipeRow({
   children,

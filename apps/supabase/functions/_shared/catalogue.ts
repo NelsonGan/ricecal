@@ -126,18 +126,14 @@ export async function lookupBarcode(code: string): Promise<CatalogueProduct | nu
 /**
  * The catalogue search: five arms fused by rank, exactly as Postgres did it.
  *
- * The `fuzzy` flag the old RPC took is gone. It existed because the trigram
- * arms were expensive enough over half a million Postgres rows to blow a
- * statement timeout on a plate with five components; over 48,000 rows in SQLite
- * with an FTS index they are not, and one code path that behaves the same for
- * a person and for the scan cascade is worth more than the microseconds.
+ * The `fuzzy` flag the old RPC took is gone. It existed because the trigram arms
+ * could blow a statement timeout over half a million Postgres rows; over 48,000
+ * rows in SQLite with an FTS index they cannot.
  *
- * RETURNS NULL WHEN THE CATALOGUE COULD NOT BE REACHED, and an empty array only
- * when it was reached and had nothing. That distinction cost an hour to learn
- * the hard way: this used to answer `[]` for both, so a Worker that was down,
- * misconfigured or holding a different token looked exactly like a dish nobody
- * has heard of — the app said "No dish by that name" over a search that had
- * never happened, and there was nothing in any log to say otherwise.
+ * Returns null when the catalogue could not be reached, and an empty array only
+ * when it was reached and had nothing. Answering `[]` for both made a Worker that
+ * was down look exactly like a dish nobody has heard of, so the app said "No dish
+ * by that name" over a search that had never happened.
  */
 export async function searchFoods(q: string, limit = 50): Promise<CatalogueFood[] | null> {
   const body = await call<{ ok: boolean; foods: CatalogueFood[] }>(

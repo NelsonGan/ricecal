@@ -12,27 +12,22 @@ import { AppBar, Card, EmptyState, Screen, SegmentedControl, Skeleton } from '@/
 /**
  * The reviews list: finished weeks, or finished months.
  *
- * TWO WINDOWS, and they are different lengths on purpose. Weeks reach three
- * months back and months reach six, because a weekly review is about something
- * you still remember eating and a monthly one is about a shape you only see
- * from a distance. Both are decided in `review_periods`; nothing here knows a
- * date.
+ * Two windows of different lengths. Weeks reach three months back and months
+ * reach six, because a weekly review is about something you still remember eating
+ * and a monthly one is about a shape you only see from a distance. Both are
+ * decided in `review_periods`; nothing here knows a date.
  *
- * ONE OF THEM IS FREE, and it is the newest week. A review is the thing this
- * app does that a notes page cannot, so a free account gets to read one rather
- * than be told about one — and it is the newest week rather than a sample,
- * because the sample would be somebody else's week and this one is theirs.
- * Everything older, and every month, opens the paywall. The rows are still
- * drawn in full with a padlock where the chevron goes: what is being sold is
- * visibly their own year, which is the only honest way to sell it.
+ * The newest week is free. A free account gets to read one review rather than be
+ * told about one, and it is the newest week rather than a sample because the
+ * sample would be somebody else's week. Everything older, and every month, opens
+ * the paywall, with the rows still drawn in full and a padlock where the chevron
+ * goes.
  *
- * EVERY PERIOD IN THE WINDOW, however little is in it. There was a sufficiency
- * rule here — four logged days of a week, twelve of a month — and periods that
- * failed it were dropped. Two things were wrong with that: the week you barely
- * logged is the week whose shape is worth seeing, and a list that silently
- * omits some weeks reads as a list that lost them. The sparkline already says
- * how much of a period was recorded, which is what the rule was trying to
- * protect against.
+ * Every period in the window is listed, however little is in it. There was a
+ * sufficiency rule here (four logged days of a week, twelve of a month) and it
+ * was wrong twice: the week you barely logged is the week whose shape is worth
+ * seeing, and a list that silently omits weeks reads as one that lost them. The
+ * sparkline already says how much of a period was recorded.
  */
 export default function ReviewsScreen() {
   const { t } = useTranslation(['reviews', 'common'])

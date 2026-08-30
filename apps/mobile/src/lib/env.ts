@@ -41,24 +41,17 @@ const schema = z.object({
   EXPO_PUBLIC_RC_IOS_KEY: z.string().min(1),
   EXPO_PUBLIC_RC_ANDROID_KEY: z.string().min(1),
   /**
-   * RevenueCat's TEST STORE key, and the only way the purchase flow can be
-   * walked on a simulator.
+   * RevenueCat's test store key, and the only way the purchase flow can be walked
+   * on a simulator. Every other way needs a real store, so the paywall's button
+   * could be pressed and never observed, which is how "I started the trial and it
+   * still says free plan" survived.
    *
-   * Every other way to buy this app needs a real store: Apple's sandbox wants a
-   * sandbox Apple ID on a device, Play's wants a licensed tester on a phone, and
-   * a StoreKit configuration file produces a receipt RevenueCat's backend will
-   * not validate. So on a simulator the paywall's button could be pressed and
-   * never observed — which is how "I started the trial and it still says free
-   * plan" survived: the one flow nobody could run was the one that was broken.
+   * The test store sells the same packages, mints a real customer, grants the
+   * real `pro` entitlement and delivers a real webhook with `environment:
+   * SANDBOX` on it, which is why the webhook has `REVENUECAT_SANDBOX_USER_IDS`.
    *
-   * The test store is RevenueCat's own: it sells the same packages, mints a real
-   * customer, grants the real `pro` entitlement and delivers a real webhook,
-   * with `environment: SANDBOX` on it. Which is also why the webhook has
-   * `REVENUECAT_SANDBOX_USER_IDS` — see the `revenuecat` edge function.
-   *
-   * OPTIONAL, and read ONLY in a development build. `.optional()` here and
-   * `__DEV__` at the one place it is used, so a release bundle cannot reach it
-   * whatever is in the environment it was built from.
+   * Optional, and read only in a development build: `.optional()` here and
+   * `__DEV__` at the one place it is used, so a release bundle cannot reach it.
    */
   EXPO_PUBLIC_RC_TEST_STORE_KEY: z.string().min(1).optional(),
   EXPO_PUBLIC_MIXPANEL_TOKEN: z.string().min(1),

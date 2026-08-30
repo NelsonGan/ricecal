@@ -3,26 +3,18 @@ import type { HrZones } from './types'
 /**
  * Heart rate samples to seconds in four bands.
  *
- * WHY FOUR BANDS AND NOT FIVE
+ * Four rather than the conventional five: zone 1 against zone 2 is a distinction
+ * for people following a training plan, and everyone else reads "mostly cruising,
+ * with a hard bit near the end".
  *
- * The sports-science convention is five zones. The design shows four — Easy,
- * Steady, Hard, Peak — and four is the right call for a calorie diary: zone 1
- * and zone 2 are a distinction for people following a training plan, and
- * everyone else reads "I was mostly cruising, with a hard bit near the end".
+ * The thresholds are a fraction of maximum rather than of reserve, because
+ * Karvonen is the better model and needs a resting heart rate many of these
+ * sessions do not carry.
  *
- * WHY THE THRESHOLDS ARE A FRACTION OF MAX AND NOT OF RESERVE
- *
- * Karvonen (heart-rate reserve) is the better model and it needs a resting
- * heart rate that many of these sessions do not carry. Percent-of-max needs
- * only an estimated maximum, which every band here is a fraction of.
- *
- * WHY THE MAXIMUM IS ESTIMATED FROM AGE AND NOT MEASURED
- *
- * A measured max needs a maximal effort, which nobody has performed for us. The
- * Tanaka formula (208 − 0.7 × age) is used rather than the famous 220 − age:
- * the latter comes from a 1970s eyeball fit through fewer than a dozen studies
- * and its own authors said so, and it under-reads by around ten beats for
- * anyone over fifty — which would put an older user in Peak for a brisk walk.
+ * The maximum is estimated from age, since a measured one needs a maximal effort
+ * nobody has performed for us. Tanaka (208 - 0.7 x age) rather than 220 - age,
+ * which comes from a 1970s eyeball fit and under-reads by about ten beats for
+ * anyone over fifty, putting an older user in Peak for a brisk walk.
  */
 
 export function estimatedMaxHr(age: number | null): number {

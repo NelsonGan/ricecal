@@ -89,15 +89,14 @@ export function Stepper({
   /**
    * Focus empties the field, and the old value becomes its placeholder.
    *
-   * Not "seed it with the current number and select it all", which is the obvious
-   * thing and is not deterministic: the text has to change on focus either way —
-   * "1½" is not editable digits — and where the caret and the selection end up
-   * after a programmatic change on the same frame as the focus is the platform's
-   * business. Append on one, replace on the other, and no way to tell from here.
+   * Not "seed it with the current number and select it all", which is not
+   * deterministic: the text has to change on focus either way, since "1½" is not
+   * editable digits, and where the caret lands after a programmatic change on the
+   * same frame as the focus is the platform's business.
    *
-   * Empty means whatever is typed IS the value, on every platform. Typing over
-   * the whole number is also what someone reaching for this wants: the ± buttons
-   * are how you nudge, and this is how you say 0.35.
+   * Empty means whatever is typed is the value, on every platform. It is also
+   * what someone reaching for this wants: the buttons are how you nudge, and this
+   * is how you say 0.35.
    */
   const startEditing = () => setTyped('')
 

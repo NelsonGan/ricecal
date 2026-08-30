@@ -7,30 +7,21 @@
  *   pnpm foods:dupes --merge char-kuey-teow char-kway-teow
  *
  * The importer refuses a dish whose slug or normalized name is already in the
- * catalogue, and that is most of the job. What it cannot refuse is the same
- * dish under a different name — `Siew Yoke Rice` against `Siew Yoke Fan`,
- * `char kway teow` against `char kuey teow` — because no similarity threshold
- * separates those from genuinely different dishes that share three words. So
- * this reports and a person decides. It is worth deciding: two rows for one
- * dish split its logs, split its search ranking, and give the user two answers
- * to the same question.
+ * catalogue. What it cannot refuse is the same dish under a different name
+ * (`Siew Yoke Rice` against `Siew Yoke Fan`), because no similarity threshold
+ * separates those from different dishes sharing three words. So this reports and
+ * a person decides: two rows for one dish split its logs, split its search
+ * ranking, and give the user two answers to the same question.
  *
- * WHY THE SIMILARITY IS COMPUTED HERE
+ * The similarity is computed here, with no index to fall back on, so a bare run
+ * compares every row against every other, 230 million pairs, which is minutes.
+ * `--since` cuts it to one round against the catalogue and loses nothing, since a
+ * duplicate this tool exists to find always has a freshly written row on one side.
  *
- * **The pinning matters more here than it did in Postgres, not less.** There is
- * no index to fall back on, so a bare `pnpm foods:dupes` really does compare
- * every row against every other — 230 million pairs, which is minutes rather
- * than seconds. `--since` cuts it to one round against the catalogue, and it
- * loses nothing: a duplicate this tool exists to find always has a freshly
- * written row on at least one side.
- *
- * WHY MERGING IS SAFE HERE
- *
- * Deleting a catalogue row is no longer dangerous the way it was. An entry
- * carries its own numbers now, so a dish that goes away takes nothing with it —
- * `food_logs.food_id` is a soft reference and a dangling one is ordinary. What
+ * Merging is safe because an entry carries its own numbers, so a dish that goes
+ * away takes nothing with it: `food_logs.food_id` is a soft reference. What
  * merging buys over deleting is that the kept row inherits the dropped one's
- * ALIASES, so `siew yoke fan` remains a thing a person can type.
+ * aliases, so `siew yoke fan` remains a thing a person can type.
  */
 
 import { normalize } from '../../cloudflare/workers/catalogue/src/text.ts'

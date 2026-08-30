@@ -25,32 +25,24 @@ export type RevenueCatEvent = {
 export const ENTITLEMENT = 'pro'
 
 /**
- * Who a SANDBOX purchase may grant Pro to.
- *
- * A sandbox purchase costs nothing and carries a genuine Supabase user id, so
- * this is the one setting here that can hand the paid app out for free.
- * `REVENUECAT_SANDBOX_SUBSCRIBERS` decides:
+ * Who a sandbox purchase may grant Pro to. A sandbox purchase costs nothing and
+ * carries a genuine Supabase user id, so this is the one setting that can hand
+ * the paid app out for free. `REVENUECAT_SANDBOX_SUBSCRIBERS` decides:
  *
  *   unset / empty   nobody. Every sandbox event is dropped.
- *   `*`             EVERYBODY. See the warning below.
+ *   `*`             everybody. See the warning below.
  *   a list of uuids just those accounts.
  *
- * `*` IS THE CURRENT SETTING AND IT IS DELIBERATE. Every purchase made outside
- * the App Store's own checkout is a sandbox transaction — a sandbox Apple ID, a
- * TestFlight build, RevenueCat's test store — so with an allow-list the paid app
- * cannot be exercised by anybody whose id somebody remembered to add, which is
- * how a real purchase came to sit in RevenueCat for hours while the app went on
- * refusing it. What it costs is that TESTFLIGHT TESTERS GET PRO WITHOUT PAYING,
- * because TestFlight always transacts against the sandbox. That is a known and
- * accepted trade, not an oversight; narrow it to a list, or to nothing, when the
- * tester group stops being people you know.
+ * `*` is the current setting, deliberately. Every purchase outside the App
+ * Store's own checkout is a sandbox transaction, so an allow-list means the paid
+ * app can only be exercised by ids somebody remembered to add. What it costs is
+ * that TestFlight testers get Pro without paying: a known trade, to be narrowed
+ * when the tester group stops being people you know.
  *
- * HERE RATHER THAN IN THE WEBHOOK, because two places apply it now: the webhook
- * when an event arrives, and `reconcileEntitlement` when it asks RevenueCat
- * directly. A second copy of this rule would be a way around the first.
+ * Here rather than in the webhook, because two places apply it: the webhook when
+ * an event arrives, and `reconcileEntitlement` when it asks RevenueCat directly.
  *
- * Read per call rather than at module scope, so changing the secret takes effect
- * on the next invocation rather than the next cold start.
+ * Read per call, so changing the secret takes effect on the next invocation.
  */
 export function sandboxPolicy(): '*' | Set<string> {
   const raw = (Deno.env.get('REVENUECAT_SANDBOX_SUBSCRIBERS') ?? '').trim()
@@ -144,30 +136,19 @@ export function statusFor(
 }
 
 /**
- * Has this event been overtaken by one we have already applied?
+ * Has this event been overtaken by one we have already applied? RevenueCat
+ * retries with a backoff, so an EXPIRATION held up by a failed delivery can land
+ * after the RENEWAL that superseded it.
  *
- * RevenueCat retries with a backoff, so deliveries do not arrive in the order
- * things happened: an EXPIRATION held up by a failed delivery can land after
- * the RENEWAL that superseded it, and applied blind it takes the app away from
- * somebody who has just paid for another month.
+ * Ordered by when the event happened, which is the second attempt at this. The
+ * first compared the event's expiry against the stored `current_period_end`,
+ * which is the same test only while every ending is the natural one: a refund, a
+ * support cancellation and a revoked grant all end a subscription inside the
+ * period it had paid for, so every one looked stale and was dropped.
  *
- * ORDERED BY WHEN THE EVENT HAPPENED, and this is the second attempt at it. The
- * first compared the event's expiry against the stored `current_period_end` and
- * dropped anything that ended sooner — which is the same test as "is this
- * stale" only while every ending is the natural one. It is not: a refund, a
- * support cancellation and a revoked promotional grant all end a subscription
- * inside the period it had already paid for. Every one of them looked stale,
- * every one was dropped, and the account stayed entitled with nothing further
- * coming to correct it.
- *
- * BOTH UNKNOWNS APPLY THE EVENT rather than dropping it. A row with no
- * `last_event_at` predates the column or was corrected by hand; a payload with
- * no `event_timestamp_ms` is one we cannot place. Refusing either
- * would mean discarding a real event to protect against a hypothetical
- * ordering, and the event in hand is the better evidence.
- *
- * Equal timestamps apply too, so a redelivery of the event we already have
- * rewrites the same row with the same values rather than being turned away.
+ * Both unknowns apply the event rather than dropping it, because discarding a
+ * real event to protect against a hypothetical ordering is the worse trade.
+ * Equal timestamps apply too, so a redelivery rewrites the same values.
  */
 export function isStale(event: RevenueCatEvent, lastEventAt: string | null | undefined): boolean {
   if (!lastEventAt) return false

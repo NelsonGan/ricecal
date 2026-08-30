@@ -23,29 +23,22 @@ import {
 } from '@/ui'
 
 /**
- * SHARE & EARN PRO — post about the app, and we give you Pro.
+ * Share & Earn Pro: post about the app, and we give you Pro.
  *
- * THE WHOLE THING IS MANUAL, and that is the design rather than a first
- * version. There is no referral code, no attribution, no tracking pixel and no
- * table: somebody posts, somebody brings the link to Discord, and a promotional
- * grant goes out by hand in RevenueCat. What a referral SYSTEM would buy is
- * automatic attribution, and the cost of it is a deep-link scheme, a claimed-by
- * column, a fraud story and a support thread for every code that did not
- * register. At the volume this app is at, a person reading a link is cheaper
- * and better, and it is the only version that can judge the thing that actually
- * matters — whether the post is real.
+ * The whole thing is manual by design. There is no referral code, attribution,
+ * tracking pixel or table: somebody posts, somebody brings the link to Discord,
+ * and a promotional grant goes out by hand. A referral system buys automatic
+ * attribution at the cost of a deep-link scheme, a claimed-by column, a fraud
+ * story and a support thread for every code that did not register, and only a
+ * person can judge whether the post is real.
  *
- * IT IS ALSO WHY THE REWARD IS LIKES RATHER THAN INSTALLS. Installs need
- * attribution to count at all; likes are visible on the post itself, to us and
- * to the person claiming, and neither side has to trust the other's dashboard.
+ * Which is also why the reward is likes rather than installs: installs need
+ * attribution to count, where likes are visible on the post itself.
  *
- * WHY IT IS NOT GATED ON BEING FREE. A monthly subscriber can earn a year, and
- * a yearly one can earn lifetime, so the row is offered to everybody. The copy
- * is about posting rather than about unlocking, so it reads correctly to
- * somebody who has already paid.
+ * Not gated on being free, because a monthly subscriber can earn a year and a
+ * yearly one lifetime. The copy is about posting rather than unlocking.
  *
- * The claim goes to Discord because Discord is already where support happens
- * (`HelpSheet`) — a second channel would be a second inbox to forget about.
+ * The claim goes to Discord, which is already where support happens.
  */
 
 /** The three rungs. What each is worth is the copy's; this is the shape. */
@@ -56,24 +49,17 @@ const TIERS: readonly { key: 'post' | 'liked' | 'viral'; icon: IconProps; tone: 
 ]
 
 /**
- * Open the first URL the phone will take: the app's own scheme, then its
- * website. See `SOCIAL_PLATFORMS` for the ladder.
+ * Open the first URL the phone will take: the app's own scheme, then its website.
+ * See `SOCIAL_PLATFORMS` for the ladder.
  *
- * IT ASKS BY TRYING, RATHER THAN BY ASKING FIRST. The obvious shape is
- * `canOpenURL` and then `openURL`, and it is the one that does not work: that
- * question is gated behind a declaration on both platforms — iOS wants the
- * scheme in `LSApplicationQueriesSchemes` and Android 11+ wants a `<queries>`
- * block — and an undeclared scheme answers FALSE rather than erroring. Both are
- * native manifest keys, so the honest answer would arrive only in a new binary
- * and never in an OTA update, and until then every tile here would quietly open
- * a browser on a phone with the app installed. That failure is invisible: the
- * tap works, it just goes to the wrong place.
+ * It asks by trying rather than by asking first. `canOpenURL` is gated behind a
+ * native manifest declaration on both platforms and answers false rather than
+ * erroring for an undeclared scheme, so the honest answer would arrive only in a
+ * new binary and until then every tile would quietly open a browser on a phone
+ * with the app installed.
  *
- * OPENING needs no such declaration on either platform. So this attempts each
- * URL and lets the rejection be the answer — "no activity found to handle
- * intent" on Android, an unhandled scheme on iOS — and falls through to the
- * website, which every phone can open. One fewer thing to declare, and it is
- * right the day it ships rather than the day a binary does.
+ * Opening needs no such declaration, so this attempts each URL and lets the
+ * rejection be the answer, falling through to the website.
  */
 async function openFirst(urls: readonly string[]): Promise<void> {
   let lastError: unknown

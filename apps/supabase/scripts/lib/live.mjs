@@ -1,53 +1,35 @@
 /**
- * Drives the DEPLOYED edge functions the way the app drives them, from a script.
+ * Drives the deployed edge functions the way the app drives them, from a script.
  *
- * The offline harness beside this one (`eval-prompts.ts`) grades a prompt by
- * importing it and calling the model directly. That answers "does the model
- * read this sentence correctly" and nothing else: it never uploads a photo,
- * never searches the catalogue, never runs the verifier or the ratio gate, and
- * never writes a row. Most of what goes wrong with a scan goes wrong in exactly
- * those parts.
+ * `eval-prompts.ts` grades a prompt by importing it and calling the model
+ * directly, which never uploads a photo, searches the catalogue, runs the
+ * verifier or writes a row. Most of what goes wrong with a scan goes wrong in
+ * those parts, so this file is the shipped path end to end, with the cascade's
+ * own `debug: true` trace on every call.
  *
- * So this file is the other half — the SHIPPED path, end to end, with the
- * cascade's own `debug: true` trace coming back on every call. What it costs is
- * a session, because every one of these functions authenticates its caller.
+ * `.secrets/eval.json` holds an email and a password for a throwaway account.
+ * The first design read a refresh token out of the running app and lasted one
+ * run: Supabase rotates a refresh token on use and revokes the chain when an old
+ * one is presented again, so the app and the script killed each other's
+ * sessions. Password sign-in gives the harness a session of its own.
  *
- * THE SESSION
- *
- * `.secrets/eval.json` holds an email and a PASSWORD for a throwaway account,
- * and the harness signs in with them. That is deliberate, and it is the second
- * design: the first read a refresh token out of the running app, and it lasted
- * one run. Supabase rotates a refresh token on use and revokes the chain when
- * an old one is presented again — so the app refreshing on its own schedule and
- * the script refreshing on its own killed each other's sessions, and the
- * symptom was `refresh_token_already_used` on a token written to disk sixty
- * seconds earlier. Password sign-in gives this harness a session of its own,
- * and the app can go on using the same account without either noticing.
- *
- * The account has no magic-link route and is not reachable from a sign-in
- * screen; to set it up, set `email` here to a throwaway address that has signed
- * in once, then give it a password:
+ * To set the account up, point `email` at a throwaway address that has signed in
+ * once, then give it a password:
  *
  *     update auth.users set encrypted_password =
  *       extensions.crypt('<generated>', extensions.gen_salt('bf'))
  *      where email = '<that address>'
  *
- * SETTING THAT PASSWORD SIGNS THE APP OUT. Supabase revokes every refresh token
- * an account holds when its password changes, so a simulator signed in as this
- * account lands back on the welcome screen — which looks like a bug in the app
- * and is not. Sign it back in from the debugger with
- * `supabase.auth.signInWithPassword(...)`, or use a different account for the
- * simulator than for the harness.
+ * Setting that password signs the app out, because Supabase revokes every
+ * refresh token an account holds when its password changes.
  *
- * AND THAT IS NO LONGER ENOUGH ON ITS OWN. Turning captcha on for the project
- * took every harness in this directory with it: `/token?grant_type=password` is
- * captcha protected, a script has no widget to solve, and the refusal names the
- * app rather than the switch — `captcha_failed` on an account whose password is
- * perfectly good. `token()` has two ways round it, and `otpToken` explains the
- * second and why it is allowed to work.
+ * That is no longer enough on its own: `/token?grant_type=password` is captcha
+ * protected and a script has no widget to solve, so the refusal is
+ * `captcha_failed` on a password that is perfectly good. `token()` has two ways
+ * round it, and `otpToken` explains the second.
  *
- * Anything this writes lands in production, under that account. Every helper
- * that writes has a matching one that takes it back out; use them.
+ * Anything this writes lands in production under that account. Every helper that
+ * writes has a matching one that takes it back out.
  */
 
 import { readFile } from 'node:fs/promises'
@@ -146,15 +128,12 @@ export async function token() {
 
 /**
  * The way in when captcha is on: mint a code as the admin, then spend it.
+ * `/auth/v1/verify` is not captcha protected, since the protection is on the
+ * endpoints a bot would use to ask for something, and `admin/generate_link`
+ * sends no mail and returns `email_otp` in plaintext.
  *
- * `/auth/v1/verify` is NOT captcha protected — the protection is on the
- * endpoints that a bot would use to ASK for something (`/token`, `/signup`,
- * `/otp`, `/recover`), and redeeming a code the server itself issued is not one
- * of them. `admin/generate_link` sends no mail and returns `email_otp` in
- * plaintext, so the round trip is entirely server side.
- *
- * It needs the service-role key, which is a real step up from a password and so
- * is deliberately NOT read from anywhere it could be committed:
+ * It needs the service-role key, which is deliberately not read from anywhere it
+ * could be committed:
  *
  *     export SUPABASE_ACCESS_TOKEN=$(security find-generic-password -s "Supabase CLI" -w)
  *     curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \

@@ -5,17 +5,15 @@
  *   pnpm foods:alias --file apps/supabase/data/foods/aliases/penang.json
  *
  * Three research rounds in a row ended with the same request: a dish is already
- * there under a name nobody types. `Nasi Ayam Bebola` is the Melaka chicken
- * rice ball; `(Papadam)` is a papadom; half the MyFCD catalogue buries the Malay
- * term inside parentheses after an English one — `Rice, "Dagang" (Nasi Dagang)`.
- * Search will not find any of those from what a person actually writes, and
- * re-importing the dish under its other name is refused as a duplicate — which
- * is correct, and leaves the name unfindable.
+ * there under a name nobody types. `Nasi Ayam Bebola` is the Melaka chicken rice
+ * ball, and half the MyFCD catalogue buries the Malay term in parentheses after
+ * an English one. Search will not find those from what a person writes, and
+ * re-importing the dish under its other name is refused as a duplicate, which is
+ * correct and leaves the name unfindable.
  *
- * An alias is a ROW rather than a word in a bag, and that is what makes it worth
- * adding: the search fuses four arms and one of them matches aliases exactly,
- * the way it matches a name. A second romanization added here ranks like a name,
- * not like one word among fifty.
+ * An alias is a row rather than a word in a bag, which is what makes it worth
+ * adding: search fuses four arms and one matches aliases exactly, the way it
+ * matches a name, so a second romanization ranks like a name.
  *
  * The file form takes `{ "<slug>": ["alias", …], … }`.
  */

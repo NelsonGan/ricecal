@@ -26,19 +26,15 @@ import { fromDbSource } from './types'
  */
 
 /**
- * The illustration for a row that has one, and `undefined` for a row that does
- * not.
+ * The illustration for a row that has one, and `undefined` for a row that does not.
  *
- * Undefined rather than a stand-in plate, which is what this used to return. The
- * catalogue is far too large to illustrate — hundreds of megabytes of imported
- * rows against a few dozen drawings — so most foods genuinely have no icon, and
- * handing every one of them the same empty plate dressed that fact up as an
- * answer. A row with nothing to show should show nothing, and the curated local
- * dishes that DO have a drawing keep it.
+ * Undefined rather than the stand-in plate this used to return. The catalogue is
+ * far too large to illustrate, so most foods genuinely have no icon, and handing
+ * every one of them the same empty plate dressed that up as an answer. The
+ * curated local dishes that do have a drawing keep it.
  *
- * The cast is the seam between a text column and a closed union. A dish inserted
- * with a name no icon set has renders blank rather than crashing, which is the
- * other reason this is not just a spread.
+ * The cast is the seam between a text column and a closed union: a dish inserted
+ * with a name no icon set has renders blank rather than crashing.
  */
 export function toIcon(set: string | null, name: string | null): IconRef | undefined {
   if (!set || !name) return undefined

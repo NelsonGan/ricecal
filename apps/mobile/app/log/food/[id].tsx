@@ -87,32 +87,23 @@ const QUICK_FIXES = ['halfPortion', 'noSambal', 'addEgg', 'extraRice'] as const
 const FIGURES = ['kcal', 'carbs', 'protein', 'fat'] as const
 
 /**
- * How far the content rides up over the photograph.
- *
- * Read twice and it has to be: the wrapper lifts by it, and the picture above
- * grows by it so the overlap covers a strip of the frame instead of cropping the
- * meal out of it. Two numbers here would be a photo cut short by exactly the
- * amount nobody could see.
+ * How far the content rides up over the photograph. Read twice, and it has to
+ * be: the wrapper lifts by it and the picture grows by it, so the overlap covers
+ * a strip of the frame rather than cropping the meal out of it.
  */
 const CONTENT_LIFT = 22
 
 /**
- * How long the portion stepper waits after the last tap before it writes.
- *
- * Long enough that "tap tap tap" is one write, short enough that letting go and
- * looking at the total does not feel like waiting. Nothing else on this screen is
- * debounced; see `savePortion` for why this one is.
+ * How long the portion stepper waits after the last tap before it writes. Long
+ * enough that "tap tap tap" is one write, short enough that letting go does not
+ * feel like waiting. See `savePortion` for why this alone is debounced.
  */
 const PORTION_DEBOUNCE_MS = 500
 
 /**
- * What the user is told when a correction changed nothing.
- *
- * A table rather than a chain of ternaries at the call site, because the five
- * are a closed set the server names and the mapping is the whole content of the
- * decision. Each one has to leave somebody with a different next move: reword
- * it, name the part, try again, or accept that the words had no calories in
- * them and nothing was owed.
+ * What the user is told when a correction changed nothing. A table rather than a
+ * chain of ternaries, because the five are a closed set the server names and
+ * each has to leave somebody with a different next move.
  */
 const FIX_DECLINED = {
   not_a_correction: 'logging:detail.fixNoCalories',
@@ -127,13 +118,10 @@ const FIX_DECLINED = {
  * The edit control in a card's own header, which is how every editable group on
  * this screen is opened.
  *
- * So each card says what it holds and carries one way in.
- *
- * The pencil alone, with no "Edit" beside it. Three of these sit one under
- * another on the same screen, so the word was printed three times to say what the
- * icon already says. The `accessibilityLabel` is where the words went, and they
- * are the specific ones ("Edit the ingredients", not "Edit") because three
- * buttons announcing "Edit" tell a screen reader nothing.
+ * The pencil alone, with no "Edit" beside it: three of these sit one under
+ * another, so the word was printed three times to say what the icon says. The
+ * words went into `accessibilityLabel`, and they are specific ("Edit the
+ * ingredients") because three buttons announcing "Edit" tell a reader nothing.
  */
 function CardEdit({ label, onPress }: { label: string; onPress: () => void }) {
   return (
@@ -162,12 +150,9 @@ function CardEdit({ label, onPress }: { label: string; onPress: () => void }) {
  *
  * With an `entryId` it edits something already logged; without one it composes a
  * new entry from the catalogue. The controls are identical either way, so the
- * difference is confined to what the button at the foot of it does.
+ * difference is confined to what the button at the foot does.
  *
- * On the edit path each section saves itself, through the sheet that opens
- * it. The add path is still a staged form, because there is nothing to write
- * until Add.
- *
+ * On the edit path each section saves itself through the sheet that opens it.
  * The add path is still a staged form, because there is nothing to write until
  * Add.
  */
@@ -176,11 +161,9 @@ export default function FoodDetail() {
   const goBack = useBack('/today')
   /**
    * Adding a dish ends the whole flow, so it unwinds to the day rather than
-   * stepping back one screen.
-   *
-   * Still `useDismissTo` even though this screen is a page now: the quick selector
-   * it came through is a transparent modal, and popping one screen would land on
-   * the search page the user is finished with.
+   * stepping back one screen. Still `useDismissTo` even though this is a page:
+   * the quick selector it came through is a transparent modal, and popping one
+   * screen would land on the search page the user is finished with.
    */
   const finish = useDismissTo('/today')
   const router = useRouter()
@@ -206,25 +189,20 @@ export default function FoodDetail() {
   const catalogueId = params.id === ENTRY_FOOD_ID ? undefined : params.id
   const { data: catalogueFood, isPending, isError } = useFood(catalogueId)
   /**
-   * The code, when this screen was arrived at by scanning a packet.
-   *
-   * The scanner navigates here the moment it reads one, before anything has been
-   * looked up, so unlike every other way in this screen can be showing a food that
-   * does not exist yet, or one that turns out not to exist at all.
+   * The code, when this screen was arrived at by scanning a packet. The scanner
+   * navigates here the moment it reads one, before any lookup, so unlike every
+   * other way in this screen can be showing a food that does not exist yet, or
+   * one that turns out not to exist at all.
    */
   const packet = packetCode(params.id)
 
   /**
-   * How the scan turned out, recorded once per packet.
+   * How the scan turned out, recorded once per packet. Here rather than in
+   * `lookupPacket`, which the query retries: this reads the settled state, so a
+   * retry that succeeds is one `found` and nothing else.
    *
-   * Here rather than in `lookupPacket`, which the query retries: a lookup that
-   * could not reach the catalogue would otherwise report two failures for one box
-   * held up to a camera. This reads the settled state instead, so a retry that
-   * succeeds is one `found` and nothing else.
-   *
-   * `not_found` is the number this event exists for. It is the live measurement of
-   * how thin the Malaysian shelf is: 4,333 rows carry a GS1 Malaysia prefix out of
-   * 3.2 million, and the source is the ceiling rather than anything in this repo.
+   * `not_found` is the number this event exists for: the live measurement of how
+   * thin the Malaysian shelf is, at 4,333 GS1 Malaysia rows out of 3.2 million.
    */
   const scanRecorded = useRef<string | undefined>(undefined)
   useEffect(() => {
@@ -244,33 +222,26 @@ export default function FoodDetail() {
     : undefined
 
   /**
-   * The plate's parts.
-   *
-   * ASKED FOR EVERY ENTRY, not only a scanned one. It used to be gated on
-   * `scanId`, on the reasoning that only the cascade wrote a breakdown — which
-   * stopped being true the moment a user could put an ingredient on a plate by
-   * hand. A dish added from search and then broken down would have shown its
-   * parts to the sheet that wrote them and to nothing else.
+   * The plate's parts, asked for on every entry rather than only a scanned one.
+   * Gating on `scanId` stopped being right the moment a user could put an
+   * ingredient on a plate by hand.
    *
    * `isLoading` rather than `isPending`: a disabled query is pending forever,
-   * and this one is still disabled while the day is loading and there is no
-   * entry yet. What is being asked is "is there a request out for this plate's
-   * parts right now".
+   * and this one is disabled while the day is still loading.
    */
   const { data: ingredients = [], isLoading: partsLoading } = useEntryIngredients(existing?.id)
 
   /**
    * The food this screen is about, and which one depends on why we are here.
    *
-   * Adding: the catalogue row is the answer, because there is no entry yet and its
-   * numbers are what the new row will snapshot.
+   * Adding: the catalogue row, since there is no entry yet and its numbers are
+   * what the new row will snapshot.
    *
-   * Editing: the entry is the answer, always. It states its own numbers, a null
-   * `food_id` is ordinary, and where it is set it is a note about provenance rather
-   * than a live reference. The catalogue row is still fetched, but only for the
-   * other portions it can offer.
+   * Editing: the entry, always. It states its own numbers, and a `food_id` where
+   * it is set is provenance rather than a live reference; the catalogue row is
+   * still fetched, but only for the other portions it can offer.
    *
-   * Letting the catalogue win here is what showed a 108 kcal soy milk as 511.
+   * Letting the catalogue win here showed a 108 kcal soy milk as 511.
    */
   const food = existing
     ? withCataloguePortions(foodFromEntry(existing), catalogueFood)
@@ -287,25 +258,20 @@ export default function FoodDetail() {
   /**
    * Which entry the controls above were filled in from.
    *
-   * They are seeded in `useState`, which runs once, and on the way in from a
-   * notification or a cold start on a deep link the day query has not answered yet,
-   * so `existing` is undefined for the first render or two. The screen used to keep
-   * those initial values for the rest of its life. Seeding again the first time the
-   * row arrives is the fix, and the id is what stops it happening a second time
-   * over a live edit.
+   * They are seeded in `useState`, which runs once, and on a cold start from a
+   * deep link the day query has not answered for the first render or two, so the
+   * screen used to keep those defaults for the rest of its life. Seeding again
+   * when the row arrives is the fix, and the id stops it happening twice.
    *
    * State rather than a ref, because the change detection below reads it during
-   * render: `existing` lands a render before the seeding effect runs, and comparing
-   * the untouched defaults against the row it has not been filled in from yet makes
-   * every field look edited.
+   * render, and comparing untouched defaults against an unseeded row makes every
+   * field look edited.
    */
   const [seededId, setSeededId] = useState<string>()
   /**
-   * The illustration, only once the user has picked one.
-   *
-   * `undefined` means untouched, which sends no icon at all. Seeding it from
-   * `existing.icon` would instead write the food's own drawing onto the entry as
-   * an override the first time anything else was saved.
+   * The illustration, only once the user has picked one. `undefined` is
+   * untouched and sends no icon; seeding it from `existing.icon` would write the
+   * food's own drawing onto the entry as an override on the next save.
    */
   const [icon, setIcon] = useState<IconRef>()
   const [pickingIcon, setPickingIcon] = useState(false)
@@ -314,40 +280,34 @@ export default function FoodDetail() {
    */
   const [pendingIcon, setPendingIcon] = useState<IconRef>()
   /**
-   * A photo taken here, uploaded but not yet on any row.
-   *
-   * Two fields because they are needed at different moments: the local uri is
-   * what the tile shows the instant the shot is taken, and the bucket key is what
-   * Save carries.
+   * A photo taken here, uploaded but not yet on any row. Two fields for two
+   * moments: the local uri is what the tile shows the instant the shot is taken,
+   * and the bucket key is what Save carries.
    */
   const [shot, setShot] = useState<{ uri: string; path: string }>()
   /**
-   * The same key again, as a ref, for as long as no row points at it.
+   * The same key as a ref, for as long as no row points at it.
    *
-   * The upload cannot wait for the button, since it is what turns a 4MB frame into
-   * a key, so between the shutter and Save the object is real and referenced by
-   * nothing. Every way off this screen that is not Save or Add has to take it with
-   * it: backing out, the swipe, a drawing chosen over it, a deep link replacing the
-   * route. An unmount effect is the only place that catches all of them, and an
-   * effect cannot read state it was not told about, hence the ref beside the state.
+   * The upload cannot wait for the button, so between the shutter and Save the
+   * object is real and referenced by nothing. Every way off this screen that is
+   * not Save has to take it: backing out, the swipe, a drawing chosen over it, a
+   * deep link. An unmount effect is the only place that catches all of them, and
+   * it cannot read state, hence the ref.
    */
   const orphanShot = useRef<string | undefined>(undefined)
   /**
    * A portion edit waiting for the taps to stop, and the timer that will send it.
    *
-   * Refs rather than state because nothing on screen depends on either, since the
-   * stepper is already showing the new portion. `flushRef` is how the unmount
-   * cleanup reaches the current flush: registered once with an empty dependency
-   * list, a cleanup closing over the function directly would capture the one from
-   * the first render, whose `existing` was undefined, and send nothing.
+   * Refs rather than state, since the stepper already shows the new portion.
+   * `flushRef` is how the unmount cleanup reaches the current flush: a cleanup
+   * closing over the function directly would capture the first render's, whose
+   * `existing` was undefined.
    *
-   * Up here with the rest of the hooks rather than beside the functions that use
-   * them, because those live below the `if (!food)` return and a hook behind a
-   * conditional runs in a different order on different renders.
+   * Up here with the other hooks rather than beside their functions, which live
+   * below the `if (!food)` return.
    *
    * The last field is set when the details sheet moves this entry to another day,
-   * so the screen knows it has to leave. A ref rather than state because it is read
-   * once, in the sheet's `onClose`.
+   * so the screen knows to leave. Read once, in the sheet's `onClose`.
    */
   const movedAway = useRef(false)
   const pendingPortion = useRef<{ quantity: number; servingId: string }>(undefined)
@@ -358,13 +318,10 @@ export default function FoodDetail() {
   // dish, and for most of the catalogue the answer is "nobody recorded it".
   const [showNutrients, setShowNutrients] = useState(false)
   /**
-   * Figures typed by hand, as strings while they are being typed.
-   *
-   * An empty field is "nothing overridden here", not "zero": what the app worked
-   * out shows through as the placeholder, and a field pre-filled with the app's own
-   * number could not tell the user whose number it was.
-   *
-   * Typed in `NutritionSheet` now, all four at once, and staged here.
+   * Figures typed by hand, as strings while they are being typed. An empty field
+   * is "nothing overridden here" rather than zero: the app's own answer shows
+   * through as the placeholder, so it is clear whose number it is. Typed in
+   * `NutritionSheet`, all four at once, and staged here.
    */
   const [typed, setTyped] = useState<TypedFigures>(NO_FIGURES)
   /** Which of the two sheets is open, if any. */
@@ -380,10 +337,8 @@ export default function FoodDetail() {
   const [name, setName] = useState('')
   /**
    * When this was eaten, staged as the two things the user is shown: the day it
-   * counts towards, and the time on the row.
-   *
-   * The day comes off `log_date` and the time off `logged_at`, which is the way
-   * round the diary already reads them. `null` is "the row has not arrived yet".
+   * counts towards, off `log_date`, and the time on the row, off `logged_at`.
+   * `null` means the row has not arrived yet.
    */
   const [whenDate, setWhenDate] = useState('')
   const [clock, setClock] = useState<Clock | null>(null)
@@ -394,11 +349,9 @@ export default function FoodDetail() {
   const { data: heroUrl, isLoading: resolvingPhoto } = useMealPhotoUrl(existing?.photoPath)
 
   /**
-   * A typed figure as a number, and `null` for a field holding nothing.
-   *
-   * Null is the answer the write side wants: it clears the override and hands
-   * the figure back to the catalogue. An empty field and an unreadable one
-   * mean the same thing here — the user has not given a number.
+   * A typed figure as a number, and `null` for a field holding nothing, which is
+   * what clears the override and hands the figure back to the catalogue. An
+   * empty field and an unreadable one mean the same thing.
    */
   const figure = (value: string) => {
     const trimmed = value.trim()
@@ -408,23 +361,18 @@ export default function FoodDetail() {
   }
 
   /**
-   * The plate as the screen shows it, which is simply what the server has.
-   *
-   * It used to be an overlay of staged edits over the fetched list, because the
-   * sheet that edited a plate lived on this screen and its draft had to be
-   * previewed under it. The editor is a page of its own now and writes before it
-   * comes back, so there is nothing here left to stage — the card reads the
-   * query, and the query refetches on the way back.
+   * The plate as the screen shows it, which is what the server has. It used to
+   * be an overlay of staged edits, because the plate editor lived on this screen
+   * and its draft had to be previewed. The editor is a page of its own now and
+   * writes before it comes back.
    */
   const parts = ingredients
 
   /**
-   * Whether the controls have been filled in from the row yet.
-   *
-   * They are seeded in an effect, and on the way in from a notification or a cold
-   * deep link the day query has not answered for the first render or two, so
-   * anything reading the staged values has to wait for this or it reads the
-   * defaults instead.
+   * Whether the controls have been filled in from the row yet. They are seeded
+   * in an effect, and on a cold deep link the day query has not answered for the
+   * first render or two, so anything reading the staged values has to wait or it
+   * reads the defaults.
    */
   const seeded = Boolean(existing) && seededId === existing?.id
 
@@ -434,11 +382,10 @@ export default function FoodDetail() {
     if (!existing || seededId === existing.id) return
     setSeededId(existing.id)
     setQuantity(existing.quantity)
-    // Empty rather than undefined: this drives a controlled selection, and
-    // `chosen` below falls back to the base serving. An entry whose portion was
-    // never a catalogue row — a scan estimate, a rebuilt plate — has no
-    // `servingId` at all now, and that is not a reason to leave the picker
-    // holding the previous entry's choice.
+    // Empty rather than undefined: this drives a controlled selection and
+    // `chosen` falls back to the base serving. An entry whose portion was never
+    // a catalogue row has no `servingId`, which is not a reason to leave the
+    // picker holding the previous entry's choice.
     setServingId(existing.servingId ?? '')
     setName(existing.foodName)
     setWhenDate(existing.logDate)
@@ -464,24 +411,19 @@ export default function FoodDetail() {
   // function.
   useEffect(() => () => flushRef.current(), [])
 
-  // NO DISCARD PROMPT, and no `gestureEnabled: false` behind it. This screen used
-  // to hold every edit in local state until one Save button in the footer wrote
-  // the lot, so the back chevron, the edge swipe and Android's hardware back were
-  // all ways to throw work away and all had to ask first. Each section saves
-  // itself now — see the four `save*` functions below — so leaving loses nothing
-  // and the swipe is an ordinary swipe again.
+  // No discard prompt, and no `gestureEnabled: false` behind it. This screen
+  // used to hold every edit until one Save button wrote the lot, so every way
+  // back was a way to throw work away. Each section saves itself now, so leaving
+  // loses nothing.
 
   /**
    * Back to the day with the log sheet open on the panel that answers this.
+   * "Scan again" cannot mean "back to where you were", since that was a
+   * viewfinder inside a sheet this screen replaced.
    *
-   * "Scan again" cannot mean "back to where you were": where you were is a
-   * viewfinder inside a sheet that was replaced by this screen. It means the day
-   * with the scanner already open, which is what `/log?panel=` is for.
-   *
-   * The packet's own answer is dropped on the way out. A miss caches like anything
-   * else, and without this a rescan of the same box would show the cached "we do
-   * not have this one" without asking anybody, which is right about the catalogue
-   * and wrong about the case that sent the user back here.
+   * The packet's own answer is dropped on the way out: a miss caches like
+   * anything else, so a rescan would otherwise show the cached "we do not have
+   * this one" without asking anybody.
    */
   const reopenLog = (which: 'barcode' | 'describe') => {
     queryClient.removeQueries({ queryKey: keys.food(params.id) })
@@ -494,11 +436,8 @@ export default function FoodDetail() {
   if (!food) {
     /**
      * A scanned packet, before the answer and when the answer is nothing.
-     *
-     * Everything else that reaches this screen has been picked off a list, so the
-     * food is already in hand and this branch is a blank frame nobody sees. A scan is
-     * the exception, and the three ways it can end are the whole reason the
-     * viewfinder no longer waits.
+     * Everything else reaching this screen was picked off a list, so the food is
+     * already in hand and this branch is a blank frame nobody sees.
      */
     if (packet) {
       return (
@@ -527,27 +466,21 @@ export default function FoodDetail() {
   const hero = storedImageSource(existing?.photoPath, heroUrl, shot?.uri)
 
   /**
-   * How tall the picture at the top of the page is.
+   * How tall the picture at the top of the page is: a base that is taller for a
+   * photograph than a drawing, plus `CONTENT_LIFT` so the box grows by exactly
+   * what the curve covers, plus the top inset so it reaches behind the status
+   * bar.
    *
-   * Three terms. The base is enough for a whole plate when there is a photograph
-   * and less when there is only a drawing; `CONTENT_LIFT` is the strip the content
-   * below rides up over, so the box grows by exactly what the curve covers; and the
-   * top inset is what lets it reach behind the status bar rather than stopping
-   * under it.
-   *
-   * `resolvingPhoto` counts as having a photo, because it means the entry has one
-   * and we are waiting on a URL for it. Left out, the box opened short and grew
-   * under the reader a moment later.
+   * `resolvingPhoto` counts as having a photo, since it means the entry has one
+   * and we are waiting on a URL. Left out, the box opened short and grew under
+   * the reader a moment later.
    */
   const heroHeight = ((hero || resolvingPhoto) && !icon ? 298 : 198) + CONTENT_LIFT + insets.top
 
   /**
-   * The drawing this tile would show, if it is showing one at all.
-   *
-   * A row carries a photo or an icon, never both, and the view already suppresses
-   * its icon columns while a photo exists, so `existing.icon` is undefined for a
-   * snapped plate. Only an unsaved choice can override that, which is exactly the
-   * swap: pick a drawing and the photo is on its way out.
+   * The drawing this tile would show, if any. A row carries a photo or an icon
+   * and never both, so `existing.icon` is undefined for a snapped plate. Only an
+   * unsaved choice overrides that, which is exactly the swap.
    */
   const shownIcon = icon ?? existing?.icon ?? food.icon
 
@@ -566,16 +499,13 @@ export default function FoodDetail() {
   }
 
   /**
-   * What this entry would count as if it were saved now.
+   * What this entry would count as if it were saved now. `entryTotals` is the
+   * client's copy of the `coalesce` in `food_log_details`: typed, then parts,
+   * then portion. Read from the staged values rather than the row.
    *
-   * `entryTotals` is the client's copy of the `coalesce` in `food_log_details`:
-   * typed, then parts, then portion. Read from the staged values rather than from
-   * the row, which is the whole point of a form.
-   *
-   * While a scanned plate's parts are still on their way, the row's own figure
-   * stands in. It is the same three-source answer worked out by the view, so the
-   * number is right from the first frame rather than being the parent's portion for
-   * as long as the query takes and then jumping.
+   * While a scanned plate's parts are on their way, the row's own figure stands
+   * in. It is the same three-source answer, so the number is right from the
+   * first frame rather than jumping when the query lands.
    */
   const macros = existing
     ? partsLoading
@@ -593,22 +523,18 @@ export default function FoodDetail() {
     : computed
 
   /**
-   * What the app works out for this entry with nothing typed over it.
-   *
-   * The placeholders in `NutritionSheet`, and it cannot be `macros`: that has the
-   * typed figures folded into it, so an entry already carrying a hand-typed 400
-   * would offer 400 as the number to go back to, and the app's own answer would be
-   * unreachable. Same three-source rule as `macros`, minus the first source.
+   * What the app works out for this entry with nothing typed over it: the
+   * placeholders in `NutritionSheet`. It cannot be `macros`, which has the typed
+   * figures folded in, so an entry carrying a hand-typed 400 would offer 400 as
+   * the number to go back to.
    */
   const appFigures = existing ? entryTotals({ parts, portion: computed }) : computed
 
   /**
    * The same scaling for the nutrients that are not part of the budget.
-   *
-   * `undefined` survives it: these columns are null for most of the imported
-   * catalogue, and null means nobody recorded the number rather than zero of it.
-   * One decimal, because a tenth of a gram of fibre is the resolution the database
-   * stores.
+   * `undefined` survives it, because these columns are null for most of the
+   * imported catalogue and null means nobody recorded the number. One decimal,
+   * which is what the database stores.
    */
   const scale = (value: number | undefined, dp = 1) =>
     value === undefined ? undefined : Math.round(value * factor * 10 ** dp) / 10 ** dp
@@ -628,13 +554,10 @@ export default function FoodDetail() {
   ] as const
 
   /**
-   * Whether there is a "More nutrients" section at all.
-   *
-   * Read twice, by the control and by the rule above it, because a divider with
-   * nothing on the far side of it is just a line across the bottom of the card.
-   * Most of the catalogue has none of these columns, so that was the ordinary case:
-   * every barcoded product with a bare macro panel drew a rule under its last macro
-   * and a band of empty space under that.
+   * Whether there is a "More nutrients" section at all. Read by the control and
+   * by the rule above it, because a divider with nothing beyond it is a line
+   * across the bottom of the card, and most of the catalogue has none of these
+   * columns.
    */
   const hasExtras = extras.some((row) => row.value !== undefined)
 
@@ -642,18 +565,16 @@ export default function FoodDetail() {
    * Put a photo of the actual plate on this row.
    *
    * The uri comes from the picker's own viewfinder, so by the time this runs the
-   * shot has been taken and there is nothing left to present. That is what fixed
-   * the camera which used to open and shut immediately: it was a native picker
-   * being asked to present while this sheet was dismissing, which iOS cancels,
-   * leaving a promise that never settles and a spinner that never stops.
+   * shot is taken and there is nothing left to present. That is what fixed the
+   * camera that used to open and shut immediately: a native picker asked to
+   * present while this sheet was dismissing, which iOS cancels.
    *
-   * The upload has to happen here whatever else does: a key is what a row can hold,
-   * and turning a 4MB frame into one is the slow part. A shot this one replaces
-   * never reached a row, so it is deleted on the spot.
+   * The upload happens here whatever else does, since turning a 4MB frame into a
+   * key is the slow part. A shot this one replaces never reached a row, so it is
+   * deleted on the spot.
    *
-   * Written to the entry immediately when there is one. The picker has no Save of
-   * its own, so with the footer's Save gone there is nothing left to carry a staged
-   * picture. On the add path it stages as it always did.
+   * Written to the entry immediately when there is one, because the picker has
+   * no Save of its own. On the add path it stages as it always did.
    */
   const attachPhoto = async (uri: string) => {
     setPickingIcon(false)
@@ -673,11 +594,10 @@ export default function FoodDetail() {
         orphanShot.current = undefined
       }
     } catch {
-      // An upload that failed, a bucket that refused it, a patch the server would not
-      // take: none is worth a screen of its own.
+      // An upload that failed, a bucket that refused it, a patch the server
+      // would not take: none is worth a screen of its own.
       //
-      // And the tile goes back. Left showing the new photograph over a row that
-      // still holds the old one, the screen disagrees with itself and with Today.
+      // The tile goes back, or the screen disagrees with itself and with Today.
       // The object stays in `orphanShot` for the unmount sweep.
       setShot(undefined)
       toast.show({ title: t('logging:detail.photoFailed'), tone: 'error' })
@@ -687,11 +607,10 @@ export default function FoodDetail() {
   }
 
   /**
-   * A drawing wins the slot, so whatever photo was in it has to go.
-   *
-   * A shot taken on this screen has already been uploaded and, on the add path,
-   * now points at nothing — so it is deleted here. The row's OWN photo is the
-   * write's business: `useUpdateEntry` deletes it once the icon has landed.
+   * A drawing wins the slot, so whatever photo was in it has to go. A shot taken
+   * on this screen is already uploaded and now points at nothing, so it is
+   * deleted here. The row's own photo is the write's business: `useUpdateEntry`
+   * deletes it once the icon has landed.
    */
   const applyIcon = (next: IconRef) => {
     setIcon(next)
@@ -713,13 +632,11 @@ export default function FoodDetail() {
   const hasPhoto = Boolean(shot ?? existing?.photoPath)
 
   const addToDiary = () => {
-    // NOT GATED, and it used to be the app's main paywall. A dish out of the
-    // catalogue and a packet off a barcode are both exact answers that cost us
-    // one index probe, so writing them is free — that is the free tier: a diary
-    // you can keep by searching and scanning, with the model behind the wall.
-    // Editing an entry that already exists was never gated either, for the
-    // reason that has not changed: a lapsed subscription must not lock somebody
-    // out of their own diary.
+    // Not gated, though it used to be the app's main paywall. A catalogue dish
+    // and a barcoded packet are exact answers costing one index probe, so the
+    // free tier is a diary you can keep by searching and scanning, with the
+    // model behind the wall. Editing was never gated either: a lapsed
+    // subscription must not lock somebody out of their own diary.
     logFood.mutate({
       snapshot: snapshotFromFood(food, chosen),
       quantity,
@@ -730,10 +647,9 @@ export default function FoodDetail() {
       // And a photo taken while composing this row, which the picker offers as
       // the alternative to a drawing. Never both: taking one clears the other.
       photoPath: shot?.path,
-      // Two doors lead to this button and `entry_source` calls both `search`:
-      // a packet held up to the camera, and a dish picked out of the list. This
-      // branch only ever runs with no `existing` entry — the footer offers Save
-      // rather than Add once there is one — so there is no third case.
+      // Two doors lead here and `entry_source` calls both `search`: a packet
+      // held up to the camera, and a dish picked out of the list. This branch
+      // only runs with no `existing` entry, so there is no third case.
       method: packet ? 'barcode' : 'search',
     })
     // The insert carries it now, so it is not an orphan for the unmount effect
@@ -743,26 +659,22 @@ export default function FoodDetail() {
   }
 
   /**
-   * One save per section, and there is no longer a Save button on the page.
+   * One save per section, and no Save button on the page. Each throws on
+   * failure, so the sheet can stay open with the draft in it, and each stages
+   * the value locally as the preview while the refetch catches up.
    *
-   * Each of these throws on failure, so the sheet can stay open with the draft
-   * still in it. They stage the value locally as well, which is the preview: the
-   * write invalidates the day and the refetch is a round trip behind it.
-   *
-   * The add path is untouched. Composing a row genuinely is a staged form.
+   * The add path is untouched: composing a row genuinely is a staged form.
    */
   const saveFailed = () => toast.show({ title: t('logging:detail.saveFailed'), tone: 'error' })
 
   const patchEntry = async (patch: Omit<EntryPatch, 'id' | 'logDate'>) => {
     if (!existing) return
     /**
-     * An empty patch is not a write. Every `save*` below builds its columns
-     * conditionally, so each can come out with nothing in it: the details sheet saved
-     * with neither the name nor the time touched, or a portion stepped up and back
-     * down inside the debounce window. Sent anyway it is a round trip that
-     * invalidates the day for no reason, and PostgREST answers an update with an
-     * empty body with a 400, which would surface as "could not save those changes"
-     * for an edit nobody made.
+     * An empty patch is not a write. Every `save*` builds its columns
+     * conditionally, so each can come out empty: the details sheet saved with
+     * nothing touched, or a portion stepped up and back down inside the debounce.
+     * PostgREST answers an empty update with a 400, which would surface as "could
+     * not save those changes" for an edit nobody made.
      */
     if (Object.keys(patch).length === 0) return
     await updateEntry.mutateAsync({ id: existing.id, logDate: existing.logDate, ...patch })
@@ -772,12 +684,10 @@ export default function FoodDetail() {
     if (!existing || !clock) return
     const named = next.name.trim() || existing.foodName
     /**
-     * The day and the instant together, or neither.
-     *
-     * Compared as a day and a clock face rather than as two ISO strings, because
-     * `instantOn` writes whole seconds while Postgres hands back microseconds, so an
-     * untouched `logged_at` would read as an edit and every save would shift the row
-     * inside its own day by however many seconds the original carried.
+     * The day and the instant together, or neither. Compared as a day and a
+     * clock face rather than two ISO strings: `instantOn` writes whole seconds
+     * while Postgres hands back microseconds, so an untouched `logged_at` would
+     * read as an edit and every save would shift the row inside its own day.
      */
     const moved =
       next.date !== existing.logDate || !sameClock(next.clock, clockOf(existing.loggedAt))
@@ -793,17 +703,14 @@ export default function FoodDetail() {
     /**
      * And off the screen, when the entry has left the day this screen reads.
      *
-     * This is not a nicety. `existing` is found in the day query for `selectedDate`,
-     * so the moment the row is filed on another day it is gone from under the screen,
-     * and the screen does not degrade gracefully: `food` falls back to the catalogue
-     * row, which turns the page into the compose-a-new-entry version of itself. For a
-     * scanned plate with no catalogue row behind it there is not even that.
+     * `existing` is found in the day query for `selectedDate`, so a row filed on
+     * another day is gone from under the screen: `food` falls back to the
+     * catalogue row and the page becomes the compose-a-new-entry version of
+     * itself, or nothing at all for a scanned plate.
      *
-     * So it goes back, and the toast says where the meal went, without which the
-     * diary it lands on has one fewer row than it did and a meal moved to yesterday
-     * is indistinguishable from a meal deleted. The selected day is left alone on
-     * purpose: the strip on Today is where the user says which day they are working
-     * on.
+     * The toast says where the meal went, without which a meal moved to yesterday
+     * is indistinguishable from a meal deleted. The selected day is left alone:
+     * the strip on Today is where the user says which day they are working on.
      */
     if (moved && next.date !== selectedDate) {
       toast.show({
@@ -814,31 +721,28 @@ export default function FoodDetail() {
           }),
         }),
       })
-      // Not `goBack()` here. This runs inside the sheet's own save, which closes
-      // itself only AFTER awaiting it — so popping the screen from here unwinds the
-      // navigator while a native modal window is still mounted over it. The flag is
-      // read by the sheet's `onClose`, one step later, once the modal has gone.
+      // Not `goBack()`: this runs inside the sheet's own save, which closes
+      // itself only after awaiting it, so popping here unwinds the navigator
+      // while a native modal is still mounted over it. The flag is read by the
+      // sheet's `onClose`, once the modal has gone.
       movedAway.current = true
     }
   }
 
   /**
-   * The four figures, and the whole job here is deciding which of them are the
-   * user's.
+   * The four figures, and the job here is deciding which of them are the user's.
    *
    * The sheet's boxes are pre-filled with the current figure, so a field holding
-   * the app's own answer comes back looking exactly like one somebody typed. Left
-   * as it arrives, opening the sheet and pressing Save would write all four as
-   * overrides, which are stored above the portion in `food_log_details`, so the
-   * next portion change would move the serving and not the calories.
+   * the app's own answer looks exactly like one somebody typed. Taken as it
+   * arrives, opening the sheet and pressing Save would write all four as
+   * overrides, which sit above the portion in `food_log_details`, so the next
+   * portion change would move the serving and not the calories.
    *
-   * So each figure is compared against what the app worked out and only a different
-   * one is an override. An unreadable or empty box means the same as an unchanged
-   * one: null, and the figure goes back to the snapshot.
+   * So each figure is compared against what the app worked out, and an
+   * unreadable or empty box means the same as an unchanged one.
    *
-   * All four every time rather than only the changed ones, because `overrides` is
-   * one answer about the entry: a field cleared has to be written null, and a patch
-   * that omitted it would leave the old override in place.
+   * All four every time rather than only the changed ones: a field cleared has
+   * to be written null, and omitting it would leave the old override in place.
    */
   const saveFigures = async (next: TypedFigures) => {
     const own = (field: (typeof FIGURES)[number]) => {
@@ -864,13 +768,10 @@ export default function FoodDetail() {
   }
 
   /**
-   * The portion is the one section that saves itself on a debounce.
-   *
-   * Everything else on this screen is a sheet with a Save button, because a sheet
-   * is a form. The stepper is not: it is a pair of buttons somebody taps three
-   * times to get from one plate to two and a half, and there is nowhere on a
-   * plus/minus row to put a Save. Written per tap it would be three round trips and
-   * three refetches for one decision; behind a short debounce it is one.
+   * The portion is the one section that saves itself on a debounce. Everything
+   * else here is a sheet with a Save button; a stepper is a pair of buttons
+   * tapped three times to get from one plate to two and a half, with nowhere to
+   * put a Save. Written per tap it is three round trips for one decision.
    */
   const savePortion = async (next: { quantity: number; servingId: string }) => {
     if (!existing) return
@@ -878,15 +779,12 @@ export default function FoodDetail() {
     await patchEntry({
       ...(next.quantity === existing.quantity ? {} : { quantity: next.quantity }),
       /**
-       * The portion's own numbers travel with its id, and they have to.
-       *
-       * `serving_id` alone was enough while `foods` and `food_servings` were in
-       * Postgres, because `food_log_details` joined to them for the factor and the
-       * label. The catalogue is in D1 now and an entry carries its own `serving_factor`
-       * and `serving_label`, so an id written by itself changes what the row claims its
-       * portion is and nothing about what it counts: switching a nasi lemak to Large
-       * previewed 975 kcal, saved, and left a row still labelled "1 serving" and still
-       * counting 650.
+       * The portion's own numbers travel with its id. `serving_id` alone was
+       * enough while the catalogue was in Postgres and `food_log_details` joined
+       * to it; an entry now carries its own `serving_factor` and `serving_label`,
+       * so an id written by itself changes nothing about what the row counts.
+       * Switching a nasi lemak to Large previewed 975 kcal and saved a row still
+       * labelled "1 serving" and still counting 650.
        */
       ...(next.servingId && next.servingId !== existing.servingId
         ? {
@@ -901,14 +799,11 @@ export default function FoodDetail() {
   }
 
   /**
-   * Send a waiting portion edit now, and hand back the write so a caller can wait
-   * for it.
-   *
-   * The promise is what `sendFix` needs: `scan-refine` reads the entry off the
-   * server and rescales what it finds there, so a correction sent while a portion
-   * patch is still pending is a correction applied to the wrong amount, and if the
-   * patch lands afterwards it overwrites the row the model just rebuilt. Every
-   * other caller fires and forgets.
+   * Send a waiting portion edit now, and hand back the write so a caller can
+   * wait for it. `sendFix` needs the promise: `scan-refine` rescales the entry
+   * as it finds it on the server, so a correction sent over a pending portion
+   * patch is applied to the wrong amount, and the patch then overwrites the row
+   * the model rebuilt. Every other caller fires and forgets.
    */
   const flushPortion = () => {
     if (portionTimer.current) clearTimeout(portionTimer.current)
@@ -932,46 +827,34 @@ export default function FoodDetail() {
 
   /**
    * The chips under the fix box: the vision model's own suggestions when it
-   * offered any, and a generic four when it did not.
-   *
-   * Hoisted out of the JSX because `sendFix` reads it too — see `fromChip`
-   * there.
+   * offered any, and a generic four when it did not. Hoisted out of the JSX
+   * because `sendFix` reads it too.
    */
   const fixSuggestions = existing?.suggestedEdits?.length
     ? existing.suggestedEdits
     : QUICK_FIXES.map((fix) => t(`logging:detail.quickFix.${fix}`))
 
   /**
-   * Send the typed correction and leave.
-   *
-   * Nothing is staged across sections: every sheet writes on its own save, so
-   * the entry on the server is always the one the user is reading.
-   *
-   * Fire and forget after that: the correction runs for several seconds and this
-   * screen describes the entry's old identity the whole time, so it leaves and the
-   * row on Today shows the work.
+   * Send the typed correction and leave. Nothing is staged across sections, so
+   * the entry on the server is the one the user is reading. Fire and forget: the
+   * correction runs for several seconds while this screen would be describing
+   * the entry's old identity, so it leaves and the row on Today shows the work.
    */
   const sendFix = async () => {
     const text = instruction.trim()
     if (!existing || !text) return
-    // Correcting by describing it is Pro. It is the most expensive thing a user
-    // can ask for per unit of value — the entry exists and already has numbers
-    // on it — and it is the one model path with a free alternative sitting right
-    // beside it: every figure it would change is editable by hand, on this
-    // screen, for nothing. The server refuses it independently; this is what
-    // makes the button honest.
+    // Correcting by describing it is Pro: the entry already has numbers on it,
+    // and every figure this would change is editable by hand on this screen for
+    // nothing. The server refuses it independently; this makes the button
+    // honest.
     if (!requirePro('refine')) return
     setSending(true)
     /**
-     * The pending portion goes first, and this await is the whole of the old
-     * `commit()` that survives.
-     *
-     * The server interprets the words against the entry as it stands there, so a
-     * portion stepped a moment ago and still sitting in the debounce would have the
-     * correction applied to the amount before it, and the patch would then land on
-     * top of the meal the model had just rebuilt. Everything else on this screen is
-     * written by the time its sheet has closed; this is the one edit that can still
-     * be in the air.
+     * The pending portion goes first. The server interprets the words against
+     * the entry as it stands there, so a portion still sitting in the debounce
+     * would have the correction applied to the amount before it, and would then
+     * land on top of the meal the model rebuilt. This is the one edit that can
+     * still be in the air.
      */
     await flushPortion()
     refineEntry({
@@ -979,57 +862,44 @@ export default function FoodDetail() {
       instruction: text,
       logDate: selectedDate,
       // Derived rather than plumbed through the sheet: a chip sets the field to
-      // exactly its own words, so an instruction that IS one of the offered
-      // sentences came from a chip. The alternative was a second callback and a
-      // piece of state saying the same thing.
+      // exactly its own words, so an instruction that is one of the offered
+      // sentences came from a chip.
       fromChip: fixSuggestions.includes(text),
-      // Said out loud, from wherever the user has got to by then — the toast
-      // provider sits above the navigator, and this screen is gone a frame
-      // after the send. A row that worked and then changed nothing is
-      // otherwise indistinguishable from a correction that did not matter.
+      // Said from wherever the user has got to by then: the toast provider sits
+      // above the navigator, and this screen is gone a frame after the send.
       //
-      // WHICH KIND, not one apology for all five. "Could not apply that, try
-      // rewording it" was shown for "extra spicy", where there is nothing to
-      // apply and rewording will not help, and for a model that answered in the
-      // wrong shape, where the words were fine all along. The four the server
-      // can name send somebody to four different next actions; `unknown` keeps
-      // the old sentence for a function older than this build.
+      // Which kind, rather than one apology for all five. "Could not apply that,
+      // try rewording it" was shown for "extra spicy", where rewording will not
+      // help, and for a model that answered in the wrong shape, where the words
+      // were fine. `unknown` keeps the old sentence for an older function.
       onNotApplied: (reason) => toast.show({ title: t(FIX_DECLINED[reason]), tone: 'warning' }),
     })
     finish()
   }
 
   /**
-   * The dish, as the entry itself names it, wherever it is read.
-   *
-   * The staged name first, then the row's, then the catalogue's, which is the same
-   * order the heading under the photograph reads in. The catalogue's is the last
-   * resort for a reason: it is the one that says "MEAL KIT, KOREAN FRIED CHICKEN
-   * WITH SWEET GOCHUJANG SAUCE".
+   * The dish, as the entry itself names it. The staged name first, then the
+   * row's, then the catalogue's, which is the order the heading under the
+   * photograph reads in. The catalogue's is last because it is the one that says
+   * "MEAL KIT, KOREAN FRIED CHICKEN WITH SWEET GOCHUJANG SAUCE".
    */
   const dishName = name.trim() || existing?.foodName || food.name
 
   /**
    * The photograph the shared card carries, which is the one on screen or none.
-   *
-   * `hero` alone is not that condition. A row holds a photo or a drawing and never
-   * both, so choosing a drawing leaves the photo in place until the write lands.
-   * Read separately in two places this drifted: the card drew the drawing and the
-   * event said "photo".
+   * `hero` alone is not that condition: choosing a drawing leaves the photo in
+   * place until the write lands, and read separately in two places this drifted,
+   * so the card drew the drawing while the event said "photo".
    */
   const sharePhoto = hero && !icon ? hero : null
 
   /**
-   * Send this meal as a picture.
+   * Send this meal as a picture. The card is already drawn off to the side of
+   * the page, so this is a capture and a share sheet and nothing else.
    *
-   * The card is already drawn and laid out off to the side of the page, so this is
-   * a capture and a share sheet and nothing else: no frames to wait for and no
-   * preview to approve.
-   *
-   * What goes out is the picture, on its own. The sentence below is the Android
-   * fallback, because that platform's share intent cannot carry a file, and iOS
-   * never sends it: the card already says the dish and the total, and a caption
-   * repeating them is the same meal twice.
+   * The picture goes out on its own. The sentence below is the Android fallback,
+   * because that platform's share intent cannot carry a file; iOS never sends
+   * it, since the card already says the dish and the total.
    */
   const sendMeal = async () => {
     const outcome = await shareMeal.share(
@@ -1129,10 +999,9 @@ export default function FoodDetail() {
           alternative was cropping every photograph to clear a notch. */}
       <View
         className={cn(
-          // SQUARE ON EVERY EDGE. It is not a card hanging off the top of the
-          // screen, it is where the screen starts — and the curve at the bottom of
-          // the picture belongs to the content sliding over it rather than to the
-          // picture itself. See the wrapper below.
+          // Square on every edge: this is where the screen starts rather than a
+          // card hanging off the top, and the curve at the bottom belongs to the
+          // content sliding over it. See the wrapper below.
           'overflow-hidden bg-track',
         )}
         style={{ marginTop: -insets.top, height: heroHeight }}
@@ -1164,10 +1033,8 @@ export default function FoodDetail() {
           ) : shownIcon ? (
             <Icon {...shownIcon} size={100} />
           ) : (
-            // Empty, and only a line of copy to say what the box is for. There was
-            // a camera illustration here, and at a glance in a list of dishes that
-            // read as this dish's picture — which is exactly what a row with no
-            // picture must not have.
+            // Empty, with only a line of copy to say what the box is for. A
+            // camera illustration read, at a glance, as this dish's picture.
             <Text variant="meta">{t('logging:detail.addPicture')}</Text>
           )}
         </Tappable>
@@ -1385,11 +1252,9 @@ export default function FoodDetail() {
                 setQuantity(next)
                 schedulePortion({ quantity: next, servingId: chosen })
               }}
-              // Quarters, matching the parts of a broken-down plate — a portion is
-              // the same kind of quantity whether the plate came apart or not, and
-              // two controls in one app that move by different amounts is a thing
-              // to discover rather than a thing to use. `Stepper` renders 1.25 as
-              // "1¼", so a quarter is as readable as a half.
+              // Quarters, matching the parts of a broken-down plate: a portion
+              // is the same kind of quantity either way, and two controls moving
+              // by different amounts is a thing to discover rather than use.
               min={0.25}
               max={20}
               step={0.25}

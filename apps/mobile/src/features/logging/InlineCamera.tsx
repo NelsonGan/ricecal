@@ -32,17 +32,14 @@ export const VIEWFINDER_HEIGHT = 310
 const CONTROL_BAND = 84
 
 /**
- * The symbologies a food packet can carry.
+ * The symbologies a food packet can carry. EAN-13 is the world's retail barcode
+ * and what almost every Malaysian packet has; UPC-A and UPC-E are the American
+ * spellings, on imports; EAN-8 is the small one, on things too narrow for
+ * thirteen digits.
  *
- * EAN-13 is the world's retail barcode and what almost every Malaysian packet
- * has (the GS1 Malaysia prefix is 955, though nothing here reads it — a code is
- * a key, not a country). UPC-A and UPC-E are the American spellings, on imports.
- * EAN-8 is the small one, on things too narrow for thirteen digits: a chewing
- * gum packet, a small tin.
- *
- * QR and Data Matrix are deliberately absent. They appear on packaging all the
- * time — a marketing URL, a batch code — and scanning one would confidently look
- * up a product code that is not a product code.
+ * QR and Data Matrix are deliberately absent: they appear on packaging as a
+ * marketing URL or a batch code, and scanning one would confidently look up a
+ * product code that is not a product code.
  */
 const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e'] as const
 
@@ -83,22 +80,17 @@ export type InlineCameraProps = {
 }
 
 /**
- * The viewfinder, inside the sheet the user opened it from.
+ * The viewfinder, inside the sheet the user opened it from. Behind a full-screen
+ * route, snapping a plate was the one action that replaced the day rather than
+ * sitting on top of it, and coming back meant dismissing two screens.
  *
- * Snapping a plate is the fastest way to log and it is one tap from Today —
- * putting it behind a full-screen route made it the one action that replaced
- * the day instead of sitting on top of it, and coming back meant dismissing
- * two screens. Inline, the day stays visible behind the sheet the whole time,
- * and the shutter is where the finger already is.
+ * One box: the preview fills it, the controls float over the bottom, and what is
+ * shown is tighter than what is captured. See `VIEWFINDER_HEIGHT` and
+ * `PHOTO_CROP`.
  *
- * It is one box: the preview fills it, the controls float over the bottom of it,
- * and what is shown is deliberately tighter than what is captured. See
- * `VIEWFINDER_HEIGHT` and `PHOTO_CROP`.
- *
- * The library button presents its picker while this sheet is still up, on purpose.
- * A native picker cannot be presented while a modal is being DISMISSED — iOS
- * cancels it and the promise never settles — so the sheet closes after a photo
- * comes back, never before.
+ * The library button presents its picker while this sheet is still up, because a
+ * native picker cannot be presented while a modal is being dismissed: iOS cancels
+ * it and the promise never settles.
  */
 export function InlineCamera({ mode = 'meal', onCapture, onScanned }: InlineCameraProps) {
   const { t } = useTranslation(['logging', 'common'])

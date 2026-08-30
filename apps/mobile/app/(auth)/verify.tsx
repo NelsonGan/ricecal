@@ -23,21 +23,17 @@ const CODE_LENGTH = 6
 const RESEND_COOLDOWN_S = 60
 
 /**
- * The six digits from the email.
+ * The six digits from the email, and the reason the emails changed. A link is
+ * consumed by whatever fetches it first, which on a corporate address is the
+ * employer's link scanner, so the mail arrived already spent; and a link only
+ * worked when the mail was opened on the phone the app is on. A code has neither
+ * problem and crosses from a laptop to a phone in somebody's head.
  *
- * THIS SCREEN IS WHY THE EMAILS CHANGED. A link is consumed by whatever fetches
- * it first — on a corporate address, the employer's link scanner — so the mail
- * arrived already spent and the app said it had expired. And a link only ever
- * worked when the mail was opened on the phone the app is on, which is not
- * where most people read mail. A code has neither problem: nothing can spend it
- * by reading a mailbox, and it crosses from a laptop to a phone in somebody's
- * head.
+ * The link still works and `LoginLinkHandler` still catches it, as the second
+ * offer rather than the only one.
  *
- * The link still works, and `LoginLinkHandler` still catches it. It is the
- * second offer now rather than the only one.
- *
- * Recovery is NOT handled here. Choosing a new password needs the code and the
- * password on one screen, for the reason `new-password.tsx` gives.
+ * Recovery is not handled here: choosing a new password needs the code and the
+ * password on one screen. See `new-password.tsx`.
  */
 export default function VerifyScreen() {
   const { t } = useTranslation(['auth', 'common'])
@@ -78,20 +74,15 @@ export default function VerifyScreen() {
   const [sending, setSending] = useState(sendOnArrival)
 
   /**
-   * Seconds left before another mail can be asked for.
+   * Seconds left before another mail can be asked for. Full when the caller sent
+   * the mail, since by the time this screen exists it has gone; zero when the
+   * send is ours and in flight, and full when it lands. The clock starts from the
+   * send rather than the mount, or a slow one is counted against its own
+   * cooldown: an interactive captcha makes that forty seconds, which leaves "Send
+   * it again" live inside `smtp_max_frequency`.
    *
-   * Full when the CALLER sent the mail, because by the time this screen exists
-   * it has already gone. Zero when the send is ours and still in flight, and
-   * set to full when it lands — the clock has to start from the send rather
-   * than from the mount, or a slow one is counted against its own cooldown. An
-   * interactive captcha makes that forty seconds, and forty seconds off a sixty
-   * second window leaves "Send it again" live almost as soon as the first mail
-   * arrives, whereupon Supabase refuses it for being inside `smtp_max_frequency`
-   * and the user is told off for pressing a button the app had just enabled.
-   *
-   * Counted down in state rather than from a timestamp because nothing has to
-   * survive a backgrounded app: coming back to a stale countdown is fixed by
-   * the server's own answer, which carries the real wait.
+   * Counted down in state rather than from a timestamp, because coming back to a
+   * stale countdown is fixed by the server's own answer.
    */
   const [cooldown, setCooldown] = useState(sendOnArrival ? 0 : RESEND_COOLDOWN_S)
   const ticker = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -150,20 +141,16 @@ export default function VerifyScreen() {
     })
 
   /**
-   * The send the CALLER did not do, because it navigated here instead.
+   * The send the caller did not do, because it navigated here instead. The screen
+   * is already up by the time this runs, which is the point: the wait moves from
+   * a button that has not changed to a page that says what is happening. A
+   * failure is a toast and a cooldown of zero, so "Send it again" is available
+   * rather than counting down from a mail that never went.
    *
-   * The screen is already on screen by the time this runs, which is the whole
-   * point: the wait moves from a button that has not changed to a page that
-   * says what is happening. A failure is a toast and a full cooldown reset to
-   * zero, so "Send it again" is immediately available rather than counting down
-   * sixty seconds from a mail that never went.
-   *
-   * ONCE, AND THE REF IS NOT BELT AND BRACES. An empty dependency list means
-   * "once per mount", and a mount is not the same thing as an arrival: Fast
-   * Refresh re-runs the effect, and so does anything that remounts this route
-   * under the same params. Every one of those would post a second mail, spend
-   * the account's one send a minute, and leave the user holding a code the app
-   * has just superseded. The ref makes it once per screen, full stop.
+   * Once, and the ref is not belt and braces: an empty dependency list means once
+   * per mount, and Fast Refresh re-runs the effect, as does anything that
+   * remounts this route. Each would post a second mail and leave the user holding
+   * a code the app has just superseded.
    */
   const posted = useRef(false)
   // biome-ignore lint/correctness/useExhaustiveDependencies: once, on arrival

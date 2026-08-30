@@ -8,23 +8,17 @@ import { ToastProvider } from '@/ui'
 import HealthStep from '../health'
 
 /**
- * The screen this app was rejected on, and the two things about it that must
- * stay true.
+ * The screen this app was rejected on, and the things about it that must stay
+ * true.
  *
- * Guideline 5.1.1(iv) in two halves. A message shown before a system permission
- * sheet may not be dressed as the ask — the button said "Connect Apple Health"
- * — and it may not offer a way past the sheet, which the "Not now" beside it
- * did. Both are assertions here rather than comments, because what would undo
- * either is ordinary product work (a label that names the store reads better; a
- * skip raises completion) and nothing about it fails.
+ * Guideline 5.1.1(iv) in two halves: a message shown before a system permission
+ * sheet may not be dressed as the ask, and may not offer a way past it. Both are
+ * assertions rather than comments, because what would undo either is ordinary
+ * product work and nothing about it fails.
  *
- * The third thing pinned is the shape that removing the skip forced. Every
- * write in this app is `networkMode: 'online'`, so the connect mutation is
- * PAUSED with no connection and its body never runs — asking through it meant
- * no sheet at all offline, on a step nobody can leave. The screen asks
- * `requestAccess` directly and does not wait for the sync, so a mutation that
- * never settles must not hold the flow. That is the last case, and it is the
- * one that would strand a new account on a permission screen.
+ * The third is the shape removing the skip forced. Every write is `networkMode:
+ * 'online'`, so the connect mutation is paused with no connection and asking
+ * through it meant no sheet at all offline, on a step nobody can leave.
  */
 
 const mockReplace = jest.fn()

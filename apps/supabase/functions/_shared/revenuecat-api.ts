@@ -1,27 +1,19 @@
 // Asking RevenueCat directly, for when the webhook never told us.
 //
-// WHY THIS EXISTS, given that `subscriptions` is supposed to be the mirror.
-// Because a mirror filled ONLY by a webhook has a single point of failure with
-// no recovery: a delivery that fails past RevenueCat's retries, an event our
-// own ordering guard wrongly drops, a sandbox purchase the environment rule
-// refuses, or a function that was down for the ninety seconds the event was
-// being delivered. Every one of those leaves somebody who has paid being
-// refused by the server for ever, with nothing in the system that would ever
-// correct it. That is not hypothetical: it is what happened, twice, and the
-// second time the account had a live subscription in RevenueCat the whole time.
+// A mirror filled only by a webhook has a single point of failure with no
+// recovery: a delivery that fails past RevenueCat's retries, an event the
+// ordering guard wrongly drops, a sandbox purchase the environment rule refuses,
+// or a function down for the ninety seconds the event was delivered. Each leaves
+// somebody who has paid refused for ever. It happened twice, and the second time
+// the account had a live subscription in RevenueCat throughout.
 //
-// So the mirror becomes a CACHE rather than the record, and this is the miss
-// path. It is asked only when the row says no — which is exactly the moment we
-// were about to refuse somebody — so an entitled account never pays for it, and
-// a free account reaches it only on a request the client's own gate should have
-// caught first.
+// So the mirror is a cache rather than the record, and this is the miss path,
+// asked only when the row says no. An entitled account never pays for it.
 //
-// THE KEY IS THE PUBLIC SDK KEY, and that is not an oversight. RevenueCat's v1
-// `GET /subscribers/{id}` is the same call the SDK in the app makes, and it
-// accepts the public key precisely because it is a read of one customer. It
-// cannot grant anything, it is already in the app binary, and nothing here
-// trusts the CLIENT — we ask RevenueCat about an id we resolved from a verified
-// JWT, and believe RevenueCat.
+// The key is the public SDK key, which is not an oversight: `GET
+// /subscribers/{id}` is the same call the SDK makes and accepts it because it is
+// a read of one customer. Nothing here trusts the client, since the id is
+// resolved from a verified JWT.
 
 /** The entitlement this app sells. Matches `ENTITLEMENT` in the webhook. */
 const ENTITLEMENT = 'pro'

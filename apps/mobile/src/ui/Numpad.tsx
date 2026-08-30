@@ -29,17 +29,15 @@ import { Text } from './Text'
 /**
  * Layout of the pad, in points, and the arithmetic that turns it into a height.
  *
- * The height has to be a number rather than a measurement, because everything
- * that gets out of the pad's way is positioned before the pad has drawn a frame:
- * the footer's lift, the scroll view's bottom padding, and the scroll that brings
- * the focused field back into view all read it on the same tick the pad opens.
- * Measuring instead would mean laying out the pad, reading it back and then
- * moving everything else a frame later, which is a visible settle.
+ * A number rather than a measurement, because everything that gets out of the
+ * pad's way is positioned before the pad has drawn a frame: the footer's lift,
+ * the scroll view's bottom padding and the scroll that brings the focused field
+ * into view all read it on the tick the pad opens. Measuring would move
+ * everything a frame later, which is a visible settle.
  *
  * `KEY_HEIGHT` is duplicated in `KEY_BOX` because NativeWind needs a literal
- * class and cannot read a constant. They have to be edited together: a key taller
- * than the height this sum was built from would put a row of it under the bottom
- * of the window.
+ * class. They have to be edited together, or a row of keys ends up under the
+ * bottom of the window.
  */
 const KEY_HEIGHT = 48
 const KEY_BOX = 'h-[48px]'
@@ -60,21 +58,17 @@ const ROWS = [
 ] as const
 
 /**
- * More digits than any figure the pad was built for: a calorie total, a weight, a
- * portion.
- *
- * A default rather than the limit, since a barcode arrived (13 digits on a
- * packet, 14 once padded) and it is typed on this pad whenever a camera cannot
+ * More digits than any figure the pad was built for. A default rather than the
+ * limit, since a barcode is 13 digits and is typed here whenever a camera cannot
  * read the label. A field states its own `maxLength` and the pad honours it.
  */
 const MAX_LENGTH = 8
 
 /**
- * What the pad needs from the field it is driving, read fresh on every press.
- *
- * A ref rather than a value, and that is the whole trick of this file. The pad is
- * mounted once and outlives every keystroke, so a handler closed over the value
- * it was opened with would append the second digit to a number one digit old.
+ * What the pad needs from the field it is driving, read fresh on every press. A
+ * ref rather than a value: the pad is mounted once and outlives every keystroke,
+ * so a handler closed over the value it opened with would append the second
+ * digit to a number one digit old.
  */
 export type NumpadFieldSpec = {
   value: string
@@ -121,14 +115,13 @@ const NumpadContext = createContext<NumpadValue | null>(null)
 /**
  * Which host is nearest above a field.
  *
- * The pad is one component, but it cannot be drawn in one place. A `Sheet` is a
- * native modal window, and nothing rendered in the app's own tree can appear over
- * it, so a pad drawn at the root would be behind the sheet whose field opened it.
- * Every bottom-anchored container therefore hosts a pad, and the nearest one
- * draws: `Screen` for a page, `Sheet` for the panel over it.
+ * A `Sheet` is a native modal window and nothing in the app's tree draws over
+ * it, so a pad at the root would be behind the sheet whose field opened it.
+ * Every bottom-anchored container hosts a pad and the nearest one draws:
+ * `Screen` for a page, `Sheet` for the panel over it.
  *
- * The empty string is "no host", which is what a field rendered outside both
- * gets. It opens nothing rather than opening a pad nobody can see.
+ * The empty string is "no host", which a field outside both gets: it opens
+ * nothing rather than a pad nobody can see.
  */
 const HostContext = createContext<string>('')
 
@@ -148,10 +141,8 @@ function useNumpad() {
 export type NumpadProviderProps = {
   children: ReactNode
   /**
-   * Copy, passed in rather than translated here. The design system knows no
-   * words: every other component in `src/ui` takes its labels the same way, and
-   * this one is only different in that its caller is the root layout rather
-   * than a screen.
+   * Copy, passed in rather than translated here: the design system knows no
+   * words. This one differs only in that its caller is the root layout.
    */
   labels: NumpadLabels
 }
@@ -160,27 +151,26 @@ export type NumpadProviderProps = {
  * The app's own number pad, and the state of whichever field is using it.
  *
  * It exists because the system one stopped being a keyboard we could lay out
- * against. A number pad has no return key, so iOS 26 floats a "Done" pill above
- * it, inside the keyboard frame the app is told about while the keys are not.
- * Everything positioned against that frame therefore clears a control it cannot
- * see, and the strip it leaves behind shows the diary through it. Guessing the
- * pill's height would be guessing at a number Apple is free to change.
+ * against: a number pad has no return key, so iOS 26 floats a "Done" pill inside
+ * the keyboard frame the app is told about while the keys are not. Everything
+ * positioned against that frame clears a control it cannot see, and the strip it
+ * leaves shows the diary through it.
  *
  * So the app draws the pad. `showSoftInputOnFocus={false}` gives the field a
- * caret and no keyboard on both platforms, the pad is an ordinary view at the
- * bottom of the window, and its height is a constant this file owns.
+ * caret and no keyboard on both platforms, and the height is a constant this
+ * file owns.
  *
- * `keyboardType` stays on the fields regardless. It does nothing while the pad is
- * up, and it is what they fall back to if a future platform declines to suppress
- * the keyboard.
+ * `keyboardType` stays on the fields regardless: it does nothing while the pad
+ * is up, and it is what they fall back to on a platform that declines to
+ * suppress the keyboard.
  */
 export function NumpadProvider({ children, labels }: NumpadProviderProps) {
   const insets = useSafeAreaInsets()
   const [session, setSession] = useState<Session | null>(null)
   /**
-   * What the host actually draws, which lags `session` by one animation on the
-   * way out. Unmounting on close would take the pad off screen in a frame and
-   * leave the footer sliding down over nothing.
+   * What the host draws, which lags `session` by one animation on the way out.
+   * Unmounting on close would take the pad off screen in a frame and leave the
+   * footer sliding down over nothing.
    */
   const [shown, setShown] = useState<Session | null>(null)
 
@@ -200,9 +190,9 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
   }, [session, height, offset])
 
   /**
-   * The open session, readable outside a render. `dismiss` needs it to blur the
-   * field, and doing that from inside a state updater would be a side effect in
-   * a function React is free to call twice.
+   * The open session, readable outside a render. `dismiss` blurs the field with
+   * it, which from inside a state updater would be a side effect in a function
+   * React is free to call twice.
    */
   const current = useRef<Session | null>(null)
   current.current = session
@@ -216,11 +206,9 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
     [],
   )
   const dismiss = useCallback(() => {
-    // Nothing open is the common case, not the edge one: `Screen` calls this on
-    // every scroll that starts, the way `keyboardDismissMode` works, and almost
-    // none of those have a pad up. Without this guard every drag anywhere in
-    // the app would push a state update through the provider above the whole
-    // tree.
+    // Nothing open is the common case: `Screen` calls this on every scroll that
+    // starts, and almost none have a pad up. Without the guard, every drag in
+    // the app pushes a state update through the provider above the whole tree.
     if (!current.current) return
     // Blur first: the field's own `onBlur` is what commits the number, and
     // every caller hangs its commit there rather than on a key. Closing without
@@ -245,10 +233,9 @@ export type NumpadFieldOptions = {
   /** Named in the pad's header, since the field may be under the pad. */
   label?: string
   /**
-   * The field's own limit, passed straight through from `TextField`'s
-   * `maxLength`. It has to reach the pad because suppressing the system
-   * keyboard also suppresses the platform's enforcement of it: with no
-   * `TextInput` typing, a cap the input alone knows about caps nothing.
+   * The field's own limit, from `TextField`'s `maxLength`. It has to reach the
+   * pad because suppressing the system keyboard also suppresses the platform's
+   * enforcement of it.
    */
   maxLength?: number
   /** The first key replaces the value. What `selectTextOnFocus` used to buy. */
@@ -258,29 +245,23 @@ export type NumpadFieldOptions = {
   onBlur?: () => void
   /**
    * Off leaves the field on the system keyboard, handlers and all. For a
-   * component whose numeric-ness is a prop — `TextField` is either a name or an
-   * amount depending on `keyboardType`, and a hook cannot be called
+   * component whose numeric-ness is a prop, since a hook cannot be called
    * conditionally.
    */
   enabled?: boolean
   /**
    * The return key the field would ask for without this pad, handed over rather
-   * than set in JSX.
-   *
-   * The spread goes last so its `onFocus` and `onBlur` win, which means it also
-   * overwrites anything it returns. So a `returnKeyType` left on the element cannot
-   * be suppressed from in here, and one returned as `undefined` would wipe the
-   * caller's on the fallback path too. Passing it in is what lets the hook decide.
+   * than set in JSX. The spread goes last so its handlers win, which means a
+   * `returnKeyType` left on the element cannot be suppressed from here and one
+   * returned as `undefined` would wipe the caller's on the fallback path.
    */
   returnKeyType?: TextInputProps['returnKeyType']
 }
 
 /**
- * Turns a `TextInput` into a field the app's own pad drives.
- *
- * Spread the result LAST, after the caller's own props: it composes `onFocus`
- * and `onBlur` with whatever was passed in, and the composed pair has to be the
- * one that wins.
+ * Turns a `TextInput` into a field the app's own pad drives. Spread the result
+ * last, after the caller's own props: it composes `onFocus` and `onBlur`, and
+ * the composed pair has to win.
  */
 export function useNumpadField({
   value,
@@ -327,15 +308,13 @@ export function useNumpadField({
   /**
    * A field that wanted the pad and could not find a host to draw it.
    *
-   * Loud, because the fallback is the bug this whole file exists to remove wearing
-   * a disguise: the field quietly keeps the system keyboard, which for a numeric
-   * one is the pad with the floating pill on it. It has already happened once, when
-   * the calorie total on a logged entry called this hook up in the route, which
-   * renders the screen rather than sitting inside it.
+   * Loud, because the fallback is the bug this file exists to remove wearing a
+   * disguise: the field keeps the system keyboard, which for a numeric one is the
+   * pad with the floating pill on it. It happened once, when the calorie total
+   * called this hook up in the route rather than inside the screen.
    *
-   * A warning rather than a throw: a field genuinely outside both containers still
-   * works on the platform's keyboard, and crashing a screen over a layout mistake
-   * is the worse trade.
+   * A warning rather than a throw: the field still works on the platform's
+   * keyboard, and crashing a screen over a layout mistake is worse.
    */
   useEffect(() => {
     if (!__DEV__ || !enabled || !context || hostId !== '') return
@@ -346,13 +325,10 @@ export function useNumpadField({
   }, [enabled, context, hostId])
 
   /**
-   * The two handlers, pulled out of the context value.
-   *
-   * They are stable where the context object is not, since it carries the open
-   * session and its identity changes on every open, close and keystroke that
-   * re-renders the provider. Depending on the object below would make the unmount
-   * guard tear down and re-run on the very render that opened the pad, and its
-   * cleanup closes: the pad appeared and vanished inside one frame.
+   * The two handlers, pulled out of the context value. They are stable where the
+   * object is not, since its identity changes on every open, close and keystroke.
+   * Depending on the object made the unmount guard re-run on the render that
+   * opened the pad, and its cleanup closes: the pad vanished inside one frame.
    */
   const openPad = context?.open
   const closePad = context?.close
@@ -387,26 +363,20 @@ export function useNumpadField({
     // same prop it has always had.
     showSoftInputOnFocus: !live,
     /**
-     * No `done` return key while the pad is driving, and this is the other half of
-     * suppressing the keyboard.
+     * No `done` return key while the pad is driving, which is the other half of
+     * suppressing the keyboard. A number pad has no return key, so asking for
+     * `returnKeyType="done"` asks iOS 26 for the floating "Done" pill, which is
+     * not part of the input view: an empty input view takes the keys away and
+     * leaves the pill over the bottom-right of this pad.
      *
-     * A number pad has no return key, so asking one for `returnKeyType="done"` is
-     * asking iOS 26 for the floating "Done" pill, and the pill is not part of the
-     * input view. Handing UIKit an empty input view takes the keys away and leaves
-     * the pill behind, floating over the bottom-right of the pad this file draws: two
-     * Done buttons on screen, the system one covering the pad's own bottom row.
-     *
-     * `undefined` rather than a different value, so a field that sets its own is left
-     * alone. The fallback stays intact: with no pad to drive the field, `live` is
-     * false and whatever the caller asked for is passed straight through.
+     * `undefined` rather than another value, so a field that sets its own is left
+     * alone and the fallback path passes the caller's through.
      */
     returnKeyType: live ? undefined : returnKeyType,
     /**
-     * The caret lives at the end, because that is where the pad writes.
-     *
-     * Controlled only while the pad is driving the field. A controlled selection is a
-     * fight with the platform's own caret handling and is worth having exactly here,
-     * where the value cannot change by any route except our own keys.
+     * The caret lives at the end, where the pad writes. Controlled only while the
+     * pad is driving: a controlled selection fights the platform's own caret
+     * handling, and is worth it only where the value changes by no other route.
      */
     selection: active ? { start: value.length, end: value.length } : undefined,
   }
@@ -415,12 +385,9 @@ export function useNumpadField({
 export type NumpadHostProps = {
   children: ReactNode
   /**
-   * This host's identity, from `useNumpadZone`.
-   *
-   * Passed in rather than minted here because the container around this element
-   * also has to know how much room its own pad is taking, and it works that out in
-   * its own render. One id, generated once, so the two halves cannot disagree about
-   * whose pad is open.
+   * This host's identity, from `useNumpadZone`. Passed in rather than minted
+   * here, because the container also has to know how much room its own pad is
+   * taking, and one id means the two halves cannot disagree.
    */
   id?: string
   /**
@@ -432,10 +399,8 @@ export type NumpadHostProps = {
 
 /**
  * Draws the pad for the fields under it, and nothing when the pad belongs to
- * somebody else.
- *
- * Renders no box of its own: the pad is absolutely positioned, so it lands
- * against the bottom of whatever view the host was placed in.
+ * somebody else. No box of its own: the pad is absolutely positioned, so it
+ * lands against the bottom of whatever view the host was placed in.
  */
 export function NumpadHost({ children, id: given, onOpen }: NumpadHostProps) {
   const own = useId()
@@ -464,25 +429,20 @@ export function NumpadHost({ children, id: given, onOpen }: NumpadHostProps) {
 /**
  * A pad host, and how much room its own pad is taking.
  *
- * The `id` pairs with the `NumpadHost` the caller renders, and the scoping is the
- * whole reason it exists. The provider holds one `offset` for the app, and read
- * directly it moves every container in the tree, including the ones that are not
- * drawing the pad and cannot see it.
+ * The `id` pairs with the `NumpadHost` the caller renders, and the scoping is
+ * why it exists: the provider holds one `offset` for the app, and read directly
+ * it moves every container in the tree, including ones that cannot see the pad.
  *
- * That is not the rare case it sounds like. A field keeps focus when you navigate
- * away from it: suppressing the system keyboard also removes the reason the
- * platform had to resign first responder, so nothing blurs, the session stays
- * open, and the screen it belongs to is still mounted somewhere under the one you
- * are looking at. Every footer and every floating action mounted after it then
- * sat the pad's full height off the bottom of the screen. Onboarding's weight
- * field is the first numeric field a new user meets, which is why the symptom was
- * a log button and a paywall button floating a third of the way up the app on
- * first open.
+ * Not a rare case. A field keeps focus when you navigate away from it, because
+ * suppressing the system keyboard removes the reason the platform had to resign
+ * first responder, so the session stays open under the screen you are looking
+ * at. Every footer mounted after it then sat the pad's full height off the
+ * bottom: onboarding's weight field is the first numeric field a new user meets,
+ * which is why a log button floated a third of the way up the app.
  *
  * `height` is 0 unless this host's pad is open, so a caller can add it to a
- * padding without a conditional. `offset` is the animated twin for the UI thread,
- * and it follows `shown` as well as `session` because `shown` lags by one
- * animation on the way out.
+ * padding without a conditional. `offset` is the animated twin, following
+ * `shown` as well as `session` because `shown` lags on the way out.
  */
 export function useNumpadZone() {
   const id = useId()
@@ -505,9 +465,8 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
 
   /**
    * True until the first key of an edit, and only interesting for a field that
-   * asked for `replaceFirst`. It is a ref rather than state because nothing on
-   * screen depends on it — re-rendering the pad on the first digit would be a
-   * frame of work for no pixels.
+   * asked for `replaceFirst`. A ref rather than state, since nothing on screen
+   * depends on it.
    */
   const pristine = useRef(true)
   // biome-ignore lint/correctness/useExhaustiveDependencies: a new session is a new edit
@@ -540,25 +499,16 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
   )
 
   /**
-   * The worklet takes two numbers, not the context.
+   * The worklet takes two numbers rather than the context, which looks like a
+   * pointless destructure and is the difference between the pad working and the
+   * pad silently refusing to type a second digit.
    *
-   * This looks like a pointless destructure and it is the difference between the
-   * pad working and the pad silently refusing to type a second digit.
-   *
-   * Reanimated freezes every object a worklet closes over, so that the UI thread
-   * can read it without tearing. Written as `context.height - context.offset.value`
-   * the worklet captures `context`, which holds `session`, which holds the `field`
-   * ref that `useNumpadField` writes the live value into on every render. Frozen,
-   * that write does nothing at all: the pad goes on reading the value the field had
-   * when it was first focused, and every key appends to it, which is to say every
-   * key replaces what came before.
-   *
-   * The symptom is that "1" then "2" leaves a field reading "2". In dev Reanimated
-   * says so ("Tried to modify key `current` of an object which has been already
-   * passed to a worklet"); in a release build it is silent.
-   *
-   * So: read the two values out here, on the JS thread, and let the worklet capture
-   * a number and a shared value.
+   * Reanimated freezes every object a worklet closes over. Written as
+   * `context.height - context.offset.value` it captures `context`, which holds
+   * the `field` ref `useNumpadField` writes the live value into, so that write
+   * does nothing and every key appends to the value the field had when it was
+   * focused. "1" then "2" leaves a field reading "2"; in a release build
+   * Reanimated says nothing about it.
    */
   const panelHeight = context.height
   const panelOffset = context.offset

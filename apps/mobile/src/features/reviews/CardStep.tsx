@@ -17,22 +17,15 @@ export type CardStepProps = {
 
 /**
  * The whole period on one card, and the one most likely to leave the app.
+ * Everything on it is a headline and nothing is a chart, which is what makes it
+ * shareable: a screenshot has to be readable at the size a chat window shows it,
+ * and a seven-column stacked bar is not.
  *
- * Everything on it is a headline — the average, how it sat against the budget,
- * which days were logged, the streak, the change on the scale — and nothing on
- * it is a chart. That is what makes it shareable: a card somebody screenshots
- * has to be readable at the size a chat window shows it, and a seven-column
- * stacked bar is not.
+ * The marks are presence rather than amount: a filled block is a day with food
+ * logged, which stays true whether the week averaged 1,400 or 2,600.
  *
- * The marks are presence rather than amount. A filled block is a day with food
- * logged and a hollow one is a day without, which is the one thing a person
- * looking back at their own week wants to see first, and it stays true whether
- * the week averaged 1,400 or 2,600.
- *
- * There is no Share button, and no wordmark of its own. Every card in a story
- * is shareable — tap it and it draws itself into a picture — and `Shareable`
- * puts the app's mark under each one, so this card carrying a second copy said
- * only that it was the special one.
+ * No Share button and no wordmark of its own. Every card in a story is shareable
+ * and `Shareable` puts the app's mark under each one.
  */
 export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
   const { t } = useTranslation(['reviews', 'common'])

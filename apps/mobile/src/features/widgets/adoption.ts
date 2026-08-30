@@ -5,15 +5,14 @@ import { setPersonProps, track } from '@/lib/analytics'
 /**
  * Which widgets are on this phone, and what changed since anybody last looked.
  *
- * NEITHER PLATFORM ANNOUNCES AN INSTALL. WidgetKit's `getCurrentConfigurations`
- * and Android's `getAppWidgetIds` both answer "what is there now" and neither
- * has a callback for "somebody just added one" — the OS owns that gesture and
- * the app is not running when it happens. So adoption is a diff: poll on
- * foreground, compare against what was stored last time, report the difference.
+ * Neither platform announces an install: WidgetKit's `getCurrentConfigurations`
+ * and Android's `getAppWidgetIds` both answer "what is there now", and the app is
+ * not running when somebody adds one. So adoption is a diff: poll on foreground,
+ * compare against what was stored last time, report the difference.
  *
- * MMKV rather than a column, for the reason `theme/preference.ts` gives: this
- * is a fact about the HANDSET, not the account. Signing out does not take a
- * widget off a home screen, and two accounts on one phone see the same widgets.
+ * MMKV rather than a column, for the reason `theme/preference.ts` gives: this is
+ * a fact about the handset, not the account. Signing out does not take a widget
+ * off a home screen.
  */
 const storage = createMMKV({ id: 'ricecal-widgets' })
 

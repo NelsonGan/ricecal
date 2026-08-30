@@ -19,21 +19,15 @@ import { useCallback } from 'react'
 /**
  * Pop the stack if something is on it, otherwise go to `fallback`.
  *
- * `dismiss`, NOT `back`, and the difference is the whole point. `back()` sends
- * GO_BACK, which every navigator in the focused chain gets a chance to claim —
- * so once the stack is empty the TAB navigator answers it, and answering it
- * means changing tab. Worse, `canGoBack()` asks the same chain, so it says yes
- * on a tab with nothing pushed and the `fallback` below never runs: a dismissal
- * that should have landed on the screen this one names walked to a tab instead.
+ * `dismiss`, not `back`. GO_BACK is offered to every navigator in the focused
+ * chain, so on an empty stack the tab navigator answers it by changing tab, and
+ * `canGoBack()` says yes for the same reason, so `fallback` never runs.
  *
- * Which tab is the part nobody would guess. Expo Router sorts the screens of a
- * navigator by the LENGTH of their route names, and the tab router's default
- * back behaviour is "go to the first route" — so `me`, at two characters, is
- * the first tab as far as the router is concerned, and every stray GO_BACK in
- * the app landed on the profile. `unstable_settings` in `(tabs)/_layout.tsx`
- * now pins that order, and this pops rather than going back, so a dismissal
- * that arrives twice cannot reach the tabs at all: POP is a stack's action and
- * nothing else handles it.
+ * Which tab it walked to was the surprise: Expo Router sorts a navigator's
+ * screens by the length of their route names and the tab router goes to the
+ * first, so `me` won and every stray GO_BACK landed on the profile.
+ * `unstable_settings` in `(tabs)/_layout.tsx` now pins that order, and POP is a
+ * stack's action that nothing else handles.
  */
 export function useBack(fallback: Href): () => void {
   const router = useRouter()
@@ -76,29 +70,17 @@ export function useDismissTo(fallback: Href): () => void {
 /**
  * Land on the app, with nothing left behind it.
  *
- * THE TABS ARE WHERE THE APP IS, and everything else in the root stack is
- * somewhere you went and can leave. A `replace` alone does not say that: it
- * swaps the ONE entry it replaces and leaves whatever that entry was standing
- * on, so the way in stays on the stack under the app for the rest of the
- * session.
+ * A `replace` alone swaps one entry and leaves whatever it was standing on, so
+ * the way in stays under the app for the rest of the session. Every route in
+ * crosses the welcome screen or the questions, so Today came up standing on
+ * "Get started" with a live session: a stray pop put a signed-in person on the
+ * sign-up screen, where "Get started" walked them back into onboarding they had
+ * already finished.
  *
- * It is the way in that makes this expensive. Every route into the app crosses
- * the welcome screen or the questions — a returning user signs in from
- * `welcome`, so `(auth)` is pushed ON TOP of it and the redirect afterwards
- * replaces `(auth)` and nothing else; onboarding's own screens sit under the
- * paywall for the same reason. So Today came up standing on "Get started", with
- * a live session, and any stray pop landed there: a signed-in person looking at
- * the sign-up screen, whose "I already have an account" bounced them straight
- * back to the diary while "Get started" walked them into onboarding they had
- * already finished. `gestureEnabled: false` on `(tabs)` was written to stop the
- * edge swipe finding it, which is a fence around the hole rather than the hole
- * filled in.
- *
- * `dismissAll` first, then `replace`: the first unwinds to the bottom of the
- * root stack, the second takes that last entry's place. Both are queued in one
- * flush, so there is no frame of the welcome screen in between. The guard is
- * not optional — `dismissAll` throws when there is nothing to unwind, which is
- * the ordinary case on a cold launch straight into the app.
+ * `dismissAll` unwinds to the bottom of the root stack, `replace` takes that
+ * last entry's place. Both queue in one flush, so no frame of the welcome
+ * screen shows in between. The guard is not optional: `dismissAll` throws when
+ * there is nothing to unwind, which is the ordinary cold launch.
  */
 export function useEnterApp(): (href?: Href) => void {
   const router = useRouter()

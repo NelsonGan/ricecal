@@ -2,33 +2,25 @@ import type { ActivityLevel, Entry, Macros, Targets } from '@/data/types'
 import { DEFAULT_WATER_ML } from './water'
 
 /**
- * Arithmetic the screens share.
- *
- * What is left here after the move to Postgres is deliberately small. Anything
- * that describes stored data (a day's calories, an entry's macros, the budget in
- * force) is a view now, computed once in the database where the reminder and
- * report jobs can read the same number. What remains is either presentation or a
- * projection of something that has not been saved yet.
+ * Arithmetic the screens share, and deliberately little of it. Anything that
+ * describes stored data is a view now, computed once in the database where the
+ * reminder and report jobs read the same number. What is left is presentation,
+ * or a projection of something not yet saved.
  */
 
 export const ZERO_MACROS: Macros = { kcal: 0, carbs: 0, protein: 0, fat: 0 }
 
 /**
- * One decimal place, and no float droppings.
- *
- * Grams come out of Postgres as `numeric(6,1)`, so every value going IN has one
- * decimal at most — but 24.3 + 51.3 is 75.60000000000001 in binary floating
- * point, and that is a string the moment anything interpolates it. "75.6g" is
- * what the screen is meant to say.
+ * One decimal place, and no float droppings. Grams arrive as `numeric(6,1)`, but
+ * 24.3 + 51.3 is 75.60000000000001 in binary floating point, which is a string
+ * the moment anything interpolates it.
  */
 const round1 = (value: number) => Math.round(value * 10) / 10
 
 /**
- * Adds up entries that already carry their own costed macros.
- *
- * Rounded as it goes out rather than by each of the six places that render the
- * result. Nothing is lost: the inputs are one-decimal numbers, so this only
- * discards the error the addition introduced.
+ * Adds up entries that already carry their own costed macros. Rounded here
+ * rather than by each of the six places that render it; the inputs are
+ * one-decimal numbers, so this only discards the error the addition introduced.
  */
 export function sumMacros(entries: readonly Entry[]): Macros {
   const total = entries.reduce<Macros>(
@@ -51,16 +43,14 @@ export function sumMacros(entries: readonly Entry[]): Macros {
 }
 
 /**
- * What one entry counts as, from the three sources that decide it.
+ * What one entry counts as, from the three sources that decide it: what the user
+ * typed, what the parts add up to, what the dish costs at this portion. The same
+ * rule as the `coalesce` in `food_log_details`, written twice because the two
+ * answer at different moments: the view answers for the diary, and this answers
+ * for the screen editing the entry, where a figure inside the save debounce has
+ * not reached the database.
  *
- * The same rule, in the same order, as the `coalesce` in `food_log_details`: what
- * the user typed, what the parts add up to, what the dish costs at this portion.
- * It is written twice because the two answer at different moments. The view
- * answers for the diary; this answers for the screen editing the entry, where a
- * figure inside the save debounce and an ingredient the optimistic update has
- * already moved are both true and neither has reached the database.
- *
- * Field by field, like the view: someone who corrects only the protein keeps the
+ * Field by field, like the view: correcting only the protein keeps the
  * catalogue's carbs.
  */
 export function entryTotals(input: {
@@ -102,11 +92,11 @@ function sumMacroList(items: readonly Macros[]): Macros {
   }
 }
 
-// `entriesForMeal`, `mealKcal` and `mealForHour` used to live here, for the
+// `entriesForMeal`, `mealKcal` and `mealForHour` lived here for the
 // card-per-meal day and the selector that guessed which meal you were logging.
-// Today is one chronological list now and nothing groups by meal, so both are gone
-// — along with the second copy of `entriesForMeal` in `data/day.ts`, which had
-// drifted to a different sort order than this one.
+// Today is one chronological list now, so they are gone, along with the second
+// copy of `entriesForMeal` in `data/day.ts` that had drifted to a different sort
+// order.
 
 /** 0 to 1, clamped, for the ring and the bars. */
 export function progressOf(done: number, goal: number): number {
@@ -137,14 +127,11 @@ const KCAL_PER_KG = 7700
 
 /**
  * How fast the plan moves in each direction, in kg per week, before the distance
- * left to run is read.
+ * left is read. Loss at the gentle end of the 0.5 to 1 kg/week the NHS and CDC
+ * call safe, since past 1 kg/week a growing share of what goes is lean tissue.
+ * Gain at the 0.25 kg/week lean-gain rate.
  *
- * Loss at the gentle end of the 0.5 to 1 kg/week both the NHS and CDC call safe,
- * since past 1 kg/week a growing share of what goes is lean tissue. Gain at 0.25
- * kg/week, the lean-gain rate: muscle has a ceiling on how fast it can be built.
- *
- * Nominal, because this is the most either direction ever asks for and not what
- * the plan does. How far the target is decides that.
+ * Nominal: the most either direction ever asks for, not what the plan does.
  */
 const NOMINAL_LOSS_KG_PER_WEEK = 0.5
 const NOMINAL_GAIN_KG_PER_WEEK = 0.25
@@ -152,49 +139,40 @@ const NOMINAL_GAIN_KG_PER_WEEK = 0.25
 /**
  * How close to the target counts as arrived, and the width of "no goal".
  *
- * Body weight swings a kilogram either way inside a single day on water alone, so
- * a plan that chased the last hundred grams would be reading noise: the budget
- * would move on every weigh-in and the number on Today would never settle. Half a
+ * Body weight swings a kilogram either way inside a day on water alone, so
+ * chasing the last hundred grams would move the budget on every weigh-in. Half a
  * kilo is also the step on the target-weight slider.
  *
- * It carries a second job now that the two weights are the whole statement of
- * intent. A user who wants no goal at all sets their target where they already
- * are, and this is what turns that into maintenance.
+ * It has a second job now the two weights are the whole statement of intent: a
+ * user who wants no goal sets their target where they are, and this turns that
+ * into maintenance.
  */
 const TARGET_DEADBAND_KG = 0.5
 
 /**
  * The shortest horizon the plan will try to close the remaining distance in.
  *
- * This is the taper, and it is the thing a fixed pace gets wrong. Someone 30 kg
- * out and someone 1 kg out were being handed the same 0.5 kg/week deficit, which
- * for the second is two weeks of work priced as a diet, and which did not stop
- * when they arrived.
+ * The taper, and what a fixed pace gets wrong: somebody 30 kg out and somebody
+ * 1 kg out were handed the same 0.5 kg/week deficit.
  *
- * Four weeks means the last two kilograms are the only ones affected: anyone
- * further out still gets the full pace, because `remaining / 4` is larger than
- * the nominal figure and the smaller one wins.
+ * Four weeks means only the last two kilograms are affected: further out,
+ * `remaining / 4` is larger than the nominal figure and the smaller one wins.
  */
 const MIN_WEEKS_TO_TARGET = 4
 
 /**
- * The pace, capped as a share of maintenance.
- *
- * A flat 550 kcal deficit is a fifth of a large man's day and nearly half a small
- * woman's. Capping the cut at 20% of maintenance is what stops the same "0.5 kg a
- * week" being gentle for one body and a crash diet for another; the surplus is
- * capped tighter still, because overshooting a lean gain just adds fat.
+ * The pace, capped as a share of maintenance. A flat 550 kcal deficit is a fifth
+ * of a large man's day and nearly half a small woman's. The surplus is capped
+ * tighter, because overshooting a lean gain just adds fat.
  */
 const MAX_DEFICIT_SHARE = 0.2
 const MAX_SURPLUS_SHARE = 0.15
 
 /**
- * Protein from body weight, not from a share of energy.
- *
- * 1.6 g/kg is where the meta-analytic evidence stops improving: more spares no
- * further lean mass, in a deficit or out of one. Deriving it from energy instead
- * — which this used to do, at 22% — gets the relationship backwards, because it
- * hands you LESS protein exactly when a deficit makes it matter most.
+ * Protein from body weight, not from a share of energy. 1.6 g/kg is where the
+ * meta-analytic evidence stops improving. Deriving it from energy, which this
+ * used to do at 22%, hands you less protein exactly when a deficit makes it
+ * matter most.
  */
 const PROTEIN_G_PER_KG = 1.6
 
@@ -209,12 +187,9 @@ const PROTEIN_MAX_SHARE = 0.35
 const FAT_SHARE = 0.25
 
 /**
- * The floor, by sex.
- *
- * Below these is the point at which the guidance says medical supervision, and
+ * The floor, by sex. Below these the guidance says medical supervision, and
  * Mifflin-St Jeor plus a percentage deficit reaches them easily for a small,
- * older, sedentary body. Two numbers rather than one because the guidance is two
- * numbers.
+ * older, sedentary body. Two numbers because the guidance is two numbers.
  */
 const FLOOR_KCAL: Record<'female' | 'male', number> = { female: 1200, male: 1500 }
 
@@ -226,13 +201,11 @@ export type BodyInput = {
   activity: ActivityLevel
   /**
    * Where the user is heading. With this and `weightKg` there is nothing left to
-   * ask: the sign says lose or gain, the size says how hard, and equal says
-   * neither. There used to be a `goal` beside it, and it could only ever agree with
-   * the two weights or contradict them, which meant a rule for deciding which of
-   * the user's own answers to believe.
+   * ask: the sign says lose or gain, the size says how hard, equal says neither.
+   * A `goal` enum beside it could only agree or contradict, which meant a rule
+   * for deciding which of the user's own answers to believe.
    *
-   * Null is "no target stated", which reads as maintenance. Only rows written
-   * before the target was collected are in that state.
+   * Null is "no target stated", which reads as maintenance.
    */
   targetWeightKg?: number | null
 }
@@ -249,20 +222,16 @@ export function maintenanceRate(body: BodyInput): number {
 }
 
 /**
- * The kg/week this plan aims for, read entirely off the two weights.
- *
- * The gap between where the user is and where they say they want to be answers
- * every question there is: which way to move, whether to move at all, and how
- * hard. Nothing else is consulted, and that is the point. There was a
- * lose/maintain/gain enum here, and a second source can only agree with the first
- * or contradict it. Agreeing, it was noise; contradicting, it forced the app to
- * decide which of the user's own answers to ignore.
+ * The kg/week this plan aims for, read entirely off the two weights. The gap
+ * answers which way to move, whether to move at all, and how hard, and nothing
+ * else is consulted: a lose/maintain/gain enum could only agree with it or
+ * contradict it.
  *
  * Three cases, in order:
  *
- * 1. No target stated: nothing to work toward, so maintenance.
- * 2. Already there, within the deadband: nothing to do. This is also how a user
- *    says they have no goal.
+ * 1. No target stated: maintenance.
+ * 2. Already there, within the deadband. This is also how a user says they have
+ *    no goal.
  * 3. A real gap: the nominal pace for that direction, or the taper, whichever
  *    asks for less.
  */
@@ -280,17 +249,14 @@ function intendedPace(body: BodyInput): number {
 }
 
 /**
- * The kcal/day added or removed for the goal, capped against maintenance.
+ * The kcal/day added or removed for the goal, capped against maintenance, and
+ * the single source of truth for how fast the plan moves. `weeklyPace` reads the
+ * answer back out rather than keeping its own copy: as two constants they
+ * disagreed, so the budget was built for 400 kcal a day while the goal date was
+ * drawn for the 550 that 0.5 kg a week needs.
  *
- * The single source of truth for how fast the plan moves. `weeklyPace` reads the
- * answer back out rather than keeping its own copy: the two used to be separate
- * constants that disagreed, so the budget was built for 400 kcal a day while the
- * goal date was drawn for 0.5 kg a week, which needs 550.
- *
- * Two caps, and they answer different questions. The taper in `intendedPace` asks
- * how much distance is left; this one asks what this body can afford, and is why
- * 0.5 kg/week is a gentle cut for a large man and a crash diet for a small woman
- * at the same 550 kcal.
+ * Two caps answering different questions: the taper in `intendedPace` asks how
+ * much distance is left, and this asks what this body can afford.
  */
 export function energyDelta(body: BodyInput): number {
   const pace = intendedPace(body)
@@ -314,31 +280,24 @@ const MAX_WEEKS_PROJECTED = 260
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 /**
- * When the target weight is reached, or null when there is nothing to reach: a
- * maintain plan has no finish line, and saying "never" would be both true and
- * unkind.
+ * When the target weight is reached, or null when there is nothing to reach.
  *
- * Walked a week at a time rather than divided, because neither term of that
- * division holds still. The pace tapers over the last two kilograms, and the body
- * doing the losing gets lighter as it goes: Mifflin-St Jeor falls about 10 kcal
- * per kilogram of BMR, so a capped deficit shrinks with it. That is the plateau
- * every diet runs into, and a straight `distance / pace` promises a date before
- * it.
+ * Walked a week at a time rather than divided, because neither term holds still:
+ * the pace tapers over the last two kilograms, and the body gets lighter as it
+ * goes, so a capped deficit shrinks with it. That is the plateau every diet runs
+ * into, and a straight `distance / pace` promises a date before it.
  *
- * The loop is bounded twice over: the step is at most a quarter of what is left,
- * so the remainder falls geometrically, and `MAX_WEEKS_PROJECTED` catches
- * anything that somehow crawls.
+ * Bounded twice: the step is at most a quarter of what is left, so the remainder
+ * falls geometrically, and `MAX_WEEKS_PROJECTED` catches anything that crawls.
  */
 export function goalDate(body: BodyInput, targetWeightKg: number, from: Date): Date | null {
   let weightKg = body.weightKg
 
   for (let week = 1; week <= MAX_WEEKS_PROJECTED; week++) {
     const pace = weeklyPace({ ...body, weightKg, targetWeightKg })
-    // Nothing to reach. On the first pass that is a target already met — the
-    // only way this can be zero, now that the gap is the whole plan. Later it
-    // cannot happen at all, because a step is never more than a quarter of what
-    // is left and so never carries the weight past the deadband that would have
-    // ended the loop.
+    // Nothing to reach: on the first pass, a target already met. Later it
+    // cannot happen, because a step is never more than a quarter of what is
+    // left and so never carries the weight past the deadband.
     if (pace === 0) return null
 
     weightKg += pace
@@ -354,16 +313,13 @@ export function goalDate(body: BodyInput, targetWeightKg: number, from: Date): D
  * The daily budget, previewed.
  *
  * The database owns this number: a trigger recomputes `daily_goals` whenever the
- * profile or the newest weigh-in changes, and that is the copy every screen
- * reads. This exists for the one moment there is nothing to read from, the
- * onboarding questions, which show a budget before the account that would store
- * it exists. Keep the two in step; `compute_targets()` in `02_functions.sql` is
- * the other half.
+ * profile or the newest weigh-in changes. This exists for the one moment there
+ * is nothing to read from, the onboarding questions. Keep the two in step;
+ * `compute_targets()` in `02_functions.sql` is the other half.
  *
- * Macros are built in a fixed order, because each one constrains the next:
- * protein from body weight, fat from a share of energy, and carbohydrate from
- * whatever energy is left. Carbohydrate last is what makes the budget add up
- * exactly, where a three-way percentage split does not.
+ * Macros are built in a fixed order, because each constrains the next: protein
+ * from body weight, fat from a share of energy, carbohydrate from what is left.
+ * Carbohydrate last is what makes the budget add up exactly.
  */
 export function computeTargets(body: BodyInput): Omit<Targets, 'isCustom'> {
   const kcal = Math.max(
@@ -375,12 +331,10 @@ export function computeTargets(body: BodyInput): Omit<Targets, 'isCustom'> {
 }
 
 /**
- * How a calorie budget divides into grams.
- *
- * Separate from `computeTargets` because it is also what a hand-set budget needs:
- * the goals screen lets a user drag the calorie total themselves, and its macros
- * should still follow the same rules rather than a third copy of them — there
- * were three copies of the old percentage split, and they did not all agree.
+ * How a calorie budget divides into grams. Separate from `computeTargets`
+ * because a hand-set budget needs it too: the goals screen lets a user drag the
+ * calorie total, and its macros follow the same rules. There were three copies
+ * of the old percentage split, and they did not all agree.
  */
 export function macroSplit(
   kcal: number,
@@ -399,15 +353,13 @@ export function macroSplit(
 const KCAL_PER_G = { carbs: 4, protein: 4, fat: 9 } as const
 
 /**
- * What share of the energy each macro is, as three fractions summing to one.
+ * What share of the energy each macro is, as three fractions summing to one. A
+ * stacked calorie bar has to be stacked by calories: 61 g of fat is a sixth of
+ * the grams on a plate and nearly a third of its energy, so a bar segmented by
+ * grams contradicts the percentages printed under it.
  *
- * A stacked calorie bar has to be stacked by calories. 61 g of fat is a sixth of
- * the grams on a plate and very nearly a third of its energy, so a bar segmented
- * by grams contradicts the percentages printed under it, which is the version
- * that was on screen first and read as a rendering bug rather than a unit one.
- *
- * All three come back zero for a day with no macros recorded, which is not the
- * same as an even split: the caller draws that column as a stub.
+ * All three come back zero for a day with no macros recorded, which is not an
+ * even split: the caller draws that column as a stub.
  */
 export function energyShare(macros: { carbs: number; protein: number; fat: number }) {
   const carbs = macros.carbs * KCAL_PER_G.carbs

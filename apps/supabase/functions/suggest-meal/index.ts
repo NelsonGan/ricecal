@@ -1,25 +1,17 @@
 // What to eat next: seven suggestions against the rest of today's budget.
 //
-// One model call and no writes. Every other model path in this app ends in a
-// row — `scan-meal` writes the entry itself, `scan-refine` edits one, the
-// recipe reader fills a form — and this one ends on a screen. Nothing here
-// touches `food_logs`, `food_scan_items` or the catalogue, which is why it
-// reads the diary with the CALLER'S OWN token rather than as `service_role`:
-// there is nothing it needs to do that RLS would stand in the way of, so it
-// does not take a credential that could.
+// One model call and no writes. Every other model path ends in a row and this
+// one ends on a screen, which is why it reads the diary with the caller's own
+// token rather than as `service_role`: there is nothing it needs to do that RLS
+// would stand in the way of.
 //
-// THE DAY IS ASSEMBLED HERE, NOT SENT BY THE CLIENT. The remaining budget, the
-// macros still owed and what has already been eaten are all read fresh off the
-// database, for two reasons. A client-supplied budget is a client-supplied
-// budget: it decides how big a meal the model offers, and a stale one (the app
-// has been backgrounded since lunch) produces a suggestion for a day that has
-// moved on. And it is one round trip either way, because the client would have
-// had to be told the same figures first.
+// The day is assembled here rather than sent by the client. A client-supplied
+// budget decides how big a meal the model offers, and a stale one produces a
+// suggestion for a day that has moved on; it is one round trip either way,
+// since the client would have had to be told the same figures.
 //
-// It is PRO, and it claims a scan, exactly as `scan-refine` does. Asking a
-// model what to eat is the same kind of request as asking it to fix a meal by
-// typing: discretionary, repeatable at the press of a button ("Try again"), and
-// with no cheaper tier underneath to fall back to.
+// Pro, and it claims a scan, exactly as `scan-refine` does: discretionary,
+// repeatable at the press of a button, and with no cheaper tier underneath.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'

@@ -1,23 +1,17 @@
 import { currentLanguage, type Language } from '@/i18n'
 
 /**
- * Date and time patterns, per language.
+ * Date and time patterns, per language. date-fns localises every token it is
+ * given and cannot localise the order they are written in, which is half of what
+ * makes a date readable: `'EEE d MMM'` produced "周一 17 8月" in Chinese, long
+ * enough that the Today title ellipsised.
  *
- * date-fns localises every TOKEN it is given — `MMM` is "Aug" in English and
- * "8月" in Japanese — but it cannot localise the ORDER they are written in, and
- * the order is half of what makes a date readable. `'EEE d MMM'` produced
- * "周一 17 8月" in Chinese: three correct words in an order nobody writes, long
- * enough that the Today title ran out of room and ellipsised.
+ * Patterns rather than copy, which is why they are here and not in `src/i18n`:
+ * the letters are date-fns tokens, so anybody editing them is reordering tokens
+ * rather than translating. A bundle of strings that must not be translated is a
+ * trap for the next person in it.
  *
- * These are patterns rather than copy, which is why they live here and not in
- * `src/i18n`. The letters are date-fns tokens with meanings — `M` is a month
- * number, `MMMM` its name, `EEEE` a weekday — and anybody editing them is
- * REORDERING tokens and punctuation, never translating them. A bundle full of
- * strings that must not be translated is a trap for the next person in it.
- *
- * Only the languages that write dates in a different order appear below. The
- * rest read day then month, exactly as the defaults do, and take them as they
- * are.
+ * Only the languages that write dates in a different order appear below.
  */
 export type DatePattern =
   /** "5:30 pm" */

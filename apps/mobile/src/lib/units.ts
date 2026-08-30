@@ -1,19 +1,16 @@
 import type { Units } from '@/data'
 
 /**
- * Kilograms and centimetres are what the database stores. Pounds, feet and
- * inches are what half the people using this app own a scale and a tape for.
+ * Kilograms and centimetres are what the database stores. Pounds, feet and inches
+ * are what half the people using this app own a scale and a tape for.
  *
- * The conversion lives here rather than in each screen because it has to be
- * SYMMETRIC: the sheet takes pounds in and must write back the kilograms it came
- * from, or a weigh-in that is opened and saved unchanged drifts by a gram every
- * time. One pair of functions, one constant, no rounding in between — the
- * rounding happens once, at the point of display.
+ * The conversion lives here because it has to be symmetric: the sheet takes
+ * pounds in and must write back the kilograms it came from, or a weigh-in opened
+ * and saved unchanged drifts by a gram every time. One pair of functions, one
+ * constant, and the rounding happens once, at the point of display.
  *
  * In `lib` rather than beside the weight panel because onboarding asks the same
- * question before any of those screens exist: the height and weight on the
- * first questionnaire screen are typed in whichever system the screen before it
- * chose.
+ * question before any of those screens exist.
  */
 const LB_PER_KG = 2.2046226218
 

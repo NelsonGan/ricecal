@@ -2,21 +2,18 @@
  * Activity: what the phone's health store says the body did.
  *
  * The tab in `app/(tabs)/activity.tsx` owns the queries and hands the answers
- * down, the same arrangement as Trends — nothing in here fetches, so a
- * navigation between the five Activity screens cannot cost a request and two
- * screens cannot disagree about today.
+ * down, as Trends does. Nothing in here fetches, so navigating between the five
+ * Activity screens cannot cost a request and two screens cannot disagree about
+ * today.
  *
- * The charts are NOT design-system components and are deliberately not in
- * `@/ui`. Each encodes a decision about its own measurement: an hour column
- * with no steps is drawn rather than skipped because the gaps are the shape of
- * a day; a balance pair shares one scale because two scales would make a
- * matched day look mismatched. Generalising them would lose exactly the part
- * worth keeping.
+ * The charts are deliberately not in `@/ui`. Each encodes a decision about its
+ * own measurement: an hour column with no steps is drawn rather than skipped
+ * because the gaps are the shape of a day; a balance pair shares one scale
+ * because two scales would make a matched day look mismatched.
  *
- * The PROVIDERS are not here either. They are in `lib/health`, because they
- * talk to a platform rather than to a screen, and keeping them out of a feature
- * folder is what lets `data/health-sync.ts` use them without a data layer
- * reaching into a feature.
+ * The providers live in `lib/health`, because they talk to a platform rather than
+ * a screen, which is what lets `data/health-sync.ts` use them without a data
+ * layer reaching into a feature.
  */
 export { type BalanceBar, BalanceBars, type BalanceBarsProps, BalanceLegend } from './BalanceBars'
 export { BudgetStrip, type BudgetStripProps } from './BudgetStrip'

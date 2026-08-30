@@ -33,29 +33,23 @@ export type WaterCardProps = {
 }
 
 /**
- * Water on Today: the card IS the tank.
+ * Water on Today: the card is the tank, one rectangle with everything drawn on
+ * it. Two shapes came before: a tall glass beside a column of quick-add buttons,
+ * which took a third of the screen, and a band with the figure above it and an
+ * Add button beside it, which was three boxes saying one thing. What is here is
+ * the level, with the figure and the button in the top-right corner.
  *
- * ONE RECTANGLE, and everything else is drawn on it. It went through two
- * shapes before this: a tall glass beside a column of quick-add buttons, which
- * took a third of the screen on a diary whose subject is the meals underneath,
- * and then a band with the figure above it and an Add button beside it, which
- * was three boxes saying one thing. What is here is the level, with the figure
- * and the button tucked into the top-right corner of it. They are small because
- * water is the cheapest decision on this screen and should look like one.
+ * No heading: "Water" over a tank of water is a label the picture carries, and
+ * the drop beside the figure identifies it on the days the tank is empty.
  *
- * NO HEADING. The word "Water" over a tank of water is the label a picture
- * already carries; the drop beside the figure is what identifies it on the days
- * the tank is empty and there is no water to recognise.
+ * The figure is drawn twice, on the dry ground and in the water: in the dark
+ * palette the water and the water ink are the same value, so one copy would
+ * vanish exactly as the day went well.
  *
- * THE FIGURE IS DRAWN TWICE, once on the dry ground and once in the water:
- * `WaterTank` does the clipping and `TankFigure` picks the two inks, which is
- * the half worth reading — in the dark palette the water and the water ink are
- * the same value, so one copy would vanish exactly as the day went well.
+ * The undo is a toast, because a button that appears after every drink is a
+ * control that exists to be ignored.
  *
- * THE UNDO IS A TOAST. A button that appears on the card after every drink is a
- * control that exists to be ignored, and there is nowhere left to put one.
- *
- * Everything here is in MILLILITRES rather than the litres the trends show,
+ * Everything here is in millilitres rather than the litres the trends show,
  * because this is where a figure is chosen. See `lib/water.ts`.
  */
 export function WaterCard({
@@ -163,35 +157,23 @@ export function WaterCard({
 }
 
 /**
- * The panel behind Add: the three vessels, and anything they miss.
+ * The panel behind Add: the three vessels, and anything they miss. The presets
+ * are the sizes people drink from rather than a round arithmetic series, and each
+ * carries its own drawing, which makes the row scannable without reading.
  *
- * The presets are the sizes people drink from rather than a round arithmetic
- * series, and each carries its own drawing — the picture is what makes the row
- * scannable without reading, and the figure is what makes it honest. A button
- * labelled "Glass" alone is the unit this whole change removed.
- *
- * CAPPED RATHER THAN FULL HEIGHT, and this is the one exception to the rule in
- * README.md that a sheet with a text field in it is always `fullHeight`. That
- * rule is about the SYSTEM keyboard: `KeyboardAvoidingView` pads a capped panel
- * up off the bottom edge when one opens, and the strip it leaves shows the
- * scrim through the curve of the keyboard's corners. This field is on the app's
- * own pad, which suppresses the system keyboard entirely — so no keyboard event
- * ever reaches that view, and `Sheet` already grows a capped panel by
- * `numpad.height` instead. Four rows of content in a full-height sheet was most
- * of a screen of empty surface under them.
+ * Capped rather than full height, the one exception to the README rule that a
+ * sheet with a text field is always `fullHeight`. That rule is about the system
+ * keyboard, and this field is on the app's own pad, so no keyboard event reaches
+ * the view and `Sheet` grows a capped panel by `numpad.height` instead. Four rows
+ * in a full-height sheet was most of a screen of empty surface.
  *
  * `scrollable={false}` for the reason short content always is: a scroll view
- * scrolls itself to reveal the first responder and overshoots on the first
- * open, before the pad's real height is known.
+ * overshoots revealing the first responder before the pad's height is known.
  *
- * THE FIELD IS FOCUSED THE MOMENT THE PANEL IS PRESENTED, so a volume none of
- * the presets covers is a number away rather than a tap and then a number. It
- * costs the presets nothing: the pad rises under them and the panel grows by
- * its height, so all three are still on screen and still one tap.
- *
- * `onShow` rather than `autoFocus`, because a field inside a `Modal` mounts
- * before the platform has presented the window and the focus is dropped. See
- * `onShow` on `Sheet`, and `FixSheet`, which does the same for the keyboard.
+ * The field is focused the moment the panel is presented, so a volume the presets
+ * miss is a number away rather than a tap and then a number. `onShow` rather than
+ * `autoFocus`, because a field inside a `Modal` mounts before the platform has
+ * presented the window and the focus is dropped.
  */
 function AddWaterSheet({
   visible,

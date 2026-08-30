@@ -52,16 +52,15 @@ export type MetricTabsProps = {
 /**
  * The three tiles under the title, which are the tabs.
  *
- * A tile is a summary and a control in the same object: it says what the range
- * averaged, and tapping it swaps the panel below. That is why these are not
- * `Tabs` or a `SegmentedControl` — both of those are labels, and the number is
- * half the point. It is also why the row sits above the panel rather than in it:
- * the three figures are true whichever one is selected, so they must not move or
- * change when the selection does.
+ * A tile is a summary and a control at once: it says what the range averaged, and
+ * tapping it swaps the panel below. That is why these are not `Tabs` or a
+ * `SegmentedControl`, both of which are labels, and why the row sits above the
+ * panel rather than in it: the three figures are true whichever is selected, so
+ * they must not move when the selection does.
  *
- * The selected tile fills pandan whichever metric it is. Tinting each tab its
- * own colour was the first attempt and it made the row read as three states of
- * one thing rather than as a choice between three.
+ * The selected tile fills pandan whichever metric it is. Tinting each tab its own
+ * colour made the row read as three states of one thing rather than a choice
+ * between three.
  */
 export function MetricTabs({
   value,

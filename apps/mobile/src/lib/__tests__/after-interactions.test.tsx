@@ -7,15 +7,14 @@ import { useAfterInteractions } from '../use-after-interactions'
 /**
  * The staging behind the picture picker's grid, on its own.
  *
- * What matters is the order: false on the frame the component mounts, true once the
- * thread is free. That is what lets a sheet build thirty of its two hundred and
- * sixty-nine tiles on the frame it opens and the rest immediately afterwards —
- * building all of them at once delayed the panel's rise by as long as it took, which
- * is what "laggy" was.
+ * What matters is the order: false on the frame the component mounts, true once
+ * the thread is free. That is what lets the sheet build thirty of its tiles on the
+ * frame it opens and the rest immediately afterwards; building all of them at once
+ * delayed the panel's rise, which is what "laggy" was.
  *
- * Tested here rather than through the sheet because the sheet cannot pin it: whether
- * the second stage has flushed by the time `render` resolves depends on what else is
- * queued, so an assertion about the tile count there passes or fails run to run.
+ * Tested here rather than through the sheet, which cannot pin it: whether the
+ * second stage has flushed by the time `render` resolves depends on what else is
+ * queued.
  */
 function Probe({ active }: { active: boolean }) {
   const settled = useAfterInteractions(active)

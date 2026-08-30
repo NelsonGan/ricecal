@@ -5,22 +5,17 @@ import { onSessionEnded } from '@/lib/supabase'
 import { useToast } from '@/ui'
 
 /**
- * Says why the app just signed somebody out that did not ask to be.
- *
- * Renders nothing; it is here for the side effect, like `LoginLinkHandler` next
- * to it. A revoked session is discovered by whichever request happened to be in
- * flight, which is any request on any screen, so there is nothing to hang this
- * off but the tree itself.
+ * Says why the app just signed somebody out who did not ask to be. Renders
+ * nothing, like `LoginLinkHandler` beside it: a revoked session is discovered by
+ * whichever request happened to be in flight, so there is nothing to hang this
+ * off but the tree.
  *
  * It sits under `ToastProvider` for the reason that provider sits outside the
- * navigator: the sign-out empties the query cache and the layout guards throw
- * the user out to sign-in a tick later, so a message that belonged to the screen
- * they were on would go with it. The sentence has to outlive the navigation,
- * because being put back on the sign-in screen unannounced is the whole
- * complaint.
+ * navigator: the sign-out empties the cache and the layout guards throw the user
+ * out a tick later, so a message belonging to their screen would go with it.
  *
- * `placement: 'top'`, same as a refusal. Every screen it can land on keeps its
- * call to action in a footer, and the bottom is where a toast goes by default.
+ * `placement: 'top'`, like a refusal, since every screen it can land on keeps its
+ * call to action in a footer.
  */
 export function SessionEndedNotice() {
   const toast = useToast()

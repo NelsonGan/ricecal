@@ -79,20 +79,14 @@ export type AppBarProps = {
 }
 
 /**
- * An in-content header bar.
+ * An in-content header bar. A styled View rather than a configured native
+ * header, because the design puts the bar on a rounded canvas-coloured plate
+ * with squishy 44pt controls. Screens using it set `headerShown: false`.
  *
- * A styled View rather than a configured native header: the design puts the
- * bar on a rounded canvas-coloured plate with squishy 44pt controls, and a
- * native header cannot do either. Screens using this should set
- * `headerShown: false` on their Stack.Screen.
+ * With no `action`, an invisible spacer keeps the title optically centred.
  *
- * When there is no `action`, an invisible spacer keeps the title optically
- * centred instead of drifting right.
- *
- * The title has three states, and the second two are one screen's: a heading,
- * a heading that can be tapped (`onPressTitle`), and a field standing exactly
- * where the heading was (`titleEdit`). See the note on that prop for why the
- * field is bare.
+ * The title has three states: a heading, a heading that can be tapped
+ * (`onPressTitle`), and a field standing where the heading was (`titleEdit`).
  */
 export function AppBar({
   title,

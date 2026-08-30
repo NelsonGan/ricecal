@@ -13,30 +13,19 @@ export type StepsFieldProps = {
 /**
  * The method: a numbered list at rest, a plain box while it is being written.
  *
- * The two are the same string. `RecipeSteps` numbers what `splitSteps` finds,
- * and the numerals are drawn rather than stored — so what the cook edits is
- * always the text they typed, and taking a step out of the middle renumbers the
- * rest by itself. See the note on `RecipeSteps`.
+ * The two are the same string. `RecipeSteps` numbers what `splitSteps` finds and
+ * the numerals are drawn rather than stored, so what the cook edits is the text
+ * they typed and removing a step renumbers the rest by itself.
  *
- * A form field that shows the FINISHED thing when it is not being used is not a
- * pattern this app had, and it earns it here for one reason: this is the only
- * field whose stored value and whose rendering differ. A name is a name. Steps
- * are a paragraph in the column and a list on every screen that reads them, and
- * a cook who typed four lines into a grey box had no way of knowing they were
- * about to become four numbered steps until they saved and left.
+ * A field that shows the finished thing when it is not being used is not a
+ * pattern this app had. It earns it because this is the only field whose stored
+ * value and rendering differ: a cook who typed four lines into a grey box had no
+ * way of knowing they were about to become four numbered steps.
  *
- * THE EDITOR IS A SHEET, and that is not decoration. A multiline field at the
- * bottom of a long form was the case the screen shell handled worst: the box
- * stayed under the keyboard however many times it was tapped, because two
- * mechanisms were insetting for one keyboard and each undid the other's work.
- * `Screen` has one owner now and the reveal is reliable, but the sheet stays:
- * it is the shape README.md prescribes for a sheet with typing in it, the same
- * one the describe panel and the fix sheet use, and it is the only one that
- * puts the field at the TOP of the screen with the keyboard covering nothing
- * but empty panel below it.
- *
- * It also buys the room the field always wanted. Six steps in a 120pt box is a
- * two-line window onto a method.
+ * The editor is a sheet, which is the shape README.md prescribes for typing and
+ * the only one that puts the field at the top of the screen with the keyboard
+ * covering nothing but empty panel. It also buys the room the field wanted: six
+ * steps in a 120pt box is a two-line window onto a method.
  */
 export function StepsField({ value, onChange }: StepsFieldProps) {
   const { t } = useTranslation(['recipes', 'common'])

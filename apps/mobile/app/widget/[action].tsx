@@ -7,19 +7,17 @@ import { track, type WidgetTarget } from '@/lib/analytics'
 import { Spinner } from '@/ui'
 
 /**
- * WHERE EVERY WIDGET TAP LANDS.
+ * Where every widget tap lands.
  *
  * A widget could link straight at `ricecal://log?panel=camera` and the right
- * screen would open. It would also be completely invisible: nothing downstream
- * can tell a tap that came off a home screen from the log button being pressed,
- * and "is anybody actually using these" is the only question the widgets have to
- * answer to justify themselves. So every link crosses here first, this is where
+ * screen would open, invisibly: nothing downstream can tell a tap off a home
+ * screen from the log button being pressed, and "is anybody using these" is the
+ * only question the widgets have to answer. So every link crosses here first,
  * `Widget Opened` is fired, and `/log` is one redirect further on.
  *
- * The same shape as `auth/[action]`, and for the same two reasons. The router
- * matches paths against files, so a path with no file behind it opens the app on
- * "Page not found" — and a `<Redirect>` inside a route cannot run before the
- * navigator is mounted, which an imperative `router.replace` from a handler can.
+ * The same shape as `auth/[action]`, for the same reasons: the router matches
+ * paths against files, so a path with no file opens the app on "Page not found",
+ * and a `<Redirect>` inside a route cannot run before the navigator is mounted.
  */
 
 /** Where each target goes, once there is a session to go there with. */

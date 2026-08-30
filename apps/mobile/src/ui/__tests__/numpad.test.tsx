@@ -309,17 +309,14 @@ describe('Numpad', () => {
   })
 
   /**
-   * The bug this pins is a whole-app one and it looked like a layout fault.
-   *
-   * The provider holds ONE offset for the app, and every `Screen` and `Sheet`
-   * used to read it directly — so a pad open anywhere lifted the footer and the
-   * floating action of every container in the tree, including the ones on other
-   * screens that were not drawing it. And a pad stays open across a navigation:
-   * suppressing the system keyboard also removes the reason the platform had to
-   * resign first responder, so leaving the screen fires no blur. Onboarding's
-   * weight field is the first numeric field a new user meets, which is how a
-   * first app open ended up with the log button and the paywall's button
-   * floating 280pt off the bottom over a screen of empty canvas.
+   * A whole-app bug that looked like a layout fault. The provider holds one
+   * offset, and every `Screen` and `Sheet` used to read it directly, so a pad open
+   * anywhere lifted the footer and floating action of every container in the tree.
+   * And a pad stays open across a navigation: suppressing the system keyboard
+   * removes the reason the platform had to resign first responder, so leaving the
+   * screen fires no blur. Onboarding's weight field is the first numeric field a
+   * new user meets, which is how a first app open ended up with the log button
+   * floating 280pt off the bottom.
    */
   it('gets one host out of the way, and leaves the others where they are', async () => {
     type Reading = { height: number; offset: { value: number } }

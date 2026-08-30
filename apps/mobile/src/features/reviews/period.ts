@@ -78,15 +78,14 @@ export function weekOfYear(start: string): number {
 /**
  * The steps a story actually has, in order.
  *
- * Not a constant list, and that is the whole of the "design for what the data
- * has" rule in one function. A review of a month before the watch arrived has
- * no movement and may have no weigh-ins, and a fourth step drawn from nothing
- * is worse than three steps: the progress bar promises something the tap does
- * not deliver.
+ * Not a constant list: a review of a month before the watch arrived has no
+ * movement and may have no weigh-ins, and a fourth step drawn from nothing is
+ * worse than three, because the progress bar promises something the tap does not
+ * deliver.
  *
- * The first three always hold. A period only reaches a story at all if it
- * qualifies, which means days with food in them, which means there is a card,
- * a dish list and a calorie chart to draw.
+ * The first three always hold. A period only reaches a story if it qualifies,
+ * which means days with food in them, which means there is a card, a dish list
+ * and a calorie chart to draw.
  */
 export type ReviewStep = 'card' | 'food' | 'calories' | 'body'
 

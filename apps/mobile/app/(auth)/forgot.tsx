@@ -9,21 +9,15 @@ import { useBack } from '@/lib/navigation'
 import { AppBar, Button, Screen, Text, TextField, useToast } from '@/ui'
 
 /**
- * Which address to reset, asked rather than assumed.
+ * Which address to reset, asked rather than assumed. It used to send on the tap,
+ * to whatever address the password screen was holding, which posts a mail before
+ * the person has agreed to anything and assumes the address is the one they
+ * meant. Somebody who cannot remember their password often cannot remember which
+ * of two addresses they signed up with.
  *
- * IT USED TO SEND ON THE TAP, to whatever address the password screen happened
- * to be holding. That is wrong twice over. It posts a mail before the person
- * has agreed to anything, so a mistap costs them a minute of send limit and an
- * email they did not want; and it assumes the address is the one they meant,
- * which is exactly the assumption a person reaching for "forgot" is least able
- * to make. Somebody who cannot remember their password often cannot remember
- * which of two addresses they signed up with, and the screen that was most
- * confident about it was the one with no way to change it.
- *
- * So the tap OPENS THIS, immediately and with nothing in flight, and the send
- * happens here behind a button whose whole job is to send. The address is
- * carried over as a starting value because it usually is right, and it is a
- * field because it is not always.
+ * So the tap opens this with nothing in flight, and the send happens behind a
+ * button whose job is to send. The address is carried over as a starting value
+ * because it usually is right, and it is a field because it is not always.
  */
 export default function ForgotScreen() {
   const { t } = useTranslation(['auth', 'onboarding', 'common'])

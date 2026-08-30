@@ -215,16 +215,14 @@ export const recipes = {
   /**
    * Reporting somebody else's recipe, and hiding the cook who wrote it.
    *
-   * App Review guideline 1.2 requires both of a community shelf, and the
-   * writing has one job the guideline does not mention: it must not read as an
-   * accusation form. Nobody is asked to justify anything, there is no free-text
-   * box, and each button says plainly what it does about the ONE recipe in
-   * front of the reader. What happens beyond that — three people reporting the
-   * same recipe takes it off the shelf for everyone — is deliberately not
-   * promised here, because the reader cannot know whether anyone else will.
+   * App Review guideline 1.2 requires both of a community shelf, and the writing
+   * must not read as an accusation form: nobody is asked to justify anything,
+   * there is no free-text box, and each button says what it does about the one
+   * recipe in front of the reader. That three reports take a recipe off the shelf
+   * for everyone is deliberately not promised here, because the reader cannot
+   * know whether anyone else will report it.
    *
-   * The four reasons are the enum, in the enum's own order. See
-   * `report_reason` in `schemas/01_enums.sql`.
+   * The four reasons are `report_reason` in `schemas/01_enums.sql`, in its order.
    */
   report: {
     title: 'Report this recipe',
