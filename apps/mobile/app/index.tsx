@@ -5,7 +5,7 @@ import { View } from 'react-native'
 
 import { useProfile, useSession } from '@/data'
 import { signOut } from '@/data/auth'
-import { isComplete, useOnboardingDraft } from '@/features/onboarding'
+import { isComplete, ONBOARDING_STEPS, useOnboardingDraft } from '@/features/onboarding'
 import { useEnterApp } from '@/lib/navigation'
 import { EmptyState, Spinner } from '@/ui'
 
@@ -97,9 +97,12 @@ export default function Index() {
    * signed up through it could not finish onboarding at all.
    *
    * The start of the flow is `ONBOARDING_STEPS[0]`, which is what `welcome`'s
-   * own button has always pushed.
+   * own button has always pushed. Read off the list rather than spelled out, so
+   * a screen put in front of `setup` moves this redirect with it instead of
+   * opening the same gap again.
    */
-  if (!profile?.onboarded_at) return <Redirect href={answered ? '/finish' : '/setup'} />
+  if (!profile?.onboarded_at)
+    return <Redirect href={answered ? '/finish' : `/${ONBOARDING_STEPS[0]}`} />
 
   return <EnterApp />
 }

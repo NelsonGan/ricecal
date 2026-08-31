@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { useFinishOnboarding, useSession } from '@/data'
-import { type CompleteDraft, isComplete, useOnboardingDraft } from '@/features/onboarding'
+import {
+  type CompleteDraft,
+  isComplete,
+  ONBOARDING_STEPS,
+  useOnboardingDraft,
+} from '@/features/onboarding'
 import { planDirection, setPersonProps, track } from '@/lib/analytics'
 import { birthDateFromAge } from '@/lib/nutrition'
 import { Button, EmptyState, Screen, Spinner, Text } from '@/ui'
@@ -42,11 +47,13 @@ export default function FinishStep() {
    * elsewhere and already flushed there. Back to the start rather than writing
    * half a profile.
    *
-   * The START, which is `setup`. It said `/about` while `units` was collected
-   * one screen earlier, so a draft missing only that answer was sent somewhere
-   * that could not supply it and arrived back here to be turned away again.
+   * The START, which is `ONBOARDING_STEPS[0]`. It said `/about` while `units`
+   * was collected one screen earlier, so a draft missing only that answer was
+   * sent somewhere that could not supply it and arrived back here to be turned
+   * away again. Read off the list rather than spelled out, so a screen put in
+   * front of the flow moves this redirect with it.
    */
-  if (!isComplete(draft)) return <Redirect href="/setup" />
+  if (!isComplete(draft)) return <Redirect href={`/${ONBOARDING_STEPS[0]}`} />
 
   return <Flush draft={draft} />
 }
