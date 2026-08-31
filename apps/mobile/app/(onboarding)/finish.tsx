@@ -41,8 +41,12 @@ export default function FinishStep() {
    * fresh install signing in, most often, where the questions were answered
    * elsewhere and already flushed there. Back to the start rather than writing
    * half a profile.
+   *
+   * The START, which is `setup`. It said `/about` while `units` was collected
+   * one screen earlier, so a draft missing only that answer was sent somewhere
+   * that could not supply it and arrived back here to be turned away again.
    */
-  if (!isComplete(draft)) return <Redirect href="/about" />
+  if (!isComplete(draft)) return <Redirect href="/setup" />
 
   return <Flush draft={draft} />
 }

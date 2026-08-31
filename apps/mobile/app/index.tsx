@@ -86,7 +86,20 @@ export default function Index() {
    */
   if (!isSuccess) return <Offline />
 
-  if (!profile?.onboarded_at) return <Redirect href={answered ? '/finish' : '/about'} />
+  /**
+   * `setup` rather than `about`, and the difference is a loop.
+   *
+   * This pointed at the first QUESTION, which was `about` until the language
+   * and units screen was put in front of it. Signing in before answering
+   * anything then landed on step two: nothing ever asked for `units`, so
+   * `isComplete` stayed false, and the flush at the end of the flow bounced
+   * straight back here. Somebody who chose "I already have an account" and
+   * signed up through it could not finish onboarding at all.
+   *
+   * The start of the flow is `ONBOARDING_STEPS[0]`, which is what `welcome`'s
+   * own button has always pushed.
+   */
+  if (!profile?.onboarded_at) return <Redirect href={answered ? '/finish' : '/setup'} />
 
   return <EnterApp />
 }
