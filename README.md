@@ -613,15 +613,17 @@ top rather than resuming.
 
 ```
 welcome                          the pitch, and the fork for a returning user
-1 about   2 activity  3 source    the questions, drafted locally
-4 calculating                    a beat, then it replaces itself with…
-5 target                         the budget, worked out on the phone
-6 account       (auth)/sign-in, carrying the same bar through the params
+1 setup                          the language, and the units everything after it
+                                 is typed in
+2 about   3 activity  4 source   the questions, drafted locally
+5 calculating                    a beat, then it replaces itself with…
+6 target                         the budget, worked out on the phone
+7 account       (auth)/sign-in, carrying the same bar through the params
                 Apple, Google, or an address, which leads to (auth)/password
                 and then (auth)/verify if a code is owed
   finish                         the one write: profile, first weigh-in, onboarded_at
-7 health        connect the store, a permission that gives rather than asks
-8 notifications turns the three meal reminders on, not just the OS permission
+8 health        connect the store, a permission that gives rather than asks
+9 notifications turns the three meal reminders on, not just the OS permission
   paywall/intro                  the offer, with "Maybe later" leading to Today
 ```
 
@@ -3738,6 +3740,18 @@ bar), and `piece`, `slice` and `fillet` are deliberately not on it: they are
 countable but their size is whatever was cut. The dish tier never had this bug,
 because `SAME_PORTION_LOW`/`HIGH` already let a row stand when the two weights
 are within 0.7-1.4 of each other.
+
+**Every way into the questions starts at the head of `ONBOARDING_STEPS`.** The
+flow is a chain rather than a menu: `setup` collects the units the screen after
+it is typed in, and `isComplete` — the check `finish` makes before the one write
+— wants every answer the chain collects. `index.tsx` sent a signed-in account
+with no draft to `about` instead, which was the first question until the language
+and units screen went in front of it. Nothing then asked for `units`, so `finish`
+refused to write and sent them back to `about`, which asked for everything except
+the missing answer. Signing in through "I already have an account" and creating
+the account there, which is what a social login does, meant onboarding could not
+be finished at all. Both redirects name `ONBOARDING_STEPS[0]` now, and the tests
+either side of the loop assert that rather than a path.
 
 **A signup form never says an address is taken.** Supabase will not, because that
 turns the form into an oracle for who uses this app.
