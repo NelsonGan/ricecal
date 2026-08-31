@@ -581,6 +581,29 @@ jobs:
           # starve a build of the disk it was going to use — it only leaves the
           # tree behind on a runner that is about to be destroyed anyway.
           EAS_LOCAL_BUILD_SKIP_CLEANUP: '1'
+          # No `expo doctor`, and it is the STEP that is the problem rather
+          # than anything it reports.
+          #
+          # `@expo/build-tools` gives it 30 seconds and, on timeout, walks the
+          # process tree and kills it. `process.kill` on a descendant that has
+          # already exited throws ESRCH; the throw is inside an async
+          # `setTimeout` callback nobody catches, so it is an uncaught
+          # exception and it takes the whole build with it. The 2026-08-31
+          # production run died there — `setup.js:168`, 32 seconds into the
+          # doctor phase, before a single file was compiled — while Android
+          # built and shipped from the same commit.
+          #
+          # Nothing is lost by skipping it. Every outcome of that phase ends in
+          # `markBuildPhaseHasWarnings()`, so a doctor failure has never been
+          # able to fail a build: crashing was the only way this step could
+          # change a build's result at all. And it is `npx -y expo-doctor` on a
+          # cold runner, which is a package download plus 21 checks against the
+          # registry, so it fits in 30 seconds most days and not every day.
+          #
+          # Run it locally when dependencies change: `npx expo-doctor` in
+          # `apps/mobile`, about ten seconds. Today it reports package drift
+          # against the SDK and nothing about whether the app builds.
+          EAS_BUILD_DISABLE_EXPO_DOCTOR_STEP: '1'
         run: |
           mkdir -p build
           eas build \

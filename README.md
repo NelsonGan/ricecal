@@ -3560,6 +3560,30 @@ eas update --branch pr-42                                  # no --environment
 
 One source for the export to read, and no precedence left to get wrong.
 
+### The release builds with `expo doctor` turned off
+
+`EAS_BUILD_DISABLE_EXPO_DOCTOR_STEP=1` on the archive step, and it is that
+step's own failure mode rather than a wish not to hear from doctor.
+
+`@expo/build-tools` runs `npx -y expo-doctor` with a 30 second cap and, on
+timeout, walks the process tree and kills it. `process.kill` on a descendant
+that has already exited throws ESRCH, from inside an async `setTimeout`
+callback with nothing catching it, so the timeout that was meant to skip a slow
+check kills the Node process running the build. The iOS leg of the 2026-08-31
+production release died that way, three minutes in and before any compilation,
+while Android shipped from the same commit.
+
+Skipping it costs nothing, because that phase could never fail a build on
+purpose: every outcome of it ends in `markBuildPhaseHasWarnings()`. Crashing
+was the only route it had to a red build. The 30 seconds covers a package
+download and 21 registry checks on a cold macOS runner, which is why it passed
+for months and then did not.
+
+So doctor is a local check now: `npx expo-doctor` in `apps/mobile`, roughly ten
+seconds, worth running when dependencies move. What it currently reports is
+package drift against the SDK, which is a thing to fix on its own terms rather
+than something the release is waiting on.
+
 ### Adding a second Worker or database
 
 A **Worker** is a directory under `workers/` with a `package.json` (needs a
