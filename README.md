@@ -653,10 +653,12 @@ the gesture until the same thing turned up one step earlier: the account screen
 is in `(auth)`, so the flow crosses out of the group and back, and a swipe after
 signing in unwound the root stack rather than the questions.
 
-### The first question answers nothing for the user
+### `about` answers nothing for the user
 
-Every control on `about` starts empty and Continue is dead until all five are
-filled. It used to open on 164 cm, 65 kg, 29, female, and every one of those is
+Every control on it starts empty and Continue is dead until all five are
+filled. `setup` in front of it is the exception and says why in its own section:
+a language and a unit system both open on an answer, so there is no version of
+that screen somebody can fail to fill in. It used to open on 164 cm, 65 kg, 29, female, and every one of those is
 a real answer as far as `compute_targets()` is concerned, so tapping straight
 through produced a calorie budget worked out for somebody else with nothing on
 screen to say so.
