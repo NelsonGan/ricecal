@@ -1,5 +1,6 @@
 import '@/i18n'
 
+import { ONBOARDING_STEPS } from '@/features/onboarding'
 import { render, screen, waitFor } from '@/test-utils'
 import Index from '../index'
 
@@ -43,6 +44,10 @@ jest.mock('@/lib/navigation', () => ({
 jest.mock('@/features/onboarding', () => ({
   useOnboardingDraft: () => ({ draft: mockDraft() }),
   isComplete: (draft: unknown) => Boolean(draft),
+  // The real list, so the assertion below is about the flow rather than about a
+  // path spelled out twice. A screen added to the front of it should fail here
+  // rather than in the app.
+  ONBOARDING_STEPS: jest.requireActual('@/features/onboarding/steps').ONBOARDING_STEPS,
 }))
 
 const session = { user: { id: 'user-1' } }
@@ -112,10 +117,12 @@ it('asks the questions when the account never finished and the phone has no draf
 
   await render(<Index />)
 
-  // The first question, which is `/about` since the goal step was removed — the
-  // plan is read off the two weights that screen collects. A redirect to a route
-  // that no longer exists is a dead end the type checker does not see.
-  expect(redirectTo('/about')).toBeTruthy()
+  // The TOP of the flow, not the first screen that asks about a body. It was
+  // `/about` until the language and units screen went in front of it, and the
+  // gap is a loop rather than a cosmetic one: `units` is only collected on
+  // `setup`, `isComplete` requires it, and `finish` sends an incomplete draft
+  // back here. Whoever signed in before answering anything could not get out.
+  expect(redirectTo(`/${ONBOARDING_STEPS[0]}`)).toBeTruthy()
 })
 
 it('signs out a session whose account has been deleted', async () => {
