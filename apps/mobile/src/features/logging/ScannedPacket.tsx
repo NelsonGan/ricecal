@@ -5,35 +5,39 @@ import { AppBar, Button, Card, Icon, Screen, Skeleton, Text } from '@/ui'
 
 export type ScannedPacketProps = {
   /**
-   * Which of the three non-answers this is.
+   * Which of the two non-answers this is.
    *
-   * `looking` is the lookup still out, `missing` is nobody anywhere knowing the
-   * packet, and `failed` is the transport or the session. The last two look
-   * similar and are not: one is a job for the catalogue and the other is a job
-   * for the network, and only the second is worth scanning the same box again
-   * for.
+   * `looking` is the lookup still out, and `failed` is the transport or the
+   * session. There was a third — `missing`, nobody anywhere knowing the packet —
+   * and it does not reach this screen any more: a miss is a job for the
+   * catalogue and there is nothing here that would do it, so the detail screen
+   * hands it to the camera to photograph the nutrition panel instead. A failure
+   * is a job for the network, and scanning the same box again is likely to just
+   * work.
    */
-  state: 'looking' | 'missing' | 'failed'
+  state: 'looking' | 'failed'
   /** Back to the day, with the scanner open on it. */
   onRetry: () => void
-  /** The path that produces a real number for a packet nobody has recorded. */
-  onDescribe: () => void
+  /**
+   * The camera, pointed at the panel on the back of the packet. Offered here as
+   * the way past a lookup that keeps failing, since the numbers are printed on
+   * the thing in the user's hand either way.
+   */
+  onPhotographLabel: () => void
   onBack: () => void
 }
 
 /**
- * The scanned packet, before there is a product to show and when there is not
- * going to be one. A scan navigates the instant the camera reads a code, so this
- * screen is where the waiting landed.
+ * The scanned packet, while the lookup is out and when it could not be made. A
+ * scan navigates the instant the camera reads a code, so this screen is where
+ * the waiting landed.
  *
  * The wait is the product page drawn empty rather than a spinner: a spinner and
  * then a full page of controls is two layouts, and the jump between them is what
- * made the old scanner feel slow.
- *
- * A miss is not an error. The packet is in the user's hand and our record of it
- * is what is missing, which is why the offer underneath is Describe.
+ * made the old scanner feel slow. It also stands in for the frame between a miss
+ * being decided and the camera it is handed to coming up.
  */
-export function ScannedPacket({ state, onRetry, onDescribe, onBack }: ScannedPacketProps) {
+export function ScannedPacket({ state, onRetry, onPhotographLabel, onBack }: ScannedPacketProps) {
   const { t } = useTranslation(['logging', 'common'])
 
   if (state === 'looking') {
@@ -55,26 +59,25 @@ export function ScannedPacket({ state, onRetry, onDescribe, onBack }: ScannedPac
     )
   }
 
-  const missing = state === 'missing'
-
   return (
     <Screen
       footer={
         <View className="gap-3">
-          {/* Describe is the primary on a miss: it is the one that ends with the
-              packet in the diary. On a failure it is the secondary, because
-              scanning the same box again is likely to just work. */}
-          <Button fullWidth variant={missing ? 'primary' : 'secondary'} onPress={onDescribe}>
-            {t('logging:barcode.describeInstead')}
-          </Button>
-          <Button fullWidth variant={missing ? 'secondary' : 'primary'} onPress={onRetry}>
+          {/* Scanning again is the primary: this is a lookup that could not be
+              made rather than one that came back empty, so the same box is
+              likely to just work. Photographing the panel is the way past it
+              when it does not. */}
+          <Button fullWidth onPress={onRetry}>
             {t('logging:barcode.tryAgain')}
+          </Button>
+          <Button fullWidth variant="secondary" onPress={onPhotographLabel}>
+            {t('logging:barcode.photographLabel')}
           </Button>
         </View>
       }
     >
       <AppBar
-        title={t(missing ? 'logging:barcode.missTitle' : 'logging:barcode.failedTitle')}
+        title={t('logging:barcode.failedTitle')}
         onBack={onBack}
         backLabel={t('common:a11y.back')}
       />
@@ -83,7 +86,7 @@ export function ScannedPacket({ state, onRetry, onDescribe, onBack }: ScannedPac
         <View className="items-center gap-3 py-4">
           <Icon set="system" name="barcode" size={72} />
           <Text variant="body" className="text-center text-muted">
-            {t(missing ? 'logging:barcode.unknown' : 'logging:barcode.failed')}
+            {t('logging:barcode.failed')}
           </Text>
         </View>
       </Card>

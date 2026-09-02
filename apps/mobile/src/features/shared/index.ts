@@ -7,6 +7,15 @@
  * the domain in with it.
  */
 export { type Bar, BarChart, type BarChartProps } from './BarChart'
+export {
+  type Budget,
+  BudgetEditor,
+  type BudgetEditorProps,
+  type BudgetFields,
+  budgetFields,
+  isRecommended,
+  readBudget,
+} from './BudgetEditor'
 export { CheckList, type CheckListProps } from './CheckList'
 export { EntryList, type EntryListProps, formatTime } from './EntryList'
 export {

@@ -61,6 +61,8 @@ export const zhHans = {
       kcal: '千卡',
       kcalUpper: '千卡',
       grams: '{{value}}克',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: '克',
       gramsOfGoal: '{{value}}/{{goal}}克',
       kg: '公斤',
       lb: '磅',
@@ -518,9 +520,6 @@ export const zhHans = {
     target: {
       title: '你的每日额度',
       perDay: '千卡每天',
-      carbs: '碳水',
-      protein: '蛋白质',
-      fat: '脂肪',
       goalWeight: '目标体重',
       goalBy: '预计达成',
       maintain: '维持',
@@ -716,12 +715,11 @@ export const zhHans = {
       permissionBody: '相机用来读包装上的条码。不会录制，也不会上传。',
       aim: '把相机对准包装上的条码。',
       noCamera: '这台设备没有相机，这里没法扫。',
-      missTitle: '新的包装',
-      unknown: '我们还没有收录这一件。用文字描述一下，我们帮你算。',
       failedTitle: '没有回应',
       failed: '我们暂时连不上食物库。包装本身可能没问题，是网络不行。',
       tryAgain: '重新扫',
-      describeInstead: '改成用文字描述',
+      photographLabel: '拍摄标签',
+      labelPrompt: '我们还没有这个包装。拍下营养成分表，我们来读取。',
     },
 
     describe: {
@@ -1130,7 +1128,8 @@ export const zhHans = {
       dailyCalories: '每日热量',
       recommended: '推荐 {{value}}',
       macroTargets: '营养素指标',
-      macroValue: '{{grams}} 克 · {{percent}}%',
+      macrosAddUpTo: '营养素合计 {{value}} 千卡',
+      useRecommended: '使用推荐值',
       goal: '目标',
       currentWeight: '当前体重',
       targetWeight: '目标体重',

@@ -54,6 +54,8 @@ export const ja = {
       kcal: 'kcal',
       kcalUpper: 'KCAL',
       grams: '{{value}}g',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: 'g',
       gramsOfGoal: '{{value}}/{{goal}}g',
       kg: 'kg',
       lb: 'lb',
@@ -523,9 +525,6 @@ export const ja = {
     target: {
       title: '1 日の枠',
       perDay: '1 日 KCAL',
-      carbs: '炭水化物',
-      protein: 'たんぱく質',
-      fat: '脂質',
       goalWeight: '目標体重',
       goalBy: '到達見込み',
       maintain: '維持',
@@ -721,13 +720,12 @@ export const ja = {
       permissionBody: 'カメラは商品のバーコードを読み取ります。録画もアップロードもしません。',
       aim: 'カメラを商品のバーコードに向けてください。',
       noCamera: 'この端末にはカメラがないため、ここでは読み取れません。',
-      missTitle: '新しい商品',
-      unknown: 'これはまだ登録がありません。言葉で書いていただければ、こちらで計算します。',
       failedTitle: '応答がありません',
       failed:
         '今はカタログに接続できませんでした。商品は問題ないかもしれません。問題は接続のほうです。',
       tryAgain: 'もう一度読み取る',
-      describeInstead: '代わりに言葉で書く',
+      photographLabel: 'ラベルを撮る',
+      labelPrompt: 'この商品はまだ登録がありません。栄養成分表示を撮ってください。読み取ります。',
     },
 
     describe: {
@@ -1140,7 +1138,8 @@ export const ja = {
       dailyCalories: '1 日のカロリー',
       recommended: '推奨 {{value}}',
       macroTargets: 'マクロの目標',
-      macroValue: '{{grams}} g · {{percent}}%',
+      macrosAddUpTo: 'マクロの合計は {{value}} kcal',
+      useRecommended: 'おすすめの値にする',
       goal: '目標',
       currentWeight: '現在の体重',
       targetWeight: '目標体重',

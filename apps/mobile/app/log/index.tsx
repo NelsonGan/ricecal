@@ -52,13 +52,17 @@ const isPanel = (value: string | undefined): value is NonNullable<Panel> =>
   PANELS.includes(value as (typeof PANELS)[number])
 
 /**
- * `?panel=barcode` still means something, which is why this mapping exists rather
- * than a rename. A packet nothing could identify offers "Scan again", which has
- * to land on the day with the scanner live; that link predates the tabs, so it
- * resolves to the camera opened on the barcode side.
+ * `?panel=barcode` and `?panel=label` both mean the camera, which is why this
+ * mapping exists rather than a rename.
+ *
+ * `barcode` is "Scan again" off a lookup that could not be made, and it has to
+ * land on the day with the scanner live; that link predates the tabs, so it
+ * resolves to the camera opened on the barcode side. `label` is the other half
+ * of the same handoff: a packet nobody has a record of sends the user here to
+ * photograph the nutrition panel, which is the MEAL side of the same camera.
  */
 const openingPanel = (value: string | undefined): NonNullable<Panel> =>
-  value === 'barcode' ? 'camera' : isPanel(value) ? value : 'camera'
+  value === 'barcode' || value === 'label' ? 'camera' : isPanel(value) ? value : 'camera'
 
 const openingMode = (value: string | undefined): CaptureMode =>
   value === 'barcode' ? 'barcode' : 'meal'
@@ -291,6 +295,20 @@ export default function LogSheet() {
             onChange={setCaptureMode}
             accessibilityLabel={t('logging:capture.tabs')}
           />
+
+          {/* WHY THIS CAMERA IS OPEN, when it was not the user who opened it.
+              A scanned packet nobody has a record of arrives here rather than
+              stopping on a dead end, and without a line saying so the app has
+              silently swapped a barcode scanner for a plate camera.
+
+              Over the meal tab only: an instruction about the nutrition panel
+              above a barcode reader is an instruction about the wrong side of
+              the box. */}
+          {opening === 'label' && captureMode === 'meal' ? (
+            <Text variant="caption" className="text-center">
+              {t('logging:barcode.labelPrompt')}
+            </Text>
+          ) : null}
 
           {/* The shutter does not wait for recognition. It writes the row and
               closes: the waiting happens on the row itself, where the user can

@@ -14,8 +14,16 @@ import {
   useWeighIns,
 } from '@/data'
 import { count } from '@/features/activity'
+import {
+  type Budget,
+  BudgetEditor,
+  type BudgetFields,
+  budgetFields,
+  isRecommended,
+  readBudget,
+} from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { computeTargets, macroSplit, weeklyPace } from '@/lib/nutrition'
+import { computeTargets, targetWeightRange, weeklyPace } from '@/lib/nutrition'
 import { fromKg, showWeight, UNIT_KEY, unitFor } from '@/lib/units'
 import {
   DEFAULT_WATER_ML,
@@ -25,18 +33,6 @@ import {
   WATER_GOAL_STEP_ML,
 } from '@/lib/water'
 import { AppBar, Button, Card, Screen, Skeleton, Slider, Stepper, Text, useToast } from '@/ui'
-
-/**
- * The bounds the target slider answers within, IN KILOGRAMS. Narrower than the
- * weight range because it is dragged rather than typed — the same numbers the
- * onboarding copy of this control uses.
- *
- * Kilograms whatever the user reads, because this is the value that is stored:
- * `target_weight_kg` is a kilogram column and the slider's position is written
- * straight into it. Only the LABELS convert (see `unit` below), which is the
- * same split `WeighInSheet` makes — one domain, converted once at the glass.
- */
-const TARGET = { min: 40, max: 120 }
 
 /** U2 GOALS */
 export default function GoalsScreen() {
@@ -75,7 +71,11 @@ export default function GoalsScreen() {
 
   // Edited locally and committed on save, so backing out of the screen does not
   // silently move the user's budget. Seeded once the queries answer.
-  const [kcal, setKcal] = useState<number | undefined>()
+  //
+  // `budget` is all four figures at once and `undefined` is "untouched", which is
+  // what keeps a hand-set budget from being rewritten by somebody who came in to
+  // change their water goal.
+  const [budget, setBudget] = useState<BudgetFields | undefined>()
   const [targetWeight, setTargetWeight] = useState<number | undefined>()
   const [water, setWater] = useState<number | undefined>()
   const [steps, setSteps] = useState<number | undefined>()
@@ -93,25 +93,33 @@ export default function GoalsScreen() {
   /** What the formula is told. An untouched slider is not a statement. */
   const currentTargetWeight = targetWeight ?? storedTargetWeight
   /**
-   * Where the handle sits. It has to be somewhere, and the current weight is the
-   * only honest place to put it when there is nothing to show — clamped into the
-   * slider's own range, as the onboarding copy of this control does, so a reader
-   * heavier than the track is long does not see a thumb pinned at 120 beside a
-   * readout saying 130.
+   * What the target slider can reach, and where its handle sits.
+   *
+   * The range follows the current weight, so an account above 120 kg can still
+   * put their target where they already are — which is how a user says they have
+   * no goal at all. The handle has to be somewhere, and the current weight is the
+   * only honest place to put it when there is nothing to show; it is clamped into
+   * the track either way, as the onboarding copy of this control does, so a
+   * reader does not see a thumb pinned at one end beside a readout saying
+   * otherwise.
    */
+  const targetRange = targetWeightRange(weight)
   const targetWeightPosition = Math.min(
-    TARGET.max,
-    Math.max(TARGET.min, currentTargetWeight ?? weight),
+    targetRange.max,
+    Math.max(targetRange.min, currentTargetWeight ?? weight),
   )
   const currentWater = water ?? targets?.waterMl ?? DEFAULT_WATER_ML
   const currentSteps = steps ?? settings?.step_goal ?? 8000
 
   // What the same formula the database runs would suggest for this body and this
-  // target — shown beside the slider so a hand-set number has a reference.
-  // Against the target being edited rather than the stored one, so the reference
-  // moves as it does.
+  // target — named under the calorie box so a hand-set number has a reference,
+  // and what the editor's reset link fills all four fields with. Against the
+  // target being EDITED rather than the stored one, so the reference moves as it
+  // does.
   const body = bodyFrom(profile, weight, { targetWeightKg: currentTargetWeight })
-  const recommended = body ? computeTargets(body).kcal : 0
+  const recommended: Budget = body
+    ? computeTargets(body)
+    : { kcal: 0, carbs: 0, protein: 0, fat: 0 }
   const pace = body ? weeklyPace(body) : 0
 
   /**
@@ -127,47 +135,47 @@ export default function GoalsScreen() {
   const planChanged = currentTargetWeight !== storedTargetWeight
 
   /**
-   * The budget on screen: the user's own number if they have dragged the slider,
+   * The four figures on screen: the user's own if they have typed any of them,
    * otherwise what this plan asks for.
    *
-   * Editing the target weight clears `kcal` — see the handler below — so
+   * Editing the target weight clears them — see the handler below — so
    * "otherwise" means the recommendation for the plan as edited, and falls back
    * to the stored budget only while nothing has been touched. That fallback is
    * what preserves a hand-set number for someone who came in to change their
    * water goal.
    */
-  const currentKcal = kcal ?? (planChanged ? recommended : (targets?.kcal ?? recommended))
+  const stored: Budget | null = targets
+    ? { kcal: targets.kcal, carbs: targets.carbs, protein: targets.protein, fat: targets.fat }
+    : null
+  const shown = budget ?? budgetFields(planChanged ? recommended : (stored ?? recommended))
+  const currentBudget = readBudget(shown, recommended)
 
-  // A plan edit takes the calorie budget back under the formula's control. The
-  // alternative — leaving a dragged number in place — is how you end up with a
+  // A plan edit takes the whole budget back under the formula's control. The
+  // alternative — leaving typed numbers in place — is how you end up with a
   // budget for the old target wearing the new target's name.
   const changeTargetWeight = (value: number) => {
     setTargetWeight(value)
-    setKcal(undefined)
+    setBudget(undefined)
   }
-
-  const macros = [
-    { key: 'carbs', label: t('common:macro.carbs'), grams: targets?.carbs ?? 0, dot: 'bg-kaya' },
-    {
-      key: 'protein',
-      label: t('common:macro.protein'),
-      grams: targets?.protein ?? 0,
-      dot: 'bg-hibiscus',
-    },
-    { key: 'fat', label: t('common:macro.fat'), grams: targets?.fat ?? 0, dot: 'bg-teh' },
-  ]
 
   /**
    * `is_custom` is the flag the recompute trigger reads and stops on, and it is
    * earned rather than assumed. Written as `true` unconditionally, opening this
    * screen and pressing Save froze the calorie budget for good.
    *
-   * Read off intent rather than the number. Comparing `currentKcal` to
-   * `recommended` is not equivalent: the recommendation is this client's copy of
-   * the formula and can disagree by a rounding step, since the two compute age
-   * against different clocks and in UTC+8 the dates differ for eight hours a day.
+   * Read off what the fields SAY rather than off whether they were touched, so
+   * that typing a number and putting it back — which is what the reset link does
+   * — leaves the budget automatic. Compared against this client's copy of the
+   * formula, which can differ from the database's by a rounding step when the
+   * two compute age against different clocks; that is the same rounding step
+   * `Use recommended` just wrote into the fields, so the comparison holds.
    */
-  const isCustom = kcal !== undefined ? true : planChanged ? false : (targets?.isCustom ?? false)
+  const isCustom =
+    budget !== undefined
+      ? !isRecommended(budget, recommended)
+      : planChanged
+        ? false
+        : (targets?.isCustom ?? false)
 
   const save = async () => {
     // Only when it actually moved. An unchanged profile write would fire the
@@ -179,11 +187,7 @@ export default function GoalsScreen() {
     // Written after the profile, whose own change fires the trigger that would
     // otherwise recompute over the top of a deliberate figure.
     await setTargets.mutateAsync({
-      kcal: currentKcal,
-      // Through the same splitter the automatic budget uses, so a hand-set
-      // calorie total still gets protein from body weight rather than from a
-      // share of energy.
-      ...macroSplit(currentKcal, weight),
+      ...currentBudget,
       waterMl: currentWater,
       isCustom,
     })
@@ -230,44 +234,18 @@ export default function GoalsScreen() {
         </>
       ) : (
         <>
-          <Card title={t('profile:goals.dailyCalories')}>
-            <View className="flex-row items-baseline justify-between">
-              <Text variant="title">{currentKcal.toLocaleString()}</Text>
-              <Text variant="caption">
-                {t('profile:goals.recommended', { value: recommended.toLocaleString() })}
-              </Text>
-            </View>
-            <Slider
-              value={currentKcal}
-              onChange={setKcal}
-              min={1200}
-              max={3500}
-              step={10}
-              // The card heading and the figure above already name this; a slider
-              // label would be the third copy of the same words.
-              accessibilityLabel={t('profile:goals.dailyCalories')}
-              format={(value) => `${value.toLocaleString()} ${t('common:unit.kcal')}`}
-            />
-          </Card>
-
-          <Card title={t('profile:goals.macroTargets')}>
-            {macros.map((macro) => (
-              <View key={macro.key} className="flex-row items-center gap-3">
-                <View className={`h-3 w-3 rounded ${macro.dot}`} />
-                <Text variant="label" className="flex-1">
-                  {macro.label}
-                </Text>
-                <Text variant="meta">
-                  {t('profile:goals.macroValue', {
-                    grams: macro.grams,
-                    percent: Math.round(
-                      ((macro.grams * (macro.key === 'fat' ? 9 : 4)) / (currentKcal || 1)) * 100,
-                    ),
-                  })}
-                </Text>
-              </View>
-            ))}
-          </Card>
+          {/* Four typed figures rather than a calorie slider over a read-only
+              list of grams. The list was stale by construction — it drew the
+              STORED macros beside a calorie total the slider had already moved —
+              and a slider cannot span the range the weight field now accepts:
+              1,200 to 3,500 stopped short of what the formula asks of a large
+              body long before it stopped short of 500 kg. */}
+          <BudgetEditor
+            value={shown}
+            onChange={setBudget}
+            recommended={recommended}
+            onReset={() => setBudget(budgetFields(recommended))}
+          />
 
           {/* The whole of the weight goal: where you are, where you want to be,
               and what that costs per week. There was a lose/maintain/gain
@@ -295,8 +273,8 @@ export default function GoalsScreen() {
             <Slider
               value={targetWeightPosition}
               onChange={changeTargetWeight}
-              min={TARGET.min}
-              max={TARGET.max}
+              min={targetRange.min}
+              max={targetRange.max}
               step={0.5}
               accessibilityLabel={t('profile:goals.targetWeight')}
               // `format` draws the thumb's bubble AND the two bound labels under

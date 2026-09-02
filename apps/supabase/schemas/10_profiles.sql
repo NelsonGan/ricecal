@@ -30,14 +30,17 @@ create table public.profiles (
   avatar_path       text,
 
   sex               public.sex,
-  birth_date        date check (birth_date > date '1900-01-01'),
+  -- 1850 rather than 1900, because the age field accepts 150 and the oldest
+  -- birth date that allows moves forward every year. A fixed date, since a
+  -- check constraint has to be immutable.
+  birth_date        date check (birth_date > date '1850-01-01'),
   height_cm         numeric(5, 1) check (height_cm between 80 and 260),
   -- Where the user is heading. With the newest row in `weight_logs` this is the
   -- whole of the calorie plan — the sign of the gap says lose or gain, its size
   -- says how hard, and equal says neither. There was a `weight_goal` enum beside
   -- it, asked for on its own onboarding screen, and it could only agree with
   -- these two numbers or contradict them; see `compute_targets`.
-  target_weight_kg  numeric(5, 1) check (target_weight_kg between 20 and 400),
+  target_weight_kg  numeric(5, 1) check (target_weight_kg between 20 and 500),
   activity_level    public.activity_level not null default 'light',
 
   -- i18n keys into onboarding.foodStyle.tags — the label is translated, the

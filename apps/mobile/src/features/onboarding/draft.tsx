@@ -48,6 +48,18 @@ export type OnboardingDraft = {
   targetWeightKg?: number
   activity?: ActivityLevel
   referralSource?: string
+  /**
+   * The budget, but only once the user has changed it.
+   *
+   * Absent is the normal case and means "whatever the formula says", which is
+   * what the recompute trigger writes the moment the profile and the first
+   * weigh-in land. Present means they typed over it on the target step, and
+   * `finish` writes it as `is_custom` so the trigger leaves it alone.
+   *
+   * It is the one answer here that does NOT gate the flush: a draft without it
+   * is complete, and `CompleteDraft` says so.
+   */
+  targets?: { kcal: number; carbs: number; protein: number; fat: number }
 }
 
 /**
@@ -60,7 +72,8 @@ export type OnboardingDraft = {
  * A remembered decision that outlives the screen that made it is only worth
  * carrying when something in between has to be crossed.
  */
-export type CompleteDraft = Required<OnboardingDraft>
+export type CompleteDraft = Required<Omit<OnboardingDraft, 'targets'>> &
+  Pick<OnboardingDraft, 'targets'>
 
 /**
  * Whether there is enough here to build a profile and a budget.

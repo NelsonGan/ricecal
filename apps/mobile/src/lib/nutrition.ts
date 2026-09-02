@@ -176,6 +176,24 @@ const MAX_SURPLUS_SHARE = 0.15
  */
 const PROTEIN_G_PER_KG = 1.6
 
+/**
+ * The BMI a healthy weight for a height is read off, and the share of the excess
+ * above it that still counts toward protein.
+ *
+ * 1.6 g/kg is prescribed against a body that is mostly lean, and total body
+ * weight stops standing in for that above the healthy band: fat mass carries
+ * almost no protein requirement, so 250 kg of body asked for 400 g of protein a
+ * day. Clinical practice prescribes against ADJUSTED body weight instead — the
+ * reference weight for the height, plus a quarter of whatever is above it — and
+ * that is what `proteinBasisKg` returns.
+ *
+ * 25 is the top of the WHO healthy band, so nobody inside it is affected at all,
+ * which is most people. This matters far more since the weight field started
+ * accepting 500 kg.
+ */
+const REFERENCE_BMI = 25
+const EXCESS_WEIGHT_SHARE = 0.25
+
 /** Protein's ceiling in the AMDR, so a small body on a floored budget stays inside it. */
 const PROTEIN_MAX_SHARE = 0.35
 
@@ -192,6 +210,60 @@ const FAT_SHARE = 0.25
  * older, sedentary body. Two numbers because the guidance is two numbers.
  */
 const FLOOR_KCAL: Record<'female' | 'male', number> = { female: 1200, male: 1500 }
+
+/**
+ * The ceiling, and it is the COLUMN's rather than the guidance's.
+ *
+ * `daily_goals.kcal` is checked between 800 and 10,000, and Mifflin-St Jeor can
+ * ask for more than that: a 500 kg thirteen-year-old on the very-active
+ * multiplier comes out at 10,680, and the insert would have been rejected. A
+ * budget nobody can save is worse than one rounded down to what the table
+ * allows.
+ */
+const CEILING_KCAL = 10_000
+
+/** What a hand-set budget is allowed to be, which is the column's own check. */
+export const KCAL_RANGE = { min: 800, max: CEILING_KCAL }
+
+/**
+ * What a hand-set macro is allowed to be. `daily_goals` only asks for a
+ * non-negative integer, so the ceiling is this file's: 2,000 g is far past
+ * anything a day's budget can be spent on, and it is what keeps a mistyped
+ * figure from becoming a target.
+ */
+export const MACRO_RANGE = { min: 0, max: 2000 }
+
+/**
+ * What the body questions will accept, in metric, and the database columns are
+ * the reason each bound is where it is.
+ *
+ * Height is `profiles.height_cm`, checked 80 to 260, narrowed to what a person
+ * asked for their height could mean. Weight is `weight_logs.weight_kg`, checked
+ * 20 to 500 — 500 because 200 turned away real people, and it is still short of
+ * the heaviest weight ever recorded. Age reaches 150 because the oldest verified
+ * life ran to 122 and a field that refuses a centenarian is a field with a bug in it;
+ * `profiles.birth_date` is checked against 1850 to leave room for it.
+ *
+ * They are here rather than on the screens because two screens ask the same
+ * questions — the onboarding step and the goals screen — and a bound that
+ * disagrees between them is a value one screen can set and the other clamps.
+ */
+export const HEIGHT_RANGE = { min: 120, max: 220 }
+export const WEIGHT_RANGE = { min: 30, max: 500 }
+export const AGE_RANGE = { min: 13, max: 150 }
+
+/**
+ * What the target-weight slider can reach, for a body of this weight.
+ *
+ * A fixed 40 to 120, which is what this was, cannot express the one thing the
+ * two weights exist to say for anybody above 120 kg: a target ON the current
+ * weight is how a user states they have no goal, and a track stopping short of
+ * them made that unsayable. So the top always reaches the body it is for, with a
+ * little headroom for a gain, and the weight field's own ceiling caps it.
+ */
+export function targetWeightRange(weightKg: number): { min: number; max: number } {
+  return { min: 40, max: Math.min(WEIGHT_RANGE.max, Math.max(120, Math.ceil(weightKg) + 10)) }
+}
 
 export type BodyInput = {
   sex: 'female' | 'male'
@@ -322,25 +394,48 @@ export function goalDate(body: BodyInput, targetWeightKg: number, from: Date): D
  * Carbohydrate last is what makes the budget add up exactly.
  */
 export function computeTargets(body: BodyInput): Omit<Targets, 'isCustom'> {
-  const kcal = Math.max(
-    Math.round((maintenanceRate(body) + energyDelta(body)) / 10) * 10,
-    FLOOR_KCAL[body.sex],
+  const kcal = Math.min(
+    CEILING_KCAL,
+    Math.max(
+      Math.round((maintenanceRate(body) + energyDelta(body)) / 10) * 10,
+      FLOOR_KCAL[body.sex],
+    ),
   )
 
-  return { kcal, ...macroSplit(kcal, body.weightKg), waterMl: DEFAULT_WATER_ML }
+  return { kcal, ...macroSplit(kcal, body), waterMl: DEFAULT_WATER_ML }
+}
+
+/**
+ * The weight protein is prescribed against: actual body weight inside the
+ * healthy BMI band, and adjusted body weight above it. See `REFERENCE_BMI`.
+ *
+ * A height of nothing gives the actual weight back rather than dividing by a
+ * reference of zero. Nothing in the app can reach that — `profiles.height_cm` is
+ * checked between 80 and 260 — but this is arithmetic a screen runs before there
+ * is a profile at all.
+ */
+export function proteinBasisKg(heightCm: number, weightKg: number): number {
+  if (heightCm <= 0) return weightKg
+  const reference = REFERENCE_BMI * (heightCm / 100) ** 2
+  if (weightKg <= reference) return weightKg
+  return reference + (weightKg - reference) * EXCESS_WEIGHT_SHARE
 }
 
 /**
  * How a calorie budget divides into grams. Separate from `computeTargets`
- * because a hand-set budget needs it too: the goals screen lets a user drag the
+ * because a hand-set budget needs it too: the goals screen lets a user set the
  * calorie total, and its macros follow the same rules. There were three copies
  * of the old percentage split, and they did not all agree.
+ *
+ * Takes the whole body rather than the weight alone, because protein is measured
+ * against the height as well now.
  */
 export function macroSplit(
   kcal: number,
-  weightKg: number,
+  body: { weightKg: number; heightCm: number },
 ): { carbs: number; protein: number; fat: number } {
-  const protein = Math.round(Math.min(weightKg * PROTEIN_G_PER_KG, (kcal * PROTEIN_MAX_SHARE) / 4))
+  const basis = proteinBasisKg(body.heightCm, body.weightKg)
+  const protein = Math.round(Math.min(basis * PROTEIN_G_PER_KG, (kcal * PROTEIN_MAX_SHARE) / 4))
   const fat = Math.round((kcal * FAT_SHARE) / 9)
   // Never negative: protein is capped at 35% of energy and fat takes 25%, so
   // something is always left — the floor says so rather than relying on it.
@@ -351,6 +446,21 @@ export function macroSplit(
 
 /** Calories in a gram of each macro. Atwater factors, as every label rounds them. */
 const KCAL_PER_G = { carbs: 4, protein: 4, fat: 9 } as const
+
+/**
+ * What a set of macro grams actually costs, by the Atwater factors.
+ *
+ * The budget editor needs it: the four figures are edited independently, so the
+ * only honest thing to do when they stop agreeing with the calorie total is to
+ * say what they add up to.
+ */
+export function energyOf(macros: { carbs: number; protein: number; fat: number }): number {
+  return Math.round(
+    macros.carbs * KCAL_PER_G.carbs +
+      macros.protein * KCAL_PER_G.protein +
+      macros.fat * KCAL_PER_G.fat,
+  )
+}
 
 /**
  * What share of the energy each macro is, as three fractions summing to one. A
