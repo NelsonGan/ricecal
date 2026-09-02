@@ -15,6 +15,7 @@ export {
   budgetFields,
   isRecommended,
   readBudget,
+  sameBudget,
 } from './BudgetEditor'
 export { CheckList, type CheckListProps } from './CheckList'
 export { EntryList, type EntryListProps, formatTime } from './EntryList'

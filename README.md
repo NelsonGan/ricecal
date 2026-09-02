@@ -3926,6 +3926,13 @@ differ from what the formula asks for, and not before — which is why "Use
 recommended" fills the fields with the formula's answer rather than remembering
 that they were touched, and why editing the target weight clears them outright.
 
+The corollary is easy to miss: the blur that settles a field into range must stay
+SILENT when the box already says what it means. Reported on every focus and blur,
+it froze the budget of anybody who tapped a field and tapped out again — and an
+account whose stored macros predate the adjusted protein basis opens this screen
+with figures that differ from the recommendation, so it was one tap away from
+permanent for most of them.
+
 **All four targets are edited, and they are independent.** Calories, carbs,
 protein and fat are four boxes on the goals screen and on the onboarding target
 step, and nothing re-splits one when another moves. The alternative — re-deriving
@@ -3933,7 +3940,10 @@ the macros whenever the calorie total changes — silently overwrites a protein
 target somebody set on purpose, and the four rings and bars around the app have
 always been drawn against four independent numbers anyway. When the grams stop
 adding up to the calorie figure the card says what they add up to; it reports the
-difference rather than correcting a number the user just typed.
+difference rather than correcting a number the user just typed. The recommended
+calorie total is the calorie box's own placeholder rather than a line under it,
+which was printing the figure the box already held on every budget nobody had
+touched.
 
 **Onboarding's copy of the budget is written after the weigh-in.** The questions
 come before the account, so an edited budget rides in the MMKV draft and

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useDeleteWeighIn, useLogWeight, useWeighIns } from '@/data'
 import { datePattern } from '@/lib/dates'
+import { WEIGHT_RANGE } from '@/lib/nutrition'
 import { fromKg, showWeight, toKg, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { Button, ConfirmSheet, Icon, SegmentedControl, Sheet, Stepper, Text, useToast } from '@/ui'
 
@@ -18,9 +19,16 @@ export type WeighInSheetProps = {
 
 /** What the ± buttons move by, in whichever unit is on screen. */
 const STEP = 0.1
-/** Bounds in kilograms, converted for display. Wide enough not to be a judgement. */
-const MIN_KG = 25
-const MAX_KG = 300
+/**
+ * Bounds in kilograms, converted for display, and the SAME ones the onboarding
+ * weight field answers within.
+ *
+ * They were 25 to 300 of this file's own, which was fine while onboarding
+ * stopped at 200 and became a trap the moment it stopped at 500: an account
+ * could state a weight it could never afterwards record, so the one screen for
+ * correcting your weight refused the number on the scale.
+ */
+const { min: MIN_KG, max: MAX_KG } = WEIGHT_RANGE
 
 /**
  * Adding a weigh-in.

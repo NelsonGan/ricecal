@@ -213,7 +213,12 @@ export const profile = {
   goals: {
     title: 'Goals and targets',
     dailyCalories: 'DAILY CALORIES',
-    recommended: 'RECOMMENDED {{value}}',
+    /**
+     * The calorie field's PLACEHOLDER, which is where the recommendation is
+     * named now. It was a caption under the box as well, saying the same figure
+     * the box already held on every budget nobody had touched.
+     */
+    recommended: 'Recommended {{value}}',
     macroTargets: 'MACRO TARGETS',
     /**
      * What the three grams cost, said only when they stop agreeing with the
