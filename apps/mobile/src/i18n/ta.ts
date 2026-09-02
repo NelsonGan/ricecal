@@ -54,6 +54,8 @@ export const ta = {
       kcal: 'kcal',
       kcalUpper: 'KCAL',
       grams: '{{value}}g',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: 'g',
       gramsOfGoal: '{{value}}/{{goal}}g',
       kg: 'kg',
       lb: 'lb',
@@ -524,9 +526,6 @@ export const ta = {
     target: {
       title: 'உங்கள் தினசரி வரவு',
       perDay: 'நாளுக்கு KCAL',
-      carbs: 'கார்ப்ஸ்',
-      protein: 'புரதம்',
-      fat: 'கொழுப்பு',
       goalWeight: 'இலக்கு எடை',
       goalBy: 'எதிர்பார்க்கும் நாள்',
       maintain: 'பராமரி',
@@ -722,12 +721,12 @@ export const ta = {
       permissionBody: 'கேமரா பொட்டலத்தின் பார்கோடைப் படிக்கிறது. எதுவும் பதிவாகவோ பதிவேற்றமாகவோ இல்லை.',
       aim: 'கேமராவைப் பொட்டலத்தின் பார்கோடு மீது காட்டுங்கள்.',
       noCamera: 'இந்தச் சாதனத்தில் கேமரா இல்லை, எனவே இங்கே ஸ்கேன் செய்ய எதுவும் இல்லை.',
-      missTitle: 'புதிய பொட்டலம்',
-      unknown: 'இது இன்னும் எங்களிடம் இல்லை. விவரித்துச் சொல்லுங்கள், நாங்கள் கணக்கிடுவோம்.',
       failedTitle: 'பதில் இல்லை',
       failed: 'இப்போது பட்டியலை அணுக முடியவில்லை. பொட்டலம் சரியாக இருக்கலாம்; இணைப்புதான் சரியில்லை.',
       tryAgain: 'மீண்டும் ஸ்கேன் செய்',
-      describeInstead: 'அதற்குப் பதில் விவரி',
+      photographLabel: 'லேபிளைப் படமெடுங்கள்',
+      labelPrompt:
+        'இந்தப் பொட்டலம் இன்னும் எங்களிடம் இல்லை. ஊட்டச்சத்து லேபிளைப் படமெடுங்கள், நாங்கள் படித்துக்கொள்கிறோம்.',
     },
 
     describe: {
@@ -1141,7 +1140,8 @@ export const ta = {
       dailyCalories: 'தினசரி கலோரிகள்',
       recommended: 'பரிந்துரை {{value}}',
       macroTargets: 'மேக்ரோ இலக்குகள்',
-      macroValue: '{{grams}} g · {{percent}}%',
+      macrosAddUpTo: 'மேக்ரோக்கள் மொத்தம் {{value}} kcal',
+      useRecommended: 'பரிந்துரையைப் பயன்படுத்து',
       goal: 'இலக்கு',
       currentWeight: 'தற்போதைய எடை',
       targetWeight: 'இலக்கு எடை',

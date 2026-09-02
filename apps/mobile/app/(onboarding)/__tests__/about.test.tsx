@@ -260,9 +260,44 @@ describe('imperial', () => {
     seed({ units: 'imperial', sex: 'female', targetWeightKg: 60 })
     await render(<AboutStep />)
 
-    // 200 kg is the ceiling, which is 440.9 lb. A pounds field clamped against
-    // 200 would refuse almost every weight anybody using pounds would type.
-    await user.type(screen.getByLabelText('WEIGHT'), '175')
-    expect(screen.getByLabelText('WEIGHT')).toHaveDisplayValue('175')
+    // 500 kg is the ceiling, which is 1,102.3 lb. A pounds field clamped against
+    // 500 would refuse a weight well inside the range.
+    await user.type(screen.getByLabelText('WEIGHT'), '600')
+    expect(screen.getByLabelText('WEIGHT')).toHaveDisplayValue('600')
+  })
+})
+
+/**
+ * The ceilings, which both turned away real people at 200 kg and 100 years. Each
+ * is inside its column's own check — `weight_logs.weight_kg` and the birth date
+ * `profiles` derives from an age — so a value this screen accepts is one the
+ * flush can write.
+ */
+describe('the top of each range', () => {
+  it('accepts a weight up to half a tonne', async () => {
+    seed(COMPLETE)
+    await render(<AboutStep />)
+
+    await user.type(screen.getByLabelText('WEIGHT'), '480')
+    await continueOn()
+    // 65 already in the field, appended to: 65480, clamped to the ceiling.
+    expect(saved()).toEqual(expect.objectContaining({ weightKg: 500 }))
+  })
+
+  it('accepts an age a centenarian could give', async () => {
+    seed({ ...COMPLETE, age: 104 })
+    await render(<AboutStep />)
+
+    expect(screen.getByLabelText('AGE')).toHaveDisplayValue('104')
+    await continueOn()
+    expect(saved()).toEqual(expect.objectContaining({ age: 104 }))
+  })
+
+  it('still clamps an age past the top', async () => {
+    seed({ ...COMPLETE, age: 400 })
+    await render(<AboutStep />)
+    await continueOn()
+
+    expect(saved()).toEqual(expect.objectContaining({ age: 150 }))
   })
 })

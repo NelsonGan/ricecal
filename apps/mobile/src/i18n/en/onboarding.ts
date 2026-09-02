@@ -141,9 +141,6 @@ export const onboarding = {
   target: {
     title: 'Your daily budget',
     perDay: 'KCAL A DAY',
-    carbs: 'CARBS',
-    protein: 'PROTEIN',
-    fat: 'FAT',
     /** The plan, as two tiles rather than a sentence. */
     goalWeight: 'GOAL WEIGHT',
     goalBy: 'ON TRACK FOR',

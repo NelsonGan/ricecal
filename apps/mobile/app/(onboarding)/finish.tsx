@@ -86,6 +86,9 @@ function Flush({ draft }: { draft: CompleteDraft }) {
         targetWeightKg: draft.targetWeightKg,
         activity: draft.activity,
         referralSource: draft.referralSource,
+        // Undefined unless the target step was edited, in which case this is the
+        // one write that has to land after the weigh-in. See `useFinishOnboarding`.
+        targets: draft.targets,
       },
       {
         onSuccess: (profile) => {

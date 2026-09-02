@@ -54,6 +54,8 @@ export const vi = {
       kcal: 'kcal',
       kcalUpper: 'KCAL',
       grams: '{{value}}g',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: 'g',
       gramsOfGoal: '{{value}}/{{goal}}g',
       kg: 'kg',
       lb: 'lb',
@@ -520,9 +522,6 @@ export const vi = {
     target: {
       title: 'Hạn mức hằng ngày của bạn',
       perDay: 'KCAL MỖI NGÀY',
-      carbs: 'TINH BỘT',
-      protein: 'ĐẠM',
-      fat: 'CHẤT BÉO',
       goalWeight: 'CÂN NẶNG ĐÍCH',
       goalBy: 'DỰ KIẾN ĐẠT',
       maintain: 'GIỮ NGUYÊN',
@@ -720,13 +719,13 @@ export const vi = {
       permissionBody: 'Máy ảnh đọc mã vạch trên gói hàng. Không ghi lại và không tải lên gì cả.',
       aim: 'Hướng máy ảnh vào mã vạch trên gói hàng.',
       noCamera: 'Thiết bị này không có máy ảnh, nên ở đây không quét được gì.',
-      missTitle: 'Gói hàng mới',
-      unknown: 'Chúng tôi chưa có món này. Cứ mô tả nó và chúng tôi sẽ tính ra.',
       failedTitle: 'Không có phản hồi',
       failed:
         'Lúc này chúng tôi không kết nối được tới danh mục. Gói hàng có thể vẫn ổn; kết nối thì không.',
       tryAgain: 'Quét lại',
-      describeInstead: 'Mô tả thay vì vậy',
+      photographLabel: 'Chụp nhãn dinh dưỡng',
+      labelPrompt:
+        'Chúng tôi chưa có gói này. Hãy chụp nhãn dinh dưỡng và chúng tôi sẽ đọc giúp bạn.',
     },
 
     describe: {
@@ -1141,7 +1140,8 @@ export const vi = {
       dailyCalories: 'CALO HẰNG NGÀY',
       recommended: 'KHUYẾN NGHỊ {{value}}',
       macroTargets: 'CHỈ TIÊU DƯỠNG CHẤT',
-      macroValue: '{{grams}} g · {{percent}}%',
+      macrosAddUpTo: 'Dưỡng chất cộng lại là {{value}} kcal',
+      useRecommended: 'Dùng mức đề xuất',
       goal: 'MỤC TIÊU',
       currentWeight: 'Cân nặng hiện tại',
       targetWeight: 'Cân nặng mục tiêu',
