@@ -90,6 +90,7 @@ Useful commands:
 | `pnpm db:test` | pgTAP tests |
 | `pnpm db:types` | regenerate the TypeScript `Database` type |
 | `pnpm foods:gate` | grade catalogue search against 30 fixed queries |
+| `pnpm foods:servings` | repoint a row whose default portion is a unit of measure |
 | `pnpm eval:prompts` | grade the model prompts |
 | `pnpm eval:scan` | drive the deployed scan pipeline end to end |
 
@@ -486,6 +487,18 @@ accent, so each is loaded as a slice.
   switched the weight path off for exactly the rows that had the number, since a
   curated Malaysian dish says "1 plate" and carries the 300 g in a column beside
   it.
+- **A default portion is a helping, not the unit the source published in.**
+  `food.kcal` is per whichever `food_serving` carries `is_default`, and on 414
+  imported drink rows that flag sat on "1 fl oz". So the catalogue said a latte
+  was 30 g and 8 kcal, the app showed that to anybody who searched for one, and
+  the scan cascade divided the glass it had measured by 30 g and got eleven
+  servings. `pnpm foods:servings` moves the flag to the portion the row already
+  carried and rescales `kcal`, the macros and every `factor` around it. It is
+  narrow on purpose: USDA states a cut of meat in "3.0 oz" and a snack in "1.0
+  oz", which are real helpings, and the first draft repointed 2,004 rows and
+  would have moved a roast beef to "1.0 roast (yield from 714 g raw meat)" at
+  1,307 kcal. Re-runnable, and worth re-running after a bulk load, because the
+  rows it fixes are imported from outside this repo.
 - **Provenance travels as columns** (`source_id`, `source_name`,
   `source_attribution`), carrying the licence and the attribution the detail
   screen prints. Open Food Facts is ODbL, so attribution is required.
@@ -1439,6 +1452,17 @@ Then, in order:
 - **Tier 1/3, dish** → the Worker's search (specific, generic, head noun), a
   verifier picks one, a wide ratio gate accepts it. Identity is what a vision
   model is good at; calories are what it is worst at.
+
+  The verifier is told that a branded or restaurant version of a dish is still
+  that dish, because the vendor is not the food. It is now also told that the
+  FORM is: a bottled, canned, instant or powdered version is not a match for one
+  made fresh. Without that sentence a photographed cafe latte was priced from a
+  bottled ready-to-drink latte four runs in six, at 100 kcal and 3 g of protein
+  against the 190 and 10 of the drink in the picture. Both rows are named
+  "Latte", both match the query exactly, and the entry wears the model's own
+  name for the meal either way, so nothing on the screen said which had answered.
+  The serving labels ("1 bottle (250 g)" against "Regular (350 ml)") were in
+  front of the verifier the whole time; it needed to be told they mattered.
 - **Tier 4, estimate** → a second model call, Atwater-checked, kept as numbers
   on the entry. It used to write a shared catalogue row; a guess reused is still
   a guess.
@@ -3731,6 +3755,20 @@ referee anything). Measured against a fixed ceiling instead, it could not see th
 case it exists for: a Filet-O-Fish with three nuggets read per unit at 830 and as
 stated at 530 against the model's own 500-560 band, the ceiling was 1.8x the top
 of that band, and 830 slipped under 1008. The meal was logged at 889.
+
+**A helping is capped and a measurement is converted.** They are different
+questions and `namesAPortion` is what tells them apart. Nobody is served eleven
+of a helping, so `clampQuantity` stops at three; a unit of measure has no such
+ceiling, because the multiple is arithmetic and "100 g" of a dish against a
+450 g plate is 4.5 servings whatever either party thinks it costs. Applying the
+helping cap to a measurement is what turned a photographed latte into "Coffee,
+Iced Latte x3" at 24 kcal, for a drink holding about 180: the row was published
+per fluid ounce, the conversion was 11.7, and three was as far as the clamp
+could count. Nothing downstream could see it, because the number was too small
+to trip a calorie gate and the only strange thing on screen was a portion count.
+The components tier already asked this question before capping a weight;
+`measuredQuantity` is the dish tier asking it. The bound is still a bound at
+twenty, since the numerator is the model's guess at a weight.
 
 **A catalogue row that names one whole article already knows what it weighs.**
 A helping varies with who served it, so `boundGramsToServing` lets the model's

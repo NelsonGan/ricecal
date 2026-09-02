@@ -25,6 +25,7 @@
     "email:check": "node --no-warnings apps/supabase/scripts/email-templates.mjs --check",
     "email:push": "node --no-warnings apps/supabase/scripts/email-templates.mjs --push",
     "foods:reindex": "node --no-warnings apps/supabase/scripts/catalogue-reindex.mjs",
+    "foods:servings": "node --no-warnings apps/supabase/scripts/foods-servings.mjs",
     "foods:gate": "node --no-warnings apps/supabase/scripts/search-gate.mjs",
     "foods:have": "node --no-warnings apps/supabase/scripts/foods-have.mjs",
     "foods:import": "node --no-warnings apps/supabase/scripts/catalogue-import.mjs",

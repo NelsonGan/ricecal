@@ -115,6 +115,44 @@ export const clampQuantity = (q: number): number =>
   Math.round(Math.min(3.0, Math.max(0.5, q)) * 4) / 4
 
 /**
+ * Twenty rather than three: a 600 ml drink priced per fluid ounce is 20 of them,
+ * which is the far side of the largest thing anybody drinks in one go. Still a
+ * bound, because the numerator is the model's guess at a weight, and a guess
+ * wrong by a factor should not buy an unbounded multiple.
+ */
+export const MEASURED_QUANTITY_MAX = 20
+
+/**
+ * The same quarter steps, for a row whose serving is a MEASUREMENT rather than a
+ * helping: "1 fl oz", "100 g", "3.0 oz".
+ *
+ * Three is the right ceiling for a helping, because nobody is served eleven of
+ * one. It is the wrong ceiling for a unit of measure, where the multiple is a
+ * conversion rather than an appetite: the README's own example, "100 g" of a
+ * dish against a 450 g plate, is 4.5 servings whatever either party thinks it
+ * costs, and `clampQuantity` was quietly making it 3.
+ *
+ * A photographed latte is what found it. The catalogue holds USDA drink rows
+ * published per fluid ounce, and one of them, "Coffee, Iced Latte" at 30 g and
+ * 8 kcal, won the search. The glass held 350 g, so the conversion is 11.7 of
+ * them; the clamp cut that to 3 and the diary got "Coffee, Iced Latte x3" at 24
+ * kcal for a drink holding about 180. Both halves of that entry were wrong and
+ * neither looked like an error: the number was too small to trip a calorie gate
+ * and the portion count was the only thing on screen that read as strange.
+ *
+ * Hundreds of imported drink rows are published this way, so it is a shape
+ * rather than a row. `pnpm foods:servings` moves the flag off the measurement
+ * wherever the row already carries a real portion, and this prices the rest
+ * honestly, including whatever the next bulk load brings back with it.
+ *
+ * `namesAPortion` already tells a helping from a measurement and the components
+ * tier already asks it before capping a weight; the dish tier is where it was
+ * missing.
+ */
+export const measuredQuantity = (q: number): number =>
+  Math.round(Math.min(MEASURED_QUANTITY_MAX, Math.max(0.25, q)) * 4) / 4
+
+/**
  * The same clamp for a fix-by-typing edit: wider, and in twentieths. A refine
  * factor comes from what the person typed, so it needs the finer step: "more
  * like 400 calories" against a 365 kcal entry is 1.096, which quarters round
@@ -838,7 +876,13 @@ async function resolveByDish(
     return {
       tier: 3,
       food: asFood(chosen),
-      quantity: clampQuantity(byWeight),
+      // A helping is capped at three and a measurement is not: see
+      // `measuredQuantity`. Only this branch, because only this one divides two
+      // weights. The calorie ratio below is a guess over a guess and keeps the
+      // tighter bound.
+      quantity: namesAPortion(chosen.serving_label)
+        ? clampQuantity(byWeight)
+        : measuredQuantity(byWeight),
       displayLabel: label,
     }
   }
