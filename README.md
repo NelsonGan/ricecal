@@ -3538,7 +3538,60 @@ deploy with the Supabase CLI and the app ships through EAS. Make every step
 backwards compatible so the window is survivable rather than merely short.
 
 **Removing runs backwards**: stop reading it everywhere, ship that, then drop the
-column.
+column. Now that the app is in a store, "ship that" means a release people have
+actually taken, which is the next section.
+
+### The store holds copies of the app you cannot recall
+
+The app is live. Every binary that has shipped goes on calling this backend, and
+nothing in the repo can stop it or fix it in place:
+
+- `runtimeVersion` is the `appVersion` policy, so an `eas update` only reaches
+  phones running the same `version` in `app.json`. A user still on 1.0.0 cannot
+  be patched over the air. They get the fix when they update from the store, if
+  they ever do.
+- Nothing checks who is asking. There is no minimum-version gate, no version
+  header, no kill switch, so the server cannot refuse an old client or tell it
+  to go and update.
+
+The Worker's routes, the edge functions' request and response shapes, and the
+tables both of them share are therefore a contract with clients that have already
+shipped. Deploy order, above, makes the gap between two of our own deploys
+survivable. This is the other half of it: the client on the far side may never
+move at all, and "the app was changed to match" is not a fix for the person who
+has not taken that app.
+
+**A backend change is additive, or it is a bug.** Concretely, on Supabase and on
+Cloudflare both:
+
+- **Add a key, never repurpose one.** Changing what an existing field *means*
+  passes every typecheck here and is wrong on every phone that has not updated.
+- **Keep returning what the old app reads**, long after nothing new reads it. A
+  response the client destructures is part of the contract even when the value is
+  now ignored.
+- **New inputs are optional, or the server fills them in.** An edge function that
+  starts requiring a field 400s the release that shipped before it, and a scan
+  that 400s reads as a broken pipeline rather than as a version skew.
+- **Do not narrow what an old client may send**: an enum, a status string, a
+  validated range, an RLS policy, a check constraint. Widening is safe; narrowing
+  rejects traffic that is already in the wild.
+- **A new column the app writes to needs a default**, or `not null` turns every
+  insert from an old binary into an error. `food_logs`, `daily_goals`,
+  `weight_logs`, `activity_days`, `activity_hours`, `health_connections`,
+  `recipes`, `user_settings` and the rest are written through PostgREST
+  directly, with no function in between to paper over a change.
+- **Renaming is deleting.** A renamed route, edge function or column is gone as
+  far as a shipped binary is concerned, whatever the new name does.
+
+**Removal runs backwards, on the store's clock.** Stop reading it in the app,
+ship *that* through review, wait for the release to be adopted, and only then
+drop the column or the route. The wait is adoption by users, which is weeks, not
+the minute between two deploys.
+
+When a change genuinely cannot be made compatible, the shape is a second thing
+beside the first: a new route, a new field, a new function name, with the old one
+still answering until the binaries that call it are gone. Say so in the PR rather
+than deciding it quietly.
 
 ### Where each piece deploys
 
