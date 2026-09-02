@@ -63,6 +63,8 @@ export const common = {
     kcal: 'kcal',
     kcalUpper: 'KCAL',
     grams: '{{value}}g',
+    /** The bare symbol, for a field whose value is typed beside it. */
+    gram: 'g',
     /** Eaten against the day's allowance, on a macro bar that has been toggled. */
     gramsOfGoal: '{{value}}/{{goal}}g',
     kg: 'kg',

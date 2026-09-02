@@ -5,6 +5,7 @@ import { View } from 'react-native'
 
 import type { Sex } from '@/data'
 import { OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
+import { AGE_RANGE, HEIGHT_RANGE, targetWeightRange, WEIGHT_RANGE } from '@/lib/nutrition'
 import {
   fromFeetInches,
   fromKg,
@@ -16,19 +17,6 @@ import {
   type WeightUnit,
 } from '@/lib/units'
 import { Card, SegmentedControl, Slider, Text, TextField } from '@/ui'
-
-/**
- * The bounds each control answers within.
- *
- * Height and weight keep a mistyped field from producing a negative calorie
- * budget. The target range is narrower than the weight one because it is
- * dragged rather than typed, and 170 kg of travel under a thumb is not a
- * control anybody can aim.
- */
-const HEIGHT = { min: 120, max: 220 }
-const WEIGHT = { min: 30, max: 200 }
-const AGE = { min: 13, max: 100 }
-const TARGET = { min: 40, max: 120 }
 
 /**
  * About you, and nothing on this screen starts answered.
@@ -83,18 +71,26 @@ export default function AboutStep() {
    */
   const heightCm = inFeet
     ? fields.feet.trim() && fields.inches.trim()
-      ? clampMaybe(fromFeetInches(Number(fields.feet), Number(fields.inches)), HEIGHT)
+      ? clampMaybe(fromFeetInches(Number(fields.feet), Number(fields.inches)), HEIGHT_RANGE)
       : undefined
-    : read(fields.height, HEIGHT)
+    : read(fields.height, HEIGHT_RANGE)
 
-  const typedWeight = read(fields.weight, bounds(WEIGHT, weightUnit))
+  const typedWeight = read(fields.weight, bounds(WEIGHT_RANGE, weightUnit))
   const weightKg = typedWeight == null ? undefined : toKg(typedWeight, weightUnit)
-  const age = read(fields.age, AGE)
+  const age = read(fields.age, AGE_RANGE)
   const sex = draft.sex
   const targetWeightKg = draft.targetWeightKg
 
+  /**
+   * What the target slider can reach, which moves with the weight above it: the
+   * track always gets as far as the body it is for, so somebody at 260 kg can
+   * still put their target where they already are.
+   */
+  const targetRange = targetWeightRange(weightKg ?? 0)
+
   /** What the slider shows before it has been dragged. Never written anywhere. */
-  const targetPreview = targetWeightKg ?? (weightKg != null ? clamp(weightKg, TARGET) : TARGET.min)
+  const targetPreview =
+    targetWeightKg ?? (weightKg != null ? clamp(weightKg, targetRange) : targetRange.min)
 
   /** Blur is where the clamp becomes visible: "show me what you understood". */
   const settle = (key: keyof typeof fields, within: { min: number; max: number }) => () =>
@@ -111,7 +107,10 @@ export default function AboutStep() {
   const settleHeight = () =>
     setFields((current) => {
       if (!current.feet.trim() || !current.inches.trim()) return current
-      const cm = clampMaybe(fromFeetInches(Number(current.feet), Number(current.inches)), HEIGHT)
+      const cm = clampMaybe(
+        fromFeetInches(Number(current.feet), Number(current.inches)),
+        HEIGHT_RANGE,
+      )
       if (cm == null) return current
       const { feet, inches } = toFeetInches(cm)
       return { ...current, feet: String(feet), inches: String(inches) }
@@ -195,7 +194,7 @@ export default function AboutStep() {
             placeholder={t('about.heightPlaceholder')}
             value={fields.height}
             onChangeText={(height) => setFields((current) => ({ ...current, height }))}
-            onBlur={settle('height', HEIGHT)}
+            onBlur={settle('height', HEIGHT_RANGE)}
             inputClassName="font-display text-[26px]"
             rightSlot={<Text variant="caption">{t('common:unit.cm')}</Text>}
           />
@@ -207,7 +206,7 @@ export default function AboutStep() {
           placeholder={inFeet ? t('about.weightPlaceholderLb') : t('about.weightPlaceholder')}
           value={fields.weight}
           onChangeText={(weight) => setFields((current) => ({ ...current, weight }))}
-          onBlur={settle('weight', bounds(WEIGHT, weightUnit))}
+          onBlur={settle('weight', bounds(WEIGHT_RANGE, weightUnit))}
           inputClassName="font-display text-[26px]"
           rightSlot={<Text variant="caption">{t(UNIT_KEY[weightUnit])}</Text>}
         />
@@ -223,7 +222,7 @@ export default function AboutStep() {
         placeholder={t('about.agePlaceholder')}
         value={fields.age}
         onChangeText={(next) => setFields((current) => ({ ...current, age: next }))}
-        onBlur={settle('age', AGE)}
+        onBlur={settle('age', AGE_RANGE)}
         inputClassName="font-display text-[26px]"
         rightSlot={<Text variant="caption">{t('about.years')}</Text>}
       />
@@ -259,8 +258,8 @@ export default function AboutStep() {
           // the draft and not to the network: the same handler against a profile
           // update was a request, and a budget recompute, per frame.
           onChange={(next) => patch({ targetWeightKg: toKg(next, weightUnit) })}
-          min={fromKg(TARGET.min, weightUnit)}
-          max={fromKg(TARGET.max, weightUnit)}
+          min={fromKg(targetRange.min, weightUnit)}
+          max={fromKg(targetRange.max, weightUnit)}
           // Half a kilogram is a scale's precision; half a pound is finer than
           // anybody aims a slider, so imperial steps a whole one.
           step={weightUnit === 'lb' ? 1 : 0.5}

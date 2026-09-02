@@ -54,6 +54,8 @@ export const hi = {
       kcal: 'kcal',
       kcalUpper: 'KCAL',
       grams: '{{value}}g',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: 'g',
       gramsOfGoal: '{{value}}/{{goal}}g',
       kg: 'kg',
       lb: 'lb',
@@ -513,9 +515,6 @@ export const hi = {
     target: {
       title: 'आपका रोज़ का हिसाब',
       perDay: 'रोज़ KCAL',
-      carbs: 'कार्ब्स',
-      protein: 'प्रोटीन',
-      fat: 'वसा',
       goalWeight: 'लक्ष्य वज़न',
       goalBy: 'अनुमानित तारीख़',
       maintain: 'बनाए रखें',
@@ -711,12 +710,11 @@ export const hi = {
       permissionBody: 'कैमरा पैकेट का बारकोड पढ़ता है। कुछ भी रिकॉर्ड या अपलोड नहीं होता।',
       aim: 'कैमरे को पैकेट के बारकोड पर रखें।',
       noCamera: 'इस डिवाइस में कैमरा नहीं है, इसलिए यहां स्कैन करने को कुछ नहीं।',
-      missTitle: 'नया पैकेट',
-      unknown: 'यह अभी हमारे पास नहीं है। इसे लिखकर बताइए और हम हिसाब लगा देंगे।',
       failedTitle: 'कोई जवाब नहीं',
       failed: 'अभी हम सूची तक नहीं पहुंच सके। पैकेट शायद ठीक हो; कनेक्शन ठीक नहीं था।',
       tryAgain: 'फिर स्कैन करें',
-      describeInstead: 'इसकी जगह लिखकर बताएं',
+      photographLabel: 'लेबल की फ़ोटो लें',
+      labelPrompt: 'यह पैकेट अभी हमारे पास नहीं है। पोषण लेबल की फ़ोटो लें, हम उसे पढ़ लेंगे।',
     },
 
     describe: {
@@ -1129,7 +1127,8 @@ export const hi = {
       dailyCalories: 'रोज़ की कैलोरी',
       recommended: 'सुझाया गया {{value}}',
       macroTargets: 'मैक्रो लक्ष्य',
-      macroValue: '{{grams}} g · {{percent}}%',
+      macrosAddUpTo: 'मैक्रो मिलाकर {{value}} kcal',
+      useRecommended: 'सुझाया गया लें',
       goal: 'लक्ष्य',
       currentWeight: 'मौजूदा वज़न',
       targetWeight: 'लक्ष्य वज़न',

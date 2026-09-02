@@ -172,6 +172,14 @@ export type OnboardingAnswers = ProfilePatch & {
    * converts on the way out. See `features/progress/units.ts`.
    */
   units: Units
+  /**
+   * The budget, and only when the user changed it on the target step.
+   *
+   * Absent leaves it to the recompute trigger, which is what fires off the
+   * weigh-in below. Present is written after everything else, flagged
+   * `is_custom` so the trigger reads the flag and stops.
+   */
+  targets?: { kcal: number; carbs: number; protein: number; fat: number }
 }
 
 /**
@@ -186,7 +194,11 @@ export type OnboardingAnswers = ProfilePatch & {
  *    the signup trigger seeds the row.
  * 2. The weigh-in, which is what asks: the trigger recomputes `daily_goals` from
  *    the newest reading, so a budget exists from here on.
- * 3. `onboarded_at`, last, because it is what the router reads. Set first, a
+ * 3. A hand-set budget, if the target step produced one. It has to come after
+ *    the weigh-in: that write is what fires the recompute, and a custom row
+ *    written before it would be overwritten by the trigger's own INSERT ... ON
+ *    CONFLICT, which only skips rows already flagged.
+ * 4. `onboarded_at`, last, because it is what the router reads. Set first, a
  *    failure strands the user in the app with no budget and no way back.
  */
 export function useFinishOnboarding() {
@@ -194,7 +206,7 @@ export function useFinishOnboarding() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ weightKg, units, ...patch }: OnboardingAnswers) => {
+    mutationFn: async ({ weightKg, units, targets, ...patch }: OnboardingAnswers) => {
       unwrapOne(
         await supabase.from('profiles').update(toRow(patch)).eq('id', userId).select('id').single(),
       )
@@ -218,6 +230,27 @@ export function useFinishOnboarding() {
           .select('measured_on')
           .single(),
       )
+
+      if (targets) {
+        unwrapOne(
+          await supabase
+            .from('daily_goals')
+            .upsert(
+              {
+                user_id: userId,
+                effective_from: today(),
+                kcal: targets.kcal,
+                carbs_g: targets.carbs,
+                protein_g: targets.protein,
+                fat_g: targets.fat,
+                is_custom: true,
+              },
+              { onConflict: 'user_id,effective_from' },
+            )
+            .select('user_id')
+            .single(),
+        )
+      }
 
       return unwrapOne(
         await supabase

@@ -54,6 +54,8 @@ export const ko = {
       kcal: 'kcal',
       kcalUpper: 'KCAL',
       grams: '{{value}}g',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: 'g',
       gramsOfGoal: '{{value}}/{{goal}}g',
       kg: 'kg',
       lb: 'lb',
@@ -518,9 +520,6 @@ export const ko = {
     target: {
       title: '하루 예산',
       perDay: '하루 KCAL',
-      carbs: '탄수화물',
-      protein: '단백질',
-      fat: '지방',
       goalWeight: '목표 몸무게',
       goalBy: '도달 예상',
       maintain: '유지',
@@ -716,12 +715,11 @@ export const ko = {
       permissionBody: '카메라는 포장의 바코드를 읽습니다. 녹화하거나 업로드하지 않습니다.',
       aim: '카메라를 포장의 바코드에 맞추세요.',
       noCamera: '이 기기에는 카메라가 없어 여기서 스캔할 수 없습니다.',
-      missTitle: '새 제품',
-      unknown: '아직 등록되지 않은 제품입니다. 말로 설명해 주시면 저희가 계산합니다.',
       failedTitle: '응답이 없습니다',
       failed: '지금은 목록에 연결하지 못했습니다. 제품은 멀쩡할 수 있고, 문제는 연결 쪽입니다.',
       tryAgain: '다시 스캔',
-      describeInstead: '대신 설명하기',
+      photographLabel: '라벨 촬영',
+      labelPrompt: '아직 등록되지 않은 제품입니다. 영양성분표를 찍어 주시면 읽어 드릴게요.',
     },
 
     describe: {
@@ -1134,7 +1132,8 @@ export const ko = {
       dailyCalories: '하루 칼로리',
       recommended: '권장 {{value}}',
       macroTargets: '영양소 목표',
-      macroValue: '{{grams}} g · {{percent}}%',
+      macrosAddUpTo: '영양소 합계는 {{value}} kcal',
+      useRecommended: '추천값 사용',
       goal: '목표',
       currentWeight: '현재 몸무게',
       targetWeight: '목표 몸무게',

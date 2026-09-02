@@ -17,7 +17,7 @@ create table public.weight_logs (
   -- The user's local calendar day, not the instant.
   measured_on   date not null,
 
-  weight_kg     numeric(5, 2) not null check (weight_kg between 20 and 400),
+  weight_kg     numeric(5, 2) not null check (weight_kg between 20 and 500),
   -- Null is unknown, never zero.
   body_fat_pct  numeric(4, 1) check (body_fat_pct between 1 and 75),
 

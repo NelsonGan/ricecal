@@ -344,13 +344,43 @@ Mifflin-St Jeor with an activity multiplier and a goal delta. A trigger
 recomputes it when the profile or the newest weigh-in changes, and stops dead if
 `is_custom` is set.
 
+**Mifflin-St Jeor on actual body weight, at every size.** That is the Academy of
+Nutrition and Dietetics' own recommendation, for obese adults as much as for
+anybody else: of the equations in wide use it is the one that lands within 10% of
+indirect calorimetry most often. It is known to drift above a BMI of about 35,
+and the published answer to that is indirect calorimetry rather than a different
+formula, so the app does not invent a correction. It states its number, and every
+figure on the goals screen can be typed over.
+
+**Protein is per kilogram of ADJUSTED body weight.** 1.6 g/kg is prescribed
+against a body that is mostly lean, and total body weight stops standing in for
+that above the healthy BMI band: 250 kg asked for 400 g of protein a day. The
+basis is the reference weight for the height (BMI 25) plus a quarter of anything
+above it, which is the clinical adjustment and is a no-op for everyone inside the
+band. Calories still use actual weight; only protein does this.
+
+**The budget has a ceiling, and it is the column's.** `daily_goals.kcal` is
+checked at 10,000 and the formula can ask for 10,680 at the top of the weight
+field's range, so `compute_targets` caps itself. Without it the trigger's insert
+is rejected and the account is left with no budget at all.
+
 **Current weight is not on `profiles`.** It is the newest `weight_logs` row. A
 column would be a cache with no invalidation story: the scale syncs, the profile
 still says what onboarding recorded, and the budget is computed from the stale
 one.
 
 **Age is stored as `birth_date`.** An integer age is wrong within a year of
-being written and nothing would ever correct it.
+being written and nothing would ever correct it. The column is checked against
+1850 rather than 1900, because the age field accepts 150 and the oldest birth
+date a fixed year allows moves forward every year.
+
+**The body questions answer within one set of bounds**, exported from
+`lib/nutrition.ts` because two screens ask the same questions: 120 to 220 cm, 30
+to 500 kg, 13 to 150 years. Weight stopped at 200 and age at 100, and both turned
+away real people. Each is inside its column's own check, and the target-weight
+slider's top end follows the current weight — a target ON the current weight is
+how a user says they have no goal, and a fixed track that stopped at 120 made
+that unsayable for anybody heavier.
 
 **`log_date` is a date; `logged_at` is an instant.** Supper at 00:30 belongs to
 the day the user thinks it does, which is why the day is stored and not derived.
@@ -630,7 +660,8 @@ welcome                          the pitch, and the fork for a returning user
                                  is typed in
 2 about   3 activity  4 source   the questions, drafted locally
 5 calculating                    a beat, then it replaces itself with…
-6 target                         the budget, worked out on the phone
+6 target                         the budget, worked out on the phone and
+                                 editable there
 7 account       (auth)/sign-in, carrying the same bar through the params
                 Apple, Google, or an address, which leads to (auth)/password
                 and then (auth)/verify if a code is owed
@@ -1331,8 +1362,8 @@ camera reads a code → leave immediately for /log/food/packet:<code>
                     ↓
   functions/barcode   D1 by barcode          hit  → the product, priced
                       Open Food Facts, live  hit  → written back, returned
-                                             miss → "we do not have this one yet"
-                                                    + Describe + Scan again
+                                             miss → the meal camera, to photograph
+                                                    the nutrition panel
 ```
 
 **The viewfinder does not wait for the answer**, and that is the whole shape of
@@ -1343,8 +1374,20 @@ Facts) and the fourth replaced the sheet with a different screen anyway.
 
 So the code is the answer as far as the scanner is concerned, and the page it
 hands the code to owns every way the lookup can turn out: a skeleton while it
-waits, the product when it lands, and a screen with Describe and Scan again on
-it when nothing knows the packet.
+waits, the product when it lands, the camera when nothing knows the packet, and a
+screen with Scan again on it when the lookup could not be made at all.
+
+**A miss goes straight to the camera**, opened on the meal side with a line
+saying to photograph the nutrition panel (`/log?panel=label`). It used to stop on
+a screen whose primary button was "Describe it instead", which asks somebody
+holding the packet to type out what is printed on the back of it. `scan-meal`
+already reads a photographed panel and logs it exactly — `resolveByLabel`, tier
+1, no cascade and no guessing — so the answer to a packet we do not have is to
+turn the camera around. It costs a scan, which the sheet's own quota line says.
+
+A lookup that could not be MADE is the other case and still stops: the packet may
+be fine and the connection was not, so "Scan again" is the primary there, with
+the label camera under it.
 
 A packet reaches that page under an id of its own, `packet:<code>`. A packaged
 product lives in D1's `product` table keyed by the barcode and has no `foods.id`
@@ -3878,8 +3921,36 @@ ignored.
 
 **A hand-set budget is one the user actually set.** `daily_goals.is_custom` stops
 the recompute permanently, so writing it for a save that merely passed through
-the goals screen freezes a user's target for good. It is set when the number
-differs from what the formula asks for, and not before.
+the goals screen freezes a user's target for good. It is set when the numbers
+differ from what the formula asks for, and not before — which is why "Use
+recommended" fills the fields with the formula's answer rather than remembering
+that they were touched, and why editing the target weight clears them outright.
+
+The corollary is easy to miss: the blur that settles a field into range must stay
+SILENT when the box already says what it means. Reported on every focus and blur,
+it froze the budget of anybody who tapped a field and tapped out again — and an
+account whose stored macros predate the adjusted protein basis opens this screen
+with figures that differ from the recommendation, so it was one tap away from
+permanent for most of them.
+
+**All four targets are edited, and they are independent.** Calories, carbs,
+protein and fat are four boxes on the goals screen and on the onboarding target
+step, and nothing re-splits one when another moves. The alternative — re-deriving
+the macros whenever the calorie total changes — silently overwrites a protein
+target somebody set on purpose, and the four rings and bars around the app have
+always been drawn against four independent numbers anyway. When the grams stop
+adding up to the calorie figure the card says what they add up to; it reports the
+difference rather than correcting a number the user just typed. The recommended
+calorie total is the calorie box's own placeholder rather than a line under it,
+which was printing the figure the box already held on every budget nobody had
+touched.
+
+**Onboarding's copy of the budget is written after the weigh-in.** The questions
+come before the account, so an edited budget rides in the MMKV draft and
+`useFinishOnboarding` upserts it as the last write. It has to be last: the
+weigh-in is what fires the recompute trigger, and a custom row written before it
+is overwritten by the trigger's own `on conflict do update`, which only skips
+rows already flagged.
 
 **A weigh-in the user typed is never overwritten by a synced one.**
 `provider is null` means "typed", and `sync_weight_readings` refuses to update a

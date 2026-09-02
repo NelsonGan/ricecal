@@ -60,6 +60,8 @@ export const zhHant = {
       kcal: '大卡',
       kcalUpper: '大卡',
       grams: '{{value}}公克',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: '公克',
       gramsOfGoal: '{{value}}/{{goal}}公克',
       kg: '公斤',
       lb: '磅',
@@ -517,9 +519,6 @@ export const zhHant = {
     target: {
       title: '你的每日額度',
       perDay: '大卡每天',
-      carbs: '碳水',
-      protein: '蛋白質',
-      fat: '脂肪',
       goalWeight: '目標體重',
       goalBy: '預計達成',
       maintain: '維持',
@@ -715,12 +714,11 @@ export const zhHant = {
       permissionBody: '相機用來讀包裝上的條碼。不會錄影，也不會上傳。',
       aim: '把相機對準包裝上的條碼。',
       noCamera: '這台裝置沒有相機，這裡沒辦法掃。',
-      missTitle: '新的包裝',
-      unknown: '我們還沒收錄這一件。用文字描述一下，我們幫你算。',
       failedTitle: '沒有回應',
       failed: '我們暫時連不上食物資料庫。包裝本身可能沒問題，是網路不行。',
       tryAgain: '重新掃',
-      describeInstead: '改成用文字描述',
+      photographLabel: '拍攝標示',
+      labelPrompt: '我們還沒有這個包裝。拍下營養標示，我們來讀取。',
     },
 
     describe: {
@@ -1129,7 +1127,8 @@ export const zhHant = {
       dailyCalories: '每日熱量',
       recommended: '建議 {{value}}',
       macroTargets: '營養素指標',
-      macroValue: '{{grams}} 公克 · {{percent}}%',
+      macrosAddUpTo: '營養素合計 {{value}} 大卡',
+      useRecommended: '使用建議值',
       goal: '目標',
       currentWeight: '目前體重',
       targetWeight: '目標體重',

@@ -169,18 +169,28 @@ grant execute on function public.gtin14 to authenticated, service_role;
 --     surplus. A flat 550 kcal deficit is a fifth of a large man's day and nearly
 --     half a small woman's; the cap is what stops one number being gentle for one
 --     body and a crash diet for another.
---   * Protein from body weight at 1.6 g/kg, the point past which the
---     meta-analytic evidence stops improving. Taking it as a share of energy has
---     it backwards: that hands out less protein exactly when a deficit makes it
---     matter most. Capped at the AMDR's 35% of energy so a floored budget stays
---     inside the range.
+--   * Protein at 1.6 g/kg, the point past which the meta-analytic evidence stops
+--     improving. Taking it as a share of energy has it backwards: that hands out
+--     less protein exactly when a deficit makes it matter most. Capped at the
+--     AMDR's 35% of energy so a floored budget stays inside the range. The kg it
+--     is per is ADJUSTED body weight above a BMI of 25 — the reference weight
+--     for the height plus a quarter of the excess — because 1.6 g/kg is
+--     prescribed against lean mass and fat mass carries almost none of the
+--     requirement.
 --   * Fat at 25% of energy, the low end of the AMDR's 20 to 35%, because what is
 --     left becomes carbohydrate and this is an app for people who eat rice twice
 --     a day. Carbohydrate is that remainder, computed last so the macros add up
 --     to the budget exactly.
 --   * Floored at 1200 kcal for women and 1500 for men, below which the guidance
 --     says medical supervision. Mifflin-St Jeor plus a percentage cut reaches
---     those easily for a small, older, sedentary body.
+--     those easily for a small, older, sedentary body. Capped at 10,000, which is
+--     the ceiling `daily_goals.kcal` will store rather than anybody's guidance.
+--
+-- Mifflin-St Jeor is used with ACTUAL body weight at every size, which is the
+-- Academy of Nutrition and Dietetics' own recommendation for obese adults as well
+-- as for everyone else. It is known to drift above a BMI of 35 or so, and the
+-- published answer to that is indirect calorimetry rather than a different
+-- formula, so the budget stays editable and this does not invent a correction.
 --
 -- kcal is rounded to the nearest 10 so the number on screen reads as a target and
 -- not as the output of a formula.
@@ -254,18 +264,38 @@ as $$
     from intent
   ),
   budget as (
-    select greatest(
+    -- Floored at the guidance, capped at what `daily_goals.kcal` will store. The
+    -- ceiling is reachable: 500 kg on the very-active multiplier asks for 10,680,
+    -- and the insert that followed would have been rejected by the check.
+    select least(greatest(
       round((tdee + goal_delta) / 10) * 10,
       case when p_sex = 'male' then 1500 else 1200 end
-    ) as kcal
+    ), 10000) as kcal
     from delta
+  ),
+  -- The weight protein is prescribed against, which is not always the weight on
+  -- the scale. Actual body weight inside the healthy BMI band, and adjusted body
+  -- weight above it: the reference weight for the height plus a quarter of the
+  -- excess. Fat mass carries almost no protein requirement, so 1.6 g/kg of a
+  -- 250 kg body asked for 400 g a day.
+  basis as (
+    select
+      kcal,
+      greatest(25 * (p_height_cm / 100) ^ 2, 1) as reference_kg
+    from budget
   ),
   split as (
     select
       kcal,
-      round(least(p_weight_kg * 1.6, kcal * 0.35 / 4)) as protein_g,
+      round(least(
+        (case
+          when p_weight_kg <= reference_kg then p_weight_kg
+          else reference_kg + (p_weight_kg - reference_kg) * 0.25
+        end) * 1.6,
+        kcal * 0.35 / 4
+      )) as protein_g,
       round(kcal * 0.25 / 9) as fat_g
-    from budget
+    from basis
   )
   select
     kcal::integer,

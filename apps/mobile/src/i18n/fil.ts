@@ -61,6 +61,8 @@ export const fil = {
       kcal: 'kcal',
       kcalUpper: 'KCAL',
       grams: '{{value}}g',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: 'g',
       gramsOfGoal: '{{value}}/{{goal}}g',
       kg: 'kg',
       lb: 'lb',
@@ -537,9 +539,6 @@ export const fil = {
     target: {
       title: 'Ang badyet mo kada araw',
       perDay: 'KCAL KADA ARAW',
-      carbs: 'CARBS',
-      protein: 'PROTINA',
-      fat: 'TABA',
       goalWeight: 'TIMBANG NA LAYUNIN',
       goalBy: 'INAASAHANG MAABOT',
       maintain: 'PANATILIHIN',
@@ -739,13 +738,13 @@ export const fil = {
         'Binabasa ng camera ang barcode sa pakete. Walang naire-record o na-a-upload.',
       aim: 'Itutok ang camera sa barcode ng pakete.',
       noCamera: 'Walang camera ang device na ito, kaya walang mai-scan dito.',
-      missTitle: 'Bagong pakete',
-      unknown: 'Wala pa kami nito. Ilarawan mo na lang at kami ang bahala.',
       failedTitle: 'Walang sagot',
       failed:
         'Hindi namin maabot ang catalogue ngayon. Baka maayos naman ang pakete; ang koneksyon ang hindi.',
       tryAgain: 'Mag-scan ulit',
-      describeInstead: 'Ilarawan na lang',
+      photographLabel: 'Kunan ng litrato ang label',
+      labelPrompt:
+        'Wala pa sa amin ang packet na ito. Kunan ng litrato ang nutrition label at babasahin namin ito.',
     },
 
     describe: {
@@ -1161,9 +1160,10 @@ export const fil = {
     goals: {
       title: 'Mga target at layunin',
       dailyCalories: 'CALORIES KADA ARAW',
-      recommended: 'INIREREKOMENDA {{value}}',
+      recommended: 'Inirerekomenda {{value}}',
       macroTargets: 'MGA TARGET NA MACRO',
-      macroValue: '{{grams}} g · {{percent}}%',
+      macrosAddUpTo: 'Umaabot sa {{value}} kcal ang macros',
+      useRecommended: 'Gamitin ang inirerekomenda',
       goal: 'TARGET',
       currentWeight: 'Kasalukuyang timbang',
       targetWeight: 'Target na timbang',

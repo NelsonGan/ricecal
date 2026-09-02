@@ -54,6 +54,8 @@ export const bn = {
       kcal: 'kcal',
       kcalUpper: 'KCAL',
       grams: '{{value}}g',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: 'g',
       gramsOfGoal: '{{value}}/{{goal}}g',
       kg: 'kg',
       lb: 'lb',
@@ -513,9 +515,6 @@ export const bn = {
     target: {
       title: 'আপনার দৈনিক হিসাব',
       perDay: 'দিনে KCAL',
-      carbs: 'কার্বস',
-      protein: 'প্রোটিন',
-      fat: 'চর্বি',
       goalWeight: 'লক্ষ্য ওজন',
       goalBy: 'পৌঁছানোর সম্ভাব্য দিন',
       maintain: 'ধরে রাখুন',
@@ -711,12 +710,11 @@ export const bn = {
       permissionBody: 'ক্যামেরা প্যাকেটের বারকোড পড়ে। কিছুই রেকর্ড বা আপলোড হয় না।',
       aim: 'ক্যামেরাটি প্যাকেটের বারকোডের দিকে ধরুন।',
       noCamera: 'এই ডিভাইসে ক্যামেরা নেই, তাই এখানে স্ক্যান করার কিছু নেই।',
-      missTitle: 'নতুন প্যাকেট',
-      unknown: 'এটি এখনো আমাদের কাছে নেই। বরং বর্ণনা করুন, আমরা হিসাব করে দেব।',
       failedTitle: 'কোনো উত্তর নেই',
       failed: 'এই মুহূর্তে তালিকায় পৌঁছাতে পারিনি। প্যাকেটটি ঠিকই থাকতে পারে; সংযোগটাই ঠিক ছিল না।',
       tryAgain: 'আবার স্ক্যান করুন',
-      describeInstead: 'বরং বর্ণনা করুন',
+      photographLabel: 'লেবেলের ছবি তুলুন',
+      labelPrompt: 'এই প্যাকেটটি এখনো আমাদের কাছে নেই। পুষ্টির লেবেলের ছবি তুলুন, আমরা সেটি পড়ে নেব।',
     },
 
     describe: {
@@ -1127,7 +1125,8 @@ export const bn = {
       dailyCalories: 'দৈনিক ক্যালরি',
       recommended: 'প্রস্তাবিত {{value}}',
       macroTargets: 'ম্যাক্রো লক্ষ্য',
-      macroValue: '{{grams}} g · {{percent}}%',
+      macrosAddUpTo: 'ম্যাক্রো মিলে {{value}} kcal',
+      useRecommended: 'প্রস্তাবিত মান নিন',
       goal: 'লক্ষ্য',
       currentWeight: 'বর্তমান ওজন',
       targetWeight: 'লক্ষ্য ওজন',
