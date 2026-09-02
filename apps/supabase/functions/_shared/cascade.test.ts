@@ -9,11 +9,14 @@
 
 import {
   bestFit,
+  clampQuantity,
   componentCandidates,
+  measuredQuantity,
   oneArticleGrams,
   priceRow,
   type SearchRow,
 } from './cascade.ts'
+import { namesAPortion } from './portion.ts'
 
 const eq = (got: unknown, want: unknown, what: string) => {
   if (got !== want) throw new Error(`${what}: expected ${want}, got ${got}`)
@@ -273,4 +276,41 @@ Deno.test('the article rule stays out of the helping cap and out of a helping', 
 
   const laksa = row('Laksa', 500, '1 bowl (400 g)', 400)
   eq(oneArticleGrams(priceRow(laksa, 480), 480), null, 'a bowl is a helping, and helpings vary')
+})
+
+// The dish tier's size bound, and the latte that showed it had one rule where it
+// needed two. `resolveByDish` picks between these by asking `namesAPortion` of
+// the row it matched, so the arithmetic either side is what there is to test.
+
+Deno.test('a drink priced per fluid ounce is converted, not capped at three', () => {
+  // The real row: USDA publishes it per fluid ounce, so one "serving" is 30 g
+  // and 8 kcal. A photographed latte matched it and the glass held 350 g.
+  const perFlOz = row('Coffee, Iced Latte', 8, '1 fl oz', 30)
+  const byWeight = 350 / (perFlOz.serving_grams ?? 1)
+  near(byWeight, 11.7, 'a 350 g glass against a 30 g fluid ounce')
+
+  eq(namesAPortion(perFlOz.serving_label), false, 'a fluid ounce is a measurement')
+  eq(measuredQuantity(byWeight), 11.75, 'so the multiple is a conversion')
+  near(perFlOz.kcal * measuredQuantity(byWeight), 94, 'and the glass is priced as one')
+
+  // What shipped instead: the helping cap, applied to a unit of measure.
+  eq(clampQuantity(byWeight), 3, 'three fluid ounces of a latte')
+  near(perFlOz.kcal * clampQuantity(byWeight), 24, '24 kcal for a drink holding about 180')
+})
+
+Deno.test('a helping is still capped at three', () => {
+  // The row the same photograph should reach. Eleven of these is not a portion
+  // anybody was served, so the cap is right here and only here.
+  const regular = row('Latte', 190, 'Regular (350 ml)', 350)
+  eq(namesAPortion(regular.serving_label), true, 'a regular is a helping')
+  eq(clampQuantity(11.7), 3, 'nobody drinks eleven regular lattes')
+  eq(clampQuantity(0.1), 0.5, 'nor a tenth of one')
+})
+
+Deno.test('a converted quantity is bounded too', () => {
+  // The numerator is still the model's guess at a weight, so a guess wrong by a
+  // factor must not buy an unbounded multiple.
+  eq(measuredQuantity(400), 20, 'a 600 ml drink by the fluid ounce is the far side of this')
+  eq(measuredQuantity(0.01), 0.25, 'and a quarter is the floor')
+  eq(measuredQuantity(4.5), 4.5, 'the README\'s 450 g plate against a "100 g" row')
 })
