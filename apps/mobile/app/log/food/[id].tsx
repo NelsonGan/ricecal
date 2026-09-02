@@ -425,26 +425,55 @@ export default function FoodDetail() {
    * anything else, so a rescan would otherwise show the cached "we do not have
    * this one" without asking anybody.
    */
-  const reopenLog = (which: 'barcode' | 'describe') => {
+  const reopenLog = (which: 'barcode' | 'label') => {
     queryClient.removeQueries({ queryKey: keys.food(params.id) })
     finish()
     router.push({ pathname: '/log', params: { panel: which } })
   }
   const rescan = () => reopenLog('barcode')
-  const describeInstead = () => reopenLog('describe')
+  /** The camera, pointed at the panel on the back of the packet. */
+  const photographLabel = () => reopenLog('label')
+
+  /**
+   * A packet nobody has a record of hands straight over to that camera.
+   *
+   * This used to stop on a screen whose primary button was "Describe instead",
+   * which asks somebody holding the packet to type out what is printed on the
+   * back of it. `scan-meal` reads a photographed nutrition panel and logs it
+   * exactly — `resolveByLabel`, no guessing and no cascade — so the answer to a
+   * miss is to turn the camera around, not to open a text box.
+   *
+   * Once per packet, and only for a MISS: a lookup that could not be made is a
+   * job for the network, and scanning the same box again is likely to just work.
+   *
+   * No dependency array, because the ref is the guard and not the list: every
+   * value below is derived per render, so a list would either re-run this on
+   * every one of them or go stale. The ref makes "once" true either way.
+   */
+  const handedOff = useRef(false)
+  useEffect(() => {
+    if (!packet || isPending || isError || catalogueFood || handedOff.current) return
+    handedOff.current = true
+    photographLabel()
+  })
 
   if (!food) {
     /**
      * A scanned packet, before the answer and when the answer is nothing.
      * Everything else reaching this screen was picked off a list, so the food is
      * already in hand and this branch is a blank frame nobody sees.
+     *
+     * A MISS never lands here: `missing` is handed to the camera above, and the
+     * skeleton stands in for the frame between deciding that and arriving. What
+     * is left is the wait itself and a lookup that could not be made, which is
+     * the one outcome worth scanning the same box again for.
      */
     if (packet) {
       return (
         <ScannedPacket
-          state={isPending ? 'looking' : isError ? 'failed' : 'missing'}
+          state={isError ? 'failed' : 'looking'}
           onRetry={rescan}
-          onDescribe={describeInstead}
+          onPhotographLabel={photographLabel}
           onBack={() => goBack()}
         />
       )

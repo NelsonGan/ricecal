@@ -59,6 +59,8 @@ export const id = {
       kcal: 'kkal',
       kcalUpper: 'KKAL',
       grams: '{{value}}g',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: 'g',
       gramsOfGoal: '{{value}}/{{goal}}g',
       kg: 'kg',
       lb: 'lb',
@@ -530,9 +532,6 @@ export const id = {
     target: {
       title: 'Jatah harianmu',
       perDay: 'KKAL PER HARI',
-      carbs: 'KARBO',
-      protein: 'PROTEIN',
-      fat: 'LEMAK',
       goalWeight: 'BERAT TUJUAN',
       goalBy: 'DIPERKIRAKAN',
       maintain: 'PERTAHANKAN',
@@ -730,13 +729,12 @@ export const id = {
       permissionBody: 'Kamera membaca barkode di kemasan. Tidak ada yang direkam atau diunggah.',
       aim: 'Arahkan kamera ke barkode di kemasan.',
       noCamera: 'Perangkat ini tidak punya kamera, jadi tidak ada yang bisa dipindai di sini.',
-      missTitle: 'Kemasan baru',
-      unknown: 'Kami belum punya yang ini. Ceritakan saja dan kami akan menghitungnya.',
       failedTitle: 'Tidak ada jawaban',
       failed:
         'Kami tidak bisa menghubungi katalog saat ini. Kemasannya mungkin tidak apa-apa; koneksinya yang bermasalah.',
       tryAgain: 'Pindai lagi',
-      describeInstead: 'Ceritakan saja',
+      photographLabel: 'Foto labelnya',
+      labelPrompt: 'Kemasan ini belum ada pada kami. Foto label gizinya dan kami akan membacanya.',
     },
 
     describe: {
@@ -1150,9 +1148,10 @@ export const id = {
     goals: {
       title: 'Target dan sasaran',
       dailyCalories: 'KALORI HARIAN',
-      recommended: 'DISARANKAN {{value}}',
+      recommended: 'Disarankan {{value}}',
       macroTargets: 'TARGET MAKRO',
-      macroValue: '{{grams}} g · {{percent}}%',
+      macrosAddUpTo: 'Makro berjumlah {{value}} kkal',
+      useRecommended: 'Pakai anjuran',
       goal: 'TARGET',
       currentWeight: 'Berat sekarang',
       targetWeight: 'Berat target',

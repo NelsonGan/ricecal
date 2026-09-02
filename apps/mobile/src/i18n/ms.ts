@@ -60,6 +60,8 @@ export const ms = {
       kcal: 'kcal',
       kcalUpper: 'KCAL',
       grams: '{{value}}g',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: 'g',
       gramsOfGoal: '{{value}}/{{goal}}g',
       kg: 'kg',
       lb: 'lb',
@@ -540,9 +542,6 @@ export const ms = {
     target: {
       title: 'Bajet harian anda',
       perDay: 'KCAL SEHARI',
-      carbs: 'KARBO',
-      protein: 'PROTEIN',
-      fat: 'LEMAK',
       goalWeight: 'BERAT SASARAN',
       goalBy: 'DIJANGKA MENJELANG',
       maintain: 'KEKALKAN',
@@ -741,13 +740,12 @@ export const ms = {
         'Kamera membaca barkod pada bungkusan. Tiada apa-apa dirakam atau dimuat naik.',
       aim: 'Halakan kamera ke barkod pada bungkusan.',
       noCamera: 'Peranti ini tiada kamera, jadi tiada apa-apa untuk mengimbas di sini.',
-      missTitle: 'Bungkusan baharu',
-      unknown: 'Kami belum ada yang ini. Terangkan sahaja dan kami akan kira.',
       failedTitle: 'Tiada jawapan',
       failed:
         'Kami tidak dapat menghubungi katalog buat masa ini. Bungkusan itu mungkin tiada masalah; sambungannya yang bermasalah.',
       tryAgain: 'Imbas lagi',
-      describeInstead: 'Terangkan sahaja',
+      photographLabel: 'Ambil gambar label',
+      labelPrompt: 'Kami belum ada pek ini. Ambil gambar label pemakanan dan kami akan membacanya.',
     },
 
     describe: {
@@ -1166,9 +1164,10 @@ export const ms = {
     goals: {
       title: 'Sasaran dan matlamat',
       dailyCalories: 'KALORI HARIAN',
-      recommended: 'DISYORKAN {{value}}',
+      recommended: 'Disyorkan {{value}}',
       macroTargets: 'SASARAN MAKRO',
-      macroValue: '{{grams}} g · {{percent}}%',
+      macrosAddUpTo: 'Makro berjumlah {{value}} kcal',
+      useRecommended: 'Guna cadangan',
       goal: 'SASARAN',
       currentWeight: 'Berat semasa',
       targetWeight: 'Berat sasaran',

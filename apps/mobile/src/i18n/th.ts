@@ -60,6 +60,8 @@ export const th = {
       kcal: 'แคล',
       kcalUpper: 'แคล',
       grams: '{{value}} ก.',
+      /** The bare symbol, for a field whose value is typed beside it. */
+      gram: 'ก.',
       gramsOfGoal: '{{value}}/{{goal}} ก.',
       kg: 'กก.',
       lb: 'ปอนด์',
@@ -517,9 +519,6 @@ export const th = {
     target: {
       title: 'โควตาต่อวันของคุณ',
       perDay: 'แคลต่อวัน',
-      carbs: 'คาร์บ',
-      protein: 'โปรตีน',
-      fat: 'ไขมัน',
       goalWeight: 'น้ำหนักเป้าหมาย',
       goalBy: 'คาดว่าถึงเมื่อ',
       maintain: 'คงไว้',
@@ -715,12 +714,11 @@ export const th = {
       permissionBody: 'กล้องใช้อ่านบาร์โค้ดบนซอง ไม่มีการบันทึกหรืออัปโหลดอะไร',
       aim: 'เล็งกล้องไปที่บาร์โค้ดบนซอง',
       noCamera: 'เครื่องนี้ไม่มีกล้อง จึงไม่มีอะไรให้สแกนที่นี่',
-      missTitle: 'ซองใหม่',
-      unknown: 'เรายังไม่มีอันนี้ ลองบรรยายแทน แล้วเราจะคำนวณให้',
       failedTitle: 'ไม่มีการตอบกลับ',
       failed: 'ตอนนี้เราติดต่อคลังอาหารไม่ได้ ซองอาจไม่มีปัญหา ปัญหาอยู่ที่การเชื่อมต่อ',
       tryAgain: 'สแกนอีกครั้ง',
-      describeInstead: 'บรรยายแทน',
+      photographLabel: 'ถ่ายรูปฉลาก',
+      labelPrompt: 'เรายังไม่มีสินค้าชิ้นนี้ ถ่ายรูปฉลากโภชนาการแล้วเราจะอ่านให้',
     },
 
     describe: {
@@ -1129,7 +1127,8 @@ export const th = {
       dailyCalories: 'แคลอรีต่อวัน',
       recommended: 'แนะนำ {{value}}',
       macroTargets: 'เป้าสารอาหารหลัก',
-      macroValue: '{{grams}} ก. · {{percent}}%',
+      macrosAddUpTo: 'สารอาหารหลักรวมได้ {{value}} แคล',
+      useRecommended: 'ใช้ค่าที่แนะนำ',
       goal: 'เป้าหมาย',
       currentWeight: 'น้ำหนักปัจจุบัน',
       targetWeight: 'น้ำหนักเป้าหมาย',

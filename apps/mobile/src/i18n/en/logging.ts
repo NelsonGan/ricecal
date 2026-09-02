@@ -172,13 +172,13 @@ export const logging = {
     permissionBody: 'The camera reads the barcode on the packet. Nothing is recorded or uploaded.',
     aim: 'Point the camera at the barcode on the packet.',
     noCamera: 'This device has no camera, so there is nothing to scan with here.',
-    missTitle: 'New packet',
-    unknown: 'We do not have this one yet. Describe it instead and we will work it out.',
     failedTitle: 'No answer',
     failed:
       'We could not reach the catalogue just now. The packet may be fine; the connection was not.',
     tryAgain: 'Scan again',
-    describeInstead: 'Describe it instead',
+    photographLabel: 'Photograph the label',
+    labelPrompt:
+      'We do not have this packet yet. Photograph the nutrition label and we will read it.',
   },
 
   /**

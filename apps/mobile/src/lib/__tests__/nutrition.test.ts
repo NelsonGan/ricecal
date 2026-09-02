@@ -10,6 +10,9 @@ import {
   goalDate,
   macroSplit,
   maintenanceRate,
+  proteinBasisKg,
+  targetWeightRange,
+  WEIGHT_RANGE,
   weeklyPace,
 } from '../nutrition'
 
@@ -201,8 +204,8 @@ describe('the budget', () => {
 describe('the macro split', () => {
   it('takes protein from body weight, not from a share of energy', () => {
     // 1.6 g/kg is where the meta-analytic evidence stops improving.
-    expect(macroSplit(2000, 65).protein).toBe(104)
-    expect(macroSplit(2600, 65).protein).toBe(104)
+    expect(macroSplit(2000, woman).protein).toBe(104)
+    expect(macroSplit(2600, woman).protein).toBe(104)
   })
 
   /**
@@ -218,12 +221,12 @@ describe('the macro split', () => {
   })
 
   it('holds protein inside the AMDR ceiling on a small budget', () => {
-    const { protein } = macroSplit(1200, 120)
+    const { protein } = macroSplit(1200, { weightKg: 120, heightCm: 164 })
     expect((protein * 4) / 1200).toBeLessThanOrEqual(0.35)
   })
 
   it('keeps fat at a quarter of energy, inside the AMDR', () => {
-    const { fat } = macroSplit(2000, 65)
+    const { fat } = macroSplit(2000, woman)
     const share = (fat * 9) / 2000
     expect(share).toBeGreaterThanOrEqual(0.2)
     expect(share).toBeLessThanOrEqual(0.35)
@@ -232,9 +235,26 @@ describe('the macro split', () => {
   /** Carbohydrate is the remainder, which is what makes the three add up. */
   it('adds up to the budget', () => {
     for (const kcal of [1200, 1500, 1840, 2310, 3000]) {
-      const { carbs, protein, fat } = macroSplit(kcal, 70)
+      const { carbs, protein, fat } = macroSplit(kcal, { weightKg: 70, heightCm: 175 })
       expect(carbs * 4 + protein * 4 + fat * 9).toBeCloseTo(kcal, -1)
     }
+  })
+
+  /**
+   * The regression the weight field's new ceiling would otherwise have shipped.
+   * 1.6 g/kg is prescribed against a body that is mostly lean, and 250 kg is not:
+   * on actual body weight this asked for 400 g of protein a day.
+   */
+  it('prescribes protein against adjusted body weight above the healthy band', () => {
+    // 1.75 m: a healthy weight tops out at 76.6 kg, so a 76 kg body is unchanged
+    // and everything above it counts a quarter.
+    expect(proteinBasisKg(175, 70)).toBe(70)
+    expect(proteinBasisKg(175, 76)).toBe(76)
+    expect(proteinBasisKg(175, 250)).toBeCloseTo(76.5625 + (250 - 76.5625) / 4, 3)
+  })
+
+  it('gives the weight straight back when there is no height to measure it against', () => {
+    expect(proteinBasisKg(0, 80)).toBe(80)
   })
 
   it('leaves enough carbohydrate for a rice-based diet', () => {
@@ -242,6 +262,35 @@ describe('the macro split', () => {
     // Not the AMDR's 45% — high protein in grams squeezes it — but well clear of
     // a low-carb plan, which this app is not.
     expect((carbs * 4) / kcal).toBeGreaterThan(0.35)
+  })
+})
+
+describe('the bounds the questions answer within', () => {
+  /**
+   * The budget cannot exceed what `daily_goals.kcal` will store, and Mifflin-St
+   * Jeor asks for more than that at the top of the weight field's range: the
+   * insert would have been rejected and the account left with no budget at all.
+   */
+  it('never asks for a budget the column will refuse', () => {
+    const largest: BodyInput = {
+      sex: 'male',
+      weightKg: WEIGHT_RANGE.max,
+      heightCm: 220,
+      age: 13,
+      activity: 'veryActive',
+      targetWeightKg: WEIGHT_RANGE.max + 50,
+    }
+    expect(computeTargets(largest).kcal).toBe(10_000)
+  })
+
+  /**
+   * A target ON the current weight is how a user says they have no goal, so a
+   * track that stops short of them makes that unsayable. It used to stop at 120.
+   */
+  it('lets the target slider reach the body it is for', () => {
+    expect(targetWeightRange(65)).toEqual({ min: 40, max: 120 })
+    expect(targetWeightRange(260).max).toBeGreaterThan(260)
+    expect(targetWeightRange(WEIGHT_RANGE.max).max).toBe(WEIGHT_RANGE.max)
   })
 })
 
@@ -298,7 +347,10 @@ describe('the database copy', () => {
     ['the surplus cap', 'tdee * 0.15'],
     ['the target deadband', 'abs(remaining) < 0.5'],
     ['the taper horizon', 'abs(remaining) / 4'],
-    ['protein per kg', 'p_weight_kg * 1.6'],
+    ['protein per kg', '* 1.6'],
+    ['the healthy-BMI reference weight', '25 * (p_height_cm / 100) ^ 2'],
+    ['the share of the excess that counts', '(p_weight_kg - reference_kg) * 0.25'],
+    ['the ceiling the kcal column will store', '), 10000)'],
     ['the protein ceiling', 'kcal * 0.35 / 4'],
     ['the fat share', 'kcal * 0.25 / 9'],
     ["the women's floor", '1200'],

@@ -1,29 +1,21 @@
 import { format } from 'date-fns'
 import { useRouter } from 'expo-router'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useSession } from '@/data'
 import { StepHeader, stepNumber, TOTAL_STEPS, useOnboardingDraft } from '@/features/onboarding'
+import {
+  BudgetEditor,
+  type BudgetFields,
+  budgetFields,
+  isRecommended,
+  readBudget,
+} from '@/features/shared'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { computeTargets, goalDate } from '@/lib/nutrition'
-import type { StatTileTone } from '@/ui'
-import { Button, CalorieRing, Card, Icon, type IconProps, Screen, StatTile, Text } from '@/ui'
-
-/**
- * The three macros, in the app's own colours.
- *
- * Kaya, hibiscus, teh — the same triple as `MacroBars` on Today, the entry
- * screen and the weekly report. This screen is the FIRST place a user meets
- * them, so getting it wrong here would teach the colour and then contradict it
- * on the next screen. That is what the `teh` tone in `StatTile` is for; before
- * it, fat had no soft surface anywhere in the system.
- */
-const MACROS = [
-  { key: 'carbs', tone: 'kaya', icon: { set: 'food', name: 'carb-block' } },
-  { key: 'protein', tone: 'hibiscus', icon: { set: 'food', name: 'protein-block' } },
-  { key: 'fat', tone: 'teh', icon: { set: 'food', name: 'fat-block' } },
-] as const satisfies ReadonlyArray<{ key: string; tone: StatTileTone; icon: IconProps }>
+import { Button, CalorieRing, Icon, Screen, StatTile, Text } from '@/ui'
 
 /**
  * Your target: the budget, worked out on the phone.
@@ -44,7 +36,7 @@ const MACROS = [
 export default function TargetStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
-  const { draft } = useOnboardingDraft()
+  const { draft, patch } = useOnboardingDraft()
   const { session } = useSession()
 
   // Defaults that only matter if a screen was skipped, which the Continue gates
@@ -64,12 +56,46 @@ export default function TargetStep() {
     targetWeightKg,
   }
 
-  const targets = computeTargets(body)
+  const recommended = computeTargets(body)
   // From the same body as the budget, so the date and the number on the ring
   // cannot describe different plans.
   const reachedOn = goalDate(body, targetWeightKg, new Date())
 
-  const grams = { carbs: targets.carbs, protein: targets.protein, fat: targets.fat }
+  /**
+   * The four figures, as they are being typed.
+   *
+   * Seeded from the draft rather than from the recommendation, so walking back to
+   * the questions and forward again shows what was typed here. `undefined` means
+   * untouched, and untouched is what the formula says — which is also what makes
+   * the ring above move as the calorie box is edited.
+   *
+   * A typed budget therefore SURVIVES a change to the body it was typed against,
+   * unlike the goals screen, where editing the target weight clears it. That is
+   * deliberate: there a slider moved, here somebody typed a number a moment ago,
+   * and the recommendation for the new body is one tap away on the card itself.
+   */
+  const [fields, setFields] = useState<BudgetFields | undefined>(() =>
+    draft.targets ? budgetFields(draft.targets) : undefined,
+  )
+  const shown = fields ?? budgetFields(recommended)
+  const budget = readBudget(shown, recommended)
+
+  /**
+   * Written to the draft on every keystroke rather than on the way out.
+   *
+   * The screen after this is the ACCOUNT, which leaves the flow for `(auth)` and
+   * may come back to `finish` rather than here — there is no unmount this could
+   * hang off that is guaranteed to run before the flush. The draft is MMKV and
+   * the write is a few bytes.
+   *
+   * Cleared back to `undefined` when the fields say what the formula does, so a
+   * user who typed a number and pressed `Use recommended` leaves with an
+   * automatic budget rather than a frozen copy of the same figures.
+   */
+  const edit = (next: BudgetFields) => {
+    setFields(next)
+    patch({ targets: isRecommended(next, recommended) ? undefined : readBudget(next, recommended) })
+  }
 
   /**
    * On to the account, which is the next mark on the bar.
@@ -140,8 +166,10 @@ export default function TargetStep() {
 
       <View className="items-center gap-2 pt-2">
         <CalorieRing
-          value={targets.kcal}
-          goal={targets.kcal}
+          // Both the same figure, and both the EDITED one: the ring is what the
+          // calorie box below is a box for, so it has to answer a keystroke.
+          value={budget.kcal}
+          goal={budget.kcal}
           /**
            * 156 and a thinner stroke, because at the default 196 the ring, the
            * card and the two plan tiles ran past the CTA on a 6.3" phone, so the
@@ -161,7 +189,7 @@ export default function TargetStep() {
           // A full ring here is the plan, not a day gone over, so the automatic
           // "you are at 100%" kaya would say the wrong thing.
           tone="pandan"
-          centerLabel={targets.kcal.toLocaleString()}
+          centerLabel={budget.kcal.toLocaleString()}
           centerCaption={t('target.perDay')}
         />
         <Text variant="screenTitle" className="text-center">
@@ -169,25 +197,20 @@ export default function TargetStep() {
         </Text>
       </View>
 
-      {/* No card title. It read "YOUR DAILY SPLIT" over three tiles labelled
-          CARBS, PROTEIN and FAT, which is the same thing said twice: the tiles
-          ARE the split, and nothing else on the screen could be mistaken for
-          it. Dropping the heading also buys back the height the ring above it
-          was asked to give up. */}
-      <Card>
-        <View className="flex-row gap-2.5">
-          {MACROS.map((macro) => (
-            <StatTile
-              key={macro.key}
-              className="flex-1"
-              tone={macro.tone}
-              icon={<Icon {...macro.icon} size={26} />}
-              label={t(`target.${macro.key}`)}
-              value={t('common:unit.grams', { value: grams[macro.key] })}
-            />
-          ))}
-        </View>
-      </Card>
+      {/* Editable, and this is the first screen in the flow where a number the
+          app worked out can be argued with. It used to be three read-only tiles
+          under a ring, over a button reading "This looks right" and a second one
+          that walked back to the questions — so the only way to change the
+          protein was to change the body it was computed from.
+
+          The figures ride in the draft, because there is still no account to put
+          them in; `finish` writes them as a custom budget once there is. */}
+      <BudgetEditor
+        value={shown}
+        onChange={edit}
+        recommended={recommended}
+        onReset={() => edit(budgetFields(recommended))}
+      />
 
       {/* Where the plan is going, as two figures rather than a sentence.
           A maintain plan has no date to reach, so the second tile says what it
