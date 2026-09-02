@@ -1160,7 +1160,7 @@ export const fil = {
     goals: {
       title: 'Mga target at layunin',
       dailyCalories: 'CALORIES KADA ARAW',
-      recommended: 'INIREREKOMENDA {{value}}',
+      recommended: 'Inirerekomenda {{value}}',
       macroTargets: 'MGA TARGET NA MACRO',
       macrosAddUpTo: 'Umaabot sa {{value}} kcal ang macros',
       useRecommended: 'Gamitin ang inirerekomenda',

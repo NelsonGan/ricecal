@@ -68,6 +68,11 @@ export default function TargetStep() {
    * the questions and forward again shows what was typed here. `undefined` means
    * untouched, and untouched is what the formula says — which is also what makes
    * the ring above move as the calorie box is edited.
+   *
+   * A typed budget therefore SURVIVES a change to the body it was typed against,
+   * unlike the goals screen, where editing the target weight clears it. That is
+   * deliberate: there a slider moved, here somebody typed a number a moment ago,
+   * and the recommendation for the new body is one tap away on the card itself.
    */
   const [fields, setFields] = useState<BudgetFields | undefined>(() =>
     draft.targets ? budgetFields(draft.targets) : undefined,

@@ -1164,7 +1164,7 @@ export const ms = {
     goals: {
       title: 'Sasaran dan matlamat',
       dailyCalories: 'KALORI HARIAN',
-      recommended: 'DISYORKAN {{value}}',
+      recommended: 'Disyorkan {{value}}',
       macroTargets: 'SASARAN MAKRO',
       macrosAddUpTo: 'Makro berjumlah {{value}} kcal',
       useRecommended: 'Guna cadangan',

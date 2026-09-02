@@ -1148,7 +1148,7 @@ export const id = {
     goals: {
       title: 'Target dan sasaran',
       dailyCalories: 'KALORI HARIAN',
-      recommended: 'DISARANKAN {{value}}',
+      recommended: 'Disarankan {{value}}',
       macroTargets: 'TARGET MAKRO',
       macrosAddUpTo: 'Makro berjumlah {{value}} kkal',
       useRecommended: 'Pakai anjuran',

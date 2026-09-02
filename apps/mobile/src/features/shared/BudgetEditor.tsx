@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -55,6 +56,11 @@ export function readBudget(fields: BudgetFields, fallback: Budget): Budget {
   }
 }
 
+/** Whether two budgets say the same thing. */
+export function sameBudget(a: Budget, b: Budget): boolean {
+  return FIELDS.every((field) => a[field] === b[field])
+}
+
 /**
  * Whether these fields still MEAN what the formula asks for.
  *
@@ -64,8 +70,7 @@ export function readBudget(fields: BudgetFields, fallback: Budget): Budget {
  * `is_custom` is the flag that stops the database ever recomputing.
  */
 export function isRecommended(fields: BudgetFields, recommended: Budget): boolean {
-  const read = readBudget(fields, recommended)
-  return FIELDS.every((field) => read[field] === recommended[field])
+  return sameBudget(readBudget(fields, recommended), recommended)
 }
 
 /**
@@ -79,8 +84,9 @@ export type BudgetEditorProps = {
   value: BudgetFields
   onChange: (next: BudgetFields) => void
   /**
-   * What the formula asks for, for this body and this plan. Named under the
-   * calorie box, and what the reset link fills all four with.
+   * What the formula asks for, for this body and this plan. It names itself in
+   * the calorie box's placeholder, and it is what the reset link fills all four
+   * fields with.
    */
   recommended: Budget
   /** Puts the four figures back under the formula's control. */
@@ -111,12 +117,33 @@ export function BudgetEditor({ value, onChange, recommended, onReset }: BudgetEd
   const set = (field: keyof BudgetFields) => (next: string) => onChange({ ...value, [field]: next })
 
   /**
+   * What the box held when it was focused. One ref for all four, because only
+   * one of them can be focused at a time.
+   */
+  const before = useRef('')
+
+  /**
    * Blur is where the clamp becomes visible: "show me what you understood". The
    * same choice the height and weight fields on the `about` step make, and it is
    * what stops 300 kcal being saved as the 800 floor without saying so.
+   *
+   * A box left EMPTY goes back to what it held rather than to the formula's
+   * answer. Backspacing to nothing is an ordinary step on the way to typing
+   * something else, and a user who taps away mid-thought should not find their
+   * protein target quietly replaced by the recommendation.
+   *
+   * Silent when the box already says what it means, so a focus and a blur are
+   * not an edit. Nothing downstream depends on that any more — `is_custom` is
+   * read off the FIGURES rather than off whether `onChange` has fired — but a
+   * screen re-rendering because somebody tapped a field is work for nothing.
    */
-  const settle = (field: keyof BudgetFields) => () =>
-    onChange({ ...value, [field]: String(readBudget(value, recommended)[field]) })
+  const settle = (field: keyof BudgetFields) => () => {
+    const settled = value[field].trim()
+      ? String(readBudget(value, recommended)[field])
+      : before.current
+    if (settled === value[field]) return
+    onChange({ ...value, [field]: settled })
+  }
 
   const budget = readBudget(value, recommended)
   const fromMacros = energyOf(budget)
@@ -128,6 +155,9 @@ export function BudgetEditor({ value, onChange, recommended, onReset }: BudgetEd
       label={t(`common:macro.${field}`)}
       value={value[field]}
       onChangeText={set(field)}
+      onFocus={() => {
+        before.current = value[field]
+      }}
       onBlur={settle(field)}
       keyboardType="number-pad"
       placeholder={String(recommended[field])}
@@ -140,25 +170,32 @@ export function BudgetEditor({ value, onChange, recommended, onReset }: BudgetEd
 
   return (
     <>
-      <Card title={t('profile:goals.dailyCalories')}>
+      {/* No card TITLE, and the field carries the name instead. The two would be
+          the same words one above the other — but the label has a second job the
+          title cannot do: it is what the app's own number pad puts in its header,
+          and this field is under the pad by the time it opens. */}
+      <Card>
         <TextField
+          label={t('profile:goals.dailyCalories')}
           value={value.kcal}
           onChangeText={set('kcal')}
+          onFocus={() => {
+            before.current = value.kcal
+          }}
           onBlur={settle('kcal')}
           /* Whole calories. Nobody has half a kilocalorie of intent about a day. */
           keyboardType="number-pad"
-          placeholder={String(recommended.kcal)}
+          // The recommendation, named where it is read: this used to be a
+          // caption under the box as well, printing the same figure the box
+          // already held on every budget nobody had touched.
+          placeholder={t('profile:goals.recommended', {
+            value: recommended.kcal.toLocaleString(),
+          })}
           selectTextOnFocus
           maxLength={5}
           inputClassName="font-display text-[26px]"
-          // The card heading already says what this is; a field label under it
-          // would be the same words a second time.
-          accessibilityLabel={t('profile:goals.dailyCalories')}
           rightSlot={<Text variant="caption">{t('common:unit.kcal')}</Text>}
         />
-        <Text variant="caption">
-          {t('profile:goals.recommended', { value: recommended.kcal.toLocaleString() })}
-        </Text>
       </Card>
 
       <Card title={t('profile:goals.macroTargets')}>

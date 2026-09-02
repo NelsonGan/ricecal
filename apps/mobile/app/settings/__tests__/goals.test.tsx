@@ -98,6 +98,70 @@ beforeEach(() => {
   mockStored = { kcal: 1640, carbs: 203, protein: 104, fat: 46, waterMl: 2000, isCustom: false }
 })
 
+it('names the recommendation in the calorie box rather than under it', async () => {
+  await render(<GoalsScreen />)
+
+  // The placeholder is where it is read. It was a caption below the field as
+  // well, printing the same figure the field already held.
+  expect(screen.getByPlaceholderText('Recommended 1,640')).toBeTruthy()
+  expect(screen.queryByText('Recommended 1,640')).toBeNull()
+})
+
+/**
+ * The regression the blur settle introduced and this pins shut. `is_custom`
+ * stops the database recomputing for good, and tapping into a field and out
+ * again is not a budget somebody set.
+ */
+it('does not freeze the budget for a field that was focused and left alone', async () => {
+  // A stored budget that does NOT match what the formula now asks for, which is
+  // the state every account whose protein target predates the adjusted basis
+  // opens this screen in. Matching figures would pass either way.
+  mockStored = { ...mockStored, protein: 130, isCustom: false }
+  await render(<GoalsScreen />)
+
+  // Typing nothing still focuses the field and blurs it on the way out, which is
+  // the whole of the interaction being pinned. `fireEvent` would do it too and
+  // leaves React's root unusable for the rest of the file — see the note at the
+  // top of the `about` step's tests.
+  await user.type(screen.getByLabelText('Protein'), '')
+  await save()
+
+  expect(mockSetTargets).toHaveBeenCalledWith(
+    expect.objectContaining({ protein: 130, isCustom: false }),
+  )
+})
+
+/**
+ * The same rule, one step further in: a box cleared and left is put back by the
+ * blur, which lands on a budget identical to the stored one. Identical is not
+ * edited, however many events it took to get there.
+ */
+it('does not freeze the budget for a figure cleared and restored', async () => {
+  mockStored = { ...mockStored, protein: 130, isCustom: false }
+  await render(<GoalsScreen />)
+
+  await user.clear(screen.getByLabelText('Protein'))
+  expect(screen.getByLabelText('Protein')).toHaveDisplayValue('130')
+
+  await save()
+  expect(mockSetTargets).toHaveBeenCalledWith(
+    expect.objectContaining({ protein: 130, isCustom: false }),
+  )
+})
+
+/** The other half of the settle: a figure outside the range comes back visibly. */
+it('shows what it understood when a figure lands outside the range', async () => {
+  await render(<GoalsScreen />)
+
+  // Appended to the 1,640 already there, which lands past the ceiling
+  // `daily_goals.kcal` will store. `user.type` ends in a blur, which is where
+  // the clamp becomes visible rather than the save quietly writing a different
+  // number.
+  await user.type(screen.getByLabelText('DAILY CALORIES'), '0')
+
+  expect(screen.getByLabelText('DAILY CALORIES')).toHaveDisplayValue('10000')
+})
+
 it('shows the stored budget in four boxes', async () => {
   mockStored = { ...mockStored, protein: 150, isCustom: true }
   await render(<GoalsScreen />)

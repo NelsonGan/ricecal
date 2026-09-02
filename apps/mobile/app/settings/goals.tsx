@@ -21,6 +21,7 @@ import {
   budgetFields,
   isRecommended,
   readBudget,
+  sameBudget,
 } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { computeTargets, targetWeightRange, weeklyPace } from '@/lib/nutrition'
@@ -112,10 +113,9 @@ export default function GoalsScreen() {
   const currentSteps = steps ?? settings?.step_goal ?? 8000
 
   // What the same formula the database runs would suggest for this body and this
-  // target — named under the calorie box so a hand-set number has a reference,
-  // and what the editor's reset link fills all four fields with. Against the
-  // target being EDITED rather than the stored one, so the reference moves as it
-  // does.
+  // target — named in the calorie box's placeholder, and what the editor's reset
+  // link fills all four fields with. Against the target being EDITED rather than
+  // the stored one, so the reference moves as it does.
   const body = bodyFrom(profile, weight, { targetWeightKg: currentTargetWeight })
   const recommended: Budget = body
     ? computeTargets(body)
@@ -125,12 +125,12 @@ export default function GoalsScreen() {
   /**
    * Whether the plan under the budget is not the one that produced it.
    *
-   * The bug this exists for: the calorie slider was seeded from the STORED
+   * The bug this exists for: the calorie control was seeded from the STORED
    * budget and nothing re-seeded it, so changing the plan moved the
-   * "recommended" caption and left the number above it where it was — and then
-   * Save wrote that stale figure, flagged custom, which stopped the database
-   * ever recomputing it again. A user changing their goal got a budget built for
-   * the goal they had just abandoned, permanently.
+   * recommendation and left the figure beside it where it was — and then Save
+   * wrote that stale number, flagged custom, which stopped the database ever
+   * recomputing it again. A user changing their goal got a budget built for the
+   * goal they had just abandoned, permanently.
    */
   const planChanged = currentTargetWeight !== storedTargetWeight
 
@@ -163,19 +163,25 @@ export default function GoalsScreen() {
    * earned rather than assumed. Written as `true` unconditionally, opening this
    * screen and pressing Save froze the calorie budget for good.
    *
-   * Read off what the fields SAY rather than off whether they were touched, so
-   * that typing a number and putting it back — which is what the reset link does
-   * — leaves the budget automatic. Compared against this client's copy of the
-   * formula, which can differ from the database's by a rounding step when the
-   * two compute age against different clocks; that is the same rounding step
-   * `Use recommended` just wrote into the fields, so the comparison holds.
+   * Read off the FIGURES rather than off whether a field was touched, in three
+   * cases and that order:
+   *
+   * 1. They say what the formula says, so there is nothing to preserve. This is
+   *    what the reset link produces, and comparing against this client's copy of
+   *    the formula is sound precisely because that copy is what the link wrote.
+   * 2. They say what is already stored, under the plan it was stored for, so
+   *    whatever flag that row carries stands. Focusing a box and leaving it, or
+   *    clearing it and letting the blur put it back, both land here — and every
+   *    account whose protein target predates the adjusted basis opens this screen
+   *    with figures that differ from the recommendation, so "differs from the
+   *    formula" alone would have frozen most of them on a stray tap.
+   * 3. Anything else is a number somebody set.
    */
-  const isCustom =
-    budget !== undefined
-      ? !isRecommended(budget, recommended)
-      : planChanged
-        ? false
-        : (targets?.isCustom ?? false)
+  const isCustom = isRecommended(shown, recommended)
+    ? false
+    : !planChanged && stored !== null && sameBudget(currentBudget, stored)
+      ? (targets?.isCustom ?? false)
+      : true
 
   const save = async () => {
     // Only when it actually moved. An unchanged profile write would fire the
@@ -219,8 +225,10 @@ export default function GoalsScreen() {
         <>
           {/* One block per card, at the height each will be, so the screen does
               not reflow under the reader's thumb when the answers land. */}
-          <Card title={t('profile:goals.dailyCalories')}>
-            <Skeleton className="h-[68px] w-full" />
+          {/* Untitled, like the card it stands in for: the calorie field carries
+              its own label so the number pad has a header. */}
+          <Card>
+            <Skeleton className="h-[92px] w-full" />
           </Card>
           <Card title={t('profile:goals.macroTargets')}>
             <Skeleton className="h-[72px] w-full" />

@@ -1138,7 +1138,7 @@ export const vi = {
     goals: {
       title: 'Mục tiêu và chỉ tiêu',
       dailyCalories: 'CALO HẰNG NGÀY',
-      recommended: 'KHUYẾN NGHỊ {{value}}',
+      recommended: 'Khuyến nghị {{value}}',
       macroTargets: 'CHỈ TIÊU DƯỠNG CHẤT',
       macrosAddUpTo: 'Dưỡng chất cộng lại là {{value}} kcal',
       useRecommended: 'Dùng mức đề xuất',
