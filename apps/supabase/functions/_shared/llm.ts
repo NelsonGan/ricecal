@@ -1077,7 +1077,10 @@ export async function pickCandidate(
           '{"choice": number|null}. `choice` is the 0-based index of the entry that IS the ' +
           'described dish, or null if none of them is. Prefer null over a near-miss: a ' +
           'different dish with similar ingredients is NOT a match. A branded or restaurant ' +
-          'version of the SAME dish is a match — the dish is what matters, not the vendor.',
+          'version of the SAME dish is a match — the dish is what matters, not the vendor. ' +
+          'FORM is not the vendor and does matter: a bottled, canned, instant or powdered ' +
+          'version of a drink is NOT a match for one made fresh, and the serving label is ' +
+          'what says which an entry is ("1 bottle (250 g)" against "Regular (350 ml)").',
       },
       {
         role: 'user',
