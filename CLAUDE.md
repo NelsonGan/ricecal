@@ -31,6 +31,17 @@ there records a bug that shipped. They are not style preferences.
 → the edge functions → the app. The README has the full version and why the
 order cannot be reversed.
 
+**The app is released, so the backend can only ever be extended.** A binary in
+a store calls Supabase and Cloudflare forever: `runtimeVersion` is
+`appVersion`, so an OTA update cannot reach a user on an older version, and
+nothing gates a request on which version sent it. Add fields, keep answering
+with the old ones, default anything new, and never narrow an enum, a constraint,
+an RLS policy or a response shape an old app depends on. Renaming is deleting.
+Removing runs backwards over a store release, not over a deploy. Before you
+touch a Worker route, an edge function's request or response, or a column the
+app writes, ask what 1.0.0 does when it meets your change. The README's
+"The store holds copies of the app you cannot recall" is the full version.
+
 **The database is declarative.** Edit `apps/supabase/schemas/*.sql` and generate
 a migration with `pnpm db:diff <name>`. Never hand-write a migration and never
 apply SQL through the dashboard or the Supabase MCP server: `supabase-drift`
