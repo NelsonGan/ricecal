@@ -128,14 +128,23 @@ select is(
   'the weigh-in completes the inputs and the budget is computed'
 );
 
--- Protein from body weight rather than from a share of energy: 68 x 1.6 = 108.8,
--- which is under the 35%-of-energy ceiling (134.75) that only binds on a small
--- budget. Fat is a quarter of energy, 1540 x 0.25 / 9 = 42.8. Carbohydrate is
--- whatever those two leave — (1540 - 436 - 387) / 4 = 179.25 — which is what
--- makes the three add back up to the budget instead of to a fixed ratio.
+-- Protein from body weight rather than from a share of energy, and from an
+-- ADJUSTED body weight: `compute_targets` prescribes against the reference
+-- weight for the height plus a quarter of anything above it, because fat mass
+-- carries almost no protein requirement. At 163 cm the reference is
+-- 25 x 1.63^2 = 66.42, so 68 kg is prescribed as 66.42 + 0.25 x 1.58 = 66.82,
+-- and 66.82 x 1.6 = 106.9. That is under the 35%-of-energy ceiling (134.75),
+-- which only binds on a small budget. Fat is a quarter of energy,
+-- 1540 x 0.25 / 9 = 42.8. Carbohydrate is whatever those two leave —
+-- (1540 - 428 - 387) / 4 = 181.25 — which is what makes the three add back up to
+-- the budget instead of to a fixed ratio.
+--
+-- These figures moved when the adjusted basis landed and this case was not moved
+-- with them, so it has been failing since. It asserted the old flat
+-- 68 x 1.6 = 108.8.
 select is(
   (select array[carbs_g, protein_g, fat_g] from public.daily_goals where user_id = :'user_a'),
-  array[179, 109, 43],
+  array[181, 107, 43],
   'protein comes from body weight and carbohydrate takes the remainder'
 );
 
