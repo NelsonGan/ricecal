@@ -11,6 +11,13 @@ export type AddPartSheetProps = {
   onClose: () => void
   /** The dish to put on the plate. The host writes it and closes this. */
   onPick: (food: Food) => void
+  /**
+   * The part being swapped out, when that is what this search is for. Only the
+   * heading changes: the question is the same one either way, and a user who
+   * swiped Replace and got a sheet headed "Add an ingredient" has been told the
+   * app misheard them.
+   */
+  replacing?: string
 }
 
 /**
@@ -31,7 +38,7 @@ export type AddPartSheetProps = {
  * The part is added at the food's own serving and at one of it. Resizing belongs
  * to the sheet that is already for that.
  */
-export function AddPartSheet({ visible, onClose, onPick }: AddPartSheetProps) {
+export function AddPartSheet({ visible, onClose, onPick, replacing }: AddPartSheetProps) {
   const { t } = useTranslation(['logging', 'common'])
   const field = useRef<TextInput>(null)
 
@@ -57,7 +64,11 @@ export function AddPartSheet({ visible, onClose, onPick }: AddPartSheetProps) {
           opened this sheet, repeated as decoration on the panel it opened —
           which says nothing the heading does not, on the one screen where the
           heading is already the answer to "where am I". */}
-      <Text variant="subtitle">{t('logging:detail.addPartTitle')}</Text>
+      <Text variant="subtitle">
+        {replacing
+          ? t('logging:detail.replaceOf', { name: replacing })
+          : t('logging:detail.addPartTitle')}
+      </Text>
 
       <FoodSearchPanel fieldRef={field} onPick={onPick} />
     </Sheet>

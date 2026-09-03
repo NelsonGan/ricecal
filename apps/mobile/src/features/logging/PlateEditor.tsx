@@ -1,15 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
 import type { EntryIngredient } from '@/data'
+import { SwipeRow } from '@/features/shared'
 import { titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, cn, Divider, Icon, IconButton, Text, useNumpadField } from '@/ui'
 import { PartLine } from './PartLine'
 import {
-  PART_MAX,
-  PART_STEP,
   type PartEdits,
   perUnitGrams,
   quantityForGrams,
@@ -98,12 +97,25 @@ function GramsField({
   )
 }
 
+/**
+ * How long a resized part waits before it is written.
+ *
+ * The same 500ms the dish's own portion stepper uses, and for the same reason:
+ * long enough that "tap tap tap" is one round trip, short enough that letting go
+ * does not feel like waiting. See `PORTION_DEBOUNCE_MS` in `log/food/[id].tsx`.
+ */
+const PLATE_DEBOUNCE_MS = 500
+
 export type PlateEditorProps = {
   /** The plate as it stands. The staging below is laid over this. */
   ingredients: readonly EntryIngredient[]
   /**
-   * Writes the staged changes. Throws to leave the page as it is with the draft
-   * still in it; resolves and the host navigates away.
+   * Writes whatever has been staged. Called on a debounce as the plate is
+   * edited, and once more on the way out; it is handed the whole overlay and
+   * works out for itself which parts actually moved.
+   *
+   * Rejects and the draft stays put, so nothing typed is lost to a failed round
+   * trip and the next tap sends it again.
    */
   onSave: (next: PartEdits) => Promise<void>
   /** Said when the write failed. The page stays where it is. */
@@ -117,6 +129,17 @@ export type PlateEditorProps = {
    * glyphs for one question.
    */
   onAdd: () => void
+  /**
+   * Take a part off, from the button a swipe uncovers.
+   *
+   * Written AT ONCE rather than staged, unlike a resize. A removal is not a
+   * value that settles: there is no second half of the gesture to wait for, and
+   * a row that has slid away and come back a moment later because a debounce
+   * had not fired yet is a row the user cannot trust.
+   */
+  onRemove: (ingredient: EntryIngredient) => void
+  /** Swap a part for a different food. The host owns the catalogue search. */
+  onReplace: (ingredient: EntryIngredient) => void
 }
 
 /**
@@ -136,19 +159,84 @@ export type PlateEditorProps = {
  * A route also mounts fresh, where a `Sheet` stays in the tree with
  * `visible={false}` and had to re-seed the draft on every opening.
  */
-export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditorProps) {
+export function PlateEditor({
+  ingredients,
+  onSave,
+  onError,
+  onAdd,
+  onRemove,
+  onReplace,
+}: PlateEditorProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
 
   /**
-   * The staging, until Save.
+   * The staging, between one edit and the write that follows it.
    *
    * An overlay keyed by ingredient id rather than a copy of the list, so a
    * refetch landing mid-edit — the one an added part triggers — cannot silently
    * drop a staged change. See `PartEdits`.
+   *
+   * It is NOT cleared once a write lands. The overlay and the server agree at
+   * that point, so `partChanges` finds nothing in it and there is nothing to
+   * clear; emptying it would instead reintroduce the flicker it exists to
+   * prevent, because the row would fall back to the fetched figures for the
+   * frame before the refetch arrives.
    */
   const [draft, setDraft] = useState<PartEdits>({})
-  const [saving, setSaving] = useState(false)
+
+  /**
+   * Whether this visit has taken a part off, which is the only thing that still
+   * tells the two empty plates apart.
+   *
+   * `ingredients.length` used to answer it: a removal was staged, so the fetched
+   * list still held the row the user had just crossed out. A removal is written
+   * at once now, and an emptied plate and an entry that never had a breakdown
+   * arrive at the same empty list by different roads. One is being offered a
+   * breakdown; the other is being told what emptying it cost, which is nothing.
+   */
+  const [emptied, setEmptied] = useState(false)
+
+  /**
+   * The draft as the timer will find it, the timer itself, and whether anything
+   * is actually waiting.
+   *
+   * The ref rather than the state, because a debounce that closes over the draft
+   * it was scheduled with writes the second-to-last edit of a fast sequence.
+   */
+  const pending = useRef<PartEdits | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  /**
+   * Send what is waiting, now.
+   *
+   * Behind a ref that is reassigned on every render, so the timeout scheduled
+   * one render ago still calls the current `onSave`.
+   */
+  const flushRef = useRef(() => {})
+  flushRef.current = () => {
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = undefined
+    const next = pending.current
+    pending.current = null
+    if (!next) return
+    void onSave(next).catch(onError)
+  }
+
+  /**
+   * ON THE WAY OUT AS WELL, and this is the half a debounce alone gets wrong: a
+   * page left within half a second of the last tap would clear its timer on
+   * unmount and lose the edit. Leaving is not cancelling.
+   */
+  useEffect(() => () => flushRef.current(), [])
+
+  const stage = (id: string, quantity: number) => {
+    const next = { ...(pending.current ?? draft), [id]: quantity }
+    pending.current = next
+    setDraft(next)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => flushRef.current(), PLATE_DEBOUNCE_MS)
+  }
 
   const parts = stagedParts(ingredients, draft)
 
@@ -162,7 +250,18 @@ export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditor
    * A part nobody weighed keeps the multiplier: there is no weight to move, and
    * "× 2" is the only thing that can be said about how much of it there was.
    */
-  const step = (ingredient: EntryIngredient, direction: 1 | -1) => {
+  /**
+   * Where a tap on the plus or the minus would land this part, IN GRAMS wherever
+   * grams are known, and `null` where there is nowhere left to go.
+   *
+   * Read twice: once to move the part, and once to decide whether the button
+   * that moves it should be live at all. Working it out in two places is what
+   * left a minus looking pressable that did nothing — the button asked whether
+   * the QUANTITY was at its quarter while the arithmetic under it was stopping a
+   * ten gram step short of the same floor, and between those two answers there
+   * is a part at "~¼ × / 14 g" with an enabled button and no effect.
+   */
+  const stepTarget = (ingredient: EntryIngredient, direction: 1 | -1): number | null => {
     const perUnit = perUnitGrams(ingredient)
     const next =
       perUnit === null || ingredient.grams === null
@@ -171,7 +270,20 @@ export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditor
             const grams = stepGrams(ingredient.grams, perUnit, direction)
             return grams === null ? null : quantityForGrams(grams, perUnit)
           })()
-    setDraft((current) => ({ ...current, [ingredient.id]: next }))
+    // A step that lands back where it started is not a step. The grams path
+    // CLAMPS at both ends rather than refusing, so this is what tells the
+    // ceiling from a move.
+    return next === null || next === ingredient.quantity ? null : next
+  }
+
+  const step = (ingredient: EntryIngredient, direction: 1 | -1) => {
+    // `null` used to MEAN removal, which was right while a plate was written by
+    // a Save button and is not now: the same tap would take a part off the plate
+    // outright, half a second later, with nothing asked and nothing to undo.
+    // Removal is the swipe.
+    const next = stepTarget(ingredient, direction)
+    if (next === null) return
+    stage(ingredient.id, next)
   }
 
   /**
@@ -181,19 +293,7 @@ export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditor
   const setGrams = (ingredient: EntryIngredient, grams: number) => {
     const perUnit = perUnitGrams(ingredient)
     if (perUnit === null) return
-    setDraft((current) => ({ ...current, [ingredient.id]: quantityForGrams(grams, perUnit) }))
-  }
-
-  const save = async () => {
-    setSaving(true)
-    try {
-      await onSave(draft)
-    } catch {
-      // The page stays, with the draft still in it, so nothing typed is lost to
-      // a failed round trip. The host is what leaves on success.
-      onError()
-      setSaving(false)
-    }
+    stage(ingredient.id, quantityForGrams(grams, perUnit))
   }
 
   return (
@@ -201,18 +301,55 @@ export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditor
       {parts.map((ingredient, index) => {
         const perUnit = perUnitGrams(ingredient)
         const weighed = perUnit !== null && ingredient.grams !== null
-        // At the smallest amount the minus takes the whole thing off the plate:
-        // a quarter of a thing and "there wasn't any" are different answers, and
-        // only one of them used to be reachable. The floor is the same either
-        // way — a quarter of one unit — said in whichever unit the row is in.
-        const atFloor = ingredient.quantity <= PART_STEP
-        const atCeiling = ingredient.quantity >= PART_MAX
+        // The minus STOPS at the smallest amount rather than removing the row,
+        // which it used to do. Under a Save button that was the only way to say
+        // "there wasn't any"; with the plate writing itself it is a part deleted
+        // by a tap that looks like the twenty before it. Swiping the row is where
+        // removal went. The floor is a quarter of one unit either way, said in
+        // whichever unit the row is in.
+        const atFloor = stepTarget(ingredient, -1) === null
+        const atCeiling = stepTarget(ingredient, 1) === null
 
         return (
           <View key={ingredient.id} className="gap-2">
             {index > 0 ? <Divider /> : null}
 
-            {/* The name on a line of its own, with the whole width to wrap into.
+            {/* THE TWO THINGS A SWIPE UNCOVERS, and between them they are why
+                the minus above no longer empties a row. Delete is where "there
+                wasn't any" went; Replace is the answer to a scan that named the
+                right kind of thing and the wrong one of it, which used to cost a
+                delete, a search and an add.
+
+                Replace nearest the row and Delete outermost: the destructive one
+                belongs at the end of the drag, which is where a long swipe puts
+                the thumb and where iOS has taught people to expect it. */}
+            <SwipeRow
+              actions={[
+                {
+                  label: t('logging:detail.replacePart'),
+                  a11yLabel: t('logging:detail.replaceOf', { name: ingredient.name }),
+                  icon: 'swap',
+                  tone: 'water',
+                  onPress: () => onReplace(ingredient),
+                },
+                {
+                  label: t('common:action.delete'),
+                  a11yLabel: t('logging:detail.removeOf', { name: ingredient.name }),
+                  icon: 'delete',
+                  tone: 'hibiscus',
+                  exits: true,
+                  onPress: () => {
+                    setEmptied(true)
+                    onRemove(ingredient)
+                  },
+                },
+              ]}
+            >
+              {/* Opaque, because the buttons are underneath: the row slides over
+                  them and anything see-through would show a bin through the
+                  ingredient's own name. */}
+              <View className="gap-2 bg-surface py-1">
+                {/* The name on a line of its own, with the whole width to wrap into.
                 Beside the controls it had about half the row, which is what this
                 sheet exists to give back.
 
@@ -221,36 +358,33 @@ export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditor
                 a name wrapping inside a 70pt column between two buttons. It moves
                 as the weight does — the buttons and the field below set grams,
                 and this is those grams read back as a number of the thing. */}
-            <PartLine quantity={ingredient.quantity} name={ingredient.name} variant="bodyStrong" />
+                <PartLine
+                  quantity={ingredient.quantity}
+                  name={ingredient.name}
+                  variant="bodyStrong"
+                />
 
-            <View className="flex-row items-center justify-between gap-3">
-              {/* What it costs. The amount used to be here too and has moved to
+                <View className="flex-row items-center justify-between gap-3">
+                  {/* What it costs. The amount used to be here too and has moved to
                   the field between the buttons, because the amount is the thing
                   being edited and reading it two inches from the control that
                   changes it is how the old card ended up truncating its names. */}
-              <Text variant="meta" className="min-w-0 flex-1">
-                {t('logging:detail.partKcal', { kcal: ingredient.kcal.toLocaleString() })}
-              </Text>
+                  <Text variant="meta" className="min-w-0 flex-1">
+                    {t('logging:detail.partKcal', { kcal: ingredient.kcal.toLocaleString() })}
+                  </Text>
 
-              <View className="flex-row items-center gap-2">
-                <IconButton
-                  size="sm"
-                  variant="neutral"
-                  accessibilityLabel={t(
-                    atFloor ? 'logging:detail.removeOf' : 'logging:detail.lessOf',
-                    { name: ingredient.name },
-                  )}
-                  onPress={() => step(ingredient, -1)}
-                >
-                  <Icon
-                    set="ui"
-                    name={atFloor ? 'delete' : 'minus'}
-                    size={16}
-                    tintColor={atFloor ? colors.hibiscusInk : colors.ink}
-                  />
-                </IconButton>
+                  <View className="flex-row items-center gap-2">
+                    <IconButton
+                      size="sm"
+                      variant="neutral"
+                      accessibilityLabel={t('logging:detail.lessOf', { name: ingredient.name })}
+                      disabled={atFloor}
+                      onPress={() => step(ingredient, -1)}
+                    >
+                      <Icon set="ui" name="minus" size={16} tintColor={colors.ink} />
+                    </IconButton>
 
-                {/* THE AMOUNT, IN GRAMS, AND IT IS A FIELD.
+                    {/* THE AMOUNT, IN GRAMS, AND IT IS A FIELD.
                     A weight is the one thing about a part somebody can check
                     against the plate in front of them, and "it was more like 200"
                     is a sentence the buttons answer ten grams at a time. Typed on
@@ -259,48 +393,50 @@ export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditor
                     A part nobody weighed keeps its multiplier and keeps it
                     read-only: there is no weight to type, and a count is what the
                     buttons move. */}
-                {weighed ? (
-                  /* THE WEIGHT, EXACT, and the count that reads it back is in the
+                    {weighed ? (
+                      /* THE WEIGHT, EXACT, and the count that reads it back is in the
                      heading above. Typing 200 g of something that comes in 180 g
                      pieces leaves this reading 200 and the heading reading "~1 ×".
                      Snapping the weight to the quarter instead would make the two
                      always agree and this field useless: the buttons move 10 g at
                      a time and every one of those taps would round straight back
                      to where it started. */
-                  <GramsField
-                    grams={Math.round(ingredient.grams ?? 0)}
-                    label={titleCase(ingredient.name)}
-                    onChange={(grams) => setGrams(ingredient, grams)}
-                  />
-                ) : (
-                  <Text variant="label" className="w-[70px] text-center">
-                    {t('logging:detail.times', { amount: ingredient.quantity })}
-                  </Text>
-                )}
+                      <GramsField
+                        grams={Math.round(ingredient.grams ?? 0)}
+                        label={titleCase(ingredient.name)}
+                        onChange={(grams) => setGrams(ingredient, grams)}
+                      />
+                    ) : (
+                      <Text variant="label" className="w-[70px] text-center">
+                        {t('logging:detail.times', { amount: ingredient.quantity })}
+                      </Text>
+                    )}
 
-                <IconButton
-                  size="sm"
-                  variant="neutral"
-                  accessibilityLabel={t('logging:detail.moreOf', { name: ingredient.name })}
-                  disabled={atCeiling}
-                  onPress={() => step(ingredient, 1)}
-                >
-                  <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
-                </IconButton>
+                    <IconButton
+                      size="sm"
+                      variant="neutral"
+                      accessibilityLabel={t('logging:detail.moreOf', { name: ingredient.name })}
+                      disabled={atCeiling}
+                      onPress={() => step(ingredient, 1)}
+                    >
+                      <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
+                    </IconButton>
+                  </View>
+                </View>
               </View>
-            </View>
+            </SwipeRow>
           </View>
         )
       })}
 
       {/* Nothing on the plate, and the two ways to arrive there read differently.
           An entry that never had a breakdown is being offered one; a plate whose
-          parts have all been taken off is being told what that will cost, which
-          is nothing — `food_log_details` falls back to the entry's own portion —
-          so it says what will happen rather than blocking the way out. */}
+          parts have all been taken off is being told what that cost, which is
+          nothing — `food_log_details` falls back to the entry's own portion — so
+          it says what has happened rather than blocking the way out. */}
       {parts.length === 0 ? (
         <Text variant="body">
-          {t(ingredients.length === 0 ? 'logging:detail.plateNone' : 'logging:detail.plateEmptied')}
+          {t(emptied ? 'logging:detail.plateEmptied' : 'logging:detail.plateNone')}
         </Text>
       ) : null}
 
@@ -325,24 +461,19 @@ export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditor
 
           Secondary, and above Save, because the two are different kinds of
           thing: this one opens something and Save is what finishes here. */}
-      <Button variant="secondary" fullWidth disabled={saving} onPress={onAdd}>
+      <Button variant="secondary" fullWidth onPress={onAdd}>
         {t('logging:detail.addPart')}
       </Button>
 
-      {/* After the rows rather than in the screen's footer, which is where a
-          page's action usually goes: the weight is typed on the app's own pad,
-          and a pinned footer lands behind the keys exactly as it did when this
-          was a capped sheet.
+      {/* AND NO SAVE. The plate writes itself half a second after the last tap
+          and once more on the way out, which is what the rest of this screen
+          already promised: every control on it is a direct manipulation of one
+          part, the totals above move as they are touched, and a button that
+          committed all of it afterwards asked the user to confirm a plate they
+          had been reading the whole time.
 
-          Absent with nothing to write. An entry with no breakdown yet has
-          exactly one thing to offer, and a Save that would leave having changed
-          nothing is a second button competing with the one that does
-          something. */}
-      {ingredients.length ? (
-        <Button fullWidth loading={saving} onPress={() => void save()}>
-          {t('logging:detail.save')}
-        </Button>
-      ) : null}
+          It also had to be pressed to be discovered. Backing out of this page
+          was the ordinary way to leave it, and it threw the work away. */}
     </>
   )
 }

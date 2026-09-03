@@ -336,10 +336,31 @@ export const logging = {
     /** The weight in the sheet's own field, and what the number pad calls it. */
     gramsShort: '{{grams}} g',
     gramsField: 'Weight in grams',
-    /** The per-ingredient portion steppers, and the one that empties a row. */
+    /**
+     * The per-ingredient portion steppers, and the two buttons a row uncovers
+     * when it is swiped.
+     *
+     * `removeOf` and `replaceOf` are what a screen reader says, because the
+     * captions on the buttons cannot: "Replace" on a plate of four parts does
+     * not say which one is about to be swapped, and the caption has 96 points
+     * to live in. `replacePart` is that caption.
+     *
+     * `replaceOf` heads the catalogue search as well, where it is the same
+     * sentence for the same reason: the sheet that opens is the one headed "Add
+     * an ingredient" everywhere else, and a user who asked to swap a part needs
+     * to see that the app heard which.
+     */
     lessOf: 'Less {{name}}',
     moreOf: 'More {{name}}',
     removeOf: 'Remove {{name}}',
+    replacePart: 'Replace',
+    replaceOf: 'Replace {{name}}',
+    /**
+     * A part swapped for another. Not `partAdded`: something left the plate as
+     * well, and a line that only mentions the arrival reads as an addition the
+     * user did not ask for.
+     */
+    partReplaced: '{{food}} is on the plate instead',
     /**
      * Typing a number in by hand, for the dish the app got close but not right.
      * All four figures are edited together in `NutritionSheet`, so this labels a
