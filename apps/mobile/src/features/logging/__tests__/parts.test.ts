@@ -112,9 +112,11 @@ it('recovers what one of a part weighs from a row already scaled by its amount',
 
 it('turns a weight into a quantity the database can hold', () => {
   expect(quantityForGrams(220, 220)).toBe(1)
-  // Two decimals is the column, so a weight lands within about a hundredth of a
-  // unit of what was asked for. See `quantityForGrams`.
-  expect(quantityForGrams(200, 220)).toBe(0.91)
+  // FOUR decimals is the column, and this is the case the widening was for: at
+  // two, 200 g of a 220 g unit was 0.91 and read back as 200.2, and a 230 g part
+  // asked for 190 came back as 191. See `quantityForGrams`.
+  expect(quantityForGrams(200, 220)).toBe(0.9091)
+  expect(Math.round(quantityForGrams(190, 230) * 230)).toBe(190)
   // And is clamped to the range the write function accepts, at both ends.
   expect(quantityForGrams(1, 220)).toBe(PART_STEP)
   expect(quantityForGrams(999_999, 220)).toBe(PART_MAX)
@@ -125,7 +127,7 @@ it('steps a weight by a round number of grams', () => {
   expect(stepGrams(165, 220, -1)).toBe(165 - GRAM_STEP)
 })
 
-it('takes the last of a part off the plate rather than shrinking it forever', () => {
+it('stops a part at the last quarter rather than shrinking it forever', () => {
   // A quarter of one unit is the floor, because below it there is no quantity
   // left to write — so the step below it is removal, the same answer the
   // multiplier gives.

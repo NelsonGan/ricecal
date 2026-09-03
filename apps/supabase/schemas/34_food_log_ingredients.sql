@@ -20,7 +20,18 @@ create table public.food_log_ingredients (
   food_id      uuid,
   -- Text, for the reason given on `food_logs.serving_id`.
   serving_id   text,
-  quantity     numeric(6, 2) not null default 1 check (quantity > 0 and quantity <= 100),
+  -- Four decimals, and the two it used to have are why.
+  --
+  -- The app edits a part BY WEIGHT: grams are stored per unit below, so a typed
+  -- weight is written here as the multiplier that produces it, and the screen
+  -- reads the product back. At two decimals the finest step a row could express
+  -- was a hundredth of a unit, which on a 230 g part is 2.3 g, so 190 g was not
+  -- a number the row could hold: it rounded to 0.83 and came back as 191, and
+  -- the user watched the figure they had just typed change under them.
+  --
+  -- Widening only. Everything two decimals could hold, four can, so a build
+  -- already in a store goes on writing what it always wrote.
+  quantity     numeric(8, 4) not null default 1 check (quantity > 0 and quantity <= 100),
 
   -- The snapshot, per one base serving, as on the parent. There is no fibre,
   -- sugar or sodium here: the view does not expose them per part, and a

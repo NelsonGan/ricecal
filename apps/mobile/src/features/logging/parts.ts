@@ -111,18 +111,22 @@ export function perUnitGrams(ingredient: Pick<EntryIngredient, 'grams' | 'quanti
  * The quantity that weighs about this much, which is what actually gets written.
  *
  * Grams are a face on a multiplier: `set_ingredient_quantity` takes a quantity
- * and `food_log_ingredients.quantity` is `numeric(6, 2)`, so the finest weight
- * a row can express is a hundredth of a unit. Ask for 200 g of something that
- * comes in 220 g units and the row settles at 202, and the screen shows what the
- * row weighs rather than what was asked for.
+ * and `food_log_ingredients.quantity` is `numeric(8, 4)`, so the finest weight a
+ * row can express is a ten-thousandth of a unit, which is a fiftieth of a gram
+ * on a 230 g part. A typed weight comes back as itself.
  *
- * Clamped to the range the function accepts. The floor is why the minus button
- * removes a part rather than shrinking it forever.
+ * IT WAS TWO DECIMALS, and that is a bug somebody reported rather than a limit
+ * worth living with: a hundredth of a 230 g unit is 2.3 g, so typing 190 landed
+ * on 0.83, read back as 191, and changed the number under the finger that had
+ * just typed it. Four is the column, and rounding here has to match it or the
+ * screen previews a weight the server will not store.
+ *
+ * Clamped to the range the function accepts.
  */
 export function quantityForGrams(grams: number, perUnit: number): number {
   const raw = grams / perUnit
   const clamped = Math.min(PART_MAX, Math.max(PART_STEP, raw))
-  return Math.round(clamped * 100) / 100
+  return Math.round(clamped * 10_000) / 10_000
 }
 
 /**
@@ -166,8 +170,11 @@ export function stepPart(quantity: number, direction: 1 | -1): number | null {
  */
 export function roundedCount(quantity: number): { amount: number; exact: boolean } {
   const amount = Math.max(PART_STEP, Math.round(quantity / PART_STEP) * PART_STEP)
-  // Half of the hundredth `food_log_ingredients.quantity` stores, so a row that
-  // IS a clean quarter is never called approximate by a floating-point hair.
+  // A hair either side of a quarter still reads as a quarter. This used to be
+  // half of what the column stored, which made it exactly the width of a
+  // rounding error; the column holds four decimals now and the tolerance is a
+  // judgement instead: 0.005 of a unit is about a gram on a plateful of rice,
+  // and printing "~1" for that would be pedantry rather than accuracy.
   return { amount, exact: Math.abs(amount - quantity) < 0.005 }
 }
 
