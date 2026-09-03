@@ -3,7 +3,11 @@ export { DayMeals, type DayMealsProps } from './DayMeals'
 export { DescribePanel, type DescribePanelProps } from './DescribePanel'
 export { DetailsSheet, type DetailsSheetProps, type EntryDetails } from './DetailsSheet'
 export { FixSheet, type FixSheetProps } from './FixSheet'
-export { FoodSearchPanel, type FoodSearchPanelProps } from './FoodSearchPanel'
+export {
+  FoodSearchPanel,
+  type FoodSearchPanelProps,
+  type FoodSearchState,
+} from './FoodSearchPanel'
 export { IconPicker, type IconPickerProps } from './IconPicker'
 export { type CaptureMode, InlineCamera, type InlineCameraProps } from './InlineCamera'
 export {

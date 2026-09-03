@@ -9,9 +9,11 @@ import { AppBar, Screen } from '@/ui'
 /**
  * L5 SEARCH, as a page of its own.
  *
- * Reached from a snap the recogniser could not read — "tap to pick the dish
- * yourself" — which is the one route into search that does not come through the
- * quick selector, where search is now a panel inside the sheet.
+ * Two routes in. A snap the recogniser could not read sends the user here to
+ * pick the dish themselves, with an empty field. And the quick selector hands
+ * off to it with `?q=`, putting this page under the dish somebody picked out of
+ * the sheet's inline search, so backing out of that dish lands on the results
+ * rather than on the day. See `openPicked` in `log/index.tsx`.
  *
  * Which is also why the second tab earns its place here more than anywhere: the
  * plate this screen is standing in for is one the app failed to read, and the
@@ -21,7 +23,7 @@ export default function SearchScreen() {
   const { t } = useTranslation(['logging', 'common'])
   const router = useRouter()
   const goBack = useBack('/today')
-  const params = useLocalSearchParams<{ meal?: Meal }>()
+  const params = useLocalSearchParams<{ meal?: Meal; q?: string; tracked?: string }>()
   const { selectedDate } = useSelectedDate()
   const logFood = useLogFood()
 
@@ -36,7 +38,12 @@ export default function SearchScreen() {
       />
 
       <FoodSearchPanel
-        autoFocus
+        // Only when the field is empty. Arriving with a query means this page was
+        // mounted UNDER the dish it handed off to, where a focus raises the
+        // keyboard over that screen, and it means the typing is finished: what
+        // the user comes back to is a list to read.
+        autoFocus={!params.q}
+        restore={params.q ? { query: params.q, tracked: params.tracked === '1' } : undefined}
         onPick={(food) =>
           router.push({ pathname: '/log/food/[id]', params: { id: food.id, meal: params.meal } })
         }

@@ -32,14 +32,38 @@ const SETTLED_MS = 1_200
  */
 type Source = 'catalogue' | 'mine'
 
+/**
+ * Everything a second panel needs to come back looking like the first.
+ *
+ * The quick selector's inline search does not survive the dish it opens: the
+ * sheet is replaced, and `log/search` mounts a fresh panel behind the dish. So
+ * `onPick` hands this out and `restore` takes it back.
+ *
+ * `tracked` is the half that is not on screen. `Food Searched` is sent 1,200ms
+ * after a query settles, and a panel that is picked from before then unmounts
+ * with the timer still pending, so the search was never recorded. Carrying the
+ * answer is what lets the second panel finish the job without doing it twice:
+ * without it, seeding always loses the fastest picks and seeding never
+ * double-counts the slow ones.
+ */
+export type FoodSearchState = {
+  query: string
+  /** Whether `Food Searched` has already been sent for `query`. */
+  tracked: boolean
+}
+
 export type FoodSearchPanelProps = {
   /**
    * A catalogue dish was chosen; the host decides where that goes. The whole row
    * rather than its id, because the two hosts want different halves: the log
    * sheet routes to a screen that fetches by id, and the ingredient picker needs
    * the macros it is already looking at.
+   *
+   * The search that found it comes too, and only the quick selector reads it:
+   * the sheet leaves as the dish opens, so the state has to travel to the search
+   * page that takes its place. See `openPicked` there.
    */
-  onPick: (food: Food) => void
+  onPick: (food: Food, search: FoodSearchState) => void
   /**
    * A dish out of this account's own history was chosen. A separate callback
    * rather than a second id, because there is no id to give: `food_id` is null
@@ -51,6 +75,13 @@ export type FoodSearchPanelProps = {
    */
   onPickHistory?: (entry: Entry) => void
   autoFocus?: boolean
+  /**
+   * A search handed over by another panel, for a host that is restoring one
+   * rather than beginning it. The debounce seeds from the query as well, so
+   * something already in the cache draws its results on the first frame instead
+   * of a beat of skeletons.
+   */
+  restore?: FoodSearchState
   /**
    * The search field itself, for a host that has to focus it by hand.
    * `autoFocus` inside a `Modal` is applied while the field is off screen and is
@@ -77,10 +108,11 @@ export function FoodSearchPanel({
   onPick,
   onPickHistory,
   autoFocus = false,
+  restore,
   fieldRef,
 }: FoodSearchPanelProps) {
   const { t } = useTranslation(['logging', 'common'])
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(restore?.query ?? '')
   const [source, setSource] = useState<Source>('catalogue')
 
   // The field renders `query` on every keystroke; the catalogue is only asked
@@ -149,12 +181,18 @@ export function FoodSearchPanel({
    * when `loading` becomes `results`.
    *
    * The last query recorded is remembered, so coming back from a dish does not
-   * count as a second search.
+   * count as a second search. A restored panel seeds it from the search it was
+   * handed, and only when that search was ALREADY sent: the timer above is
+   * cleared by the unmount, so a query picked from inside its 1,200ms had not
+   * been recorded by anybody, and seeding on the words alone would lose exactly
+   * the searches that found their answer fastest.
    *
    * Only the catalogue tab is measured: a filter over the user's own forty rows
    * says nothing about whether the catalogue can be searched.
    */
-  const lastTracked = useRef<string | undefined>(undefined)
+  const lastTracked = useRef<string | undefined>(
+    restore?.tracked ? restore.query.trim() || undefined : undefined,
+  )
   useEffect(() => {
     const needle = debouncedQuery.trim()
     if (source !== 'catalogue') return
@@ -265,7 +303,7 @@ export function FoodSearchPanel({
                     // `pnpm foods:gate` grades against thirty fixed queries: a
                     // ranking that is working puts most picks at position one.
                     track('Food Picked', { position: index + 1, results: results.length })
-                    onPick(food)
+                    onPick(food, { query, tracked: lastTracked.current === query.trim() })
                   }}
                 />
               </Card>
