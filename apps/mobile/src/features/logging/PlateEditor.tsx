@@ -6,7 +6,7 @@ import type { EntryIngredient } from '@/data'
 import { SwipeRow } from '@/features/shared'
 import { titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, cn, Divider, Icon, IconButton, Text, useNumpadField } from '@/ui'
+import { Button, Card, cn, Divider, Icon, IconButton, Text, useNumpadField } from '@/ui'
 import { PartLine } from './PartLine'
 import {
   type PartEdits,
@@ -296,8 +296,18 @@ export function PlateEditor({
     stage(ingredient.id, quantityForGrams(grams, perUnit))
   }
 
-  return (
-    <>
+  /**
+   * The parts, as rows of ONE card rather than a tile each.
+   *
+   * `SwipeRow` rounds its own corners, which is right on Today, where an entry
+   * is a tile on the canvas. Here it drew a white pill per ingredient with the
+   * dividers floating in the gaps between them, and no side padding at all, so
+   * every name started on the pill's own edge. The card owns the corners and
+   * the rows are lines in it: `flush` because the swipe has to reach the edge,
+   * `gap-0` because the dividers are the spacing.
+   */
+  const plate = (
+    <Card flush contentClassName="gap-0">
       {parts.map((ingredient, index) => {
         const perUnit = perUnitGrams(ingredient)
         const weighed = perUnit !== null && ingredient.grams !== null
@@ -311,8 +321,11 @@ export function PlateEditor({
         const atCeiling = stepTarget(ingredient, 1) === null
 
         return (
-          <View key={ingredient.id} className="gap-2">
-            {index > 0 ? <Divider /> : null}
+          <View key={ingredient.id}>
+            {/* Inset to the text rather than run wall to wall, which is what
+                every other list card in the app does, and outside the `SwipeRow`
+                so it stays put while the row slides over its buttons. */}
+            {index > 0 ? <Divider className="mx-card" /> : null}
 
             {/* THE TWO THINGS A SWIPE UNCOVERS, and between them they are why
                 the minus above no longer empties a row. Delete is where "there
@@ -324,6 +337,7 @@ export function PlateEditor({
                 belongs at the end of the drag, which is where a long swipe puts
                 the thumb and where iOS has taught people to expect it. */}
             <SwipeRow
+              square
               actions={[
                 {
                   label: t('logging:detail.replacePart'),
@@ -348,7 +362,7 @@ export function PlateEditor({
               {/* Opaque, because the buttons are underneath: the row slides over
                   them and anything see-through would show a bin through the
                   ingredient's own name. */}
-              <View className="gap-2 bg-surface py-1">
+              <View className="gap-2 bg-surface px-card py-md">
                 {/* The name on a line of its own, with the whole width to wrap into.
                 Beside the controls it had about half the row, which is what this
                 sheet exists to give back.
@@ -429,6 +443,27 @@ export function PlateEditor({
         )
       })}
 
+      {/* THE SUM, and the last child of the card on purpose. `Squish` clips at
+          the container and its surface layer does not, so a filled row here
+          would paint square white corners over the slab; this one is
+          transparent and takes the card's own corners. */}
+      <Divider className="mx-card" />
+      <View className="flex-row items-baseline justify-between gap-3 px-card py-md">
+        <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
+        <View className="flex-row items-baseline gap-1">
+          <Text variant="numeric">
+            {parts.reduce((sum, item) => sum + item.kcal, 0).toLocaleString()}
+          </Text>
+          <Text variant="caption">{t('common:unit.kcal')}</Text>
+        </View>
+      </View>
+    </Card>
+  )
+
+  return (
+    <>
+      {parts.length ? plate : null}
+
       {/* Nothing on the plate, and the two ways to arrive there read differently.
           An entry that never had a breakdown is being offered one; a plate whose
           parts have all been taken off is being told what that cost, which is
@@ -438,21 +473,6 @@ export function PlateEditor({
         <Text variant="body">
           {t(emptied ? 'logging:detail.plateEmptied' : 'logging:detail.plateNone')}
         </Text>
-      ) : null}
-
-      {parts.length ? (
-        <>
-          <Divider />
-          <View className="flex-row items-baseline justify-between gap-3">
-            <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
-            <View className="flex-row items-baseline gap-1">
-              <Text variant="numeric">
-                {parts.reduce((sum, item) => sum + item.kcal, 0).toLocaleString()}
-              </Text>
-              <Text variant="caption">{t('common:unit.kcal')}</Text>
-            </View>
-          </View>
-        </>
       ) : null}
 
       {/* THE WAY TO PUT SOMETHING ON, under the list it adds to. It raises the
