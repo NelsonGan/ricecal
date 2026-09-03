@@ -62,6 +62,17 @@ export type SwipeRowProps = {
    */
   onPress?: () => void
   /**
+   * Drop the row's own rounded corners, for a row that is a LINE INSIDE A CARD
+   * rather than a tile on the canvas.
+   *
+   * Today's entries are tiles and own their radius. The plate's parts sit in one
+   * card that already owns the corners, and rounding each of them drew four
+   * white pills stacked down the page with the dividers floating in the gaps
+   * between them. The clipping stays either way: it is what keeps the revealed
+   * buttons inside the row.
+   */
+  square?: boolean
+  /**
    * Whether this row's action is parked open, for whoever is drawing over it.
    *
    * Today's floating log button sits at the bottom-right corner, which is
@@ -91,7 +102,13 @@ export type SwipeRowProps = {
  * nothing. The revealed button is drawn after the row for a related reason: the
  * row's box keeps its full width while its contents slide.
  */
-export function SwipeRow({ children, actions, onPress, onOpenChange }: SwipeRowProps) {
+export function SwipeRow({
+  children,
+  actions,
+  square = false,
+  onPress,
+  onOpenChange,
+}: SwipeRowProps) {
   const colors = useThemeColors()
   // How far the row travels: one button's width per action.
   const reveal = ACTION_W * actions.length
@@ -214,7 +231,7 @@ export function SwipeRow({ children, actions, onPress, onOpenChange }: SwipeRowP
   }))
 
   return (
-    <View className="overflow-hidden rounded-tile">
+    <View className={cn('overflow-hidden', !square && 'rounded-tile')}>
       <GestureDetector gesture={gesture}>
         <View collapsable={false}>
           <Animated.View style={sliding}>{children}</Animated.View>
