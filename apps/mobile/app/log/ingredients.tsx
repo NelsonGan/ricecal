@@ -149,6 +149,10 @@ export default function IngredientsScreen() {
         // correcting is which food it was, and the count is the part of the row
         // the scan got right.
         quantity: replacing?.quantity,
+        // AND WHERE IT WAS. Without this the swapped part leaves its row and
+        // reappears at the bottom of the plate, which reads as two edits rather
+        // than one thing being corrected.
+        position: replacing?.position,
       })
       // ADDED FIRST, REMOVED SECOND, and the order is the whole safety of this.
       // `add_ingredient` refuses an entry whose calories were typed over, and a

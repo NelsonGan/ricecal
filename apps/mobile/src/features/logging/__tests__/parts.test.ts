@@ -30,6 +30,7 @@ const part = (over: Partial<EntryIngredient> = {}): EntryIngredient => ({
   servingLabel: '1 bowl',
   kcal: 200,
   grams: 180,
+  position: 0,
   carbs: 44,
   protein: 4.2,
   fat: 0.4,
