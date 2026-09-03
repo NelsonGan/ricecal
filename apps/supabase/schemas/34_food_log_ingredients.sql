@@ -20,7 +20,18 @@ create table public.food_log_ingredients (
   food_id      uuid,
   -- Text, for the reason given on `food_logs.serving_id`.
   serving_id   text,
-  quantity     numeric(6, 2) not null default 1 check (quantity > 0 and quantity <= 100),
+  -- Four decimals, and the two it used to have are why.
+  --
+  -- The app edits a part BY WEIGHT: grams are stored per unit below, so a typed
+  -- weight is written here as the multiplier that produces it, and the screen
+  -- reads the product back. At two decimals the finest step a row could express
+  -- was a hundredth of a unit, which on a 230 g part is 2.3 g, so 190 g was not
+  -- a number the row could hold: it rounded to 0.83 and came back as 191, and
+  -- the user watched the figure they had just typed change under them.
+  --
+  -- Widening only. Everything two decimals could hold, four can, so a build
+  -- already in a store goes on writing what it always wrote.
+  quantity     numeric(8, 4) not null default 1 check (quantity > 0 and quantity <= 100),
 
   -- The snapshot, per one base serving, as on the parent. There is no fibre,
   -- sugar or sodium here: the view does not expose them per part, and a
@@ -220,7 +231,17 @@ create or replace function public.add_ingredient(
   p_grams         numeric default null,
   p_food_id       uuid    default null,
   p_serving_id    text    default null,
-  p_serving_label text    default null
+  p_serving_label text    default null,
+  -- WHERE ON THE PLATE, for a part that is taking another one's place.
+  --
+  -- Null is "after whatever is there", which is what adding means and what
+  -- every caller before this one wanted. Replacing is the case that needs to
+  -- say otherwise: the app adds the new part and then removes the old one, so
+  -- without this the swapped ingredient leaves its row and reappears at the
+  -- bottom of the list, which reads as two edits rather than one.
+  --
+  -- Defaulted, so a build already in a store goes on calling this without it.
+  p_position      smallint default null
 )
 returns uuid
 language plpgsql
@@ -305,7 +326,11 @@ begin
     v_entry.id,
     p_food_id,
     nullif(left(btrim(coalesce(p_serving_id, '')), 200), ''),
-    round(p_quantity, 2),
+    -- Four decimals, matching the column. It was two, which is the same bug the
+    -- column had: a part added at a typed weight would have been rounded here
+    -- instead of there, and a replacement would come back weighing something
+    -- else than the part it replaced.
+    round(p_quantity, 4),
     v_name,
     round(p_kcal),
     least(2000, greatest(0, round(coalesce(p_carbs_g, 0), 1))),
@@ -318,12 +343,23 @@ begin
     1,
     v_name,
     case when p_grams is null then null else round(p_grams, 1) end,
-    -- After whatever is already there, read off the rows rather than off the
-    -- count: a plate somebody has removed the middle of has fewer parts than
-    -- its highest position, and a new row numbered by the count would land on
-    -- top of one that is still there.
-    (select coalesce(max(i.position), -1) + 1
-     from public.food_log_ingredients i where i.food_log_id = v_entry.id)
+    -- Where the caller asked for, or after whatever is already there. The
+    -- fallback is read off the rows rather than off the count: a plate somebody
+    -- has removed the middle of has fewer parts than its highest position, and a
+    -- new row numbered by the count would land on top of one that is still
+    -- there.
+    --
+    -- A replacement DOES land on top of one that is still there, briefly, and
+    -- that is the intent: the row it is replacing is removed a moment later, and
+    -- until then the two are simply adjacent.
+    -- NOT `coalesce(greatest(0, p_position), ...)`. `greatest` IGNORES nulls, so
+    -- `greatest(0, null)` is 0 rather than null, and every part added without a
+    -- position would have landed on top of the plate. The pgTAP suite caught it.
+    case
+      when p_position is not null then greatest(0, p_position)
+      else (select coalesce(max(i.position), -1) + 1
+            from public.food_log_ingredients i where i.food_log_id = v_entry.id)
+    end
   )
   returning id into v_id;
 

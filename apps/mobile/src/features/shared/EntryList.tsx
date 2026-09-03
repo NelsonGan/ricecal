@@ -232,9 +232,16 @@ function EntryRow({
   if (!onDelete) return row(onPress ? () => onPress(entry) : undefined)
   return (
     <SwipeRow
-      onDelete={() => onDelete(entry)}
+      actions={[
+        {
+          label: t('logging:today.deleteEntry'),
+          icon: 'delete',
+          tone: 'hibiscus',
+          exits: true,
+          onPress: () => onDelete(entry),
+        },
+      ]}
       onPress={onPress ? () => onPress(entry) : undefined}
-      deleteLabel={t('logging:today.deleteEntry')}
       onOpenChange={onSwipeOpenChange}
     >
       {row()}

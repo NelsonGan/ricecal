@@ -23,7 +23,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(32);
+select plan(34);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -358,6 +358,27 @@ select is(
    from public.food_log_ingredients where food_log_id = :'plain_id'::uuid),
   array[0, 2, 3]::smallint[],
   'and it lands past the highest position rather than on top of one'
+);
+
+-- A part given a position of its own takes that one instead, which is what
+-- REPLACING an ingredient needs: the app adds the new part where the old one
+-- sat and removes the old one after, so the swap does not move the row to the
+-- bottom of the plate. The two share a number for as long as that takes.
+--
+-- Worth its own case because the null path is easy to break from here:
+-- `greatest(0, null)` is 0 rather than null, so a `coalesce` around it would
+-- send every ordinary addition to the top of the plate.
+select lives_ok(
+  format('select public.add_ingredient(%L::uuid, %L, 55, 9, 2, 1, 1, null, null, null, null, 2::smallint)',
+         :'plain_id', 'Teh tarik'),
+  'a food goes on at a position it was given'
+);
+
+select is(
+  (select array_agg(position order by position)
+   from public.food_log_ingredients where food_log_id = :'plain_id'::uuid),
+  array[0, 2, 2, 3]::smallint[],
+  'and it lands exactly there rather than after the last'
 );
 
 reset role;

@@ -774,6 +774,14 @@ paywalls) and carry a cross. Every screen draws its own title bar; the native
 header is off everywhere. A tab carries a `ScreenTitle` instead, because there
 is nothing behind it to go back to.
 
+**The quick selector's inline search hands off to the search page.** A dish
+picked there is opened by replacing the sheet with `log/search`, carrying the
+query, and pushing the dish over it. Both queue in one flush, so the user still
+sees the sheet go and the dish arrive; what changes is what is underneath.
+Replacing straight to the dish, which is what the barcode scanner still does,
+left it standing on Today, so backing out of a portion nobody had decided on
+threw the search away and made the user type it again.
+
 Five tabs (Today, Recipes, Activity, Trends, Me) on the headless
 `expo-router/ui` Tabs rather than a styled navigator, because `NavBar` and
 `NavItem` are the design system's and a native tab bar cannot be made to look

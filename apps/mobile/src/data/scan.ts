@@ -31,6 +31,12 @@ export type EntryIngredient = {
   carbs: number
   protein: number
   fat: number
+  /**
+   * Where it sits on the plate. Already what this list is ordered by, and read
+   * back so a part being REPLACED can hand its place to the one taking over:
+   * without it the swap leaves the row and reappears at the bottom.
+   */
+  position: number
 }
 
 export function useEntryIngredients(entryId: string | undefined) {
@@ -58,6 +64,7 @@ export function useEntryIngredients(entryId: string | undefined) {
         carbs: Number(row.carbs_g ?? 0),
         protein: Number(row.protein_g ?? 0),
         fat: Number(row.fat_g ?? 0),
+        position: row.position ?? 0,
       }))
     },
   })
@@ -173,6 +180,11 @@ export function useAddIngredient() {
       foodId?: string
       servingId?: string
       servingLabel?: string
+      /**
+       * Where on the plate, for a part taking another one's place. Left out and
+       * the row lands after everything else, which is what adding means.
+       */
+      position?: number
     }) => {
       const { error } = await supabase.rpc('add_ingredient', {
         p_food_log_id: input.entryId,
@@ -186,6 +198,7 @@ export function useAddIngredient() {
         p_food_id: input.foodId,
         p_serving_id: input.servingId,
         p_serving_label: input.servingLabel,
+        p_position: input.position,
       })
       // Rewrapped rather than rethrown, because the caller reads this message. A
       // `PostgrestError` is a plain object, so `error instanceof Error` is false
