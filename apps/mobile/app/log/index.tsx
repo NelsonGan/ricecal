@@ -24,6 +24,7 @@ import {
   type CaptureMode,
   DescribePanel,
   FoodSearchPanel,
+  type FoodSearchState,
   InlineCamera,
   QuickAction,
 } from '@/features/logging'
@@ -167,18 +168,48 @@ export default function LogSheet() {
   const toast = useToast()
 
   /**
-   * A dish was picked out of the inline search.
+   * A dish opens.
    *
    * `replace` rather than `push`: this route is a `transparentModal`, and a push
    * from inside one lands on the stack within that presentation, so the dish
    * would come up as a second modal stacked on the sheet. Replacing puts it on
    * the stack above Today, where a page belongs.
    *
-   * The cost is that back from the dish lands on the day rather than the results,
-   * which is the right trade for pick a dish, set the portion, done.
+   * Which is right for the scanner, whose code is one dish and one answer, and
+   * was wrong for search. See `openPicked`.
    */
   const openFood = (foodId: string) =>
     router.replace({ pathname: '/log/food/[id]', params: { id: foodId } })
+
+  /**
+   * A dish was picked out of the inline search, which is `openFood` with the
+   * search left standing behind it.
+   *
+   * The sheet is replaced by the SEARCH PAGE carrying the words that found the
+   * dish, and the dish is pushed on top of that. Both actions queue in one
+   * flush, so nothing of the page shows in between: what the user sees is the
+   * sheet going and the dish arriving, as before.
+   *
+   * What changes is what is underneath. Replacing straight to the dish left it
+   * standing on Today, so backing out of a portion the user had not decided on
+   * threw the search away and made them type it again. Search is a page with the
+   * query on it (`log/search`) precisely so it can be come back to, and now the
+   * inline field reaches it too.
+   *
+   * The history tab does not come through here: an entry is written where it is
+   * picked and this sheet closes, so there is nothing to come back to.
+   *
+   * `tracked` rides along because the panel is being rebuilt rather than moved,
+   * and only the one it left knows whether `Food Searched` went. See
+   * `FoodSearchState`.
+   */
+  const openPicked = (foodId: string, search: FoodSearchState) => {
+    router.replace({
+      pathname: '/log/search',
+      params: { q: search.query, tracked: search.tracked ? '1' : '0' },
+    })
+    router.push({ pathname: '/log/food/[id]', params: { id: foodId } })
+  }
 
   // Takes the snapshot rather than a food, because the three things this sheet
   // can add outright — a recipe, a catalogue dish, a meal out of this account's
@@ -380,7 +411,7 @@ export default function LogSheet() {
       {panel === 'search' ? (
         <FoodSearchPanel
           autoFocus
-          onPick={(food) => openFood(food.id)}
+          onPick={(food, search) => openPicked(food.id, search)}
           /* A meal out of this account's own diary is WRITTEN HERE, the way a
              recipe is, rather than opening the portion screen a catalogue dish
              opens. An entry already states its own numbers AND the size it was

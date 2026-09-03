@@ -315,7 +315,12 @@ function RootStack() {
           that comes up over the day: the query survives the trip to a dish and
           back, the edge swipe returns to it, and its bar carries a chevron. As a
           modal it also stacked a second presentation on top of the quick
-          selector, which is already one. */}
+          selector, which is already one.
+
+          It is also where the selector's own inline search hands off to. Picking
+          a dish there replaces the sheet with this page, carrying the query, and
+          pushes the dish over it, so backing out of a portion returns to the
+          results instead of the day. See `openPicked` in `log/index.tsx`. */}
       <Stack.Screen name="log/search" />
       {/* The dish pushes. It is where a portion is chosen and an entry edited —
           several controls, a note field, a delete — which is a page of work
