@@ -57,10 +57,19 @@ it('keeps a part nobody weighed unweighed', () => {
   expect(half?.grams).toBeNull()
 })
 
-it('drops a part on its way off the plate', () => {
-  expect(stagedParts([part(), part({ id: 'egg', name: 'fried egg' })], { rice: null })).toEqual([
-    part({ id: 'egg', name: 'fried egg' }),
-  ])
+/**
+ * There is no "on its way off" in the overlay any more: a removal is written the
+ * moment the swipe asks for it, so the only thing that can be staged against a
+ * part is an amount. What is pinned here is that a part nobody touched is handed
+ * back UNCHANGED rather than copied, which is what lets a row keep its identity
+ * through an edit to the row above it.
+ */
+it('leaves a part the overlay has never heard of exactly as it was', () => {
+  const rice = part()
+  const egg = part({ id: 'egg', name: 'fried egg' })
+  const staged = stagedParts([rice, egg], { rice: 0.5 })
+  expect(staged).toHaveLength(2)
+  expect(staged[1]).toBe(egg)
 })
 
 it('counts only the parts whose amount actually moved', () => {
@@ -69,7 +78,7 @@ it('counts only the parts whose amount actually moved', () => {
   // Stepped up and back down again is not a change, and neither is a part the
   // overlay has never heard of.
   expect(partChanges([rice, egg], { rice: 1 })).toEqual([])
-  expect(partChanges([rice, egg], { rice: 0.75, egg: null }).map((one) => one.id)).toEqual([
+  expect(partChanges([rice, egg], { rice: 0.75, egg: 1 }).map((one) => one.id)).toEqual([
     'rice',
     'egg',
   ])

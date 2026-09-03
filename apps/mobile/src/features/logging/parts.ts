@@ -12,14 +12,19 @@ import { formatPortion } from '@/lib/portions'
  */
 
 /**
- * What has been staged against a plate: the amount a part was moved to, `null`
- * for one on its way off, and nothing at all for a part nobody touched.
+ * What has been staged against a plate: the amount a part was moved to, and
+ * nothing at all for a part nobody touched.
  *
  * An overlay on the fetched list rather than a copy of it, so a refetch landing
  * mid-edit cannot silently drop a staged change — and so "stepped up and back
  * down again" is not a change at all.
+ *
+ * There is no "on its way off" any more. A removal used to be staged here as a
+ * `null` and written by the Save button; the plate writes itself now, and a
+ * deletion is not a value that settles, so it goes straight to the server from
+ * the swipe that asked for it. See `PlateEditor`.
  */
-export type PartEdits = Record<string, number | null>
+export type PartEdits = Record<string, number>
 
 /** One decimal, which is the resolution the database stores grams at. */
 const tenth = (value: number) => Math.round(value * 10) / 10
@@ -37,25 +42,22 @@ export function stagedParts(
   ingredients: readonly EntryIngredient[],
   edits: PartEdits,
 ): EntryIngredient[] {
-  return ingredients.flatMap((ingredient) => {
+  return ingredients.map((ingredient) => {
     const staged = edits[ingredient.id]
-    if (staged === null) return []
-    if (staged === undefined || staged === ingredient.quantity) return [ingredient]
+    if (staged === undefined || staged === ingredient.quantity) return ingredient
 
     const factor = staged / Math.max(0.01, ingredient.quantity)
-    return [
-      {
-        ...ingredient,
-        quantity: staged,
-        kcal: Math.round(ingredient.kcal * factor),
-        carbs: tenth(ingredient.carbs * factor),
-        protein: tenth(ingredient.protein * factor),
-        fat: tenth(ingredient.fat * factor),
-        // Null survives the scaling: a part nobody weighed still weighs nothing
-        // anybody knows, and "0 g" would be a claim about the food.
-        grams: ingredient.grams === null ? null : Math.round(ingredient.grams * factor),
-      },
-    ]
+    return {
+      ...ingredient,
+      quantity: staged,
+      kcal: Math.round(ingredient.kcal * factor),
+      carbs: tenth(ingredient.carbs * factor),
+      protein: tenth(ingredient.protein * factor),
+      fat: tenth(ingredient.fat * factor),
+      // Null survives the scaling: a part nobody weighed still weighs nothing
+      // anybody knows, and "0 g" would be a claim about the food.
+      grams: ingredient.grams === null ? null : Math.round(ingredient.grams * factor),
+    }
   })
 }
 
@@ -72,7 +74,7 @@ export function partChanges(
 ): EntryIngredient[] {
   return ingredients.filter((ingredient) => {
     const staged = edits[ingredient.id]
-    return staged === null || (staged !== undefined && staged !== ingredient.quantity)
+    return staged !== undefined && staged !== ingredient.quantity
   })
 }
 

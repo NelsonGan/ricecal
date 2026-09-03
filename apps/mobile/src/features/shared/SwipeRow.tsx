@@ -10,20 +10,49 @@ import Animated, {
 } from 'react-native-reanimated'
 
 import { useThemeColors } from '@/theme/useTheme'
-import { Icon, Tappable, Text } from '@/ui'
+import { cn, Icon, Tappable, Text } from '@/ui'
 
-/** Width of the revealed button, and how far the row parks open. */
+/** Width of one revealed button. A row parks open by this times its actions. */
 const ACTION_W = 96
-/** Past half of it, letting go opens; short of it, the row closes again. */
-const OPEN_AT = ACTION_W / 2
+/** Past half of what is revealed, letting go opens; short of it, it closes. */
+const OPEN_FRACTION = 0.5
 /** How long the row takes to settle either way. */
 const SETTLE_MS = 180
 
+/**
+ * One of the buttons a row uncovers.
+ *
+ * `label` is the caption, so it has to fit 96 points: a word. `a11yLabel` is
+ * what a screen reader says instead, and it exists because the caption cannot
+ * say WHICH row — two rows both announcing "Replace" tell a reader nothing.
+ */
+export type SwipeAction = {
+  label: string
+  a11yLabel?: string
+  icon: 'delete' | 'swap'
+  /**
+   * The palette this button is set in. Destructive is `hibiscus`; anything that
+   * leads somewhere rather than ending something is `water`, so the colour says
+   * which of the two a thumb is about to land on before the word is read.
+   */
+  tone: 'hibiscus' | 'water'
+  /**
+   * The row slides away as this runs, for an action that takes it off the list.
+   * Anything that leaves the row where it is settles closed instead, or the row
+   * flies out and comes straight back.
+   */
+  exits?: boolean
+  onPress: () => void
+}
+
 export type SwipeRowProps = {
   children: ReactNode
-  onDelete: () => void
-  /** On the revealed button, and read out by a screen reader. */
-  deleteLabel: string
+  /**
+   * What the row uncovers, nearest the row first, so the outermost button is
+   * the one at the end of the drag. Destructive last, which is where iOS puts
+   * it and where the thumb ends up on a long swipe.
+   */
+  actions: readonly SwipeAction[]
   /**
    * The row's own tap, handled HERE rather than by a `Pressable` inside the
    * row. Two systems were arbitrating for the same touch — gesture-handler's
@@ -46,11 +75,12 @@ export type SwipeRowProps = {
 }
 
 /**
- * A row that slides left to reveal one button: delete.
+ * A row that slides left to reveal its actions.
  *
- * The swipe never deletes by itself. It uncovers the control and stops there,
+ * The swipe never runs one by itself. It uncovers the control and stops there,
  * because a gesture that removes a meal on release removes a meal by accident and
- * there is no undo behind it.
+ * there is no undo behind it. That is truer with two buttons than it was with
+ * one: a release cannot mean "delete" when it could equally mean "replace".
  *
  * Settling is a timed slide rather than a spring: the button is parked at a fixed
  * offset, so overshooting means it moves after the finger has left.
@@ -61,14 +91,11 @@ export type SwipeRowProps = {
  * nothing. The revealed button is drawn after the row for a related reason: the
  * row's box keeps its full width while its contents slide.
  */
-export function SwipeRow({
-  children,
-  onDelete,
-  deleteLabel,
-  onPress,
-  onOpenChange,
-}: SwipeRowProps) {
+export function SwipeRow({ children, actions, onPress, onOpenChange }: SwipeRowProps) {
   const colors = useThemeColors()
+  // How far the row travels: one button's width per action.
+  const reveal = ACTION_W * actions.length
+  const openAt = reveal * OPEN_FRACTION
   const offset = useSharedValue(0)
   const parked = useSharedValue(false)
   // Plain state, because what depends on it is `pointerEvents`: while closed
@@ -113,10 +140,25 @@ export function SwipeRow({
     [],
   )
 
-  const remove = useCallback(() => {
+  /**
+   * ONCE, whatever the animation says.
+   *
+   * A `withTiming` callback is not a promise: it runs when the animation lands
+   * AND again when the animation is cancelled, and an action that takes the row
+   * off the list cancels its own by unmounting. So every exiting swipe fired
+   * twice, about 120ms apart. Today's list has always done this and never showed
+   * it — the second `remove_entry` is a fire-and-forget on a row the server has
+   * already deleted, so it fails into nothing — and the plate is where it
+   * surfaced, because a failed delete there is reported.
+   *
+   * A latch rather than reading the callback's `finished`: an action must run
+   * exactly once, and "the animation was interrupted" is not the same question.
+   */
+  const fired = useSharedValue(false)
+  const run = useCallback((action: SwipeAction) => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-    onDelete()
-  }, [onDelete])
+    action.onPress()
+  }, [])
 
   const press = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
@@ -130,17 +172,17 @@ export function SwipeRow({
     .activeOffsetX([-16, 16])
     .failOffsetY([-12, 12])
     .onUpdate((event) => {
-      const base = parked.value ? -ACTION_W : 0
-      // Never further than the button is wide, and never rightward past
+      const base = parked.value ? -reveal : 0
+      // Never further than the buttons are wide, and never rightward past
       // closed: there is nothing on either side of those, and moving into
       // empty space suggests there is.
-      offset.value = Math.max(-ACTION_W, Math.min(0, base + event.translationX))
+      offset.value = Math.max(-reveal, Math.min(0, base + event.translationX))
     })
     .onEnd((event) => {
-      const willOpen = -offset.value >= OPEN_AT || event.velocityX < -700
+      const willOpen = -offset.value >= openAt || event.velocityX < -700
       parked.value = willOpen
       runOnJS(settle)(willOpen)
-      offset.value = withTiming(willOpen ? -ACTION_W : 0, { duration: SETTLE_MS })
+      offset.value = withTiming(willOpen ? -reveal : 0, { duration: SETTLE_MS })
     })
 
   // A tap on an open row closes it rather than opening the dish behind it,
@@ -168,7 +210,7 @@ export function SwipeRow({
     backgroundColor: colors.surface,
   }))
   const action = useAnimatedStyle(() => ({
-    opacity: Math.min(1, -offset.value / (ACTION_W * 0.5)),
+    opacity: Math.min(1, -offset.value / openAt),
   }))
 
   return (
@@ -184,29 +226,52 @@ export function SwipeRow({
           loose from the row it belongs to. What the eye should see is the row
           sliding to uncover something underneath it. */}
       <Animated.View
-        style={action}
+        style={[action, { width: reveal }]}
         pointerEvents={open ? 'auto' : 'none'}
-        className="absolute top-0 right-0 bottom-0 w-[96px] overflow-hidden"
+        className="absolute top-0 right-0 bottom-0 flex-row overflow-hidden"
       >
-        <Tappable
-          className="h-full w-full items-center justify-center gap-1 bg-hibiscus"
-          accessibilityRole="button"
-          accessibilityLabel={deleteLabel}
-          onPress={() => {
-            // Through `settle` rather than `setOpen`, so this path reports the
-            // close like every other one: the row is on its way out and
-            // whatever stood aside for it can come back during the slide,
-            // instead of waiting for the unmount at the end of it.
-            settle(false)
-            parked.value = false
-            offset.value = withTiming(-600, { duration: 200 }, () => runOnJS(remove)())
-          }}
-        >
-          <Icon set="ui" name="delete" size={20} tintColor={colors.onHibiscus} />
-          <Text variant="caption" style={{ color: colors.onHibiscus }}>
-            {deleteLabel}
-          </Text>
-        </Tappable>
+        {actions.map((item) => (
+          <Tappable
+            key={item.label}
+            className={cn(
+              'h-full flex-1 items-center justify-center gap-1',
+              item.tone === 'hibiscus' ? 'bg-hibiscus' : 'bg-water',
+            )}
+            accessibilityRole="button"
+            accessibilityLabel={item.a11yLabel ?? item.label}
+            onPress={() => {
+              // Through `settle` rather than `setOpen`, so this path reports the
+              // close like every other one: the row is on its way out and
+              // whatever stood aside for it can come back during the slide,
+              // instead of waiting for the unmount at the end of it.
+              settle(false)
+              parked.value = false
+              if (!item.exits) {
+                offset.value = withTiming(0, { duration: SETTLE_MS })
+                run(item)
+                return
+              }
+              offset.value = withTiming(-600, { duration: 200 }, () => {
+                if (fired.value) return
+                fired.value = true
+                runOnJS(run)(item)
+              })
+            }}
+          >
+            <Icon
+              set="ui"
+              name={item.icon}
+              size={20}
+              tintColor={item.tone === 'hibiscus' ? colors.onHibiscus : colors.onWater}
+            />
+            <Text
+              variant="caption"
+              style={{ color: item.tone === 'hibiscus' ? colors.onHibiscus : colors.onWater }}
+            >
+              {item.label}
+            </Text>
+          </Tappable>
+        ))}
       </Animated.View>
     </View>
   )
