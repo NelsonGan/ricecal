@@ -1,8 +1,9 @@
 import { useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
+  type EntryIngredient,
   type Food,
   snapshotFromFood,
   useAddIngredient,
@@ -49,7 +50,14 @@ export default function IngredientsScreen() {
   const removeIngredient = useRemoveIngredient()
   const addIngredient = useAddIngredient()
 
-  const [addingPart, setAddingPart] = useState(false)
+  /**
+   * The catalogue search, and what it is being opened for.
+   *
+   * One sheet, two jobs, because they ask the same question: which food. A
+   * `null` is "put it on the plate"; an ingredient is "put it on INSTEAD of
+   * this one".
+   */
+  const [picking, setPicking] = useState<{ replacing: EntryIngredient | null } | null>(null)
 
   const saveFailed = () => toast.show({ title: t('logging:detail.saveFailed'), tone: 'error' })
 
@@ -60,19 +68,22 @@ export default function IngredientsScreen() {
    * It leaves the parent row alone on purpose, and the entry's totals follow
    * anyway, because `food_log_details` sums the parts whenever an entry has any.
    *
-   * Throws on to the editor, which keeps the page and the draft. Only a save
-   * that got all the way through leaves.
+   * Called on a debounce rather than by a button, and it does NOT navigate: the
+   * page is where the user still is. `partChanges` is read against the
+   * ingredients as they are now, so a write that has already landed is not sent
+   * a second time by the flush on the way out.
+   *
+   * Throws on to the editor, which says so and keeps the draft.
+   *
+   * Memoised because the editor holds it in a ref that its debounce reads, and
+   * a new identity every render is a new function for a timer that has already
+   * been scheduled.
    */
-  const savePlate = async (next: PartEdits) => {
-    for (const ingredient of partChanges(ingredients, next)) {
-      const staged = next[ingredient.id]
-      if (staged === null) {
-        await removeIngredient.mutateAsync({
-          ingredientId: ingredient.id,
-          entryId,
-          logDate,
-        })
-      } else if (staged !== undefined) {
+  const savePlate = useCallback(
+    async (next: PartEdits) => {
+      for (const ingredient of partChanges(ingredients, next)) {
+        const staged = next[ingredient.id]
+        if (staged === undefined) continue
         await updateIngredient.mutateAsync({
           ingredientId: ingredient.id,
           quantity: staged,
@@ -80,8 +91,21 @@ export default function IngredientsScreen() {
           logDate,
         })
       }
-    }
-    goBack()
+    },
+    [ingredients, updateIngredient, entryId, logDate],
+  )
+
+  /**
+   * A part off the plate, written at once.
+   *
+   * No confirmation, and no toast either: the row is gone from a list the user
+   * is looking at and the total under it has moved, which says more than a line
+   * of text would. The swipe that reveals the button is the deliberate half.
+   */
+  const removePart = (ingredient: EntryIngredient) => {
+    removeIngredient
+      .mutateAsync({ ingredientId: ingredient.id, entryId, logDate })
+      .catch(saveFailed)
   }
 
   /**
@@ -98,8 +122,8 @@ export default function IngredientsScreen() {
    * references on the way — the placeholder ids this app mints for routing are
    * not catalogue ids, and `food_id` is a uuid column.
    */
-  const addPart = async (picked: Food) => {
-    setAddingPart(false)
+  const addPart = async (picked: Food, replacing: EntryIngredient | null) => {
+    setPicking(null)
     const snapshot = snapshotFromFood(picked)
     const scale = snapshot.servingFactor
     // A weight the row cannot hold is sent as no weight at all. `grams` is
@@ -120,9 +144,31 @@ export default function IngredientsScreen() {
         foodId: snapshot.foodId,
         servingId: snapshot.servingId,
         servingLabel: snapshot.servingLabel,
+        // HOW MANY OF IT, carried over when this is a swap. Replacing two eggs
+        // with two pieces of chicken is two, not one: what the user is
+        // correcting is which food it was, and the count is the part of the row
+        // the scan got right.
+        quantity: replacing?.quantity,
+        // AND WHERE IT WAS. Without this the swapped part leaves its row and
+        // reappears at the bottom of the plate, which reads as two edits rather
+        // than one thing being corrected.
+        position: replacing?.position,
       })
+      // ADDED FIRST, REMOVED SECOND, and the order is the whole safety of this.
+      // `add_ingredient` refuses an entry whose calories were typed over, and a
+      // remove that had already run would leave the plate short of a part the
+      // user never asked to lose.
+      if (replacing) {
+        await removeIngredient.mutateAsync({
+          ingredientId: replacing.id,
+          entryId,
+          logDate,
+        })
+      }
       toast.show({
-        title: t('logging:detail.partAdded', { food: snapshot.name }),
+        title: t(replacing ? 'logging:detail.partReplaced' : 'logging:detail.partAdded', {
+          food: snapshot.name,
+        }),
         tone: 'success',
         icon: { set: 'ui', name: 'check' },
       })
@@ -140,7 +186,7 @@ export default function IngredientsScreen() {
   }
 
   return (
-    <Screen>
+    <Screen gestureScroll>
       {/* A chevron, not a cross: this is a full page, and the entry it was
           opened from is still on the stack behind it. */}
       <AppBar
@@ -163,14 +209,17 @@ export default function IngredientsScreen() {
           ingredients={ingredients}
           onSave={savePlate}
           onError={saveFailed}
-          onAdd={() => setAddingPart(true)}
+          onAdd={() => setPicking({ replacing: null })}
+          onRemove={removePart}
+          onReplace={(ingredient) => setPicking({ replacing: ingredient })}
         />
       ) : null}
 
       <AddPartSheet
-        visible={addingPart}
-        onClose={() => setAddingPart(false)}
-        onPick={(picked) => void addPart(picked)}
+        visible={picking !== null}
+        onClose={() => setPicking(null)}
+        onPick={(food) => void addPart(food, picking?.replacing ?? null)}
+        replacing={picking?.replacing?.name}
       />
     </Screen>
   )
