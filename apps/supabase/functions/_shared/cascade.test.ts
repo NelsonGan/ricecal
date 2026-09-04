@@ -396,3 +396,14 @@ Deno.test('dishIcon names the dish, not what came with it', () => {
 Deno.test('dishIcon falls back to the rest of the label', () => {
   eq(dishIcon(resolvedAs('A plate with chicken rice'))?.name, 'chicken-rice', 'the tail answers')
 })
+
+// The other half of the head rule, and the reason it asks for two words. A
+// one-word head is an ingredient, and `icon-match`'s table has entries written
+// for exactly this shape — `with rice` is a plate of rice with something on it.
+// Letting a leading ingredient reach past them is how "Chicken with rice"
+// became a grilled chicken breast.
+Deno.test('dishIcon does not let a leading ingredient outrank the whole plate', () => {
+  eq(dishIcon(resolvedAs('Chicken with rice'))?.name, 'plate-rice', 'the compound phrase holds')
+  eq(dishIcon(resolvedAs('Rice with fried chicken'))?.name, 'fried-chicken-bucket', 'one word')
+  eq(dishIcon(resolvedAs('Bread and butter pudding'))?.name, 'pudding', 'it is a pudding')
+})
