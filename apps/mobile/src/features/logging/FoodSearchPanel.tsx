@@ -14,7 +14,17 @@ import { ItemRow, ROW_TILE } from '@/features/shared'
 import { track } from '@/lib/analytics'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Card, EmptyState, Icon, IconButton, SearchField, Skeleton, Tabs } from '@/ui'
+import {
+  Card,
+  EmptyState,
+  Icon,
+  IconButton,
+  SearchField,
+  Skeleton,
+  Tabs,
+  Tappable,
+  Text,
+} from '@/ui'
 import { whenLabel } from './when'
 
 /**
@@ -418,24 +428,36 @@ function OwnFoodList({
   const searched = query.trim().length > 0
 
   /**
-   * ABOVE the list rather than inside the empty state, and that is the keyboard
-   * rather than a preference. This panel takes the keyboard on open, which
-   * leaves about half the sheet, and a button under an illustration and two
-   * lines of explanation sits below the fold — the one control on the one tab
-   * whose whole job is "you have not written any yet".
+   * The quiet row the ingredient list uses, not a button.
    *
-   * Hidden while a search is running, where the field is the thing being used
-   * and every row on screen is an answer to it.
+   * ABOVE the list, and that is the keyboard rather than a preference: this
+   * panel takes the keyboard on open, which leaves about half the sheet, so
+   * anything under the rows is below the fold on the one tab whose job is "you
+   * have not written any yet". At the head it costs 30pt, and the foods still
+   * start on the first screen.
    *
-   * The form's own title is the label, so this button and the heading it opens
-   * are the same words.
+   * Drawn in EVERY state of this tab, including while a search is running.
+   * "Not in your foods" and "write it down" are the same thought, and a control
+   * that comes and goes with the field is one people stop looking for.
+   *
+   * The form's own title is the label, so this row and the heading it opens are
+   * the same words.
    */
-  const create =
-    onCreate && !searched ? (
-      <Button variant="secondary" fullWidth onPress={onCreate}>
+  const create = onCreate ? (
+    <Tappable
+      className="flex-row items-center gap-2.5"
+      onPress={onCreate}
+      accessibilityRole="button"
+      accessibilityLabel={t('recipes:new.title')}
+    >
+      <View className="h-[30px] w-[30px] items-center justify-center rounded-md bg-pandan-soft">
+        <Icon set="ui" name="plus" size={16} />
+      </View>
+      <Text variant="label" className="text-pandan-ink">
         {t('recipes:new.title')}
-      </Button>
-    ) : null
+      </Text>
+    </Tappable>
+  ) : null
 
   // `isPending` and not `isFetching`, as the history list has it: this list is
   // worth showing while it refreshes, and only a first load has nothing to draw.
@@ -463,36 +485,44 @@ function OwnFoodList({
 
   if (isPaused && recipes.length === 0) {
     return (
-      <EmptyState
-        title={t('logging:search.offlineTitle')}
-        description={t('logging:search.mineOfflineBody')}
-        icon={{ set: 'ui', name: 'offline' }}
-      />
+      <>
+        {create}
+        <EmptyState
+          title={t('logging:search.offlineTitle')}
+          description={t('logging:search.mineOfflineBody')}
+          icon={{ set: 'ui', name: 'offline' }}
+        />
+      </>
     )
   }
 
   if (isError && recipes.length === 0) {
     return (
-      <EmptyState
-        title={t('logging:search.errorTitle')}
-        description={t('logging:search.errorBody')}
-        icon={{ set: 'ui', name: 'warning' }}
-      />
+      <>
+        {create}
+        <EmptyState
+          title={t('logging:search.errorTitle')}
+          description={t('logging:search.errorBody')}
+          icon={{ set: 'ui', name: 'warning' }}
+        />
+      </>
     )
   }
 
   if (recipes.length === 0) {
     // Two different nothings, the same split the history list makes. An account
-    // that has written nothing is being told what this list is for, above a
-    // button that opens the form; one whose search matched nothing is being told
-    // to try fewer letters, and offering it a blank form would answer a question
-    // it did not ask.
+    // that has written nothing is being told what this list is for; one whose
+    // search matched nothing is being told to try fewer letters. The row above
+    // both is the same answer to either.
     return searched ? (
-      <EmptyState
-        title={t('logging:search.emptyTitle')}
-        description={t('logging:search.mineNoMatchBody')}
-        icon={{ set: 'ui', name: 'search' }}
-      />
+      <>
+        {create}
+        <EmptyState
+          title={t('logging:search.emptyTitle')}
+          description={t('logging:search.mineNoMatchBody')}
+          icon={{ set: 'ui', name: 'search' }}
+        />
+      </>
     ) : (
       <>
         {create}
