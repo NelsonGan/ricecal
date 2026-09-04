@@ -167,15 +167,20 @@ export function FoodSearchPanel({
   // picker passes neither callback and gets no strip at all, rather than a
   // strip with one tab on it: a single tab is a label pretending to be a
   // control.
+  //
+  // Keyed on WHETHER the host handles a tab rather than on the handlers
+  // themselves: every host passes them as inline arrows, so depending on the
+  // functions would rebuild this array on every keystroke, which is the one
+  // thing the memo is here to stop.
+  const hasOwn = Boolean(onPickOwn && onOpenOwn)
+  const hasHistory = Boolean(onPickHistory)
   const tabs = useMemo(
     () => [
       { value: 'catalogue' as const, label: t('logging:search.tabCatalogue') },
-      ...(onPickOwn && onOpenOwn
-        ? [{ value: 'mine' as const, label: t('logging:search.tabMine') }]
-        : []),
-      ...(onPickHistory ? [{ value: 'past' as const, label: t('logging:search.tabPast') }] : []),
+      ...(hasOwn ? [{ value: 'mine' as const, label: t('logging:search.tabMine') }] : []),
+      ...(hasHistory ? [{ value: 'past' as const, label: t('logging:search.tabPast') }] : []),
     ],
-    [t, onPickOwn, onOpenOwn, onPickHistory],
+    [t, hasOwn, hasHistory],
   )
 
   // The opening tab has to be one this host actually offers, or a widget's deep

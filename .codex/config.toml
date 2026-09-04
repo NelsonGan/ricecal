@@ -1,0 +1,5 @@
+[mcp_servers.discord-mcp]
+url = "http://localhost:8085/mcp"
+
+[mcp_servers.supabase]
+url = "https://mcp.supabase.com/mcp?project_ref=wgybijmprafqkshmmxdl"

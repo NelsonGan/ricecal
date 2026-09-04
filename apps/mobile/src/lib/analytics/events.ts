@@ -117,10 +117,15 @@ export type SignInMethod = 'apple' | 'google' | 'email' | 'password'
 export type PlanDirection = 'lose' | 'gain' | 'maintain'
 
 /**
- * Where a widget tap was aiming. The four logging panels are spelt as the log
- * sheet's own route param spells them, so a breakdown lines up with `Log Sheet
- * Opened`'s `panel`. `open` is a widget with one tap target and nothing more
- * specific to say.
+ * Where a widget tap was aiming. The panels are spelt as the log sheet's own
+ * route param spells them, so a breakdown lines up with `Log Sheet Opened`'s
+ * `panel`. `open` is a widget with one tap target and nothing more specific to
+ * say.
+ *
+ * `recipes` is kept although the sheet has no such panel any more: the widget
+ * is native and is on home screens built against a version that had one. The
+ * app resolves that name to search on My foods, and this is what those taps are
+ * still counted as.
  */
 export type WidgetTarget = 'open' | 'camera' | 'search' | 'barcode' | 'recipes' | 'water' | 'weight'
 
