@@ -100,10 +100,16 @@ select
   -- all. Anything that needs to exclude a guess filters on `food_id is not null`,
   -- which is the real test.
   --
-  -- A photo suppresses both icons outright: the entry's own icon wins over the
-  -- food's, and a photograph wins over either.
-  case when e.photo_path is null then coalesce(e.icon_set,  e.item_icon_set)  end as icon_set,
-  case when e.photo_path is null then coalesce(e.icon_name, e.item_icon_name) end as icon_name,
+  -- The entry's own icon wins over the food's. A photograph used to suppress
+  -- both, which put the rendering order in the view: the row shows a photo, a
+  -- drawing, then the placeholder, and every screen that draws an entry already
+  -- does that itself. What it cost was everything else the drawing is for. Two
+  -- functions had to join back to `food_logs` to get it (`day_plates` and
+  -- `review_meals`, for the day a sweep takes the picture away), and "Past
+  -- foods" could not carry it: logging a photographed meal again copies the
+  -- snapshot and not the photograph, so the new row drew an empty plate.
+  coalesce(e.icon_set,  e.item_icon_set)  as icon_set,
+  coalesce(e.icon_name, e.item_icon_name) as icon_name,
   e.item_place                           as place,
   e.serving_id,
   e.serving_label,

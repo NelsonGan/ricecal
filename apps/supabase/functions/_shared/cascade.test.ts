@@ -11,9 +11,11 @@ import {
   bestFit,
   clampQuantity,
   componentCandidates,
+  dishIcon,
   measuredQuantity,
   oneArticleGrams,
   priceRow,
+  type Resolved,
   type SearchRow,
 } from './cascade.ts'
 import { namesAPortion } from './portion.ts'
@@ -53,6 +55,10 @@ const row = (
   default_serving_id: 'serving',
   serving_label,
   serving_grams,
+  // Most of the catalogue has no drawing, and none of the arithmetic below
+  // reads one. `writeEntry` is what cares.
+  icon_set: null,
+  icon_name: null,
 })
 
 Deno.test('priceRow converts a row priced by weight to the weight asked for', () => {
@@ -313,4 +319,80 @@ Deno.test('a converted quantity is bounded too', () => {
   eq(measuredQuantity(400), 20, 'a 600 ml drink by the fluid ounce is the far side of this')
   eq(measuredQuantity(0.01), 0.25, 'and a quarter is the floor')
   eq(measuredQuantity(4.5), 4.5, 'the README\'s 450 g plate against a "100 g" row')
+})
+
+// -- THE DRAWING ON THE ROW ---------------------------------------------------
+//
+// Every entry the cascade writes carries one, photograph or no photograph. The
+// reason is two screens away: a plate logged again out of "Past foods" copies
+// the snapshot and not the picture, so a row with no drawing came back as the
+// empty-plate placeholder.
+
+/** A resolved item, with only what `dishIcon` reads filled in. */
+const resolvedAs = (
+  name: string,
+  displayLabel: string | null = null,
+  icon: { set: 'dishes' | 'food'; name: string } | null = null,
+): Resolved => ({
+  tier: 1,
+  quantity: 1,
+  displayLabel,
+  food: {
+    id: 'food',
+    name,
+    kcal: 400,
+    carbs: 0,
+    protein: 0,
+    fat: 0,
+    fibre: null,
+    sugar: null,
+    sodium: null,
+    place: null,
+    servingLabel: '1 plate',
+    servingGrams: null,
+    serving_id: null,
+    icon,
+  },
+})
+
+Deno.test('dishIcon prefers the drawing the catalogue chose for the row', () => {
+  const chosen = dishIcon(resolvedAs('Kuih Seri Muka', null, { set: 'dishes', name: 'kuih-lapis' }))
+  // Deliberately not the one the name would match: somebody picked this for
+  // this row, and a phrase table cannot know better than they did.
+  eq(chosen?.name, 'kuih-lapis', 'the row states its own')
+})
+
+Deno.test('dishIcon falls back to the name a row without one', () => {
+  eq(dishIcon(resolvedAs('Nasi Lemak'))?.name, 'nasi-lemak', 'matched from the name')
+  eq(dishIcon(resolvedAs('Nasi Lemak'))?.set, 'dishes', 'and its set')
+})
+
+// The label is the model's words for what is on the plate and the name is the
+// catalogue row's. An estimate is the case where they differ most: the row is
+// generic and the label is the dish.
+Deno.test('dishIcon reads the label before the row name', () => {
+  eq(dishIcon(resolvedAs('Rice dish', 'Chicken rice'))?.name, 'chicken-rice', 'the label wins')
+  // And the name is still there to fall back to, for a label that matches
+  // nothing at all.
+  eq(dishIcon(resolvedAs('Roti canai', 'Two of them'))?.name, 'roti-canai', 'the name catches it')
+})
+
+Deno.test('dishIcon answers nothing rather than a wrong picture', () => {
+  eq(dishIcon(resolvedAs('Mixed plate')), null, 'nothing in the table fires')
+})
+
+// THE assertion. `iconFor` scans longest phrase first, which is right for a
+// catalogue descriptor and wrong for a plate: "fried chicken" is a longer phrase
+// than "nasi lemak", so the first real scan through this code drew a bucket of
+// fried chicken over a nasi lemak.
+Deno.test('dishIcon names the dish, not what came with it', () => {
+  eq(dishIcon(resolvedAs('Nasi lemak with fried chicken'))?.name, 'nasi-lemak', 'with')
+  eq(dishIcon(resolvedAs('Roti canai and teh tarik'))?.name, 'roti-canai', 'and')
+  eq(dishIcon(resolvedAs('Nasi goreng + telur'))?.name, 'nasi-goreng', 'a plus sign')
+  eq(dishIcon(resolvedAs('Mee goreng dengan ayam'))?.name, 'mee-goreng', 'in Malay')
+})
+
+// And the whole string is still read, for a head that names nothing we draw.
+Deno.test('dishIcon falls back to the rest of the label', () => {
+  eq(dishIcon(resolvedAs('A plate with chicken rice'))?.name, 'chicken-rice', 'the tail answers')
 })

@@ -4,6 +4,8 @@ import {
   foodFromEntry,
   packetCode,
   packetFoodId,
+  snapshotColumns,
+  snapshotFromEntry,
   snapshotFromFood,
   withCataloguePortions,
 } from '@/data/snapshot'
@@ -175,5 +177,44 @@ describe('withCataloguePortions', () => {
   it('is the entry alone when there is no catalogue row at all', () => {
     expect(withCataloguePortions(entry, null)).toEqual(entry)
     expect(withCataloguePortions(entry, undefined)).toEqual(entry)
+  })
+})
+
+/**
+ * What "the same again" copies out of a meal already in the diary.
+ *
+ * The drawing is the half that was missing, and it only shows two screens away:
+ * the photograph deliberately does NOT come (it belongs to the meal that was
+ * actually taken, and two rows sharing one object would leave the retention
+ * sweep deleting a picture another row still names), so a repeat with no
+ * drawing either came out as the empty-plate placeholder.
+ */
+describe('snapshotFromEntry', () => {
+  const repeated = {
+    foodName: 'Nasi lemak',
+    icon: { set: 'dishes', name: 'nasi-lemak' } as const,
+    base: { kcal: 400, carbs: 50, protein: 10, fat: 18 },
+    servingLabel: '1 plate',
+    servingFactor: 1,
+  }
+
+  it('carries the drawing the entry was showing', () => {
+    expect(snapshotFromEntry(repeated).icon).toEqual({ set: 'dishes', name: 'nasi-lemak' })
+  })
+
+  it("writes it to the food's own icon columns, not the user's override", () => {
+    // `item_icon_*` is what the food looks like; `icon_set`/`icon_name` are the
+    // user's picture of this plate, and `food_logs_one_picture` will not have
+    // those beside a photograph. Writing the wrong pair is a constraint
+    // violation waiting for the first repeat of a photographed meal.
+    const columns = snapshotColumns(snapshotFromEntry(repeated))
+    expect(columns.item_icon_set).toBe('dishes')
+    expect(columns.item_icon_name).toBe('nasi-lemak')
+  })
+
+  it('is content with an entry that has no drawing', () => {
+    const { icon: _icon, ...plain } = repeated
+    expect(snapshotFromEntry(plain).icon).toBeUndefined()
+    expect(snapshotColumns(snapshotFromEntry(plain)).item_icon_set).toBeNull()
   })
 })
