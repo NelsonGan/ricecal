@@ -32,7 +32,7 @@ export const fil = {
 
     nav: {
       today: 'Ngayon',
-      recipes: 'Recipe',
+      recipes: 'Pagkain',
       activity: 'Aktibidad',
       trends: 'Mga trend',
       me: 'Ako',
@@ -578,16 +578,14 @@ export const fil = {
       offerAction: 'Ipakita mo',
 
       log: {
-        title: 'Apat na paraan ng pag-log',
+        title: 'Tatlong paraan ng pag-log',
         subtitle: 'I-tap ang berdeng button sa Ngayon, tapos pumili ng isa.',
         snap: 'Litrato',
         snapBody: 'Isang litrato ng plato',
         describe: 'Ilarawan',
         describeBody: 'I-type ang kinain mo',
         search: 'Hanapin',
-        searchBody: 'Hanapin sa pangalan',
-        recipes: 'Recipe',
-        recipesBody: 'Isang bagay na niluto mo',
+        searchBody: 'Sa amin, sa iyo, o nakain na',
         barcode: 'May pakete? Nagba-barcode din ang camera.',
       },
 
@@ -778,10 +776,17 @@ export const fil = {
       tabs: 'Aling mga pagkain ang hahanapin',
       tabCatalogue: 'Lahat ng pagkain',
       tabMine: 'Aking pagkain',
-      mineEmptyTitle: 'Wala pang nakatala',
-      mineEmptyBody: 'Lilitaw dito ang mga pagkaing itinatala mo, handang idagdag muli.',
-      mineNoMatchBody: 'Walang tumutugma diyan sa mga nakain mo.',
-      mineOfflineBody: 'Nasa server ang talaan mo. Magloload ito pagbalik mo online.',
+      tabPast: 'Nakain na',
+      mineEmptyTitle: 'Wala ka pang sariling pagkain',
+      mineEmptyBody:
+        'Walang nakatakdang serving ang isang kaldero. Ilagay kung ano ang inilagay at para sa ilan ito, isang beses lang, at isang tap na lang ang pag-log mula noon.',
+      mineCreate: 'Magsulat ng isa',
+      mineNoMatchBody: 'Walang pagkain mo ang tugma doon.',
+      mineOfflineBody: 'Nasa server ang mga pagkain mo. Mag-lo-load ito kapag online ka na ulit.',
+      pastEmptyTitle: 'Wala pang nakatala',
+      pastEmptyBody: 'Lilitaw dito ang mga pagkaing itinatala mo, handang idagdag muli.',
+      pastNoMatchBody: 'Walang tumutugma diyan sa mga nakain mo.',
+      pastOfflineBody: 'Nasa server ang talaan mo. Magloload ito pagbalik mo online.',
       place: {
         mamak: 'Mamak',
         kopitiam: 'Kopitiam',
@@ -1089,7 +1094,7 @@ export const fil = {
       deleteBody: 'Mabubura ang lahat ng nasa ibaba sa oras na kumpirmahin mo.',
       goesDiary: 'Bawat pagkain, timbang, tubig at tala',
       goesPhotos: 'Bawat larawang kinuha mo',
-      goesRecipes: 'Ang mga recipe mo, pati ang mga na-publish',
+      goesRecipes: 'Ang mga pagkaing isinulat mo, pati ang mga na-publish',
       goesProfile: 'Ang profile, mga setting at sign-in mo',
       cancelFirst:
         'Kanselahin muna ang subscription mo sa store, kung hindi ay patuloy kang sisingilin.',
@@ -1240,7 +1245,8 @@ export const fil = {
       trialLeft_other: 'Libreng trial, {{count}} araw na natitira',
       renews: 'Magre-renew sa {{price}}.',
       neverRenews: 'Bayad nang isang beses. Walang nagre-renew.',
-      freeBody: '{{scans}} scan kada araw, {{recipes}} recipe, at ang trend ng nakaraang linggo.',
+      freeBody:
+        '{{scans}} scan kada araw, {{recipes}} sariling pagkain, at ang trend ng nakaraang linggo.',
       whatYouGet: 'ANO ANG MAKUKUHA MO SA PRO',
       included: 'KASAMA',
       cancel: 'Kanselahin ang subscription',
@@ -1325,11 +1331,11 @@ export const fil = {
         },
         recipes: {
           label: 'I-save ang niluluto mo',
-          free: '{{recipes}} recipe',
+          free: '{{recipes}} pagkain',
           pro: 'Walang limitasyon',
         },
         recipeFill: {
-          label: 'Punan ang recipe mula sa litrato',
+          label: 'Punan ang pagkain mula sa litrato',
           free: '',
           pro: '',
         },
@@ -1410,8 +1416,9 @@ export const fil = {
         camera: 'Kailangan ng RiceCal Pro para mag-scan ng isa pang plato ngayong araw.',
         describe: 'Kailangan ng RiceCal Pro para sabihin ang kinain mo sa salita.',
         refine: 'Kailangan ng RiceCal Pro para ayusin ang pagkain sa paglalarawan.',
-        read_recipe: 'Kailangan ng RiceCal Pro para punan ang recipe mula sa litrato.',
-        new_recipe: 'Kailangan ng RiceCal Pro para magtago ng higit sa {{recipes}} recipe.',
+        read_recipe: 'Kailangan ng RiceCal Pro para punan ang pagkain mula sa litrato.',
+        new_recipe:
+          'Kailangan ng RiceCal Pro para magtago ng higit sa {{recipes}} sariling pagkain.',
         suggest: 'Kailangan ng RiceCal Pro para magtanong kung ano ang susunod na kakainin.',
         trend_range: 'Kailangan ng RiceCal Pro para tumingin nang lampas sa isang linggo.',
         review: 'Kailangan ng RiceCal Pro para magbasa ng mas lumang review.',
@@ -1440,33 +1447,28 @@ export const fil = {
   recipes: {
     shelf: {
       mine: 'Akin',
-      official: 'Opisyal',
       community: 'Komunidad',
     },
 
     heading: {
-      mine: 'Recipe ko',
-      official: 'Kusina ng RiceCal',
+      mine: 'Pagkain ko',
       community: 'Mula sa komunidad',
     },
 
     search: {
-      official: 'Maghanap ng opisyal na recipe',
-      community: 'Maghanap ng pampublikong recipe',
-      mine: 'Maghanap sa mga recipe ko',
+      community: 'Maghanap ng pampublikong pagkain',
+      mine: 'Maghanap sa mga pagkain ko',
       clear: 'I-clear ang paghahanap',
       none: 'Walang ganoong pangalan',
       noneBody: 'Subukan ang mas maikling salita, o bahagi ng pangalan ng ulam.',
     },
 
     empty: {
-      mineTitle: 'Wala pang recipe',
+      mineTitle: 'Wala pang pagkain',
       mineBody:
         'Walang nakatakdang serving ang isang kaldero. Ilagay kung ano ang inilagay at para sa ilan ito, isang beses lang, at isang tap na lang ang pag-log mula noon.',
-      officialTitle: 'Walang laman ang kusina',
-      officialBody: 'Lilitaw dito ang mga recipe mula sa amin.',
       communityTitle: 'Wala pang ibinabahagi',
-      communityBody: 'Lilitaw dito ang mga recipe na ginawang pampubliko.',
+      communityBody: 'Lilitaw dito ang mga pagkain na ginawang pampubliko.',
     },
 
     servings_one: '{{count}} serving',
@@ -1480,7 +1482,7 @@ export const fil = {
     someCook: 'May isang tao',
 
     new: {
-      title: 'Bagong recipe',
+      title: 'Bagong pagkain',
       scanLabel: 'Litrato',
       describeLabel: 'Ilarawan',
       scanTitle: 'Punan mula sa litrato',
@@ -1502,13 +1504,13 @@ export const fil = {
     },
 
     edit: {
-      title: 'I-edit ang recipe',
+      title: 'I-edit ang pagkain',
       name: 'PANGALAN',
       namePlaceholder: 'Ano ang tawag mo dito?',
       picture: 'LARAWAN',
       changePicture: 'Palitan ang larawan',
       replacePhotoTitle: 'Gumamit na lang ng drawing?',
-      replacePhotoBody: 'Aalisin ang litrato ng recipe na ito.',
+      replacePhotoBody: 'Aalisin ang litrato ng pagkain na ito.',
       replacePhotoConfirm: 'Gamitin ang drawing',
       servings: 'ILANG SERVING',
       ingredients: 'MGA SANGKAP',
@@ -1524,11 +1526,12 @@ export const fil = {
       stepsEdit_one: 'I-edit ang mga hakbang, {{count}} hakbang',
       stepsEdit_other: 'I-edit ang mga hakbang, {{count}} hakbang',
       stepsWrite: 'Isulat kung paano mo ito niluluto',
-      save: 'I-save ang recipe',
-      saved: 'Na-save ang recipe',
+      save: 'I-save ang pagkain',
+      saved: 'Na-save ang pagkain',
       nameRequired: 'Pangalanan mo muna ito',
       saveFailed: 'Hindi ma-save iyon. Subukan ulit.',
-      limitReached: 'Nagtatago ang libreng account ng {{count}} recipe. Walang limitasyon ang Pro.',
+      limitReached:
+        'Nagtatago ang libreng account ng {{count}} pagkain. Walang limitasyon ang Pro.',
       totalLabel: 'Kada serving, {{count}}',
       totalWhole: 'Buong kaldero {{kcal}} kcal',
       discardTitle: 'Umalis nang hindi nagse-save?',
@@ -1575,21 +1578,20 @@ export const fil = {
       ingredients: 'MGA SANGKAP',
       addToDay: 'Idagdag sa ngayong araw',
       added: 'Naidagdag sa araw mo',
-      saveCopy: 'I-save sa mga recipe ko',
-      savedCopy: 'Na-save sa mga recipe mo',
+      saveCopy: 'I-save sa mga pagkain ko',
+      savedCopy: 'Na-save sa mga pagkain mo',
       saveCopyFailed: 'Hindi ma-save iyon. Subukan ulit.',
-      goneTitle: 'Hindi mahanap ang recipe',
+      goneTitle: 'Hindi mahanap ang pagkain',
       goneBody:
         'Baka nabura na ito, o ginawang pribado ulit. Humingi ng bagong link sa nagbahagi nito.',
-      official: 'Mula sa kusina ng RiceCal',
-      delete: 'Burahin ang recipe',
-      deleteTitle: 'Burahin ang recipe na ito?',
+      delete: 'Burahin ang pagkain',
+      deleteTitle: 'Burahin ang pagkain na ito?',
       deleteBody: 'Mananatili sa diary mo ang mga pagkaing ni-log mo na mula rito.',
-      deleted: 'Nabura ang recipe',
+      deleted: 'Nabura ang pagkain',
     },
 
     report: {
-      title: 'I-report ang recipe na ito',
+      title: 'I-report ang pagkain na ito',
       body: 'Titigil itong lumabas sa iyo agad. Hindi sinasabihan ang nagluto.',
       inappropriate: 'Nakakasakit o hindi pagkain',
       spam: 'Spam o advertising',
@@ -1597,13 +1599,13 @@ export const fil = {
       stolen: 'Gawa ng iba',
       block: 'Itago ang lahat ni {{name}}',
       done: 'Na-report na. Hindi mo na ito makikita.',
-      blocked: 'Naitago na. Hindi mo na makikita ang mga recipe nila.',
+      blocked: 'Naitago na. Hindi mo na makikita ang mga pagkain nila.',
       failed: 'Hindi nagawa iyon. Subukan ulit.',
     },
 
     share: {
       action: 'Ibahagi',
-      title: 'Ibahagi ang recipe na ito',
+      title: 'Ibahagi ang pagkain na ito',
       body: 'Makikita ng sinumang may link ang mga sangkap, hakbang at calories, at makakapag-save ng sarili nilang kopya. Sa iyo pa rin ang sa iyo.',
       publicTitle: 'Gawin itong pampubliko',
       publicBody: 'Sasali ito sa community tab para mahanap at ma-save ninuman.',
@@ -1611,23 +1613,14 @@ export const fil = {
     },
 
     review: {
-      checking: 'Sinusuri ang recipe mo…',
-      approved: 'Nasa komunidad na ang recipe mo',
+      checking: 'Sinusuri ang pagkain mo…',
+      approved: 'Nasa komunidad na ang pagkain mo',
       rejected: 'Hindi na-publish: {{reason}}',
       rejectedPlain: 'Hindi namin ma-publish ito.',
       pending: 'Tinitingnan pa namin ito. Lilitaw ito kapag pumasa na.',
       badgePending: 'Sinusuri',
       badgeRejected: 'Hindi na-publish',
       badgePublic: 'Pampubliko',
-    },
-
-    log: {
-      action: 'Recipe',
-      empty: {
-        mine: 'Wala pang recipe. Magdagdag ng isa at isang tap na lang ang pag-log.',
-        official: 'Wala pang laman ang kusina.',
-        community: 'Wala pang ibinabahagi. Lilitaw dito ang mga recipe na ginawang pampubliko.',
-      },
     },
   },
 

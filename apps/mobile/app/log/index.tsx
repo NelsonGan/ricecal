@@ -13,6 +13,7 @@ import {
   useDayLog,
   useDescribeFood,
   useLogFood,
+  useRecipeQuota,
   useScanQuota,
   useSelectedDate,
   useSettings,
@@ -29,41 +30,58 @@ import {
   QuickAction,
 } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
-import { RecipePanel } from '@/features/recipes'
 import { dateOffset, type LogMethod, track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
 import { SheetSurface, Tabs, Text, useToast } from '@/ui'
 
 /**
- * Which of the four quick actions has its panel open below the row, if any. A
+ * Which of the three quick actions has its panel open below the row, if any. A
  * union rather than a flag each, because they share the space: opening the camera
  * has to put search away.
  *
- * Scanning a packet is a tab inside the camera rather than a fifth tile. It is
- * the same gesture, and a fifth tile made the row longer to answer a question the
- * user had already answered by reaching for the camera.
+ * Scanning a packet is a tab inside the camera rather than a fourth tile. It is
+ * the same gesture, and a fourth tile made the row longer to answer a question
+ * the user had already answered by reaching for the camera.
+ *
+ * There was a fourth, "Recipes", and it opened a shelf of the food the user had
+ * written themselves. It is a tab inside search now. A tile that opened its own
+ * list with its own field made "search for a dish" two different features
+ * depending on who had written the dish, and the one word somebody types is the
+ * same word either way.
  */
-type Panel = 'camera' | 'describe' | 'search' | 'recipes' | null
+type Panel = 'camera' | 'describe' | 'search' | null
 
-const PANELS = ['camera', 'describe', 'search', 'recipes'] as const
+const PANELS = ['camera', 'describe', 'search'] as const
 
 /** A route param is whatever was in the URL, so it is checked before it is used. */
 const isPanel = (value: string | undefined): value is NonNullable<Panel> =>
   PANELS.includes(value as (typeof PANELS)[number])
 
 /**
- * `?panel=barcode` and `?panel=label` both mean the camera, which is why this
- * mapping exists rather than a rename.
+ * Three names that are not panels and still have to land somewhere, which is why
+ * this mapping exists rather than a rename.
  *
  * `barcode` is "Scan again" off a lookup that could not be made, and it has to
  * land on the day with the scanner live; that link predates the tabs, so it
  * resolves to the camera opened on the barcode side. `label` is the other half
  * of the same handoff: a packet nobody has a record of sends the user here to
  * photograph the nutrition panel, which is the MEAL side of the same camera.
+ *
+ * `recipes` is the quick-log widget, which is native and is on home screens
+ * built against a version of this app that had a fourth tile. It has to keep
+ * meaning something, and what it meant is now the My foods tab. Explicit rather
+ * than left to the fallback below, which would answer a tap on a cooking pot
+ * with a camera.
  */
 const openingPanel = (value: string | undefined): NonNullable<Panel> =>
-  value === 'barcode' || value === 'label' ? 'camera' : isPanel(value) ? value : 'camera'
+  value === 'barcode' || value === 'label'
+    ? 'camera'
+    : value === 'recipes'
+      ? 'search'
+      : isPanel(value)
+        ? value
+        : 'camera'
 
 const openingMode = (value: string | undefined): CaptureMode =>
   value === 'barcode' ? 'barcode' : 'meal'
@@ -80,7 +98,7 @@ const openingMode = (value: string | undefined): CaptureMode =>
  * tapping the log button felt slow.
  */
 export default function LogSheet() {
-  const { t } = useTranslation(['logging', 'recipes', 'common'])
+  const { t } = useTranslation(['logging', 'common'])
   const router = useRouter()
   const goBack = useBack('/today')
   const logFood = useLogFood()
@@ -99,12 +117,12 @@ export default function LogSheet() {
   const { panel: opening } = useLocalSearchParams<{ panel?: string }>()
 
   /**
-   * The viewfinder, the search field and the recipe list live inside this sheet
+   * The viewfinder, the search field and the describe box live inside this sheet
    * rather than in screens of their own, so the day stays visible and nothing has
    * to be dismissed twice.
    *
    * Snap is the default, so the log button opens on a camera pointed at the food:
-   * the other three are how you log a meal you are not looking at. Tapping Snap
+   * the other two are how you log a meal you are not looking at. Tapping Snap
    * again closes it.
    */
   const [panel, setPanel] = useState<Panel>(() => openingPanel(opening))
@@ -162,6 +180,9 @@ export default function LogSheet() {
   // transparentModal, and a paywall pushed from inside one comes up stacked on
   // the sheet rather than over the app.
   const requirePro = useRequirePro({ navigate: 'replace' })
+  // Read for the "Write one" button on an empty My foods tab, which is the one
+  // place in this sheet that creates rather than logs.
+  const recipeQuota = useRecipeQuota()
   // Only ever rendered under the viewfinder, so it is fetched with the sheet
   // rather than with the tab behind it.
   const quota = useScanQuota()
@@ -258,7 +279,7 @@ export default function LogSheet() {
           NO SUGGESTION GLYPH BESIDE IT ANY MORE. "I do not know what to eat"
           was here for a while, on the argument that somebody who opens this
           sheet has not decided what the meal is — which is true and was not
-          enough. It was two taps deep, inside a sheet whose four tiles all
+          enough. It was two taps deep, inside a sheet whose tiles all
           assume the meal IS decided, so an account that never pressed the log
           button never learnt the feature existed. It is a row on Today now,
           under the week strip. See `SuggestAction`. */}
@@ -301,16 +322,6 @@ export default function LogSheet() {
           icon={{ set: 'ui', name: 'search' }}
           selected={panel === 'search'}
           onPress={() => toggle('search')}
-        />
-        {/* Something you cooked. The fourth way in, and the only one that logs a
-            dish the user wrote themselves — everything to its left resolves to
-            the shared catalogue one way or another. */}
-        <QuickAction
-          label={t('recipes:log.action')}
-          icon={{ set: 'food', name: 'cooking-pot' }}
-          tone="water"
-          selected={panel === 'recipes'}
-          onPress={() => toggle('recipes')}
         />
       </View>
 
@@ -411,6 +422,9 @@ export default function LogSheet() {
       {panel === 'search' ? (
         <FoodSearchPanel
           autoFocus
+          // The widget's fourth button used to open a shelf of the user's own
+          // food, and still asks for one. See `openingPanel`.
+          initialSource={opening === 'recipes' ? 'mine' : undefined}
           onPick={(food, search) => openPicked(food.id, search)}
           /* A meal out of this account's own diary is WRITTEN HERE, the way a
              recipe is, rather than opening the portion screen a catalogue dish
@@ -420,18 +434,24 @@ export default function LogSheet() {
              the digit. The quantity travels with it for the same reason: two
              plates yesterday is two plates today. */
           onPickHistory={(entry) => add(snapshotFromEntry(entry), 'history', entry.quantity)}
-        />
-      ) : null}
-      {panel === 'recipes' ? (
-        // `replace` for the same reason `openFood` does it: a push from inside a
-        // transparent modal lands on the stack WITHIN that presentation, so the
-        // recipe would come up as a second modal stacked on this sheet.
-        <RecipePanel
-          autoFocus
-          onLog={(recipe) => add(snapshotFromRecipe(recipe), 'recipe')}
-          onOpen={(recipe) =>
+          /* One serving of something the user wrote themselves, written the way
+             a repeat is: the figures are theirs and the size is the one they
+             said the pot feeds. Any other number of servings is a question, and
+             the food's own screen is where it is asked. */
+          onPickOwn={(recipe) => add(snapshotFromRecipe(recipe), 'recipe')}
+          /* `replace` for the same reason `openFood` does it: a push from inside
+             a transparent modal lands on the stack WITHIN that presentation, so
+             the food would come up as a second modal stacked on this sheet. */
+          onOpenOwn={(recipe) =>
             router.replace({ pathname: '/recipe/[id]', params: { id: recipe.id } })
           }
+          onCreateOwn={() => {
+            // The database enforces the same ceiling
+            // (`recipes_enforce_free_limit`); this is the half that opens the
+            // paywall rather than letting somebody fill a form in first.
+            if (recipeQuota.atLimit && !requirePro('new_recipe')) return
+            router.replace('/recipe/edit')
+          }}
         />
       ) : null}
     </SheetSurface>

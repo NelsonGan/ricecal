@@ -242,11 +242,13 @@ export type Events = {
    * the live version of what `pnpm foods:gate` measures against thirty fixed
    * queries.
    *
-   * `source` says which of the panel's two lists it came from, because rank
+   * `source` says which of the panel's three lists it came from, because rank
    * means different things in each: in the catalogue it grades the Worker's
-   * ranking, and in the history it is how far back the meal was.
+   * ranking, in the history it is how far back the meal was, and among the
+   * user's own food it is how recently they wrote it. Absent is the catalogue,
+   * which is the only list the ranking is a claim about.
    */
-  'Food Picked': { position: number; results: number; source?: 'history' }
+  'Food Picked': { position: number; results: number; source?: 'history' | 'recipe' }
 
   // ── Money, up to the store sheet and no further ──────────────────────────
   /**

@@ -31,7 +31,7 @@ export const ms = {
 
     nav: {
       today: 'Hari ini',
-      recipes: 'Resipi',
+      recipes: 'Makanan',
       activity: 'Aktiviti',
       trends: 'Trend',
       me: 'Saya',
@@ -580,16 +580,14 @@ export const ms = {
       offerAction: 'Tunjukkan',
 
       log: {
-        title: 'Empat cara merekod',
+        title: 'Tiga cara merekod',
         subtitle: 'Ketik butang hijau pada Hari ini, kemudian pilih satu.',
         snap: 'Snap',
         snapBody: 'Gambar pinggan itu',
         describe: 'Terangkan',
         describeBody: 'Taip apa yang anda makan',
         search: 'Cari',
-        searchBody: 'Cari mengikut nama',
-        recipes: 'Resipi',
-        recipesBody: 'Sesuatu yang anda masak',
+        searchBody: 'Kami punya, anda punya, atau pernah dimakan',
         barcode: 'Ada bungkusan? Kamera juga mengimbas barkod.',
       },
 
@@ -779,10 +777,18 @@ export const ms = {
       tabs: 'Cari dalam makanan yang mana',
       tabCatalogue: 'Semua makanan',
       tabMine: 'Makanan saya',
-      mineEmptyTitle: 'Belum ada yang direkod',
-      mineEmptyBody: 'Hidangan yang anda rekod muncul di sini, sedia ditambah semula.',
-      mineNoMatchBody: 'Tiada apa yang anda pernah makan sepadan dengan itu.',
+      tabPast: 'Pernah dimakan',
+      mineEmptyTitle: 'Belum ada makanan anda sendiri',
+      mineEmptyBody:
+        'Satu periuk kongsi tiada saiz hidangan. Masukkan apa yang dimasukkan dan berapa orang ia cukup, sekali sahaja, dan merekodnya hanya satu ketikan selepas itu.',
+      mineCreate: 'Tulis satu',
+      mineNoMatchBody: 'Tiada makanan anda yang sepadan dengan itu.',
       mineOfflineBody:
+        'Makanan anda berada di pelayan. Ini akan dimuatkan sebaik anda kembali dalam talian.',
+      pastEmptyTitle: 'Belum ada yang direkod',
+      pastEmptyBody: 'Hidangan yang anda rekod muncul di sini, sedia ditambah semula.',
+      pastNoMatchBody: 'Tiada apa yang anda pernah makan sepadan dengan itu.',
+      pastOfflineBody:
         'Diari anda berada di pelayan. Ini akan dimuatkan sebaik anda kembali dalam talian.',
       place: {
         mamak: 'Mamak',
@@ -1094,7 +1100,7 @@ export const ms = {
       deleteBody: 'Semua di bawah ini dipadam sebaik anda mengesahkan.',
       goesDiary: 'Setiap hidangan, timbangan, air dan nota',
       goesPhotos: 'Setiap gambar yang anda ambil',
-      goesRecipes: 'Resipi anda, termasuk yang diterbitkan',
+      goesRecipes: 'Makanan yang anda tulis, termasuk yang diterbitkan',
       goesProfile: 'Profil, tetapan dan log masuk anda',
       cancelFirst: 'Batalkan langganan anda di stor dahulu, atau caj akan diteruskan.',
       action: 'Padam akaun saya',
@@ -1244,7 +1250,7 @@ export const ms = {
       trialLeft_other: 'Percubaan percuma, baki {{count}} hari',
       renews: 'Diperbaharui pada {{price}}.',
       neverRenews: 'Dibayar sekali. Tiada pembaharuan.',
-      freeBody: '{{scans}} imbasan sehari, {{recipes}} resipi, dan trend minggu lepas.',
+      freeBody: '{{scans}} imbasan sehari, {{recipes}} makanan sendiri, dan trend minggu lepas.',
       whatYouGet: 'APA YANG ANDA DAPAT DENGAN PRO',
       included: 'TERMASUK',
       cancel: 'Batalkan langganan',
@@ -1329,11 +1335,11 @@ export const ms = {
         },
         recipes: {
           label: 'Simpan apa yang anda masak',
-          free: '{{recipes}} resipi',
+          free: '{{recipes}} makanan',
           pro: 'Tanpa had',
         },
         recipeFill: {
-          label: 'Isi resipi daripada gambar',
+          label: 'Isi makanan daripada gambar',
           free: '',
           pro: '',
         },
@@ -1414,8 +1420,8 @@ export const ms = {
         camera: 'Mengimbas satu lagi pinggan hari ini memerlukan RiceCal Pro.',
         describe: 'Mengatakan apa yang anda makan dalam perkataan memerlukan RiceCal Pro.',
         refine: 'Membetulkan hidangan dengan menerangkannya memerlukan RiceCal Pro.',
-        read_recipe: 'Mengisi resipi daripada gambar memerlukan RiceCal Pro.',
-        new_recipe: 'Menyimpan lebih daripada {{recipes}} resipi memerlukan RiceCal Pro.',
+        read_recipe: 'Mengisi makanan daripada gambar memerlukan RiceCal Pro.',
+        new_recipe: 'Menyimpan lebih daripada {{recipes}} makanan sendiri memerlukan RiceCal Pro.',
         suggest: 'Bertanya apa hendak dimakan seterusnya memerlukan RiceCal Pro.',
         trend_range: 'Melihat lebih jauh daripada seminggu memerlukan RiceCal Pro.',
         review: 'Membaca ulasan lama memerlukan RiceCal Pro.',
@@ -1444,33 +1450,28 @@ export const ms = {
   recipes: {
     shelf: {
       mine: 'Saya',
-      official: 'Rasmi',
       community: 'Komuniti',
     },
 
     heading: {
-      mine: 'Resipi saya',
-      official: 'Dapur RiceCal',
+      mine: 'Makanan saya',
       community: 'Daripada komuniti',
     },
 
     search: {
-      official: 'Cari resipi rasmi',
-      community: 'Cari resipi awam',
-      mine: 'Cari resipi saya',
+      community: 'Cari makanan awam',
+      mine: 'Cari makanan saya',
       clear: 'Kosongkan carian',
       none: 'Tiada apa-apa dengan nama itu',
       noneBody: 'Cuba perkataan yang lebih pendek, atau sebahagian nama hidangan.',
     },
 
     empty: {
-      mineTitle: 'Belum ada resipi',
+      mineTitle: 'Belum ada makanan',
       mineBody:
         'Satu periuk kongsi tiada saiz hidangan. Masukkan apa yang dimasukkan dan berapa orang ia cukup, sekali sahaja, dan merekodnya hanya satu ketikan selepas itu.',
-      officialTitle: 'Dapur ini kosong',
-      officialBody: 'Resipi daripada kami akan muncul di sini.',
       communityTitle: 'Belum ada yang dikongsi',
-      communityBody: 'Resipi yang dijadikan awam oleh orang akan muncul di sini.',
+      communityBody: 'Makanan yang dijadikan awam oleh orang akan muncul di sini.',
     },
 
     servings_one: '{{count}} hidangan',
@@ -1484,7 +1485,7 @@ export const ms = {
     someCook: 'Seseorang',
 
     new: {
-      title: 'Resipi baharu',
+      title: 'Makanan baharu',
       scanLabel: 'Gambar',
       describeLabel: 'Terangkan',
       scanTitle: 'Isi daripada gambar',
@@ -1506,13 +1507,13 @@ export const ms = {
     },
 
     edit: {
-      title: 'Sunting resipi',
+      title: 'Sunting makanan',
       name: 'NAMA',
       namePlaceholder: 'Apa anda panggil ia?',
       picture: 'GAMBAR',
       changePicture: 'Tukar gambar',
       replacePhotoTitle: 'Guna lukisan sebaliknya?',
-      replacePhotoBody: 'Foto resipi ini akan dibuang.',
+      replacePhotoBody: 'Foto makanan ini akan dibuang.',
       replacePhotoConfirm: 'Guna lukisan',
       servings: 'BERAPA HIDANGAN',
       ingredients: 'BAHAN',
@@ -1528,11 +1529,11 @@ export const ms = {
       stepsEdit_one: 'Sunting langkah, {{count}} langkah',
       stepsEdit_other: 'Sunting langkah, {{count}} langkah',
       stepsWrite: 'Tulis bagaimana anda masak',
-      save: 'Simpan resipi',
-      saved: 'Resipi disimpan',
+      save: 'Simpan makanan',
+      saved: 'Makanan disimpan',
       nameRequired: 'Beri ia nama dahulu',
       saveFailed: 'Tidak dapat menyimpannya. Cuba lagi.',
-      limitReached: 'Akaun percuma menyimpan {{count}} resipi. Pro tiada had.',
+      limitReached: 'Akaun percuma menyimpan {{count}} makanan. Pro tiada had.',
       totalLabel: 'Setiap hidangan, {{count}}',
       totalWhole: 'Seluruh periuk {{kcal}} kcal',
       discardTitle: 'Keluar tanpa menyimpan?',
@@ -1579,21 +1580,20 @@ export const ms = {
       ingredients: 'BAHAN',
       addToDay: 'Tambah ke hari ini',
       added: 'Ditambah ke hari anda',
-      saveCopy: 'Simpan ke resipi saya',
-      savedCopy: 'Disimpan ke resipi anda',
+      saveCopy: 'Simpan ke makanan saya',
+      savedCopy: 'Disimpan ke makanan anda',
       saveCopyFailed: 'Tidak dapat menyimpan yang itu. Cuba lagi.',
-      goneTitle: 'Resipi tidak dijumpai',
+      goneTitle: 'Makanan tidak dijumpai',
       goneBody:
         'Ia mungkin sudah dipadam, atau dijadikan peribadi semula. Minta pautan baharu daripada sesiapa yang berkongsinya.',
-      official: 'Daripada dapur RiceCal',
-      delete: 'Padam resipi',
-      deleteTitle: 'Padam resipi ini?',
+      delete: 'Padam makanan',
+      deleteTitle: 'Padam makanan ini?',
       deleteBody: 'Hidangan yang sudah anda rekod daripadanya kekal dalam diari anda.',
-      deleted: 'Resipi dipadam',
+      deleted: 'Makanan dipadam',
     },
 
     report: {
-      title: 'Laporkan resipi ini',
+      title: 'Laporkan makanan ini',
       body: 'Ia berhenti muncul untuk anda serta-merta. Tukang masak tidak diberitahu.',
       inappropriate: 'Menyinggung atau bukan makanan',
       spam: 'Spam atau iklan',
@@ -1601,13 +1601,13 @@ export const ms = {
       stolen: 'Hasil kerja orang lain',
       block: 'Sembunyikan semua daripada {{name}}',
       done: 'Dilaporkan. Anda tidak akan melihatnya lagi.',
-      blocked: 'Disembunyikan. Anda tidak akan melihat resipi mereka lagi.',
+      blocked: 'Disembunyikan. Anda tidak akan melihat makanan mereka lagi.',
       failed: 'Tidak dapat berbuat demikian. Cuba lagi.',
     },
 
     share: {
       action: 'Kongsi',
-      title: 'Kongsi resipi ini',
+      title: 'Kongsi makanan ini',
       body: 'Sesiapa yang ada pautan boleh melihat bahan, langkah dan kalorinya, dan menyimpan salinan mereka sendiri. Milik anda kekal milik anda.',
       publicTitle: 'Jadikan ia awam',
       publicBody: 'Ia menyertai tab komuniti untuk sesiapa sahaja mencari dan menyimpannya.',
@@ -1615,23 +1615,14 @@ export const ms = {
     },
 
     review: {
-      checking: 'Menyemak resipi anda…',
-      approved: 'Resipi anda sudah masuk komuniti',
+      checking: 'Menyemak makanan anda…',
+      approved: 'Makanan anda sudah masuk komuniti',
       rejected: 'Tidak diterbitkan: {{reason}}',
       rejectedPlain: 'Kami tidak dapat menerbitkan yang ini.',
       pending: 'Kami masih melihat yang ini. Ia akan muncul selepas ia lulus.',
       badgePending: 'Dalam semakan',
       badgeRejected: 'Tidak diterbitkan',
       badgePublic: 'Awam',
-    },
-
-    log: {
-      action: 'Resipi',
-      empty: {
-        mine: 'Belum ada resipi. Tambah satu dan merekodnya hanya satu ketikan.',
-        official: 'Belum ada apa-apa dalam dapur.',
-        community: 'Belum ada yang dikongsi. Resipi yang dijadikan awam akan muncul di sini.',
-      },
     },
   },
 

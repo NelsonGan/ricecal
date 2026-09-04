@@ -20,19 +20,23 @@ import {
   Skeleton,
 } from '@/ui'
 
-const SHELVES: RecipeShelf[] = ['mine', 'official', 'community']
+const SHELVES: RecipeShelf[] = ['mine', 'community']
 
 const SKELETON_ROWS = ['r1', 'r2', 'r3'] as const
 
 /**
- * The three shelves of the recipe list, and the Recipes tab.
+ * The two shelves of food people write, and the Food tab.
  *
- * One screen and not three, because they are one list read three ways: the same
- * row, the same tap target, the same numbers. What changes is who wrote the
- * recipe, and the segmented control says which is showing.
+ * One screen and not two, because they are one list read two ways: the same row,
+ * the same tap target, the same numbers. What changes is who wrote the food, and
+ * the segmented control says which is showing.
+ *
+ * There was a third, the RiceCal kitchen: rows with no owner at all. Nothing was
+ * ever put on it, and a permanently empty shelf is a tab that teaches people the
+ * app has nothing.
  *
  * A root screen, so it carries a `ScreenTitle` rather than an `AppBar`. The
- * heading changes with the shelf, unlike the other tabs' titles: "My recipes" and
+ * heading changes with the shelf, unlike the other tabs' titles: "My foods" and
  * "From the community" are different places.
  */
 export default function RecipesScreen() {
@@ -79,8 +83,9 @@ export default function RecipesScreen() {
         onChange={(next) => {
           setShelf(next)
           // The query belongs to the shelf that was showing. Carried across, it
-          // reads as "no official recipes match" when what happened is that the
-          // user changed tab and the field kept a word from the last one.
+          // reads as "nothing in the community matches" when what happened is
+          // that the user changed tab and the field kept a word from the last
+          // one.
           setQuery('')
         }}
       />
