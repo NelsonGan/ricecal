@@ -37,7 +37,7 @@ export const recipes = {
     communityBody: 'Foods people have made public will show up here.',
   },
 
-  /** The count under a recipe's name in a list. */
+  /** The count under a food's name in a list. */
   servings_one: '{{count}} serving',
   servings_other: '{{count}} servings',
   ingredients_one: '{{count}} ingredient',

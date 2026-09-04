@@ -101,7 +101,7 @@ export type FoodSearchPanelProps = {
    */
   onOpenOwn?: (recipe: Recipe) => void
   /**
-   * Write a new food. Offered where the My foods tab is empty, because that is
+   * Write a new food. Offered at the head of the My foods tab, because that is
    * where somebody looking for food they have not written yet ends up, and the
    * alternative is closing this sheet and finding the Food tab.
    */
@@ -412,24 +412,47 @@ function OwnFoodList({
 
   const searched = query.trim().length > 0
 
+  /**
+   * ABOVE the list rather than inside the empty state, and that is the keyboard
+   * rather than a preference. This panel takes the keyboard on open, which
+   * leaves about half the sheet, and a button under an illustration and two
+   * lines of explanation sits below the fold — the one control on the one tab
+   * whose whole job is "you have not written any yet".
+   *
+   * Hidden while a search is running, where the field is the thing being used
+   * and every row on screen is an answer to it.
+   *
+   * The form's own title is the label, so this button and the heading it opens
+   * are the same words.
+   */
+  const create =
+    onCreate && !searched ? (
+      <Button variant="secondary" fullWidth onPress={onCreate}>
+        {t('recipes:new.title')}
+      </Button>
+    ) : null
+
   // `isPending` and not `isFetching`, as the history list has it: this list is
   // worth showing while it refreshes, and only a first load has nothing to draw.
   if (isPending && !isPaused) {
     return (
-      <View className="gap-3" accessibilityRole="progressbar">
-        {SKELETON_ROWS.map((id) => (
-          <Card key={id}>
-            <View className="flex-row items-center gap-3">
-              <Skeleton className={ROW_TILE} />
-              <View className="flex-1 gap-2">
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="h-3 w-2/5" />
+      <>
+        {create}
+        <View className="gap-3" accessibilityRole="progressbar">
+          {SKELETON_ROWS.map((id) => (
+            <Card key={id}>
+              <View className="flex-row items-center gap-3">
+                <Skeleton className={ROW_TILE} />
+                <View className="flex-1 gap-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-2/5" />
+                </View>
+                <Skeleton className="h-6 w-12" />
               </View>
-              <Skeleton className="h-6 w-12" />
-            </View>
-          </Card>
-        ))}
-      </View>
+            </Card>
+          ))}
+        </View>
+      </>
     )
   }
 
@@ -455,10 +478,10 @@ function OwnFoodList({
 
   if (recipes.length === 0) {
     // Two different nothings, the same split the history list makes. An account
-    // that has written nothing is being told what this list is for, and offered
-    // the form; one whose search matched nothing is being told to try fewer
-    // letters, and offering it a blank form would answer a question it did not
-    // ask.
+    // that has written nothing is being told what this list is for, above a
+    // button that opens the form; one whose search matched nothing is being told
+    // to try fewer letters, and offering it a blank form would answer a question
+    // it did not ask.
     return searched ? (
       <EmptyState
         title={t('logging:search.emptyTitle')}
@@ -466,23 +489,20 @@ function OwnFoodList({
         icon={{ set: 'ui', name: 'search' }}
       />
     ) : (
-      <View className="gap-3">
+      <>
+        {create}
         <EmptyState
           title={t('logging:search.mineEmptyTitle')}
           description={t('logging:search.mineEmptyBody')}
           icon={{ set: 'food', name: 'cooking-pot' }}
         />
-        {onCreate ? (
-          <Button variant="secondary" fullWidth onPress={onCreate}>
-            {t('logging:search.mineCreate')}
-          </Button>
-        ) : null}
-      </View>
+      </>
     )
   }
 
   return (
     <>
+      {create}
       {recipes.map((recipe, index) => (
         <Card key={recipe.id}>
           <ItemRow

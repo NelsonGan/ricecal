@@ -564,7 +564,7 @@ export const zhHans = {
         describe: '描述',
         describeBody: '打字说你吃了什么',
         search: '搜索',
-        searchBody: '我们的、你的，或吃过的',
+        searchBody: '我们的或你的',
         barcode: '有包装？相机也能扫条码。',
       },
 
@@ -753,7 +753,6 @@ export const zhHans = {
       tabPast: '吃过的',
       mineEmptyTitle: '还没有你自己的食物',
       mineEmptyBody: '一锅菜没有现成的份量。把用了什么、够几个人吃填一次，之后记录就只要点一下。',
-      mineCreate: '写一个',
       mineNoMatchBody: '你的食物里没有匹配的。',
       mineOfflineBody: '你的食物存在服务器上。回到网络后就会载入。',
       pastEmptyTitle: '还没有记录',

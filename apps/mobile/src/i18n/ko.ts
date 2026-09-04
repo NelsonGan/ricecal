@@ -564,7 +564,7 @@ export const ko = {
         describe: '설명',
         describeBody: '먹은 것을 입력',
         search: '검색',
-        searchBody: '우리 것, 내 것, 전에 먹은 것',
+        searchBody: '우리 것도 내 것도',
         barcode: '포장 제품인가요? 카메라가 바코드도 읽습니다.',
       },
 
@@ -754,7 +754,6 @@ export const ko = {
       mineEmptyTitle: '아직 내 음식이 없습니다',
       mineEmptyBody:
         '한 냄비 요리에는 정해진 1인분이 없습니다. 무엇이 들어갔고 몇 인분인지 한 번만 넣어두면, 그다음부터는 한 번 누르면 기록됩니다.',
-      mineCreate: '하나 만들기',
       mineNoMatchBody: '그 말과 맞는 음식이 없습니다.',
       mineOfflineBody: '내 음식은 서버에 있습니다. 다시 온라인이 되면 불러옵니다.',
       pastEmptyTitle: '아직 기록이 없어요',

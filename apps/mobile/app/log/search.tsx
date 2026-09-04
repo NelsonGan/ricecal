@@ -35,8 +35,8 @@ export default function SearchScreen() {
   const { selectedDate } = useSelectedDate()
   const logFood = useLogFood()
   const requirePro = useRequirePro()
-  // For the "Write one" button on an empty My foods tab. The database enforces
-  // the same ceiling; this is the half that opens the paywall instead.
+  // For the "New food" button at the head of the My foods tab. The database
+  // enforces the same ceiling; this is the half that opens the paywall instead.
   const recipeQuota = useRecipeQuota()
 
   return (

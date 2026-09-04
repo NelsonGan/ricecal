@@ -148,7 +148,11 @@ function LogWays() {
                 <View className={cn('items-center gap-2 rounded-md px-2 py-4', way.fill)}>
                   <Icon {...way.icon} size={30} />
                   <Text variant="bodyStrong">{t(`tutorial.log.${way.key}`)}</Text>
-                  <Text variant="meta" numberOfLines={1}>
+                  {/* Two lines, since these went from half the row to a third
+                      of it: "A photo of the plate" truncated to "A photo of…"
+                      on one, and the tiles are stretched to a common height by
+                      the row anyway, so the second line costs nothing. */}
+                  <Text variant="meta" numberOfLines={2} className="text-center">
                     {t(`tutorial.log.${way.key}Body`)}
                   </Text>
                 </View>

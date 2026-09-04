@@ -569,7 +569,7 @@ export const ja = {
         describe: '書く',
         describeBody: '食べたものを入力',
         search: '探す',
-        searchBody: 'うちのも、あなたのも、前に食べたものも',
+        searchBody: 'うちのも自分のも',
         barcode: '商品ですか。カメラはバーコードも読みます。',
       },
 
@@ -761,7 +761,6 @@ export const ja = {
       mineEmptyTitle: 'まだ自分のフードがありません',
       mineEmptyBody:
         '大鍋の料理には決まった 1 人前がありません。何を入れて何人分かを一度だけ登録すれば、次からはタップ 1 回で記録できます。',
-      mineCreate: '書いてみる',
       mineNoMatchBody: 'その言葉に合うフードはありません。',
       mineOfflineBody: '自分のフードはサーバーにあります。オンラインに戻れば読み込まれます。',
       pastEmptyTitle: 'まだ記録がありません',

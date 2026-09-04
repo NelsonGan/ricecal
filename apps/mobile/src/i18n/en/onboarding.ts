@@ -233,7 +233,7 @@ export const onboarding = {
       describe: 'Describe',
       describeBody: 'Type what you ate',
       search: 'Search',
-      searchBody: 'Ours, yours, or eaten before',
+      searchBody: 'Ours or yours',
       /** Scanning is a tab inside the camera, not a fourth square. Say so. */
       barcode: 'Got a packet? The camera scans barcodes too.',
     },

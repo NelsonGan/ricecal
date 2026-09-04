@@ -585,7 +585,7 @@ export const fil = {
         describe: 'Ilarawan',
         describeBody: 'I-type ang kinain mo',
         search: 'Hanapin',
-        searchBody: 'Sa amin, sa iyo, o nakain na',
+        searchBody: 'Sa amin o sa iyo',
         barcode: 'May pakete? Nagba-barcode din ang camera.',
       },
 
@@ -780,7 +780,6 @@ export const fil = {
       mineEmptyTitle: 'Wala ka pang sariling pagkain',
       mineEmptyBody:
         'Walang nakatakdang serving ang isang kaldero. Ilagay kung ano ang inilagay at para sa ilan ito, isang beses lang, at isang tap na lang ang pag-log mula noon.',
-      mineCreate: 'Magsulat ng isa',
       mineNoMatchBody: 'Walang pagkain mo ang tugma doon.',
       mineOfflineBody: 'Nasa server ang mga pagkain mo. Mag-lo-load ito kapag online ka na ulit.',
       pastEmptyTitle: 'Wala pang nakatala',

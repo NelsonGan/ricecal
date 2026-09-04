@@ -587,7 +587,7 @@ export const ms = {
         describe: 'Terangkan',
         describeBody: 'Taip apa yang anda makan',
         search: 'Cari',
-        searchBody: 'Kami punya, anda punya, atau pernah dimakan',
+        searchBody: 'Milik kami atau anda',
         barcode: 'Ada bungkusan? Kamera juga mengimbas barkod.',
       },
 
@@ -781,7 +781,6 @@ export const ms = {
       mineEmptyTitle: 'Belum ada makanan anda sendiri',
       mineEmptyBody:
         'Satu periuk kongsi tiada saiz hidangan. Masukkan apa yang dimasukkan dan berapa orang ia cukup, sekali sahaja, dan merekodnya hanya satu ketikan selepas itu.',
-      mineCreate: 'Tulis satu',
       mineNoMatchBody: 'Tiada makanan anda yang sepadan dengan itu.',
       mineOfflineBody:
         'Makanan anda berada di pelayan. Ini akan dimuatkan sebaik anda kembali dalam talian.',
