@@ -567,7 +567,7 @@ export const vi = {
         describe: 'Mô tả',
         describeBody: 'Gõ ra bạn đã ăn gì',
         search: 'Tìm',
-        searchBody: 'Của chúng tôi, của bạn, hay đã từng ăn',
+        searchBody: 'Chúng tôi hoặc bạn',
         barcode: 'Có gói hàng? Máy ảnh cũng quét mã vạch.',
       },
 
@@ -760,7 +760,6 @@ export const vi = {
       mineEmptyTitle: 'Chưa có món ăn nào của bạn',
       mineEmptyBody:
         'Một nồi ăn chung không có sẵn khẩu phần. Nhập những gì đã cho vào và nồi đó đủ cho mấy người, một lần thôi, và từ đó ghi lại chỉ mất một chạm.',
-      mineCreate: 'Viết một món',
       mineNoMatchBody: 'Không có món ăn nào của bạn khớp với từ đó.',
       mineOfflineBody: 'Món ăn của bạn nằm trên máy chủ. Phần này sẽ tải khi bạn có mạng trở lại.',
       pastEmptyTitle: 'Chưa ghi món nào',

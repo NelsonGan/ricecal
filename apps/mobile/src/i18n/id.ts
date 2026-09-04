@@ -578,7 +578,7 @@ export const id = {
         describe: 'Ceritakan',
         describeBody: 'Ketik apa yang kamu makan',
         search: 'Cari',
-        searchBody: 'Punya kami, punyamu, atau pernah dimakan',
+        searchBody: 'Milik kami atau kamu',
         barcode: 'Punya kemasan? Kamera juga memindai barkode.',
       },
 
@@ -770,7 +770,6 @@ export const id = {
       mineEmptyTitle: 'Belum ada makanan buatanmu',
       mineEmptyBody:
         'Satu panci bersama tidak punya ukuran porsi. Masukkan apa saja isinya dan untuk berapa orang, sekali saja, dan mencatatnya cuma satu ketukan setelah itu.',
-      mineCreate: 'Tulis satu',
       mineNoMatchBody: 'Tidak ada makananmu yang cocok dengan itu.',
       mineOfflineBody: 'Makananmu ada di server. Ini akan dimuat begitu kamu kembali online.',
       pastEmptyTitle: 'Belum ada yang dicatat',

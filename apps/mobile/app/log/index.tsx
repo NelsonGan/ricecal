@@ -180,8 +180,8 @@ export default function LogSheet() {
   // transparentModal, and a paywall pushed from inside one comes up stacked on
   // the sheet rather than over the app.
   const requirePro = useRequirePro({ navigate: 'replace' })
-  // Read for the "Write one" button on an empty My foods tab, which is the one
-  // place in this sheet that creates rather than logs.
+  // Read for the "New food" button on the My foods tab, which is the one place
+  // in this sheet that creates rather than logs.
   const recipeQuota = useRecipeQuota()
   // Only ever rendered under the viewfinder, so it is fetched with the sheet
   // rather than with the tab behind it.

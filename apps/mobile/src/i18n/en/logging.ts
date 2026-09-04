@@ -235,7 +235,6 @@ export const logging = {
     mineEmptyTitle: 'No foods of your own yet',
     mineEmptyBody:
       'A shared pot has no serving size. Write down what went in and how many it feeds, once, and logging it is one tap from then on.',
-    mineCreate: 'Write one',
     /** There is a shelf; nothing on it matches what was typed. */
     mineNoMatchBody: 'None of your foods match that.',
     mineOfflineBody: 'Your foods live on the server. This will load once you are back online.',

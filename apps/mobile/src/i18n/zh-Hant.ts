@@ -563,7 +563,7 @@ export const zhHant = {
         describe: '描述',
         describeBody: '打字說你吃了什麼',
         search: '搜尋',
-        searchBody: '我們的、你的，或吃過的',
+        searchBody: '我們的或你的',
         barcode: '有包裝？相機也能掃條碼。',
       },
 
@@ -752,7 +752,6 @@ export const zhHant = {
       tabPast: '吃過的',
       mineEmptyTitle: '還沒有你自己的食物',
       mineEmptyBody: '一鍋菜沒有現成的份量。把用了什麼、夠幾個人吃填一次，之後記錄就只要點一下。',
-      mineCreate: '寫一個',
       mineNoMatchBody: '你的食物裡沒有符合的。',
       mineOfflineBody: '你的食物存在伺服器上。回到網路後就會載入。',
       pastEmptyTitle: '還沒有紀錄',
