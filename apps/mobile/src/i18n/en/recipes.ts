@@ -1,5 +1,10 @@
 /**
- * Home cooking: the three shelves, the form, and the community gate.
+ * Home cooking: the two shelves, the form, and the community gate.
+ *
+ * THE WORD ON SCREEN IS "FOOD". The namespace, the tables and every hook still
+ * say "recipe", because a released app is talking to those tables and renaming
+ * one is deleting it; the user was never going to call the thing they wrote a
+ * recipe when half of them are a sandwich they make the same way every morning.
  *
  * Dish names are NOT here and never will be — "rendang daging" is what the cook
  * typed, in whatever language they typed it, and it is data. Nothing in this
@@ -8,33 +13,28 @@
 export const recipes = {
   shelf: {
     mine: 'Mine',
-    official: 'Official',
     community: 'Community',
   },
 
   heading: {
-    mine: 'My recipes',
-    official: 'RiceCal kitchen',
+    mine: 'My foods',
     community: 'From the community',
   },
 
   search: {
-    official: 'Search official recipes',
-    community: 'Search public recipes',
-    mine: 'Search my recipes',
+    community: 'Search shared foods',
+    mine: 'Search my foods',
     clear: 'Clear search',
     none: 'Nothing by that name',
     noneBody: 'Try a shorter word, or part of the dish name.',
   },
 
   empty: {
-    mineTitle: 'No recipes yet',
+    mineTitle: 'No foods yet',
     mineBody:
-      'A shared pot has no serving size. Enter what went in and how many it feeds, once, and logging it is one tap from then on.',
-    officialTitle: 'The kitchen is empty',
-    officialBody: 'Recipes from us will show up here.',
+      'A shared pot has no serving size. Write down what went in and how many it feeds, once, and logging it is one tap from then on.',
     communityTitle: 'Nothing shared yet',
-    communityBody: 'Recipes people have made public will show up here.',
+    communityBody: 'Foods people have made public will show up here.',
   },
 
   /** The count under a recipe's name in a list. */
@@ -54,9 +54,9 @@ export const recipes = {
   someCook: 'Someone',
 
   new: {
-    title: 'New recipe',
+    title: 'New food',
     /**
-     * The two tiles at the top of a new recipe. One word each: at half the
+     * The two tiles at the top of a new food. One word each: at half the
      * screen a sentence wraps to three lines, and the sheet each one opens
      * explains itself better than a caption under an icon could.
      */
@@ -88,7 +88,7 @@ export const recipes = {
   },
 
   edit: {
-    title: 'Edit recipe',
+    title: 'Edit food',
     name: 'NAME',
     namePlaceholder: 'What do you call it?',
     picture: 'PICTURE',
@@ -98,7 +98,7 @@ export const recipes = {
      * photograph of the real pot.
      */
     replacePhotoTitle: 'Use a drawing instead?',
-    replacePhotoBody: 'The photo of this recipe will be removed.',
+    replacePhotoBody: 'The photo of this food will be removed.',
     replacePhotoConfirm: 'Use the drawing',
     servings: 'HOW MANY SERVINGS',
     ingredients: 'INGREDIENTS',
@@ -121,19 +121,19 @@ export const recipes = {
     stepsEdit_one: 'Edit the steps, {{count}} step',
     stepsEdit_other: 'Edit the steps, {{count}} steps',
     stepsWrite: 'Write how you cook it',
-    save: 'Save recipe',
-    saved: 'Recipe saved',
+    save: 'Save food',
+    saved: 'Food saved',
     nameRequired: 'Give it a name first',
     saveFailed: 'Could not save that. Try again.',
     /**
      * The free tier's ceiling, met at the write. The plus button on the shelf
      * normally catches this first, so the sentence has to work for the case
-     * where it did not: a recipe saved on another phone since this count was
+     * where it did not: a food saved on another phone since this count was
      * read, or a subscription that lapsed with the form already open. It names
      * the number rather than saying "limit reached", because a ceiling somebody
      * has just met is a ceiling they want to know the size of.
      */
-    limitReached: 'A free account keeps {{count}} recipes. Pro has no limit.',
+    limitReached: 'A free account keeps {{count}} foods of its own. Pro has no limit.',
     /** The totals card under the ingredient list. */
     totalLabel: 'Per serving, {{count}}',
     totalWhole: 'Whole pot {{kcal}} kcal',
@@ -199,33 +199,32 @@ export const recipes = {
     ingredients: 'INGREDIENTS',
     addToDay: 'Add to today',
     added: 'Added to your day',
-    saveCopy: 'Save to my recipes',
-    savedCopy: 'Saved to your recipes',
+    saveCopy: 'Save to my foods',
+    savedCopy: 'Saved to your foods',
     saveCopyFailed: 'Could not save that one. Try again.',
-    goneTitle: 'Recipe not found',
+    goneTitle: 'Food not found',
     goneBody:
       'It may have been deleted, or made private again. Ask whoever shared it for a fresh link.',
-    official: 'From the RiceCal kitchen',
-    delete: 'Delete recipe',
-    deleteTitle: 'Delete this recipe?',
+    delete: 'Delete food',
+    deleteTitle: 'Delete this food?',
     deleteBody: 'Meals you have already logged from it stay in your diary.',
-    deleted: 'Recipe deleted',
+    deleted: 'Food deleted',
   },
 
   /**
-   * Reporting somebody else's recipe, and hiding the cook who wrote it.
+   * Reporting somebody else's food, and hiding the cook who wrote it.
    *
    * App Review guideline 1.2 requires both of a community shelf, and the writing
    * must not read as an accusation form: nobody is asked to justify anything,
    * there is no free-text box, and each button says what it does about the one
-   * recipe in front of the reader. That three reports take a recipe off the shelf
+   * food in front of the reader. That three reports take a food off the shelf
    * for everyone is deliberately not promised here, because the reader cannot
    * know whether anyone else will report it.
    *
    * The four reasons are `report_reason` in `schemas/01_enums.sql`, in its order.
    */
   report: {
-    title: 'Report this recipe',
+    title: 'Report this food',
     body: 'It stops showing up for you straight away. The cook is not told.',
     inappropriate: 'Offensive or not food',
     spam: 'Spam or advertising',
@@ -234,13 +233,13 @@ export const recipes = {
     /** The cook's own name, or "Someone" when there is none. */
     block: 'Hide everything by {{name}}',
     done: 'Reported. You will not see it again.',
-    blocked: 'Hidden. You will not see their recipes again.',
+    blocked: 'Hidden. You will not see their foods again.',
     failed: 'Could not do that. Try again.',
   },
 
   share: {
     action: 'Share',
-    title: 'Share this recipe',
+    title: 'Share this food',
     body: 'Anyone with the link can see the ingredients, the steps and the calories, and save their own copy. Yours stays yours.',
     /** The toggle at the foot of the share sheet. */
     publicTitle: 'Make it public',
@@ -253,8 +252,8 @@ export const recipes = {
    * `pending` is not a soft rejection, it is nobody having read it yet.
    */
   review: {
-    checking: 'Checking your recipe…',
-    approved: 'Your recipe is in the community',
+    checking: 'Checking your food…',
+    approved: 'Your food is in the community',
     rejected: 'Not published: {{reason}}',
     rejectedPlain: 'We could not publish this one.',
     pending: 'We are still looking at this one. It will show up once it passes.',
@@ -262,20 +261,5 @@ export const recipes = {
     badgePending: 'In review',
     badgeRejected: 'Not published',
     badgePublic: 'Public',
-  },
-
-  /** The fourth option on the log sheet. */
-  log: {
-    action: 'Recipes',
-    /**
-     * Nothing on this shelf, said per shelf. "No recipes yet" is true of your
-     * own and wrong about the other two, where the answer is that nobody has
-     * put anything there rather than that you have not.
-     */
-    empty: {
-      mine: 'No recipes yet. Add one and logging it is a tap.',
-      official: 'Nothing in the kitchen yet.',
-      community: 'Nothing shared yet. Recipes people make public show up here.',
-    },
   },
 } as const

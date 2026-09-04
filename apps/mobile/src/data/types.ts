@@ -244,15 +244,13 @@ export type Recipe = {
   servings: number
   steps?: string
 
-  /** From the RiceCal kitchen: a recipe with no owner. */
-  isOfficial: boolean
   isMine: boolean
   /** The owner asked for it to be listed. Not the same as it being listed. */
   isPublic: boolean
   review: RecipeReviewStatus
   /** Why the review turned it down, shown to the owner. */
   reviewNote?: string
-  /** Who to credit on a community card. Empty on your own and on official ones. */
+  /** Who to credit on a community card. Empty on your own. */
   authorName: string
   /**
    * The account that owns it, empty on an official recipe. It exists for

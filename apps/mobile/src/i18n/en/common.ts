@@ -27,7 +27,8 @@ export const common = {
 
   nav: {
     today: 'Today',
-    recipes: 'Recipes',
+    /** The tab, and the key is still `recipes` because the route is. */
+    recipes: 'Food',
     activity: 'Activity',
     trends: 'Trends',
     me: 'Me',

@@ -1,8 +1,16 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 
-import { type Meal, snapshotFromEntry, useLogFood, useSelectedDate } from '@/data'
+import {
+  type Meal,
+  snapshotFromEntry,
+  snapshotFromRecipe,
+  useLogFood,
+  useRecipeQuota,
+  useSelectedDate,
+} from '@/data'
 import { FoodSearchPanel } from '@/features/logging'
+import { useRequirePro } from '@/features/paywall'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Screen } from '@/ui'
 
@@ -26,6 +34,10 @@ export default function SearchScreen() {
   const params = useLocalSearchParams<{ meal?: Meal; q?: string; tracked?: string }>()
   const { selectedDate } = useSelectedDate()
   const logFood = useLogFood()
+  const requirePro = useRequirePro()
+  // For the "Write one" button on an empty My foods tab. The database enforces
+  // the same ceiling; this is the half that opens the paywall instead.
+  const recipeQuota = useRecipeQuota()
 
   return (
     <Screen>
@@ -62,6 +74,24 @@ export default function SearchScreen() {
             method: 'history',
           })
           goBack()
+        }}
+        /* One serving of the user's own food, written here for the same reason
+           the history is: they entered the figures and they said how many the
+           pot feeds, so there is nothing left to ask. Any other number of
+           servings is a question the food's own screen asks. */
+        onPickOwn={(recipe) => {
+          logFood.mutate({
+            snapshot: snapshotFromRecipe(recipe),
+            logDate: selectedDate,
+            source: 'quickAdd',
+            method: 'recipe',
+          })
+          goBack()
+        }}
+        onOpenOwn={(recipe) => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
+        onCreateOwn={() => {
+          if (recipeQuota.atLimit && !requirePro('new_recipe')) return
+          router.push('/recipe/edit')
         }}
       />
     </Screen>

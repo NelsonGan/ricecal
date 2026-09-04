@@ -226,17 +226,15 @@ export const onboarding = {
     offerAction: 'Show me',
 
     log: {
-      title: 'Four ways to log',
+      title: 'Three ways to log',
       subtitle: 'Tap the green button on Today, then pick one.',
       snap: 'Snap',
       snapBody: 'A photo of the plate',
       describe: 'Describe',
       describeBody: 'Type what you ate',
       search: 'Search',
-      searchBody: 'Find it by name',
-      recipes: 'Recipes',
-      recipesBody: 'Something you cooked',
-      /** Scanning is a tab inside the camera, not a fifth square. Say so. */
+      searchBody: 'Ours, yours, or eaten before',
+      /** Scanning is a tab inside the camera, not a fourth square. Say so. */
       barcode: 'Got a packet? The camera scans barcodes too.',
     },
 

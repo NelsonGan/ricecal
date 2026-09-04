@@ -6,8 +6,6 @@ const tones = {
   pandan: { fill: 'bg-pandan-soft', slab: 'bg-pandan-soft-line' },
   kaya: { fill: 'bg-kaya-soft', slab: 'bg-kaya-soft-line' },
   hibiscus: { fill: 'bg-hibiscus-soft', slab: 'bg-hibiscus-soft-line' },
-  // The fourth square, recipes. A fourth accent rather than a second neutral:
-  // three tinted squares and a grey one reads as one of them being disabled.
   water: { fill: 'bg-water-soft', slab: 'bg-water-soft-line' },
   neutral: { fill: 'bg-track', slab: 'bg-line-strong' },
 } as const
@@ -26,7 +24,7 @@ export type QuickActionProps = {
   className?: string
 }
 
-/** One of the four squares in the log sheet: snap, scan, say, search. */
+/** One of the three squares in the log sheet: snap, describe, search. */
 export function QuickAction({
   label,
   icon,
