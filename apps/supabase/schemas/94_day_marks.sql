@@ -93,11 +93,11 @@ grant  execute on function public.day_marks to authenticated;
 -- about a day somebody missed, and here it would be a row of nulls saying what a
 -- missing key already says.
 --
--- The photograph and the drawing are returned together and the client prefers the
--- photograph, exactly as `review_meals` does and for the same reason:
--- `food_log_details` nulls an entry's icons whenever it has a photo, and a month
--- whose plates were all photographed would otherwise be a grid of blanks on the
--- day the retention sweep takes the pictures away.
+-- The photograph and the drawing are returned together and the client prefers
+-- the photograph, exactly as `review_meals` does and for the same reason: a
+-- month whose plates were all photographed would otherwise be a grid of blanks
+-- on the day the retention sweep takes the pictures away. Both come off
+-- `food_log_details` now; see the body for what that used to cost.
 -- ---------------------------------------------------------------------------
 create or replace function public.day_plates(
   p_from    date,
@@ -115,17 +115,18 @@ language sql
 stable
 set search_path = ''
 as $$
-  -- The view for the arithmetic, the table beside it for the DRAWING, exactly
-  -- as `review_meals` does it: the view nulls an entry's icons whenever it has
-  -- a photograph, and this grid wants whichever of the two survives.
+  -- The view alone, which it was not always. `food_log_details` used to null an
+  -- entry's icons whenever it had a photograph, so this grid joined back to
+  -- `food_logs` for the drawing it still wanted on the day a sweep takes the
+  -- picture away. The view coalesces the two icon columns and stops there now,
+  -- which is the same expression this was writing out by hand.
   select distinct on (e.log_date)
     e.log_date,
     e.food_name,
-    coalesce(f.icon_set,  f.item_icon_set),
-    coalesce(f.icon_name, f.item_icon_name),
+    e.icon_set,
+    e.icon_name,
     e.photo_path
   from public.food_log_details e
-  join public.food_logs f on f.id = e.id
   where e.user_id = p_user_id
     and e.log_date between p_from and p_to
   -- The tie-break is the timestamp rather than nothing at all: two plates of

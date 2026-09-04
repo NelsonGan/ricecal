@@ -1642,6 +1642,17 @@ photograph or no photograph. `dishIcon` picks it: the catalogue row's own choice
 first, because a person made it for that food, then `iconFor` on the label the
 row will show and on the row's own name.
 
+**A meal label is read dish-first, which a catalogue name is not.** `iconFor`
+scans longest-phrase-first — right for "Soup, vegetable chicken, canned", and
+the reason "Nasi lemak with fried chicken" came back as a bucket of fried
+chicken, since that is the longer phrase. A label has a shape a descriptor does
+not, so `dishIcon` tries the words before the first "with" or "and" first. Only
+when that head is TWO words or more: a one-word head is an ingredient, and the
+phrase table has entries written for exactly that shape, so letting `Chicken`
+reach past `with rice` turns a plate of rice into a chicken breast. The rule
+lives in `cascade.ts` and not in `icon-match.ts`, which the retention sweep and
+the catalogue tooling share and which never sees a label.
+
 It is not decoration on a row that already has a picture. It is what the row
 falls back to, and there are three ways to get there. **The retention sweep**
 takes a free account's photographs after thirty days and the diary has to keep
@@ -1657,7 +1668,9 @@ put the rendering order — photo, drawing, placeholder — in the view, where e
 screen that draws an entry already does it itself, and it cost the drawing
 everywhere the photograph is not what is being drawn. Two functions had to join
 back to `food_logs` to get it back (`day_plates` and `review_meals`). The view
-coalesces the two columns now and stops there, and `ItemRow` decides.
+coalesces the two columns now and stops there, `ItemRow` decides, and both
+functions read the view alone: the join was writing out by hand the expression
+the view had been withholding.
 
 A redescribe rewrites `item_icon_*` with `item_name`. The two move together or
 an entry ends up with a picture of the dish that was corrected away.

@@ -1095,8 +1095,15 @@ const ACCOMPANIMENT = /\s+(?:with|and|plus|dan|dengan|serta)\s+|\s*[+&]\s*/i
  * for "Nasi lemak with fried chicken" it answered `fried-chicken-bucket`, since
  * "fried chicken" is a longer phrase than "nasi lemak" and length is the
  * tie-break. The label is not a descriptor though, it is a sentence with a shape
- * — the dish, then what came with it — so the head is tried first and the whole
- * string is still there behind it.
+ * — the dish, then what came with it — so the head is tried first.
+ *
+ * **Only a head of two words or more.** A one-word head is an ingredient rather
+ * than a dish, and the phrase table has compound entries written for exactly
+ * that shape: "Chicken with rice" is `plate-rice` through `with rice`, and
+ * letting `Chicken` reach past it answers `grilled-chicken` instead. Same for
+ * "Bread and butter pudding", which is a pudding rather than a loaf. Two words
+ * is what tells "Nasi lemak" from "Rice", and the bar costs nothing, because a
+ * head naming nothing we draw falls through to the whole string anyway.
  *
  * Here rather than in `icon-match.ts`, which is shared with the retention sweep
  * and with the catalogue's own tooling: this rule is about the sentence a scan
@@ -1104,8 +1111,9 @@ const ACCOMPANIMENT = /\s+(?:with|and|plus|dan|dengan|serta)\s+|\s*[+&]\s*/i
  */
 function iconForLabel(text: string | null): IconChoice | null {
   if (!text) return null
-  const head = text.split(ACCOMPANIMENT)[0]?.trim()
-  return (head && head !== text.trim() ? iconFor(head) : null) ?? iconFor(text)
+  const head = text.split(ACCOMPANIMENT)[0]?.trim() ?? ''
+  const namesADish = head !== text.trim() && head.split(/\s+/).length >= 2
+  return (namesADish ? iconFor(head) : null) ?? iconFor(text)
 }
 
 /**

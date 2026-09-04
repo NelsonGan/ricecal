@@ -564,18 +564,15 @@ as $$
     select p_start as from_date, public.review_end(p_kind, p_start) as to_date
   ),
   entries as (
-    -- The view for the arithmetic, the table beside it for the DRAWING.
-    -- `food_log_details` nulls both icon columns whenever an entry has a
-    -- photograph, because in the diary the photograph is the better picture.
-    -- This screen wants BOTH — the plate somebody actually photographed, and a
-    -- drawing to fall back on when nobody did — and the view can only ever hand
-    -- it one of them.
-    select
-      e.*,
-      coalesce(f.icon_set,  f.item_icon_set)  as own_icon_set,
-      coalesce(f.icon_name, f.item_icon_name) as own_icon_name
+    -- The view alone, which it was not always. It used to null both icon
+    -- columns whenever an entry had a photograph, and this screen wants BOTH:
+    -- the plate somebody actually photographed, and a drawing to fall back on
+    -- when nobody did. So this joined back to `food_logs` and wrote the
+    -- coalesce out by hand, under an `own_icon_*` alias to keep it clear of the
+    -- view's own nulls. The view does exactly that coalesce now, so the join,
+    -- the alias and the reason for both are gone.
+    select e.*
     from public.food_log_details e
-    join public.food_logs f on f.id = e.id
     cross join span s
     where e.user_id = p_user_id and e.log_date between s.from_date and s.to_date
   )
@@ -583,8 +580,11 @@ as $$
     -- The most recent spelling wins. Two entries differing only in case are one
     -- dish, and the newer one is the one the user last saw on their diary.
     (array_agg(e.food_name order by e.logged_at desc))[1],
-    (array_agg(e.own_icon_set  order by e.logged_at desc) filter (where e.own_icon_set  is not null))[1],
-    (array_agg(e.own_icon_name order by e.logged_at desc) filter (where e.own_icon_name is not null))[1],
+    -- The newest entry that HAS a drawing, which is not the same as the newest
+    -- entry's: one logged by hand under a name two others were photographed
+    -- under is the only one of the three carrying an icon.
+    (array_agg(e.icon_set  order by e.logged_at desc) filter (where e.icon_set  is not null))[1],
+    (array_agg(e.icon_name order by e.logged_at desc) filter (where e.icon_name is not null))[1],
     -- The newest plate anybody photographed under this name, which is not
     -- necessarily the entry the icon came from: a dish logged twice by camera
     -- and once by hand has a photograph and a drawing, and the screen prefers
