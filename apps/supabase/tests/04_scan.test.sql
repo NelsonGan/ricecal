@@ -23,7 +23,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(34);
+select plan(37);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -68,6 +68,54 @@ select is(
   :fixture_kcal,
   'daily_nutrition includes the labelled entry — display_label breaks nothing'
 );
+
+
+-- The drawing survives a photograph -------------------------------------------
+--
+-- `item_icon_*` is what the FOOD looks like and `photo_path` is a picture of
+-- this plate, so the two are not alternatives and the view stopped treating
+-- them as a pair. It used to null both icon columns whenever a photo existed,
+-- which put the rendering order (photo, then drawing, then the placeholder) in
+-- the view rather than in the row that draws it — and cost the drawing
+-- everywhere the photograph is not being shown. "Past foods" is the one that
+-- reads: logging a photographed meal again copies the snapshot and not the
+-- picture, so the new row came out as an empty plate.
+
+update public.food_logs
+   set photo_path     = 'meals/' || :'user_a' || '/plate.jpg',
+       item_icon_set  = 'dishes',
+       item_icon_name = 'nasi-campur'
+ where user_id = :'user_a';
+
+select is(
+  (select icon_name from public.food_log_details where user_id = :'user_a'),
+  'nasi-campur',
+  'a photographed entry still states the drawing of the food it is'
+);
+
+-- And the row it belongs to still has the photograph, so nothing downstream has
+-- to guess which of the two it was handed.
+select is(
+  (select photo_path is not null from public.food_log_details where user_id = :'user_a'),
+  true,
+  'the photograph comes with it, and the screen picks'
+);
+
+-- The user's own choice still wins over the food's, which is the half of the
+-- old expression that was never in question.
+update public.food_logs
+   set photo_path = null, icon_set = 'food', icon_name = 'coconut'
+ where user_id = :'user_a';
+
+select is(
+  (select icon_name from public.food_log_details where user_id = :'user_a'),
+  'coconut',
+  'an entry drawn by hand overrides the food it was logged against'
+);
+
+update public.food_logs
+   set icon_set = null, icon_name = null, item_icon_set = null, item_icon_name = null
+ where user_id = :'user_a';
 
 -- Habits: a guessed entry never becomes a "usual at this time" suggestion.
 --

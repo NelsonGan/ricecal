@@ -50,7 +50,7 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-import { refineQuantity, resolveItem, writeIngredients } from '../_shared/cascade.ts'
+import { dishIcon, refineQuantity, resolveItem, writeIngredients } from '../_shared/cascade.ts'
 import {
   claimScan,
   createMeter,
@@ -600,6 +600,11 @@ Deno.serve(async (req: Request) => {
           serving_id: null,
           item_name: interpretation.name,
           item_brand: null,
+          // `item_icon_*` deliberately does NOT move with the name here, which
+          // is the one place it does not. An adjust is this plate re-priced
+          // ("no sambal", "half of it"), so the drawing is still a drawing of
+          // what is on it; a redescribe below is a different food and rewrites
+          // it. See "Rules you must not break" in the README.
           item_place: null,
           base_kcal: target,
           base_carbs_g: round1(Number(entry.base_carbs_g ?? 0) * factor * scale),
@@ -648,6 +653,10 @@ Deno.serve(async (req: Request) => {
         return json({ ok: true, applied: false, code: 'no_match', reason: 'nothing matched' })
       }
 
+      // Matched the way `writeEntry` matches it, so a redescribed entry and a
+      // freshly scanned one carrying the same dish end up with the same drawing.
+      const itemIcon = dishIcon(resolved)
+
       const { error } = await db
         .from('food_logs')
         .update({
@@ -659,6 +668,13 @@ Deno.serve(async (req: Request) => {
           // under the new plate's name.
           item_name: resolved.food.name,
           item_brand: null,
+          // The dish's own drawing, rewritten with the name it belongs to. The
+          // invariant is that these two columns move together: leaving the old
+          // one behind would put a picture of the corrected-away plate under
+          // the new plate's name, which is the same bug the snapshot below is
+          // rewritten wholesale to avoid.
+          item_icon_set: itemIcon?.set ?? null,
+          item_icon_name: itemIcon?.name ?? null,
           item_place: resolved.food.place,
           base_kcal: Math.round(resolved.food.kcal),
           base_carbs_g: resolved.food.carbs,
@@ -673,10 +689,10 @@ Deno.serve(async (req: Request) => {
           quantity: resolved.quantity,
           display_label: resolved.displayLabel,
           scan_id: scanId,
-          // The drawing described the old food, as the breakdown below did: a
-          // typed meal is illustrated from its own name, so a redescribe leaves
-          // a picture of the dish that was corrected away. Cleared rather than
-          // re-chosen, and the detail screen has a picker.
+          // The USER's picture of this plate, which is a different question
+          // from what the food looks like: it described the old food, as the
+          // breakdown below did, and there is nothing to re-choose it from.
+          // Cleared, and the detail screen has a picker.
           icon_set: null,
           icon_name: null,
         })

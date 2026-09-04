@@ -55,7 +55,7 @@ const SETTLED_MS = 1_200
  * different: the catalogue ranks by how well a name matches, your own food by
  * when you wrote it, and the diary by when you ate it.
  */
-type Source = 'catalogue' | 'mine' | 'past'
+export type Source = 'catalogue' | 'mine' | 'past'
 
 /**
  * Everything a second panel needs to come back looking like the first.
@@ -114,8 +114,12 @@ export type FoodSearchPanelProps = {
    * Write a new food. Offered at the head of the My foods tab, because that is
    * where somebody looking for food they have not written yet ends up, and the
    * alternative is closing this sheet and finding the Food tab.
+   *
+   * The search comes too, for the same reason it comes with `onPick`: the sheet
+   * is replaced by the form, so a host that wants the panel underneath has to
+   * rebuild it. Only the quick selector reads it. See `openCreate` there.
    */
-  onCreateOwn?: () => void
+  onCreateOwn?: (search: FoodSearchState) => void
   autoFocus?: boolean
   /**
    * Which tab to open on. Only the quick selector passes it, for the widget that
@@ -316,7 +320,12 @@ export function FoodSearchPanel({
           query={debouncedQuery}
           onPick={onPickOwn}
           onOpen={onOpenOwn}
-          onCreate={onCreateOwn}
+          // The live query rather than the debounced one, exactly as `onPick`
+          // hands it over: what is restored has to be what is in the field.
+          onCreate={
+            onCreateOwn &&
+            (() => onCreateOwn({ query, tracked: lastTracked.current === query.trim() }))
+          }
         />
       ) : (
         <>

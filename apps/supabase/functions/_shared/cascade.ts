@@ -21,6 +21,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { type CatalogueFood, searchFoods } from './catalogue.ts'
 import type { Meter } from './entitlement.ts'
+import { iconFor } from './icon-match.ts'
+import { type IconChoice, knownIcon } from './icons.ts'
 import {
   estimateNutrition,
   type MockSteer,
@@ -67,6 +69,12 @@ export type FoodRow = {
   servingGrams: number | null
   /** Soft too. The cascade only ever picks a row's default serving. */
   serving_id: string | null
+  /**
+   * The catalogue row's own drawing, when it has one. Null for an estimate,
+   * which is numbers rather than a row, and `writeEntry` matches on the name
+   * instead.
+   */
+  icon: IconChoice | null
 }
 
 export type Ingredient = {
@@ -198,6 +206,8 @@ export type SearchRow = {
   default_serving_id: string | null
   serving_label: string | null
   serving_grams: number | null
+  icon_set: string | null
+  icon_name: string | null
 }
 
 /**
@@ -231,6 +241,8 @@ async function search(q: string, limit: number): Promise<SearchRow[]> {
         default_serving_id: f.default_serving_id,
         serving_label: f.serving_label,
         serving_grams: f.serving_g,
+        icon_set: f.icon_set,
+        icon_name: f.icon_name,
       }),
     )
     .filter((r) => r.id && r.serving_label && r.kcal !== null)
@@ -259,6 +271,9 @@ const asFood = (r: SearchRow): FoodRow => ({
   servingLabel: r.serving_label ?? '1 serving',
   servingGrams: rowGrams(r),
   serving_id: r.default_serving_id,
+  // Checked rather than copied: `icon_set` is a Postgres enum on `food_logs`,
+  // so a set D1 has and this app does not would fail the whole insert.
+  icon: knownIcon(r.icon_set, r.icon_name),
 })
 
 /**
@@ -456,6 +471,7 @@ function estimateRow(input: {
     servingLabel: '1 serving',
     servingGrams: null,
     serving_id: null,
+    icon: null,
   }
 }
 
@@ -1053,7 +1069,75 @@ export type WrittenEntry = {
   /** What the row will show. The client announces it from the background. */
   kcal: number
   tier: number
+  /**
+   * The dish's own drawing, as written to `item_icon_set`/`item_icon_name`.
+   * Null when nothing could be matched, which is a blank tile only if the row
+   * also has no photograph.
+   */
+  icon: IconChoice | null
   ingredients: Array<{ name: string; kcal: number; quantity: number }>
+}
+
+/**
+ * Where a meal label stops naming the dish and starts naming what came with it.
+ *
+ * Only the joining WORDS, and deliberately not a comma: `matchIcon` reads a
+ * comma as a composition table's "Head, qualifier, qualifier" and has its own
+ * tuned handling for it, where "with" and "and" are how a person writes a plate.
+ */
+const ACCOMPANIMENT = /\s+(?:with|and|plus|dan|dengan|serta)\s+|\s*[+&]\s*/i
+
+/**
+ * A drawing for one meal label, the dish before its sides.
+ *
+ * `iconFor` scans the whole name longest-phrase-first, which is right for a
+ * catalogue row ("Soup, vegetable chicken, canned") and wrong for a plate: asked
+ * for "Nasi lemak with fried chicken" it answered `fried-chicken-bucket`, since
+ * "fried chicken" is a longer phrase than "nasi lemak" and length is the
+ * tie-break. The label is not a descriptor though, it is a sentence with a shape
+ * — the dish, then what came with it — so the head is tried first and the whole
+ * string is still there behind it.
+ *
+ * Here rather than in `icon-match.ts`, which is shared with the retention sweep
+ * and with the catalogue's own tooling: this rule is about the sentence a scan
+ * produces and nothing else writes one.
+ */
+function iconForLabel(text: string | null): IconChoice | null {
+  if (!text) return null
+  const head = text.split(ACCOMPANIMENT)[0]?.trim()
+  return (head && head !== text.trim() ? iconFor(head) : null) ?? iconFor(text)
+}
+
+/**
+ * The DISH's own drawing, which every row the cascade writes now carries.
+ *
+ * Not the same question as `food_logs.icon_set`: that one is the picture of
+ * this plate, cannot sit beside a photograph, and is the user's to choose. This
+ * one is what the food looks like, and is true whether or not anybody
+ * photographed it. Which matters twice over. A photographed meal picked out of
+ * "Past foods" is logged again with no photograph to copy, and drew the
+ * empty-plate placeholder; and the second and later items of one multi-item
+ * scan never had a photograph in the first place, since the plate is filed
+ * against the first row alone.
+ *
+ * The catalogue's own pick first, because somebody chose it for that food.
+ * Failing that the phrase matcher the retention sweep uses, on the label the row
+ * will show and then on the row's own name. Both, because they are not always
+ * the same sentence: a tier-1 row's name is the catalogue's words and the label
+ * is the model's, and a tier-4 estimate has the model's words in both.
+ *
+ * Both go through `iconForLabel`, including the name. A catalogue descriptor
+ * separates its qualifiers with commas rather than "with", so the head rule
+ * mostly does not fire on one, and where it does the leading dish is the answer
+ * that name was leading with.
+ *
+ * Exported for its own test, and shared with `scan-refine`, so a redescribed
+ * entry and a freshly scanned one carrying the same dish agree.
+ */
+export function dishIcon(resolved: Resolved): IconChoice | null {
+  return (
+    resolved.food.icon ?? iconForLabel(resolved.displayLabel) ?? iconForLabel(resolved.food.name)
+  )
 }
 
 /** One resolved item into the diary: the entry, then its ingredients. */
@@ -1075,15 +1159,19 @@ export async function writeEntry(
     /**
      * The drawing the model picked for a typed meal, out of our own set.
      *
-     * `food_logs_one_picture` allows a photograph or a drawing and not both.
-     * Passing an icon alongside a `photoPath` is a caller bug, so the insert
-     * drops it rather than letting the database refuse the whole entry.
+     * `food_logs_one_picture` allows a photograph or a drawing and not both,
+     * because this column is the USER's picture of the plate and a photograph
+     * of the real thing wins. Passing an icon alongside a `photoPath` is a
+     * caller bug, so the insert drops it rather than letting the database
+     * refuse the whole entry. The dish's own drawing is a different column and
+     * is written below whatever this is.
      */
     icon?: { set: string; name: string } | null
   },
 ): Promise<WrittenEntry> {
   const { resolved } = input
   const icon = input.photoPath ? null : (input.icon ?? null)
+  const itemIcon = dishIcon(resolved)
   const { data: entry, error } = await db
     .from('food_logs')
     .insert({
@@ -1095,6 +1183,8 @@ export async function writeEntry(
       // The snapshot, and the only thing that says what the entry is worth:
       // `food_log_details` has no catalogue left to join.
       item_name: resolved.food.name,
+      item_icon_set: itemIcon?.set ?? null,
+      item_icon_name: itemIcon?.name ?? null,
       item_place: resolved.food.place,
       base_kcal: Math.round(resolved.food.kcal),
       base_carbs_g: resolved.food.carbs,
@@ -1137,6 +1227,7 @@ export async function writeEntry(
       ? ingredients.reduce((sum, part) => sum + part.kcal, 0)
       : Math.round(resolved.food.kcal * resolved.quantity),
     tier: resolved.tier,
+    icon: itemIcon,
     ingredients,
   }
 }

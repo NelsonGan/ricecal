@@ -122,6 +122,25 @@ for (const set of Object.keys(ICON_NAMES) as IconSet[]) {
 export const ICON_LIST: string = [...SET_OF.keys()].join(', ')
 
 /**
+ * A pair somebody else already chose, kept only if it names a drawing we ship.
+ *
+ * The catalogue carries its own `icon_set`/`icon_name`, picked by whoever wrote
+ * the row, and that is the best drawing a scan can end up with: it was chosen
+ * for the food rather than matched from its name. It still has to be checked,
+ * because `food_logs.icon_set` is a Postgres enum and a set the app does not
+ * have would fail the whole insert rather than the one column.
+ *
+ * `ICON_NAMES` rather than `SET_OF`, deliberately: this is not a model picking a
+ * meal out of a list, so the `NOT_A_MEAL` filter does not apply. A drink row
+ * drawn as a paper cup means it.
+ */
+export function knownIcon(set: unknown, name: unknown): IconChoice | null {
+  if (typeof set !== 'string' || typeof name !== 'string') return null
+  const names = (ICON_NAMES as Record<string, readonly string[]>)[set]
+  return names?.includes(name) ? { set: set as IconSet, name } : null
+}
+
+/**
  * An icon id that has turned up somewhere it does not belong, unslugged.
  *
  * ICON_INSTRUCTION fences the list off and the fence is not airtight, since a

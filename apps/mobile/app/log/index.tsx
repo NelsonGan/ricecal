@@ -232,6 +232,26 @@ export default function LogSheet() {
     router.push({ pathname: '/log/food/[id]', params: { id: foodId } })
   }
 
+  /**
+   * "New food" was tapped, which is `openPicked` for a form instead of a dish.
+   *
+   * The same two-step, for the same reason and one more. A form is abandoned
+   * more often than a portion is, and it is reached from the one tab whose job
+   * is "not in the catalogue" — so the search behind it is the search that just
+   * failed, and throwing it away asks somebody who has already typed the dish
+   * twice to type it a third time.
+   *
+   * `source` as well as the query: what has to survive here is the TAB. Landing
+   * back on the catalogue would be landing on the list that had nothing on it.
+   */
+  const openCreate = (search: FoodSearchState) => {
+    router.replace({
+      pathname: '/log/search',
+      params: { q: search.query, tracked: search.tracked ? '1' : '0', source: 'mine' },
+    })
+    router.push('/recipe/edit')
+  }
+
   // Takes the snapshot rather than a food, because the three things this sheet
   // can add outright — a recipe, a catalogue dish, a meal out of this account's
   // own history — build one the same way and nothing downstream needs to know
@@ -445,12 +465,12 @@ export default function LogSheet() {
           onOpenOwn={(recipe) =>
             router.replace({ pathname: '/recipe/[id]', params: { id: recipe.id } })
           }
-          onCreateOwn={() => {
+          onCreateOwn={(search) => {
             // The database enforces the same ceiling
             // (`recipes_enforce_free_limit`); this is the half that opens the
             // paywall rather than letting somebody fill a form in first.
             if (recipeQuota.atLimit && !requirePro('new_recipe')) return
-            router.replace('/recipe/edit')
+            openCreate(search)
           }}
         />
       ) : null}
