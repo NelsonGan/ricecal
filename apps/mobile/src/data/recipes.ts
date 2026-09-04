@@ -25,8 +25,16 @@ import type { IconRef, Macros, Recipe, RecipeIngredient, RecipeUnit } from './ty
  * copy bumps a counter on somebody else's row.
  */
 
-/** Which shelf of the list is on screen. Part of the query key. */
-export type RecipeShelf = 'mine' | 'official' | 'community'
+/**
+ * Which shelf of the list is on screen. Part of the query key.
+ *
+ * There was a third, `official`: the recipes with no owner at all, written by
+ * us. Nothing was ever put on it, and a shelf that is permanently empty is a
+ * tab that teaches people the app has nothing. `is_official` is still a column
+ * on `recipe_details` — a released app reads that view, so the view keeps
+ * answering — and nothing in the client asks for it any more.
+ */
+export type RecipeShelf = 'mine' | 'community'
 
 const RECIPE_COLUMNS = '*'
 
@@ -43,13 +51,11 @@ export function useRecipes(shelf: RecipeShelf, query = '') {
         // `owner_id`, not `is_mine`: a computed column cannot be a filter
         // PostgREST pushes into the index, and this is the list that grows.
         request = request.eq('owner_id', userId).order('created_at', { ascending: false })
-      } else if (shelf === 'official') {
-        request = request.is('owner_id', null).order('created_at', { ascending: false })
       } else {
         // The community shelf leans on the read policy rather than restating
         // it: `is_public and review_status = 'approved'` is already the only
-        // way somebody else's recipe is visible at all, so the filter here is
-        // just "not mine, not the kitchen's".
+        // way somebody else's food is visible at all, so the filter here is
+        // just "not mine, and it has an author".
         request = request
           .not('owner_id', 'is', null)
           .neq('owner_id', userId)

@@ -123,7 +123,6 @@ export function toRecipe(row: RecipeRow): Recipe {
     servings: row.servings ?? 1,
     steps: row.steps ?? undefined,
 
-    isOfficial: row.is_official ?? false,
     isMine: row.is_mine ?? false,
     isPublic: row.is_public ?? false,
     review: row.review_status ?? 'pending',

@@ -25,7 +25,7 @@ export const vi = {
 
     nav: {
       today: 'Hôm nay',
-      recipes: 'Công thức',
+      recipes: 'Món ăn',
       activity: 'Hoạt động',
       trends: 'Xu hướng',
       me: 'Tôi',
@@ -560,16 +560,14 @@ export const vi = {
       offerAction: 'Cho tôi xem',
 
       log: {
-        title: 'Bốn cách ghi',
+        title: 'Ba cách ghi',
         subtitle: 'Chạm nút màu xanh ở Hôm nay, rồi chọn một cách.',
         snap: 'Chụp',
         snapBody: 'Một tấm ảnh của đĩa ăn',
         describe: 'Mô tả',
         describeBody: 'Gõ ra bạn đã ăn gì',
         search: 'Tìm',
-        searchBody: 'Tìm theo tên',
-        recipes: 'Công thức',
-        recipesBody: 'Món bạn tự nấu',
+        searchBody: 'Chúng tôi hoặc bạn',
         barcode: 'Có gói hàng? Máy ảnh cũng quét mã vạch.',
       },
 
@@ -758,10 +756,16 @@ export const vi = {
       tabs: 'Tìm trong nhóm món nào',
       tabCatalogue: 'Tất cả món ăn',
       tabMine: 'Món của tôi',
-      mineEmptyTitle: 'Chưa ghi món nào',
-      mineEmptyBody: 'Các bữa bạn ghi sẽ hiện ở đây, sẵn sàng để thêm lại.',
-      mineNoMatchBody: 'Không có món nào bạn từng ăn khớp với từ đó.',
-      mineOfflineBody: 'Nhật ký của bạn nằm trên máy chủ. Nó sẽ tải ngay khi bạn có mạng trở lại.',
+      tabPast: 'Đã từng ăn',
+      mineEmptyTitle: 'Chưa có món ăn nào của bạn',
+      mineEmptyBody:
+        'Một nồi ăn chung không có sẵn khẩu phần. Nhập những gì đã cho vào và nồi đó đủ cho mấy người, một lần thôi, và từ đó ghi lại chỉ mất một chạm.',
+      mineNoMatchBody: 'Không có món ăn nào của bạn khớp với từ đó.',
+      mineOfflineBody: 'Món ăn của bạn nằm trên máy chủ. Phần này sẽ tải khi bạn có mạng trở lại.',
+      pastEmptyTitle: 'Chưa ghi món nào',
+      pastEmptyBody: 'Các bữa bạn ghi sẽ hiện ở đây, sẵn sàng để thêm lại.',
+      pastNoMatchBody: 'Không có món nào bạn từng ăn khớp với từ đó.',
+      pastOfflineBody: 'Nhật ký của bạn nằm trên máy chủ. Nó sẽ tải ngay khi bạn có mạng trở lại.',
       place: {
         mamak: 'Quán mamak',
         kopitiam: 'Quán cà phê',
@@ -1068,7 +1072,7 @@ export const vi = {
       deleteBody: 'Mọi thứ bên dưới sẽ bị xóa ngay khi bạn xác nhận.',
       goesDiary: 'Mọi bữa ăn, lần cân, nước và ghi chú',
       goesPhotos: 'Mọi ảnh bạn đã chụp',
-      goesRecipes: 'Công thức của bạn, kể cả công thức đã đăng',
+      goesRecipes: 'Món ăn bạn viết, kể cả món đã đăng',
       goesProfile: 'Hồ sơ, cài đặt và thông tin đăng nhập của bạn',
       cancelFirst: 'Hãy hủy đăng ký trong cửa hàng trước, nếu không bạn vẫn bị tính phí.',
       action: 'Xóa tài khoản của tôi',
@@ -1219,7 +1223,7 @@ export const vi = {
       renews: 'Gia hạn ở mức {{price}}.',
       neverRenews: 'Trả một lần. Không có gì gia hạn.',
       freeBody:
-        '{{scans}} lượt quét mỗi ngày, {{recipes}} công thức, và xu hướng của tuần vừa rồi.',
+        '{{scans}} lượt quét mỗi ngày, {{recipes}} món ăn của mình, và xu hướng của tuần vừa rồi.',
       whatYouGet: 'BẠN ĐƯỢC GÌ VỚI PRO',
       included: 'BAO GỒM',
       cancel: 'Huỷ đăng ký',
@@ -1303,11 +1307,11 @@ export const vi = {
         },
         recipes: {
           label: 'Lưu món bạn nấu',
-          free: '{{recipes}} công thức',
+          free: '{{recipes}} món ăn',
           pro: 'Không giới hạn',
         },
         recipeFill: {
-          label: 'Điền công thức từ một tấm ảnh',
+          label: 'Điền món ăn từ một tấm ảnh',
           free: '',
           pro: '',
         },
@@ -1387,8 +1391,8 @@ export const vi = {
         camera: 'Quét thêm một đĩa nữa hôm nay cần RiceCal Pro.',
         describe: 'Nói ra bạn đã ăn gì cần RiceCal Pro.',
         refine: 'Sửa một bữa bằng cách mô tả cần RiceCal Pro.',
-        read_recipe: 'Điền công thức từ một tấm ảnh cần RiceCal Pro.',
-        new_recipe: 'Giữ hơn {{recipes}} công thức cần RiceCal Pro.',
+        read_recipe: 'Điền món ăn từ một tấm ảnh cần RiceCal Pro.',
+        new_recipe: 'Giữ hơn {{recipes}} món ăn của mình cần RiceCal Pro.',
         suggest: 'Hỏi nên ăn gì tiếp cần RiceCal Pro.',
         trend_range: 'Nhìn lại xa hơn một tuần cần RiceCal Pro.',
         review: 'Đọc một bản tổng kết cũ hơn cần RiceCal Pro.',
@@ -1417,33 +1421,28 @@ export const vi = {
   recipes: {
     shelf: {
       mine: 'Của tôi',
-      official: 'Chính thức',
       community: 'Cộng đồng',
     },
 
     heading: {
-      mine: 'Công thức của tôi',
-      official: 'Bếp RiceCal',
+      mine: 'Món ăn của tôi',
       community: 'Từ cộng đồng',
     },
 
     search: {
-      official: 'Tìm công thức chính thức',
-      community: 'Tìm công thức công khai',
-      mine: 'Tìm công thức của tôi',
+      community: 'Tìm món ăn công khai',
+      mine: 'Tìm món ăn của tôi',
       clear: 'Xoá tìm kiếm',
       none: 'Không có gì tên như vậy',
       noneBody: 'Thử một từ ngắn hơn, hoặc một phần tên món.',
     },
 
     empty: {
-      mineTitle: 'Chưa có công thức nào',
+      mineTitle: 'Chưa có món ăn nào',
       mineBody:
         'Một nồi ăn chung không có sẵn khẩu phần. Nhập những gì đã cho vào và nồi đó đủ cho mấy người, một lần thôi, và từ đó ghi lại chỉ mất một chạm.',
-      officialTitle: 'Bếp đang trống',
-      officialBody: 'Công thức từ chúng tôi sẽ xuất hiện ở đây.',
       communityTitle: 'Chưa ai chia sẻ',
-      communityBody: 'Công thức mọi người để công khai sẽ xuất hiện ở đây.',
+      communityBody: 'Món ăn mọi người để công khai sẽ xuất hiện ở đây.',
     },
 
     servings_one: '{{count}} khẩu phần',
@@ -1457,7 +1456,7 @@ export const vi = {
     someCook: 'Một người',
 
     new: {
-      title: 'Công thức mới',
+      title: 'Món ăn mới',
       scanLabel: 'Ảnh',
       describeLabel: 'Mô tả',
       scanTitle: 'Điền từ một tấm ảnh',
@@ -1479,13 +1478,13 @@ export const vi = {
     },
 
     edit: {
-      title: 'Sửa công thức',
+      title: 'Sửa món ăn',
       name: 'TÊN',
       namePlaceholder: 'Bạn gọi nó là gì?',
       picture: 'HÌNH',
       changePicture: 'Đổi hình',
       replacePhotoTitle: 'Dùng hình vẽ thay thế?',
-      replacePhotoBody: 'Ảnh chụp của công thức này sẽ bị xoá.',
+      replacePhotoBody: 'Ảnh chụp của món ăn này sẽ bị xoá.',
       replacePhotoConfirm: 'Dùng hình vẽ',
       servings: 'BAO NHIÊU KHẨU PHẦN',
       ingredients: 'NGUYÊN LIỆU',
@@ -1500,11 +1499,11 @@ export const vi = {
       stepsEdit_one: 'Sửa các bước, {{count}} bước',
       stepsEdit_other: 'Sửa các bước, {{count}} bước',
       stepsWrite: 'Viết cách bạn nấu',
-      save: 'Lưu công thức',
-      saved: 'Đã lưu công thức',
+      save: 'Lưu món ăn',
+      saved: 'Đã lưu món ăn',
       nameRequired: 'Đặt tên cho nó trước đã',
       saveFailed: 'Không lưu được. Thử lại.',
-      limitReached: 'Tài khoản miễn phí giữ {{count}} công thức. Pro không giới hạn.',
+      limitReached: 'Tài khoản miễn phí giữ {{count}} món ăn. Pro không giới hạn.',
       totalLabel: 'Mỗi khẩu phần, {{count}}',
       totalWhole: 'Cả nồi {{kcal}} kcal',
       discardTitle: 'Thoát mà không lưu?',
@@ -1550,35 +1549,34 @@ export const vi = {
       ingredients: 'NGUYÊN LIỆU',
       addToDay: 'Thêm vào hôm nay',
       added: 'Đã thêm vào ngày của bạn',
-      saveCopy: 'Lưu vào công thức của tôi',
-      savedCopy: 'Đã lưu vào công thức của bạn',
+      saveCopy: 'Lưu vào món ăn của tôi',
+      savedCopy: 'Đã lưu vào món ăn của bạn',
       saveCopyFailed: 'Không lưu được cái đó. Thử lại.',
-      goneTitle: 'Không tìm thấy công thức',
+      goneTitle: 'Không tìm thấy món ăn',
       goneBody:
         'Có thể nó đã bị xoá, hoặc được đặt riêng tư trở lại. Xin một liên kết mới từ người đã chia sẻ.',
-      official: 'Từ bếp RiceCal',
-      delete: 'Xoá công thức',
-      deleteTitle: 'Xoá công thức này?',
+      delete: 'Xoá món ăn',
+      deleteTitle: 'Xoá món ăn này?',
       deleteBody: 'Những bữa bạn đã ghi từ nó vẫn nằm trong nhật ký.',
-      deleted: 'Đã xoá công thức',
+      deleted: 'Đã xoá món ăn',
     },
 
     report: {
-      title: 'Báo cáo công thức này',
-      body: 'Công thức này sẽ không hiện với bạn nữa, ngay lập tức. Người nấu không được báo.',
+      title: 'Báo cáo món ăn này',
+      body: 'Món ăn này sẽ không hiện với bạn nữa, ngay lập tức. Người nấu không được báo.',
       inappropriate: 'Phản cảm hoặc không phải đồ ăn',
       spam: 'Spam hoặc quảng cáo',
       dangerous: 'Không an toàn để nấu hoặc ăn',
       stolen: 'Là công sức của người khác',
       block: 'Ẩn mọi thứ của {{name}}',
       done: 'Đã báo cáo. Bạn sẽ không thấy nó nữa.',
-      blocked: 'Đã ẩn. Bạn sẽ không thấy công thức của họ nữa.',
+      blocked: 'Đã ẩn. Bạn sẽ không thấy món ăn của họ nữa.',
       failed: 'Không thực hiện được. Vui lòng thử lại.',
     },
 
     share: {
       action: 'Chia sẻ',
-      title: 'Chia sẻ công thức này',
+      title: 'Chia sẻ món ăn này',
       body: 'Bất kỳ ai có liên kết đều xem được nguyên liệu, các bước và calo, và lưu một bản của riêng họ. Của bạn vẫn là của bạn.',
       publicTitle: 'Đặt công khai',
       publicBody: 'Nó vào tab cộng đồng để bất kỳ ai cũng tìm và lưu được.',
@@ -1586,23 +1584,14 @@ export const vi = {
     },
 
     review: {
-      checking: 'Đang kiểm tra công thức của bạn…',
-      approved: 'Công thức của bạn đã vào cộng đồng',
+      checking: 'Đang kiểm tra món ăn của bạn…',
+      approved: 'Món ăn của bạn đã vào cộng đồng',
       rejected: 'Không được đăng: {{reason}}',
       rejectedPlain: 'Chúng tôi không đăng được cái này.',
       pending: 'Chúng tôi vẫn đang xem cái này. Nó sẽ hiện ra khi được duyệt.',
       badgePending: 'Đang duyệt',
       badgeRejected: 'Không được đăng',
       badgePublic: 'Công khai',
-    },
-
-    log: {
-      action: 'Công thức',
-      empty: {
-        mine: 'Chưa có công thức nào. Thêm một cái và ghi lại chỉ mất một chạm.',
-        official: 'Trong bếp chưa có gì.',
-        community: 'Chưa ai chia sẻ. Công thức mọi người để công khai sẽ hiện ra ở đây.',
-      },
     },
   },
 

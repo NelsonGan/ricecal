@@ -101,7 +101,7 @@ export default function Tutorial() {
 }
 
 /**
- * The four squares, in the order and the colours the log sheet uses.
+ * The three squares, in the order and the colours the log sheet uses.
  *
  * Not `QuickAction` itself: that one is a button, and a button in a tutorial is
  * a control that does nothing when pressed. This is the same square with the
@@ -129,12 +129,6 @@ function LogWays() {
       fill: 'bg-track',
       slab: 'bg-line-strong',
     },
-    {
-      key: 'recipes',
-      icon: { set: 'food', name: 'cooking-pot' },
-      fill: 'bg-water-soft',
-      slab: 'bg-water-soft-line',
-    },
   ] as const satisfies ReadonlyArray<{ key: string; icon: IconProps; fill: string; slab: string }>
 
   return (
@@ -144,16 +138,21 @@ function LogWays() {
           {ways.map((way, position) => (
             <Animated.View
               key={way.key}
-              // Staggered, so the four land one after another and the eye is
+              // Staggered, so the three land one after another and the eye is
               // walked across them in the order the sheet lists them.
               entering={FadeInDown.delay(120 + position * 70).duration(300)}
-              className="basis-[47%] grow"
+              // A third of the row each, which is the row the sheet draws.
+              className="basis-[30%] grow"
             >
               <View className={cn('rounded-md pt-1', way.slab)}>
                 <View className={cn('items-center gap-2 rounded-md px-2 py-4', way.fill)}>
                   <Icon {...way.icon} size={30} />
                   <Text variant="bodyStrong">{t(`tutorial.log.${way.key}`)}</Text>
-                  <Text variant="meta" numberOfLines={1}>
+                  {/* Two lines, since these went from half the row to a third
+                      of it: "A photo of the plate" truncated to "A photo of…"
+                      on one, and the tiles are stretched to a common height by
+                      the row anyway, so the second line costs nothing. */}
+                  <Text variant="meta" numberOfLines={2} className="text-center">
                     {t(`tutorial.log.${way.key}Body`)}
                   </Text>
                 </View>

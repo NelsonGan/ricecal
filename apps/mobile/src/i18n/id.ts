@@ -30,7 +30,7 @@ export const id = {
 
     nav: {
       today: 'Hari ini',
-      recipes: 'Resep',
+      recipes: 'Makanan',
       activity: 'Aktivitas',
       trends: 'Tren',
       me: 'Saya',
@@ -571,16 +571,14 @@ export const id = {
       offerAction: 'Tunjukkan',
 
       log: {
-        title: 'Empat cara mencatat',
+        title: 'Tiga cara mencatat',
         subtitle: 'Ketuk tombol hijau di Hari ini, lalu pilih satu.',
         snap: 'Foto',
         snapBody: 'Sebuah foto piring',
         describe: 'Ceritakan',
         describeBody: 'Ketik apa yang kamu makan',
         search: 'Cari',
-        searchBody: 'Temukan lewat nama',
-        recipes: 'Resep',
-        recipesBody: 'Sesuatu yang kamu masak',
+        searchBody: 'Milik kami atau kamu',
         barcode: 'Punya kemasan? Kamera juga memindai barkode.',
       },
 
@@ -768,10 +766,16 @@ export const id = {
       tabs: 'Cari di makanan yang mana',
       tabCatalogue: 'Semua makanan',
       tabMine: 'Makanan saya',
-      mineEmptyTitle: 'Belum ada yang dicatat',
-      mineEmptyBody: 'Makanan yang Anda catat muncul di sini, siap ditambahkan lagi.',
-      mineNoMatchBody: 'Tidak ada yang pernah Anda makan cocok dengan itu.',
-      mineOfflineBody: 'Catatan Anda ada di server. Ini akan dimuat begitu Anda kembali online.',
+      tabPast: 'Pernah dimakan',
+      mineEmptyTitle: 'Belum ada makanan buatanmu',
+      mineEmptyBody:
+        'Satu panci bersama tidak punya ukuran porsi. Masukkan apa saja isinya dan untuk berapa orang, sekali saja, dan mencatatnya cuma satu ketukan setelah itu.',
+      mineNoMatchBody: 'Tidak ada makananmu yang cocok dengan itu.',
+      mineOfflineBody: 'Makananmu ada di server. Ini akan dimuat begitu kamu kembali online.',
+      pastEmptyTitle: 'Belum ada yang dicatat',
+      pastEmptyBody: 'Makanan yang Anda catat muncul di sini, siap ditambahkan lagi.',
+      pastNoMatchBody: 'Tidak ada yang pernah Anda makan cocok dengan itu.',
+      pastOfflineBody: 'Catatan Anda ada di server. Ini akan dimuat begitu Anda kembali online.',
       place: {
         mamak: 'Mamak',
         kopitiam: 'Kopitiam',
@@ -1079,7 +1083,7 @@ export const id = {
       deleteBody: 'Semua di bawah ini terhapus begitu Anda mengonfirmasi.',
       goesDiary: 'Setiap makanan, timbangan, air dan catatan',
       goesPhotos: 'Setiap foto yang Anda ambil',
-      goesRecipes: 'Resep Anda, termasuk yang dipublikasikan',
+      goesRecipes: 'Makanan yang Anda tulis, termasuk yang dipublikasikan',
       goesProfile: 'Profil, pengaturan dan info masuk Anda',
       cancelFirst: 'Batalkan langganan Anda di toko dulu, atau tagihan akan terus berjalan.',
       action: 'Hapus akun saya',
@@ -1228,7 +1232,8 @@ export const id = {
       trialLeft_other: 'Uji coba gratis, sisa {{count}} hari',
       renews: 'Diperpanjang di {{price}}.',
       neverRenews: 'Dibayar sekali. Tidak ada perpanjangan.',
-      freeBody: '{{scans}} pindai per hari, {{recipes}} resep, dan tren seminggu terakhir.',
+      freeBody:
+        '{{scans}} pindai per hari, {{recipes}} makanan sendiri, dan tren seminggu terakhir.',
       whatYouGet: 'YANG KAMU DAPAT DENGAN PRO',
       included: 'TERMASUK',
       cancel: 'Batalkan langganan',
@@ -1312,11 +1317,11 @@ export const id = {
         },
         recipes: {
           label: 'Simpan yang kamu masak',
-          free: '{{recipes}} resep',
+          free: '{{recipes}} makanan',
           pro: 'Tanpa batas',
         },
         recipeFill: {
-          label: 'Isi resep dari sebuah foto',
+          label: 'Isi makanan dari sebuah foto',
           free: '',
           pro: '',
         },
@@ -1396,8 +1401,8 @@ export const id = {
         camera: 'Memindai satu piring lagi hari ini butuh RiceCal Pro.',
         describe: 'Menceritakan apa yang kamu makan butuh RiceCal Pro.',
         refine: 'Memperbaiki makanan dengan menceritakannya butuh RiceCal Pro.',
-        read_recipe: 'Mengisi resep dari sebuah foto butuh RiceCal Pro.',
-        new_recipe: 'Menyimpan lebih dari {{recipes}} resep butuh RiceCal Pro.',
+        read_recipe: 'Mengisi makanan dari sebuah foto butuh RiceCal Pro.',
+        new_recipe: 'Menyimpan lebih dari {{recipes}} makanan sendiri butuh RiceCal Pro.',
         suggest: 'Bertanya mau makan apa berikutnya butuh RiceCal Pro.',
         trend_range: 'Melihat lebih jauh dari seminggu butuh RiceCal Pro.',
         review: 'Membaca ulasan yang lebih lama butuh RiceCal Pro.',
@@ -1426,33 +1431,28 @@ export const id = {
   recipes: {
     shelf: {
       mine: 'Milikku',
-      official: 'Resmi',
       community: 'Komunitas',
     },
 
     heading: {
-      mine: 'Resepku',
-      official: 'Dapur RiceCal',
+      mine: 'Makananku',
       community: 'Dari komunitas',
     },
 
     search: {
-      official: 'Cari resep resmi',
-      community: 'Cari resep publik',
-      mine: 'Cari resepku',
+      community: 'Cari makanan publik',
+      mine: 'Cari makananku',
       clear: 'Bersihkan pencarian',
       none: 'Tidak ada yang bernama itu',
       noneBody: 'Coba kata yang lebih pendek, atau sebagian nama hidangannya.',
     },
 
     empty: {
-      mineTitle: 'Belum ada resep',
+      mineTitle: 'Belum ada makanan',
       mineBody:
         'Satu panci bersama tidak punya ukuran porsi. Masukkan apa saja isinya dan untuk berapa orang, sekali saja, dan mencatatnya cuma satu ketukan setelah itu.',
-      officialTitle: 'Dapurnya kosong',
-      officialBody: 'Resep dari kami akan muncul di sini.',
       communityTitle: 'Belum ada yang dibagikan',
-      communityBody: 'Resep yang dipublikkan orang akan muncul di sini.',
+      communityBody: 'Makanan yang dipublikkan orang akan muncul di sini.',
     },
 
     servings_one: '{{count}} porsi',
@@ -1466,7 +1466,7 @@ export const id = {
     someCook: 'Seseorang',
 
     new: {
-      title: 'Resep baru',
+      title: 'Makanan baru',
       scanLabel: 'Foto',
       describeLabel: 'Ceritakan',
       scanTitle: 'Isi dari sebuah foto',
@@ -1488,13 +1488,13 @@ export const id = {
     },
 
     edit: {
-      title: 'Ubah resep',
+      title: 'Ubah makanan',
       name: 'NAMA',
       namePlaceholder: 'Kamu menyebutnya apa?',
       picture: 'GAMBAR',
       changePicture: 'Ganti gambar',
       replacePhotoTitle: 'Pakai ilustrasi saja?',
-      replacePhotoBody: 'Foto resep ini akan dihapus.',
+      replacePhotoBody: 'Foto makanan ini akan dihapus.',
       replacePhotoConfirm: 'Pakai ilustrasi',
       servings: 'BERAPA PORSI',
       ingredients: 'BAHAN',
@@ -1509,11 +1509,11 @@ export const id = {
       stepsEdit_one: 'Ubah langkahnya, {{count}} langkah',
       stepsEdit_other: 'Ubah langkahnya, {{count}} langkah',
       stepsWrite: 'Tulis cara kamu memasak',
-      save: 'Simpan resep',
-      saved: 'Resep tersimpan',
+      save: 'Simpan makanan',
+      saved: 'Makanan tersimpan',
       nameRequired: 'Beri nama dulu',
       saveFailed: 'Tidak bisa menyimpannya. Coba lagi.',
-      limitReached: 'Akun gratis menyimpan {{count}} resep. Pro tanpa batas.',
+      limitReached: 'Akun gratis menyimpan {{count}} makanan. Pro tanpa batas.',
       totalLabel: 'Per porsi, {{count}}',
       totalWhole: 'Seluruh panci {{kcal}} kkal',
       discardTitle: 'Keluar tanpa menyimpan?',
@@ -1559,35 +1559,34 @@ export const id = {
       ingredients: 'BAHAN',
       addToDay: 'Tambahkan ke hari ini',
       added: 'Ditambahkan ke harimu',
-      saveCopy: 'Simpan ke resepku',
-      savedCopy: 'Tersimpan ke resepmu',
+      saveCopy: 'Simpan ke makananku',
+      savedCopy: 'Tersimpan ke makananmu',
       saveCopyFailed: 'Tidak bisa menyimpan yang itu. Coba lagi.',
-      goneTitle: 'Resep tidak ditemukan',
+      goneTitle: 'Makanan tidak ditemukan',
       goneBody:
         'Mungkin sudah dihapus, atau dijadikan privat lagi. Minta tautan baru dari yang membagikannya.',
-      official: 'Dari dapur RiceCal',
-      delete: 'Hapus resep',
-      deleteTitle: 'Hapus resep ini?',
+      delete: 'Hapus makanan',
+      deleteTitle: 'Hapus makanan ini?',
       deleteBody: 'Makanan yang sudah kamu catat darinya tetap ada di buku harianmu.',
-      deleted: 'Resep dihapus',
+      deleted: 'Makanan dihapus',
     },
 
     report: {
-      title: 'Laporkan resep ini',
-      body: 'Resep ini langsung berhenti muncul untuk Anda. Pembuatnya tidak diberi tahu.',
+      title: 'Laporkan makanan ini',
+      body: 'Makanan ini langsung berhenti muncul untuk Anda. Pembuatnya tidak diberi tahu.',
       inappropriate: 'Menyinggung atau bukan makanan',
       spam: 'Spam atau iklan',
       dangerous: 'Tidak aman dimasak atau dimakan',
       stolen: 'Karya orang lain',
       block: 'Sembunyikan semua dari {{name}}',
       done: 'Dilaporkan. Anda tidak akan melihatnya lagi.',
-      blocked: 'Disembunyikan. Anda tidak akan melihat resep mereka lagi.',
+      blocked: 'Disembunyikan. Anda tidak akan melihat makanan mereka lagi.',
       failed: 'Tidak bisa melakukannya. Coba lagi.',
     },
 
     share: {
       action: 'Bagikan',
-      title: 'Bagikan resep ini',
+      title: 'Bagikan makanan ini',
       body: 'Siapa pun yang punya tautannya bisa melihat bahan, langkah dan kalorinya, dan menyimpan salinannya sendiri. Milikmu tetap milikmu.',
       publicTitle: 'Jadikan publik',
       publicBody: 'Ia masuk ke tab komunitas untuk ditemukan dan disimpan siapa saja.',
@@ -1595,23 +1594,14 @@ export const id = {
     },
 
     review: {
-      checking: 'Memeriksa resepmu…',
-      approved: 'Resepmu sudah masuk komunitas',
+      checking: 'Memeriksa makananmu…',
+      approved: 'Makananmu sudah masuk komunitas',
       rejected: 'Tidak diterbitkan: {{reason}}',
       rejectedPlain: 'Kami tidak bisa menerbitkan yang ini.',
       pending: 'Kami masih melihatnya. Ia akan muncul setelah lolos.',
       badgePending: 'Dalam tinjauan',
       badgeRejected: 'Tidak diterbitkan',
       badgePublic: 'Publik',
-    },
-
-    log: {
-      action: 'Resep',
-      empty: {
-        mine: 'Belum ada resep. Tambah satu dan mencatatnya cuma satu ketukan.',
-        official: 'Belum ada apa-apa di dapur.',
-        community: 'Belum ada yang dibagikan. Resep yang dipublikkan orang muncul di sini.',
-      },
     },
   },
 

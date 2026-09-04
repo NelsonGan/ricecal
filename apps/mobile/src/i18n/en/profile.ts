@@ -97,7 +97,7 @@ export const profile = {
     deleteBody: 'Everything below is erased the moment you confirm.',
     goesDiary: 'Every meal, weigh-in, water and note',
     goesPhotos: 'Every photograph you took',
-    goesRecipes: 'Your recipes, published ones included',
+    goesRecipes: 'The foods you wrote, published ones included',
     goesProfile: 'Your profile, settings and sign-in',
     /** Only where a renewing subscription exists. */
     cancelFirst: 'Cancel your subscription in the store first, or it keeps being charged.',
@@ -336,7 +336,7 @@ export const profile = {
     /** Lifetime does not renew, and saying it does would be the app lying. */
     neverRenews: 'Paid once. Nothing renews.',
     /** The same card for somebody who has never subscribed. */
-    freeBody: '{{scans}} scans a day, {{recipes}} recipes, and the last week of trends.',
+    freeBody: '{{scans}} scans a day, {{recipes}} foods of your own, and the last week of trends.',
     whatYouGet: 'WHAT YOU GET WITH PRO',
     /** A heading only. What is under it comes from `paywall:table.rows`. */
     included: 'INCLUDED',
