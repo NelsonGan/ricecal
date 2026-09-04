@@ -117,10 +117,15 @@ export type SignInMethod = 'apple' | 'google' | 'email' | 'password'
 export type PlanDirection = 'lose' | 'gain' | 'maintain'
 
 /**
- * Where a widget tap was aiming. The four logging panels are spelt as the log
- * sheet's own route param spells them, so a breakdown lines up with `Log Sheet
- * Opened`'s `panel`. `open` is a widget with one tap target and nothing more
- * specific to say.
+ * Where a widget tap was aiming. The panels are spelt as the log sheet's own
+ * route param spells them, so a breakdown lines up with `Log Sheet Opened`'s
+ * `panel`. `open` is a widget with one tap target and nothing more specific to
+ * say.
+ *
+ * `recipes` is kept although the sheet has no such panel any more: the widget
+ * is native and is on home screens built against a version that had one. The
+ * app resolves that name to search on My foods, and this is what those taps are
+ * still counted as.
  */
 export type WidgetTarget = 'open' | 'camera' | 'search' | 'barcode' | 'recipes' | 'water' | 'weight'
 
@@ -242,11 +247,13 @@ export type Events = {
    * the live version of what `pnpm foods:gate` measures against thirty fixed
    * queries.
    *
-   * `source` says which of the panel's two lists it came from, because rank
+   * `source` says which of the panel's three lists it came from, because rank
    * means different things in each: in the catalogue it grades the Worker's
-   * ranking, and in the history it is how far back the meal was.
+   * ranking, in the history it is how far back the meal was, and among the
+   * user's own food it is how recently they wrote it. Absent is the catalogue,
+   * which is the only list the ranking is a claim about.
    */
-  'Food Picked': { position: number; results: number; source?: 'history' }
+  'Food Picked': { position: number; results: number; source?: 'history' | 'recipe' }
 
   // ── Money, up to the store sheet and no further ──────────────────────────
   /**

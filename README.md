@@ -21,7 +21,7 @@ project works is here.
 - [Logging a meal](#logging-a-meal)
 - [Correcting an entry](#correcting-an-entry)
 - [What to eat next](#what-to-eat-next)
-- [Recipes](#recipes)
+- [Food people write](#food-people-write)
 - [The diary screen](#the-diary-screen)
 - [Water](#water)
 - [Home screen widgets](#home-screen-widgets)
@@ -782,7 +782,7 @@ Replacing straight to the dish, which is what the barcode scanner still does,
 left it standing on Today, so backing out of a portion nobody had decided on
 threw the search away and made the user type it again.
 
-Five tabs (Today, Recipes, Activity, Trends, Me) on the headless
+Five tabs (Today, Food, Activity, Trends, Me) on the headless
 `expo-router/ui` Tabs rather than a styled navigator, because `NavBar` and
 `NavItem` are the design system's and a native tab bar cannot be made to look
 like them.
@@ -1317,28 +1317,48 @@ is the evidence: the widget did its job.
 
 ## Logging a meal
 
-Four ways in, and the FAB opens all of them in one sheet (`app/log/index.tsx`):
-**Snap** a photo, **Describe** it in words, **Scan** the barcode, or **Search**
-— for a dish in the catalogue, or for a meal this account has eaten before.
-Whatever the route, the entry is written against `selectedDate`, the day the
-strip on Today has selected.
+Three ways in, and the FAB opens all of them in one sheet
+(`app/log/index.tsx`): **Snap** a photo, **Describe** it in words, or **Search**
+— for a dish in the catalogue, for food this account wrote itself, or for a meal
+it has eaten before. Scanning a barcode is a tab inside the camera. Whatever the
+route, the entry is written against `selectedDate`, the day the strip on Today
+has selected.
 
 Search, scan and quick-add are ordinary writes. The other two run the cascade.
 
-### Search has two tabs, and the second one is the diary
+There was a fourth tile, **Recipes**, and it opened a shelf of the food the user
+had written with a search field of its own. It is the middle tab of search now.
+A tile that opened its own list with its own field made "search for a dish" two
+different features depending on who had written the dish, and the one word
+somebody types is the same word either way. The widget still asks for
+`?panel=recipes` — it is native, and it is on home screens built against a
+version of the app that had the tile — so `openingPanel` maps that name to
+search opened on My foods rather than letting it fall through to the camera.
 
-`FoodSearchPanel` puts one field over two lists. **All foods** is the catalogue:
-48,000 shared rows, ranked by the Worker, asked over the network on a debounce.
-**My foods** is what this account has eaten before, newest first, filtered on the
-phone as you type.
+### Search has three tabs, and only the first is the catalogue
 
-**One field above both**, because the word somebody types is the same word
+`FoodSearchPanel` puts one field over three lists. **All foods** is the
+catalogue: 48,000 shared rows, ranked by the Worker, asked over the network on a
+debounce. **My foods** is what this account wrote itself, newest first, which the
+database calls a recipe. **Past foods** is what it has eaten before, newest
+first, filtered on the phone as you type.
+
+**One field above all three**, because the word somebody types is the same word
 whichever list they meant it for — and a field per tab would lose it on exactly
 the switch that wants it, since "not in the catalogue, was it something I have
-eaten?" is the question the second tab answers.
+eaten?" is the question the third tab answers.
 
-**It is folded to one row per dish**, keeping the most recent of each, and the
-key is name plus per-serving calories plus portion label. Unfolded it is the
+**A tab is offered only where its host can act on a pick.** The ingredient
+picker passes neither `onPickOwn` nor `onPickHistory` and gets no strip at all,
+rather than a strip with one tab on it: a pot is not an ingredient, and a single
+tab is a label pretending to be a control.
+
+**`OwnFoodList` lives in `FoodSearchPanel.tsx` rather than in
+`features/recipes`.** `IngredientSheet` imports this panel, so a panel that
+imported the recipe feature back would be a cycle.
+
+The Past foods list **is folded to one row per dish**, keeping the most recent
+of each, and the key is name plus per-serving calories plus portion label. Unfolded it is the
 diary again, and a diary is the screen the user just came from: three weeks of
 the same breakfast, in order, is not a list of foods. Folded on the name alone,
 a 108 kcal packet of soy milk would hide behind the 511 kcal hawker one it
@@ -1346,7 +1366,7 @@ shares a word with, offering one of them under the other's calories. Which row
 survives matters too: the newest carries the portion and the photograph the user
 last accepted.
 
-**A pick from this tab is WRITTEN, where a catalogue pick opens the portion
+**A pick from Past foods is WRITTEN, where a catalogue pick opens the portion
 screen.** The catalogue knows a food and not how much of it; an entry is a meal
 somebody already ate at a size they already accepted, so `snapshotFromEntry`
 copies the figures verbatim — a repeat lands on the same calories to the digit —
@@ -1358,6 +1378,12 @@ stop.
 The rows carry their own picture, which is most of the point. A meal somebody
 photographed is recognisable from six weeks away in a way its name is not, and
 the catalogue's side has a drawing at best.
+
+**My foods writes on the plus and opens on the row**, which is the split the
+shelf itself makes: how many servings is a question with an answer screen, and
+"one, the way I always have it" should not need it. An empty My foods offers the
+form, because somebody searching for food they have not written yet is exactly
+who should be told it can be written.
 
 ### Scanning a barcode
 
@@ -2002,11 +2028,21 @@ nothing to log, so the honest answer is to say nothing came to mind.
 
 ---
 
-## Recipes
+## Food people write
 
-A shared pot has no serving size, which is where logging breaks down. A recipe is
-two answers, what went in and how many it feeds, entered once, and every future
-log of it is one tap.
+A shared pot has no serving size, which is where logging breaks down. So a user
+can write a food of their own: two answers, what went in and how many it feeds,
+entered once, and every future log of it is one tap.
+
+**The word on screen is "food"; everything in the code says "recipe".** The
+tables, the view, the RPCs, the routes, the hooks and the i18n namespace are all
+`recipe`, and they stay that way — a released app is talking to those tables and
+renaming one is deleting it (see "The store holds copies of the app you cannot
+recall"). What changed is the copy, because half of what people write down is a
+sandwich they make the same way every morning, and nobody calls that a recipe.
+`Food` is already the catalogue's row type, which is why the client did not
+follow the copy: two things called `Food` would be worse than one honest
+mismatch, written down here.
 
 **A recipe was a `foods` row, and is not any more.** It had to be, once:
 `food_logs.food_id` was not null and referenced the catalogue, and everything
@@ -2030,14 +2066,27 @@ that was true. `ingredientBasis` in `features/recipes/basis.ts` turns a catalogu
 serving into one: it reads a weight out of the serving label and falls back to
 counting when there is none.
 
-**Three shelves, one list.** Mine, the RiceCal kitchen, and the community. Which
-one a recipe is on is a property of the row: official is the *absence* of an
-owner, so "official and owned by Farah" cannot be spelled, and community is
-somebody else's that is both public and approved.
+**Two shelves, one list.** Mine and the community. Which one a row is on is a
+property of the row: community is somebody else's that is both public and
+approved.
 
-Somebody else's recipe is **saved before it can be logged** (`save_recipe_copy`,
-a copy with `source_recipe_id` for provenance). Logging it directly would put
-their future corrections into your past diary.
+There was a third, the RiceCal kitchen: `owner_id is null`, so "official and
+owned by Farah" could not be spelled. Nothing was ever put on it, and a
+permanently empty shelf is a tab that teaches people the app has nothing. The
+client no longer asks for it and no longer reads `is_official`. **The view still
+computes that column**, because a released app selects `*` from
+`recipe_details`, and dropping it would be a deploy that ran backwards over a
+store release.
+
+**Somebody else's food can be logged, and can also be kept.** Logging it used to
+be impossible, and the reason was real at the time: a logged entry referenced the
+recipe's mirror catalogue row, so their future corrections would land in your
+past diary. The mirror went with the catalogue. An entry is a snapshot now, and
+`recipe_id` is provenance nothing reads back through, so a community dish costs
+the reader exactly what it said it cost on the day they ate it. `save_recipe_copy`
+is still there and still the way to get an editable copy of your own, with
+`source_recipe_id` for provenance — it is the second button on that screen rather
+than the only one.
 
 ### The publishing gate
 

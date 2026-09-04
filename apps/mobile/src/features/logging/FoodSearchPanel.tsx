@@ -2,11 +2,29 @@ import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { type TextInput, View } from 'react-native'
 
-import { type Entry, type Food, useFoodSearch, useRecentFoods } from '@/data'
+import {
+  type Entry,
+  type Food,
+  type Recipe,
+  useFoodSearch,
+  useRecentFoods,
+  useRecipes,
+} from '@/data'
 import { ItemRow, ROW_TILE } from '@/features/shared'
 import { track } from '@/lib/analytics'
 import { useDebouncedValue } from '@/lib/use-debounce'
-import { Card, EmptyState, SearchField, Skeleton, Tabs } from '@/ui'
+import { useThemeColors } from '@/theme/useTheme'
+import {
+  Card,
+  EmptyState,
+  Icon,
+  IconButton,
+  SearchField,
+  Skeleton,
+  Tabs,
+  Tappable,
+  Text,
+} from '@/ui'
 import { whenLabel } from './when'
 
 /**
@@ -26,11 +44,18 @@ const SKELETON_ROWS = ['s1', 's2', 's3', 's4', 's5', 's6'] as const
 const SETTLED_MS = 1_200
 
 /**
- * Which list is on screen. `catalogue` is the shared rows behind the Worker;
- * `mine` is what this account has eaten before. Tabs rather than one merged list,
- * because the catalogue ranks by how well a name matches and a history by when.
+ * Which list is on screen.
+ *
+ * `catalogue` is the shared rows behind the Worker. `mine` is the food this
+ * account wrote itself, which the database still calls a recipe — the word the
+ * user reads is "food" everywhere, and the tables keep their names because a
+ * released app is talking to them. `past` is what this account has eaten before.
+ *
+ * Three lists rather than one merged one, because each is ordered by something
+ * different: the catalogue ranks by how well a name matches, your own food by
+ * when you wrote it, and the diary by when you ate it.
  */
-type Source = 'catalogue' | 'mine'
+type Source = 'catalogue' | 'mine' | 'past'
 
 /**
  * Everything a second panel needs to come back looking like the first.
@@ -70,11 +95,33 @@ export type FoodSearchPanelProps = {
    * for everything the cascade estimated, and where it is set it is provenance
    * rather than a reference. The entry states its own numbers.
    *
-   * Omit it and there are no tabs and no second list, for the route that reaches
+   * Omit it and the Past foods tab is not offered, for the route that reaches
    * this panel from an unreadable snap.
    */
   onPickHistory?: (entry: Entry) => void
+  /**
+   * One serving of the user's own food, logged outright. Omit it and the My
+   * foods tab is not offered — which is what the ingredient picker wants, since
+   * a pot is not an ingredient.
+   */
+  onPickOwn?: (recipe: Recipe) => void
+  /**
+   * Open one of the user's own foods, for a different number of servings or a
+   * look at how it is cooked. Required by the same tab `onPickOwn` turns on.
+   */
+  onOpenOwn?: (recipe: Recipe) => void
+  /**
+   * Write a new food. Offered at the head of the My foods tab, because that is
+   * where somebody looking for food they have not written yet ends up, and the
+   * alternative is closing this sheet and finding the Food tab.
+   */
+  onCreateOwn?: () => void
   autoFocus?: boolean
+  /**
+   * Which tab to open on. Only the quick selector passes it, for the widget that
+   * still deep-links at the recipe panel this replaced.
+   */
+  initialSource?: Source
   /**
    * A search handed over by another panel, for a host that is restoring one
    * rather than beginning it. The debounce seeds from the query as well, so
@@ -92,28 +139,65 @@ export type FoodSearchPanelProps = {
 }
 
 /**
- * The search: a field, two lists, and what they find.
+ * The search: a field, three lists, and what they find.
  *
  * Extracted from the search route, because search is inline in the quick selector
  * now and the route is still reached from a snap that could not be read. Two
  * hosts, and none of the debounce, loading or empty-state behaviour is worth
  * having twice.
  *
- * One field above both tabs: the word somebody types is the same word whichever
+ * One field above every tab: the word somebody types is the same word whichever
  * list they meant it for, and a field per tab would lose it on the switch that
  * asks "not in the catalogue, was it something I have eaten?". The catalogue is
- * asked over the network on a debounce; the history filters as you type.
+ * asked over the network on a debounce; the other two filter as you type.
+ *
+ * This is the only way in to a food the user wrote themselves, which is why the
+ * middle tab exists. It used to be a fourth tile on the log sheet, and a tile
+ * that opened its own shelf with its own field made "search for a dish" two
+ * different features depending on who had written the dish.
  */
 export function FoodSearchPanel({
   onPick,
   onPickHistory,
+  onPickOwn,
+  onOpenOwn,
+  onCreateOwn,
   autoFocus = false,
+  initialSource,
   restore,
   fieldRef,
 }: FoodSearchPanelProps) {
   const { t } = useTranslation(['logging', 'common'])
   const [query, setQuery] = useState(restore?.query ?? '')
-  const [source, setSource] = useState<Source>('catalogue')
+
+  // Memoised because the strip is a prop on a component that re-renders on
+  // every keystroke of the field above it.
+  //
+  // A tab is offered only where its host can act on a pick. The ingredient
+  // picker passes neither callback and gets no strip at all, rather than a
+  // strip with one tab on it: a single tab is a label pretending to be a
+  // control.
+  //
+  // Keyed on WHETHER the host handles a tab rather than on the handlers
+  // themselves: every host passes them as inline arrows, so depending on the
+  // functions would rebuild this array on every keystroke, which is the one
+  // thing the memo is here to stop.
+  const hasOwn = Boolean(onPickOwn && onOpenOwn)
+  const hasHistory = Boolean(onPickHistory)
+  const tabs = useMemo(
+    () => [
+      { value: 'catalogue' as const, label: t('logging:search.tabCatalogue') },
+      ...(hasOwn ? [{ value: 'mine' as const, label: t('logging:search.tabMine') }] : []),
+      ...(hasHistory ? [{ value: 'past' as const, label: t('logging:search.tabPast') }] : []),
+    ],
+    [t, hasOwn, hasHistory],
+  )
+
+  // The opening tab has to be one this host actually offers, or a widget's deep
+  // link would select a tab with no list under it.
+  const [source, setSource] = useState<Source>(() =>
+    initialSource && tabs.some((tab) => tab.value === initialSource) ? initialSource : 'catalogue',
+  )
 
   // The field renders `query` on every keystroke; the catalogue is only asked
   // once typing pauses. See `useDebouncedValue` for why this is a debounce
@@ -125,22 +209,12 @@ export function FoodSearchPanel({
   // this is a round trip rather than a filter over something the phone holds.
   //
   // Asked only while its own tab is showing. `useFoodSearch('')` answers with an
-  // empty list and sends nothing, so typing over your own history does not fire a
+  // empty list and sends nothing, so typing over your own food does not fire a
   // Worker request per pause for a list nobody is looking at.
   const { data, isFetching, isPaused, isError } = useFoodSearch(
     source === 'catalogue' ? debouncedQuery : '',
   )
   const results = data ?? []
-
-  // Memoised because the strip is a prop on a component that re-renders on
-  // every keystroke of the field above it.
-  const tabs = useMemo(
-    () => [
-      { value: 'catalogue' as const, label: t('logging:search.tabCatalogue') },
-      { value: 'mine' as const, label: t('logging:search.tabMine') },
-    ],
-    [t],
-  )
 
   // Before the first keystroke there is nothing to say. The empty state reads
   // "No dish by that name", which is only true once a name has been typed.
@@ -225,7 +299,7 @@ export function FoodSearchPanel({
 
       {/* No strip at all with one list, rather than a strip with one tab on it.
           A single tab is a label pretending to be a control. */}
-      {onPickHistory ? (
+      {tabs.length > 1 ? (
         <Tabs
           align="center"
           options={tabs}
@@ -235,8 +309,15 @@ export function FoodSearchPanel({
         />
       ) : null}
 
-      {source === 'mine' && onPickHistory ? (
+      {source === 'past' && onPickHistory ? (
         <HistoryList query={query} onPick={onPickHistory} />
+      ) : source === 'mine' && onPickOwn && onOpenOwn ? (
+        <OwnFoodList
+          query={debouncedQuery}
+          onPick={onPickOwn}
+          onOpen={onOpenOwn}
+          onCreate={onCreateOwn}
+        />
       ) : (
         <>
           {state === 'loading' ? (
@@ -315,6 +396,184 @@ export function FoodSearchPanel({
 }
 
 /**
+ * The food this account wrote itself, newest first.
+ *
+ * A pot the user entered once: what went in and how many it feeds. The database
+ * calls one a recipe and so does every hook below, because a released app is
+ * talking to those tables; the word on screen is "food".
+ *
+ * Living in this file rather than in `features/recipes` is deliberate.
+ * `IngredientSheet` imports this panel, so a panel that imported the recipe
+ * feature back would be a cycle.
+ *
+ * The plus logs one serving outright and the row opens the food, which is the
+ * same split the shelf makes: how many servings is a question with an answer
+ * screen, and "one, the way I always have it" should not need it.
+ */
+function OwnFoodList({
+  query,
+  onPick,
+  onOpen,
+  onCreate,
+}: {
+  query: string
+  onPick: (recipe: Recipe) => void
+  onOpen: (recipe: Recipe) => void
+  onCreate?: () => void
+}) {
+  const { t } = useTranslation(['logging', 'recipes', 'common'])
+  const colors = useThemeColors()
+  const { data: recipes = [], isPending, isPaused, isError } = useRecipes('mine', query)
+
+  const searched = query.trim().length > 0
+
+  /**
+   * The quiet row the ingredient list uses, not a button.
+   *
+   * ABOVE the list, and that is the keyboard rather than a preference: this
+   * panel takes the keyboard on open, which leaves about half the sheet, so
+   * anything under the rows is below the fold on the one tab whose job is "you
+   * have not written any yet". At the head it costs 30pt, and the foods still
+   * start on the first screen.
+   *
+   * Drawn in EVERY state of this tab, including while a search is running.
+   * "Not in your foods" and "write it down" are the same thought, and a control
+   * that comes and goes with the field is one people stop looking for.
+   *
+   * The form's own title is the label, so this row and the heading it opens are
+   * the same words.
+   */
+  const create = onCreate ? (
+    <Tappable
+      className="flex-row items-center gap-2.5"
+      onPress={onCreate}
+      accessibilityRole="button"
+      accessibilityLabel={t('recipes:new.title')}
+    >
+      <View className="h-[30px] w-[30px] items-center justify-center rounded-md bg-pandan-soft">
+        <Icon set="ui" name="plus" size={16} />
+      </View>
+      <Text variant="label" className="text-pandan-ink">
+        {t('recipes:new.title')}
+      </Text>
+    </Tappable>
+  ) : null
+
+  // `isPending` and not `isFetching`, as the history list has it: this list is
+  // worth showing while it refreshes, and only a first load has nothing to draw.
+  if (isPending && !isPaused) {
+    return (
+      <>
+        {create}
+        <View className="gap-3" accessibilityRole="progressbar">
+          {SKELETON_ROWS.map((id) => (
+            <Card key={id}>
+              <View className="flex-row items-center gap-3">
+                <Skeleton className={ROW_TILE} />
+                <View className="flex-1 gap-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-2/5" />
+                </View>
+                <Skeleton className="h-6 w-12" />
+              </View>
+            </Card>
+          ))}
+        </View>
+      </>
+    )
+  }
+
+  if (isPaused && recipes.length === 0) {
+    return (
+      <>
+        {create}
+        <EmptyState
+          title={t('logging:search.offlineTitle')}
+          description={t('logging:search.mineOfflineBody')}
+          icon={{ set: 'ui', name: 'offline' }}
+        />
+      </>
+    )
+  }
+
+  if (isError && recipes.length === 0) {
+    return (
+      <>
+        {create}
+        <EmptyState
+          title={t('logging:search.errorTitle')}
+          description={t('logging:search.errorBody')}
+          icon={{ set: 'ui', name: 'warning' }}
+        />
+      </>
+    )
+  }
+
+  if (recipes.length === 0) {
+    // Two different nothings, the same split the history list makes. An account
+    // that has written nothing is being told what this list is for; one whose
+    // search matched nothing is being told to try fewer letters. The row above
+    // both is the same answer to either.
+    return searched ? (
+      <>
+        {create}
+        <EmptyState
+          title={t('logging:search.emptyTitle')}
+          description={t('logging:search.mineNoMatchBody')}
+          icon={{ set: 'ui', name: 'search' }}
+        />
+      </>
+    ) : (
+      <>
+        {create}
+        <EmptyState
+          title={t('logging:search.mineEmptyTitle')}
+          description={t('logging:search.mineEmptyBody')}
+          icon={{ set: 'food', name: 'cooking-pot' }}
+        />
+      </>
+    )
+  }
+
+  return (
+    <>
+      {create}
+      {recipes.map((recipe, index) => (
+        <Card key={recipe.id}>
+          <ItemRow
+            title={recipe.name}
+            icon={recipe.icon}
+            photoPath={recipe.photoPath}
+            // What one serving costs, which is what the plus beside it writes.
+            value={recipe.perServing.kcal}
+            unit={t('common:unit.kcal')}
+            detail={t('recipes:servings', { count: recipe.servings })}
+            onPress={() => onOpen(recipe)}
+            trailing={
+              <IconButton
+                size="sm"
+                variant="primary"
+                accessibilityLabel={`${t('common:action.add')}, ${recipe.name}`}
+                onPress={() => {
+                  track('Food Picked', {
+                    position: index + 1,
+                    results: recipes.length,
+                    source: 'recipe',
+                  })
+                  onPick(recipe)
+                }}
+              >
+                <Icon set="ui" name="plus" size={18} tintColor={colors.onPandan} />
+              </IconButton>
+            }
+          />
+        </Card>
+      ))}
+    </>
+  )
+}
+
+/**
  * What this account has eaten before, newest first.
  *
  * Filtered on the phone rather than over the network, so it narrows on the
@@ -369,7 +628,7 @@ function HistoryList({ query, onPick }: { query: string; onPick: (entry: Entry) 
     return (
       <EmptyState
         title={t('logging:search.offlineTitle')}
-        description={t('logging:search.mineOfflineBody')}
+        description={t('logging:search.pastOfflineBody')}
         icon={{ set: 'ui', name: 'offline' }}
       />
     )
@@ -392,13 +651,13 @@ function HistoryList({ query, onPick }: { query: string; onPick: (entry: Entry) 
     return needle ? (
       <EmptyState
         title={t('logging:search.emptyTitle')}
-        description={t('logging:search.mineNoMatchBody')}
+        description={t('logging:search.pastNoMatchBody')}
         icon={{ set: 'ui', name: 'search' }}
       />
     ) : (
       <EmptyState
-        title={t('logging:search.mineEmptyTitle')}
-        description={t('logging:search.mineEmptyBody')}
+        title={t('logging:search.pastEmptyTitle')}
+        description={t('logging:search.pastEmptyBody')}
         icon={{ set: 'food', name: 'empty-plate' }}
       />
     )

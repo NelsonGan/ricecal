@@ -11,10 +11,10 @@ export type RecipeRowProps = {
 }
 
 /**
- * One recipe in a list.
+ * One food in a list.
  *
  * The detail line answers a different question on each shelf, which is why it
- * is built here rather than passed in: on my own recipes it is the portion
+ * is built here rather than passed in: on my own food it is the portion
  * ("4 servings · 6 ingredients"), and on the community it is who cooked it
  * and how many people kept it. The number on the right is always the SERVING,
  * never the pot — that is what logging it will cost, and a list that showed the
@@ -26,15 +26,14 @@ export function RecipeRow({ recipe, onPress }: RecipeRowProps) {
   // The number on the right is already "what one serving costs", so the detail
   // line does not repeat it — said twice it truncated on a 393pt screen, and the
   // half of it that survived was the half already on the right.
-  const detail =
-    recipe.isMine || recipe.isOfficial
-      ? `${t('servings', { count: recipe.servings })} · ${t('ingredients', {
-          count: recipe.ingredientCount,
-        })}`
-      : t('byAuthor', {
-          name: recipe.authorName || t('someCook'),
-          saves: t('savedTimes', { count: recipe.savedCount }),
-        })
+  const detail = recipe.isMine
+    ? `${t('servings', { count: recipe.servings })} · ${t('ingredients', {
+        count: recipe.ingredientCount,
+      })}`
+    : t('byAuthor', {
+        name: recipe.authorName || t('someCook'),
+        saves: t('savedTimes', { count: recipe.savedCount }),
+      })
 
   return (
     <View className="gap-2">
@@ -48,11 +47,11 @@ export function RecipeRow({ recipe, onPress }: RecipeRowProps) {
         onPress={onPress}
       />
       {/* Only on your own, and only when there is something to say. The badge
-          reports where a PUBLISHED recipe has got to; a private one is not
+          reports where a PUBLISHED food has got to; a private one is not
           waiting for anything and says nothing.
 
           Indented to the row's text column so it reads as belonging to the
-          recipe above it rather than to the gap between two of them, which is
+          food above it rather than to the gap between two of them, which is
           what it looked like once the rows lost their cards. */}
       {recipe.isMine && recipe.isPublic ? (
         <View className={cn('flex-row', ROW_TEXT_INDENT)}>

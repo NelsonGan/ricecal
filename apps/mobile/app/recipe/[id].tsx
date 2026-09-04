@@ -48,16 +48,19 @@ import {
 } from '@/ui'
 
 /**
- * One recipe, and the two things you can do with it.
+ * One food somebody wrote, and what you can do with it.
  *
- * Which two depends on whose it is, and that is the one decision on this screen.
- * Your own recipe logs straight into the day; somebody else's is saved first, as
- * a copy, and logged from the copy.
+ * Your own logs into the day and can be shared. Somebody else's does BOTH: it
+ * logs into the day, and it can be kept as a copy of your own to edit.
  *
- * That is not a permissions detail. A logged entry references the recipe's mirror
- * catalogue row, and editing a recipe reprices every entry that ever pointed at
- * it, so logging somebody else's directly would put their future corrections into
- * your past diary. A copy is yours, and so are its numbers.
+ * Logging somebody else's used to be impossible, and the reason was real at the
+ * time: a logged entry referenced the recipe's mirror catalogue row, so editing
+ * a recipe repriced every entry that ever pointed at it and logging somebody
+ * else's would have put their future corrections into your past diary. The
+ * mirror went with the catalogue. An entry is a snapshot now — `recipe_id` is
+ * provenance and nothing reads back through it — so a community dish costs the
+ * reader exactly what it said it cost on the day they ate it, and making them
+ * save a copy first was a step that no longer protected anything.
  */
 export default function RecipeDetailScreen() {
   const { t } = useTranslation(['recipes', 'common'])
@@ -94,14 +97,10 @@ export default function RecipeDetailScreen() {
   const photo = storedImageSource(recipe?.photoPath, photoUrl)
 
   /**
-   * Whether this recipe has an author who could be reported or blocked.
-   *
-   * Somebody else's AND not the kitchen's. An official recipe has no owner by
-   * design — `owner_id is null` is what "official" means — so there is nobody
-   * to block, and a report about one belongs in the help sheet with everything
-   * else that is our fault.
+   * Whether this food has an author who could be reported or blocked. Somebody
+   * else's, and with a cook on it to name.
    */
-  const reportable = Boolean(recipe && !recipe.isMine && !recipe.isOfficial && recipe.ownerId)
+  const reportable = Boolean(recipe && !recipe.isMine && recipe.ownerId)
 
   /**
    * Both of these leave the screen, because the recipe they were about is no
@@ -185,11 +184,11 @@ export default function RecipeDetailScreen() {
   ]
 
   const addToDay = () => {
-    // NOT GATED. Logging a pot writes a food entry from figures the user
-    // entered themselves, reaches no model and costs nothing, so it is free for
-    // the same reason searching the catalogue is. What a free account is
-    // limited on is how many recipes it may KEEP, which is checked where one is
-    // created rather than where one is logged.
+    // NOT GATED, and on somebody else's food either. Logging a pot writes an
+    // entry from figures somebody typed, reaches no model and costs nothing, so
+    // it is free for the same reason searching the catalogue is. What a free
+    // account is limited on is how many foods it may KEEP, which is checked
+    // where one is created rather than where one is logged.
     logFood.mutate({
       snapshot: snapshotFromRecipe(recipe),
       quantity,
@@ -202,9 +201,9 @@ export default function RecipeDetailScreen() {
   }
 
   const copy = async () => {
-    // A saved copy is a recipe of yours — it lands on your shelf, it is yours
-    // to edit, and the database counts it against the same three. So the gate
-    // is here as well as on the plus button, or "save somebody else's" would be
+    // A saved copy is a food of yours — it lands on your shelf, it is yours to
+    // edit, and the database counts it against the same three. So the gate is
+    // here as well as on the plus button, or "save somebody else's" would be
     // the way round the ceiling, and the user would meet a trigger's error
     // message instead of a paywall.
     if (quota.atLimit && !requirePro('new_recipe')) return
@@ -236,6 +235,12 @@ export default function RecipeDetailScreen() {
 
   return (
     <Screen
+      /* "Add to today" is the primary on both, because it is what somebody
+         reading a dish at a mealtime came to do. What sits beside it differs:
+         your own has a share button, and somebody else's has "Save to my
+         foods", which is the second thing you might want and not the first.
+         Keeping a copy is for the food you mean to cook again, and that is a
+         decision about next week rather than about lunch. */
       footer={
         recipe.isMine ? (
           <View className="flex-row items-center gap-2.5">
@@ -251,9 +256,14 @@ export default function RecipeDetailScreen() {
             </IconButton>
           </View>
         ) : (
-          <Button fullWidth loading={saveCopy.isPending} onPress={copy}>
-            {t('recipes:detail.saveCopy')}
-          </Button>
+          <View className="gap-2.5">
+            <Button fullWidth loading={logFood.isPending} onPress={addToDay}>
+              {t('recipes:detail.addToDay')}
+            </Button>
+            <Button fullWidth variant="secondary" loading={saveCopy.isPending} onPress={copy}>
+              {t('recipes:detail.saveCopy')}
+            </Button>
+          </View>
         )
       }
     >
@@ -265,11 +275,9 @@ export default function RecipeDetailScreen() {
         titleLines={2}
         onBack={() => goBack()}
         backLabel={t('common:a11y.back')}
-        /* On a community recipe too, and that is guideline 1.2 rather than a
+        /* On a community food too, and that is guideline 1.2 rather than a
            nicety: an app whose users read each other's writing has to offer a
-           way to report it and a way to never see that cook again. `isOfficial`
-           is excluded because the RiceCal kitchen is us — there is nobody to
-           block and a report has nowhere to go. */
+           way to report it and a way to never see that cook again. */
         action={
           recipe.isMine || reportable ? (
             <IconButton
@@ -313,13 +321,11 @@ export default function RecipeDetailScreen() {
       {/* Who cooked it, on somebody else's. Absent on your own, where the answer
           is you. */}
       {!recipe.isMine ? (
-        <Card tone={recipe.isOfficial ? 'pandan' : 'water'}>
+        <Card tone="water">
           <View className="flex-row items-center gap-3">
-            <Icon set="ui" name={recipe.isOfficial ? 'check' : 'profile'} size={18} />
+            <Icon set="ui" name="profile" size={18} />
             <Text variant="meta" className="flex-1">
-              {recipe.isOfficial
-                ? t('recipes:detail.official')
-                : t('recipes:fromAuthor', { name: recipe.authorName || t('recipes:someCook') })}
+              {t('recipes:fromAuthor', { name: recipe.authorName || t('recipes:someCook') })}
             </Text>
           </View>
         </Card>
@@ -411,7 +417,7 @@ export default function RecipeDetailScreen() {
 
       <Card
         title={
-          recipe.isMine || recipe.isOfficial
+          recipe.isMine
             ? t('recipes:detail.steps')
             : t('recipes:detail.stepsFrom', { name: recipe.authorName || t('recipes:someCook') })
         }
