@@ -102,7 +102,7 @@ three worth reading and drops the rest.
 - **Do not write all three the same way.** Three bullets of the same length,
   each joining two halves with "and", reads as machine-written even when every
   word of it is true. Let one be four words. Prefer the plain verb (keep, add,
-  write) to the considered one (carries, covers, includes).
+  write) to the considered one (carries, covers).
 
   The third bullet of the 1.0.2 note, first draft and shipped:
 
