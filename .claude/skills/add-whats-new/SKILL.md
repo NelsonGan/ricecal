@@ -1,5 +1,5 @@
 ---
-name: whats-new
+name: add-whats-new
 description: Write the store What's New note for a RiceCal release and open a PR on ricecal-screenshots-creator. Reads the note that is live, finds the ricecal commits it does not cover, and rewrites the note in all 23 listing locales. Use when asked to update the What's New / release notes / store note, or to say what changed in the new version.
 ---
 
