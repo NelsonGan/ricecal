@@ -116,7 +116,8 @@ print(re.search(r'\n  en: \{.*?whatsNew: \`(.*?)\`,', s, re.S).group(1))
 "
 ```
 
-RiceCal's own notes #2 and #4 are **not** the register. Both were written by
+The notes shipped by `ricecal-screenshots-creator#2` and `#4` are **not** the
+register. Both were written by
 Claude and read like it; the rules below are what they failed. The shape:
 
 ```
@@ -198,7 +199,7 @@ every one of them; touch no `description`.
 
 **Take each locale's verb form from money2time's current note**, which is the
 same 23 languages written by the same hand: `Menambah` in `ms`, `新增了` in
-`zh`, `Se anadieron` in `es`, `Lade till` in `sv`, `Nagdagdag ng` in `fil`,
+`zh`, `Se añadieron` in `es`, `Lade till` in `sv`, `Nagdagdag ng` in `fil`,
 `...しました` in `ja`. Do not invent one, and do not translate "Added" literally
 into a form that language would not use in a store note.
 
@@ -269,7 +270,7 @@ for loc, note in rows:
     bad = []
     if len(bullets) != n: bad.append('%d bullets, en has %d' % (len(bullets), n))
     if lines[-2] != '' or not lines[-1].strip(): bad.append('no closing line')
-    if any(c in ' '.join(bullets) for c in ',，،'): bad.append('comma in a bullet')
+    if any(c in ' '.join(bullets) for c in ',，、،'): bad.append('comma in a bullet')
     if bad: print(loc, '->', '; '.join(bad))
 print('%d locales checked, %d bullets each' % (len(rows), n))
 PY
