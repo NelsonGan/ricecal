@@ -112,7 +112,8 @@ session to learn.
 is named; its value never is. Values stay in `.secrets/` (gitignored wholesale),
 in the login keychain, or in the console that issued them. The same goes for
 account addresses, passwords and store identifiers: name the file, not the
-value.
+value. The half that cannot be written here is `.secrets/agent-notes.md`, which
+every agent working in this checkout can read and no commit can carry.
 
 ## Credentials, and where each one lives
 
@@ -126,6 +127,8 @@ value.
 | `gplay` service account key | `~/.gplay/play-console-cli.json`, profile in `~/.gplay/config.json` |
 | App Store Connect API key | `.secrets/*.p8`, reached through the `asc` CLI profile |
 | project ref, anon key, catalogue URL | `apps/mobile/.env.local` |
+| test account addresses, passwords and uids | `.secrets/agent-notes.md` |
+| project and org refs, store and RevenueCat identifiers | `.secrets/agent-notes.md` |
 | `OPENROUTER_API_KEY` | the function secrets, and it cannot be read back |
 
 **The secrets endpoint returns digests, not secrets.**
@@ -280,17 +283,22 @@ candidates, which brute-forces in about a second in Node.
 - Setting a password revokes that account's sessions, so a simulator signed in
   as it lands back on the welcome screen.
 
-**Test accounts.** Three exist on the hosted project — one Pro, one free and
-deliberately un-onboarded, one sandbox buyer — plus the eval account. Their
-addresses and passwords are deliberately not in this repo; they are in
-`.secrets/eval.json` and in the owner's own notes. A fresh account needs
+**Test accounts.** Three plus-tagged accounts on the hosted project, one on each
+side of the paywall and one sandbox buyer, plus the eval account behind
+`.secrets/eval.json`. Their addresses, passwords and uids are in
+`.secrets/agent-notes.md`, which is gitignored, and never in this repo.
+**All three are onboarded** (checked, 2026-09-05; an older note calling the free
+one un-onboarded is wrong), so none of them is a way back into onboarding — that
+needs a fresh signup. The free one carries a `subscriptions` row at `expired`
+rather than no row at all, which entitles the same as none. A fresh account needs
 `profiles.onboarded_at` (plus sex, birth date, height, target weight) and one
 `weight_logs` row, or the app opens on onboarding; `weight_logs` wants
 `measured_on`, not `log_date`. Pick a uuid the pgTAP suite does not seed
 (`1111…`, `2222…`, `3333…`), or `07_recipes` fails on a duplicate key that names
 nothing you touched.
 
-**To read the free UI without walking eight onboarding screens**, flip the Pro
+**Signing out and back in is more trouble than moving a row.** To see the free
+side of a gate on the account the simulator is already holding, set the Pro
 account's `subscriptions.status` to `expired`, look, then put it back — write
 the restore down before running the first statement. `current_period_end` stays
 put and `isEntitledRow` reads both. Restart the app rather than reloading: the
@@ -533,6 +541,7 @@ something** — one pass is not a measurement.
 and confirmation dialogs run long — two sentences where one does, both sides of
 a toggle explained where naming one is enough — and they get cut. Write the
 shortest string that still says the thing, then cut again. Drop a hint entirely
-if the label already carries it, and put a detail worth keeping behind a tooltip
-rather than an always-visible caption. Every string is also translated into 22
-other locales, so length costs screen space and translation churn.
+if the label already carries it. There is no tooltip component here, so a detail
+that will not fit is a detail to cut rather than to hide. Every string is also
+carried into twelve other languages (`src/i18n/languages.ts` is the list), so
+length costs screen space and translation churn in all thirteen.
