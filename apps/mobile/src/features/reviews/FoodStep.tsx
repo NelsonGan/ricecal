@@ -5,7 +5,7 @@ import type { ReviewMeal, ReviewSummary } from '@/data'
 import { storedImageSource, useMealPhotoUrl } from '@/data'
 import { MealPhoto } from '@/features/shared'
 import { energyShare } from '@/lib/nutrition'
-import { Card, cn, Divider, Icon, Text } from '@/ui'
+import { Card, cn, Divider, Icon, Skeleton, Text } from '@/ui'
 import { Shareable } from './ShareableCards'
 
 export type FoodStepProps = {
@@ -30,6 +30,10 @@ const MACROS = [
  * before the app runs produces no style at all.
  */
 const TILE = 'h-11 w-11'
+/** The same 44pt, as a number, for the pulse that fills the tile while a
+ *  photograph is being signed for. `Skeleton` takes a height rather than a
+ *  class, and NativeWind cannot read a class built at runtime. */
+const TILE_PX = 44
 /** The drawing inside that box, at the size it was before the box existed. */
 const TILE_ICON = 38
 
@@ -129,11 +133,11 @@ export function FoodStep({ summary, meals }: FoodStepProps) {
  * bucket is private, so a stored key is one signature away from being
  * renderable, and five keys asked for in the same frame are signed in one
  * request (see `BATCH_WINDOW_MS` in `data/photos.ts`). Nothing waits on it: the
- * row draws, and the tile fills in or stays a drawing.
+ * row draws, and the tile fills in.
  */
 function MealRow({ meal }: { meal: ReviewMeal }) {
   const share = energyShare(meal)
-  const { data: photoUrl } = useMealPhotoUrl(meal.photoPath)
+  const { data: photoUrl, isLoading: resolving } = useMealPhotoUrl(meal.photoPath)
   const photo = storedImageSource(meal.photoPath, photoUrl)
 
   return (
@@ -145,6 +149,13 @@ function MealRow({ meal }: { meal: ReviewMeal }) {
       <View className={cn(TILE, 'items-center justify-center overflow-hidden rounded-tile')}>
         {photo ? (
           <MealPhoto source={photo} accessibilityLabel={meal.name} />
+        ) : resolving && meal.photoPath ? (
+          /* A pulse rather than the drawing, which this row also has: a dish
+             carries its own illustration alongside its photograph now, so
+             drawing it here would put a picture up and replace it with a
+             different one a moment later. Same guard, and the same reason, as
+             `ItemRow` and the month grid's cell. */
+          <Skeleton width="100%" height={TILE_PX} rounded={false} className="bg-line" />
         ) : (
           /* Spread rather than two named props: `IconRef` is a union of
              set-and-name PAIRS, and splitting it lets a name from one set

@@ -40,6 +40,7 @@ const mockSearch = jest.fn()
 jest.mock('@/data', () => ({
   useFoodSearch: (query: string) => mockSearch(query),
   useRecentFoods: () => ({ data: [], isPending: false, isPaused: false, isError: false }),
+  useRecipes: () => ({ data: [], isPending: false, isPaused: false, isError: false }),
   useMealPhotoUrl: () => ({ data: undefined, isLoading: false }),
   storedImageSource: () => undefined,
 }))
@@ -104,4 +105,28 @@ it('records a restored search that was not', async () => {
   await settle(<FoodSearchPanel restore={{ query: 'thosai', tracked: false }} onPick={onPick} />)
 
   expect(mockTrack).toHaveBeenCalledWith('Food Searched', { results: 1, query_length: 6 })
+})
+
+/**
+ * "New food" is the second thing that leaves this panel behind, and it leaves it
+ * behind harder: a form is abandoned more often than a portion is, and it is
+ * reached from the tab whose job is "not in the catalogue" — so the search
+ * underneath it is the search that just failed to find the dish being written.
+ */
+it('hands the host the search when a food is written instead of found', async () => {
+  const onCreateOwn = jest.fn()
+  await render(
+    <FoodSearchPanel
+      onPick={onPick}
+      onPickOwn={jest.fn()}
+      onOpenOwn={jest.fn()}
+      onCreateOwn={onCreateOwn}
+    />,
+  )
+
+  await user.type(screen.getByPlaceholderText('Search any dish'), 'sup ekor')
+  await user.press(screen.getByRole('tab', { name: 'My foods' }))
+  await user.press(await screen.findByRole('button', { name: 'New food' }))
+
+  expect(onCreateOwn).toHaveBeenCalledWith({ query: 'sup ekor', tracked: false })
 })

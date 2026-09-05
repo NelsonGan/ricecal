@@ -7,7 +7,7 @@
 // square forever. Nothing throws, nothing logs, and the row looks like every
 // other row that simply has no drawing.
 
-import { guessIcon, ICON_INSTRUCTION, ICON_LIST, resolveIcon } from './icons.ts'
+import { guessIcon, ICON_INSTRUCTION, ICON_LIST, knownIcon, resolveIcon } from './icons.ts'
 
 const eq = (got: unknown, want: unknown, what: string) => {
   if (got !== want) throw new Error(`${what}: expected ${want}, got ${got}`)
@@ -87,4 +87,31 @@ Deno.test('guessIcon holds out for two shared words', () => {
 Deno.test('guessIcon cannot reach a drawing that is not a meal', () => {
   eq(guessIcon('kitchen scale'), null, 'not offerable')
   eq(guessIcon('empty plate'), null, 'not offerable')
+})
+
+// The catalogue's own pair, which reaches the diary on every scan that resolves
+// to a catalogue row. The check is not about hallucination here: it is that
+// `food_logs.icon_set` is a Postgres ENUM, so a set D1 carries and this app does
+// not would fail the whole insert rather than one column of it.
+Deno.test('knownIcon keeps a pair that names a drawing we ship', () => {
+  eq(knownIcon('dishes', 'nasi-lemak')?.name, 'nasi-lemak', 'a real dish')
+  eq(knownIcon('dishes', 'nasi-lemak')?.set, 'dishes', 'and its set')
+  eq(knownIcon('food', 'coconut')?.name, 'coconut', 'an ingredient')
+})
+
+Deno.test('knownIcon refuses anything that would not render', () => {
+  eq(knownIcon('dishes', 'shepherds-pie'), null, 'a name we do not draw')
+  eq(knownIcon('meals', 'nasi-lemak'), null, 'a set that is not one of ours')
+  eq(knownIcon('ui', 'search'), null, 'a set no plate is drawn from')
+  eq(knownIcon(null, 'nasi-lemak'), null, 'half a pair')
+  eq(knownIcon('dishes', null), null, 'the other half')
+})
+
+// `NOT_A_MEAL` is about what a MODEL may be offered, and this is not a model:
+// somebody wrote the catalogue row and said what it looks like. A drink filed
+// against a paper cup means it, where the same answer out of a prompt is the
+// list leaking into the reply.
+Deno.test('knownIcon is not filtered down to meals', () => {
+  eq(knownIcon('food', 'empty-plate')?.name, 'empty-plate', 'offered to nobody, drawn all the same')
+  eq(guessIcon('empty plate'), null, 'and still unreachable from a name')
 })

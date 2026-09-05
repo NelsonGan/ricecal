@@ -782,6 +782,16 @@ Replacing straight to the dish, which is what the barcode scanner still does,
 left it standing on Today, so backing out of a portion nobody had decided on
 threw the search away and made the user type it again.
 
+**"New food" hands off the same way**, and carries `?source=mine` as well as the
+query, because what has to survive that trip is the TAB. It is the one control
+on My foods that opens a form rather than a row, a form is abandoned more often
+than a portion is, and it is reached from the tab whose whole job is "not in the
+catalogue" — so the list underneath is the search that just failed to find the
+dish being written, and landing back on All foods would land on the list that
+had nothing on it. `openCreate` beside `openPicked`, and the page does not
+focus its field when either sent it, since a keyboard would come up under the
+screen on top.
+
 Five tabs (Today, Food, Activity, Trends, Me) on the headless
 `expo-router/ui` Tabs rather than a styled navigator, because `NavBar` and
 `NavItem` are the design system's and a native tab bar cannot be made to look
@@ -1379,6 +1389,14 @@ The rows carry their own picture, which is most of the point. A meal somebody
 photographed is recognisable from six weeks away in a way its name is not, and
 the catalogue's side has a drawing at best.
 
+**The drawing is copied and the photograph is not.** A repeat writes a new row,
+and two rows naming one object in the bucket would leave the retention sweep
+deleting a picture the other still points at — so `snapshotFromEntry` carries
+`icon` and nothing else about the picture. Which is why a scan writes
+`item_icon_*` in the first place: without it, every photographed meal repeated
+out of this tab came back as the empty-plate placeholder. See "Every entry
+carries the dish's own drawing".
+
 **My foods writes on the plus and opens on the row**, which is the split the
 shelf itself makes: how many servings is a question with an answer screen, and
 "one, the way I always have it" should not need it. An empty My foods offers the
@@ -1608,8 +1626,54 @@ photograph, so the row would be a name over an empty square, and the model that
 just read "nasi lemak with fried chicken" knows which of our illustrations that
 is. The prompt carries the list of icon names and the answer is validated
 against it in `_shared/icons.ts`, the one place in a scan where a hallucination
-cannot be useful. A photographed meal is never asked: `food_logs` holds one or
-the other.
+cannot be useful. A photographed meal is never asked, and pays none of those
+tokens: it has a picture of the real thing, and the drawing it gets below is
+matched rather than chosen.
+
+### Every entry carries the dish's own drawing
+
+Two icon columns, and they answer different questions. `icon_set`/`icon_name` is
+the USER's picture of this plate, which is why `food_logs_one_picture` will not
+have it beside a photograph: a photo of the real thing always wins, so a row
+holding both would carry a drawing nothing would ever render. `item_icon_set`/
+`item_icon_name` is what the FOOD looks like, and that is true whether or not
+anybody photographed it — so `writeEntry` fills it on every row it writes,
+photograph or no photograph. `dishIcon` picks it: the catalogue row's own choice
+first, because a person made it for that food, then `iconFor` on the label the
+row will show and on the row's own name.
+
+**A meal label is read dish-first, which a catalogue name is not.** `iconFor`
+scans longest-phrase-first — right for "Soup, vegetable chicken, canned", and
+the reason "Nasi lemak with fried chicken" came back as a bucket of fried
+chicken, since that is the longer phrase. A label has a shape a descriptor does
+not, so `dishIcon` tries the words before the first "with" or "and" first. Only
+when that head is TWO words or more: a one-word head is an ingredient, and the
+phrase table has entries written for exactly that shape, so letting `Chicken`
+reach past `with rice` turns a plate of rice into a chicken breast. The rule
+lives in `cascade.ts` and not in `icon-match.ts`, which the retention sweep and
+the catalogue tooling share and which never sees a label.
+
+It is not decoration on a row that already has a picture. It is what the row
+falls back to, and there are three ways to get there. **The retention sweep**
+takes a free account's photographs after thirty days and the diary has to keep
+reading as meals; that one used to be `clear_meal_photos`'s job alone, matching
+on the name after the fact. **A multi-item scan** files the plate against the
+first row only — N copies of one photograph would draw the same plate N times —
+so every row after the first never had a picture at all, and drew the empty
+plate. And **Past foods**, where a repeat copies the snapshot and deliberately
+not the photograph.
+
+`food_log_details` used to null both icon columns whenever a photo existed. That
+put the rendering order — photo, drawing, placeholder — in the view, where every
+screen that draws an entry already does it itself, and it cost the drawing
+everywhere the photograph is not what is being drawn. Two functions had to join
+back to `food_logs` to get it back (`day_plates` and `review_meals`). The view
+coalesces the two columns now and stops there, `ItemRow` decides, and both
+functions read the view alone: the join was writing out by hand the expression
+the view had been withholding.
+
+A redescribe rewrites `item_icon_*` with `item_name`. The two move together or
+an entry ends up with a picture of the dish that was corrected away.
 
 Two things about that list were learnt immediately. Two hundred hyphenated slugs
 is the largest block of example text in either prompt, and a model reads a long
@@ -3016,6 +3080,12 @@ a key that is already gone is a no-op; the other order strands the bytes for
 ever, the key being their only name. The row keeps a drawing where the plate
 was, or a swept month would be a column of grey tiles.
 
+Most rows now reach the sweep already carrying one, in `item_icon_*`, which the
+scan writes (see "Every entry carries the dish's own drawing"). The match
+`clear_meal_photos` makes on the entry's name is the fallback for everything
+logged before that, and it writes only where the row would otherwise draw
+nothing.
+
 **A former subscriber gets sixty days before any of it starts.** A subscription
 ends for reasons that are not a decision (a card expires, a renewal webhook is
 lost, a support cancellation lands early) and the account reads as free the same
@@ -3862,6 +3932,17 @@ its portion is and nothing about its arithmetic: switching a nasi lemak to Large
 previewed 975 kcal, saved, and left a row labelled "1 serving" still counting
 650. `snapshotColumns` writes all three on insert; `EntryPatch` carries all three
 on update.
+
+**`item_icon_*` moves with `item_name` wherever the food changes.** They are the
+food's name and the food's drawing, and a write that rewrites one and leaves the
+other puts a picture of the corrected-away dish under the new dish's name. Two
+writers change the food: `writeEntry` and `scan-refine`'s redescribe, both
+through `dishIcon`. `scan-refine`'s **adjust** is the deliberate exception, and
+the reason is what separates the two branches: an adjust is the same plate
+re-priced ("no sambal"), so its drawing is still the drawing of what is on it,
+where a redescribe is a different food. `food_logs.icon_set` is a different
+column answering a different question (the user's own picture of this plate) and
+is left alone by all three.
 
 **An LLM figure is never averaged with a catalogue figure**, and the nutrition
 call is never told the vision call's guess. Anchored, the model answered 450 kcal
