@@ -108,6 +108,7 @@ export function snapshotFromEntry(entry: {
   servingId?: string
   foodName: string
   brand?: string
+  icon?: IconRef
   place?: Place
   base: Macros
   extras?: ExtraNutrients
@@ -121,6 +122,12 @@ export function snapshotFromEntry(entry: {
     recipeId: entry.recipeId,
     name: entry.foodName,
     brand: entry.brand,
+    // The drawing comes too, and it is the whole reason a repeat is not blank.
+    // The photograph cannot: it belongs to the meal that was actually taken,
+    // and copying its key would give two rows one object for the retention
+    // sweep to delete once. So a plate logged again out of "Past foods" has the
+    // drawing where the picture was, which is what a swept row shows anyway.
+    icon: entry.icon,
     place: entry.place,
     base: entry.base,
     extras: entry.extras,

@@ -114,10 +114,12 @@ export function ItemRow({
       {photo ? (
         <MealPhoto source={photo} dimmed={busy} />
       ) : resolving ? (
-        // Not an icon, and not nothing: a snapped row's `icon` is undefined by
-        // design — the view suppresses it while a photo exists — so the choice
-        // here is between a pulse and a bare grey square that gives no reason
-        // for itself.
+        // Not the icon, and not nothing. A snapped row usually has one now —
+        // the food's own drawing, which `food_log_details` states beside the
+        // photograph — and drawing it here would put an illustration up and
+        // then replace it with the photograph a moment later, which is the one
+        // thing this tile must not do. A pulse says "a picture is coming"; the
+        // icon is what a missing object falls through to, below.
         // `bg-line` rather than the skeleton's own `bg-track`, which is what
         // the tile behind it already is — track on track does not pulse.
         <Skeleton width="100%" height={72} rounded={false} className="bg-line" />

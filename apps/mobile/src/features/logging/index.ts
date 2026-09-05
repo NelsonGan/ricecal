@@ -7,6 +7,7 @@ export {
   FoodSearchPanel,
   type FoodSearchPanelProps,
   type FoodSearchState,
+  type Source as FoodSearchSource,
 } from './FoodSearchPanel'
 export { IconPicker, type IconPickerProps } from './IconPicker'
 export { type CaptureMode, InlineCamera, type InlineCameraProps } from './InlineCamera'

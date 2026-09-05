@@ -507,9 +507,11 @@ export default function FoodDetail() {
   const heroHeight = ((hero || resolvingPhoto) && !icon ? 298 : 198) + CONTENT_LIFT + insets.top
 
   /**
-   * The drawing this tile would show, if any. A row carries a photo or an icon
-   * and never both, so `existing.icon` is undefined for a snapped plate. Only an
-   * unsaved choice overrides that, which is exactly the swap.
+   * The drawing this tile would show, if any. Not what it shows: a photograph
+   * wins over it in the box below, and this is what is left when there is none
+   * or when the object has gone. A snapped plate has one too — the food's own
+   * drawing, which the entry carries beside its photograph. Only an unsaved
+   * choice overrides all of it, which is exactly the swap.
    */
   const shownIcon = icon ?? existing?.icon ?? food.icon
 

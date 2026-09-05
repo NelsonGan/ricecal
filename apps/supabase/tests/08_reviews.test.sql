@@ -28,7 +28,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(18);
+select plan(19);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -205,6 +205,26 @@ select is(
 
 
 -- Meals -----------------------------------------------------------------------
+
+-- A drawing on the row that also has the photograph, which is the pairing this
+-- list needs: it leads with the picture and falls back to the drawing, so
+-- `review_meals` hands over both and the screen chooses. It used to join back
+-- to `food_logs` for the icons, because `food_log_details` nulled them whenever
+-- an entry had a photograph. The view coalesces them now and the join is gone;
+-- this is the assertion that the two ways agree.
+update public.food_logs
+   set item_icon_set = 'dishes', item_icon_name = 'nasi-lemak'
+ where user_id = :'user_a'
+   and lower(item_name) = 'nasi lemak'
+   and photo_path is not null;
+
+select is(
+  (select icon_name
+     from public.review_meals('week', date_trunc('week', public.local_today())::date - 7, 5)
+    where lower(name) = 'nasi lemak'),
+  'nasi-lemak',
+  'a photographed dish hands over its drawing as well as its photograph'
+);
 
 select is(
   (select count(*)::integer
