@@ -67,10 +67,27 @@ body of each candidate before writing a word about it:
 gh pr view <n> --repo NelsonGan/ricecal --json title,body,mergedAt
 ```
 
-Note which side of the version bump each one landed. `Take the app to 1.0.x`
-commits are the cut. A change merged after the cut is not in the binary the
-store is about to show, so it either waits for the next note or the note goes
-out with the next build. Say which in the PR body; do not decide it silently.
+Note which side of the version bump each one landed, then **ask the stores
+rather than the bump**. `ricecal#140` made every merge to `main` submit Android
+straight to production, so several builds ship under one version number and
+"merged after the bump" no longer means "not in the store".
+
+```sh
+gplay status --package com.nelsongan.ricecal        # production track's version code
+asc versions list --app 6795558595 --output table   # iOS App Store versions
+asc builds list --app 6795558595 --limit 5 --output table
+```
+
+Compare the build's upload time against the PR's `mergedAt`. For 1.0.2, Play
+production was at version code 105 while `ricecal#140` had recorded 103, and
+103 itself was uploaded 24 minutes after `ricecal#139` merged, so a change made
+after the bump was in the store anyway. The App Store side ran the other way:
+no 1.0.2 version record existed at all, only TestFlight builds, so the note
+would reach iOS only when somebody created and submitted one.
+
+A change that is genuinely ahead of every store build either waits for the next
+note or the note goes out with the next build. Say which in the PR body; do not
+decide it silently.
 
 ## 3. Keep only what a person using the app would notice
 
@@ -82,40 +99,57 @@ work, schema and Worker changes nobody sees, catalogue loads, comments, tests,
 `AGENTS.md` and `README.md`. A release with nothing in the "in" column gets no
 new note; leave the live one alone and say so rather than padding.
 
-Two to four bullets is the shape. If six things landed, the note takes the
-three worth reading and drops the rest.
+At most five bullets, and two or three is the usual shape. If six things
+landed, the note takes the ones worth reading and drops the rest.
 
 ## 4. Write the English note
 
-`en` is the source. The shape, unchanged since the first note:
+`en` is the source, and **the register is money2time's**. That is the sibling
+app by the same owner, in the same 23 locales, and its store notes are the
+user's own voice. Read the live one before writing a word:
+
+```sh
+python3 -c "
+import re
+s = open('$HOME/Projects/money2time-screenshots-creator/src/data/appDescriptions.ts').read()
+print(re.search(r'\n  en: \{.*?whatsNew: \`(.*?)\`,', s, re.S).group(1))
+"
+```
+
+The notes shipped by `ricecal-screenshots-creator#2` and `#4` are **not** the
+register. Both were written by
+Claude and read like it; the rules below are what they failed. The shape:
 
 ```
-- <one change, one line>
-- <one change, one line>
+- Added <one thing>
+- Added <one thing>
+- Fixed <one thing>
 
 <closing line>
 ```
 
-- **One short sentence per bullet.** Ten words is a good bullet and twenty is a
-  paragraph. What runs long is the tail: the clause saying what the change is
-  for, which the reader worked out from the first half. Cut it.
-- **Do not write all three the same way.** Three bullets of the same length,
-  each joining two halves with "and", reads as machine-written even when every
-  word of it is true. Let one be four words. Prefer the plain verb (keep, add,
-  write) to the considered one (carries, covers).
-
-  The third bullet of the 1.0.2 note, first draft and shipped:
-
-  ```
-  - A photographed meal now carries a drawing of the dish, so logging it again still looks like food
-  - Scanned meals now keep a picture of the dish
-  ```
-
+- **Features first, then fixes.**
+- **One bare clause per bullet**, opening `Added` / `Fixed` / `Revamped`. About
+  ten words, and **no comma**. A bullet that wants a comma is doing two things:
+  drop the qualifier, or split it in two.
+- **Four tics, and every one of them is how a machine writes a release note:**
+  - the second person imperative: "**Write** your own food, or add somebody else's"
+  - the trailing qualifier: "so logging it again **still looks like food**"
+  - the contrast: "your own foods, **not just** the ones we know"
+  - the example list: "the ones you have eaten, **like last week's nasi lemak**"
+- **Name what changed, not how it was built.** "Added the ability to log
+  someone else's food", not "Added a community shelf whose primary action logs
+  into today".
+- **Round numbers down and hedge them.** "Added over 100 more dishes", never
+  "47 to 159": a precise count invites a mismatch with the PR and ages badly.
+- **Tag a single-platform change** `(iPhone)` or `(Android)`.
+- **Never tag anything Pro**, however much of it sits behind the paywall.
+  Announce what is in the release and let the paywall speak for itself.
 - **Replace, do not append.** The note describes this release, not the app's
   history. The previous bullets go.
 - **Never name a screen or a label.** The listing is in 23 languages and the app
   speaks 13, so "Goals and targets" in Swedish points at a label no Swedish user
-  can find. Say what someone does, not where they tap.
+  can find. Say what changed, not where they tap.
 - **Take the app's own words** for anything that is named (ingredient, gram,
   food, plate) from `apps/mobile/src/i18n/en/*`, so the note and the app agree
   in the 13 the app does speak.
@@ -123,10 +157,33 @@ three worth reading and drops the rest.
   semicolon, brackets.
 - **Under 500 characters per locale.** Play truncates there without warning, and
   German and French run about 40% longer than English.
-- The closing line is a short **unattributed** healthy-eating proverb, a
-  different one from the note it replaces. Unattributed because a misattribution
-  ships in 23 languages at once. It is translated for meaning, never left in
-  English and never transliterated.
+
+The 1.0.2 note's second bullet, as Claude first wrote it and as it shipped:
+
+```
+- Write your own food, or add somebody else's to your day
+- Added the ability to log someone else's food
+```
+
+The closing line is one short **unattributed** line about food or eating, and it
+**must not repeat**. Unattributed because a misattribution ships in 23 languages
+at once. Pull every one already spent first:
+
+```sh
+cd ~/Projects/ricecal-screenshots-creator
+for c in $(git log --format=%h -- src/data/appDescriptions.ts); do
+  git show "${c}:src/data/appDescriptions.ts" 2>/dev/null | python3 -c "
+import sys, re
+m = re.search(r'whatsNew: \`(.*?)\`,', sys.stdin.read(), re.S)
+print(m.group(1).rsplit(chr(10), 1)[-1] if m else '')
+"
+done | sort -u
+```
+
+The **braces** matter: in zsh `$c:src/...` parses as a substitution modifier, so
+you get a diff against the wrong text instead of the file. Spent so far: "Jom
+makan", "Eat well, live well", "You are what you eat", "We eat first with our
+eyes". Reach for one that fits the release rather than the most famous one left.
 
 ## 5. Translate into all 23 locales
 
@@ -140,10 +197,19 @@ The locales are `en ms zh id th vi ja ko hi fil es fr de pt it nl ru tr pl uk
 sv nb da`, plus whatever the file holds if that list has grown. Edit `whatsNew` in place for
 every one of them; touch no `description`.
 
-Translate for meaning. A bullet that reads as an instruction in English reads as
-one in Japanese. Where the app speaks the language, the nouns come from
+**Take each locale's verb form from money2time's current note**, which is the
+same 23 languages written by the same hand: `Menambah` in `ms`, `新增了` in
+`zh`, `Se añadieron` in `es`, `Lade till` in `sv`, `Nagdagdag ng` in `fil`,
+`...しました` in `ja`. Do not invent one, and do not translate "Added" literally
+into a form that language would not use in a store note.
+
+**Stay as terse as the English.** A translation is not the place to put back the
+qualifier the English bullet dropped, and no bullet gains a comma on the way
+into another language.
+
+Where the app speaks the language, the nouns come from
 `apps/mobile/src/i18n/<locale>/*` so the note matches the app's own wording;
-where it does not, translate plainly.
+where it does not, translate plainly. Keep **RiceCal** untranslated.
 
 ## 6. Verify before opening anything
 
@@ -187,6 +253,27 @@ const now = read(require('fs').readFileSync('src/data/appDescriptions.ts', 'utf8
 const moved = Object.keys({ ...was, ...now }).filter((k) => was[k] !== now[k]);
 console.log(moved.length ? 'DESCRIPTION CHANGED: ' + moved.join(', ') : Object.keys(now).length + ' descriptions unchanged');
 "
+```
+
+Then the shape, which is what a translation quietly breaks: a locale that lost
+a bullet, or gained a comma, passes every check above.
+
+```sh
+python3 - <<'PY'
+import re
+src = open('src/data/appDescriptions.ts').read()
+rows = re.findall(r"\n  ([a-z]{2,3}): \{.*?whatsNew: `(.*?)`,", src, re.S)
+n = len([l for l in rows[0][1].split('\n') if l.startswith('- ')])
+for loc, note in rows:
+    lines = note.split('\n')
+    bullets = [l for l in lines if l.startswith('- ')]
+    bad = []
+    if len(bullets) != n: bad.append('%d bullets, en has %d' % (len(bullets), n))
+    if lines[-2] != '' or not lines[-1].strip(): bad.append('no closing line')
+    if any(c in ' '.join(bullets) for c in ',，、،'): bad.append('comma in a bullet')
+    if bad: print(loc, '->', '; '.join(bad))
+print('%d locales checked, %d bullets each' % (len(rows), n))
+PY
 ```
 
 Then read the diff itself for a stray `—` or `–`; no command catches one.
