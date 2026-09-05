@@ -629,17 +629,20 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
-      # ANDROID LANDS ON CLOSED TESTING, not internal, and the track is in
-      # `eas.json` rather than here so a local `eas submit` cannot disagree with
-      # CI about where a build goes. It was `internal`, which meant every
-      # release then had to be promoted internal to closed by hand — a manual
-      # step in the middle of an automated pipeline, which is the kind that gets
-      # forgotten rather than the kind that gets noticed. The trade is review:
-      # an internal release is available in minutes and a closed one waits for
-      # Google, so a deploy no longer means testers have it.
+      # ANDROID LANDS ON PRODUCTION, and the track is in `eas.json` rather than
+      # here so a local `eas submit` cannot disagree with CI about where a build
+      # goes. It was `internal`, then closed testing, and each of those left one
+      # promotion to be done by hand at the end of an automated pipeline, which
+      # is the kind of step that gets forgotten rather than the kind that gets
+      # noticed. There is no promotion left: a merge to `main` is a release to
+      # every Android user, at 100%, as soon as Google's review passes.
+      # `releaseStatus` is left at its default of `completed` for that reason. A
+      # staged rollout is `releaseStatus: inProgress` with a `rollout` fraction
+      # in `eas.json`, and it costs a manual step again to finish.
       #
-      # iOS is unaffected. `ascAppId` sends it to TestFlight, which is already
-      # the equivalent stage.
+      # The two platforms are no longer at the same stage after a merge. iOS is
+      # unchanged: `ascAppId` sends it to TestFlight, and putting that build in
+      # front of users is still a submission somebody makes in App Store Connect.
       - name: Submit build
         working-directory: apps/mobile
         run: |
