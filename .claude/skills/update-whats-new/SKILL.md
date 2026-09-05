@@ -1,5 +1,5 @@
 ---
-name: add-whats-new
+name: update-whats-new
 description: Write the store What's New note for a RiceCal release and open a PR on ricecal-screenshots-creator. Reads the note that is live, finds the ricecal commits it does not cover, and rewrites the note in all 23 listing locales. Use when asked to update the What's New / release notes / store note, or to say what changed in the new version.
 ---
 
@@ -95,6 +95,21 @@ three worth reading and drops the rest.
 
 <closing line>
 ```
+
+- **One short sentence per bullet.** Ten words is a good bullet and twenty is a
+  paragraph. What runs long is the tail: the clause saying what the change is
+  for, which the reader worked out from the first half. Cut it.
+- **Do not write all three the same way.** Three bullets of the same length,
+  each joining two halves with "and", reads as machine-written even when every
+  word of it is true. Let one be four words. Prefer the plain verb (keep, add,
+  write) to the considered one (carries, covers).
+
+  The third bullet of the 1.0.2 note, first draft and shipped:
+
+  ```
+  - A photographed meal now carries a drawing of the dish, so logging it again still looks like food
+  - Scanned meals now keep a picture of the dish
+  ```
 
 - **Replace, do not append.** The note describes this release, not the app's
   history. The previous bullets go.
