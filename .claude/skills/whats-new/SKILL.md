@@ -20,26 +20,37 @@ in `ricecal-screenshots-creator`; only the reading happens in `ricecal`.
 ## 1. Find where the last note stopped
 
 The note is not cumulative and carries no date, so the boundary is written down
-rather than inferred. Every note commit ends its body with a `Covers:` line.
+rather than inferred. It is written in the **PR body**, as a last line reading
+`Covers: ricecal#136, ricecal#137`.
+
+**It cannot live in the commit body.** Squash merging this repo keeps the
+subject and throws the body away: `git log -1 --format=%B 0616027` is one line,
+though that commit's branch had a full body. Step 7 writes the line into both
+and only the PR copy is expected to survive.
 
 ```sh
 cd ~/Projects/ricecal-screenshots-creator
-git pull --ff-only
-git log -1 --grep='^Covers: ricecal#' --format='%h%n%B'
+git checkout main && git pull --ff-only
+git log -3 --format='%h %s' -- src/data/appDescriptions.ts
 ```
 
-Take the highest `ricecal#N` on that line. That PR is the last thing the live
-note describes.
+Take the newest subject that is about the note, read the `(#N)` off it, then:
 
-Two fallbacks, in order, when the line is absent (the first note predates this
-skill):
+```sh
+gh pr view <N> --json body -q .body | grep '^Covers: ricecal#'
+```
 
-1. The PR body. `git log -3 --format='%h %s' -- src/data/appDescriptions.ts`,
-   take the newest subject that is about the note, read its `(#N)` and run
-   `gh pr view N --json body -q .body | grep -o 'ricecal#[0-9]*'`.
-2. The commit date. `git log -1 --format=%ad --date=short <that sha>`, then in
-   ricecal `git log --since=<that date>`. Least reliable: a PR can merge days
-   after the work, so read the range before trusting it.
+The highest `ricecal#N` on that line is the last thing the live note describes.
+
+Two fallbacks, in order:
+
+1. **Any `ricecal#` reference in that body.**
+   `gh pr view <N> --json body -q .body | grep -o 'ricecal#[0-9]*' | sort -u`.
+   This is how the notes written before this skill are readable at all; PR #2
+   named its two in prose.
+2. **The commit date.** `git log -1 --format=%ad --date=short <sha>`, then in
+   ricecal `git log --since=<that date>`. Least reliable, because a PR can merge
+   days after the work it describes. Read the range before trusting it.
 
 ## 2. Read what has happened since
 
@@ -104,8 +115,14 @@ three worth reading and drops the rest.
 
 ## 5. Translate into all 23 locales
 
-`en ms zh id th vi ja ko hi fil es fr de pt it nl ru tr pl uk sv nb da` plus
-whatever the file holds if that list has grown. Edit `whatsNew` in place for
+Branch before the first edit, so nothing is written on `main`:
+
+```sh
+git checkout -b <a-branch-named-after-the-change>
+```
+
+The locales are `en ms zh id th vi ja ko hi fil es fr de pt it nl ru tr pl uk
+sv nb da`, plus whatever the file holds if that list has grown. Edit `whatsNew` in place for
 every one of them; touch no `description`.
 
 Translate for meaning. A bullet that reads as an instruction in English reads as
@@ -137,10 +154,24 @@ console.log(over.length ? 'OVER 500: ' + over.join(', ') : 'all under 500');
 "
 ```
 
-and that no `description` moved:
+and that no `description` moved. Grepping the diff for `description:` only sees
+the line the keyword is on, and these are multi line templates, so compare the
+values against `main`:
 
 ```sh
-git diff -U0 src/data/appDescriptions.ts | grep -c '^[-+].*description:'  # 0
+node -e "
+const { execSync } = require('child_process');
+const read = (t) => {
+  const r = /^  ([a-z-]+): \{\s*description: \`([\s\S]*?)\`,/gm;
+  const o = {}; let m;
+  while ((m = r.exec(t))) o[m[1]] = m[2];
+  return o;
+};
+const was = read(execSync('git show main:src/data/appDescriptions.ts', { encoding: 'utf8' }));
+const now = read(require('fs').readFileSync('src/data/appDescriptions.ts', 'utf8'));
+const moved = Object.keys({ ...was, ...now }).filter((k) => was[k] !== now[k]);
+console.log(moved.length ? 'DESCRIPTION CHANGED: ' + moved.join(', ') : Object.keys(now).length + ' descriptions unchanged');
+"
 ```
 
 Then read the diff itself for a stray `—` or `–`; no command catches one.
@@ -148,24 +179,32 @@ Then read the diff itself for a stray `—` or `–`; no command catches one.
 ## 7. Open the PR
 
 ```sh
-git -C ~/Projects/ricecal-screenshots-creator status --porcelain   # clean but for the file
-git checkout -b <a-branch-named-after-the-change>
+git status --porcelain          # appDescriptions.ts and nothing else
 git commit -am "<a sentence about what changed>"
 git push -u origin HEAD
-gh pr create --fill
+gh pr create --title "<the same sentence>" --body "$(cat <<'EOF'
+...
+EOF
+)"
 ```
 
-The commit body ends with the line the next run reads:
+Write the body out rather than using `--fill`: it carries, in this order, the
+English note in a fence, one line per covered ricecal PR with a
+`[ricecal#N](https://github.com/NelsonGan/ricecal/pull/N)` link saying what it
+actually did, which app version the note goes out with and whether anything in
+it is ahead of that build, the longest locale and its length, and that
+`description` is untouched and `tsc` is clean.
+
+**Its last line is the one the next run reads**, after any attribution footer
+or before it, as long as it starts the line:
 
 ```
 Covers: ricecal#136, ricecal#137, ricecal#139
 ```
 
-The PR body carries, in this order: the English note in a fence, one line per
-covered ricecal PR with a `[ricecal#N](https://github.com/NelsonGan/ricecal/pull/N)`
-link saying what it actually did, which app version the note goes out with and
-whether anything in it is ahead of that build, the longest locale and its
-length, and that `description` is untouched and `tsc` is clean.
+Put the same line at the end of the commit body too. The squash drops it there,
+but the branch keeps it, and a repo that merges differently later gets it for
+free.
 
 Attribution footers are whatever the session was told to use.
 
