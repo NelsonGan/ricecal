@@ -2867,7 +2867,11 @@ never grant. Every SDK in `lib/startup.ts` is gated on its key being real.
 Three products on both stores and in RevenueCat: monthly, yearly, and a one-off
 lifetime. The two subscriptions carry a seven-day free trial and lifetime does
 not, which is why the button and the small print on `paywall/intro.tsx` change
-with the selection.
+with the selection. Trial copy also follows the current store account's
+eligibility: iOS uses RevenueCat's introductory-offer eligibility result, and
+Android uses the free phase on the default subscription option Google returned.
+An unknown or failed check shows the regular subscription terms, because the
+store's purchase sheet is the final authority on what that account will receive.
 
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the
