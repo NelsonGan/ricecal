@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type Plan, useAwaitEntitlement } from '@/data'
+import { type Plan, useAwaitEntitlement, usePlanPrices } from '@/data'
 import {
   isUserCancelled,
   PurchasesUnavailable,
@@ -39,6 +39,8 @@ export default function Paywall() {
   const toast = useToast()
   const awaitEntitlement = useAwaitEntitlement()
   const [plan, setPlan] = useState<Plan>('yearly')
+  const { data: prices } = usePlanPrices()
+  const freeTrialEligible = prices?.[plan]?.freeTrialEligible === true
 
   // Seeing the price resets the standing offer's clock, however the user got
   // here. Without it, somebody refused at the shutter on Monday would meet the
@@ -100,7 +102,11 @@ export default function Paywall() {
       footer={
         <View className="gap-1.5">
           <Button fullWidth onPress={start}>
-            {plan === 'lifetime' ? t('paywall:hard.startLifetime') : t('paywall:hard.start')}
+            {plan === 'lifetime'
+              ? t('paywall:hard.startLifetime')
+              : freeTrialEligible
+                ? t('paywall:hard.start')
+                : t('paywall:hard.startSubscription')}
           </Button>
           <Button variant="ghost" fullWidth onPress={restore}>
             {t('paywall:hard.restore')}

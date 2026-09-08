@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type Plan, useAwaitEntitlement } from '@/data'
+import { type Plan, useAwaitEntitlement, usePlanPrices } from '@/data'
 import {
   isUserCancelled,
   PurchasesUnavailable,
@@ -32,9 +32,10 @@ import { Button, Screen, useToast } from '@/ui'
  * nothing to go back to.
  *
  * The three plans are all offered here, unlike the feature gates, because this is
- * the one screen with room to weigh them up. Lifetime has no trial, so the button
- * and the small print both change when it is selected: a "start free trial" over
- * a one-off purchase would be a promise the store does not keep.
+ * the one screen with room to weigh them up. Lifetime has no trial, and a
+ * returning subscriber might no longer qualify for one. The button and small
+ * print use the store's eligibility answer so neither promises a trial the
+ * purchase sheet will not provide.
  */
 export default function IntroPaywall() {
   const { t } = useTranslation(['paywall', 'common'])
@@ -43,10 +44,12 @@ export default function IntroPaywall() {
   const toast = useToast()
   const awaitEntitlement = useAwaitEntitlement()
   const [plan, setPlan] = useState<Plan>('yearly')
+  const { data: prices } = usePlanPrices()
 
   useTrackPaywallShown('intro')
 
   const lifetime = plan === 'lifetime'
+  const freeTrialEligible = prices?.[plan]?.freeTrialEligible === true
 
   const start = async () => {
     if (!purchasesAvailable()) {
@@ -105,7 +108,11 @@ export default function IntroPaywall() {
       footer={
         <View className="gap-1.5">
           <Button fullWidth onPress={start}>
-            {lifetime ? t('paywall:hard.startLifetime') : t('paywall:hard.start')}
+            {lifetime
+              ? t('paywall:hard.startLifetime')
+              : freeTrialEligible
+                ? t('paywall:hard.start')
+                : t('paywall:hard.startSubscription')}
           </Button>
           {/* Not a push. This screen replaced the tour, and the tour replaced
               the questions, so there is nothing underneath worth keeping — and
