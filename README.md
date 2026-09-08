@@ -81,6 +81,11 @@ pnpm ios                 # or: pnpm android
 `pnpm check` runs typecheck, tests and lint across the workspace. CI runs the
 same thing on every push.
 
+Agent skills live in `.agents/skills/`, with Claude's copies in `.claude/skills/`.
+Keep both copies in sync when changing a workflow. In Codex, use
+`$update-whats-new` to prepare the store release note and open its PR in
+`ricecal-screenshots-creator`. The skill does not upload to either store.
+
 Useful commands:
 
 | command | what it does |
