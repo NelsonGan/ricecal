@@ -21,10 +21,8 @@ export type PlanPickerProps = {
   /**
    * Whether to offer the one-off purchase.
    *
-   * Off in the places that are selling a TRIAL — the onboarding step and the
-   * feature gates both lead with "free for 7 days", and lifetime has no trial
-   * to offer. Putting it there would make the button under it lie about one of
-   * the three options.
+   * Lifetime has no introductory offer, so purchase screens use its regular
+   * one-off terms regardless of the subscription trial eligibility beside it.
    */
   showLifetime?: boolean
   className?: string

@@ -103,6 +103,8 @@ export type PlanPrice = {
    * the same formatter as `priceString` so the two agree.
    */
   perMonthString?: string
+  /** Whether this customer will receive a free trial when buying this plan. */
+  freeTrialEligible: boolean
 }
 
 export type PlanPrices = Partial<Record<Plan, PlanPrice>> & {
@@ -123,6 +125,30 @@ export function yearlySavingPercent(monthly?: number, annual?: number): number |
   return saving > 0 ? saving : undefined
 }
 
+type TrialProduct = {
+  introPrice?: { price: number } | null
+  defaultOption?: { freePhase?: unknown | null } | null
+}
+
+/**
+ * Whether the package RevenueCat will buy includes a free trial for this customer.
+ *
+ * Apple exposes the offer and the customer's eligibility separately. Google
+ * filters ineligible offers out of `defaultOption`, so a free phase there is
+ * already specific to the current Play account. Unknown Apple eligibility is
+ * false because the checkout sheet is the final authority and the paywall must
+ * not promise a trial it cannot confirm.
+ */
+export function hasFreeTrial(
+  platform: string,
+  product: TrialProduct,
+  iosEligible = false,
+): boolean {
+  if (platform === 'ios') return product.introPrice?.price === 0 && iosEligible
+  if (platform === 'android') return product.defaultOption?.freePhase != null
+  return false
+}
+
 /**
  * Reads the current offering and returns what each plan costs. Throws
  * `PurchasesUnavailable` when the SDK is not configured, which is ordinary on a
@@ -138,6 +164,22 @@ export async function fetchPlanPrices(): Promise<PlanPrices> {
 
   const byLookupKey = (key: string) => current.availablePackages.find((p) => p.identifier === key)
 
+  const monthlyPackage = current.monthly ?? byLookupKey('$rc_monthly')
+  const annualPackage = current.annual ?? byLookupKey('$rc_annual')
+  const lifetimePackage = current.lifetime ?? byLookupKey('$rc_lifetime')
+
+  // Android includes only offers this Play account can use in the product's
+  // subscription options. Apple needs a separate eligibility check. A failure
+  // here should not hide prices, but it must suppress trial copy.
+  const iosEligibility: Record<string, { status: number }> =
+    Platform.OS === 'ios'
+      ? await Purchases.checkTrialOrIntroductoryPriceEligibility(
+          [monthlyPackage, annualPackage]
+            .filter((pkg) => pkg != null)
+            .map((pkg) => pkg.product.identifier),
+        ).catch(() => ({}) as Record<string, { status: number }>)
+      : {}
+
   /**
    * `pricePerMonthString` comes from the SDK rather than being computed here. As
    * `Intl.NumberFormat` over price/12 it rendered "MYR 2.49" under a store string
@@ -147,7 +189,16 @@ export async function fetchPlanPrices(): Promise<PlanPrices> {
    */
   const priced = (
     pkg:
-      | { product: { priceString: string; price: number; pricePerMonthString?: string | null } }
+      | {
+          product: {
+            identifier: string
+            priceString: string
+            price: number
+            pricePerMonthString?: string | null
+            introPrice?: { price: number } | null
+            defaultOption?: { freePhase?: unknown | null } | null
+          }
+        }
       | null
       | undefined,
   ) =>
@@ -156,12 +207,18 @@ export async function fetchPlanPrices(): Promise<PlanPrices> {
           priceString: pkg.product.priceString,
           price: pkg.product.price,
           perMonthString: pkg.product.pricePerMonthString ?? undefined,
+          freeTrialEligible: hasFreeTrial(
+            Platform.OS,
+            pkg.product,
+            iosEligibility[pkg.product.identifier]?.status ===
+              Purchases.INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE,
+          ),
         }
       : undefined
 
-  const monthly = priced(current.monthly ?? byLookupKey('$rc_monthly'))
-  const annual = priced(current.annual ?? byLookupKey('$rc_annual'))
-  const lifetime = priced(current.lifetime ?? byLookupKey('$rc_lifetime'))
+  const monthly = priced(monthlyPackage)
+  const annual = priced(annualPackage)
+  const lifetime = priced(lifetimePackage)
 
   return {
     monthly,

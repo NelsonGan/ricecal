@@ -1,4 +1,4 @@
-import { isUserCancelled, yearlySavingPercent } from '../purchases'
+import { hasFreeTrial, isUserCancelled, yearlySavingPercent } from '../purchases'
 
 /**
  * The saving badge, and the two failures the purchase screens must tell apart.
@@ -51,5 +51,24 @@ describe('isUserCancelled', () => {
     expect(isUserCancelled(new Error('payment declined'))).toBe(false)
     expect(isUserCancelled(undefined)).toBe(false)
     expect(isUserCancelled(null)).toBe(false)
+  })
+})
+
+describe('hasFreeTrial', () => {
+  it('requires a free introductory price and confirmed eligibility on iOS', () => {
+    expect(hasFreeTrial('ios', { introPrice: { price: 0 } }, true)).toBe(true)
+    expect(hasFreeTrial('ios', { introPrice: { price: 0 } }, false)).toBe(false)
+    expect(hasFreeTrial('ios', { introPrice: { price: 1.99 } }, true)).toBe(false)
+    expect(hasFreeTrial('ios', { introPrice: null }, true)).toBe(false)
+  })
+
+  it('uses the eligible default subscription option on Android', () => {
+    expect(hasFreeTrial('android', { defaultOption: { freePhase: {} } })).toBe(true)
+    expect(hasFreeTrial('android', { defaultOption: { freePhase: null } })).toBe(false)
+    expect(hasFreeTrial('android', { defaultOption: null })).toBe(false)
+  })
+
+  it('does not advertise a trial on unsupported platforms', () => {
+    expect(hasFreeTrial('web', { introPrice: { price: 0 } }, true)).toBe(false)
   })
 })
