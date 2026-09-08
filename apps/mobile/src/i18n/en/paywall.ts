@@ -55,14 +55,17 @@ export const paywall = {
      */
     smallPrintYearly: 'Free for 7 days, then {{price}} a year.',
     smallPrintMonthly: 'Free for 7 days, then {{price}} a month.',
+    smallPrintYearlyNoTrial: '{{price}} a year.',
+    smallPrintMonthlyNoTrial: '{{price}} a month.',
     smallPrintLifetime: 'One payment of {{price}}. No subscription, no renewal.',
     /**
      * Shown until the store answers, so the sentence is never half a price. Not
      * "cancel any time": the assurance line above says that, and twice reads as a
      * promise made by somebody worried it was not believed.
      */
-    smallPrintPending: 'Free for 7 days.',
+    smallPrintPending: 'Price shown before purchase.',
     start: 'Start free trial',
+    startSubscription: 'Subscribe',
     startLifetime: 'Buy lifetime access',
     restore: 'Restore purchase',
     /**

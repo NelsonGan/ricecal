@@ -53,13 +53,18 @@ export function ProPitch({ plan, onPlanChange, onRestore }: ProPitchProps) {
   const { data: prices } = usePlanPrices()
 
   const priceString = prices?.[plan]?.priceString
+  const freeTrialEligible = prices?.[plan]?.freeTrialEligible === true
   const smallPrint = !priceString
     ? t('hard.smallPrintPending')
     : plan === 'lifetime'
       ? t('hard.smallPrintLifetime', { price: priceString })
-      : plan === 'yearly'
+      : freeTrialEligible && plan === 'yearly'
         ? t('hard.smallPrintYearly', { price: priceString })
-        : t('hard.smallPrintMonthly', { price: priceString })
+        : freeTrialEligible
+          ? t('hard.smallPrintMonthly', { price: priceString })
+          : plan === 'yearly'
+            ? t('hard.smallPrintYearlyNoTrial', { price: priceString })
+            : t('hard.smallPrintMonthlyNoTrial', { price: priceString })
 
   return (
     <>
