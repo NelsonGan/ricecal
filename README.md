@@ -1112,6 +1112,8 @@ unannounced is the other half of the complaint.
 The Edit button beside the name on Me opens `app/settings/account.tsx`.
 Names save on blur through the existing profile mutation. Blank names are rejected;
 failed saves keep the draft for another attempt when the field loses focus.
+The Back button waits for that save, and photo picking saves the name first so
+two profile writes cannot overwrite each other in the cache.
 Email is read-only with a flat copy symbol inside the field that briefly becomes
 a checkmark after copying. Tapping the avatar opens the system image picker and the existing avatar upload, then save the returned key.
 Clipboard support requires a native 1.0.5 build; the app-version runtime keeps this bundle off older binaries.

@@ -12,6 +12,7 @@ const mockUpdatePassword = jest.fn().mockResolvedValue(undefined)
 const mockPick = jest.fn().mockResolvedValue({ canceled: true })
 const mockUpload = jest.fn().mockResolvedValue('avatars/user/new.jpg')
 const mockCopy = jest.fn().mockResolvedValue(true)
+const mockBack = jest.fn()
 const mockDelete = jest.fn().mockResolvedValue(undefined)
 let mockProfile: { display_name: string } | undefined = { display_name: 'Alex' }
 
@@ -35,7 +36,7 @@ jest.mock('@/features/auth', () => ({
 }))
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: () => mockPick() }))
 jest.mock('expo-clipboard', () => ({ setStringAsync: (value: string) => mockCopy(value) }))
-jest.mock('@/lib/navigation', () => ({ useBack: () => jest.fn() }))
+jest.mock('@/lib/navigation', () => ({ useBack: () => mockBack }))
 
 function Providers({ children }: { children: ReactNode }) {
   return (
@@ -199,4 +200,50 @@ it('saves a changed name only on blur and skips unchanged names', async () => {
   expect(mockUpdateProfile).not.toHaveBeenCalled()
   await fireEvent(screen.getByLabelText('NAME'), 'blur')
   await waitFor(() => expect(mockUpdateProfile).toHaveBeenCalledWith({ displayName: 'Sam' }))
+})
+
+it('saves the focused name before leaving and stays after a failed save', async () => {
+  await mount()
+  await fireEvent.changeText(screen.getByLabelText('NAME'), 'Sam')
+  mockUpdateProfile.mockRejectedValueOnce(new Error('offline'))
+  await user.press(screen.getByRole('button', { name: 'Go back' }))
+  expect(mockUpdateProfile).toHaveBeenCalledWith({ displayName: 'Sam' })
+  expect(mockBack).not.toHaveBeenCalled()
+  await user.press(screen.getByRole('button', { name: 'Go back' }))
+  await waitFor(() => expect(mockBack).toHaveBeenCalledTimes(1))
+})
+
+it('finishes saving the name before opening the photo picker', async () => {
+  let finish!: (value: object) => void
+  mockUpdateProfile.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
+  await mount()
+  await fireEvent.changeText(screen.getByLabelText('NAME'), 'Sam')
+  await user.press(screen.getByRole('button', { name: 'Change photo' }))
+  expect(mockUpdateProfile).toHaveBeenCalledWith({ displayName: 'Sam' })
+  expect(mockPick).not.toHaveBeenCalled()
+  finish({})
+  await waitFor(() => expect(mockPick).toHaveBeenCalledTimes(1))
+})
+
+it('shares an in-flight name save and only navigates back once', async () => {
+  let finish!: (value: object) => void
+  mockUpdateProfile.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
+  await mount()
+  await fireEvent.changeText(screen.getByLabelText('NAME'), 'Sam')
+  await user.press(screen.getByRole('button', { name: 'Go back' }))
+  await user.press(screen.getByRole('button', { name: 'Go back' }))
+  expect(mockUpdateProfile).toHaveBeenCalledTimes(1)
+  expect(mockBack).not.toHaveBeenCalled()
+  finish({})
+  await waitFor(() => expect(mockBack).toHaveBeenCalledTimes(1))
 })

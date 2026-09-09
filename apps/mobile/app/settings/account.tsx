@@ -53,30 +53,37 @@ export default function AccountScreen() {
   const [submitted, setSubmitted] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
-  const saving = useRef(false)
+  const saving = useRef<Promise<boolean> | null>(null)
+  const leaving = useRef(false)
   const colors = useThemeColors()
   const [copied, setCopied] = useState(false)
   const copyReset = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   useEffect(() => () => clearTimeout(copyReset.current), [])
 
-  const save = async () => {
-    if (saving.current || !profile || draft === undefined) return
+  const save = (): Promise<boolean> => {
+    if (saving.current) return saving.current
+    if (!profile || draft === undefined) return Promise.resolve(true)
     setSubmitted(true)
-    if (!name.trim()) return
+    if (!name.trim()) return Promise.resolve(false)
     if (name.trim() === (profile.display_name ?? '')) {
       setDraft(undefined)
-      return
+      return Promise.resolve(true)
     }
-    saving.current = true
-    try {
-      await updateProfile.mutateAsync({ displayName: name.trim() })
-      setDraft(undefined)
-      toast.show({ title: t('profile:account.saved') })
-    } catch {
-      toast.show({ title: t('profile:account.saveFailed'), tone: 'error' })
-    } finally {
-      saving.current = false
-    }
+    // Blur, Back and photo picking can arrive together. Share the same save.
+    saving.current = (async () => {
+      try {
+        await updateProfile.mutateAsync({ displayName: name.trim() })
+        setDraft((current) => (current === draft ? undefined : current))
+        toast.show({ title: t('profile:account.saved') })
+        return true
+      } catch {
+        toast.show({ title: t('profile:account.saveFailed'), tone: 'error' })
+        return false
+      } finally {
+        saving.current = null
+      }
+    })()
+    return saving.current
   }
 
   const copyEmail = async () => {
@@ -92,11 +99,12 @@ export default function AccountScreen() {
   }
 
   const changePhoto = async () => {
-    if (pickingPhoto.current || saving.current || !profile) return
+    if (pickingPhoto.current || !profile) return
     pickingPhoto.current = true
     setPhotoPending(true)
     Keyboard.dismiss()
     try {
+      if (!(await save())) return
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
@@ -119,7 +127,13 @@ export default function AccountScreen() {
     <Screen>
       <AppBar
         title={t('profile:account.title')}
-        onBack={goBack}
+        onBack={async () => {
+          if (leaving.current) return
+          leaving.current = true
+          Keyboard.dismiss()
+          if (await save()) goBack()
+          else leaving.current = false
+        }}
         backLabel={t('common:a11y.back')}
       />
       <View className="items-center py-2">
