@@ -51,7 +51,6 @@ export default function AccountScreen() {
   const name = draft ?? profile?.display_name ?? ''
   const [submitted, setSubmitted] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
-  const [detailsOpen, setDetailsOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const saving = useRef(false)
 
@@ -113,25 +112,27 @@ export default function AccountScreen() {
         onBack={goBack}
         backLabel={t('common:a11y.back')}
       />
+      <View className="items-center gap-3 py-2">
+        <Avatar
+          name={name}
+          uri={avatar?.uri}
+          cacheKey={avatar?.cacheKey}
+          size="lg"
+          className="self-center"
+          tone="pandan"
+        />
+        <Button
+          variant="secondary"
+          size="sm"
+          className="self-center"
+          onPress={changePhoto}
+          loading={photoPending}
+          disabled={!profile || busy}
+        >
+          {t('profile:account.changePhoto')}
+        </Button>
+      </View>
       <Card>
-        <View className="flex-row items-center gap-3">
-          <Avatar
-            name={name}
-            uri={avatar?.uri}
-            cacheKey={avatar?.cacheKey}
-            size="lg"
-            tone="pandan"
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            onPress={changePhoto}
-            loading={photoPending}
-            disabled={!profile || busy}
-          >
-            {t('profile:account.changePhoto')}
-          </Button>
-        </View>
         <TextField
           label={t('profile:account.name')}
           value={name}
@@ -153,9 +154,14 @@ export default function AccountScreen() {
             className="pr-2 opacity-100"
             inputClassName="text-muted"
             rightSlot={
-              <Button variant="secondary" size="sm" onPress={copyEmail}>
-                {t('profile:account.copy')}
-              </Button>
+              <IconButton
+                variant="ghost"
+                size="sm"
+                onPress={copyEmail}
+                accessibilityLabel={t('profile:account.copy')}
+              >
+                <Icon set="ui" name="duplicate" size={22} />
+              </IconButton>
             }
           />
         ) : null}
@@ -182,31 +188,17 @@ export default function AccountScreen() {
       </Button>
 
       <View className="gap-2">
-        <View className="flex-row items-center gap-2">
-          <Button
-            variant="secondary"
-            className="flex-1"
-            disabled={busy}
-            onPress={() => {
-              Keyboard.dismiss()
-              setConfirming(true)
-            }}
-          >
-            {t('profile:account.action')}
-          </Button>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            className="self-center"
-            accessibilityLabel={t('profile:account.deleteDetails')}
-            onPress={() => {
-              Keyboard.dismiss()
-              setDetailsOpen(true)
-            }}
-          >
-            <Icon set="ui" name="info" size={20} />
-          </IconButton>
-        </View>
+        <Button
+          variant="danger"
+          fullWidth
+          disabled={busy}
+          onPress={() => {
+            Keyboard.dismiss()
+            setConfirming(true)
+          }}
+        >
+          {t('profile:account.action')}
+        </Button>
         {plan.renews ? (
           <View className="gap-2">
             <Text variant="meta">{t('profile:account.cancelFirst')}</Text>
@@ -234,43 +226,6 @@ export default function AccountScreen() {
           </Tappable>
         ))}
       </View>
-
-      <Modal
-        visible={detailsOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDetailsOpen(false)}
-      >
-        <View className="flex-1 justify-center bg-black/30 px-6 py-16">
-          <Tappable
-            haptics={false}
-            className="absolute inset-0"
-            accessibilityLabel={t('common:action.close')}
-            accessibilityRole="button"
-            onPress={() => setDetailsOpen(false)}
-          />
-          <View className="max-h-full rounded-lg bg-surface p-5" accessibilityViewIsModal>
-            <ScrollView>
-              <Text variant="subtitle">{t('profile:account.deleteDetails')}</Text>
-              <View className="gap-3 py-4">
-                {(['goesDiary', 'goesPhotos', 'goesRecipes', 'goesProfile'] as const).map((key) => (
-                  <View key={key} className="flex-row gap-2">
-                    <Text variant="body" accessibilityElementsHidden importantForAccessibility="no">
-                      •
-                    </Text>
-                    <Text variant="body" className="flex-1">
-                      {t(`profile:account.${key}`)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-              <Button variant="ghost" size="sm" onPress={() => setDetailsOpen(false)}>
-                {t('common:action.close')}
-              </Button>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
       {passwordOpen ? <ChangePassword onClose={() => setPasswordOpen(false)} /> : null}
       {confirming ? <DeleteAccount onClose={() => setConfirming(false)} /> : null}
@@ -313,16 +268,12 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet
+      fullHeight
       visible
       onClose={onClose}
       dismissible={!pending}
       closeLabel={t('common:action.close')}
       title={t('profile:account.changePassword')}
-      footer={
-        <Button fullWidth onPress={save} loading={pending} disabled={pending}>
-          {t('common:action.save')}
-        </Button>
-      }
     >
       <PasswordField
         label={t('auth:reset.field')}
@@ -349,6 +300,9 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
         onSubmitEditing={save}
         error={submitted && !tooShort && mismatched ? t('auth:errors.passwordMismatch') : undefined}
       />
+      <Button fullWidth onPress={save} loading={pending} disabled={pending}>
+        {t('common:action.save')}
+      </Button>
     </Sheet>
   )
 }
@@ -356,6 +310,7 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
 function DeleteAccount({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['profile', 'common'])
   const toast = useToast()
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const [confirmation, setConfirmation] = useState('')
   const [pending, setPending] = useState(false)
   const running = useRef(false)
@@ -380,28 +335,28 @@ function DeleteAccount({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet
+      fullHeight
       visible
       onClose={onClose}
       dismissible={!pending}
       closeLabel={t('common:action.close')}
-      title={t('profile:account.confirmTitle')}
-      footer={
-        <View className="gap-2">
-          <Button
-            variant="danger"
-            fullWidth
-            onPress={remove}
-            disabled={!confirmed || pending}
-            loading={pending}
-          >
-            {t('common:action.delete')}
-          </Button>
-          <Button variant="ghost" fullWidth onPress={onClose} disabled={pending}>
-            {t('common:action.cancel')}
-          </Button>
-        </View>
-      }
     >
+      <View className="flex-row items-center gap-1">
+        <Text variant="subtitle" className="shrink">
+          {t('profile:account.confirmTitle')}
+        </Text>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          accessibilityLabel={t('profile:account.deleteDetails')}
+          onPress={() => {
+            Keyboard.dismiss()
+            setDetailsOpen(true)
+          }}
+        >
+          <Icon set="ui" name="info" size={20} />
+        </IconButton>
+      </View>
       <Text variant="body">{t('profile:account.confirmBody')}</Text>
       <TextField
         label={t('profile:account.typeDelete')}
@@ -413,6 +368,56 @@ function DeleteAccount({ onClose }: { onClose: () => void }) {
         returnKeyType="done"
         onSubmitEditing={remove}
       />
+      <View className="gap-2">
+        <Button
+          variant="danger"
+          fullWidth
+          onPress={remove}
+          disabled={!confirmed || pending}
+          loading={pending}
+        >
+          {t('common:action.delete')}
+        </Button>
+        <Button variant="ghost" fullWidth onPress={onClose} disabled={pending}>
+          {t('common:action.cancel')}
+        </Button>
+      </View>
+      <Modal
+        visible={detailsOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDetailsOpen(false)}
+      >
+        <View className="flex-1 justify-center bg-black/30 px-6 py-16">
+          <Tappable
+            haptics={false}
+            className="absolute inset-0"
+            accessibilityLabel={t('common:action.close')}
+            accessibilityRole="button"
+            onPress={() => setDetailsOpen(false)}
+          />
+          <View className="max-h-full rounded-lg bg-surface p-5" accessibilityViewIsModal>
+            <ScrollView>
+              <Text variant="subtitle">{t('profile:account.deleteDetails')}</Text>
+              <View className="gap-3 py-4">
+                {(['goesDiary', 'goesPhotos', 'goesRecipes', 'goesProfile'] as const).map((key) => (
+                  <View key={key} className="flex-row gap-2">
+                    <Text variant="body" accessibilityElementsHidden importantForAccessibility="no">
+                      •
+                    </Text>
+                    <Text variant="body" className="flex-1">
+                      {t(`profile:account.${key}`)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <Button variant="ghost" size="sm" onPress={() => setDetailsOpen(false)}>
+                {t('common:action.close')}
+              </Button>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </Sheet>
   )
 }
