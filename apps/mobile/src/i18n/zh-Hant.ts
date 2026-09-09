@@ -1061,6 +1061,10 @@ export const zhHant = {
       copied: '電子郵件已複製',
       copyFailed: '無法複製電子郵件',
       changePassword: '變更密碼',
+      changePhoto: '更換照片',
+      photoSaved: '照片已儲存',
+      photoFailed: '無法更新照片',
+      typeDelete: '輸入「delete」以確認',
       deleteDetails: '將刪除的內容',
 
       privacy: '隱私政策',

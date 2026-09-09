@@ -1065,6 +1065,10 @@ export const ko = {
       copied: '이메일을 복사했어요',
       copyFailed: '이메일을 복사하지 못했어요',
       changePassword: '비밀번호 변경',
+      changePhoto: '사진 변경',
+      photoSaved: '사진 저장됨',
+      photoFailed: '사진을 업데이트할 수 없어요',
+      typeDelete: '확인하려면 "delete"를 입력하세요',
       deleteDetails: '삭제되는 항목',
 
       privacy: '개인정보 처리방침',

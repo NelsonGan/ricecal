@@ -1082,6 +1082,10 @@ export const id = {
       copied: 'Email disalin',
       copyFailed: 'Email gagal disalin',
       changePassword: 'Ubah kata sandi',
+      changePhoto: 'Ubah foto',
+      photoSaved: 'Foto disimpan',
+      photoFailed: 'Tidak dapat memperbarui foto',
+      typeDelete: 'Ketik "delete" untuk mengonfirmasi',
       deleteDetails: 'Yang akan dihapus',
 
       privacy: 'Kebijakan Privasi',

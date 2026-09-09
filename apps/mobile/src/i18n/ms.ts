@@ -1098,6 +1098,10 @@ export const ms = {
       copied: 'E-mel disalin',
       copyFailed: 'E-mel tidak dapat disalin',
       changePassword: 'Tukar kata laluan',
+      changePhoto: 'Tukar foto',
+      photoSaved: 'Foto disimpan',
+      photoFailed: 'Foto tidak dapat dikemas kini',
+      typeDelete: 'Taip "delete" untuk mengesahkan',
       deleteDetails: 'Apa yang dipadam',
 
       privacy: 'Dasar Privasi',

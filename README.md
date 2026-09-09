@@ -1111,8 +1111,9 @@ unannounced is the other half of the complaint.
 
 The Edit button beside the name on Me opens `app/settings/account.tsx`.
 Names update `profiles.display_name` through the existing profile mutation.
-Email is read-only with a copy action. Clipboard support requires a native
-1.0.5 build; the app-version runtime keeps this bundle off older binaries.
+Email is read-only with a copy button inside the field. Profile photos use the
+system image picker and the existing avatar upload, then save the returned key.
+Clipboard support requires a native 1.0.5 build; the app-version runtime keeps this bundle off older binaries.
 Change password opens a short form using
 `updatePassword`, with length and confirmation checks before the auth request.
 Closing the form clears both password fields. Privacy Policy and Terms of Use
@@ -1126,9 +1127,10 @@ account has to let them delete it from inside the app. Not by email, not by
 asking somebody. This app was rejected for offering only the email route that
 `ricecal.app/data-deletion` used to describe.
 
-Two taps, which is the most the guideline allows: a red button, then a sheet
-that says it cannot be undone. Nothing bargains, nothing asks for a reason, and
-there is no typed confirmation. A subscription that renews gets one extra line,
+The delete action opens a sheet that says it cannot be undone. The user types
+`delete` before the final button enables. Closing the sheet clears that text.
+Nothing bargains or asks for a reason. A subscription that renews gets one extra
+line,
 because billing lives with Apple or Google and deleting the account here stops
 none of it.
 

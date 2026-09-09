@@ -1059,6 +1059,10 @@ export const bn = {
       copied: 'ইমেইল কপি হয়েছে',
       copyFailed: 'ইমেইল কপি করা যায়নি',
       changePassword: 'পাসওয়ার্ড বদলান',
+      changePhoto: 'ছবি বদলান',
+      photoSaved: 'ছবি সেভ হয়েছে',
+      photoFailed: 'ছবি আপডেট করা যায়নি',
+      typeDelete: 'নিশ্চিত করতে "delete" লিখুন',
       deleteDetails: 'যা মুছে যাবে',
 
       privacy: 'গোপনীয়তা নীতি',

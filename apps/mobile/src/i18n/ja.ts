@@ -1071,6 +1071,10 @@ export const ja = {
       copied: 'メールアドレスをコピーしました',
       copyFailed: 'コピーできませんでした',
       changePassword: 'パスワードを変更',
+      changePhoto: '写真を変更',
+      photoSaved: '写真を保存しました',
+      photoFailed: '写真を更新できませんでした',
+      typeDelete: '確認のため「delete」と入力',
       deleteDetails: '削除されるもの',
 
       privacy: 'プライバシーポリシー',

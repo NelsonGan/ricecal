@@ -1,9 +1,17 @@
 import * as Clipboard from 'expo-clipboard'
+import * as ImagePicker from 'expo-image-picker'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Keyboard, Modal, ScrollView, type TextInput, View } from 'react-native'
 
-import { useProfile, useSession, useUpdateProfile } from '@/data'
+import {
+  storedImageSource,
+  uploadAvatar,
+  useAvatarUrl,
+  useProfile,
+  useSession,
+  useUpdateProfile,
+} from '@/data'
 import { deleteAccount, updatePassword } from '@/data/auth'
 import { openManageSubscriptions } from '@/data/purchases'
 import { PasswordField, useAuthMessage } from '@/features/auth'
@@ -12,9 +20,9 @@ import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal'
 import { useBack } from '@/lib/navigation'
 import {
   AppBar,
+  Avatar,
   Button,
   Card,
-  ConfirmSheet,
   Icon,
   IconButton,
   Screen,
@@ -33,6 +41,11 @@ export default function AccountScreen() {
   const { data: profile } = useProfile()
   const updateProfile = useUpdateProfile()
   const plan = usePlanSummary()
+  const { data: avatarUri } = useAvatarUrl(profile?.avatar_path ?? undefined)
+  const avatar = storedImageSource(profile?.avatar_path ?? undefined, avatarUri)
+  const [photoPending, setPhotoPending] = useState(false)
+  const pickingPhoto = useRef(false)
+  const busy = photoPending || updateProfile.isPending
   // An untouched draft follows the query, including a profile that loads late.
   const [draft, setDraft] = useState<string>()
   const name = draft ?? profile?.display_name ?? ''
@@ -43,7 +56,7 @@ export default function AccountScreen() {
   const saving = useRef(false)
 
   const save = async () => {
-    if (saving.current || !profile) return
+    if (saving.current || pickingPhoto.current || !profile) return
     setSubmitted(true)
     if (!name.trim()) return
     saving.current = true
@@ -69,12 +82,27 @@ export default function AccountScreen() {
     }
   }
 
-  const remove = async () => {
+  const changePhoto = async () => {
+    if (pickingPhoto.current || saving.current || !profile) return
+    pickingPhoto.current = true
+    setPhotoPending(true)
+    Keyboard.dismiss()
     try {
-      await deleteAccount()
-      toast.show({ title: t('profile:account.done') })
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
+      if (result.canceled || !result.assets[0]) return
+      const avatarPath = await uploadAvatar(result.assets[0].uri)
+      await updateProfile.mutateAsync({ avatarPath })
+      toast.show({ title: t('profile:account.photoSaved') })
     } catch {
-      toast.show({ title: t('profile:account.failed'), tone: 'error' })
+      toast.show({ title: t('profile:account.photoFailed'), tone: 'error' })
+    } finally {
+      pickingPhoto.current = false
+      setPhotoPending(false)
     }
   }
 
@@ -86,11 +114,29 @@ export default function AccountScreen() {
         backLabel={t('common:a11y.back')}
       />
       <Card>
+        <View className="flex-row items-center gap-3">
+          <Avatar
+            name={name}
+            uri={avatar?.uri}
+            cacheKey={avatar?.cacheKey}
+            size="lg"
+            tone="pandan"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onPress={changePhoto}
+            loading={photoPending}
+            disabled={!profile || busy}
+          >
+            {t('profile:account.changePhoto')}
+          </Button>
+        </View>
         <TextField
           label={t('profile:account.name')}
           value={name}
           onChangeText={setDraft}
-          editable={Boolean(profile) && !updateProfile.isPending}
+          editable={Boolean(profile) && !busy}
           autoComplete="name"
           textContentType="name"
           maxLength={60}
@@ -104,8 +150,10 @@ export default function AccountScreen() {
             value={session.user.email}
             editable={false}
             accessibilityState={{ disabled: true }}
-            labelAction={
-              <Button variant="ghost" size="sm" onPress={copyEmail}>
+            className="pr-2 opacity-100"
+            inputClassName="text-muted"
+            rightSlot={
+              <Button variant="secondary" size="sm" onPress={copyEmail}>
                 {t('profile:account.copy')}
               </Button>
             }
@@ -115,9 +163,7 @@ export default function AccountScreen() {
           fullWidth
           onPress={save}
           loading={updateProfile.isPending}
-          disabled={
-            !profile || updateProfile.isPending || name.trim() === (profile.display_name ?? '')
-          }
+          disabled={!profile || busy || name.trim() === (profile.display_name ?? '')}
         >
           {t('common:action.save')}
         </Button>
@@ -126,7 +172,7 @@ export default function AccountScreen() {
       <Button
         variant="secondary"
         fullWidth
-        disabled={updateProfile.isPending}
+        disabled={busy}
         onPress={() => {
           Keyboard.dismiss()
           setPasswordOpen(true)
@@ -136,12 +182,11 @@ export default function AccountScreen() {
       </Button>
 
       <View className="gap-2">
-        <View className="flex-row items-center justify-center gap-1">
+        <View className="flex-row items-center gap-2">
           <Button
-            variant="ghost"
-            size="sm"
-            disabled={updateProfile.isPending}
-            labelClassName="text-hibiscus-ink"
+            variant="secondary"
+            className="flex-1"
+            disabled={busy}
             onPress={() => {
               Keyboard.dismiss()
               setConfirming(true)
@@ -228,15 +273,7 @@ export default function AccountScreen() {
       </Modal>
 
       {passwordOpen ? <ChangePassword onClose={() => setPasswordOpen(false)} /> : null}
-      <ConfirmSheet
-        visible={confirming}
-        onClose={() => setConfirming(false)}
-        onConfirm={remove}
-        title={t('profile:account.confirmTitle')}
-        description={t('profile:account.confirmBody')}
-        confirmLabel={t('common:action.delete')}
-        cancelLabel={t('common:action.cancel')}
-      />
+      {confirming ? <DeleteAccount onClose={() => setConfirming(false)} /> : null}
     </Screen>
   )
 }
@@ -311,6 +348,70 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
         returnKeyType="done"
         onSubmitEditing={save}
         error={submitted && !tooShort && mismatched ? t('auth:errors.passwordMismatch') : undefined}
+      />
+    </Sheet>
+  )
+}
+
+function DeleteAccount({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation(['profile', 'common'])
+  const toast = useToast()
+  const [confirmation, setConfirmation] = useState('')
+  const [pending, setPending] = useState(false)
+  const running = useRef(false)
+  const confirmed = confirmation === 'delete'
+
+  const remove = async () => {
+    if (!confirmed || running.current) return
+    running.current = true
+    setPending(true)
+    Keyboard.dismiss()
+    try {
+      await deleteAccount()
+      toast.show({ title: t('profile:account.done') })
+      onClose()
+    } catch {
+      toast.show({ title: t('profile:account.failed'), tone: 'error' })
+    } finally {
+      running.current = false
+      setPending(false)
+    }
+  }
+
+  return (
+    <Sheet
+      visible
+      onClose={onClose}
+      dismissible={!pending}
+      closeLabel={t('common:action.close')}
+      title={t('profile:account.confirmTitle')}
+      footer={
+        <View className="gap-2">
+          <Button
+            variant="danger"
+            fullWidth
+            onPress={remove}
+            disabled={!confirmed || pending}
+            loading={pending}
+          >
+            {t('common:action.delete')}
+          </Button>
+          <Button variant="ghost" fullWidth onPress={onClose} disabled={pending}>
+            {t('common:action.cancel')}
+          </Button>
+        </View>
+      }
+    >
+      <Text variant="body">{t('profile:account.confirmBody')}</Text>
+      <TextField
+        label={t('profile:account.typeDelete')}
+        value={confirmation}
+        onChangeText={setConfirmation}
+        autoCapitalize="none"
+        autoCorrect={false}
+        editable={!pending}
+        returnKeyType="done"
+        onSubmitEditing={remove}
       />
     </Sheet>
   )
