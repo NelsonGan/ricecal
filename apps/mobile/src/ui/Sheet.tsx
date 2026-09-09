@@ -82,6 +82,8 @@ export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow' | 'onBack'
 export type SheetProps = {
   visible: boolean
   onClose: () => void
+  /** Keep the panel in place while a request must finish before closing. */
+  dismissible?: boolean
   /**
    * Android's hardware back, for a sheet with somewhere to go that is not closed:
    * the body it has drilled into. Absent, which is every sheet at its top level,
@@ -180,7 +182,7 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
       animationType="none"
       onShow={onShow}
       /* Up one level if there is one, and only then out. See `onBack`. */
-      onRequestClose={rest.onBack ?? rest.onClose}
+      onRequestClose={rest.dismissible === false ? () => {} : (rest.onBack ?? rest.onClose)}
     >
       {/* A `Modal` is its own window, and on Android gesture-handler's root view
           does not reach into one — the app's root is outside it, so the handle's
@@ -206,6 +208,7 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
  */
 export function SheetSurface({
   hosting = true,
+  dismissible = true,
   onClose,
   closeLabel,
   title,
@@ -273,7 +276,7 @@ export function SheetSurface({
   const falling = useSharedValue(false)
 
   const dismiss = useCallback(() => {
-    if (closing.current) return
+    if (!dismissible || closing.current) return
     closing.current = true
     falling.value = true
     rise.value = withTiming(
@@ -290,9 +293,10 @@ export function SheetSurface({
         if (finished) runOnJS(onClose)()
       },
     )
-  }, [rise, falling, height, onClose])
+  }, [rise, falling, height, onClose, dismissible])
 
   const dragHandle = Gesture.Pan()
+    .enabled(dismissible)
     .onUpdate((event) => {
       // Nothing moves the panel once it is leaving. See `falling`.
       if (falling.value) return
@@ -451,6 +455,8 @@ export function SheetSurface({
                 onPress={dismiss}
                 accessibilityRole="button"
                 accessibilityLabel={closeLabel}
+                accessibilityState={{ disabled: !dismissible }}
+                disabled={!dismissible}
               >
                 <View className="h-1.5 w-[54px] rounded-full bg-line" />
               </Pressable>

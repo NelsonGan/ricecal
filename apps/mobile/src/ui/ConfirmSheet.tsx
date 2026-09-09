@@ -59,7 +59,8 @@ export function ConfirmSheet({
   return (
     <Sheet
       visible={visible}
-      onClose={pending ? () => {} : onClose}
+      onClose={onClose}
+      dismissible={!pending}
       // The drag handle dismisses, which is exactly what the neutral button
       // does, so it says the same word rather than asking for a third label.
       closeLabel={cancelLabel}
