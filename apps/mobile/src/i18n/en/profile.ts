@@ -61,40 +61,30 @@ export const profile = {
      * dismissed it and then changed their mind has no other route back.
      */
     rate: 'Rate RiceCal',
-    /** The row that leads to deletion. See the `account` block below. */
-    account: 'Account',
     signOut: 'Sign out',
   },
 
-  /**
-   * The account screen, which exists so deleting an account is something a
-   * person can do rather than ask for.
-   *
-   * App Review guideline 5.1.1(v) shapes the copy more than it looks: no form,
-   * no reason to give, nobody to write to, and no wording that reads as a plea
-   * to stay.
-   *
-   * It says what goes, in four lines, which is the whole defence against a
-   * mis-tap: "this cannot be undone" is a sentence everybody scrolls past, where
-   * "every meal, every weigh-in, every photograph" is the same fact in terms of
-   * what the person would miss.
-   *
-   * The subscription line is not a warning about us. Billing lives with Apple and
-   * Google, so a deleted account with a renewing subscription goes on being
-   * charged, and it is only shown to somebody who has one.
-   */
+  // Deletion details live behind the info button. Renewing subscribers still
+  // see the store-billing warning without opening it.
   account: {
-    title: 'Account',
-    signedInAs: 'SIGNED IN AS',
+    title: 'Edit profile',
+    name: 'NAME',
+    nameRequired: 'Enter your name',
+    saved: 'Name saved',
+    saveFailed: 'Could not save your name',
+    copy: 'Copy',
+    copied: 'Email copied',
+    copyFailed: 'Could not copy email',
+    changePassword: 'Change password',
+    changePhoto: 'Change photo',
+    photoSaved: 'Photo saved',
+    photoFailed: 'Could not update photo',
+    typeDelete: 'Type "delete" to confirm',
+    deleteDetails: 'What gets deleted',
 
-    /** Card title, so caps, like the ones around it. */
-    legalTitle: 'THE SMALL PRINT',
     privacy: 'Privacy Policy',
     terms: 'Terms of Use',
 
-    /** A card title, so caps, like `home.settings` and `connect.readTitle`. */
-    deleteTitle: 'DELETE YOUR ACCOUNT',
-    deleteBody: 'Everything below is erased the moment you confirm.',
     goesDiary: 'Every meal, weigh-in, water and note',
     goesPhotos: 'Every photograph you took',
     goesRecipes: 'The foods you wrote, published ones included',

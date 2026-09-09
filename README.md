@@ -1107,17 +1107,35 @@ cache and the layout guards send the user out to sign-in a tick later, so a
 message belonging to the screen they were on would go with it. Arriving there
 unannounced is the other half of the complaint.
 
+### Editing an account
+
+The Edit button beside the name on Me opens `app/settings/account.tsx`.
+Names save on blur through the existing profile mutation. Blank names are rejected;
+failed saves keep the draft for another attempt when the field loses focus.
+The Back button waits for that save, and photo picking saves the name first so
+two profile writes cannot overwrite each other in the cache.
+Email is read-only with a flat copy symbol inside the field that briefly becomes
+a checkmark after copying. Tapping the avatar opens the system image picker and the existing avatar upload, then save the returned key.
+Clipboard support requires a native 1.0.5 build; the app-version runtime keeps this bundle off older binaries.
+Change password opens a short form using
+`updatePassword`, with length and confirmation checks before the auth request.
+Closing the form clears both password fields. Privacy Policy and Terms of Use
+are plain links here. The info button beside the deletion confirmation heading
+shows what is erased. Password and deletion forms use full-height sheets: the
+keyboard overlays the surface while the form can scroll to keep fields reachable.
+
 ### Deleting an account
 
-`app/settings/account.tsx`, reached from **Me, Account**, and it exists because
+`app/settings/account.tsx`, reached from **Me, Edit**, and it exists because
 App Review guideline 5.1.1(v) requires it: an app that lets somebody create an
 account has to let them delete it from inside the app. Not by email, not by
 asking somebody. This app was rejected for offering only the email route that
 `ricecal.app/data-deletion` used to describe.
 
-Two taps, which is the most the guideline allows: a red button, then a sheet
-that says it cannot be undone. Nothing bargains, nothing asks for a reason, and
-there is no typed confirmation. A subscription that renews gets one extra line,
+The delete action opens a sheet that says it cannot be undone. The user types
+`delete` before the final button enables. Closing the sheet clears that text.
+Nothing bargains or asks for a reason. A subscription that renews gets one extra
+line,
 because billing lives with Apple or Google and deleting the account here stops
 none of it.
 
@@ -2907,7 +2925,7 @@ because "every screen that can start a purchase" is a set that grows. There are
 three of them — `paywall/intro`, `paywall/index` and `paywall/ended` — and the
 third sold a year with one tap and had no price, period or renewal anywhere on
 it at all. `lib/legal.ts` holds the two addresses, and the same pair is on
-**Me, Account** for everybody who never reaches a paywall.
+**Me, Edit** for everybody who never reaches a paywall.
 
 ### What each tier gets
 
