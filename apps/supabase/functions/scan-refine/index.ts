@@ -58,7 +58,13 @@ import {
   requireEntitlement,
   ScanLimitReached,
 } from '../_shared/entitlement.ts'
-import { interpretInstruction, type MockSteer, mockActive } from '../_shared/llm.ts'
+import {
+  estimateNutrition,
+  interpretInstruction,
+  type MockSteer,
+  mockActive,
+} from '../_shared/llm.ts'
+import { findRefinePart, matchingRefineParts } from '../_shared/refine.ts'
 
 type RefineRequest = {
   food_log_id: string
@@ -96,6 +102,8 @@ type RefineEntry = {
   food_log_ingredients: Array<{
     id: string
     quantity: number
+    grams: number | null
+    serving_label: string | null
     display_label: string | null
     item_name: string | null
   }>
@@ -178,6 +186,10 @@ async function rebuildFromParts(
       base_fibre_g: null,
       base_sugar_g: null,
       base_sodium_mg: null,
+      override_kcal: null,
+      override_carbs_g: null,
+      override_protein_g: null,
+      override_fat_g: null,
       serving_label: '1 serving',
       serving_factor: 1,
       serving_grams: null,
@@ -276,7 +288,7 @@ Deno.serve(async (req: Request) => {
       'id, user_id, quantity, scan_id, display_label, food_id, ' +
         'item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, ' +
         'serving_label, serving_factor, ' +
-        'food_log_ingredients(id, quantity, display_label, item_name)',
+        'food_log_ingredients(id, quantity, grams, serving_label, display_label, item_name)',
     )
     .eq('id', body.food_log_id)
     .single()
@@ -366,23 +378,23 @@ Deno.serve(async (req: Request) => {
       //
       // The old path added the delta to the entry's own figure and deleted the
       // breakdown to stop it contradicting the total.
-      //
-      // Exact name first, then either direction of containment: the model mostly
-      // copies the ingredient's name, but "the chicken" has to find "fried
-      // chicken wing" too.
-      const findPart = (wanted: string | null) => {
-        const needle = wanted?.toLowerCase().trim() ?? ''
-        if (!needle) return undefined
-        return (
-          parts.find((part) => partName(part).toLowerCase() === needle) ??
-          parts.find((part) => {
-            const name = partName(part).toLowerCase()
-            return name.includes(needle) || needle.includes(name)
-          })
-        )
+      const matches = matchingRefineParts(parts, interpretation.part, partName)
+      const match = matches.length === 1 ? matches[0] : undefined
+      const swapped = findRefinePart(parts, interpretation.replaces, partName)
+
+      // A failed swap must not fall through to resizing or adding the new food.
+      if (
+        (interpretation.replaces && !swapped) ||
+        (!interpretation.replaces && matches.length > 1)
+      ) {
+        await recordRefine(null, entry.food_id, null)
+        return json({
+          ok: true,
+          applied: false,
+          code: 'no_change',
+          reason: 'ingredient target was missing or ambiguous',
+        })
       }
-      const match = findPart(interpretation.part)
-      const swapped = findPart(interpretation.replaces)
 
       /**
        * Whether any arm of the chain below actually moved something. The chain
@@ -394,22 +406,37 @@ Deno.serve(async (req: Request) => {
       let changed = true
 
       if (swapped && interpretation.part) {
-        // ONE PART BECAME A DIFFERENT FOOD. The row is replaced in place: same
-        // count, same position, priced from what it used to cost plus the
-        // model's delta for the swap — so the three parts nobody mentioned are
-        // untouched, which is the whole reason this is not a redescribe.
-        const held = Math.max(0.25, Number(swapped.quantity))
-        const before = partKcal.get(swapped.id) ?? 0
-        // The model's own price for the new food when it gave one, and only
-        // the delta as a fallback. See `Interpretation.part_kcal`: asked what
-        // rendang chicken costs it answers 280; asked how it differs from a
-        // 247 kcal fried chicken it answered -172, which is 75 kcal of rendang.
-        const after = Math.max(
-          10,
-          Math.round(interpretation.part_kcal ?? before + interpretation.kcal_delta),
+        // Keep the measured portion and price the replacement itself. A fixed
+        // 50/20/30 macro split made chicken mostly carbohydrate after a swap.
+        const held = Number(swapped.quantity)
+        const grams = swapped.grams == null ? null : Number(swapped.grams)
+        const nutrition = await estimateNutrition(
+          {
+            name: interpretation.part,
+            specific_query: interpretation.part,
+            generic_query: interpretation.part,
+            count: 1,
+            grams,
+            components: [],
+            serving_hint: grams == null ? (swapped.serving_label ?? '1 serving') : '1 serving',
+            kcal_low: 0,
+            kcal_high: 0,
+            confidence: 1,
+            suggested_edits: [],
+            icon: null,
+          },
+          mock,
+          meter,
         )
-        const perUnit = Math.max(1, Math.round(after / held))
-        await db
+        const energy = nutrition.carbs_g * 4 + nutrition.protein_g * 4 + nutrition.fat_g * 9
+        if (
+          !(nutrition.kcal > 0 && nutrition.kcal <= 20000) ||
+          Math.abs(energy - nutrition.kcal) / nutrition.kcal > 0.25 ||
+          (grams != null && nutrition.kcal > grams * 9)
+        ) {
+          throw new Error('could not price replacement')
+        }
+        const { error } = await db
           .from('food_log_ingredients')
           .update({
             // The new food is nothing in any catalogue, so the reference goes
@@ -417,16 +444,17 @@ Deno.serve(async (req: Request) => {
             food_id: null,
             serving_id: null,
             item_name: interpretation.part.slice(0, 120),
-            base_kcal: perUnit,
-            base_carbs_g: Math.round((perUnit * 0.5) / 4),
-            base_protein_g: Math.round((perUnit * 0.2) / 4),
-            base_fat_g: Math.round((perUnit * 0.3) / 9),
+            base_kcal: Math.round(nutrition.kcal),
+            base_carbs_g: nutrition.carbs_g,
+            base_protein_g: nutrition.protein_g,
+            base_fat_g: nutrition.fat_g,
             serving_label: '1 serving',
             serving_factor: 1,
-            quantity: refineQuantity(held),
+            quantity: held,
             display_label: interpretation.part.slice(0, 120),
           })
           .eq('id', swapped.id)
+        if (error) throw error
       } else if (match && interpretation.total) {
         // The user said how many there ARE. "Only 3 skewers" sets that part to
         // three and leaves the rest of the plate alone — read as a change it
@@ -488,7 +516,7 @@ Deno.serve(async (req: Request) => {
             .update({ quantity: refineQuantity(Math.max(0.25, left)) })
             .eq('id', match.id)
         }
-      } else if (interpretation.kcal_delta < 0 && parts.length > 1) {
+      } else if (interpretation.kcal_delta < 0 && !interpretation.part && parts.length > 1) {
         // Something was removed and no part answers to the name. Take it off
         // the plate as a whole rather than pretending the list still adds up:
         // the largest part shrinks by the delta, which is where a removed

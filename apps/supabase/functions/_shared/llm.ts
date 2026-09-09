@@ -177,7 +177,8 @@ export type Interpretation =
        * at. Only meaningful alongside `replaces`, and the one adjustment where
        * a delta is the wrong question: against a 247 kcal fried chicken the
        * model answered -172, putting rendang at 75 kcal. Asked what rendang
-       * chicken costs, it answers 280.
+       * chicken costs, it answers 280. This remains an interpretation hint;
+       * scan-refine prices persisted swaps separately, including their macros.
        */
       part_kcal: number | null
       /**
@@ -1225,7 +1226,7 @@ export type RefineContext = {
   ingredients: Array<{ name: string; quantity: number; kcal: number }>
 }
 
-function shapeInterpretation(raw: unknown): Interpretation {
+export function shapeInterpretation(raw: unknown): Interpretation {
   const o = (raw ?? {}) as Record<string, unknown>
   if (o.action === 'quantity') {
     const factor = Number(o.factor)
@@ -1248,7 +1249,10 @@ function shapeInterpretation(raw: unknown): Interpretation {
     const partKcal = Number(o.part_kcal)
     // A swap is the one adjustment that may cost nothing: chicken for chicken
     // of a different kind can come out even, and the plate still has to change.
-    const swapping = Boolean(part && replaces && replaces.toLowerCase() !== part.toLowerCase())
+    if (replaces && (!part || replaces.toLowerCase() === part.toLowerCase())) {
+      return { action: 'none', code: 'unusable', reason: 'replacement must name a different food' }
+    }
+    const swapping = Boolean(part && replaces)
     // A stated count is a change on its own, delta or no delta. "Only 3
     // skewers" against six halves the plate, and the model reasonably answers 0
     // for a field it has been told is about calories, so requiring a non-zero
@@ -1267,9 +1271,9 @@ function shapeInterpretation(raw: unknown): Interpretation {
           swapping && Number.isFinite(partKcal) && partKcal > 0 && partKcal <= 5000
             ? Math.round(partKcal)
             : null,
-        count: counted && Math.abs(count) <= 20 ? Math.round(count) : null,
+        count: counted && Math.abs(count) <= 20 ? count : null,
         // Zero is not a total: "no sambal" is a removal, which the delta says.
-        total: stated && total <= 20 ? Math.round(total) : null,
+        total: stated && total <= 20 ? total : null,
       }
     }
     return { action: 'none', code: 'unusable', reason: 'unusable adjustment' }
@@ -1299,14 +1303,24 @@ function shapeInterpretation(raw: unknown): Interpretation {
 export const INTERPRET_INSTRUCTION_PROMPT =
   'A user is correcting ONE logged food entry by typing. Decide what the correction ' +
   'means and respond with JSON only.\n\n' +
+  'First read the WHOLE correction. "Not X, but Y", "Y, not X", "this is Y instead ' +
+  'of X" and "replace X with Y" all mean the same thing: X was misidentified and ' +
+  'must become Y. They NEVER mean less X. If X is an ingredient, use adjust with ' +
+  '`replaces` set to its exact listed name and `part` set to Y. Keep the other ' +
+  'ingredients. A food identity correction matters even when its calories are unchanged.\n' +
+  'Example: Ingredients are "Grilled pork chop", "Steamed rice", "Mixed vegetables". ' +
+  'User: "This is not pork chop, but chicken". Return action "adjust", replaces ' +
+  '"Grilled pork chop", part "Grilled chicken", and name "Grilled chicken with rice ' +
+  'and vegetables". Never return part "Grilled pork chop" for this correction. ' +
+  'Retain the preparation unless the user corrects it; do not invent a cut of meat.\n\n' +
   'Work down this list and STOP at the first case that fits. The order is not a ' +
   'preference: each step keeps more of the entry than the one below it, and everything ' +
   'about the entry except the thing just typed is something the user has already ' +
   'accepted.\n\n' +
-  '1. {"action":"none","reason":string} — the text is not a correction to this food, or ' +
+  '1. {"action":"none","reason":string}. Use this when the text is not a correction to this food, or ' +
   'it has no calorie consequence: "extra spicy", "more chilli", "no ice", "it was tasty", ' +
   '"remind me to buy milk". Flavour, temperature and cooking style are not calories.\n\n' +
-  '2. {"action":"quantity","factor":number} — the amount of the WHOLE entry changed and ' +
+  '2. {"action":"quantity","factor":number}. The amount of the WHOLE entry changed and ' +
   'nothing else did. `factor` multiplies the amount CURRENTLY logged, which is the ' +
   'number the user is looking at.\n' +
   '   - "half portion", "I only ate half of it" -> 0.5.\n' +
@@ -1318,38 +1332,41 @@ export const INTERPRET_INSTRUCTION_PROMPT =
   'entry rescales the parts nobody mentioned too.\n\n' +
   '3. {"action":"adjust","kcal_delta":number,"name":string,"part":string|null,' +
   '"replaces":string|null,"part_kcal":number|null,"count":number|null,' +
-  '"total":number|null} — the same meal with ' +
+  '"total":number|null}. The same meal with ' +
   'ONE part added, removed, resized or swapped. This is the answer for nearly every real ' +
   'correction.\n' +
   '   - `part`: the food the correction is about. For a removal or a resize, copy the ' +
   'name from the Ingredients list EXACTLY. For an addition or a swap, it is the name of ' +
   'the food coming IN ("fried egg", "rendang chicken") and NOT the one being corrected. ' +
-  'Null only when no part answers to the change and it is about the dish as a whole.\n' +
+  'Null only when no part answers to the change and it is about the dish as a whole. ' +
+  'Resolve obvious typing mistakes against the listed ingredients: "no smabal" ' +
+  'means remove listed "Sambal", so copy that exact listed name into `part`, not null.\n' +
   '   - A SWAP is one part turning out to be a different food, and it needs three ' +
   'fields together: `replaces` is the listed ingredient that was wrong, copied exactly; ' +
   '`part` is what it actually was; `part_kcal` is what THAT food costs at the count the ' +
-  'listed one is logged at. The two names are never the same string — if you would ' +
+  'listed one is logged at. The two names are never the same string. If you would ' +
   'write the same text in both, this is not a swap. Against a listed "Fried chicken ' +
   '(thigh) x 1 = 247 kcal", "it was rendang chicken not fried chicken" is replaces ' +
   '"Fried chicken (thigh)", part "rendang chicken", part_kcal 280. Give the food\'s own ' +
-  'cost there, not a difference — arithmetic against the old figure is where this goes ' +
+  'cost there, not a difference. Arithmetic against the old figure is where this goes ' +
   'wrong. `replaces` and `part_kcal` are null for every other kind of adjustment.\n' +
-  '   - `kcal_delta`: the calorie change for THAT PART ALONE and never for the meal — ' +
-  'negative for a removal, positive for an addition, and for a swap the new food minus ' +
-  'the old one (`part_kcal` is what actually gets used there). The ' +
+  '   - `kcal_delta`: the calorie change for THAT PART ALONE and never for the meal. ' +
+  'Negative for a removal, positive for an addition, and for a swap the new food minus ' +
+  'the old one. The ' +
   'Ingredients list gives what each part costs at its current count, so half of a 340 ' +
   'kcal rice is -170 and dropping a 60 kcal sambal is -60. An addition nobody sized is ' +
   'about +75 for an egg, +130 for a sweet drink.\n' +
   '   - `count` / `total`: how many, in whichever way the user said it. `count` is a ' +
   'CHANGE ("two more skewers" is 2, "one less egg" is -1). `total` is an AMOUNT ("only 3 ' +
   'skewers", "there were 3 eggs", "only 1 chicken wing" are 3, 3 and 1). "only N" is ' +
-  'always `total` N — do not subtract your way to it. Never both, and null for each when ' +
-  'the user gave no number.\n' +
-  '   - `name`: the corrected dish name, still recognisably this meal — "Nasi lemak, no ' +
+  'always `total` N. Do not subtract your way to it. Never both, and null for each when ' +
+  'the user gave no number. Fractions are valid: half of a listed ingredient at ' +
+  'quantity Q means `total` Q/2, never rescale the whole meal.\n' +
+  '   - `name`: the corrected dish name, still recognisably this meal. "Nasi lemak, no ' +
   'sambal", "Nasi lemak with rendang chicken". Not a new dish.\n' +
   '   Less of an INGREDIENT is an adjustment even when the words sound like taste: ' +
   '"less sugar", "kurang manis", "no santan", "no oil", "skip the gravy" all take ' +
-  'calories out and belong here — about -60 for the sugar in a sweet drink, -100 for ' +
+  'calories out and belong here: about -60 for the sugar in a sweet drink, -100 for ' +
   'the santan in a bowl of laksa. Only a change with nothing to subtract ("extra ' +
   'spicy", "more chilli") is case 1.\n\n' +
   '4. {"action":"redescribe","item":{"name":string,"specific_query":string,' +
@@ -1357,8 +1374,8 @@ export const INTERPRET_INSTRUCTION_PROMPT =
   '"components":[{"name":string,"count":number,"grams":number,' +
   '"kcal":number,"carbs_g":number|null,"protein_g":number|null,' +
   '"fat_g":number|null}],"serving_hint":string|null,' +
-  '"kcal_low":number,"kcal_high":number,"confidence":number,"suggested_edits":[]}} — ' +
-  'the dish IDENTITY was wrong: what is logged is not the food that was eaten. "it was ' +
+  '"kcal_low":number,"kcal_high":number,"confidence":number,"suggested_edits":[]}}. ' +
+  'The dish IDENTITY was wrong: what is logged is not the food that was eaten. "it was ' +
   'actually hokkien mee", "this is nasi kandar not nasi lemak".\n' +
   '   This is the expensive answer and the last one. It DISCARDS the breakdown and ' +
   're-prices the meal from nothing, so every part the user did not mention is guessed ' +
@@ -1366,7 +1383,7 @@ export const INTERPRET_INSTRUCTION_PROMPT =
   'entry is the right food. A wrong amount, a wrong side, a wrong number of something ' +
   'and a wrong calorie figure are all corrections to THIS entry, not new dishes. ' +
   'Describe the correct dish as eaten and bound its calories tightly. Weigh every part ' +
-  'first — "grams" is what ONE of it weighs, edible parts only — and price the weight: ' +
+  'first. "grams" is what ONE of it weighs, edible parts only. Price that weight: ' +
   'cooked rice and noodles are about 1.3 kcal/g, grilled meat 1.5-2, fried chicken 2.5-3, ' +
   'vegetables 0.3, and nothing on a plate is over 6 kcal/g.'
 
@@ -1396,12 +1413,12 @@ export const refineUserMessage = (context: RefineContext, instruction: string): 
  * The ceiling is not a bill: tokens are charged as generated, so a small number
  * only buys that failure.
  */
-const INTERPRET_MAX_TOKENS = 2400
+export const INTERPRET_MAX_TOKENS = 2400
 
 /**
  * The fix-by-typing interpreter: entry state and free text in, one decision out.
- * Text-only and cheap; search and estimation only happen when the answer is
- * `redescribe`, and then it is the same cascade a fresh scan runs.
+ * The caller prices replacement ingredients separately and sends `redescribe`
+ * through the same cascade a fresh scan runs.
  */
 export async function interpretInstruction(
   context: RefineContext,
@@ -1498,21 +1515,36 @@ export async function interpretInstruction(
    *
    * A considered `not_a_correction` is not retried, since that is an answer.
    */
-  const ask = async () =>
+  const ask = async (retryReason?: string) =>
     shapeInterpretation(
       await chatJSON(
         meter,
         [
           { role: 'system', content: INTERPRET_INSTRUCTION_PROMPT },
           { role: 'user', content: refineUserMessage(context, instruction) },
+          ...(retryReason
+            ? [
+                {
+                  role: 'user',
+                  content:
+                    `Your previous answer was rejected: ${retryReason}. ` +
+                    'Read the original correction again and return corrected JSON. ' +
+                    'For a replacement, part must name the incoming food the user actually ate, ' +
+                    'not repeat the old listed ingredient. Keep the old name only in replaces.',
+                },
+              ]
+            : []),
         ],
         INTERPRET_MAX_TOKENS,
       ),
     )
 
-  const first = await ask()
+  const first = await ask().catch((error): Interpretation => {
+    if (!(error instanceof SyntaxError)) throw error
+    return { action: 'none', code: 'unusable', reason: 'response was not valid JSON' }
+  })
   if (first.action !== 'none' || first.code !== 'unusable') return first
-  return ask().catch(() => first)
+  return ask(first.reason).catch(() => first)
 }
 
 /**
