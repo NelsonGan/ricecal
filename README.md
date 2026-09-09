@@ -1111,8 +1111,8 @@ unannounced is the other half of the complaint.
 
 The Edit button beside the name on Me opens `app/settings/account.tsx`.
 Names update `profiles.display_name` through the existing profile mutation.
-Email is read-only with a copy icon inside the field. Profile photos use the
-system image picker and the existing avatar upload, then save the returned key.
+Email is read-only with a flat copy symbol inside the field that briefly becomes
+a checkmark after copying. Tapping the avatar opens the system image picker and the existing avatar upload, then save the returned key.
 Clipboard support requires a native 1.0.5 build; the app-version runtime keeps this bundle off older binaries.
 Change password opens a short form using
 `updatePassword`, with length and confirmation checks before the auth request.

@@ -64,6 +64,7 @@ it('copies the read-only email without allowing an edit', async () => {
   expect(screen.getByLabelText('EMAIL')).toHaveProp('editable', false)
   await user.press(screen.getByRole('button', { name: 'Copy' }))
   expect(mockCopy).toHaveBeenCalledWith('account@example.test')
+  expect(screen.getByRole('button', { name: 'Email copied' })).toBeTruthy()
   expect(mockUpdateProfile).not.toHaveBeenCalled()
 })
 
@@ -152,7 +153,7 @@ it('hides deletion details until asked and never deletes on the first tap', asyn
 it('uploads the selected profile photo before saving its key', async () => {
   mockPick.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///photo.jpg' }] })
   await mount()
-  await user.press(screen.getByText('Change photo'))
+  await user.press(screen.getByRole('button', { name: 'Change photo' }))
   await waitFor(() =>
     expect(mockUpdateProfile).toHaveBeenCalledWith({ avatarPath: 'avatars/user/new.jpg' }),
   )
@@ -161,11 +162,11 @@ it('uploads the selected profile photo before saving its key', async () => {
 
 it('leaves the photo unchanged when picking is canceled or uploading fails', async () => {
   await mount()
-  await user.press(screen.getByText('Change photo'))
+  await user.press(screen.getByRole('button', { name: 'Change photo' }))
   expect(mockUpload).not.toHaveBeenCalled()
   mockPick.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///photo.jpg' }] })
   mockUpload.mockRejectedValueOnce(new Error('offline'))
-  await user.press(screen.getByText('Change photo'))
+  await user.press(screen.getByRole('button', { name: 'Change photo' }))
   await waitFor(() => expect(screen.getByText('Could not update photo')).toBeTruthy())
   expect(mockUpdateProfile).not.toHaveBeenCalled()
 })

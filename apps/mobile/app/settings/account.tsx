@@ -1,8 +1,8 @@
 import * as Clipboard from 'expo-clipboard'
 import * as ImagePicker from 'expo-image-picker'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Keyboard, Modal, ScrollView, type TextInput, View } from 'react-native'
+import { ActivityIndicator, Keyboard, Modal, ScrollView, type TextInput, View } from 'react-native'
 
 import {
   storedImageSource,
@@ -18,6 +18,7 @@ import { PasswordField, useAuthMessage } from '@/features/auth'
 import { usePlanSummary } from '@/features/paywall'
 import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal'
 import { useBack } from '@/lib/navigation'
+import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
   Avatar,
@@ -53,6 +54,10 @@ export default function AccountScreen() {
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const saving = useRef(false)
+  const colors = useThemeColors()
+  const [copied, setCopied] = useState(false)
+  const copyReset = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => clearTimeout(copyReset.current), [])
 
   const save = async () => {
     if (saving.current || pickingPhoto.current || !profile) return
@@ -74,8 +79,10 @@ export default function AccountScreen() {
   const copyEmail = async () => {
     if (!session?.user.email) return
     try {
-      await Clipboard.setStringAsync(session.user.email)
-      toast.show({ title: t('profile:account.copied') })
+      if (!(await Clipboard.setStringAsync(session.user.email))) throw new Error('Copy failed')
+      setCopied(true)
+      clearTimeout(copyReset.current)
+      copyReset.current = setTimeout(() => setCopied(false), 2000)
     } catch {
       toast.show({ title: t('profile:account.copyFailed'), tone: 'error' })
     }
@@ -112,25 +119,34 @@ export default function AccountScreen() {
         onBack={goBack}
         backLabel={t('common:a11y.back')}
       />
-      <View className="items-center gap-3 py-2">
-        <Avatar
-          name={name}
-          uri={avatar?.uri}
-          cacheKey={avatar?.cacheKey}
-          size="lg"
-          className="self-center"
-          tone="pandan"
-        />
-        <Button
-          variant="secondary"
-          size="sm"
-          className="self-center"
-          onPress={changePhoto}
-          loading={photoPending}
+      <View className="items-center py-2">
+        <Tappable
+          accessibilityRole="button"
+          accessibilityLabel={t('profile:account.changePhoto')}
+          accessibilityState={{ disabled: !profile || busy, busy: photoPending }}
           disabled={!profile || busy}
+          onPress={changePhoto}
+          className="self-center"
         >
-          {t('profile:account.changePhoto')}
-        </Button>
+          <View
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            <Avatar
+              name={name}
+              uri={avatar?.uri}
+              cacheKey={avatar?.cacheKey}
+              size="lg"
+              tone="pandan"
+            />
+            {photoPending ? (
+              <View className="absolute inset-0 items-center justify-center rounded-card bg-surface/70">
+                <ActivityIndicator color={colors.pandan} />
+              </View>
+            ) : null}
+          </View>
+        </Tappable>
       </View>
       <Card>
         <TextField
@@ -158,9 +174,10 @@ export default function AccountScreen() {
                 variant="ghost"
                 size="sm"
                 onPress={copyEmail}
-                accessibilityLabel={t('profile:account.copy')}
+                className="self-center"
+                accessibilityLabel={t(copied ? 'profile:account.copied' : 'profile:account.copy')}
               >
-                <Icon set="ui" name="duplicate" size={22} />
+                <CopyMark copied={copied} />
               </IconButton>
             }
           />
@@ -348,13 +365,14 @@ function DeleteAccount({ onClose }: { onClose: () => void }) {
         <IconButton
           variant="ghost"
           size="sm"
+          className="self-center"
           accessibilityLabel={t('profile:account.deleteDetails')}
           onPress={() => {
             Keyboard.dismiss()
             setDetailsOpen(true)
           }}
         >
-          <Icon set="ui" name="info" size={20} />
+          <Icon set="ui" name="info" size={20} style={{ transform: [{ translateY: -2 }] }} />
         </IconButton>
       </View>
       <Text variant="body">{t('profile:account.confirmBody')}</Text>
@@ -419,5 +437,56 @@ function DeleteAccount({ onClose }: { onClose: () => void }) {
         </View>
       </Modal>
     </Sheet>
+  )
+}
+
+function CopyMark({ copied }: { copied: boolean }) {
+  const colors = useThemeColors()
+  return (
+    <View style={{ width: 22, height: 22 }} accessible={false}>
+      {copied ? (
+        <View
+          style={{
+            position: 'absolute',
+            left: 7,
+            top: 2,
+            width: 8,
+            height: 15,
+            borderRightWidth: 2,
+            borderBottomWidth: 2,
+            borderColor: colors.pandan,
+            transform: [{ rotate: '45deg' }],
+          }}
+        />
+      ) : (
+        <>
+          <View
+            style={{
+              position: 'absolute',
+              left: 3,
+              top: 3,
+              width: 12,
+              height: 14,
+              borderWidth: 1.8,
+              borderRadius: 2,
+              borderColor: colors.ink,
+            }}
+          />
+          <View
+            style={{
+              position: 'absolute',
+              left: 7,
+              top: 7,
+              width: 12,
+              height: 14,
+              borderWidth: 1.8,
+              borderRadius: 2,
+              borderColor: colors.ink,
+              backgroundColor: colors.surface,
+            }}
+          />
+        </>
+      )}
+    </View>
   )
 }
