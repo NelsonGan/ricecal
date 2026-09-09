@@ -60,11 +60,14 @@ export default function AccountScreen() {
   useEffect(() => () => clearTimeout(copyReset.current), [])
 
   const save = async () => {
-    if (saving.current || pickingPhoto.current || !profile) return
+    if (saving.current || !profile || draft === undefined) return
     setSubmitted(true)
     if (!name.trim()) return
+    if (name.trim() === (profile.display_name ?? '')) {
+      setDraft(undefined)
+      return
+    }
     saving.current = true
-    Keyboard.dismiss()
     try {
       await updateProfile.mutateAsync({ displayName: name.trim() })
       setDraft(undefined)
@@ -158,7 +161,8 @@ export default function AccountScreen() {
           textContentType="name"
           maxLength={60}
           returnKeyType="done"
-          onSubmitEditing={save}
+          onBlur={save}
+          onSubmitEditing={() => Keyboard.dismiss()}
           error={submitted && !name.trim() ? t('profile:account.nameRequired') : undefined}
         />
         {session?.user.email ? (
@@ -182,14 +186,6 @@ export default function AccountScreen() {
             }
           />
         ) : null}
-        <Button
-          fullWidth
-          onPress={save}
-          loading={updateProfile.isPending}
-          disabled={!profile || busy || name.trim() === (profile.display_name ?? '')}
-        >
-          {t('common:action.save')}
-        </Button>
       </Card>
 
       <Button
