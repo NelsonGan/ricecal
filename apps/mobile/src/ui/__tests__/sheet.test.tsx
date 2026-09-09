@@ -42,3 +42,21 @@ describe('SheetSurface', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 })
+
+it('keeps a pending sheet visible and lets it close after the request finishes', async () => {
+  const onClose = jest.fn()
+  const panel = (dismissible: boolean) => (
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <SheetSurface onClose={onClose} closeLabel="Close" dismissible={dismissible}>
+        <Text>Pending request</Text>
+      </SheetSurface>
+    </SafeAreaProvider>
+  )
+  const view = await render(panel(false))
+  await user.press(screen.getByLabelText('Close'))
+  expect(onClose).not.toHaveBeenCalled()
+  expect(screen.getByText('Pending request')).toBeTruthy()
+  await view.rerender(panel(true))
+  await user.press(screen.getByLabelText('Close'))
+  await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
+})
