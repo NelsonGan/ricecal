@@ -9,11 +9,16 @@ import AccountScreen from '../account'
 
 const mockUpdateProfile = jest.fn().mockResolvedValue({})
 const mockUpdatePassword = jest.fn().mockResolvedValue(undefined)
+const mockPick = jest.fn().mockResolvedValue({ canceled: true })
+const mockUpload = jest.fn().mockResolvedValue('avatars/user/new.jpg')
 const mockCopy = jest.fn().mockResolvedValue(true)
 const mockDelete = jest.fn().mockResolvedValue(undefined)
 let mockProfile: { display_name: string } | undefined = { display_name: 'Alex' }
 
 jest.mock('@/data', () => ({
+  useAvatarUrl: () => ({ data: undefined }),
+  storedImageSource: () => undefined,
+  uploadAvatar: (uri: string) => mockUpload(uri),
   useProfile: () => ({ data: mockProfile }),
   useSession: () => ({ session: { user: { email: 'account@example.test' } } }),
   useUpdateProfile: () => ({ mutateAsync: mockUpdateProfile, isPending: false }),
@@ -28,6 +33,7 @@ jest.mock('@/features/auth', () => ({
   PasswordField: jest.requireActual('@/features/auth/PasswordField').PasswordField,
   useAuthMessage: () => () => 'Password could not be changed',
 }))
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: () => mockPick() }))
 jest.mock('expo-clipboard', () => ({ setStringAsync: (value: string) => mockCopy(value) }))
 jest.mock('@/lib/navigation', () => ({ useBack: () => jest.fn() }))
 
@@ -141,4 +147,44 @@ it('hides deletion details until asked and never deletes on the first tap', asyn
   expect(mockDelete).not.toHaveBeenCalled()
   await user.press(screen.getByText('Cancel'))
   expect(mockDelete).not.toHaveBeenCalled()
+})
+
+it('uploads the selected profile photo before saving its key', async () => {
+  mockPick.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///photo.jpg' }] })
+  await mount()
+  await user.press(screen.getByText('Change photo'))
+  await waitFor(() =>
+    expect(mockUpdateProfile).toHaveBeenCalledWith({ avatarPath: 'avatars/user/new.jpg' }),
+  )
+  expect(mockUpload).toHaveBeenCalledWith('file:///photo.jpg')
+})
+
+it('leaves the photo unchanged when picking is canceled or uploading fails', async () => {
+  await mount()
+  await user.press(screen.getByText('Change photo'))
+  expect(mockUpload).not.toHaveBeenCalled()
+  mockPick.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///photo.jpg' }] })
+  mockUpload.mockRejectedValueOnce(new Error('offline'))
+  await user.press(screen.getByText('Change photo'))
+  await waitFor(() => expect(screen.getByText('Could not update photo')).toBeTruthy())
+  expect(mockUpdateProfile).not.toHaveBeenCalled()
+})
+
+it('requires the exact delete confirmation and clears it when canceled', async () => {
+  await mount()
+  await user.press(screen.getByText('Delete my account'))
+  const field = screen.getByLabelText('Type "delete" to confirm')
+  expect(screen.getByRole('button', { name: /^Delete$/ })).toBeDisabled()
+  await user.type(field, 'Delete')
+  expect(screen.getByRole('button', { name: /^Delete$/ })).toBeDisabled()
+  await user.clear(field)
+  await user.type(field, 'delete')
+  expect(screen.getByRole('button', { name: /^Delete$/ })).toBeEnabled()
+  await user.press(screen.getByText('Cancel'))
+  await user.press(screen.getByText('Delete my account'))
+  expect(screen.getByLabelText('Type "delete" to confirm')).toHaveDisplayValue('')
+  expect(mockDelete).not.toHaveBeenCalled()
+  await user.type(screen.getByLabelText('Type "delete" to confirm'), 'delete')
+  await user.press(screen.getByRole('button', { name: /^Delete$/ }))
+  expect(mockDelete).toHaveBeenCalledTimes(1)
 })

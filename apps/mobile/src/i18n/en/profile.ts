@@ -76,6 +76,10 @@ export const profile = {
     copied: 'Email copied',
     copyFailed: 'Could not copy email',
     changePassword: 'Change password',
+    changePhoto: 'Change photo',
+    photoSaved: 'Photo saved',
+    photoFailed: 'Could not update photo',
+    typeDelete: 'Type "delete" to confirm',
     deleteDetails: 'What gets deleted',
 
     privacy: 'Privacy Policy',

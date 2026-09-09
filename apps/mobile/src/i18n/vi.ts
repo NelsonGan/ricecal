@@ -1071,6 +1071,10 @@ export const vi = {
       copied: 'Đã sao chép email',
       copyFailed: 'Không thể sao chép email',
       changePassword: 'Đổi mật khẩu',
+      changePhoto: 'Đổi ảnh',
+      photoSaved: 'Đã lưu ảnh',
+      photoFailed: 'Không thể cập nhật ảnh',
+      typeDelete: 'Nhập "delete" để xác nhận',
       deleteDetails: 'Những gì sẽ bị xóa',
 
       privacy: 'Chính sách quyền riêng tư',

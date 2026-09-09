@@ -1092,6 +1092,10 @@ export const fil = {
       copied: 'Nakopya ang email',
       copyFailed: 'Hindi makopya ang email',
       changePassword: 'Palitan ang password',
+      changePhoto: 'Palitan ang larawan',
+      photoSaved: 'Na-save ang larawan',
+      photoFailed: 'Hindi ma-update ang larawan',
+      typeDelete: 'I-type ang "delete" para kumpirmahin',
       deleteDetails: 'Mga mabubura',
 
       privacy: 'Patakaran sa Privacy',

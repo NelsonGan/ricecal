@@ -1062,6 +1062,10 @@ export const zhHans = {
       copied: '邮箱已复制',
       copyFailed: '无法复制邮箱',
       changePassword: '修改密码',
+      changePhoto: '更换照片',
+      photoSaved: '照片已保存',
+      photoFailed: '无法更新照片',
+      typeDelete: '输入“delete”以确认',
       deleteDetails: '将删除的内容',
 
       privacy: '隐私政策',

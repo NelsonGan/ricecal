@@ -1060,6 +1060,10 @@ export const hi = {
       copied: 'ईमेल कॉपी हो गया',
       copyFailed: 'ईमेल कॉपी नहीं हुआ',
       changePassword: 'पासवर्ड बदलें',
+      changePhoto: 'फ़ोटो बदलें',
+      photoSaved: 'फ़ोटो सेव हो गई',
+      photoFailed: 'फ़ोटो अपडेट नहीं हो सकी',
+      typeDelete: 'पुष्टि के लिए "delete" लिखें',
       deleteDetails: 'क्या मिटाया जाएगा',
 
       privacy: 'निजता नीति',

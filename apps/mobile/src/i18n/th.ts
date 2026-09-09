@@ -1061,6 +1061,10 @@ export const th = {
       copied: 'คัดลอกอีเมลแล้ว',
       copyFailed: 'คัดลอกอีเมลไม่ได้',
       changePassword: 'เปลี่ยนรหัสผ่าน',
+      changePhoto: 'เปลี่ยนรูป',
+      photoSaved: 'บันทึกรูปแล้ว',
+      photoFailed: 'อัปเดตรูปไม่ได้',
+      typeDelete: 'พิมพ์ "delete" เพื่อยืนยัน',
       deleteDetails: 'สิ่งที่จะถูกลบ',
 
       privacy: 'นโยบายความเป็นส่วนตัว',
