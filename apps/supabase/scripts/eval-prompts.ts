@@ -32,6 +32,7 @@ import {
   DESCRIBE_MEAL_PROMPT,
   describeUserMessage,
   INTERPRET_INSTRUCTION_PROMPT,
+  INTERPRET_MAX_TOKENS,
   type RefineContext,
   refineUserMessage,
 } from '../functions/_shared/llm.ts'
@@ -505,6 +506,37 @@ const near = (value: number | null | undefined, target: number, slack: number) =
   value !== null && value !== undefined && Math.abs(value - target) <= slack
 
 const REFINE_CASES: RefineCase[] = [
+  ...[
+    'This is not pork chop, but chicken',
+    'This is chicken, not pork chop',
+    'Replace the pork chop with chicken',
+    'Not pork, chicken. Same amount.',
+    'It was chicken instead of pork, the calories are the same',
+    'Ini bukan pork chop, ini ayam',
+    '这不是猪排，是鸡肉',
+  ].map(
+    (text): RefineCase => ({
+      context: {
+        name: 'Pork chop with rice and vegetables',
+        kcal: 700,
+        quantity: 1,
+        servingLabel: '1 plate',
+        ingredients: [
+          { name: 'Grilled pork chop', quantity: 1, kcal: 350 },
+          { name: 'Steamed rice', quantity: 1, kcal: 260 },
+          { name: 'Mixed vegetables', quantity: 1, kcal: 90 },
+        ],
+      },
+      text,
+      checks: (a) => [
+        action(a, 'adjust'),
+        check('replaces the listed pork', a.replaces === 'Grilled pork chop', a.replaces),
+        check('replacement is chicken', /chicken|ayam|鸡/i.test(a.part ?? ''), a.part),
+        check('replacement is not pork', !/pork|猪/i.test(a.part ?? ''), a.part),
+        check('corrected name has no pork', !/pork|猪/i.test(a.name ?? ''), a.name),
+      ],
+    }),
+  ),
   // -- The amount of the whole plate, in the three ways people say it.
   {
     context: PLATE,
@@ -1238,7 +1270,7 @@ async function run(name: string, runs: number) {
           (await call(
             INTERPRET_INSTRUCTION_PROMPT,
             refineUserMessage(c.context, c.text),
-            600,
+            INTERPRET_MAX_TOKENS,
           )) as Interpretation,
         ),
     })),
@@ -1297,6 +1329,7 @@ async function run(name: string, runs: number) {
     for (const c of bad) console.log(`     ✗ ${c.label} — got ${c.got}`)
   }
   console.log(`\n${passed}/${total} checks passed\n`)
+  if (passed !== total || rows.some((row) => row.error)) Deno.exitCode = 1
 }
 
 const which = Deno.args[0] ?? 'all'

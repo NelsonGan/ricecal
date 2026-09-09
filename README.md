@@ -98,6 +98,7 @@ Useful commands:
 | `pnpm foods:servings` | repoint a row whose default portion is a unit of measure |
 | `pnpm eval:prompts` | grade the model prompts |
 | `pnpm eval:scan` | drive the deployed scan pipeline end to end |
+| `pnpm eval:refine --repeat=3` | test real AI ingredient corrections against local Supabase |
 
 Run one simulator at a time. This machine does not have room for the iOS
 simulator and the Android emulator together, and the result is not just
@@ -1942,7 +1943,27 @@ of them was ever the user's wording:
   its `food_id` and answered `applied: true`. The user watched a row rework
   itself for ten seconds and got the same numbers under a new name.
 
-An unreadable answer is asked for **once more** before any of this is reported.
+**"Not pork chop, but chicken" is a replacement, not less pork.** The interpreter
+reads both sides of a correction before choosing an action. Otherwise it renamed
+the plate to chicken but reduced the pork ingredient to 0.8 servings. A swap whose
+two names are identical is rejected and retried with the validation failure
+explained to the model; a missing or ambiguous target
+leaves the plate alone instead of falling through to an addition or reduction.
+Partial ingredient names must match a whole word sequence and identify one row.
+An ambiguous addition also leaves the plate alone; it must not create another row.
+Fractional ingredient counts stay fractional: rounding a model answer of 0.5
+servings to one silently undid "half the rice".
+
+A replacement keeps the ingredient's id, position, exact quantity and measured
+weight. Without a recorded weight, its portion label still informs the estimate.
+A separate nutrition call prices one unit of the new food at that weight,
+without the old calorie figure, and checks its energy against its macros before
+writing. The previous fixed macro split made chicken mostly carbohydrate. The
+other parts are untouched, and rebuilding the parent clears old figure overrides
+so the corrected parts and the displayed totals agree.
+
+An unreadable answer, including malformed JSON, is asked for **once more** before
+any of this is reported.
 A considered `not_a_correction` is not: the model read the words and said they
 have no calories in them, and asking the same model the same question again is
 not a plan.
@@ -4362,6 +4383,16 @@ check does not see them. `deno check --no-lock --config <fn>/deno.json
 <fn>/index.ts` is their typecheck, and CI runs it over every function.
 `--no-lock` matters: a lockfile left in a function directory gets bundled and
 triples the deployed script.
+
+For real local AI testing, keep `OPENROUTER_API_KEY` in the gitignored
+`apps/supabase/functions/.env` (owner read/write only). Supabase's secrets API
+returns hashes, not recoverable values. Local auth and database keys must stay
+local; only the AI provider credential is shared. Stop and start the local stack
+after changing the env file, and leave `MOCK_AI` unset. The prompt suite can read
+the same file with `deno run --env-file=apps/supabase/functions/.env -A
+apps/supabase/scripts/eval-prompts.ts refine 3`. `pnpm eval:refine --repeat=3`
+seeds its own local Pro account, checks persisted ingredients and totals, then
+deletes the account. It refuses a hosted API URL.
 
 **Mock AI** is on whenever `OPENROUTER_API_KEY` is unset (or `MOCK_AI=true`), so
 a local stack scans with no config and production can never mock silently.

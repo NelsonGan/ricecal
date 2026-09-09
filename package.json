@@ -44,7 +44,8 @@
     "android": "pnpm --filter @ricecal/mobile exec expo run:android",
     "prebuild": "LANG=${LANG:-en_US.UTF-8} pnpm --filter @ricecal/mobile exec expo prebuild --clean",
     "build:android": "pnpm --filter @ricecal/mobile exec eas build --profile development --platform android",
-    "build:ios": "pnpm --filter @ricecal/mobile exec eas build --profile development --platform ios"
+    "build:ios": "pnpm --filter @ricecal/mobile exec eas build --profile development --platform ios",
+    "eval:refine": "node --no-warnings apps/supabase/scripts/refine-eval.mjs"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
