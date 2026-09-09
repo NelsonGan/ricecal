@@ -1,4 +1,4 @@
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native'
+import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -76,7 +76,7 @@ it('waits for a late profile and does not replace a typed draft on refetch', asy
   await view.rerender(<AccountScreen />)
   expect(screen.getByLabelText('NAME')).toHaveDisplayValue('Alex')
   await user.clear(screen.getByLabelText('NAME'))
-  await user.type(screen.getByLabelText('NAME'), 'New name')
+  await user.type(screen.getByLabelText('NAME'), 'New name', { skipBlur: true })
   mockProfile = { display_name: 'Refetched name' }
   await view.rerender(<AccountScreen />)
   expect(screen.getByLabelText('NAME')).toHaveDisplayValue('New name')
@@ -85,12 +85,12 @@ it('waits for a late profile and does not replace a typed draft on refetch', asy
 it('rejects a blank name and saves only the trimmed name', async () => {
   await mount()
   await user.clear(screen.getByLabelText('NAME'))
-  await user.type(screen.getByLabelText('NAME'), '   ')
-  await user.press(screen.getByText('Save changes'))
+  await user.type(screen.getByLabelText('NAME'), '   ', { skipBlur: true })
+  await fireEvent(screen.getByLabelText('NAME'), 'blur')
   expect(mockUpdateProfile).not.toHaveBeenCalled()
   expect(screen.getByText('Enter your name')).toBeTruthy()
-  await user.type(screen.getByLabelText('NAME'), 'Sam  ')
-  await user.press(screen.getByText('Save changes'))
+  await user.type(screen.getByLabelText('NAME'), 'Sam  ', { skipBlur: true })
+  await fireEvent(screen.getByLabelText('NAME'), 'blur')
   expect(mockUpdateProfile).toHaveBeenCalledWith({ displayName: 'Sam' })
 })
 
@@ -98,11 +98,11 @@ it('keeps a failed name draft available for retry', async () => {
   mockUpdateProfile.mockRejectedValueOnce(new Error('offline'))
   await mount()
   await user.clear(screen.getByLabelText('NAME'))
-  await user.type(screen.getByLabelText('NAME'), 'Sam')
-  await user.press(screen.getByText('Save changes'))
+  await user.type(screen.getByLabelText('NAME'), 'Sam', { skipBlur: true })
+  await fireEvent(screen.getByLabelText('NAME'), 'blur')
   expect(screen.getByLabelText('NAME')).toHaveDisplayValue('Sam')
-  expect(screen.getByText('Could not save your name')).toBeTruthy()
-  await user.press(screen.getByText('Save changes'))
+  await waitFor(() => expect(screen.getByText('Could not save your name')).toBeTruthy())
+  await fireEvent(screen.getByLabelText('NAME'), 'blur')
   expect(mockUpdateProfile).toHaveBeenCalledTimes(2)
 })
 
@@ -188,4 +188,15 @@ it('requires the exact delete confirmation and clears it when canceled', async (
   await user.type(screen.getByLabelText('Type "delete" to confirm'), 'delete')
   await user.press(screen.getByRole('button', { name: /^Delete$/ }))
   expect(mockDelete).toHaveBeenCalledTimes(1)
+})
+
+it('saves a changed name only on blur and skips unchanged names', async () => {
+  await mount()
+  expect(screen.queryByText('Save changes')).toBeNull()
+  await fireEvent(screen.getByLabelText('NAME'), 'blur')
+  expect(mockUpdateProfile).not.toHaveBeenCalled()
+  await fireEvent.changeText(screen.getByLabelText('NAME'), 'Sam')
+  expect(mockUpdateProfile).not.toHaveBeenCalled()
+  await fireEvent(screen.getByLabelText('NAME'), 'blur')
+  await waitFor(() => expect(mockUpdateProfile).toHaveBeenCalledWith({ displayName: 'Sam' }))
 })
