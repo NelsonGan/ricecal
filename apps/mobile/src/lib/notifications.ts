@@ -6,12 +6,12 @@ import { parseTime } from './meal-times'
 
 /**
  * Local reminders, all scheduled on the device. A meal reminder is "every day at
- * 08:00 in the user's own timezone", which both platforms express as a repeating
- * calendar trigger: no server, no push token, nothing to deliver if the phone is
+ * 08:00 in the user's own timezone", which both platforms express with a daily
+ * trigger: no server, no push token, nothing to deliver if the phone is
  * offline at breakfast.
  *
  * That is why `meal_times.at` is a `time` rather than a timestamp. The OS
- * re-evaluates a calendar trigger against the current timezone, where a stored
+ * re-evaluates the daily trigger against the current timezone, where a stored
  * instant would fire an hour early for the rest of a trip.
  *
  * Push, when it exists, is for what the phone cannot know by itself.
@@ -111,11 +111,11 @@ async function ensureChannel(): Promise<void> {
   })
 }
 
-const dailyTrigger = (hour: number, minute: number): Notifications.CalendarTriggerInput => ({
-  type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+// CALENDAR is iOS-only; DAILY repeats at the chosen local time on both platforms.
+const dailyTrigger = (hour: number, minute: number): Notifications.DailyTriggerInput => ({
+  type: Notifications.SchedulableTriggerInputTypes.DAILY,
   hour,
   minute,
-  repeats: true,
   channelId: CHANNEL,
 })
 
