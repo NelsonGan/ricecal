@@ -3161,7 +3161,8 @@ sides can see them.
 ### Reminders
 
 **All local.** A meal reminder is "every day at 08:00 in the user's own
-timezone", which both platforms express as a repeating calendar trigger. No
+timezone", using Expo's `DAILY` trigger on both platforms. `CALENDAR` is
+iOS-only: Android rejects it and stops scheduling the remaining reminders. No
 server, no push token, nothing to deliver if the phone is offline at breakfast.
 
 ---
