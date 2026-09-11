@@ -1097,6 +1097,8 @@ export const ms = {
       copy: 'Salin',
       copied: 'E-mel disalin',
       copyFailed: 'E-mel tidak dapat disalin',
+      currentPassword: 'Kata laluan semasa',
+      currentPasswordWrong: 'Kata laluan semasa salah',
       changePassword: 'Tukar kata laluan',
       changePhoto: 'Tukar foto',
       photoSaved: 'Foto disimpan',

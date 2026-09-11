@@ -1070,6 +1070,8 @@ export const vi = {
       copy: 'Sao chép',
       copied: 'Đã sao chép email',
       copyFailed: 'Không thể sao chép email',
+      currentPassword: 'Mật khẩu hiện tại',
+      currentPasswordWrong: 'Mật khẩu hiện tại không đúng',
       changePassword: 'Đổi mật khẩu',
       changePhoto: 'Đổi ảnh',
       photoSaved: 'Đã lưu ảnh',

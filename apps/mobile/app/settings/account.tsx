@@ -1,3 +1,4 @@
+import { format, parseISO } from 'date-fns'
 import * as Clipboard from 'expo-clipboard'
 import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useRef, useState } from 'react'
@@ -12,10 +13,12 @@ import {
   useSession,
   useUpdateProfile,
 } from '@/data'
-import { deleteAccount, updatePassword } from '@/data/auth'
+import { changeAccountPassword, hasAccountPassword } from '@/data/account-password'
+import { asAuthProblem, deleteAccount } from '@/data/auth'
 import { openManageSubscriptions } from '@/data/purchases'
-import { PasswordField, useAuthMessage } from '@/features/auth'
+import { PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
 import { usePlanSummary } from '@/features/paywall'
+import { datePattern } from '@/lib/dates'
 import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal'
 import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
@@ -26,6 +29,7 @@ import {
   Card,
   Icon,
   IconButton,
+  ListRow,
   Screen,
   Sheet,
   Tappable,
@@ -43,6 +47,7 @@ export default function AccountScreen() {
   const updateProfile = useUpdateProfile()
   const plan = usePlanSummary()
   const { data: avatarUri } = useAvatarUrl(profile?.avatar_path ?? undefined)
+  const memberSince = profile?.created_at ?? session?.user.created_at
   const avatar = storedImageSource(profile?.avatar_path ?? undefined, avatarUri)
   const [photoPending, setPhotoPending] = useState(false)
   const pickingPhoto = useRef(false)
@@ -136,7 +141,7 @@ export default function AccountScreen() {
         }}
         backLabel={t('common:a11y.back')}
       />
-      <View className="items-center py-2">
+      <View className="items-center gap-3 py-2">
         <Tappable
           accessibilityRole="button"
           accessibilityLabel={t('profile:account.changePhoto')}
@@ -154,9 +159,12 @@ export default function AccountScreen() {
               name={name}
               uri={avatar?.uri}
               cacheKey={avatar?.cacheKey}
-              size="lg"
+              size="md"
               tone="pandan"
             />
+            <View className="absolute -bottom-1 -right-2 h-7 w-7 items-center justify-center rounded-full border-2 border-canvas bg-surface">
+              <Icon set="system" name="camera" size={16} tintColor={colors.muted} />
+            </View>
             {photoPending ? (
               <View className="absolute inset-0 items-center justify-center rounded-card bg-surface/70">
                 <ActivityIndicator color={colors.pandan} />
@@ -164,30 +172,27 @@ export default function AccountScreen() {
             ) : null}
           </View>
         </Tappable>
+        {memberSince ? (
+          <Text variant="meta">
+            {t('profile:home.memberSince', {
+              month: format(parseISO(memberSince), datePattern('monthYear')),
+            })}
+          </Text>
+        ) : null}
       </View>
-      <Card>
-        <TextField
-          label={t('profile:account.name')}
-          value={name}
-          onChangeText={setDraft}
-          editable={Boolean(profile) && !busy}
-          autoComplete="name"
-          textContentType="name"
-          maxLength={60}
-          returnKeyType="done"
-          onBlur={save}
-          onSubmitEditing={() => Keyboard.dismiss()}
-          error={submitted && !name.trim() ? t('profile:account.nameRequired') : undefined}
-        />
+      <Card contentClassName="gap-0">
         {session?.user.email ? (
-          <TextField
-            label={t('onboarding:account.email')}
-            value={session.user.email}
-            editable={false}
-            accessibilityState={{ disabled: true }}
-            className="pr-2 opacity-100"
-            inputClassName="text-muted"
-            rightSlot={
+          <View className="gap-1 border-b-2 border-track pb-4">
+            <Text variant="label">{t('onboarding:account.email')}</Text>
+            <View className="flex-row items-center gap-2">
+              <Text
+                variant="body"
+                className="flex-1 text-muted"
+                selectable
+                accessibilityLabel={t('onboarding:account.email')}
+              >
+                {session.user.email}
+              </Text>
               <IconButton
                 variant="ghost"
                 size="sm"
@@ -197,44 +202,60 @@ export default function AccountScreen() {
               >
                 <CopyMark copied={copied} />
               </IconButton>
-            }
-          />
+            </View>
+          </View>
         ) : null}
-      </Card>
-
-      <Button
-        variant="secondary"
-        fullWidth
-        disabled={busy}
-        onPress={() => {
-          Keyboard.dismiss()
-          setPasswordOpen(true)
-        }}
-      >
-        {t('profile:account.changePassword')}
-      </Button>
-
-      <View className="gap-2">
-        <Button
-          variant="danger"
-          fullWidth
+        <View className="border-b-2 border-track py-4">
+          <TextField
+            label={t('profile:account.name')}
+            value={name}
+            onChangeText={setDraft}
+            editable={Boolean(profile) && !busy}
+            autoComplete="name"
+            textContentType="name"
+            maxLength={60}
+            returnKeyType="done"
+            onBlur={save}
+            onSubmitEditing={() => Keyboard.dismiss()}
+            className="min-h-[48px] border-0 bg-track"
+            error={submitted && !name.trim() ? t('profile:account.nameRequired') : undefined}
+          />
+        </View>
+        <ListRow
+          title={t('profile:account.changePassword')}
+          leading={<Icon set="system" name="lock" size={24} tintColor={colors.muted} />}
+          disabled={busy}
+          onPress={() => {
+            Keyboard.dismiss()
+            setPasswordOpen(true)
+          }}
+        />
+        <Tappable
+          accessibilityRole="button"
+          accessibilityLabel={t('profile:account.action')}
           disabled={busy}
           onPress={() => {
             Keyboard.dismiss()
             setConfirming(true)
           }}
         >
-          {t('profile:account.action')}
-        </Button>
-        {plan.renews ? (
-          <View className="gap-2">
-            <Text variant="meta">{t('profile:account.cancelFirst')}</Text>
-            <Button variant="ghost" size="sm" onPress={() => openManageSubscriptions()}>
-              {t('profile:subscription.manage')}
-            </Button>
+          <View className="min-h-[52px] flex-row items-center gap-md pt-3.5">
+            <Icon set="ui" name="delete" size={24} tintColor={colors.hibiscus} />
+            <Text variant="bodyStrong" className="flex-1 text-hibiscus">
+              {t('profile:account.action')}
+            </Text>
+            <Icon set="ui" name="chevron-right" size={20} tintColor={colors.faint} />
           </View>
-        ) : null}
-      </View>
+        </Tappable>
+      </Card>
+      {plan.renews ? (
+        <View className="gap-2">
+          <Text variant="meta">{t('profile:account.cancelFirst')}</Text>
+          <Button variant="ghost" size="sm" onPress={() => openManageSubscriptions()}>
+            {t('profile:subscription.manage')}
+          </Button>
+        </View>
+      ) : null}
 
       <View className="flex-row flex-wrap justify-center gap-x-5 gap-y-1">
         {[
@@ -265,6 +286,28 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['auth', 'profile', 'common'])
   const toast = useToast()
   const message = useAuthMessage()
+  const colorsForLoading = useThemeColors().pandan
+  const captcha = useCaptchaToken()
+  const [hasPassword, setHasPassword] = useState<boolean>()
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [current, setCurrent] = useState('')
+  const [currentWrong, setCurrentWrong] = useState(false)
+  const newPasswordRef = useRef<TextInput>(null)
+  useEffect(() => {
+    if (loadFailed) return
+    let active = true
+    hasAccountPassword().then(
+      (value) => {
+        if (active) setHasPassword(value)
+      },
+      () => {
+        if (active) setLoadFailed(true)
+      },
+    )
+    return () => {
+      active = false
+    }
+  }, [loadFailed])
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -277,16 +320,26 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
   const save = async () => {
     if (running.current) return
     setSubmitted(true)
-    if (tooShort || mismatched) return
+    if (hasPassword === undefined || tooShort || mismatched || (hasPassword && !current)) return
     running.current = true
     setPending(true)
     try {
-      await updatePassword(password)
+      setCurrentWrong(false)
+      await changeAccountPassword(
+        password,
+        current || undefined,
+        hasPassword ? await captcha() : undefined,
+      )
       Keyboard.dismiss()
       onClose()
       toast.show({ title: t('auth:reset.done') })
     } catch (error) {
-      toast.show({ title: message(error), tone: 'error' })
+      if (asAuthProblem(error).reason === 'invalid_credentials') {
+        setHasPassword(true)
+        setCurrentWrong(true)
+      } else {
+        toast.show({ title: message(error), tone: 'error' })
+      }
     } finally {
       running.current = false
       setPending(false)
@@ -302,34 +355,69 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
       closeLabel={t('common:action.close')}
       title={t('profile:account.changePassword')}
     >
-      <PasswordField
-        label={t('auth:reset.field')}
-        value={password}
-        onChangeText={setPassword}
-        placeholder={t('auth:password.placeholder')}
-        autoComplete="new-password"
-        textContentType="newPassword"
-        editable={!pending}
-        returnKeyType="next"
-        onSubmitEditing={() => confirmRef.current?.focus()}
-        error={submitted && tooShort ? t('auth:errors.passwordShort') : undefined}
-      />
-      <PasswordField
-        ref={confirmRef}
-        label={t('auth:reset.confirmField')}
-        value={confirm}
-        onChangeText={setConfirm}
-        placeholder={t('auth:password.placeholder')}
-        autoComplete="new-password"
-        textContentType="newPassword"
-        editable={!pending}
-        returnKeyType="done"
-        onSubmitEditing={save}
-        error={submitted && !tooShort && mismatched ? t('auth:errors.passwordMismatch') : undefined}
-      />
-      <Button fullWidth onPress={save} loading={pending} disabled={pending}>
-        {t('common:action.save')}
-      </Button>
+      {hasPassword === undefined ? (
+        loadFailed ? (
+          <Button onPress={() => setLoadFailed(false)}>{t('common:action.retry')}</Button>
+        ) : (
+          <ActivityIndicator color={colorsForLoading} />
+        )
+      ) : (
+        <>
+          {hasPassword ? (
+            <PasswordField
+              label={t('profile:account.currentPassword')}
+              value={current}
+              onChangeText={(value) => {
+                setCurrent(value)
+                setCurrentWrong(false)
+              }}
+              autoComplete="current-password"
+              textContentType="password"
+              editable={!pending}
+              returnKeyType="next"
+              onSubmitEditing={() => newPasswordRef.current?.focus()}
+              error={
+                currentWrong
+                  ? t('profile:account.currentPasswordWrong')
+                  : submitted && !current
+                    ? t('auth:errors.passwordRequired')
+                    : undefined
+              }
+            />
+          ) : null}
+          <PasswordField
+            ref={newPasswordRef}
+            label={t('auth:reset.field')}
+            value={password}
+            onChangeText={setPassword}
+            placeholder={t('auth:password.placeholder')}
+            autoComplete="new-password"
+            textContentType="newPassword"
+            editable={!pending}
+            returnKeyType="next"
+            onSubmitEditing={() => confirmRef.current?.focus()}
+            error={submitted && tooShort ? t('auth:errors.passwordShort') : undefined}
+          />
+          <PasswordField
+            ref={confirmRef}
+            label={t('auth:reset.confirmField')}
+            value={confirm}
+            onChangeText={setConfirm}
+            placeholder={t('auth:password.placeholder')}
+            autoComplete="new-password"
+            textContentType="newPassword"
+            editable={!pending}
+            returnKeyType="done"
+            onSubmitEditing={save}
+            error={
+              submitted && !tooShort && mismatched ? t('auth:errors.passwordMismatch') : undefined
+            }
+          />
+          <Button fullWidth onPress={save} loading={pending} disabled={pending}>
+            {t('common:action.save')}
+          </Button>
+        </>
+      )}
     </Sheet>
   )
 }

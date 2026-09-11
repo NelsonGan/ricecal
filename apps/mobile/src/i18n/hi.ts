@@ -1059,6 +1059,8 @@ export const hi = {
       copy: 'कॉपी करें',
       copied: 'ईमेल कॉपी हो गया',
       copyFailed: 'ईमेल कॉपी नहीं हुआ',
+      currentPassword: 'मौजूदा पासवर्ड',
+      currentPasswordWrong: 'मौजूदा पासवर्ड गलत है',
       changePassword: 'पासवर्ड बदलें',
       changePhoto: 'फ़ोटो बदलें',
       photoSaved: 'फ़ोटो सेव हो गई',
