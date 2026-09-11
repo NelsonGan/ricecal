@@ -1091,6 +1091,8 @@ export const fil = {
       copy: 'Kopyahin',
       copied: 'Nakopya ang email',
       copyFailed: 'Hindi makopya ang email',
+      currentPassword: 'Kasalukuyang password',
+      currentPasswordWrong: 'Mali ang kasalukuyang password',
       changePassword: 'Palitan ang password',
       changePhoto: 'Palitan ang larawan',
       photoSaved: 'Na-save ang larawan',

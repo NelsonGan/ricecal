@@ -1064,6 +1064,8 @@ export const ko = {
       copy: '복사',
       copied: '이메일을 복사했어요',
       copyFailed: '이메일을 복사하지 못했어요',
+      currentPassword: '현재 비밀번호',
+      currentPasswordWrong: '현재 비밀번호가 올바르지 않습니다',
       changePassword: '비밀번호 변경',
       changePhoto: '사진 변경',
       photoSaved: '사진 저장됨',

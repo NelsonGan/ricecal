@@ -19,6 +19,12 @@ packages/shared  the few constants both sides need
 
 `pnpm check` is typecheck + jest + biome. Run it before you say you are done.
 
+**Always include screenshots in PR descriptions after UI testing.** Capture the
+final UI and embed the screenshots in the PR description using URLs reviewers
+can access. Local file paths and a text-only report are not enough. Keep private
+account details out of the images. Include before/after screenshots only when
+both were actually captured.
+
 **Expo has changed.** Read the versioned docs at
 <https://docs.expo.dev/versions/v57.0.0/> before writing any Expo code. Do not
 work from memory of an older version.
@@ -306,6 +312,13 @@ subscription query is persisted to MMKV, so a reload rehydrates the old answer
 first.
 
 ## Driving the iOS app
+
+**Keep Simulator visible while testing.** Argent and `xcrun simctl` control the
+device, but booting it does not open the macOS Simulator window. Before testing,
+run `open -a Simulator --args -CurrentDeviceUDID <udid>`, then
+`osascript -e 'tell application "Simulator" to activate'`. Verify that the
+device window is visible, and leave it open on the tested screen so the user
+can follow along and inspect the result.
 
 A simulator build is already on disk, so verifying a UI change does not need
 `pnpm ios` (a prebuild plus a full compile):

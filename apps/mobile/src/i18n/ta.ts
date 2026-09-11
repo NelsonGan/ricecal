@@ -1072,6 +1072,8 @@ export const ta = {
       copy: 'நகலெடு',
       copied: 'மின்னஞ்சல் நகலெடுக்கப்பட்டது',
       copyFailed: 'மின்னஞ்சலை நகலெடுக்க முடியவில்லை',
+      currentPassword: 'தற்போதைய கடவுச்சொல்',
+      currentPasswordWrong: 'தற்போதைய கடவுச்சொல் தவறானது',
       changePassword: 'கடவுச்சொல்லை மாற்று',
       changePhoto: 'படத்தை மாற்று',
       photoSaved: 'படம் சேமிக்கப்பட்டது',

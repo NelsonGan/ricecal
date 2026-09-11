@@ -8,6 +8,8 @@ import { ToastProvider } from '@/ui'
 import AccountScreen from '../account'
 
 const mockUpdateProfile = jest.fn().mockResolvedValue({})
+const mockHasPassword = jest.fn().mockResolvedValue(false)
+const mockCaptcha = jest.fn().mockResolvedValue('captcha-token')
 const mockUpdatePassword = jest.fn().mockResolvedValue(undefined)
 const mockPick = jest.fn().mockResolvedValue({ canceled: true })
 const mockUpload = jest.fn().mockResolvedValue('avatars/user/new.jpg')
@@ -25,15 +27,29 @@ jest.mock('@/data', () => ({
   useUpdateProfile: () => ({ mutateAsync: mockUpdateProfile, isPending: false }),
 }))
 jest.mock('@/data/auth', () => ({
-  updatePassword: (value: string) => mockUpdatePassword(value),
+  asAuthProblem: (error: unknown) => error,
   deleteAccount: () => mockDelete(),
+}))
+jest.mock('@/data/account-password', () => ({
+  hasAccountPassword: () => mockHasPassword(),
+  changeAccountPassword: (...args: unknown[]) => mockUpdatePassword(...args),
 }))
 jest.mock('@/data/purchases', () => ({ openManageSubscriptions: jest.fn() }))
 jest.mock('@/features/paywall', () => ({ usePlanSummary: () => ({ renews: false }) }))
-jest.mock('@/features/auth', () => ({
-  PasswordField: jest.requireActual('@/features/auth/PasswordField').PasswordField,
-  useAuthMessage: () => () => 'Password could not be changed',
-}))
+jest.mock('@/features/auth', () => {
+  const React = jest.requireActual<typeof import('react')>('react')
+  const Context = React.createContext(false)
+  return {
+    PasswordField: jest.requireActual('@/features/auth/PasswordField').PasswordField,
+    CaptchaProvider: ({ children }: { children: ReactNode }) =>
+      React.createElement(Context.Provider, { value: true }, children),
+    useCaptchaToken: () => {
+      if (!React.useContext(Context)) throw new Error('Password form needs its captcha provider')
+      return mockCaptcha
+    },
+    useAuthMessage: () => () => 'Password could not be changed',
+  }
+})
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: () => mockPick() }))
 jest.mock('expo-clipboard', () => ({ setStringAsync: (value: string) => mockCopy(value) }))
 jest.mock('@/lib/navigation', () => ({ useBack: () => mockBack }))
@@ -57,12 +73,14 @@ const mount = () => render(<AccountScreen />, { wrapper: Providers })
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockHasPassword.mockReset().mockResolvedValue(false)
   mockProfile = { display_name: 'Alex' }
 })
 
 it('copies the read-only email without allowing an edit', async () => {
   await mount()
-  expect(screen.getByLabelText('EMAIL')).toHaveProp('editable', false)
+  expect(screen.getByLabelText('EMAIL: account@example.test')).not.toHaveProp('onChangeText')
+  expect(screen.getByText('account@example.test')).toBeTruthy()
   await user.press(screen.getByRole('button', { name: 'Copy' }))
   expect(mockCopy).toHaveBeenCalledWith('account@example.test')
   expect(screen.getByRole('button', { name: 'Email copied' })).toBeTruthy()
@@ -110,32 +128,32 @@ it('keeps a failed name draft available for retry', async () => {
 it('checks password length and confirmation before making an auth request', async () => {
   await mount()
   await user.press(screen.getByRole('button', { name: 'Change password' }))
-  await user.type(screen.getByLabelText('NEW PASSWORD'), 'short')
+  await user.type(await screen.findByLabelText('NEW PASSWORD'), 'short')
   await user.press(screen.getAllByRole('button', { name: 'Save changes' }).slice(-1)[0])
   expect(mockUpdatePassword).not.toHaveBeenCalled()
-  await user.type(screen.getByLabelText('NEW PASSWORD'), ' enough')
+  await user.type(await screen.findByLabelText('NEW PASSWORD'), ' enough')
   await user.type(screen.getByLabelText('CONFIRM NEW PASSWORD'), 'different')
   await user.press(screen.getAllByRole('button', { name: 'Save changes' }).slice(-1)[0])
   expect(mockUpdatePassword).not.toHaveBeenCalled()
   await user.clear(screen.getByLabelText('CONFIRM NEW PASSWORD'))
   await user.type(screen.getByLabelText('CONFIRM NEW PASSWORD'), 'short enough')
   await user.press(screen.getAllByRole('button', { name: 'Save changes' }).slice(-1)[0])
-  expect(mockUpdatePassword).toHaveBeenCalledWith('short enough')
+  expect(mockUpdatePassword).toHaveBeenCalledWith('short enough', undefined, undefined)
 })
 
 it('clears passwords when dismissed and keeps auth errors in the form', async () => {
   await mount()
   await user.press(screen.getByRole('button', { name: 'Change password' }))
-  await user.type(screen.getByLabelText('NEW PASSWORD'), 'valid example')
+  await user.type(await screen.findByLabelText('NEW PASSWORD'), 'valid example')
   await user.press(screen.getByLabelText('Close'))
   await waitFor(() => expect(screen.queryByLabelText('NEW PASSWORD')).toBeNull())
   await user.press(screen.getByRole('button', { name: 'Change password' }))
-  expect(screen.getByLabelText('NEW PASSWORD')).toHaveDisplayValue('')
-  await user.type(screen.getByLabelText('NEW PASSWORD'), 'valid example')
+  expect(await screen.findByLabelText('NEW PASSWORD')).toHaveDisplayValue('')
+  await user.type(await screen.findByLabelText('NEW PASSWORD'), 'valid example')
   await user.type(screen.getByLabelText('CONFIRM NEW PASSWORD'), 'valid example')
   mockUpdatePassword.mockRejectedValueOnce(new Error('same_password'))
   await user.press(screen.getAllByRole('button', { name: 'Save changes' }).slice(-1)[0])
-  expect(screen.getByLabelText('NEW PASSWORD')).toHaveDisplayValue('valid example')
+  expect(await screen.findByLabelText('NEW PASSWORD')).toHaveDisplayValue('valid example')
   expect(screen.getByText('Password could not be changed')).toBeTruthy()
 })
 
@@ -246,4 +264,49 @@ it('shares an in-flight name save and only navigates back once', async () => {
   expect(mockBack).not.toHaveBeenCalled()
   finish({})
   await waitFor(() => expect(mockBack).toHaveBeenCalledTimes(1))
+})
+
+it('requires the current password for an existing password and verifies it before changing', async () => {
+  mockHasPassword.mockResolvedValue(true)
+  await mount()
+  await user.press(screen.getByRole('button', { name: 'Change password' }))
+  const current = await screen.findByLabelText('Current password')
+  await fireEvent.changeText(screen.getByLabelText('NEW PASSWORD'), 'new-password-123')
+  await fireEvent.changeText(screen.getByLabelText('CONFIRM NEW PASSWORD'), 'new-password-123')
+  await user.press(screen.getByRole('button', { name: 'Save changes' }))
+  expect(mockUpdatePassword).not.toHaveBeenCalled()
+  await fireEvent.changeText(current, 'wrong-password')
+  mockUpdatePassword.mockRejectedValueOnce({ reason: 'invalid_credentials' })
+  await user.press(screen.getByRole('button', { name: 'Save changes' }))
+  expect(await screen.findByText('Current password is incorrect')).toBeTruthy()
+  await fireEvent.changeText(current, 'old-password-123')
+  await user.press(screen.getByRole('button', { name: 'Save changes' }))
+  expect(mockUpdatePassword).toHaveBeenLastCalledWith(
+    'new-password-123',
+    'old-password-123',
+    'captcha-token',
+  )
+})
+
+it('allows a first password without a current-password field and clears it on close', async () => {
+  await mount()
+  await user.press(screen.getByRole('button', { name: 'Change password' }))
+  await screen.findByLabelText('NEW PASSWORD')
+  expect(screen.queryByLabelText('Current password')).toBeNull()
+  await fireEvent.changeText(screen.getByLabelText('NEW PASSWORD'), 'first-password-123')
+  await fireEvent.changeText(screen.getByLabelText('CONFIRM NEW PASSWORD'), 'first-password-123')
+  await user.press(screen.getByRole('button', { name: 'Save changes' }))
+  expect(mockUpdatePassword).toHaveBeenLastCalledWith('first-password-123', undefined, undefined)
+  expect(mockCaptcha).not.toHaveBeenCalled()
+  await user.press(screen.getByRole('button', { name: 'Change password' }))
+  expect(await screen.findByLabelText('NEW PASSWORD')).toHaveDisplayValue('')
+})
+
+it('does not show a password form until password status is known and can retry', async () => {
+  mockHasPassword.mockRejectedValueOnce(new Error('offline'))
+  await mount()
+  await user.press(screen.getByRole('button', { name: 'Change password' }))
+  await user.press(await screen.findByRole('button', { name: 'Try again' }))
+  expect(await screen.findByLabelText('NEW PASSWORD')).toBeTruthy()
+  expect(mockUpdatePassword).not.toHaveBeenCalled()
 })

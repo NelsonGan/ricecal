@@ -1060,6 +1060,8 @@ export const zhHant = {
       copy: '複製',
       copied: '電子郵件已複製',
       copyFailed: '無法複製電子郵件',
+      currentPassword: '目前密碼',
+      currentPasswordWrong: '目前密碼不正確',
       changePassword: '變更密碼',
       changePhoto: '更換照片',
       photoSaved: '照片已儲存',
