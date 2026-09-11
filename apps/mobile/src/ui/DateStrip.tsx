@@ -96,7 +96,9 @@ export function DateStrip({ days, value, onChange, className }: DateStripProps) 
             </Text>
             <Text
               className={cn(
-                'font-display text-[18px] leading-[20px]',
+                // Baloo 2 needs about 1.2x leading. The old 20pt line box
+                // clipped these numerals on newer iOS text rendering.
+                'font-display text-[18px] leading-[22px]',
                 selected ? 'text-on-pandan' : 'text-ink',
                 day.disabled && 'opacity-40',
               )}
