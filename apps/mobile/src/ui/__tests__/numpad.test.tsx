@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PixelRatio, StyleSheet } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { fireEvent, render, screen, userEvent, waitFor } from '../../test-utils'
@@ -81,6 +82,16 @@ describe('Numpad', () => {
     // The header, which is the only thing left saying what the digits are for
     // once the pad covers the field.
     expect(screen.getAllByText('Servings').length).toBeGreaterThan(0)
+  })
+
+  it('leaves enough leading around every digit to avoid clipping', async () => {
+    await render(<Harness />)
+    await openPad()
+
+    const style = StyleSheet.flatten(screen.getByText('7').props.style) as {
+      lineHeight?: number
+    }
+    expect(style.lineHeight).toBe(Math.round(29 * PixelRatio.getFontScale()))
   })
 
   /**
