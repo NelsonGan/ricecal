@@ -36,11 +36,20 @@ jest.mock('@/data/account-password', () => ({
 }))
 jest.mock('@/data/purchases', () => ({ openManageSubscriptions: jest.fn() }))
 jest.mock('@/features/paywall', () => ({ usePlanSummary: () => ({ renews: false }) }))
-jest.mock('@/features/auth', () => ({
-  PasswordField: jest.requireActual('@/features/auth/PasswordField').PasswordField,
-  useCaptchaToken: () => mockCaptcha,
-  useAuthMessage: () => () => 'Password could not be changed',
-}))
+jest.mock('@/features/auth', () => {
+  const React = jest.requireActual<typeof import('react')>('react')
+  const Context = React.createContext(false)
+  return {
+    PasswordField: jest.requireActual('@/features/auth/PasswordField').PasswordField,
+    CaptchaProvider: ({ children }: { children: ReactNode }) =>
+      React.createElement(Context.Provider, { value: true }, children),
+    useCaptchaToken: () => {
+      if (!React.useContext(Context)) throw new Error('Password form needs its captcha provider')
+      return mockCaptcha
+    },
+    useAuthMessage: () => () => 'Password could not be changed',
+  }
+})
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: () => mockPick() }))
 jest.mock('expo-clipboard', () => ({ setStringAsync: (value: string) => mockCopy(value) }))
 jest.mock('@/lib/navigation', () => ({ useBack: () => mockBack }))
@@ -70,7 +79,7 @@ beforeEach(() => {
 
 it('copies the read-only email without allowing an edit', async () => {
   await mount()
-  expect(screen.getByLabelText('EMAIL')).not.toHaveProp('onChangeText')
+  expect(screen.getByLabelText('EMAIL: account@example.test')).not.toHaveProp('onChangeText')
   expect(screen.getByText('account@example.test')).toBeTruthy()
   await user.press(screen.getByRole('button', { name: 'Copy' }))
   expect(mockCopy).toHaveBeenCalledWith('account@example.test')

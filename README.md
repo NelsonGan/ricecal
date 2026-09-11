@@ -1116,7 +1116,7 @@ The inner page has a small avatar with a camera badge, membership date, and one
 card of rows: read-only email with Copy, editable name, Change password and a
 quiet delete action. The legal links stay below the card.
 The name uses the standard outlined input. Long emails truncate to one line;
-Copy always copies the full address.
+Copy and the accessibility label always retain the full address.
 Names save on blur through the existing profile mutation. Blank names are rejected;
 failed saves keep the draft for another attempt when the field loses focus.
 The Back button waits for that save, and photo picking saves the name first so
@@ -1134,7 +1134,9 @@ lookup offers retry instead of guessing which form to show.
 An account without a password gets New password and Confirm new password. An
 account with one also gets Current password. `changeAccountPassword` rechecks
 status before saving, then verifies the current password with a separate,
-nonpersistent Supabase client and the existing captcha flow. A wrong password
+nonpersistent Supabase client and the existing captcha flow. The captcha provider
+lives inside the password sheet so its challenge is visible above the native modal;
+the sign-in screen provider does not reach account settings. A wrong password
 never reaches the update call. The temporary verification session is signed out
 with local scope, and the app checks that the active account has not changed
 before updating. The app's own session is never replaced by verification.
