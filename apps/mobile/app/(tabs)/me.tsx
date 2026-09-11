@@ -138,7 +138,20 @@ export default function MeScreen() {
             tone="pandan"
           />
           <View className="min-w-0 flex-1 gap-0.5">
-            <Text variant="subtitle">{profile?.display_name || t('profile:home.noName')}</Text>
+            <View className="flex-row items-center gap-1">
+              <Text variant="subtitle" className="min-w-0 shrink">
+                {profile?.display_name || t('profile:home.noName')}
+              </Text>
+              <IconButton
+                variant="ghost"
+                size="sm"
+                className="self-center"
+                accessibilityLabel={t('common:action.edit')}
+                onPress={() => router.push('/settings/account')}
+              >
+                <Icon set="ui" name="edit" size={20} tintColor={colors.muted} />
+              </IconButton>
+            </View>
             <Text variant="meta">
               {profile?.created_at
                 ? t('profile:home.memberSince', {
@@ -147,14 +160,6 @@ export default function MeScreen() {
                 : ''}
             </Text>
           </View>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            accessibilityLabel={t('common:action.edit')}
-            onPress={() => router.push('/settings/account')}
-          >
-            <Icon set="ui" name="edit" size={20} tintColor={colors.muted} />
-          </IconButton>
         </View>
 
         <View className="flex-row gap-2.5">
