@@ -188,6 +188,8 @@ export default function AccountScreen() {
               <Text
                 variant="body"
                 className="flex-1 text-muted"
+                numberOfLines={1}
+                ellipsizeMode="tail"
                 selectable
                 accessibilityLabel={t('onboarding:account.email')}
               >
@@ -217,7 +219,6 @@ export default function AccountScreen() {
             returnKeyType="done"
             onBlur={save}
             onSubmitEditing={() => Keyboard.dismiss()}
-            className="min-h-[48px] border-0 bg-track"
             error={submitted && !name.trim() ? t('profile:account.nameRequired') : undefined}
           />
         </View>
