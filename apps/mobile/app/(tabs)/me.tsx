@@ -10,6 +10,7 @@ import {
   useHealthConnection,
   useMealTimes,
   useProfile,
+  useSession,
   useSettings,
   useStreak,
   useTargets,
@@ -23,26 +24,17 @@ import { datePattern } from '@/lib/dates'
 import { askForRating } from '@/lib/rating'
 import { showWeight, UNIT_KEY, unitFor } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
-import {
-  Avatar,
-  Button,
-  Card,
-  ConfirmSheet,
-  Icon,
-  IconButton,
-  ListRow,
-  Screen,
-  StatTile,
-  Text,
-} from '@/ui'
+import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Text } from '@/ui'
 
 /** U1 PROFILE */
 export default function MeScreen() {
   const { t } = useTranslation(['profile', 'activity', 'common', 'paywall'])
   const router = useRouter()
   const colors = useThemeColors()
+  const { session } = useSession()
 
   const { data: profile } = useProfile()
+  const memberSince = profile?.created_at ?? session?.user.created_at
   const { data: avatarUri } = useAvatarUrl(profile?.avatar_path ?? undefined)
   /**
    * Through `storedImageSource` rather than handed to `Avatar` in two pieces,
@@ -138,25 +130,11 @@ export default function MeScreen() {
             tone="pandan"
           />
           <View className="min-w-0 flex-1 gap-0.5">
-            <View className="flex-row items-center gap-1">
-              <Text variant="subtitle" className="min-w-0 shrink">
-                {profile?.display_name || t('profile:home.noName')}
-              </Text>
-              <IconButton
-                variant="ghost"
-                size="xxs"
-                hitSlop={8}
-                className="self-center"
-                accessibilityLabel={t('common:action.edit')}
-                onPress={() => router.push('/settings/account')}
-              >
-                <Icon set="ui" name="edit" size={14} tintColor={colors.muted} />
-              </IconButton>
-            </View>
+            <Text variant="subtitle">{profile?.display_name || t('profile:home.noName')}</Text>
             <Text variant="meta">
-              {profile?.created_at
+              {memberSince
                 ? t('profile:home.memberSince', {
-                    month: format(parseISO(profile.created_at), 'MMMM'),
+                    month: format(parseISO(memberSince), datePattern('monthYear')),
                   })
                 : ''}
             </Text>
@@ -197,6 +175,13 @@ export default function MeScreen() {
             value={targets ? targets.kcal.toLocaleString() : '—'}
           />
         </View>
+        <ListRow
+          title={t('profile:account.title')}
+          leading={<Icon set="ui" name="edit" size={22} tintColor={colors.muted} />}
+          onPress={() => router.push('/settings/account')}
+          divider={false}
+          className="border-t-2 border-track pb-0"
+        />
       </Card>
 
       {/* `gap-0` because this card holds TWO rows now, and a `ListRow` carries its
