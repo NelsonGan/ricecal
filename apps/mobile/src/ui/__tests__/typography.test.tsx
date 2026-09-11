@@ -1,6 +1,7 @@
 import { PixelRatio, StyleSheet } from 'react-native'
 
 import { render, screen } from '../../test-utils'
+import { DateStrip } from '../DateStrip'
 import { Text } from '../Text'
 import { TextScriptProvider } from '../TextScript'
 
@@ -72,6 +73,18 @@ it('keeps a leading the caller set for itself', async () => {
   )
 
   expect(leadingOf(screen.getByText('1,847'))).toBe(42)
+})
+
+it('leaves enough leading around the compact day numerals', async () => {
+  await render(
+    <DateStrip
+      days={[{ initial: 'M', day: 20, key: '2026-07-20' }]}
+      value="2026-07-20"
+      onChange={() => {}}
+    />,
+  )
+
+  expect(leadingOf(screen.getByText('20'))).toBe(22)
 })
 
 it('still floors a caller-set pair for a script that needs more', async () => {
