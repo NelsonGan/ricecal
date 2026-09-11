@@ -1115,6 +1115,8 @@ profile creation date, falling back to the signed-in account date while the prof
 The inner page has a small avatar with a camera badge, membership date, and one
 card of rows: read-only email with Copy, editable name, Change password and a
 quiet delete action. The legal links stay below the card.
+The name uses the standard outlined input. Long emails truncate to one line;
+Copy always copies the full address.
 Names save on blur through the existing profile mutation. Blank names are rejected;
 failed saves keep the draft for another attempt when the field loses focus.
 The Back button waits for that save, and photo picking saves the name first so
