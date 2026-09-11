@@ -16,7 +16,7 @@ import {
 import { changeAccountPassword, hasAccountPassword } from '@/data/account-password'
 import { asAuthProblem, deleteAccount } from '@/data/auth'
 import { openManageSubscriptions } from '@/data/purchases'
-import { PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
+import { CaptchaProvider, PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
 import { usePlanSummary } from '@/features/paywall'
 import { datePattern } from '@/lib/dates'
 import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal'
@@ -191,7 +191,7 @@ export default function AccountScreen() {
                 numberOfLines={1}
                 ellipsizeMode="tail"
                 selectable
-                accessibilityLabel={t('onboarding:account.email')}
+                accessibilityLabel={`${t('onboarding:account.email')}: ${session.user.email}`}
               >
                 {session.user.email}
               </Text>
@@ -284,6 +284,36 @@ export default function AccountScreen() {
 
 // Mounted only while open so a dismissed password never survives in the form.
 function ChangePassword({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation(['profile', 'common'])
+  const [pending, setPending] = useState(false)
+  return (
+    <Sheet
+      fullHeight
+      visible
+      onClose={onClose}
+      dismissible={!pending}
+      closeLabel={t('common:action.close')}
+      title={t('profile:account.changePassword')}
+    >
+      {/* The challenge must live in this native modal, above the account page. */}
+      <View className="gap-md">
+        <CaptchaProvider>
+          <ChangePasswordForm onClose={onClose} pending={pending} setPending={setPending} />
+        </CaptchaProvider>
+      </View>
+    </Sheet>
+  )
+}
+
+function ChangePasswordForm({
+  onClose,
+  pending,
+  setPending,
+}: {
+  onClose: () => void
+  pending: boolean
+  setPending: (pending: boolean) => void
+}) {
   const { t } = useTranslation(['auth', 'profile', 'common'])
   const toast = useToast()
   const message = useAuthMessage()
@@ -312,7 +342,6 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [pending, setPending] = useState(false)
   const running = useRef(false)
   const confirmRef = useRef<TextInput>(null)
   const tooShort = password.length < 8
@@ -326,6 +355,7 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
     setPending(true)
     try {
       setCurrentWrong(false)
+      Keyboard.dismiss()
       await changeAccountPassword(
         password,
         current || undefined,
@@ -348,14 +378,7 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Sheet
-      fullHeight
-      visible
-      onClose={onClose}
-      dismissible={!pending}
-      closeLabel={t('common:action.close')}
-      title={t('profile:account.changePassword')}
-    >
+    <>
       {hasPassword === undefined ? (
         loadFailed ? (
           <Button onPress={() => setLoadFailed(false)}>{t('common:action.retry')}</Button>
@@ -419,7 +442,7 @@ function ChangePassword({ onClose }: { onClose: () => void }) {
           </Button>
         </>
       )}
-    </Sheet>
+    </>
   )
 }
 
