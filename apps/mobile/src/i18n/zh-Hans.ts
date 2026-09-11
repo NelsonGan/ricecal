@@ -1061,6 +1061,8 @@ export const zhHans = {
       copy: '复制',
       copied: '邮箱已复制',
       copyFailed: '无法复制邮箱',
+      currentPassword: '当前密码',
+      currentPasswordWrong: '当前密码不正确',
       changePassword: '修改密码',
       changePhoto: '更换照片',
       photoSaved: '照片已保存',

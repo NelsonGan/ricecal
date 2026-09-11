@@ -1058,6 +1058,8 @@ export const bn = {
       copy: 'কপি করুন',
       copied: 'ইমেইল কপি হয়েছে',
       copyFailed: 'ইমেইল কপি করা যায়নি',
+      currentPassword: 'বর্তমান পাসওয়ার্ড',
+      currentPasswordWrong: 'বর্তমান পাসওয়ার্ড সঠিক নয়',
       changePassword: 'পাসওয়ার্ড বদলান',
       changePhoto: 'ছবি বদলান',
       photoSaved: 'ছবি সেভ হয়েছে',

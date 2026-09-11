@@ -1070,6 +1070,8 @@ export const ja = {
       copy: 'コピー',
       copied: 'メールアドレスをコピーしました',
       copyFailed: 'コピーできませんでした',
+      currentPassword: '現在のパスワード',
+      currentPasswordWrong: '現在のパスワードが正しくありません',
       changePassword: 'パスワードを変更',
       changePhoto: '写真を変更',
       photoSaved: '写真を保存しました',
