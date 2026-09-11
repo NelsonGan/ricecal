@@ -144,12 +144,13 @@ export default function MeScreen() {
               </Text>
               <IconButton
                 variant="ghost"
-                size="sm"
+                size="xxs"
+                hitSlop={8}
                 className="self-center"
                 accessibilityLabel={t('common:action.edit')}
                 onPress={() => router.push('/settings/account')}
               >
-                <Icon set="ui" name="edit" size={20} tintColor={colors.muted} />
+                <Icon set="ui" name="edit" size={14} tintColor={colors.muted} />
               </IconButton>
             </View>
             <Text variant="meta">
