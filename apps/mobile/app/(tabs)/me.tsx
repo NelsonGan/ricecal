@@ -123,19 +123,7 @@ export default function MeScreen() {
 
   return (
     <Screen>
-      <ScreenTitle
-        title={t('common:nav.me')}
-        trailing={
-          <IconButton
-            variant="ghost"
-            size="sm"
-            accessibilityLabel={t('common:action.edit')}
-            onPress={() => router.push('/settings/account')}
-          >
-            <Icon set="ui" name="edit" size={20} tintColor={colors.muted} />
-          </IconButton>
-        }
-      />
+      <ScreenTitle title={t('common:nav.me')} />
 
       <Card>
         <View className="flex-row items-center gap-3">
@@ -159,6 +147,14 @@ export default function MeScreen() {
                 : ''}
             </Text>
           </View>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            accessibilityLabel={t('common:action.edit')}
+            onPress={() => router.push('/settings/account')}
+          >
+            <Icon set="ui" name="edit" size={20} tintColor={colors.muted} />
+          </IconButton>
         </View>
 
         <View className="flex-row gap-2.5">
