@@ -581,7 +581,11 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
                     // above explains.
                     <Icon set="ui" name="arrow-left" size={22} tintColor={colors.muted} />
                   ) : (
-                    <Text className="font-display text-[24px] text-heading">{key}</Text>
+                    // Keep Baloo 2's full glyph box inside the key. A tighter
+                    // implicit leading clipped the digits on newer iOS.
+                    <Text className="font-display text-[24px] leading-[29px] text-heading">
+                      {key}
+                    </Text>
                   )}
                 </Squish>
               )
