@@ -1109,7 +1109,7 @@ unannounced is the other half of the complaint.
 
 ### Editing an account
 
-The pencil icon at the top right of the name card on Me opens `app/settings/account.tsx`.
+The pencil icon beside the name on Me opens `app/settings/account.tsx`.
 Names save on blur through the existing profile mutation. Blank names are rejected;
 failed saves keep the draft for another attempt when the field loses focus.
 The Back button waits for that save, and photo picking saves the name first so
