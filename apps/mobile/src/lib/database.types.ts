@@ -1,16 +1,16 @@
 /**
- * GENERATED FILE — do not edit.
+ * Generated file, do not edit.
  *
  *   pnpm db:types
  *
- * which runs `supabase gen types typescript --local` against the local stack,
- * so the local database must be up to date: `pnpm db:reset` first if you have
- * just pulled a migration. Nothing in CI checks this file against the schema,
- * so a stale copy shows up as a type error on a column that plainly exists.
+ * runs `supabase gen types typescript --local` against the local stack, so the
+ * local database must be up to date: `pnpm db:reset` first if you have just
+ * pulled a migration. Nothing in CI checks this file against the schema, so a
+ * stale copy shows up as a type error on a column that plainly exists.
  *
- * Postgres enums arrive as string-literal unions, which is the reason the
- * schema uses enums for its closed domains — `Database['public']['Enums']['meal']`
- * is exactly the `Meal` union the screens already speak.
+ * Postgres enums arrive as string-literal unions, which is why the schema uses
+ * enums for its closed domains: `Database['public']['Enums']['meal']` is the
+ * `Meal` union the screens already speak.
  */
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
@@ -1595,6 +1595,7 @@ export type Database = {
           p_grams?: number
           p_kcal: number
           p_name: string
+          p_position?: number
           p_protein_g: number
           p_quantity?: number
           p_serving_id?: string
@@ -1708,6 +1709,7 @@ export type Database = {
         }
       }
       gtin14: { Args: { code: string }; Returns: string }
+      has_account_password: { Args: never; Returns: boolean }
       is_entitled: { Args: { p_user: string }; Returns: boolean }
       lapsed_photo_grace_days: { Args: never; Returns: number }
       local_today: { Args: { p_user_id?: string }; Returns: string }

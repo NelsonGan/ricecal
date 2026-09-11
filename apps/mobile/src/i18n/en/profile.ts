@@ -75,6 +75,8 @@ export const profile = {
     copy: 'Copy',
     copied: 'Email copied',
     copyFailed: 'Could not copy email',
+    currentPassword: 'Current password',
+    currentPasswordWrong: 'Current password is incorrect',
     changePassword: 'Change password',
     changePhoto: 'Change photo',
     photoSaved: 'Photo saved',

@@ -1081,6 +1081,8 @@ export const id = {
       copy: 'Salin',
       copied: 'Email disalin',
       copyFailed: 'Email gagal disalin',
+      currentPassword: 'Kata sandi saat ini',
+      currentPasswordWrong: 'Kata sandi saat ini salah',
       changePassword: 'Ubah kata sandi',
       changePhoto: 'Ubah foto',
       photoSaved: 'Foto disimpan',

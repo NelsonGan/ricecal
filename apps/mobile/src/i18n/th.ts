@@ -1060,6 +1060,8 @@ export const th = {
       copy: 'คัดลอก',
       copied: 'คัดลอกอีเมลแล้ว',
       copyFailed: 'คัดลอกอีเมลไม่ได้',
+      currentPassword: 'รหัสผ่านปัจจุบัน',
+      currentPasswordWrong: 'รหัสผ่านปัจจุบันไม่ถูกต้อง',
       changePassword: 'เปลี่ยนรหัสผ่าน',
       changePhoto: 'เปลี่ยนรูป',
       photoSaved: 'บันทึกรูปแล้ว',

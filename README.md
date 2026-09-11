@@ -1112,19 +1112,39 @@ unannounced is the other half of the complaint.
 The Edit profile footer in the account card on Me opens `app/settings/account.tsx`.
 The name and membership month and year stay above the stats. Membership uses the
 profile creation date, falling back to the signed-in account date while the profile loads.
+The inner page has a small avatar with a camera badge, membership date, and one
+card of rows: read-only email with Copy, editable name, Change password and a
+quiet delete action. The legal links stay below the card.
 Names save on blur through the existing profile mutation. Blank names are rejected;
 failed saves keep the draft for another attempt when the field loses focus.
 The Back button waits for that save, and photo picking saves the name first so
 two profile writes cannot overwrite each other in the cache.
-Email is read-only with a flat copy symbol inside the field that briefly becomes
-a checkmark after copying. Tapping the avatar opens the system image picker and the existing avatar upload, then save the returned key.
+Tapping the avatar opens the system image picker and the existing avatar upload.
 Clipboard support requires a native 1.0.5 build; the app-version runtime keeps this bundle off older binaries.
-Change password opens a short form using
-`updatePassword`, with length and confirmation checks before the auth request.
-Closing the form clears both password fields. Privacy Policy and Terms of Use
-are plain links here. The info button beside the deletion confirmation heading
-shows what is erased. Password and deletion forms use full-height sheets: the
-keyboard overlays the surface while the form can scroll to keep fields reachable.
+
+**Password setup and changes are different forms.** `has_account_password()`
+returns only whether the calling account has a stored password. An email identity
+alone proves nothing, since email-code accounts have one too. Deploy this additive
+migration before the app; old binaries do not call it and keep their existing flow.
+The lookup is restricted to authenticated callers and takes no user id. A failed
+lookup offers retry instead of guessing which form to show.
+
+An account without a password gets New password and Confirm new password. An
+account with one also gets Current password. `changeAccountPassword` rechecks
+status before saving, then verifies the current password with a separate,
+nonpersistent Supabase client and the existing captcha flow. A wrong password
+never reaches the update call. The temporary verification session is signed out
+with local scope, and the app checks that the active account has not changed
+before updating. The app's own session is never replaced by verification.
+Supabase's global current-password requirement stays off: enabling it would break
+released binaries that do not send that field. Recovery continues through
+`updatePassword`, because a recovery code is the proof in that flow.
+
+Closing the sheet clears all password fields. The server's minimum length and
+matching confirmation are checked before submitting. Password and deletion forms
+use full-height sheets: the keyboard overlays the surface while the form can
+scroll to keep fields reachable. The info button beside the deletion confirmation
+heading shows what is erased.
 
 ### Deleting an account
 
