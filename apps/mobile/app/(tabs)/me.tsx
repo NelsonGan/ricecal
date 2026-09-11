@@ -22,12 +22,25 @@ import { ScreenTitle, SettingRow } from '@/features/shared'
 import { datePattern } from '@/lib/dates'
 import { askForRating } from '@/lib/rating'
 import { showWeight, UNIT_KEY, unitFor } from '@/lib/units'
-import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Text } from '@/ui'
+import { useThemeColors } from '@/theme/useTheme'
+import {
+  Avatar,
+  Button,
+  Card,
+  ConfirmSheet,
+  Icon,
+  IconButton,
+  ListRow,
+  Screen,
+  StatTile,
+  Text,
+} from '@/ui'
 
 /** U1 PROFILE */
 export default function MeScreen() {
   const { t } = useTranslation(['profile', 'activity', 'common', 'paywall'])
   const router = useRouter()
+  const colors = useThemeColors()
 
   const { data: profile } = useProfile()
   const { data: avatarUri } = useAvatarUrl(profile?.avatar_path ?? undefined)
@@ -110,7 +123,19 @@ export default function MeScreen() {
 
   return (
     <Screen>
-      <ScreenTitle title={t('common:nav.me')} />
+      <ScreenTitle
+        title={t('common:nav.me')}
+        trailing={
+          <IconButton
+            variant="ghost"
+            size="sm"
+            accessibilityLabel={t('common:action.edit')}
+            onPress={() => router.push('/settings/account')}
+          >
+            <Icon set="ui" name="edit" size={20} tintColor={colors.muted} />
+          </IconButton>
+        }
+      />
 
       <Card>
         <View className="flex-row items-center gap-3">
@@ -125,19 +150,7 @@ export default function MeScreen() {
             tone="pandan"
           />
           <View className="min-w-0 flex-1 gap-0.5">
-            <View className="flex-row items-center gap-2">
-              <Text variant="subtitle" className="min-w-0 shrink">
-                {profile?.display_name || t('profile:home.noName')}
-              </Text>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="self-center"
-                onPress={() => router.push('/settings/account')}
-              >
-                {t('common:action.edit')}
-              </Button>
-            </View>
+            <Text variant="subtitle">{profile?.display_name || t('profile:home.noName')}</Text>
             <Text variant="meta">
               {profile?.created_at
                 ? t('profile:home.memberSince', {
