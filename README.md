@@ -1189,11 +1189,13 @@ are really gone.
 The phone then signs out with `scope: 'local'`, for the reason
 [the section above](#signing-out-when-the-server-already-has) gives: there is no
 session left on the server, and the user the token names no longer exists.
-`SIGNED_OUT` does the rest through `SessionProvider` — cache, pictures on disk,
-pending snaps, RevenueCat, Mixpanel. The Mixpanel *profile* is deleted
+`SIGNED_OUT` does the rest through `SessionProvider`: cache, pictures on disk,
+pending snaps, RevenueCat and product analytics. The Mixpanel *profile* is deleted
 explicitly first (`forgetPerson`), because `$email` lives on it and is the one
 identifier in the whole analytics plan that names a person; it has to happen
 before the reset, or it lands on the fresh anonymous profile instead.
+GA4 never receives the address. Its local user and installation identifiers are
+cleared on reset, while its historical events remain pseudonymous.
 
 What survives, and `ricecal.app/data-deletion` says the same in the user's own
 words: a recipe somebody else saved into their own diary (`source_recipe_id` is
@@ -2665,7 +2667,7 @@ right screen would open — and nothing downstream could tell that tap from the 
 button being pressed, which is the only question the widgets have to answer to
 justify themselves.
 
-### What Mixpanel is told
+### What analytics is told
 
 Four events and one person property, and the awkward one is adoption.
 
@@ -2686,7 +2688,7 @@ screen, so a reinstall would otherwise report three installs that happened
 months ago.
 
 `Widget Water Added` is fired when the queue drains, not when the button was
-pressed, because the button runs in a process with no Mixpanel in it. A drink
+pressed, because the button runs in a process with no analytics client in it. A drink
 whose sync failed is never counted, which is the honest direction to be wrong in.
 
 ---
@@ -3488,26 +3490,61 @@ The one secret is set by hand, once per environment:
 
 ## Analytics
 
-Mixpanel. `src/lib/analytics/events.ts` is the authority: every event is declared
-there with the exact properties it carries, and `track` accepts nothing else.
+Mixpanel and GA4. `src/lib/analytics/events.ts` is the authority for RiceCal's
+product events: every event is declared there with the exact properties it
+carries, and `track` accepts nothing else. Both providers receive that same plan.
+GA4 also records the Firebase SDK's own lifecycle events, such as first open,
+session start and app update. Those are kept separate from RiceCal's namespaced
+custom events.
 
 ```
-client.ts    the seam. Imports nothing, so anything may track.
-events.ts    the plan, as a type. A typo does not compile.
-props.ts     the two derived properties more than one call site needs.
+client.ts      the seam. Imports nothing, so anything may track.
+events.ts      the plan, as a type. A typo does not compile.
+ga4.ts         GA4 names, value conversion, limits and PII exclusions.
+providers.ts   the ordered fan-out to Mixpanel and Firebase Analytics.
+props.ts       the two derived properties more than one call site needs.
 ```
 
-`startup.ts` builds the Mixpanel instance and hands it to `registerAnalytics`.
-Nothing else touches the SDK, for the same reason the RevenueCat lifecycle is in
-its own file: `mixpanel-react-native` is imported at module scope and jest cannot
-transform it, so a native import in a module that tracking is fired from would
-drag an untransformable dependency into most of the test suite.
+`startup.ts` builds the Mixpanel instance and the Firebase bridge, then hands one
+combined client to `registerAnalytics`. Nothing else touches either SDK, for the
+same reason the RevenueCat lifecycle is in its own file: a native import in a
+module that tracking is fired from would drag an untransformable dependency into
+most of the test suite. Firebase Analytics is loaded lazily as well, so an OTA
+bundle stays safe on a native binary built before the module existed.
 
-Events fired before the SDK finishes starting are queued and drained on
-registration, because `initServices` runs inside an effect and the router has
-already decided where a launch belongs by the time it resolves.
+Events fired before the SDKs finish starting are queued and drained on
+registration. Firebase operations then run serially, so an async user-id write
+cannot race the event after it and file that event under the anonymous install.
 
 Nothing is sent in development.
+
+The Firebase project is the existing `ricecal` Google Cloud project. It is linked
+to GA4 property **RiceCal Mobile App** (`553863111`) in Analytics account
+`350740029`. Firebase holds four app registrations: release and `.dev` variants
+for both Android and iOS. The Android config contains both packages; dynamic Expo
+config selects the matching iOS plist. These client config files contain public
+project identifiers, not service-account credentials.
+
+Native collection starts disabled. Shipping JavaScript enables it after startup;
+development leaves it disabled. Automatic screen reporting is off because a
+React Native route is not a native activity or view controller, and this plan does
+not count renders as decisions. Advertising IDs, ad storage, ad user data and ad
+personalisation signals are disabled on both platforms. iOS builds the Analytics
+pod without AdSupport.
+
+Before version 1.0.7 is released, the public privacy policy's processor table
+must name Google/Firebase Analytics beside Mixpanel, and the App Store privacy
+answers and Google Play Data safety form must be checked against the additional
+provider. The categories do not widen beyond the product analytics already
+described there, but naming every processor is part of the promise that page
+makes.
+
+GA4 custom events are the Mixpanel display name converted to lowercase snake case
+under the `ricecal_` namespace. Booleans become 1 or 0, unsupported values are
+dropped, `Entry Updated`'s field-name array becomes one comma-separated value,
+and names, values and counts are capped at GA4's documented limits. Person and
+super properties become GA4 user properties. A null clears the old value instead
+of leaving stale state behind.
 
 ### The rules this plan was written against
 
@@ -3530,15 +3567,17 @@ travels as an `outcome` property on the event it belongs to.
 
 **Scan quality belongs to Postgres.** `food_scan_items` records what the model
 claimed and where it landed, and `food_scan_misses` is the catalogue-widening
-backlog. Mixpanel measures behaviour; those two measure the pipeline.
+backlog. Product analytics measures behaviour; those two measure the pipeline.
 
 ### The one identifier that names a person
 
-`$email`, and it is an exception made on purpose rather than a hole in the rule.
-The address is what a support conversation starts from, and a profile that cannot
-be found by it is a profile nobody can act on. It is set from `identifyUser`
-alone, from the address on the session, and it is the same address RevenueCat is
-given, so both dashboards answer the same search.
+`$email`, in Mixpanel only, and it is an exception made on purpose rather than a
+hole in the rule. The address is what a support conversation starts from, and a
+profile that cannot be found by it is a profile nobody can act on. It is set from
+`identifyUser` alone, from the address on the session, and it is the same address
+RevenueCat is given, so both support dashboards answer the same search. GA4 gets
+the Supabase uuid as its pseudonymous user id and its property mapper rejects both
+`$email` and `email`.
 
 Nothing else about the person follows it: no name, no body figures, and the diary
 half of the rule is unchanged.
@@ -3553,9 +3592,10 @@ so counting it as a sign-in would report a returning user's every cold start as
 an acquisition. The three call sites in `data/auth.ts` are the moments a person
 signed in.
 
-**One super property**, `entitled`, stamped on every event. It is the cut every
-other report wants. It waits for a real answer: offline with nothing cached,
-registering `false` would mark a paying user's whole session as free.
+**One super property**, `entitled`, stamped on every Mixpanel event and mirrored
+as a GA4 user property. It is the cut every other report wants. It waits for a
+real answer: offline with nothing cached, registering `false` would mark a paying
+user's whole session as free.
 
 ### Adding an event
 
@@ -4357,9 +4397,11 @@ so.
 path *is* the cache entry, so `storedImageSource` hands it over with no
 `cacheKey`.
 
-**Nothing off the diary reaches Mixpanel.** `src/lib/analytics/events.ts` is the
-whole list of what is sent, and a call site cannot add to it without editing that
-file. `$email` is the one exception, explained above.
+**Nothing off the diary reaches RiceCal's product-event plan.**
+`src/lib/analytics/events.ts` is the whole list of app decisions sent to Mixpanel
+and GA4, and a call site cannot add to it without editing that file. GA4's
+SDK-managed lifecycle events carry app and device context, not diary content.
+`$email` is the one Mixpanel-only exception, explained above.
 
 **No embeddings.**
 
