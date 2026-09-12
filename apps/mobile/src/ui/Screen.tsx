@@ -85,6 +85,13 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   floatingLeading?: ReactNode
   /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
   flush?: boolean
+  /**
+   * Whether this shell owns the top safe-area inset.
+   *
+   * Disable only when a fixed header above the shell already pads itself for
+   * the inset. Otherwise the content starts with two status-bar clearances.
+   */
+  safeAreaTop?: boolean
   /** Render children in a plain View instead of a ScrollView. */
   scroll?: boolean
   /**
@@ -143,6 +150,7 @@ export function Screen({
   floating,
   floatingLeading,
   flush = false,
+  safeAreaTop = true,
   scroll = true,
   gestureScroll = false,
   className,
@@ -248,7 +256,7 @@ export function Screen({
         // Every route draws its own title bar with `headerShown: false`, so the
         // status bar is this view's problem. Without the top inset the first
         // line of every screen sits under the clock.
-        paddingTop: (flush ? 0 : spacing.gutter) + insets.top,
+        paddingTop: (flush ? 0 : spacing.gutter) + (safeAreaTop ? insets.top : 0),
         // The pad's own share, so a field near the end of a screen has
         // somewhere to be scrolled TO. Without it the reveal asks for an offset
         // past the end of the content and the scroll view declines.
@@ -283,7 +291,7 @@ export function Screen({
       className={cn('flex-1', !flush && 'p-gutter', contentClassName)}
       style={{
         gap: spacing.stack,
-        paddingTop: (flush ? 0 : spacing.gutter) + insets.top,
+        paddingTop: (flush ? 0 : spacing.gutter) + (safeAreaTop ? insets.top : 0),
         // No scroll view to inset, so the content box is what shrinks — the
         // same thing `behavior="padding"` does for the shell when a system
         // keyboard opens.

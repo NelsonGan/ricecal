@@ -78,8 +78,10 @@ it('uses the same selected-plan offer on the standing paywall', async () => {
   expect(screen.getByRole('header', { name: 'RiceCal Pro' })).toBeOnTheScreen()
   expect(screen.getAllByRole('radio')).toHaveLength(3)
   expect(screen.getByRole('button', { name: 'Start free trial' })).toBeOnTheScreen()
-  await user.press(screen.getByRole('button', { name: 'Maybe later' }))
+  await user.press(screen.getByRole('button', { name: 'Close' }))
   expect(later).toHaveBeenCalledTimes(1)
+  await user.press(screen.getByRole('button', { name: 'Maybe later' }))
+  expect(later).toHaveBeenCalledTimes(2)
 })
 
 it('purchases the selected plan from the one shared button', async () => {

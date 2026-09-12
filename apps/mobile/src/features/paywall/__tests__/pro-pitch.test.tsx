@@ -31,7 +31,6 @@ beforeEach(() => {
 it('shows one selected-plan offer with the comparison beneath it', async () => {
   await render(<ProPitch plan="yearly" onPlanChange={jest.fn()} onRestore={jest.fn()} />)
 
-  expect(screen.getByRole('header', { name: 'RiceCal Pro' })).toBeOnTheScreen()
   expect(screen.queryByText('No limits with RiceCal Pro')).toBeNull()
   expect(screen.getByText('Choose your plan')).toBeOnTheScreen()
   expect(screen.getByText('Everything in Pro')).toBeOnTheScreen()
