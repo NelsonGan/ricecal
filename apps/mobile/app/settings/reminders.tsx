@@ -69,13 +69,15 @@ export default function RemindersScreen() {
     (mealTimes ?? []).find((slot) => slot.meal === meal)?.reminder_enabled ?? false
 
   return (
-    <Screen>
-      <AppBar
-        title={t('profile:reminders.title')}
-        onBack={() => goBack()}
-        backLabel={t('common:a11y.back')}
-      />
-
+    <Screen
+      header={
+        <AppBar
+          title={t('profile:reminders.title')}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+        />
+      }
+    >
       {/* Only after a refusal, and it links out rather than asking again:
           once `canAskAgain` is false the OS dialog never appears again. */}
       {blocked ? (

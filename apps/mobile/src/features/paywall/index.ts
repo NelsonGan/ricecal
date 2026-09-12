@@ -8,8 +8,10 @@
 
 export { EntitlementSync } from './EntitlementSync'
 export { markPaywallSeen, NUDGE_INTERVAL_MS, paywallDue } from './nudge'
+export { PaywallOffer, type PaywallOfferProps } from './PaywallOffer'
 export { PLAN_FEATURES, type PlanFeature, PlanTable } from './PlanTable'
 export { ProPitch, type ProPitchProps } from './ProPitch'
+export { ProWordmark, type ProWordmarkProps } from './ProWordmark'
 export { PurchaseTerms } from './PurchaseTerms'
 export { type PlanSummary, planOfProduct, usePlanSummary } from './plan'
 export {

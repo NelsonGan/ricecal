@@ -58,15 +58,17 @@ export default function SearchScreen() {
   const recipeQuota = useRecipeQuota()
 
   return (
-    <Screen>
-      {/* A chevron, not a cross: this is a full page, and the row it was opened
-          from is still on the day behind it. */}
-      <AppBar
-        title={t('logging:search.title')}
-        onBack={() => goBack()}
-        backLabel={t('common:a11y.back')}
-      />
-
+    <Screen
+      header={
+        /* A chevron, not a cross: this is a full page, and the row it was opened
+           from is still on the day behind it. */
+        <AppBar
+          title={t('logging:search.title')}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+        />
+      }
+    >
       <FoodSearchPanel
         // Only when this page was opened in its own right. A handover mounts it
         // UNDER the screen it handed off to, where a focus raises the keyboard

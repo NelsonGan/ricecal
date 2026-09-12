@@ -69,47 +69,54 @@ export function PlanTable() {
   }
 
   return (
-    <Card title={t('table.title')} contentClassName="gap-0 p-card">
-      <View className="flex-row items-end gap-2 pb-2">
-        <View className="flex-1" />
-        <Text variant="overlineSm" style={{ width: COLUMN }} className="text-center">
-          {t('table.free')}
-        </Text>
-        {/* The one coloured thing in the header, because it is the column being
-            sold. Everything below it stays in the ordinary ink: a table where
-            the right-hand side is tinted throughout reads as a highlight rather
-            than as a comparison. */}
-        <Text
-          variant="overlineSm"
-          style={{ width: COLUMN }}
-          className="text-center text-pandan-ink"
-        >
-          {t('table.pro')}
-        </Text>
+    <View className="gap-3">
+      <View className="gap-0">
+        <Text variant="subtitle">{t('table.sectionTitle')}</Text>
+        <Text variant="meta">{t('table.sectionSubtitle')}</Text>
       </View>
-      <Divider />
 
-      {PLAN_FEATURES.map((feature, index) => (
-        <View key={feature.key}>
-          <View className="flex-row items-center gap-2 py-2.5">
-            <Text variant="meta" className="flex-1 text-ink">
-              {t(`table.rows.${feature.key}.label`)}
-            </Text>
-            <Cell
-              kind={feature.free}
-              label={t(`table.rows.${feature.key}.free`, limits)}
-              tint={colors.muted}
-            />
-            <Cell
-              kind={feature.pro}
-              label={t(`table.rows.${feature.key}.pro`, limits)}
-              tint={colors.pandanInk}
-            />
-          </View>
-          {index < PLAN_FEATURES.length - 1 ? <Divider /> : null}
+      <Card title={t('table.title')} contentClassName="gap-0 p-card">
+        <View className="flex-row items-end gap-2 pb-2">
+          <View className="flex-1" />
+          <Text variant="overlineSm" style={{ width: COLUMN }} className="text-center">
+            {t('table.free')}
+          </Text>
+          {/* The one coloured thing in the header, because it is the column being
+              sold. Everything below it stays in the ordinary ink: a table where
+              the right-hand side is tinted throughout reads as a highlight rather
+              than as a comparison. */}
+          <Text
+            variant="overlineSm"
+            style={{ width: COLUMN }}
+            className="text-center text-pandan-ink"
+          >
+            {t('table.pro')}
+          </Text>
         </View>
-      ))}
-    </Card>
+        <Divider />
+
+        {PLAN_FEATURES.map((feature, index) => (
+          <View key={feature.key}>
+            <View className="flex-row items-center gap-2 py-2.5">
+              <Text variant="meta" className="flex-1 text-ink">
+                {t(`table.rows.${feature.key}.label`)}
+              </Text>
+              <Cell
+                kind={feature.free}
+                label={t(`table.rows.${feature.key}.free`, limits)}
+                tint={colors.muted}
+              />
+              <Cell
+                kind={feature.pro}
+                label={t(`table.rows.${feature.key}.pro`, limits)}
+                tint={colors.pandanInk}
+              />
+            </View>
+            {index < PLAN_FEATURES.length - 1 ? <Divider /> : null}
+          </View>
+        ))}
+      </Card>
+    </View>
   )
 }
 

@@ -66,6 +66,13 @@ export default function SubscriptionScreen() {
 
   return (
     <Screen
+      header={
+        <AppBar
+          title={t('profile:subscription.title')}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+        />
+      }
       footer={
         entitled ? (
           <Button variant="neutral" fullWidth onPress={switchPlan}>
@@ -82,12 +89,6 @@ export default function SubscriptionScreen() {
         )
       }
     >
-      <AppBar
-        title={t('profile:subscription.title')}
-        onBack={() => goBack()}
-        backLabel={t('common:a11y.back')}
-      />
-
       <Card>
         <View className="flex-row items-center gap-3">
           <Icon set="system" name="crown" size={50} />

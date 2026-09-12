@@ -186,15 +186,18 @@ export default function IngredientsScreen() {
   }
 
   return (
-    <Screen gestureScroll>
-      {/* A chevron, not a cross: this is a full page, and the entry it was
-          opened from is still on the stack behind it. */}
-      <AppBar
-        title={t('logging:detail.plateHeading')}
-        onBack={() => goBack()}
-        backLabel={t('common:a11y.back')}
-      />
-
+    <Screen
+      gestureScroll
+      header={
+        /* A chevron, not a cross: this is a full page, and the entry it was
+           opened from is still on the stack behind it. */
+        <AppBar
+          title={t('logging:detail.plateHeading')}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+        />
+      }
+    >
       {/* Nothing at all while the parts are being fetched. An editor that draws
           an empty plate and fills it in a moment later reads as a meal that lost
           its ingredients, and the one control on an empty plate — Add — would be

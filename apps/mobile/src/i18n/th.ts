@@ -1249,8 +1249,7 @@ export const th = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'ไม่มีขีดจำกัดกับ RiceCal Pro',
+      choosePlan: 'เลือกแผนของคุณ',
       assurance: 'ไม่มีข้อผูกมัด ยกเลิกได้ทุกเมื่อ',
       assuranceLifetime: 'จ่ายครั้งเดียว ขอคืนเงินผ่านสโตร์ได้',
       smallPrintYearly: 'ฟรี 7 วัน จากนั้น {{price}} ต่อปี',
@@ -1258,7 +1257,6 @@ export const th = {
       smallPrintYearlyNoTrial: '{{price}} ต่อปี',
       smallPrintMonthlyNoTrial: '{{price}} ต่อเดือน',
       smallPrintLifetime: 'จ่าย {{price}} ครั้งเดียว ไม่ใช่การสมัครสมาชิก ไม่มีการต่ออายุ',
-      smallPrintPending: 'ระบบจะแสดงราคาก่อนซื้อ',
       start: 'เริ่มทดลองใช้ฟรี',
       startSubscription: 'สมัครสมาชิก',
       startLifetime: 'ซื้อสิทธิ์ตลอดชีพ',
@@ -1271,6 +1269,8 @@ export const th = {
     },
 
     table: {
+      sectionTitle: 'ทุกอย่างใน Pro',
+      sectionSubtitle: 'ดูว่ามีอะไรปลดล็อกเมื่อคุณอัปเกรด',
       title: 'ฟรีเทียบกับ PRO',
       free: 'ฟรี',
       pro: 'Pro',
@@ -1426,7 +1426,7 @@ export const th = {
 
     heading: {
       mine: 'อาหารของฉัน',
-      community: 'จากชุมชน',
+      community: 'ชุมชน',
     },
 
     search: {
@@ -1439,9 +1439,7 @@ export const th = {
 
     empty: {
       mineTitle: 'ยังไม่มีอาหาร',
-      mineBody: 'หม้อที่กินร่วมกันไม่มีขนาดต่อที่ ใส่ว่ามีอะไรบ้างและกินได้กี่คนสักครั้ง จากนั้นการบันทึกก็แค่แตะเดียว',
       communityTitle: 'ยังไม่มีใครแชร์',
-      communityBody: 'อาหารที่คนเปิดเป็นสาธารณะจะมาปรากฏตรงนี้',
     },
 
     servings_one: '{{count}} ที่',

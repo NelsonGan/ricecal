@@ -1261,8 +1261,7 @@ export const ja = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'RiceCal Pro なら上限なし',
+      choosePlan: 'プランを選択',
       assurance: '縛りなし、いつでも解約できます',
       assuranceLifetime: '一度の支払い、ストアを通じて返金可能',
       smallPrintYearly: '7 日間無料、その後は年 {{price}}。',
@@ -1270,7 +1269,6 @@ export const ja = {
       smallPrintYearlyNoTrial: '年 {{price}}。',
       smallPrintMonthlyNoTrial: '月 {{price}}。',
       smallPrintLifetime: '{{price}} を一度だけ。サブスクではなく、更新もありません。',
-      smallPrintPending: '購入前に価格が表示されます。',
       start: '無料トライアルを始める',
       startSubscription: 'サブスクリプションに登録',
       startLifetime: '買い切りで購入',
@@ -1283,6 +1281,8 @@ export const ja = {
     },
 
     table: {
+      sectionTitle: 'Pro のすべて',
+      sectionSubtitle: 'アップグレードで使える機能を確認',
       title: '無料と PRO の比較',
       free: '無料',
       pro: 'Pro',
@@ -1438,7 +1438,7 @@ export const ja = {
 
     heading: {
       mine: '自分のフード',
-      community: 'コミュニティから',
+      community: 'コミュニティ',
     },
 
     search: {
@@ -1451,10 +1451,7 @@ export const ja = {
 
     empty: {
       mineTitle: 'まだフードがありません',
-      mineBody:
-        '大鍋の料理には決まった 1 人前がありません。何を入れて何人分かを一度だけ登録すれば、次からはタップ 1 回で記録できます。',
       communityTitle: 'まだ共有はありません',
-      communityBody: '公開されたフードはここに並びます。',
     },
 
     servings_one: '{{count}} 人前',

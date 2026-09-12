@@ -27,13 +27,15 @@ export default function PreferencesScreen() {
     isPending ? <Skeleton className="h-[44px] w-full" /> : control
 
   return (
-    <Screen>
-      <AppBar
-        title={t('preferences.title')}
-        onBack={() => goBack()}
-        backLabel={t('common:a11y.back')}
-      />
-
+    <Screen
+      header={
+        <AppBar
+          title={t('preferences.title')}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+        />
+      }
+    >
       {/*
         The language card is back, and the note under it is the reason it can
         be. It used to offer English and Bahasa with only English bundled, so

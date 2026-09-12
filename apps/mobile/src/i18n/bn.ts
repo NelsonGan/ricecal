@@ -1248,8 +1248,7 @@ export const bn = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'RiceCal Pro তে কোনো সীমা নেই',
+      choosePlan: 'আপনার প্ল্যান বেছে নিন',
       assurance: 'কোনো বাধ্যবাধকতা নেই, যেকোনো সময় বাতিল',
       assuranceLifetime: 'একবার দেওয়া, স্টোরের মাধ্যমে ফেরত পাওয়া যায়',
       smallPrintYearly: '৭ দিন বিনামূল্যে, তারপর বছরে {{price}}।',
@@ -1257,7 +1256,6 @@ export const bn = {
       smallPrintYearlyNoTrial: 'বছরে {{price}}।',
       smallPrintMonthlyNoTrial: 'মাসে {{price}}।',
       smallPrintLifetime: '{{price}} একবারে। কোনো সাবস্ক্রিপশন নয়, কোনো নবায়ন নয়।',
-      smallPrintPending: 'কেনার আগে দাম দেখানো হবে।',
       start: 'বিনামূল্যের ট্রায়াল শুরু করুন',
       startSubscription: 'সাবস্ক্রাইব করুন',
       startLifetime: 'আজীবন ব্যবহার কিনুন',
@@ -1270,6 +1268,8 @@ export const bn = {
     },
 
     table: {
+      sectionTitle: 'Pro-তে সবকিছু',
+      sectionSubtitle: 'আপগ্রেড করলে ঠিক কী আনলক হবে দেখুন',
       title: 'বিনামূল্যে বনাম PRO',
       free: 'বিনামূল্যে',
       pro: 'Pro',
@@ -1425,7 +1425,7 @@ export const bn = {
 
     heading: {
       mine: 'আমার খাবার',
-      community: 'কমিউনিটি থেকে',
+      community: 'কমিউনিটি',
     },
 
     search: {
@@ -1438,10 +1438,7 @@ export const bn = {
 
     empty: {
       mineTitle: 'এখনো কোনো খাবার নেই',
-      mineBody:
-        'ভাগ করে খাওয়া হাঁড়ির নির্দিষ্ট পরিবেশন থাকে না। কী দিয়েছেন আর কতজনের জন্য, একবার লিখে দিন, তারপর থেকে লেখা মানে একটি চাপ।',
       communityTitle: 'এখনো কিছু ভাগ করা হয়নি',
-      communityBody: 'মানুষ যেসব খাবার প্রকাশ্য করবে সেগুলো এখানে আসবে।',
     },
 
     servings_one: '{{count}} পরিবেশন',

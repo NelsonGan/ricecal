@@ -90,7 +90,7 @@ export default function TrendsScreen() {
               setRange(next)
             }}
             accessibilityLabel={t('progress:range.label')}
-            // Sized rather than left to grow: the control and the title share a
+            // Sized rather than left to grow: the control and title share a
             // row, and a segmented control that takes what it needs would push
             // "Trends" to an ellipsis on a narrow phone.
             className="w-[152px]"

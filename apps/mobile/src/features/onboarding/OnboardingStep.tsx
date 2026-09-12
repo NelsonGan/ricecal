@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { View } from 'react-native'
 
 import { track } from '@/lib/analytics'
-import { Button, type ButtonVariant, Screen, type StepProgressTone, Text } from '@/ui'
+import { Button, type ButtonVariant, Screen, type StepProgressTone } from '@/ui'
 import { StepHeader } from './StepHeader'
 import { type OnboardingStepName, stepNumber, TOTAL_STEPS } from './steps'
 
@@ -93,6 +93,19 @@ export function OnboardingStep({
 
   return (
     <Screen
+      header={
+        /* The progress and the question stay together while the answers
+           scroll. A back control that remains reachable without the title it
+           belongs to is only half a header. */
+        <StepHeader
+          step={step}
+          total={TOTAL_STEPS}
+          tone={accent}
+          onBack={onBack}
+          title={title}
+          subtitle={subtitle}
+        />
+      }
       footer={
         <View className="gap-1.5">
           <Button
@@ -111,16 +124,6 @@ export function OnboardingStep({
         </View>
       }
     >
-      {/* The bar is announced rather than captioned: the design leaves the
-          marks to speak for themselves, and a screen reader has nothing to go
-          on but a percentage. */}
-      <StepHeader step={step} total={TOTAL_STEPS} tone={accent} onBack={onBack} />
-
-      <View className="gap-2 pt-4">
-        <Text variant="title">{title}</Text>
-        {subtitle ? <Text className="text-[16px] leading-[24px]">{subtitle}</Text> : null}
-      </View>
-
       <View className="gap-md pt-2">{children}</View>
     </Screen>
   )

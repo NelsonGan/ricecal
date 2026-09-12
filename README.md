@@ -776,9 +776,23 @@ about that failed to typecheck.
 Routes come in two shapes. **Full pages push** (settings, the reports, search,
 the dish detail, one recipe, the reviews list and one review) and carry a
 chevron in their own `AppBar`. **Modals present** (the quick selector, the
-paywalls) and carry a cross. Every screen draws its own title bar; the native
-header is off everywhere. A tab carries a `ScreenTitle` instead, because there
-is nothing behind it to go back to.
+paywalls) and carry a cross. Every pushed page passes that bar through
+`Screen`'s `header` slot, outside the scroll view, so its way out, title and
+trailing control remain visible while the body moves. `AppBar` reserves the
+wider control width on both sides, keeping its one or two-line title centred on
+the screen even when a trailing action is wider than Back. The native header is
+off everywhere. A tab carries a left-aligned `ScreenTitle` instead, because
+there is nothing behind it to go back to and the larger root heading establishes
+the page hierarchy. The two paywall routes share `PaywallOffer`, whose centred
+wordmark and close control are likewise fixed outside its `Screen`.
+
+The logged-food page is the full-bleed exception. `CollapsingAppBar` keeps one
+set of controls fixed over the hero image, then fades in the canvas and the
+divider as the image's lower edge reaches the bar. The food name stays in the
+body because Back plus three actions leave no useful title width in that row.
+Scrolling back reverses the same transition. There are never two sets of live
+controls, and a caller does not rebuild the back/action row to get the image
+treatment.
 
 **The quick selector's inline search hands off to the search page.** A dish
 picked there is opened by replacing the sheet with `log/search`, carrying the
@@ -788,15 +802,12 @@ Replacing straight to the dish, which is what the barcode scanner still does,
 left it standing on Today, so backing out of a portion nobody had decided on
 threw the search away and made the user type it again.
 
-**"New food" hands off the same way**, and carries `?source=mine` as well as the
-query, because what has to survive that trip is the TAB. It is the one control
-on My foods that opens a form rather than a row, a form is abandoned more often
-than a portion is, and it is reached from the tab whose whole job is "not in the
-catalogue" — so the list underneath is the search that just failed to find the
-dish being written, and landing back on All foods would land on the list that
-had nothing on it. `openCreate` beside `openPicked`, and the page does not
-focus its field when either sent it, since a keyboard would come up under the
-screen on top.
+**My foods hands off the same way**, and carries `?source=mine` as well as the
+query, because what has to survive that trip is the TAB. That applies both when
+opening an existing food and when tapping "New food": backing out returns to the
+same My foods results instead of Today or All foods. `openOwn` and `openCreate`
+sit beside `openPicked`, and the page does not focus its field when any of them
+sent it, since a keyboard would come up under the screen on top.
 
 Five tabs (Today, Food, Activity, Trends, Me) on the headless
 `expo-router/ui` Tabs rather than a styled navigator, because `NavBar` and
@@ -1767,9 +1778,12 @@ The add path is a staged form, because there is nothing to write until Add.
 **The plate is the top of the screen, full width, with the chrome floating on
 it.** The `Screen` is `flush` and one wrapper puts the gutter back for
 everything under it; back on the left, then share, the pencil and the bin on the
-right, least to most destructive. The dish name is the page's heading
-underneath, where it stopped truncating: a bar between two 44pt buttons had room
-for about three words of "Nasi Lemak with Fried Chicken with pineapple juice".
+right, least to most destructive. Those controls stay fixed as the plate
+scrolls. When the image leaves, the canvas and a one-line dish title fade into
+the same bar; scrolling back reveals the plate behind it again. The full dish
+name remains the page's two-line heading underneath, where it stopped
+truncating: a bar between two 44pt buttons has room for about three words of
+"Nasi Lemak with Fried Chicken with pineapple juice".
 
 It runs behind the status bar rather than stopping under it. `flush` keeps the
 top inset as padding, which is right for content and wrong for a picture meant
@@ -2202,9 +2216,11 @@ that was true. `ingredientBasis` in `features/recipes/basis.ts` turns a catalogu
 serving into one: it reads a weight out of the serving label and falls back to
 counting when there is none.
 
-**Two shelves, one list.** Mine and the community. Which one a row is on is a
+**Two shelves, one grid.** Mine and the community. Which one a tile is on is a
 property of the row: community is somebody else's that is both public and
-approved.
+approved. Each shelf is three columns of image-led tiles: the serving calories sit
+over the artwork and the food name sits below it. The rest belongs on the detail
+screen.
 
 There was a third, the RiceCal kitchen: `owner_id is null`, so "official and
 owned by Farah" could not be spelled. Nothing was ever put on it, and a
@@ -2938,22 +2954,32 @@ never grant. Every SDK in `lib/startup.ts` is gated on its key being real.
 
 Three products on both stores and in RevenueCat: monthly, yearly, and a one-off
 lifetime. The two subscriptions carry a seven-day free trial and lifetime does
-not, which is why the button and the small print on `paywall/intro.tsx` change
-with the selection. Trial copy also follows the current store account's
-eligibility: iOS uses RevenueCat's introductory-offer eligibility result, and
-Android uses the free phase on the default subscription option Google returned.
-An unknown or failed check shows the regular subscription terms, because the
-store's purchase sheet is the final authority on what that account will receive.
+not. Both full paywalls use the same select-then-purchase offer: the three plans
+come first, one is selected, and one footer button buys that plan. The comparison
+follows as supporting detail under its own title. The subscription assurance sits
+under the plan heading in muted text. A compact RiceCal Pro wordmark, with Pro in
+an inverse rounded-rectangle badge, replaces the logo-and-tagline hero on both.
+Both finish with the same purchase button and Maybe later action; the route only
+decides whether Maybe later enters the app or returns to the previous screen. A
+sticky wordmark and close control remain at the top while the comparison scrolls;
+close performs the same route-specific action as Maybe later.
+
+Trial copy follows the current store account's eligibility: iOS uses RevenueCat's
+introductory-offer eligibility result, and Android uses the free phase on the
+default subscription option Google returned. Until the store returns a price the
+card shows a dash and no placeholder sentence. Once it answers, the real price
+and the selected plan's matching terms arrive together; the store's purchase
+sheet remains the final authority on what that account will receive.
 
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the
-terms of use and the privacy policy. The first three were on `ProPitch` already;
-the links are `PurchaseTerms`, which is a component rather than a copied pair
-because "every screen that can start a purchase" is a set that grows. There are
-three of them — `paywall/intro`, `paywall/index` and `paywall/ended` — and the
-third sold a year with one tap and had no price, period or renewal anywhere on
-it at all. `lib/legal.ts` holds the two addresses, and the same pair is on
-**Me, Edit** for everybody who never reaches a paywall.
+terms of use and the privacy policy. `PurchaseTerms` renders Terms and Privacy in
+one compact row, with Restore Purchase at the front on both paywalls. The
+trial-ended screen uses the same row without restore. There are three screens
+that can charge somebody: `paywall/intro`, `paywall/index` and `paywall/ended`.
+The third once sold a year with one tap and had no price, period or renewal
+anywhere on it at all. `lib/legal.ts` holds the two addresses, and the same pair
+is on **Me, Edit** for everybody who never reaches a paywall.
 
 ### What each tier gets
 
@@ -4609,6 +4635,10 @@ renders *underneath* it: it mounts, joins the accessibility tree, runs its timer
 and dismisses itself, entirely invisible. `ToastHost` is the same fix
 `NumpadHost` is, and `SheetSurface` renders one. It pins the placement to the
 top, because the bottom of a sheet is the panel and its buttons.
+
+Every toast can also be dismissed with a horizontal swipe. The gesture waits
+for clear sideways intent, so tapping an action such as Undo and scrolling the
+screen keep their normal touch behaviour.
 
 **And the host has to go when the window does**, which is not the same as when
 the component does. On iOS a `Modal` keeps its children mounted after `visible`

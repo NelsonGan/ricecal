@@ -1250,8 +1250,7 @@ export const hi = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'RiceCal Pro में कोई सीमा नहीं',
+      choosePlan: 'अपना प्लान चुनें',
       assurance: 'कोई बंधन नहीं, कभी भी रद्द करें',
       assuranceLifetime: 'एक बार भुगतान, स्टोर के ज़रिए वापसी संभव',
       smallPrintYearly: '7 दिन मुफ़्त, फिर {{price}} सालाना।',
@@ -1259,7 +1258,6 @@ export const hi = {
       smallPrintYearlyNoTrial: 'सालाना {{price}}।',
       smallPrintMonthlyNoTrial: 'महीने का {{price}}।',
       smallPrintLifetime: '{{price}} का एक भुगतान। न सदस्यता, न नवीनीकरण।',
-      smallPrintPending: 'खरीदने से पहले कीमत दिखाई जाएगी।',
       start: 'मुफ़्त ट्रायल शुरू करें',
       startSubscription: 'सदस्यता लें',
       startLifetime: 'आजीवन पहुंच ख़रीदें',
@@ -1272,6 +1270,8 @@ export const hi = {
     },
 
     table: {
+      sectionTitle: 'Pro में सब कुछ',
+      sectionSubtitle: 'अपग्रेड करने पर क्या अनलॉक होगा, ठीक से देखें',
       title: 'मुफ़्त बनाम PRO',
       free: 'मुफ़्त',
       pro: 'Pro',
@@ -1427,7 +1427,7 @@ export const hi = {
 
     heading: {
       mine: 'मेरा खाना',
-      community: 'समुदाय से',
+      community: 'समुदाय',
     },
 
     search: {
@@ -1440,10 +1440,7 @@ export const hi = {
 
     empty: {
       mineTitle: 'अभी कोई खाना नहीं',
-      mineBody:
-        'साझा बर्तन का कोई तय हिस्सा नहीं होता। एक बार लिख दीजिए कि उसमें क्या पड़ा और कितने लोगों के लिए है, फिर उसे दर्ज करना एक ही टैप का काम है।',
       communityTitle: 'अभी कुछ साझा नहीं हुआ',
-      communityBody: 'जो खाने लोग सार्वजनिक करेंगे वे यहां दिखेंगे।',
     },
 
     servings_one: '{{count}} हिस्सा',

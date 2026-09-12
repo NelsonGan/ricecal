@@ -397,6 +397,16 @@ export default function RecipeFormScreen() {
 
   return (
     <Screen
+      header={
+        <AppBar
+          title={recipeId ? t('recipes:edit.title') : t('recipes:new.title')}
+          onBack={leave}
+          // A cross rather than a chevron: the back control here discards, and a
+          // chevron promises a hierarchy this form does not have.
+          leading="dismiss"
+          backLabel={t('common:a11y.close')}
+        />
+      }
       footer={
         <Button
           fullWidth
@@ -410,15 +420,6 @@ export default function RecipeFormScreen() {
         </Button>
       }
     >
-      <AppBar
-        title={recipeId ? t('recipes:edit.title') : t('recipes:new.title')}
-        onBack={leave}
-        // A cross rather than a chevron: the back control here discards, and a
-        // chevron promises a hierarchy this form does not have.
-        leading="dismiss"
-        backLabel={t('common:a11y.close')}
-      />
-
       {/* The form, or the wait for it.
 
           The wait REPLACES the form rather than sitting over it, and that is

@@ -15,7 +15,7 @@ import {
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { computeTargets, goalDate } from '@/lib/nutrition'
-import { Button, CalorieRing, Icon, Screen, StatTile, Text } from '@/ui'
+import { Button, CalorieRing, Icon, Screen, StatTile } from '@/ui'
 
 /**
  * Your target: the budget, worked out on the phone.
@@ -151,6 +151,15 @@ export default function TargetStep() {
 
   return (
     <Screen
+      header={
+        <StepHeader
+          step={stepNumber('target')}
+          total={TOTAL_STEPS}
+          tone="pandan"
+          onBack={goBack}
+          title={t('target.title')}
+        />
+      }
       footer={
         <View className="gap-1.5">
           <Button fullWidth onPress={accept}>
@@ -162,8 +171,6 @@ export default function TargetStep() {
         </View>
       }
     >
-      <StepHeader step={stepNumber('target')} total={TOTAL_STEPS} tone="pandan" onBack={goBack} />
-
       <View className="items-center gap-2 pt-2">
         <CalorieRing
           // Both the same figure, and both the EDITED one: the ring is what the
@@ -192,9 +199,6 @@ export default function TargetStep() {
           centerLabel={budget.kcal.toLocaleString()}
           centerCaption={t('target.perDay')}
         />
-        <Text variant="screenTitle" className="text-center">
-          {t('target.title')}
-        </Text>
       </View>
 
       {/* Editable, and this is the first screen in the flow where a number the

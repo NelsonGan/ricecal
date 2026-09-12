@@ -21,7 +21,7 @@ export {
   type IngredientSheetProps,
 } from './IngredientSheet'
 export { ReadingRecipe, type ReadingRecipeProps } from './ReadingRecipe'
-export { RecipeRow, type RecipeRowProps } from './RecipeRow'
 export { RecipeSteps, splitSteps } from './RecipeSteps'
+export { RecipeTile, type RecipeTileProps } from './RecipeTile'
 export { recipeLink, ShareSheet, type ShareSheetProps } from './ShareSheet'
 export { StepsField, type StepsFieldProps } from './StepsField'

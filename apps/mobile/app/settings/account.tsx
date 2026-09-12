@@ -129,18 +129,21 @@ export default function AccountScreen() {
   }
 
   return (
-    <Screen>
-      <AppBar
-        title={t('profile:account.title')}
-        onBack={async () => {
-          if (leaving.current) return
-          leaving.current = true
-          Keyboard.dismiss()
-          if (await save()) goBack()
-          else leaving.current = false
-        }}
-        backLabel={t('common:a11y.back')}
-      />
+    <Screen
+      header={
+        <AppBar
+          title={t('profile:account.title')}
+          onBack={async () => {
+            if (leaving.current) return
+            leaving.current = true
+            Keyboard.dismiss()
+            if (await save()) goBack()
+            else leaving.current = false
+          }}
+          backLabel={t('common:a11y.back')}
+        />
+      }
+    >
       <View className="items-center gap-3 py-2">
         <Tappable
           accessibilityRole="button"
