@@ -1296,7 +1296,6 @@ export const fil = {
       smallPrintYearlyNoTrial: '{{price}} kada taon.',
       smallPrintMonthlyNoTrial: '{{price}} kada buwan.',
       smallPrintLifetime: 'Isang bayad na {{price}}. Walang subscription, walang renewal.',
-      smallPrintPending: 'Ipapakita ang presyo bago bumili.',
       start: 'Simulan ang libreng trial',
       startSubscription: 'Mag-subscribe',
       startLifetime: 'Bilhin ang habambuhay na access',

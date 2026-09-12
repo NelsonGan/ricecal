@@ -1300,7 +1300,6 @@ export const ms = {
       smallPrintYearlyNoTrial: '{{price}} setahun.',
       smallPrintMonthlyNoTrial: '{{price}} sebulan.',
       smallPrintLifetime: 'Satu bayaran {{price}}. Tiada langganan, tiada pembaharuan.',
-      smallPrintPending: 'Harga ditunjukkan sebelum pembelian.',
       start: 'Mula percubaan percuma',
       startSubscription: 'Langgan',
       startLifetime: 'Beli akses seumur hidup',

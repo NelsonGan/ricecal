@@ -1258,7 +1258,6 @@ export const zhHant = {
       smallPrintYearlyNoTrial: '每年 {{price}}。',
       smallPrintMonthlyNoTrial: '每月 {{price}}。',
       smallPrintLifetime: '一次付 {{price}}。不是訂閱，也不會續訂。',
-      smallPrintPending: '價格會在購買前顯示。',
       start: '開始免費試用',
       startSubscription: '訂閱',
       startLifetime: '購買永久版',

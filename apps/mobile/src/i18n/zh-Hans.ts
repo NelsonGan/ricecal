@@ -1259,7 +1259,6 @@ export const zhHans = {
       smallPrintYearlyNoTrial: '每年 {{price}}。',
       smallPrintMonthlyNoTrial: '每月 {{price}}。',
       smallPrintLifetime: '一次付 {{price}}。不是订阅，也不会续费。',
-      smallPrintPending: '价格将在购买前显示。',
       start: '开始免费试用',
       startSubscription: '订阅',
       startLifetime: '购买永久版',

@@ -63,7 +63,6 @@ export const paywall = {
      * "cancel any time": the assurance line above says that, and twice reads as a
      * promise made by somebody worried it was not believed.
      */
-    smallPrintPending: 'Price shown before purchase.',
     start: 'Start free trial',
     startSubscription: 'Subscribe',
     startLifetime: 'Buy lifetime access',

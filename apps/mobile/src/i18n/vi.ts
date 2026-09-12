@@ -1273,7 +1273,6 @@ export const vi = {
       smallPrintYearlyNoTrial: '{{price}} mỗi năm.',
       smallPrintMonthlyNoTrial: '{{price}} mỗi tháng.',
       smallPrintLifetime: 'Trả một lần {{price}}. Không phải đăng ký, không gia hạn.',
-      smallPrintPending: 'Giá sẽ hiện trước khi mua.',
       start: 'Bắt đầu dùng thử miễn phí',
       startSubscription: 'Đăng ký',
       startLifetime: 'Mua quyền trọn đời',

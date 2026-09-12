@@ -1270,7 +1270,6 @@ export const ja = {
       smallPrintYearlyNoTrial: '年 {{price}}。',
       smallPrintMonthlyNoTrial: '月 {{price}}。',
       smallPrintLifetime: '{{price}} を一度だけ。サブスクではなく、更新もありません。',
-      smallPrintPending: '購入前に価格が表示されます。',
       start: '無料トライアルを始める',
       startSubscription: 'サブスクリプションに登録',
       startLifetime: '買い切りで購入',

@@ -1258,7 +1258,6 @@ export const th = {
       smallPrintYearlyNoTrial: '{{price}} ต่อปี',
       smallPrintMonthlyNoTrial: '{{price}} ต่อเดือน',
       smallPrintLifetime: 'จ่าย {{price}} ครั้งเดียว ไม่ใช่การสมัครสมาชิก ไม่มีการต่ออายุ',
-      smallPrintPending: 'ระบบจะแสดงราคาก่อนซื้อ',
       start: 'เริ่มทดลองใช้ฟรี',
       startSubscription: 'สมัครสมาชิก',
       startLifetime: 'ซื้อสิทธิ์ตลอดชีพ',

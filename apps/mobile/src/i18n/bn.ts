@@ -1257,7 +1257,6 @@ export const bn = {
       smallPrintYearlyNoTrial: 'বছরে {{price}}।',
       smallPrintMonthlyNoTrial: 'মাসে {{price}}।',
       smallPrintLifetime: '{{price}} একবারে। কোনো সাবস্ক্রিপশন নয়, কোনো নবায়ন নয়।',
-      smallPrintPending: 'কেনার আগে দাম দেখানো হবে।',
       start: 'বিনামূল্যের ট্রায়াল শুরু করুন',
       startSubscription: 'সাবস্ক্রাইব করুন',
       startLifetime: 'আজীবন ব্যবহার কিনুন',

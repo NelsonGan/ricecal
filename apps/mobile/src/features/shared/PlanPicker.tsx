@@ -40,7 +40,7 @@ export type PlanPickerProps = PlanPickerBaseProps &
         mode: 'purchase'
         onPurchase: (plan: Plan) => void
         /** The store terms displayed on each directly actionable plan. */
-        disclosures: Record<Plan, string>
+        disclosures: Partial<Record<Plan, string>>
         /** Disables every plan while one store sheet is being opened. */
         pendingPlan?: Plan | null
         /** Another store action, such as restore, currently owns the SDK. */
@@ -155,7 +155,8 @@ function PlanCard({
       radius={20}
       slabClassName={action ? 'bg-line' : selected ? 'bg-pandan-soft-line' : ''}
       className={cn(
-        'gap-2 border-[3px] p-4',
+        'border-[3px] p-4',
+        action ? 'flex-row items-center gap-3.5' : 'gap-2',
         selected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
         disabled && !busy && 'opacity-60',
       )}
@@ -174,58 +175,60 @@ function PlanCard({
         .filter(Boolean)
         .join(', ')}
     >
-      <View className="flex-row items-center gap-3.5">
-        {action ? null : (
-          <View
-            className={cn(
-              'h-[24px] w-[24px] items-center justify-center rounded-full border-[3px]',
-              selected ? 'border-pandan' : 'border-line-strong',
-            )}
-          >
-            {selected ? <View className="h-[11px] w-[11px] rounded-full bg-pandan" /> : null}
-          </View>
-        )}
+      <View className={action ? 'min-w-0 flex-1 gap-2' : 'w-full'}>
+        <View className="flex-row items-center gap-3.5">
+          {action ? null : (
+            <View
+              className={cn(
+                'h-[24px] w-[24px] items-center justify-center rounded-full border-[3px]',
+                selected ? 'border-pandan' : 'border-line-strong',
+              )}
+            >
+              {selected ? <View className="h-[11px] w-[11px] rounded-full bg-pandan" /> : null}
+            </View>
+          )}
 
-        <View className="min-w-0 flex-1 items-start gap-1">
-          {/* The badge sits ON the title's line, so a card carrying one is the
-              same height as a card that does not. */}
-          <View className="flex-row items-center gap-2">
-            <Text variant="label" className="text-[16px]">
-              {title}
+          <View className="min-w-0 flex-1 items-start gap-1">
+            {/* The badge sits ON the title's line, so a card carrying one is the
+                same height as a card that does not. */}
+            <View className="flex-row items-center gap-2">
+              <Text variant="label" className="text-[16px]">
+                {title}
+              </Text>
+              {badge ? (
+                <Badge size="sm" className="bg-pandan" labelClassName="text-on-pandan">
+                  {badge}
+                </Badge>
+              ) : null}
+            </View>
+            {detail ? <Text variant="meta">{detail}</Text> : null}
+          </View>
+
+          <View className="items-end gap-0.5">
+            <Text variant="subtitle" className="text-ink">
+              {price}
             </Text>
-            {badge ? (
-              <Badge size="sm" className="bg-pandan" labelClassName="text-on-pandan">
-                {badge}
-              </Badge>
-            ) : null}
+            {caption ? <Text variant="meta">{caption}</Text> : null}
           </View>
-          {detail ? <Text variant="meta">{detail}</Text> : null}
         </View>
 
-        <View className="items-end gap-0.5">
-          <Text variant="subtitle" className="text-ink">
-            {price}
+        {disclosure ? (
+          <Text variant="micro" className="text-muted">
+            {disclosure}
           </Text>
-          {caption ? <Text variant="meta">{caption}</Text> : null}
-        </View>
-
-        {action ? (
-          // It looks like the action while the card remains the full 44pt-plus
-          // target. A nested button would make two controls perform one purchase.
-          <View className="h-[36px] w-[36px] items-center justify-center rounded-full bg-pandan">
-            {busy ? (
-              <ActivityIndicator size="small" color={colors.onPandan} />
-            ) : (
-              <Icon set="ui" name="arrow-right" size={18} tintColor={colors.onPandan} />
-            )}
-          </View>
         ) : null}
       </View>
 
-      {disclosure ? (
-        <Text variant="micro" className="text-muted">
-          {disclosure}
-        </Text>
+      {action ? (
+        // A sibling of the whole text block, including its disclosure, so the
+        // arrow stays vertically centred whether terms take a line or not.
+        <View className="h-[36px] w-[36px] items-center justify-center rounded-full bg-pandan">
+          {busy ? (
+            <ActivityIndicator size="small" color={colors.onPandan} />
+          ) : (
+            <Icon set="ui" name="arrow-right" size={18} tintColor={colors.onPandan} />
+          )}
+        </View>
       ) : null}
     </Squish>
   )
