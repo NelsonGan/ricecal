@@ -1291,8 +1291,6 @@ export const ms = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'Tiada had dengan RiceCal Pro',
       choosePlan: 'Pilih pelan anda',
       assurance: 'Tiada komitmen, batal bila-bila masa',
       assuranceLifetime: 'Satu bayaran, boleh dikembalikan melalui gedung',

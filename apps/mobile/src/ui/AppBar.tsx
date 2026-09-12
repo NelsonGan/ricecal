@@ -18,6 +18,8 @@ export type AppBarProps = {
    * is a chevron and nothing else, and a trailing `action` still keeps its edge.
    */
   title?: string
+  /** A styled title that occupies the same centred slot as `title`. */
+  titleContent?: ReactNode
   /** Back affordance. Omit on a root screen. */
   onBack?: () => void
   /** Screen-reader name for the back button. Pass translated copy. */
@@ -90,6 +92,7 @@ export type AppBarProps = {
  */
 export function AppBar({
   title,
+  titleContent,
   onBack,
   backLabel = 'Go back',
   leading = 'back',
@@ -168,6 +171,8 @@ export function AppBar({
           cursorColor={colors.pandan}
           selectionColor={colors.pandan}
         />
+      ) : titleContent ? (
+        <View className="flex-1">{titleContent}</View>
       ) : onPressTitle ? (
         <Tappable className="flex-1" onPress={onPressTitle} accessibilityRole="button">
           <Text variant="subtitle" numberOfLines={titleLines}>

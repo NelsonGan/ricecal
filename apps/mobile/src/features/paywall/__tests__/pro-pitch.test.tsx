@@ -2,12 +2,6 @@ import '@/i18n'
 import { render, screen, userEvent } from '@/test-utils'
 import { ProPitch } from '../ProPitch'
 
-/**
- * The standing paywall has no selected plan and no second purchase button.
- * Each price card is the action it describes, while restore and privacy remain
- * quiet links below the choices.
- */
-
 const mockOpenLegal = jest.fn()
 const mockPlanPrices = {
   yearly: { priceString: 'RM99.90', perMonthString: 'RM8.33', freeTrialEligible: true },
@@ -18,9 +12,7 @@ const mockPlanPrices = {
 let mockPrices: typeof mockPlanPrices | undefined = mockPlanPrices
 
 jest.mock('@/data', () => ({
-  usePlanPrices: () => ({
-    data: mockPrices,
-  }),
+  usePlanPrices: () => ({ data: mockPrices }),
 }))
 
 jest.mock('@/lib/legal', () => ({
@@ -36,35 +28,51 @@ beforeEach(() => {
   mockPrices = mockPlanPrices
 })
 
-it('makes each plan card its purchase action', async () => {
-  const purchase = jest.fn()
-  await render(<ProPitch mode="purchase" onPlanPurchase={purchase} onRestore={jest.fn()} />)
+it('shows one selected-plan offer with the comparison beneath it', async () => {
+  await render(<ProPitch plan="yearly" onPlanChange={jest.fn()} onRestore={jest.fn()} />)
 
-  await user.press(screen.getByRole('button', { name: 'Monthly, RM12.90 a month.' }))
-
-  expect(purchase).toHaveBeenCalledWith('monthly')
-  expect(screen.queryByText('Subscribe')).toBeNull()
-})
-
-it('keeps purchase terms and legal links on direct-action cards', async () => {
-  const restore = jest.fn()
-  await render(<ProPitch mode="purchase" onPlanPurchase={jest.fn()} onRestore={restore} />)
-
-  expect(screen.getByText('Free for 7 days, then RM99.90 a year.')).toBeOnTheScreen()
-  expect(screen.getByText('RM12.90 a month.')).toBeOnTheScreen()
-  expect(
-    screen.getByText('One payment of RM299.90. No subscription, no renewal.'),
-  ).toBeOnTheScreen()
+  expect(screen.getByRole('header', { name: 'RiceCal Pro' })).toBeOnTheScreen()
+  expect(screen.queryByText('No limits with RiceCal Pro')).toBeNull()
   expect(screen.getByText('Choose your plan')).toBeOnTheScreen()
   expect(screen.getByText('Everything in Pro')).toBeOnTheScreen()
   expect(screen.getByText('See exactly what unlocks when you upgrade')).toBeOnTheScreen()
+  expect(
+    screen.getByRole('radio', {
+      name: 'Yearly, SAVE 35%, Billed every year, RM99.90, RM8.33 a month',
+    }),
+  ).toBeSelected()
+})
+
+it('keeps the reassurance neutral instead of presenting it as a benefit', async () => {
+  await render(<ProPitch plan="yearly" onPlanChange={jest.fn()} onRestore={jest.fn()} />)
+
   expect(screen.getByText('No commitment, cancel any time')).toHaveProp(
     'className',
     expect.stringContaining('text-muted'),
   )
-  expect(screen.getByText('Restore Purchase')).toBeOnTheScreen()
-  expect(screen.getByText('Terms')).toBeOnTheScreen()
-  expect(screen.getByText('Privacy')).toBeOnTheScreen()
+})
+
+it('hands a newly selected plan back to the shared purchase flow', async () => {
+  const change = jest.fn()
+  await render(<ProPitch plan="yearly" onPlanChange={change} onRestore={jest.fn()} />)
+
+  await user.press(screen.getByRole('radio', { name: 'Monthly, Billed every month, RM12.90' }))
+
+  expect(change).toHaveBeenCalledWith('monthly')
+})
+
+it('uses lifetime copy for a one-off purchase', async () => {
+  await render(<ProPitch plan="lifetime" onPlanChange={jest.fn()} onRestore={jest.fn()} />)
+
+  expect(screen.getByText('One payment, refundable through the store')).toBeOnTheScreen()
+  expect(
+    screen.getByText('One payment of RM299.90. No subscription, no renewal.'),
+  ).toBeOnTheScreen()
+})
+
+it('keeps restore and legal links at the end of the offer', async () => {
+  const restore = jest.fn()
+  await render(<ProPitch plan="yearly" onPlanChange={jest.fn()} onRestore={restore} />)
 
   await user.press(screen.getByText('Restore Purchase'))
   expect(restore).toHaveBeenCalledTimes(1)
@@ -76,64 +84,29 @@ it('keeps purchase terms and legal links on direct-action cards', async () => {
   expect(mockOpenLegal).toHaveBeenCalledWith('https://ricecal.app/privacy')
 })
 
-it('uses the same plan heading and compact legal actions in the selected-plan flow', async () => {
-  const restore = jest.fn()
-  await render(<ProPitch plan="yearly" onPlanChange={jest.fn()} onRestore={restore} />)
-
-  expect(screen.getByText('Choose your plan')).toBeOnTheScreen()
-  expect(screen.getByText('No commitment, cancel any time')).toBeOnTheScreen()
-  expect(screen.getByText('Restore Purchase')).toBeOnTheScreen()
-  expect(screen.getByText('Terms')).toBeOnTheScreen()
-  expect(screen.getByText('Privacy')).toBeOnTheScreen()
-
-  await user.press(screen.getByText('Restore Purchase'))
-  expect(restore).toHaveBeenCalledTimes(1)
-})
-
-it('does not add placeholder terms while store prices are loading', async () => {
+it('shows no guessed price or terms while the store is loading', async () => {
   mockPrices = undefined
-  await render(<ProPitch mode="purchase" onPlanPurchase={jest.fn()} onRestore={jest.fn()} />)
+  await render(<ProPitch plan="yearly" onPlanChange={jest.fn()} onRestore={jest.fn()} />)
 
   expect(screen.queryByText(/Price shown before purchase/i)).toBeNull()
-  expect(screen.getByRole('button', { name: 'Yearly, Billed every year, —' })).toBeOnTheScreen()
+  expect(screen.queryByText(/Free for 7 days/i)).toBeNull()
+  expect(screen.getByRole('radio', { name: 'Yearly, Billed every year, —' })).toBeOnTheScreen()
 })
 
-it('blocks a second purchase while the store is opening', async () => {
-  const purchase = jest.fn()
-  await render(
-    <ProPitch
-      mode="purchase"
-      purchasingPlan="monthly"
-      onPlanPurchase={purchase}
-      onRestore={jest.fn()}
-    />,
-  )
-
-  const yearly = screen.getByRole('button', {
-    name: 'Yearly, SAVE 35%, Free for 7 days, then RM99.90 a year., RM8.33 a month',
-  })
-  const monthly = screen.getByRole('button', { name: 'Monthly, RM12.90 a month.' })
-
-  expect(yearly).toBeDisabled()
-  expect(monthly.props.accessibilityState).toMatchObject({ busy: true, disabled: true })
-  await user.press(yearly)
-  expect(purchase).not.toHaveBeenCalled()
-})
-
-it('blocks plan and restore actions while a restore is opening the store', async () => {
-  const purchase = jest.fn()
+it('blocks plan and restore actions while the store is opening', async () => {
+  const change = jest.fn()
   const restore = jest.fn()
-  await render(<ProPitch mode="purchase" restoring onPlanPurchase={purchase} onRestore={restore} />)
+  await render(<ProPitch disabled plan="yearly" onPlanChange={change} onRestore={restore} />)
 
-  const yearly = screen.getByRole('button', {
-    name: 'Yearly, SAVE 35%, Free for 7 days, then RM99.90 a year., RM8.33 a month',
+  const monthly = screen.getByRole('radio', {
+    name: 'Monthly, Billed every month, RM12.90',
   })
   const restoreLink = screen.getByRole('button', { name: 'Restore Purchase' })
 
-  expect(yearly).toBeDisabled()
+  expect(monthly).toBeDisabled()
   expect(restoreLink).toBeDisabled()
-  await user.press(yearly)
+  await user.press(monthly)
   await user.press(restoreLink)
-  expect(purchase).not.toHaveBeenCalled()
+  expect(change).not.toHaveBeenCalled()
   expect(restore).not.toHaveBeenCalled()
 })

@@ -1250,8 +1250,6 @@ export const hi = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'RiceCal Pro में कोई सीमा नहीं',
       choosePlan: 'अपना प्लान चुनें',
       assurance: 'कोई बंधन नहीं, कभी भी रद्द करें',
       assuranceLifetime: 'एक बार भुगतान, स्टोर के ज़रिए वापसी संभव',
