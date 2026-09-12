@@ -1272,6 +1272,8 @@ export const hi = {
     },
 
     table: {
+      sectionTitle: 'Pro में सब कुछ',
+      sectionSubtitle: 'अपग्रेड करने पर क्या अनलॉक होगा, ठीक से देखें',
       title: 'मुफ़्त बनाम PRO',
       free: 'मुफ़्त',
       pro: 'Pro',

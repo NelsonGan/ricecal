@@ -1271,6 +1271,8 @@ export const th = {
     },
 
     table: {
+      sectionTitle: 'ทุกอย่างใน Pro',
+      sectionSubtitle: 'ดูว่ามีอะไรปลดล็อกเมื่อคุณอัปเกรด',
       title: 'ฟรีเทียบกับ PRO',
       free: 'ฟรี',
       pro: 'Pro',

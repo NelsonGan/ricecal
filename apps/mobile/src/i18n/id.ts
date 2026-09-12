@@ -1296,6 +1296,8 @@ export const id = {
     },
 
     table: {
+      sectionTitle: 'Semua fitur Pro',
+      sectionSubtitle: 'Lihat apa saja yang terbuka saat Anda upgrade',
       title: 'GRATIS VS PRO',
       free: 'Gratis',
       pro: 'Pro',

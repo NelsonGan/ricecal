@@ -95,6 +95,8 @@ export const paywall = {
    * it would turn the row being sold into a restriction.
    */
   table: {
+    sectionTitle: 'Everything in Pro',
+    sectionSubtitle: 'See exactly what unlocks when you upgrade',
     title: 'FREE VS PRO',
     free: 'Free',
     pro: 'Pro',

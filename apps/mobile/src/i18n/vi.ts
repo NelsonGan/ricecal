@@ -1286,6 +1286,8 @@ export const vi = {
     },
 
     table: {
+      sectionTitle: 'Mọi thứ trong Pro',
+      sectionSubtitle: 'Xem chính xác những gì được mở khóa khi nâng cấp',
       title: 'MIỄN PHÍ SO VỚI PRO',
       free: 'Miễn phí',
       pro: 'Pro',

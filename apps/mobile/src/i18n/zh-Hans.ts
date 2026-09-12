@@ -1272,6 +1272,8 @@ export const zhHans = {
     },
 
     table: {
+      sectionTitle: 'Pro 的全部功能',
+      sectionSubtitle: '看看升级后会解锁哪些功能',
       title: '免费版对比 Pro',
       free: '免费',
       pro: 'Pro',
