@@ -83,12 +83,15 @@ function HealthSettingsScreen() {
 
   if (connection.isPending) {
     return (
-      <Screen>
-        <AppBar
-          title={t('activity:settings.title')}
-          onBack={goBack}
-          backLabel={t('common:action.back')}
-        />
+      <Screen
+        header={
+          <AppBar
+            title={t('activity:settings.title')}
+            onBack={goBack}
+            backLabel={t('common:action.back')}
+          />
+        }
+      >
         <Card>
           <Skeleton className="h-[200px] w-full" />
         </Card>
@@ -97,13 +100,15 @@ function HealthSettingsScreen() {
   }
 
   return (
-    <Screen>
-      <AppBar
-        title={t('activity:settings.title')}
-        onBack={goBack}
-        backLabel={t('common:action.back')}
-      />
-
+    <Screen
+      header={
+        <AppBar
+          title={t('activity:settings.title')}
+          onBack={goBack}
+          backLabel={t('common:action.back')}
+        />
+      }
+    >
       {provider && connected ? (
         <>
           <Card title={t('activity:settings.connectedTitle')}>

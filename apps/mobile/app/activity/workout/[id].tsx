@@ -47,8 +47,7 @@ export default function WorkoutScreen() {
 
   if (isPending) {
     return (
-      <Screen>
-        <AppBar title={title} onBack={goBack} backLabel={t('common:action.back')} />
+      <Screen header={<AppBar title={title} onBack={goBack} backLabel={t('common:action.back')} />}>
         <Card>
           <Skeleton className="h-[220px] w-full" />
         </Card>
@@ -58,8 +57,7 @@ export default function WorkoutScreen() {
 
   if (!session) {
     return (
-      <Screen>
-        <AppBar title={title} onBack={goBack} backLabel={t('common:action.back')} />
+      <Screen header={<AppBar title={title} onBack={goBack} backLabel={t('common:action.back')} />}>
         <EmptyState
           title={t('activity:workout.missing')}
           icon={{ set: 'body', name: 'stopwatch' }}
@@ -138,13 +136,15 @@ export default function WorkoutScreen() {
   const rows = rowsOfThree(stats)
 
   return (
-    <Screen>
-      <AppBar
-        title={format(parseISO(session.startedAt), datePattern('weekdayTime'))}
-        onBack={goBack}
-        backLabel={t('common:action.back')}
-      />
-
+    <Screen
+      header={
+        <AppBar
+          title={format(parseISO(session.startedAt), datePattern('weekdayTime'))}
+          onBack={goBack}
+          backLabel={t('common:action.back')}
+        />
+      }
+    >
       <Card>
         <View className="items-center gap-1.5">
           <Icon {...workoutIcon(session.kind)} size={56} />

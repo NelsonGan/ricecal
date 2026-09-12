@@ -62,16 +62,16 @@ export default function ForgotScreen() {
 
   return (
     <Screen
+      header={
+        <AppBar title={t('auth:reset.askTitle')} onBack={back} backLabel={t('common:a11y.back')} />
+      }
       footer={
         <Button fullWidth onPress={send} disabled={busy} loading={busy}>
           {t('auth:reset.send')}
         </Button>
       }
     >
-      <AppBar onBack={back} backLabel={t('common:a11y.back')} />
-
-      <View className="gap-2 pb-2 pt-6">
-        <Text variant="screenTitle">{t('auth:reset.askTitle')}</Text>
+      <View className="pb-2 pt-6">
         <Text variant="meta">{t('auth:reset.askSubtitle')}</Text>
       </View>
 

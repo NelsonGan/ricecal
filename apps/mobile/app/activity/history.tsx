@@ -49,13 +49,15 @@ export default function HistoryScreen() {
   const rows = sessions.data ?? []
 
   return (
-    <Screen>
-      <AppBar
-        title={t('activity:history.title')}
-        onBack={goBack}
-        backLabel={t('common:action.back')}
-      />
-
+    <Screen
+      header={
+        <AppBar
+          title={t('activity:history.title')}
+          onBack={goBack}
+          backLabel={t('common:action.back')}
+        />
+      }
+    >
       <Card title={t('activity:history.weekTitle')}>
         {summary.isPending ? <Skeleton className="h-[52px] w-full" /> : <StatRow stats={stats} />}
       </Card>

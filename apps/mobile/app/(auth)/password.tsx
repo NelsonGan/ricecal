@@ -214,25 +214,24 @@ export default function PasswordScreen() {
   const forgot = () => router.push({ pathname: '/(auth)/forgot', params: { email } })
 
   const signingUp = mode === 'sign-up'
+  const title = t(signingUp ? 'auth:password.signUpTitle' : 'auth:password.signInTitle')
 
   return (
     <Screen
+      header={
+        showProgress ? (
+          <StepHeader step={step} total={total} tone="pandan" onBack={back} title={title} />
+        ) : (
+          <AppBar title={title} onBack={back} backLabel={t('common:a11y.back')} />
+        )
+      }
       footer={
         <Button fullWidth onPress={submit} disabled={busy} loading={busy}>
           {t(signingUp ? 'auth:password.createAccount' : 'auth:password.signIn')}
         </Button>
       }
     >
-      {showProgress ? (
-        <StepHeader step={step} total={total} tone="pandan" onBack={back} />
-      ) : (
-        <AppBar onBack={back} backLabel={t('common:a11y.back')} />
-      )}
-
-      <View className="gap-2 pb-2 pt-6">
-        <Text variant="screenTitle">
-          {t(signingUp ? 'auth:password.signUpTitle' : 'auth:password.signInTitle')}
-        </Text>
+      <View className="pb-2 pt-6">
         <Text variant="meta">
           {t(signingUp ? 'auth:password.signUpSubtitle' : 'auth:password.signInSubtitle', {
             email,

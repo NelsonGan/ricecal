@@ -58,6 +58,7 @@ export {
   type RadioGroupProps,
   type RadioProps,
 } from './Choice'
+export { CollapsingAppBar, type CollapsingAppBarProps } from './CollapsingAppBar'
 export { ConfirmSheet, type ConfirmSheetProps } from './ConfirmSheet'
 export { cn } from './cn'
 export {

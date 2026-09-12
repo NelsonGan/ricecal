@@ -182,20 +182,26 @@ export default function VerifyScreen() {
 
   return (
     <Screen
+      header={
+        showProgress ? (
+          <StepHeader
+            step={step}
+            total={total}
+            tone="pandan"
+            onBack={back}
+            title={t('auth:verify.title')}
+          />
+        ) : (
+          <AppBar title={t('auth:verify.title')} onBack={back} backLabel={t('common:a11y.back')} />
+        )
+      }
       footer={
         <Button fullWidth onPress={submit} disabled={busy} loading={running === 'submit'}>
           {t('auth:verify.submit')}
         </Button>
       }
     >
-      {showProgress ? (
-        <StepHeader step={step} total={total} tone="pandan" onBack={back} />
-      ) : (
-        <AppBar onBack={back} backLabel={t('common:a11y.back')} />
-      )}
-
-      <View className="gap-2 pb-2 pt-6">
-        <Text variant="screenTitle">{t('auth:verify.title')}</Text>
+      <View className="pb-2 pt-6">
         {/* Present tense while it is still going out, past tense once it has.
             Saying "we sent a code" over a request still in flight is the one
             version that can be wrong. */}

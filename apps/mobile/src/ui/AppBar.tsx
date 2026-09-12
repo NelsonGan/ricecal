@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { TextInput, View } from 'react-native'
+import { type ReactNode, useCallback, useState } from 'react'
+import { type LayoutChangeEvent, TextInput, View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
@@ -18,6 +18,12 @@ export type AppBarProps = {
    * is a chevron and nothing else, and a trailing `action` still keeps its edge.
    */
   title?: string
+  /**
+   * A title drawn by the caller in the bar's title slot. The collapsing image
+   * header uses it to fade the same title in while its controls stay put.
+   * Ordinary pages pass `title` and keep the shared typography below.
+   */
+  titleContent?: ReactNode
   /** Back affordance. Omit on a root screen. */
   onBack?: () => void
   /** Screen-reader name for the back button. Pass translated copy. */
@@ -83,13 +89,16 @@ export type AppBarProps = {
  * header, because the design puts the bar on a rounded canvas-coloured plate
  * with squishy 44pt controls. Screens using it set `headerShown: false`.
  *
- * With no `action`, an invisible spacer keeps the title optically centred.
+ * The leading and trailing slots are always the same width, using whichever
+ * side is wider. That keeps the title centred on the screen rather than merely
+ * centred in the leftover space when a trailing control is wider than Back.
  *
  * The title has three states: a heading, a heading that can be tapped
  * (`onPressTitle`), and a field standing where the heading was (`titleEdit`).
  */
 export function AppBar({
   title,
+  titleContent,
   onBack,
   backLabel = 'Go back',
   leading = 'back',
@@ -100,24 +109,38 @@ export function AppBar({
   className,
 }: AppBarProps) {
   const colors = useThemeColors()
+  const [leadingWidth, setLeadingWidth] = useState(0)
+  const [actionWidth, setActionWidth] = useState(0)
+  const sideWidth = Math.max(leadingWidth, actionWidth)
+
+  const measureLeading = useCallback((event: LayoutChangeEvent) => {
+    setLeadingWidth(event.nativeEvent.layout.width)
+  }, [])
+  const measureAction = useCallback((event: LayoutChangeEvent) => {
+    setActionWidth(event.nativeEvent.layout.width)
+  }, [])
 
   return (
     <View
       className={cn('flex-row items-center gap-md rounded-tile bg-canvas p-3', className)}
       accessibilityRole="header"
     >
-      {onBack ? (
-        <IconButton size="sm" accessibilityLabel={backLabel} onPress={onBack}>
-          {/* Tinted: chrome is monochrome, and the illustration's own palette
-              reads as a stray accent next to a title. */}
-          <Icon
-            set="ui"
-            name={leading === 'dismiss' ? 'close' : 'chevron-left'}
-            size={20}
-            tintColor={colors.muted}
-          />
-        </IconButton>
-      ) : null}
+      <View style={{ minWidth: sideWidth }} className="items-start">
+        {onBack ? (
+          <View onLayout={measureLeading}>
+            <IconButton size="sm" accessibilityLabel={backLabel} onPress={onBack}>
+              {/* Tinted: chrome is monochrome, and the illustration's own palette
+                  reads as a stray accent next to a title. */}
+              <Icon
+                set="ui"
+                name={leading === 'dismiss' ? 'close' : 'chevron-left'}
+                size={20}
+                tintColor={colors.muted}
+              />
+            </IconButton>
+          </View>
+        ) : null}
+      </View>
 
       {titleEdit ? (
         /* The heading's own face and place, with a caret in it. A bordered
@@ -148,7 +171,7 @@ export function AppBar({
              tighter leading shears the tops off tall glyphs. The font picks
              its own line box, and the cap below is what stops the bar growing.
              The row's 44pt controls absorb the point or two of difference. */
-          className="flex-1 font-display text-[20px] text-heading"
+          className="min-w-0 flex-1 text-center font-display text-[20px] text-heading"
           style={[
             // The padding UIKit gives a field by default, which the heading
             // does not take, and which would shift the title as it was tapped.
@@ -168,24 +191,32 @@ export function AppBar({
           cursorColor={colors.pandan}
           selectionColor={colors.pandan}
         />
+      ) : titleContent ? (
+        <View className="min-w-0 flex-1 items-center">{titleContent}</View>
       ) : onPressTitle ? (
-        <Tappable className="flex-1" onPress={onPressTitle} accessibilityRole="button">
-          <Text variant="subtitle" numberOfLines={titleLines}>
+        <Tappable
+          className="min-w-0 flex-1 items-center"
+          onPress={onPressTitle}
+          accessibilityRole="button"
+        >
+          <Text variant="subtitle" className="text-center" numberOfLines={titleLines}>
             {title}
           </Text>
         </Tappable>
       ) : title ? (
-        <Text variant="subtitle" className="flex-1" numberOfLines={titleLines}>
+        <Text variant="subtitle" className="min-w-0 flex-1 text-center" numberOfLines={titleLines}>
           {title}
         </Text>
       ) : (
         /* Untitled: the space is still claimed, so a trailing action stays on
            the right edge and the chevron stays on the left rather than the two
            meeting in the middle. */
-        <View className="flex-1" />
+        <View className="min-w-0 flex-1" />
       )}
 
-      {action ?? (onBack ? <View className="w-[44px]" /> : null)}
+      <View style={{ minWidth: sideWidth }} className="items-end">
+        {action ? <View onLayout={measureAction}>{action}</View> : null}
+      </View>
     </View>
   )
 }

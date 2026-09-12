@@ -97,13 +97,15 @@ export default function ShareAndEarnScreen() {
   }
 
   return (
-    <Screen>
-      <AppBar
-        title={t('profile:shareEarn.title')}
-        onBack={() => goBack()}
-        backLabel={t('common:a11y.back')}
-      />
-
+    <Screen
+      header={
+        <AppBar
+          title={t('profile:shareEarn.title')}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+        />
+      }
+    >
       {/* The offer, once, at the top. Everything below it is the detail. */}
       <Card>
         <View className="items-center gap-2">

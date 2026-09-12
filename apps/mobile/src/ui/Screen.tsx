@@ -2,8 +2,6 @@ import { cssInterop } from 'nativewind'
 import { type ReactNode, useCallback, useRef, useState } from 'react'
 import {
   type LayoutChangeEvent,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
   Platform,
   type ScrollViewProps,
   useWindowDimensions,
@@ -17,7 +15,12 @@ import {
   type KeyboardAwareScrollViewRef,
   useReanimatedKeyboardAnimation,
 } from 'react-native-keyboard-controller'
-import Reanimated, { useAnimatedStyle } from 'react-native-reanimated'
+import Reanimated, {
+  type SharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
@@ -67,6 +70,25 @@ const FIELD_CLEARANCE = spacing.lg + spacing.md + spacing.lg
 
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
+  /**
+   * Page chrome pinned above the scroll area. Pass an `AppBar` here on every
+   * pushed page so its way out and its title remain reachable while the body
+   * moves. The shell owns the safe-area inset and the usual screen gutter for
+   * it, leaving callers to describe only the bar itself.
+   */
+  header?: ReactNode
+  /**
+   * Header chrome layered over the scroll area instead of taking layout space.
+   * Reserved for a full-bleed hero whose image is the header background; the
+   * node owns its own absolute positioning and transition.
+   */
+  overlayHeader?: ReactNode
+  /**
+   * A scroll position consumed on Reanimated's UI thread. Use this for chrome
+   * whose appearance follows the page, so a busy JavaScript frame cannot make
+   * the transition lag behind the content under somebody's finger.
+   */
+  scrollOffset?: SharedValue<number>
   /** Content pinned below the scroll area — the footer CTA. Never scrolls away. */
   footer?: ReactNode
   /**
@@ -146,6 +168,9 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
  */
 export function Screen({
   children,
+  header,
+  overlayHeader,
+  scrollOffset,
   footer,
   floating,
   floatingLeading,
@@ -223,21 +248,24 @@ export function Screen({
    * that is not lands `bottomOffset` above whatever is covering it.
    */
   const scroller = useRef<KeyboardAwareScrollViewRef>(null)
-  const scrolled = useRef(0)
-  const trackScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrolled.current = event.nativeEvent.contentOffset.y
-  }, [])
+  const scrolled = useSharedValue(0)
+  const trackAnimatedScroll = useAnimatedScrollHandler(
+    (event) => {
+      scrolled.value = event.contentOffset.y
+      if (scrollOffset) scrollOffset.value = event.contentOffset.y
+    },
+    [scrollOffset],
+  )
 
   const revealForNumpad = useCallback(
     (measure: (report: (top: number, height: number) => void) => void) => {
       measure((top, fieldHeight) => {
         const clear = windowHeight - numpad.height - bottomOffset
         const overlap = top + fieldHeight - clear
-        if (overlap > 1)
-          scroller.current?.scrollTo({ y: scrolled.current + overlap, animated: true })
+        if (overlap > 1) scroller.current?.scrollTo({ y: scrolled.value + overlap, animated: true })
       })
     },
-    [windowHeight, numpad.height, bottomOffset],
+    [windowHeight, numpad.height, bottomOffset, scrolled],
   )
 
   const body = scroll ? (
@@ -256,7 +284,10 @@ export function Screen({
         // Every route draws its own title bar with `headerShown: false`, so the
         // status bar is this view's problem. Without the top inset the first
         // line of every screen sits under the clock.
-        paddingTop: (flush ? 0 : spacing.gutter) + (safeAreaTop ? insets.top : 0),
+        // A pinned header owns both of these above the scroll view. Keeping
+        // them here as well would leave a second blank header-height band
+        // before the first card.
+        paddingTop: header ? 0 : (flush ? 0 : spacing.gutter) + (safeAreaTop ? insets.top : 0),
         // The pad's own share, so a field near the end of a screen has
         // somewhere to be scrolled TO. Without it the reveal asks for an offset
         // past the end of the content and the scroll view declines.
@@ -270,10 +301,18 @@ export function Screen({
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       showsVerticalScrollIndicator={false}
       {...rest}
-      onScroll={(event) => {
-        trackScroll(event)
-        rest.onScroll?.(event)
-      }}
+      onScroll={
+        rest.onScroll
+          ? (event) => {
+              // `onScroll` remains a normal React Native escape hatch. The
+              // dedicated `scrollOffset` path above is what visual work uses,
+              // because it never crosses to the JavaScript thread.
+              scrolled.value = event.nativeEvent.contentOffset.y
+              if (scrollOffset) scrollOffset.value = event.nativeEvent.contentOffset.y
+              rest.onScroll?.(event)
+            }
+          : trackAnimatedScroll
+      }
       scrollEventThrottle={rest.scrollEventThrottle ?? 16}
       // What `keyboardDismissMode` does for the system keyboard, done by hand
       // for ours: a drag is somebody looking at the screen rather than typing
@@ -291,7 +330,7 @@ export function Screen({
       className={cn('flex-1', !flush && 'p-gutter', contentClassName)}
       style={{
         gap: spacing.stack,
-        paddingTop: (flush ? 0 : spacing.gutter) + (safeAreaTop ? insets.top : 0),
+        paddingTop: header ? 0 : (flush ? 0 : spacing.gutter) + (safeAreaTop ? insets.top : 0),
         // No scroll view to inset, so the content box is what shrinks — the
         // same thing `behavior="padding"` does for the shell when a system
         // keyboard opens.
@@ -316,7 +355,22 @@ export function Screen({
           window. Around it, the pad would be measured against whatever the
           screen's parent happens to be. */}
       <NumpadHost id={numpad.id} onOpen={revealForNumpad}>
+        {header ? (
+          /* Outside `body`, so neither a drag nor keyboard-driven reveal can
+             move the page's way out. The bottom padding is the same stack gap
+             that separated an in-content AppBar from the first card before
+             headers became sticky. */
+          <View
+            className="z-10 bg-canvas px-gutter pb-stack"
+            style={{ paddingTop: (safeAreaTop ? insets.top : 0) + spacing.gutter }}
+          >
+            {header}
+          </View>
+        ) : null}
+
         {body}
+
+        {overlayHeader}
 
         {/* Rides up with the footer, so a floating control is never left under an
           open keyboard.
