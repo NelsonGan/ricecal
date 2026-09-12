@@ -106,7 +106,10 @@ export default function IntroPaywall() {
   return (
     <Screen
       footer={
-        <View className="gap-1.5">
+        // The screen shell already protects the home indicator. Pull this
+        // quiet final action slightly into that padding so it sits nearer the
+        // edge without shrinking either button's tap target.
+        <View className="-mb-sm gap-1.5">
           <Button fullWidth onPress={start}>
             {lifetime
               ? t('paywall:hard.startLifetime')
