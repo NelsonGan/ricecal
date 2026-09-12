@@ -788,15 +788,12 @@ Replacing straight to the dish, which is what the barcode scanner still does,
 left it standing on Today, so backing out of a portion nobody had decided on
 threw the search away and made the user type it again.
 
-**"New food" hands off the same way**, and carries `?source=mine` as well as the
-query, because what has to survive that trip is the TAB. It is the one control
-on My foods that opens a form rather than a row, a form is abandoned more often
-than a portion is, and it is reached from the tab whose whole job is "not in the
-catalogue" — so the list underneath is the search that just failed to find the
-dish being written, and landing back on All foods would land on the list that
-had nothing on it. `openCreate` beside `openPicked`, and the page does not
-focus its field when either sent it, since a keyboard would come up under the
-screen on top.
+**My foods hands off the same way**, and carries `?source=mine` as well as the
+query, because what has to survive that trip is the TAB. That applies both when
+opening an existing food and when tapping "New food": backing out returns to the
+same My foods results instead of Today or All foods. `openOwn` and `openCreate`
+sit beside `openPicked`, and the page does not focus its field when any of them
+sent it, since a keyboard would come up under the screen on top.
 
 Five tabs (Today, Food, Activity, Trends, Me) on the headless
 `expo-router/ui` Tabs rather than a styled navigator, because `NavBar` and
@@ -2202,9 +2199,11 @@ that was true. `ingredientBasis` in `features/recipes/basis.ts` turns a catalogu
 serving into one: it reads a weight out of the serving label and falls back to
 counting when there is none.
 
-**Two shelves, one list.** Mine and the community. Which one a row is on is a
+**Two shelves, one grid.** Mine and the community. Which one a tile is on is a
 property of the row: community is somebody else's that is both public and
-approved.
+approved. Each shelf is three columns of image-led tiles: the serving calories sit
+over the artwork and the food name sits below it. The rest belongs on the detail
+screen.
 
 There was a third, the RiceCal kitchen: `owner_id is null`, so "official and
 owned by Farah" could not be spelled. Nothing was ever put on it, and a
@@ -2938,8 +2937,10 @@ never grant. Every SDK in `lib/startup.ts` is gated on its key being real.
 
 Three products on both stores and in RevenueCat: monthly, yearly, and a one-off
 lifetime. The two subscriptions carry a seven-day free trial and lifetime does
-not, which is why the button and the small print on `paywall/intro.tsx` change
-with the selection. Trial copy also follows the current store account's
+not. Onboarding keeps the deliberate select-then-continue flow; the standing
+paywall makes each plan card the purchase action and marks it with an arrow. Each
+direct-action card carries its own terms, because there is no selected plan with
+one shared sentence underneath. Trial copy follows the current store account's
 eligibility: iOS uses RevenueCat's introductory-offer eligibility result, and
 Android uses the free phase on the default subscription option Google returned.
 An unknown or failed check shows the regular subscription terms, because the
@@ -2947,12 +2948,12 @@ store's purchase sheet is the final authority on what that account will receive.
 
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the
-terms of use and the privacy policy. The first three were on `ProPitch` already;
-the links are `PurchaseTerms`, which is a component rather than a copied pair
-because "every screen that can start a purchase" is a set that grows. There are
-three of them — `paywall/intro`, `paywall/index` and `paywall/ended` — and the
-third sold a year with one tap and had no price, period or renewal anywhere on
-it at all. `lib/legal.ts` holds the two addresses, and the same pair is on
+terms of use and the privacy policy. `PurchaseTerms` renders the pair on the
+select-then-continue and trial-ended screens; the standing paywall puts the same
+links beside Restore Purchase in one compact row. There are three screens that
+can charge somebody: `paywall/intro`, `paywall/index` and `paywall/ended`. The
+third once sold a year with one tap and had no price, period or renewal anywhere
+on it at all. `lib/legal.ts` holds the two addresses, and the same pair is on
 **Me, Edit** for everybody who never reaches a paywall.
 
 ### What each tier gets
@@ -4609,6 +4610,10 @@ renders *underneath* it: it mounts, joins the accessibility tree, runs its timer
 and dismisses itself, entirely invisible. `ToastHost` is the same fix
 `NumpadHost` is, and `SheetSurface` renders one. It pins the placement to the
 top, because the bottom of a sheet is the panel and its buttons.
+
+Every toast can also be dismissed with a horizontal swipe. The gesture waits
+for clear sideways intent, so tapping an action such as Undo and scrolling the
+screen keep their normal touch behaviour.
 
 **And the host has to go when the window does**, which is not the same as when
 the component does. On iOS a `Modal` keeps its children mounted after `visible`

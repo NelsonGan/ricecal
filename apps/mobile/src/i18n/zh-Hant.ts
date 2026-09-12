@@ -1426,7 +1426,7 @@ export const zhHant = {
 
     heading: {
       mine: '我的食物',
-      community: '來自社群',
+      community: '社群',
     },
 
     search: {
@@ -1439,9 +1439,7 @@ export const zhHant = {
 
     empty: {
       mineTitle: '還沒有食物',
-      mineBody: '一鍋菜沒有現成的份量。把用了什麼、夠幾個人吃填一次，之後記錄就只要點一下。',
       communityTitle: '還沒有人分享',
-      communityBody: '別人設為公開的食物會出現在這裡。',
     },
 
     servings_one: '{{count}} 份',

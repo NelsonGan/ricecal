@@ -1438,7 +1438,7 @@ export const ja = {
 
     heading: {
       mine: '自分のフード',
-      community: 'コミュニティから',
+      community: 'コミュニティ',
     },
 
     search: {
@@ -1451,10 +1451,7 @@ export const ja = {
 
     empty: {
       mineTitle: 'まだフードがありません',
-      mineBody:
-        '大鍋の料理には決まった 1 人前がありません。何を入れて何人分かを一度だけ登録すれば、次からはタップ 1 回で記録できます。',
       communityTitle: 'まだ共有はありません',
-      communityBody: '公開されたフードはここに並びます。',
     },
 
     servings_one: '{{count}} 人前',

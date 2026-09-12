@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 
 import type { Plan } from '@/data'
 import { usePlanPrices } from '@/data'
-import { Badge, cn, Squish, Text } from '@/ui'
+import { useThemeColors } from '@/theme/useTheme'
+import { Badge, cn, Icon, Squish, Text } from '@/ui'
 
 /**
  * What a price reads as before the store has answered.
@@ -15,9 +16,7 @@ import { Badge, cn, Squish, Text } from '@/ui'
  */
 const PENDING = '—'
 
-export type PlanPickerProps = {
-  value: Plan
-  onChange: (plan: Plan) => void
+type PlanPickerBaseProps = {
   /**
    * Whether to offer the one-off purchase.
    *
@@ -28,26 +27,56 @@ export type PlanPickerProps = {
   className?: string
 }
 
+export type PlanPickerProps = PlanPickerBaseProps &
+  (
+    | {
+        /** A radio-style chooser whose selected plan is acted on elsewhere. */
+        mode?: 'select'
+        value: Plan
+        onChange: (plan: Plan) => void
+      }
+    | {
+        /** Every card is the purchase action for the plan it describes. */
+        mode: 'purchase'
+        onPurchase: (plan: Plan) => void
+        /** The store terms displayed on each directly actionable plan. */
+        disclosures: Record<Plan, string>
+        /** Disables every plan while one store sheet is being opened. */
+        pendingPlan?: Plan | null
+        /** Another store action, such as restore, currently owns the SDK. */
+        disabled?: boolean
+      }
+  )
+
 /**
  * Yearly, monthly, and optionally lifetime.
  *
- * Radio cards rather than `RadioGroup`, because each option carries a price
- * block and a badge that a plain label cannot hold. The selection state and the
- * accessibility role are the same either way.
+ * Select mode is a radio group for flows with a separate continue button.
+ * Purchase mode replaces the radio with an arrow and makes the full card the
+ * action, for a paywall where there is no second confirmation button in-app.
  */
-export function PlanPicker({ value, onChange, showLifetime = false, className }: PlanPickerProps) {
+export function PlanPicker(props: PlanPickerProps) {
   const { t } = useTranslation('paywall')
   const { data: prices } = usePlanPrices()
+  const purchaseMode = props.mode === 'purchase'
+  const choose = (plan: Plan) => (purchaseMode ? props.onPurchase(plan) : props.onChange(plan))
+  const selected = (plan: Plan) => !purchaseMode && props.value === plan
 
   // Computed by the store's own numbers, so it cannot drift from the prices
   // beside it the way a hardcoded "SAVE 50%" did.
   const saving = prices?.yearlySavingPercent
 
   return (
-    <View className={cn('gap-3', className)} accessibilityRole="radiogroup">
+    <View
+      className={cn('gap-3', props.className)}
+      accessibilityRole={purchaseMode ? undefined : 'radiogroup'}
+    >
       <PlanCard
-        selected={value === 'yearly'}
-        onPress={() => onChange('yearly')}
+        action={purchaseMode}
+        busy={purchaseMode && props.pendingPlan === 'yearly'}
+        disabled={purchaseMode && (props.pendingPlan != null || props.disabled === true)}
+        selected={selected('yearly')}
+        onPress={() => choose('yearly')}
         title={t('plans.yearly')}
         badge={saving && saving > 0 ? t('plans.yearlyBadge', { percent: saving }) : undefined}
         detail={t('plans.yearlyBilling')}
@@ -57,25 +86,34 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
             ? t('plans.perMonth', { price: prices.yearly.perMonthString })
             : undefined
         }
+        disclosure={purchaseMode ? props.disclosures.yearly : undefined}
       />
       <PlanCard
-        selected={value === 'monthly'}
-        onPress={() => onChange('monthly')}
+        action={purchaseMode}
+        busy={purchaseMode && props.pendingPlan === 'monthly'}
+        disabled={purchaseMode && (props.pendingPlan != null || props.disabled === true)}
+        selected={selected('monthly')}
+        onPress={() => choose('monthly')}
         title={t('plans.monthly')}
         detail={t('plans.monthlyBilling')}
         price={prices?.monthly?.priceString ?? PENDING}
+        disclosure={purchaseMode ? props.disclosures.monthly : undefined}
       />
-      {showLifetime ? (
+      {props.showLifetime ? (
         /* No badge here. The yearly card's is a SAVING — a number worth the
            emphasis because it is a comparison somebody can check. "PAY ONCE"
            restated the line directly under it and earned its colour with
            nothing. */
         <PlanCard
-          selected={value === 'lifetime'}
-          onPress={() => onChange('lifetime')}
+          action={purchaseMode}
+          busy={purchaseMode && props.pendingPlan === 'lifetime'}
+          disabled={purchaseMode && (props.pendingPlan != null || props.disabled === true)}
+          selected={selected('lifetime')}
+          onPress={() => choose('lifetime')}
           title={t('plans.lifetime')}
           detail={t('plans.lifetimeDetail')}
           price={prices?.lifetime?.priceString ?? PENDING}
+          disclosure={purchaseMode ? props.disclosures.lifetime : undefined}
         />
       ) : null}
     </View>
@@ -83,6 +121,9 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
 }
 
 type PlanCardProps = {
+  action: boolean
+  busy: boolean
+  disabled: boolean
   selected: boolean
   onPress: () => void
   title: string
@@ -90,58 +131,102 @@ type PlanCardProps = {
   detail?: string
   price: string
   caption?: string
+  disclosure?: string
 }
 
-function PlanCard({ selected, onPress, title, badge, detail, price, caption }: PlanCardProps) {
+function PlanCard({
+  action,
+  busy,
+  disabled,
+  selected,
+  onPress,
+  title,
+  badge,
+  detail,
+  price,
+  caption,
+  disclosure,
+}: PlanCardProps) {
+  const colors = useThemeColors()
+
   return (
     <Squish
-      depth={selected ? 5 : 0}
+      depth={action ? 4 : selected ? 5 : 0}
       radius={20}
-      slabClassName={selected ? 'bg-pandan-soft-line' : ''}
+      slabClassName={action ? 'bg-line' : selected ? 'bg-pandan-soft-line' : ''}
       className={cn(
-        'flex-row items-center gap-3.5 border-[3px] p-4',
+        'gap-2 border-[3px] p-4',
         selected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
+        disabled && !busy && 'opacity-60',
       )}
       onPress={onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
+      disabled={disabled}
+      accessibilityRole={action ? 'button' : 'radio'}
+      accessibilityState={action ? { busy } : { selected }}
       /* Everything on the card, in reading order. The label overrides the
          children rather than adding to them, so anything left out of it is
          simply not announced — which is what happened to the saving and the
          billing period, the two things the card is asking somebody to weigh. */
-      accessibilityLabel={[title, badge, detail, price, caption].filter(Boolean).join(', ')}
+      accessibilityLabel={(disclosure
+        ? [title, badge, disclosure, caption]
+        : [title, badge, detail, price, caption]
+      )
+        .filter(Boolean)
+        .join(', ')}
     >
-      <View
-        className={cn(
-          'h-[24px] w-[24px] items-center justify-center rounded-full border-[3px]',
-          selected ? 'border-pandan' : 'border-line-strong',
+      <View className="flex-row items-center gap-3.5">
+        {action ? null : (
+          <View
+            className={cn(
+              'h-[24px] w-[24px] items-center justify-center rounded-full border-[3px]',
+              selected ? 'border-pandan' : 'border-line-strong',
+            )}
+          >
+            {selected ? <View className="h-[11px] w-[11px] rounded-full bg-pandan" /> : null}
+          </View>
         )}
-      >
-        {selected ? <View className="h-[11px] w-[11px] rounded-full bg-pandan" /> : null}
-      </View>
 
-      <View className="min-w-0 flex-1 items-start gap-1">
-        {/* The badge sits ON the title's line, so a card carrying one is the
-            same height as a card that does not. */}
-        <View className="flex-row items-center gap-2">
-          <Text variant="label" className="text-[16px]">
-            {title}
-          </Text>
-          {badge ? (
-            <Badge size="sm" className="bg-pandan" labelClassName="text-on-pandan">
-              {badge}
-            </Badge>
-          ) : null}
+        <View className="min-w-0 flex-1 items-start gap-1">
+          {/* The badge sits ON the title's line, so a card carrying one is the
+              same height as a card that does not. */}
+          <View className="flex-row items-center gap-2">
+            <Text variant="label" className="text-[16px]">
+              {title}
+            </Text>
+            {badge ? (
+              <Badge size="sm" className="bg-pandan" labelClassName="text-on-pandan">
+                {badge}
+              </Badge>
+            ) : null}
+          </View>
+          {detail ? <Text variant="meta">{detail}</Text> : null}
         </View>
-        {detail ? <Text variant="meta">{detail}</Text> : null}
+
+        <View className="items-end gap-0.5">
+          <Text variant="subtitle" className="text-ink">
+            {price}
+          </Text>
+          {caption ? <Text variant="meta">{caption}</Text> : null}
+        </View>
+
+        {action ? (
+          // It looks like the action while the card remains the full 44pt-plus
+          // target. A nested button would make two controls perform one purchase.
+          <View className="h-[36px] w-[36px] items-center justify-center rounded-full bg-pandan">
+            {busy ? (
+              <ActivityIndicator size="small" color={colors.onPandan} />
+            ) : (
+              <Icon set="ui" name="arrow-right" size={18} tintColor={colors.onPandan} />
+            )}
+          </View>
+        ) : null}
       </View>
 
-      <View className="items-end gap-0.5">
-        <Text variant="subtitle" className="text-ink">
-          {price}
+      {disclosure ? (
+        <Text variant="micro" className="text-muted">
+          {disclosure}
         </Text>
-        {caption ? <Text variant="meta">{caption}</Text> : null}
-      </View>
+      ) : null}
     </Squish>
   )
 }
