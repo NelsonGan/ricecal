@@ -72,16 +72,18 @@ beforeEach(() => {
 })
 
 it('uses the same selected-plan offer on the standing paywall', async () => {
-  await renderOffer({ screen: 'hard', onBack: jest.fn() })
+  const later = jest.fn()
+  await renderOffer({ screen: 'hard', onLater: later })
 
   expect(screen.getByRole('header', { name: 'RiceCal Pro' })).toBeOnTheScreen()
   expect(screen.getAllByRole('radio')).toHaveLength(3)
   expect(screen.getByRole('button', { name: 'Start free trial' })).toBeOnTheScreen()
-  expect(screen.queryByRole('button', { name: 'Maybe later' })).toBeNull()
+  await user.press(screen.getByRole('button', { name: 'Maybe later' }))
+  expect(later).toHaveBeenCalledTimes(1)
 })
 
 it('purchases the selected plan from the one shared button', async () => {
-  await renderOffer({ screen: 'hard', onBack: jest.fn() })
+  await renderOffer({ screen: 'hard', onLater: jest.fn() })
 
   await user.press(screen.getByRole('radio', { name: 'Monthly, Billed every month, RM12.90' }))
   await user.press(screen.getByRole('button', { name: 'Subscribe' }))
@@ -94,7 +96,7 @@ it('purchases the selected plan from the one shared button', async () => {
   })
 })
 
-it('adds only the onboarding exit to the same offer', async () => {
+it('uses the route-specific destination behind the shared later action', async () => {
   const later = jest.fn()
   await renderOffer({ screen: 'intro', onLater: later })
 
@@ -105,7 +107,7 @@ it('adds only the onboarding exit to the same offer', async () => {
 })
 
 it('restores through the same guarded store flow', async () => {
-  await renderOffer({ screen: 'hard', onBack: jest.fn() })
+  await renderOffer({ screen: 'hard', onLater: jest.fn() })
 
   await user.press(screen.getByRole('button', { name: 'Restore Purchase' }))
 

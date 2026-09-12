@@ -12,14 +12,16 @@ import {
   restorePurchases,
 } from '@/data/purchases'
 import { track } from '@/lib/analytics'
-import { AppBar, Button, Screen, useToast } from '@/ui'
+import { Button, Screen, useToast } from '@/ui'
 import { ProPitch } from './ProPitch'
-import { ProWordmark } from './ProWordmark'
 import { trackPurchaseAbandoned, trackPurchaseStarted } from './tracking'
 
-export type PaywallOfferProps =
-  | { screen: 'intro'; onLater: () => void; onBack?: never }
-  | { screen: 'hard'; onBack: () => void; onLater?: never }
+export type PaywallOfferProps = {
+  /** Kept only to attribute purchase analytics to the route that opened the offer. */
+  screen: 'intro' | 'hard'
+  /** Leaves without buying: enter the app after onboarding, or return from a gate. */
+  onLater: () => void
+}
 
 /** The shared plan selection, purchase, and restore flow for both full paywalls. */
 export function PaywallOffer(props: PaywallOfferProps) {
@@ -118,29 +120,13 @@ export function PaywallOffer(props: PaywallOfferProps) {
                 ? t('paywall:hard.start')
                 : t('paywall:hard.startSubscription')}
           </Button>
-          {props.screen === 'intro' ? (
-            <Button variant="ghost" fullWidth onPress={props.onLater} disabled={busy}>
-              {t('paywall:intro.later')}
-            </Button>
-          ) : null}
+          <Button variant="ghost" fullWidth onPress={props.onLater} disabled={busy}>
+            {t('paywall:intro.later')}
+          </Button>
         </View>
       }
     >
-      {props.screen === 'hard' ? (
-        <AppBar
-          titleContent={<ProWordmark />}
-          onBack={props.onBack}
-          backLabel={t('common:a11y.back')}
-        />
-      ) : null}
-
-      <ProPitch
-        showBrand={props.screen === 'intro'}
-        plan={plan}
-        onPlanChange={selectPlan}
-        onRestore={restore}
-        disabled={busy}
-      />
+      <ProPitch plan={plan} onPlanChange={selectPlan} onRestore={restore} disabled={busy} />
     </Screen>
   )
 }

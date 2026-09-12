@@ -2941,7 +2941,9 @@ not. Both full paywalls use the same select-then-purchase offer: the three plans
 come first, one is selected, and one footer button buys that plan. The comparison
 follows as supporting detail under its own title. The subscription assurance sits
 under the plan heading in muted text. A compact RiceCal Pro wordmark, with Pro in
-an inverse badge, replaces the logo-and-tagline hero on both.
+an inverse rounded-rectangle badge, replaces the logo-and-tagline hero on both.
+Both finish with the same purchase button and Maybe later action; the route only
+decides whether Maybe later enters the app or returns to the previous screen.
 
 Trial copy follows the current store account's eligibility: iOS uses RevenueCat's
 introductory-offer eligibility result, and Android uses the free phase on the
