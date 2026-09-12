@@ -782,7 +782,10 @@ trailing control remain visible while the body moves. `AppBar` reserves the
 wider control width on both sides, keeping its one or two-line title centred on
 the screen even when a trailing action is wider than Back. The native header is
 off everywhere. A tab carries a `ScreenTitle` instead, because there is nothing
-behind it to go back to. The two paywall routes share `PaywallOffer`, whose
+behind it to go back to. It uses the same symmetric slots, so root titles stay
+centred beside search, date and status controls too. Wide controls, such as the
+Trends range selector, take a centred row below the title rather than squeezing
+it aside. The two paywall routes share `PaywallOffer`, whose
 centred wordmark and close control are likewise fixed outside its `Screen`.
 
 The logged-food page is the full-bleed exception. `CollapsingAppBar` keeps one

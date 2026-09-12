@@ -1,5 +1,4 @@
-import { Stack } from 'expo-router'
-
+import { ScreenTitle } from '@/features/shared'
 import { ControlsSection } from '@/gallery/ControlsSection'
 import { DataSection } from '@/gallery/DataSection'
 import { FeedbackSection } from '@/gallery/FeedbackSection'
@@ -26,26 +25,24 @@ export default function Gallery() {
   const { isDark, preference, setPreference } = useTheme()
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Gallery' }} />
-      <Screen>
-        <Card
-          title="Theme"
-          action={<Badge tone={isDark ? 'water' : 'kaya'}>{isDark ? 'Dark' : 'Light'}</Badge>}
-        >
-          <SegmentedControl
-            options={SCHEMES}
-            value={preference}
-            onChange={setPreference}
-            accessibilityLabel="Colour scheme"
-          />
-        </Card>
+    <Screen>
+      <ScreenTitle title="Gallery" />
+      <Card
+        title="Theme"
+        action={<Badge tone={isDark ? 'water' : 'kaya'}>{isDark ? 'Dark' : 'Light'}</Badge>}
+      >
+        <SegmentedControl
+          options={SCHEMES}
+          value={preference}
+          onChange={setPreference}
+          accessibilityLabel="Colour scheme"
+        />
+      </Card>
 
-        <PrimitivesSection />
-        <ControlsSection />
-        <DataSection />
-        <FeedbackSection />
-      </Screen>
-    </>
+      <PrimitivesSection />
+      <ControlsSection />
+      <DataSection />
+      <FeedbackSection />
+    </Screen>
   )
 }

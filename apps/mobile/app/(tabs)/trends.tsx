@@ -66,36 +66,31 @@ export default function TrendsScreen() {
 
   return (
     <Screen>
-      <ScreenTitle
-        title={t('progress:title')}
-        trailing={
-          <SegmentedControl
-            options={TREND_RANGES.map((value) => ({
-              value,
-              label: t(RANGE_KEY[value]),
-            }))}
-            value={range}
-            /**
-             * A free account sees the week and nothing else. The control keeps
-             * all three segments and refuses the two it cannot serve rather than
-             * hiding them: a hidden option is a feature nobody knows they are
-             * missing, and a greyed-out one gives them nowhere to go.
-             *
-             * Seven days is not an arbitrary slice: the strip on Today is a week
-             * and the review is a week, so a free user is shown the week and
-             * offered the shape only a month or a year can carry.
-             */
-            onChange={(next) => {
-              if (next !== '7d' && !requirePro('trend_range')) return
-              setRange(next)
-            }}
-            accessibilityLabel={t('progress:range.label')}
-            // Sized rather than left to grow: the control and the title share a
-            // row, and a segmented control that takes what it needs would push
-            // "Trends" to an ellipsis on a narrow phone.
-            className="w-[152px]"
-          />
-        }
+      <ScreenTitle title={t('progress:title')} />
+      <SegmentedControl
+        options={TREND_RANGES.map((value) => ({
+          value,
+          label: t(RANGE_KEY[value]),
+        }))}
+        value={range}
+        /**
+         * A free account sees the week and nothing else. The control keeps all
+         * three segments and refuses the two it cannot serve rather than hiding
+         * them: a hidden option is a feature nobody knows they are missing, and
+         * a greyed-out one gives them nowhere to go.
+         *
+         * Seven days is not an arbitrary slice: the strip on Today is a week and
+         * the review is a week, so a free user is shown the week and offered the
+         * shape only a month or a year can carry.
+         */
+        onChange={(next) => {
+          if (next !== '7d' && !requirePro('trend_range')) return
+          setRange(next)
+        }}
+        accessibilityLabel={t('progress:range.label')}
+        // Its own centred row leaves the screen title genuinely centred while
+        // keeping all three translated labels enough room to remain legible.
+        className="w-[180px] self-center"
       />
 
       {/* The same gate as the panel below. The tiles are the tab control so
