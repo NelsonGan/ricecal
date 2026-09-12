@@ -80,13 +80,15 @@ export default function PersonalisationScreen() {
   }
 
   return (
-    <Screen>
-      <AppBar
-        title={t('profile:personalisation.title')}
-        onBack={() => goBack()}
-        backLabel={t('common:a11y.back')}
-      />
-
+    <Screen
+      header={
+        <AppBar
+          title={t('profile:personalisation.title')}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+        />
+      }
+    >
       <Card title={t('profile:personalisation.mealsTitle')} contentClassName="gap-0">
         {/* A rule between rows, not around them: the card draws its own edges,
             so a divider above the first row or below the last would be a second

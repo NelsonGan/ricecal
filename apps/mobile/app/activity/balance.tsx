@@ -107,29 +107,31 @@ export default function BalanceScreen() {
   const loading = series.isPending || summary.isPending
 
   return (
-    <Screen>
-      <AppBar
-        // "Balance", not "Energy balance". The bar carries a three-option range
-        // control, and the two together do not fit a 393pt phone — one of them
-        // ellipsises whatever the split. The row on the Activity tab that opens
-        // this screen is called "Balance", so the short form is also the one
-        // that matches how the user got here. The longer form was kept as a
-        // spare string for a card heading it never reached, and has been
-        // deleted rather than left looking like it was in use somewhere.
-        title={t('activity:today.balanceRow')}
-        onBack={goBack}
-        backLabel={t('common:action.back')}
-        action={
-          <SegmentedControl
-            options={TREND_RANGES.map((value) => ({ value, label: t(RANGE_KEY[value]) }))}
-            value={range}
-            onChange={setRange}
-            accessibilityLabel={t('progress:range.label')}
-            className="w-[132px]"
-          />
-        }
-      />
-
+    <Screen
+      header={
+        <AppBar
+          // "Balance", not "Energy balance". The bar carries a three-option range
+          // control, and the two together do not fit a 393pt phone — one of them
+          // ellipsises whatever the split. The row on the Activity tab that opens
+          // this screen is called "Balance", so the short form is also the one
+          // that matches how the user got here. The longer form was kept as a
+          // spare string for a card heading it never reached, and has been
+          // deleted rather than left looking like it was in use somewhere.
+          title={t('activity:today.balanceRow')}
+          onBack={goBack}
+          backLabel={t('common:action.back')}
+          action={
+            <SegmentedControl
+              options={TREND_RANGES.map((value) => ({ value, label: t(RANGE_KEY[value]) }))}
+              value={range}
+              onChange={setRange}
+              accessibilityLabel={t('progress:range.label')}
+              className="w-[132px]"
+            />
+          }
+        />
+      }
+    >
       <Card
         title={t('activity:balance.chartTitle')}
         action={

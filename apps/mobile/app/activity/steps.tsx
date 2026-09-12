@@ -123,22 +123,24 @@ export default function StepsScreen() {
   ]
 
   return (
-    <Screen>
-      <AppBar
-        title={t('activity:steps.title')}
-        onBack={goBack}
-        backLabel={t('common:action.back')}
-        action={
-          <SegmentedControl
-            options={TREND_RANGES.map((value) => ({ value, label: t(RANGE_KEY[value]) }))}
-            value={range}
-            onChange={setRange}
-            accessibilityLabel={t('progress:range.label')}
-            className="w-[132px]"
-          />
-        }
-      />
-
+    <Screen
+      header={
+        <AppBar
+          title={t('activity:steps.title')}
+          onBack={goBack}
+          backLabel={t('common:action.back')}
+          action={
+            <SegmentedControl
+              options={TREND_RANGES.map((value) => ({ value, label: t(RANGE_KEY[value]) }))}
+              value={range}
+              onChange={setRange}
+              accessibilityLabel={t('progress:range.label')}
+              className="w-[132px]"
+            />
+          }
+        />
+      }
+    >
       <Card>
         <View className="gap-4">
           {/* The count, the target and the bar are one statement — "8,260 of

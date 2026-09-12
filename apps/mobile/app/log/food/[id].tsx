@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, View } from 'react-native'
+import { useSharedValue } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
@@ -60,8 +61,8 @@ import {
   Button,
   Card,
   Chip,
+  CollapsingAppBar,
   ConfirmSheet,
-  cn,
   Divider,
   Icon,
   IconButton,
@@ -169,9 +170,10 @@ export default function FoodDetail() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const colors = useThemeColors()
-  // For the strip that keeps the photograph out from under the status bar as the
-  // page scrolls. See `overlay` below.
+  // The full-bleed hero and its collapsing header share this measurement: one
+  // reaches behind the status bar, and the other keeps its controls below it.
   const insets = useSafeAreaInsets()
+  const headerScrollY = useSharedValue(0)
   const toast = useToast()
   const logFood = useLogFood()
   const requirePro = useRequirePro()
@@ -480,12 +482,16 @@ export default function FoodDetail() {
     }
 
     return (
-      <Screen>
-        <AppBar
-          title={isPending ? '' : t('logging:search.emptyTitle')}
-          onBack={() => goBack()}
-          backLabel={t('common:a11y.back')}
-        />
+      <Screen
+        header={
+          <AppBar
+            title={isPending ? '' : t('logging:search.emptyTitle')}
+            onBack={() => goBack()}
+            backLabel={t('common:a11y.back')}
+          />
+        }
+      >
+        {null}
       </Screen>
     )
   }
@@ -953,13 +959,61 @@ export default function FoodDetail() {
     goBack()
   }
 
+  const headerActions = existing ? (
+    <View className="flex-row gap-2">
+      <IconButton
+        size="sm"
+        accessibilityLabel={t('logging:detail.shareEntry')}
+        disabled={shareMeal.sharing}
+        onPress={() => void sendMeal()}
+      >
+        <Icon set="ui" name="share" size={20} tintColor={colors.muted} />
+      </IconButton>
+
+      {clock ? (
+        <IconButton
+          size="sm"
+          accessibilityLabel={t('logging:detail.editDetails')}
+          onPress={() => setEditingDetails(true)}
+        >
+          <Icon set="ui" name="edit" size={20} />
+        </IconButton>
+      ) : null}
+
+      <IconButton
+        size="sm"
+        accessibilityLabel={t('logging:detail.deleteEntry')}
+        onPress={() => setConfirmDelete(true)}
+      >
+        <Icon set="ui" name="delete" size={20} tintColor={colors.hibiscusInk} />
+      </IconButton>
+    </View>
+  ) : undefined
+
   return (
     <Screen
       /* NO GUTTER, so the photograph at the top can reach both edges. Everything
-         under it is wrapped in a view that puts the gutter back — see there. The
-         top inset is still applied, which is what keeps the picture out from
-         under the status bar. */
+         under it is wrapped in a view that puts the gutter back. The hero cancels
+         the shell's top inset to reach behind the status bar, while the fixed
+         controls add that inset back for a safe tap target. */
       flush
+      scrollOffset={headerScrollY}
+      overlayHeader={
+        /* One fixed set of controls for both states. Over the plate the bar is
+           transparent, preserving the existing raised buttons on the image. As
+           the plate's lower edge reaches it, `CollapsingAppBar` fades in the
+           canvas underneath those same controls. The food name stays in the
+           body; four controls leave no honest room for it in this row. */
+        <CollapsingAppBar
+          scrollY={headerScrollY}
+          revealAt={heroHeight - (insets.top + spacing.sm * 2 + 44)}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+          /* Whole-entry actions, least to most destructive. They are absent
+             while composing because there is nothing saved to act on yet. */
+          action={headerActions}
+        />
+      }
       footer={
         existing ? (
           /* ONE BUTTON, and it is not a save. Save used to sit here beside it,
@@ -988,34 +1042,6 @@ export default function FoodDetail() {
         )
       }
     >
-      {/* THE PLATE, FULL WIDTH, WITH THE CHROME FLOATING ON IT.
-          It was a padded tile under an `AppBar`, and the bar and the tile were
-          two boxes doing one job: the bar held the way out and the way to delete,
-          the tile held the picture, and between them they spent about a fifth of
-          the screen on things that are not the meal. The photograph is the first
-          thing anybody is here to look at, so it goes edge to edge at the top and
-          the two controls sit over it — the shape a listing takes in every app
-          that leads with a picture.
-
-          Square at the top and rounded at the bottom: it is flush to the screen's
-          edges, so a rounded top corner would leave a triangle of canvas at the
-          edge, while the bottom is where the content begins and wants the card's
-          own radius.
-
-          BELOW the status bar rather than under it. Running the photo up behind
-          the clock is the last few points of the effect and it costs the one thing
-          that cannot be recovered: the status bar draws in the theme's colour, and
-          over an arbitrary photograph of somebody's lunch it is illegible about as
-          often as not. `Screen`'s `flush` already leaves the top inset alone,
-          which is exactly this decision made once.
-
-          Still the way in to the picture picker, and still live before the entry
-          exists: most of the catalogue has no drawing, so a dish added from the
-          list arrives blank and picking one then is the natural moment. Straight
-          into the picker whether or not there is a photo — replacing one photo
-          with another is not something to warn about, and the picker leads with
-          the camera; the warning is on the DRAWING, which is the answer that
-          discards a picture of the real plate. */}
       {/* BEHIND THE STATUS BAR, not below it.
           `Screen`'s `flush` drops the gutter and keeps the top inset as padding,
           which is right for content and wrong for a picture that is meant to be
@@ -1029,12 +1055,10 @@ export default function FoodDetail() {
           whatever is up there — legible on most plates, not on all of them. The
           alternative was cropping every photograph to clear a notch. */}
       <View
-        className={cn(
-          // Square on every edge: this is where the screen starts rather than a
-          // card hanging off the top, and the curve at the bottom belongs to the
-          // content sliding over it. See the wrapper below.
-          'overflow-hidden bg-track',
-        )}
+        // Square on every edge: this is where the screen starts rather than a
+        // card hanging off the top, and the curve at the bottom belongs to the
+        // content sliding over it. See the wrapper below.
+        className="overflow-hidden bg-track"
         style={{ marginTop: -insets.top, height: heroHeight }}
       >
         <Tappable
@@ -1069,93 +1093,6 @@ export default function FoodDetail() {
             <Text variant="meta">{t('logging:detail.addPicture')}</Text>
           )}
         </Tappable>
-
-        {/* Over the picture, and AFTER it in the tree so they are on top of it and
-            take the touch before the tile behind them does. A gutter in from each
-            corner, so they sit where a thumb reaches on either side.
-
-            The white surface is what keeps them readable: `IconButton`'s neutral
-            variant is a raised white square, which reads as a control against a
-            photograph of anything. A scrim under them would darken the plate to
-            make the app's own chrome legible, which is the wrong way round. */}
-        {/* Padded down past the status bar, which the box no longer does for them:
-            a back chevron under the notch is a control nobody can reach. */}
-        <View
-          className="absolute inset-x-0 top-0 flex-row justify-between px-3"
-          style={{ paddingTop: insets.top + spacing.sm, paddingBottom: spacing.sm }}
-        >
-          <IconButton size="sm" accessibilityLabel={t('common:a11y.back')} onPress={() => goBack()}>
-            {/* Tinted: chrome is monochrome, and the illustration's own palette
-                reads as a stray accent. */}
-            <Icon set="ui" name="chevron-left" size={20} tintColor={colors.muted} />
-          </IconButton>
-
-          {/* THE THINGS YOU CAN DO TO THE WHOLE ENTRY, together, in the order of
-              least to most destructive: send a picture of it, correct it, throw
-              it away.
-
-              Share is first because it changes nothing at all — it is the one
-              control up here that only reads. It also puts the most destructive
-              button furthest from the one somebody reaches for casually, which
-              is the reason this row is ordered rather than grouped.
-
-              The pencil was on the line under the title and it did not belong
-              there — that line is the entry's date, and a control at the end of it
-              read as "edit the date" when what it opens is the name and the when.
-              Up here it sits beside the bin, which is the other thing that acts on
-              the entry as a whole, and the date line goes back to being a fact.
-
-              Delete lives up here rather than in a card at the foot of the screen.
-              It was the last thing on a page that scrolls, so removing a row meant
-              scrolling past every control for editing it first, and it read as one
-              more editing step rather than as the way out. The press only opens
-              the confirmation, which is what makes a one-tap destructive control
-              in the chrome safe.
-
-              All three are absent while composing a new entry: there is nothing
-              logged to send, nothing to delete, and nothing whose name and time
-              can be corrected. */}
-          <View className="flex-row gap-2">
-            {existing ? (
-              <IconButton
-                size="sm"
-                accessibilityLabel={t('logging:detail.shareEntry')}
-                disabled={shareMeal.sharing}
-                onPress={() => void sendMeal()}
-              >
-                {/* Tinted, like the chevron and the bin: the way out, the way to
-                    share and the way to delete are chrome, and the pencil between
-                    them is the one glyph whose colour carries its meaning. */}
-                <Icon set="ui" name="share" size={20} tintColor={colors.muted} />
-              </IconButton>
-            ) : null}
-
-            {existing && clock ? (
-              <IconButton
-                size="sm"
-                accessibilityLabel={t('logging:detail.editDetails')}
-                onPress={() => setEditingDetails(true)}
-              >
-                {/* Untinted, unlike the two chrome icons either side of it: this is
-                    a yellow pencil with a red eraser and all of its meaning is the
-                    colour. See `CardEdit`. */}
-                <Icon set="ui" name="edit" size={20} />
-              </IconButton>
-            ) : null}
-
-            {existing ? (
-              <IconButton
-                size="sm"
-                accessibilityLabel={t('logging:detail.deleteEntry')}
-                onPress={() => setConfirmDelete(true)}
-              >
-                {/* Tinted to hibiscus rather than to muted, because this one is not
-                    neutral chrome. */}
-                <Icon set="ui" name="delete" size={20} tintColor={colors.hibiscusInk} />
-              </IconButton>
-            ) : null}
-          </View>
-        </View>
       </View>
 
       {/* Everything else, ON A CURVE THAT RIDES OVER THE PICTURE.

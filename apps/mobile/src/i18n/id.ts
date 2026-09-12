@@ -1274,8 +1274,7 @@ export const id = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'Tanpa batas dengan RiceCal Pro',
+      choosePlan: 'Pilih paket Anda',
       assurance: 'Tanpa komitmen, batalkan kapan saja',
       assuranceLifetime: 'Satu pembayaran, bisa dikembalikan lewat toko',
       smallPrintYearly: 'Gratis 7 hari, lalu {{price}} per tahun.',
@@ -1283,7 +1282,6 @@ export const id = {
       smallPrintYearlyNoTrial: '{{price}} per tahun.',
       smallPrintMonthlyNoTrial: '{{price}} per bulan.',
       smallPrintLifetime: 'Satu pembayaran {{price}}. Bukan langganan, tanpa perpanjangan.',
-      smallPrintPending: 'Harga ditampilkan sebelum membeli.',
       start: 'Mulai uji coba gratis',
       startSubscription: 'Berlangganan',
       startLifetime: 'Beli akses seumur hidup',
@@ -1296,6 +1294,8 @@ export const id = {
     },
 
     table: {
+      sectionTitle: 'Semua fitur Pro',
+      sectionSubtitle: 'Lihat apa saja yang terbuka saat Anda upgrade',
       title: 'GRATIS VS PRO',
       free: 'Gratis',
       pro: 'Pro',
@@ -1451,7 +1451,7 @@ export const id = {
 
     heading: {
       mine: 'Makananku',
-      community: 'Dari komunitas',
+      community: 'Komunitas',
     },
 
     search: {
@@ -1464,10 +1464,7 @@ export const id = {
 
     empty: {
       mineTitle: 'Belum ada makanan',
-      mineBody:
-        'Satu panci bersama tidak punya ukuran porsi. Masukkan apa saja isinya dan untuk berapa orang, sekali saja, dan mencatatnya cuma satu ketukan setelah itu.',
       communityTitle: 'Belum ada yang dibagikan',
-      communityBody: 'Makanan yang dipublikkan orang akan muncul di sini.',
     },
 
     servings_one: '{{count}} porsi',

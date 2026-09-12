@@ -1287,8 +1287,7 @@ export const fil = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'Walang limitasyon sa RiceCal Pro',
+      choosePlan: 'Piliin ang iyong plan',
       assurance: 'Walang commitment, kanselahin anumang oras',
       assuranceLifetime: 'Isang bayad, maibabalik sa pamamagitan ng store',
       smallPrintYearly: 'Libre nang 7 araw, tapos {{price}} kada taon.',
@@ -1296,7 +1295,6 @@ export const fil = {
       smallPrintYearlyNoTrial: '{{price}} kada taon.',
       smallPrintMonthlyNoTrial: '{{price}} kada buwan.',
       smallPrintLifetime: 'Isang bayad na {{price}}. Walang subscription, walang renewal.',
-      smallPrintPending: 'Ipapakita ang presyo bago bumili.',
       start: 'Simulan ang libreng trial',
       startSubscription: 'Mag-subscribe',
       startLifetime: 'Bilhin ang habambuhay na access',
@@ -1309,6 +1307,8 @@ export const fil = {
     },
 
     table: {
+      sectionTitle: 'Lahat sa Pro',
+      sectionSubtitle: 'Tingnan kung ano ang maa-unlock kapag nag-upgrade ka',
       title: 'LIBRE VS PRO',
       free: 'Libre',
       pro: 'Pro',
@@ -1466,7 +1466,7 @@ export const fil = {
 
     heading: {
       mine: 'Pagkain ko',
-      community: 'Mula sa komunidad',
+      community: 'Komunidad',
     },
 
     search: {
@@ -1479,10 +1479,7 @@ export const fil = {
 
     empty: {
       mineTitle: 'Wala pang pagkain',
-      mineBody:
-        'Walang nakatakdang serving ang isang kaldero. Ilagay kung ano ang inilagay at para sa ilan ito, isang beses lang, at isang tap na lang ang pag-log mula noon.',
       communityTitle: 'Wala pang ibinabahagi',
-      communityBody: 'Lilitaw dito ang mga pagkain na ginawang pampubliko.',
     },
 
     servings_one: '{{count}} serving',

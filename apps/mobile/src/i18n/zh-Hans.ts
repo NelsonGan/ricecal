@@ -1250,8 +1250,7 @@ export const zhHans = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'RiceCal Pro，没有上限',
+      choosePlan: '选择方案',
       assurance: '没有约束，随时可以取消',
       assuranceLifetime: '一次付清，可通过商店退款',
       smallPrintYearly: '免费 7 天，之后每年 {{price}}。',
@@ -1259,7 +1258,6 @@ export const zhHans = {
       smallPrintYearlyNoTrial: '每年 {{price}}。',
       smallPrintMonthlyNoTrial: '每月 {{price}}。',
       smallPrintLifetime: '一次付 {{price}}。不是订阅，也不会续费。',
-      smallPrintPending: '价格将在购买前显示。',
       start: '开始免费试用',
       startSubscription: '订阅',
       startLifetime: '购买永久版',
@@ -1272,6 +1270,8 @@ export const zhHans = {
     },
 
     table: {
+      sectionTitle: 'Pro 的全部功能',
+      sectionSubtitle: '看看升级后会解锁哪些功能',
       title: '免费版对比 Pro',
       free: '免费',
       pro: 'Pro',
@@ -1427,7 +1427,7 @@ export const zhHans = {
 
     heading: {
       mine: '我的食物',
-      community: '来自社区',
+      community: '社区',
     },
 
     search: {
@@ -1440,9 +1440,7 @@ export const zhHans = {
 
     empty: {
       mineTitle: '还没有食物',
-      mineBody: '一锅菜没有现成的份量。把用了什么、够几个人吃填一次，之后记录就只要点一下。',
       communityTitle: '还没有人分享',
-      communityBody: '别人设为公开的食物会出现在这里。',
     },
 
     servings_one: '{{count}} 份',

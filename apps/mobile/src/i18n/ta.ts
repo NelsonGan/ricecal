@@ -1263,8 +1263,7 @@ export const ta = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'RiceCal Pro இல் வரம்பே இல்லை',
+      choosePlan: 'உங்கள் திட்டத்தைத் தேர்ந்தெடுக்கவும்',
       assurance: 'கட்டுப்பாடு இல்லை, எப்போது வேண்டுமானாலும் ரத்து',
       assuranceLifetime: 'ஒரே கட்டணம், கடை வழியாகத் திரும்பப் பெறலாம்',
       smallPrintYearly: '7 நாட்கள் இலவசம், பிறகு ஆண்டுக்கு {{price}}.',
@@ -1272,7 +1271,6 @@ export const ta = {
       smallPrintYearlyNoTrial: 'ஆண்டுக்கு {{price}}.',
       smallPrintMonthlyNoTrial: 'மாதம் {{price}}.',
       smallPrintLifetime: '{{price}} ஒரே கட்டணம். சந்தா இல்லை, புதுப்பிப்பு இல்லை.',
-      smallPrintPending: 'வாங்கும் முன் விலை காட்டப்படும்.',
       start: 'இலவசச் சோதனையைத் தொடங்கு',
       startSubscription: 'சந்தா சேர்',
       startLifetime: 'வாழ்நாள் அணுகலை வாங்கு',
@@ -1285,6 +1283,8 @@ export const ta = {
     },
 
     table: {
+      sectionTitle: 'Pro இல் அனைத்தும்',
+      sectionSubtitle: 'மேம்படுத்தும்போது என்ன திறக்கும் என்பதைப் பாருங்கள்',
       title: 'இலவசம் எதிராக PRO',
       free: 'இலவசம்',
       pro: 'Pro',
@@ -1440,7 +1440,7 @@ export const ta = {
 
     heading: {
       mine: 'என் உணவுகள்',
-      community: 'சமூகத்திலிருந்து',
+      community: 'சமூகம்',
     },
 
     search: {
@@ -1453,10 +1453,7 @@ export const ta = {
 
     empty: {
       mineTitle: 'இன்னும் உணவு இல்லை',
-      mineBody:
-        'பகிர்ந்து உண்ணும் பானைக்குத் தனிப் பங்கு அளவு இல்லை. என்ன போட்டீர்கள், எத்தனை பேருக்கு என ஒருமுறை உள்ளிட்டால், அதன் பிறகு பதிவு செய்வது ஒரே தட்டல்.',
       communityTitle: 'இன்னும் எதுவும் பகிரப்படவில்லை',
-      communityBody: 'மக்கள் பொதுவாக்கிய உணவுகள் இங்கே தோன்றும்.',
     },
 
     servings_one: '{{count}} பங்கு',

@@ -56,9 +56,11 @@ export default function ReviewsScreen() {
   const isFree = (index: number) => !known || entitled || (kind === 'week' && index === 0)
 
   return (
-    <Screen>
-      <AppBar title={t('reviews:title')} onBack={back} backLabel={t('common:action.back')} />
-
+    <Screen
+      header={
+        <AppBar title={t('reviews:title')} onBack={back} backLabel={t('common:action.back')} />
+      }
+    >
       <SegmentedControl
         options={[
           { value: 'week', label: t('reviews:kind.week') },

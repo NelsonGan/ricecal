@@ -44,6 +44,8 @@ const PLACEHOLDER_ICON = { set: 'food', name: 'empty-plate' } as const
 export type ItemRowProps = {
   /** The dish, the thing. */
   title: string
+  /** Most rows wrap names; compact action rows can keep the name to one line. */
+  titleLines?: number
   /** "1 plate", "8:20 am", "Mamak · 1 piece". */
   detail?: string
   /**
@@ -65,10 +67,12 @@ export type ItemRowProps = {
    * then to the placeholder, so a row is never blank.
    */
   photoPath?: string
-  /** The number on the right. */
+  /** The row's primary number. */
   value: number | string
   /** What the number is in. Omit for a unitless count. */
   unit?: string
+  /** Put the value directly below the title instead of at the right edge. */
+  valueUnderTitle?: boolean
   /** Calories burned read in hibiscus; everything else in ink. */
   valueTone?: keyof typeof valueTones
   /**
@@ -92,12 +96,14 @@ export type ItemRowProps = {
  */
 export function ItemRow({
   title,
+  titleLines = 2,
   detail,
   icon,
   photoUri,
   photoPath,
   value,
   unit,
+  valueUnderTitle = false,
   valueTone = 'ink',
   busy = false,
   trailing,
@@ -106,6 +112,25 @@ export function ItemRow({
 }: ItemRowProps) {
   const { data: photoUrl, isLoading: resolving } = useMealPhotoUrl(photoPath)
   const photo = storedImageSource(photoPath, photoUrl, photoUri)
+
+  const valueLabel = (
+    <View className="flex-row items-baseline gap-1">
+      <Text
+        variant="numeric"
+        className={cn(
+          valueUnderTitle ? 'text-[16px] leading-[20px]' : 'text-[19px] leading-[24px]',
+          valueTones[valueTone],
+        )}
+      >
+        {typeof value === 'number' ? value.toLocaleString() : value}
+      </Text>
+      {unit ? (
+        <Text variant={valueUnderTitle ? 'micro' : 'caption'} className="text-muted">
+          {unit}
+        </Text>
+      ) : null}
+    </View>
+  )
 
   const tile = (
     <View
@@ -148,9 +173,10 @@ export function ItemRow({
             prawns" truncated to "Char kuey teow wi…", which is the half that
             says least. Both lines plus the detail come to 69pt against a 72pt
             tile, so a wrapped title costs no height and the rows stay even. */}
-        <Text variant="bodyStrong" numberOfLines={2}>
+        <Text variant="bodyStrong" numberOfLines={titleLines}>
           {title}
         </Text>
+        {valueUnderTitle && !busy ? valueLabel : null}
         {detail ? (
           <Text variant="meta" numberOfLines={1}>
             {detail}
@@ -158,17 +184,7 @@ export function ItemRow({
         ) : null}
       </View>
 
-      {busy ? null : (
-        <View className="flex-row items-baseline gap-1">
-          <Text
-            variant="numeric"
-            className={cn('text-[19px] leading-[24px]', valueTones[valueTone])}
-          >
-            {typeof value === 'number' ? value.toLocaleString() : value}
-          </Text>
-          {unit ? <Text variant="caption">{unit}</Text> : null}
-        </View>
-      )}
+      {busy || valueUnderTitle ? null : valueLabel}
 
       {trailing}
     </>

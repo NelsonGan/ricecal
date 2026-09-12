@@ -164,28 +164,28 @@ export type FloatingActionProps = NavActionProps
 /**
  * The same pandan tile, floating over a screen instead of sitting in the bar.
  *
- * Bigger than the bar version — 64pt against 62 — because a control with
- * nothing beside it has no neighbours to be measured against, and because it is
- * now the only target on the screen that is not a row of the diary.
+ * Compact at 56pt so it stays out of the diary's way, but still comfortably
+ * clears the 44pt touch floor. The bar version is larger because it has to hold
+ * its place beside four full-height tab columns.
  *
  * `NavAction` is still here and still used by the fully controlled `BottomNav`
- * the design gallery renders. The two are one visual; if the fill or the slab
- * changes, it changes in both.
+ * the design gallery renders. The two share their fill and press mechanic, while
+ * their dimensions belong to where each one sits.
  */
 export function FloatingAction({ onPress, label, className }: FloatingActionProps) {
   const colors = useThemeColors()
 
   return (
     <Squish
-      depth={slab.lg}
-      radius={radius.tile}
+      depth={slab.md}
+      radius={radius.md}
       slabClassName="bg-pandan-slab"
-      className={cn('h-[64px] w-[64px] items-center justify-center bg-pandan', className)}
+      className={cn('h-[56px] w-[56px] items-center justify-center bg-pandan', className)}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Icon set="ui" name="plus" size={30} tintColor={colors.onPandan} />
+      <Icon set="ui" name="plus" size={26} tintColor={colors.onPandan} />
     </Squish>
   )
 }

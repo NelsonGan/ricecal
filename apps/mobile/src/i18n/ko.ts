@@ -1255,8 +1255,7 @@ export const ko = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'RiceCal Pro는 한도가 없습니다',
+      choosePlan: '요금제를 선택하세요',
       assurance: '약정 없음, 언제든 해지',
       assuranceLifetime: '한 번 결제, 스토어를 통해 환불 가능',
       smallPrintYearly: '7일 무료, 이후 연 {{price}}.',
@@ -1264,7 +1263,6 @@ export const ko = {
       smallPrintYearlyNoTrial: '연 {{price}}.',
       smallPrintMonthlyNoTrial: '월 {{price}}.',
       smallPrintLifetime: '{{price}} 한 번 결제. 구독이 아니며 갱신도 없습니다.',
-      smallPrintPending: '구매 전에 가격이 표시됩니다.',
       start: '무료 체험 시작',
       startSubscription: '구독하기',
       startLifetime: '평생 이용권 구매',
@@ -1277,6 +1275,8 @@ export const ko = {
     },
 
     table: {
+      sectionTitle: 'Pro의 모든 기능',
+      sectionSubtitle: '업그레이드하면 무엇이 열리는지 확인하세요',
       title: '무료와 PRO 비교',
       free: '무료',
       pro: 'Pro',
@@ -1432,7 +1432,7 @@ export const ko = {
 
     heading: {
       mine: '내 음식',
-      community: '커뮤니티에서',
+      community: '커뮤니티',
     },
 
     search: {
@@ -1445,10 +1445,7 @@ export const ko = {
 
     empty: {
       mineTitle: '아직 음식이 없습니다',
-      mineBody:
-        '한 냄비 요리에는 정해진 1인분이 없습니다. 무엇이 들어갔고 몇 인분인지 한 번만 넣어두면, 그다음부터는 한 번 누르면 기록됩니다.',
       communityTitle: '아직 공유된 것이 없습니다',
-      communityBody: '사람들이 공개한 음식이 여기에 올라옵니다.',
     },
 
     servings_one: '{{count}}인분',

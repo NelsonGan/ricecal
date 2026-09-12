@@ -108,8 +108,12 @@ export type FoodSearchPanelProps = {
   /**
    * Open one of the user's own foods, for a different number of servings or a
    * look at how it is cooked. Required by the same tab `onPickOwn` turns on.
+   *
+   * The search comes too, because the quick selector has to rebuild this panel
+   * under the food before it opens it. That keeps My foods, the query and its
+   * results in place when the user backs out.
    */
-  onOpenOwn?: (recipe: Recipe) => void
+  onOpenOwn?: (recipe: Recipe, search: FoodSearchState) => void
   /**
    * Write a new food. Offered at the head of the My foods tab, because that is
    * where somebody looking for food they have not written yet ends up, and the
@@ -319,7 +323,11 @@ export function FoodSearchPanel({
         <OwnFoodList
           query={debouncedQuery}
           onPick={onPickOwn}
-          onOpen={onOpenOwn}
+          // The live query rather than the debounced filter. What returns after
+          // backing out has to match the field, including its newest keystroke.
+          onOpen={(recipe) =>
+            onOpenOwn(recipe, { query, tracked: lastTracked.current === query.trim() })
+          }
           // The live query rather than the debounced one, exactly as `onPick`
           // hands it over: what is restored has to be what is in the field.
           onCreate={
@@ -551,15 +559,20 @@ function OwnFoodList({
         <Card key={recipe.id}>
           <ItemRow
             title={recipe.name}
+            titleLines={1}
             icon={recipe.icon}
             photoPath={recipe.photoPath}
             // What one serving costs, which is what the plus beside it writes.
+            // Under the name so the action has a clear column of its own.
             value={recipe.perServing.kcal}
             unit={t('common:unit.kcal')}
-            detail={t('recipes:servings', { count: recipe.servings })}
+            valueUnderTitle
             onPress={() => onOpen(recipe)}
             trailing={
               <IconButton
+                // IconButton defaults to `self-start` for heading actions. A
+                // result action belongs at the row's vertical centre instead.
+                className="self-center"
                 size="sm"
                 variant="primary"
                 accessibilityLabel={`${t('common:action.add')}, ${recipe.name}`}

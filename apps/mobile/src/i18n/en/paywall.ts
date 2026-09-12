@@ -32,14 +32,7 @@ export const paywall = {
   },
 
   hard: {
-    /** The bar on the pushed page. The screen's own headline is `title`. */
-    appBar: 'RiceCal Pro',
-    /**
-     * Not "start logging". A free account logs, by camera three times a day and
-     * by barcode and search without limit, so a headline saying they need Pro to
-     * start is disproved by the screen behind it. Pro removes the ceiling.
-     */
-    title: 'No limits with RiceCal Pro',
+    choosePlan: 'Choose your plan',
     assurance: 'No commitment, cancel any time',
     /**
      * The same reassurance for a plan with nothing to cancel. The shared line sat
@@ -63,11 +56,10 @@ export const paywall = {
      * "cancel any time": the assurance line above says that, and twice reads as a
      * promise made by somebody worried it was not believed.
      */
-    smallPrintPending: 'Price shown before purchase.',
     start: 'Start free trial',
     startSubscription: 'Subscribe',
     startLifetime: 'Buy lifetime access',
-    restore: 'Restore purchase',
+    restore: 'Restore Purchase',
     /**
      * The two links guideline 3.1.2 requires beside a subscription price. Short,
      * because they sit side by side under the small print.
@@ -95,6 +87,8 @@ export const paywall = {
    * it would turn the row being sold into a restriction.
    */
   table: {
+    sectionTitle: 'Everything in Pro',
+    sectionSubtitle: 'See exactly what unlocks when you upgrade',
     title: 'FREE VS PRO',
     free: 'Free',
     pro: 'Pro',

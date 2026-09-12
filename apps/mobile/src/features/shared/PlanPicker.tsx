@@ -18,24 +18,21 @@ const PENDING = '—'
 export type PlanPickerProps = {
   value: Plan
   onChange: (plan: Plan) => void
-  /**
-   * Whether to offer the one-off purchase.
-   *
-   * Lifetime has no introductory offer, so purchase screens use its regular
-   * one-off terms regardless of the subscription trial eligibility beside it.
-   */
+  /** Whether to offer the one-off purchase beside the subscriptions. */
   showLifetime?: boolean
+  /** A purchase or restore currently owns the store SDK. */
+  disabled?: boolean
   className?: string
 }
 
-/**
- * Yearly, monthly, and optionally lifetime.
- *
- * Radio cards rather than `RadioGroup`, because each option carries a price
- * block and a badge that a plain label cannot hold. The selection state and the
- * accessibility role are the same either way.
- */
-export function PlanPicker({ value, onChange, showLifetime = false, className }: PlanPickerProps) {
+/** Yearly, monthly, and optionally lifetime, as one radio-style choice. */
+export function PlanPicker({
+  value,
+  onChange,
+  showLifetime = false,
+  disabled = false,
+  className,
+}: PlanPickerProps) {
   const { t } = useTranslation('paywall')
   const { data: prices } = usePlanPrices()
 
@@ -46,6 +43,7 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
   return (
     <View className={cn('gap-3', className)} accessibilityRole="radiogroup">
       <PlanCard
+        disabled={disabled}
         selected={value === 'yearly'}
         onPress={() => onChange('yearly')}
         title={t('plans.yearly')}
@@ -59,6 +57,7 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
         }
       />
       <PlanCard
+        disabled={disabled}
         selected={value === 'monthly'}
         onPress={() => onChange('monthly')}
         title={t('plans.monthly')}
@@ -66,11 +65,12 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
         price={prices?.monthly?.priceString ?? PENDING}
       />
       {showLifetime ? (
-        /* No badge here. The yearly card's is a SAVING — a number worth the
+        /* No badge here. The yearly card's is a SAVING, a number worth the
            emphasis because it is a comparison somebody can check. "PAY ONCE"
            restated the line directly under it and earned its colour with
            nothing. */
         <PlanCard
+          disabled={disabled}
           selected={value === 'lifetime'}
           onPress={() => onChange('lifetime')}
           title={t('plans.lifetime')}
@@ -83,6 +83,7 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
 }
 
 type PlanCardProps = {
+  disabled: boolean
   selected: boolean
   onPress: () => void
   title: string
@@ -92,55 +93,69 @@ type PlanCardProps = {
   caption?: string
 }
 
-function PlanCard({ selected, onPress, title, badge, detail, price, caption }: PlanCardProps) {
+function PlanCard({
+  disabled,
+  selected,
+  onPress,
+  title,
+  badge,
+  detail,
+  price,
+  caption,
+}: PlanCardProps) {
   return (
     <Squish
       depth={selected ? 5 : 0}
       radius={20}
       slabClassName={selected ? 'bg-pandan-soft-line' : ''}
       className={cn(
-        'flex-row items-center gap-3.5 border-[3px] p-4',
+        'gap-2 border-[3px] p-4',
         selected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
+        disabled && 'opacity-60',
       )}
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="radio"
-      accessibilityState={{ selected }}
+      accessibilityState={{ selected, disabled }}
       /* Everything on the card, in reading order. The label overrides the
-         children rather than adding to them, so anything left out of it is
-         simply not announced — which is what happened to the saving and the
-         billing period, the two things the card is asking somebody to weigh. */
+         children rather than adding to them, so the saving and billing period
+         cannot disappear from the choice a screen reader hears. */
       accessibilityLabel={[title, badge, detail, price, caption].filter(Boolean).join(', ')}
     >
-      <View
-        className={cn(
-          'h-[24px] w-[24px] items-center justify-center rounded-full border-[3px]',
-          selected ? 'border-pandan' : 'border-line-strong',
-        )}
-      >
-        {selected ? <View className="h-[11px] w-[11px] rounded-full bg-pandan" /> : null}
-      </View>
+      <View className="w-full">
+        <View className="flex-row items-center gap-3.5">
+          <View
+            className={cn(
+              'h-[24px] w-[24px] items-center justify-center rounded-full border-[3px]',
+              selected ? 'border-pandan' : 'border-line-strong',
+            )}
+          >
+            {selected ? <View className="h-[11px] w-[11px] rounded-full bg-pandan" /> : null}
+          </View>
 
-      <View className="min-w-0 flex-1 items-start gap-1">
-        {/* The badge sits ON the title's line, so a card carrying one is the
-            same height as a card that does not. */}
-        <View className="flex-row items-center gap-2">
-          <Text variant="label" className="text-[16px]">
-            {title}
-          </Text>
-          {badge ? (
-            <Badge size="sm" className="bg-pandan" labelClassName="text-on-pandan">
-              {badge}
-            </Badge>
-          ) : null}
+          <View className="min-w-0 flex-1 items-start gap-1">
+            {/* The badge sits on the title's line, so a card carrying one is the
+                same height as a card that does not. */}
+            <View className="flex-row items-center gap-2">
+              <Text variant="label" className="text-[16px]">
+                {title}
+              </Text>
+              {badge ? (
+                <Badge size="sm" className="bg-pandan" labelClassName="text-on-pandan">
+                  {badge}
+                </Badge>
+              ) : null}
+            </View>
+            {detail ? <Text variant="meta">{detail}</Text> : null}
+          </View>
+
+          <View className="items-end gap-0.5">
+            <Text variant="subtitle" className="text-ink">
+              {price}
+            </Text>
+            {caption ? <Text variant="meta">{caption}</Text> : null}
+          </View>
         </View>
-        {detail ? <Text variant="meta">{detail}</Text> : null}
-      </View>
-
-      <View className="items-end gap-0.5">
-        <Text variant="subtitle" className="text-ink">
-          {price}
-        </Text>
-        {caption ? <Text variant="meta">{caption}</Text> : null}
       </View>
     </Squish>
   )

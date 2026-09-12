@@ -24,7 +24,7 @@ export type ScreenTitleProps = {
  * The title row at the top of a root screen.
  *
  * `AppBar` is the pushed-screen equivalent: it centres its title and carries a
- * back button. A root screen has neither, and its title is a size larger.
+ * back button. A root screen has neither, so its larger title stays left aligned.
  */
 export function ScreenTitle({ title, leading, trailing, className }: ScreenTitleProps) {
   return (
@@ -48,7 +48,7 @@ export function ScreenTitle({ title, leading, trailing, className }: ScreenTitle
       */}
       <Text
         variant="screenTitle"
-        className="flex-1"
+        className="flex-1 text-left"
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.85}

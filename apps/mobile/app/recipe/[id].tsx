@@ -134,8 +134,9 @@ export default function RecipeDetailScreen() {
 
   if (isPending) {
     return (
-      <Screen>
-        <AppBar title="" onBack={() => goBack()} backLabel={t('common:a11y.back')} />
+      <Screen
+        header={<AppBar title="" onBack={() => goBack()} backLabel={t('common:a11y.back')} />}
+      >
         <Skeleton className="h-[130px] w-full" />
         <Skeleton className="h-[120px] w-full" />
       </Screen>
@@ -149,12 +150,15 @@ export default function RecipeDetailScreen() {
   // what happened.
   if (!recipe) {
     return (
-      <Screen>
-        <AppBar
-          title={t('recipes:detail.goneTitle')}
-          onBack={() => goBack()}
-          backLabel={t('common:a11y.back')}
-        />
+      <Screen
+        header={
+          <AppBar
+            title={t('recipes:detail.goneTitle')}
+            onBack={() => goBack()}
+            backLabel={t('common:a11y.back')}
+          />
+        }
+      >
         <EmptyState
           title={t('recipes:detail.goneTitle')}
           description={t('recipes:detail.goneBody')}
@@ -235,6 +239,31 @@ export default function RecipeDetailScreen() {
 
   return (
     <Screen
+      header={
+        <AppBar
+          title={recipe.name}
+          /* A cook's own name for their own pot, so it is as long as they made
+             it: the same reason the logged-entry screen takes two lines. Every
+             other bar in the app names a screen and stays on one. */
+          titleLines={2}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+          /* On a community food too, and that is guideline 1.2 rather than a
+             nicety: an app whose users read each other's writing has to offer a
+             way to report it and a way to never see that cook again. */
+          action={
+            recipe.isMine || reportable ? (
+              <IconButton
+                size="sm"
+                accessibilityLabel={t('common:a11y.more')}
+                onPress={() => (recipe.isMine ? setMenu(true) : setReporting(true))}
+              >
+                <Icon set="ui" name="more-vertical" size={20} tintColor={colors.muted} />
+              </IconButton>
+            ) : undefined
+          }
+        />
+      }
       /* "Add to today" is the primary on both, because it is what somebody
          reading a dish at a mealtime came to do. What sits beside it differs:
          your own has a share button, and somebody else's has "Save to my
@@ -267,30 +296,6 @@ export default function RecipeDetailScreen() {
         )
       }
     >
-      <AppBar
-        title={recipe.name}
-        /* A cook's own name for their own pot, so it is as long as they made
-           it: the same reason the logged-entry screen takes two lines. Every
-           other bar in the app names a screen and stays on one. */
-        titleLines={2}
-        onBack={() => goBack()}
-        backLabel={t('common:a11y.back')}
-        /* On a community food too, and that is guideline 1.2 rather than a
-           nicety: an app whose users read each other's writing has to offer a
-           way to report it and a way to never see that cook again. */
-        action={
-          recipe.isMine || reportable ? (
-            <IconButton
-              size="sm"
-              accessibilityLabel={t('common:a11y.more')}
-              onPress={() => (recipe.isMine ? setMenu(true) : setReporting(true))}
-            >
-              <Icon set="ui" name="more-vertical" size={20} tintColor={colors.muted} />
-            </IconButton>
-          ) : undefined
-        }
-      />
-
       {/* Tall enough for the whole dish when there is a photograph of it, the
           same two heights the logged-entry screen uses. At a flat 130pt a
           photo of a pot came through as a letterbox strip across the middle of

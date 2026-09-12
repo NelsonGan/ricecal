@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 
 import '@/i18n'
-import type { Food } from '@/data'
+import type { Food, Recipe } from '@/data'
 import { act, render, screen, userEvent } from '@/test-utils'
 import { FoodSearchPanel } from '../FoodSearchPanel'
 
@@ -34,13 +34,30 @@ const THOSAI: Food = {
   verified: true,
 }
 
+const GINGER_RICE: Recipe = {
+  id: 'r1',
+  name: 'Ginger chicken rice',
+  servings: 4,
+  isMine: true,
+  isPublic: false,
+  review: 'pending',
+  authorName: '',
+  ownerId: 'u1',
+  shareSlug: 'ginger-chicken-rice',
+  savedCount: 0,
+  ingredientCount: 3,
+  total: { kcal: 1_600, carbs: 180, protein: 100, fat: 45 },
+  perServing: { kcal: 400, carbs: 45, protein: 25, fat: 11.25 },
+}
+
 const mockSearch = jest.fn()
+let mockRecipes: Recipe[] = []
 // The two hooks under test, plus the pair `ItemRow` reaches for to draw a
 // photographed meal. Nothing here has a photograph, so both answer with nothing.
 jest.mock('@/data', () => ({
   useFoodSearch: (query: string) => mockSearch(query),
   useRecentFoods: () => ({ data: [], isPending: false, isPaused: false, isError: false }),
-  useRecipes: () => ({ data: [], isPending: false, isPaused: false, isError: false }),
+  useRecipes: () => ({ data: mockRecipes, isPending: false, isPaused: false, isError: false }),
   useMealPhotoUrl: () => ({ data: undefined, isLoading: false }),
   storedImageSource: () => undefined,
 }))
@@ -64,6 +81,7 @@ const settle = async (ui: ReactElement) => {
 beforeEach(() => {
   onPick.mockClear()
   mockTrack.mockClear()
+  mockRecipes = []
   mockSearch.mockReturnValue({
     data: [THOSAI],
     isFetching: false,
@@ -129,4 +147,20 @@ it('hands the host the search when a food is written instead of found', async ()
   await user.press(await screen.findByRole('button', { name: 'New food' }))
 
   expect(onCreateOwn).toHaveBeenCalledWith({ query: 'sup ekor', tracked: false })
+})
+
+it('hands the host the search when one of My foods is opened', async () => {
+  const onOpenOwn = jest.fn()
+  mockRecipes = [GINGER_RICE]
+  await render(<FoodSearchPanel onPick={onPick} onPickOwn={jest.fn()} onOpenOwn={onOpenOwn} />)
+
+  await user.type(screen.getByPlaceholderText('Search any dish'), 'ginger')
+  await user.press(screen.getByRole('tab', { name: 'My foods' }))
+  await user.press(
+    await screen.findByRole('button', {
+      name: 'Ginger chicken rice, 400 kcal',
+    }),
+  )
+
+  expect(onOpenOwn).toHaveBeenCalledWith(GINGER_RICE, { query: 'ginger', tracked: false })
 })

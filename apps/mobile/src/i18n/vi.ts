@@ -1264,8 +1264,7 @@ export const vi = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'Không giới hạn với RiceCal Pro',
+      choosePlan: 'Chọn gói của bạn',
       assurance: 'Không ràng buộc, huỷ bất cứ lúc nào',
       assuranceLifetime: 'Trả một lần, hoàn tiền qua cửa hàng',
       smallPrintYearly: 'Miễn phí 7 ngày, sau đó {{price}} mỗi năm.',
@@ -1273,7 +1272,6 @@ export const vi = {
       smallPrintYearlyNoTrial: '{{price}} mỗi năm.',
       smallPrintMonthlyNoTrial: '{{price}} mỗi tháng.',
       smallPrintLifetime: 'Trả một lần {{price}}. Không phải đăng ký, không gia hạn.',
-      smallPrintPending: 'Giá sẽ hiện trước khi mua.',
       start: 'Bắt đầu dùng thử miễn phí',
       startSubscription: 'Đăng ký',
       startLifetime: 'Mua quyền trọn đời',
@@ -1286,6 +1284,8 @@ export const vi = {
     },
 
     table: {
+      sectionTitle: 'Mọi thứ trong Pro',
+      sectionSubtitle: 'Xem chính xác những gì được mở khóa khi nâng cấp',
       title: 'MIỄN PHÍ SO VỚI PRO',
       free: 'Miễn phí',
       pro: 'Pro',
@@ -1441,7 +1441,7 @@ export const vi = {
 
     heading: {
       mine: 'Món ăn của tôi',
-      community: 'Từ cộng đồng',
+      community: 'Cộng đồng',
     },
 
     search: {
@@ -1454,10 +1454,7 @@ export const vi = {
 
     empty: {
       mineTitle: 'Chưa có món ăn nào',
-      mineBody:
-        'Một nồi ăn chung không có sẵn khẩu phần. Nhập những gì đã cho vào và nồi đó đủ cho mấy người, một lần thôi, và từ đó ghi lại chỉ mất một chạm.',
       communityTitle: 'Chưa ai chia sẻ',
-      communityBody: 'Món ăn mọi người để công khai sẽ xuất hiện ở đây.',
     },
 
     servings_one: '{{count}} khẩu phần',
