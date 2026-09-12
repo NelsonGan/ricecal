@@ -2939,8 +2939,9 @@ Three products on both stores and in RevenueCat: monthly, yearly, and a one-off
 lifetime. The two subscriptions carry a seven-day free trial and lifetime does
 not. Onboarding keeps the deliberate select-then-continue flow; the standing
 paywall makes each plan card the purchase action and marks it with an arrow. Each
-paywall introduces those choices as their own section, with the subscription
-assurance directly under its heading. Each direct-action card carries its own
+paywall presents the comparison and the plan choices as titled sections. The
+comparison explains what an upgrade unlocks, and the subscription assurance sits
+directly under the plan heading. Each direct-action card carries its own
 terms, because there is no selected plan with one shared sentence underneath.
 Trial copy follows the current store account's eligibility: iOS uses RevenueCat's
 introductory-offer eligibility result, and Android uses the free phase on the

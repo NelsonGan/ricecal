@@ -1309,6 +1309,8 @@ export const fil = {
     },
 
     table: {
+      sectionTitle: 'Lahat sa Pro',
+      sectionSubtitle: 'Tingnan kung ano ang maa-unlock kapag nag-upgrade ka',
       title: 'LIBRE VS PRO',
       free: 'Libre',
       pro: 'Pro',

@@ -1313,6 +1313,8 @@ export const ms = {
     },
 
     table: {
+      sectionTitle: 'Semua dalam Pro',
+      sectionSubtitle: 'Lihat apa yang dibuka apabila anda menaik taraf',
       title: 'PERCUMA LAWAN PRO',
       free: 'Percuma',
       pro: 'Pro',

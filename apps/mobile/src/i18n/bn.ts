@@ -1270,6 +1270,8 @@ export const bn = {
     },
 
     table: {
+      sectionTitle: 'Pro-তে সবকিছু',
+      sectionSubtitle: 'আপগ্রেড করলে ঠিক কী আনলক হবে দেখুন',
       title: 'বিনামূল্যে বনাম PRO',
       free: 'বিনামূল্যে',
       pro: 'Pro',

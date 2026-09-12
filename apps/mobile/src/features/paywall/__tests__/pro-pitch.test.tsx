@@ -56,7 +56,12 @@ it('keeps purchase terms and legal links on direct-action cards', async () => {
     screen.getByText('One payment of RM299.90. No subscription, no renewal.'),
   ).toBeOnTheScreen()
   expect(screen.getByText('Choose your plan')).toBeOnTheScreen()
-  expect(screen.getByText('No commitment, cancel any time')).toBeOnTheScreen()
+  expect(screen.getByText('Everything in Pro')).toBeOnTheScreen()
+  expect(screen.getByText('See exactly what unlocks when you upgrade')).toBeOnTheScreen()
+  expect(screen.getByText('No commitment, cancel any time')).toHaveProp(
+    'className',
+    expect.stringContaining('text-muted'),
+  )
   expect(screen.getByText('Restore Purchase')).toBeOnTheScreen()
   expect(screen.getByText('Terms')).toBeOnTheScreen()
   expect(screen.getByText('Privacy')).toBeOnTheScreen()

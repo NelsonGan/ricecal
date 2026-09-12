@@ -119,7 +119,7 @@ export function ProPitch(props: ProPitchProps) {
       <View className="mt-lg gap-3">
         <View className="gap-1">
           <Text variant="subtitle">{t('paywall:hard.choosePlan')}</Text>
-          <Text variant="meta" className="text-pandan-ink">
+          <Text variant="meta">
             {/* Purchase mode has no selected plan, but the two subscriptions
                 both carry this assurance. Select mode changes the line when
                 lifetime is chosen so it never promises a cancellation for a

@@ -1283,6 +1283,8 @@ export const ja = {
     },
 
     table: {
+      sectionTitle: 'Pro のすべて',
+      sectionSubtitle: 'アップグレードで使える機能を確認',
       title: '無料と PRO の比較',
       free: '無料',
       pro: 'Pro',

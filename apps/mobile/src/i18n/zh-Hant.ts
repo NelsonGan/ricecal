@@ -1271,6 +1271,8 @@ export const zhHant = {
     },
 
     table: {
+      sectionTitle: 'Pro 的完整功能',
+      sectionSubtitle: '看看升級後會解鎖哪些功能',
       title: '免費版對比 Pro',
       free: '免費',
       pro: 'Pro',

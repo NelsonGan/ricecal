@@ -1277,6 +1277,8 @@ export const ko = {
     },
 
     table: {
+      sectionTitle: 'Pro의 모든 기능',
+      sectionSubtitle: '업그레이드하면 무엇이 열리는지 확인하세요',
       title: '무료와 PRO 비교',
       free: '무료',
       pro: 'Pro',

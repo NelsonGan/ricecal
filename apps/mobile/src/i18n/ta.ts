@@ -1285,6 +1285,8 @@ export const ta = {
     },
 
     table: {
+      sectionTitle: 'Pro இல் அனைத்தும்',
+      sectionSubtitle: 'மேம்படுத்தும்போது என்ன திறக்கும் என்பதைப் பாருங்கள்',
       title: 'இலவசம் எதிராக PRO',
       free: 'இலவசம்',
       pro: 'Pro',
