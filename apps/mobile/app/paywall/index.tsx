@@ -4,8 +4,8 @@ import { useBack } from '@/lib/navigation'
 /**
  * The standing paywall.
  *
- * It shares the full offer and purchase flow with onboarding, but it is a page
- * reached from the app and therefore keeps the back affordance.
+ * It shares the full offer and purchase flow with onboarding. Only the result
+ * of "Maybe later" differs: this route returns to where the user came from.
  */
 export default function Paywall() {
   const goBack = useBack('/today')
@@ -15,5 +15,5 @@ export default function Paywall() {
   // same page unprompted on Wednesday having already read it.
   useMarkPaywallSeen()
 
-  return <PaywallOffer screen="hard" onBack={goBack} />
+  return <PaywallOffer screen="hard" onLater={goBack} />
 }

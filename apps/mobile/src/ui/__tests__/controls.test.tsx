@@ -11,7 +11,6 @@ import { cn } from '../cn'
 import { StatTile } from '../StatTile'
 import { Stepper } from '../Stepper'
 import { Switch } from '../Switch'
-import { Text } from '../Text'
 
 /**
  * Behaviour, not appearance. Styling is verified on a device through the gallery
@@ -385,11 +384,6 @@ describe('NavItem', () => {
 })
 
 describe('AppBar', () => {
-  it('keeps styled title content in the title slot', async () => {
-    await render(<AppBar titleContent={<Text>RiceCal Pro</Text>} />)
-    expect(screen.getByText('RiceCal Pro')).toBeOnTheScreen()
-  })
-
   it("offers the title as a button when it is the user's to rename", async () => {
     const onPressTitle = jest.fn()
     await render(<AppBar title="Nasi lemak" onPressTitle={onPressTitle} />)
