@@ -233,6 +233,18 @@ export default function LogSheet() {
   }
 
   /**
+   * One of My foods was opened from inline search. It needs the same page left
+   * underneath as a catalogue dish, plus the source that restores its tab.
+   */
+  const openOwn = (recipeId: string, search: FoodSearchState) => {
+    router.replace({
+      pathname: '/log/search',
+      params: { q: search.query, tracked: search.tracked ? '1' : '0', source: 'mine' },
+    })
+    router.push({ pathname: '/recipe/[id]', params: { id: recipeId } })
+  }
+
+  /**
    * "New food" was tapped, which is `openPicked` for a form instead of a dish.
    *
    * The same two-step, for the same reason and one more. A form is abandoned
@@ -459,12 +471,7 @@ export default function LogSheet() {
              said the pot feeds. Any other number of servings is a question, and
              the food's own screen is where it is asked. */
           onPickOwn={(recipe) => add(snapshotFromRecipe(recipe), 'recipe')}
-          /* `replace` for the same reason `openFood` does it: a push from inside
-             a transparent modal lands on the stack WITHIN that presentation, so
-             the food would come up as a second modal stacked on this sheet. */
-          onOpenOwn={(recipe) =>
-            router.replace({ pathname: '/recipe/[id]', params: { id: recipe.id } })
-          }
+          onOpenOwn={(recipe, search) => openOwn(recipe.id, search)}
           onCreateOwn={(search) => {
             // The database enforces the same ceiling
             // (`recipes_enforce_free_limit`); this is the half that opens the

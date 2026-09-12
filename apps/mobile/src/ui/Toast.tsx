@@ -9,8 +9,20 @@ import {
   useRef,
   useState,
 } from 'react'
-import { View } from 'react-native'
-import Animated, { SlideInDown, SlideInUp, SlideOutDown, SlideOutUp } from 'react-native-reanimated'
+import { useTranslation } from 'react-i18next'
+import { useWindowDimensions, View } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import Animated, {
+  Easing,
+  runOnJS,
+  SlideInDown,
+  SlideInUp,
+  SlideOutDown,
+  SlideOutUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
@@ -80,6 +92,11 @@ const tones = {
   warning: { fill: 'bg-kaya', title: 'text-on-kaya', body: 'text-on-kaya opacity-70' },
   error: { fill: 'bg-hibiscus', title: 'text-on-hibiscus', body: 'text-on-hibiscus opacity-80' },
 } as const
+
+/** A clear drag, or a quick flick, dismisses without making a button hard to tap. */
+const SWIPE_DISTANCE = 72
+const SWIPE_VELOCITY = 700
+const SWIPE_SETTLE_MS = 180
 
 /**
  * What an outlet needs to draw, and the register of who is drawing.
@@ -235,6 +252,7 @@ function ToastSurface({
   offset: number
   placement?: ToastPlacement
 }) {
+  const { t } = useTranslation('common')
   const insets = useSafeAreaInsets()
   const { toast, dismiss } = stage
   const palette = tones[toast?.tone ?? 'neutral']
@@ -255,44 +273,143 @@ function ToastSurface({
       }
       pointerEvents="box-none"
     >
-      <Animated.View
-        // Keyed by id so replacing a toast replays the entrance rather than
-        // silently swapping the text of one already on screen.
+      <ToastCard
+        // Keyed by id so replacing a toast resets its swipe as well as replaying
+        // the entrance, rather than carrying an interrupted drag into new copy.
         key={toast.id}
-        entering={fromTop ? SlideInUp.duration(280) : SlideInDown.duration(280)}
-        exiting={fromTop ? SlideOutUp.duration(200) : SlideOutDown.duration(200)}
-        className={cn('flex-row items-center gap-md rounded-md p-lg', palette.fill)}
-        accessibilityRole="alert"
-        accessibilityLiveRegion="polite"
-      >
-        {toast.icon ? <Icon {...toast.icon} size={24} /> : null}
-
-        <View className="flex-1 gap-0.5">
-          <Text className={cn('font-body-black text-[16px] leading-[20px]', palette.title)}>
-            {toast.title}
-          </Text>
-          {toast.description ? (
-            <Text className={cn('font-body-bold text-[14px] leading-[18px]', palette.body)}>
-              {toast.description}
-            </Text>
-          ) : null}
-        </View>
-
-        {toast.action ? (
-          <Tappable
-            onPress={() => {
-              toast.action?.onPress()
-              dismiss()
-            }}
-            hitSlop={10}
-            accessibilityRole="button"
-          >
-            <Text className="font-display text-[16px] leading-[20px] text-inverse-accent">
-              {toast.action.label}
-            </Text>
-          </Tappable>
-        ) : null}
-      </Animated.View>
+        toast={toast}
+        dismiss={dismiss}
+        dismissLabel={t('action.close')}
+        palette={palette}
+        fromTop={fromTop}
+      />
     </View>
+  )
+}
+
+/**
+ * The toast card and its horizontal way out.
+ *
+ * Kept inside the positioned surface so the safe-area and tab-bar clearance do
+ * not move with the finger. The vertical entrance lives on the outer animated
+ * view and the horizontal drag on the inner one; two animations writing the
+ * same transform would otherwise replace one another.
+ */
+function ToastCard({
+  toast,
+  dismiss,
+  dismissLabel,
+  palette,
+  fromTop,
+}: {
+  toast: Toast
+  dismiss: () => void
+  dismissLabel: string
+  palette: (typeof tones)[ToastTone]
+  fromTop: boolean
+}) {
+  const { width } = useWindowDimensions()
+  const offset = useSharedValue(0)
+  const leaving = useSharedValue(false)
+
+  const swipe = Gesture.Pan()
+    // Horizontal only after a clear sideways intent. A short movement still
+    // belongs to the action button, and a vertical one belongs to the screen.
+    .activeOffsetX([-14, 14])
+    .failOffsetY([-12, 12])
+    .onUpdate((event) => {
+      if (!leaving.value) offset.value = event.translationX
+    })
+    .onEnd((event) => {
+      if (leaving.value) return
+
+      const farEnough = Math.abs(event.translationX) >= SWIPE_DISTANCE
+      const fastEnough = Math.abs(event.velocityX) >= SWIPE_VELOCITY
+      if (!farEnough && !fastEnough) {
+        offset.value = withTiming(0, {
+          duration: SWIPE_SETTLE_MS,
+          easing: Easing.out(Easing.cubic),
+        })
+        return
+      }
+
+      leaving.value = true
+      // A flick can reverse just before release. Follow the velocity when the
+      // velocity is what qualified it, otherwise follow the travelled distance.
+      const direction = (fastEnough ? event.velocityX : event.translationX) < 0 ? -1 : 1
+      offset.value = withTiming(
+        direction * width,
+        { duration: SWIPE_SETTLE_MS, easing: Easing.in(Easing.cubic) },
+        (finished) => {
+          // Dismissing unmounts this card. Only do it once the horizontal exit
+          // has landed, or the usual vertical exit replaces the finger's motion.
+          if (finished) runOnJS(dismiss)()
+        },
+      )
+    })
+    .onFinalize(() => {
+      // The OS can cancel an active gesture, for example when another window
+      // takes over the touch. Without a reset, the notice stays half offscreen.
+      if (!leaving.value) {
+        offset.value = withTiming(0, {
+          duration: SWIPE_SETTLE_MS,
+          easing: Easing.out(Easing.cubic),
+        })
+      }
+    })
+    .withTestId('toast-swipe')
+
+  const swipeStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: offset.value }],
+    opacity: Math.max(0, 1 - Math.abs(offset.value) / Math.max(1, width * 0.8)),
+  }))
+
+  return (
+    <Animated.View
+      entering={fromTop ? SlideInUp.duration(280) : SlideInDown.duration(280)}
+      exiting={fromTop ? SlideOutUp.duration(200) : SlideOutDown.duration(200)}
+    >
+      <GestureDetector gesture={swipe}>
+        <Animated.View
+          style={swipeStyle}
+          className={cn('flex-row items-center gap-md rounded-md p-lg', palette.fill)}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          {toast.icon ? <Icon {...toast.icon} size={24} /> : null}
+
+          <View className="flex-1 gap-0.5">
+            <Text className={cn('font-body-black text-[16px] leading-[20px]', palette.title)}>
+              {toast.title}
+            </Text>
+            {toast.description ? (
+              <Text className={cn('font-body-bold text-[14px] leading-[18px]', palette.body)}>
+                {toast.description}
+              </Text>
+            ) : null}
+          </View>
+
+          {toast.action ? (
+            <Tappable
+              onPress={() => {
+                toast.action?.onPress()
+                dismiss()
+              }}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityActions={[{ name: 'dismiss', label: dismissLabel }]}
+              onAccessibilityAction={(event) => {
+                if (event.nativeEvent.actionName === 'dismiss') dismiss()
+              }}
+              onAccessibilityEscape={dismiss}
+            >
+              <Text className="font-display text-[16px] leading-[20px] text-inverse-accent">
+                {toast.action.label}
+              </Text>
+            </Tappable>
+          ) : null}
+        </Animated.View>
+      </GestureDetector>
+    </Animated.View>
   )
 }

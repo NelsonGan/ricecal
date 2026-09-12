@@ -5,6 +5,7 @@ import { View } from 'react-native'
 import type { Plan } from '@/data'
 import { usePlanPrices } from '@/data'
 import { PlanPicker } from '@/features/shared'
+import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal'
 import { Button, Icon, Text } from '@/ui'
 import { PlanTable } from './PlanTable'
 import { PurchaseTerms } from './PurchaseTerms'
@@ -20,9 +21,7 @@ import { PurchaseTerms } from './PurchaseTerms'
  */
 const LOGO = require('../../../assets/icon.png')
 
-export type ProPitchProps = {
-  plan: Plan
-  onPlanChange: (plan: Plan) => void
+type ProPitchBaseProps = {
   /**
    * Restoring a purchase, as a link at the end of the page rather than a button
    * in the footer.
@@ -39,6 +38,22 @@ export type ProPitchProps = {
   onRestore?: () => void
 }
 
+export type ProPitchProps = ProPitchBaseProps &
+  (
+    | {
+        mode?: 'select'
+        plan: Plan
+        onPlanChange: (plan: Plan) => void
+      }
+    | {
+        mode: 'purchase'
+        onPlanPurchase: (plan: Plan) => void
+        onRestore: () => void
+        purchasingPlan?: Plan | null
+        restoring?: boolean
+      }
+  )
+
 /**
  * The sales half of both paywall screens.
  *
@@ -48,23 +63,39 @@ export type ProPitchProps = {
  * onboarding one offers "Maybe later", the standing one has a back chevron —
  * so that is what stays in the screens.
  */
-export function ProPitch({ plan, onPlanChange, onRestore }: ProPitchProps) {
-  const { t } = useTranslation('paywall')
+export function ProPitch(props: ProPitchProps) {
+  const { t } = useTranslation(['paywall', 'profile'])
   const { data: prices } = usePlanPrices()
+  const purchaseMode = props.mode === 'purchase'
+  const plan = purchaseMode ? null : props.plan
 
-  const priceString = prices?.[plan]?.priceString
-  const freeTrialEligible = prices?.[plan]?.freeTrialEligible === true
-  const smallPrint = !priceString
-    ? t('hard.smallPrintPending')
-    : plan === 'lifetime'
-      ? t('hard.smallPrintLifetime', { price: priceString })
-      : freeTrialEligible && plan === 'yearly'
-        ? t('hard.smallPrintYearly', { price: priceString })
-        : freeTrialEligible
-          ? t('hard.smallPrintMonthly', { price: priceString })
-          : plan === 'yearly'
-            ? t('hard.smallPrintYearlyNoTrial', { price: priceString })
-            : t('hard.smallPrintMonthlyNoTrial', { price: priceString })
+  const disclosureFor = (candidate: Plan): string => {
+    const price = prices?.[candidate]?.priceString
+    if (!price) return t('paywall:hard.smallPrintPending')
+    if (candidate === 'lifetime') {
+      return t('paywall:hard.smallPrintLifetime', { price })
+    }
+    if (prices?.[candidate]?.freeTrialEligible === true) {
+      return t(
+        candidate === 'yearly' ? 'paywall:hard.smallPrintYearly' : 'paywall:hard.smallPrintMonthly',
+        { price },
+      )
+    }
+    return t(
+      candidate === 'yearly'
+        ? 'paywall:hard.smallPrintYearlyNoTrial'
+        : 'paywall:hard.smallPrintMonthlyNoTrial',
+      { price },
+    )
+  }
+
+  const smallPrint = plan ? disclosureFor(plan) : null
+
+  const purchaseDisclosures = {
+    yearly: disclosureFor('yearly'),
+    monthly: disclosureFor('monthly'),
+    lifetime: disclosureFor('lifetime'),
+  } satisfies Record<Plan, string>
 
   return (
     <>
@@ -75,7 +106,7 @@ export function ProPitch({ plan, onPlanChange, onRestore }: ProPitchProps) {
           contentFit="cover"
         />
         <Text variant="title" className="text-center">
-          {t('hard.title')}
+          {t('paywall:hard.title')}
         </Text>
       </View>
 
@@ -86,35 +117,81 @@ export function ProPitch({ plan, onPlanChange, onRestore }: ProPitchProps) {
           `PlanTable`. */}
       <PlanTable />
 
-      <PlanPicker showLifetime value={plan} onChange={onPlanChange} />
+      {purchaseMode ? (
+        <PlanPicker
+          showLifetime
+          mode="purchase"
+          onPurchase={props.onPlanPurchase}
+          pendingPlan={props.purchasingPlan}
+          disabled={props.restoring}
+          disclosures={purchaseDisclosures}
+        />
+      ) : (
+        <PlanPicker showLifetime value={props.plan} onChange={props.onPlanChange} />
+      )}
 
-      <View className="items-center gap-1.5">
-        <View className="flex-row items-center gap-2">
-          <Icon set="system" name="shield" size={16} />
-          <Text variant="caption" className="text-pandan-ink">
-            {/* Branches with the small print below it, or the two contradict
-                each other. See `assuranceLifetime`. */}
-            {t(plan === 'lifetime' ? 'hard.assuranceLifetime' : 'hard.assurance')}
-          </Text>
-        </View>
-        {/* The sentence needs the price, so it waits for it rather than
-            printing half of itself. */}
-        <Text variant="caption" className="text-center text-faint">
-          {smallPrint}
-        </Text>
-
-        {onRestore ? (
-          // `self-center` because `Button` sets `self-start` on its own
-          // container, and align-self beats the column's align-items.
-          <Button variant="ghost" size="sm" className="self-center" onPress={onRestore}>
-            {t('hard.restore')}
+      {purchaseMode ? (
+        <View className="flex-row items-center justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            contentClassName="px-2"
+            labelClassName="text-[12px]"
+            onPress={props.onRestore}
+            disabled={props.purchasingPlan != null || props.restoring}
+          >
+            {t('paywall:hard.restore')}
           </Button>
-        ) : null}
+          <Text variant="micro">·</Text>
+          <Button
+            variant="ghost"
+            size="sm"
+            contentClassName="px-2"
+            labelClassName="text-[12px]"
+            onPress={() => openLegal(TERMS_URL)}
+          >
+            {t('paywall:hard.terms')}
+          </Button>
+          <Text variant="micro">·</Text>
+          <Button
+            variant="ghost"
+            size="sm"
+            contentClassName="px-2"
+            labelClassName="text-[12px]"
+            onPress={() => openLegal(PRIVACY_URL)}
+          >
+            {t('profile:account.privacy')}
+          </Button>
+        </View>
+      ) : (
+        <View className="items-center gap-1.5">
+          <View className="flex-row items-center gap-2">
+            <Icon set="system" name="shield" size={16} />
+            <Text variant="caption" className="text-pandan-ink">
+              {/* Branches with the small print below it, or the two contradict
+                  each other. See `assuranceLifetime`. */}
+              {t(plan === 'lifetime' ? 'paywall:hard.assuranceLifetime' : 'paywall:hard.assurance')}
+            </Text>
+          </View>
+          {/* The sentence needs the price, so it waits for it rather than
+              printing half of itself. */}
+          <Text variant="caption" className="text-center text-faint">
+            {smallPrint}
+          </Text>
 
-        {/* Guideline 3.1.2. The sentence above says what it costs and how long
-            it lasts; this is the pair of links that has to sit beside it. */}
-        <PurchaseTerms />
-      </View>
+          {props.onRestore ? (
+            // `self-center` because `Button` sets `self-start` on its own
+            // container, and align-self beats the column's align-items.
+            <Button variant="ghost" size="sm" className="self-center" onPress={props.onRestore}>
+              {t('paywall:hard.restore')}
+            </Button>
+          ) : null}
+
+          {/* Guideline 3.1.2. The sentence above says what it costs and how long
+              it lasts; this is the pair of links that has to sit beside it. */}
+          <PurchaseTerms />
+        </View>
+      )}
     </>
   )
 }

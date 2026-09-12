@@ -67,7 +67,7 @@ export const paywall = {
     start: 'Start free trial',
     startSubscription: 'Subscribe',
     startLifetime: 'Buy lifetime access',
-    restore: 'Restore purchase',
+    restore: 'Restore Purchase',
     /**
      * The two links guideline 3.1.2 requires beside a subscription price. Short,
      * because they sit side by side under the small print.

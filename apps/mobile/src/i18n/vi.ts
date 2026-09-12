@@ -1441,7 +1441,7 @@ export const vi = {
 
     heading: {
       mine: 'Món ăn của tôi',
-      community: 'Từ cộng đồng',
+      community: 'Cộng đồng',
     },
 
     search: {
@@ -1454,10 +1454,7 @@ export const vi = {
 
     empty: {
       mineTitle: 'Chưa có món ăn nào',
-      mineBody:
-        'Một nồi ăn chung không có sẵn khẩu phần. Nhập những gì đã cho vào và nồi đó đủ cho mấy người, một lần thôi, và từ đó ghi lại chỉ mất một chạm.',
       communityTitle: 'Chưa ai chia sẻ',
-      communityBody: 'Món ăn mọi người để công khai sẽ xuất hiện ở đây.',
     },
 
     servings_one: '{{count}} khẩu phần',

@@ -14,7 +14,7 @@ import { Text } from './Text'
 
 export type SkeletonProps = {
   width?: DimensionValue
-  height?: number
+  height?: DimensionValue
   /** Pill by default; square off for image and card placeholders. */
   rounded?: boolean
   className?: string

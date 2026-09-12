@@ -1427,7 +1427,7 @@ export const zhHans = {
 
     heading: {
       mine: '我的食物',
-      community: '来自社区',
+      community: '社区',
     },
 
     search: {
@@ -1440,9 +1440,7 @@ export const zhHans = {
 
     empty: {
       mineTitle: '还没有食物',
-      mineBody: '一锅菜没有现成的份量。把用了什么、够几个人吃填一次，之后记录就只要点一下。',
       communityTitle: '还没有人分享',
-      communityBody: '别人设为公开的食物会出现在这里。',
     },
 
     servings_one: '{{count}} 份',

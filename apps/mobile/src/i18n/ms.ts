@@ -1469,7 +1469,7 @@ export const ms = {
 
     heading: {
       mine: 'Makanan saya',
-      community: 'Daripada komuniti',
+      community: 'Komuniti',
     },
 
     search: {
@@ -1482,10 +1482,7 @@ export const ms = {
 
     empty: {
       mineTitle: 'Belum ada makanan',
-      mineBody:
-        'Satu periuk kongsi tiada saiz hidangan. Masukkan apa yang dimasukkan dan berapa orang ia cukup, sekali sahaja, dan merekodnya hanya satu ketikan selepas itu.',
       communityTitle: 'Belum ada yang dikongsi',
-      communityBody: 'Makanan yang dijadikan awam oleh orang akan muncul di sini.',
     },
 
     servings_one: '{{count}} hidangan',

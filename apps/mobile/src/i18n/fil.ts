@@ -1466,7 +1466,7 @@ export const fil = {
 
     heading: {
       mine: 'Pagkain ko',
-      community: 'Mula sa komunidad',
+      community: 'Komunidad',
     },
 
     search: {
@@ -1479,10 +1479,7 @@ export const fil = {
 
     empty: {
       mineTitle: 'Wala pang pagkain',
-      mineBody:
-        'Walang nakatakdang serving ang isang kaldero. Ilagay kung ano ang inilagay at para sa ilan ito, isang beses lang, at isang tap na lang ang pag-log mula noon.',
       communityTitle: 'Wala pang ibinabahagi',
-      communityBody: 'Lilitaw dito ang mga pagkain na ginawang pampubliko.',
     },
 
     servings_one: '{{count}} serving',

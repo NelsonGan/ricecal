@@ -18,7 +18,7 @@ export const recipes = {
 
   heading: {
     mine: 'My foods',
-    community: 'From the community',
+    community: 'Community',
   },
 
   search: {
@@ -31,10 +31,7 @@ export const recipes = {
 
   empty: {
     mineTitle: 'No foods yet',
-    mineBody:
-      'A shared pot has no serving size. Write down what went in and how many it feeds, once, and logging it is one tap from then on.',
     communityTitle: 'Nothing shared yet',
-    communityBody: 'Foods people have made public will show up here.',
   },
 
   /** The count under a food's name in a list. */

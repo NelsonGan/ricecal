@@ -1432,7 +1432,7 @@ export const ko = {
 
     heading: {
       mine: '내 음식',
-      community: '커뮤니티에서',
+      community: '커뮤니티',
     },
 
     search: {
@@ -1445,10 +1445,7 @@ export const ko = {
 
     empty: {
       mineTitle: '아직 음식이 없습니다',
-      mineBody:
-        '한 냄비 요리에는 정해진 1인분이 없습니다. 무엇이 들어갔고 몇 인분인지 한 번만 넣어두면, 그다음부터는 한 번 누르면 기록됩니다.',
       communityTitle: '아직 공유된 것이 없습니다',
-      communityBody: '사람들이 공개한 음식이 여기에 올라옵니다.',
     },
 
     servings_one: '{{count}}인분',

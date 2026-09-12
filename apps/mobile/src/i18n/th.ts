@@ -1426,7 +1426,7 @@ export const th = {
 
     heading: {
       mine: 'อาหารของฉัน',
-      community: 'จากชุมชน',
+      community: 'ชุมชน',
     },
 
     search: {
@@ -1439,9 +1439,7 @@ export const th = {
 
     empty: {
       mineTitle: 'ยังไม่มีอาหาร',
-      mineBody: 'หม้อที่กินร่วมกันไม่มีขนาดต่อที่ ใส่ว่ามีอะไรบ้างและกินได้กี่คนสักครั้ง จากนั้นการบันทึกก็แค่แตะเดียว',
       communityTitle: 'ยังไม่มีใครแชร์',
-      communityBody: 'อาหารที่คนเปิดเป็นสาธารณะจะมาปรากฏตรงนี้',
     },
 
     servings_one: '{{count}} ที่',

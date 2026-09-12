@@ -1451,7 +1451,7 @@ export const id = {
 
     heading: {
       mine: 'Makananku',
-      community: 'Dari komunitas',
+      community: 'Komunitas',
     },
 
     search: {
@@ -1464,10 +1464,7 @@ export const id = {
 
     empty: {
       mineTitle: 'Belum ada makanan',
-      mineBody:
-        'Satu panci bersama tidak punya ukuran porsi. Masukkan apa saja isinya dan untuk berapa orang, sekali saja, dan mencatatnya cuma satu ketukan setelah itu.',
       communityTitle: 'Belum ada yang dibagikan',
-      communityBody: 'Makanan yang dipublikkan orang akan muncul di sini.',
     },
 
     servings_one: '{{count}} porsi',
