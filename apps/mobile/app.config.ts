@@ -62,7 +62,11 @@ function applyDevVariant(cfg: ExpoConfig): ExpoConfig {
     ...cfg,
     name: 'RiceCal Dev',
     scheme: 'ricecal-dev',
-    ios: { ...cfg.ios, bundleIdentifier: `${cfg.ios?.bundleIdentifier}${DEV_SUFFIX}` },
+    ios: {
+      ...cfg.ios,
+      bundleIdentifier: `${cfg.ios?.bundleIdentifier}${DEV_SUFFIX}`,
+      googleServicesFile: './GoogleService-Info.dev.plist',
+    },
     android: { ...cfg.android, package: `${cfg.android?.package}${DEV_SUFFIX}` },
   }
 }
