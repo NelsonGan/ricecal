@@ -2943,8 +2943,10 @@ direct-action card carries its own terms, because there is no selected plan with
 one shared sentence underneath. Trial copy follows the current store account's
 eligibility: iOS uses RevenueCat's introductory-offer eligibility result, and
 Android uses the free phase on the default subscription option Google returned.
-An unknown or failed check shows the regular subscription terms, because the
-store's purchase sheet is the final authority on what that account will receive.
+Until the store returns a price the card shows a dash and no placeholder
+sentence. Once it answers, the real price and the matching terms arrive
+together; the store's purchase sheet remains the final authority on what that
+account will receive.
 
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the

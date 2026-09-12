@@ -9,15 +9,17 @@ import { ProPitch } from '../ProPitch'
  */
 
 const mockOpenLegal = jest.fn()
+const mockPlanPrices = {
+  yearly: { priceString: 'RM99.90', perMonthString: 'RM8.33', freeTrialEligible: true },
+  monthly: { priceString: 'RM12.90', freeTrialEligible: false },
+  lifetime: { priceString: 'RM299.90', freeTrialEligible: false },
+  yearlySavingPercent: 35,
+}
+let mockPrices: typeof mockPlanPrices | undefined = mockPlanPrices
 
 jest.mock('@/data', () => ({
   usePlanPrices: () => ({
-    data: {
-      yearly: { priceString: 'RM99.90', perMonthString: 'RM8.33', freeTrialEligible: true },
-      monthly: { priceString: 'RM12.90', freeTrialEligible: false },
-      lifetime: { priceString: 'RM299.90', freeTrialEligible: false },
-      yearlySavingPercent: 35,
-    },
+    data: mockPrices,
   }),
 }))
 
@@ -31,6 +33,7 @@ const user = userEvent.setup()
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockPrices = mockPlanPrices
 })
 
 it('makes each plan card its purchase action', async () => {
@@ -64,6 +67,14 @@ it('keeps purchase terms and legal links on direct-action cards', async () => {
 
   await user.press(screen.getByText('Privacy Policy'))
   expect(mockOpenLegal).toHaveBeenCalledWith('https://ricecal.app/privacy')
+})
+
+it('does not add placeholder terms while store prices are loading', async () => {
+  mockPrices = undefined
+  await render(<ProPitch mode="purchase" onPlanPurchase={jest.fn()} onRestore={jest.fn()} />)
+
+  expect(screen.queryByText(/Price shown before purchase/i)).toBeNull()
+  expect(screen.getByRole('button', { name: 'Yearly, Billed every year, —' })).toBeOnTheScreen()
 })
 
 it('blocks a second purchase while the store is opening', async () => {

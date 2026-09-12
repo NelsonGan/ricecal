@@ -31,9 +31,9 @@ type ProPitchBaseProps = {
    * look like a way forward from this screen rather than the escape hatch for
    * somebody who has already paid on another phone.
    *
-   * The standing paywall keeps its footer button: it is reached from a refused tap
-   * rather than from a flow, so somebody arriving there having already paid is a
-   * likelier visitor.
+   * The standing paywall keeps the link in its compact legal row: it is reached
+   * from a refused tap rather than from a flow, so somebody arriving there
+   * having already paid is a likelier visitor.
    */
   onRestore?: () => void
 }
@@ -69,9 +69,9 @@ export function ProPitch(props: ProPitchProps) {
   const purchaseMode = props.mode === 'purchase'
   const plan = purchaseMode ? null : props.plan
 
-  const disclosureFor = (candidate: Plan): string => {
+  const disclosureFor = (candidate: Plan): string | undefined => {
     const price = prices?.[candidate]?.priceString
-    if (!price) return t('paywall:hard.smallPrintPending')
+    if (!price) return undefined
     if (candidate === 'lifetime') {
       return t('paywall:hard.smallPrintLifetime', { price })
     }
@@ -95,7 +95,7 @@ export function ProPitch(props: ProPitchProps) {
     yearly: disclosureFor('yearly'),
     monthly: disclosureFor('monthly'),
     lifetime: disclosureFor('lifetime'),
-  } satisfies Record<Plan, string>
+  } satisfies Partial<Record<Plan, string>>
 
   return (
     <>
@@ -173,11 +173,13 @@ export function ProPitch(props: ProPitchProps) {
               {t(plan === 'lifetime' ? 'paywall:hard.assuranceLifetime' : 'paywall:hard.assurance')}
             </Text>
           </View>
-          {/* The sentence needs the price, so it waits for it rather than
-              printing half of itself. */}
-          <Text variant="caption" className="text-center text-faint">
-            {smallPrint}
-          </Text>
+          {/* No placeholder sentence while the store is loading. A real price
+              earns real terms; until then the picker already shows a dash. */}
+          {smallPrint ? (
+            <Text variant="caption" className="text-center text-faint">
+              {smallPrint}
+            </Text>
+          ) : null}
 
           {props.onRestore ? (
             // `self-center` because `Button` sets `self-start` on its own

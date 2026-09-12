@@ -1283,7 +1283,6 @@ export const id = {
       smallPrintYearlyNoTrial: '{{price}} per tahun.',
       smallPrintMonthlyNoTrial: '{{price}} per bulan.',
       smallPrintLifetime: 'Satu pembayaran {{price}}. Bukan langganan, tanpa perpanjangan.',
-      smallPrintPending: 'Harga ditampilkan sebelum membeli.',
       start: 'Mulai uji coba gratis',
       startSubscription: 'Berlangganan',
       startLifetime: 'Beli akses seumur hidup',

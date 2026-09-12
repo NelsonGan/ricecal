@@ -1259,7 +1259,6 @@ export const hi = {
       smallPrintYearlyNoTrial: 'सालाना {{price}}।',
       smallPrintMonthlyNoTrial: 'महीने का {{price}}।',
       smallPrintLifetime: '{{price}} का एक भुगतान। न सदस्यता, न नवीनीकरण।',
-      smallPrintPending: 'खरीदने से पहले कीमत दिखाई जाएगी।',
       start: 'मुफ़्त ट्रायल शुरू करें',
       startSubscription: 'सदस्यता लें',
       startLifetime: 'आजीवन पहुंच ख़रीदें',

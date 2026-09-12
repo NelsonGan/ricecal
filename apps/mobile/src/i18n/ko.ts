@@ -1264,7 +1264,6 @@ export const ko = {
       smallPrintYearlyNoTrial: '연 {{price}}.',
       smallPrintMonthlyNoTrial: '월 {{price}}.',
       smallPrintLifetime: '{{price}} 한 번 결제. 구독이 아니며 갱신도 없습니다.',
-      smallPrintPending: '구매 전에 가격이 표시됩니다.',
       start: '무료 체험 시작',
       startSubscription: '구독하기',
       startLifetime: '평생 이용권 구매',

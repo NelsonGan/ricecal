@@ -1272,7 +1272,6 @@ export const ta = {
       smallPrintYearlyNoTrial: 'ஆண்டுக்கு {{price}}.',
       smallPrintMonthlyNoTrial: 'மாதம் {{price}}.',
       smallPrintLifetime: '{{price}} ஒரே கட்டணம். சந்தா இல்லை, புதுப்பிப்பு இல்லை.',
-      smallPrintPending: 'வாங்கும் முன் விலை காட்டப்படும்.',
       start: 'இலவசச் சோதனையைத் தொடங்கு',
       startSubscription: 'சந்தா சேர்',
       startLifetime: 'வாழ்நாள் அணுகலை வாங்கு',
