@@ -790,9 +790,11 @@ centred wordmark and close control are likewise fixed outside its `Screen`.
 
 The logged-food page is the full-bleed exception. `CollapsingAppBar` keeps one
 set of controls fixed over the hero image, then fades in the canvas and the
-one-line dish title as the image's lower edge reaches the bar. Scrolling back
-reverses the same transition. There are never two sets of live controls, and a
-caller does not rebuild the back/title/action row to get the image treatment.
+divider as the image's lower edge reaches the bar. The food name stays in the
+body because Back plus three actions leave no useful title width in that row.
+Scrolling back reverses the same transition. There are never two sets of live
+controls, and a caller does not rebuild the back/action row to get the image
+treatment.
 
 **The quick selector's inline search hands off to the search page.** A dish
 picked there is opened by replacing the sheet with `log/search`, carrying the
