@@ -5,8 +5,7 @@ import { View } from 'react-native'
 import type { Plan } from '@/data'
 import { usePlanPrices } from '@/data'
 import { PlanPicker } from '@/features/shared'
-import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal'
-import { Button, Icon, Text } from '@/ui'
+import { Icon, Text } from '@/ui'
 import { PlanTable } from './PlanTable'
 import { PurchaseTerms } from './PurchaseTerms'
 
@@ -117,83 +116,54 @@ export function ProPitch(props: ProPitchProps) {
           `PlanTable`. */}
       <PlanTable />
 
-      {purchaseMode ? (
-        <PlanPicker
-          showLifetime
-          mode="purchase"
-          onPurchase={props.onPlanPurchase}
-          pendingPlan={props.purchasingPlan}
-          disabled={props.restoring}
-          disclosures={purchaseDisclosures}
-        />
-      ) : (
-        <PlanPicker showLifetime value={props.plan} onChange={props.onPlanChange} />
-      )}
-
-      {purchaseMode ? (
-        <View className="flex-row items-center justify-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            contentClassName="px-2"
-            labelClassName="text-[12px]"
-            onPress={props.onRestore}
-            disabled={props.purchasingPlan != null || props.restoring}
-          >
-            {t('paywall:hard.restore')}
-          </Button>
-          <Text variant="micro">·</Text>
-          <Button
-            variant="ghost"
-            size="sm"
-            contentClassName="px-2"
-            labelClassName="text-[12px]"
-            onPress={() => openLegal(TERMS_URL)}
-          >
-            {t('paywall:hard.terms')}
-          </Button>
-          <Text variant="micro">·</Text>
-          <Button
-            variant="ghost"
-            size="sm"
-            contentClassName="px-2"
-            labelClassName="text-[12px]"
-            onPress={() => openLegal(PRIVACY_URL)}
-          >
-            {t('profile:account.privacy')}
-          </Button>
-        </View>
-      ) : (
-        <View className="items-center gap-1.5">
+      <View className="gap-3">
+        <View className="gap-1.5">
+          <Text variant="overline">{t('paywall:hard.choosePlan')}</Text>
           <View className="flex-row items-center gap-2">
             <Icon set="system" name="shield" size={16} />
-            <Text variant="caption" className="text-pandan-ink">
-              {/* Branches with the small print below it, or the two contradict
-                  each other. See `assuranceLifetime`. */}
-              {t(plan === 'lifetime' ? 'paywall:hard.assuranceLifetime' : 'paywall:hard.assurance')}
+            <Text variant="caption" className="flex-1 text-pandan-ink">
+              {/* Purchase mode has no selected plan, but the two subscriptions
+                  both carry this assurance. Select mode changes the line when
+                  lifetime is chosen so it never promises a cancellation for a
+                  one-off purchase. */}
+              {t(
+                !purchaseMode && plan === 'lifetime'
+                  ? 'paywall:hard.assuranceLifetime'
+                  : 'paywall:hard.assurance',
+              )}
             </Text>
           </View>
-          {/* No placeholder sentence while the store is loading. A real price
-              earns real terms; until then the picker already shows a dash. */}
-          {smallPrint ? (
-            <Text variant="caption" className="text-center text-faint">
-              {smallPrint}
-            </Text>
-          ) : null}
-
-          {props.onRestore ? (
-            // `self-center` because `Button` sets `self-start` on its own
-            // container, and align-self beats the column's align-items.
-            <Button variant="ghost" size="sm" className="self-center" onPress={props.onRestore}>
-              {t('paywall:hard.restore')}
-            </Button>
-          ) : null}
-
-          {/* Guideline 3.1.2. The sentence above says what it costs and how long
-              it lasts; this is the pair of links that has to sit beside it. */}
-          <PurchaseTerms />
         </View>
-      )}
+
+        {purchaseMode ? (
+          <PlanPicker
+            showLifetime
+            mode="purchase"
+            onPurchase={props.onPlanPurchase}
+            pendingPlan={props.purchasingPlan}
+            disabled={props.restoring}
+            disclosures={purchaseDisclosures}
+          />
+        ) : (
+          <PlanPicker showLifetime value={props.plan} onChange={props.onPlanChange} />
+        )}
+
+        {!purchaseMode && smallPrint ? (
+          <Text variant="caption" className="text-center text-faint">
+            {smallPrint}
+          </Text>
+        ) : null}
+
+        {/* One compact legal row on both paywalls. The trial-ended screen uses
+            the same component without restore, because it has its own account
+            recovery path. */}
+        <PurchaseTerms
+          onRestore={props.onRestore}
+          restoreDisabled={
+            purchaseMode && (props.purchasingPlan != null || props.restoring === true)
+          }
+        />
+      </View>
     </>
   )
 }

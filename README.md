@@ -2939,24 +2939,25 @@ Three products on both stores and in RevenueCat: monthly, yearly, and a one-off
 lifetime. The two subscriptions carry a seven-day free trial and lifetime does
 not. Onboarding keeps the deliberate select-then-continue flow; the standing
 paywall makes each plan card the purchase action and marks it with an arrow. Each
-direct-action card carries its own terms, because there is no selected plan with
-one shared sentence underneath. Trial copy follows the current store account's
-eligibility: iOS uses RevenueCat's introductory-offer eligibility result, and
-Android uses the free phase on the default subscription option Google returned.
-Until the store returns a price the card shows a dash and no placeholder
-sentence. Once it answers, the real price and the matching terms arrive
-together; the store's purchase sheet remains the final authority on what that
-account will receive.
+paywall introduces those choices as their own section, with the subscription
+assurance directly under its heading. Each direct-action card carries its own
+terms, because there is no selected plan with one shared sentence underneath.
+Trial copy follows the current store account's eligibility: iOS uses RevenueCat's
+introductory-offer eligibility result, and Android uses the free phase on the
+default subscription option Google returned. Until the store returns a price the
+card shows a dash and no placeholder sentence. Once it answers, the real price
+and the matching terms arrive together; the store's purchase sheet remains the
+final authority on what that account will receive.
 
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the
-terms of use and the privacy policy. `PurchaseTerms` renders the pair on the
-select-then-continue and trial-ended screens; the standing paywall puts the same
-links beside Restore Purchase in one compact row. There are three screens that
-can charge somebody: `paywall/intro`, `paywall/index` and `paywall/ended`. The
-third once sold a year with one tap and had no price, period or renewal anywhere
-on it at all. `lib/legal.ts` holds the two addresses, and the same pair is on
-**Me, Edit** for everybody who never reaches a paywall.
+terms of use and the privacy policy. `PurchaseTerms` renders Terms and Privacy in
+one compact row, with Restore Purchase at the front on both paywalls. The
+trial-ended screen uses the same row without restore. There are three screens
+that can charge somebody: `paywall/intro`, `paywall/index` and `paywall/ended`.
+The third once sold a year with one tap and had no price, period or renewal
+anywhere on it at all. `lib/legal.ts` holds the two addresses, and the same pair
+is on **Me, Edit** for everybody who never reaches a paywall.
 
 ### What each tier gets
 

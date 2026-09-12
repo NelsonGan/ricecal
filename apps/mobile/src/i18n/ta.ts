@@ -1265,6 +1265,7 @@ export const ta = {
     hard: {
       appBar: 'RiceCal Pro',
       title: 'RiceCal Pro இல் வரம்பே இல்லை',
+      choosePlan: 'உங்கள் திட்டத்தைத் தேர்ந்தெடுக்கவும்',
       assurance: 'கட்டுப்பாடு இல்லை, எப்போது வேண்டுமானாலும் ரத்து',
       assuranceLifetime: 'ஒரே கட்டணம், கடை வழியாகத் திரும்பப் பெறலாம்',
       smallPrintYearly: '7 நாட்கள் இலவசம், பிறகு ஆண்டுக்கு {{price}}.',

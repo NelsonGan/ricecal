@@ -1252,6 +1252,7 @@ export const zhHans = {
     hard: {
       appBar: 'RiceCal Pro',
       title: 'RiceCal Pro，没有上限',
+      choosePlan: '选择方案',
       assurance: '没有约束，随时可以取消',
       assuranceLifetime: '一次付清，可通过商店退款',
       smallPrintYearly: '免费 7 天，之后每年 {{price}}。',

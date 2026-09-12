@@ -1251,6 +1251,7 @@ export const th = {
     hard: {
       appBar: 'RiceCal Pro',
       title: 'ไม่มีขีดจำกัดกับ RiceCal Pro',
+      choosePlan: 'เลือกแผนของคุณ',
       assurance: 'ไม่มีข้อผูกมัด ยกเลิกได้ทุกเมื่อ',
       assuranceLifetime: 'จ่ายครั้งเดียว ขอคืนเงินผ่านสโตร์ได้',
       smallPrintYearly: 'ฟรี 7 วัน จากนั้น {{price}} ต่อปี',

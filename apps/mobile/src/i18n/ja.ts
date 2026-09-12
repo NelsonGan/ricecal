@@ -1263,6 +1263,7 @@ export const ja = {
     hard: {
       appBar: 'RiceCal Pro',
       title: 'RiceCal Pro なら上限なし',
+      choosePlan: 'プランを選択',
       assurance: '縛りなし、いつでも解約できます',
       assuranceLifetime: '一度の支払い、ストアを通じて返金可能',
       smallPrintYearly: '7 日間無料、その後は年 {{price}}。',
