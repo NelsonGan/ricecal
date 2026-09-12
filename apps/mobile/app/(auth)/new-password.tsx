@@ -121,16 +121,16 @@ export default function NewPasswordScreen() {
 
   return (
     <Screen
+      header={
+        <AppBar title={t('auth:reset.newTitle')} onBack={back} backLabel={t('common:a11y.back')} />
+      }
       footer={
         <Button fullWidth onPress={save} disabled={busy} loading={running === 'save'}>
           {t('auth:reset.save')}
         </Button>
       }
     >
-      <AppBar onBack={back} backLabel={t('common:a11y.back')} />
-
-      <View className="gap-2 pb-2 pt-6">
-        <Text variant="screenTitle">{t('auth:reset.newTitle')}</Text>
+      <View className="pb-2 pt-6">
         <Text variant="meta">
           {needsCode ? t('auth:verify.sentTo', { email }) : t('auth:reset.newSubtitle')}
         </Text>

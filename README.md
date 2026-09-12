@@ -776,9 +776,20 @@ about that failed to typecheck.
 Routes come in two shapes. **Full pages push** (settings, the reports, search,
 the dish detail, one recipe, the reviews list and one review) and carry a
 chevron in their own `AppBar`. **Modals present** (the quick selector, the
-paywalls) and carry a cross. Every screen draws its own title bar; the native
-header is off everywhere. A tab carries a `ScreenTitle` instead, because there
-is nothing behind it to go back to.
+paywalls) and carry a cross. Every pushed page passes that bar through
+`Screen`'s `header` slot, outside the scroll view, so its way out, title and
+trailing control remain visible while the body moves. `AppBar` reserves the
+wider control width on both sides, keeping its one or two-line title centred on
+the screen even when a trailing action is wider than Back. The native header is
+off everywhere. A tab carries a `ScreenTitle` instead, because there is nothing
+behind it to go back to. The two paywall routes share `PaywallOffer`, whose
+centred wordmark and close control are likewise fixed outside its `Screen`.
+
+The logged-food page is the full-bleed exception. `CollapsingAppBar` keeps one
+set of controls fixed over the hero image, then fades in the canvas and the
+one-line dish title as the image's lower edge reaches the bar. Scrolling back
+reverses the same transition. There are never two sets of live controls, and a
+caller does not rebuild the back/title/action row to get the image treatment.
 
 **The quick selector's inline search hands off to the search page.** A dish
 picked there is opened by replacing the sheet with `log/search`, carrying the
@@ -1764,9 +1775,12 @@ The add path is a staged form, because there is nothing to write until Add.
 **The plate is the top of the screen, full width, with the chrome floating on
 it.** The `Screen` is `flush` and one wrapper puts the gutter back for
 everything under it; back on the left, then share, the pencil and the bin on the
-right, least to most destructive. The dish name is the page's heading
-underneath, where it stopped truncating: a bar between two 44pt buttons had room
-for about three words of "Nasi Lemak with Fried Chicken with pineapple juice".
+right, least to most destructive. Those controls stay fixed as the plate
+scrolls. When the image leaves, the canvas and a one-line dish title fade into
+the same bar; scrolling back reveals the plate behind it again. The full dish
+name remains the page's two-line heading underneath, where it stopped
+truncating: a bar between two 44pt buttons has room for about three words of
+"Nasi Lemak with Fried Chicken with pineapple juice".
 
 It runs behind the status bar rather than stopping under it. `flush` keeps the
 top inset as padding, which is right for content and wrong for a picture meant

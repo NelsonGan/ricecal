@@ -42,12 +42,15 @@ export function ScannedPacket({ state, onRetry, onPhotographLabel, onBack }: Sca
 
   if (state === 'looking') {
     return (
-      <Screen>
-        {/* No title. There is nothing true to put in it yet, and a placeholder
-            word would be replaced by the product's name a moment later — the
-            largest text on the screen changing into something else while being
-            read. */}
-        <AppBar title="" onBack={onBack} backLabel={t('common:a11y.back')} />
+      <Screen
+        header={
+          /* No title. There is nothing true to put in it yet, and a placeholder
+             word would be replaced by the product's name a moment later — the
+             largest text on the screen changing into something else while being
+             read. */
+          <AppBar title="" onBack={onBack} backLabel={t('common:a11y.back')} />
+        }
+      >
         {/* `bg-line` rather than the default `bg-track`, which is a pale grey on
             a pale canvas — three blocks of it read as a screen that had failed
             to draw rather than one still drawing. The same choice the photo
@@ -61,6 +64,13 @@ export function ScannedPacket({ state, onRetry, onPhotographLabel, onBack }: Sca
 
   return (
     <Screen
+      header={
+        <AppBar
+          title={t('logging:barcode.failedTitle')}
+          onBack={onBack}
+          backLabel={t('common:a11y.back')}
+        />
+      }
       footer={
         <View className="gap-3">
           {/* Scanning again is the primary: this is a lookup that could not be
@@ -76,12 +86,6 @@ export function ScannedPacket({ state, onRetry, onPhotographLabel, onBack }: Sca
         </View>
       }
     >
-      <AppBar
-        title={t('logging:barcode.failedTitle')}
-        onBack={onBack}
-        backLabel={t('common:a11y.back')}
-      />
-
       <Card>
         <View className="items-center gap-3 py-4">
           <Icon set="system" name="barcode" size={72} />

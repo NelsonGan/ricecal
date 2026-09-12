@@ -156,11 +156,14 @@ export default function ReviewScreen() {
 
   if (loading) {
     return (
-      <Screen>
-        {/* The bar is here rather than only under the loaded review, because a
-            request that is slow, or retrying against a network that is not
-            there, would otherwise be a screen with no way off it. */}
-        <AppBar title={t('reviews:title')} onBack={back} backLabel={t('common:action.back')} />
+      <Screen
+        header={
+          /* The bar is here rather than only under the loaded review, because a
+             request that is slow, or retrying against a network that is not
+             there, would otherwise be a screen with no way off it. */
+          <AppBar title={t('reviews:title')} onBack={back} backLabel={t('common:action.back')} />
+        }
+      >
         <Card>
           <Skeleton className="h-[320px] w-full" />
         </Card>
@@ -202,9 +205,7 @@ export default function ReviewScreen() {
       })}
       onShared={() => track('Review Card Shared', { kind })}
     >
-      <Screen>
-        <AppBar title={title} onBack={back} backLabel={t('common:action.back')} />
-
+      <Screen header={<AppBar title={title} onBack={back} backLabel={t('common:action.back')} />}>
         {/* A section is one or more cards about one thing, and it is wrapped so
             that the space between two cards of a section and the space between
             two sections are the same. They are not the same THING — the seam
@@ -233,8 +234,11 @@ function Missing() {
   const back = useBack('/reviews')
 
   return (
-    <Screen>
-      <AppBar title={t('reviews:title')} onBack={back} backLabel={t('common:action.back')} />
+    <Screen
+      header={
+        <AppBar title={t('reviews:title')} onBack={back} backLabel={t('common:action.back')} />
+      }
+    >
       <View className="flex-1 justify-center">
         <Card>
           <EmptyState

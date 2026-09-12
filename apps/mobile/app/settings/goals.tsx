@@ -209,18 +209,19 @@ export default function GoalsScreen() {
 
   return (
     <Screen
+      header={
+        <AppBar
+          title={t('profile:goals.title')}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+        />
+      }
       footer={
         <Button fullWidth onPress={save} disabled={loading}>
           {t('common:action.save')}
         </Button>
       }
     >
-      <AppBar
-        title={t('profile:goals.title')}
-        onBack={() => goBack()}
-        backLabel={t('common:a11y.back')}
-      />
-
       {loading ? (
         <>
           {/* One block per card, at the height each will be, so the screen does

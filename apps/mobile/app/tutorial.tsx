@@ -45,6 +45,13 @@ export default function Tutorial() {
 
   return (
     <Screen
+      header={
+        <AppBar
+          title={t('onboarding:tutorial.appBar')}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+        />
+      }
       footer={
         <View className="gap-1.5">
           <Button fullWidth onPress={() => (last ? goBack() : setIndex((current) => current + 1))}>
@@ -61,12 +68,6 @@ export default function Tutorial() {
         </View>
       }
     >
-      <AppBar
-        title={t('onboarding:tutorial.appBar')}
-        onBack={() => goBack()}
-        backLabel={t('common:a11y.back')}
-      />
-
       <StepProgress
         total={CARDS.length}
         current={index + 1}
