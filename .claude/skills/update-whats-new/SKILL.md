@@ -142,7 +142,8 @@ Claude and read like it; the rules below are what they failed. The shape:
   into today".
 - **Round numbers down and hedge them.** "Added over 100 more dishes", never
   "47 to 159": a precise count invites a mismatch with the PR and ages badly.
-- **Tag a single-platform change** `(iPhone)` or `(Android)`.
+- **Do not tag a bullet by platform.** Leave out labels such as `(iPhone)` and
+  `(Android)` even when a change only affects one platform.
 - **Never tag anything Pro**, however much of it sits behind the paywall.
   Announce what is in the release and let the paywall speak for itself.
 - **Replace, do not append.** The note describes this release, not the app's
