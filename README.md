@@ -4611,6 +4611,14 @@ nothing: the two versions differ only in that one function, and the JS build is
 byte for byte the same. Anything that widens the range back to `~`, a helpful
 `expo install --check` included, brings the build failure back.
 
+**React Native Firebase makes Skia 2.6.2's missing iOS header paths visible.**
+Firebase requires static frameworks, while Expo 57 asks Skia to build from source.
+Under that combination CocoaPods does not expand Skia's recursive header glob, so
+the production archive fails on `third_party/base64.h` and then the Skia headers.
+The pnpm patch adds the explicit `cpp/api`, `cpp/api/third_party` and `cpp/skia`
+roots to Skia's podspec. Keep it until Expo's supported Skia version contains the
+upstream static-framework fixes.
+
 ### Sheets and the keyboard
 
 **A sheet with a text field in it is `fullHeight`. Every time.** This has been
