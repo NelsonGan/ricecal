@@ -1,15 +1,15 @@
 import * as Sentry from '@sentry/react-native'
 import { Mixpanel } from 'mixpanel-react-native'
 
-import { registerAnalytics } from './analytics'
+import { type AnalyticsClient, registerAnalytics } from './analytics'
+import { createAnalyticsProviders, type FirebaseAnalyticsBridge } from './analytics/providers'
 import { env, isConfigured } from './env'
 import { configurePurchases } from './revenuecat'
 
 /**
- * Each SDK is gated on its key being provisioned. Initialising one with a
- * REPLACE_ME placeholder produces noisy runtime failures that look like
- * integration bugs rather than what they are: an account that does not exist
- * yet.
+ * Each remote SDK is gated on the configuration it needs. Initialising one with
+ * a placeholder key or a native module the current binary does not contain
+ * produces noisy failures that look like integration bugs.
  *
  * Remove a gate only once its key is real — never to "make the warning stop".
  */
@@ -62,24 +62,75 @@ export function initSentry() {
  * event of ours — and an event of ours would be a second, slightly different
  * answer to the same question.
  */
-export async function initMixpanel() {
+async function initMixpanel(): Promise<AnalyticsClient | null> {
   if (!isConfigured(env.EXPO_PUBLIC_MIXPANEL_TOKEN)) {
     skipped.push('Mixpanel')
-    return
+    return null
   }
   const instance = new Mixpanel(env.EXPO_PUBLIC_MIXPANEL_TOKEN, true)
   await instance.init()
+  return instance
+}
+
+/**
+ * Loaded lazily so a same-runtime OTA bundle remains safe on a binary made
+ * before Firebase was linked. The old binary keeps Mixpanel and skips GA4.
+ */
+function firebaseAnalytics(): FirebaseAnalyticsBridge | null {
+  try {
+    const sdk =
+      require('@react-native-firebase/analytics') as typeof import('@react-native-firebase/analytics')
+    const instance = sdk.getAnalytics()
+    return {
+      setCollectionEnabled: (enabled) => sdk.setAnalyticsCollectionEnabled(instance, enabled),
+      setUserId: (userId) => sdk.setUserId(instance, userId),
+      setUserProperties: (properties) => sdk.setUserProperties(instance, properties),
+      logEvent: (event, properties) => sdk.logEvent(instance, event, properties),
+      resetData: () => sdk.resetAnalyticsData(instance),
+    }
+  } catch (error) {
+    skipped.push('Firebase Analytics')
+    if (__DEV__) console.warn('[analytics] Firebase Analytics is unavailable', error)
+    return null
+  }
+}
+
+function reportAnalyticsFailure(
+  provider: 'Mixpanel' | 'Firebase',
+  operation: string,
+  error: unknown,
+) {
+  if (__DEV__) {
+    console.warn(`[analytics] ${provider} ${operation} failed`, error)
+    return
+  }
+  Sentry.captureException(error, {
+    tags: { analytics_provider: provider, analytics_operation: operation },
+  })
+}
+
+async function initAnalytics() {
+  const firebase = firebaseAnalytics()
+  const mixpanel = await initMixpanel().catch((error) => {
+    reportAnalyticsFailure('Mixpanel', 'initialization', error)
+    return null
+  })
+
+  if (firebase) {
+    try {
+      // firebase.json keeps collection off until JavaScript can distinguish a
+      // release from a local run. Local actions are never product behaviour.
+      await firebase.setCollectionEnabled(!__DEV__)
+    } catch (error) {
+      reportAnalyticsFailure('Firebase', 'initialization', error)
+    }
+  }
+
   /**
-   * The one place the SDK meets the app's own seam, and the only place the two
-   * shapes are checked against each other. Everything else tracks through
-   * `lib/analytics`, which imports nothing native — see the header there for
-   * what that buys.
-   *
-   * Registering LAST, after `init` has resolved: whatever was fired during
-   * startup is queued in the seam and drains into a client that is ready for
-   * it, rather than into one still reading its own persisted state.
+   * Registering last drains startup calls into providers that are ready. The
+   * adapter serializes Firebase identity and events in that same order.
    */
-  registerAnalytics(instance)
+  registerAnalytics(createAnalyticsProviders(mixpanel, firebase, reportAnalyticsFailure).client)
 }
 
 /**
@@ -94,12 +145,10 @@ export async function initPurchases() {
 export async function initServices() {
   initSentry()
   await initPurchases()
-  await initMixpanel()
+  await initAnalytics()
 
   if (__DEV__ && skipped.length > 0) {
-    console.log(
-      `[startup] not initialised (key still ${'REPLACE_ME'} in .env.local): ${skipped.join(', ')}`,
-    )
+    console.log(`[startup] not initialised: ${skipped.join(', ')}`)
   }
   if (__DEV__ && disabled.length > 0) {
     console.log(`[startup] switched off in src/lib/startup.ts: ${disabled.join(', ')}`)

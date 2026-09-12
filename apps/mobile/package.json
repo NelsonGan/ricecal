@@ -1,6 +1,6 @@
 {
   "name": "@ricecal/mobile",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "main": "expo-router/entry",
   "private": true,
   "scripts": {
@@ -18,6 +18,8 @@
     "@expo-google-fonts/nunito": "^0.4.2",
     "@kingstinct/react-native-healthkit": "^14.0.2",
     "@react-native-community/netinfo": "12.0.1",
+    "@react-native-firebase/analytics": "^26.4.0",
+    "@react-native-firebase/app": "^26.4.0",
     "@react-native-google-signin/google-signin": "^16.1.4",
     "@ricecal/shared": "workspace:*",
     "@sentry/react-native": "~8.20.0",
