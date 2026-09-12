@@ -55,7 +55,10 @@
       "esbuild",
       "unrs-resolver",
       "workerd"
-    ]
+    ],
+    "patchedDependencies": {
+      "@shopify/react-native-skia@2.6.2": "patches/@shopify__react-native-skia@2.6.2.patch"
+    }
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.6",
