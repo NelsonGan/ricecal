@@ -1,7 +1,7 @@
 import type { EventName, Events, PersonProps, SuperProps } from './events'
 
 /**
- * The seam between the app and Mixpanel.
+ * The seam between the app and product analytics.
  *
  * Nothing native is imported here. `mixpanel-react-native` cannot be
  * transformed by jest (the same problem that put the RevenueCat lifecycle in
@@ -14,9 +14,8 @@ import type { EventName, Events, PersonProps, SuperProps } from './events'
  */
 
 /**
- * The slice of Mixpanel's surface this app uses. Written out rather than
- * imported, because importing the type imports the module. It is checked
- * against the real thing at the `registerAnalytics` call in `startup.ts`.
+ * The provider-neutral surface this app uses. Written out rather than imported
+ * from either native SDK, because doing that here would import the module too.
  */
 export type AnalyticsClient = {
   track(event: string, properties?: Record<string, unknown>): void
@@ -35,7 +34,7 @@ let client: AnalyticsClient | null = null
 /**
  * Events fired before the SDK finished starting. `initServices` is awaited
  * inside a `useEffect`, so the router decides where a launch belongs before
- * Mixpanel exists, which on a cold start into onboarding is the first few
+ * the providers exist, which on a cold start into onboarding is the first few
  * events in the funnel.
  *
  * Capped, because a build whose token is still a placeholder never registers

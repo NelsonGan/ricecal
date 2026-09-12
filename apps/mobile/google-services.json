@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "829952813471",
+    "project_id": "ricecal",
+    "storage_bucket": "ricecal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:829952813471:android:f6d8a81a4b134ff254b5aa",
+        "android_client_info": {
+          "package_name": "com.nelsongan.ricecal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "829952813471-cja2673hrsgaveh8fof2c3basss1kiqb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDw9UMK8gThyD9WDB_fk2QLavIYHdJ7OFM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "829952813471-cja2673hrsgaveh8fof2c3basss1kiqb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "829952813471-dd59l6cbtpav3ijmdiu69geoqnp9c9q4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.nelsongan.ricecal"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:829952813471:android:ebed5aa0f4b1a56b54b5aa",
+        "android_client_info": {
+          "package_name": "com.nelsongan.ricecal.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "829952813471-cja2673hrsgaveh8fof2c3basss1kiqb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDw9UMK8gThyD9WDB_fk2QLavIYHdJ7OFM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "829952813471-cja2673hrsgaveh8fof2c3basss1kiqb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "829952813471-dd59l6cbtpav3ijmdiu69geoqnp9c9q4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.nelsongan.ricecal"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
