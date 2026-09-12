@@ -1,5 +1,5 @@
-import { type ReactNode, useCallback, useState } from 'react'
-import { type LayoutChangeEvent, View } from 'react-native'
+import type { ReactNode } from 'react'
+import { View } from 'react-native'
 
 import { cn, Text } from '@/ui'
 
@@ -23,44 +23,24 @@ export type ScreenTitleProps = {
 /**
  * The title row at the top of a root screen.
  *
- * `AppBar` is the pushed-screen equivalent: it carries a back button, while a
- * root screen has neither and uses a size larger. Both centre the title against
- * the screen, not merely the room left between their controls.
+ * `AppBar` is the pushed-screen equivalent: it centres its title and carries a
+ * back button. A root screen has neither, so its larger title stays left aligned.
  */
 export function ScreenTitle({ title, leading, trailing, className }: ScreenTitleProps) {
-  const [leadingWidth, setLeadingWidth] = useState(0)
-  const [trailingWidth, setTrailingWidth] = useState(0)
-  const sideWidth = Math.max(leadingWidth, trailingWidth)
-
-  const measureLeading = useCallback((event: LayoutChangeEvent) => {
-    setLeadingWidth(event.nativeEvent.layout.width)
-  }, [])
-  const measureTrailing = useCallback((event: LayoutChangeEvent) => {
-    setTrailingWidth(event.nativeEvent.layout.width)
-  }, [])
-
   return (
-    <View className={cn('flex-row items-center gap-md pt-1', className)} accessibilityRole="header">
-      <View
-        testID="screen-title-leading-slot"
-        style={{ minWidth: sideWidth }}
-        className="items-start"
-      >
-        {leading ? (
-          <View testID="screen-title-leading-measure" onLayout={measureLeading}>
-            {leading}
-          </View>
-        ) : null}
-      </View>
+    <View
+      className={cn('flex-row items-center justify-between gap-md pt-1', className)}
+      accessibilityRole="header"
+    >
+      {leading}
       {/*
-        Shrinks rather than ellipsises, and centres within symmetric side slots.
+        Shrinks rather than ellipsises.
 
-        The wider control decides BOTH slot widths, so a search button or streak
-        pill cannot push the title away from the screen's true centre. What goes
-        in here is sometimes a date. "8月17日 周一" at the largest Dynamic Type
-        setting did not fit and came back as "8月17日…", which is a title that has
-        stopped saying which day it is about. A point or two smaller is legible;
-        a truncated date is not.
+        The title shares its row with a streak pill and a view toggle, and what
+        goes in it is sometimes a date. "8月17日 周一" at the largest Dynamic Type
+        setting did not fit and came back as "8月17日…", which is a title that
+        has stopped saying which day it is about. A point or two smaller is
+        legible; a truncated date is not.
 
         Safe beside `adjustsFontSizeToFit` because `Text` deliberately sets no
         `lineHeight` when it sees that prop — the React Native bug `StatTile`
@@ -68,24 +48,14 @@ export function ScreenTitle({ title, leading, trailing, className }: ScreenTitle
       */}
       <Text
         variant="screenTitle"
-        className="min-w-0 flex-1 text-center"
+        className="flex-1 text-left"
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.85}
       >
         {title}
       </Text>
-      <View
-        testID="screen-title-trailing-slot"
-        style={{ minWidth: sideWidth }}
-        className="items-end"
-      >
-        {trailing ? (
-          <View testID="screen-title-trailing-measure" onLayout={measureTrailing}>
-            {trailing}
-          </View>
-        ) : null}
-      </View>
+      {trailing}
     </View>
   )
 }
