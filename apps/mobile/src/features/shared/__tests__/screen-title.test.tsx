@@ -1,9 +1,9 @@
 import { View } from 'react-native'
 
-import { act, render, screen } from '@/test-utils'
+import { render, screen } from '@/test-utils'
 import { ScreenTitle } from '../ScreenTitle'
 
-it('reserves the wider control width on both sides of a root title', async () => {
+it('keeps a root title left aligned beside its controls', async () => {
   await render(
     <ScreenTitle
       title="My foods"
@@ -17,15 +17,5 @@ it('reserves the wider control width on both sides of a root title', async () =>
     />,
   )
 
-  await act(() => {
-    screen.getByTestId('screen-title-leading-measure').props.onLayout({
-      nativeEvent: { layout: { width: 44 } },
-    })
-    screen.getByTestId('screen-title-trailing-measure').props.onLayout({
-      nativeEvent: { layout: { width: 96 } },
-    })
-  })
-
-  expect(screen.getByTestId('screen-title-leading-slot')).toHaveStyle({ minWidth: 96 })
-  expect(screen.getByTestId('screen-title-trailing-slot')).toHaveStyle({ minWidth: 96 })
+  expect(screen.getByText('My foods')).toHaveProp('className', expect.stringContaining('text-left'))
 })
