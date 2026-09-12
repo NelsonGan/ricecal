@@ -1289,6 +1289,7 @@ export const fil = {
     hard: {
       appBar: 'RiceCal Pro',
       title: 'Walang limitasyon sa RiceCal Pro',
+      choosePlan: 'Piliin ang iyong plan',
       assurance: 'Walang commitment, kanselahin anumang oras',
       assuranceLifetime: 'Isang bayad, maibabalik sa pamamagitan ng store',
       smallPrintYearly: 'Libre nang 7 araw, tapos {{price}} kada taon.',

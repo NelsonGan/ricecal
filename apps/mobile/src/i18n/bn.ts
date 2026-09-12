@@ -1250,6 +1250,7 @@ export const bn = {
     hard: {
       appBar: 'RiceCal Pro',
       title: 'RiceCal Pro তে কোনো সীমা নেই',
+      choosePlan: 'আপনার প্ল্যান বেছে নিন',
       assurance: 'কোনো বাধ্যবাধকতা নেই, যেকোনো সময় বাতিল',
       assuranceLifetime: 'একবার দেওয়া, স্টোরের মাধ্যমে ফেরত পাওয়া যায়',
       smallPrintYearly: '৭ দিন বিনামূল্যে, তারপর বছরে {{price}}।',

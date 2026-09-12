@@ -55,9 +55,11 @@ it('keeps purchase terms and legal links on direct-action cards', async () => {
   expect(
     screen.getByText('One payment of RM299.90. No subscription, no renewal.'),
   ).toBeOnTheScreen()
+  expect(screen.getByText('Choose your plan')).toBeOnTheScreen()
+  expect(screen.getByText('No commitment, cancel any time')).toBeOnTheScreen()
   expect(screen.getByText('Restore Purchase')).toBeOnTheScreen()
   expect(screen.getByText('Terms')).toBeOnTheScreen()
-  expect(screen.getByText('Privacy Policy')).toBeOnTheScreen()
+  expect(screen.getByText('Privacy')).toBeOnTheScreen()
 
   await user.press(screen.getByText('Restore Purchase'))
   expect(restore).toHaveBeenCalledTimes(1)
@@ -65,8 +67,22 @@ it('keeps purchase terms and legal links on direct-action cards', async () => {
   await user.press(screen.getByText('Terms'))
   expect(mockOpenLegal).toHaveBeenCalledWith('https://ricecal.app/terms')
 
-  await user.press(screen.getByText('Privacy Policy'))
+  await user.press(screen.getByText('Privacy'))
   expect(mockOpenLegal).toHaveBeenCalledWith('https://ricecal.app/privacy')
+})
+
+it('uses the same plan heading and compact legal actions in the selected-plan flow', async () => {
+  const restore = jest.fn()
+  await render(<ProPitch plan="yearly" onPlanChange={jest.fn()} onRestore={restore} />)
+
+  expect(screen.getByText('Choose your plan')).toBeOnTheScreen()
+  expect(screen.getByText('No commitment, cancel any time')).toBeOnTheScreen()
+  expect(screen.getByText('Restore Purchase')).toBeOnTheScreen()
+  expect(screen.getByText('Terms')).toBeOnTheScreen()
+  expect(screen.getByText('Privacy')).toBeOnTheScreen()
+
+  await user.press(screen.getByText('Restore Purchase'))
+  expect(restore).toHaveBeenCalledTimes(1)
 })
 
 it('does not add placeholder terms while store prices are loading', async () => {

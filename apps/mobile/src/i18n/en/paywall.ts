@@ -40,6 +40,7 @@ export const paywall = {
      * start is disproved by the screen behind it. Pro removes the ceiling.
      */
     title: 'No limits with RiceCal Pro',
+    choosePlan: 'Choose your plan',
     assurance: 'No commitment, cancel any time',
     /**
      * The same reassurance for a plan with nothing to cancel. The shared line sat

@@ -1276,6 +1276,7 @@ export const id = {
     hard: {
       appBar: 'RiceCal Pro',
       title: 'Tanpa batas dengan RiceCal Pro',
+      choosePlan: 'Pilih paket Anda',
       assurance: 'Tanpa komitmen, batalkan kapan saja',
       assuranceLifetime: 'Satu pembayaran, bisa dikembalikan lewat toko',
       smallPrintYearly: 'Gratis 7 hari, lalu {{price}} per tahun.',
