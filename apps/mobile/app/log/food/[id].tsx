@@ -1002,9 +1002,9 @@ export default function FoodDetail() {
         /* One fixed set of controls for both states. Over the plate the bar is
            transparent, preserving the existing raised buttons on the image. As
            the plate's lower edge reaches it, `CollapsingAppBar` fades in the
-           canvas and dish title underneath those same controls. */
+           canvas underneath those same controls. The food name stays in the
+           body; four controls leave no honest room for it in this row. */
         <CollapsingAppBar
-          title={dishName}
           scrollY={headerScrollY}
           revealAt={heroHeight - (insets.top + spacing.sm * 2 + 44)}
           onBack={() => goBack()}
