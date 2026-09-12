@@ -5,7 +5,7 @@ import { View } from 'react-native'
 import type { Plan } from '@/data'
 import { usePlanPrices } from '@/data'
 import { PlanPicker } from '@/features/shared'
-import { Icon, Text } from '@/ui'
+import { Text } from '@/ui'
 import { PlanTable } from './PlanTable'
 import { PurchaseTerms } from './PurchaseTerms'
 
@@ -116,23 +116,20 @@ export function ProPitch(props: ProPitchProps) {
           `PlanTable`. */}
       <PlanTable />
 
-      <View className="gap-3">
-        <View className="gap-1.5">
-          <Text variant="overline">{t('paywall:hard.choosePlan')}</Text>
-          <View className="flex-row items-center gap-2">
-            <Icon set="system" name="shield" size={16} />
-            <Text variant="caption" className="flex-1 text-pandan-ink">
-              {/* Purchase mode has no selected plan, but the two subscriptions
-                  both carry this assurance. Select mode changes the line when
-                  lifetime is chosen so it never promises a cancellation for a
-                  one-off purchase. */}
-              {t(
-                !purchaseMode && plan === 'lifetime'
-                  ? 'paywall:hard.assuranceLifetime'
-                  : 'paywall:hard.assurance',
-              )}
-            </Text>
-          </View>
+      <View className="mt-lg gap-3">
+        <View className="gap-1">
+          <Text variant="subtitle">{t('paywall:hard.choosePlan')}</Text>
+          <Text variant="meta" className="text-pandan-ink">
+            {/* Purchase mode has no selected plan, but the two subscriptions
+                both carry this assurance. Select mode changes the line when
+                lifetime is chosen so it never promises a cancellation for a
+                one-off purchase. */}
+            {t(
+              !purchaseMode && plan === 'lifetime'
+                ? 'paywall:hard.assuranceLifetime'
+                : 'paywall:hard.assurance',
+            )}
+          </Text>
         </View>
 
         {purchaseMode ? (
