@@ -32,14 +32,6 @@ export const paywall = {
   },
 
   hard: {
-    /** The bar on the pushed page. The screen's own headline is `title`. */
-    appBar: 'RiceCal Pro',
-    /**
-     * Not "start logging". A free account logs, by camera three times a day and
-     * by barcode and search without limit, so a headline saying they need Pro to
-     * start is disproved by the screen behind it. Pro removes the ceiling.
-     */
-    title: 'No limits with RiceCal Pro',
     choosePlan: 'Choose your plan',
     assurance: 'No commitment, cancel any time',
     /**

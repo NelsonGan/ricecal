@@ -1249,8 +1249,6 @@ export const zhHant = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'RiceCal Pro，沒有上限',
       choosePlan: '選擇方案',
       assurance: '沒有綁約，隨時可以取消',
       assuranceLifetime: '一次付清，可透過商店退款',

@@ -1264,8 +1264,6 @@ export const vi = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'Không giới hạn với RiceCal Pro',
       choosePlan: 'Chọn gói của bạn',
       assurance: 'Không ràng buộc, huỷ bất cứ lúc nào',
       assuranceLifetime: 'Trả một lần, hoàn tiền qua cửa hàng',

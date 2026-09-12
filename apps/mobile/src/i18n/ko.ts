@@ -1255,8 +1255,6 @@ export const ko = {
     },
 
     hard: {
-      appBar: 'RiceCal Pro',
-      title: 'RiceCal Pro는 한도가 없습니다',
       choosePlan: '요금제를 선택하세요',
       assurance: '약정 없음, 언제든 해지',
       assuranceLifetime: '한 번 결제, 스토어를 통해 환불 가능',
