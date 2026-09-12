@@ -20,7 +20,13 @@ export function ProWordmark({ className }: ProWordmarkProps) {
         {/* The two words use the same face and size. Only the tier changes
             surface, so the mark still reads as one name rather than a title
             followed by a small status chip. */}
-        <Text variant="subtitle" className="text-inverse-accent">
+        <Text
+          variant="subtitle"
+          className="text-inverse-accent"
+          // Baloo's visible glyph sits above the centre of its line box. One
+          // optical point down makes the ink, not just the box, look centred.
+          style={{ transform: [{ translateY: 1 }] }}
+        >
           Pro
         </Text>
       </View>

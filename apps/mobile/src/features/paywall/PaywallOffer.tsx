@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { type Plan, useAwaitEntitlement, usePlanPrices } from '@/data'
 import {
@@ -12,8 +13,11 @@ import {
   restorePurchases,
 } from '@/data/purchases'
 import { track } from '@/lib/analytics'
-import { Button, Screen, useToast } from '@/ui'
+import { spacing } from '@/theme/tokens'
+import { useThemeColors } from '@/theme/useTheme'
+import { Button, Icon, IconButton, Screen, useToast } from '@/ui'
 import { ProPitch } from './ProPitch'
+import { ProWordmark } from './ProWordmark'
 import { trackPurchaseAbandoned, trackPurchaseStarted } from './tracking'
 
 export type PaywallOfferProps = {
@@ -28,6 +32,8 @@ export function PaywallOffer(props: PaywallOfferProps) {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
   const toast = useToast()
+  const colors = useThemeColors()
+  const insets = useSafeAreaInsets()
   const awaitEntitlement = useAwaitEntitlement()
   const { data: prices } = usePlanPrices()
   const [plan, setPlan] = useState<Plan>('yearly')
@@ -110,23 +116,45 @@ export function PaywallOffer(props: PaywallOfferProps) {
   const busy = storeAction !== null
 
   return (
-    <Screen
-      footer={
-        <View className="-mb-sm gap-1.5">
-          <Button fullWidth onPress={start} loading={storeAction === 'purchase'} disabled={busy}>
-            {lifetime
-              ? t('paywall:hard.startLifetime')
-              : freeTrialEligible
-                ? t('paywall:hard.start')
-                : t('paywall:hard.startSubscription')}
-          </Button>
-          <Button variant="ghost" fullWidth onPress={props.onLater} disabled={busy}>
-            {t('paywall:intro.later')}
-          </Button>
+    <View className="flex-1 bg-canvas">
+      {/* One fixed header for both routes. The close control is positioned
+          outside the centring calculation, so the wordmark stays at the
+          screen's true midpoint while the offer below it scrolls. */}
+      <View className="bg-canvas px-gutter" style={{ paddingTop: insets.top + spacing.sm }}>
+        <View className="relative min-h-[44px] flex-row items-center justify-center">
+          <ProWordmark />
+          <IconButton
+            variant="ghost"
+            size="sm"
+            className="absolute right-0 top-0"
+            accessibilityLabel={t('common:action.close')}
+            onPress={props.onLater}
+            disabled={busy}
+          >
+            <Icon set="ui" name="close" size={20} tintColor={colors.muted} />
+          </IconButton>
         </View>
-      }
-    >
-      <ProPitch plan={plan} onPlanChange={selectPlan} onRestore={restore} disabled={busy} />
-    </Screen>
+      </View>
+
+      <Screen
+        safeAreaTop={false}
+        footer={
+          <View className="-mb-sm gap-1.5">
+            <Button fullWidth onPress={start} loading={storeAction === 'purchase'} disabled={busy}>
+              {lifetime
+                ? t('paywall:hard.startLifetime')
+                : freeTrialEligible
+                  ? t('paywall:hard.start')
+                  : t('paywall:hard.startSubscription')}
+            </Button>
+            <Button variant="ghost" fullWidth onPress={props.onLater} disabled={busy}>
+              {t('paywall:intro.later')}
+            </Button>
+          </View>
+        }
+      >
+        <ProPitch plan={plan} onPlanChange={selectPlan} onRestore={restore} disabled={busy} />
+      </Screen>
+    </View>
   )
 }

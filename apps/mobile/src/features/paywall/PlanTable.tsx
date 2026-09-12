@@ -70,7 +70,7 @@ export function PlanTable() {
 
   return (
     <View className="gap-3">
-      <View className="gap-1">
+      <View className="gap-0">
         <Text variant="subtitle">{t('table.sectionTitle')}</Text>
         <Text variant="meta">{t('table.sectionSubtitle')}</Text>
       </View>

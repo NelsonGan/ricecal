@@ -2943,7 +2943,9 @@ follows as supporting detail under its own title. The subscription assurance sit
 under the plan heading in muted text. A compact RiceCal Pro wordmark, with Pro in
 an inverse rounded-rectangle badge, replaces the logo-and-tagline hero on both.
 Both finish with the same purchase button and Maybe later action; the route only
-decides whether Maybe later enters the app or returns to the previous screen.
+decides whether Maybe later enters the app or returns to the previous screen. A
+sticky wordmark and close control remain at the top while the comparison scrolls;
+close performs the same route-specific action as Maybe later.
 
 Trial copy follows the current store account's eligibility: iOS uses RevenueCat's
 introductory-offer eligibility result, and Android uses the free phase on the

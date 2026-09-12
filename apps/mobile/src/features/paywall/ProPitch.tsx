@@ -6,7 +6,6 @@ import { usePlanPrices } from '@/data'
 import { PlanPicker } from '@/features/shared'
 import { Text } from '@/ui'
 import { PlanTable } from './PlanTable'
-import { ProWordmark } from './ProWordmark'
 import { PurchaseTerms } from './PurchaseTerms'
 
 export type ProPitchProps = {
@@ -47,10 +46,8 @@ export function ProPitch({ plan, onPlanChange, onRestore, disabled = false }: Pr
 
   return (
     <>
-      <ProWordmark />
-
-      <View className="gap-3">
-        <View className="gap-1">
+      <View className="mt-sm gap-3">
+        <View className="gap-0">
           <Text variant="subtitle">{t('hard.choosePlan')}</Text>
           <Text variant="meta">
             {t(plan === 'lifetime' ? 'hard.assuranceLifetime' : 'hard.assurance')}
