@@ -111,7 +111,9 @@ export function Avatar({
 
   return (
     <Squish
-      depth={slab.md}
+      // A photo is already the whole surface. Leaving the accent slab under it
+      // exposes a green strip that reads as part of the picture.
+      depth={uri ? 0 : slab.md}
       radius={metrics.radius}
       containerClassName={cn('self-start', className)}
       slabClassName={palette.slab}
