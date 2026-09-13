@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/react-native'
 import { Mixpanel } from 'mixpanel-react-native'
 
 import { type AnalyticsClient, registerAnalytics } from './analytics'
+import { configureGa4Collection, ga4CollectionEnabled } from './analytics/ga4'
 import { createAnalyticsProviders, type FirebaseAnalyticsBridge } from './analytics/providers'
 import { env, isConfigured } from './env'
 import { configurePurchases } from './revenuecat'
@@ -110,21 +111,21 @@ function reportAnalyticsFailure(
 }
 
 async function initAnalytics() {
-  const firebase = firebaseAnalytics()
+  // A preview build uses the release bundle id so the real store can price its
+  // products. It is still an internal build, and EAS sets this flag to keep its
+  // taps out of the production property. Firebase persists a runtime override,
+  // so startup must write false as deliberately as it writes true.
+  const ga4Enabled = ga4CollectionEnabled(__DEV__, env.EXPO_PUBLIC_GA4_ENABLED)
+  let firebase: FirebaseAnalyticsBridge | null = null
+  try {
+    firebase = await configureGa4Collection(firebaseAnalytics(), ga4Enabled)
+  } catch (error) {
+    reportAnalyticsFailure('Firebase', 'initialization', error)
+  }
   const mixpanel = await initMixpanel().catch((error) => {
     reportAnalyticsFailure('Mixpanel', 'initialization', error)
     return null
   })
-
-  if (firebase) {
-    try {
-      // firebase.json keeps collection off until JavaScript can distinguish a
-      // release from a local run. Local actions are never product behaviour.
-      await firebase.setCollectionEnabled(!__DEV__)
-    } catch (error) {
-      reportAnalyticsFailure('Firebase', 'initialization', error)
-    }
-  }
 
   /**
    * Registering last drains startup calls into providers that are ready. The

@@ -307,10 +307,18 @@ jobs:
           # Rewrite in place rather than exporting: see the note above for why an
           # exported value does not survive.
           sed -i.bak "s|^EXPO_PUBLIC_CATALOGUE_URL=.*|EXPO_PUBLIC_CATALOGUE_URL=${WORKER_URL}|" .env.local
+          # Build-profile env is not available to EAS Update. The pulled cloud
+          # environment may not contain this repo-owned safety flag, so enforce
+          # it in the same file Babel reads when exporting the PR bundle.
+          if grep -q '^EXPO_PUBLIC_GA4_ENABLED=' .env.local; then
+            sed -i.bak 's|^EXPO_PUBLIC_GA4_ENABLED=.*|EXPO_PUBLIC_GA4_ENABLED=false|' .env.local
+          else
+            printf '\nEXPO_PUBLIC_GA4_ENABLED=false\n' >> .env.local
+          fi
           rm -f .env.local.bak
-          # Say which one it ended up on. The failure this replaced was invisible
-          # precisely because nothing ever printed the value it used.
-          grep '^EXPO_PUBLIC_CATALOGUE_URL=' .env.local
+          # Say which values it ended up on. The failures these replaced were
+          # invisible precisely because nothing ever printed what was used.
+          grep -E '^(EXPO_PUBLIC_CATALOGUE_URL|EXPO_PUBLIC_GA4_ENABLED)=' .env.local
 
       - name: Publish PR update
         id: preview
