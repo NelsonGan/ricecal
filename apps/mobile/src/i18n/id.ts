@@ -1181,6 +1181,7 @@ export const id = {
       other: 'LAINNYA',
       waterGoal: 'Target air',
       saved: 'Sasaran tersimpan',
+      saveFailed: 'Target gagal disimpan. Coba lagi.',
     },
 
     personalisation: {

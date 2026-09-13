@@ -1157,6 +1157,7 @@ export const zhHant = {
       other: '其他',
       waterGoal: '喝水目標',
       saved: '指標已儲存',
+      saveFailed: '無法儲存目標，請重試。',
     },
 
     personalisation: {

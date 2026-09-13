@@ -1171,6 +1171,7 @@ export const vi = {
       other: 'KHÁC',
       waterGoal: 'Mục tiêu nước',
       saved: 'Đã lưu chỉ tiêu',
+      saveFailed: 'Không thể lưu mục tiêu. Hãy thử lại.',
     },
 
     personalisation: {

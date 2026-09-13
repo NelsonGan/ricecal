@@ -1193,6 +1193,7 @@ export const fil = {
       other: 'IBA PA',
       waterGoal: 'Target na tubig',
       saved: 'Na-save ang mga layunin',
+      saveFailed: 'Hindi ma-save ang mga target. Subukan muli.',
     },
 
     personalisation: {

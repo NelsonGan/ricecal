@@ -243,6 +243,7 @@ export const profile = {
     other: 'OTHER',
     waterGoal: 'Water goal',
     saved: 'Targets saved',
+    saveFailed: 'Could not save targets. Try again.',
   },
 
   /**

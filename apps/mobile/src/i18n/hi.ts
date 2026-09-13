@@ -1158,6 +1158,7 @@ export const hi = {
       other: 'अन्य',
       waterGoal: 'पानी का लक्ष्य',
       saved: 'आंकड़े सहेज लिए',
+      saveFailed: 'लक्ष्य सेव नहीं हुए। फिर कोशिश करें।',
     },
 
     personalisation: {

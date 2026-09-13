@@ -1,4 +1,4 @@
-import { render as rntlRender, screen, userEvent } from '@testing-library/react-native'
+import { act, render as rntlRender, screen, userEvent } from '@testing-library/react-native'
 import type { ReactElement, ReactNode } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -69,7 +69,23 @@ jest.mock('@/data', () => {
   }
 })
 
-jest.mock('@/lib/navigation', () => ({ useBack: () => jest.fn() }))
+jest.mock('@/ui', () => {
+  const actual = jest.requireActual('@/ui')
+  const { Pressable } = jest.requireActual('react-native')
+  return {
+    ...actual,
+    Slider: ({ onChange }: { onChange: (value: number) => void }) => (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Change target weight"
+        onPress={() => onChange(64)}
+      />
+    ),
+  }
+})
+
+const mockGoBack = jest.fn()
+jest.mock('@/lib/navigation', () => ({ useBack: () => mockGoBack }))
 
 function Providers({ children }: { children: ReactNode }) {
   return (
@@ -95,6 +111,9 @@ const save = async () => {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  for (const write of [mockUpdateProfile, mockSetTargets, mockUpdateSettings]) {
+    write.mockReset().mockResolvedValue({})
+  }
   mockStored = { kcal: 1640, carbs: 203, protein: 104, fat: 46, waterMl: 2000, isCustom: false }
 })
 
@@ -235,4 +254,63 @@ it('keeps a stored custom budget through a save that did not touch it', async ()
   expect(mockSetTargets).toHaveBeenCalledWith(
     expect.objectContaining({ kcal: 1800, protein: 150, isCustom: true }),
   )
+})
+
+const networkFailure = {
+  code: '',
+  details: 'The network connection was lost.',
+  hint: '',
+  message: 'Error: fetch failed',
+}
+
+it.each(['profile', 'targets', 'settings'] as const)(
+  'keeps the draft and allows retry when the %s write fails',
+  async (step) => {
+    const writes = [mockUpdateProfile, mockSetTargets, mockUpdateSettings]
+    const failedIndex = ['profile', 'targets', 'settings'].indexOf(step)
+    writes[failedIndex].mockRejectedValueOnce(networkFailure)
+    await render(<GoalsScreen />)
+    await user.press(screen.getByLabelText('Change target weight'))
+    await user.type(screen.getByLabelText('Protein'), '5')
+    const protein = screen.getByLabelText('Protein').props.value
+
+    await save()
+
+    expect(screen.getByText('Could not save targets. Try again.')).toBeTruthy()
+    expect(screen.queryByText('Targets saved')).toBeNull()
+    expect(mockGoBack).not.toHaveBeenCalled()
+    expect(screen.getByLabelText('Protein')).toHaveDisplayValue(protein)
+    for (const write of writes.slice(failedIndex + 1)) expect(write).not.toHaveBeenCalled()
+
+    await save()
+
+    expect(mockUpdateSettings).toHaveBeenCalledWith({ step_goal: 8000 })
+    expect(mockSetTargets).toHaveBeenLastCalledWith(
+      expect.objectContaining({ protein: Number(protein), isCustom: true }),
+    )
+    expect(screen.getByText('Targets saved')).toBeTruthy()
+    expect(mockGoBack).toHaveBeenCalledTimes(1)
+  },
+)
+
+it('blocks another save until the last write finishes', async () => {
+  let finish!: () => void
+  mockUpdateSettings.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve
+      }),
+  )
+  await render(<GoalsScreen />)
+  await save()
+
+  expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled()
+  await save()
+  expect(mockSetTargets).toHaveBeenCalledTimes(1)
+  expect(mockUpdateSettings).toHaveBeenCalledTimes(1)
+  expect(mockGoBack).not.toHaveBeenCalled()
+
+  await act(() => finish())
+  expect(mockGoBack).toHaveBeenCalledTimes(1)
+  expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled()
 })
