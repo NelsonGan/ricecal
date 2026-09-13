@@ -10,6 +10,32 @@ const USER_PROPERTY_NAME_LIMIT = 24
 const USER_PROPERTY_VALUE_LIMIT = 36
 const MAX_PROPERTIES = 25
 
+/** Release collection is opt-out so old production environments keep sending. */
+export function ga4CollectionEnabled(
+  isDevelopment: boolean,
+  setting: 'true' | 'false' | undefined,
+): boolean {
+  return !isDevelopment && setting !== 'false'
+}
+
+type Ga4CollectionBridge = {
+  setCollectionEnabled(enabled: boolean): Promise<void> | void
+}
+
+/**
+ * Firebase persists its runtime collection override across app launches. Write
+ * both states so an internal build replacing a release build cannot inherit an
+ * earlier `true`, then keep a disabled bridge away from every later event.
+ */
+export async function configureGa4Collection<T extends Ga4CollectionBridge>(
+  bridge: T | null,
+  enabled: boolean,
+): Promise<T | null> {
+  if (!bridge) return null
+  await bridge.setCollectionEnabled(enabled)
+  return enabled ? bridge : null
+}
+
 function snakeCase(value: string): string {
   return value
     .trim()
