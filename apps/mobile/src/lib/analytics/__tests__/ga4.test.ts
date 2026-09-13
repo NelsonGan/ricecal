@@ -1,4 +1,10 @@
-import { ga4CollectionEnabled, ga4EventName, ga4EventParameters, ga4UserProperties } from '../ga4'
+import {
+  configureGa4Collection,
+  ga4CollectionEnabled,
+  ga4EventName,
+  ga4EventParameters,
+  ga4UserProperties,
+} from '../ga4'
 
 describe('GA4 collection', () => {
   it('collects in production unless the build explicitly disables it', () => {
@@ -10,6 +16,24 @@ describe('GA4 collection', () => {
   it('never collects in development', () => {
     expect(ga4CollectionEnabled(true, undefined)).toBe(false)
     expect(ga4CollectionEnabled(true, 'true')).toBe(false)
+  })
+
+  it('writes the enabled state and returns the bridge to the provider', async () => {
+    const bridge = { setCollectionEnabled: jest.fn() }
+
+    await expect(configureGa4Collection(bridge, true)).resolves.toBe(bridge)
+    expect(bridge.setCollectionEnabled).toHaveBeenCalledWith(true)
+  })
+
+  it('writes the disabled state and keeps the bridge out of the provider', async () => {
+    const bridge = { setCollectionEnabled: jest.fn() }
+
+    await expect(configureGa4Collection(bridge, false)).resolves.toBeNull()
+    expect(bridge.setCollectionEnabled).toHaveBeenCalledWith(false)
+  })
+
+  it('does nothing when the native bridge is unavailable', async () => {
+    await expect(configureGa4Collection(null, true)).resolves.toBeNull()
   })
 })
 

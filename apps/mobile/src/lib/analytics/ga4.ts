@@ -18,6 +18,24 @@ export function ga4CollectionEnabled(
   return !isDevelopment && setting !== 'false'
 }
 
+type Ga4CollectionBridge = {
+  setCollectionEnabled(enabled: boolean): Promise<void> | void
+}
+
+/**
+ * Firebase persists its runtime collection override across app launches. Write
+ * both states so an internal build replacing a release build cannot inherit an
+ * earlier `true`, then keep a disabled bridge away from every later event.
+ */
+export async function configureGa4Collection<T extends Ga4CollectionBridge>(
+  bridge: T | null,
+  enabled: boolean,
+): Promise<T | null> {
+  if (!bridge) return null
+  await bridge.setCollectionEnabled(enabled)
+  return enabled ? bridge : null
+}
+
 function snakeCase(value: string): string {
   return value
     .trim()

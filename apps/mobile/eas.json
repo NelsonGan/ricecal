@@ -10,7 +10,8 @@
       "channel": "development",
       "environment": "development",
       "env": {
-        "APP_VARIANT": "development"
+        "APP_VARIANT": "development",
+        "EXPO_PUBLIC_GA4_ENABLED": "false"
       }
     },
     "preview": {
