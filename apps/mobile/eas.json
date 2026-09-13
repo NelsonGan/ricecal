@@ -16,7 +16,10 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
-      "environment": "preview"
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_GA4_ENABLED": "false"
+      }
     },
     "production": {
       "autoIncrement": true,
