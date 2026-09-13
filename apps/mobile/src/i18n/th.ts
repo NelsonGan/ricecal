@@ -1157,6 +1157,7 @@ export const th = {
       other: 'อื่นๆ',
       waterGoal: 'เป้าหมายน้ำ',
       saved: 'บันทึกตัวเลขแล้ว',
+      saveFailed: 'บันทึกเป้าหมายไม่ได้ ลองอีกครั้ง',
     },
 
     personalisation: {

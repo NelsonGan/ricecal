@@ -1169,6 +1169,7 @@ export const ja = {
       other: 'その他',
       waterGoal: '水分の目標',
       saved: '数値を保存しました',
+      saveFailed: '目標を保存できませんでした。もう一度お試しください。',
     },
 
     personalisation: {

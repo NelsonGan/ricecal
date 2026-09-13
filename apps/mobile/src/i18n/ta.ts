@@ -1171,6 +1171,7 @@ export const ta = {
       other: 'மற்றவை',
       waterGoal: 'தண்ணீர் இலக்கு',
       saved: 'எண்கள் சேமிக்கப்பட்டன',
+      saveFailed: 'இலக்குகளைச் சேமிக்க முடியவில்லை. மீண்டும் முயலவும்.',
     },
 
     personalisation: {
