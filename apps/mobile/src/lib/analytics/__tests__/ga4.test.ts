@@ -1,4 +1,17 @@
-import { ga4EventName, ga4EventParameters, ga4UserProperties } from '../ga4'
+import { ga4CollectionEnabled, ga4EventName, ga4EventParameters, ga4UserProperties } from '../ga4'
+
+describe('GA4 collection', () => {
+  it('collects in production unless the build explicitly disables it', () => {
+    expect(ga4CollectionEnabled(false, undefined)).toBe(true)
+    expect(ga4CollectionEnabled(false, 'true')).toBe(true)
+    expect(ga4CollectionEnabled(false, 'false')).toBe(false)
+  })
+
+  it('never collects in development', () => {
+    expect(ga4CollectionEnabled(true, undefined)).toBe(false)
+    expect(ga4CollectionEnabled(true, 'true')).toBe(false)
+  })
+})
 
 describe('the GA4 shape', () => {
   it('maps product events into a namespaced valid event name', () => {

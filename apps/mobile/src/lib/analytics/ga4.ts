@@ -10,6 +10,14 @@ const USER_PROPERTY_NAME_LIMIT = 24
 const USER_PROPERTY_VALUE_LIMIT = 36
 const MAX_PROPERTIES = 25
 
+/** Release collection is opt-out so old production environments keep sending. */
+export function ga4CollectionEnabled(
+  isDevelopment: boolean,
+  setting: 'true' | 'false' | undefined,
+): boolean {
+  return !isDevelopment && setting !== 'false'
+}
+
 function snakeCase(value: string): string {
   return value
     .trim()

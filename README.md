@@ -3542,7 +3542,10 @@ Events fired before the SDKs finish starting are queued and drained on
 registration. Firebase operations then run serially, so an async user-id write
 cannot race the event after it and file that event under the anonymous install.
 
-Nothing is sent in development.
+Nothing is sent to GA4 in development or from an internal `preview` build. The
+preview profile keeps the release identifiers so store prices work, then sets
+`EXPO_PUBLIC_GA4_ENABLED=false`; native collection starts off and JavaScript
+never turns it on. Production omits the flag and enables collection.
 
 The Firebase project is the existing `ricecal` Google Cloud project. It is linked
 to GA4 property **RiceCal Mobile App** (`553863111`) in Analytics account
@@ -3558,12 +3561,20 @@ not count renders as decisions. Advertising IDs, ad storage, ad user data and ad
 personalisation signals are disabled on both platforms. iOS builds the Analytics
 pod without AdSupport.
 
-Before version 1.0.7 is released, the public privacy policy's processor table
-must name Google/Firebase Analytics beside Mixpanel, and the App Store privacy
-answers and Google Play Data safety form must be checked against the additional
-provider. The categories do not widen beyond the product analytics already
-described there, but naming every processor is part of the promise that page
-makes.
+The live property keeps event and user data for 14 months, reports in MYR, has
+Google Signals off, and disallows ads personalisation in every region. Its 37
+custom dimensions and 11 custom metrics mirror the parameters in the event plan.
+`Onboarding Completed` and `Meal Logged` are key events, and saved funnel
+explorations cover onboarding, meal logging and purchase conversion. The release
+Android stream is linked to the Play app. The unused internal-traffic filter is
+inactive because preview builds never send to this property.
+
+The public privacy policy names Google Firebase Analytics beside Mixpanel and
+states the 14-month retention period. The App Store privacy label already covers
+the same linked identifiers, product interactions and diagnostics. Google Play's
+Data safety form declares the retained product interactions, user and device IDs,
+photos, health and fitness data, and diagnostics; these categories do not widen
+because of GA4, but their retention answers still have to match the implementation.
 
 GA4 custom events are the Mixpanel display name converted to lowercase snake case
 under the `ricecal_` namespace. Booleans become 1 or 0, unsupported values are
