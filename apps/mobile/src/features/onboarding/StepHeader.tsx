@@ -11,7 +11,7 @@ export type StepHeaderProps = {
   tone?: StepProgressTone
   /** Omitted on a screen with nothing behind it, which draws the bar alone. */
   onBack?: () => void
-  /** The question this progress row belongs to, fixed and centred beneath it. */
+  /** The question this progress row belongs to, fixed beneath it. */
   title?: string
   subtitle?: string
   className?: string
@@ -68,12 +68,8 @@ export function StepHeader({
 
       {title ? (
         <View className="gap-2 pt-4">
-          <Text variant="title" className="text-center">
-            {title}
-          </Text>
-          {subtitle ? (
-            <Text className="text-center text-[16px] leading-[24px]">{subtitle}</Text>
-          ) : null}
+          <Text variant="title">{title}</Text>
+          {subtitle ? <Text className="text-[16px] leading-[24px]">{subtitle}</Text> : null}
         </View>
       ) : null}
     </View>
