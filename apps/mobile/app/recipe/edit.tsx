@@ -21,30 +21,25 @@ import { IconPicker, InlineCamera } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import {
   DescribeRecipePanel,
-  IngredientAmountSheet,
   IngredientSheet,
-  ingredientTotal,
+  NewRecipeChooser,
   potTotals,
   ReadingRecipe,
+  RecipeIngredientEditor,
   StepsField,
 } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
   Button,
   Card,
   ConfirmSheet,
   cn,
-  Divider,
   Icon,
-  IconButton,
-  type IconProps,
   Screen,
   Sheet,
   Skeleton,
-  Squish,
   Stepper,
   Tappable,
   Text,
@@ -90,7 +85,6 @@ export default function RecipeFormScreen() {
   const goBack = useBack('/recipes')
   const toast = useToast()
   const requirePro = useRequirePro()
-  const colors = useThemeColors()
 
   const params = useLocalSearchParams<{ id?: string }>()
   const recipeId = params.id
@@ -124,13 +118,8 @@ export default function RecipeFormScreen() {
   const [picking, setPicking] = useState(false)
 
   const [dirty, setDirty] = useState(false)
-  const [adding, setAdding] = useState(false)
-  /**
-   * Which staged row the amount sheet is open on, by its local key rather than
-   * by index — the list is filtered on removal, so an index would point at a
-   * different ingredient the moment one above it went.
-   */
-  const [editingKey, setEditingKey] = useState<string | null>(null)
+  /** Null is closed; a missing key adds, and a key replaces that staged row. */
+  const [pickingIngredient, setPickingIngredient] = useState<{ replacingKey?: string } | null>(null)
   const [camera, setCamera] = useState(false)
   const [describing, setDescribing] = useState(false)
   /**
@@ -146,10 +135,8 @@ export default function RecipeFormScreen() {
   // dropped, so the field waits for `onShow` rather than for `visible`.
   const [describeReady, setDescribeReady] = useState(false)
   const [leaving, setLeaving] = useState(false)
-  /**
-   * The form has been filled in for them already.
-   */
-  const [filled, setFilled] = useState(false)
+  /** A new food starts on the method choice. Existing food opens on its form. */
+  const [mode, setMode] = useState<'choose' | 'form'>(recipeId ? 'form' : 'choose')
 
   /**
    * Seed the form from the recipe being edited, exactly once. A ref rather than a
@@ -180,7 +167,7 @@ export default function RecipeFormScreen() {
 
   const totals = potTotals(items, servings)
   const ready = name.trim().length > 0
-  const editing = items.find((item) => item.key === editingKey)
+  const replacingIngredient = items.find((item) => item.key === pickingIngredient?.replacingKey)
 
   const touch = () => setDirty(true)
 
@@ -205,23 +192,29 @@ export default function RecipeFormScreen() {
     setCamera(false)
     if (!uri) return
 
+    setReading('photo')
     const key = await attachPhoto(uri)
     if (!key) {
+      setReading(null)
+      setMode('form')
       toast.show({ title: t('recipes:new.scanFailed'), tone: 'warning' })
       return
     }
 
-    setReading('photo')
     let draft: ScannedRecipe | null
     try {
       draft = await read.mutateAsync({ photoPath: key })
     } catch (error) {
-      if (showRefusal(error)) return
+      if (showRefusal(error)) {
+        setMode('form')
+        return
+      }
       draft = null
     } finally {
       setReading(null)
     }
     if (!draft) {
+      setMode('form')
       toast.show({ title: t('recipes:new.scanFailed'), tone: 'warning' })
       return
     }
@@ -293,19 +286,22 @@ export default function RecipeFormScreen() {
   const readText = async (described: string) => {
     setDescribing(false)
     setDescribeReady(false)
-    touch()
 
     setReading('text')
     let draft: ScannedRecipe | null
     try {
       draft = await read.mutateAsync({ text: described })
     } catch (error) {
-      if (showRefusal(error)) return
+      if (showRefusal(error)) {
+        setMode('form')
+        return
+      }
       draft = null
     } finally {
       setReading(null)
     }
     if (!draft) {
+      setMode('form')
       toast.show({ title: t('recipes:new.describeFailed'), tone: 'warning' })
       return
     }
@@ -318,7 +314,8 @@ export default function RecipeFormScreen() {
    * paths, so the two cannot drift on which fields they will clobber.
    */
   const applyDraft = (draft: ScannedRecipe) => {
-    setFilled(true)
+    setMode('form')
+    touch()
     setName((current) => current || draft.name)
     setSteps((current) => current || draft.steps)
     setServings((current) => (current === 1 ? draft.servings : current))
@@ -393,31 +390,37 @@ export default function RecipeFormScreen() {
     router.replace({ pathname: '/recipe/[id]', params: { id: result.id } })
   }
 
-  const leave = () => (dirty ? setLeaving(true) : goBack())
+  const leave = () => {
+    // The manual form is one branch of the new-food chooser, so its chevron
+    // returns there without throwing away anything already typed. The chooser's
+    // own cross remains the boundary that confirms before leaving the screen.
+    if (!recipeId && mode === 'form' && !reading) {
+      setMode('choose')
+      return
+    }
+    if (dirty) setLeaving(true)
+    else goBack()
+  }
+
+  const formCanGoBack = !recipeId && mode === 'form' && !reading
 
   return (
     <Screen
+      gestureScroll
       header={
         <AppBar
           title={recipeId ? t('recipes:edit.title') : t('recipes:new.title')}
           onBack={leave}
-          // A cross rather than a chevron: the back control here discards, and a
-          // chevron promises a hierarchy this form does not have.
-          leading="dismiss"
-          backLabel={t('common:a11y.close')}
+          leading={formCanGoBack ? 'back' : 'dismiss'}
+          backLabel={formCanGoBack ? t('common:action.back') : t('common:a11y.close')}
         />
       }
       footer={
-        <Button
-          fullWidth
-          loading={save.isPending}
-          // Nothing to save yet, and nothing that would survive the draft
-          // landing on top of it. See `ReadingRecipe`.
-          disabled={!ready || reading !== null}
-          onPress={commit}
-        >
-          {t('recipes:edit.save')}
-        </Button>
+        mode === 'form' && !reading ? (
+          <Button fullWidth loading={save.isPending} disabled={!ready} onPress={commit}>
+            {t('recipes:edit.save')}
+          </Button>
+        ) : undefined
       }
     >
       {/* The form, or the wait for it.
@@ -429,51 +432,20 @@ export default function RecipeFormScreen() {
           arrive around it. For these few seconds there is no answer to edit. */}
       {reading ? (
         <ReadingRecipe source={reading} />
+      ) : mode === 'choose' && !recipeId ? (
+        <NewRecipeChooser
+          onManual={() => setMode('form')}
+          onPhoto={() => {
+            if (!requirePro('read_recipe')) return
+            setCamera(true)
+          }}
+          onDescribe={() => {
+            if (!requirePro('read_recipe')) return
+            setDescribing(true)
+          }}
+        />
       ) : (
         <>
-          {/* Two ways to have the form filled in, on a NEW recipe only. Editing
-          one, the form is already full and a button that overwrites it is a
-          trap.
-
-          Both offered at once rather than behind a chooser: they answer
-          different situations, not different preferences. The pot is on the
-          stove, or it is not. */}
-          {!recipeId && !filled ? (
-            <View className="gap-2.5">
-              <View className="flex-row gap-2.5">
-                {/* Both are Pro, and both are gated at the tap rather than at
-                the send: the camera and the describe field are each a sheet,
-                and opening one to refuse what comes out of it wastes a photo
-                the user has already taken. The form underneath is free, which
-                is the point — a free account writes a recipe by typing it, the
-                way one has always been written. */}
-                <FillOption
-                  icon={{ set: 'system', name: 'camera' }}
-                  label={t('recipes:new.scanLabel')}
-                  tone="pandan"
-                  onPress={() => {
-                    if (!requirePro('read_recipe')) return
-                    setCamera(true)
-                  }}
-                />
-                <FillOption
-                  icon={{ set: 'system', name: 'sparkle' }}
-                  label={t('recipes:new.describeLabel')}
-                  tone="kaya"
-                  onPress={() => {
-                    if (!requirePro('read_recipe')) return
-                    setDescribing(true)
-                  }}
-                />
-              </View>
-              <View className="flex-row items-center gap-3 pt-1">
-                <View className="h-0.5 flex-1 bg-line" />
-                <Text variant="overline">{t('recipes:new.or')}</Text>
-                <View className="h-0.5 flex-1 bg-line" />
-              </View>
-            </View>
-          ) : null}
-
           <TextField
             label={t('recipes:edit.name')}
             value={name}
@@ -521,85 +493,21 @@ export default function RecipeFormScreen() {
                 : t('recipes:edit.ingredients')}
             </Text>
 
-            <Card>
-              {items.length === 0 ? (
-                <Text variant="meta">{t('recipes:edit.ingredientsEmpty')}</Text>
-              ) : null}
-
-              {items.map((item, index) => {
-                const line = ingredientTotal(item.perUnit, item.amount)
-                const measure = `${item.amount} ${t(`recipes:ingredient.unit.${item.unit}`, {
-                  count: item.amount,
-                })}`
-                return (
-                  <View key={item.key}>
-                    {index > 0 ? <Divider /> : null}
-                    <View className="flex-row items-center gap-2.5">
-                      {/* The row opens the amount and the cross stays outside
-                          it. An autofilled pot arrives with amounts the model
-                          estimated, and until this was tappable the only way to
-                          correct one was to delete the row and add it again —
-                          which for an ingredient the model invented meant
-                          retyping its calories by hand, since a described
-                          recipe never goes near the catalogue. */}
-                      <Tappable
-                        className="min-w-0 flex-1 flex-row items-center gap-2.5 py-2.5"
-                        onPress={() => setEditingKey(item.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('recipes:ingredient.change', {
-                          name: item.name,
-                          measure,
-                        })}
-                      >
-                        <View className="min-w-0 flex-1">
-                          <Text variant="bodyStrong" numberOfLines={1}>
-                            {item.name}
-                          </Text>
-                          <View className="flex-row items-center gap-1">
-                            <Text variant="meta">{measure}</Text>
-                            {/* Small, muted, and on every row: one row wearing
-                                a pencil would read as the only one that can be
-                                changed. */}
-                            <Icon set="ui" name="edit" size={12} tintColor={colors.muted} />
-                          </View>
-                        </View>
-                        <View className="flex-row items-baseline gap-1">
-                          <Text variant="numeric" className="text-[17px] leading-[22px]">
-                            {line.kcal.toLocaleString()}
-                          </Text>
-                          <Text variant="caption">{t('common:unit.kcal')}</Text>
-                        </View>
-                      </Tappable>
-                      <IconButton
-                        size="sm"
-                        accessibilityLabel={`${t('recipes:ingredient.remove')}, ${item.name}`}
-                        onPress={() => {
-                          setItems((current) => current.filter((row) => row.key !== item.key))
-                          touch()
-                        }}
-                      >
-                        <Icon set="ui" name="close" size={16} tintColor={colors.muted} />
-                      </IconButton>
-                    </View>
-                  </View>
+            <RecipeIngredientEditor
+              ingredients={items}
+              onAmountChange={(key, amount) => {
+                setItems((current) =>
+                  current.map((item) => (item.key === key ? { ...item, amount } : item)),
                 )
-              })}
-
-              <Divider />
-              <Tappable
-                className="flex-row items-center gap-2.5 pt-3"
-                onPress={() => setAdding(true)}
-                accessibilityRole="button"
-                accessibilityLabel={t('recipes:edit.addIngredient')}
-              >
-                <View className="h-[30px] w-[30px] items-center justify-center rounded-md bg-pandan-soft">
-                  <Icon set="ui" name="plus" size={16} />
-                </View>
-                <Text variant="label" className="text-pandan-ink">
-                  {t('recipes:edit.addIngredient')}
-                </Text>
-              </Tappable>
-            </Card>
+                touch()
+              }}
+              onAdd={() => setPickingIngredient({})}
+              onRemove={(ingredient) => {
+                setItems((current) => current.filter((item) => item.key !== ingredient.key))
+                touch()
+              }}
+              onReplace={(ingredient) => setPickingIngredient({ replacingKey: ingredient.key })}
+            />
           </View>
 
           {/* The preview. Reads the staged values, so it cannot disagree with what
@@ -668,57 +576,51 @@ export default function RecipeFormScreen() {
           />
 
           <IngredientSheet
-            visible={adding}
-            onClose={() => setAdding(false)}
+            visible={pickingIngredient !== null}
+            onClose={() => setPickingIngredient(null)}
+            replacing={replacingIngredient?.name}
             onAdd={(input) => {
-              setItems((current) => [...current, stage(input)])
-              touch()
-            }}
-          />
-
-          <IngredientAmountSheet
-            ingredient={editing ?? null}
-            onClose={() => setEditingKey(null)}
-            onSave={(next) => {
               setItems((current) =>
-                current.map((row) => (row.key === editingKey ? { ...row, ...next } : row)),
+                replacingIngredient
+                  ? current.map((item) =>
+                      item.key === replacingIngredient.key
+                        ? { ...input, key: replacingIngredient.key }
+                        : item,
+                    )
+                  : [...current, stage(input)],
               )
               touch()
             }}
           />
-
-          {/* Not full height and not scrollable: a viewfinder, a shutter and two
-          buttons fit inside the 440pt cap with room to spare, and there is no
-          text field here to raise a keyboard — which is the only thing
-          `fullHeight` exists to survive. No footer either: the shutter IS the
-          action. */}
-          <Sheet
-            visible={camera}
-            onClose={() => setCamera(false)}
-            title={t('recipes:new.scanTitle')}
-            closeLabel={t('common:action.close')}
-            scrollable={false}
-          >
-            <InlineCamera onCapture={readPhoto} />
-          </Sheet>
-
-          {/* A text field, so full height and not scrollable — the two rules a sheet
-          with typing in it always follows. See the note in README.md. */}
-          <Sheet
-            visible={describing}
-            onClose={() => setDescribing(false)}
-            title={t('recipes:new.describeTitle')}
-            closeLabel={t('common:action.close')}
-            fullHeight
-            scrollable={false}
-            onShow={() => setDescribeReady(true)}
-          >
-            {/* `autoFocus` inside a `Modal` is dropped, so the field is mounted only
-            once the window is actually presented and focuses itself then. */}
-            {describeReady ? <DescribeRecipePanel autoFocus onSubmit={readText} /> : null}
-          </Sheet>
         </>
       )}
+
+      {/* The chooser owns both AI panels. They stay mounted outside its branch so
+          presenting one does not replace the button that opened it. */}
+      <Sheet
+        visible={camera}
+        onClose={() => setCamera(false)}
+        title={t('recipes:new.scanTitle')}
+        closeLabel={t('common:action.close')}
+        scrollable={false}
+      >
+        <InlineCamera onCapture={readPhoto} />
+      </Sheet>
+
+      <Sheet
+        visible={describing}
+        onClose={() => {
+          setDescribing(false)
+          setDescribeReady(false)
+        }}
+        title={t('recipes:new.describeTitle')}
+        closeLabel={t('common:action.close')}
+        fullHeight
+        scrollable={false}
+        onShow={() => setDescribeReady(true)}
+      >
+        {describeReady ? <DescribeRecipePanel autoFocus onSubmit={readText} /> : null}
+      </Sheet>
 
       <ConfirmSheet
         visible={leaving}
@@ -734,54 +636,6 @@ export default function RecipeFormScreen() {
         }}
       />
     </Screen>
-  )
-}
-
-/**
- * One of the two offers to fill the form in.
- *
- * A square-ish tile beside its sibling rather than a full-width row: two stacked
- * rows read as a list of settings and pushed the form's first real field below
- * the fold, where two tiles read as a choice. The same shape as the quick actions
- * on the log sheet.
- *
- * The label is one word and the explanation is gone rather than truncated. At
- * this width a sentence wraps to three lines and makes the tile taller than the
- * field it is offering to fill, and the sheet that opens says the rest.
- *
- * A component rather than two near-copies, which differ by an icon, a word and a
- * tint.
- */
-function FillOption({
-  icon,
-  label,
-  tone,
-  onPress,
-}: {
-  icon: IconProps
-  label: string
-  tone: 'pandan' | 'kaya'
-  onPress: () => void
-}) {
-  return (
-    <Squish
-      depth={6}
-      radius={22}
-      containerClassName="flex-1"
-      slabClassName={tone === 'pandan' ? 'bg-pandan-soft-line' : 'bg-kaya-soft-line'}
-      className={cn(
-        'items-center gap-2 border-[3px] px-3 py-4',
-        tone === 'pandan' ? 'border-pandan bg-pandan-soft' : 'border-kaya-soft-line bg-kaya-soft',
-      )}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Icon {...icon} size={30} />
-      <Text variant="label" numberOfLines={1}>
-        {label}
-      </Text>
-    </Squish>
   )
 }
 

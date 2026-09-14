@@ -52,6 +52,8 @@ export const recipes = {
 
   new: {
     title: 'New food',
+    manualLabel: 'Fill it in myself',
+    aiLabel: 'Use AI',
     /**
      * The two tiles at the top of a new food. One word each: at half the
      * screen a sentence wraps to three lines, and the sheet each one opens
@@ -103,21 +105,16 @@ export const recipes = {
     ingredientsEmpty: 'Nothing yet. Search each item and we add up the pot for you.',
     addIngredient: 'Add an ingredient',
     steps: 'HOW YOU COOK IT',
-    /**
-     * The one thing worth saying about this field is what the RETURN key does,
-     * because the numbering is added where the steps are drawn and nowhere in
-     * the text. Without it people number the lines themselves and end up with
-     * "1. 1. Fry the rempah".
-     */
-    stepsPlaceholder: 'One step on each line. Start a new line and we number it for you.',
-    /** Under the field, since a placeholder disappears the moment they type. */
-    stepsHint: 'Each new line becomes the next numbered step.',
     stepsSheetTitle: 'How you cook it',
     stepsEditAction: 'Edit the steps',
     /** Read out in place of the list itself, which a screen reader would spell. */
     stepsEdit_one: 'Edit the steps, {{count}} step',
     stepsEdit_other: 'Edit the steps, {{count}} steps',
-    stepsWrite: 'Write how you cook it',
+    stepsWrite: 'Add cooking instructions',
+    stepLabel: 'Step {{count}}',
+    stepPlaceholder: 'What happens in this step?',
+    addStep: 'Add step',
+    removeStep: 'Remove step {{count}}',
     save: 'Save food',
     saved: 'Food saved',
     nameRequired: 'Give it a name first',
@@ -149,7 +146,7 @@ export const recipes = {
     namePlaceholder: 'What is it?',
     calories: 'CALORIES',
     macros: 'MACROS, IF YOU KNOW THEM',
-    amount: 'HOW MUCH WENT IN',
+    amount: 'PORTION',
     add: 'Add to the pot',
     remove: 'Remove',
     /**
