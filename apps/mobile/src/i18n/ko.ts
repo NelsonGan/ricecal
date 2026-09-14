@@ -1461,6 +1461,8 @@ export const ko = {
 
     new: {
       title: '새 음식',
+      manualLabel: '직접 입력',
+      aiLabel: 'AI 사용',
       scanLabel: '사진',
       describeLabel: '설명',
       scanTitle: '사진으로 채우기',
@@ -1501,7 +1503,7 @@ export const ko = {
       stepsEditAction: '조리 순서 편집',
       stepsEdit_one: '조리 순서 편집, {{count}}단계',
       stepsEdit_other: '조리 순서 편집, {{count}}단계',
-      stepsWrite: '조리 방법 적기',
+      stepsWrite: '조리 방법 추가',
       save: '음식 저장',
       saved: '음식을 저장했습니다',
       nameRequired: '먼저 이름을 지어 주세요',

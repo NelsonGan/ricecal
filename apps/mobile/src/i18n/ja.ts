@@ -1467,6 +1467,8 @@ export const ja = {
 
     new: {
       title: '新しいフード',
+      manualLabel: '自分で入力',
+      aiLabel: 'AIを使う',
       scanLabel: '写真',
       describeLabel: '書く',
       scanTitle: '写真から埋める',
@@ -1508,7 +1510,7 @@ export const ja = {
       stepsEditAction: '手順を編集',
       stepsEdit_one: '手順を編集、{{count}} 手順',
       stepsEdit_other: '手順を編集、{{count}} 手順',
-      stepsWrite: '作り方を書く',
+      stepsWrite: '調理手順を追加',
       save: 'フードを保存',
       saved: 'フードを保存しました',
       nameRequired: '先に名前をつけてください',

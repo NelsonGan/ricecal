@@ -52,6 +52,8 @@ export const recipes = {
 
   new: {
     title: 'New food',
+    manualLabel: 'Fill it in myself',
+    aiLabel: 'Use AI',
     /**
      * The two tiles at the top of a new food. One word each: at half the
      * screen a sentence wraps to three lines, and the sheet each one opens
@@ -117,7 +119,7 @@ export const recipes = {
     /** Read out in place of the list itself, which a screen reader would spell. */
     stepsEdit_one: 'Edit the steps, {{count}} step',
     stepsEdit_other: 'Edit the steps, {{count}} steps',
-    stepsWrite: 'Write how you cook it',
+    stepsWrite: 'Add cooking instructions',
     save: 'Save food',
     saved: 'Food saved',
     nameRequired: 'Give it a name first',

@@ -1455,6 +1455,8 @@ export const zhHant = {
 
     new: {
       title: '新食物',
+      manualLabel: '自己填寫',
+      aiLabel: '使用 AI',
       scanLabel: '照片',
       describeLabel: '描述',
       scanTitle: '用照片填好',
@@ -1495,7 +1497,7 @@ export const zhHant = {
       stepsEditAction: '編輯步驟',
       stepsEdit_one: '編輯步驟，{{count}} 步',
       stepsEdit_other: '編輯步驟，{{count}} 步',
-      stepsWrite: '寫下你怎麼做',
+      stepsWrite: '新增烹調步驟',
       save: '儲存食物',
       saved: '食物已儲存',
       nameRequired: '先給它取個名字',

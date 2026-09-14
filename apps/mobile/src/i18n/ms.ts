@@ -1498,6 +1498,8 @@ export const ms = {
 
     new: {
       title: 'Makanan baharu',
+      manualLabel: 'Isi sendiri',
+      aiLabel: 'Guna AI',
       scanLabel: 'Gambar',
       describeLabel: 'Terangkan',
       scanTitle: 'Isi daripada gambar',
@@ -1540,7 +1542,7 @@ export const ms = {
       stepsEditAction: 'Sunting langkah',
       stepsEdit_one: 'Sunting langkah, {{count}} langkah',
       stepsEdit_other: 'Sunting langkah, {{count}} langkah',
-      stepsWrite: 'Tulis bagaimana anda masak',
+      stepsWrite: 'Tambah arahan memasak',
       save: 'Simpan makanan',
       saved: 'Makanan disimpan',
       nameRequired: 'Beri ia nama dahulu',
