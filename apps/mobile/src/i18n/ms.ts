@@ -1198,6 +1198,7 @@ export const ms = {
       other: 'LAIN-LAIN',
       waterGoal: 'Sasaran air',
       saved: 'Sasaran disimpan',
+      saveFailed: 'Sasaran tidak dapat disimpan. Cuba lagi.',
     },
 
     personalisation: {

@@ -1156,6 +1156,7 @@ export const bn = {
       other: 'অন্যান্য',
       waterGoal: 'পানির লক্ষ্য',
       saved: 'সংখ্যা সংরক্ষিত হয়েছে',
+      saveFailed: 'লক্ষ্য সেভ করা যায়নি। আবার চেষ্টা করুন।',
     },
 
     personalisation: {
