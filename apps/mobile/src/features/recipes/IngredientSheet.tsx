@@ -27,6 +27,8 @@ export type IngredientSheetProps = {
   onClose: () => void
   /** The finished line, ready to be staged on the form. */
   onAdd: (ingredient: RecipeIngredientInput) => void
+  /** The row being swapped, when this picker is replacing rather than adding. */
+  replacing?: string
 }
 
 /**
@@ -56,8 +58,8 @@ const UNITS: RecipeUnit[] = ['g', 'ml', 'piece']
  * scroll view, so at full height it lands behind the keyboard — the button goes
  * in the body, after the field.
  */
-export function IngredientSheet({ visible, onClose, onAdd }: IngredientSheetProps) {
-  const { t } = useTranslation(['recipes', 'common'])
+export function IngredientSheet({ visible, onClose, onAdd, replacing }: IngredientSheetProps) {
+  const { t } = useTranslation(['recipes', 'logging', 'common'])
   const [panel, setPanel] = useState<Panel>('search')
 
   // The dish chosen out of the search results, which is the point the sheet
@@ -84,7 +86,7 @@ export function IngredientSheet({ visible, onClose, onAdd }: IngredientSheetProp
     <Sheet
       visible={visible}
       onClose={close}
-      title={t('recipes:ingredient.title')}
+      title={t(replacing ? 'logging:detail.replacePart' : 'recipes:ingredient.title')}
       closeLabel={t('common:action.close')}
       fullHeight
     >
@@ -99,10 +101,12 @@ export function IngredientSheet({ visible, onClose, onAdd }: IngredientSheetProp
       ) : null}
 
       {panel === 'amount' && pickedId ? (
-        <AmountPanel foodId={pickedId} onBack={back} onAdd={add} />
+        <AmountPanel foodId={pickedId} onBack={back} onAdd={add} replacing={Boolean(replacing)} />
       ) : null}
 
-      {panel === 'own' ? <CustomPanel onBack={back} onAdd={add} /> : null}
+      {panel === 'own' ? (
+        <CustomPanel onBack={back} onAdd={add} replacing={Boolean(replacing)} />
+      ) : null}
     </Sheet>
   )
 }
@@ -255,12 +259,14 @@ function AmountPanel({
   foodId,
   onBack,
   onAdd,
+  replacing,
 }: {
   foodId: string
   onBack: () => void
   onAdd: (ingredient: RecipeIngredientInput) => void
+  replacing: boolean
 }) {
-  const { t } = useTranslation(['recipes', 'common'])
+  const { t } = useTranslation(['recipes', 'logging', 'common'])
   const colors = useThemeColors()
   const { data: food } = useFood(foodId)
   const basis = food ? ingredientBasis(food) : null
@@ -284,7 +290,7 @@ function AmountPanel({
         unit={basis.unit}
         perUnit={basis.perUnit}
         initial={basis.amount}
-        action={t('recipes:ingredient.add')}
+        action={t(replacing ? 'logging:detail.replacePart' : 'recipes:ingredient.add')}
         onSubmit={(amount) =>
           onAdd({
             name: food.name,
@@ -296,64 +302,6 @@ function AmountPanel({
         }
       />
     </View>
-  )
-}
-
-export type IngredientAmountSheetProps = {
-  /** The row being corrected, or null when the sheet is closed. */
-  ingredient: RecipeIngredientInput | null
-  onClose: () => void
-  onSave: (ingredient: RecipeIngredientInput) => void
-}
-
-/**
- * Correcting how much of something went in, after the fact.
- *
- * The gap this fills is the autofill. A described pot comes back with amounts
- * the model estimated — 400 g of noodles, 3 eggs — and until this existed the
- * only way to say "it was 250" was to delete the row and search the catalogue
- * for it again, which for an ingredient the model invented (a described recipe
- * never touches the catalogue) meant retyping its calories by hand. The amount
- * is the one number on those rows most likely to be wrong and it was the one
- * that could not be changed.
- *
- * Only the amount, and `AmountForm` says why. A wrong FOOD is a different
- * correction and the row already has a cross for it.
- */
-export function IngredientAmountSheet({ ingredient, onClose, onSave }: IngredientAmountSheetProps) {
-  const { t } = useTranslation(['recipes', 'common'])
-
-  return (
-    <Sheet
-      visible={ingredient !== null}
-      onClose={onClose}
-      title={ingredient?.name ?? ''}
-      closeLabel={t('common:action.close')}
-      // A text field, so full height. And short content, so not scrollable:
-      // a scroll view scrolls itself to reveal the first responder and, before
-      // the keyboard's real height is known, carries the field off the top.
-      // Both rules are in README.md.
-      fullHeight
-      scrollable={false}
-    >
-      {/* Keyed by name, so opening the sheet on a different row remounts the
-          form and re-reads its prefill. Without it `AmountForm` keeps the
-          amount typed into the row before this one. */}
-      {ingredient ? (
-        <View key={ingredient.name} className="gap-3">
-          <AmountForm
-            unit={ingredient.unit}
-            perUnit={ingredient.perUnit}
-            initial={ingredient.amount}
-            action={t('common:action.save')}
-            onSubmit={(amount) => {
-              onSave({ ...ingredient, amount })
-              onClose()
-            }}
-          />
-        </View>
-      ) : null}
-    </Sheet>
   )
 }
 
@@ -372,11 +320,13 @@ const ZERO: Macros = { kcal: 0, carbs: 0, protein: 0, fat: 0 }
 function CustomPanel({
   onBack,
   onAdd,
+  replacing,
 }: {
   onBack: () => void
   onAdd: (ingredient: RecipeIngredientInput) => void
+  replacing: boolean
 }) {
-  const { t } = useTranslation(['recipes', 'common'])
+  const { t } = useTranslation(['recipes', 'logging', 'common'])
   const colors = useThemeColors()
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('100')
@@ -409,10 +359,6 @@ function CustomPanel({
           {t('recipes:ingredient.ownTitle')}
         </Text>
       </View>
-
-      <Text variant="body" className="text-muted">
-        {t('recipes:ingredient.customBody')}
-      </Text>
 
       <TextField
         label={t('recipes:ingredient.name')}
@@ -459,7 +405,6 @@ function CustomPanel({
         }
       />
 
-      <Text variant="overline">{t('recipes:ingredient.macros')}</Text>
       <View className="flex-row gap-2.5">
         <TextField
           containerClassName="flex-1"
@@ -507,7 +452,7 @@ function CustomPanel({
           })
         }
       >
-        {t('recipes:ingredient.add')}
+        {t(replacing ? 'logging:detail.replacePart' : 'recipes:ingredient.add')}
       </Button>
     </View>
   )

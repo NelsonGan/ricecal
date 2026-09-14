@@ -2338,6 +2338,12 @@ Two offers on a new recipe, answering different situations rather than different
 preferences: the pot is on the stove, or it is not. Both land in the same `read`
 action and come back as the same draft, so only the first model call differs.
 
+**The choice comes before the form.** A new food opens with one manual action and
+the two AI inputs, Photo and Describe. Picking manual reveals only the ordinary
+form; picking either AI input reads first and then reveals that same form with a
+draft in it. Editing an existing food skips the choice because it already has an
+answer in every field.
+
 **Who the authority is** is the whole difference, exactly as in the scan cascade.
 A photograph has one witness and it is the model, so everything it says is
 inference. A sentence was written by the person who cooked the dish, so the
@@ -2348,6 +2354,14 @@ the object out of the bucket. Neither path goes near the catalogue: what comes
 back lands in a form the user is about to check line by line, and a lookup per
 ingredient would be six searches to populate fields that are about to be edited.
 A failed read is a form they fill in themselves, and the endpoint says so.
+
+**The ingredient list edits like a diary plate.** The amount is typed or nudged
+in the row, and a swipe reveals Replace and Delete. Adding and replacing both use
+the catalogue picker, while all changes remain staged until the food is saved.
+An empty list says nothing beyond the Add an ingredient action. Cooking
+instructions follow the same rule: an empty method is one Add cooking
+instructions action, and the writing sheet carries no second line explaining
+what Return does.
 
 **A draft is applied only over empty fields.** Somebody who typed a name and then
 reached for the camera meant it to fill in the parts they had not done.

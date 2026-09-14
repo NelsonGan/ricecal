@@ -1480,6 +1480,8 @@ export const id = {
 
     new: {
       title: 'Makanan baru',
+      manualLabel: 'Isi sendiri',
+      aiLabel: 'Pakai AI',
       scanLabel: 'Foto',
       describeLabel: 'Ceritakan',
       scanTitle: 'Isi dari sebuah foto',
@@ -1521,7 +1523,7 @@ export const id = {
       stepsEditAction: 'Ubah langkahnya',
       stepsEdit_one: 'Ubah langkahnya, {{count}} langkah',
       stepsEdit_other: 'Ubah langkahnya, {{count}} langkah',
-      stepsWrite: 'Tulis cara kamu memasak',
+      stepsWrite: 'Tambahkan petunjuk memasak',
       save: 'Simpan makanan',
       saved: 'Makanan tersimpan',
       nameRequired: 'Beri nama dulu',

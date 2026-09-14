@@ -1495,6 +1495,8 @@ export const fil = {
 
     new: {
       title: 'Bagong pagkain',
+      manualLabel: 'Ako ang maglalagay',
+      aiLabel: 'Gumamit ng AI',
       scanLabel: 'Litrato',
       describeLabel: 'Ilarawan',
       scanTitle: 'Punan mula sa litrato',
@@ -1537,7 +1539,7 @@ export const fil = {
       stepsEditAction: 'I-edit ang mga hakbang',
       stepsEdit_one: 'I-edit ang mga hakbang, {{count}} hakbang',
       stepsEdit_other: 'I-edit ang mga hakbang, {{count}} hakbang',
-      stepsWrite: 'Isulat kung paano mo ito niluluto',
+      stepsWrite: 'Magdagdag ng mga tagubilin sa pagluluto',
       save: 'I-save ang pagkain',
       saved: 'Na-save ang pagkain',
       nameRequired: 'Pangalanan mo muna ito',

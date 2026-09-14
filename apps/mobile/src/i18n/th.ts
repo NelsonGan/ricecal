@@ -1455,6 +1455,8 @@ export const th = {
 
     new: {
       title: 'อาหารใหม่',
+      manualLabel: 'กรอกเอง',
+      aiLabel: 'ใช้ AI',
       scanLabel: 'รูปถ่าย',
       describeLabel: 'บรรยาย',
       scanTitle: 'กรอกจากรูปถ่าย',
@@ -1495,7 +1497,7 @@ export const th = {
       stepsEditAction: 'แก้ไขขั้นตอน',
       stepsEdit_one: 'แก้ไขขั้นตอน {{count}} ขั้น',
       stepsEdit_other: 'แก้ไขขั้นตอน {{count}} ขั้น',
-      stepsWrite: 'เขียนวิธีทำของคุณ',
+      stepsWrite: 'เพิ่มวิธีทำ',
       save: 'บันทึกอาหาร',
       saved: 'บันทึกอาหารแล้ว',
       nameRequired: 'ตั้งชื่อให้มันก่อน',

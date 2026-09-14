@@ -1470,6 +1470,8 @@ export const vi = {
 
     new: {
       title: 'Món ăn mới',
+      manualLabel: 'Tự điền',
+      aiLabel: 'Dùng AI',
       scanLabel: 'Ảnh',
       describeLabel: 'Mô tả',
       scanTitle: 'Điền từ một tấm ảnh',
@@ -1511,7 +1513,7 @@ export const vi = {
       stepsEditAction: 'Sửa các bước',
       stepsEdit_one: 'Sửa các bước, {{count}} bước',
       stepsEdit_other: 'Sửa các bước, {{count}} bước',
-      stepsWrite: 'Viết cách bạn nấu',
+      stepsWrite: 'Thêm hướng dẫn nấu',
       save: 'Lưu món ăn',
       saved: 'Đã lưu món ăn',
       nameRequired: 'Đặt tên cho nó trước đã',

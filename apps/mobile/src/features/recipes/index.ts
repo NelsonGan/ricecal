@@ -15,12 +15,16 @@ export {
 } from './basis'
 export { DescribeRecipePanel, type DescribeRecipePanelProps } from './DescribeRecipePanel'
 export {
-  IngredientAmountSheet,
-  type IngredientAmountSheetProps,
   IngredientSheet,
   type IngredientSheetProps,
 } from './IngredientSheet'
+export { NewRecipeChooser, type NewRecipeChooserProps } from './NewRecipeChooser'
 export { ReadingRecipe, type ReadingRecipeProps } from './ReadingRecipe'
+export {
+  type EditableRecipeIngredient,
+  RecipeIngredientEditor,
+  type RecipeIngredientEditorProps,
+} from './RecipeIngredientEditor'
 export { RecipeSteps, splitSteps } from './RecipeSteps'
 export { RecipeTile, type RecipeTileProps } from './RecipeTile'
 export { recipeLink, ShareSheet, type ShareSheetProps } from './ShareSheet'

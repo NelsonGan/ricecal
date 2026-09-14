@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { Button, Icon, Sheet, Tappable, Text, TextField } from '@/ui'
+import { Button, cn, Icon, Sheet, Tappable, Text, TextField } from '@/ui'
 import { RecipeSteps, splitSteps } from './RecipeSteps'
 
 export type StepsFieldProps = {
@@ -70,7 +70,11 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
       <Text variant="label">{t('recipes:edit.steps')}</Text>
 
       <Tappable
-        className="gap-3 rounded-card border-[3px] border-line bg-surface p-4"
+        className={cn(
+          steps.length
+            ? 'gap-3 rounded-card border-[3px] border-line bg-surface p-4'
+            : 'flex-row items-center gap-2.5 py-1',
+        )}
         onPress={open}
         accessibilityRole="button"
         accessibilityLabel={
@@ -93,14 +97,14 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
             </View>
           </>
         ) : (
-          // Empty, and it has to read as a box that wants filling in rather
-          // than as a card with nothing in it.
-          <View className="gap-1">
-            <Text variant="body" className="text-muted">
-              {t('recipes:edit.stepsPlaceholder')}
+          <>
+            <View className="h-[30px] w-[30px] items-center justify-center rounded-md bg-pandan-soft">
+              <Icon set="ui" name="plus" size={16} />
+            </View>
+            <Text variant="label" className="text-pandan-ink">
+              {t('recipes:edit.stepsWrite')}
             </Text>
-            <Text variant="meta">{t('recipes:edit.stepsHint')}</Text>
-          </View>
+          </>
         )}
       </Tappable>
 
@@ -122,8 +126,7 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
             <TextField
               value={draft}
               onChangeText={setDraft}
-              placeholder={t('recipes:edit.stepsPlaceholder')}
-              hint={t('recipes:edit.stepsHint')}
+              placeholder={t('recipes:edit.stepsWrite')}
               autoFocus
               multiline
               // Return inserts a newline here, and a newline is the whole

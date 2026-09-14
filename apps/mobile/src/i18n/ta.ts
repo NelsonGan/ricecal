@@ -1469,6 +1469,8 @@ export const ta = {
 
     new: {
       title: 'புதிய உணவு',
+      manualLabel: 'நானே நிரப்புகிறேன்',
+      aiLabel: 'AI-ஐ பயன்படுத்துங்கள்',
       scanLabel: 'படம்',
       describeLabel: 'விவரி',
       scanTitle: 'படத்திலிருந்து நிரப்பு',
@@ -1510,7 +1512,7 @@ export const ta = {
       stepsEditAction: 'படிகளைத் திருத்து',
       stepsEdit_one: 'படிகளைத் திருத்து, {{count}} படி',
       stepsEdit_other: 'படிகளைத் திருத்து, {{count}} படிகள்',
-      stepsWrite: 'எப்படிச் சமைக்கிறீர்கள் என எழுதுங்கள்',
+      stepsWrite: 'சமைக்கும் வழிமுறைகளைச் சேர்க்கவும்',
       save: 'உணவைச் சேமி',
       saved: 'உணவு சேமிக்கப்பட்டது',
       nameRequired: 'முதலில் ஒரு பெயர் இடுங்கள்',

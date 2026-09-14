@@ -1456,6 +1456,8 @@ export const hi = {
 
     new: {
       title: 'नया खाना',
+      manualLabel: 'खुद भरें',
+      aiLabel: 'AI का इस्तेमाल करें',
       scanLabel: 'फ़ोटो',
       describeLabel: 'बताएं',
       scanTitle: 'फ़ोटो से भरें',
@@ -1496,7 +1498,7 @@ export const hi = {
       stepsEditAction: 'क़दम बदलें',
       stepsEdit_one: 'क़दम बदलें, {{count}} क़दम',
       stepsEdit_other: 'क़दम बदलें, {{count}} क़दम',
-      stepsWrite: 'लिखिए आप इसे कैसे पकाते हैं',
+      stepsWrite: 'पकाने के निर्देश जोड़ें',
       save: 'खाना सहेजें',
       saved: 'खाना सहेज लिया',
       nameRequired: 'पहले इसका नाम रखिए',

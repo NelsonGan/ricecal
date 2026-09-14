@@ -1454,6 +1454,8 @@ export const bn = {
 
     new: {
       title: 'নতুন খাবার',
+      manualLabel: 'নিজে পূরণ করুন',
+      aiLabel: 'AI ব্যবহার করুন',
       scanLabel: 'ছবি',
       describeLabel: 'বর্ণনা',
       scanTitle: 'ছবি থেকে ভরুন',
@@ -1494,7 +1496,7 @@ export const bn = {
       stepsEditAction: 'ধাপগুলো সম্পাদনা করুন',
       stepsEdit_one: 'ধাপ সম্পাদনা, {{count}} ধাপ',
       stepsEdit_other: 'ধাপ সম্পাদনা, {{count}} ধাপ',
-      stepsWrite: 'কীভাবে রাঁধেন তা লিখুন',
+      stepsWrite: 'রান্নার নির্দেশনা যোগ করুন',
       save: 'খাবার সংরক্ষণ করুন',
       saved: 'খাবার সংরক্ষিত হয়েছে',
       nameRequired: 'আগে এর একটি নাম দিন',
