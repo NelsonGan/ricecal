@@ -201,6 +201,7 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
                   </Text>
                   <Tappable
                     className="min-h-[40px] flex-row items-center gap-1.5 px-1"
+                    hitSlop={2}
                     accessibilityRole="button"
                     accessibilityLabel={t('recipes:edit.removeStep', { count: index + 1 })}
                     onPress={() => removeStep(step.key)}
