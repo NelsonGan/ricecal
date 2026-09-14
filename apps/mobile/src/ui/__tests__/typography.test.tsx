@@ -32,11 +32,11 @@ const renderIn = async (script: 'latin' | 'cjk' | 'tall', ui: React.ReactElement
   await render(<TextScriptProvider script={script}>{ui}</TextScriptProvider>)
 }
 
-it('sets a Latin screen title in exactly the leading it was designed with', async () => {
+it('keeps a Latin screen title above the Baloo line-box floor', async () => {
   await renderIn('latin', <Text variant="screenTitle">Monday 17 Aug</Text>)
 
-  // 26px type, 32px leading, straight off the ramp.
-  expect(leadingOf(screen.getByText('Monday 17 Aug'))).toBe(32)
+  // 26 x 1.36, because the ramp's 32px leading is not enough room for Baloo.
+  expect(leadingOf(screen.getByText('Monday 17 Aug'))).toBe(35)
 })
 
 it('opens the same title up for a script whose glyphs fill the em box', async () => {
@@ -64,18 +64,51 @@ it('leaves prose alone in every script, because it already has the room', async 
  * share card — by passing their own pair. Reading the variant's leading over
  * the top of those would silently undo every one of them.
  */
-it('keeps a leading the caller set for itself', async () => {
+it('keeps a safe leading the caller set for itself', async () => {
   await renderIn(
     'latin',
-    <Text variant="numeric" className="text-[34px] leading-[42px]">
+    <Text variant="numeric" className="text-[34px] leading-[48px]">
       1,847
     </Text>,
   )
 
-  expect(leadingOf(screen.getByText('1,847'))).toBe(42)
+  expect(leadingOf(screen.getByText('1,847'))).toBe(48)
 })
 
-it('leaves enough leading around the compact day numerals', async () => {
+it('floors a tight Baloo pair in Latin', async () => {
+  await renderIn(
+    'latin',
+    <Text variant="title" className="text-[28px] leading-[32px]">
+      A few basics
+    </Text>,
+  )
+
+  expect(leadingOf(screen.getByText('A few basics'))).toBe(38)
+})
+
+it('floors a custom Baloo size without custom leading', async () => {
+  await renderIn(
+    'latin',
+    <Text variant="numeric" className="text-[24px]">
+      640
+    </Text>,
+  )
+
+  expect(leadingOf(screen.getByText('640'))).toBe(33)
+})
+
+it('floors an inline Baloo size and leading', async () => {
+  await renderIn(
+    'latin',
+    <Text className="font-display" style={{ fontSize: 28, lineHeight: 32 }}>
+      A few basics
+    </Text>,
+  )
+
+  expect(leadingOf(screen.getByText('A few basics'))).toBe(38)
+})
+
+it('floors the compact Baloo day numerals too', async () => {
   await render(
     <DateStrip
       days={[{ initial: 'M', day: 20, key: '2026-07-20' }]}
@@ -84,7 +117,7 @@ it('leaves enough leading around the compact day numerals', async () => {
     />,
   )
 
-  expect(leadingOf(screen.getByText('20'))).toBe(22)
+  expect(leadingOf(screen.getByText('20'))).toBe(24)
 })
 
 it('still floors a caller-set pair for a script that needs more', async () => {
