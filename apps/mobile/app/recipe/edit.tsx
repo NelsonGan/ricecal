@@ -390,7 +390,19 @@ export default function RecipeFormScreen() {
     router.replace({ pathname: '/recipe/[id]', params: { id: result.id } })
   }
 
-  const leave = () => (dirty ? setLeaving(true) : goBack())
+  const leave = () => {
+    // The manual form is one branch of the new-food chooser, so its chevron
+    // returns there without throwing away anything already typed. The chooser's
+    // own cross remains the boundary that confirms before leaving the screen.
+    if (!recipeId && mode === 'form' && !reading) {
+      setMode('choose')
+      return
+    }
+    if (dirty) setLeaving(true)
+    else goBack()
+  }
+
+  const formCanGoBack = !recipeId && mode === 'form' && !reading
 
   return (
     <Screen
@@ -399,10 +411,8 @@ export default function RecipeFormScreen() {
         <AppBar
           title={recipeId ? t('recipes:edit.title') : t('recipes:new.title')}
           onBack={leave}
-          // A cross rather than a chevron: the back control here discards, and a
-          // chevron promises a hierarchy this form does not have.
-          leading="dismiss"
-          backLabel={t('common:a11y.close')}
+          leading={formCanGoBack ? 'back' : 'dismiss'}
+          backLabel={formCanGoBack ? t('common:action.back') : t('common:a11y.close')}
         />
       }
       footer={
