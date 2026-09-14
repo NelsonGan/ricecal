@@ -1523,7 +1523,7 @@ export const hi = {
       namePlaceholder: 'यह क्या है?',
       calories: 'कैलोरी',
       macros: 'मैक्रो, अगर पता हों',
-      amount: 'कितना पड़ा',
+      amount: 'मात्रा',
       add: 'बर्तन में डालें',
       remove: 'हटाएं',
       change: '{{name}} की मात्रा बदलें, अभी {{measure}}',

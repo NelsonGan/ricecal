@@ -1522,7 +1522,7 @@ export const zhHant = {
       namePlaceholder: '這是什麼？',
       calories: '熱量',
       macros: '三大營養素，如果你知道的話',
-      amount: '放了多少',
+      amount: '份量',
       add: '加進鍋裡',
       remove: '移除',
       change: '更改{{name}}的用量，現在是 {{measure}}',

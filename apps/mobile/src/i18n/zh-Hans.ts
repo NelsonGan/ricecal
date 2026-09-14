@@ -1523,7 +1523,7 @@ export const zhHans = {
       namePlaceholder: '这是什么？',
       calories: '热量',
       macros: '三大营养素，如果你知道的话',
-      amount: '放了多少',
+      amount: '份量',
       add: '加进锅里',
       remove: '移除',
       change: '更改{{name}}的用量，现在是 {{measure}}',

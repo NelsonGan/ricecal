@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { type TextInput, View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, cn, Icon, IconButton, Sheet, Tappable, Text, TextField } from '@/ui'
+import { Button, cn, Icon, Sheet, Tappable, Text, TextField } from '@/ui'
 import { RecipeSteps, splitSteps } from './RecipeSteps'
 
 export type StepsFieldProps = {
@@ -63,6 +63,7 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
   // applied while the field is still off screen and routinely dropped.
   const [ready, setReady] = useState(false)
   const [focusKey, setFocusKey] = useState<string | null>(null)
+  const [activeKey, setActiveKey] = useState<string | null>(null)
   const inputs = useRef(new Map<string, TextInput>())
 
   useEffect(() => {
@@ -93,6 +94,7 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
     setEditing(false)
     setReady(false)
     setFocusKey(null)
+    setActiveKey(null)
   }
 
   const addStep = () => {
@@ -186,28 +188,35 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
         {editing ? (
           <View className="gap-3">
             {draft.map((step, index) => (
-              <View key={step.key} className="flex-row items-start gap-2.5">
-                <View className="items-center gap-1 pt-3">
-                  <View className="h-[32px] w-[32px] items-center justify-center rounded-full bg-pandan-soft">
-                    <Text variant="caption" className="text-pandan-ink">
-                      {index + 1}
-                    </Text>
-                  </View>
-                  <IconButton
-                    size="sm"
-                    variant="neutral"
+              <View
+                key={step.key}
+                className={cn(
+                  'overflow-hidden rounded-md border-[3px] bg-surface',
+                  activeKey === step.key ? 'border-pandan' : 'border-line',
+                )}
+              >
+                <View className="min-h-[42px] flex-row items-center justify-between border-line border-b-2 px-4">
+                  <Text variant="label" className="text-pandan-ink">
+                    {t('recipes:edit.stepLabel', { count: index + 1 })}
+                  </Text>
+                  <Tappable
+                    className="min-h-[40px] flex-row items-center gap-1.5 px-1"
+                    accessibilityRole="button"
                     accessibilityLabel={t('recipes:edit.removeStep', { count: index + 1 })}
                     onPress={() => removeStep(step.key)}
                   >
-                    <Icon set="ui" name="delete" size={16} tintColor={colors.hibiscusInk} />
-                  </IconButton>
+                    <Icon set="ui" name="delete" size={14} tintColor={colors.hibiscusInk} />
+                    <Text variant="caption" className="text-hibiscus-ink">
+                      {t('recipes:ingredient.remove')}
+                    </Text>
+                  </Tappable>
                 </View>
                 <TextField
                   ref={(input) => {
                     if (input) inputs.current.set(step.key, input)
                     else inputs.current.delete(step.key)
                   }}
-                  containerClassName="min-w-0 flex-1"
+                  containerClassName="gap-0"
                   value={step.text}
                   // A newline is the stored row delimiter. Keeping it out of a
                   // row means pasted text cannot create steps with no matching
@@ -215,10 +224,12 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
                   onChangeText={(text) => updateStep(step.key, oneLine(text))}
                   placeholder={t('recipes:edit.stepPlaceholder')}
                   accessibilityLabel={t('recipes:edit.stepLabel', { count: index + 1 })}
+                  onFocus={() => setActiveKey(step.key)}
+                  onBlur={() => setActiveKey((current) => (current === step.key ? null : current))}
                   multiline
                   submitBehavior="blurAndSubmit"
                   returnKeyType="done"
-                  className="min-h-[88px] items-start py-2"
+                  className="min-h-[76px] items-start rounded-none border-0 px-4 py-2"
                   inputClassName="pt-2"
                   textAlignVertical="top"
                 />
@@ -226,12 +237,12 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
             ))}
 
             <Tappable
-              className="flex-row items-center gap-2.5 py-1"
+              className="min-h-[50px] flex-row items-center gap-3 rounded-md bg-pandan-soft px-4"
               onPress={addStep}
               accessibilityRole="button"
               accessibilityLabel={t('recipes:edit.addStep')}
             >
-              <View className="h-[30px] w-[30px] items-center justify-center rounded-md bg-pandan-soft">
+              <View className="h-[30px] w-[30px] items-center justify-center rounded-full bg-surface">
                 <Icon set="ui" name="plus" size={16} />
               </View>
               <Text variant="label" className="text-pandan-ink">

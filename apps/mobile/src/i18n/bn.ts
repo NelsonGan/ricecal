@@ -1521,7 +1521,7 @@ export const bn = {
       namePlaceholder: 'এটি কী?',
       calories: 'ক্যালরি',
       macros: 'ম্যাক্রো, জানা থাকলে',
-      amount: 'কতটা গেছে',
+      amount: 'পরিমাণ',
       add: 'হাঁড়িতে দিন',
       remove: 'সরান',
       change: '{{name}} কতটা তা বদলান, এখন {{measure}}',
