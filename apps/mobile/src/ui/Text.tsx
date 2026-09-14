@@ -1,4 +1,10 @@
-import { PixelRatio, Platform, Text as RNText, type TextProps as RNTextProps } from 'react-native'
+import {
+  PixelRatio,
+  Platform,
+  Text as RNText,
+  type TextProps as RNTextProps,
+  StyleSheet,
+} from 'react-native'
 
 import { cn } from './cn'
 import { useTextScript } from './TextScript'
@@ -12,9 +18,9 @@ import { useTextScript } from './TextScript'
  * at runtime from the reader's Dynamic Type setting and the script being
  * rendered. See `resolveLineHeight`.
  *
- * Every Baloo 2 leading is about 1.2x its size rather than the 1.0 the design
- * specifies, because a browser lets glyphs overflow their line box and React
- * Native clips them: `lineHeight: 52` on 52px type shears the top off "1,847".
+ * Baloo 2 has a deeper native line box than Nunito. React Native clips that box
+ * when a caller asks for tighter leading, so `resolveLineHeight` also applies a
+ * floor for the font face rather than relying on each variant to remember it.
  */
 const variants = {
   /** Hero numerals: the calorie count on Today. */
@@ -74,21 +80,25 @@ export type TextVariant = keyof typeof variants
  * the box in both directions; Thai, Devanagari, Tamil and Bengali stack marks
  * above and below the base letter and need more again.
  *
- * A FLOOR rather than a replacement. `latin` is 1, so English keeps the exact
- * leading it was designed with everywhere, and the prose variants — `body` is
- * already 1.59x — keep theirs in every language. Only the tight display sizes
- * open up, and only where the script needs it.
+ * A FLOOR rather than a replacement. Script floors leave roomy prose alone and
+ * only open a line when its glyphs need it.
  */
 const scriptLeading = { latin: 1, cjk: 1.36, tall: 1.5 } as const
 
 /**
+ * Baloo 2 clips on iOS below 1.36x, even in Latin. The font's native ascent and
+ * descent are much deeper than Nunito's, and the clipped bottoms are easiest to
+ * see on rounded lowercase letters such as those in "A few basics".
+ */
+const displayLeading = 1.36
+
+/**
  * A caller's own size and leading, read back off the class string.
  *
- * Forty-odd places set `text-[34px] leading-[42px]` to size type against
- * something measured — a ring, a stepper, a share card. Those pairs are
- * deliberate and have to keep winning, so they are parsed rather than
- * overridden: this function returns what the caller asked for, and the same
- * scaling is applied to it as to a variant.
+ * Callers size type against measured elements such as rings, steppers and share
+ * cards. Their pairs are parsed so safe leading is preserved and only a pair
+ * below the font or script floor is opened up. The same Dynamic Type scaling is
+ * then applied to the result as to a variant.
  *
  * Cached because it runs on every `Text` in the tree and the class strings are
  * a small fixed set.
@@ -121,13 +131,17 @@ function classMetrics(className: string): { size?: number; leading?: number } {
  */
 function resolveLineHeight(
   variant: TextVariant,
-  className: string | undefined,
+  className: string,
   script: keyof typeof scriptLeading,
+  style: RNTextProps['style'],
 ): number {
-  const custom = className ? classMetrics(className) : {}
-  const size = custom.size ?? variants[variant].size
-  const leading = custom.leading ?? variants[variant].leading
-  return Math.round(Math.max(leading, size * scriptLeading[script]) * PixelRatio.getFontScale())
+  const custom = classMetrics(className)
+  const inline = StyleSheet.flatten(style)
+  const size = inline?.fontSize ?? custom.size ?? variants[variant].size
+  const leading = inline?.lineHeight ?? custom.leading ?? variants[variant].leading
+  const fontLeading = className.includes('font-display') ? displayLeading : 1
+  const minimumLeading = Math.max(scriptLeading[script], fontLeading)
+  return Math.round(Math.max(leading, size * minimumLeading) * PixelRatio.getFontScale())
 }
 
 export type TextProps = RNTextProps & {
@@ -150,6 +164,7 @@ export function Text({
   ...rest
 }: TextProps) {
   const script = useTextScript()
+  const resolvedClassName = cn(variants[variant].className, className)
 
   /**
    * NOTHING for a shrinking label, and that is load-bearing.
@@ -159,15 +174,14 @@ export function Text({
    */
   const leading = adjustsFontSizeToFit
     ? null
-    : { lineHeight: resolveLineHeight(variant, className, script) }
+    : { lineHeight: resolveLineHeight(variant, resolvedClassName, script, style) }
 
   return (
     <RNText
-      className={cn(variants[variant].className, className)}
-      // Leading BEFORE `style`, so a caller passing an explicit `lineHeight` in
-      // a style object still wins. The ring centre and the stepper both size
-      // their numerals against a measured box rather than the ramp.
-      style={[androidTightening, leading, style]}
+      className={resolvedClassName}
+      // Leading comes after `style` so an inline size participates in the same
+      // floor and an inline line height cannot silently bypass it.
+      style={[androidTightening, style, leading]}
       adjustsFontSizeToFit={adjustsFontSizeToFit}
       {...rest}
     />
