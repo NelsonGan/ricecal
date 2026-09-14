@@ -1535,7 +1535,7 @@ export const ja = {
       namePlaceholder: 'これは何ですか',
       calories: 'カロリー',
       macros: 'マクロ（わかれば）',
-      amount: 'どれだけ入れたか',
+      amount: '分量',
       add: '鍋に入れる',
       remove: '外す',
       change: '{{name}} の量を変更、現在は {{measure}}',

@@ -1538,7 +1538,7 @@ export const vi = {
       namePlaceholder: 'Đây là gì?',
       calories: 'CALO',
       macros: 'DƯỠNG CHẤT, NẾU BẠN BIẾT',
-      amount: 'ĐÃ CHO VÀO BAO NHIÊU',
+      amount: 'KHẨU PHẦN',
       add: 'Cho vào nồi',
       remove: 'Bỏ ra',
       change: 'Đổi lượng {{name}}, hiện là {{measure}}',

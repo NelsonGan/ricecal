@@ -146,7 +146,7 @@ export const recipes = {
     namePlaceholder: 'What is it?',
     calories: 'CALORIES',
     macros: 'MACROS, IF YOU KNOW THEM',
-    amount: 'HOW MUCH WENT IN',
+    amount: 'PORTION',
     add: 'Add to the pot',
     remove: 'Remove',
     /**

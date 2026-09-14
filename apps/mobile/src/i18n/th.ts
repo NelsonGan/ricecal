@@ -1522,7 +1522,7 @@ export const th = {
       namePlaceholder: 'นี่คืออะไร',
       calories: 'แคลอรี',
       macros: 'สารอาหารหลัก ถ้าคุณรู้',
-      amount: 'ใส่ไปเท่าไร',
+      amount: 'ปริมาณ',
       add: 'ใส่ลงหม้อ',
       remove: 'เอาออก',
       change: 'เปลี่ยนปริมาณ{{name}} ตอนนี้ {{measure}}',

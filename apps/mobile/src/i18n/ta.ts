@@ -1538,7 +1538,7 @@ export const ta = {
       namePlaceholder: 'இது என்ன?',
       calories: 'கலோரிகள்',
       macros: 'மேக்ரோக்கள், தெரிந்தால்',
-      amount: 'எவ்வளவு போனது',
+      amount: 'அளவு',
       add: 'பானையில் சேர்',
       remove: 'நீக்கு',
       change: '{{name}} எவ்வளவு என்பதை மாற்று, தற்போது {{measure}}',

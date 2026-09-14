@@ -25,10 +25,13 @@ it('builds numbered rows and saves them as newline-delimited text', async () => 
   await mount(<StepsField value="" onChange={onChange} />)
 
   await user.press(screen.getByRole('button', { name: 'Add cooking instructions' }))
-  await fireEvent.changeText(await screen.findByLabelText('Step 1'), 'Toast the spices.')
+  expect(await screen.findByText('Step 1')).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Remove step 1' })).toHaveTextContent('Remove')
+  await fireEvent.changeText(screen.getByLabelText('Step 1'), 'Toast the spices.')
 
   await user.press(screen.getByRole('button', { name: 'Add step' }))
   await fireEvent.changeText(await screen.findByLabelText('Step 2'), 'Add the stock.')
+  expect(screen.getByText('Step 2')).toBeOnTheScreen()
 
   await user.press(screen.getByRole('button', { name: 'Remove step 1' }))
   expect(screen.getByLabelText('Step 1')).toHaveDisplayValue('Add the stock.')

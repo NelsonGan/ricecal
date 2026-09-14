@@ -1528,7 +1528,7 @@ export const ko = {
       namePlaceholder: '이건 무엇인가요?',
       calories: '칼로리',
       macros: '영양소, 아신다면',
-      amount: '얼마나 들어갔나요',
+      amount: '분량',
       add: '냄비에 넣기',
       remove: '빼기',
       change: '{{name}} 양 바꾸기, 현재 {{measure}}',

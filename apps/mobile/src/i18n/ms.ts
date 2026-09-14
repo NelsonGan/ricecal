@@ -1568,7 +1568,7 @@ export const ms = {
       namePlaceholder: 'Apa benda ini?',
       calories: 'KALORI',
       macros: 'MAKRO, JIKA ANDA TAHU',
-      amount: 'BERAPA BANYAK DIMASUKKAN',
+      amount: 'BAHAGIAN',
       add: 'Masukkan ke dalam periuk',
       remove: 'Buang',
       change: 'Tukar berapa banyak {{name}}, kini {{measure}}',

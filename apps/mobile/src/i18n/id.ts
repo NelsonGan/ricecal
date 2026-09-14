@@ -1548,7 +1548,7 @@ export const id = {
       namePlaceholder: 'Ini apa?',
       calories: 'KALORI',
       macros: 'MAKRO, KALAU KAMU TAHU',
-      amount: 'BERAPA BANYAK YANG MASUK',
+      amount: 'PORSI',
       add: 'Masukkan ke panci',
       remove: 'Hapus',
       change: 'Ubah berapa banyak {{name}}, saat ini {{measure}}',

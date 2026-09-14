@@ -1565,7 +1565,7 @@ export const fil = {
       namePlaceholder: 'Ano ito?',
       calories: 'CALORIES',
       macros: 'MACROS, KUNG ALAM MO',
-      amount: 'GAANO KARAMI ANG INILAGAY',
+      amount: 'BAHAGI',
       add: 'Ilagay sa kaldero',
       remove: 'Alisin',
       change: 'Baguhin kung gaano karaming {{name}}, kasalukuyang {{measure}}',
