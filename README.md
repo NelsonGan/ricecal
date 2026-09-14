@@ -2342,7 +2342,9 @@ action and come back as the same draft, so only the first model call differs.
 the two AI inputs, Photo and Describe. Picking manual reveals only the ordinary
 form; picking either AI input reads first and then reveals that same form with a
 draft in it. Editing an existing food skips the choice because it already has an
-answer in every field.
+answer in every field. A new food's form has a chevron back to the choice and
+keeps anything already entered; the choice itself keeps the cross that leaves the
+screen and confirms before discarding staged work.
 
 **Who the authority is** is the whole difference, exactly as in the scan cascade.
 A photograph has one witness and it is the model, so everything it says is
@@ -2360,8 +2362,9 @@ in the row, and a swipe reveals Replace and Delete. Adding and replacing both us
 the catalogue picker, while all changes remain staged until the food is saved.
 An empty list says nothing beyond the Add an ingredient action. Cooking
 instructions follow the same rule: an empty method is one Add cooking
-instructions action, and the writing sheet carries no second line explaining
-what Return does.
+instructions action. Its writing sheet gives each instruction a numbered row,
+with Add step and Remove actions, then joins the non-empty rows with newlines for
+the existing `recipes.steps` column.
 
 **A draft is applied only over empty fields.** Somebody who typed a name and then
 reached for the camera meant it to fill in the parts they had not done.

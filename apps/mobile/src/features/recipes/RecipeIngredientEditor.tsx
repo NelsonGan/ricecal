@@ -162,6 +162,10 @@ export function RecipeIngredientEditor({
                       <Icon set="ui" name="minus" size={16} tintColor={colors.ink} />
                     </IconButton>
                     <AmountField
+                      // Replacing preserves the row key so the swipe row stays
+                      // put. The field also needs the ingredient identity or a
+                      // half-typed amount can survive into the replacement.
+                      key={`${ingredient.key}:${ingredient.foodId ?? ingredient.name}:${ingredient.unit}`}
                       ingredient={ingredient}
                       measure={measure}
                       onChange={(amount) => onAmountChange(ingredient.key, amount)}
