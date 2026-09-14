@@ -91,7 +91,7 @@ describe('Numpad', () => {
     const style = StyleSheet.flatten(screen.getByText('7').props.style) as {
       lineHeight?: number
     }
-    expect(style.lineHeight).toBe(Math.round(29 * PixelRatio.getFontScale()))
+    expect(style.lineHeight).toBe(Math.round(24 * 1.36 * PixelRatio.getFontScale()))
   })
 
   /**
