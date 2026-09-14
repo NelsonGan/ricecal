@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -183,28 +183,42 @@ export default function GoalsScreen() {
       ? (targets?.isCustom ?? false)
       : true
 
+  const saving = useRef(false)
+  const [pending, setPending] = useState(false)
+
   const save = async () => {
-    // Only when it actually moved. An unchanged profile write would fire the
-    // recompute trigger for nothing, and a user who has never set a target would
-    // send an empty patch.
-    if (planChanged && currentTargetWeight !== null) {
-      await updateProfile.mutateAsync({ targetWeightKg: currentTargetWeight })
+    if (saving.current) return
+    saving.current = true
+    setPending(true)
+    try {
+      // Only when it actually moved. An unchanged profile write would fire the
+      // recompute trigger for nothing, and a user who has never set a target would
+      // send an empty patch.
+      if (planChanged && currentTargetWeight !== null) {
+        await updateProfile.mutateAsync({ targetWeightKg: currentTargetWeight })
+      }
+      // Written after the profile, whose own change fires the trigger that would
+      // otherwise recompute over the top of a deliberate figure.
+      await setTargets.mutateAsync({
+        ...currentBudget,
+        waterMl: currentWater,
+        isCustom,
+      })
+      // Not part of the calorie budget, and stored beside the display preferences
+      // rather than in `daily_goals` — but it is a goal, and this is the screen
+      // called Goals and targets. It was only reachable from the health-sync
+      // screen before, which is where you go to connect a store rather than to
+      // decide what to aim for.
+      await updateSettings.mutateAsync({ step_goal: currentSteps })
+      toast.show({ title: t('profile:goals.saved'), tone: 'success' })
+      goBack()
+    } catch {
+      // A dropped connection must leave the draft available for another save.
+      toast.show({ title: t('profile:goals.saveFailed'), tone: 'error' })
+    } finally {
+      saving.current = false
+      setPending(false)
     }
-    // Written after the profile, whose own change fires the trigger that would
-    // otherwise recompute over the top of a deliberate figure.
-    await setTargets.mutateAsync({
-      ...currentBudget,
-      waterMl: currentWater,
-      isCustom,
-    })
-    // Not part of the calorie budget, and stored beside the display preferences
-    // rather than in `daily_goals` — but it is a goal, and this is the screen
-    // called Goals and targets. It was only reachable from the health-sync
-    // screen before, which is where you go to connect a store rather than to
-    // decide what to aim for.
-    await updateSettings.mutateAsync({ step_goal: currentSteps })
-    toast.show({ title: t('profile:goals.saved'), tone: 'success' })
-    goBack()
   }
 
   return (
@@ -217,7 +231,7 @@ export default function GoalsScreen() {
         />
       }
       footer={
-        <Button fullWidth onPress={save} disabled={loading}>
+        <Button fullWidth onPress={save} disabled={loading} loading={pending}>
           {t('common:action.save')}
         </Button>
       }
