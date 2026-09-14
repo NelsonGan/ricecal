@@ -967,15 +967,16 @@ behind a dropdown.
 Two things went wrong on a Mandarin phone, both of them invisible to anybody
 testing in English.
 
-**The leading is Latin's.** Every Baloo 2 line height in `src/ui/Text.tsx` is
-about 1.2x its size, measured against a Latin lowercase that uses two thirds of
-the em box. A CJK glyph fills the box in both directions, and Thai, Devanagari,
-Tamil and Bengali stack marks above and below the base letter. At 1.2x the line
-box crops them: 没有上限 came back with the tops sheared off. `TextScriptProvider`
-tells the design system which of three scripts it is setting — a metric, not a
-word — and `Text` raises the leading to a floor of 1.36x or 1.5x for the two that
-need it. English is a floor of 1x, so it renders in exactly the leading it was
-designed with.
+**The leading belongs to both the font and the script.** Baloo 2 has a deeper
+native line box than Nunito, and React Native clips it when a caller asks for
+tighter leading. At less than 1.36x, even Latin rounded letters were visibly
+cut off in "A few basics". A CJK glyph fills the box in both directions, and
+Thai, Devanagari, Tamil and Bengali stack marks above and below the base letter.
+`TextScriptProvider` tells the design system which of three scripts it is
+setting, a metric rather than a word. `Text` combines that script floor with a
+1.36x Baloo floor, including for callers that supply their own size and leading
+through classes or an inline style.
+Roomy Nunito prose keeps the leading it was designed with.
 
 **Dynamic Type scaled the size and not the leading.** An absolute `lineHeight`
 stays where it is while the platform multiplies the font size, so at the largest
@@ -983,7 +984,8 @@ setting a 1.19x ramp is nearer 0.9x and every script crops. `Text` multiplies by
 `PixelRatio.getFontScale()` to hold the ratio. Callers that set their own
 `text-[34px] leading-[42px]` pair — around forty of them, sizing type against a
 ring or a stepper — are parsed back out of the class string and scaled the same
-way rather than overridden.
+way. Safe pairs stay unchanged, while a tight pair is raised to the font and
+script floors before it is scaled.
 
 `src/ui/__tests__/typography.test.tsx` pins the arithmetic, because the failure
 is silent and only visible in a language the person changing the code probably
@@ -4608,9 +4610,9 @@ ask for it rather than baking it into a component.
 variant's `leading-*` onto an input slices tall glyphs. Let the font choose its
 line box and pin the row's height instead.
 
-**Baloo 2 needs line height above its font size.** A browser lets glyphs overflow
-their line box; React Native clips them. `lineHeight: 52` on 52px type shears the
-top off "1,847".
+**Baloo 2 needs at least 1.36x line height.** A browser lets glyphs overflow
+their line box; React Native clips them. The shared `Text` component enforces
+the font-face floor for variants, class-based overrides and inline styles.
 
 **An Expo patch range can pull in a module built against a newer core.**
 `expo-store-review@57.0.2` swapped its own scene lookup for
