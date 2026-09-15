@@ -1,6 +1,7 @@
 import { assertEquals } from 'jsr:@std/assert@^1'
 
 import {
+  accountNoLongerExists,
   at,
   isStale,
   planOf,
@@ -10,6 +11,32 @@ import {
 } from './revenuecat.ts'
 
 const event = (partial: Partial<RevenueCatEvent>): RevenueCatEvent => partial
+
+Deno.test('only the missing-account foreign key is safe to acknowledge', () => {
+  assertEquals(
+    accountNoLongerExists({
+      code: '23503',
+      message:
+        'insert or update on table "subscriptions" violates foreign key constraint "subscriptions_user_id_fkey"',
+    }),
+    true,
+  )
+  assertEquals(
+    accountNoLongerExists({
+      code: '23503',
+      message:
+        'insert or update on table "subscriptions" violates foreign key constraint "subscriptions_product_id_fkey"',
+    }),
+    false,
+  )
+  assertEquals(
+    accountNoLongerExists({
+      code: '23505',
+      message: 'duplicate key value violates unique constraint "subscriptions_user_id_fkey"',
+    }),
+    false,
+  )
+})
 
 Deno.test('planOf reads the plan out of either store’s spelling', () => {
   // Apple sends a reverse-DNS product id; Play sends `productId:basePlanId`.

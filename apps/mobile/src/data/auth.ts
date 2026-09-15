@@ -11,8 +11,8 @@ import { supabase } from '@/lib/supabase'
  *
  * - **Apple** authenticates against the bundle id alone, so no Services ID and
  *   no six-monthly key rotation. The identity token goes straight to Supabase.
- * - **Google** is written but gated: its client ids are still placeholders, so
- *   the button is hidden rather than offered and broken.
+ * - **Google** exchanges the identity and access tokens from the native SDK,
+ *   with the button gated on both client ids being configured.
  * - **Email**, which is a password or a code in the post.
  *
  * The mail leads with a six digit code, because a link is spent by whatever
@@ -590,6 +590,45 @@ export function googleSignInAvailable(): boolean {
   )
 }
 
+type GoogleSignInClient = Pick<
+  typeof import('@react-native-google-signin/google-signin').GoogleSignin,
+  'configure' | 'hasPlayServices' | 'signIn' | 'getTokens'
+>
+
+/** Completes the exchange after the lazily loaded native SDK is available. */
+export async function completeGoogleSignIn(GoogleSignin: GoogleSignInClient): Promise<void> {
+  GoogleSignin.configure({
+    webClientId: env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    iosClientId: env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  })
+
+  await GoogleSignin.hasPlayServices()
+  const response = await GoogleSignin.signIn()
+  const signedInIdToken = response.data?.idToken
+  if (!signedInIdToken) {
+    track('Sign In Failed', { method: 'google', reason: 'cancelled' })
+    throw new SignInCancelled()
+  }
+
+  /**
+   * Google puts an `at_hash` in this identity token. GoTrue currently accepts it
+   * without the access token but cannot verify that claim, and warns that the
+   * access token will become mandatory. `signIn()` does not return that token;
+   * the SDK exposes it through this second read after the account is selected.
+   */
+  const { idToken, accessToken } = await GoogleSignin.getTokens()
+  const { error } = await supabase.auth.signInWithIdToken({
+    provider: 'google',
+    token: idToken,
+    access_token: accessToken,
+  })
+  if (error) {
+    track('Sign In Failed', { method: 'google', reason: 'error' })
+    throw error
+  }
+  await announceSignIn('google')
+}
+
 export async function signInWithGoogle(): Promise<void> {
   if (!googleSignInAvailable()) {
     throw new Error('Google sign-in is not configured')
@@ -598,26 +637,7 @@ export async function signInWithGoogle(): Promise<void> {
   // Imported lazily: the module throws at import time on a build with no
   // google-services file, which is every build until the console side exists.
   const { GoogleSignin } = await import('@react-native-google-signin/google-signin')
-
-  GoogleSignin.configure({
-    webClientId: env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    iosClientId: env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-  })
-
-  await GoogleSignin.hasPlayServices()
-  const response = await GoogleSignin.signIn()
-  const idToken = response.data?.idToken
-  if (!idToken) {
-    track('Sign In Failed', { method: 'google', reason: 'cancelled' })
-    throw new SignInCancelled()
-  }
-
-  const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken })
-  if (error) {
-    track('Sign In Failed', { method: 'google', reason: 'error' })
-    throw error
-  }
-  await announceSignIn('google')
+  await completeGoogleSignIn(GoogleSignin)
 }
 
 export async function signOut(): Promise<void> {

@@ -65,6 +65,17 @@ export const at = (ms: number | null | undefined): string | null =>
   typeof ms === 'number' && Number.isFinite(ms) ? new Date(ms).toISOString() : null
 
 /**
+ * Did Postgres refuse the subscription because its Supabase account is gone?
+ *
+ * The SQLSTATE alone means any foreign-key violation. Keep the named constraint
+ * beside it so adding another relation to `subscriptions` cannot turn a real
+ * integrity failure into a webhook we acknowledge and silently discard.
+ */
+export function accountNoLongerExists(error: { code?: string; message?: string }): boolean {
+  return error.code === '23503' && (error.message ?? '').includes('"subscriptions_user_id_fkey"')
+}
+
+/**
  * Which of our three plans a store product is.
  *
  * Matched on the SUFFIX rather than on the full identifier, because the two
