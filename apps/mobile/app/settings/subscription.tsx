@@ -6,13 +6,10 @@ import { View } from 'react-native'
 import { useEntitlement, usePlanPrices } from '@/data'
 import { openManageSubscriptions } from '@/data/purchases'
 import { PLAN_FEATURES, usePlanSummary } from '@/features/paywall'
+import { trialProgress } from '@/features/paywall/trial'
 import { CheckList } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { progressOf } from '@/lib/nutrition'
 import { AppBar, Button, Card, ConfirmSheet, Icon, ProgressBar, Screen, Text } from '@/ui'
-
-/** Matches the introductory offer on both stores: ONE_WEEK / P7D. */
-const TRIAL_DAYS = 7
 
 /** U6 SUBSCRIPTION */
 export default function SubscriptionScreen() {
@@ -53,6 +50,7 @@ export default function SubscriptionScreen() {
         Math.ceil((new Date(plan.trialEndsAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
       )
     : 0
+  const progress = trialProgress(plan.trialStartedAt, plan.trialEndsAt)
 
   // Both of these leave the app. The payment relationship is with the store,
   // and Apple and Google both require cancellation to happen there — the app
@@ -115,9 +113,9 @@ export default function SubscriptionScreen() {
             to be left of — which told a paying subscriber their trial was
             spent, and told somebody who had bought LIFETIME the same thing
             about a trial they never had. */}
-        {plan.state === 'trial' ? (
+        {plan.state === 'trial' && progress != null ? (
           <ProgressBar
-            value={progressOf(TRIAL_DAYS - trialDaysLeft, TRIAL_DAYS)}
+            value={progress}
             tone="kaya"
             height={11}
             accessibilityLabel={t('profile:subscription.title')}

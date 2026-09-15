@@ -43,14 +43,24 @@ export const paywall = {
     assuranceLifetime: 'One payment, refundable through the store',
     /**
      * One line per plan rather than one with the price and period interpolated.
-     * Lifetime has no trial, so "free for 7 days, then $119.99" would be false
-     * about it, and an assembled sentence is one no translator can reorder.
+     * Lifetime has no trial, so a free period before its one-off price would be
+     * false about it. Each sentence lets a translator reorder the duration.
      */
-    smallPrintYearly: 'Free for 7 days, then {{price}} a year.',
-    smallPrintMonthly: 'Free for 7 days, then {{price}} a month.',
+    smallPrintYearly: 'Free for {{duration}}, then {{price}} a year.',
+    smallPrintMonthly: 'Free for {{duration}}, then {{price}} a month.',
     smallPrintYearlyNoTrial: '{{price}} a year.',
     smallPrintMonthlyNoTrial: '{{price}} a month.',
     smallPrintLifetime: 'One payment of {{price}}. No subscription, no renewal.',
+    trialDuration: {
+      day_one: '{{count}} day',
+      day_other: '{{count}} days',
+      week_one: '{{count}} week',
+      week_other: '{{count}} weeks',
+      month_one: '{{count}} month',
+      month_other: '{{count}} months',
+      year_one: '{{count}} year',
+      year_other: '{{count}} years',
+    },
     /**
      * Shown until the store answers, so the sentence is never half a price. Not
      * "cancel any time": the assurance line above says that, and twice reads as a
@@ -210,6 +220,7 @@ export const paywall = {
     meals: 'MEALS',
     kgDown: 'KG DOWN',
     starts: 'Your plan starts {{date}} at {{price}} a year.',
+    startsMonthly: 'Your plan starts {{date}} at {{price}} a month.',
     keep: 'Keep my plan',
     manage: 'Manage subscription',
   },
@@ -236,7 +247,7 @@ export const paywall = {
      * period or renewal, all three of which guideline 3.1.2 requires beside the
      * button.
      *
-     * Not `hard.smallPrintYearly`, which reads "Free for 7 days, then...":
+     * Not `hard.smallPrintYearly`, which promises another free period:
      * everybody who sees this screen has just finished that trial.
      */
     terms: '{{price}} a year, renewing until you cancel.',
@@ -326,10 +337,12 @@ export const paywall = {
      * Said only when the store actually started a trial. It was said to everybody
      * not buying lifetime, and an introductory offer is once per account per
      * subscription group, so anybody resubscribing was charged immediately and
-     * told they had a week free. `usePlanSummary` reads the period type off the
-     * purchase rather than the button that was pressed.
+     * told they had time free. `usePlanSummary` reads the period type off the
+     * purchase rather than the button that was pressed, and the duration comes
+     * from the selected store product.
      */
-    body: 'Your 7 free days start now. Everything is unlocked.',
+    body: 'Your free trial lasts {{duration}}. Everything is unlocked.',
+    bodyTrialUnknown: 'Your free trial starts now. Everything is unlocked.',
     /** Paid straight away: a resubscriber, or an account with no offer left. */
     bodyActive: 'Everything is unlocked.',
     bodyLifetime: 'RiceCal Pro is yours for good. Everything is unlocked.',
