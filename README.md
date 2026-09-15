@@ -2978,23 +2978,29 @@ by the `revenuecat` edge function. `data/purchases.ts` buys and restores but can
 never grant. Every SDK in `lib/startup.ts` is gated on its key being real.
 
 Three products on both stores and in RevenueCat: monthly, yearly, and a one-off
-lifetime. The two subscriptions carry a seven-day free trial and lifetime does
+lifetime. The subscription products can carry free trials and lifetime does
 not. Both full paywalls use the same select-then-purchase offer: the three plans
 come first, one is selected, and one footer button buys that plan. The comparison
 follows as supporting detail under its own title. The subscription assurance sits
 under the plan heading in muted text. A compact RiceCal Pro wordmark, with Pro in
 an inverse rounded-rectangle badge, replaces the logo-and-tagline hero on both.
-Both finish with the same purchase button and Maybe later action; the route only
-decides whether Maybe later enters the app or returns to the previous screen. A
-sticky wordmark and close control remain at the top while the comparison scrolls;
+The selected plan's price and terms sit in the sticky footer immediately above
+the purchase button. Both finish with the same purchase button and Maybe later
+action; the route only decides whether Maybe later enters the app or returns to
+the previous screen. A sticky wordmark and close control remain at the top while
+the comparison scrolls;
 close performs the same route-specific action as Maybe later.
 
-Trial copy follows the current store account's eligibility: iOS uses RevenueCat's
-introductory-offer eligibility result, and Android uses the free phase on the
-default subscription option Google returned. Until the store returns a price the
-card shows a dash and no placeholder sentence. Once it answers, the real price
-and the selected plan's matching terms arrive together; the store's purchase
-sheet remains the final authority on what that account will receive.
+Trial copy follows the current store account's eligibility and the selected
+product's free period: iOS uses RevenueCat's introductory offer and eligibility
+result, and Android uses the free phase on the default subscription option Google
+returned. Each plan is checked independently. Until the store returns a price
+the card shows a dash and the footer shows no terms. An unreadable period does
+not become a seven-day promise. The store's purchase sheet remains the final
+authority on what that account will receive. The purchase receipt keeps the
+period shown at checkout even if eligibility changes afterward. The trial
+progress bar follows the purchased period's start and end dates rather than
+today's offer duration.
 
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the

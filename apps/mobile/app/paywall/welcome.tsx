@@ -12,8 +12,8 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
-
 import { usePlanSummary } from '@/features/paywall'
+import { isTrialUnit, trialDurationText } from '@/features/paywall/trial'
 import { useEnterApp } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, cn, Icon, type IconProps, Screen, Text } from '@/ui'
@@ -50,13 +50,22 @@ export default function WelcomeToPro() {
    * and false again for anybody who arrived here by RESTORING a subscription
    * they bought months ago.
    */
-  const { plan } = useLocalSearchParams<{ plan?: string }>()
+  const { plan, trialUnit, trialCount } = useLocalSearchParams<{
+    plan?: string
+    trialUnit?: string
+    trialCount?: string
+  }>()
   const lifetime = plan === 'lifetime'
   // WHETHER THIS IS ACTUALLY A TRIAL is the store's answer, not the button's.
   // The line under the title used to claim seven free days to everybody who had
   // not bought lifetime — including a resubscriber, who has already used the
   // introductory offer for this subscription group and was charged on the spot.
   const { state } = usePlanSummary()
+  const count = Number(trialCount)
+  const duration =
+    isTrialUnit(trialUnit) && Number.isSafeInteger(count) && count > 0
+      ? { unit: trialUnit, count }
+      : undefined
 
   /**
    * Land on Today, and stop there. It used to raise the log sheet as well, which
@@ -102,7 +111,9 @@ export default function WelcomeToPro() {
             {lifetime
               ? t('welcome.bodyLifetime')
               : state === 'trial'
-                ? t('welcome.body')
+                ? duration
+                  ? t('welcome.body', { duration: trialDurationText(t, duration) })
+                  : t('welcome.bodyTrialUnknown')
                 : t('welcome.bodyActive')}
           </Text>
         </Animated.View>
