@@ -83,3 +83,14 @@ it('gives Supabase the access token that verifies the identity token', async () 
     access_token: 'google-access-token',
   })
 })
+
+it('does not fetch or exchange tokens after the account picker is cancelled', async () => {
+  mockGoogleSignin.signIn.mockResolvedValue({ type: 'cancelled', data: null })
+
+  await expect(completeGoogleSignIn(mockGoogleSignin)).rejects.toMatchObject({
+    name: 'SignInCancelled',
+  })
+
+  expect(mockGoogleSignin.getTokens).not.toHaveBeenCalled()
+  expect(supabase.auth.signInWithIdToken).not.toHaveBeenCalled()
+})

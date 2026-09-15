@@ -3086,9 +3086,10 @@ did not answer" as "they have nothing" would cancel every paying customer the
 first time the API had a bad night.
 
 An event for an account that has already been deleted is acknowledged and
-ignored. `subscriptions` has no other foreign key, so that failure cannot mean a
-purchase is waiting on some other row; answering 500 only makes RevenueCat retry
-an account that can never exist again.
+ignored. The webhook matches both SQLSTATE `23503` and the
+`subscriptions_user_id_fkey` constraint: answering 500 only makes RevenueCat
+retry an account that can never exist again, while any other foreign-key failure
+still asks for a retry rather than silently dropping a purchase.
 
 ### Identity
 

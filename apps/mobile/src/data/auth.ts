@@ -11,8 +11,8 @@ import { supabase } from '@/lib/supabase'
  *
  * - **Apple** authenticates against the bundle id alone, so no Services ID and
  *   no six-monthly key rotation. The identity token goes straight to Supabase.
- * - **Google** is written but gated: its client ids are still placeholders, so
- *   the button is hidden rather than offered and broken.
+ * - **Google** exchanges the identity and access tokens from the native SDK,
+ *   with the button gated on both client ids being configured.
  * - **Email**, which is a password or a code in the post.
  *
  * The mail leads with a six digit code, because a link is spent by whatever
@@ -590,12 +590,10 @@ export function googleSignInAvailable(): boolean {
   )
 }
 
-type GoogleSignInClient = {
-  configure: (options: { webClientId: string; iosClientId: string }) => void
-  hasPlayServices: () => Promise<unknown>
-  signIn: () => Promise<{ data?: { idToken?: string | null } | null }>
-  getTokens: () => Promise<{ idToken: string; accessToken: string }>
-}
+type GoogleSignInClient = Pick<
+  typeof import('@react-native-google-signin/google-signin').GoogleSignin,
+  'configure' | 'hasPlayServices' | 'signIn' | 'getTokens'
+>
 
 /** Completes the exchange after the lazily loaded native SDK is available. */
 export async function completeGoogleSignIn(GoogleSignin: GoogleSignInClient): Promise<void> {
@@ -621,7 +619,7 @@ export async function completeGoogleSignIn(GoogleSignin: GoogleSignInClient): Pr
   const { idToken, accessToken } = await GoogleSignin.getTokens()
   const { error } = await supabase.auth.signInWithIdToken({
     provider: 'google',
-    token: idToken || signedInIdToken,
+    token: idToken,
     access_token: accessToken,
   })
   if (error) {
