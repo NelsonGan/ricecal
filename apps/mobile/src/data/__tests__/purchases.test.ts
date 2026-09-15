@@ -1,4 +1,4 @@
-import { hasFreeTrial, isUserCancelled, yearlySavingPercent } from '../purchases'
+import { freeTrialDuration, hasFreeTrial, isUserCancelled, yearlySavingPercent } from '../purchases'
 
 /**
  * The saving badge, and the two failures the purchase screens must tell apart.
@@ -70,5 +70,34 @@ describe('hasFreeTrial', () => {
 
   it('does not advertise a trial on unsupported platforms', () => {
     expect(hasFreeTrial('web', { introPrice: { price: 0 } }, true)).toBe(false)
+  })
+})
+
+describe('freeTrialDuration', () => {
+  it('reads each Apple product independently and requires eligibility', () => {
+    const annual = {
+      introPrice: { price: 0, periodUnit: 'DAY', periodNumberOfUnits: 3, cycles: 1 },
+    }
+    expect(freeTrialDuration('ios', annual, true)).toEqual({ unit: 'day', count: 3 })
+    expect(freeTrialDuration('ios', annual, false)).toBeUndefined()
+    expect(freeTrialDuration('ios', { introPrice: null }, true)).toBeUndefined()
+  })
+
+  it('reads the eligible Play default option, including repeated free cycles', () => {
+    expect(
+      freeTrialDuration('android', {
+        defaultOption: {
+          freePhase: { billingPeriod: { unit: 'WEEK', value: 1 }, billingCycleCount: 2 },
+        },
+      }),
+    ).toEqual({ unit: 'week', count: 2 })
+    expect(freeTrialDuration('android', { defaultOption: { freePhase: null } })).toBeUndefined()
+  })
+
+  it('does not guess when the store returns an unreadable period', () => {
+    expect(freeTrialDuration('ios', { introPrice: { price: 0 } }, true)).toBeUndefined()
+    expect(
+      freeTrialDuration('android', { defaultOption: { freePhase: { billingPeriod: null } } }),
+    ).toBeUndefined()
   })
 })

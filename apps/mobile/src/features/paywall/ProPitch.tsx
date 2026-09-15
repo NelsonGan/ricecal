@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { Plan } from '@/data'
-import { usePlanPrices } from '@/data'
 import { PlanPicker } from '@/features/shared'
 import { Text } from '@/ui'
 import { PlanTable } from './PlanTable'
@@ -25,25 +24,6 @@ export type ProPitchProps = {
  */
 export function ProPitch({ plan, onPlanChange, onRestore, disabled = false }: ProPitchProps) {
   const { t } = useTranslation('paywall')
-  const { data: prices } = usePlanPrices()
-
-  const price = prices?.[plan]?.priceString
-  let smallPrint: string | undefined
-  if (price) {
-    if (plan === 'lifetime') {
-      smallPrint = t('hard.smallPrintLifetime', { price })
-    } else if (prices?.[plan]?.freeTrialEligible === true) {
-      smallPrint = t(plan === 'yearly' ? 'hard.smallPrintYearly' : 'hard.smallPrintMonthly', {
-        price,
-      })
-    } else {
-      smallPrint = t(
-        plan === 'yearly' ? 'hard.smallPrintYearlyNoTrial' : 'hard.smallPrintMonthlyNoTrial',
-        { price },
-      )
-    }
-  }
-
   return (
     <>
       <View className="mt-sm gap-3">
@@ -55,12 +35,6 @@ export function ProPitch({ plan, onPlanChange, onRestore, disabled = false }: Pr
         </View>
 
         <PlanPicker showLifetime value={plan} onChange={onPlanChange} disabled={disabled} />
-
-        {smallPrint ? (
-          <Text variant="caption" className="text-center text-faint">
-            {smallPrint}
-          </Text>
-        ) : null}
       </View>
 
       {/* What each tier gets, side by side. A reader whose barcode scanner

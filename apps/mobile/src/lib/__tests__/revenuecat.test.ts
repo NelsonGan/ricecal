@@ -51,6 +51,7 @@ type FakeEntitlement = {
   willRenew: boolean
   periodType: string
   expirationDate: string | null
+  latestPurchaseDate?: string | null
   productIdentifier: string
   isSandbox: boolean
 }
@@ -210,6 +211,7 @@ it('reads the pro entitlement out of the store', async () => {
     active: true,
     trial: false,
     expiresAt: '2027-01-01T00:00:00Z',
+    trialStartedAt: null,
     productId: 'com.nelsongan.ricecal.pro.yearly',
     sandbox: false,
   })
@@ -217,7 +219,11 @@ it('reads the pro entitlement out of the store', async () => {
 
 it('reads a free trial as entitled, and says it is a trial', () => {
   const read = proEntitlementOf({
-    entitlements: { active: { pro: entitlement({ periodType: 'TRIAL' }) } },
+    entitlements: {
+      active: {
+        pro: entitlement({ periodType: 'TRIAL', latestPurchaseDate: '2026-12-25T00:00:00Z' }),
+      },
+    },
   })
 
   // The trial is what the user pressed the button for, so an app that did not
@@ -226,6 +232,7 @@ it('reads a free trial as entitled, and says it is a trial', () => {
   // webhook is in flight.
   expect(read.active).toBe(true)
   expect(read.trial).toBe(true)
+  expect(read.trialStartedAt).toBe('2026-12-25T00:00:00Z')
 })
 
 it('is not entitled by somebody else’s entitlement', () => {

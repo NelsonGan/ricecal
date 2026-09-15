@@ -2,8 +2,8 @@ import { format, parseISO } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useCurrentWeight, usePlanPrices, useStreak, useSubscription, useWeighIns } from '@/data'
-import { useTrackPaywallShown } from '@/features/paywall'
+import { useCurrentWeight, usePlanPrices, useStreak, useWeighIns } from '@/data'
+import { usePlanSummary, useTrackPaywallShown } from '@/features/paywall'
 import { StatRow } from '@/features/shared'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
@@ -14,7 +14,7 @@ export default function TrialReminder() {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
   const goBack = useBack('/today')
-  const { data: subscription } = useSubscription()
+  const plan = usePlanSummary()
   const { data: prices } = usePlanPrices()
   const { data: weighIns = [] } = useWeighIns()
   const current = useCurrentWeight() ?? 0
@@ -27,18 +27,16 @@ export default function TrialReminder() {
 
   // Whole days until the store charges. Derived from the instant RevenueCat
   // reported rather than a counter, which would need something to decrement it.
-  const trialDaysLeft = subscription?.trial_ends_at
+  const trialDaysLeft = plan.trialEndsAt
     ? Math.max(
         0,
-        Math.ceil(
-          (new Date(subscription.trial_ends_at).getTime() - Date.now()) / (24 * 60 * 60 * 1000),
-        ),
+        Math.ceil((new Date(plan.trialEndsAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
       )
     : 0
 
   // Counted from what was actually logged, so the numbers agree with the diary
   // if the user goes and looks.
-  const daysLogged = Math.min(streak.current, 7)
+  const daysLogged = streak.current
   const meals = daysLogged * 3
   const dropped = Math.max(0, (weighIns[0]?.kg ?? current) - current)
 
@@ -90,14 +88,17 @@ export default function TrialReminder() {
           />
         </Card>
 
-        <Text variant="caption" className="text-center text-faint">
-          {t('paywall:reminder.starts', {
-            date: subscription?.trial_ends_at
-              ? format(parseISO(subscription.trial_ends_at), datePattern('dayMonthLong'))
-              : '',
-            price: prices?.yearly?.priceString ?? '—',
-          })}
-        </Text>
+        {plan.trialEndsAt && (plan.plan === 'yearly' || plan.plan === 'monthly') ? (
+          <Text variant="caption" className="text-center text-faint">
+            {t(
+              plan.plan === 'yearly' ? 'paywall:reminder.starts' : 'paywall:reminder.startsMonthly',
+              {
+                date: format(parseISO(plan.trialEndsAt), datePattern('dayMonthLong')),
+                price: prices?.[plan.plan]?.priceString ?? '—',
+              },
+            )}
+          </Text>
+        ) : null}
       </View>
     </Screen>
   )

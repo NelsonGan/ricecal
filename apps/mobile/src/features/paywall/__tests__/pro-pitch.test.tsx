@@ -64,9 +64,7 @@ it('uses lifetime copy for a one-off purchase', async () => {
   await render(<ProPitch plan="lifetime" onPlanChange={jest.fn()} onRestore={jest.fn()} />)
 
   expect(screen.getByText('One payment, refundable through the store')).toBeOnTheScreen()
-  expect(
-    screen.getByText('One payment of RM299.90. No subscription, no renewal.'),
-  ).toBeOnTheScreen()
+  expect(screen.queryByText('One payment of RM299.90. No subscription, no renewal.')).toBeNull()
 })
 
 it('keeps restore and legal links at the end of the offer', async () => {
@@ -88,7 +86,7 @@ it('shows no guessed price or terms while the store is loading', async () => {
   await render(<ProPitch plan="yearly" onPlanChange={jest.fn()} onRestore={jest.fn()} />)
 
   expect(screen.queryByText(/Price shown before purchase/i)).toBeNull()
-  expect(screen.queryByText(/Free for 7 days/i)).toBeNull()
+  expect(screen.queryByText(/Free for/i)).toBeNull()
   expect(screen.getByRole('radio', { name: 'Yearly, Billed every year, —' })).toBeOnTheScreen()
 })
 

@@ -21,6 +21,8 @@ export type PlanSummary = {
   plan: Plan | null
   /** When the trial ends, if this is one and anybody said. */
   trialEndsAt: string | null
+  /** The store's start of this trial, if its current receipt is available. */
+  trialStartedAt: string | null
   /** Whether this plan renews at all, which lifetime does not. */
   renews: boolean
 }
@@ -49,7 +51,9 @@ export function usePlanSummary(): PlanSummary {
   const { data: subscription } = useSubscription()
   const { data: store } = useStoreEntitlement()
 
-  if (!entitled) return { state: 'none', plan: null, trialEndsAt: null, renews: false }
+  if (!entitled) {
+    return { state: 'none', plan: null, trialEndsAt: null, trialStartedAt: null, renews: false }
+  }
 
   // The mirror first: it carries the plan as a column rather than a product id
   // to parse, and it is the one the server agrees with. The store fills in what
@@ -64,6 +68,7 @@ export function usePlanSummary(): PlanSummary {
     // The same instant twice. The mirror's is the one a support conversation
     // can be had about, so it leads.
     trialEndsAt: trial ? (subscription?.trial_ends_at ?? store?.expiresAt ?? null) : null,
+    trialStartedAt: trial ? (store?.trialStartedAt ?? null) : null,
     // An unnamed plan is treated as not renewing: a promotional grant renews
     // nothing, and "Renews at $4.90" against one quoted the monthly price to
     // somebody who had never been charged.

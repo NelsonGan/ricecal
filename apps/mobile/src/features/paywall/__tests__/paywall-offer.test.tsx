@@ -15,11 +15,17 @@ const mockTrackPurchaseStarted = jest.fn()
 const mockTrackPurchaseAbandoned = jest.fn()
 
 const mockPlanPrices = {
-  yearly: { priceString: 'RM99.90', perMonthString: 'RM8.33', freeTrialEligible: true },
+  yearly: {
+    priceString: 'RM99.90',
+    perMonthString: 'RM8.33',
+    freeTrialEligible: true,
+    trialDuration: { unit: 'day', count: 3 },
+  },
   monthly: { priceString: 'RM12.90', freeTrialEligible: false },
   lifetime: { priceString: 'RM299.90', freeTrialEligible: false },
   yearlySavingPercent: 35,
 }
+let mockPrices: typeof mockPlanPrices | undefined = mockPlanPrices
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ replace: mockReplace }),
@@ -27,7 +33,7 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/data', () => ({
   useAwaitEntitlement: () => mockAwaitEntitlement,
-  usePlanPrices: () => ({ data: mockPlanPrices }),
+  usePlanPrices: () => ({ data: mockPrices }),
 }))
 
 jest.mock('@/data/purchases', () => ({
@@ -66,9 +72,18 @@ async function renderOffer(props: ComponentProps<typeof PaywallOffer>) {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockPrices = mockPlanPrices
   mockPurchasesAvailable.mockReturnValue(true)
   mockRestorePurchases.mockResolvedValue(true)
   mockPurchasePlan.mockResolvedValue(undefined)
+})
+
+it('shows no guessed trial length or charge terms before the store responds', async () => {
+  mockPrices = undefined
+  await renderOffer({ screen: 'hard', onLater: jest.fn() })
+  expect(screen.queryByText(/Free for/)).toBeNull()
+  expect(screen.queryByText(/a year\./)).toBeNull()
+  expect(screen.getByRole('button', { name: 'Subscribe' })).toBeOnTheScreen()
 })
 
 it('uses the same selected-plan offer on the standing paywall', async () => {
@@ -78,6 +93,7 @@ it('uses the same selected-plan offer on the standing paywall', async () => {
   expect(screen.getByRole('header', { name: 'RiceCal Pro' })).toBeOnTheScreen()
   expect(screen.getAllByRole('radio')).toHaveLength(3)
   expect(screen.getByRole('button', { name: 'Start free trial' })).toBeOnTheScreen()
+  expect(screen.getByText('Free for 3 days, then RM99.90 a year.')).toBeOnTheScreen()
   await user.press(screen.getByRole('button', { name: 'Close' }))
   expect(later).toHaveBeenCalledTimes(1)
   await user.press(screen.getByRole('button', { name: 'Maybe later' }))
@@ -88,6 +104,8 @@ it('purchases the selected plan from the one shared button', async () => {
   await renderOffer({ screen: 'hard', onLater: jest.fn() })
 
   await user.press(screen.getByRole('radio', { name: 'Monthly, Billed every month, RM12.90' }))
+  expect(screen.getByText('RM12.90 a month.')).toBeOnTheScreen()
+  expect(screen.queryByText(/Free for 3 days/)).toBeNull()
   await user.press(screen.getByRole('button', { name: 'Subscribe' }))
 
   expect(mockPurchasePlan).toHaveBeenCalledWith('monthly')
@@ -96,6 +114,26 @@ it('purchases the selected plan from the one shared button', async () => {
     pathname: '/paywall/welcome',
     params: { plan: 'monthly' },
   })
+})
+
+it('carries the selected store period into the purchase receipt', async () => {
+  await renderOffer({ screen: 'hard', onLater: jest.fn() })
+  await user.press(screen.getByRole('button', { name: 'Start free trial' }))
+  expect(mockReplace).toHaveBeenCalledWith({
+    pathname: '/paywall/welcome',
+    params: { plan: 'yearly', trialUnit: 'day', trialCount: '3' },
+  })
+})
+
+it('keeps the selected lifetime terms above its purchase action', async () => {
+  await renderOffer({ screen: 'hard', onLater: jest.fn() })
+  await user.press(
+    screen.getByRole('radio', { name: 'Lifetime, One payment, yours for good, RM299.90' }),
+  )
+  expect(
+    screen.getByText('One payment of RM299.90. No subscription, no renewal.'),
+  ).toBeOnTheScreen()
+  expect(screen.getByRole('button', { name: 'Buy lifetime access' })).toBeOnTheScreen()
 })
 
 it('uses the route-specific destination behind the shared later action', async () => {
