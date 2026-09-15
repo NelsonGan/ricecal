@@ -199,6 +199,13 @@ Deno.serve(async (req: Request) => {
   )
 
   if (error) {
+    // The only foreign key on `subscriptions` is the account. RevenueCat can
+    // deliver or retry an event after that account has been deleted; there is
+    // then nobody left to entitle, and a 500 only asks it to retry forever.
+    if (error.code === '23503') {
+      console.warn('[revenuecat] ignoring an event for an account that no longer exists')
+      return json({ ok: true, ignored: 'account no longer exists' })
+    }
     // A 500 so RevenueCat RETRIES. This is the one failure here worth retrying:
     // the event was real and we could not record it, and dropping it silently
     // leaves somebody who has paid looking unsubscribed.

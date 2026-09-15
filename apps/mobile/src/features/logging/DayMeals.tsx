@@ -90,7 +90,11 @@ export function DayMeals({
                 entry.servingLabel,
                 t('detail.servingWord'),
               )}`}
-              onPress={() => onPressEntry(entry)}
+              // Pending scans are client-only `snap-*` rows, not database
+              // entries. Today already renders them as progress or recovery
+              // actions; the calendar used to make the same rows tappable and
+              // opened the editor, which sent that placeholder to uuid columns.
+              onPress={entry.status ? undefined : () => onPressEntry(entry)}
             />
           ))
       )}

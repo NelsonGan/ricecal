@@ -2927,6 +2927,12 @@ so every query and delete treats it like a real one. Both native libraries are
 built before the dependency landed, and the symptom is a white screen rather than
 a broken tab.
 
+Hourly rows are deleted and replaced for each rolling window because an hour can
+disappear when a duplicate Health source is removed. The replacement is an
+upsert and the client admits one sync at a time: a foreground event and a manual
+refresh can otherwise both delete before either writes, making the second pass
+fail on the `(user_id, log_date, hour)` key.
+
 ---
 
 ## Photos
@@ -3078,6 +3084,11 @@ truth and a schedule to forget about. If it ever comes back, the one thing it
 must keep is downgrading **only on a positive answer**: a job reading "RevenueCat
 did not answer" as "they have nothing" would cancel every paying customer the
 first time the API had a bad night.
+
+An event for an account that has already been deleted is acknowledged and
+ignored. `subscriptions` has no other foreign key, so that failure cannot mean a
+purchase is waiting on some other row; answering 500 only makes RevenueCat retry
+an account that can never exist again.
 
 ### Identity
 
