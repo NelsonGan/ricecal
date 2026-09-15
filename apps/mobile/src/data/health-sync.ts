@@ -197,10 +197,10 @@ async function persist(
    * when a duplicate source is removed in Health.
    *
    * Safe only because the delete covers exactly the dates the reading can
-   * contain. The insert is not an upsert, so a row the delete missed is a
-   * duplicate-key error that fails the whole sync: clamping the delete to the
-   * hourly retention window while the providers returned the whole chunk was
-   * invisible on a first backfill and a hard failure on the second.
+   * contain. The write is still an upsert because two foreground passes can
+   * overlap: both can finish their delete before either inserts, and the second
+   * insert must replace the first one's hours instead of failing the whole sync
+   * on the primary key. The delete is still what removes a disappeared hour.
    */
   if (window.withHours) {
     const { error: deleteError } = await supabase
@@ -212,7 +212,7 @@ async function persist(
     if (deleteError) throw deleteError
 
     if (reading.hours.length > 0) {
-      const { error } = await supabase.from('activity_hours').insert(
+      const { error } = await supabase.from('activity_hours').upsert(
         reading.hours.map((hour) => ({
           user_id: userId,
           log_date: hour.date,
@@ -221,6 +221,7 @@ async function persist(
           active_kcal: hour.activeKcal,
           distance_m: hour.distanceM,
         })),
+        { onConflict: 'user_id,log_date,hour' },
       )
       if (error) throw error
     }
@@ -592,6 +593,10 @@ export function useHealthAutoSync(provider: ProviderId | null): {
 } {
   const sync = useSyncHealth()
   const lastRun = useRef(0)
+  // `Mutation.isPending` updates on the next render. This ref closes the frame
+  // where a foreground event and a pull-to-refresh can both start the same
+  // delete-and-replace pass before React has rendered that pending state.
+  const running = useRef(false)
 
   // Whether the pass in flight was asked for. State rather than a ref: the refresh
   // control has to re-render when it changes.
@@ -606,9 +611,11 @@ export function useHealthAutoSync(provider: ProviderId | null): {
   const run = useCallback(
     (force: boolean) => {
       if (!provider) return
+      if (running.current) return
       const now = Date.now()
       if (!force && now - lastRun.current < MIN_INTERVAL_MS) return
       lastRun.current = now
+      running.current = true
       // After the guards, so a pull that was thrown away for want of a provider does
       // not leave the control spinning over nothing.
       if (force) setForced(true)
@@ -619,6 +626,7 @@ export function useHealthAutoSync(provider: ProviderId | null): {
       // spinner running for ever.
       syncRef.current.mutate(provider, {
         onSettled: () => {
+          running.current = false
           if (force) setForced(false)
         },
       })

@@ -22,6 +22,7 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 import {
+  accountNoLongerExists,
   at,
   ENTITLEMENT,
   isStale,
@@ -199,6 +200,14 @@ Deno.serve(async (req: Request) => {
   )
 
   if (error) {
+    // RevenueCat can deliver or retry an event after that account has been
+    // deleted; there is then nobody left to entitle, and a 500 only asks it to
+    // retry forever. Match the constraint as well as the SQLSTATE so a future,
+    // unrelated foreign key still gets the retry it needs.
+    if (accountNoLongerExists(error)) {
+      console.warn('[revenuecat] ignoring an event for an account that no longer exists')
+      return json({ ok: true, ignored: 'account no longer exists' })
+    }
     // A 500 so RevenueCat RETRIES. This is the one failure here worth retrying:
     // the event was real and we could not record it, and dropping it silently
     // leaves somebody who has paid looking unsubscribed.
