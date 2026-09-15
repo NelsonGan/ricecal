@@ -105,6 +105,13 @@ export type PlanPrice = {
   perMonthString?: string
   /** Whether this customer will receive a free trial when buying this plan. */
   freeTrialEligible: boolean
+  /** The free phase the store will apply to this plan and account. */
+  trialDuration?: TrialDuration
+}
+
+export type TrialDuration = {
+  unit: 'day' | 'week' | 'month' | 'year'
+  count: number
 }
 
 export type PlanPrices = Partial<Record<Plan, PlanPrice>> & {
@@ -126,8 +133,53 @@ export function yearlySavingPercent(monthly?: number, annual?: number): number |
 }
 
 type TrialProduct = {
-  introPrice?: { price: number } | null
-  defaultOption?: { freePhase?: unknown | null } | null
+  introPrice?: {
+    price: number
+    cycles?: number
+    periodUnit?: string
+    periodNumberOfUnits?: number
+  } | null
+  defaultOption?: {
+    freePhase?: {
+      billingPeriod?: { unit: string; value: number } | null
+      billingCycleCount?: number | null
+    } | null
+  } | null
+}
+
+function durationOf(unit: string | undefined, units: number | undefined, cycles = 1) {
+  const normalized = unit?.toLowerCase()
+  const count = (units ?? 0) * cycles
+  if (
+    (normalized === 'day' ||
+      normalized === 'week' ||
+      normalized === 'month' ||
+      normalized === 'year') &&
+    Number.isSafeInteger(count) &&
+    count > 0
+  ) {
+    return { unit: normalized, count } satisfies TrialDuration
+  }
+  return undefined
+}
+
+/** The native store's free period, not the paid subscription's renewal period. */
+export function freeTrialDuration(
+  platform: string,
+  product: TrialProduct,
+  iosEligible = false,
+): TrialDuration | undefined {
+  if (!hasFreeTrial(platform, product, iosEligible)) return undefined
+  if (platform === 'ios') {
+    const intro = product.introPrice
+    return durationOf(intro?.periodUnit, intro?.periodNumberOfUnits, intro?.cycles ?? 1)
+  }
+  const phase = product.defaultOption?.freePhase
+  return durationOf(
+    phase?.billingPeriod?.unit,
+    phase?.billingPeriod?.value,
+    phase?.billingCycleCount ?? 1,
+  )
 }
 
 /**
@@ -195,26 +247,29 @@ export async function fetchPlanPrices(): Promise<PlanPrices> {
             priceString: string
             price: number
             pricePerMonthString?: string | null
-            introPrice?: { price: number } | null
-            defaultOption?: { freePhase?: unknown | null } | null
+            introPrice?: TrialProduct['introPrice']
+            defaultOption?: TrialProduct['defaultOption']
           }
         }
       | null
       | undefined,
-  ) =>
-    pkg
-      ? {
-          priceString: pkg.product.priceString,
-          price: pkg.product.price,
-          perMonthString: pkg.product.pricePerMonthString ?? undefined,
-          freeTrialEligible: hasFreeTrial(
-            Platform.OS,
-            pkg.product,
-            iosEligibility[pkg.product.identifier]?.status ===
-              Purchases.INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE,
-          ),
-        }
-      : undefined
+  ) => {
+    if (!pkg) return undefined
+    const trialDuration = freeTrialDuration(
+      Platform.OS,
+      pkg.product,
+      iosEligibility[pkg.product.identifier]?.status ===
+        Purchases.INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE,
+    )
+    return {
+      priceString: pkg.product.priceString,
+      price: pkg.product.price,
+      perMonthString: pkg.product.pricePerMonthString ?? undefined,
+      trialDuration,
+      // An unreadable store period is not a seven-day promise by default.
+      freeTrialEligible: trialDuration != null,
+    }
+  }
 
   const monthly = priced(monthlyPackage)
   const annual = priced(annualPackage)

@@ -50,6 +50,7 @@ type StoreEntitlementInfo = {
   willRenew: boolean
   periodType: string
   expirationDate: string | null
+  latestPurchaseDate?: string | null
   productIdentifier: string
   isSandbox: boolean
 }
@@ -256,6 +257,8 @@ export type StoreEntitlement = {
   trial: boolean
   /** Null for a plan that never expires, exactly as `current_period_end` is. */
   expiresAt: string | null
+  /** The purchased trial's start, for progress independent of today's offer. */
+  trialStartedAt: string | null
   productId: string | null
   /**
    * A sandbox purchase. Worth having on hand: the webhook deliberately refuses
@@ -277,12 +280,21 @@ export function proEntitlementOf(info: StoreCustomerInfo): StoreEntitlement {
   // here, unlike the mirror in Postgres — that one is a copy of an event and can
   // be stale, this one is the SDK's own reading of a receipt.
   if (!pro?.isActive) {
-    return { active: false, trial: false, expiresAt: null, productId: null, sandbox: false }
+    return {
+      active: false,
+      trial: false,
+      expiresAt: null,
+      trialStartedAt: null,
+      productId: null,
+      sandbox: false,
+    }
   }
+  const trial = pro.periodType?.toUpperCase() === 'TRIAL'
   return {
     active: true,
-    trial: pro.periodType?.toUpperCase() === 'TRIAL',
+    trial,
     expiresAt: pro.expirationDate ?? null,
+    trialStartedAt: trial ? (pro.latestPurchaseDate ?? null) : null,
     productId: pro.productIdentifier ?? null,
     sandbox: pro.isSandbox === true,
   }

@@ -16,6 +16,7 @@ import { track } from '@/lib/analytics'
 import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, Screen, useToast } from '@/ui'
+import { PlanTerms } from './PlanTerms'
 import { ProPitch } from './ProPitch'
 import { ProWordmark } from './ProWordmark'
 import { trackPurchaseAbandoned, trackPurchaseStarted } from './tracking'
@@ -63,7 +64,18 @@ export function PaywallOffer(props: PaywallOfferProps) {
       // The store has confirmed; wait for the app's entitlement mirror before
       // leaving so the next screen cannot put the paywall straight back.
       await awaitEntitlement()
-      router.replace({ pathname: '/paywall/welcome', params: { plan } })
+      // Apple can mark an intro offer ineligible after this purchase. Carry the
+      // period shown at checkout so the receipt does not lose its duration.
+      const trialDuration = prices?.[plan]?.trialDuration
+      router.replace({
+        pathname: '/paywall/welcome',
+        params: {
+          plan,
+          ...(trialDuration
+            ? { trialUnit: trialDuration.unit, trialCount: String(trialDuration.count) }
+            : {}),
+        },
+      })
     } catch (error) {
       trackPurchaseAbandoned(props.screen, plan, error)
       if (isUserCancelled(error)) return
@@ -140,6 +152,7 @@ export function PaywallOffer(props: PaywallOfferProps) {
         safeAreaTop={false}
         footer={
           <View className="-mb-sm gap-1.5">
+            <PlanTerms plan={plan} prices={prices} />
             <Button fullWidth onPress={start} loading={storeAction === 'purchase'} disabled={busy}>
               {lifetime
                 ? t('paywall:hard.startLifetime')

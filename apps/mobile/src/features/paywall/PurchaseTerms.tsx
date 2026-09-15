@@ -9,10 +9,11 @@ import { Button, Text } from '@/ui'
  *
  * Guideline 3.1.2 asks for four things: what is being sold, how long it lasts,
  * what it costs, and working links to the terms of use and the privacy policy.
- * The first three are the sentence above this one (`hard.smallPrint*`, or
- * `ended.terms`); these are the last two, and they were on none of the three
- * screens that can charge somebody. The two paywalls also put restore on this
- * line, where it reads as account recovery rather than another purchase CTA.
+ * The first three are the selected plan's sticky footer sentence
+ * (`hard.smallPrint*`) or `ended.terms`; these are the last two, and they were
+ * on none of the three screens that can charge somebody. The two paywalls also
+ * put restore on this line, where it reads as account recovery rather than another
+ * purchase CTA.
  *
  * A component rather than a copied pair of links, because the set of screens that
  * can start a purchase grows.
