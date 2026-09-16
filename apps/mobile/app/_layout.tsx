@@ -287,12 +287,13 @@ function RootStack() {
       {/* The one screen with no back gesture. Everything else in this stack is
           somewhere you went and can leave; the tabs are where the app IS.
 
-          Nothing should be behind this any more — `useEnterApp` unwinds the way
-          in rather than replacing one entry of it, which is what left the whole
-          of onboarding under the diary and made an edge swipe on Today land on
-          the questions somebody had just finished answering. The gesture stays
-          off regardless: a swipe on the app itself should do nothing, whatever
-          a future route happens to leave lying around. */}
+          Nothing should be behind this any more — `useEnterApp` resets the root
+          to this group rather than replacing one entry of it, which is what left
+          the whole of onboarding under the diary. That reset is one navigation
+          action: a queued pop followed by a replace raced and revealed the
+          questions again when the intro paywall closed. The gesture stays off
+          regardless: a swipe on the app itself should do nothing, whatever a
+          future route happens to leave lying around. */}
       <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
       {/* The quick selector sits over Today, so the screen behind it stays
           visible and the sheet keeps its own scrim.

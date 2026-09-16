@@ -1,4 +1,4 @@
-import { type Href, useRouter } from 'expo-router'
+import { type Href, type NativeStackNavigationProp, useNavigation, useRouter } from 'expo-router'
 import { useCallback } from 'react'
 
 /**
@@ -77,19 +77,19 @@ export function useDismissTo(fallback: Href): () => void {
  * sign-up screen, where "Get started" walked them back into onboarding they had
  * already finished.
  *
- * `dismissAll` unwinds to the bottom of the root stack, `replace` takes that
- * last entry's place. Both queue in one flush, so no frame of the welcome
- * screen shows in between. The guard is not optional: `dismissAll` throws when
- * there is nothing to unwind, which is the ordinary cold launch.
+ * This has to be one root reset rather than `dismissAll` followed by `replace`.
+ * Expo Router queues both calls, and the pop-to-top can finish after the
+ * replacement. At the end of onboarding that put Today on the stack and then
+ * popped it straight back off, revealing the target question under the
+ * paywall. One reset has no intermediate history for another action to expose.
  */
-export function useEnterApp(): (href?: Href) => void {
-  const router = useRouter()
+export function useEnterApp(): () => void {
+  const navigation = useNavigation<NativeStackNavigationProp<{ '(tabs)': undefined }>>('/')
 
-  return useCallback(
-    (href: Href = '/today') => {
-      if (router.canDismiss()) router.dismissAll()
-      router.replace(href)
-    },
-    [router],
-  )
+  return useCallback(() => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: '(tabs)' }],
+    })
+  }, [navigation])
 }
