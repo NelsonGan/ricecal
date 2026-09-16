@@ -288,12 +288,12 @@ function ToastSurface({
 }
 
 /**
- * The toast card and its horizontal way out.
+ * The toast card and its way out in any direction.
  *
  * Kept inside the positioned surface so the safe-area and tab-bar clearance do
- * not move with the finger. The vertical entrance lives on the outer animated
- * view and the horizontal drag on the inner one; two animations writing the
- * same transform would otherwise replace one another.
+ * not move with the finger. The entrance lives on the outer animated view and
+ * the drag on the inner one; two animations writing the same transform would
+ * otherwise replace one another.
  */
 function ToastCard({
   toast,
@@ -308,25 +308,35 @@ function ToastCard({
   palette: (typeof tones)[ToastTone]
   fromTop: boolean
 }) {
-  const { width } = useWindowDimensions()
-  const offset = useSharedValue(0)
+  const { width, height } = useWindowDimensions()
+  const offsetX = useSharedValue(0)
+  const offsetY = useSharedValue(0)
   const leaving = useSharedValue(false)
 
   const swipe = Gesture.Pan()
-    // Horizontal only after a clear sideways intent. A short movement still
-    // belongs to the action button, and a vertical one belongs to the screen.
-    .activeOffsetX([-14, 14])
-    .failOffsetY([-12, 12])
+    // A short movement still belongs to the action button. Once the finger has
+    // clearly moved, every direction is a way to get a temporary message out
+    // of the way.
+    .minDistance(14)
     .onUpdate((event) => {
-      if (!leaving.value) offset.value = event.translationX
+      if (!leaving.value) {
+        offsetX.value = event.translationX
+        offsetY.value = event.translationY
+      }
     })
     .onEnd((event) => {
       if (leaving.value) return
 
-      const farEnough = Math.abs(event.translationX) >= SWIPE_DISTANCE
-      const fastEnough = Math.abs(event.velocityX) >= SWIPE_VELOCITY
+      const farEnough =
+        Math.max(Math.abs(event.translationX), Math.abs(event.translationY)) >= SWIPE_DISTANCE
+      const fastEnough =
+        Math.max(Math.abs(event.velocityX), Math.abs(event.velocityY)) >= SWIPE_VELOCITY
       if (!farEnough && !fastEnough) {
-        offset.value = withTiming(0, {
+        offsetX.value = withTiming(0, {
+          duration: SWIPE_SETTLE_MS,
+          easing: Easing.out(Easing.cubic),
+        })
+        offsetY.value = withTiming(0, {
           duration: SWIPE_SETTLE_MS,
           easing: Easing.out(Easing.cubic),
         })
@@ -336,22 +346,49 @@ function ToastCard({
       leaving.value = true
       // A flick can reverse just before release. Follow the velocity when the
       // velocity is what qualified it, otherwise follow the travelled distance.
-      const direction = (fastEnough ? event.velocityX : event.translationX) < 0 ? -1 : 1
-      offset.value = withTiming(
-        direction * width,
-        { duration: SWIPE_SETTLE_MS, easing: Easing.in(Easing.cubic) },
-        (finished) => {
-          // Dismissing unmounts this card. Only do it once the horizontal exit
-          // has landed, or the usual vertical exit replaces the finger's motion.
-          if (finished) runOnJS(dismiss)()
-        },
-      )
+      // The dominant axis wins so a diagonal drag leaves by the nearest edge.
+      const exitX = fastEnough ? event.velocityX : event.translationX
+      const exitY = fastEnough ? event.velocityY : event.translationY
+      const horizontal = Math.abs(exitX) >= Math.abs(exitY)
+      const destination = (horizontal ? exitX : exitY) < 0 ? -1 : 1
+
+      if (horizontal) {
+        offsetY.value = withTiming(0, {
+          duration: SWIPE_SETTLE_MS,
+          easing: Easing.in(Easing.cubic),
+        })
+        offsetX.value = withTiming(
+          destination * width,
+          { duration: SWIPE_SETTLE_MS, easing: Easing.in(Easing.cubic) },
+          (finished) => {
+            // Dismissing unmounts this card. Only do it once the chosen exit has
+            // landed, or the usual entrance-edge exit replaces the finger's motion.
+            if (finished) runOnJS(dismiss)()
+          },
+        )
+      } else {
+        offsetX.value = withTiming(0, {
+          duration: SWIPE_SETTLE_MS,
+          easing: Easing.in(Easing.cubic),
+        })
+        offsetY.value = withTiming(
+          destination * height,
+          { duration: SWIPE_SETTLE_MS, easing: Easing.in(Easing.cubic) },
+          (finished) => {
+            if (finished) runOnJS(dismiss)()
+          },
+        )
+      }
     })
     .onFinalize(() => {
       // The OS can cancel an active gesture, for example when another window
       // takes over the touch. Without a reset, the notice stays half offscreen.
       if (!leaving.value) {
-        offset.value = withTiming(0, {
+        offsetX.value = withTiming(0, {
+          duration: SWIPE_SETTLE_MS,
+          easing: Easing.out(Easing.cubic),
+        })
+        offsetY.value = withTiming(0, {
           duration: SWIPE_SETTLE_MS,
           easing: Easing.out(Easing.cubic),
         })
@@ -360,8 +397,15 @@ function ToastCard({
     .withTestId('toast-swipe')
 
   const swipeStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: offset.value }],
-    opacity: Math.max(0, 1 - Math.abs(offset.value) / Math.max(1, width * 0.8)),
+    transform: [{ translateX: offsetX.value }, { translateY: offsetY.value }],
+    opacity: Math.max(
+      0,
+      1 -
+        Math.max(
+          Math.abs(offsetX.value) / Math.max(1, width * 0.8),
+          Math.abs(offsetY.value) / Math.max(1, height * 0.8),
+        ),
+    ),
   }))
 
   return (

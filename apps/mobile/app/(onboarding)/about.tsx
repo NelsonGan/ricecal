@@ -297,8 +297,8 @@ function typed(value: number): string {
 /**
  * A metric bound, expressed in whichever unit the field is typed in.
  *
- * The limits are on the real quantity, not on the number in the box: 30 kg and
- * 66 lb are the same floor, and clamping a pounds field against 30 would refuse
+ * The limits are on the real quantity, not on the number in the box: 20 kg and
+ * 44 lb are the same floor, and clamping a pounds field against 20 would refuse
  * every weight anybody using pounds would ever type.
  */
 function bounds(within: { min: number; max: number }, unit: WeightUnit) {

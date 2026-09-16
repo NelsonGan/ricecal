@@ -288,7 +288,8 @@ describe('the bounds the questions answer within', () => {
    * track that stops short of them makes that unsayable. It used to stop at 120.
    */
   it('lets the target slider reach the body it is for', () => {
-    expect(targetWeightRange(65)).toEqual({ min: 40, max: 120 })
+    expect(targetWeightRange(65)).toEqual({ min: WEIGHT_RANGE.min, max: 120 })
+    expect(targetWeightRange(25)).toEqual({ min: WEIGHT_RANGE.min, max: 120 })
     expect(targetWeightRange(260).max).toBeGreaterThan(260)
     expect(targetWeightRange(WEIGHT_RANGE.max).max).toBe(WEIGHT_RANGE.max)
   })
