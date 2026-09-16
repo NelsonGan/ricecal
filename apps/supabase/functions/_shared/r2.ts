@@ -6,8 +6,9 @@
 //
 // What moved here from Postgres is authorization. Supabase Storage enforced "you
 // may only touch your own folder" as eight RLS policies; R2 has no idea who a
-// user is, so `ownsKey` is the entire check, and every key arriving from a client
-// goes through it before anything is signed.
+// user is, so every write, delete and ordinary read goes through `ownsKey`.
+// `photos/access.ts` adds the one read exception: a recipe photograph visible
+// through the caller's RLS policy.
 //
 // Credentials are an R2 API token scoped to the one bucket, kept in the project's
 // function secrets. The client is handed a signed URL that expires, never a key.

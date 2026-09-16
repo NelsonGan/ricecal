@@ -381,12 +381,12 @@ being written and nothing would ever correct it. The column is checked against
 date a fixed year allows moves forward every year.
 
 **The body questions answer within one set of bounds**, exported from
-`lib/nutrition.ts` because two screens ask the same questions: 120 to 220 cm, 30
+`lib/nutrition.ts` because two screens ask the same questions: 120 to 220 cm, 20
 to 500 kg, 13 to 150 years. Weight stopped at 200 and age at 100, and both turned
 away real people. Each is inside its column's own check, and the target-weight
-slider's top end follows the current weight — a target ON the current weight is
-how a user says they have no goal, and a fixed track that stopped at 120 made
-that unsayable for anybody heavier.
+slider shares that floor and its top end follows the current weight — a target ON
+the current weight is how a user says they have no goal, and a fixed track that
+stopped at 120 made that unsayable for anybody outside it.
 
 **`log_date` is a date; `logged_at` is an instant.** Supper at 00:30 belongs to
 the day the user thinks it does, which is why the day is stored and not derived.
@@ -2942,7 +2942,10 @@ own this too: Supabase Storage let the client talk to the bucket and let eight
 RLS policies over `storage.objects` decide whether it was allowed to. R2 has no
 notion of a user, so that check is now `ownsKey` in `functions/_shared/r2.ts`:
 one line of TypeScript where there were eight policies, and the only thing
-standing between two users' diaries.
+standing between two users' diaries. Reads have one extension: a photo attached
+to a recipe the caller can see may be signed for them. That lookup runs under the
+caller's recipe RLS, and the owner encoded in the key has to be the recipe owner,
+so private, pending, reported and blocked cooking grants nothing.
 
 The client holds no credential. It asks for a signed URL and gets one that
 expires. Uploads still go phone → R2 directly, so only the signature is a round
@@ -4696,9 +4699,9 @@ and dismisses itself, entirely invisible. `ToastHost` is the same fix
 `NumpadHost` is, and `SheetSurface` renders one. It pins the placement to the
 top, because the bottom of a sheet is the panel and its buttons.
 
-Every toast can also be dismissed with a horizontal swipe. The gesture waits
-for clear sideways intent, so tapping an action such as Undo and scrolling the
-screen keep their normal touch behaviour.
+Every toast can also be dismissed with a swipe left, right, up or down. The
+gesture waits for a clear drag, so tapping an action such as Undo keeps its
+normal touch behaviour.
 
 **And the host has to go when the window does**, which is not the same as when
 the component does. On iOS a `Modal` keeps its children mounted after `visible`

@@ -16,22 +16,12 @@ import {
   deleteObject,
   MAX_UPLOAD_BYTES,
   newKey,
-  ownsKey,
   READ_TTL_SECONDS,
   r2Configured,
   signGet,
   signPut,
 } from '../_shared/r2.ts'
-
-/**
- * How many keys one read may sign.
- *
- * The client batches a screenful into a single call — a day of diary is a
- * dozen plates and would otherwise be a dozen cold starts. The cap is here so
- * that a bug upstream costs one rejected request rather than a minute of
- * signing.
- */
-const MAX_KEYS = 100
+import { claimOwnedKeys, claimReadableKeys } from './access.ts'
 
 type UploadRequest = { action: 'upload'; kind?: AssetKind; contentType?: string; size?: number }
 type ReadRequest = { action: 'read'; keys?: string[] }
@@ -47,32 +37,6 @@ function json(body: unknown, status = 200): Response {
 
 function isKind(value: unknown): value is AssetKind {
   return value === 'meal' || value === 'avatar'
-}
-
-/**
- * The keys in a read or delete, validated and proven to be the caller's.
- *
- * The status travels with the message because the two failures here are not
- * the same thing: a malformed list is the client's bug, and a key belonging to
- * somebody else is the one worth being able to find in a log.
- */
-function claimKeys(
-  raw: unknown,
-  userId: string,
-): { keys: string[] } | { error: string; status: number } {
-  if (!Array.isArray(raw) || raw.length === 0) {
-    return { error: 'keys must be a non-empty array', status: 400 }
-  }
-  if (raw.length > MAX_KEYS) return { error: `at most ${MAX_KEYS} keys per request`, status: 400 }
-  if (!raw.every((key) => typeof key === 'string' && key.length > 0)) {
-    return { error: 'every key must be a string', status: 400 }
-  }
-  // One foreign key fails the whole request rather than being skipped. A
-  // partial answer here would be a client quietly rendering some of what it
-  // asked for, which is how a bug in key handling stays invisible.
-  const keys = raw as string[]
-  if (!keys.every((key) => ownsKey(key, userId))) return { error: 'not your object', status: 403 }
-  return { keys }
 }
 
 Deno.serve(async (req: Request) => {
@@ -140,7 +104,14 @@ Deno.serve(async (req: Request) => {
       }
 
       case 'read': {
-        const claim = claimKeys(body.keys, userId)
+        const claim = await claimReadableKeys(body.keys, userId, async (keys) => {
+          const { data, error } = await anonClient
+            .from('recipes')
+            .select('owner_id, photo_path')
+            .in('photo_path', keys)
+          if (error) throw error
+          return data
+        })
         if ('error' in claim) return json({ ok: false, error: claim.error }, claim.status)
 
         const signed = await Promise.all(claim.keys.map((key) => signGet(key)))
@@ -152,7 +123,9 @@ Deno.serve(async (req: Request) => {
       }
 
       case 'delete': {
-        const claim = claimKeys(body.keys, userId)
+        // Reading an approved community recipe is not ownership. Only the
+        // author can delete the object under their own prefix.
+        const claim = claimOwnedKeys(body.keys, userId)
         if ('error' in claim) return json({ ok: false, error: claim.error }, claim.status)
 
         await Promise.all(claim.keys.map((key) => deleteObject(key)))
