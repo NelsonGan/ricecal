@@ -249,20 +249,23 @@ export const MACRO_RANGE = { min: 0, max: 2000 }
  * disagrees between them is a value one screen can set and the other clamps.
  */
 export const HEIGHT_RANGE = { min: 120, max: 220 }
-export const WEIGHT_RANGE = { min: 30, max: 500 }
+export const WEIGHT_RANGE = { min: 20, max: 500 }
 export const AGE_RANGE = { min: 13, max: 150 }
 
 /**
  * What the target-weight slider can reach, for a body of this weight.
  *
  * A fixed 40 to 120, which is what this was, cannot express the one thing the
- * two weights exist to say for anybody above 120 kg: a target ON the current
- * weight is how a user states they have no goal, and a track stopping short of
- * them made that unsayable. So the top always reaches the body it is for, with a
- * little headroom for a gain, and the weight field's own ceiling caps it.
+ * two weights exist to say outside that interval: a target ON the current weight
+ * is how a user states they have no goal. The track therefore shares the weight
+ * field's floor, reaches the body it is for, and keeps a little headroom for a
+ * gain without passing the field's ceiling.
  */
 export function targetWeightRange(weightKg: number): { min: number; max: number } {
-  return { min: 40, max: Math.min(WEIGHT_RANGE.max, Math.max(120, Math.ceil(weightKg) + 10)) }
+  return {
+    min: WEIGHT_RANGE.min,
+    max: Math.min(WEIGHT_RANGE.max, Math.max(120, Math.ceil(weightKg) + 10)),
+  }
 }
 
 export type BodyInput = {

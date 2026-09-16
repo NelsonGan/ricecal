@@ -165,6 +165,17 @@ it('records what was typed', async () => {
   expect(saved()).toEqual(expect.objectContaining({ weightKg: 65.5 }))
 })
 
+it('accepts a body and target weight below 30 kg', async () => {
+  seed({ ...COMPLETE, weightKg: 25, targetWeightKg: 24 })
+  await render(<AboutStep />)
+
+  expect(screen.getByLabelText('WEIGHT')).toHaveDisplayValue('25')
+  expect(screen.getByText('24.0 kg')).toBeOnTheScreen()
+  await continueOn()
+
+  expect(saved()).toEqual(expect.objectContaining({ weightKg: 25, targetWeightKg: 24 }))
+})
+
 /**
  * Typed straight past the maximum, with no blur in between: a user who taps
  * Continue while still in the field never fires one, so the clamp cannot live
@@ -199,7 +210,7 @@ it('clamps a height below the bottom of the range', async () => {
  * these is really about the conversion at the edge: what a stored answer looks
  * like coming back into a field, and what a typed one becomes on the way to the
  * draft. The bounds are metric too, which is why a pounds field has to be
- * clamped against a converted limit rather than against 30.
+ * clamped against a converted limit rather than against 20.
  */
 describe('imperial', () => {
   const IMPERIAL: OnboardingDraft = { ...COMPLETE, units: 'imperial' }

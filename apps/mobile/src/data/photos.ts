@@ -9,7 +9,6 @@ import { Image } from 'react-native'
 
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
-import { useUserId } from './session'
 
 /**
  * Images, in Cloudflare R2.
@@ -308,18 +307,6 @@ export function uploadAvatar(localUri: string): Promise<string> {
 }
 
 /**
- * Whether this key is one the caller could possibly be handed a URL for. The
- * server's `ownsKey` is the real check; this is the same rule one round trip
- * earlier, because `signRead` batches every key in a 24 ms window into one call
- * and rejects the whole promise if any is refused. On the community recipe shelf
- * that meant asking for other people's photographs blanked the user's own.
- */
-function ownKey(path: string | undefined, userId: string): boolean {
-  if (!path) return false
-  return path.startsWith(`meals/${userId}/`) || path.startsWith(`avatars/${userId}/`)
-}
-
-/**
  * A uri for a stored image: a local file, or a signed URL.
  *
  * The bucket is private, so anything fetched over the network carries a
@@ -334,11 +321,12 @@ function ownKey(path: string | undefined, userId: string): boolean {
  * query never written to disk; kept for ever it also kept every deleted key.
  */
 function useStoredImageUri(path: string | undefined) {
-  const userId = useUserId()
-
   return useQuery({
     queryKey: keys.photo(path ?? ''),
-    enabled: ownKey(path, userId),
+    // The function authorizes the signed-in user's own images and photographs
+    // attached to recipes this account may read. The latter cannot be decided
+    // from a key prefix on the phone: a community photo belongs to its cook.
+    enabled: Boolean(path),
     staleTime: (READ_TTL_SECONDS - 300) * 1000,
     gcTime: READ_TTL_SECONDS * 1000,
     /**
