@@ -59,7 +59,7 @@ export async function claimReadableKeys(
   const rows = await visibleRecipePhotos(foreign)
   const allowed = new Set(
     rows.flatMap(({ owner_id: ownerId, photo_path: path }) =>
-      ownerId && path?.startsWith(`meals/${ownerId}/`) ? [path] : [],
+      ownerId && path && ownsKey(path, ownerId, 'meal') ? [path] : [],
     ),
   )
 

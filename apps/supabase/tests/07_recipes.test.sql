@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(28);
+select plan(29);
 
 \set cook  '33333333-3333-3333-3333-333333333333'
 \set other '44444444-4444-4444-4444-444444444444'
@@ -207,6 +207,20 @@ select is(
   (select is_public from public.recipes where id = :'recipe_id'),
   true,
   'and leaves it public, so the author does not have to ask twice'
+);
+
+-- A photograph is reviewed material too. Now that community photographs are
+-- readable, replacing one under an old approval would be the same bypass as
+-- rewriting the steps.
+update public.recipes set review_status = 'approved' where id = :'recipe_id';
+update public.recipes
+set photo_path = 'meals/33333333-3333-3333-3333-333333333333/replacement.jpg'
+where id = :'recipe_id';
+
+select is(
+  (select review_status::text from public.recipes where id = :'recipe_id'),
+  'pending',
+  'and so does replacing its photograph'
 );
 
 -- The nutrition is reviewable too — "calories that do not follow from the

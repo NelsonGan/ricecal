@@ -302,9 +302,10 @@ revoke execute on function public.recipes_enforce_free_limit from public, anon, 
 -- An edit sends a published recipe back to the reviewer.
 --
 -- The gate's second half, and without it the first half is decoration. Publish
--- something bland, collect an `approved`, then rewrite the name and the steps
--- into an advert: the row is still `is_public and review_status = 'approved'`, so
--- the new text is live in the community tab and no reviewer has seen it.
+-- something bland, collect an `approved`, then rewrite the name or steps into
+-- an advert, or replace the photograph: the row is still `is_public and
+-- review_status = 'approved'`, so the new material is live in the community tab
+-- and no reviewer has seen it.
 -- `set_recipe_public` only runs when the toggle is flipped, so it cannot catch
 -- this.
 --
@@ -423,7 +424,7 @@ create trigger recipes_set_updated_at
 -- before-row triggers in name order, and neither of these reads the other's
 -- columns.
 create trigger recipes_reset_review
-  before update of name, steps, servings on public.recipes
+  before update of name, steps, servings, photo_path on public.recipes
   for each row execute function public.recipes_reset_review();
 
 -- Renamed from `recipe_ingredients_sync_food`, which is what it did until the
