@@ -1,4 +1,4 @@
-import { requireOptionalNativeModule } from 'expo-modules-core'
+import { requireOptionalNativeModule } from 'expo'
 
 import { WIDGET_KINDS, type WidgetAction, type WidgetKind, type WidgetSnapshot } from './src/types'
 
