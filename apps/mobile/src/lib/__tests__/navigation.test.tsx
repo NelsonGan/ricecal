@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react-native'
 
-import { useBack, useDismissTo } from '@/lib/navigation'
+import { useBack, useDismissTo, useEnterApp } from '@/lib/navigation'
 
 /**
  * Where a dismissal goes when there is nothing to dismiss.
@@ -23,11 +23,18 @@ const mockRouter = {
   navigate: jest.fn(),
   replace: jest.fn(),
 }
+const mockNavigation = { reset: jest.fn() }
+const mockUseNavigation = jest.fn((_path: string) => mockNavigation)
 
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter }))
+jest.mock('expo-router', () => ({
+  useRouter: () => mockRouter,
+  useNavigation: (path: string) => mockUseNavigation(path),
+}))
 
 beforeEach(() => {
   for (const fn of Object.values(mockRouter)) fn.mockReset()
+  mockNavigation.reset.mockReset()
+  mockUseNavigation.mockClear()
 })
 
 describe('useBack', () => {
@@ -95,5 +102,20 @@ describe('useDismissTo', () => {
     result.current()
 
     expect(mockRouter.replace).toHaveBeenCalledWith('/today')
+  })
+})
+
+describe('useEnterApp', () => {
+  it('replaces the root history in one navigation action', async () => {
+    const { result } = await renderHook(() => useEnterApp())
+    result.current()
+
+    expect(mockUseNavigation).toHaveBeenCalledWith('/')
+    expect(mockNavigation.reset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: '(tabs)' }],
+    })
+    expect(mockRouter.dismissAll).not.toHaveBeenCalled()
+    expect(mockRouter.replace).not.toHaveBeenCalled()
   })
 })
