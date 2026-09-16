@@ -2259,11 +2259,12 @@ approves one.
 
 **An edit sends a published recipe back**, and without that the gate is
 decoration: publish something bland, collect an approval, then rewrite the name
-and the steps into an advert. A trigger resets `review_status` when the name, the
-steps, the servings or the ingredient list change on a public recipe. In the
-database, because a rule the client is trusted to follow is a rule an attacker
-declines to. Private recipes are left alone: there is nothing to re-review about
-something nobody else can see.
+and the steps into an advert, or replace the approved photograph. A trigger
+resets `review_status` when the name, the steps, the servings, the photograph or
+the ingredient list change on a public recipe. In the database, because a rule
+the client is trusted to follow is a rule an attacker declines to. Private
+recipes are left alone: there is nothing to re-review about something nobody
+else can see.
 
 **Everything fails shut.** The community tab reads `approved` only, so a review
 that errors, times out or was never deployed leaves the recipe public, pending
