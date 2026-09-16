@@ -42,7 +42,7 @@ import { buildWidgetSnapshot } from './snapshot'
  * 3. Notice which widgets are on the home screen, since nothing announces it.
  */
 export function WidgetSync() {
-  const { userId } = useSession()
+  const { userId, loading } = useSession()
 
   /**
    * How a widget tap addresses this build, told once. Signed out as well as in,
@@ -56,11 +56,13 @@ export function WidgetSync() {
   /**
    * Signed out clears the store, and it is not a tidy-up: a widget is a
    * screenshot of somebody's day pinned to a home screen, and it survives an
-   * account being signed out of.
+   * account being signed out of. The initial empty user is unresolved rather
+   * than signed out; clearing then also deletes the action a widget cold launch
+   * is trying to send.
    */
   useEffect(() => {
-    if (!userId) clearWidgetSnapshot()
-  }, [userId])
+    if (!loading && !userId) clearWidgetSnapshot()
+  }, [loading, userId])
 
   // Every hook below this line needs a session — `useUserId` throws without
   // one — so the signed-out case is an early return rather than a guard inside
