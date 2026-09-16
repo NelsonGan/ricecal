@@ -28,7 +28,12 @@ function Notice({ onUndo = NOOP }: { onUndo?: () => void }) {
   return null
 }
 
-it('dismisses a toast with a deliberate horizontal swipe', async () => {
+it.each([
+  ['left', -96, 0],
+  ['right', 96, 0],
+  ['up', 0, -96],
+  ['down', 0, 96],
+])('dismisses a toast with a deliberate %s swipe', async (_, translationX, translationY) => {
   await render(
     <SafeAreaProvider initialMetrics={METRICS}>
       <ToastProvider>
@@ -41,9 +46,21 @@ it('dismisses a toast with a deliberate horizontal swipe', async () => {
 
   await act(async () => {
     fireGestureHandler(getByGestureTestId('toast-swipe'), [
-      { state: State.BEGAN, translationX: 0, velocityX: 0 },
-      { state: State.ACTIVE, translationX: -96, velocityX: -240 },
-      { state: State.END, translationX: -96, velocityX: -240 },
+      { state: State.BEGAN, translationX: 0, translationY: 0, velocityX: 0, velocityY: 0 },
+      {
+        state: State.ACTIVE,
+        translationX,
+        translationY,
+        velocityX: translationX * 2.5,
+        velocityY: translationY * 2.5,
+      },
+      {
+        state: State.END,
+        translationX,
+        translationY,
+        velocityX: translationX * 2.5,
+        velocityY: translationY * 2.5,
+      },
     ])
   })
 
@@ -94,9 +111,15 @@ it('keeps the toast when the system cancels a partial swipe', async () => {
 
   await act(async () => {
     fireGestureHandler(getByGestureTestId('toast-swipe'), [
-      { state: State.BEGAN, translationX: 0, velocityX: 0 },
-      { state: State.ACTIVE, translationX: 40, velocityX: 120 },
-      { state: State.CANCELLED, translationX: 40, velocityX: 120 },
+      { state: State.BEGAN, translationX: 0, translationY: 0, velocityX: 0, velocityY: 0 },
+      { state: State.ACTIVE, translationX: 40, translationY: 20, velocityX: 120, velocityY: 60 },
+      {
+        state: State.CANCELLED,
+        translationX: 40,
+        translationY: 20,
+        velocityX: 120,
+        velocityY: 60,
+      },
     ])
   })
 
