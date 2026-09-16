@@ -42,6 +42,15 @@ Deno.test('a visible recipe cannot grant access to another account image', async
   assertEquals(read, { error: 'not your object or a visible recipe photo', status: 403 })
 })
 
+Deno.test('a visible recipe cannot escape its owner folder with path traversal', async () => {
+  const traversal = `meals/${COOK}/../${READER}/secret.jpg`
+  const read = await claimReadableKeys([traversal], READER, async () => [
+    { owner_id: COOK, photo_path: traversal },
+  ])
+
+  assertEquals(read, { error: 'not your object or a visible recipe photo', status: 403 })
+})
+
 Deno.test('a recipe cannot expose its author avatar as a food photo', async () => {
   const avatar = `avatars/${COOK}/avatar.jpg`
   const read = await claimReadableKeys([avatar], READER, async () => [
