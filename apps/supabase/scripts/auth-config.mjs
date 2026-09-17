@@ -57,6 +57,16 @@ const SETTINGS = {
   mailer_otp_length: 6,
 
   /**
+   * One message per address per minute, with a project-wide ceiling above it.
+   *
+   * The first is also mirrored by the app after an ambiguous timeout. SMTP can
+   * accept a message before GoTrue's request times out, and retrying at once
+   * then sends a second code that invalidates the delivered first one.
+   */
+  smtp_max_frequency: 60,
+  rate_limit_email_sent: 100,
+
+  /**
    * Eight, up from Supabase's default of six.
    *
    * Six is below every published floor worth naming and this app now has

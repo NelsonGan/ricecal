@@ -2,6 +2,7 @@ import * as AppleAuthentication from 'expo-apple-authentication'
 import { Platform } from 'react-native'
 
 import { forgetPerson, type SignInMethod, track } from '@/lib/analytics'
+import { isValidEmailAddress, normalizeEmailAddress } from '@/lib/email'
 import { env, isConfigured } from '@/lib/env'
 import { appScheme } from '@/lib/scheme'
 import { supabase } from '@/lib/supabase'
@@ -58,6 +59,8 @@ export function passwordResetRedirect(): string {
  * `cause` for Sentry.
  */
 export type AuthProblemReason =
+  /** The address cannot receive internet mail, caught before a request. */
+  | 'invalid_email'
   /** The password does not match the address, or there is no such account. */
   | 'invalid_credentials'
   /** Right password, but the address was never confirmed. Recoverable: resend. */
@@ -89,6 +92,8 @@ export class AuthProblem extends Error {
     /** Seconds until the same request would be accepted. `rate_limited` only. */
     readonly retryAfter?: number,
     cause?: unknown,
+    /** A mail call failed after a code may already have gone out. */
+    readonly emailMayHaveBeenSent = false,
   ) {
     super(reason)
     this.name = 'AuthProblem'
@@ -133,10 +138,12 @@ export function asAuthProblem(error: unknown): AuthProblem {
   const status = (error as { status?: number } | null)?.status
   const message = error instanceof Error ? error.message : String(error)
 
-  const problem = (reason: AuthProblemReason, retryAfter?: number) =>
-    new AuthProblem(reason, retryAfter, error)
+  const problem = (reason: AuthProblemReason, retryAfter?: number, emailMayHaveBeenSent = false) =>
+    new AuthProblem(reason, retryAfter, error, emailMayHaveBeenSent)
 
   switch (code) {
+    case 'email_address_invalid':
+      return problem('invalid_email')
     case 'invalid_credentials':
       return problem('invalid_credentials')
     case 'email_not_confirmed':
@@ -153,6 +160,8 @@ export function asAuthProblem(error: unknown): AuthProblem {
     case 'same_password':
       return problem('same_password')
     case 'over_email_send_rate_limit':
+      // This limit is per address, so it proves a recent mail request exists.
+      return problem('rate_limited', retryAfterIn(message), true)
     case 'over_request_rate_limit':
       return problem('rate_limited', retryAfterIn(message))
     case 'captcha_failed':
@@ -161,7 +170,8 @@ export function asAuthProblem(error: unknown): AuthProblem {
 
   // A 429 with no code is still a rate limit, and its wait is in the sentence.
   if (status === 429 || /you can only request this after/i.test(message)) {
-    return problem('rate_limited', retryAfterIn(message))
+    const perAddress = /you can only request this after/i.test(message)
+    return problem('rate_limited', retryAfterIn(message), perAddress)
   }
   // Belt and braces: `AuthError.code` is populated by every supabase-js this
   // project has shipped, but these are the two failures a person actually hits
@@ -178,6 +188,81 @@ export function asAuthProblem(error: unknown): AuthProblem {
   if (/network request failed|failed to fetch/i.test(message)) return problem('offline')
 
   return problem('unknown')
+}
+
+/**
+ * Supabase may time out after its SMTP handoff succeeded. Production did
+ * exactly that: the request answered 504, the first code was delivered, and an
+ * immediate retry delivered a second code that invalidated the first. Keep a
+ * short local hold for that ambiguous result, and mirror any exact wait GoTrue
+ * returns. Ordinary successes use GoTrue's own per-address limit, and definite
+ * refusals remain retryable.
+ */
+const EMAIL_SEND_COOLDOWN_S = 60
+type EmailSendHold = { until: number; emailMayHaveBeenSent: boolean }
+const emailSendHolds = new Map<string, EmailSendHold>()
+
+function emailKey(email: string): string {
+  return normalizeEmailAddress(email).toLowerCase()
+}
+
+function currentEmailSendHold(email: string): (EmailSendHold & { retryAfter: number }) | undefined {
+  const key = emailKey(email)
+  const hold = emailSendHolds.get(key)
+  if (!hold) return undefined
+
+  const retryAfter = Math.ceil((hold.until - Date.now()) / 1000)
+  if (retryAfter > 0) return { ...hold, retryAfter }
+
+  emailSendHolds.delete(key)
+  return undefined
+}
+
+export function emailSendRetryAfter(email: string): number {
+  return currentEmailSendHold(email)?.retryAfter ?? 0
+}
+
+function holdEmailSend(
+  email: string,
+  seconds = EMAIL_SEND_COOLDOWN_S,
+  emailMayHaveBeenSent = false,
+): number {
+  const key = emailKey(email)
+  const duration = seconds > 0 ? seconds : EMAIL_SEND_COOLDOWN_S
+  const previous = currentEmailSendHold(email)
+  emailSendHolds.set(key, {
+    until: Math.max(previous?.until ?? 0, Date.now() + duration * 1000),
+    emailMayHaveBeenSent: previous?.emailMayHaveBeenSent || emailMayHaveBeenSent,
+  })
+  return emailSendRetryAfter(email)
+}
+
+function validEmail(email: string): string {
+  const address = normalizeEmailAddress(email)
+  if (!isValidEmailAddress(address)) throw new AuthProblem('invalid_email')
+  return address
+}
+
+function mailMayHaveBeenAccepted(error: unknown): boolean {
+  let current: unknown = error
+
+  while (current) {
+    const candidate = current as {
+      cause?: unknown
+      code?: string
+      reason?: AuthProblemReason
+      status?: number
+    }
+    if (candidate.code === 'request_timeout') return true
+    if (candidate.reason === 'offline') return true
+    if (candidate.status === 0 || (candidate.status !== undefined && candidate.status >= 500)) {
+      return true
+    }
+    if (!candidate.cause || candidate.cause === current) break
+    current = candidate.cause
+  }
+
+  return false
 }
 
 /**
@@ -202,6 +287,36 @@ async function attempt<R extends { error: unknown }>(work: () => Promise<R>): Pr
 }
 
 /**
+ * Validates and rate-protects a call that can send email. A held request never
+ * reaches Supabase, so it cannot add another message to Cloudflare's retry or
+ * bounce queues.
+ */
+async function attemptEmail<R extends { error: unknown }>(
+  email: string,
+  work: (address: string) => Promise<R>,
+): Promise<R> {
+  const address = validEmail(email)
+  const hold = currentEmailSendHold(address)
+  if (hold) {
+    throw new AuthProblem('rate_limited', hold.retryAfter, undefined, hold.emailMayHaveBeenSent)
+  }
+
+  try {
+    return await attempt(() => work(address))
+  } catch (error) {
+    const problem = asAuthProblem(error)
+    if (problem.reason === 'rate_limited') {
+      holdEmailSend(address, problem.retryAfter, problem.emailMayHaveBeenSent)
+      throw problem
+    }
+    if (mailMayHaveBeenAccepted(error)) {
+      throw new AuthProblem('rate_limited', holdEmailSend(address, undefined, true), error, true)
+    }
+    throw error
+  }
+}
+
+/**
  * Mails a sign-in code, creating the account if the address is new.
  *
  * The mail carries a code and a link. `emailRedirectTo` is what makes the link
@@ -210,9 +325,9 @@ async function attempt<R extends { error: unknown }>(work: () => Promise<R>): Pr
  * `pnpm auth:config` owns both.
  */
 export async function sendLoginLink(email: string, captchaToken?: string): Promise<void> {
-  await attempt(() =>
+  await attemptEmail(email, (address) =>
     supabase.auth.signInWithOtp({
-      email: email.trim(),
+      email: address,
       options: {
         shouldCreateUser: true,
         emailRedirectTo: loginLinkRedirect(),
@@ -253,9 +368,9 @@ export async function signUpWithPassword(
   password: string,
   captchaToken?: string,
 ): Promise<SignUpOutcome> {
-  const { data } = await attempt(() =>
+  const { data } = await attemptEmail(email, (address) =>
     supabase.auth.signUp({
-      email: email.trim(),
+      email: address,
       password,
       options: { emailRedirectTo: loginLinkRedirect(), captchaToken },
     }),
@@ -280,9 +395,10 @@ export async function signInWithPassword(
   password: string,
   captchaToken?: string,
 ): Promise<void> {
+  const address = validEmail(email)
   await attempt(() =>
     supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: address,
       password,
       options: { captchaToken },
     }),
@@ -296,8 +412,8 @@ export async function signInWithPassword(
  * reporting otherwise gives away the one thing it is careful not to.
  */
 export async function sendPasswordReset(email: string, captchaToken?: string): Promise<void> {
-  await attempt(async () => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+  await attemptEmail(email, async (address) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(address, {
       redirectTo: passwordResetRedirect(),
       captchaToken,
     })
@@ -315,10 +431,10 @@ export async function sendPasswordReset(email: string, captchaToken?: string): P
  * path then refuses.
  */
 export async function resendConfirmation(email: string, captchaToken?: string): Promise<void> {
-  await attempt(async () => {
+  await attemptEmail(email, async (address) => {
     const { error } = await supabase.auth.resend({
       type: 'signup',
-      email: email.trim(),
+      email: address,
       options: { emailRedirectTo: loginLinkRedirect(), captchaToken },
     })
     return { data: null, error }
@@ -351,9 +467,10 @@ export async function verifyEmailCode(
   code: string,
   purpose: CodePurpose,
 ): Promise<void> {
+  const address = validEmail(email)
   await attempt(() =>
     supabase.auth.verifyOtp({
-      email: email.trim(),
+      email: address,
       // A code read off a banner is pasted as often as typed, and the
       // clipboard brings the spaces with it.
       token: code.replace(/\s/g, ''),

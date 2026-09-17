@@ -1052,6 +1052,34 @@ the screen switches to sign-in and offers a code, and neither says why.
 `code_invalid` reason and its copy covers both. Copy that said "expired" would
 tell somebody who mistyped to go and wait for another mail.
 
+### Keeping auth mail deliverable
+
+The address field applies a practical internet-mail check before the app can
+reach an endpoint that sends. It rejects malformed domains and a short list of
+mail-provider misspellings observed in delivery failures, while accepting
+Apple's `privaterelay.appleid.com` addresses. This cannot prove that a mailbox
+exists. Cloudflare owns that last mile and its suppression list stops known bad
+recipients from consuming another delivery attempt.
+
+The app never retries an auth email automatically. A failed HTTP response does
+not prove that no message went out: GoTrue can hand a message to SMTP and then
+time out. `data/auth.ts` holds the address for a minute after an ambiguous
+timeout, preserves any exact wait Supabase returns, and the resend screens show
+that countdown. Only an ambiguous result or the per-address email limit moves
+on to code entry; an IP-wide request limit does not pretend a message exists. A
+definite refusal, such as a failed captcha, stays immediately retryable.
+`pnpm auth:config` owns the one-minute per-address interval and the project-wide
+hourly ceiling.
+
+Apple private relay addresses are real addresses, not disposable-mail abuse.
+Delivery to them requires every outbound domain to be registered under **Sign
+in with Apple, Email Communication** in the Apple developer account. Register
+`ricecal.app` for the From address and DKIM signature, and
+`cf-bounce.ricecal.app` for Cloudflare's envelope sender and SPF check. A 550
+`unauthorized sender` from an Apple relay address means that registration is
+missing or no longer verified; do not suppress the recipient or reject the
+relay domain in the app.
+
 ### The reset is one screen, and that is a race not a taste
 
 Verifying a recovery code creates the session, and that session is both the

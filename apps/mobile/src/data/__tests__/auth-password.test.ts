@@ -1,6 +1,7 @@
 import {
   AuthProblem,
   asAuthProblem,
+  emailSendRetryAfter,
   signInWithPassword,
   signUpWithPassword,
   verifyEmailCode,
@@ -115,6 +116,80 @@ describe('signing up', () => {
       expect.objectContaining({ email: 'aisyah@example.com' }),
     )
   })
+
+  it('refuses a provider typo before it can reach the mailer', async () => {
+    await expect(signUpWithPassword('person@gmial.com', 'longenough')).rejects.toMatchObject({
+      reason: 'invalid_email',
+    })
+
+    expect(supabase.auth.signUp).not.toHaveBeenCalled()
+  })
+
+  it('accepts an Apple private relay address', async () => {
+    await signUpWithPassword('apple-user@privaterelay.appleid.com', 'longenough')
+
+    expect(supabase.auth.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'apple-user@privaterelay.appleid.com' }),
+    )
+  })
+
+  it('holds an immediate retry when the first mail may already have been accepted', async () => {
+    const timeout = Object.assign(new Error('upstream request timeout'), {
+      code: 'request_timeout',
+      status: 504,
+    })
+    supabase.auth.signUp.mockResolvedValue({ data: { user: null, session: null }, error: timeout })
+
+    await expect(signUpWithPassword('timeout@example.com', 'longenough')).rejects.toMatchObject({
+      reason: 'rate_limited',
+      retryAfter: 60,
+    })
+    await expect(signUpWithPassword('timeout@example.com', 'longenough')).rejects.toMatchObject({
+      reason: 'rate_limited',
+      retryAfter: 60,
+    })
+
+    expect(supabase.auth.signUp).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the exact wait from a server rate limit and blocks another request locally', async () => {
+    const limited = Object.assign(
+      new Error('For security purposes, you can only request this after 47 seconds.'),
+      { code: 'over_email_send_rate_limit', status: 429 },
+    )
+    supabase.auth.signUp.mockResolvedValue({ data: { user: null, session: null }, error: limited })
+
+    await expect(signUpWithPassword('limited@example.com', 'longenough')).rejects.toMatchObject({
+      reason: 'rate_limited',
+      retryAfter: 47,
+      emailMayHaveBeenSent: true,
+    })
+    expect(emailSendRetryAfter('limited@example.com')).toBe(47)
+
+    await expect(signUpWithPassword('limited@example.com', 'longenough')).rejects.toMatchObject({
+      reason: 'rate_limited',
+      retryAfter: 47,
+      emailMayHaveBeenSent: true,
+    })
+    expect(supabase.auth.signUp).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not hold a retry when Supabase definitely refused the request', async () => {
+    const captcha = Object.assign(new Error('captcha verification failed'), {
+      code: 'captcha_failed',
+      status: 400,
+    })
+    supabase.auth.signUp.mockResolvedValue({ data: { user: null, session: null }, error: captcha })
+
+    await expect(signUpWithPassword('captcha@example.com', 'longenough')).rejects.toMatchObject({
+      reason: 'captcha',
+    })
+    await expect(signUpWithPassword('captcha@example.com', 'longenough')).rejects.toMatchObject({
+      reason: 'captcha',
+    })
+
+    expect(supabase.auth.signUp).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('signing in', () => {
@@ -180,6 +255,13 @@ describe('reading what Supabase said', () => {
     expect(asAuthProblem(error).reason).toBe('code_invalid')
   })
 
+  it('maps the official invalid-address code to the field error', () => {
+    const error = Object.assign(new Error('Email address is invalid'), {
+      code: 'email_address_invalid',
+    })
+    expect(asAuthProblem(error).reason).toBe('invalid_email')
+  })
+
   /**
    * Checked against the deployed project: a code that is simply WRONG comes
    * back 403 `otp_expired`, "Token has expired or is invalid". So there is no
@@ -212,7 +294,21 @@ describe('reading what Supabase said', () => {
 
   it('reads a 429 with no code at all as a rate limit', () => {
     const error = Object.assign(new Error('Too many requests'), { status: 429 })
-    expect(asAuthProblem(error).reason).toBe('rate_limited')
+    expect(asAuthProblem(error)).toMatchObject({
+      reason: 'rate_limited',
+      emailMayHaveBeenSent: false,
+    })
+  })
+
+  it('does not mistake an IP-wide limit for evidence that a code was sent', () => {
+    const error = Object.assign(new Error('Too many requests'), {
+      code: 'over_request_rate_limit',
+      status: 429,
+    })
+    expect(asAuthProblem(error)).toMatchObject({
+      reason: 'rate_limited',
+      emailMayHaveBeenSent: false,
+    })
   })
 
   /**

@@ -35,6 +35,7 @@ class MockAuthProblem extends Error {
   constructor(
     readonly reason: string,
     readonly retryAfter?: number,
+    readonly emailMayHaveBeenSent = false,
   ) {
     super(reason)
     this.name = 'AuthProblem'
@@ -138,6 +139,31 @@ describe('creating an account', () => {
     })
   })
 
+  it('still opens the code screen when the signup mail may already have arrived', async () => {
+    auth.signUpWithPassword.mockRejectedValue(new MockAuthProblem('rate_limited', 60, true))
+    await render(<PasswordScreen />)
+
+    await fill('PASSWORD', 'longenough')
+    await fill('CONFIRM PASSWORD', 'longenough')
+    await user.press(screen.getByText('Create account'))
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/(auth)/verify',
+      params: { email: 'aisyah@example.com', purpose: 'signup' },
+    })
+  })
+
+  it('stays put when an IP-wide limit means no signup mail was sent', async () => {
+    auth.signUpWithPassword.mockRejectedValue(new MockAuthProblem('rate_limited', 60))
+    await render(<PasswordScreen />)
+
+    await fill('PASSWORD', 'longenough')
+    await fill('CONFIRM PASSWORD', 'longenough')
+    await user.press(screen.getByText('Create account'))
+
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
   it('goes nowhere when the project handed back a session', async () => {
     auth.signUpWithPassword.mockResolvedValue('signed-in')
     await render(<PasswordScreen />)
@@ -198,6 +224,20 @@ describe('signing in', () => {
     await user.press(screen.getByText('Sign in'))
 
     expect(auth.resendConfirmation).toHaveBeenCalledWith('aisyah@example.com', undefined)
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/(auth)/verify',
+      params: { email: 'aisyah@example.com', purpose: 'signup' },
+    })
+  })
+
+  it('opens the code screen when the fresh confirmation may already have arrived', async () => {
+    auth.signInWithPassword.mockRejectedValue(new MockAuthProblem('email_not_confirmed'))
+    auth.resendConfirmation.mockRejectedValue(new MockAuthProblem('rate_limited', 60, true))
+    await render(<PasswordScreen />)
+
+    await fill('PASSWORD', 'longenough')
+    await user.press(screen.getByText('Sign in'))
+
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/(auth)/verify',
       params: { email: 'aisyah@example.com', purpose: 'signup' },
