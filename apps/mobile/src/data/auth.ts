@@ -92,6 +92,8 @@ export class AuthProblem extends Error {
     /** Seconds until the same request would be accepted. `rate_limited` only. */
     readonly retryAfter?: number,
     cause?: unknown,
+    /** A mail call failed after a code may already have gone out. */
+    readonly emailMayHaveBeenSent = false,
   ) {
     super(reason)
     this.name = 'AuthProblem'
@@ -136,10 +138,12 @@ export function asAuthProblem(error: unknown): AuthProblem {
   const status = (error as { status?: number } | null)?.status
   const message = error instanceof Error ? error.message : String(error)
 
-  const problem = (reason: AuthProblemReason, retryAfter?: number) =>
-    new AuthProblem(reason, retryAfter, error)
+  const problem = (reason: AuthProblemReason, retryAfter?: number, emailMayHaveBeenSent = false) =>
+    new AuthProblem(reason, retryAfter, error, emailMayHaveBeenSent)
 
   switch (code) {
+    case 'email_address_invalid':
+      return problem('invalid_email')
     case 'invalid_credentials':
       return problem('invalid_credentials')
     case 'email_not_confirmed':
@@ -156,6 +160,8 @@ export function asAuthProblem(error: unknown): AuthProblem {
     case 'same_password':
       return problem('same_password')
     case 'over_email_send_rate_limit':
+      // This limit is per address, so it proves a recent mail request exists.
+      return problem('rate_limited', retryAfterIn(message), true)
     case 'over_request_rate_limit':
       return problem('rate_limited', retryAfterIn(message))
     case 'captcha_failed':
@@ -164,7 +170,8 @@ export function asAuthProblem(error: unknown): AuthProblem {
 
   // A 429 with no code is still a rate limit, and its wait is in the sentence.
   if (status === 429 || /you can only request this after/i.test(message)) {
-    return problem('rate_limited', retryAfterIn(message))
+    const perAddress = /you can only request this after/i.test(message)
+    return problem('rate_limited', retryAfterIn(message), perAddress)
   }
   // Belt and braces: `AuthError.code` is populated by every supabase-js this
   // project has shipped, but these are the two failures a person actually hits
@@ -187,26 +194,47 @@ export function asAuthProblem(error: unknown): AuthProblem {
  * Supabase may time out after its SMTP handoff succeeded. Production did
  * exactly that: the request answered 504, the first code was delivered, and an
  * immediate retry delivered a second code that invalidated the first. Keep a
- * short local hold only for that ambiguous result. Ordinary successes use
- * GoTrue's own per-address limit, and definite refusals remain retryable.
+ * short local hold for that ambiguous result, and mirror any exact wait GoTrue
+ * returns. Ordinary successes use GoTrue's own per-address limit, and definite
+ * refusals remain retryable.
  */
-const EMAIL_SEND_COOLDOWN_MS = 60_000
-const uncertainEmailSends = new Map<string, number>()
+const EMAIL_SEND_COOLDOWN_S = 60
+type EmailSendHold = { until: number; emailMayHaveBeenSent: boolean }
+const emailSendHolds = new Map<string, EmailSendHold>()
 
 function emailKey(email: string): string {
   return normalizeEmailAddress(email).toLowerCase()
 }
 
-export function emailSendRetryAfter(email: string): number {
+function currentEmailSendHold(email: string): (EmailSendHold & { retryAfter: number }) | undefined {
   const key = emailKey(email)
-  const sentAt = uncertainEmailSends.get(key)
-  if (sentAt === undefined) return 0
+  const hold = emailSendHolds.get(key)
+  if (!hold) return undefined
 
-  const remaining = Math.ceil((sentAt + EMAIL_SEND_COOLDOWN_MS - Date.now()) / 1000)
-  if (remaining > 0) return remaining
+  const retryAfter = Math.ceil((hold.until - Date.now()) / 1000)
+  if (retryAfter > 0) return { ...hold, retryAfter }
 
-  uncertainEmailSends.delete(key)
-  return 0
+  emailSendHolds.delete(key)
+  return undefined
+}
+
+export function emailSendRetryAfter(email: string): number {
+  return currentEmailSendHold(email)?.retryAfter ?? 0
+}
+
+function holdEmailSend(
+  email: string,
+  seconds = EMAIL_SEND_COOLDOWN_S,
+  emailMayHaveBeenSent = false,
+): number {
+  const key = emailKey(email)
+  const duration = seconds > 0 ? seconds : EMAIL_SEND_COOLDOWN_S
+  const previous = currentEmailSendHold(email)
+  emailSendHolds.set(key, {
+    until: Math.max(previous?.until ?? 0, Date.now() + duration * 1000),
+    emailMayHaveBeenSent: previous?.emailMayHaveBeenSent || emailMayHaveBeenSent,
+  })
+  return emailSendRetryAfter(email)
 }
 
 function validEmail(email: string): string {
@@ -268,15 +296,21 @@ async function attemptEmail<R extends { error: unknown }>(
   work: (address: string) => Promise<R>,
 ): Promise<R> {
   const address = validEmail(email)
-  const retryAfter = emailSendRetryAfter(address)
-  if (retryAfter > 0) throw new AuthProblem('rate_limited', retryAfter)
+  const hold = currentEmailSendHold(address)
+  if (hold) {
+    throw new AuthProblem('rate_limited', hold.retryAfter, undefined, hold.emailMayHaveBeenSent)
+  }
 
   try {
     return await attempt(() => work(address))
   } catch (error) {
+    const problem = asAuthProblem(error)
+    if (problem.reason === 'rate_limited') {
+      holdEmailSend(address, problem.retryAfter, problem.emailMayHaveBeenSent)
+      throw problem
+    }
     if (mailMayHaveBeenAccepted(error)) {
-      uncertainEmailSends.set(emailKey(address), Date.now())
-      throw new AuthProblem('rate_limited', emailSendRetryAfter(address), error)
+      throw new AuthProblem('rate_limited', holdEmailSend(address, undefined, true), error, true)
     }
     throw error
   }

@@ -90,7 +90,9 @@ export default function VerifyScreen() {
    * Counted down in state rather than from a timestamp, because coming back to a
    * stale countdown is fixed by the server's own answer.
    */
-  const [cooldown, setCooldown] = useState(sendOnArrival ? 0 : RESEND_COOLDOWN_S)
+  const [cooldown, setCooldown] = useState(() =>
+    sendOnArrival ? 0 : emailSendRetryAfter(email) || RESEND_COOLDOWN_S,
+  )
   const ticker = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -151,10 +153,10 @@ export default function VerifyScreen() {
    * The send the caller did not do, because it navigated here instead. The screen
    * is already up by the time this runs, which is the point: the wait moves from
    * a button that has not changed to a page that says what is happening. A
-   * A definite failure leaves the cooldown at zero. A timeout is different:
+   * definite failure leaves the cooldown at zero. A timeout is different:
    * Supabase can time out after handing the mail to Cloudflare, so the data
-   * layer preserves the remainder of the minute rather than sending a second
-   * code that invalidates the first.
+   * layer holds a full minute, or preserves the server's exact wait, rather
+   * than sending a second code that invalidates the first.
    *
    * Once, and the ref is not belt and braces: an empty dependency list means once
    * per mount, and Fast Refresh re-runs the effect, as does anything that

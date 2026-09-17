@@ -1,5 +1,5 @@
 /**
- * Email addresses the app can safely hand to an internet mailer.
+ * Email-address syntax the app can safely hand to Supabase Auth.
  *
  * This is deliberately practical rather than a complete RFC 5322 parser. Auth
  * mail has to reach a public DNS name, so quoted local parts, address literals
@@ -11,37 +11,11 @@ const DOMAIN_LABEL = /^[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?$/i
 const TOP_LEVEL_DOMAIN = /^(?:[A-Z]{2,63}|XN--[A-Z0-9-]{2,59})$/i
 
 /**
- * Syntactically valid misspellings seen in delivery logs, plus the adjacent
- * key and transposition variants of the same large mailbox providers. Syntax
- * alone cannot distinguish `gmial.com` from a real domain, but the mail server
- * will still spend hours retrying it.
+ * Syntactically valid misspellings that produced delivery failures. Keep this
+ * evidence-based: a guessed typo can be a real domain with real mailboxes, and
+ * blocking one would lock its users out before the mailer had a say.
  */
-const COMMON_PROVIDER_TYPOS = new Set([
-  'gamil.com',
-  'gmail.cm',
-  'gmail.cmo',
-  'gmail.co',
-  'gmail.comel',
-  'gmail.comn',
-  'gmail.con',
-  'gmial.com',
-  'gmil.com',
-  'hotmai.com',
-  'hotmail.co',
-  'hotmail.con',
-  'hotmal.com',
-  'hotnail.com',
-  'icloud.co',
-  'icloud.con',
-  'iclod.com',
-  'iclud.com',
-  'outlok.com',
-  'outlook.co',
-  'outlook.con',
-  'yaho.com',
-  'yahoo.co',
-  'yahoo.con',
-])
+const COMMON_PROVIDER_TYPOS = new Set(['gmail.comel', 'gmail.comn', 'gmial.com'])
 
 export function normalizeEmailAddress(value: string): string {
   return value.trim()
