@@ -151,8 +151,8 @@ export default function RecipeDetailScreen() {
 
   // Resolved, and there is nothing there. Distinct from still loading, and the
   // distinction matters most on the path this screen exists for: a shared LINK
-  // to a recipe that was deleted, made private again, or is still waiting on a
-  // review. A skeleton that never resolves says the app is broken; this says
+  // to an invalid link, a deleted recipe, or one this account blocked or
+  // reported. A skeleton that never resolves says the app is broken; this says
   // what happened.
   if (!recipe) {
     return (

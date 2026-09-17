@@ -21,7 +21,12 @@ import {
   signGet,
   signPut,
 } from '../_shared/r2.ts'
-import { claimOwnedKeys, claimReadableKeys, type VisibleRecipePhoto } from './access.ts'
+import {
+  claimOwnedKeys,
+  claimReadableKeys,
+  isRecipeShareSlug,
+  type VisibleRecipePhoto,
+} from './access.ts'
 
 type UploadRequest = { action: 'upload'; kind?: AssetKind; contentType?: string; size?: number }
 type ReadRequest = { action: 'read'; keys?: string[]; shareSlug?: string }
@@ -104,8 +109,8 @@ Deno.serve(async (req: Request) => {
       }
 
       case 'read': {
-        if (body.shareSlug !== undefined && typeof body.shareSlug !== 'string') {
-          return json({ ok: false, error: 'shareSlug must be a string' }, 400)
+        if (body.shareSlug !== undefined && !isRecipeShareSlug(body.shareSlug)) {
+          return json({ ok: false, error: 'shareSlug is not valid' }, 400)
         }
 
         const claim = await claimReadableKeys(body.keys, userId, async (keys) => {

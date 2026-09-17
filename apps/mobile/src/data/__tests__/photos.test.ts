@@ -145,12 +145,13 @@ describe('resolveStoredImage', () => {
   })
 
   it('carries a private recipe link into photo authorization', async () => {
-    await expect(resolveStoredImage(KEY, 'family-rendang-deadbeef')).resolves.toBe(SIGNED)
+    const shareSlug = '0123456789abcdef0123456789abcdef'
+    await expect(resolveStoredImage(KEY, shareSlug)).resolves.toBe(SIGNED)
     expect(supabase.functions.invoke).toHaveBeenCalledWith('photos', {
       body: {
         action: 'read',
         keys: [KEY],
-        shareSlug: 'family-rendang-deadbeef',
+        shareSlug,
       },
     })
   })
