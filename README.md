@@ -1071,11 +1071,12 @@ project-wide hourly ceiling.
 
 Apple private relay addresses are real addresses, not disposable-mail abuse.
 Delivery to them requires every outbound domain to be registered under **Sign
-in with Apple, Email Communication** in the Apple developer account. For this
-project that is `ricecal.app`, authenticated by the SPF and DKIM records that
-Cloudflare Email Sending publishes. A 550 `unauthorized sender` from an Apple
-relay address means that registration is missing or no longer verified; do not
-suppress the recipient or reject the relay domain in the app.
+in with Apple, Email Communication** in the Apple developer account. Register
+`ricecal.app` for the From address and DKIM signature, and
+`cf-bounce.ricecal.app` for Cloudflare's envelope sender and SPF check. A 550
+`unauthorized sender` from an Apple relay address means that registration is
+missing or no longer verified; do not suppress the recipient or reject the
+relay domain in the app.
 
 ### The reset is one screen, and that is a race not a taste
 
