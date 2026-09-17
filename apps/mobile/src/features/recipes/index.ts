@@ -27,5 +27,6 @@ export {
 } from './RecipeIngredientEditor'
 export { RecipeSteps, splitSteps } from './RecipeSteps'
 export { RecipeTile, type RecipeTileProps } from './RecipeTile'
-export { recipeLink, ShareSheet, type ShareSheetProps } from './ShareSheet'
+export { ShareSheet, type ShareSheetProps } from './ShareSheet'
 export { StepsField, type StepsFieldProps } from './StepsField'
+export { recipeLink } from './share'

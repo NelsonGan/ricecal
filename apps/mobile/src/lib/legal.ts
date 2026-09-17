@@ -12,9 +12,8 @@ import { Linking } from 'react-native'
  * Our own documents rather than Apple's standard EULA. `ricecal-web` serves both,
  * and the deletion page beside them is what guideline 5.1.1(v) points at.
  *
- * `ricecal.app` rather than the `ricecal.my` in `recipeLink`, which is the short
- * domain a shared recipe opens from: these have to be the addresses filed in App
- * Store Connect.
+ * These are the addresses filed in App Store Connect, and the same `ricecal.app`
+ * host the website and shared recipe links use.
  */
 const SITE = 'https://ricecal.app'
 

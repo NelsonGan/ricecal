@@ -1,13 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { Share } from 'react-native'
+import { Platform, Share } from 'react-native'
 
 import type { Recipe } from '@/data'
 import { usePublishRecipe } from '@/data'
 import { ToggleRow } from '@/features/shared'
 import { Button, Card, Icon, Sheet, Text, useToast } from '@/ui'
-
-/** Where a shared recipe lives. One place, so a link cannot be built two ways. */
-export const recipeLink = (shareSlug: string) => `https://ricecal.my/r/${shareSlug}`
+import { recipeLink } from './share'
 
 export type ShareSheetProps = {
   visible: boolean
@@ -37,8 +35,14 @@ export function ShareSheet({ visible, onClose, recipe }: ShareSheetProps) {
 
   const share = () => {
     // The platform's own sheet, which is copy, message and everything else in
-    // one — and needs no native module this app does not already have.
-    Share.share({ message: `${recipe.name}: ${link}`, url: link }).catch(() => {})
+    // one, and needs no native module this app does not already have. Android
+    // ignores `url`, while putting it in iOS's message prints the link twice in
+    // some targets, so each platform gets the field it actually sends.
+    const content =
+      Platform.OS === 'ios'
+        ? { message: recipe.name, url: link }
+        : { message: `${recipe.name}: ${link}` }
+    Share.share(content).catch(() => {})
   }
 
   const setPublic = async (next: boolean) => {

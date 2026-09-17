@@ -110,6 +110,98 @@ grant select on public.recipe_details to authenticated, service_role;
 
 
 -- ---------------------------------------------------------------------------
+-- Reading a recipe somebody shared as a link.
+--
+-- `share_slug` is the bearer credential. A normal select still goes through
+-- recipe RLS and cannot see private cooking; this function widens one read to
+-- the one row named by the unguessable slug. Reports and blocks still win, so
+-- opening an old message cannot bring back something the reader hid.
+-- ---------------------------------------------------------------------------
+create or replace function public.get_shared_recipe(p_share_slug text)
+returns setof public.recipe_details
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select d.*
+  from public.recipe_details d
+  where d.share_slug = p_share_slug
+    and (
+      d.owner_id = (select auth.uid())
+      or d.owner_id is null
+      or (
+        not exists (
+          select 1
+          from public.blocked_authors b
+          where b.user_id = (select auth.uid())
+            and b.author_id = d.owner_id
+        )
+        and not exists (
+          select 1
+          from public.recipe_reports r
+          where r.recipe_id = d.id
+            and r.reporter_id = (select auth.uid())
+        )
+      )
+    )
+  limit 1;
+$$;
+
+comment on function public.get_shared_recipe is
+  'Read the one recipe named by a private share link. The slug is the bearer '
+  'credential; the caller must still be signed in, and their reports and '
+  'blocked cooks remain hidden.';
+
+revoke execute on function public.get_shared_recipe from public, anon;
+grant execute on function public.get_shared_recipe to authenticated, service_role;
+
+
+-- The ingredients are a separate query in the app, so they need the same
+-- narrow link exception. Keeping the predicate beside the recipe read makes a
+-- future moderation change fail both database tests instead of quietly showing
+-- a hidden cook's ingredient list under an empty detail page.
+create or replace function public.get_shared_recipe_ingredients(p_share_slug text)
+returns setof public.recipe_ingredient_details
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select i.*
+  from public.recipe_ingredient_details i
+  join public.recipes r on r.id = i.recipe_id
+  where r.share_slug = p_share_slug
+    and (
+      r.owner_id = (select auth.uid())
+      or r.owner_id is null
+      or (
+        not exists (
+          select 1
+          from public.blocked_authors b
+          where b.user_id = (select auth.uid())
+            and b.author_id = r.owner_id
+        )
+        and not exists (
+          select 1
+          from public.recipe_reports p
+          where p.recipe_id = r.id
+            and p.reporter_id = (select auth.uid())
+        )
+      )
+    )
+  order by i.position;
+$$;
+
+comment on function public.get_shared_recipe_ingredients is
+  'Read the ingredients belonging to the one recipe named by a private share '
+  'link, under the same signed-in, report and block rules as get_shared_recipe.';
+
+revoke execute on function public.get_shared_recipe_ingredients from public, anon;
+grant execute on function public.get_shared_recipe_ingredients to authenticated, service_role;
+
+
+-- ---------------------------------------------------------------------------
 -- Asking for a recipe to be published, and taking it back.
 --
 -- A function rather than an update, because `is_public` and `review_status` are
@@ -265,3 +357,96 @@ comment on function public.save_recipe_copy is
 
 revoke execute on function public.save_recipe_copy from public, anon;
 grant execute on function public.save_recipe_copy to authenticated, service_role;
+
+
+-- ---------------------------------------------------------------------------
+-- Saving a privately shared recipe as your own.
+--
+-- The ordinary copy function accepts an id only after RLS would have shown the
+-- source. A private link is deliberately not RLS-visible, so this sibling takes
+-- the bearer slug and repeats the same copy without turning private cooking
+-- into something enumerable. Keep the writes in step with save_recipe_copy.
+-- ---------------------------------------------------------------------------
+create or replace function public.save_shared_recipe_copy(p_share_slug text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid := auth.uid();
+  src    public.recipes;
+  v_new  uuid;
+begin
+  if v_user is null then
+    raise exception 'not signed in';
+  end if;
+
+  select * into src
+  from public.recipes r
+  where r.share_slug = p_share_slug
+    and (
+      r.owner_id = v_user
+      or r.owner_id is null
+      or (
+        not exists (
+          select 1
+          from public.blocked_authors b
+          where b.user_id = v_user
+            and b.author_id = r.owner_id
+        )
+        and not exists (
+          select 1
+          from public.recipe_reports p
+          where p.recipe_id = r.id
+            and p.reporter_id = v_user
+        )
+      )
+    );
+
+  if src.id is null then
+    raise exception 'recipe not found';
+  end if;
+
+  -- Photographs stay with their owner. See save_recipe_copy for why the icon
+  -- can copy and an R2 object key cannot.
+  insert into public.recipes (
+    owner_id, name, icon_set, icon_name, servings, steps, source_recipe_id
+  )
+  values (
+    v_user, src.name, src.icon_set, src.icon_name, src.servings, src.steps, src.id
+  )
+  returning id into v_new;
+
+  insert into public.recipe_ingredients (
+    recipe_id, name, food_id, amount, unit,
+    kcal_per_unit, carbs_g_per_unit, protein_g_per_unit, fat_g_per_unit, position
+  )
+  select
+    v_new, i.name, i.food_id, i.amount, i.unit,
+    i.kcal_per_unit, i.carbs_g_per_unit, i.protein_g_per_unit, i.fat_g_per_unit,
+    i.position
+  from public.recipe_ingredients i
+  where i.recipe_id = src.id;
+
+  if src.owner_id is distinct from v_user then
+    insert into public.recipe_saves (recipe_id, user_id)
+    values (src.id, v_user)
+    on conflict do nothing;
+
+    if found then
+      update public.recipes set saved_count = saved_count + 1 where id = src.id;
+    end if;
+  end if;
+
+  return v_new;
+end;
+$$;
+
+comment on function public.save_shared_recipe_copy is
+  'Copy the recipe named by a private share link into the signed-in caller''s '
+  'own foods. The slug is the bearer credential; reports and blocked cooks '
+  'remain hidden.';
+
+revoke execute on function public.save_shared_recipe_copy from public, anon;
+grant execute on function public.save_shared_recipe_copy to authenticated, service_role;

@@ -149,16 +149,32 @@ export function isRecipeLimit(error: unknown): boolean {
   return typeof message === 'string' && message.includes(RECIPE_LIMIT)
 }
 
-export function useRecipe(id: string | undefined) {
+/** A route reached inside the app carries the row id; a shared link carries its bearer slug. */
+const RECIPE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function isRecipeId(reference: string): boolean {
+  return RECIPE_ID.test(reference)
+}
+
+export function useRecipe(reference: string | undefined) {
   return useQuery({
-    queryKey: keys.recipe(id ?? ''),
-    enabled: Boolean(id),
+    queryKey: keys.recipe(reference ?? ''),
+    enabled: Boolean(reference),
     queryFn: async (): Promise<Recipe | null> => {
+      if (!isRecipeId(reference as string)) {
+        const row = unwrapMaybe(
+          await supabase
+            .rpc('get_shared_recipe', { p_share_slug: reference as string })
+            .maybeSingle(),
+        )
+        return row ? toRecipe(row) : null
+      }
+
       const row = unwrapMaybe(
         await supabase
           .from('recipe_details')
           .select(RECIPE_COLUMNS)
-          .eq('id', id as string)
+          .eq('id', reference as string)
           .maybeSingle(),
       )
       return row ? toRecipe(row) : null
@@ -166,18 +182,27 @@ export function useRecipe(id: string | undefined) {
   })
 }
 
-export function useRecipeIngredients(recipeId: string | undefined) {
+export function useRecipeIngredients(reference: string | undefined) {
   return useQuery({
-    queryKey: keys.recipeIngredients(recipeId ?? ''),
-    enabled: Boolean(recipeId),
-    queryFn: async (): Promise<RecipeIngredient[]> =>
-      unwrap(
+    queryKey: keys.recipeIngredients(reference ?? ''),
+    enabled: Boolean(reference),
+    queryFn: async (): Promise<RecipeIngredient[]> => {
+      if (!isRecipeId(reference as string)) {
+        return unwrap(
+          await supabase.rpc('get_shared_recipe_ingredients', {
+            p_share_slug: reference as string,
+          }),
+        ).map(toRecipeIngredient)
+      }
+
+      return unwrap(
         await supabase
           .from('recipe_ingredient_details')
           .select('*')
-          .eq('recipe_id', recipeId as string)
+          .eq('recipe_id', reference as string)
           .order('position'),
-      ).map(toRecipeIngredient),
+      ).map(toRecipeIngredient)
+    },
   })
 }
 
@@ -429,15 +454,26 @@ export function useSaveRecipeCopy() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (recipeId: string): Promise<string> =>
+    mutationFn: async ({
+      recipeId,
+      shareSlug,
+    }: {
+      recipeId: string
+      shareSlug?: string
+    }): Promise<string> =>
       unwrapMaybe(
-        await supabase.rpc('save_recipe_copy', { p_recipe_id: recipeId }),
+        shareSlug
+          ? await supabase.rpc('save_shared_recipe_copy', { p_share_slug: shareSlug })
+          : await supabase.rpc('save_recipe_copy', { p_recipe_id: recipeId }),
       ) as unknown as string,
-    onSuccess: (_newId, sourceId) => {
+    onSuccess: (_newId, source) => {
       track('Recipe Copied', {})
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
       // The original's saved count moved.
-      queryClient.invalidateQueries({ queryKey: keys.recipe(sourceId) })
+      queryClient.invalidateQueries({ queryKey: keys.recipe(source.recipeId) })
+      if (source.shareSlug) {
+        queryClient.invalidateQueries({ queryKey: keys.recipe(source.shareSlug) })
+      }
     },
   })
 }

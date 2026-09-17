@@ -37,13 +37,13 @@ export function claimOwnedKeys(raw: unknown, userId: string): KeyClaim {
 }
 
 /**
- * A read may also name the photograph on a recipe visible through RLS.
+ * A read may also name the photograph on a recipe the caller may read.
  *
- * The lookup runs as the caller, so the recipe read policies still hide
- * private, pending, rejected, reported, and blocked cooking. The owner encoded
- * in the key must also be the recipe owner. Without that second half an author
- * could put a guessed key from another account on their public recipe and turn
- * publication into permission to read it.
+ * The caller normally supplies an RLS-scoped lookup. A private share supplies
+ * the narrow bearer-link RPC instead, which still hides reported and blocked
+ * cooking. The owner encoded in the key must also be the recipe owner. Without
+ * that second half an author could put a guessed key from another account on
+ * their recipe and turn sharing into permission to read it.
  */
 export async function claimReadableKeys(
   raw: unknown,

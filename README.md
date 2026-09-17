@@ -2270,6 +2270,25 @@ is still there and still the way to get an editable copy of your own, with
 `source_recipe_id` for provenance — it is the second button on that screen rather
 than the only one.
 
+### Sharing a food by link
+
+**A link is private sharing, not publication.** The app sends
+`ricecal.app/r/<share_slug>`, whose website page hands the slug to
+`ricecal:///recipe/<share_slug>`. It names no recipe in its HTML and is not
+indexed: the slug is the bearer credential, so somebody without the app sees a
+way to open or install it rather than the cook's private food on the web.
+
+An ordinary recipe query still goes through RLS and cannot enumerate private
+rows. `get_shared_recipe` and `get_shared_recipe_ingredients` widen that read to
+the one row named by the slug, for a signed-in account only. Reports and blocked
+cooks still win. `save_shared_recipe_copy` is the matching copy path, and a
+shared photograph carries the slug into the photo signer so the image follows
+the same rule as the words.
+
+New links carry sixteen random hex characters. Older eight-character links stay
+valid because a link already sent is an API contract too; changing the trigger
+only strengthens links minted after this migration.
+
 ### The publishing gate
 
 Making a recipe public is two writes, and they are deliberately not one.
