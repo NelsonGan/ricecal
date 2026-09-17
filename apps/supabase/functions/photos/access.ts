@@ -7,12 +7,17 @@ import { ownsKey } from '../_shared/r2.ts'
  * bug one rejected request rather than a minute of signing work.
  */
 const MAX_KEYS = 100
+const RECIPE_SHARE_SLUG = /^[0-9a-f]{32}$/
 
 export type KeyClaim = { keys: string[] } | { error: string; status: number }
 
 export type VisibleRecipePhoto = {
   owner_id: string | null
   photo_path: string | null
+}
+
+export function isRecipeShareSlug(value: unknown): value is string {
+  return typeof value === 'string' && RECIPE_SHARE_SLUG.test(value)
 }
 
 function validKeys(raw: unknown): KeyClaim {

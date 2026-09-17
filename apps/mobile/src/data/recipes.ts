@@ -151,6 +151,7 @@ export function isRecipeLimit(error: unknown): boolean {
 
 /** A route reached inside the app carries the row id; a shared link carries its bearer slug. */
 const RECIPE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const RECIPE_SHARE_SLUG = /^[0-9a-f]{32}$/
 
 function isRecipeId(reference: string): boolean {
   return RECIPE_ID.test(reference)
@@ -162,6 +163,7 @@ export function useRecipe(reference: string | undefined) {
     enabled: Boolean(reference),
     queryFn: async (): Promise<Recipe | null> => {
       if (!isRecipeId(reference as string)) {
+        if (!RECIPE_SHARE_SLUG.test(reference as string)) return null
         const row = unwrapMaybe(
           await supabase
             .rpc('get_shared_recipe', { p_share_slug: reference as string })
@@ -188,6 +190,7 @@ export function useRecipeIngredients(reference: string | undefined) {
     enabled: Boolean(reference),
     queryFn: async (): Promise<RecipeIngredient[]> => {
       if (!isRecipeId(reference as string)) {
+        if (!RECIPE_SHARE_SLUG.test(reference as string)) return []
         return unwrap(
           await supabase.rpc('get_shared_recipe_ingredients', {
             p_share_slug: reference as string,

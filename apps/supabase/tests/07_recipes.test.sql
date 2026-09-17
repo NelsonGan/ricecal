@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(43);
+select plan(50);
 
 \set cook  '33333333-3333-3333-3333-333333333333'
 \set other '44444444-4444-4444-4444-444444444444'
@@ -30,15 +30,16 @@ values
 -- rendang — and `\gset` fails outright on a second row, which is a test that
 -- breaks on a developer's machine and passes in CI. Same discipline as
 -- 00_catalogue's assertions about how big the catalogue actually is.
-insert into public.recipes (owner_id, name, servings, steps, photo_path)
+insert into public.recipes (owner_id, name, servings, steps, photo_path, share_slug)
 values (:'cook', 'fixture-pot-a', 6, 'Fry the rempah until it darkens.',
-        'meals/33333333-3333-3333-3333-333333333333/fixture.jpg');
+        'meals/33333333-3333-3333-3333-333333333333/fixture.jpg',
+        'client-chosen-and-guessable');
 
 select id as recipe_id from public.recipes where name = 'fixture-pot-a' \gset
 
 select ok(
-  (select share_slug ~ '-[0-9a-f]{16}$' from public.recipes where id = :'recipe_id'),
-  'a new share link carries enough random suffix to act as a bearer credential'
+  (select share_slug ~ '^[0-9a-f]{32}$' from public.recipes where id = :'recipe_id'),
+  'a new share link overrides client input with an opaque bearer credential'
 );
 -- THE MIRROR IS GONE, and four assertions went with it: that a new recipe
 -- minted a `foods` row, that the row had exactly one base portion at factor 1,
@@ -357,7 +358,9 @@ select is(
 -- Taking the source off the community shelf makes the distinction real: an
 -- ordinary query must lose it, while the bearer slug may name exactly this one
 -- recipe and its ingredients. The copied rows above stay owned by the reader.
-update public.recipes set is_public = false where id = :'recipe_id';
+update public.recipes
+set is_public = false, review_note = 'owner-only moderation reason'
+where id = :'recipe_id';
 select share_slug as shared_slug from public.recipes where id = :'recipe_id' \gset
 
 select set_config('request.jwt.claims',
@@ -374,6 +377,12 @@ select is(
   (select count(*)::integer from public.get_shared_recipe(:'shared_slug')),
   1,
   'the bearer slug reads that private recipe'
+);
+
+select is(
+  (select review_note from public.get_shared_recipe(:'shared_slug')),
+  null,
+  'a share never exposes the owner-only moderation note'
 );
 
 select is(
@@ -427,6 +436,55 @@ select throws_ok(
   'P0001',
   'recipe not found',
   'and the blocked recipe cannot be copied through its link'
+);
+
+delete from public.blocked_authors
+where user_id = :'other' and author_id = :'cook';
+
+insert into public.recipe_reports (recipe_id, reporter_id, reason)
+values (:'recipe_id', :'other', 'spam');
+
+select is(
+  (select count(*)::integer from public.get_shared_recipe(:'shared_slug')),
+  0,
+  'a share link cannot bring back a recipe the reader reported'
+);
+
+select is(
+  (select count(*)::integer from public.get_shared_recipe_ingredients(:'shared_slug')),
+  0,
+  'nor the reported recipe''s ingredients'
+);
+
+select throws_ok(
+  format('select public.save_shared_recipe_copy(%L)', :'shared_slug'),
+  'P0001',
+  'recipe not found',
+  'and a reported recipe cannot be copied through its link'
+);
+
+reset role;
+
+select set_config('request.jwt.claims', '{}'::text, true);
+set local role authenticated;
+
+select is(
+  (select count(*)::integer from public.get_shared_recipe(:'shared_slug')),
+  0,
+  'the read function still refuses an authenticated role without a user'
+);
+
+select is(
+  (select count(*)::integer from public.get_shared_recipe_ingredients(:'shared_slug')),
+  0,
+  'and refuses ingredients without a user'
+);
+
+select throws_ok(
+  format('select public.save_shared_recipe_copy(%L)', :'shared_slug'),
+  'P0001',
+  'not signed in',
+  'and refuses a copy without a user'
 );
 
 reset role;

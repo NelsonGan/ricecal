@@ -2,8 +2,8 @@ import { recipeLink } from '@/features/recipes/share'
 
 describe('recipeLink', () => {
   it('uses the website route that hands a shared recipe to the app', () => {
-    expect(recipeLink('family-rendang-deadbeef')).toBe(
-      'https://ricecal.app/r/family-rendang-deadbeef',
+    expect(recipeLink('0123456789abcdef0123456789abcdef')).toBe(
+      'https://ricecal.app/r/0123456789abcdef0123456789abcdef',
     )
   })
 

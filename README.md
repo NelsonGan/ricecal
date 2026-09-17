@@ -2285,9 +2285,10 @@ cooks still win. `save_shared_recipe_copy` is the matching copy path, and a
 shared photograph carries the slug into the photo signer so the image follows
 the same rule as the words.
 
-New links carry sixteen random hex characters. Older eight-character links stay
-valid because a link already sent is an API contract too; changing the trigger
-only strengthens links minted after this migration.
+Share tokens are opaque UUIDs with 122 random bits. This migration rotates the
+old short, name-bearing values once: those links used the wrong domain and had
+no working read path, so preserving them would keep a weak credential without
+preserving any working behaviour.
 
 ### The publishing gate
 

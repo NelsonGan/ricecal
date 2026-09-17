@@ -16,7 +16,8 @@ CREATE FUNCTION public.get_shared_recipe_ingredients (
   select i.*
   from public.recipe_ingredient_details i
   join public.recipes r on r.id = i.recipe_id
-  where r.share_slug = p_share_slug
+  where (select auth.uid()) is not null
+    and r.share_slug = p_share_slug
     and (
       r.owner_id = (select auth.uid())
       or r.owner_id is null
@@ -57,9 +58,38 @@ CREATE FUNCTION public.get_shared_recipe (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-  select d.*
+  select
+    d.id,
+    d.owner_id,
+    d.name,
+    d.photo_path,
+    d.icon_set,
+    d.icon_name,
+    d.servings,
+    d.steps,
+    d.is_public,
+    d.review_status,
+    null::text as review_note,
+    d.author_name,
+    d.share_slug,
+    d.source_recipe_id,
+    d.saved_count,
+    d.created_at,
+    d.updated_at,
+    d.is_official,
+    d.is_mine,
+    d.ingredient_count,
+    d.total_kcal,
+    d.total_carbs_g,
+    d.total_protein_g,
+    d.total_fat_g,
+    d.serving_kcal,
+    d.serving_carbs_g,
+    d.serving_protein_g,
+    d.serving_fat_g
   from public.recipe_details d
-  where d.share_slug = p_share_slug
+  where (select auth.uid()) is not null
+    and d.share_slug = p_share_slug
     and (
       d.owner_id = (select auth.uid())
       or d.owner_id is null
@@ -97,25 +127,13 @@ CREATE OR REPLACE FUNCTION public.recipes_before_insert()
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-declare
-  v_stem text;
 begin
-  if new.share_slug is null then
-    -- `search_normalize` folds accents and case; the rest turns what is left
-    -- into link-safe words. A name that is entirely punctuation leaves nothing,
-    -- hence the fallback stem.
-    v_stem := pg_catalog.regexp_replace(
-      pg_catalog.regexp_replace(public.search_normalize(new.name), '[^a-z0-9]+', '-', 'g'),
-      '(^-+|-+$)', '', 'g'
-    );
-    v_stem := pg_catalog.left(coalesce(nullif(v_stem, ''), 'recipe'), 40);
-    -- Sixteen hex characters off a fresh uuid. `gen_random_bytes` would be the
-    -- obvious source and lives in pgcrypto, which this database does not
-    -- install; a v4 uuid is the same CSPRNG and is already here.
-    new.share_slug := v_stem || '-' || pg_catalog.left(
-      pg_catalog.replace(pg_catalog.gen_random_uuid()::text, '-', ''), 16
-    );
-  end if;
+  -- The client does not get to choose a bearer credential. Besides protecting
+  -- honest callers from weak values, this closes the direct PostgREST insert
+  -- path to somebody deliberately minting a guessable link.
+  new.share_slug := pg_catalog.replace(
+    pg_catalog.gen_random_uuid()::text, '-', ''
+  );
 
   new.author_name := coalesce(
     (select p.display_name from public.profiles p where p.id = new.owner_id),
@@ -125,6 +143,14 @@ begin
   return new;
 end;
 $function$;
+
+-- Hand-written data migration: the old links never resolved, and their short,
+-- name-bearing values are not safe credentials for the feature that now does.
+-- Rotating them once gives every existing recipe the same opaque token newly
+-- inserted recipes receive. A re-run leaves already-rotated rows alone.
+UPDATE public.recipes
+SET share_slug = pg_catalog.replace(pg_catalog.gen_random_uuid()::text, '-', '')
+WHERE share_slug !~ '^[0-9a-f]{32}$';
 
 CREATE FUNCTION public.save_shared_recipe_copy (
   p_share_slug text

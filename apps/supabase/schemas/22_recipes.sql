@@ -68,8 +68,8 @@ create table public.recipes (
   -- recipe, which is as fresh as a display name needs to be.
   author_name   text not null default '' check (char_length(author_name) <= 60),
 
-  -- The link. `ricecal.app/r/<share_slug>`, minted once and never rotated, so a
-  -- link sent to a friend last month still opens.
+  -- The link. `ricecal.app/r/<share_slug>`, with an opaque bearer token so the
+  -- URL itself reveals nothing about the recipe.
   share_slug    text not null,
 
   -- Where this copy came from, when it was saved off somebody else's. Kept for
@@ -193,9 +193,9 @@ create index recipe_ingredients_recipe_idx
 -- Everything a recipe needs settled before it exists: its share link and the name
 -- to credit.
 --
--- The share slug is minted from the name plus sixteen hex characters. Random rather
--- than sequential so a link cannot be guessed by counting, and appended rather
--- than replacing the name so a link pasted into a chat still says what it is.
+-- The share slug is an opaque UUID without hyphens. A v4 UUID carries 122 bits
+-- of randomness, enough for a long-lived bearer credential, and leaving the
+-- name out keeps the meal itself out of web-server and message-preview URLs.
 -- ---------------------------------------------------------------------------
 
 create or replace function public.recipes_before_insert()
@@ -204,25 +204,13 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
-declare
-  v_stem text;
 begin
-  if new.share_slug is null then
-    -- `search_normalize` folds accents and case; the rest turns what is left
-    -- into link-safe words. A name that is entirely punctuation leaves nothing,
-    -- hence the fallback stem.
-    v_stem := pg_catalog.regexp_replace(
-      pg_catalog.regexp_replace(public.search_normalize(new.name), '[^a-z0-9]+', '-', 'g'),
-      '(^-+|-+$)', '', 'g'
-    );
-    v_stem := pg_catalog.left(coalesce(nullif(v_stem, ''), 'recipe'), 40);
-    -- Sixteen hex characters off a fresh uuid. `gen_random_bytes` would be the
-    -- obvious source and lives in pgcrypto, which this database does not
-    -- install; a v4 uuid is the same CSPRNG and is already here.
-    new.share_slug := v_stem || '-' || pg_catalog.left(
-      pg_catalog.replace(pg_catalog.gen_random_uuid()::text, '-', ''), 16
-    );
-  end if;
+  -- The client does not get to choose a bearer credential. Besides protecting
+  -- honest callers from weak values, this closes the direct PostgREST insert
+  -- path to somebody deliberately minting a guessable link.
+  new.share_slug := pg_catalog.replace(
+    pg_catalog.gen_random_uuid()::text, '-', ''
+  );
 
   new.author_name := coalesce(
     (select p.display_name from public.profiles p where p.id = new.owner_id),

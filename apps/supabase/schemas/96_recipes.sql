@@ -124,9 +124,38 @@ stable
 security definer
 set search_path = ''
 as $$
-  select d.*
+  select
+    d.id,
+    d.owner_id,
+    d.name,
+    d.photo_path,
+    d.icon_set,
+    d.icon_name,
+    d.servings,
+    d.steps,
+    d.is_public,
+    d.review_status,
+    null::text as review_note,
+    d.author_name,
+    d.share_slug,
+    d.source_recipe_id,
+    d.saved_count,
+    d.created_at,
+    d.updated_at,
+    d.is_official,
+    d.is_mine,
+    d.ingredient_count,
+    d.total_kcal,
+    d.total_carbs_g,
+    d.total_protein_g,
+    d.total_fat_g,
+    d.serving_kcal,
+    d.serving_carbs_g,
+    d.serving_protein_g,
+    d.serving_fat_g
   from public.recipe_details d
-  where d.share_slug = p_share_slug
+  where (select auth.uid()) is not null
+    and d.share_slug = p_share_slug
     and (
       d.owner_id = (select auth.uid())
       or d.owner_id is null
@@ -171,7 +200,8 @@ as $$
   select i.*
   from public.recipe_ingredient_details i
   join public.recipes r on r.id = i.recipe_id
-  where r.share_slug = p_share_slug
+  where (select auth.uid()) is not null
+    and r.share_slug = p_share_slug
     and (
       r.owner_id = (select auth.uid())
       or r.owner_id is null
