@@ -3,7 +3,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type CodePurpose, resendConfirmation, sendLoginLink, verifyEmailCode } from '@/data/auth'
+import {
+  type CodePurpose,
+  emailSendRetryAfter,
+  resendConfirmation,
+  sendLoginLink,
+  verifyEmailCode,
+} from '@/data/auth'
 import { useAuthMessage, useCaptchaToken } from '@/features/auth'
 import { StepHeader } from '@/features/onboarding'
 import { useBack } from '@/lib/navigation'
@@ -105,6 +111,7 @@ export default function VerifyScreen() {
     try {
       await work()
     } catch (error) {
+      if (which === 'resend') setCooldown(emailSendRetryAfter(email))
       toast.show({ title: message(error), tone: 'error' })
     } finally {
       setRunning(null)
@@ -144,8 +151,10 @@ export default function VerifyScreen() {
    * The send the caller did not do, because it navigated here instead. The screen
    * is already up by the time this runs, which is the point: the wait moves from
    * a button that has not changed to a page that says what is happening. A
-   * failure is a toast and a cooldown of zero, so "Send it again" is available
-   * rather than counting down from a mail that never went.
+   * A definite failure leaves the cooldown at zero. A timeout is different:
+   * Supabase can time out after handing the mail to Cloudflare, so the data
+   * layer preserves the remainder of the minute rather than sending a second
+   * code that invalidates the first.
    *
    * Once, and the ref is not belt and braces: an empty dependency list means once
    * per mount, and Fast Refresh re-runs the effect, as does anything that
@@ -164,9 +173,10 @@ export default function VerifyScreen() {
         if (!cancelled) setCooldown(RESEND_COOLDOWN_S)
       })
       .catch((error) => {
-        // Left at zero on a failure, so "Send it again" is available at once
-        // rather than counting down a minute for a mail that never went.
-        if (!cancelled) toast.show({ title: message(error), tone: 'error' })
+        if (!cancelled) {
+          setCooldown(emailSendRetryAfter(email))
+          toast.show({ title: message(error), tone: 'error' })
+        }
       })
       .finally(() => {
         if (!cancelled) setSending(false)

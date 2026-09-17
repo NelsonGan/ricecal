@@ -127,6 +127,19 @@ describe('the email route', () => {
     expect(mockPush).not.toHaveBeenCalled()
     expect(screen.getByText('That does not look like an email address.')).toBeOnTheScreen()
   })
+
+  it.each(['person@gmial.com', 'person@gmail.comn', 'person@gmail.comel'])(
+    'refuses the provider typo %s before another screen can send to it',
+    async (email) => {
+      await render(<SignInScreen />)
+
+      await fill('EMAIL', email)
+      await submit()
+
+      expect(mockPush).not.toHaveBeenCalled()
+      expect(screen.getByText('That does not look like an email address.')).toBeOnTheScreen()
+    },
+  )
 })
 
 /**
