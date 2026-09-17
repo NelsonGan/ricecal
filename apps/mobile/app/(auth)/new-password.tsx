@@ -5,7 +5,12 @@ import type { TextInput } from 'react-native'
 import { View } from 'react-native'
 
 import { useSession } from '@/data'
-import { sendPasswordReset, updatePassword, verifyEmailCode } from '@/data/auth'
+import {
+  emailSendRetryAfter,
+  sendPasswordReset,
+  updatePassword,
+  verifyEmailCode,
+} from '@/data/auth'
 import { PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Button, Screen, Text, TextField, useToast } from '@/ui'
@@ -85,6 +90,7 @@ export default function NewPasswordScreen() {
     try {
       await work()
     } catch (error) {
+      if (which === 'resend') setCooldown(emailSendRetryAfter(email))
       toast.show({ title: message(error), tone: 'error' })
     } finally {
       setRunning(null)

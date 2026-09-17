@@ -5,6 +5,7 @@ import { View } from 'react-native'
 
 import { sendPasswordReset } from '@/data/auth'
 import { useAuthMessage, useCaptchaToken } from '@/features/auth'
+import { isValidEmailAddress } from '@/lib/email'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Button, Screen, Text, TextField, useToast } from '@/ui'
 
@@ -33,9 +34,7 @@ export default function ForgotScreen() {
 
   const back = useBack('/(auth)/sign-in')
 
-  const emailError = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)
-    ? undefined
-    : t('onboarding:account.errors.email')
+  const emailError = isValidEmailAddress(email) ? undefined : t('onboarding:account.errors.email')
 
   const send = async () => {
     setSubmitted(true)

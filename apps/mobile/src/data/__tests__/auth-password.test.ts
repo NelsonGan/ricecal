@@ -115,6 +115,58 @@ describe('signing up', () => {
       expect.objectContaining({ email: 'aisyah@example.com' }),
     )
   })
+
+  it('refuses a provider typo before it can reach the mailer', async () => {
+    await expect(signUpWithPassword('person@gmial.com', 'longenough')).rejects.toMatchObject({
+      reason: 'invalid_email',
+    })
+
+    expect(supabase.auth.signUp).not.toHaveBeenCalled()
+  })
+
+  it('accepts an Apple private relay address', async () => {
+    await signUpWithPassword('apple-user@privaterelay.appleid.com', 'longenough')
+
+    expect(supabase.auth.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'apple-user@privaterelay.appleid.com' }),
+    )
+  })
+
+  it('holds an immediate retry when the first mail may already have been accepted', async () => {
+    const timeout = Object.assign(new Error('upstream request timeout'), {
+      code: 'request_timeout',
+      status: 504,
+    })
+    supabase.auth.signUp.mockResolvedValue({ data: { user: null, session: null }, error: timeout })
+
+    await expect(signUpWithPassword('timeout@example.com', 'longenough')).rejects.toMatchObject({
+      reason: 'rate_limited',
+      retryAfter: 60,
+    })
+    await expect(signUpWithPassword('timeout@example.com', 'longenough')).rejects.toMatchObject({
+      reason: 'rate_limited',
+      retryAfter: 60,
+    })
+
+    expect(supabase.auth.signUp).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not hold a retry when Supabase definitely refused the request', async () => {
+    const captcha = Object.assign(new Error('captcha verification failed'), {
+      code: 'captcha_failed',
+      status: 400,
+    })
+    supabase.auth.signUp.mockResolvedValue({ data: { user: null, session: null }, error: captcha })
+
+    await expect(signUpWithPassword('captcha@example.com', 'longenough')).rejects.toMatchObject({
+      reason: 'captcha',
+    })
+    await expect(signUpWithPassword('captcha@example.com', 'longenough')).rejects.toMatchObject({
+      reason: 'captcha',
+    })
+
+    expect(supabase.auth.signUp).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('signing in', () => {
