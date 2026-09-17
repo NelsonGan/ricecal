@@ -144,6 +144,17 @@ describe('resolveStoredImage', () => {
     })
   })
 
+  it('carries a private recipe link into photo authorization', async () => {
+    await expect(resolveStoredImage(KEY, 'family-rendang-deadbeef')).resolves.toBe(SIGNED)
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('photos', {
+      body: {
+        action: 'read',
+        keys: [KEY],
+        shareSlug: 'family-rendang-deadbeef',
+      },
+    })
+  })
+
   /**
    * A cache that will not answer is not a reason to leave the tile blank: the
    * signature is still there to be asked for, which is what happened before

@@ -68,7 +68,7 @@ create table public.recipes (
   -- recipe, which is as fresh as a display name needs to be.
   author_name   text not null default '' check (char_length(author_name) <= 60),
 
-  -- The link. `ricecal.my/r/<share_slug>`, minted once and never rotated, so a
+  -- The link. `ricecal.app/r/<share_slug>`, minted once and never rotated, so a
   -- link sent to a friend last month still opens.
   share_slug    text not null,
 
@@ -193,7 +193,7 @@ create index recipe_ingredients_recipe_idx
 -- Everything a recipe needs settled before it exists: its share link and the name
 -- to credit.
 --
--- The share slug is minted from the name plus eight hex characters. Random rather
+-- The share slug is minted from the name plus sixteen hex characters. Random rather
 -- than sequential so a link cannot be guessed by counting, and appended rather
 -- than replacing the name so a link pasted into a chat still says what it is.
 -- ---------------------------------------------------------------------------
@@ -216,11 +216,11 @@ begin
       '(^-+|-+$)', '', 'g'
     );
     v_stem := pg_catalog.left(coalesce(nullif(v_stem, ''), 'recipe'), 40);
-    -- Eight hex characters off a fresh uuid. `gen_random_bytes` would be the
+    -- Sixteen hex characters off a fresh uuid. `gen_random_bytes` would be the
     -- obvious source and lives in pgcrypto, which this database does not
     -- install; a v4 uuid is the same CSPRNG and is already here.
     new.share_slug := v_stem || '-' || pg_catalog.left(
-      pg_catalog.replace(pg_catalog.gen_random_uuid()::text, '-', ''), 8
+      pg_catalog.replace(pg_catalog.gen_random_uuid()::text, '-', ''), 16
     );
   end if;
 
