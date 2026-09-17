@@ -6,7 +6,7 @@ describe('email addresses', () => {
     "o'hara+rice@example.co.uk",
     'USER@EXAMPLE.COM',
     'apple-user@privaterelay.appleid.com',
-    'person@xn--bcher-kva.example',
+    'person@xn--bcher-kva.de',
   ])('accepts %s', (email) => {
     expect(isValidEmailAddress(email)).toBe(true)
   })

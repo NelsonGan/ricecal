@@ -1063,11 +1063,13 @@ recipients from consuming another delivery attempt.
 
 The app never retries an auth email automatically. A failed HTTP response does
 not prove that no message went out: GoTrue can hand a message to SMTP and then
-time out. `data/auth.ts` holds the address for the remainder of
-`smtp_max_frequency` after an ambiguous timeout, and the resend screens show
-that countdown. A definite refusal, such as a failed captcha, stays immediately
-retryable. `pnpm auth:config` owns the one-minute per-address interval and the
-project-wide hourly ceiling.
+time out. `data/auth.ts` holds the address for a minute after an ambiguous
+timeout, preserves any exact wait Supabase returns, and the resend screens show
+that countdown. Only an ambiguous result or the per-address email limit moves
+on to code entry; an IP-wide request limit does not pretend a message exists. A
+definite refusal, such as a failed captcha, stays immediately retryable.
+`pnpm auth:config` owns the one-minute per-address interval and the project-wide
+hourly ceiling.
 
 Apple private relay addresses are real addresses, not disposable-mail abuse.
 Delivery to them requires every outbound domain to be registered under **Sign

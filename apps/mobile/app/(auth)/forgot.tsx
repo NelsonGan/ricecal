@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { sendPasswordReset } from '@/data/auth'
+import { asAuthProblem, sendPasswordReset } from '@/data/auth'
 import { useAuthMessage, useCaptchaToken } from '@/features/auth'
 import { isValidEmailAddress } from '@/lib/email'
 import { useBack } from '@/lib/navigation'
@@ -40,9 +40,9 @@ export default function ForgotScreen() {
     setSubmitted(true)
     if (emailError || busy) return
 
+    const address = email.trim()
     setBusy(true)
     try {
-      const address = email.trim()
       await sendPasswordReset(address, await captcha())
       // `replace`, not `push`: this screen's whole job was to ask which address
       // and post the mail, and both are done. Left on the stack, the chevron on
@@ -54,6 +54,14 @@ export default function ForgotScreen() {
       // off to Today before they had chosen anything — see `new-password.tsx`.
       router.replace({ pathname: '/(auth)/new-password', params: { email: address } })
     } catch (error) {
+      // A timeout can happen after SMTP accepted the reset, and a rate limit
+      // means a recent reset may already be in the inbox. In either case the
+      // code screen is useful and its countdown prevents another send.
+      const problem = asAuthProblem(error)
+      if (problem.reason === 'rate_limited' && problem.emailMayHaveBeenSent) {
+        router.replace({ pathname: '/(auth)/new-password', params: { email: address } })
+        return
+      }
       toast.show({ title: message(error), tone: 'error' })
       setBusy(false)
     }

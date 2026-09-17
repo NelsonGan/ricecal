@@ -70,7 +70,7 @@ export default function NewPasswordScreen() {
   const [running, setRunning] = useState<'save' | 'resend' | null>(null)
   const busy = running !== null
   /** Full on arrival, because the mail that brought them here just went out. */
-  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_S)
+  const [cooldown, setCooldown] = useState(() => emailSendRetryAfter(email) || RESEND_COOLDOWN_S)
   useEffect(() => {
     const ticker = setInterval(() => setCooldown((left) => (left > 0 ? left - 1 : 0)), 1000)
     return () => clearInterval(ticker)
