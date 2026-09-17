@@ -12,6 +12,7 @@ import {
 } from '@/data/auth'
 import { ProviderButton, useAuthMessage } from '@/features/auth'
 import { StepHeader } from '@/features/onboarding'
+import { isValidEmailAddress } from '@/lib/email'
 import { AppBar, Button, Divider, Icon, Screen, Text, TextField, useToast } from '@/ui'
 
 /** Only what the screen says differs; the email button does the same thing either way. */
@@ -91,9 +92,7 @@ export default function SignInScreen() {
     }
   }, [])
 
-  const emailError = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)
-    ? undefined
-    : t('onboarding:account.errors.email')
+  const emailError = isValidEmailAddress(email) ? undefined : t('onboarding:account.errors.email')
 
   /** Both providers funnel through here so one failure path serves them. */
   const attempt = async (which: 'apple' | 'google', work: () => Promise<void>) => {

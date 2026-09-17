@@ -156,7 +156,16 @@ export default function PasswordScreen() {
           // note on `isAuthProblem` for why class identity is not something to
           // branch on here.
           if (asAuthProblem(error).reason === 'email_not_confirmed') {
-            await resendConfirmation(email, await captcha())
+            try {
+              await resendConfirmation(email, await captcha())
+            } catch (sendError) {
+              // A recent or ambiguously accepted confirmation still leaves a
+              // usable code path. The next screen owns the send countdown.
+              const sendProblem = asAuthProblem(sendError)
+              if (sendProblem.reason !== 'rate_limited' || !sendProblem.emailMayHaveBeenSent) {
+                throw sendError
+              }
+            }
             toast.show({ title: t('auth:errors.email_not_confirmed') })
             router.push({
               pathname: '/(auth)/verify',
@@ -176,7 +185,15 @@ export default function PasswordScreen() {
           router.push({ pathname: '/(auth)/verify', params: { email, purpose: 'signup', ...flow } })
         }
       } catch (error) {
-        if (asAuthProblem(error).reason === 'account_exists') {
+        const problem = asAuthProblem(error)
+        if (problem.reason === 'rate_limited' && problem.emailMayHaveBeenSent) {
+          // The signup may have reached SMTP before its response was lost, or
+          // the server may be protecting a confirmation sent moments ago.
+          // Either way, let the person try that code without posting another.
+          router.push({ pathname: '/(auth)/verify', params: { email, purpose: 'signup', ...flow } })
+          return
+        }
+        if (problem.reason === 'account_exists') {
           setMaybeExisting(true)
           setMode('sign-in')
           setSubmitted(false)

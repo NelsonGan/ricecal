@@ -16,11 +16,15 @@ import { asAuthProblem } from '@/data/auth'
  * `data/auth.ts` and the wording is with the rest of the wording.
  */
 export function useAuthMessage(): (error: unknown) => string {
-  const { t } = useTranslation('auth')
+  const { t } = useTranslation(['auth', 'onboarding'])
 
   return useCallback(
     (error: unknown) => {
       const problem = asAuthProblem(error)
+
+      if (problem.reason === 'invalid_email') {
+        return t('onboarding:account.errors.email')
+      }
 
       // The one reason with a number in it. Without the seconds the sentence
       // has to say "wait a moment", which is the advice somebody has already

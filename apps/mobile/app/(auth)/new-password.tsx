@@ -5,7 +5,12 @@ import type { TextInput } from 'react-native'
 import { View } from 'react-native'
 
 import { useSession } from '@/data'
-import { sendPasswordReset, updatePassword, verifyEmailCode } from '@/data/auth'
+import {
+  emailSendRetryAfter,
+  sendPasswordReset,
+  updatePassword,
+  verifyEmailCode,
+} from '@/data/auth'
 import { PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Button, Screen, Text, TextField, useToast } from '@/ui'
@@ -65,7 +70,7 @@ export default function NewPasswordScreen() {
   const [running, setRunning] = useState<'save' | 'resend' | null>(null)
   const busy = running !== null
   /** Full on arrival, because the mail that brought them here just went out. */
-  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_S)
+  const [cooldown, setCooldown] = useState(() => emailSendRetryAfter(email) || RESEND_COOLDOWN_S)
   useEffect(() => {
     const ticker = setInterval(() => setCooldown((left) => (left > 0 ? left - 1 : 0)), 1000)
     return () => clearInterval(ticker)
@@ -85,6 +90,7 @@ export default function NewPasswordScreen() {
     try {
       await work()
     } catch (error) {
+      if (which === 'resend') setCooldown(emailSendRetryAfter(email))
       toast.show({ title: message(error), tone: 'error' })
     } finally {
       setRunning(null)
