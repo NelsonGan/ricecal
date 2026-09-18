@@ -154,7 +154,18 @@ let inFlight: Promise<Record<string, string>> | null = null
 /**
  * A signed read URL for one key, sharing a request with its neighbours.
  */
-function signRead(key: string): Promise<string> {
+function signRead(key: string, shareSlug?: string): Promise<string> {
+  // A private recipe needs its bearer slug beside the key. Keep it out of the
+  // shared batch, whose one request cannot express a different credential for
+  // each photograph and whose ordinary diary callers need none.
+  if (shareSlug) {
+    return photos({ action: 'read', keys: [key], shareSlug }).then((data) => {
+      const url = data.urls?.[key]
+      if (!url) throw new Error('no URL for that image')
+      return url
+    })
+  }
+
   queued.push(key)
 
   if (!inFlight) {
@@ -214,8 +225,8 @@ async function cachedFile(key: string): Promise<string | null> {
  *
  * Exported for the tests: the order of these two is the whole feature.
  */
-export function resolveStoredImage(key: string): Promise<string> {
-  return cachedFile(key).then((local) => local ?? signRead(key))
+export function resolveStoredImage(key: string, shareSlug?: string): Promise<string> {
+  return cachedFile(key).then((local) => local ?? signRead(key, shareSlug))
 }
 
 /**
@@ -320,9 +331,9 @@ export function uploadAvatar(localUri: string): Promise<string> {
  * persister can write a query to disk before it is collected, and this is the
  * query never written to disk; kept for ever it also kept every deleted key.
  */
-function useStoredImageUri(path: string | undefined) {
+function useStoredImageUri(path: string | undefined, shareSlug?: string) {
   return useQuery({
-    queryKey: keys.photo(path ?? ''),
+    queryKey: keys.photo(path ?? '', shareSlug),
     // The function authorizes the signed-in user's own images and photographs
     // attached to recipes this account may read. The latter cannot be decided
     // from a key prefix on the phone: a community photo belongs to its cook.
@@ -338,15 +349,15 @@ function useStoredImageUri(path: string | undefined) {
      * It costs a doomed round trip per photograph this device has not seen.
      */
     networkMode: 'offlineFirst',
-    queryFn: () => resolveStoredImage(path as string),
+    queryFn: () => resolveStoredImage(path as string, shareSlug),
   })
 }
 
 /**
  * A uri for a logged plate's photograph.
  */
-export function useMealPhotoUrl(path: string | undefined) {
-  return useStoredImageUri(path)
+export function useMealPhotoUrl(path: string | undefined, shareSlug?: string) {
+  return useStoredImageUri(path, shareSlug)
 }
 
 /**

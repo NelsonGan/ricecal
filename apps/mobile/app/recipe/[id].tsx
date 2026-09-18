@@ -93,7 +93,13 @@ export default function RecipeDetailScreen() {
   const [deleting, setDeleting] = useState(false)
   const [reporting, setReporting] = useState(false)
 
-  const { data: photoUrl, isLoading: resolvingPhoto } = useMealPhotoUrl(recipe?.photoPath)
+  // Internal navigation carries the row id. A link carries the bearer slug,
+  // which the photo signer needs as well as the recipe queries.
+  const sharedSlug = recipe && recipe.id !== id ? id : undefined
+  const { data: photoUrl, isLoading: resolvingPhoto } = useMealPhotoUrl(
+    recipe?.photoPath,
+    sharedSlug,
+  )
   const photo = storedImageSource(recipe?.photoPath, photoUrl)
 
   /**
@@ -145,8 +151,8 @@ export default function RecipeDetailScreen() {
 
   // Resolved, and there is nothing there. Distinct from still loading, and the
   // distinction matters most on the path this screen exists for: a shared LINK
-  // to a recipe that was deleted, made private again, or is still waiting on a
-  // review. A skeleton that never resolves says the app is broken; this says
+  // to an invalid link, a deleted recipe, or one this account blocked or
+  // reported. A skeleton that never resolves says the app is broken; this says
   // what happened.
   if (!recipe) {
     return (
@@ -213,7 +219,7 @@ export default function RecipeDetailScreen() {
     if (quota.atLimit && !requirePro('new_recipe')) return
     let newId: string
     try {
-      newId = await saveCopy.mutateAsync(recipe.id)
+      newId = await saveCopy.mutateAsync({ recipeId: recipe.id, shareSlug: sharedSlug })
     } catch (error) {
       // The trigger refusing, rather than the write failing. Reachable even
       // past the guard above: the count this screen read can be a shelf out of

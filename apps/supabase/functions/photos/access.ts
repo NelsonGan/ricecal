@@ -7,12 +7,17 @@ import { ownsKey } from '../_shared/r2.ts'
  * bug one rejected request rather than a minute of signing work.
  */
 const MAX_KEYS = 100
+const RECIPE_SHARE_SLUG = /^[0-9a-f]{32}$/
 
 export type KeyClaim = { keys: string[] } | { error: string; status: number }
 
 export type VisibleRecipePhoto = {
   owner_id: string | null
   photo_path: string | null
+}
+
+export function isRecipeShareSlug(value: unknown): value is string {
+  return typeof value === 'string' && RECIPE_SHARE_SLUG.test(value)
 }
 
 function validKeys(raw: unknown): KeyClaim {
@@ -37,13 +42,13 @@ export function claimOwnedKeys(raw: unknown, userId: string): KeyClaim {
 }
 
 /**
- * A read may also name the photograph on a recipe visible through RLS.
+ * A read may also name the photograph on a recipe the caller may read.
  *
- * The lookup runs as the caller, so the recipe read policies still hide
- * private, pending, rejected, reported, and blocked cooking. The owner encoded
- * in the key must also be the recipe owner. Without that second half an author
- * could put a guessed key from another account on their public recipe and turn
- * publication into permission to read it.
+ * The caller normally supplies an RLS-scoped lookup. A private share supplies
+ * the narrow bearer-link RPC instead, which still hides reported and blocked
+ * cooking. The owner encoded in the key must also be the recipe owner. Without
+ * that second half an author could put a guessed key from another account on
+ * their recipe and turn sharing into permission to read it.
  */
 export async function claimReadableKeys(
   raw: unknown,
