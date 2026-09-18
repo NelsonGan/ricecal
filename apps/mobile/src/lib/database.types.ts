@@ -1687,6 +1687,71 @@ export type Database = {
       free_daily_scans: { Args: never; Returns: number }
       free_photo_retention_days: { Args: never; Returns: number }
       free_recipe_limit: { Args: never; Returns: number }
+      get_shared_recipe: {
+        Args: { p_share_slug: string }
+        Returns: {
+          author_name: string | null
+          created_at: string | null
+          icon_name: string | null
+          icon_set: Database['public']['Enums']['icon_set'] | null
+          id: string | null
+          ingredient_count: number | null
+          is_mine: boolean | null
+          is_official: boolean | null
+          is_public: boolean | null
+          name: string | null
+          owner_id: string | null
+          photo_path: string | null
+          review_note: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          saved_count: number | null
+          serving_carbs_g: number | null
+          serving_fat_g: number | null
+          serving_kcal: number | null
+          serving_protein_g: number | null
+          servings: number | null
+          share_slug: string | null
+          source_recipe_id: string | null
+          steps: string | null
+          total_carbs_g: number | null
+          total_fat_g: number | null
+          total_kcal: number | null
+          total_protein_g: number | null
+          updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'recipe_details'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_shared_recipe_ingredients: {
+        Args: { p_share_slug: string }
+        Returns: {
+          amount: number | null
+          carbs_g: number | null
+          carbs_g_per_unit: number | null
+          fat_g: number | null
+          fat_g_per_unit: number | null
+          food_id: string | null
+          id: string | null
+          kcal: number | null
+          kcal_per_unit: number | null
+          name: string | null
+          position: number | null
+          protein_g: number | null
+          protein_g_per_unit: number | null
+          recipe_id: string | null
+          unit: Database['public']['Enums']['recipe_unit'] | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'recipe_ingredient_details'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       goals_on: {
         Args: { p_date: string; p_user_id?: string }
         Returns: {
@@ -1836,6 +1901,10 @@ export type Database = {
         }[]
       }
       save_recipe_copy: { Args: { p_recipe_id: string }; Returns: string }
+      save_shared_recipe_copy: {
+        Args: { p_share_slug: string }
+        Returns: string
+      }
       scan_daily_limit: { Args: { p_user: string }; Returns: number }
       scan_usage_today: {
         Args: never

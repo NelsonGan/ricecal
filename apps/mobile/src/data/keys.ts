@@ -110,9 +110,9 @@ export const keys = {
    * it; the literal segment cannot collide with a shelf name.
    */
   recipeCount: (userId: string) => ['recipes', userId, 'count'] as const,
-  /** One recipe, asked for by id alone. */
-  recipe: (id: string) => ['recipe', id] as const,
-  recipeIngredients: (recipeId: string) => ['recipe-ingredients', recipeId] as const,
+  /** One recipe, asked for by row id inside the app or bearer slug from a shared link. */
+  recipe: (reference: string) => ['recipe', reference] as const,
+  recipeIngredients: (reference: string) => ['recipe-ingredients', reference] as const,
 
   weighIns: (userId: string) => ['weigh-ins', userId] as const,
 
@@ -169,5 +169,5 @@ export const keys = {
   activitySession: (id: string) => ['activity-session', id] as const,
   healthConnection: (userId: string) => ['health-connection', userId] as const,
 
-  photo: (path: string) => ['photo', path] as const,
+  photo: (path: string, shareSlug?: string) => ['photo', path, shareSlug ?? 'visible'] as const,
 } as const

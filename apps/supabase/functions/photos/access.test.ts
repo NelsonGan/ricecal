@@ -1,11 +1,18 @@
 import { assertEquals } from 'jsr:@std/assert@^1'
 
-import { claimOwnedKeys, claimReadableKeys } from './access.ts'
+import { claimOwnedKeys, claimReadableKeys, isRecipeShareSlug } from './access.ts'
 
 const READER = '11111111-1111-1111-1111-111111111111'
 const COOK = '22222222-2222-2222-2222-222222222222'
 const OWN = `meals/${READER}/own.jpg`
 const COMMUNITY = `meals/${COOK}/community.jpg`
+
+Deno.test('private recipe credentials accept only opaque share tokens', () => {
+  assertEquals(isRecipeShareSlug('0123456789abcdef0123456789abcdef'), true)
+  assertEquals(isRecipeShareSlug('family-dinner-0123456789abcdef'), false)
+  assertEquals(isRecipeShareSlug(''), false)
+  assertEquals(isRecipeShareSlug(123), false)
+})
 
 Deno.test('a caller can read and delete their own image without a recipe lookup', async () => {
   let lookedUp = false

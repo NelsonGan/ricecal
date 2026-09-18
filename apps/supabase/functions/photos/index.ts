@@ -21,10 +21,15 @@ import {
   signGet,
   signPut,
 } from '../_shared/r2.ts'
-import { claimOwnedKeys, claimReadableKeys } from './access.ts'
+import {
+  claimOwnedKeys,
+  claimReadableKeys,
+  isRecipeShareSlug,
+  type VisibleRecipePhoto,
+} from './access.ts'
 
 type UploadRequest = { action: 'upload'; kind?: AssetKind; contentType?: string; size?: number }
-type ReadRequest = { action: 'read'; keys?: string[] }
+type ReadRequest = { action: 'read'; keys?: string[]; shareSlug?: string }
 type DeleteRequest = { action: 'delete'; keys?: string[] }
 type PhotosRequest = UploadRequest | ReadRequest | DeleteRequest
 
@@ -104,7 +109,21 @@ Deno.serve(async (req: Request) => {
       }
 
       case 'read': {
+        if (body.shareSlug !== undefined && !isRecipeShareSlug(body.shareSlug)) {
+          return json({ ok: false, error: 'shareSlug is not valid' }, 400)
+        }
+
         const claim = await claimReadableKeys(body.keys, userId, async (keys) => {
+          if (body.shareSlug) {
+            const { data, error } = await anonClient.rpc('get_shared_recipe', {
+              p_share_slug: body.shareSlug,
+            })
+            if (error) throw error
+            return (data ?? []).filter(
+              ({ photo_path: path }: VisibleRecipePhoto) => path && keys.includes(path),
+            )
+          }
+
           const { data, error } = await anonClient
             .from('recipes')
             .select('owner_id, photo_path')
