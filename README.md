@@ -4813,6 +4813,16 @@ a year and returns nothing, which looks like a broken feature rather than an
 empty device. The Activity tab offers generated data once a connected store turns
 out to have no days in it.
 
+**Built with Xcode 27, the app must adopt the UIScene lifecycle or iOS 27 kills
+it at launch** (`EXC_BREAKPOINT` in
+`UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`, before any JS
+runs). On SDK 57 that is `ios.enableSceneSupport` in expo-build-properties, which
+starts React Native from Expo's `EXExpoAppSceneDelegate` instead of the app
+delegate. Its mod only accepts the stock AppDelegate, and Firebase writes
+`FirebaseApp.configure()` into the middle of the block it removes, so
+`plugins/withFirebaseOutsideStartup.js` moves that line out first. It must stay
+listed after expo-build-properties. SDK 58 does this by itself; drop both then.
+
 **A purchase cannot be tested with the real store, and the flow that could not be
 run is the one that was broken.** Apple's sandbox wants a sandbox Apple ID on a
 device, Play's wants a licensed tester on a phone, and an Xcode StoreKit
