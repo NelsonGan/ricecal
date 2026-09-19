@@ -125,10 +125,12 @@
           },
           "ios": {
             "deploymentTarget": "16.4",
-            "useFrameworks": "static"
+            "useFrameworks": "static",
+            "enableSceneSupport": true
           }
         }
       ],
+      "./plugins/withFirebaseOutsideStartup",
       [
         "@kingstinct/react-native-healthkit",
         {
