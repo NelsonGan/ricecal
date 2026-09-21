@@ -277,8 +277,17 @@ Deno.serve(async (req: Request) => {
         //
         // The entry is already written either way: the user is owed their log
         // whatever the catalogue does, so nothing below can fail this scan.
+        //
+        // A PHOTOGRAPH, not a description. `shapeVision` builds `label` from a
+        // `nutrition_label` key whichever model call produced it, and
+        // `describeMeal` runs the same shaper, so without this a request of
+        // `{ text: "nutrition facts: 250 kcal, 30 g carbohydrate, ...", barcode }`
+        // writes figures somebody simply typed into a row every other user gets
+        // served. The app only ever sends a barcode with a photo, so this costs
+        // the feature nothing and is the difference between evidence and an
+        // assertion.
         let contributed = false
-        if (barcode) {
+        if (barcode && photoPath) {
           const judged = productFromLabel(barcode, vision.label)
           if ('reason' in judged) {
             trace.push(`[contribute] ${judged.reason}`)
