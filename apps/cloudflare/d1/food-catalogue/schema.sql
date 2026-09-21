@@ -160,6 +160,44 @@ create table if not exists product (
 );
 
 -- ---------------------------------------------------------------------------
+-- Where a cached `product` row came from, for the rows that were not bulk
+-- loaded.
+--
+-- A SEPARATE TABLE rather than a column on `product`, and not for tidiness.
+-- Every statement in this file has to be safe to re-run, because CI applies the
+-- whole thing on every merge to main; SQLite has no `add column if not exists`,
+-- so an `alter table` here would pass once and fail the build every time after.
+-- A table can say `if not exists` and a column cannot, which settles it.
+--
+-- One row per contributed barcode. The bulk-loaded millions have no row at all,
+-- which is the honest reading: they came from the import and not from anybody.
+--
+--   'open_food_facts'  the live fallback in the `barcode` edge function
+--   'user_label'       somebody photographed the panel after a miss
+--
+-- The point of writing this down is that it can be taken back. A panel read by
+-- a model off a phone camera is the least trustworthy thing in the catalogue,
+-- and one statement has to be able to undo the lot:
+--
+--   delete from product where barcode in
+--     (select barcode from product_contribution where source = 'user_label');
+--   delete from product_contribution where source = 'user_label';
+--
+-- No user id. This is the catalogue, not the diary, and the two are kept apart:
+-- a Supabase uuid in here would turn "who scanned this packet" into a question
+-- this database can answer, which is a privacy surface bought for nothing. The
+-- source and the date are what the delete above needs.
+-- ---------------------------------------------------------------------------
+create table if not exists product_contribution (
+  barcode    integer primary key,
+  source     text not null,
+  created_at text not null default current_timestamp
+);
+
+create index if not exists product_contribution_source_idx
+  on product_contribution (source);
+
+-- ---------------------------------------------------------------------------
 -- The full-text side.
 --
 -- Both indexes are CONTENTLESS (`content = ''`): FTS5 stores the terms and not

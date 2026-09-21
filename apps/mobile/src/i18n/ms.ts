@@ -743,7 +743,8 @@ export const ms = {
         'Kami tidak dapat menghubungi katalog buat masa ini. Bungkusan itu mungkin tiada masalah; sambungannya yang bermasalah.',
       tryAgain: 'Imbas lagi',
       photographLabel: 'Ambil gambar label',
-      labelPrompt: 'Kami belum ada pek ini. Ambil gambar label pemakanan dan kami akan membacanya.',
+      labelTitle: 'Ambil gambar label pemakanan',
+      labelPrompt: 'Kami belum ada pek ini. Terbalikkan pek dan kami akan membaca nilainya.',
     },
 
     describe: {

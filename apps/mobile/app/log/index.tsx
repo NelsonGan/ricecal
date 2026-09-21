@@ -114,7 +114,27 @@ export default function LogSheet() {
    * needs it: "Scan again" has to mean the day with the viewfinder already open,
    * not the sheet as if the log button had been pressed.
    */
-  const { panel: opening } = useLocalSearchParams<{ panel?: string }>()
+  const { panel: opening, code: openingCode } = useLocalSearchParams<{
+    panel?: string
+    code?: string
+  }>()
+
+  /**
+   * The packet the miss handoff came from, if that is what opened this camera.
+   *
+   * Carried on the one shot taken here and nowhere else: it is what lets the
+   * server write the photographed panel back into the catalogue against this
+   * code. Cleared as that shot is taken, because it describes THAT capture
+   * rather than the camera in general — a second photograph is a different
+   * plate, and attributing it to this packet would put somebody's lunch in the
+   * catalogue under a barcode it has nothing to do with.
+   *
+   * State rather than the route param read directly, for exactly that reason:
+   * the param does not change when the shutter fires.
+   */
+  const [labelCode, setLabelCode] = useState<string | undefined>(() =>
+    opening === 'label' ? openingCode : undefined,
+  )
 
   /**
    * The viewfinder, the search field and the describe box live inside this sheet
@@ -375,13 +395,28 @@ export default function LogSheet() {
               stopping on a dead end, and without a line saying so the app has
               silently swapped a barcode scanner for a plate camera.
 
+              Two lines rather than one, because one sentence was carrying two
+              jobs and doing neither: saying we have never seen this packet, and
+              saying what to point the camera at. A user who reads only the bold
+              half still knows to turn the box over.
+
+              "Turn the packet over" rather than "photograph the label": the
+              panel is on the back and the camera is already up, so the
+              instruction people actually need is which face of the box, not
+              which button to press.
+
               Over the meal tab only: an instruction about the nutrition panel
               above a barcode reader is an instruction about the wrong side of
               the box. */}
           {opening === 'label' && captureMode === 'meal' ? (
-            <Text variant="caption" className="text-center">
-              {t('logging:barcode.labelPrompt')}
-            </Text>
+            <View className="gap-1 px-2">
+              <Text variant="label" className="text-center">
+                {t('logging:barcode.labelTitle')}
+              </Text>
+              <Text variant="caption" className="text-center">
+                {t('logging:barcode.labelPrompt')}
+              </Text>
+            </View>
           ) : null}
 
           {/* The shutter does not wait for recognition. It writes the row and
@@ -409,7 +444,19 @@ export default function LogSheet() {
               // inside one lands on the stack within that presentation.
               const ahead = scanLimitAhead(quota.data)
               if (ahead && announceRefusal(toast, ahead, 'camera', { navigate: 'replace' })) return
-              snapFood({ photoUri, logDate: selectedDate })
+              // The packet, on this shot only. `labelCode` is set when a miss
+              // sent the user here, and the server writes whatever panel it
+              // reads back against that code. Cleared immediately: the next
+              // photograph is a different plate, and attributing it to this
+              // packet would put someone else's lunch in the catalogue under a
+              // barcode it has nothing to do with.
+              //
+              // A barcode capture cannot reach this handler, but the mode is
+              // checked anyway — this is the one place a wrong answer becomes
+              // everybody's.
+              const barcode = captureMode === 'meal' ? labelCode : undefined
+              setLabelCode(undefined)
+              snapFood({ photoUri, logDate: selectedDate, barcode })
               goBack()
             }}
             onScanned={(code) => openFood(packetFoodId(code))}
