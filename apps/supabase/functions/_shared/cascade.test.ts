@@ -15,9 +15,11 @@ import {
   measuredQuantity,
   oneArticleGrams,
   priceRow,
+  productFromLabel,
   type Resolved,
   type SearchRow,
 } from './cascade.ts'
+import type { NutritionLabel } from './llm.ts'
 import { namesAPortion } from './portion.ts'
 
 const eq = (got: unknown, want: unknown, what: string) => {
@@ -406,4 +408,116 @@ Deno.test('dishIcon does not let a leading ingredient outrank the whole plate', 
   eq(dishIcon(resolvedAs('Chicken with rice'))?.name, 'plate-rice', 'the compound phrase holds')
   eq(dishIcon(resolvedAs('Rice with fried chicken'))?.name, 'fried-chicken-bucket', 'one word')
   eq(dishIcon(resolvedAs('Bread and butter pudding'))?.name, 'pudding', 'it is a pudding')
+})
+
+// ---------------------------------------------------------------------------
+// `productFromLabel`: what a photographed panel has to look like before it is
+// allowed into the catalogue under somebody's barcode.
+//
+// This is the one place in the scan pipeline where a model's reading is written
+// where other people will find it, so every guard below is about a stranger's
+// diary rather than the photographer's. The cost of refusing is that the packet
+// stays a miss, which is where it already was.
+// ---------------------------------------------------------------------------
+
+const PANEL_CODE = '09556001315694'
+
+const labelPanel = (over: Partial<NutritionLabel> = {}): NutritionLabel => ({
+  name: 'Jacobs Cream Crackers',
+  // A panel that agrees with itself: 4/4/9 on these macros is 157 kcal.
+  kcal: 157,
+  carbs_g: 22.3,
+  protein_g: 3.1,
+  fat_g: 6.1,
+  fibre_g: 1.8,
+  sugar_g: 0.2,
+  sodium_mg: 32,
+  serving: '3 pcs (30 g)',
+  ...over,
+})
+
+const labelRow = (label: NutritionLabel) => {
+  const judged = productFromLabel(PANEL_CODE, label)
+  if ('reason' in judged) throw new Error(`expected a row, got: ${judged.reason}`)
+  return judged.product
+}
+const labelRefusal = (label: NutritionLabel) => {
+  const judged = productFromLabel(PANEL_CODE, label)
+  if (!('reason' in judged)) throw new Error('expected a refusal, got a row')
+  return judged.reason
+}
+
+Deno.test('productFromLabel writes a panel that reads like a panel', () => {
+  const product = labelRow(labelPanel())
+  eq(product.barcode, 9556001315694, 'the code is the row key')
+  eq(product.name, 'Jacobs Cream Crackers', 'the name is the panel name')
+  eq(product.kcal, 157, 'energy is rounded to a whole kcal')
+  eq(product.carbs_g, 22.3, 'macros keep one decimal')
+  eq(product.serving_g, 30, 'the parenthesised weight is the serving')
+  eq(product.source, 'user_label', 'and it is marked as a contribution')
+})
+
+// The brand is on the FRONT of the box. A panel photographed from the back has
+// no brand in it, and inventing one out of the product name is how a catalogue
+// grows rows attributed to companies that never made them.
+Deno.test('productFromLabel does not guess a brand', () => {
+  eq(labelRow(labelPanel()).brand, null, 'brand stays null')
+})
+
+// "1 sachet" with no weight is a real serving and a common one. The row is
+// still one serving of the thing; only the gram figure is unknown.
+Deno.test('productFromLabel keeps a serving it cannot weigh', () => {
+  eq(labelRow(labelPanel({ serving: '1 sachet' })).serving_g, null, 'no grams, still a row')
+})
+
+// A close-up of the panel has no product name in it, so what comes back is the
+// table's own heading or the model shrugging. This function reads the RAW label
+// rather than the renamed one `resolveByLabel` hands the diary, so these are the
+// strings it actually meets — checking only for "Packaged food" passed the test
+// and let a product called "Nutrition Facts" into the catalogue.
+Deno.test('productFromLabel refuses a panel with no product name', () => {
+  const no = 'no product name on the panel'
+  eq(labelRefusal(labelPanel({ name: 'Nutrition Facts' })), no, 'the table heading')
+  eq(labelRefusal(labelPanel({ name: 'Nutritional Information' })), no, 'the other heading')
+  eq(labelRefusal(labelPanel({ name: 'Unidentified Food Product' })), no, 'the model shrugging')
+  eq(labelRefusal(labelPanel({ name: 'Packaged food' })), no, 'the fallback name itself')
+  eq(labelRefusal(labelPanel({ name: '  ' })), no, 'whitespace')
+})
+
+// And it does not refuse a real product whose name happens to contain one of
+// those words in passing.
+Deno.test('productFromLabel keeps a real name that reads like a heading', () => {
+  eq(labelRow(labelPanel({ name: 'Nutrition Bar' })).name, 'Nutrition Bar', 'a bar is a product')
+})
+
+// A zero means the model found the table and not the numbers in it.
+Deno.test('productFromLabel refuses an energy figure that cannot be right', () => {
+  eq(labelRefusal(labelPanel({ kcal: 0 })).startsWith('implausible energy'), true, 'zero')
+  eq(
+    labelRefusal(labelPanel({ kcal: 2600 })).startsWith('implausible energy'),
+    true,
+    'a whole packet',
+  )
+})
+
+Deno.test('productFromLabel refuses a panel missing a macro', () => {
+  eq(labelRefusal(labelPanel({ fat_g: Number.NaN })), 'panel is missing a macro', 'not a number')
+  eq(labelRefusal(labelPanel({ protein_g: -1 })), 'panel is missing a macro', 'negative')
+})
+
+// THE assertion this function exists for. A misplaced decimal point does not
+// throw and does not look wrong on its own: "6.1 g fat" read as "61 g" is a
+// perfectly ordinary number. It stops matching the energy the same label
+// prints, and that is the only signal there is.
+Deno.test('productFromLabel refuses a panel that disagrees with itself', () => {
+  const reason = labelRefusal(labelPanel({ fat_g: 61 }))
+  eq(reason.startsWith('panel disagrees with itself'), true, 'a decimal point slipped')
+})
+
+// And it does not refuse an honest one. Real labels round every row on their
+// own and carry fibre and polyols that Atwater does not price the same way, so
+// the band has to be loose enough for a panel that is simply a label.
+Deno.test('productFromLabel tolerates ordinary label rounding', () => {
+  eq(labelRow(labelPanel({ kcal: 140 })).kcal, 140, '11% under Atwater is still a label')
+  eq(labelRow(labelPanel({ kcal: 195 })).kcal, 195, '24% over is too')
 })

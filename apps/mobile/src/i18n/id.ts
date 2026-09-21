@@ -732,7 +732,9 @@ export const id = {
         'Kami tidak bisa menghubungi katalog saat ini. Kemasannya mungkin tidak apa-apa; koneksinya yang bermasalah.',
       tryAgain: 'Pindai lagi',
       photographLabel: 'Foto labelnya',
-      labelPrompt: 'Kemasan ini belum ada pada kami. Foto label gizinya dan kami akan membacanya.',
+      labelTitle: 'Foto label gizi',
+      labelPrompt:
+        'Kemasan ini belum ada pada kami. Balik kemasannya dan kami akan membaca angkanya.',
     },
 
     describe: {

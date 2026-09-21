@@ -163,9 +163,14 @@ export const logging = {
    * the lookup happened there, and a scan now leaves the sheet as soon as a code
    * is read, so three of them belong to the page it leaves for.
    *
-   * "We do not have this one yet" rather than "not found": the packet is in the
-   * user's hand and our record is what is missing, which is why the next thing
-   * offered is Describe rather than an apology.
+   * "We have no record of this packet" rather than "not found": the packet is in
+   * the user's hand and our record is what is missing, which is why the next
+   * thing offered is the camera rather than an apology. The panel is printed on
+   * the thing they are already holding.
+   *
+   * `labelTitle` and `labelPrompt` are that offer, and they are two strings
+   * because one was doing two jobs. The title is the instruction and says which
+   * label; the line under it says why the camera opened by itself.
    */
   barcode: {
     permissionTitle: 'Let RiceCal use the camera',
@@ -177,8 +182,8 @@ export const logging = {
       'We could not reach the catalogue just now. The packet may be fine; the connection was not.',
     tryAgain: 'Scan again',
     photographLabel: 'Photograph the label',
-    labelPrompt:
-      'We do not have this packet yet. Photograph the nutrition label and we will read it.',
+    labelTitle: 'Photograph the nutrition label',
+    labelPrompt: 'We have no record of this packet. Turn it over and we will read the numbers.',
   },
 
   /**
