@@ -71,6 +71,15 @@ export type CatalogueFood = {
   serving_g: number | null
 }
 
+/**
+ * Where a cached product row came from.
+ *
+ * Absent for the bulk-loaded millions, which is the honest reading: they came
+ * from the import rather than from anybody. See `product_contribution` in
+ * `apps/cloudflare/d1/food-catalogue/schema.sql`.
+ */
+export type ProductSource = 'open_food_facts' | 'user_label'
+
 export type CatalogueProduct = {
   barcode: number
   name: string
@@ -80,6 +89,8 @@ export type CatalogueProduct = {
   protein_g: number
   fat_g: number
   serving_g: number | null
+  /** Null for a bulk-loaded row. Set only on the two contributed paths. */
+  source?: ProductSource | null
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T | null> {
@@ -145,15 +156,42 @@ export async function searchFoods(q: string, limit = 50): Promise<CatalogueFood[
 /**
  * Remember a product the catalogue did not have.
  *
- * Best-effort, and deliberately not awaited for correctness: the caller already
- * has the answer it needs, and this only decides whether the NEXT person to
- * scan that packet pays for the round trip to Open Food Facts. A failure here
- * must never fail the scan.
+ * Best-effort, and never fatal: the caller already has the answer it needs, and
+ * this only decides whether the NEXT person to scan that packet pays for the
+ * round trip to Open Food Facts. A failure here must never fail the scan.
+ *
+ * `source` travels with it. The Worker records it against the barcode so a
+ * panel a model read off somebody's camera can be told apart from a row Open
+ * Food Facts published, and taken back on its own if it turns out to be wrong.
+ *
+ * REPORTS WHAT HAPPENED, which is not the same as "this did not throw". `call`
+ * answers null for a timeout, a 500 or a Worker mid-deploy and logs it, so a
+ * caller that ignored the result could tell somebody their packet had been
+ * added while the request was refused at the door. It did exactly that for the
+ * whole of one test run.
+ *
+ * Three answers rather than two, because a boolean puts opposite news behind
+ * one word. "Did not write a row" covers both the packet already being there,
+ * which is the good outcome arriving by another route, and the catalogue being
+ * unreachable, which means the packet is still missing. Only the second is
+ * worth looking into, and only the first should be reported as a success.
+ *
+ *   stored   this call wrote the row
+ *   present  somebody else got there first, which is a race with one right
+ *            answer rather than a problem
+ *   failed   the catalogue could not be reached, or refused the row
  */
-export async function cacheProduct(product: CatalogueProduct): Promise<void> {
-  await call('/product', {
+export type CacheOutcome = 'stored' | 'present' | 'failed'
+
+export async function cacheProduct(product: CatalogueProduct): Promise<CacheOutcome> {
+  const body = await call<{ ok: boolean; stored?: boolean }>('/product', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(product),
   })
+  if (body?.ok !== true) return 'failed'
+  // `stored` is absent on an older Worker than this function, which answered a
+  // bare `{ ok: true }`. Reaching it at all meant the row was written, so the
+  // fallback reads that way rather than reporting a failure that did not happen.
+  return body.stored === false ? 'present' : 'stored'
 }

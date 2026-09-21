@@ -24,6 +24,16 @@ export type SnapInput = {
   logDate: string
   /** The plate, if there was a camera to take it with. */
   photoUri?: string
+  /**
+   * The packet this shot is meant to answer for, when the camera was opened by
+   * a barcode the catalogue could not resolve.
+   *
+   * Set only by the miss handoff, and only for the shot taken on that screen.
+   * It does not change how the photo is read; it lets the server write the
+   * panel back against this code so the next person to scan the packet gets an
+   * answer rather than the same dead end.
+   */
+  barcode?: string
 }
 
 export type DescribeInput = {
@@ -67,12 +77,14 @@ async function scanMeal(input: {
   photoPath?: string
   text?: string
   logDate: string
+  barcode?: string
 }): Promise<ScanResponse> {
   const { data, error } = await supabase.functions.invoke<ScanResponse>('scan-meal', {
     body: {
       photo_path: input.photoPath,
       text: input.text,
       log_date: input.logDate,
+      barcode: input.barcode,
     },
   })
   if (error) {
@@ -126,10 +138,12 @@ function useRecogniseMeal() {
       logDate,
       photoUri,
       text,
+      barcode,
     }: {
       logDate: string
       photoUri?: string
       text?: string
+      barcode?: string
     }): string => {
       // Not a database id: this row does not exist yet. Prefixed so nothing
       // mistakes it for one and tries to update it.
@@ -200,7 +214,7 @@ function useRecogniseMeal() {
             throw settled(error instanceof Error ? error : new Error('upload failed'))
           }
         }
-        return scanMeal({ photoPath: path, text, logDate })
+        return scanMeal({ photoPath: path, text, logDate, barcode })
       }
 
       work()

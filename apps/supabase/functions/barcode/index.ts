@@ -271,6 +271,7 @@ Deno.serve(async (req: Request) => {
     protein_g: Math.round((protein as number) * scale * 10) / 10,
     fat_g: Math.round((fat as number) * scale * 10) / 10,
     serving_g: grams,
+    source: 'open_food_facts' as const,
   }
 
   // Remembered in the catalogue so the next person to scan this packet gets the
@@ -319,6 +320,28 @@ function asFood(p: CatalogueProduct, label?: string) {
         default: true,
       },
     ],
+    // Derived from the row rather than hardcoded. A packet whose numbers came
+    // off a photographed panel must not go out crediting Open Food Facts: they
+    // did not publish it, the licence sentence is not theirs to grant, and the
+    // field is the only thing downstream that says where a number came from.
+    ...attributionFor(p.source),
+  }
+}
+
+/**
+ * How a product row describes its own provenance.
+ *
+ * A bulk-loaded row has no `source` and is Open Food Facts, which is where the
+ * import came from. The two contributed paths name themselves.
+ */
+function attributionFor(source: CatalogueProduct['source']) {
+  if (source === 'user_label') {
+    return {
+      source_id: 'user_label',
+      source_attribution: 'Read from a nutrition label photographed by a RiceCal user',
+    }
+  }
+  return {
     source_id: 'open_food_facts',
     source_attribution: 'Data from Open Food Facts, available under the Open Database License',
   }

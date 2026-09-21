@@ -722,8 +722,8 @@ export const vi = {
         'Lúc này chúng tôi không kết nối được tới danh mục. Gói hàng có thể vẫn ổn; kết nối thì không.',
       tryAgain: 'Quét lại',
       photographLabel: 'Chụp nhãn dinh dưỡng',
-      labelPrompt:
-        'Chúng tôi chưa có gói này. Hãy chụp nhãn dinh dưỡng và chúng tôi sẽ đọc giúp bạn.',
+      labelTitle: 'Chụp nhãn dinh dưỡng',
+      labelPrompt: 'Chúng tôi chưa có gói này. Lật mặt sau và chúng tôi sẽ đọc các chỉ số.',
     },
 
     describe: {

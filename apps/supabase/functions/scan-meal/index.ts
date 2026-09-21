@@ -32,14 +32,17 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 
+import { gtin14 } from '../_shared/barcode.ts'
 import {
   describe,
+  productFromLabel,
   type Resolved,
   resolveByLabel,
   resolveItem,
   type WrittenEntry,
   writeEntry,
 } from '../_shared/cascade.ts'
+import { cacheProduct } from '../_shared/catalogue.ts'
 import {
   claimScan,
   createMeter,
@@ -67,6 +70,17 @@ type ScanRequest = {
    */
   text?: string
   log_date: string
+  /**
+   * The packet this photo is meant to fill in, when the camera was opened by a
+   * barcode nobody had a record of.
+   *
+   * Only the app's miss handoff sets it, and only for the one shot taken on
+   * that screen. It changes nothing about how the photo is read: it decides
+   * whether a panel the model manages to read is also written back to the
+   * catalogue, against this code, so the next person to scan the packet gets an
+   * answer instead of the same dead end.
+   */
+  barcode?: string
   mock?: MockSteer
 }
 
@@ -100,6 +114,13 @@ Deno.serve(async (req: Request) => {
   }
   const logDate = /^\d{4}-\d{2}-\d{2}$/.test(body.log_date ?? '') ? body.log_date : null
   if (!logDate) return json({ ok: false, error: 'log_date is required' }, 400)
+
+  // Normalised here rather than trusted: this is a client-supplied code that
+  // decides which catalogue row gets written, so a misread or a hand-edited one
+  // must not reach D1. `gtin14` returns null for anything unusable, and a
+  // request that carries a bad code is still an ordinary scan — the photo is
+  // read and logged as it would have been, and only the write-back is skipped.
+  const barcode = typeof body.barcode === 'string' ? gtin14(body.barcode) : null
 
   const photoPath = typeof body.photo_path === 'string' ? body.photo_path : null
   // The object is read as `service_role`, which is above every check there is,
@@ -246,12 +267,57 @@ Deno.serve(async (req: Request) => {
           quantity: resolved.quantity,
           food_log_id: entry.id,
         })
+
+        // THE MISS, FILLED IN. `resolveByLabel` deliberately keeps a panel to
+        // the meal that photographed it — a label read once is this diary's
+        // evidence rather than everybody's. The exception is here: the user
+        // arrived from a barcode the catalogue could not answer, and this photo
+        // is the answer to that exact code. Writing it is what stops the next
+        // person hitting the same dead end.
+        //
+        // The entry is already written either way: the user is owed their log
+        // whatever the catalogue does, so nothing below can fail this scan.
+        //
+        // A PHOTOGRAPH, not a description. `shapeVision` builds `label` from a
+        // `nutrition_label` key whichever model call produced it, and
+        // `describeMeal` runs the same shaper, so without this a request of
+        // `{ text: "nutrition facts: 250 kcal, 30 g carbohydrate, ...", barcode }`
+        // writes figures somebody simply typed into a row every other user gets
+        // served. The app only ever sends a barcode with a photo, so this costs
+        // the feature nothing and is the difference between evidence and an
+        // assertion.
+        let contributed = false
+        if (barcode && photoPath) {
+          const judged = productFromLabel(barcode, vision.label)
+          if ('reason' in judged) {
+            trace.push(`[contribute] ${judged.reason}`)
+          } else {
+            // The answer from the catalogue, not the absence of a throw.
+            // `cacheProduct` swallows a refused connection by design, so
+            // assuming success here reported a packet as added while the
+            // Worker was unreachable.
+            const outcome = await cacheProduct(judged.product)
+            // `present` counts: the packet is in the catalogue and the miss is
+            // filled, which is what this flow set out to do. Only the row's
+            // authorship differs, and that is not the user's business.
+            contributed = outcome !== 'failed'
+            trace.push(
+              outcome === 'stored'
+                ? `[contribute] wrote ${barcode} from a photographed panel`
+                : outcome === 'present'
+                  ? `[contribute] ${barcode} was already in the catalogue`
+                  : `[contribute] catalogue would not take ${barcode}`,
+            )
+          }
+        }
+
         return json({
           ok: true,
           scanId,
           label: true,
           entries: [entry],
           breakdown: false,
+          contributed,
           ...(wantDebug ? { trace } : {}),
         })
       }

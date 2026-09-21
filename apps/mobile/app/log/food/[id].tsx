@@ -430,7 +430,17 @@ export default function FoodDetail() {
   const reopenLog = (which: 'barcode' | 'label') => {
     queryClient.removeQueries({ queryKey: keys.food(params.id) })
     finish()
-    router.push({ pathname: '/log', params: { panel: which } })
+    // The code travels with the `label` handoff, and only with that one. The
+    // photo taken on the far side is an answer to THIS packet, so the scan
+    // carries the barcode and the panel it reads is written back against it —
+    // without this the next person to scan the box meets the same dead end.
+    //
+    // Not on `barcode`, which reopens the scanner: there is nothing to attribute
+    // yet, the user is about to read a code rather than photograph a panel.
+    router.push({
+      pathname: '/log',
+      params: which === 'label' && packet ? { panel: which, code: packet } : { panel: which },
+    })
   }
   const rescan = () => reopenLog('barcode')
   /** The camera, pointed at the panel on the back of the packet. */

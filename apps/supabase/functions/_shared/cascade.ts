@@ -19,7 +19,7 @@
 // nothing fits, and the row on Today offers another go.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { type CatalogueFood, searchFoods } from './catalogue.ts'
+import { type CatalogueFood, type CatalogueProduct, searchFoods } from './catalogue.ts'
 import type { Meter } from './entitlement.ts'
 import { iconFor } from './icon-match.ts'
 import { type IconChoice, knownIcon } from './icons.ts'
@@ -921,19 +921,32 @@ async function resolveByDish(
 }
 
 /**
+ * A panel whose PRODUCT name did not come through.
+ *
+ * A close-up of the panel has no product name in it, so what the model sends
+ * back is the table's own heading ("Nutrition Facts") or the model shrugging
+ * ("Unidentified Food Product", from a real scan). The prompt asks for null;
+ * this is the belt to its braces.
+ *
+ * Shared by the two readers of a label, and that sharing is the point.
+ * `resolveByLabel` swaps the name for "Packaged food" so the diary entry has
+ * something to call itself, and `productFromLabel` refuses the panel outright.
+ * They were separate tests for a while, against different strings: the second
+ * one checked for "Packaged food" and never saw it, because it reads the RAW
+ * label rather than the renamed one. A panel headed "Nutrition Facts" went
+ * into the catalogue under that name.
+ */
+const UNNAMED_PANEL =
+  /^(nutrition|nutritional)\s*(facts|information|panel)?$|\b(unidentified|unknown|unnamed|generic)\b/i
+
+/**
  * A photographed nutrition panel, taken at its word. No search, no verifier, no
  * estimate: the cascade exists to work out numbers nobody wrote down, and here
  * the manufacturer did. Nothing reaches the catalogue, because a panel read once
  * is this meal's evidence rather than everybody's.
  */
 export async function resolveByLabel(label: NutritionLabel): Promise<Resolved | null> {
-  // A close-up of the panel has no product name in it, so the row must not be
-  // named after the table ("Nutrition Facts") or after the model shrugging
-  // ("Unidentified Food Product", from a real scan). The prompt asks for null;
-  // this is the belt to its braces.
-  const unnamed =
-    /^(nutrition|nutritional)\s*(facts|information|panel)?$|\b(unidentified|unknown|unnamed|generic)\b/i
-  const name = unnamed.test(label.name.trim()) ? 'Packaged food' : label.name
+  const name = UNNAMED_PANEL.test(label.name.trim()) ? 'Packaged food' : label.name
 
   const food = estimateRow({
     name,
@@ -950,6 +963,75 @@ export async function resolveByLabel(label: NutritionLabel): Promise<Resolved | 
   // One serving, as the panel defines one. The stepper is now counting the
   // packet's own unit.
   return { tier: 1, food, quantity: 1, displayLabel: name }
+}
+
+/**
+ * The same panel, judged as a CATALOGUE row rather than as one diary entry.
+ *
+ * `resolveByLabel` above is deliberately generous: it is pricing one meal for
+ * the person holding the packet, they can see what they photographed, and they
+ * can edit the row afterwards. This is the opposite situation. A row written
+ * here is served to everybody who ever scans that barcode, nothing downstream
+ * will question it, and the person it misleads will never have seen the packet.
+ *
+ * So the bar is higher, and everything rejected simply stays a miss — which is
+ * exactly where it already was. Refusing costs nothing; accepting a misread
+ * puts a wrong number in front of strangers.
+ *
+ * Returns the row to write, or a reason not to, which the caller traces.
+ */
+export function productFromLabel(
+  barcode: string,
+  label: NutritionLabel,
+): { product: CatalogueProduct } | { reason: string } {
+  const { name, kcal, carbs_g: carbs, protein_g: protein, fat_g: fat } = label
+
+  // `resolveByLabel` renames an unreadable panel to "Packaged food" so the
+  // entry has something to call itself. Fine for one row in one diary, useless
+  // as a catalogue name: the next person scans a box with a name printed on it
+  // and is told it is "Packaged food". A panel whose product name did not come
+  // through is a photo of the back of the box and nothing more.
+  const named = name.trim()
+  if (named.length < 2 || UNNAMED_PANEL.test(named) || /^packaged food$/i.test(named)) {
+    return { reason: 'no product name on the panel' }
+  }
+
+  if (![kcal, carbs, protein, fat].every((n) => Number.isFinite(n) && n >= 0)) {
+    return { reason: 'panel is missing a macro' }
+  }
+  // One serving, not one packet. Nothing edible is 2,000 kcal a serving, and a
+  // zero means the model found the table but not the numbers in it.
+  if (kcal <= 0 || kcal > 2000) {
+    return { reason: `implausible energy: ${kcal} kcal per serving` }
+  }
+
+  // Does the panel agree with itself? A misplaced decimal point is what this
+  // catches: "1.2 g fat" read as "12 g" stops matching the energy figure the
+  // same label prints. Wider than the 25% the estimator uses, because a real
+  // label rounds every row on its own and may carry fibre or polyols that
+  // Atwater does not price the same way.
+  const atwater = carbs * 4 + protein * 4 + fat * 9
+  if (Math.abs(atwater - kcal) / kcal > 0.35) {
+    return { reason: `panel disagrees with itself: ${Math.round(atwater)} vs ${kcal} kcal` }
+  }
+
+  return {
+    product: {
+      barcode: Number(barcode),
+      name: named.slice(0, 120),
+      // The panel is the back of the box and the brand is on the front. Left
+      // null rather than guessed out of the product name.
+      brand: null,
+      kcal: Math.round(kcal),
+      carbs_g: Math.round(carbs * 10) / 10,
+      protein_g: Math.round(protein * 10) / 10,
+      fat_g: Math.round(fat * 10) / 10,
+      // The panel's own words for one serving, in grams where it said so. Null
+      // is fine and common ("1 sachet"): the row is still one serving of it.
+      serving_g: servingGrams(label.serving),
+      source: 'user_label',
+    },
+  }
 }
 
 /** Tier 4: validated model nutrition, kept as the entry's own numbers. */
