@@ -712,7 +712,17 @@ export default {
           const code = gtin14(url.searchParams.get('code') ?? '')
           if (!code) return json({ ok: false, error: 'not a usable barcode' }, 400)
 
-          const row = await env.DB.prepare('select * from product where barcode = ?')
+          // The left join carries provenance out with the row. Without it a
+          // panel somebody photographed comes back indistinguishable from a
+          // bulk-loaded one, and the `barcode` edge function credits Open Food
+          // Facts for a number they never published. A left join on a primary
+          // key costs one more b-tree descent and nothing else.
+          const row = await env.DB.prepare(
+            `select p.*, c.source
+               from product p
+               left join product_contribution c on c.barcode = p.barcode
+              where p.barcode = ?`,
+          )
             .bind(Number(code))
             .first()
           return json({ ok: true, product: row ?? null })
@@ -732,13 +742,19 @@ export default {
           return json({ ok: true, food: found.get(id) ?? null })
         }
 
-        // A product Open Food Facts had and the catalogue did not, written so
-        // the second person to scan that packet gets the index probe.
+        // A product the catalogue did not have, written so the second person to
+        // scan that packet gets the index probe. Two ways in now: Open Food
+        // Facts answered the live lookup, or somebody photographed the panel
+        // after a miss and the model read it.
         //
         // `insert or ignore`: two people scanning one new packet at once is a
         // race with one right answer. The catalogue is rebuilt from source data
         // anyway, so a row arriving this way is a cache entry rather than an
         // authority.
+        //
+        // A photographed panel is the weakest evidence in here, so it is
+        // recorded as such — see `product_contribution` in the schema for why
+        // that has to be undoable in one statement.
         case '/product': {
           if (request.method !== 'POST') {
             return json({ ok: false, error: 'POST only' }, 405)
@@ -750,7 +766,16 @@ export default {
             return json({ ok: false, error: 'name and kcal are required' }, 400)
           }
 
-          await env.DB.prepare(
+          // An allow-list, not the caller's string. This value is what the
+          // clean-up statement in the schema selects on, so a typo'd source
+          // would quietly make a row unreachable by the one thing that can take
+          // it back.
+          const source =
+            body.source === 'user_label' || body.source === 'open_food_facts'
+              ? body.source
+              : 'open_food_facts'
+
+          const written = await env.DB.prepare(
             `insert or ignore into product
                (barcode, name, brand, kcal, carbs_g, protein_g, fat_g, serving_g)
              values (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -766,7 +791,20 @@ export default {
               body.serving_g == null ? null : Number(body.serving_g),
             )
             .run()
-          return json({ ok: true })
+
+          // Only for a row this call actually created. `insert or ignore` is
+          // silent about losing the race, and marking an existing row as
+          // contributed would be two lies at once: it would credit a panel
+          // photo for numbers that came from the import, and it would put a
+          // bulk-loaded row inside the blast radius of the `user_label` delete.
+          if (written.meta.changes > 0) {
+            await env.DB.prepare(
+              `insert or ignore into product_contribution (barcode, source) values (?, ?)`,
+            )
+              .bind(Number(code), source)
+              .run()
+          }
+          return json({ ok: true, stored: written.meta.changes > 0, source })
         }
 
         case '/health': {

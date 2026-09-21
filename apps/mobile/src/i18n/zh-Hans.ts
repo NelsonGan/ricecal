@@ -717,7 +717,8 @@ export const zhHans = {
       failed: '我们暂时连不上食物库。包装本身可能没问题，是网络不行。',
       tryAgain: '重新扫',
       photographLabel: '拍摄标签',
-      labelPrompt: '我们还没有这个包装。拍下营养成分表，我们来读取。',
+      labelTitle: '拍下营养成分表',
+      labelPrompt: '我们还没有这个包装。把它翻到背面，我们来读取数值。',
     },
 
     describe: {

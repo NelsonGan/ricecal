@@ -741,8 +741,9 @@ export const fil = {
         'Hindi namin maabot ang catalogue ngayon. Baka maayos naman ang pakete; ang koneksyon ang hindi.',
       tryAgain: 'Mag-scan ulit',
       photographLabel: 'Kunan ng litrato ang label',
+      labelTitle: 'Kuhanan ng litrato ang nutrition label',
       labelPrompt:
-        'Wala pa sa amin ang packet na ito. Kunan ng litrato ang nutrition label at babasahin namin ito.',
+        'Wala pa sa amin ang packet na ito. Baliktarin ito at babasahin namin ang mga numero.',
     },
 
     describe: {

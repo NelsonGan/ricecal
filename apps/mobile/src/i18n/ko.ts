@@ -717,7 +717,8 @@ export const ko = {
       failed: '지금은 목록에 연결하지 못했습니다. 제품은 멀쩡할 수 있고, 문제는 연결 쪽입니다.',
       tryAgain: '다시 스캔',
       photographLabel: '라벨 촬영',
-      labelPrompt: '아직 등록되지 않은 제품입니다. 영양성분표를 찍어 주시면 읽어 드릴게요.',
+      labelTitle: '영양성분표 촬영',
+      labelPrompt: '아직 등록되지 않은 제품입니다. 뒷면을 보여 주시면 수치를 읽어 드릴게요.',
     },
 
     describe: {

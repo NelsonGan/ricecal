@@ -716,7 +716,8 @@ export const zhHant = {
       failed: '我們暫時連不上食物資料庫。包裝本身可能沒問題，是網路不行。',
       tryAgain: '重新掃',
       photographLabel: '拍攝標示',
-      labelPrompt: '我們還沒有這個包裝。拍下營養標示，我們來讀取。',
+      labelTitle: '拍下營養標示',
+      labelPrompt: '我們還沒有這個包裝。把它翻到背面，我們來讀取數值。',
     },
 
     describe: {
