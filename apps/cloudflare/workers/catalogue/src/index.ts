@@ -775,12 +775,30 @@ export default {
               ? body.source
               : 'open_food_facts'
 
-          const written = await env.DB.prepare(
-            `insert or ignore into product
-               (barcode, name, brand, kcal, carbs_g, protein_g, fat_g, serving_g)
-             values (?, ?, ?, ?, ?, ?, ?, ?)`,
-          )
-            .bind(
+          // ONE TRANSACTION, because a row and its provenance are one fact.
+          // `batch` runs these in order inside a transaction, so both land or
+          // neither does. As two awaited statements, a failure of the second
+          // left the product row written and unattributed — indistinguishable
+          // from one of the 3.2 million bulk-loaded rows, and therefore outside
+          // the reach of the one `delete` that can take a contributed row back.
+          // That is the single property this table exists to provide.
+          //
+          // The provenance row goes FIRST, and is conditional in SQL rather
+          // than in TypeScript, which is what lets the pair be a batch at all:
+          // it writes only when the product is not already there, so a
+          // bulk-loaded row cannot be relabelled as somebody's photograph and
+          // pulled into the blast radius of that delete. After the insert below
+          // the row always exists, so the test has to be made before it.
+          const [, written] = await env.DB.batch([
+            env.DB.prepare(
+              `insert or ignore into product_contribution (barcode, source)
+                 select ?, ? where not exists (select 1 from product where barcode = ?)`,
+            ).bind(Number(code), source, Number(code)),
+            env.DB.prepare(
+              `insert or ignore into product
+                 (barcode, name, brand, kcal, carbs_g, protein_g, fat_g, serving_g)
+               values (?, ?, ?, ?, ?, ?, ?, ?)`,
+            ).bind(
               Number(code),
               String(body.name).slice(0, 120),
               body.brand ? String(body.brand).slice(0, 60) : null,
@@ -789,21 +807,9 @@ export default {
               Number(body.protein_g ?? 0),
               Number(body.fat_g ?? 0),
               body.serving_g == null ? null : Number(body.serving_g),
-            )
-            .run()
+            ),
+          ])
 
-          // Only for a row this call actually created. `insert or ignore` is
-          // silent about losing the race, and marking an existing row as
-          // contributed would be two lies at once: it would credit a panel
-          // photo for numbers that came from the import, and it would put a
-          // bulk-loaded row inside the blast radius of the `user_label` delete.
-          if (written.meta.changes > 0) {
-            await env.DB.prepare(
-              `insert or ignore into product_contribution (barcode, source) values (?, ?)`,
-            )
-              .bind(Number(code), source)
-              .run()
-          }
           return json({ ok: true, stored: written.meta.changes > 0, source })
         }
 
