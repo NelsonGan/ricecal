@@ -54,6 +54,7 @@ export const ja = {
     followersOnly: 'フォロワー',
     everyoneHint: 'ログインしている全員が見られます。',
     followersHint: 'あなたとフォロワーだけが見られます。',
+    shareInfo: 'シェアについて',
     shareHint:
       'この食事とキャプションだけが公開されます。日記の記録を削除すると投稿も削除されます。',
     post: '投稿',
@@ -87,7 +88,8 @@ export const ja = {
     reportTitle: '報告する理由は？',
     spam: 'スパム',
     inappropriate: '不適切な内容',
-    notifications: 'アクティビティ',
+    notifications: '通知',
+    unread: '未読',
     markRead: '既読にする',
     notificationFollow: '{{name}}さんがあなたをフォローしました',
     notificationLike: '{{name}}さんが投稿にいいねしました',

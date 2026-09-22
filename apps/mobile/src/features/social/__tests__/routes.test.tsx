@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, userEvent } from '@/test-utils'
 import '@/i18n'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import ComposeScreen from '../../../../app/social/compose'
 import PostScreen from '../../../../app/social/post/[id]'
 
@@ -41,7 +42,8 @@ jest.mock('@/data/social', () => ({
 jest.mock('@/features/social/components', () => {
   return {
     useSocialTask: () => ({ run: mockRun, isPending: false }),
-    SocialBar: () => null,
+    SocialBar: ({ action }: { action?: React.ReactNode }) =>
+      require('react').createElement(require('react-native').View, {}, action),
     FoodPreview: () => null,
     JoinPrompt: () => null,
     QueryNotice: () => null,
@@ -53,8 +55,15 @@ jest.mock('@/features/social/components', () => {
 })
 jest.mock('@/ui', () => ({
   ...jest.requireActual('@/ui'),
-  Screen: ({ children, footer }: { children: React.ReactNode; footer?: React.ReactNode }) =>
-    require('react').createElement(require('react-native').View, {}, children, footer),
+  Screen: ({
+    children,
+    header,
+    footer,
+  }: {
+    children: React.ReactNode
+    header?: React.ReactNode
+    footer?: React.ReactNode
+  }) => require('react').createElement(require('react-native').View, {}, header, children, footer),
 }))
 
 beforeEach(() => {
@@ -78,6 +87,45 @@ it('does not carry a shared meal caption or audience into another source entry',
       caption: '',
       audience: 'public',
     }),
+  )
+})
+
+it('keeps sharing details in the audience picker and info sheet', async () => {
+  mockParams = { entryId: 'fresh-entry' }
+  await render(
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 390, height: 844 },
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      }}
+    >
+      <ComposeScreen />
+    </SafeAreaProvider>,
+  )
+  const user = userEvent.setup()
+  const audience = screen.getByLabelText('Who can see this?')
+  const shareHint =
+    'Only this food and your caption are shared. Deleting the diary entry also removes its post.'
+
+  expect(screen.getByText('fresh-entry')).toBeOnTheScreen()
+  expect(screen.getByLabelText('Caption')).toHaveProp('maxLength', 280)
+  expect(audience).toHaveAccessibilityValue({ text: 'Everyone' })
+  expect(screen.queryByText('Anyone signed in can see this post.')).toBeNull()
+  expect(screen.queryByText('Only you and your followers can see this post.')).toBeNull()
+  expect(screen.queryByText(shareHint)).toBeNull()
+
+  await user.press(audience)
+  expect(screen.getByText('Anyone signed in can see this post.')).toBeOnTheScreen()
+  expect(screen.getByText('Only you and your followers can see this post.')).toBeOnTheScreen()
+  await user.press(screen.getByText('Followers'))
+  expect(audience).toHaveAccessibilityValue({ text: 'Followers' })
+
+  await user.press(screen.getByRole('button', { name: 'About sharing' }))
+  expect(screen.getByText(shareHint)).toBeOnTheScreen()
+  await user.press(screen.getByRole('button', { name: 'Cancel' }))
+  await user.press(screen.getByRole('button', { name: 'Share' }))
+  expect(mockRun).toHaveBeenLastCalledWith(
+    expect.objectContaining({ action: 'post', entryId: 'fresh-entry', audience: 'followers' }),
   )
 })
 

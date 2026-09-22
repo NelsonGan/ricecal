@@ -59,6 +59,7 @@ export const id = {
     followersOnly: 'Pengikut',
     everyoneHint: 'Siapa pun yang masuk dapat melihat postingan ini.',
     followersHint: 'Hanya Anda dan pengikut Anda yang dapat melihat postingan ini.',
+    shareInfo: 'Tentang berbagi',
     shareHint:
       'Hanya makanan ini dan keterangannya yang dibagikan. Menghapus catatan jurnal juga menghapus postingannya.',
     post: 'Postingan',
@@ -92,7 +93,8 @@ export const id = {
     reportTitle: 'Mengapa Anda melaporkan ini?',
     spam: 'Spam',
     inappropriate: 'Konten tidak pantas',
-    notifications: 'Aktivitas',
+    notifications: 'Notifikasi',
+    unread: 'Belum dibaca',
     markRead: 'Tandai dibaca',
     notificationFollow: '{{name}} mengikuti Anda',
     notificationLike: '{{name}} menyukai postingan Anda',

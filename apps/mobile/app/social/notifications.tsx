@@ -2,8 +2,15 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useSocialNotifications, useSocialOnline } from '@/data/social'
-import { SocialBar, SocialList, SocialPhoto, useSocialTask } from '@/features/social/components'
-import { Button, Screen, Tappable, Text } from '@/ui'
+import {
+  SocialBar,
+  SocialList,
+  SocialPhoto,
+  socialTime,
+  useSocialTask,
+} from '@/features/social/components'
+import { useThemeColors } from '@/theme/useTheme'
+import { cn, Icon, IconButton, Screen, Tappable, Text } from '@/ui'
 
 export default function NotificationsScreen() {
   const { t } = useTranslation('social')
@@ -11,68 +18,86 @@ export default function NotificationsScreen() {
   const notifications = useSocialNotifications()
   const action = useSocialTask()
   const online = useSocialOnline()
+  const colors = useThemeColors()
   const unread =
     notifications.data?.pages
       .flatMap((page) => page.rows)
       .filter((row) => !row.read_at)
       .map((row) => row.id) ?? []
   return (
-    <Screen scroll={false} flush header={<SocialBar title={t('notifications')} />}>
+    <Screen
+      scroll={false}
+      flush
+      header={
+        <SocialBar
+          title={t('notifications')}
+          action={
+            unread.length ? (
+              <IconButton
+                size="sm"
+                variant="ghost"
+                accessibilityLabel={t('markRead')}
+                disabled={!online || action.isPending}
+                onPress={() => action.press({ action: 'read', ids: unread })}
+              >
+                <Icon set="ui" name="check" size={22} tintColor={colors.muted} />
+              </IconButton>
+            ) : undefined
+          }
+        />
+      }
+    >
       <SocialList
         query={notifications}
         rowKey={(item) => item.id}
         empty={t('emptyNotifications')}
-        header={
-          unread.length ? (
-            <Button
-              size="sm"
-              variant="neutral"
-              loading={action.isPending}
-              disabled={!online}
-              onPress={() => action.press({ action: 'read', ids: unread })}
+        variant="rows"
+        renderRow={(item, visible) => {
+          const message = t(
+            item.kind === 'follow'
+              ? 'notificationFollow'
+              : item.kind === 'like'
+                ? 'notificationLike'
+                : 'notificationComment',
+            { name: item.actor_display_name },
+          )
+          const time = socialTime(item.created_at)
+          return (
+            <Tappable
+              accessibilityLabel={[message, time, !item.read_at ? t('unread') : '']
+                .filter(Boolean)
+                .join(', ')}
+              className={cn(
+                'min-h-[68px] flex-row items-center gap-3 px-1 py-3',
+                !item.read_at && 'bg-pandan-soft',
+              )}
+              onPress={() => {
+                if (!item.read_at && online) action.press({ action: 'read', ids: [item.id] })
+                if (item.post_id)
+                  router.push({ pathname: '/social/post/[id]', params: { id: item.post_id } })
+                else
+                  router.push({
+                    pathname: '/social/profile/[id]',
+                    params: { id: item.actor_id },
+                  })
+              }}
             >
-              {t('markRead')}
-            </Button>
-          ) : undefined
-        }
-        renderRow={(item, visible) => (
-          <Tappable
-            accessibilityLabel={t(
-              item.kind === 'follow'
-                ? 'notificationFollow'
-                : item.kind === 'like'
-                  ? 'notificationLike'
-                  : 'notificationComment',
-              { name: item.actor_display_name },
-            )}
-            className="flex-row items-center gap-3 rounded-md bg-surface p-3"
-            onPress={() => {
-              if (!item.read_at && online) action.press({ action: 'read', ids: [item.id] })
-              if (item.post_id)
-                router.push({ pathname: '/social/post/[id]', params: { id: item.post_id } })
-              else router.push({ pathname: '/social/profile/[id]', params: { id: item.actor_id } })
-            }}
-          >
-            <SocialPhoto
-              path={item.actor_avatar_path}
-              avatar
-              label={item.actor_display_name}
-              visible={visible}
-            />
-            <View className="flex-1">
-              <Text variant={item.read_at ? 'body' : 'label'}>
-                {t(
-                  item.kind === 'follow'
-                    ? 'notificationFollow'
-                    : item.kind === 'like'
-                      ? 'notificationLike'
-                      : 'notificationComment',
-                  { name: item.actor_display_name },
-                )}
-              </Text>
-            </View>
-          </Tappable>
-        )}
+              <SocialPhoto
+                path={item.actor_avatar_path}
+                avatar
+                label={item.actor_display_name}
+                visible={visible}
+              />
+              <View className="flex-1">
+                <Text variant={item.read_at ? 'body' : 'label'}>{message}</Text>
+                <Text variant="meta">{time}</Text>
+              </View>
+              {!item.read_at ? (
+                <View className="h-2.5 w-2.5 rounded-full bg-pandan" accessibilityElementsHidden />
+              ) : null}
+            </Tappable>
+          )
+        }}
       />
     </Screen>
   )

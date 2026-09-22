@@ -24,7 +24,7 @@ export default function PeopleScreen() {
       scroll={false}
       flush
       header={
-        <View className="gap-3 pb-3">
+        <View className="gap-2 pb-2">
           <SocialBar title={t('people')} />
           <SearchField
             value={query}
@@ -45,6 +45,7 @@ export default function PeopleScreen() {
           rowKey={(person) => person.user_id}
           renderRow={(person, visible) => <PersonRow person={person} visible={visible} />}
           empty={t('emptyPeople')}
+          variant="rows"
         />
       ) : (
         <SocialList
@@ -52,7 +53,8 @@ export default function PeopleScreen() {
           rowKey={(person) => person.user_id}
           renderRow={(person, visible) => <PersonRow person={person} visible={visible} />}
           empty={t('emptyPeople')}
-          header={<Text variant="subtitle">{t('suggestions')}</Text>}
+          header={<Text variant="label">{t('suggestions')}</Text>}
+          variant="rows"
         />
       )}
     </Screen>

@@ -24,6 +24,7 @@ function Connections({ id, direction }: { id: string; direction: 'followers' | '
       <SocialList
         query={people}
         rowKey={(person) => person.user_id}
+        variant="rows"
         renderRow={(person, visible) => (
           <PersonRow
             person={person}
