@@ -1,5 +1,6 @@
 import { Linking, Platform } from 'react-native'
 
+import { type Events, track } from '@/lib/analytics'
 import { env, isConfigured } from '@/lib/env'
 import { ensurePurchasesConfigured, PRO_ENTITLEMENT } from '@/lib/revenuecat'
 import type { Plan } from './types'
@@ -296,12 +297,31 @@ export async function restorePurchases(): Promise<boolean> {
 }
 
 /**
+ * Why the store's own subscription page is being opened, and from where.
+ *
+ * Read off the event rather than written out again: cancelling and switching
+ * are one call apart here and a breakdown apart in Mixpanel, and two lists that
+ * can disagree is how one of them ends up carrying a value nothing reports.
+ */
+type Manage = Events['Manage Subscription Opened']
+
+/**
  * Cancelling and switching plans both happen in the store, not in the app.
  *
  * Apple and Google require it, and it is also the only place that can do it: the
  * app never holds the payment relationship.
+ *
+ * The intent is required rather than optional because this hand-off is the last
+ * thing the app sees. What opens is a list of the plans in the group with the
+ * cancel action under it, and on the App Store a tap on the wrong row ended a
+ * free trial and charged for the new plan immediately. Untracked, that arrives
+ * as a purchase with nothing in the funnel behind it.
  */
-export async function openManageSubscriptions(): Promise<void> {
+export async function openManageSubscriptions(
+  intent: Manage['intent'],
+  source: Manage['source'],
+): Promise<void> {
+  track('Manage Subscription Opened', { intent, source })
   const url =
     Platform.OS === 'ios'
       ? 'https://apps.apple.com/account/subscriptions'

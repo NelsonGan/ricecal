@@ -1265,7 +1265,7 @@ export const fil = {
       cancel: 'Kanselahin ang subscription',
       cancelTitle: 'Kanselahin ang subscription mo?',
       cancelBody:
-        'Mananatili kang Pro hanggang matapos ang panahon. Mababasa pa rin ang log mo alinman ang mangyari.',
+        'Kanselahin sa store page na bubukas. Mananatili kang Pro hanggang matapos ang panahon.',
       cancelConfirm: 'Kanselahin ang plano',
       switchMonthly: 'Lumipat sa buwanan',
       switchYearly: 'Lumipat sa taunan',

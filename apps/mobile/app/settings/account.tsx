@@ -255,7 +255,11 @@ export default function AccountScreen() {
       {plan.renews ? (
         <View className="gap-2">
           <Text variant="meta">{t('profile:account.cancelFirst')}</Text>
-          <Button variant="ghost" size="sm" onPress={() => openManageSubscriptions()}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onPress={() => openManageSubscriptions('cancel', 'account')}
+          >
             {t('profile:subscription.manage')}
           </Button>
         </View>

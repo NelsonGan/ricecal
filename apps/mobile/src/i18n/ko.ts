@@ -1233,7 +1233,7 @@ export const ko = {
       included: '포함',
       cancel: '구독 해지',
       cancelTitle: '구독을 해지할까요?',
-      cancelBody: '기간이 끝날 때까지는 Pro입니다. 어느 쪽이든 기록은 계속 볼 수 있습니다.',
+      cancelBody: '열리는 스토어 페이지에서 해지하세요. 기간이 끝날 때까지는 Pro입니다.',
       cancelConfirm: '요금제 해지',
       switchMonthly: '월간으로 변경',
       switchYearly: '연간으로 변경',

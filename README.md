@@ -4469,6 +4469,31 @@ there is, including everyone holding a promotional grant whose
 guessing, and a null plan means no plan name, no renewal price and "Manage in the
 store".
 
+**Nothing offers a plan switch during a trial.** A plan change out of a free
+trial ends the trial and bills the new plan on the spot, so a switch offered to a
+trial is a purchase wearing the clothes of plan admin. That is the store's rule
+rather than this app's, and it is the store's page the switch opens. On
+`settings/subscription` the switch was also the full-width footer button, one tap
+from the same page as Cancel: two accounts on a Pro Yearly trial switched to
+monthly, 37 seconds and 11 hours in, were charged RM19.90 and cancelled 99 and 43
+seconds later, one of them asking Apple for the money back. Cancelling is the
+footer now; switching is a ghost button under the plan card, and `canSwitch`
+hides it while `plan.state === 'trial'`. Lifetime and a promotional grant keep
+"Manage in the store" and are offered no cancellation, having nothing to cancel.
+
+Both incidents were App Store, which is all the evidence there is: nothing here
+was measured against Play, and Play's own answer depends on a replacement mode
+nobody chooses from its subscriptions page. The rule does not need the
+difference settled, since the app declines to offer the switch either way.
+
+**Every hand-off to the store's own subscription page says what it was for.**
+Cancelling, switching and plain management are one call apart in the app and the
+same URL at the other end, and what opens is a list of the plans in the group
+with the cancel action underneath: a tap on the wrong row is a charge with
+nothing in the funnel behind it. `openManageSubscriptions` takes the intent
+rather than defaulting one, and fires `Manage Subscription Opened` with it. It is
+the last event before the app stops being able to see anything.
+
 **An entitled status is not enough; the period has to be running too.**
 `entitledBy` on the server and `isEntitledRow` on the client both read
 `current_period_end`, and null means no expiry rather than an expired one:

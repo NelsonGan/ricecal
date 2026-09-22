@@ -25,13 +25,29 @@ export default function SubscriptionScreen() {
   // what put "Renews at $4.90" under a promotional grant.
   const plan = usePlanSummary()
   const yearly = plan.plan === 'yearly'
-  // A one-off purchase has no renewal and nothing to switch to, so both the
-  // footer button and the line under the plan have to say something else. So
-  // does an entitlement whose plan is unnamed: there is nothing to switch a
-  // promotional grant TO, and offering "Switch to yearly" against one is the
-  // app inviting somebody to buy what they have already been given.
+  /**
+   * A plan that renews, which is the only kind there is anything to do about.
+   *
+   * `recurring` rather than `switchable`, which is what this was called when
+   * switching was the only thing it gated. It now also decides whether there is
+   * a subscription to cancel, and a one-off purchase has neither: lifetime has
+   * no renewal and nothing to switch to, and an entitlement whose plan is
+   * unnamed is a promotional grant, where "Switch to yearly" would be the app
+   * inviting somebody to buy what they have already been given.
+   */
   const lifetime = plan.plan === 'lifetime'
-  const switchable = plan.plan === 'yearly' || plan.plan === 'monthly'
+  const recurring = plan.plan === 'yearly' || plan.plan === 'monthly'
+
+  /**
+   * NOT DURING A TRIAL. A plan change out of a free trial ends the trial and
+   * bills the new plan at once, so a switch offered to a trial is not plan
+   * admin, it is a charge — and it was the loudest control on this screen, one
+   * tap from the same store page as Cancel. Two App Store accounts took it and
+   * cancelled within two minutes of being charged. Nothing is gained by
+   * switching mid-trial, so the offer waits until the trial has converted.
+   */
+  const trial = plan.state === 'trial'
+  const canSwitch = recurring && !trial
 
   /**
    * Somebody who has never paid, or whose subscription has lapsed.
@@ -53,13 +69,14 @@ export default function SubscriptionScreen() {
   const progress = trialProgress(plan.trialStartedAt, plan.trialEndsAt)
 
   // Both of these leave the app. The payment relationship is with the store,
-  // and Apple and Google both require cancellation to happen there — the app
-  // could not do it even if it wanted to.
-  const switchPlan = () => openManageSubscriptions()
+  // and Apple and Google both require cancellation to happen there: the app
+  // could not do it even if it wanted to. They open the same page, so the
+  // intent is the only thing that tells the two apart afterwards.
+  const switchPlan = () => openManageSubscriptions('switch', 'subscription')
 
   const cancel = () => {
     setConfirmCancel(false)
-    openManageSubscriptions()
+    openManageSubscriptions('cancel', 'subscription')
   }
 
   return (
@@ -72,14 +89,25 @@ export default function SubscriptionScreen() {
         />
       }
       footer={
+        /* CANCELLING IS THE FOOTER, and switching is not. The two do the same
+           thing to the app and very different things to the user, and the one
+           that can charge somebody was the one drawn as the main action. A
+           lifetime purchase and a promotional grant have nothing to cancel, so
+           they keep the plain way through to the store. */
         entitled ? (
-          <Button variant="neutral" fullWidth onPress={switchPlan}>
-            {!switchable
-              ? t('profile:subscription.manage')
-              : yearly
-                ? t('profile:subscription.switchMonthly')
-                : t('profile:subscription.switchYearly')}
-          </Button>
+          recurring ? (
+            <Button variant="neutral" fullWidth onPress={() => setConfirmCancel(true)}>
+              {t('profile:subscription.cancel')}
+            </Button>
+          ) : (
+            <Button
+              variant="neutral"
+              fullWidth
+              onPress={() => openManageSubscriptions('manage', 'subscription')}
+            >
+              {t('profile:subscription.manage')}
+            </Button>
+          )
         ) : (
           <Button fullWidth onPress={() => router.push('/paywall')}>
             {t('paywall:ended.resume')}
@@ -99,7 +127,7 @@ export default function SubscriptionScreen() {
             <Text variant="meta">
               {plan.state === 'none'
                 ? t('profile:home.proNone')
-                : plan.state === 'trial'
+                : trial
                   ? t('profile:subscription.trialLeft', { count: trialDaysLeft })
                   : plan.plan
                     ? t('profile:home.proActive', { plan: t(`paywall:plans.${plan.plan}`) })
@@ -113,7 +141,7 @@ export default function SubscriptionScreen() {
             to be left of — which told a paying subscriber their trial was
             spent, and told somebody who had bought LIFETIME the same thing
             about a trial they never had. */}
-        {plan.state === 'trial' && progress != null ? (
+        {trial && progress != null ? (
           <ProgressBar
             value={progress}
             tone="kaya"
@@ -131,7 +159,7 @@ export default function SubscriptionScreen() {
              lifetime renews", this quoted the MONTHLY price to every account
              holding one — a figure they have never been charged, presented as a
              standing commitment. */
-          lifetime || switchable ? (
+          lifetime || recurring ? (
             <Text variant="meta">
               {lifetime
                 ? t('profile:subscription.neverRenews')
@@ -167,9 +195,11 @@ export default function SubscriptionScreen() {
         />
       </Card>
 
-      {entitled ? (
-        <Button variant="ghost" fullWidth onPress={() => setConfirmCancel(true)}>
-          {t('profile:subscription.cancel')}
+      {canSwitch ? (
+        <Button variant="ghost" fullWidth onPress={switchPlan}>
+          {yearly
+            ? t('profile:subscription.switchMonthly')
+            : t('profile:subscription.switchYearly')}
         </Button>
       ) : null}
 
