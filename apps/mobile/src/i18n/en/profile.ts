@@ -335,7 +335,7 @@ export const profile = {
     included: 'INCLUDED',
     cancel: 'Cancel subscription',
     cancelTitle: 'Cancel your subscription?',
-    cancelBody: 'You keep Pro until the end of the period. Your log stays readable either way.',
+    cancelBody: 'Cancel from the store page that opens. You keep Pro until the period ends.',
     cancelConfirm: 'Cancel plan',
     switchMonthly: 'Switch to monthly',
     switchYearly: 'Switch to yearly',

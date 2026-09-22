@@ -1268,8 +1268,7 @@ export const ms = {
       included: 'TERMASUK',
       cancel: 'Batalkan langganan',
       cancelTitle: 'Batalkan langganan anda?',
-      cancelBody:
-        'Anda kekal Pro sehingga tamat tempoh. Rekod anda tetap boleh dibaca sama ada cara.',
+      cancelBody: 'Batalkan di halaman gedung yang terbuka. Anda kekal Pro sehingga tamat tempoh.',
       cancelConfirm: 'Batalkan pelan',
       switchMonthly: 'Tukar ke bulanan',
       switchYearly: 'Tukar ke tahunan',

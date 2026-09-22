@@ -1253,7 +1253,7 @@ export const id = {
       included: 'TERMASUK',
       cancel: 'Batalkan langganan',
       cancelTitle: 'Batalkan langgananmu?',
-      cancelBody: 'Kamu tetap Pro sampai akhir periode. Catatanmu tetap bisa dibaca bagaimanapun.',
+      cancelBody: 'Batalkan di halaman toko yang terbuka. Kamu tetap Pro sampai akhir periode.',
       cancelConfirm: 'Batalkan paket',
       switchMonthly: 'Ganti ke bulanan',
       switchYearly: 'Ganti ke tahunan',

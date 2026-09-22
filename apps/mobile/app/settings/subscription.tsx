@@ -34,6 +34,17 @@ export default function SubscriptionScreen() {
   const switchable = plan.plan === 'yearly' || plan.plan === 'monthly'
 
   /**
+   * NOT DURING A TRIAL. Both stores end a free trial the instant the plan
+   * changes and bill the new one at once, so a switch offered to a trial is not
+   * plan admin, it is a charge — and it was the loudest control on this screen,
+   * one tap from the same store page as Cancel. Two trial accounts took it,
+   * were charged within the minute and cancelled. Nothing is gained by
+   * switching mid-trial, so the offer waits until the trial has converted.
+   */
+  const trial = plan.state === 'trial'
+  const canSwitch = switchable && !trial
+
+  /**
    * Somebody who has never paid, or whose subscription has lapsed.
    *
    * `useEntitlement`, not a second copy of the rule. It exists so that "what
@@ -53,13 +64,14 @@ export default function SubscriptionScreen() {
   const progress = trialProgress(plan.trialStartedAt, plan.trialEndsAt)
 
   // Both of these leave the app. The payment relationship is with the store,
-  // and Apple and Google both require cancellation to happen there — the app
-  // could not do it even if it wanted to.
-  const switchPlan = () => openManageSubscriptions()
+  // and Apple and Google both require cancellation to happen there: the app
+  // could not do it even if it wanted to. They open the same page, so the
+  // intent is the only thing that tells the two apart afterwards.
+  const switchPlan = () => openManageSubscriptions('switch', 'subscription')
 
   const cancel = () => {
     setConfirmCancel(false)
-    openManageSubscriptions()
+    openManageSubscriptions('cancel', 'subscription')
   }
 
   return (
@@ -72,14 +84,25 @@ export default function SubscriptionScreen() {
         />
       }
       footer={
+        /* CANCELLING IS THE FOOTER, and switching is not. The two do the same
+           thing to the app and very different things to the user, and the one
+           that can charge somebody was the one drawn as the main action. A
+           lifetime purchase and a promotional grant have nothing to cancel, so
+           they keep the plain way through to the store. */
         entitled ? (
-          <Button variant="neutral" fullWidth onPress={switchPlan}>
-            {!switchable
-              ? t('profile:subscription.manage')
-              : yearly
-                ? t('profile:subscription.switchMonthly')
-                : t('profile:subscription.switchYearly')}
-          </Button>
+          switchable ? (
+            <Button variant="neutral" fullWidth onPress={() => setConfirmCancel(true)}>
+              {t('profile:subscription.cancel')}
+            </Button>
+          ) : (
+            <Button
+              variant="neutral"
+              fullWidth
+              onPress={() => openManageSubscriptions('manage', 'subscription')}
+            >
+              {t('profile:subscription.manage')}
+            </Button>
+          )
         ) : (
           <Button fullWidth onPress={() => router.push('/paywall')}>
             {t('paywall:ended.resume')}
@@ -99,7 +122,7 @@ export default function SubscriptionScreen() {
             <Text variant="meta">
               {plan.state === 'none'
                 ? t('profile:home.proNone')
-                : plan.state === 'trial'
+                : trial
                   ? t('profile:subscription.trialLeft', { count: trialDaysLeft })
                   : plan.plan
                     ? t('profile:home.proActive', { plan: t(`paywall:plans.${plan.plan}`) })
@@ -113,7 +136,7 @@ export default function SubscriptionScreen() {
             to be left of — which told a paying subscriber their trial was
             spent, and told somebody who had bought LIFETIME the same thing
             about a trial they never had. */}
-        {plan.state === 'trial' && progress != null ? (
+        {trial && progress != null ? (
           <ProgressBar
             value={progress}
             tone="kaya"
@@ -167,9 +190,11 @@ export default function SubscriptionScreen() {
         />
       </Card>
 
-      {entitled ? (
-        <Button variant="ghost" fullWidth onPress={() => setConfirmCancel(true)}>
-          {t('profile:subscription.cancel')}
+      {canSwitch ? (
+        <Button variant="ghost" fullWidth onPress={switchPlan}>
+          {yearly
+            ? t('profile:subscription.switchMonthly')
+            : t('profile:subscription.switchYearly')}
         </Button>
       ) : null}
 

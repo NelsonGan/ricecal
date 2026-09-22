@@ -1241,7 +1241,7 @@ export const vi = {
       included: 'BAO GỒM',
       cancel: 'Huỷ đăng ký',
       cancelTitle: 'Huỷ gói đăng ký của bạn?',
-      cancelBody: 'Bạn vẫn giữ Pro tới hết kỳ. Nhật ký của bạn vẫn đọc được dù thế nào.',
+      cancelBody: 'Huỷ ở trang cửa hàng vừa mở. Bạn vẫn giữ Pro tới hết kỳ.',
       cancelConfirm: 'Huỷ gói',
       switchMonthly: 'Đổi sang hằng tháng',
       switchYearly: 'Đổi sang hằng năm',

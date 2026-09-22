@@ -289,6 +289,20 @@ export type Events = {
   }
   'Restore Requested': { outcome: 'restored' | 'nothing' | 'unavailable' }
   /**
+   * The store's own subscription page was handed the user, and what for.
+   *
+   * The last thing this app sees before somebody is standing in front of
+   * Apple's plan list with a Cancel button under it. Two trial users tapped a
+   * plan row there instead, which ends the free trial and charges for the new
+   * one on the spot; from here that looked like a purchase nobody made. The
+   * intent is the half only this side knows.
+   */
+  'Manage Subscription Opened': {
+    intent: 'cancel' | 'switch' | 'manage'
+    /* `from` rather than `screen`, which everything above spells a paywall. */
+    from: 'subscription' | 'account'
+  }
+  /**
    * Share and Earn: a platform shortcut was tapped, and the Discord claim was
    * opened. The two ends of a funnel whose middle happens in somebody else's
    * app. Which platform says where this app's users actually are, which no
