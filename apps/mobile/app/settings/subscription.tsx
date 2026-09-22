@@ -25,24 +25,29 @@ export default function SubscriptionScreen() {
   // what put "Renews at $4.90" under a promotional grant.
   const plan = usePlanSummary()
   const yearly = plan.plan === 'yearly'
-  // A one-off purchase has no renewal and nothing to switch to, so both the
-  // footer button and the line under the plan have to say something else. So
-  // does an entitlement whose plan is unnamed: there is nothing to switch a
-  // promotional grant TO, and offering "Switch to yearly" against one is the
-  // app inviting somebody to buy what they have already been given.
+  /**
+   * A plan that renews, which is the only kind there is anything to do about.
+   *
+   * `recurring` rather than `switchable`, which is what this was called when
+   * switching was the only thing it gated. It now also decides whether there is
+   * a subscription to cancel, and a one-off purchase has neither: lifetime has
+   * no renewal and nothing to switch to, and an entitlement whose plan is
+   * unnamed is a promotional grant, where "Switch to yearly" would be the app
+   * inviting somebody to buy what they have already been given.
+   */
   const lifetime = plan.plan === 'lifetime'
-  const switchable = plan.plan === 'yearly' || plan.plan === 'monthly'
+  const recurring = plan.plan === 'yearly' || plan.plan === 'monthly'
 
   /**
-   * NOT DURING A TRIAL. Both stores end a free trial the instant the plan
-   * changes and bill the new one at once, so a switch offered to a trial is not
-   * plan admin, it is a charge — and it was the loudest control on this screen,
-   * one tap from the same store page as Cancel. Two trial accounts took it,
-   * were charged within the minute and cancelled. Nothing is gained by
+   * NOT DURING A TRIAL. A plan change out of a free trial ends the trial and
+   * bills the new plan at once, so a switch offered to a trial is not plan
+   * admin, it is a charge — and it was the loudest control on this screen, one
+   * tap from the same store page as Cancel. Two App Store accounts took it and
+   * cancelled within two minutes of being charged. Nothing is gained by
    * switching mid-trial, so the offer waits until the trial has converted.
    */
   const trial = plan.state === 'trial'
-  const canSwitch = switchable && !trial
+  const canSwitch = recurring && !trial
 
   /**
    * Somebody who has never paid, or whose subscription has lapsed.
@@ -90,7 +95,7 @@ export default function SubscriptionScreen() {
            lifetime purchase and a promotional grant have nothing to cancel, so
            they keep the plain way through to the store. */
         entitled ? (
-          switchable ? (
+          recurring ? (
             <Button variant="neutral" fullWidth onPress={() => setConfirmCancel(true)}>
               {t('profile:subscription.cancel')}
             </Button>
@@ -154,7 +159,7 @@ export default function SubscriptionScreen() {
              lifetime renews", this quoted the MONTHLY price to every account
              holding one — a figure they have never been charged, presented as a
              standing commitment. */
-          lifetime || switchable ? (
+          lifetime || recurring ? (
             <Text variant="meta">
               {lifetime
                 ? t('profile:subscription.neverRenews')
