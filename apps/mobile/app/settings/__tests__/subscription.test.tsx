@@ -1,5 +1,6 @@
 import '@/i18n'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import type { PlanSummary } from '@/features/paywall'
 import { render, screen, userEvent } from '@/test-utils'
 import { ToastProvider } from '@/ui'
 import SubscriptionScreen from '../subscription'
@@ -7,22 +8,22 @@ import SubscriptionScreen from '../subscription'
 /**
  * The rule this file exists for: a trial never gets offered a plan switch.
  *
- * Both stores end a free trial the moment the plan changes and bill the new
- * one at once, so the switch is a charge wearing the clothes of plan admin.
- * Two trial accounts took it from this screen and were charged inside a
+ * A plan change out of a free trial ends the trial and bills the new plan at
+ * once, so the switch is a charge wearing the clothes of plan admin. Two
+ * App Store accounts took it from this screen and were charged within the
  * minute. Cancelling is what a trial wants, so cancelling is the footer.
  */
 
 const mockOpenManage = jest.fn()
 const mockPush = jest.fn()
 
-type Summary = {
-  state: 'none' | 'trial' | 'active'
-  plan: 'monthly' | 'yearly' | 'lifetime' | null
-  trialEndsAt: string | null
-  trialStartedAt: string | null
-  renews: boolean
-}
+/**
+ * The hook's own type, not a copy of it. A type import is erased, so it never
+ * reaches the `jest.mock` factory below, and it is what makes this mock fail to
+ * compile rather than quietly go stale when `usePlanSummary` grows a field the
+ * screen then reads.
+ */
+type Summary = PlanSummary
 
 const PAID_YEARLY: Summary = {
   state: 'active',

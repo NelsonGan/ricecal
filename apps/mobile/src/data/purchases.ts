@@ -313,15 +313,15 @@ type Manage = Events['Manage Subscription Opened']
  *
  * The intent is required rather than optional because this hand-off is the last
  * thing the app sees. What opens is a list of the plans in the group with the
- * cancel action under it, and a tap on the wrong row there ends a free trial
- * and charges for the new plan immediately. Untracked, that arrives as a
- * purchase with nothing in the funnel behind it.
+ * cancel action under it, and on the App Store a tap on the wrong row ended a
+ * free trial and charged for the new plan immediately. Untracked, that arrives
+ * as a purchase with nothing in the funnel behind it.
  */
 export async function openManageSubscriptions(
   intent: Manage['intent'],
-  from: Manage['from'],
+  source: Manage['source'],
 ): Promise<void> {
-  track('Manage Subscription Opened', { intent, from })
+  track('Manage Subscription Opened', { intent, source })
   const url =
     Platform.OS === 'ios'
       ? 'https://apps.apple.com/account/subscriptions'
