@@ -158,7 +158,7 @@ function CardEdit({ label, onPress }: { label: string; onPress: () => void }) {
  * Add.
  */
 export default function FoodDetail() {
-  const { t } = useTranslation(['logging', 'common'])
+  const { t } = useTranslation(['logging', 'common', 'social'])
   const goBack = useBack('/today')
   /**
    * Adding a dish ends the whole flow, so it unwinds to the day rather than
@@ -1175,6 +1175,17 @@ export default function FoodDetail() {
           ) : null}
         </View>
 
+        {existing ? (
+          <Button
+            variant="secondary"
+            onPress={() =>
+              router.push({ pathname: '/social/compose', params: { entryId: existing.id } })
+            }
+          >
+            {t('social:share')}
+          </Button>
+        ) : null}
+
         <IconPicker
           visible={pickingIcon}
           onClose={() => setPickingIcon(false)}
@@ -1511,7 +1522,7 @@ export default function FoodDetail() {
           onClose={() => setConfirmDelete(false)}
           onConfirm={remove}
           title={t('logging:detail.deleteTitle')}
-          description={t('logging:detail.deleteBody')}
+          description={t('social:sourceDelete')}
           confirmLabel={t('common:action.delete')}
           cancelLabel={t('common:action.keep')}
           tone="danger"

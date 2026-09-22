@@ -84,8 +84,12 @@ export function useBlockAuthor() {
         )
       if (error) throw error
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       track('Author Blocked', {})
+      // Recipe blocks also remove social connections. Cancel old reads before
+      // clearing their results so they cannot restore the blocked author.
+      await queryClient.cancelQueries({ queryKey: keys.social(userId) })
+      await queryClient.resetQueries({ queryKey: keys.social(userId) })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
     },
   })

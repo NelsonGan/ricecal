@@ -9,6 +9,9 @@
  * the wrong account cannot read them if the sign-out cache clear regresses.
  */
 export const keys = {
+  social: (userId: string) => ['social', userId] as const,
+  socialRead: (userId: string, name: string, params: object = {}) =>
+    ['social', userId, name, params] as const,
   profile: (userId: string) => ['profile', userId] as const,
   settings: (userId: string) => ['settings', userId] as const,
   mealTimes: (userId: string) => ['meal-times', userId] as const,

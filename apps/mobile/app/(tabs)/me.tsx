@@ -28,7 +28,7 @@ import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Te
 
 /** U1 PROFILE */
 export default function MeScreen() {
-  const { t } = useTranslation(['profile', 'activity', 'common', 'paywall'])
+  const { t } = useTranslation(['profile', 'activity', 'common', 'paywall', 'social'])
   const router = useRouter()
   const colors = useThemeColors()
   const { session } = useSession()
@@ -220,6 +220,11 @@ export default function MeScreen() {
       </Card>
 
       <Card title={t('profile:home.settings')} contentClassName="gap-0">
+        <SettingRow
+          icon={{ set: 'food', name: 'cooking-pot' }}
+          title={t('social:myFoods')}
+          onPress={() => router.push('/settings/foods')}
+        />
         <SettingRow
           icon={{ set: 'body', name: 'target' }}
           title={t('profile:home.goals')}

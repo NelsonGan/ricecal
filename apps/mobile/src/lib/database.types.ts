@@ -1024,6 +1024,464 @@ export type Database = {
         }
         Relationships: []
       }
+      social_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          post_id: string
+          quarantined: boolean
+          request_id: string
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review']
+          revision: number
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          post_id: string
+          quarantined?: boolean
+          request_id: string
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review']
+          revision?: number
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          quarantined?: boolean
+          request_id?: string
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review']
+          revision?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_comments_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_comments_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_comments_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_post_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_comments_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      social_counters: {
+        Row: {
+          entity_id: string
+          metric: Database['public']['Enums']['social_counter_metric']
+          shard: number
+          value: number
+        }
+        Insert: {
+          entity_id: string
+          metric: Database['public']['Enums']['social_counter_metric']
+          shard: number
+          value?: number
+        }
+        Update: {
+          entity_id?: string
+          metric?: Database['public']['Enums']['social_counter_metric']
+          shard?: number
+          value?: number
+        }
+        Relationships: []
+      }
+      social_follows: {
+        Row: {
+          created_at: string
+          followed_id: string
+          follower_id: string
+        }
+        Insert: {
+          created_at?: string
+          followed_id: string
+          follower_id: string
+        }
+        Update: {
+          created_at?: string
+          followed_id?: string
+          follower_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_follows_followed_id_fkey'
+            columns: ['followed_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_follows_followed_id_fkey'
+            columns: ['followed_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_follows_follower_id_fkey'
+            columns: ['follower_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_follows_follower_id_fkey'
+            columns: ['follower_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
+      social_likes: {
+        Row: {
+          created_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_likes_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_post_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_likes_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_likes_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_likes_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
+      social_notifications: {
+        Row: {
+          actor_id: string
+          comment_id: string | null
+          created_at: string
+          id: string
+          kind: Database['public']['Enums']['social_activity_kind']
+          post_id: string | null
+          read_at: string | null
+          recipient_id: string
+        }
+        Insert: {
+          actor_id: string
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          kind: Database['public']['Enums']['social_activity_kind']
+          post_id?: string | null
+          read_at?: string | null
+          recipient_id: string
+        }
+        Update: {
+          actor_id?: string
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database['public']['Enums']['social_activity_kind']
+          post_id?: string | null
+          read_at?: string | null
+          recipient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_notifications_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_notifications_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_notifications_comment_id_fkey'
+            columns: ['comment_id']
+            isOneToOne: false
+            referencedRelation: 'social_comment_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_notifications_comment_id_fkey'
+            columns: ['comment_id']
+            isOneToOne: false
+            referencedRelation: 'social_comments'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_notifications_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_post_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_notifications_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_notifications_recipient_id_fkey'
+            columns: ['recipient_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_notifications_recipient_id_fkey'
+            columns: ['recipient_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
+      social_posts: {
+        Row: {
+          audience: Database['public']['Enums']['social_audience']
+          author_id: string
+          caption: string
+          created_at: string
+          food_name: string
+          icon_name: string | null
+          icon_set: Database['public']['Enums']['icon_set'] | null
+          id: string
+          photo_etag: string | null
+          photo_path: string | null
+          published_at: string | null
+          quarantined: boolean
+          request_id: string
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review']
+          revision: number
+          source_entry_id: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: Database['public']['Enums']['social_audience']
+          author_id: string
+          caption?: string
+          created_at?: string
+          food_name: string
+          icon_name?: string | null
+          icon_set?: Database['public']['Enums']['icon_set'] | null
+          id?: string
+          photo_etag?: string | null
+          photo_path?: string | null
+          published_at?: string | null
+          quarantined?: boolean
+          request_id: string
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review']
+          revision?: number
+          source_entry_id: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: Database['public']['Enums']['social_audience']
+          author_id?: string
+          caption?: string
+          created_at?: string
+          food_name?: string
+          icon_name?: string | null
+          icon_set?: Database['public']['Enums']['icon_set'] | null
+          id?: string
+          photo_etag?: string | null
+          photo_path?: string | null
+          published_at?: string | null
+          quarantined?: boolean
+          request_id?: string
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review']
+          revision?: number
+          source_entry_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_posts_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_posts_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_posts_source_entry_id_fkey'
+            columns: ['source_entry_id']
+            isOneToOne: true
+            referencedRelation: 'food_log_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_source_entry_id_fkey'
+            columns: ['source_entry_id']
+            isOneToOne: true
+            referencedRelation: 'food_logs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      social_profiles: {
+        Row: {
+          avatar_path: string | null
+          bio: string
+          created_at: string
+          display_name: string
+          handle: string
+          photo_etag: string | null
+          quarantined: boolean
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review']
+          revision: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_path?: string | null
+          bio?: string
+          created_at?: string
+          display_name: string
+          handle: string
+          photo_etag?: string | null
+          quarantined?: boolean
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review']
+          revision?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_path?: string | null
+          bio?: string
+          created_at?: string
+          display_name?: string
+          handle?: string
+          photo_etag?: string | null
+          quarantined?: boolean
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review']
+          revision?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      social_rate_limits: {
+        Row: {
+          action: string
+          bucket: string
+          used: number
+          user_id: string
+        }
+        Insert: {
+          action: string
+          bucket: string
+          used: number
+          user_id: string
+        }
+        Update: {
+          action?: string
+          bucket?: string
+          used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      social_reports: {
+        Row: {
+          content_id: string
+          created_at: string
+          kind: Database['public']['Enums']['social_content_kind']
+          reason: Database['public']['Enums']['report_reason']
+          reporter_id: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string
+          kind: Database['public']['Enums']['social_content_kind']
+          reason: Database['public']['Enums']['report_reason']
+          reporter_id: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string
+          kind?: Database['public']['Enums']['social_content_kind']
+          reason?: Database['public']['Enums']['report_reason']
+          reporter_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -1494,6 +1952,205 @@ export type Database = {
           },
         ]
       }
+      social_comment_details: {
+        Row: {
+          author_id: string | null
+          avatar_path: string | null
+          body: string | null
+          created_at: string | null
+          display_name: string | null
+          handle: string | null
+          id: string | null
+          post_id: string | null
+          quarantined: boolean | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          revision: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_comments_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_comments_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_comments_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_post_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_comments_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      social_notification_details: {
+        Row: {
+          actor_avatar_path: string | null
+          actor_display_name: string | null
+          actor_handle: string | null
+          actor_id: string | null
+          comment_id: string | null
+          created_at: string | null
+          id: string | null
+          kind: Database['public']['Enums']['social_activity_kind'] | null
+          post_id: string | null
+          read_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_notifications_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_notifications_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_notifications_comment_id_fkey'
+            columns: ['comment_id']
+            isOneToOne: false
+            referencedRelation: 'social_comment_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_notifications_comment_id_fkey'
+            columns: ['comment_id']
+            isOneToOne: false
+            referencedRelation: 'social_comments'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_notifications_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_post_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_notifications_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      social_post_details: {
+        Row: {
+          audience: Database['public']['Enums']['social_audience'] | null
+          author_id: string | null
+          avatar_path: string | null
+          caption: string | null
+          comment_count: number | null
+          created_at: string | null
+          display_name: string | null
+          food_name: string | null
+          handle: string | null
+          icon_name: string | null
+          icon_set: Database['public']['Enums']['icon_set'] | null
+          id: string | null
+          is_following: boolean | null
+          is_liked: boolean | null
+          like_count: number | null
+          photo_path: string | null
+          published_at: string | null
+          quarantined: boolean | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          revision: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_posts_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_posts_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
+      social_profile_details: {
+        Row: {
+          avatar_path: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          follower_count: number | null
+          following_count: number | null
+          handle: string | null
+          is_followed_by: boolean | null
+          is_following: boolean | null
+          post_count: number | null
+          quarantined: boolean | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          revision: number | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_path?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          follower_count?: never
+          following_count?: never
+          handle?: string | null
+          is_followed_by?: never
+          is_following?: never
+          post_count?: never
+          quarantined?: boolean | null
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review'] | null
+          revision?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_path?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          follower_count?: never
+          following_count?: never
+          handle?: string | null
+          is_followed_by?: never
+          is_following?: never
+          post_count?: never
+          quarantined?: boolean | null
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review'] | null
+          revision?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_food_stats: {
         Row: {
           food_id: string | null
@@ -1634,6 +2291,7 @@ export type Database = {
           used: number
         }[]
       }
+      claim_social_review: { Args: { p_user: string }; Returns: boolean }
       clear_meal_photos: { Args: { p_rows: Json }; Returns: number }
       compute_targets: {
         Args: {
@@ -1650,6 +2308,19 @@ export type Database = {
           kcal: number
           protein_g: number
         }[]
+      }
+      create_social_comment: {
+        Args: { p_body: string; p_post_id: string; p_request_id: string }
+        Returns: string
+      }
+      create_social_post: {
+        Args: {
+          p_audience: Database['public']['Enums']['social_audience']
+          p_caption: string
+          p_entry_id: string
+          p_request_id: string
+        }
+        Returns: string
       }
       current_weight_kg: { Args: { p_user_id?: string }; Returns: number }
       day_marks: {
@@ -1672,6 +2343,8 @@ export type Database = {
           photo_path: string
         }[]
       }
+      delete_social_comment: { Args: { p_id: string }; Returns: undefined }
+      delete_social_post: { Args: { p_id: string }; Returns: undefined }
       expired_meal_photos: {
         Args: { p_limit?: number }
         Returns: {
@@ -1785,6 +2458,10 @@ export type Database = {
           current_days: number
         }[]
       }
+      mark_social_notifications_read: {
+        Args: { p_ids: string[] }
+        Returns: undefined
+      }
       pro_daily_scans: { Args: never; Returns: number }
       recipe_mark_for_review: {
         Args: { p_recipe_id: string }
@@ -1795,7 +2472,30 @@ export type Database = {
         Args: { p_ingredient_id: string }
         Returns: undefined
       }
+      remove_social_follower: {
+        Args: { p_follower_id: string }
+        Returns: undefined
+      }
+      report_social_content: {
+        Args: {
+          p_id: string
+          p_kind: Database['public']['Enums']['social_content_kind']
+          p_reason: Database['public']['Enums']['report_reason']
+        }
+        Returns: undefined
+      }
       report_threshold: { Args: never; Returns: number }
+      resolve_social_report: {
+        Args: {
+          p_id: string
+          p_kind: Database['public']['Enums']['social_content_kind']
+          p_photo_etag?: string
+          p_reason?: string
+          p_revision?: number
+          p_status: Database['public']['Enums']['recipe_review']
+        }
+        Returns: boolean
+      }
       review_days: {
         Args: { p_from: string; p_to: string; p_user_id?: string }
         Returns: {
@@ -1866,6 +2566,17 @@ export type Database = {
           weight_last: number
         }[]
       }
+      review_social_content: {
+        Args: {
+          p_id: string
+          p_kind: Database['public']['Enums']['social_content_kind']
+          p_photo_etag?: string
+          p_reason?: string
+          p_revision: number
+          p_status: Database['public']['Enums']['recipe_review']
+        }
+        Returns: boolean
+      }
       review_summary: {
         Args: { p_kind: string; p_start: string; p_user_id?: string }
         Returns: {
@@ -1923,6 +2634,315 @@ export type Database = {
       set_recipe_public: {
         Args: { p_public: boolean; p_recipe_id: string }
         Returns: Database['public']['Enums']['recipe_review']
+      }
+      set_social_follow: {
+        Args: { p_following: boolean; p_target_id: string }
+        Returns: undefined
+      }
+      set_social_like: {
+        Args: { p_liked: boolean; p_post_id: string }
+        Returns: undefined
+      }
+      set_social_profile: {
+        Args: {
+          p_avatar_path?: string
+          p_bio?: string
+          p_display_name: string
+          p_handle: string
+        }
+        Returns: string
+      }
+      social_blocked_profiles: {
+        Args: { p_before_at?: string; p_before_id?: string; p_limit?: number }
+        Returns: {
+          avatar_path: string
+          bio: string
+          connection_created_at: string
+          created_at: string
+          display_name: string
+          follower_count: number
+          following_count: number
+          handle: string
+          is_followed_by: boolean
+          is_following: boolean
+          post_count: number
+          quarantined: boolean
+          review_reason: string
+          review_status: Database['public']['Enums']['recipe_review']
+          revision: number
+          user_id: string
+        }[]
+      }
+      social_comments: {
+        Args: {
+          p_before_at?: string
+          p_before_id?: string
+          p_limit?: number
+          p_post_id: string
+        }
+        Returns: {
+          author_id: string | null
+          avatar_path: string | null
+          body: string | null
+          created_at: string | null
+          display_name: string | null
+          handle: string | null
+          id: string | null
+          post_id: string | null
+          quarantined: boolean | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          revision: number | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'social_comment_details'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      social_connections: {
+        Args: {
+          p_before_at?: string
+          p_before_id?: string
+          p_direction?: string
+          p_limit?: number
+          p_user_id: string
+        }
+        Returns: {
+          avatar_path: string
+          bio: string
+          connection_created_at: string
+          created_at: string
+          display_name: string
+          follower_count: number
+          following_count: number
+          handle: string
+          is_followed_by: boolean
+          is_following: boolean
+          post_count: number
+          quarantined: boolean
+          review_reason: string
+          review_status: Database['public']['Enums']['recipe_review']
+          revision: number
+          user_id: string
+        }[]
+      }
+      social_entry_post: { Args: { p_entry_id: string }; Returns: string }
+      social_feed: {
+        Args: {
+          p_before_at?: string
+          p_before_id?: string
+          p_limit?: number
+          p_mode?: string
+        }
+        Returns: {
+          audience: Database['public']['Enums']['social_audience'] | null
+          author_id: string | null
+          avatar_path: string | null
+          caption: string | null
+          comment_count: number | null
+          created_at: string | null
+          display_name: string | null
+          food_name: string | null
+          handle: string | null
+          icon_name: string | null
+          icon_set: Database['public']['Enums']['icon_set'] | null
+          id: string | null
+          is_following: boolean | null
+          is_liked: boolean | null
+          like_count: number | null
+          photo_path: string | null
+          published_at: string | null
+          quarantined: boolean | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          revision: number | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'social_post_details'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      social_has_unread_notifications: { Args: never; Returns: boolean }
+      social_notifications: {
+        Args: { p_before_at?: string; p_before_id?: string; p_limit?: number }
+        Returns: {
+          actor_avatar_path: string | null
+          actor_display_name: string | null
+          actor_handle: string | null
+          actor_id: string | null
+          comment_id: string | null
+          created_at: string | null
+          id: string | null
+          kind: Database['public']['Enums']['social_activity_kind'] | null
+          post_id: string | null
+          read_at: string | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'social_notification_details'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      social_photo_claims: {
+        Args: { p_keys: string[] }
+        Returns: {
+          kind: string
+          owner_id: string
+          photo_etag: string
+          photo_path: string
+        }[]
+      }
+      social_post: {
+        Args: { p_id: string }
+        Returns: {
+          audience: Database['public']['Enums']['social_audience'] | null
+          author_id: string | null
+          avatar_path: string | null
+          caption: string | null
+          comment_count: number | null
+          created_at: string | null
+          display_name: string | null
+          food_name: string | null
+          handle: string | null
+          icon_name: string | null
+          icon_set: Database['public']['Enums']['icon_set'] | null
+          id: string | null
+          is_following: boolean | null
+          is_liked: boolean | null
+          like_count: number | null
+          photo_path: string | null
+          published_at: string | null
+          quarantined: boolean | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          revision: number | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'social_post_details'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      social_profile: {
+        Args: { p_user_id: string }
+        Returns: {
+          avatar_path: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          follower_count: number | null
+          following_count: number | null
+          handle: string | null
+          is_followed_by: boolean | null
+          is_following: boolean | null
+          post_count: number | null
+          quarantined: boolean | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          revision: number | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'social_profile_details'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      social_profile_posts: {
+        Args: {
+          p_before_at?: string
+          p_before_id?: string
+          p_limit?: number
+          p_user_id: string
+        }
+        Returns: {
+          audience: Database['public']['Enums']['social_audience'] | null
+          author_id: string | null
+          avatar_path: string | null
+          caption: string | null
+          comment_count: number | null
+          created_at: string | null
+          display_name: string | null
+          food_name: string | null
+          handle: string | null
+          icon_name: string | null
+          icon_set: Database['public']['Enums']['icon_set'] | null
+          id: string | null
+          is_following: boolean | null
+          is_liked: boolean | null
+          like_count: number | null
+          photo_path: string | null
+          published_at: string | null
+          quarantined: boolean | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          revision: number | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'social_post_details'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      social_search_profiles: {
+        Args: { p_after_handle?: string; p_limit?: number; p_query: string }
+        Returns: {
+          avatar_path: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          follower_count: number | null
+          following_count: number | null
+          handle: string | null
+          is_followed_by: boolean | null
+          is_following: boolean | null
+          post_count: number | null
+          quarantined: boolean | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          revision: number | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'social_profile_details'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      social_suggestions: {
+        Args: { p_limit?: number }
+        Returns: {
+          avatar_path: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          follower_count: number | null
+          following_count: number | null
+          handle: string | null
+          is_followed_by: boolean | null
+          is_following: boolean | null
+          post_count: number | null
+          quarantined: boolean | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          revision: number | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'social_profile_details'
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       sync_weight_readings: {
         Args: {
@@ -2002,6 +3022,18 @@ export type Database = {
           weight_peak_on: string
         }[]
       }
+      update_social_comment: {
+        Args: { p_body: string; p_id: string }
+        Returns: string
+      }
+      update_social_post: {
+        Args: {
+          p_audience: Database['public']['Enums']['social_audience']
+          p_caption: string
+          p_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       activity_level: 'sedentary' | 'light' | 'on_feet' | 'very_active'
@@ -2015,6 +3047,10 @@ export type Database = {
       recipe_unit: 'g' | 'ml' | 'piece'
       report_reason: 'inappropriate' | 'spam' | 'dangerous' | 'stolen'
       sex: 'female' | 'male'
+      social_activity_kind: 'follow' | 'like' | 'comment'
+      social_audience: 'public' | 'followers'
+      social_content_kind: 'profile' | 'post' | 'comment'
+      social_counter_metric: 'followers' | 'following' | 'posts' | 'likes' | 'comments'
       subscription_plan: 'monthly' | 'yearly' | 'lifetime'
       subscription_status: 'none' | 'trial' | 'active' | 'expired' | 'billing_retry'
       unit_system: 'metric' | 'imperial'
@@ -2157,6 +3193,10 @@ export const Constants = {
       recipe_unit: ['g', 'ml', 'piece'],
       report_reason: ['inappropriate', 'spam', 'dangerous', 'stolen'],
       sex: ['female', 'male'],
+      social_activity_kind: ['follow', 'like', 'comment'],
+      social_audience: ['public', 'followers'],
+      social_content_kind: ['profile', 'post', 'comment'],
+      social_counter_metric: ['followers', 'following', 'posts', 'likes', 'comments'],
       subscription_plan: ['monthly', 'yearly', 'lifetime'],
       subscription_status: ['none', 'trial', 'active', 'expired', 'billing_retry'],
       unit_system: ['metric', 'imperial'],

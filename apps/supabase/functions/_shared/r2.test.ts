@@ -1,6 +1,6 @@
 import { assertEquals } from 'jsr:@std/assert@^1'
 
-import { deleteUserObjects, listKeys, ownsKey } from './r2.ts'
+import { deleteUserObjects, listKeys, ownsKey, signGet } from './r2.ts'
 
 /**
  * The two things in `r2.ts` that a mistake would make silently wrong.
@@ -100,6 +100,22 @@ Deno.test('a key belongs to its own folder and to no other', () => {
   assertEquals(ownsKey(`meals/${USER}x/a.jpg`, USER), false)
   assertEquals(ownsKey(`meals/${USER}/../${OTHER}/a.jpg`, USER), false)
   assertEquals(ownsKey(`meals/${USER}/a.jpg?x=1`, USER), false)
+})
+
+Deno.test('social read signatures bind the reviewed ETag while diary signatures stay compatible', async () => {
+  await withS3({}, async () => {
+    const social = new URL(await signGet(`meals/${USER}/a.jpg`, 60, '"reviewed123"'))
+    const diary = new URL(await signGet(`meals/${USER}/a.jpg`))
+    assertEquals(social.searchParams.get('X-Amz-SignedHeaders'), 'host;if-match')
+    assertEquals(social.searchParams.get('X-Amz-Expires'), '60')
+    assertEquals(diary.searchParams.get('X-Amz-SignedHeaders'), 'host')
+    assertEquals(diary.searchParams.get('X-Amz-Expires'), '3600')
+    const changed = new URL(await signGet(`meals/${USER}/a.jpg`, 60, '"different"'))
+    assertEquals(
+      social.searchParams.get('X-Amz-Signature') === changed.searchParams.get('X-Amz-Signature'),
+      false,
+    )
+  })
 })
 
 Deno.test('listing follows the continuation token to the last page', async () => {

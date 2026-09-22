@@ -1,10 +1,12 @@
+import { onlineManager } from '@tanstack/react-query'
 import { format, parseISO, subDays } from 'date-fns'
 import { useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   dateKey,
   ENTRY_FOOD_ID,
+  type Entry,
   useActivityDay,
   useDayLog,
   usePendingSnaps,
@@ -14,6 +16,7 @@ import {
   useStreak,
   useTargets,
 } from '@/data'
+import { socialEntryPost } from '@/data/social'
 import {
   DayMeals,
   dayInMonth,
@@ -34,6 +37,7 @@ import {
   Button,
   CalorieRing,
   Card,
+  ConfirmSheet,
   EmptyState,
   FloatingAction,
   Icon,
@@ -68,7 +72,7 @@ const yesterday = (key: string) => dateKey(subDays(parseISO(key), 1))
  * placeholder is worse than no ring.
  */
 export default function TodayScreen() {
-  const { t } = useTranslation(['logging', 'common'])
+  const { t } = useTranslation(['logging', 'common', 'social'])
   const router = useRouter()
   const toast = useToast()
 
@@ -89,6 +93,49 @@ export default function TodayScreen() {
   const { data: targets, isPending: targetsPending, isPaused: targetsPaused } = useTargets()
   const streak = useStreak()
   const removeEntry = useRemoveEntry()
+  const [sharedDelete, setSharedDelete] = useState<Entry | null>(null)
+  const checkingDelete = useRef(false)
+  const queueRemove = removeEntry.mutate
+  const removeAsync = removeEntry.mutateAsync
+  const deleteEntry = useCallback(
+    async (entry: Entry) => {
+      const variables = {
+        id: entry.id,
+        logDate: entry.logDate,
+        photoPath: entry.photoPath,
+        source: entry.source,
+      }
+      // Diary deletes have always queued offline. A social warning must not
+      // turn that private diary action into an online-only operation.
+      if (onlineManager.isOnline()) await removeAsync(variables)
+      else queueRemove(variables)
+      toast.show({ title: t('logging:added.removedToast') })
+    },
+    [queueRemove, removeAsync, t, toast],
+  )
+  const requestDelete = useCallback(
+    async (entry: Entry) => {
+      if (checkingDelete.current) return
+      checkingDelete.current = true
+      try {
+        // There is no social cache to trust offline. Preserve the diary's
+        // queued delete; the database cascade removes a post on reconnect.
+        if (!onlineManager.isOnline()) {
+          await deleteEntry(entry)
+          return
+        }
+        if (await socialEntryPost(entry.id)) setSharedDelete(entry)
+        else await deleteEntry(entry)
+      } catch {
+        // Connectivity can change while the post lookup is in flight.
+        if (!onlineManager.isOnline()) await deleteEntry(entry)
+        else toast.show({ title: t('social:saveFailed'), tone: 'error' })
+      } finally {
+        checkingDelete.current = false
+      }
+    },
+    [deleteEntry, t, toast],
+  )
   const pending = usePendingSnaps()
   // The day's movement, if a health store is connected. Null on every account
   // that has not connected one, which is what keeps `burned` at zero below.
@@ -239,16 +286,12 @@ export default function TodayScreen() {
       icon: { set: 'ui', name: 'check' },
       action: {
         label: t('common:action.undo'),
-        onPress: () =>
-          removeEntry.mutate({
-            id: justAdded.id,
-            logDate: justAdded.logDate,
-            photoPath: justAdded.photoPath,
-            source: justAdded.source,
-          }),
+        onPress: () => {
+          void requestDelete(justAdded)
+        },
       },
     })
-  }, [justAdded, toast, t, removeEntry])
+  }, [justAdded, toast, t, requestDelete])
 
   /**
    * The way back to today, and only when there is one. The strip can put any day
@@ -566,19 +609,30 @@ export default function TodayScreen() {
               // two screens to undo; this is the shortcut, and the detail screen's
               // delete is still there for anyone who wants to look first.
               onDeleteEntry={(entry) => {
-                removeEntry.mutate({
-                  id: entry.id,
-                  logDate: entry.logDate,
-                  photoPath: entry.photoPath,
-                  source: entry.source,
-                })
-                toast.show({ title: t('logging:added.removedToast') })
+                void requestDelete(entry)
               }}
               onSwipeOpenChange={setSwipeOpen}
             />
           )}
         </>
       )}
+      <ConfirmSheet
+        visible={Boolean(sharedDelete)}
+        onClose={() => setSharedDelete(null)}
+        title={t('logging:detail.deleteTitle')}
+        description={t('social:sourceDelete')}
+        confirmLabel={t('common:action.delete')}
+        cancelLabel={t('common:action.keep')}
+        onConfirm={async () => {
+          if (!sharedDelete) return
+          try {
+            await deleteEntry(sharedDelete)
+          } catch (error) {
+            toast.show({ title: t('social:saveFailed'), tone: 'error' })
+            throw error
+          }
+        }}
+      />
     </Screen>
   )
 }
