@@ -5,15 +5,13 @@ import { View } from 'react-native'
 import { useUserId } from '@/data'
 import { useSocialFeed, useSocialProfile, useSocialUnread } from '@/data/social'
 import { ScreenTitle } from '@/features/shared'
-import { JoinPrompt, PostCard, SocialList } from '@/features/social/components'
-import { useThemeColors } from '@/theme/useTheme'
+import { JoinPrompt, PostCard, QueryNotice, SocialList } from '@/features/social/components'
 import { Icon, IconButton, Screen, Tabs } from '@/ui'
 
 export default function FeedScreen() {
   const { t } = useTranslation('social')
   const router = useRouter()
   const viewer = useUserId()
-  const colors = useThemeColors()
   const [mode, setMode] = useState<'following' | 'discover'>('following')
   const feed = useSocialFeed(mode)
   const own = useSocialProfile()
@@ -34,7 +32,7 @@ export default function FeedScreen() {
                   accessibilityLabel={t('people')}
                   onPress={() => router.push('/social/people')}
                 >
-                  <Icon set="ui" name="search" size={21} tintColor={colors.muted} />
+                  <Icon set="ui" name="search" size={21} />
                 </IconButton>
                 <IconButton
                   size="sm"
@@ -45,7 +43,7 @@ export default function FeedScreen() {
                   onPress={() => router.push('/social/notifications')}
                 >
                   <View className="h-6 w-6 items-center justify-center">
-                    <Icon set="ui" name="notification" size={22} tintColor={colors.muted} />
+                    <Icon set="ui" name="notification" size={22} />
                     {unread.data ? (
                       <View
                         className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-canvas bg-hibiscus"
@@ -62,7 +60,7 @@ export default function FeedScreen() {
                     router.push({ pathname: '/social/profile/[id]', params: { id: viewer } })
                   }
                 >
-                  <Icon set="ui" name="profile" size={22} tintColor={colors.muted} />
+                  <Icon set="ui" name="profile" size={22} />
                 </IconButton>
               </View>
             }
@@ -89,7 +87,11 @@ export default function FeedScreen() {
         renderRow={(post, visible) => <PostCard post={post} visible={visible} />}
         empty={t(mode === 'following' ? 'emptyFollowing' : 'emptyDiscover')}
         header={
-          !own.isPending && !own.isError && !own.data ? (
+          own.isError ? (
+            <View className="m-5">
+              <QueryNotice error paused={own.fetchStatus === 'paused'} retry={own.refetch} />
+            </View>
+          ) : !own.isPending && !own.data ? (
             <View className="m-5">
               <JoinPrompt />
             </View>

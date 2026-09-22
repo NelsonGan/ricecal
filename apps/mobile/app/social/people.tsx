@@ -7,7 +7,7 @@ import { useDebouncedValue } from '@/lib/use-debounce'
 import { Screen, SearchField, Text } from '@/ui'
 
 export default function PeopleScreen() {
-  const { t } = useTranslation('social')
+  const { t } = useTranslation(['social', 'recipes'])
   const [query, setQuery] = useState('')
   const debounced = useDebouncedValue(query.trim().toLowerCase().replace(/^@/, ''))
   const search = useSocialSearch(debounced)
@@ -31,7 +31,7 @@ export default function PeopleScreen() {
             value={query}
             onChangeText={setQuery}
             onClear={() => setQuery('')}
-            clearLabel={t('cancel')}
+            clearLabel={t('recipes:search.clear')}
             placeholder={t('search')}
             autoCapitalize="none"
             autoCorrect={false}

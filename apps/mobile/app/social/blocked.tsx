@@ -20,6 +20,7 @@ export default function BlockedScreen() {
           <PersonRow
             person={person}
             visible={visible}
+            navigable={false}
             trailing={
               <Button
                 size="sm"

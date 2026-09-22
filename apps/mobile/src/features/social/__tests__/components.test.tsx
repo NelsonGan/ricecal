@@ -1,11 +1,22 @@
+import { View } from 'react-native'
+import type { SocialPost, SocialProfile } from '@/data/social'
+import i18n from '@/i18n'
 import { act, render, screen, userEvent } from '@/test-utils'
-import '@/i18n'
-import { FollowButton, ReviewNotice, SocialPhoto } from '../components'
+import {
+  FollowButton,
+  PersonRow,
+  PostCard,
+  QueryNotice,
+  ReviewNotice,
+  SocialList,
+  SocialPhoto,
+} from '../components'
 
 const mockPush = jest.fn()
 const mockMutate = jest.fn()
 const mockProfile = jest.fn()
 const mockPhoto = jest.fn()
+const mockRefetchProfile = jest.fn()
 const mockToast = jest.fn()
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
@@ -21,6 +32,7 @@ jest.mock('expo-image', () => ({
 jest.mock('@/data', () => ({
   useUserId: () => 'viewer',
   useMealPhotoUrl: () => ({ data: undefined }),
+  useAvatarUrl: () => ({ data: undefined }),
 }))
 jest.mock('@/data/social', () => ({
   useSocialAction: () => ({ mutateAsync: mockMutate, isPending: false }),
@@ -30,15 +42,68 @@ jest.mock('@/data/social', () => ({
 }))
 jest.mock('@/ui', () => ({ ...jest.requireActual('@/ui'), useToast: () => ({ show: mockToast }) }))
 
-beforeEach(() => {
+const person: SocialProfile = {
+  user_id: 'someone',
+  handle: 'someone',
+  display_name: 'Someone',
+  bio: '',
+  avatar_path: null,
+  review_status: 'approved',
+  review_reason: null,
+  revision: 1,
+  quarantined: false,
+  follower_count: 0,
+  following_count: 0,
+  post_count: 0,
+  is_following: false,
+  is_followed_by: false,
+  created_at: '2026-09-23T00:00:00.000Z',
+}
+
+const post: SocialPost = {
+  id: 'post',
+  author_id: person.user_id,
+  handle: person.handle,
+  display_name: person.display_name,
+  avatar_path: null,
+  food_name: 'Rice',
+  icon_set: null,
+  icon_name: null,
+  photo_path: null,
+  caption: '',
+  audience: 'public',
+  review_status: 'approved',
+  review_reason: null,
+  revision: 1,
+  quarantined: false,
+  created_at: '2026-09-23T00:00:00.000Z',
+  published_at: '2026-09-23T00:00:00.000Z',
+  like_count: 0,
+  comment_count: 0,
+  is_liked: false,
+  is_following: true,
+}
+
+beforeEach(async () => {
   jest.clearAllMocks()
-  mockProfile.mockReturnValue({ data: { user_id: 'viewer' } })
+  await i18n.changeLanguage('en')
+  mockProfile.mockReturnValue({
+    data: { ...person, user_id: 'viewer' },
+    isPending: false,
+    isError: false,
+    refetch: mockRefetchProfile,
+  })
   mockPhoto.mockReturnValue({ data: undefined, isError: false })
   mockMutate.mockResolvedValue({})
 })
 
 it('asks a reader without public identity to create one before following', async () => {
-  mockProfile.mockReturnValue({ data: null })
+  mockProfile.mockReturnValue({
+    data: null,
+    isPending: false,
+    isError: false,
+    refetch: mockRefetchProfile,
+  })
   await render(<FollowButton id="someone" following={false} />)
   await userEvent.setup().press(screen.getByRole('button', { name: 'Follow' }))
   expect(mockPush).toHaveBeenCalledWith('/social/edit-profile')
@@ -51,6 +116,92 @@ it('unfollows by setting the desired state and never offers following yourself',
   expect(mockMutate).toHaveBeenCalledWith({ action: 'follow', id: 'someone', following: false })
   await view.rerender(<FollowButton id="viewer" following={false} />)
   expect(screen.queryByRole('button')).toBeNull()
+})
+
+it('waits for the public identity query and offers retry when it fails', async () => {
+  mockProfile.mockReturnValue({
+    data: undefined,
+    isPending: true,
+    isError: false,
+    refetch: mockRefetchProfile,
+  })
+  const view = await render(<FollowButton id="someone" following={false} />)
+  expect(screen.getByRole('button', { name: 'Follow' })).toBeDisabled()
+
+  mockProfile.mockReturnValue({
+    data: undefined,
+    isPending: false,
+    isError: true,
+    refetch: mockRefetchProfile,
+  })
+  await view.rerender(<FollowButton id="someone" following={false} />)
+  await userEvent.setup().press(screen.getByRole('button', { name: 'Try again' }))
+  expect(mockRefetchProfile).toHaveBeenCalledTimes(1)
+  expect(mockPush).not.toHaveBeenCalled()
+  expect(mockMutate).not.toHaveBeenCalled()
+})
+
+it('does not treat an unresolved public identity as permission to like', async () => {
+  mockProfile.mockReturnValue({
+    data: undefined,
+    isPending: false,
+    isError: true,
+    refetch: mockRefetchProfile,
+  })
+  const view = await render(<PostCard post={post} />)
+  expect(screen.getByRole('button', { name: 'Like, 0 likes' })).toBeDisabled()
+
+  mockProfile.mockReturnValue({
+    data: { ...person, user_id: 'viewer' },
+    isPending: false,
+    isError: false,
+    refetch: mockRefetchProfile,
+  })
+  await view.rerender(<PostCard post={post} />)
+  await userEvent.setup().press(screen.getByRole('button', { name: 'Like, 0 likes' }))
+  expect(mockMutate).toHaveBeenCalledWith({ action: 'like', id: 'post', liked: true })
+  expect(mockPush).not.toHaveBeenCalledWith('/social/edit-profile')
+})
+
+it('keeps blocked people static while regular people remain navigable', async () => {
+  const view = await render(<PersonRow person={person} navigable={false} trailing={<View />} />)
+  expect(screen.queryByRole('button', { name: 'Someone, @someone' })).toBeNull()
+
+  await view.rerender(<PersonRow person={person} trailing={<View />} />)
+  await userEvent.setup().press(screen.getByRole('button', { name: 'Someone, @someone' }))
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: '/social/profile/[id]',
+    params: { id: 'someone' },
+  })
+})
+
+it('announces social loading states in the active language', async () => {
+  await i18n.changeLanguage('ms')
+  await render(
+    <>
+      <QueryNotice pending retry={jest.fn()} />
+      <SocialList
+        query={{
+          data: undefined,
+          isPending: true,
+          isError: false,
+          isFetching: true,
+          isFetchingNextPage: false,
+          isFetchNextPageError: false,
+          hasNextPage: false,
+          fetchStatus: 'fetching',
+          fetchNextPage: jest.fn(),
+          refetch: jest.fn(),
+        }}
+        rowKey={(row: { id: string }) => row.id}
+        renderRow={() => <></>}
+        empty="Empty"
+      />
+    </>,
+  )
+  const loading = screen.getAllByLabelText('Memuatkan')
+  expect(loading).toHaveLength(2)
+  for (const indicator of loading) expect(indicator).toHaveProp('accessibilityRole', 'progressbar')
 })
 
 it('offers retry only for pending moderation and retains the revision identity', async () => {

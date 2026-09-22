@@ -137,7 +137,7 @@ export function SocialPhoto({
     return () => clearTimeout(timer)
   }, [photo.data])
   const box = { sm: 40, md: 52, lg: 64 }[size]
-  if (focused && visible && privateUri) {
+  if (visible && privateUri) {
     return (
       <Image
         source={{ uri: privateUri }}
@@ -152,7 +152,7 @@ export function SocialPhoto({
       />
     )
   }
-  if (!focused || !visible || photo.isError || !photo.data || photo.data.expiresAt <= Date.now()) {
+  if (!visible || photo.isError || !photo.data || photo.data.expiresAt <= Date.now()) {
     return avatar ? <Avatar name={label} size={size} fallback="initial" /> : null
   }
   return (
@@ -271,10 +271,16 @@ function FollowButtonControl({
   following,
   fullWidth = false,
   own,
+  ownPending,
+  ownError,
+  retryOwn,
   action,
   online,
 }: FollowButtonProps & {
   own: SocialProfile | null | undefined
+  ownPending: boolean
+  ownError: boolean
+  retryOwn: () => unknown
   action: SocialTask
   online: boolean
 }) {
@@ -282,26 +288,35 @@ function FollowButtonControl({
   const viewer = useUserId()
   const router = useRouter()
   if (id === viewer) return null
+  const needsProfile = !following
+  const retryProfile = needsProfile && own === undefined && ownError
+  const waitingForProfile = needsProfile && (ownPending || (own === undefined && !ownError))
   return (
     <Button
       size="sm"
       variant={following ? 'neutral' : 'secondary'}
       fullWidth={fullWidth}
-      disabled={!online}
+      disabled={!online || waitingForProfile}
       loading={action.isPending}
       onPress={() => {
-        if (!following && (own?.review_status !== 'approved' || own.quarantined)) {
-          router.push(
-            own
-              ? { pathname: '/social/profile/[id]', params: { id: viewer } }
-              : '/social/edit-profile',
-          )
-          return
+        if (!following) {
+          if (own === undefined) {
+            if (ownError) retryOwn()
+            return
+          }
+          if (own === null || own.review_status !== 'approved' || own.quarantined) {
+            router.push(
+              own
+                ? { pathname: '/social/profile/[id]', params: { id: viewer } }
+                : '/social/edit-profile',
+            )
+            return
+          }
         }
         action.press({ action: 'follow', id, following: !following })
       }}
     >
-      {t(following ? 'unfollow' : 'follow')}
+      {t(retryProfile ? 'retry' : following ? 'unfollow' : 'follow')}
     </Button>
   )
 }
@@ -310,43 +325,64 @@ export function FollowButton(props: FollowButtonProps) {
   const own = useSocialProfile()
   const action = useSocialTask()
   const online = useSocialOnline()
-  return <FollowButtonControl {...props} own={own.data} action={action} online={online} />
+  return (
+    <FollowButtonControl
+      {...props}
+      own={own.data}
+      ownPending={own.isPending}
+      ownError={own.isError}
+      retryOwn={own.refetch}
+      action={action}
+      online={online}
+    />
+  )
 }
 
 export function PersonRow({
   person,
   visible = true,
+  navigable = true,
   trailing,
 }: {
   person: SocialProfile
   visible?: boolean
+  navigable?: boolean
   trailing?: ReactElement
 }) {
   const router = useRouter()
   const { t } = useTranslation('social')
   const name = person.display_name || t('unknownPerson')
+  const identity = (
+    <>
+      <SocialPhoto path={person.avatar_path} visible={visible} avatar label={name} />
+      <View className="min-w-0 flex-1">
+        <Text variant="label" numberOfLines={1}>
+          {name}
+        </Text>
+        <Text variant="meta" numberOfLines={1}>
+          {person.handle ? `@${person.handle}` : ''}
+        </Text>
+      </View>
+    </>
+  )
   return (
     <View className="flex-row items-center gap-3 py-3">
-      <Tappable
-        className="min-h-sm min-w-0 flex-1 flex-row items-center gap-3"
-        onPress={() =>
-          router.push({ pathname: '/social/profile/[id]', params: { id: person.user_id } })
-        }
-        accessibilityRole="button"
-        accessibilityLabel={[name, person.handle ? `@${person.handle}` : '']
-          .filter(Boolean)
-          .join(', ')}
-      >
-        <SocialPhoto path={person.avatar_path} visible={visible} avatar label={name} />
-        <View className="min-w-0 flex-1">
-          <Text variant="label" numberOfLines={1}>
-            {name}
-          </Text>
-          <Text variant="meta" numberOfLines={1}>
-            {person.handle ? `@${person.handle}` : ''}
-          </Text>
-        </View>
-      </Tappable>
+      {navigable ? (
+        <Tappable
+          className="min-h-sm min-w-0 flex-1 flex-row items-center gap-3"
+          onPress={() =>
+            router.push({ pathname: '/social/profile/[id]', params: { id: person.user_id } })
+          }
+          accessibilityRole="button"
+          accessibilityLabel={[name, person.handle ? `@${person.handle}` : '']
+            .filter(Boolean)
+            .join(', ')}
+        >
+          {identity}
+        </Tappable>
+      ) : (
+        <View className="min-h-sm min-w-0 flex-1 flex-row items-center gap-3">{identity}</View>
+      )}
       {trailing ?? <FollowButton id={person.user_id} following={person.is_following} />}
     </View>
   )
@@ -417,6 +453,7 @@ type ContentSafetyProps = {
   id: string
   authorId: string
   onRemoved?: () => void
+  onBlocked?: () => void
   extraAction?: {
     label: string
     description: string
@@ -430,12 +467,12 @@ function ContentSafetyControl({
   id,
   authorId,
   onRemoved,
+  onBlocked,
   extraAction,
   action,
   online,
 }: ContentSafetyProps & { action: SocialTask; online: boolean }) {
   const { t } = useTranslation(['social', 'recipes'])
-  const colors = useThemeColors()
   const [panel, setPanel] = useState<'menu' | 'report' | 'block' | 'extra' | null>(null)
   const afterDismiss = useRef<(() => void) | null>(null)
   const reasons: ReportReason[] = ['inappropriate', 'spam', 'dangerous', 'stolen']
@@ -450,7 +487,7 @@ function ContentSafetyControl({
         accessibilityLabel={t('social:options')}
         onPress={() => setPanel('menu')}
       >
-        <Icon set="ui" name="more-horizontal" size={22} tintColor={colors.muted} />
+        <Icon set="ui" name="more-horizontal" size={22} />
       </IconButton>
       <Sheet
         visible={panel !== null}
@@ -496,7 +533,10 @@ function ContentSafetyControl({
                   afterDismiss.current = () => {
                     void action
                       .run(input)
-                      .then(() => onRemoved?.())
+                      .then(() => {
+                        if (panel === 'block') onBlocked?.()
+                        onRemoved?.()
+                      })
                       .catch(() => undefined)
                   }
                   setPanel(null)
@@ -593,13 +633,15 @@ export function PostCard({
   const viewer = useUserId()
   const ownProfile = useSocialProfile()
   const router = useRouter()
-  const leavePost = useBack('/feed')
-  const action = useSocialTask()
+  const leavePost = useCallback(() => router.dismissTo('/feed'), [router])
+  const likeAction = useSocialTask()
+  const followAction = useSocialTask()
+  const menuAction = useSocialTask()
   const online = useSocialOnline()
   const [panel, setPanel] = useState<'options' | 'delete' | null>(null)
   const afterDismiss = useRef<(() => void) | null>(null)
-  const colors = useThemeColors()
   const mine = post.author_id === viewer
+  const own = ownProfile.data
   const privatePhoto =
     mine && (post.review_status !== 'approved' || post.quarantined)
       ? (post.photo_path ?? undefined)
@@ -610,18 +652,18 @@ export function PostCard({
   const time = useSocialTime(post.published_at ?? post.created_at)
   const hasPhoto = Boolean(post.photo_path || ownPhoto.data)
   const toggleLike = () => {
-    if (
-      !post.is_liked &&
-      (ownProfile.data?.review_status !== 'approved' || ownProfile.data.quarantined)
-    ) {
-      router.push(
-        ownProfile.data
-          ? { pathname: '/social/profile/[id]', params: { id: viewer } }
-          : '/social/edit-profile',
-      )
-      return
+    if (!post.is_liked) {
+      if (own === undefined) return
+      if (own === null || own.review_status !== 'approved' || own.quarantined) {
+        router.push(
+          own
+            ? { pathname: '/social/profile/[id]', params: { id: viewer } }
+            : '/social/edit-profile',
+        )
+        return
+      }
     }
-    action.press({ action: 'like', id: post.id, liked: !post.is_liked })
+    likeAction.press({ action: 'like', id: post.id, liked: !post.is_liked })
   }
   return (
     <View className="overflow-hidden border-b-2 border-track bg-surface">
@@ -657,7 +699,10 @@ export function PostCard({
             id={post.author_id}
             following={false}
             own={ownProfile.data}
-            action={action}
+            ownPending={ownProfile.isPending}
+            ownError={ownProfile.isError}
+            retryOwn={ownProfile.refetch}
+            action={followAction}
             online={online}
           />
         ) : null}
@@ -668,7 +713,7 @@ export function PostCard({
             accessibilityLabel={t('options')}
             onPress={() => setPanel('options')}
           >
-            <Icon set="ui" name="more-horizontal" size={22} tintColor={colors.muted} />
+            <Icon set="ui" name="more-horizontal" size={22} />
           </IconButton>
         ) : (
           <ContentSafetyControl
@@ -676,7 +721,7 @@ export function PostCard({
             id={post.id}
             authorId={post.author_id}
             onRemoved={detail ? leavePost : undefined}
-            action={action}
+            action={menuAction}
             online={online}
           />
         )}
@@ -712,11 +757,20 @@ export function PostCard({
         <View className="flex-row items-center gap-5">
           <Tappable
             className="min-h-sm min-w-[44px] flex-row items-center justify-center gap-1.5"
-            disabled={!online || post.review_status !== 'approved' || action.isPending}
+            disabled={
+              !online ||
+              post.review_status !== 'approved' ||
+              likeAction.isPending ||
+              (!post.is_liked && ownProfile.data === undefined)
+            }
             accessibilityRole="button"
             accessibilityLabel={`${t(post.is_liked ? 'unlike' : 'like')}, ${t('likes', { count: post.like_count })}`}
             accessibilityState={{
-              disabled: !online || post.review_status !== 'approved' || action.isPending,
+              disabled:
+                !online ||
+                post.review_status !== 'approved' ||
+                likeAction.isPending ||
+                (!post.is_liked && ownProfile.data === undefined),
               selected: post.is_liked,
             }}
             onPress={toggleLike}
@@ -724,16 +778,26 @@ export function PostCard({
             <Icon set="system" name={post.is_liked ? 'heart-filled' : 'heart'} size={24} />
             <Text variant="meta">{post.like_count}</Text>
           </Tappable>
-          <Tappable
-            className="min-h-sm min-w-[44px] flex-row items-center justify-center gap-1.5"
-            disabled={detail}
-            accessibilityRole="button"
-            accessibilityLabel={t('comments', { count: post.comment_count })}
-            onPress={detail ? undefined : open}
-          >
-            <Icon set="system" name="chat" size={24} />
-            <Text variant="meta">{post.comment_count}</Text>
-          </Tappable>
+          {detail ? (
+            <View
+              className="min-h-sm min-w-[44px] flex-row items-center justify-center gap-1.5"
+              accessible
+              accessibilityLabel={t('comments', { count: post.comment_count })}
+            >
+              <Icon set="system" name="chat" size={24} />
+              <Text variant="meta">{post.comment_count}</Text>
+            </View>
+          ) : (
+            <Tappable
+              className="min-h-sm min-w-[44px] flex-row items-center justify-center gap-1.5"
+              accessibilityRole="button"
+              accessibilityLabel={t('comments', { count: post.comment_count })}
+              onPress={open}
+            >
+              <Icon set="system" name="chat" size={24} />
+              <Text variant="meta">{post.comment_count}</Text>
+            </Tappable>
+          )}
         </View>
         <Text variant="bodyStrong" numberOfLines={2}>
           {post.food_name}
@@ -762,7 +826,7 @@ export function PostCard({
           afterDismiss.current = null
           next?.()
         }}
-        dismissible={!action.isPending}
+        dismissible={!menuAction.isPending}
         closeLabel={t('cancel')}
         title={t(panel === 'delete' ? 'deletePost' : 'options')}
         description={panel === 'delete' ? t('deletePostBody') : undefined}
@@ -773,11 +837,11 @@ export function PostCard({
               <Button
                 variant="danger"
                 className="flex-1"
-                loading={action.isPending}
+                loading={menuAction.isPending}
                 disabled={!online}
                 onPress={() => {
                   afterDismiss.current = () => {
-                    void action
+                    void menuAction
                       .run({ action: 'deletePost', id: post.id })
                       .then(() => {
                         if (detail) leavePost()
@@ -792,7 +856,7 @@ export function PostCard({
               <Button
                 variant="neutral"
                 className="flex-1"
-                disabled={action.isPending}
+                disabled={menuAction.isPending}
                 onPress={() => setPanel(null)}
               >
                 {t('cancel')}
@@ -954,7 +1018,7 @@ export function SocialList<T>({
       onEndReachedThreshold={0.6}
       ListEmptyComponent={
         query.isPending && query.fetchStatus !== 'paused' ? (
-          <Spinner />
+          <Spinner label={t('loading')} />
         ) : (
           <EmptyState
             title={
@@ -984,7 +1048,7 @@ export function SocialList<T>({
             {t('retry')}
           </Button>
         ) : query.isFetchingNextPage ? (
-          <Spinner />
+          <Spinner label={t('loading')} />
         ) : query.hasNextPage ? (
           <Button
             size="sm"
@@ -1016,7 +1080,7 @@ export function QueryNotice({
   retry: () => unknown
 }) {
   const { t } = useTranslation('social')
-  if (pending && !paused) return <Spinner />
+  if (pending && !paused) return <Spinner label={t('loading')} />
   return (
     <View className="gap-3">
       <EmptyState
