@@ -173,3 +173,6 @@ jobs:
       # `cascade.ts` imports it; nothing under test touches the network.
       - name: Test the shared edge-function code
         run: deno test --no-lock --allow-env --config scan-meal/deno.json _shared/
+
+      - name: Test social moderation and photo authorization
+        run: deno test --no-lock --allow-env --config social/deno.json social/ photos/

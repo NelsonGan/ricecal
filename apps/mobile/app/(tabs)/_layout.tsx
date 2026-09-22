@@ -50,7 +50,7 @@ export default function TabsLayout() {
 }
 
 function SignedInTabs() {
-  const { t } = useTranslation()
+  const { t } = useTranslation(['common', 'social'])
 
   // Here rather than in the root layout: they need a session, and this is the
   // first thing that only renders with one. One rewrites the phone's scheduled
@@ -73,11 +73,8 @@ function SignedInTabs() {
             <NavItem label={t('nav.today')} icon={{ set: 'ui', name: 'home' }} />
           </TabTrigger>
 
-          {/* Second, where the design puts it: cooking is a thing you go and
-              look at, and it sits beside the day it feeds rather than behind
-              the reports. A `food` icon, because the pot IS the noun. */}
-          <TabTrigger name="recipes" href="/recipes" asChild>
-            <NavItem label={t('nav.recipes')} icon={{ set: 'food', name: 'cooking-pot' }} />
+          <TabTrigger name="feed" href="/feed" asChild>
+            <NavItem label={t('social:feed')} icon={{ set: 'system', name: 'users-group' }} />
           </TabTrigger>
 
           {/* A `body` icon rather than a `ui` one. The other tabs are interface

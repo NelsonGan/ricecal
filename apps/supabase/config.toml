@@ -598,6 +598,13 @@ verify_jwt = false
 import_map = "./functions/recipes/deno.json"
 entrypoint = "./functions/recipes/index.ts"
 
+# Social publication reviews authenticate the caller before the service write.
+[functions.social]
+enabled = true
+verify_jwt = false
+import_map = "./functions/social/deno.json"
+entrypoint = "./functions/social/index.ts"
+
 # RevenueCat's webhook, and the only writer of `subscriptions`. NOT the same
 # auth pattern as the others: there is no user and no Supabase JWT, so it
 # checks a shared secret instead — REVENUECAT_WEBHOOK_TOKEN, matching the value

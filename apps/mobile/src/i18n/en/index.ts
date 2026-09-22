@@ -8,6 +8,7 @@ import { profile } from './profile'
 import { progress } from './progress'
 import { recipes } from './recipes'
 import { reviews } from './reviews'
+import { social } from './social'
 import { suggest } from './suggest'
 
 /**
@@ -31,6 +32,7 @@ export const en = {
   recipes,
   reviews,
   suggest,
+  social,
 } as const
 
 export type Resources = typeof en

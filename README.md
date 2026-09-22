@@ -22,6 +22,7 @@ project works is here.
 - [Correcting an entry](#correcting-an-entry)
 - [What to eat next](#what-to-eat-next)
 - [Food people write](#food-people-write)
+- [The social food feed](#the-social-food-feed)
 - [The diary screen](#the-diary-screen)
 - [Water](#water)
 - [Home screen widgets](#home-screen-widgets)
@@ -2434,6 +2435,327 @@ sentences when it did not get them, and `RecipeSteps` draws the numerals.
 Numbering in the data would double up against the numerals beside it, survive
 into the field the cook edits by hand, and renumber nothing when a step was taken
 out of the middle.
+
+---
+
+## The social food feed
+
+### Product contract and implementation plan
+
+This is an explicit publication system. Logging a meal never publishes it. The
+saved entry offers **Share to feed**, which opens a preview of the food name,
+photograph or drawing, an optional caption (280 characters), and an audience:
+Everyone or Followers. Only pressing Share creates a post. A failed publication
+does not undo the meal. The source is one committed entry owned by the caller;
+the server constructs the snapshot and accepts no client-supplied author or food.
+
+Feed takes the second bottom tab. **My foods** moves into the Settings card on
+Me, retaining both the personal and community recipe shelves. Existing recipe
+routes and database contracts survive; the old recipes tab route redirects to
+Settings. Feed and recipes are separate concepts: a post says what somebody ate,
+while a recipe describes food somebody can make and log.
+
+The first implementation includes:
+
+- Following, newest first, containing the viewer and accounts they follow;
+  Discover, containing public posts from other accounts they do not follow.
+- Opt-in public identity with a unique handle, display name, short bio and an
+  optional explicitly selected avatar. No health-profile fields are copied.
+- Profile posts, follower and following lists, follow/unfollow, follower removal,
+  handle search and suggested people. Suggestions exclude self, existing follows,
+  unavailable profiles and blocks in either direction.
+- Post editing/deletion, likes, short comments (500 characters), comment editing and deletion
+  by its author or the post author, and an in-app activity list for follows,
+  likes and comments. Activity does not send push notifications.
+- Reports for posts, comments and public profiles, symmetric blocking, and an
+  unblock screen. Blocking removes follow edges in both directions. Unblocking
+  does not recreate them.
+- Moderation before another account can read submitted text or media. Rejected
+  content can be corrected; unavailable moderation leaves it pending with retry.
+
+Public profiles do not expose a private account mode. Followers-only is a post
+audience: follows are accepted immediately, and the composer states who will see
+the post. Direct messages, video, stories, contact-book uploads and push delivery
+are separate products, not prerequisites for a food following system.
+
+### The privacy boundary is a separate set of rows
+
+`profiles` contains birth date, sex, height and weight goals and remains
+owner-only. `social_profiles` is opt-in; installing an update creates no public
+identity. An account can browse, report and block without opting in. Publishing,
+following, liking and commenting require an approved public identity. Its handle
+is normalized lowercase ASCII, 3 to 24 characters,
+unique under a database constraint. Names and bios accept the app's languages.
+
+`social_posts` holds only the food name, drawing, owned photo key, caption and
+audience. It never contains diary notes, meal dates/times, nutrition, goals,
+weight, location or account email. Publication time is new, not the time the
+meal was logged. A source-entry reference exists for ownership and deletion,
+not as permission to join the private diary. Read RPCs return explicit public
+fields. Diary and recipe RLS are never widened to implement the feed.
+
+There is at most one post per source entry. A client request UUID makes a retry
+of an interrupted comment submission the same operation. Follow and like writes
+set the desired state instead of toggling it, so repeated requests converge.
+Caption edits keep the original publication position and create a new review
+revision. Changing the diary does not silently rewrite the published words.
+Deleting the diary entry removes its post and dependent comments, likes and
+activity. The entry screen and delete confirmation must make this consequence
+clear. Deleting a post keeps the diary entry.
+
+The existing `blocked_authors` rows remain private to their writers. Social read
+policies use a narrowly scoped private helper to check both directions without
+revealing who blocked whom. Existing recipe behavior is preserved. A social
+block governs profiles, graph lists, posts, comments, likes, suggestions, activity
+and photo authorization, including direct-id reads. No client-side filter is a
+substitute for the database rule. Reports are visible only to the reporter and
+moderators; the subject is never told who reported them.
+
+### Graph, feed and count storage
+
+The graph is one row per `(follower_id, followed_id)`, with the reverse index for
+followers and creation-time/id indexes for list pagination. It is not arrays on
+profiles and not one document per celebrity. There is no follower-count cap.
+An account may follow up to 5,000 accounts; a lock scoped to that follower makes
+the limit hold under concurrent requests. This bounds read fan-in and abuse
+without making a high-follower account expensive to publish to. Blocking and
+following the same pair must serialize, including blocks from older clients.
+
+Posts have an author/time/id index and a partial public approved/time/id index.
+Following reads bounded slices from followed authors, then merges to one page.
+Discover reads the public index and applies visibility and follow exclusions.
+Neither path writes an inbox row to every follower, scans old pages with OFFSET,
+nor downloads the graph to the phone. Discovery is chronological in this version;
+there is no claim that a heuristic is personalized machine learning.
+
+Post, comment, connection and activity lists have an immutable, total ordering. Posts and comments use
+`(created_at, id)`; connections use `(created_at, other_user_id)`; search uses
+handle. Both cursor components are required together and page size is capped at
+50. The client requests a sentinel row to distinguish a full final page from
+another page. Refresh starts at the head. Post and comment edits never move rows between pages;
+concurrent inserts appear on refresh. Deleting the cursor row does not invalidate
+the cursor because its values travel with the request.
+Handle search is ordered by the current handle. A renamed account may move
+across the search cursor; refresh to see its new position. The client deduplicates
+by account id while paging.
+
+Popular posts and people must not run `count(*)` over their entire history for
+each card. Counts are maintained in fixed shards selected by the acting account,
+and summed over that bounded shard set. This avoids one counter-row lock for all
+of a celebrity's followers or likes. Counter changes, edge changes and any
+notification are one transaction. Duplicate writes produce no extra count or
+activity. Counters are derived data; reconciliation queries against canonical
+edges/posts are part of verification. Counts do not determine authorization.
+
+Activity is one recipient per interaction, not one recipient per follower of a
+publisher. It stores references, not copied captions or comments that survive
+deletion. Its read path rechecks the referenced content. Recipient/time/id and
+recipient/unread indexes keep history paging and the unread indicator bounded.
+
+### Growth strategy and its limits
+
+This is indexed fan-out on read, appropriate for the current Postgres deployment.
+It removes follower count from the publishing cost, but it does not make storage,
+high-following reads or discovery filtering free. The launch budget is 20 visible
+cards per request, at most 50 through the API, and bounded client page retention.
+Benchmark sparse and dense following graphs, a viewer following 5,000 people,
+an author with many followers, deep cursors, and heavily filtered discovery.
+Record `EXPLAIN (ANALYZE, BUFFERS)` against generated local data rather than
+claiming scale from an index existing in a file.
+
+Measure p50/p95 feed latency, examined rows/buffers, database CPU, lock waits,
+disk growth and moderation throughput. A sustained p95 above 300 ms for the
+database feed read, or feed work consuming 25% of database CPU, is the trigger to
+profile and change candidate retrieval. These are operating targets, not a
+promise that the free plan meets them. Capacity alerts must precede the hosted
+500 MB limit; synthetic scale fixtures run locally and roll back.
+
+The next stage is a durable transactional outbox and asynchronously materialized
+candidate inbox for active ordinary accounts, with celebrity posts merged on
+read. The inbox contains post ids only and never grants visibility. Workers
+deduplicate `(recipient, post)` writes, checkpoint bounded batches, retry, and
+backfill recent history on follow. Reads still apply current audience, blocks,
+reports and moderation, so a delayed deletion or unfollow cannot leak a post.
+The normalized graph and cursor contract remain the source of truth. Only after
+measured need should graph partitions, read replicas or separate candidate
+storage be introduced. No silent truncation of a follow list is a scaling plan.
+
+Suggestions use a bounded indexed candidate pool rather than sorting the full
+user table by a live aggregate or traversing an unbounded friends-of-friends
+graph. Discovery and suggestions remain available on a brand-new account with
+no follows; if there are no eligible people or posts, the screen says so.
+
+### Publication, moderation and media
+
+Authenticated RPCs create or edit pending content and increment its revision.
+Only the service role can approve it. The `social` edge function checks the
+caller, claims an atomic per-account review budget, loads exactly that caller's
+pending content and reviews text and any attached image. It sends no diary or
+health data to the reviewer. Approval compares the revision it read; a concurrent
+edit, deletion or report cannot be approved by a stale response. Errors and
+missing production credentials leave content pending. Local deterministic review
+is explicitly restricted to the local stack and supports rejection/failure
+fixtures. Social moderation is available to free accounts and never consumes
+their scan allowance.
+
+The report button hides the target from its reporter immediately. Three distinct
+reports quarantine content for everyone pending moderator action. A normal
+client retry cannot remove this quarantine. The service role has the inspection
+and resolution path; public roles cannot read reports, review budgets or mutate
+review status, counters or another account's identity. Database functions pin
+their search path, authenticate the caller, and explicitly revoke default PUBLIC
+execution. RLS applies to every exposed social table.
+
+Posts reference the source meal's existing owned object; they do not create a
+second untracked photograph. If diary photo replacement or the existing retention
+job removes that key, a trigger removes it from the post and the drawing remains.
+This preserves the free/Pro retention policy. Account deletion still sweeps the
+same two existing R2 prefixes before cascading all social rows.
+
+The photo endpoint gains an explicit social scope. It signs only keys attached to
+content the caller can currently see, verifies that the key belongs to its
+author, and uses a 60-second URL lifetime. The old diary and recipe requests keep
+their existing response contract and lifetime. Social images never use the
+diary's disk-first resolver. They are not written to disk and do not reuse a
+photo key as permanent authorization. A previously delivered signed URL can work
+until its short expiry; downloaded bytes cannot be recalled. Blocking/deletion
+invalidates visible content immediately in the acting client and on the next
+authorized read elsewhere.
+
+An upload URL can be reused until it expires, so a unique object key alone does
+not prove that an approved photograph stayed unchanged. Review records the ETag
+of the exact bytes it inspected. Social GET signatures require a signed
+`If-Match` header with that ETag; an overwrite fails with 412 instead of showing
+an unreviewed replacement. The signer never accepts a client-supplied ETag.
+[R2 supports conditional GETs](https://developers.cloudflare.com/r2/api/s3/api/).
+This adds no copied objects or new cleanup domain.
+
+### App boundaries, rollout and verification gates
+
+Screens use `data/social.ts`; all viewer-scoped keys live in `data/keys.ts`.
+Social queries have finite garbage collection and bounded infinite pages and are
+excluded from MMKV persistence. Mutations remove stale social content before
+refetching after block, report, delete or audience restriction. Requests cancelled
+during account changes cannot refill another viewer's cache. Offline social
+writes are disabled with visible feedback; private diary offline behavior stays
+as it is. Reusable social cards, people rows, photo rendering, lists and report
+controls live under `features/social` rather than being copied into routes.
+
+Implementation order is deliberate:
+
+1. Document and review this contract, research and failure cases.
+2. Add declarative social schema, ownership/visibility policies, transactional
+   writes, bounded read RPCs and database tests. Generate the migration with
+   `pnpm db:diff`; inspect function revokes the diff cannot preserve.
+3. Add revision-safe moderation and scoped media reads, with standalone Deno
+   typechecks and tests, then regenerate the app's database types.
+4. Build navigation, feed, profiles, relationships, composer, comments, activity,
+   moderation controls and all thirteen language bundles.
+5. Reset and test local Supabase; run multi-user REST, concurrency, adversarial
+   authorization and scale tests; drive the iOS simulator against that stack.
+6. Review the full diff, fix findings, run `pnpm check`, capture final simulator
+   screenshots and publish a PR with reviewer-accessible image URLs.
+
+Deploy the additive schema before the edge functions and then the app. There is
+no D1 change in this feature. Released binaries retain every old table, column,
+RPC, recipe share and photo response they already use. Do not deploy a new app
+against a database without the social migration.
+
+Required database cases include cross-user diary snapshot attempts, self-follow,
+duplicate and concurrent follow/like/comment requests, the following cap,
+both-direction block races, blocked direct reads and media, report isolation and
+quarantine, stale review approvals, invalid and partial cursors, tied timestamps,
+cursor deletion, new inserts while paging, followers-only access on unfollow and
+follower removal, source entry deletion, photo replacement/retention, account
+cascades, counter reconciliation and anonymous grants. Run assertions as actual
+authenticated roles, not just as the database owner.
+
+Required app cases include empty/error/loading/offline states, profile opt-in and
+handle collisions, caption/comment boundaries, retries without duplicates, draft
+retention after errors, both feed modes, suggestions/search, profile and graph
+pagination, following and follower removal, likes/comments/activity, reports,
+blocks/unblocks, edit/delete, fresh and historical logged food, recipe navigation,
+keyboard and long-text layout, non-Latin copy, and private-cache behavior across
+account changes. Local UI fixtures contain fictional public identities only.
+The PR distinguishes local mocked moderation from any live model verification;
+neither substitutes for the other.
+
+The local verification entrypoints are:
+
+```sh
+pnpm exec supabase test db --workdir apps
+node apps/supabase/scripts/social-concurrency.mjs
+node apps/supabase/scripts/social-live.mjs
+node apps/supabase/scripts/social-scale.mjs --repeat=21 --save=/tmp/social-scale.json
+```
+
+The concurrency suite uses separate authenticated database sessions and removes
+its exact fixture accounts in `finally`. Scale fixtures contain 110,000 posts,
+15,050 profiles, dense and sparse 5,000-follow graphs, 15,000 followers and
+14,999 likes on one post. They are local-only and roll back. Use
+`--plans=/tmp/social-plans.log` in a separate benchmark run for nested
+`EXPLAIN (ANALYZE, BUFFERS)` output; profiling affects timings. The HTTP suite
+uses real local Auth, PostgREST and edge functions, and `--keep` leaves fictional
+accounts in gitignored `.secrets/social-ui.json` for simulator testing.
+
+Media verification needs an S3 server that enforces `If-Match`. Supabase's local
+S3 endpoint verifies that the header is signed but, in the tested version,
+returns overwritten bytes instead of 412. Do not weaken the overwrite assertion.
+The verified local alternative is MinIO image
+`quay.io/minio/minio@sha256:9966a92a734f9411e32f4f41d7d9d826fcdc0f68c4e20b70295bd4e7c11f8a2f`,
+with `MINIO_SITE_REGION=auto`, a private `meals` bucket, and random local
+credentials kept in `.secrets/`. Point `R2_ENDPOINT` at its reachable LAN port
+and set the matching R2 credentials in the gitignored function `.env`, then
+fully stop/start Supabase so the edge container picks up the values. This is
+local test infrastructure only; production continues to use R2.
+
+On 22 September 2026, all 24 scale scenarios returned their expected page sizes.
+Each case ran once cold and 20 times warm against local Postgres. The following
+are warm database p95 measurements, not network latency or production throughput:
+
+| Read | Warm p95 |
+| --- | ---: |
+| Following, 5,000 active followed authors | 57.6 ms |
+| Following, 5,000 sparse followed authors | 18.3 ms |
+| Following, deep cursor | 46.9 ms |
+| Discover, skipping 100,000 followed posts | 21.0 ms |
+| Suggestions, 64 by 64 graph paths | 5.1 ms |
+| Followers page, 15,000 followers | 4.3 ms |
+
+The original policy-per-candidate plan took 14.5 seconds for dense Following
+and 18.4 seconds for filtered Discover. Private candidate selectors now apply
+the same viewer-specific conditions using indexed joins, then public invoker
+functions hydrate only the resulting page through RLS. Relationship flags use
+single indexed lookups, so a card cannot make PostgreSQL read the entire graph.
+The same approach keeps suggestion traversal bounded before loading profile
+details and counts. Final local verification passed 465 SQL assertions and
+20 concurrent-session assertions, including cleanup. Re-run the benchmark when
+visibility predicates or candidate queries change; these figures describe this
+fixture and machine, not an unlimited capacity guarantee.
+
+### Research behind the decisions
+
+Meta's [description of Instagram suggested
+content](https://engineering.fb.com/2020/12/10/web/how-instagram-suggests-new-content/)
+separates sources chosen by following from discovery candidates. Its
+[Explore architecture](https://engineering.fb.com/2023/08/09/ml-applications/scaling-instagram-explore-recommendations-system/)
+uses staged retrieval instead of ranking the entire corpus on every request.
+Those ideas inform our separate feeds and bounded suggestion pool; this app does
+not reproduce Instagram's models or claim comparable recommendation quality.
+The [TAO graph design](https://engineering.fb.com/2013/06/25/core-infra/tao-the-power-of-the-graph/)
+also motivates indexed forward/inverse edges and range operations rather than
+arbitrary request-time traversal. Sharded SQL counters are our own design to
+reduce [row-lock contention](https://www.postgresql.org/docs/current/explicit-locking.html),
+not a claim about how Instagram implements its counts.
+
+PostgreSQL documents the cost of skipped rows in [LIMIT and
+OFFSET](https://www.postgresql.org/docs/current/queries-limit.html), and
+[multicolumn indexes](https://www.postgresql.org/docs/current/indexes-multicolumn.html)
+explain why the equality key precedes chronological range keys. Supabase's
+[RLS guidance](https://supabase.com/docs/guides/database/postgres/row-level-security)
+covers indexed policy predicates, auth helpers and explicit privileges. These
+support the query and access-control choices; they do not establish this app's
+capacity without measurements.
 
 ---
 
