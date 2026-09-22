@@ -9,7 +9,6 @@ import {
   useSocialTask,
   useSocialTime,
 } from '@/features/social/components'
-import { useThemeColors } from '@/theme/useTheme'
 import { cn, Icon, IconButton, Screen, Tappable, Text } from '@/ui'
 
 function NotificationRow({
@@ -66,7 +65,6 @@ export default function NotificationsScreen() {
   const notifications = useSocialNotifications()
   const action = useSocialTask()
   const online = useSocialOnline()
-  const colors = useThemeColors()
   const unread =
     notifications.data?.pages
       .flatMap((page) => page.rows)
@@ -85,10 +83,11 @@ export default function NotificationsScreen() {
                 size="sm"
                 variant="ghost"
                 accessibilityLabel={t('markRead')}
-                disabled={!online || action.isPending}
+                disabled={!online}
+                loading={action.isPending}
                 onPress={() => action.press({ action: 'read', ids: unread })}
               >
-                <Icon set="ui" name="check" size={22} tintColor={colors.muted} />
+                <Icon set="ui" name="check" size={22} />
               </IconButton>
             ) : undefined
           }

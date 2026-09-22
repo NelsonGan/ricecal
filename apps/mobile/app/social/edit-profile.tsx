@@ -79,7 +79,7 @@ export default function EditProfileScreen() {
     } catch {
       toast.show({ title: t('saveFailed'), tone: 'error' })
     } finally {
-      setPicking(false)
+      if (mounted.current) setPicking(false)
     }
   }
   const save = async () => {

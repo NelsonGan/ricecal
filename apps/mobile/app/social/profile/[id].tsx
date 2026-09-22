@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useAvatarUrl, useUserId } from '@/data'
@@ -15,8 +15,6 @@ import {
   SocialList,
   SocialPhoto,
 } from '@/features/social/components'
-import { useBack } from '@/lib/navigation'
-import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Button, Icon, IconButton, Screen, Sheet, Tappable, Text } from '@/ui'
 
 export default function ProfileScreen() {
@@ -30,8 +28,7 @@ function Profile({ id }: { id: string }) {
   const viewer = useUserId()
   const profile = useSocialProfile(id)
   const posts = useSocialPosts(id)
-  const leaveProfile = useBack('/feed')
-  const colors = useThemeColors()
+  const leaveProfile = useCallback(() => router.dismissTo('/feed'), [router])
   const [options, setOptions] = useState(false)
   const afterDismiss = useRef<(() => void) | null>(null)
   const person = profile.data
@@ -129,7 +126,7 @@ function Profile({ id }: { id: string }) {
         accessibilityLabel={t('options')}
         onPress={() => setOptions(true)}
       >
-        <Icon set="ui" name="more-horizontal" size={22} tintColor={colors.muted} />
+        <Icon set="ui" name="more-horizontal" size={22} />
       </IconButton>
     ) : (
       <ContentSafety kind="profile" id={id} authorId={id} onRemoved={leaveProfile} />

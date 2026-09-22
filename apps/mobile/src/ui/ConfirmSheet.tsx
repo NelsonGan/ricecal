@@ -51,6 +51,10 @@ export function ConfirmSheet({
     try {
       await onConfirm()
       onClose()
+    } catch {
+      // The caller owns error feedback. A refused confirmation stays open, and
+      // consuming the rejection keeps an async press handler from leaking it as
+      // an unhandled promise.
     } finally {
       setPending(false)
     }

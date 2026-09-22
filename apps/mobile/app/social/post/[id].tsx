@@ -42,7 +42,6 @@ function CommentRow({
   const router = useRouter()
   const action = useSocialTask()
   const online = useSocialOnline()
-  const colors = useThemeColors()
   const [panel, setPanel] = useState<'options' | 'delete' | null>(null)
   const afterDismiss = useRef<(() => void) | null>(null)
   const [editing, setEditing] = useState(false)
@@ -52,15 +51,15 @@ function CommentRow({
   const mine = comment.author_id === viewer
   const ownAvatar = useAvatarUrl(mine ? (comment.avatar_path ?? undefined) : undefined)
   const time = useSocialTime(comment.created_at)
+  const openAuthor = () =>
+    router.push({ pathname: '/social/profile/[id]', params: { id: comment.author_id } })
   return (
     <>
       <View className="border-b-2 border-track px-5 py-3">
         <View className="flex-row items-start gap-3">
           <Tappable
             className="h-[44px] w-[44px] items-center justify-center"
-            onPress={() =>
-              router.push({ pathname: '/social/profile/[id]', params: { id: comment.author_id } })
-            }
+            onPress={openAuthor}
             accessibilityRole="button"
             accessibilityLabel={[comment.display_name, `@${comment.handle}`, time]
               .filter(Boolean)
@@ -76,9 +75,18 @@ function CommentRow({
           </Tappable>
           <View className="min-w-0 flex-1 gap-1.5">
             <View className="flex-row flex-wrap items-baseline gap-2">
-              <Text variant="label" numberOfLines={1}>
-                {comment.display_name}
-              </Text>
+              <Tappable
+                hitSlop={10}
+                onPress={openAuthor}
+                accessibilityRole="button"
+                accessibilityLabel={[comment.display_name, `@${comment.handle}`]
+                  .filter(Boolean)
+                  .join(', ')}
+              >
+                <Text variant="label" numberOfLines={1}>
+                  {comment.display_name}
+                </Text>
+              </Tappable>
               {time ? <Text variant="meta">{time}</Text> : null}
             </View>
             {editing ? (
@@ -140,17 +148,19 @@ function CommentRow({
             <IconButton
               size="sm"
               variant="ghost"
-              disabled={!online}
+              disabled={!online || editing}
+              loading={action.isPending}
               accessibilityLabel={t('options')}
               onPress={() => setPanel('options')}
             >
-              <Icon set="ui" name="more-horizontal" size={22} tintColor={colors.muted} />
+              <Icon set="ui" name="more-horizontal" size={22} />
             </IconButton>
           ) : (
             <ContentSafety
               kind="comment"
               id={comment.id}
               authorId={comment.author_id}
+              onBlocked={comment.author_id === owner ? () => router.dismissTo('/feed') : undefined}
               extraAction={
                 owner === viewer
                   ? {
@@ -305,7 +315,8 @@ function Post({ id }: { id: string }) {
                 variant="ghost"
                 size="sm"
                 accessibilityLabel={t('send')}
-                disabled={!online || !canSend || action.isPending}
+                disabled={!online || !canSend}
+                loading={action.isPending}
                 onPress={() => {
                   void send()
                 }}
@@ -330,6 +341,14 @@ function Post({ id }: { id: string }) {
             <View>
               <PostCard post={post.data} detail />
               <View className="gap-3 px-5 py-4">
+                {!own.data && (own.isPending || own.isError) ? (
+                  <QueryNotice
+                    pending={own.isPending}
+                    error={own.isError}
+                    paused={own.fetchStatus === 'paused'}
+                    retry={own.refetch}
+                  />
+                ) : null}
                 {!own.data && !own.isPending && !own.isError ? <JoinPrompt /> : null}
                 {own.data && (own.data.review_status !== 'approved' || own.data.quarantined) ? (
                   <>
