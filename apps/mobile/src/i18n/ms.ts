@@ -61,6 +61,7 @@ export const ms = {
     followersOnly: 'Pengikut',
     everyoneHint: 'Sesiapa yang log masuk boleh melihat siaran ini.',
     followersHint: 'Hanya anda dan pengikut anda boleh melihat siaran ini.',
+    shareInfo: 'Tentang perkongsian',
     shareHint:
       'Hanya makanan ini dan kapsyen anda dikongsi. Memadam rekod diari turut membuang siarannya.',
     post: 'Siaran',
@@ -94,7 +95,8 @@ export const ms = {
     reportTitle: 'Mengapa anda melaporkan ini?',
     spam: 'Spam',
     inappropriate: 'Kandungan tidak sesuai',
-    notifications: 'Aktiviti',
+    notifications: 'Pemberitahuan',
+    unread: 'Belum dibaca',
     markRead: 'Tandakan dibaca',
     notificationFollow: '{{name}} mengikuti anda',
     notificationLike: '{{name}} menyukai siaran anda',

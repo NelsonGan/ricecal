@@ -15,6 +15,7 @@ export default function BlockedScreen() {
       <SocialList
         query={people}
         rowKey={(person) => person.user_id}
+        variant="rows"
         renderRow={(person, visible) => (
           <PersonRow
             person={person}

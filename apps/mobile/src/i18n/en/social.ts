@@ -46,6 +46,7 @@ export const social = {
   followersOnly: 'Followers',
   everyoneHint: 'Anyone signed in can see this post.',
   followersHint: 'Only you and your followers can see this post.',
+  shareInfo: 'About sharing',
   shareHint:
     'Only this food and your caption are shared. Deleting the diary entry also removes its post.',
   post: 'Post',
@@ -79,7 +80,8 @@ export const social = {
   reportTitle: 'Why are you reporting this?',
   spam: 'Spam',
   inappropriate: 'Inappropriate content',
-  notifications: 'Activity',
+  notifications: 'Notifications',
+  unread: 'Unread',
   markRead: 'Mark as read',
   notificationFollow: '{{name}} followed you',
   notificationLike: '{{name}} liked your post',

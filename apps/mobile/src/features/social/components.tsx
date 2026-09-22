@@ -1,6 +1,7 @@
+import { formatDistanceToNowStrict } from 'date-fns'
 import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactElement, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, View, type ViewToken } from 'react-native'
 import { useMealPhotoUrl, useUserId } from '@/data'
@@ -19,14 +20,18 @@ import {
 } from '@/data/social'
 import type { IconRef, ReportReason } from '@/data/types'
 import { useBack } from '@/lib/navigation'
+import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
   Avatar,
+  Badge,
   Button,
   Card,
   ConfirmSheet,
+  cn,
   EmptyState,
   Icon,
+  IconButton,
   Sheet,
   Spinner,
   Tappable,
@@ -34,10 +39,16 @@ import {
   useToast,
 } from '@/ui'
 
-export function SocialBar({ title }: { title: string }) {
+export function SocialBar({ title, action }: { title: string; action?: ReactNode }) {
   const { t } = useTranslation('social')
   const back = useBack('/feed')
-  return <AppBar title={title} onBack={back} backLabel={t('back')} />
+  return <AppBar title={title} onBack={back} backLabel={t('back')} action={action} />
+}
+
+export function socialTime(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return formatDistanceToNowStrict(date, { addSuffix: true })
 }
 
 export function useSocialTask() {
@@ -63,11 +74,13 @@ export function SocialPhoto({
   path,
   visible = true,
   avatar = false,
+  size = 'sm',
   label,
 }: {
   path?: string | null
   visible?: boolean
   avatar?: boolean
+  size?: 'sm' | 'md' | 'lg'
   label: string
 }) {
   const [focused, setFocused] = useState(false)
@@ -88,8 +101,9 @@ export function SocialPhoto({
     return () => clearTimeout(timer)
   }, [photo.data])
   if (!focused || !visible || photo.isError || !photo.data || photo.data.expiresAt <= Date.now()) {
-    return avatar ? <Avatar name={label} size="sm" /> : null
+    return avatar ? <Avatar name={label} size={size} fallback="initial" /> : null
   }
+  const box = { sm: 40, md: 52, lg: 64 }[size]
   return (
     <Image
       source={{ uri: photo.data.url, headers: photo.data.headers }}
@@ -97,7 +111,9 @@ export function SocialPhoto({
       recyclingKey={path ?? undefined}
       contentFit="cover"
       style={
-        avatar ? { width: 44, height: 44, borderRadius: 22 } : { width: '100%', height: '100%' }
+        avatar
+          ? { width: box, height: box, borderRadius: box / 2.8 }
+          : { width: '100%', height: '100%' }
       }
       accessibilityLabel={label}
     />
@@ -110,18 +126,30 @@ export function FoodPreview({
   icon,
   visible = true,
   privateUri,
+  showName = true,
+  compact = false,
+  rounded = true,
 }: {
   name: string
   photo?: string | null
   icon?: IconRef | null
   visible?: boolean
   privateUri?: string
+  showName?: boolean
+  compact?: boolean
+  rounded?: boolean
 }) {
   return (
-    <View className="gap-3">
-      <View className="aspect-square items-center justify-center overflow-hidden rounded-tile bg-pandan-soft">
+    <View className={showName ? 'gap-2' : undefined}>
+      <View
+        className={cn(
+          'items-center justify-center overflow-hidden bg-pandan-soft',
+          compact ? 'aspect-[2/1]' : 'aspect-square',
+          rounded && 'rounded-tile',
+        )}
+      >
         <View className="absolute items-center justify-center">
-          <Icon {...(icon ?? { set: 'food', name: 'cooking-pot' })} size={120} />
+          <Icon {...(icon ?? { set: 'food', name: 'cooking-pot' })} size={compact ? 88 : 120} />
         </View>
         {privateUri ? (
           <Image
@@ -135,7 +163,11 @@ export function FoodPreview({
           <SocialPhoto path={photo} visible={visible} label={name} />
         ) : null}
       </View>
-      <Text variant="subtitle">{name}</Text>
+      {showName ? (
+        <Text variant="bodyStrong" numberOfLines={2}>
+          {name}
+        </Text>
+      ) : null}
     </View>
   )
 }
@@ -143,16 +175,49 @@ export function FoodPreview({
 export function JoinPrompt() {
   const { t } = useTranslation('social')
   const router = useRouter()
+  const colors = useThemeColors()
+  const [details, setDetails] = useState(false)
   return (
-    <Card>
-      <Text variant="subtitle">{t('join')}</Text>
-      <Text>{t('joinBody')}</Text>
-      <Button onPress={() => router.push('/social/edit-profile')}>{t('join')}</Button>
-    </Card>
+    <>
+      <Card>
+        <View className="flex-row items-center gap-2">
+          <Text variant="subtitle" className="min-w-0 flex-1">
+            {t('join')}
+          </Text>
+          <IconButton
+            size="sm"
+            variant="ghost"
+            accessibilityLabel={t('join')}
+            onPress={() => setDetails(true)}
+          >
+            <Icon set="ui" name="info" size={20} tintColor={colors.muted} />
+          </IconButton>
+        </View>
+        <Button size="sm" onPress={() => router.push('/social/edit-profile')}>
+          {t('join')}
+        </Button>
+      </Card>
+      <Sheet
+        visible={details}
+        onClose={() => setDetails(false)}
+        closeLabel={t('cancel')}
+        title={t('join')}
+      >
+        <Text>{t('joinBody')}</Text>
+      </Sheet>
+    </>
   )
 }
 
-export function FollowButton({ id, following }: { id: string; following: boolean }) {
+export function FollowButton({
+  id,
+  following,
+  fullWidth = false,
+}: {
+  id: string
+  following: boolean
+  fullWidth?: boolean
+}) {
   const { t } = useTranslation('social')
   const viewer = useUserId()
   const own = useSocialProfile()
@@ -164,6 +229,7 @@ export function FollowButton({ id, following }: { id: string; following: boolean
     <Button
       size="sm"
       variant={following ? 'neutral' : 'secondary'}
+      fullWidth={fullWidth}
       disabled={!online}
       loading={action.isPending}
       onPress={() => {
@@ -233,27 +299,48 @@ export function ReviewNotice({
   const { t } = useTranslation('social')
   const action = useSocialTask()
   const online = useSocialOnline()
+  const colors = useThemeColors()
+  const [details, setDetails] = useState(false)
   if (status === 'approved') return null
   const explanation =
     reason === 'content_not_allowed' || reason === 'Edit the text or photo, then try again.'
       ? t('rejectedBody')
       : reason || t(status === 'rejected' ? 'rejectedBody' : 'pendingBody')
   return (
-    <View className="gap-2 rounded-md bg-kaya-soft p-3">
-      <Text variant="label">{t(status)}</Text>
-      <Text variant="meta">{explanation}</Text>
-      {status === 'pending' ? (
-        <Button
+    <>
+      <View className="flex-row flex-wrap items-center gap-2 rounded-md bg-kaya-soft px-3 py-2">
+        <Badge tone="kaya" size="sm">
+          {t(status)}
+        </Badge>
+        <IconButton
           size="sm"
-          variant="neutral"
-          disabled={!online}
-          loading={action.isPending}
-          onPress={() => action.press({ action: 'review', kind, id })}
+          variant="ghost"
+          accessibilityLabel={t(status)}
+          onPress={() => setDetails(true)}
         >
-          {t('retryReview')}
-        </Button>
-      ) : null}
-    </View>
+          <Icon set="ui" name="info" size={20} tintColor={colors.muted} />
+        </IconButton>
+        {status === 'pending' ? (
+          <Button
+            size="sm"
+            variant="neutral"
+            disabled={!online}
+            loading={action.isPending}
+            onPress={() => action.press({ action: 'review', kind, id })}
+          >
+            {t('retryReview')}
+          </Button>
+        ) : null}
+      </View>
+      <Sheet
+        visible={details}
+        onClose={() => setDetails(false)}
+        closeLabel={t('cancel')}
+        title={t(status)}
+      >
+        <Text>{explanation}</Text>
+      </Sheet>
+    </>
   )
 }
 
@@ -262,13 +349,17 @@ export function ContentSafety({
   id,
   authorId,
   onRemoved,
+  extraAction,
 }: {
   kind: SocialKind
   id: string
   authorId: string
   onRemoved?: () => void
+  extraAction?: { label: string; onPress: () => void; disabled?: boolean }
 }) {
   const { t } = useTranslation(['social', 'recipes'])
+  const colors = useThemeColors()
+  const [menu, setMenu] = useState(false)
   const [report, setReport] = useState(false)
   const [block, setBlock] = useState(false)
   const action = useSocialTask()
@@ -276,14 +367,60 @@ export function ContentSafety({
   const reasons: ReportReason[] = ['inappropriate', 'spam', 'dangerous', 'stolen']
   return (
     <>
-      <View className="flex-row flex-wrap gap-2">
-        <Button size="sm" variant="ghost" disabled={!online} onPress={() => setReport(true)}>
+      <IconButton
+        size="sm"
+        variant="ghost"
+        disabled={!online}
+        accessibilityLabel={t('social:options')}
+        onPress={() => setMenu(true)}
+      >
+        <Icon set="ui" name="more-horizontal" size={22} tintColor={colors.muted} />
+      </IconButton>
+      <Sheet
+        visible={menu}
+        onClose={() => setMenu(false)}
+        closeLabel={t('social:cancel')}
+        title={t('social:options')}
+      >
+        {extraAction ? (
+          <Button
+            fullWidth
+            variant="ghost"
+            contentClassName="justify-start"
+            disabled={extraAction.disabled}
+            onPress={() => {
+              setMenu(false)
+              extraAction.onPress()
+            }}
+          >
+            {extraAction.label}
+          </Button>
+        ) : null}
+        <Button
+          fullWidth
+          variant="ghost"
+          contentClassName="justify-start"
+          disabled={!online}
+          onPress={() => {
+            setMenu(false)
+            setReport(true)
+          }}
+        >
           {t('social:report')}
         </Button>
-        <Button size="sm" variant="ghost" disabled={!online} onPress={() => setBlock(true)}>
+        <Button
+          fullWidth
+          variant="ghost"
+          contentClassName="justify-start"
+          disabled={!online}
+          onPress={() => {
+            setMenu(false)
+            setBlock(true)
+          }}
+        >
           {t('social:block')}
         </Button>
-      </View>
+      </Sheet>
       <Sheet
         visible={report}
         onClose={() => setReport(false)}
@@ -342,14 +479,32 @@ export function PostCard({
   const action = useSocialTask()
   const online = useSocialOnline()
   const [remove, setRemove] = useState(false)
+  const [options, setOptions] = useState(false)
+  const colors = useThemeColors()
   const mine = post.author_id === viewer
   const ownPhoto = useMealPhotoUrl(
     mine && post.review_status !== 'approved' ? (post.photo_path ?? undefined) : undefined,
   )
   const open = () => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })
+  const time = socialTime(post.published_at ?? post.created_at)
+  const hasPhoto = Boolean(post.photo_path || ownPhoto.data)
+  const toggleLike = () => {
+    if (
+      !post.is_liked &&
+      (ownProfile.data?.review_status !== 'approved' || ownProfile.data.quarantined)
+    ) {
+      router.push(
+        ownProfile.data
+          ? { pathname: '/social/profile/[id]', params: { id: viewer } }
+          : '/social/edit-profile',
+      )
+      return
+    }
+    action.press({ action: 'like', id: post.id, liked: !post.is_liked })
+  }
   return (
-    <Card>
-      <View className="flex-row items-center gap-3">
+    <View className="overflow-hidden border-b-2 border-track bg-surface">
+      <View className="flex-row items-center gap-3 px-5 py-3">
         <Tappable
           className="min-w-0 flex-1 flex-row items-center gap-3"
           onPress={() =>
@@ -362,10 +517,31 @@ export function PostCard({
             <Text variant="label" numberOfLines={1}>
               {post.display_name}
             </Text>
-            <Text variant="meta">@{post.handle}</Text>
+            <Text variant="meta" numberOfLines={1}>
+              {[`@${post.handle}`, time].filter(Boolean).join(' · ')}
+            </Text>
           </View>
         </Tappable>
-        {!mine ? <FollowButton id={post.author_id} following={post.is_following} /> : null}
+        {!mine && !post.is_following ? (
+          <FollowButton id={post.author_id} following={false} />
+        ) : null}
+        {mine ? (
+          <IconButton
+            size="sm"
+            variant="ghost"
+            accessibilityLabel={t('options')}
+            onPress={() => setOptions(true)}
+          >
+            <Icon set="ui" name="more-horizontal" size={22} tintColor={colors.muted} />
+          </IconButton>
+        ) : (
+          <ContentSafety
+            kind="post"
+            id={post.id}
+            authorId={post.author_id}
+            onRemoved={detail ? () => router.replace('/feed') : undefined}
+          />
+        )}
       </View>
       <Tappable
         onPress={detail ? undefined : open}
@@ -378,71 +554,94 @@ export function PostCard({
           icon={toIcon(post.icon_set, post.icon_name)}
           visible={visible}
           privateUri={ownPhoto.data}
+          showName={false}
+          compact={!hasPhoto}
+          rounded={false}
         />
       </Tappable>
-      {post.caption ? <Text>{post.caption}</Text> : null}
-      <Text variant="meta">{t(post.audience === 'followers' ? 'followersOnly' : 'everyone')}</Text>
-      {mine ? (
-        <ReviewNotice
-          status={post.quarantined ? 'quarantined' : post.review_status}
-          reason={post.review_reason}
-          kind="post"
-          id={post.id}
-        />
-      ) : null}
-      <View className="flex-row flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          variant={post.is_liked ? 'secondary' : 'ghost'}
-          disabled={!online || post.review_status !== 'approved'}
-          loading={action.isPending}
-          accessibilityLabel={t(post.is_liked ? 'unlike' : 'like')}
-          onPress={() => {
-            if (
-              !post.is_liked &&
-              (ownProfile.data?.review_status !== 'approved' || ownProfile.data.quarantined)
-            ) {
-              router.push(
-                ownProfile.data
-                  ? { pathname: '/social/profile/[id]', params: { id: viewer } }
-                  : '/social/edit-profile',
-              )
-              return
-            }
-            action.press({ action: 'like', id: post.id, liked: !post.is_liked })
-          }}
-        >
-          {t('likes', { count: post.like_count })}
-        </Button>
-        <Button size="sm" variant="ghost" onPress={detail ? undefined : open} disabled={detail}>
-          {t('comments', { count: post.comment_count })}
-        </Button>
-      </View>
-      {detail ? (
-        mine ? (
-          <View className="flex-row flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="neutral"
-              onPress={() =>
-                router.push({ pathname: '/social/compose', params: { postId: post.id } })
-              }
+      <View className="gap-2 px-5 pb-4 pt-2">
+        <View className="flex-row items-center gap-5">
+          <Tappable
+            className="min-h-sm min-w-[44px] flex-row items-center justify-center gap-1.5"
+            disabled={!online || post.review_status !== 'approved' || action.isPending}
+            accessibilityRole="button"
+            accessibilityLabel={`${t(post.is_liked ? 'unlike' : 'like')}, ${t('likes', { count: post.like_count })}`}
+            accessibilityState={{
+              disabled: !online || post.review_status !== 'approved' || action.isPending,
+              selected: post.is_liked,
+            }}
+            onPress={toggleLike}
+          >
+            <Text
+              className={cn(
+                'text-[27px] leading-[30px]',
+                post.is_liked ? 'text-hibiscus-ink' : 'text-muted',
+              )}
             >
-              {t('editPost')}
-            </Button>
-            <Button size="sm" variant="ghost" disabled={!online} onPress={() => setRemove(true)}>
-              {t('deletePost')}
-            </Button>
+              {post.is_liked ? '♥︎' : '♡'}
+            </Text>
+            <Text variant="meta">{post.like_count}</Text>
+          </Tappable>
+          <Tappable
+            className="min-h-sm min-w-[44px] flex-row items-center justify-center gap-1.5"
+            disabled={detail}
+            accessibilityRole="button"
+            accessibilityLabel={t('comments', { count: post.comment_count })}
+            onPress={detail ? undefined : open}
+          >
+            <Icon set="system" name="chat" size={24} />
+            <Text variant="meta">{post.comment_count}</Text>
+          </Tappable>
+        </View>
+        <Text variant="bodyStrong" numberOfLines={2}>
+          {post.food_name}
+        </Text>
+        {post.caption ? <Text numberOfLines={detail ? undefined : 2}>{post.caption}</Text> : null}
+        {post.audience === 'followers' ? (
+          <View className="flex-row items-center gap-1.5">
+            <Icon set="system" name="lock" size={17} />
+            <Text variant="meta">{t('followersOnly')}</Text>
           </View>
-        ) : (
-          <ContentSafety
+        ) : null}
+        {mine ? (
+          <ReviewNotice
+            status={post.quarantined ? 'quarantined' : post.review_status}
+            reason={post.review_reason}
             kind="post"
             id={post.id}
-            authorId={post.author_id}
-            onRemoved={() => router.replace('/feed')}
           />
-        )
-      ) : null}
+        ) : null}
+      </View>
+      <Sheet
+        visible={options}
+        onClose={() => setOptions(false)}
+        closeLabel={t('cancel')}
+        title={t('options')}
+      >
+        <Button
+          fullWidth
+          variant="ghost"
+          contentClassName="justify-start"
+          onPress={() => {
+            setOptions(false)
+            router.push({ pathname: '/social/compose', params: { postId: post.id } })
+          }}
+        >
+          {t('editPost')}
+        </Button>
+        <Button
+          fullWidth
+          variant="ghost"
+          contentClassName="justify-start"
+          disabled={!online}
+          onPress={() => {
+            setOptions(false)
+            setRemove(true)
+          }}
+        >
+          {t('deletePost')}
+        </Button>
+      </Sheet>
       <ConfirmSheet
         visible={remove}
         onClose={() => setRemove(false)}
@@ -452,10 +651,43 @@ export function PostCard({
         cancelLabel={t('cancel')}
         onConfirm={async () => {
           await action.run({ action: 'deletePost', id: post.id })
-          router.replace('/feed')
+          if (detail) router.replace('/feed')
         }}
       />
-    </Card>
+    </View>
+  )
+}
+
+export function PostTile({ post, visible = true }: { post: SocialPost; visible?: boolean }) {
+  const { t } = useTranslation('social')
+  const viewer = useUserId()
+  const router = useRouter()
+  const mine = post.author_id === viewer
+  const status = post.quarantined ? 'quarantined' : post.review_status
+  const ownPhoto = useMealPhotoUrl(
+    mine && post.review_status !== 'approved' ? (post.photo_path ?? undefined) : undefined,
+  )
+  return (
+    <Tappable
+      className="flex-1 overflow-hidden rounded-md bg-surface p-1"
+      accessibilityLabel={[post.food_name, mine && status !== 'approved' ? t(status) : '']
+        .filter(Boolean)
+        .join(', ')}
+      onPress={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
+    >
+      <FoodPreview
+        name={post.food_name}
+        photo={post.photo_path}
+        icon={toIcon(post.icon_set, post.icon_name)}
+        visible={visible}
+        privateUri={ownPhoto.data}
+      />
+      {mine && status !== 'approved' ? (
+        <Badge className="absolute left-3 top-3" tone="kaya" size="sm">
+          {t(status)}
+        </Badge>
+      ) : null}
+    </Tappable>
   )
 }
 
@@ -476,12 +708,16 @@ export function SocialList<T>({
   renderRow,
   empty,
   header,
+  variant = 'cards',
+  columns = 1,
 }: {
   query: PageQuery<T>
   rowKey: (row: T) => string
   renderRow: (row: T, visible: boolean) => ReactElement
   empty: string
   header?: ReactElement
+  variant?: 'cards' | 'feed' | 'rows' | 'grid'
+  columns?: number
 }) {
   const { t } = useTranslation('social')
   const [visible, setVisible] = useState<Set<string>>(new Set())
@@ -498,16 +734,40 @@ export function SocialList<T>({
   const next = () => {
     if (query.hasNextPage && !query.isFetching) void query.fetchNextPage()
   }
+  const contentContainerStyle =
+    variant === 'feed'
+      ? { paddingBottom: 32 }
+      : variant === 'rows'
+        ? { paddingHorizontal: 20, paddingBottom: 32 }
+        : variant === 'grid'
+          ? { padding: 2, paddingBottom: 32 }
+          : { padding: 20, gap: 16, paddingBottom: 32 }
   return (
     <FlatList
       data={rows}
       keyExtractor={rowKey}
-      renderItem={({ item }) => renderRow(item, visible.has(rowKey(item)))}
+      renderItem={({ item }) => {
+        const row = renderRow(item, visible.has(rowKey(item)))
+        return variant === 'grid' ? (
+          <View style={{ flex: 1 / columns }} className="p-0.5">
+            {row}
+          </View>
+        ) : (
+          row
+        )
+      }}
+      numColumns={columns}
       onViewableItemsChanged={onViewableItemsChanged}
       viewabilityConfig={{ itemVisiblePercentThreshold: 5 }}
-      contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 32 }}
+      contentContainerStyle={contentContainerStyle}
       style={{ flex: 1 }}
       ListHeaderComponent={header}
+      ListHeaderComponentStyle={
+        header ? { marginBottom: variant === 'feed' ? 0 : variant === 'grid' ? 12 : 16 } : undefined
+      }
+      ItemSeparatorComponent={
+        variant === 'rows' ? () => <View className="h-[2px] bg-track" /> : undefined
+      }
       keyboardShouldPersistTaps="handled"
       initialNumToRender={4}
       maxToRenderPerBatch={4}
@@ -539,16 +799,11 @@ export function SocialList<T>({
           >
             {t('retry')}
           </Button>
-        ) : query.hasNextPage ? (
-          <Button variant="ghost" loading={query.isFetchingNextPage} onPress={next}>
-            {t('loadMore')}
-          </Button>
-        ) : rows.length ? (
-          <Text variant="meta" className="text-center">
-            {t('end')}
-          </Text>
+        ) : query.isFetchingNextPage ? (
+          <Spinner />
         ) : null
       }
+      ListFooterComponentStyle={{ padding: 16 }}
     />
   )
 }

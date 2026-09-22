@@ -6,12 +6,14 @@ import { useUserId } from '@/data'
 import { useSocialFeed, useSocialProfile } from '@/data/social'
 import { ScreenTitle } from '@/features/shared'
 import { JoinPrompt, PostCard, SocialList } from '@/features/social/components'
-import { Button, Screen, SegmentedControl, Text } from '@/ui'
+import { useThemeColors } from '@/theme/useTheme'
+import { Icon, IconButton, Screen, Tabs } from '@/ui'
 
 export default function FeedScreen() {
   const { t } = useTranslation('social')
   const router = useRouter()
   const viewer = useUserId()
+  const colors = useThemeColors()
   const [mode, setMode] = useState<'following' | 'discover'>('following')
   const feed = useSocialFeed(mode)
   const own = useSocialProfile()
@@ -20,27 +22,44 @@ export default function FeedScreen() {
       scroll={false}
       flush
       header={
-        <View className="gap-3 pb-3">
-          <ScreenTitle title={t('feed')} />
-          <View className="flex-row flex-wrap gap-2">
-            <Button size="sm" variant="neutral" onPress={() => router.push('/social/people')}>
-              {t('people')}
-            </Button>
-            <Button size="sm" variant="ghost" onPress={() => router.push('/social/notifications')}>
-              {t('notifications')}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onPress={() =>
-                router.push({ pathname: '/social/profile/[id]', params: { id: viewer } })
-              }
-            >
-              {t('myProfile')}
-            </Button>
-          </View>
-          <SegmentedControl
+        <View className="gap-1">
+          <ScreenTitle
+            title={t('feed')}
+            trailing={
+              <View className="flex-row items-center">
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  accessibilityLabel={t('people')}
+                  onPress={() => router.push('/social/people')}
+                >
+                  <Icon set="ui" name="search" size={21} tintColor={colors.muted} />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  accessibilityLabel={t('notifications')}
+                  onPress={() => router.push('/social/notifications')}
+                >
+                  <Icon set="ui" name="notification" size={22} tintColor={colors.muted} />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  accessibilityLabel={t('myProfile')}
+                  onPress={() =>
+                    router.push({ pathname: '/social/profile/[id]', params: { id: viewer } })
+                  }
+                >
+                  <Icon set="ui" name="profile" size={22} tintColor={colors.muted} />
+                </IconButton>
+              </View>
+            }
+          />
+          <Tabs
             value={mode}
+            align="center"
+            accessibilityLabel={t('feed')}
             options={[
               { value: 'following', label: t('following') },
               { value: 'discover', label: t('discover') },
@@ -53,14 +72,15 @@ export default function FeedScreen() {
       <SocialList
         key={mode}
         query={feed}
+        variant="feed"
         rowKey={(post) => post.id}
         renderRow={(post, visible) => <PostCard post={post} visible={visible} />}
-        empty={t(mode === 'following' ? 'emptyFeed' : 'emptyDiscover')}
+        empty={t(mode === 'following' ? 'emptyFollowing' : 'emptyDiscover')}
         header={
           !own.isPending && !own.isError && !own.data ? (
-            <JoinPrompt />
-          ) : mode === 'following' && !feed.data?.pages[0]?.rows.length ? (
-            <Text variant="meta">{t('emptyFollowing')}</Text>
+            <View className="m-5">
+              <JoinPrompt />
+            </View>
           ) : undefined
         }
       />

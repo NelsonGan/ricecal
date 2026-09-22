@@ -6,20 +6,16 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { uploadAvatar, useUserId } from '@/data'
 import { useSocialOnline, useSocialProfile } from '@/data/social'
-import {
-  QueryNotice,
-  ReviewNotice,
-  SocialBar,
-  SocialPhoto,
-  useSocialTask,
-} from '@/features/social/components'
-import { Button, Screen, Text, TextField, useToast } from '@/ui'
+import { QueryNotice, ReviewNotice, SocialPhoto, useSocialTask } from '@/features/social/components'
+import { useBack } from '@/lib/navigation'
+import { AppBar, Button, Icon, IconButton, Screen, Sheet, Text, TextField, useToast } from '@/ui'
 
 export default function EditProfileScreen() {
-  const { t } = useTranslation('social')
+  const { t } = useTranslation(['social', 'common'])
   const viewer = useUserId()
   const profile = useSocialProfile()
   const router = useRouter()
+  const back = useBack('/feed')
   const action = useSocialTask()
   const online = useSocialOnline()
   const toast = useToast()
@@ -31,6 +27,7 @@ export default function EditProfileScreen() {
   const [picking, setPicking] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [handleTaken, setHandleTaken] = useState(false)
+  const [info, setInfo] = useState<'join' | 'handle' | null>(null)
   const initialized = useRef(false)
   useEffect(() => {
     if (initialized.current || profile.isPending || profile.isError) return
@@ -76,19 +73,28 @@ export default function EditProfileScreen() {
         setHandleTaken(true)
     }
   }
+  const saveDisabled = !online || picking || profile.isPending || profile.isError
   return (
     <Screen
-      header={<SocialBar title={t(profile.data ? 'editProfile' : 'join')} />}
-      footer={
-        <Button
-          disabled={!online || picking || profile.isPending || profile.isError}
-          loading={action.isPending}
-          onPress={() => {
-            void save()
-          }}
-        >
-          {t('save')}
-        </Button>
+      header={
+        <AppBar
+          title={t(profile.data ? 'editProfile' : 'join')}
+          onBack={back}
+          backLabel={t('back')}
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={saveDisabled}
+              loading={action.isPending}
+              onPress={() => {
+                void save()
+              }}
+            >
+              {t('save')}
+            </Button>
+          }
+        />
       }
     >
       {profile.isPending || profile.isError ? (
@@ -100,7 +106,6 @@ export default function EditProfileScreen() {
         />
       ) : (
         <>
-          <Text>{t('joinBody')}</Text>
           {profile.data ? (
             <ReviewNotice
               status={profile.data.quarantined ? 'quarantined' : profile.data.review_status}
@@ -109,43 +114,65 @@ export default function EditProfileScreen() {
               id={viewer}
             />
           ) : null}
-          <View className="flex-row items-center gap-3">
+          <View className="flex-row items-start gap-3">
             {localAvatar ? (
               <Image
                 source={{ uri: localAvatar }}
-                style={{ width: 64, height: 64, borderRadius: 32 }}
+                style={{ width: 40, height: 40, borderRadius: 14 }}
                 cachePolicy="none"
+                accessibilityLabel={name || t('unknownPerson')}
               />
             ) : (
               <SocialPhoto path={avatar} avatar label={name || t('unknownPerson')} />
             )}
-            <Button
-              size="sm"
-              variant="neutral"
-              loading={picking}
-              disabled={!online}
-              onPress={() => {
-                void choosePhoto()
-              }}
-            >
-              {t('avatar')}
-            </Button>
+            <View className="min-w-0 flex-1 gap-1">
+              <Button
+                size="sm"
+                variant="neutral"
+                loading={picking}
+                disabled={!online}
+                onPress={() => {
+                  void choosePhoto()
+                }}
+              >
+                {t('avatar')}
+              </Button>
+              {avatar ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => {
+                    setAvatar(null)
+                    setLocalAvatar(null)
+                  }}
+                >
+                  {t('removeAvatar')}
+                </Button>
+              ) : null}
+            </View>
+            {!profile.data ? (
+              <IconButton
+                variant="ghost"
+                size="sm"
+                accessibilityLabel={t('join')}
+                onPress={() => setInfo('join')}
+              >
+                <Icon set="ui" name="info" size={22} />
+              </IconButton>
+            ) : null}
           </View>
-          {avatar ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onPress={() => {
-                setAvatar(null)
-                setLocalAvatar(null)
-              }}
-            >
-              {t('removeAvatar')}
-            </Button>
-          ) : null}
           <TextField
             label={t('handle')}
-            hint={t('handleHint')}
+            labelAction={
+              <IconButton
+                variant="ghost"
+                size="xs"
+                accessibilityLabel={t('handleHint')}
+                onPress={() => setInfo('handle')}
+              >
+                <Icon set="ui" name="info" size={18} />
+              </IconButton>
+            }
             value={handle}
             onChangeText={(value) => {
               setHandle(value.toLowerCase())
@@ -177,8 +204,18 @@ export default function EditProfileScreen() {
             multiline
             inputClassName="min-h-[100px] py-3"
           />
-          <Text variant="meta">{t('characterCount', { count: bio.length, limit: 160 })}</Text>
+          {bio.length >= 130 ? (
+            <Text variant="meta">{t('characterCount', { count: bio.length, limit: 160 })}</Text>
+          ) : null}
           {!online ? <Text variant="meta">{t('offline')}</Text> : null}
+          <Sheet
+            visible={info !== null}
+            onClose={() => setInfo(null)}
+            title={t(info === 'handle' ? 'handle' : 'join')}
+            closeLabel={t('common:action.close')}
+          >
+            <Text>{t(info === 'handle' ? 'handleHint' : 'joinBody')}</Text>
+          </Sheet>
         </>
       )}
     </Screen>

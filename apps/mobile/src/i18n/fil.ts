@@ -62,6 +62,7 @@ export const fil = {
     followersOnly: 'Mga tagasunod',
     everyoneHint: 'Makikita ito ng sinumang naka-sign in.',
     followersHint: 'Ikaw at ang mga tagasunod mo lang ang makakakita nito.',
+    shareInfo: 'Tungkol sa pagbabahagi',
     shareHint:
       'Pagkain at caption lang ang ibabahagi. Kapag binura ang tala sa talaarawan, mabubura rin ang post.',
     post: 'Post',
@@ -95,7 +96,8 @@ export const fil = {
     reportTitle: 'Bakit mo ito iniuulat?',
     spam: 'Spam',
     inappropriate: 'Hindi angkop na nilalaman',
-    notifications: 'Aktibidad',
+    notifications: 'Mga notification',
+    unread: 'Hindi pa nababasa',
     markRead: 'Markahang nabasa',
     notificationFollow: 'Sinundan ka ni {{name}}',
     notificationLike: 'Nagustuhan ni {{name}} ang post mo',
