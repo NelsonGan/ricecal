@@ -1239,7 +1239,7 @@ export const ja = {
       included: '含まれるもの',
       cancel: 'サブスクリプションを解約',
       cancelTitle: 'サブスクリプションを解約しますか',
-      cancelBody: '期間の終わりまでは Pro のままです。どちらにしても記録は読めます。',
+      cancelBody: '表示されるストアのページで解約してください。期間の終わりまでは Pro のままです。',
       cancelConfirm: 'プランを解約',
       switchMonthly: '月額に切り替え',
       switchYearly: '年額に切り替え',

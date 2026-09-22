@@ -1228,7 +1228,7 @@ export const zhHans = {
       included: '包含',
       cancel: '取消订阅',
       cancelTitle: '取消你的订阅？',
-      cancelBody: '你在这一期结束前都还是 Pro。不管怎样，你的记录都能继续看。',
+      cancelBody: '在打开的商店页面取消。这一期结束前你都还是 Pro。',
       cancelConfirm: '取消方案',
       switchMonthly: '换成按月',
       switchYearly: '换成按年',
