@@ -2729,9 +2729,10 @@ functions hydrate only the resulting page through RLS. Relationship flags use
 single indexed lookups, so a card cannot make PostgreSQL read the entire graph.
 The same approach keeps suggestion traversal bounded before loading profile
 details and counts. Final local verification passed 482 SQL assertions and
-21 concurrent-session assertions, including cleanup. Re-run the benchmark when
-visibility predicates or candidate queries change; these figures describe this
-fixture and machine, not an unlimited capacity guarantee.
+21 concurrent-session behavior assertions, followed by cleanup verification.
+Re-run the benchmark when visibility predicates or candidate queries change;
+these figures describe this fixture and machine, not an unlimited capacity
+guarantee.
 
 ### Research behind the decisions
 
