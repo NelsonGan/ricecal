@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
+import { ActivityIndicator, View } from 'react-native'
 
 import { radius, slab } from '@/theme/tokens'
+import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Squish, type SquishProps } from './Squish'
 
@@ -53,6 +55,8 @@ export type IconButtonProps = Omit<
   contentClassName?: string
   /** Required: an icon-only control has no visible label to read out. */
   accessibilityLabel: string
+  /** Keeps the square stable while replacing its icon with progress. */
+  loading?: boolean
 }
 
 /**
@@ -68,12 +72,17 @@ export function IconButton({
   variant = 'neutral',
   size = 'md',
   disabled,
+  loading = false,
+  onPress,
+  accessibilityState,
   className,
   contentClassName,
   ...rest
 }: IconButtonProps) {
   const tone = tones[variant]
   const metrics = sizes[size]
+  const colors = useThemeColors()
+  const inert = Boolean(disabled || loading)
 
   return (
     <Squish
@@ -87,12 +96,18 @@ export function IconButton({
         disabled ? 'bg-disabled' : tone.surface,
         contentClassName,
       )}
-      disabled={disabled}
+      disabled={inert}
+      onPress={loading ? undefined : onPress}
       accessibilityRole="button"
-      accessibilityState={{ disabled: Boolean(disabled) }}
+      accessibilityState={{ ...accessibilityState, disabled: inert, busy: loading }}
       {...rest}
     >
-      {children}
+      <View className={loading ? 'opacity-0' : undefined}>{children}</View>
+      {loading ? (
+        <View className="absolute inset-0 items-center justify-center">
+          <ActivityIndicator size="small" color={colors.pandanInk} />
+        </View>
+      ) : null}
     </Squish>
   )
 }

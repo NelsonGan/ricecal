@@ -16,6 +16,7 @@ export default function PeopleScreen() {
     ...suggestions,
     data: suggestions.data ? { pages: [{ rows: suggestions.data, next: null }] } : undefined,
     isFetchingNextPage: false,
+    isFetchNextPageError: false,
     hasNextPage: false,
     fetchNextPage: async () => undefined,
   }

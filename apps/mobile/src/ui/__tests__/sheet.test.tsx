@@ -1,8 +1,8 @@
-import { Text } from 'react-native'
+import { Platform, Text } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { render, screen, userEvent, waitFor } from '../../test-utils'
-import { SheetSurface } from '../Sheet'
+import { Sheet, SheetSurface } from '../Sheet'
 
 /**
  * A sheet closes ONCE, however many times it is asked to.
@@ -59,4 +59,28 @@ it('keeps a pending sheet visible and lets it close after the request finishes',
   await view.rerender(panel(true))
   await user.press(screen.getByLabelText('Close'))
   await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
+})
+
+it('hands work off only after an Android modal closes', async () => {
+  const originalPlatform = Platform.OS
+  Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' })
+  const onDismiss = jest.fn()
+  const panel = (visible: boolean) => (
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <Sheet visible={visible} onClose={jest.fn()} onDismiss={onDismiss} closeLabel="Close">
+        <Text>Modal body</Text>
+      </Sheet>
+    </SafeAreaProvider>
+  )
+
+  try {
+    const view = await render(panel(false))
+    expect(onDismiss).not.toHaveBeenCalled()
+    await view.rerender(panel(true))
+    expect(onDismiss).not.toHaveBeenCalled()
+    await view.rerender(panel(false))
+    await waitFor(() => expect(onDismiss).toHaveBeenCalledTimes(1))
+  } finally {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform })
+  }
 })

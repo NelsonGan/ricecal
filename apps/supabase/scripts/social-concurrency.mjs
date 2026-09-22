@@ -219,6 +219,10 @@ try {
     'concurrent report retries count as one reporter',
   )
   await assertSql(
+    `(select used from public.social_rate_limits where user_id = ${quote(carol)} and action = 'report') = 1`,
+    'concurrent report retries consume one rate-limit claim',
+  )
+  await assertSql(
     `(select quarantined from public.social_posts where id = ${quote(post)}) = false`,
     'one concurrent reporter cannot quarantine a post',
   )

@@ -1,8 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useUserId } from '@/data'
+import { useAvatarUrl, useUserId } from '@/data'
 import { useSocialPosts, useSocialProfile } from '@/data/social'
 import {
   ContentSafety,
@@ -15,6 +15,7 @@ import {
   SocialList,
   SocialPhoto,
 } from '@/features/social/components'
+import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Button, Icon, IconButton, Screen, Sheet, Tappable, Text } from '@/ui'
 
@@ -29,14 +30,23 @@ function Profile({ id }: { id: string }) {
   const viewer = useUserId()
   const profile = useSocialProfile(id)
   const posts = useSocialPosts(id)
+  const leaveProfile = useBack('/feed')
   const colors = useThemeColors()
   const [options, setOptions] = useState(false)
+  const afterDismiss = useRef<(() => void) | null>(null)
   const person = profile.data
   const mine = id === viewer
+  const ownAvatar = useAvatarUrl(mine ? (person?.avatar_path ?? undefined) : undefined)
   const header = person ? (
     <View className="gap-4 border-b-2 border-track bg-surface px-5 pb-5 pt-2">
       <View className="flex-row items-center gap-4">
-        <SocialPhoto path={person.avatar_path} avatar size="lg" label={person.display_name} />
+        <SocialPhoto
+          path={mine ? null : person.avatar_path}
+          privateUri={ownAvatar.data}
+          avatar
+          size="lg"
+          label={person.display_name}
+        />
         <View className="min-w-0 flex-1 gap-1">
           <Text variant="subtitle" numberOfLines={1}>
             {person.display_name}
@@ -122,12 +132,7 @@ function Profile({ id }: { id: string }) {
         <Icon set="ui" name="more-horizontal" size={22} tintColor={colors.muted} />
       </IconButton>
     ) : (
-      <ContentSafety
-        kind="profile"
-        id={id}
-        authorId={id}
-        onRemoved={() => router.replace('/feed')}
-      />
+      <ContentSafety kind="profile" id={id} authorId={id} onRemoved={leaveProfile} />
     )
   ) : undefined
   return (
@@ -150,7 +155,12 @@ function Profile({ id }: { id: string }) {
         ) : (
           <View className="p-5">
             {mine && !profile.isPending && !profile.isError && !profile.data ? (
-              <JoinPrompt />
+              <View className="gap-3">
+                <JoinPrompt />
+                <Button variant="neutral" onPress={() => router.push('/social/blocked')}>
+                  {t('blocked')}
+                </Button>
+              </View>
             ) : (
               <QueryNotice
                 pending={profile.isPending}
@@ -166,6 +176,11 @@ function Profile({ id }: { id: string }) {
       <Sheet
         visible={options}
         onClose={() => setOptions(false)}
+        onDismiss={() => {
+          const next = afterDismiss.current
+          afterDismiss.current = null
+          next?.()
+        }}
         closeLabel={t('cancel')}
         title={t('options')}
       >
@@ -174,8 +189,8 @@ function Profile({ id }: { id: string }) {
           variant="ghost"
           contentClassName="justify-start"
           onPress={() => {
+            afterDismiss.current = () => router.push('/social/blocked')
             setOptions(false)
-            router.push('/social/blocked')
           }}
         >
           {t('blocked')}

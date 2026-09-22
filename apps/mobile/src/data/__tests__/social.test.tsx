@@ -15,9 +15,11 @@ import {
 
 const mockRpc = jest.fn()
 const mockInvoke = jest.fn()
+const mockFrom = jest.fn()
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: (...args: unknown[]) => mockRpc(...args),
+    from: (...args: unknown[]) => mockFrom(...args),
     functions: { invoke: (...args: unknown[]) => mockInvoke(...args) },
   },
 }))
@@ -43,6 +45,13 @@ beforeEach(() => {
   jest.clearAllMocks()
   onlineManager.setOnline(true)
   mockInvoke.mockResolvedValue({ data: { ok: true, status: 'approved' }, error: null })
+  mockFrom.mockReturnValue({
+    delete: () => ({
+      eq: () => ({
+        eq: () => Promise.resolve({ error: null }),
+      }),
+    }),
+  })
 })
 
 it('keeps the sentinel for the next page and ends on an exactly full final page', () => {
@@ -151,6 +160,138 @@ it('refuses offline actions immediately without queueing them', async () => {
   expect(mockRpc).not.toHaveBeenCalled()
   expect(result.current.isPaused).toBe(false)
   onlineManager.setOnline(true)
+  await unmount()
+  client.clear()
+})
+
+it.each([
+  {
+    name: 'like',
+    action: { action: 'like', id: 'post', liked: true } as const,
+    invalidated: ['social_feed', 'social_profile_posts', 'social_post'],
+    preserved: ['social_notifications', 'unread', 'social_profile'],
+  },
+  {
+    name: 'read',
+    action: { action: 'read', ids: ['notification'] as string[] } as const,
+    invalidated: ['social_notifications', 'unread'],
+    preserved: ['social_feed', 'social_profile_posts', 'social_post'],
+  },
+  {
+    name: 'follow',
+    action: { action: 'follow', id: 'author', following: true } as const,
+    invalidated: [
+      'social_feed',
+      'social_profile',
+      'social_profile_posts',
+      'social_post',
+      'social_connections',
+      'social_suggestions',
+      'social_search_profiles',
+    ],
+    preserved: ['social_notifications', 'unread'],
+  },
+  {
+    name: 'remove follower',
+    action: { action: 'removeFollower', id: 'follower' } as const,
+    invalidated: [
+      'social_feed',
+      'social_profile',
+      'social_connections',
+      'social_suggestions',
+      'social_search_profiles',
+      'social_notifications',
+      'unread',
+    ],
+    preserved: ['social_profile_posts', 'social_post'],
+  },
+  {
+    name: 'unblock',
+    action: { action: 'unblock', id: 'author' } as const,
+    invalidated: [
+      'social_feed',
+      'social_profile',
+      'social_profile_posts',
+      'social_post',
+      'social_comments',
+      'social_connections',
+      'social_suggestions',
+      'social_search_profiles',
+      'social_blocked_profiles',
+      'social_notifications',
+      'unread',
+    ],
+    preserved: [],
+  },
+])(
+  'invalidates only the intended social reads after $name',
+  async ({ action, invalidated, preserved }) => {
+    mockRpc.mockImplementation(() => response(null))
+    const { client, wrapper } = setup()
+    const socialKeys = Object.fromEntries(
+      [...invalidated, ...preserved].map((name) => [name, keys.socialRead('viewer', name)]),
+    )
+    const photoKey = keys.socialRead('viewer', 'photo', { path: 'reviewed/photo.jpg' })
+    const diaryKey = keys.day('viewer', '2026-09-22')
+    for (const key of [...Object.values(socialKeys), photoKey, diaryKey]) {
+      client.setQueryData(key, { fixture: true })
+    }
+
+    const { result, unmount } = await renderHook(useSocialAction, { wrapper })
+    await act(async () => {
+      await result.current.mutateAsync(action)
+    })
+
+    for (const name of invalidated) {
+      expect(client.getQueryState(socialKeys[name])?.isInvalidated).toBe(true)
+    }
+    for (const name of preserved) {
+      expect(client.getQueryState(socialKeys[name])?.isInvalidated).toBe(false)
+    }
+    expect(client.getQueryState(photoKey)?.isInvalidated).toBe(false)
+    expect(client.getQueryState(diaryKey)?.isInvalidated).toBe(false)
+    await unmount()
+    client.clear()
+  },
+)
+
+it('keeps loaded pages and retries the same cursor after the next page fails', async () => {
+  let nextAttempts = 0
+  mockRpc.mockImplementation((_name, params) => {
+    if (!params.p_before_id) return response(rows(0))
+    nextAttempts += 1
+    if (nextAttempts <= 2) return response(null, new Error('page unavailable'))
+    return response(rows(Number(params.p_before_id) + 1))
+  })
+  const { client, wrapper } = setup()
+  const { result, unmount } = await renderHook(() => useSocialFeed('following'), { wrapper })
+  await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+  await act(async () => {
+    await result.current.fetchNextPage()
+  })
+  await waitFor(() => expect(result.current.isFetchNextPageError).toBe(true))
+  expect(result.current.data?.pages).toHaveLength(1)
+  expect(result.current.data?.pages[0].rows.map((row) => row.id)).toEqual(
+    rows(0, 20).map((row) => row.id),
+  )
+
+  await act(async () => {
+    await result.current.fetchNextPage()
+  })
+  await waitFor(() => expect(result.current.data?.pages).toHaveLength(2))
+  expect(result.current.data?.pages[0].rows[0].id).toBe('0')
+  expect(result.current.data?.pages[1].rows[0].id).toBe('20')
+  expect(
+    mockRpc.mock.calls.slice(1).map(([, params]) => ({
+      at: params.p_before_at,
+      id: params.p_before_id,
+    })),
+  ).toEqual([
+    { at: '2026-09-22T12:00:00Z', id: '19' },
+    { at: '2026-09-22T12:00:00Z', id: '19' },
+    { at: '2026-09-22T12:00:00Z', id: '19' },
+  ])
   await unmount()
   client.clear()
 })

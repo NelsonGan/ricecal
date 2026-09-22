@@ -100,12 +100,18 @@ create index social_comments_author_idx on public.social_comments(author_id);
 create table public.social_reports (
   kind public.social_content_kind not null,
   content_id uuid not null,
+  content_revision integer not null check (content_revision > 0),
   reporter_id uuid not null references auth.users(id) on delete cascade,
   reason public.report_reason not null,
   created_at timestamptz not null default now(),
-  primary key (kind, content_id, reporter_id)
+  resolved_at timestamptz,
+  primary key (kind, content_id, content_revision, reporter_id)
 );
-create index social_reports_reporter_idx on public.social_reports(reporter_id, kind, content_id);
+-- Resolution closes a counting cycle without deleting its audit rows. Every
+-- row still hides that target from its reporter, including after resolution.
+create index social_reports_reporter_idx on public.social_reports(reporter_id, kind, content_id, content_revision);
+create index social_reports_unresolved_idx on public.social_reports(kind, content_id, content_revision)
+  where resolved_at is null;
 
 -- At most 32 lazily created rows per counter. Popular accounts and posts do
 -- not make every writer contend on the same counter row.
@@ -435,8 +441,6 @@ begin
       insert into public.social_notifications(recipient_id, actor_id, kind, post_id, comment_id)
       values (v_owner, v_row.author_id, 'comment', v_row.post_id, v_row.id) on conflict do nothing;
     end if;
-  else
-    delete from public.social_notifications where comment_id = v_row.id;
   end if;
   if tg_op = 'DELETE' then delete from public.social_reports where kind = 'comment' and content_id = old.id; end if;
   return null;
@@ -625,24 +629,42 @@ $$;
 
 create or replace function public.report_social_content(p_kind public.social_content_kind, p_id uuid, p_reason public.report_reason)
 returns void language plpgsql security definer set search_path = '' as $$
-declare v_user uuid := private.social_require_user(false); v_author uuid;
+declare
+  v_user uuid := private.social_require_user(false);
+  v_author uuid;
+  v_revision integer;
+  v_visible boolean;
 begin
-  if exists (select 1 from public.social_reports where kind = p_kind and content_id = p_id and reporter_id = v_user) then return; end if;
+  if p_kind is null or p_id is null then raise exception 'Invalid report' using errcode = '22023'; end if;
+  if exists (select 1 from public.social_reports
+      where kind = p_kind and content_id = p_id and reporter_id = v_user) then return; end if;
+  perform pg_advisory_xact_lock(hashtextextended('social-report:' || p_kind::text || ':' || p_id::text, 0));
+  if exists (select 1 from public.social_reports
+      where kind = p_kind and content_id = p_id and reporter_id = v_user) then return; end if;
   case p_kind
-    when 'profile' then select user_id into v_author from public.social_profiles where user_id = p_id and private.social_can_view_profile(user_id);
-    when 'post' then select author_id into v_author from public.social_posts where id = p_id and private.social_can_view_post(id);
-    when 'comment' then select author_id into v_author from public.social_comments where id = p_id and private.social_can_view_comment(id);
+    when 'profile' then select p.user_id, p.revision, private.social_can_view_profile(p.user_id)
+      into v_author, v_revision, v_visible from public.social_profiles p where p.user_id = p_id for update;
+    when 'post' then select p.author_id, p.revision, private.social_can_view_post(p.id)
+      into v_author, v_revision, v_visible from public.social_posts p where p.id = p_id for update;
+    when 'comment' then select c.author_id, c.revision, private.social_can_view_comment(c.id)
+      into v_author, v_revision, v_visible from public.social_comments c where c.id = p_id for update;
     else raise exception 'Invalid report' using errcode = '22023';
   end case;
   if v_author is null or v_author = v_user then raise exception 'Content unavailable' using errcode = '42501'; end if;
+  if not v_visible then raise exception 'Content unavailable' using errcode = '42501'; end if;
   if not private.social_claim(v_user, 'report', 30) then raise exception 'Try again later' using errcode = 'P0001'; end if;
-  perform pg_advisory_xact_lock(hashtextextended('social-report:' || p_kind::text || ':' || p_id::text, 0));
-  insert into public.social_reports(kind, content_id, reporter_id, reason) values (p_kind, p_id, v_user, p_reason) on conflict do nothing;
-  if (select count(*) from (select 1 from public.social_reports where kind = p_kind and content_id = p_id limit 3) reports) >= 3 then
+  insert into public.social_reports(kind, content_id, content_revision, reporter_id, reason)
+  values (p_kind, p_id, v_revision, v_user, p_reason) on conflict do nothing;
+  if (select count(*) from (select 1 from public.social_reports
+      where kind = p_kind and content_id = p_id and content_revision = v_revision
+        and resolved_at is null limit 3) reports) >= 3 then
     case p_kind
-      when 'profile' then update public.social_profiles set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now() where user_id = p_id and not quarantined;
-      when 'post' then update public.social_posts set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now() where id = p_id and not quarantined;
-      when 'comment' then update public.social_comments set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now() where id = p_id and not quarantined;
+      when 'profile' then update public.social_profiles set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now()
+        where user_id = p_id and revision = v_revision and not quarantined;
+      when 'post' then update public.social_posts set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now()
+        where id = p_id and revision = v_revision and not quarantined;
+      when 'comment' then update public.social_comments set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now()
+        where id = p_id and revision = v_revision and not quarantined;
     end case;
   end if;
 end;
@@ -693,6 +715,7 @@ returns boolean language plpgsql security definer set search_path = '' as $$
 declare v_count integer; v_has_photo boolean := false;
 begin
   if p_revision is null then raise exception 'The reviewed revision is required' using errcode = '22023'; end if;
+  perform pg_advisory_xact_lock(hashtextextended('social-report:' || p_kind::text || ':' || p_id::text, 0));
   if p_kind = 'profile' then select avatar_path is not null into v_has_photo from public.social_profiles where user_id = p_id;
   elsif p_kind = 'post' then select photo_path is not null into v_has_photo from public.social_posts where id = p_id; end if;
   if p_status = 'approved' and v_has_photo and (p_photo_etag is null or char_length(p_photo_etag) not between 1 and 128 or p_photo_etag !~ '^"[a-zA-Z0-9-]+"$' ) then
@@ -709,6 +732,10 @@ begin
     else raise exception 'Invalid content kind' using errcode = '22023';
   end case;
   get diagnostics v_count = row_count;
+  if v_count = 1 then
+    update public.social_reports set resolved_at = pg_catalog.clock_timestamp()
+    where kind = p_kind and content_id = p_id and resolved_at is null;
+  end if;
   return v_count = 1;
 end;
 $$;
