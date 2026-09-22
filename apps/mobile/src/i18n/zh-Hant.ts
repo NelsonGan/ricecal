@@ -1227,7 +1227,7 @@ export const zhHant = {
       included: '包含',
       cancel: '取消訂閱',
       cancelTitle: '取消你的訂閱？',
-      cancelBody: '你在這一期結束前都還是 Pro。不管怎樣，你的紀錄都還看得到。',
+      cancelBody: '在開啟的商店頁面取消。這一期結束前你都還是 Pro。',
       cancelConfirm: '取消方案',
       switchMonthly: '換成月繳',
       switchYearly: '換成年繳',
