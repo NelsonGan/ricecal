@@ -86,6 +86,8 @@ export type SocialCursor = { at: string; id: string } | { handle: string } | nul
 export type SocialPage<T> = { rows: T[]; next: SocialCursor }
 const PAGE_SIZE = 20
 const MEMORY_OPTIONS = { gcTime: 60_000, staleTime: 15_000, retry: 1 } as const
+const subscribeOnline = (listener: () => void) => onlineManager.subscribe(listener)
+const onlineSnapshot = () => onlineManager.isOnline()
 
 // The backend RPCs return a sentinel row. It is never drawn or used as a cursor,
 // because the next request must include that row rather than skip it.
@@ -135,9 +137,7 @@ type ListRequest = {
 }[ListName]
 
 export function useSocialOnline() {
-  return useSyncExternalStore(onlineManager.subscribe.bind(onlineManager), () =>
-    onlineManager.isOnline(),
-  )
+  return useSyncExternalStore(subscribeOnline, onlineSnapshot, onlineSnapshot)
 }
 
 function useSocialPages<T>(request: ListRequest, cursor: (row: T) => SocialCursor, enabled = true) {
@@ -241,6 +241,16 @@ export function useSocialSuggestions() {
     ...MEMORY_OPTIONS,
   })
 }
+export function useSocialUnread() {
+  const viewer = useUserId()
+  return useQuery({
+    queryKey: keys.socialRead(viewer, 'unread'),
+    queryFn: async ({ signal }) =>
+      await rpc('social_has_unread_notifications', undefined as never, signal),
+    refetchInterval: 60_000,
+    ...MEMORY_OPTIONS,
+  })
+}
 export function useSocialEntry(entryId: string) {
   const viewer = useUserId()
   return useQuery({
@@ -248,23 +258,21 @@ export function useSocialEntry(entryId: string) {
     enabled: Boolean(entryId),
     ...MEMORY_OPTIONS,
     queryFn: async ({ signal }) => {
-      const { data, error } = await supabase
+      const entry = supabase
         .from('food_log_details')
         .select('id,food_name,photo_path,icon_set,icon_name')
         .eq('id', entryId)
         .eq('user_id', viewer)
         .abortSignal(signal)
         .maybeSingle()
+      const [{ data, error }, postId] = await Promise.all([
+        entry,
+        rpc('social_entry_post', { p_entry_id: entryId }, signal),
+      ])
       if (error) throw error
-      const postId = await rpc('social_entry_post', { p_entry_id: entryId }, signal)
       return { entry: data, postId }
     },
   })
-}
-
-export async function socialEntryPost(entryId: string): Promise<string | null> {
-  if (!onlineManager.isOnline()) throw new Error('offline')
-  return await rpc('social_entry_post', { p_entry_id: entryId })
 }
 
 export type SocialAction =
@@ -302,6 +310,20 @@ export async function reviewSocial(kind: SocialKind, id: string): Promise<Social
 export function useSocialAction() {
   const viewer = useUserId()
   const client = useQueryClient()
+  const socialKey = keys.social(viewer)
+  const refresh = async (names: readonly string[]) => {
+    const included = new Set(names)
+    await client.invalidateQueries({
+      queryKey: socialKey,
+      predicate: (query) => included.has(String(query.queryKey[2])),
+    })
+  }
+  const resetSocial = async () => {
+    // Revoking visibility also clears signed social photos before any old
+    // request can put them back in the cache.
+    await client.cancelQueries({ queryKey: socialKey })
+    await client.resetQueries({ queryKey: socialKey })
+  }
   return useMutation({
     // Fail an offline tap immediately, even if connectivity changed after the
     // button rendered. A social action must never sit in an offline write queue.
@@ -395,26 +417,66 @@ export function useSocialAction() {
       return {}
     },
     onSuccess: async (_result, input) => {
-      const queryKey = keys.social(viewer)
       if (
-        [
-          'block',
-          'unblock',
-          'report',
-          'deletePost',
-          'deleteComment',
-          'editPost',
-          'editComment',
-          'profile',
-          'removeFollower',
-        ].includes(input.action) ||
+        ['block', 'report', 'deletePost', 'editPost', 'profile'].includes(input.action) ||
         (input.action === 'follow' && !input.following)
       ) {
-        // Cancel before clearing, so an older response cannot put revoked data
-        // back on screen. Reset also notifies mounted readers immediately.
-        await client.cancelQueries({ queryKey })
-        await client.resetQueries({ queryKey })
-      } else await client.invalidateQueries({ queryKey })
+        await resetSocial()
+      } else {
+        const names =
+          input.action === 'read'
+            ? ['social_notifications', 'unread']
+            : input.action === 'like'
+              ? ['social_feed', 'social_profile_posts', 'social_post']
+              : input.action === 'comment'
+                ? ['social_feed', 'social_profile_posts', 'social_post', 'social_comments']
+                : input.action === 'post'
+                  ? ['social_feed', 'social_profile_posts', 'social_profile', 'entry']
+                  : input.action === 'follow'
+                    ? [
+                        'social_feed',
+                        'social_profile',
+                        'social_profile_posts',
+                        'social_post',
+                        'social_connections',
+                        'social_suggestions',
+                        'social_search_profiles',
+                      ]
+                    : input.action === 'removeFollower'
+                      ? [
+                          'social_feed',
+                          'social_profile',
+                          'social_connections',
+                          'social_suggestions',
+                          'social_search_profiles',
+                          'social_notifications',
+                          'unread',
+                        ]
+                      : input.action === 'unblock'
+                        ? [
+                            'social_feed',
+                            'social_profile',
+                            'social_profile_posts',
+                            'social_post',
+                            'social_comments',
+                            'social_connections',
+                            'social_suggestions',
+                            'social_search_profiles',
+                            'social_blocked_profiles',
+                            'social_notifications',
+                            'unread',
+                          ]
+                        : [
+                            'social_feed',
+                            'social_profile',
+                            'social_profile_posts',
+                            'social_post',
+                            'social_comments',
+                            'social_notifications',
+                            'unread',
+                          ]
+        await refresh(names)
+      }
       if (input.action === 'block' || input.action === 'unblock') {
         await client.invalidateQueries({ queryKey: keys.recipesAll(viewer) })
       }

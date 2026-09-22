@@ -1,5 +1,5 @@
 import { impactAsync } from 'expo-haptics'
-import { StyleSheet } from 'react-native'
+import { StyleSheet, Text } from 'react-native'
 
 import { fireEvent, render, screen, userEvent } from '../../test-utils'
 import { AppBar } from '../AppBar'
@@ -8,6 +8,7 @@ import { NavItem } from '../BottomNav'
 import { Button } from '../Button'
 import { Chip } from '../Chip'
 import { cn } from '../cn'
+import { IconButton } from '../IconButton'
 import { StatTile } from '../StatTile'
 import { Stepper } from '../Stepper'
 import { Switch } from '../Switch'
@@ -74,6 +75,22 @@ describe('Button', () => {
     const button = screen.getByRole('button')
     expect(button).toBeDisabled()
     expect(button).toBeBusy()
+  })
+})
+
+describe('IconButton', () => {
+  it('stays visible, busy, and inert while loading', async () => {
+    const onPress = jest.fn()
+    await render(
+      <IconButton accessibilityLabel="Save" loading onPress={onPress}>
+        <Text>S</Text>
+      </IconButton>,
+    )
+    const button = screen.getByRole('button', { name: 'Save' })
+    expect(button).toBeDisabled()
+    expect(button).toBeBusy()
+    await user.press(button)
+    expect(onPress).not.toHaveBeenCalled()
   })
 })
 

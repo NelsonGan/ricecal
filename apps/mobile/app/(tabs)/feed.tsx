@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useUserId } from '@/data'
-import { useSocialFeed, useSocialProfile } from '@/data/social'
+import { useSocialFeed, useSocialProfile, useSocialUnread } from '@/data/social'
 import { ScreenTitle } from '@/features/shared'
 import { JoinPrompt, PostCard, SocialList } from '@/features/social/components'
 import { useThemeColors } from '@/theme/useTheme'
@@ -17,6 +17,7 @@ export default function FeedScreen() {
   const [mode, setMode] = useState<'following' | 'discover'>('following')
   const feed = useSocialFeed(mode)
   const own = useSocialProfile()
+  const unread = useSocialUnread()
   return (
     <Screen
       scroll={false}
@@ -38,10 +39,20 @@ export default function FeedScreen() {
                 <IconButton
                   size="sm"
                   variant="ghost"
-                  accessibilityLabel={t('notifications')}
+                  accessibilityLabel={[t('notifications'), unread.data ? t('unread') : '']
+                    .filter(Boolean)
+                    .join(', ')}
                   onPress={() => router.push('/social/notifications')}
                 >
-                  <Icon set="ui" name="notification" size={22} tintColor={colors.muted} />
+                  <View className="h-6 w-6 items-center justify-center">
+                    <Icon set="ui" name="notification" size={22} tintColor={colors.muted} />
+                    {unread.data ? (
+                      <View
+                        className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-canvas bg-hibiscus"
+                        accessibilityElementsHidden
+                      />
+                    ) : null}
+                  </View>
                 </IconButton>
                 <IconButton
                   size="sm"
@@ -59,6 +70,7 @@ export default function FeedScreen() {
           <Tabs
             value={mode}
             align="center"
+            scrollable
             accessibilityLabel={t('feed')}
             options={[
               { value: 'following', label: t('following') },

@@ -16,7 +16,6 @@ import {
   useStreak,
   useTargets,
 } from '@/data'
-import { socialEntryPost } from '@/data/social'
 import {
   DayMeals,
   dayInMonth,
@@ -94,7 +93,6 @@ export default function TodayScreen() {
   const streak = useStreak()
   const removeEntry = useRemoveEntry()
   const [sharedDelete, setSharedDelete] = useState<Entry | null>(null)
-  const checkingDelete = useRef(false)
   const queueRemove = removeEntry.mutate
   const removeAsync = removeEntry.mutateAsync
   const deleteEntry = useCallback(
@@ -113,29 +111,10 @@ export default function TodayScreen() {
     },
     [queueRemove, removeAsync, t, toast],
   )
-  const requestDelete = useCallback(
-    async (entry: Entry) => {
-      if (checkingDelete.current) return
-      checkingDelete.current = true
-      try {
-        // There is no social cache to trust offline. Preserve the diary's
-        // queued delete; the database cascade removes a post on reconnect.
-        if (!onlineManager.isOnline()) {
-          await deleteEntry(entry)
-          return
-        }
-        if (await socialEntryPost(entry.id)) setSharedDelete(entry)
-        else await deleteEntry(entry)
-      } catch {
-        // Connectivity can change while the post lookup is in flight.
-        if (!onlineManager.isOnline()) await deleteEntry(entry)
-        else toast.show({ title: t('social:saveFailed'), tone: 'error' })
-      } finally {
-        checkingDelete.current = false
-      }
-    },
-    [deleteEntry, t, toast],
-  )
+  // The shared state cannot be trusted offline and can change on another
+  // device between a lookup and deletion. One concise confirmation tells the
+  // truth in every state: if a feed post exists, it leaves with this meal.
+  const requestDelete = useCallback((entry: Entry) => setSharedDelete(entry), [])
   const pending = usePendingSnaps()
   // The day's movement, if a health store is connected. Null on every account
   // that has not connected one, which is what keeps `burned` at zero below.

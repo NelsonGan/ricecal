@@ -83,8 +83,8 @@ from generate_series(1,15000) n;
 
 -- The dense viewer follows every author of the newest 100,000 posts. This
 -- deliberately exposes the cost of Discover excluding mostly followed content.
-insert into public.social_reports (kind, content_id, reporter_id, reason)
-select 'post', pg_temp.social_bench_id('post', n), pg_temp.social_bench_id('user', 15004), 'spam'
+insert into public.social_reports (kind, content_id, content_revision, reporter_id, reason)
+select 'post', pg_temp.social_bench_id('post', n), 1, pg_temp.social_bench_id('user', 15004), 'spam'
 from generate_series(100001,100500) n;
 insert into public.blocked_authors (user_id, author_id)
 select pg_temp.social_bench_id('user', 15004), pg_temp.social_bench_id('user', n)

@@ -1461,24 +1461,30 @@ export type Database = {
       social_reports: {
         Row: {
           content_id: string
+          content_revision: number
           created_at: string
           kind: Database['public']['Enums']['social_content_kind']
           reason: Database['public']['Enums']['report_reason']
           reporter_id: string
+          resolved_at: string | null
         }
         Insert: {
           content_id: string
+          content_revision: number
           created_at?: string
           kind: Database['public']['Enums']['social_content_kind']
           reason: Database['public']['Enums']['report_reason']
           reporter_id: string
+          resolved_at?: string | null
         }
         Update: {
           content_id?: string
+          content_revision?: number
           created_at?: string
           kind?: Database['public']['Enums']['social_content_kind']
           reason?: Database['public']['Enums']['report_reason']
           reporter_id?: string
+          resolved_at?: string | null
         }
         Relationships: []
       }

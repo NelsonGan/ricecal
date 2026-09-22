@@ -4,10 +4,11 @@ import { useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { uploadAvatar, useUserId } from '@/data'
+import { removeAvatar, uploadAvatar, useAvatarUrl, useUserId } from '@/data'
 import { useSocialOnline, useSocialProfile } from '@/data/social'
 import { QueryNotice, ReviewNotice, SocialPhoto, useSocialTask } from '@/features/social/components'
 import { useBack } from '@/lib/navigation'
+import { useThemeColors } from '@/theme/useTheme'
 import { AppBar, Button, Icon, IconButton, Screen, Sheet, Text, TextField, useToast } from '@/ui'
 
 export default function EditProfileScreen() {
@@ -16,6 +17,7 @@ export default function EditProfileScreen() {
   const profile = useSocialProfile()
   const router = useRouter()
   const back = useBack('/feed')
+  const colors = useThemeColors()
   const action = useSocialTask()
   const online = useSocialOnline()
   const toast = useToast()
@@ -28,7 +30,19 @@ export default function EditProfileScreen() {
   const [submitted, setSubmitted] = useState(false)
   const [handleTaken, setHandleTaken] = useState(false)
   const [info, setInfo] = useState<'join' | 'handle' | null>(null)
+  const privateAvatar = useAvatarUrl(localAvatar ? undefined : (avatar ?? undefined))
   const initialized = useRef(false)
+  const mounted = useRef(true)
+  const stagedAvatar = useRef<string | null>(null)
+  const saving = useRef(false)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      // After Save starts, a late error cannot prove the server did not commit.
+      if (stagedAvatar.current && !saving.current) void removeAvatar(stagedAvatar.current)
+    }
+  }, [])
   useEffect(() => {
     if (initialized.current || profile.isPending || profile.isError) return
     initialized.current = true
@@ -53,8 +67,15 @@ export default function EditProfileScreen() {
       if (result.canceled || !result.assets[0]) return
       const uri = result.assets[0].uri
       const path = await uploadAvatar(uri)
+      if (!mounted.current) {
+        await removeAvatar(path)
+        return
+      }
+      const previous = stagedAvatar.current
+      stagedAvatar.current = path
       setAvatar(path)
       setLocalAvatar(uri)
+      if (previous) void removeAvatar(previous)
     } catch {
       toast.show({ title: t('saveFailed'), tone: 'error' })
     } finally {
@@ -64,13 +85,24 @@ export default function EditProfileScreen() {
   const save = async () => {
     setSubmitted(true)
     if (!validHandle || !name.trim()) return
+    saving.current = true
     try {
       await action.run({ action: 'profile', handle, name: name.trim(), bio: bio.trim(), avatar })
-      router.replace({ pathname: '/social/profile/[id]', params: { id: viewer } })
+      if (stagedAvatar.current === avatar) stagedAvatar.current = null
+      if (mounted.current)
+        router.dismissTo({ pathname: '/social/profile/[id]', params: { id: viewer } })
     } catch (error) {
       /* Keep the complete draft after a refused write. */
-      if (typeof error === 'object' && error && 'code' in error && error.code === '23505')
+      if (
+        mounted.current &&
+        typeof error === 'object' &&
+        error &&
+        'code' in error &&
+        error.code === '23505'
+      )
         setHandleTaken(true)
+    } finally {
+      saving.current = false
     }
   }
   const saveDisabled = !online || picking || profile.isPending || profile.isError
@@ -82,17 +114,18 @@ export default function EditProfileScreen() {
           onBack={back}
           backLabel={t('back')}
           action={
-            <Button
+            <IconButton
               variant="ghost"
               size="sm"
+              accessibilityLabel={t('save')}
               disabled={saveDisabled}
               loading={action.isPending}
               onPress={() => {
                 void save()
               }}
             >
-              {t('save')}
-            </Button>
+              <Icon set="ui" name="check" size={22} tintColor={colors.pandanInk} />
+            </IconButton>
           }
         />
       }
@@ -123,14 +156,19 @@ export default function EditProfileScreen() {
                 accessibilityLabel={name || t('unknownPerson')}
               />
             ) : (
-              <SocialPhoto path={avatar} avatar label={name || t('unknownPerson')} />
+              <SocialPhoto
+                path={null}
+                privateUri={privateAvatar.data}
+                avatar
+                label={name || t('unknownPerson')}
+              />
             )}
             <View className="min-w-0 flex-1 gap-1">
               <Button
                 size="sm"
                 variant="neutral"
                 loading={picking}
-                disabled={!online}
+                disabled={!online || action.isPending}
                 onPress={() => {
                   void choosePhoto()
                 }}
@@ -141,9 +179,13 @@ export default function EditProfileScreen() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  disabled={action.isPending}
                   onPress={() => {
+                    const staged = stagedAvatar.current
+                    stagedAvatar.current = null
                     setAvatar(null)
                     setLocalAvatar(null)
+                    if (staged) void removeAvatar(staged)
                   }}
                 >
                   {t('removeAvatar')}
@@ -154,7 +196,7 @@ export default function EditProfileScreen() {
               <IconButton
                 variant="ghost"
                 size="sm"
-                accessibilityLabel={t('join')}
+                accessibilityLabel={t('shareInfo')}
                 onPress={() => setInfo('join')}
               >
                 <Icon set="ui" name="info" size={22} />
@@ -167,6 +209,7 @@ export default function EditProfileScreen() {
               <IconButton
                 variant="ghost"
                 size="xs"
+                hitSlop={3}
                 accessibilityLabel={t('handleHint')}
                 onPress={() => setInfo('handle')}
               >

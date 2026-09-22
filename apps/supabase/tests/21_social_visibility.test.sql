@@ -151,8 +151,13 @@ select is((select quarantined from public.social_comments where id = :'comment')
   'three comment reports quarantine the comment');
 select is((select coalesce(sum(value), 0)::bigint from public.social_counters where entity_id = :'post' and metric = 'comments'), 0::bigint,
   'quarantined comments are removed from approved comment counts');
-select is((select count(*)::int from public.social_notifications where comment_id = :'comment'), 0,
-  'quarantined comments remove their activity reference');
+select is((select count(*)::int from public.social_notifications where comment_id = :'comment'), 1,
+  'quarantining a comment retains its activity audit row');
+select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is((select count(*)::int from public.social_notifications() where comment_id = :'comment'), 0,
+  'quarantined comment activity is hidden from its recipient');
+reset role;
 
 -- A report on a profile governs all surfaces, including direct photo requests.
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);

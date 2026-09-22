@@ -150,8 +150,8 @@ select is((select count(*)::int from public.social_notifications()), 0,
   'activity cannot leak to another account');
 reset role;
 
-insert into public.social_reports (kind, content_id, reporter_id, reason)
-select 'post', id, :'viewer', 'spam' from public.social_posts
+insert into public.social_reports (kind, content_id, content_revision, reporter_id, reason)
+select 'post', id, revision, :'viewer', 'spam' from public.social_posts
 where author_id = :'author' and id >= 'a8220000-0000-4000-8000-000000000051';
 select set_config('request.jwt.claims', json_build_object('sub', :'viewer', 'role', 'authenticated')::text, true);
 set local role authenticated;

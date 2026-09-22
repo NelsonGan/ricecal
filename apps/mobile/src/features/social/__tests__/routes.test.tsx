@@ -122,7 +122,7 @@ it('keeps sharing details in the audience picker and info sheet', async () => {
 
   await user.press(screen.getByRole('button', { name: 'About sharing' }))
   expect(screen.getByText(shareHint)).toBeOnTheScreen()
-  await user.press(screen.getByRole('button', { name: 'Cancel' }))
+  await user.press(screen.getByRole('button', { name: 'Close' }))
   await user.press(screen.getByRole('button', { name: 'Share' }))
   expect(mockRun).toHaveBeenLastCalledWith(
     expect.objectContaining({ action: 'post', entryId: 'fresh-entry', audience: 'followers' }),

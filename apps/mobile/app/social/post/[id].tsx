@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useUserId } from '@/data'
+import { useAvatarUrl, useUserId } from '@/data'
 import {
   type SocialComment,
   useSocialComments,
@@ -19,22 +19,12 @@ import {
   SocialBar,
   SocialList,
   SocialPhoto,
-  socialTime,
   useSocialTask,
+  useSocialTime,
 } from '@/features/social/components'
 import { socialRequestId } from '@/features/social/request-id'
 import { useThemeColors } from '@/theme/useTheme'
-import {
-  Button,
-  ConfirmSheet,
-  Icon,
-  IconButton,
-  Screen,
-  Sheet,
-  Tappable,
-  Text,
-  TextField,
-} from '@/ui'
+import { Button, Icon, IconButton, Screen, Sheet, Tappable, Text, TextField } from '@/ui'
 
 const COMMENT_LIMIT = 500
 
@@ -53,14 +43,15 @@ function CommentRow({
   const action = useSocialTask()
   const online = useSocialOnline()
   const colors = useThemeColors()
-  const [remove, setRemove] = useState(false)
-  const [options, setOptions] = useState(false)
+  const [panel, setPanel] = useState<'options' | 'delete' | null>(null)
+  const afterDismiss = useRef<(() => void) | null>(null)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(comment.body)
   const draftLength = draft.length
   const canSave = Boolean(draft.trim()) && draftLength <= COMMENT_LIMIT
   const mine = comment.author_id === viewer
-  const time = comment.created_at ? socialTime(comment.created_at) : ''
+  const ownAvatar = useAvatarUrl(mine ? (comment.avatar_path ?? undefined) : undefined)
+  const time = useSocialTime(comment.created_at)
   return (
     <>
       <View className="border-b-2 border-track px-5 py-3">
@@ -70,10 +61,14 @@ function CommentRow({
             onPress={() =>
               router.push({ pathname: '/social/profile/[id]', params: { id: comment.author_id } })
             }
-            accessibilityLabel={comment.display_name}
+            accessibilityRole="button"
+            accessibilityLabel={[comment.display_name, `@${comment.handle}`, time]
+              .filter(Boolean)
+              .join(', ')}
           >
             <SocialPhoto
-              path={comment.avatar_path}
+              path={mine ? null : comment.avatar_path}
+              privateUri={ownAvatar.data}
               avatar
               label={comment.display_name}
               visible={visible}
@@ -147,7 +142,7 @@ function CommentRow({
               variant="ghost"
               disabled={!online}
               accessibilityLabel={t('options')}
-              onPress={() => setOptions(true)}
+              onPress={() => setPanel('options')}
             >
               <Icon set="ui" name="more-horizontal" size={22} tintColor={colors.muted} />
             </IconButton>
@@ -158,7 +153,12 @@ function CommentRow({
               authorId={comment.author_id}
               extraAction={
                 owner === viewer
-                  ? { label: t('deleteComment'), onPress: () => setRemove(true), disabled: !online }
+                  ? {
+                      label: t('deleteComment'),
+                      description: t('deleteCommentBody'),
+                      input: { action: 'deleteComment', id: comment.id },
+                      disabled: !online,
+                    }
                   : undefined
               }
             />
@@ -166,48 +166,78 @@ function CommentRow({
         </View>
       </View>
       <Sheet
-        visible={options}
-        onClose={() => setOptions(false)}
-        closeLabel={t('cancel')}
-        title={t('options')}
-      >
-        <Button
-          fullWidth
-          variant="ghost"
-          contentClassName="justify-start"
-          disabled={!online}
-          onPress={() => {
-            setOptions(false)
-            setDraft(comment.body)
-            setEditing(true)
-          }}
-        >
-          {t('common:action.edit')}
-        </Button>
-        <Button
-          fullWidth
-          variant="ghost"
-          contentClassName="justify-start"
-          disabled={!online}
-          onPress={() => {
-            setOptions(false)
-            setRemove(true)
-          }}
-        >
-          {t('deleteComment')}
-        </Button>
-      </Sheet>
-      <ConfirmSheet
-        visible={remove}
-        onClose={() => setRemove(false)}
-        title={t('deleteComment')}
-        description={t('deleteCommentBody')}
-        confirmLabel={t('deleteComment')}
-        cancelLabel={t('cancel')}
-        onConfirm={async () => {
-          await action.run({ action: 'deleteComment', id: comment.id })
+        visible={panel !== null}
+        onClose={() => setPanel(null)}
+        onDismiss={() => {
+          const next = afterDismiss.current
+          afterDismiss.current = null
+          next?.()
         }}
-      />
+        dismissible={!action.isPending}
+        closeLabel={t('cancel')}
+        title={t(panel === 'delete' ? 'deleteComment' : 'options')}
+        description={panel === 'delete' ? t('deleteCommentBody') : undefined}
+        scrollResetKey={panel ?? 'closed'}
+        footer={
+          panel === 'delete' ? (
+            <View className="flex-row gap-3">
+              <Button
+                variant="danger"
+                className="flex-1"
+                loading={action.isPending}
+                disabled={!online}
+                onPress={() => {
+                  afterDismiss.current = () => {
+                    void action
+                      .run({ action: 'deleteComment', id: comment.id })
+                      .catch(() => undefined)
+                  }
+                  setPanel(null)
+                }}
+              >
+                {t('deleteComment')}
+              </Button>
+              <Button
+                variant="neutral"
+                className="flex-1"
+                disabled={action.isPending}
+                onPress={() => setPanel(null)}
+              >
+                {t('cancel')}
+              </Button>
+            </View>
+          ) : undefined
+        }
+      >
+        {panel === 'options' ? (
+          <>
+            <Button
+              fullWidth
+              variant="ghost"
+              contentClassName="justify-start"
+              disabled={!online}
+              onPress={() => {
+                afterDismiss.current = () => {
+                  setDraft(comment.body)
+                  setEditing(true)
+                }
+                setPanel(null)
+              }}
+            >
+              {t('common:action.edit')}
+            </Button>
+            <Button
+              fullWidth
+              variant="ghost"
+              contentClassName="justify-start"
+              disabled={!online}
+              onPress={() => setPanel('delete')}
+            >
+              {t('deleteComment')}
+            </Button>
+          </>
+        ) : null}
+      </Sheet>
     </>
   )
 }

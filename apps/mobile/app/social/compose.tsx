@@ -17,10 +17,11 @@ import {
   QueryNotice,
   ReviewNotice,
   SocialBar,
-  SocialPhoto,
   useSocialTask,
 } from '@/features/social/components'
 import { socialRequestId } from '@/features/social/request-id'
+import { useBack } from '@/lib/navigation'
+import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, Screen, Select, Sheet, Text, TextField } from '@/ui'
 
 export default function ComposeScreen() {
@@ -32,8 +33,9 @@ export default function ComposeScreen() {
 }
 
 function Composer({ entryId, postId }: { entryId: string; postId: string }) {
-  const { t } = useTranslation('social')
+  const { t } = useTranslation(['social', 'common'])
   const router = useRouter()
+  const colors = useThemeColors()
   const viewer = useUserId()
   const own = useSocialProfile()
   const source = useSocialEntry(entryId)
@@ -53,6 +55,10 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
     }
   }, [])
   const existing = post.data?.author_id === viewer ? post.data : null
+  const editingPostId = postId || source.data?.postId || ''
+  const finishEdit = useBack(
+    editingPostId ? { pathname: '/social/post/[id]', params: { id: editingPostId } } : '/feed',
+  )
   useEffect(() => {
     if (existing && !initialized.current) {
       initialized.current = true
@@ -63,10 +69,10 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
   const entry = source.data?.entry
   const privatePhoto = useMealPhotoUrl(existing?.photo_path ?? entry?.photo_path ?? undefined)
   const editing = Boolean(postId || source.data?.postId)
+  const missingSource = !entryId && !postId
   const loaded = editing ? existing : entry
   const reading = editing ? post : source
   const foodName = existing?.food_name ?? entry?.food_name ?? ''
-  const photo = existing?.photo_path
   const icon = toIcon(
     existing?.icon_set ?? entry?.icon_set ?? null,
     existing?.icon_name ?? entry?.icon_name ?? null,
@@ -79,7 +85,8 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
           : { action: 'post', entryId, caption: caption.trim(), audience, requestId },
       )
       if (mounted.current && result.id) {
-        router.replace({ pathname: '/social/post/[id]', params: { id: result.id } })
+        if (existing) finishEdit()
+        else router.replace({ pathname: '/social/post/[id]', params: { id: result.id } })
       }
     } catch {
       /* A retry uses the same id and keeps the user's draft. */
@@ -92,23 +99,30 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
           title={t(editing ? 'editPost' : 'newPost')}
           action={
             own.data?.review_status === 'approved' && !own.data.quarantined && loaded ? (
-              <Button
+              <IconButton
                 size="sm"
                 variant="ghost"
-                disabled={!online || action.isPending}
+                accessibilityLabel={t(editing ? 'save' : 'publish')}
+                disabled={!online}
                 loading={action.isPending}
                 onPress={() => {
                   void save()
                 }}
               >
-                {t(editing ? 'save' : 'publish')}
-              </Button>
+                {editing ? (
+                  <Icon set="ui" name="check" size={22} tintColor={colors.pandanInk} />
+                ) : (
+                  <Icon set="system" name="send" size={22} tintColor={colors.pandanInk} />
+                )}
+              </IconButton>
             ) : undefined
           }
         />
       }
     >
-      {own.isPending || own.isError ? (
+      {missingSource ? (
+        <QueryNotice unavailable retry={() => undefined} />
+      ) : own.isPending || own.isError ? (
         <QueryNotice
           pending={own.isPending}
           error={own.isError}
@@ -153,8 +167,6 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
                     style={{ width: '100%', height: '100%' }}
                     accessibilityLabel={foodName}
                   />
-                ) : photo ? (
-                  <SocialPhoto path={photo} label={foodName} />
                 ) : null}
               </View>
 
@@ -212,7 +224,7 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
             visible={detailsOpen}
             onClose={() => setDetailsOpen(false)}
             title={t('share')}
-            closeLabel={t('cancel')}
+            closeLabel={t('common:action.close')}
           >
             <Text>{t('shareHint')}</Text>
           </Sheet>

@@ -4,6 +4,7 @@ import {
   Modal,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  Platform,
   Pressable,
   useWindowDimensions,
   View,
@@ -62,7 +63,7 @@ const DISMISS_VELOCITY = 900
  * No `onShow` and no `onBack`: a surface without a window of its own is never
  * presented, and never takes a back press — the route hosting it does.
  */
-export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow' | 'onBack'> & {
+export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow' | 'onDismiss' | 'onBack'> & {
   /**
    * Whether this surface should draw the app's toasts. See the outlet at the foot
    * of `SheetSurface`.
@@ -98,6 +99,8 @@ export type SheetProps = {
    * dropped. Ignored by `SheetSurface`, which has no window of its own.
    */
   onShow?: () => void
+  /** The native modal is fully gone, so another modal or route can open safely. */
+  onDismiss?: () => void
   /**
    * What a screen reader calls the handle, which is a button as well as a drag
    * target. Defaulted rather than required, as `Stepper` defaults its two, or a
@@ -167,7 +170,21 @@ export type SheetProps = {
  * A sheet with a text field rides above the keyboard itself: a `Modal` is its
  * own window, so the `Screen` shell's keyboard handling does not reach inside.
  */
-export function Sheet({ visible, onShow, ...rest }: SheetProps) {
+export function Sheet({ visible, onShow, onDismiss, ...rest }: SheetProps) {
+  const wasVisible = useRef(visible)
+  const dismissCallback = useRef(onDismiss)
+  dismissCallback.current = onDismiss
+
+  useEffect(() => {
+    const justDismissed = wasVisible.current && !visible
+    wasVisible.current = visible
+    // React Native reports native dismissal on iOS. Android removes the modal
+    // in this commit, so the next frame is the equivalent safe handoff point.
+    if (!justDismissed || Platform.OS === 'ios' || !dismissCallback.current) return
+    const frame = requestAnimationFrame(() => dismissCallback.current?.())
+    return () => cancelAnimationFrame(frame)
+  }, [visible])
+
   return (
     /**
      * `animationType="none"`, not `"slide"`. The platform slide animates the
@@ -181,6 +198,7 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
       transparent
       animationType="none"
       onShow={onShow}
+      onDismiss={() => dismissCallback.current?.()}
       /* Up one level if there is one, and only then out. See `onBack`. */
       onRequestClose={rest.dismissible === false ? () => {} : (rest.onBack ?? rest.onClose)}
     >

@@ -10,13 +10,14 @@ select no_plan();
 \set dan   'a8100000-0000-4000-8000-000000000004'
 \set eve   'a8100000-0000-4000-8000-000000000005'
 \set fresh 'a8100000-0000-4000-8000-000000000006'
+\set frank 'a8100000-0000-4000-8000-000000000007'
 \set entry 'a8110000-0000-4000-8000-000000000001'
 \set second_entry 'a8110000-0000-4000-8000-000000000002'
 
 insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
        id::text || '@social.example.test', '{}', '{}'
-from unnest(array[:'alice'::uuid, :'bob'::uuid, :'carol'::uuid, :'dan'::uuid, :'eve'::uuid, :'fresh'::uuid]) id;
+from unnest(array[:'alice'::uuid, :'bob'::uuid, :'carol'::uuid, :'dan'::uuid, :'eve'::uuid, :'fresh'::uuid, :'frank'::uuid]) id;
 
 update public.profiles set display_name = 'Private name', birth_date = '1990-01-01',
   height_cm = 170, target_weight_kg = 65 where id = :'alice';
@@ -182,6 +183,9 @@ select is(public.review_social_content('post', :'post', 1, 'approved', null, '"f
 select is(public.review_social_content('post', :'post', 2, 'approved', null, '"fixture-etag"'), true,
   'review of the latest revision can approve the edit');
 select public.review_social_content('comment', :'comment', 1, 'approved', null);
+select id as comment_activity from public.social_notifications
+  where comment_id = :'comment' \gset
+update public.social_notifications set read_at = now() where id = :'comment_activity';
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select throws_ok(format('select public.update_social_comment(%L, repeat(%L, 501))', :'comment', 'x'),
@@ -190,10 +194,14 @@ select public.update_social_comment(:'comment', 'Looks delicious');
 reset role;
 select is((select review_status::text from public.social_comments where id = :'comment'), 'pending',
   'editing an approved comment requires a fresh review');
+select is((select count(*)::int from public.social_notifications where id = :'comment_activity'), 1,
+  'editing retains the existing comment activity while visibility is pending');
 select is(public.review_social_content('comment', :'comment', 1, 'approved', null), false,
   'a stale comment review cannot approve text changed after it was read');
 select is(public.review_social_content('comment', :'comment', 2, 'approved', null), true,
   'the current comment revision can be approved');
+select ok((select read_at is not null from public.social_notifications where id = :'comment_activity'),
+  'reapproval preserves the original read comment activity');
 
 select set_config('request.jwt.claims', json_build_object('sub', :'carol', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -314,6 +322,60 @@ select is((select quarantined from public.social_posts where id = :'post'), true
   'editing preserves quarantine until a moderator resolves it');
 select revision as corrected_revision from public.social_posts where id = :'post' \gset
 select public.resolve_social_report('post', :'post', 'approved', null, :corrected_revision, '"fixture-etag"');
+select is((select count(*)::int from public.social_reports where kind = 'post' and content_id = :'post'), 3,
+  'resolving a report cycle preserves its audit rows');
+select is((select count(*)::int from public.social_reports
+    where kind = 'post' and content_id = :'post' and resolved_at is null), 0,
+  'resolving a report cycle closes every outstanding report');
+
+select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is((select count(*)::int from public.social_posts where id = :'post'), 0,
+  'a resolved report continues to hide its target from that reporter');
+reset role;
+
+select revision as reopened_revision from public.social_posts where id = :'post' \gset
+select set_config('request.jwt.claims', json_build_object('sub', :'eve', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is((select count(*)::int from public.social_posts where id = :'post'), 1,
+  'resolving reports restores the target for an unrelated reader');
+select public.report_social_content('post', :'post', 'spam');
+reset role;
+select is(public.resolve_social_report('post', :'post', 'approved', null, :corrected_revision, '"fixture-etag"'), false,
+  'a stale resolution cannot close a later report cycle');
+select is((select count(*)::int from public.social_reports
+    where kind = 'post' and content_id = :'post' and resolved_at is null), 1,
+  'one report in a new revision starts a separate unresolved cycle');
+select is((select quarantined from public.social_posts where id = :'post'), false,
+  'resolved reports do not count toward a later quarantine threshold');
+
+select set_config('request.jwt.claims', json_build_object('sub', :'fresh', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.report_social_content('post', :'post', 'dangerous');
+reset role;
+select is((select count(*)::int from public.social_reports
+    where kind = 'post' and content_id = :'post' and content_revision = :reopened_revision and resolved_at is null), 2,
+  'two reports on the current revision remain below the threshold');
+select is((select quarantined from public.social_posts where id = :'post'), false,
+  'two reports in the new cycle do not quarantine content');
+
+select set_config('request.jwt.claims', json_build_object('sub', :'frank', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.report_social_content('post', :'post', 'inappropriate');
+reset role;
+select is((select quarantined from public.social_posts where id = :'post'), true,
+  'three reports on the current revision quarantine the content again');
+select revision as second_quarantined_revision from public.social_posts where id = :'post' \gset
+select is(public.resolve_social_report('post', :'post', 'approved', null, :second_quarantined_revision, '"fixture-etag"'), true,
+  'a moderator can resolve the later report cycle');
+select is((select count(*)::int from public.social_reports where kind = 'post' and content_id = :'post'), 6,
+  'multiple resolved report cycles remain available for audit');
+select is((select count(distinct content_revision)::int from public.social_reports
+    where kind = 'post' and content_id = :'post'), 2,
+  'report audit rows retain the target revision from each cycle');
+select is((select count(*)::int from public.social_reports
+    where kind = 'post' and content_id = :'post' and resolved_at is null), 0,
+  'resolving the later cycle closes only after a successful target update');
 
 -- Media references are revocable even though snapshot words are immutable.
 update public.food_logs set photo_path = 'meals/' || :'alice' || '/replacement.jpg' where id = :'entry';
