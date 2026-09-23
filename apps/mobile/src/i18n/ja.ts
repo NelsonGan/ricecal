@@ -167,7 +167,8 @@ export const ja = {
       kg: 'kg',
       lb: 'lb',
       cm: 'cm',
-      gramsLong: '{{value}} グラム',
+      gramsLong_one: '{{count}} グラム',
+      gramsLong_other: '{{count}} グラム',
     },
 
     volume: {

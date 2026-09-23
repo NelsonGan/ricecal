@@ -16,8 +16,11 @@ export default function PeopleScreen() {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9_]/g, '')
-    .slice(0, 24)
-  const debounced = useDebouncedValue(handle)
+  // Do not silently search a truncated prefix while the field shows something
+  // longer. A handle cannot exceed 24 characters, so that visible query has no
+  // possible match.
+  const searchableHandle = handle.length <= 24 ? handle : ''
+  const debounced = useDebouncedValue(searchableHandle)
   const search = useSocialSearch(debounced)
   const suggestions = useSocialSuggestions()
   const suggested = {
@@ -47,7 +50,7 @@ export default function PeopleScreen() {
         </View>
       }
     >
-      {query.trim() && !handle ? (
+      {query.trim() && !searchableHandle ? (
         <View className="px-5">
           <EmptyState title={t('emptyPeople')} />
         </View>

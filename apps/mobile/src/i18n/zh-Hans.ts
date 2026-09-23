@@ -173,7 +173,8 @@ export const zhHans = {
       kg: '公斤',
       lb: '磅',
       cm: '厘米',
-      gramsLong: '{{value}} 克',
+      gramsLong_one: '{{count}} 克',
+      gramsLong_other: '{{count}} 克',
     },
 
     volume: {

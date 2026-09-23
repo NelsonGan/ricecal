@@ -167,7 +167,8 @@ export const hi = {
       kg: 'kg',
       lb: 'lb',
       cm: 'cm',
-      gramsLong: '{{value}} ग्राम',
+      gramsLong_one: '{{count}} ग्राम',
+      gramsLong_other: '{{count}} ग्राम',
     },
 
     volume: {

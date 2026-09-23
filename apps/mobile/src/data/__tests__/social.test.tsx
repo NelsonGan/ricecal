@@ -32,6 +32,13 @@ function response(data: unknown, error: unknown = null) {
   const promise = Promise.resolve({ data, error })
   return Object.assign(promise, { abortSignal: () => promise })
 }
+function deferredResponse() {
+  let settle!: (result: { data: unknown; error: unknown }) => void
+  const promise = new Promise<{ data: unknown; error: unknown }>((resolve) => {
+    settle = resolve
+  })
+  return { request: Object.assign(promise, { abortSignal: () => promise }), settle }
+}
 function setup() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false, gcTime: 0 } },
@@ -232,6 +239,52 @@ it('draws a like on every cached copy of the post without refetching a feed', as
   client.clear()
 })
 
+it('keeps a successful like when an older feed request finishes late', async () => {
+  mockRpc.mockImplementation(() => response(null))
+  const { client, wrapper } = setup()
+  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'following' })
+  const stale = { id: 'post', is_liked: false, like_count: 4 } as SocialPost
+  client.setQueryData(feedKey, {
+    pages: [{ rows: [stale], next: null }],
+    pageParams: [null],
+  })
+
+  let release: (() => void) | undefined
+  let aborted = false
+  const lateFetch = client
+    .fetchInfiniteQuery({
+      queryKey: feedKey,
+      initialPageParam: null,
+      queryFn: ({ signal }) =>
+        new Promise<SocialPage<SocialPost>>((resolve) => {
+          signal.addEventListener('abort', () => {
+            aborted = true
+          })
+          release = () => resolve({ rows: [stale], next: null })
+        }),
+      getNextPageParam: () => undefined,
+    })
+    .catch(() => undefined)
+  await waitFor(() => expect(client.getQueryState(feedKey)?.fetchStatus).toBe('fetching'))
+
+  const { result, unmount } = await renderHook(useSocialAction, { wrapper })
+  await act(async () => {
+    await result.current.mutateAsync({ action: 'like', id: 'post', liked: true })
+  })
+  expect(aborted).toBe(true)
+
+  // Even if the transport delivers its stale response after cancellation,
+  // React Query must not let that response replace the successful Like.
+  release?.()
+  await lateFetch
+  expect(
+    client.getQueryData<{ pages: SocialPage<SocialPost>[] }>(feedKey)?.pages[0].rows[0],
+  ).toEqual(expect.objectContaining({ is_liked: true, like_count: 5 }))
+
+  await unmount()
+  client.clear()
+})
+
 it('puts a like back when the server refuses it', async () => {
   mockRpc.mockImplementation(() => response(null, new Error('Post unavailable')))
   const { client, wrapper } = setup()
@@ -249,6 +302,131 @@ it('puts a like back when the server refuses it', async () => {
     client.getQueryData<{ pages: SocialPage<SocialPost>[] }>(feedKey)?.pages[0].rows[0],
   ).toEqual(expect.objectContaining({ is_liked: true, like_count: 2 }))
   await unmount()
+  client.clear()
+})
+
+it('rolls back only the failed post while another Like succeeds', async () => {
+  const firstRequest = deferredResponse()
+  const secondRequest = deferredResponse()
+  mockRpc.mockImplementation((_name, params) =>
+    params.p_post_id === 'first' ? firstRequest.request : secondRequest.request,
+  )
+  const { client, wrapper } = setup()
+  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'discover' })
+  const first = { id: 'first', is_liked: false, like_count: 4 } as SocialPost
+  const second = { id: 'second', is_liked: false, like_count: 8 } as SocialPost
+  client.setQueryData(feedKey, {
+    pages: [{ rows: [first, second], next: null }],
+    pageParams: [null],
+  })
+
+  const firstHook = await renderHook(useSocialAction, { wrapper })
+  const secondHook = await renderHook(useSocialAction, { wrapper })
+  let firstMutation!: Promise<unknown>
+  let secondMutation!: Promise<unknown>
+  await act(async () => {
+    firstMutation = firstHook.result.current
+      .mutateAsync({ action: 'like', id: 'first', liked: true })
+      .catch((error) => error)
+    await Promise.resolve()
+  })
+  await waitFor(() =>
+    expect(
+      client.getQueryData<{ pages: SocialPage<SocialPost>[] }>(feedKey)?.pages[0].rows[0],
+    ).toEqual(expect.objectContaining({ is_liked: true, like_count: 5 })),
+  )
+  await act(async () => {
+    secondMutation = secondHook.result.current.mutateAsync({
+      action: 'like',
+      id: 'second',
+      liked: true,
+    })
+    await Promise.resolve()
+  })
+  await waitFor(() =>
+    expect(
+      client.getQueryData<{ pages: SocialPage<SocialPost>[] }>(feedKey)?.pages[0].rows[1],
+    ).toEqual(expect.objectContaining({ is_liked: true, like_count: 9 })),
+  )
+
+  await act(async () => {
+    secondRequest.settle({ data: null, error: null })
+    await secondMutation
+  })
+  await act(async () => {
+    firstRequest.settle({ data: null, error: new Error('Post unavailable') })
+    await firstMutation
+  })
+
+  expect(client.getQueryData<{ pages: SocialPage<SocialPost>[] }>(feedKey)?.pages[0].rows).toEqual([
+    expect.objectContaining({ id: 'first', is_liked: false, like_count: 4 }),
+    expect.objectContaining({ id: 'second', is_liked: true, like_count: 9 }),
+  ])
+  await firstHook.unmount()
+  await secondHook.unmount()
+  client.clear()
+})
+
+it('sends same-post Likes in tap order and keeps the newer choice after a failure', async () => {
+  const olderRequest = deferredResponse()
+  const newerRequest = deferredResponse()
+  mockRpc
+    .mockImplementationOnce(() => olderRequest.request)
+    .mockImplementationOnce(() => newerRequest.request)
+  const { client, wrapper } = setup()
+  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'discover' })
+  const post = { id: 'post', is_liked: false, like_count: 4 } as SocialPost
+  client.setQueryData(feedKey, { pages: [{ rows: [post], next: null }], pageParams: [null] })
+
+  const older = await renderHook(useSocialAction, { wrapper })
+  const newer = await renderHook(useSocialAction, { wrapper })
+  let olderMutation!: Promise<unknown>
+  let newerMutation!: Promise<unknown>
+  await act(async () => {
+    olderMutation = older.result.current
+      .mutateAsync({ action: 'like', id: 'post', liked: true })
+      .catch((error) => error)
+    await Promise.resolve()
+  })
+  await waitFor(() =>
+    expect(
+      client.getQueryData<{ pages: SocialPage<SocialPost>[] }>(feedKey)?.pages[0].rows[0],
+    ).toEqual(expect.objectContaining({ is_liked: true, like_count: 5 })),
+  )
+  await act(async () => {
+    newerMutation = newer.result.current.mutateAsync({
+      action: 'like',
+      id: 'post',
+      liked: false,
+    })
+    await Promise.resolve()
+  })
+  await waitFor(() =>
+    expect(
+      client.getQueryData<{ pages: SocialPage<SocialPost>[] }>(feedKey)?.pages[0].rows[0],
+    ).toEqual(expect.objectContaining({ is_liked: false, like_count: 4 })),
+  )
+
+  // The Unlike is already visible, but it cannot overtake the older Like on
+  // the wire. It starts only after that request settles, even when it fails.
+  expect(mockRpc).toHaveBeenCalledTimes(1)
+  expect(mockRpc.mock.calls[0][1]).toEqual({ p_post_id: 'post', p_liked: true })
+  await act(async () => {
+    olderRequest.settle({ data: null, error: new Error('Post unavailable') })
+    await olderMutation
+  })
+  await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2))
+  expect(mockRpc.mock.calls[1][1]).toEqual({ p_post_id: 'post', p_liked: false })
+  await act(async () => {
+    newerRequest.settle({ data: null, error: null })
+    await newerMutation
+  })
+
+  expect(
+    client.getQueryData<{ pages: SocialPage<SocialPost>[] }>(feedKey)?.pages[0].rows[0],
+  ).toEqual(expect.objectContaining({ is_liked: false, like_count: 4 }))
+  await older.unmount()
+  await newer.unmount()
   client.clear()
 })
 

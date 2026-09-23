@@ -166,7 +166,8 @@ export const bn = {
       kg: 'kg',
       lb: 'lb',
       cm: 'cm',
-      gramsLong: '{{value}} গ্রাম',
+      gramsLong_one: '{{count}} গ্রাম',
+      gramsLong_other: '{{count}} গ্রাম',
     },
 
     volume: {

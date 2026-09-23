@@ -222,7 +222,7 @@ function useFoodLabel() {
       `${Math.round(totals.kcal)} ${t('unit.kcal')}`,
       ...MACROS.map(
         (macro) =>
-          `${t(macro.label)} ${t('unit.gramsLong', { value: Math.round(totals[macro.key]) })}`,
+          `${t(macro.label)} ${t('unit.gramsLong', { count: Math.round(totals[macro.key]) })}`,
       ),
     ].join(', ')
   }
@@ -244,7 +244,9 @@ function FoodFactsRow({
   const totals = totalsOf(facts)
   if (!totals) return null
   const strong = light ? 'text-white' : 'text-ink'
-  const soft = light ? 'text-white/75' : 'text-muted'
+  // The panel can sit over a white plate. Translucent white at this size falls
+  // below 4.5:1 there even with the black scrim, so photo copy stays opaque.
+  const soft = light ? 'text-white' : 'text-muted'
   return (
     <View className="flex-row flex-wrap items-baseline gap-x-3 gap-y-1">
       <View className="flex-row items-baseline gap-1">
@@ -312,7 +314,7 @@ function FoodCaption({
           <Text
             className={cn(
               'font-body-bold text-[12px] leading-[16px]',
-              onPhoto ? 'text-white/80' : 'text-muted',
+              onPhoto ? 'text-white' : 'text-muted',
             )}
           >
             {`${Math.round(totals.kcal).toLocaleString()} ${t('unit.kcal')}`}

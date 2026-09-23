@@ -13,6 +13,7 @@ select no_plan();
 \set frank 'a8100000-0000-4000-8000-000000000007'
 \set entry 'a8110000-0000-4000-8000-000000000001'
 \set second_entry 'a8110000-0000-4000-8000-000000000002'
+\set wide_entry 'a8110000-0000-4000-8000-000000000003'
 
 insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
@@ -28,7 +29,10 @@ values
   (:'entry', :'alice', '2020-01-01', '2020-01-01 10:30:00+00', 'Fixture nasi lemak', 'dishes', 'nasi-lemak',
    600, 60, 25, 28, '1 plate', 1, 'Private diary note', 'meals/' || :'alice' || '/social-fixture.jpg'),
   (:'second_entry', :'alice', '2020-01-02', '2020-01-02 10:30:00+00', 'Fixture rice', 'food', 'rice',
-   200, 44, 4, 1, '1 bowl', 1, null, null);
+   200, 44, 4, 1, '1 bowl', 1, null, null),
+  (:'wide_entry', :'alice', '2020-01-03', '2020-01-03 10:30:00+00', 'Large fixture', null, null,
+   1, 2000, 2000, 2000, '50 large servings', 50, null, null);
+update public.food_logs set quantity = 100 where id = :'wide_entry';
 
 select is((select count(*)::int from public.social_profiles where user_id = :'alice'), 0,
   'creating an account does not opt it into a public identity');
@@ -95,6 +99,10 @@ select is((select food_name from public.social_posts where id = :'post'), 'Fixtu
 select is((select array[kcal, carbs_g, protein_g, fat_g]::numeric[] from public.social_posts where id = :'post'),
   array[600, 60, 25, 28]::numeric[],
   'the post snapshots the entry''s calories and macros, as the diary totals them');
+select public.create_social_post(:'wide_entry', '', 'public') as wide_post \gset
+select is((select carbs_g from public.social_posts where id = :'wide_post'), 10000000::numeric,
+  'a valid diary total above fixed numeric precision can still be published');
+select public.delete_social_post(:'wide_post');
 select is((select caption from public.social_posts where id = :'post'), 'A good lunch',
   'a repeated publication cannot silently edit the first snapshot');
 select ok((select created_at > '2025-01-01'::timestamptz from public.social_posts where id = :'post'),

@@ -1790,8 +1790,9 @@ Two ways, separated because they cost different things.
 
 **One save per section, and there is no Save button on the page.** Each group
 sits behind a pencil that opens a sheet, and each sheet is a form that saves
-what it is about. The footer is left with the one thing that is not a section of
-this entry: handing the meal back to the model.
+what it is about. The footer is reserved for the two actions about the whole
+meal: handing it back to the model with **Fix it**, and publishing or editing
+the post with **Share to feed** or **Edit post**.
 
 Each `save*` function throws on failure so its sheet can stay open with the
 draft still in it, and stages the value locally as well: the write invalidates
@@ -2767,7 +2768,7 @@ the same viewer-specific conditions using indexed joins, then public invoker
 functions hydrate only the resulting page through RLS. Relationship flags use
 single indexed lookups, so a card cannot make PostgreSQL read the entire graph.
 The same approach keeps suggestion traversal bounded before loading profile
-details and counts. Final local verification passed 488 SQL assertions,
+details and counts. Final local verification passed 491 SQL assertions,
 21 concurrent-session behavior assertions followed by cleanup verification, and
 32 HTTP checks against real local Auth, PostgREST, edge functions and MinIO.
 Re-run the benchmark when visibility predicates or candidate queries change;

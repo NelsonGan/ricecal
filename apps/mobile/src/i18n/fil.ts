@@ -175,7 +175,8 @@ export const fil = {
       kg: 'kg',
       lb: 'lb',
       cm: 'cm',
-      gramsLong: '{{value}} gramo',
+      gramsLong_one: '{{count}} gramo',
+      gramsLong_other: '{{count}} gramo',
     },
 
     volume: {

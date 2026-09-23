@@ -172,7 +172,8 @@ export const th = {
       kg: 'กก.',
       lb: 'ปอนด์',
       cm: 'ซม.',
-      gramsLong: '{{value}} กรัม',
+      gramsLong_one: '{{count}} กรัม',
+      gramsLong_other: '{{count}} กรัม',
     },
 
     volume: {

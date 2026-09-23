@@ -167,7 +167,8 @@ export const ta = {
       kg: 'kg',
       lb: 'lb',
       cm: 'cm',
-      gramsLong: '{{value}} கிராம்',
+      gramsLong_one: '{{count}} கிராம்',
+      gramsLong_other: '{{count}} கிராம்',
     },
 
     volume: {

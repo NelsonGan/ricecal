@@ -167,7 +167,8 @@ export const vi = {
       kg: 'kg',
       lb: 'lb',
       cm: 'cm',
-      gramsLong: '{{value}} gam',
+      gramsLong_one: '{{count}} gam',
+      gramsLong_other: '{{count}} gam',
     },
 
     volume: {
