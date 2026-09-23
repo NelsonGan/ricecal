@@ -1305,13 +1305,17 @@ export type Database = {
           audience: Database['public']['Enums']['social_audience']
           author_id: string
           caption: string
+          carbs_g: number | null
           created_at: string
+          fat_g: number | null
           food_name: string
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string
+          kcal: number | null
           photo_etag: string | null
           photo_path: string | null
+          protein_g: number | null
           published_at: string | null
           quarantined: boolean
           review_reason: string | null
@@ -1324,13 +1328,17 @@ export type Database = {
           audience?: Database['public']['Enums']['social_audience']
           author_id: string
           caption?: string
+          carbs_g?: number | null
           created_at?: string
+          fat_g?: number | null
           food_name: string
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
+          kcal?: number | null
           photo_etag?: string | null
           photo_path?: string | null
+          protein_g?: number | null
           published_at?: string | null
           quarantined?: boolean
           review_reason?: string | null
@@ -1343,13 +1351,17 @@ export type Database = {
           audience?: Database['public']['Enums']['social_audience']
           author_id?: string
           caption?: string
+          carbs_g?: number | null
           created_at?: string
+          fat_g?: number | null
           food_name?: string
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
+          kcal?: number | null
           photo_etag?: string | null
           photo_path?: string | null
+          protein_g?: number | null
           published_at?: string | null
           quarantined?: boolean
           review_reason?: string | null
@@ -2065,9 +2077,11 @@ export type Database = {
           author_id: string | null
           avatar_path: string | null
           caption: string | null
+          carbs_g: number | null
           comment_count: number | null
           created_at: string | null
           display_name: string | null
+          fat_g: number | null
           food_name: string | null
           handle: string | null
           icon_name: string | null
@@ -2075,8 +2089,10 @@ export type Database = {
           id: string | null
           is_following: boolean | null
           is_liked: boolean | null
+          kcal: number | null
           like_count: number | null
           photo_path: string | null
+          protein_g: number | null
           published_at: string | null
           quarantined: boolean | null
           review_reason: string | null
@@ -2743,9 +2759,11 @@ export type Database = {
           author_id: string | null
           avatar_path: string | null
           caption: string | null
+          carbs_g: number | null
           comment_count: number | null
           created_at: string | null
           display_name: string | null
+          fat_g: number | null
           food_name: string | null
           handle: string | null
           icon_name: string | null
@@ -2753,8 +2771,10 @@ export type Database = {
           id: string | null
           is_following: boolean | null
           is_liked: boolean | null
+          kcal: number | null
           like_count: number | null
           photo_path: string | null
+          protein_g: number | null
           published_at: string | null
           quarantined: boolean | null
           review_reason: string | null
@@ -2805,9 +2825,11 @@ export type Database = {
           author_id: string | null
           avatar_path: string | null
           caption: string | null
+          carbs_g: number | null
           comment_count: number | null
           created_at: string | null
           display_name: string | null
+          fat_g: number | null
           food_name: string | null
           handle: string | null
           icon_name: string | null
@@ -2815,8 +2837,10 @@ export type Database = {
           id: string | null
           is_following: boolean | null
           is_liked: boolean | null
+          kcal: number | null
           like_count: number | null
           photo_path: string | null
+          protein_g: number | null
           published_at: string | null
           quarantined: boolean | null
           review_reason: string | null
@@ -2868,9 +2892,11 @@ export type Database = {
           author_id: string | null
           avatar_path: string | null
           caption: string | null
+          carbs_g: number | null
           comment_count: number | null
           created_at: string | null
           display_name: string | null
+          fat_g: number | null
           food_name: string | null
           handle: string | null
           icon_name: string | null
@@ -2878,8 +2904,10 @@ export type Database = {
           id: string | null
           is_following: boolean | null
           is_liked: boolean | null
+          kcal: number | null
           like_count: number | null
           photo_path: string | null
+          protein_g: number | null
           published_at: string | null
           quarantined: boolean | null
           review_reason: string | null

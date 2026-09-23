@@ -28,6 +28,7 @@ import {
 } from '@/data/social'
 import type { IconRef, ReportReason } from '@/data/types'
 import { useBack } from '@/lib/navigation'
+import { energyShare } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -111,6 +112,7 @@ export function SocialPhoto({
   avatar = false,
   size = 'sm',
   label,
+  onShown,
 }: {
   path?: string | null
   privateUri?: string
@@ -118,6 +120,8 @@ export function SocialPhoto({
   avatar?: boolean
   size?: 'sm' | 'md' | 'lg'
   label: string
+  /** Whether the picture is on screen, so what sits over it can match. */
+  onShown?: (shown: boolean) => void
 }) {
   const [focused, setFocused] = useState(false)
   useFocusEffect(
@@ -137,6 +141,11 @@ export function SocialPhoto({
     return () => clearTimeout(timer)
   }, [photo.data])
   const box = { sm: 40, md: 52, lg: 64 }[size]
+  const signed =
+    visible && !privateUri && !photo.isError && photo.data && photo.data.expiresAt > Date.now()
+  useEffect(() => {
+    if (!signed) onShown?.(false)
+  }, [signed, onShown])
   if (visible && privateUri) {
     return (
       <Image
@@ -152,7 +161,7 @@ export function SocialPhoto({
       />
     )
   }
-  if (!visible || photo.isError || !photo.data || photo.data.expiresAt <= Date.now()) {
+  if (!signed || !photo.data) {
     return avatar ? <Avatar name={label} size={size} fallback="initial" /> : null
   }
   return (
@@ -174,58 +183,250 @@ export function SocialPhoto({
           : { width: '100%', height: '100%' }
       }
       accessibilityLabel={label}
+      onLoad={() => onShown?.(true)}
+      onError={() => onShown?.(false)}
     />
   )
 }
 
+/** Carbs, protein and fat, in the order and colours every chart in the app uses. */
+const MACROS = [
+  { key: 'carbs_g', share: 'carbs', dot: 'bg-kaya', label: 'macro.carbs' },
+  { key: 'protein_g', share: 'protein', dot: 'bg-hibiscus', label: 'macro.protein' },
+  { key: 'fat_g', share: 'fat', dot: 'bg-teh', label: 'macro.fat' },
+] as const
+
+type FoodFacts = Pick<SocialPost, 'kcal' | 'carbs_g' | 'protein_g' | 'fat_g'>
+type Totals = { [K in keyof FoodFacts]: number }
+
+/** The server writes all four together, so a post has every figure or none. */
+function totalsOf(facts?: Partial<FoodFacts> | null): Totals | null {
+  if (facts?.kcal == null || facts.carbs_g == null || facts.protein_g == null) return null
+  if (facts.fat_g == null) return null
+  return {
+    kcal: facts.kcal,
+    carbs_g: facts.carbs_g,
+    protein_g: facts.protein_g,
+    fat_g: facts.fat_g,
+  }
+}
+
+/** What a screen reader says for a dish: its name, then every figure the picture shows. */
+function useFoodLabel() {
+  const { t } = useTranslation('common')
+  return (name: string, facts?: Partial<FoodFacts> | null) => {
+    const totals = totalsOf(facts)
+    if (!totals) return name
+    return [
+      name,
+      `${Math.round(totals.kcal)} ${t('unit.kcal')}`,
+      ...MACROS.map(
+        (macro) =>
+          `${t(macro.label)} ${t('unit.gramsLong', { value: Math.round(totals[macro.key]) })}`,
+      ),
+    ].join(', ')
+  }
+}
+
+/**
+ * Calories and the three macros on one line, the total leading at a size the
+ * others do not compete with, as on the meal share card. `light` is for a dark
+ * panel over a photo.
+ */
+function FoodFactsRow({
+  facts,
+  light = false,
+}: {
+  facts?: Partial<FoodFacts> | null
+  light?: boolean
+}) {
+  const { t } = useTranslation('common')
+  const totals = totalsOf(facts)
+  if (!totals) return null
+  const strong = light ? 'text-white' : 'text-ink'
+  const soft = light ? 'text-white/75' : 'text-muted'
+  return (
+    <View className="flex-row flex-wrap items-baseline gap-x-3 gap-y-1">
+      <View className="flex-row items-baseline gap-1">
+        <Text className={cn('font-display text-[20px] leading-[26px]', strong)}>
+          {Math.round(totals.kcal).toLocaleString()}
+        </Text>
+        <Text className={cn('font-body-bold text-[12px] leading-[16px]', soft)}>
+          {t('unit.kcal')}
+        </Text>
+      </View>
+      {MACROS.map((macro) => (
+        <View key={macro.key} className="flex-row items-center gap-1.5">
+          <View className={cn('h-2 w-2 rounded-full', macro.dot)} />
+          <Text className={cn('font-body-bold text-[12px] leading-[16px]', soft)}>
+            {t(macro.label)}
+          </Text>
+          <Text className={cn('font-body-black text-[12px] leading-[16px]', strong)}>
+            {t('unit.grams', { value: Math.round(totals[macro.key]) })}
+          </Text>
+        </View>
+      ))}
+    </View>
+  )
+}
+
+/**
+ * The dish and its figures, laid over the picture. Over a photo the panel is
+ * dark and translucent, so white type stays readable on a white plate as well
+ * as a dark table (the app draws no gradient or blur). Over a drawing's pale
+ * tile it is the page's own surface, which a dark panel only made muddy.
+ */
+function FoodCaption({
+  name,
+  facts,
+  compact,
+  onPhoto,
+}: {
+  name: string
+  facts?: Partial<FoodFacts> | null
+  compact: boolean
+  onPhoto: boolean
+}) {
+  const { t } = useTranslation('common')
+  const totals = totalsOf(facts)
+  // No bar for a food with nothing to split, such as black coffee: an empty
+  // track reads as a chart that failed to draw.
+  const split =
+    totals && totals.carbs_g + totals.protein_g + totals.fat_g > 0
+      ? energyShare({ carbs: totals.carbs_g, protein: totals.protein_g, fat: totals.fat_g })
+      : null
+  const panel = onPhoto ? 'bg-black/55' : 'bg-surface/90'
+  if (compact) {
+    return (
+      <View className={cn('gap-0.5 rounded-[14px] px-2.5 py-1.5', panel)}>
+        <Text
+          numberOfLines={1}
+          className={cn(
+            'font-body-black text-[13px] leading-[18px]',
+            onPhoto ? 'text-white' : 'text-ink',
+          )}
+        >
+          {name}
+        </Text>
+        {totals ? (
+          <Text
+            className={cn(
+              'font-body-bold text-[12px] leading-[16px]',
+              onPhoto ? 'text-white/80' : 'text-muted',
+            )}
+          >
+            {`${Math.round(totals.kcal).toLocaleString()} ${t('unit.kcal')}`}
+          </Text>
+        ) : null}
+      </View>
+    )
+  }
+  return (
+    <View className={cn('gap-2 rounded-[18px] px-4 pb-3 pt-2.5', panel)}>
+      <Text
+        numberOfLines={2}
+        className={cn(
+          'font-display text-[20px] leading-[26px]',
+          onPhoto ? 'text-white' : 'text-heading',
+        )}
+      >
+        {name}
+      </Text>
+      {split ? (
+        <View
+          className={cn(
+            'h-1 flex-row overflow-hidden rounded-full',
+            onPhoto ? 'bg-white/20' : 'bg-track',
+          )}
+        >
+          {MACROS.map((macro) =>
+            split[macro.share] <= 0 ? null : (
+              <View
+                key={macro.key}
+                className={macro.dot}
+                style={{ flexGrow: split[macro.share], flexBasis: 0 }}
+              />
+            ),
+          )}
+        </View>
+      ) : null}
+      <FoodFactsRow facts={facts} light={onPhoto} />
+    </View>
+  )
+}
+
+/**
+ * A shared dish: the photograph, or the drawing on its tile, with the name and
+ * figures over it. `card` runs edge to edge in a feed; `tile` is a rounded
+ * square in a profile grid, and names the total alone.
+ */
 export function FoodPreview({
   name,
   photo,
   icon,
   visible = true,
   privateUri,
-  showName = true,
-  compact = false,
-  rounded = true,
+  hasPhoto,
+  facts,
+  variant = 'card',
 }: {
   name: string
   photo?: string | null
   icon?: IconRef | null
   visible?: boolean
   privateUri?: string
-  showName?: boolean
-  compact?: boolean
-  rounded?: boolean
+  /** A private photo's link arrives after the post does; this keeps its square meanwhile. */
+  hasPhoto?: boolean
+  facts?: Partial<FoodFacts> | null
+  variant?: 'card' | 'tile'
 }) {
+  const drawing = icon ?? { set: 'food', name: 'cooking-pot' }
+  const tile = variant === 'tile'
+  // The box is a photo's square from the start so nothing moves when it loads,
+  // but the panel only darkens once the photo is really there: until then, and
+  // if it never arrives, it sits on the drawing's pale tile.
+  const [shown, setShown] = useState(false)
+  const expectsPhoto = hasPhoto ?? Boolean(privateUri || photo)
+  const caption = (
+    <FoodCaption name={name} facts={facts} compact={tile} onPhoto={expectsPhoto && shown} />
+  )
+  // A drawing cannot fill a box the way a photograph does, so a card without a
+  // photo puts the panel under the drawing instead of over it.
+  if (!tile && !expectsPhoto) {
+    return (
+      <View className="items-center bg-pandan-soft px-3 pb-3 pt-6">
+        <Icon {...drawing} size={112} />
+        <View className="mt-4 self-stretch">{caption}</View>
+      </View>
+    )
+  }
   return (
-    <View className={showName ? 'gap-2' : undefined}>
+    <View className={cn('aspect-square overflow-hidden bg-pandan-soft', tile && 'rounded-tile')}>
+      {/* Under the photograph while it loads, and in its place if it cannot. */}
       <View
         className={cn(
-          'items-center justify-center overflow-hidden bg-pandan-soft',
-          compact ? 'aspect-[2/1]' : 'aspect-square',
-          rounded && 'rounded-tile',
+          'absolute inset-x-0 top-0 items-center justify-center',
+          tile ? 'bottom-12' : 'bottom-0',
         )}
       >
-        <View className="absolute items-center justify-center">
-          <Icon {...(icon ?? { set: 'food', name: 'cooking-pot' })} size={compact ? 88 : 120} />
-        </View>
-        {privateUri ? (
-          <Image
-            source={{ uri: privateUri }}
-            cachePolicy="none"
-            contentFit="cover"
-            style={{ width: '100%', height: '100%' }}
-            accessibilityLabel={name}
-          />
-        ) : photo ? (
-          <SocialPhoto path={photo} visible={visible} label={name} />
-        ) : null}
+        <Icon {...drawing} size={tile ? 84 : 120} />
       </View>
-      {showName ? (
-        <Text variant="bodyStrong" numberOfLines={2}>
-          {name}
-        </Text>
+      {privateUri ? (
+        <Image
+          source={{ uri: privateUri }}
+          cachePolicy="none"
+          contentFit="cover"
+          style={{ width: '100%', height: '100%' }}
+          accessibilityLabel={name}
+          onLoad={() => setShown(true)}
+          onError={() => setShown(false)}
+        />
+      ) : photo ? (
+        <SocialPhoto path={photo} visible={visible} label={name} onShown={setShown} />
       ) : null}
+      <View className={cn('absolute', tile ? 'inset-x-1.5 bottom-1.5' : 'inset-x-3 bottom-3')}>
+        {caption}
+      </View>
     </View>
   )
 }
@@ -565,11 +766,20 @@ function ContentSafetyControl({
       >
         {panel === 'menu' ? (
           <>
+            <Button
+              fullWidth
+              variant="secondary"
+              leftIcon={<Icon set="system" name="flag" size={20} />}
+              disabled={!online}
+              onPress={() => setPanel('report')}
+            >
+              {t('social:report')}
+            </Button>
             {extraAction ? (
               <Button
                 fullWidth
-                variant="ghost"
-                contentClassName="justify-start"
+                variant="danger"
+                leftIcon={<Icon set="ui" name="delete" size={20} />}
                 disabled={extraAction.disabled}
                 onPress={() => setPanel('extra')}
               >
@@ -578,17 +788,8 @@ function ContentSafetyControl({
             ) : null}
             <Button
               fullWidth
-              variant="ghost"
-              contentClassName="justify-start"
-              disabled={!online}
-              onPress={() => setPanel('report')}
-            >
-              {t('social:report')}
-            </Button>
-            <Button
-              fullWidth
-              variant="ghost"
-              contentClassName="justify-start"
+              variant="danger"
+              leftIcon={<Icon set="ui" name="close" size={20} />}
               disabled={!online}
               onPress={() => setPanel('block')}
             >
@@ -599,7 +800,8 @@ function ContentSafetyControl({
           reasons.map((reason) => (
             <Button
               key={reason}
-              variant="neutral"
+              variant="secondary"
+              fullWidth
               loading={action.isPending}
               disabled={!online}
               onPress={() => {
@@ -657,7 +859,7 @@ export function PostCard({
   const ownAvatar = useAvatarUrl(mine ? (post.avatar_path ?? undefined) : undefined)
   const open = () => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })
   const time = useSocialTime(post.published_at ?? post.created_at)
-  const hasPhoto = Boolean(post.photo_path || ownPhoto.data)
+  const foodLabel = useFoodLabel()
   const toggleLike = () => {
     if (!post.is_liked) {
       if (own === undefined) return
@@ -734,29 +936,31 @@ export function PostCard({
         )}
       </View>
       {detail ? (
-        <View>
+        <View accessible accessibilityLabel={foodLabel(post.food_name, post)}>
           <FoodPreview
             name={post.food_name}
             photo={privatePhoto ? null : post.photo_path}
             icon={toIcon(post.icon_set, post.icon_name)}
             visible={visible}
             privateUri={ownPhoto.data}
-            showName={false}
-            compact={!hasPhoto}
-            rounded={false}
+            hasPhoto={Boolean(post.photo_path)}
+            facts={post}
           />
         </View>
       ) : (
-        <Tappable onPress={open} accessibilityRole="button" accessibilityLabel={post.food_name}>
+        <Tappable
+          onPress={open}
+          accessibilityRole="button"
+          accessibilityLabel={foodLabel(post.food_name, post)}
+        >
           <FoodPreview
             name={post.food_name}
             photo={privatePhoto ? null : post.photo_path}
             icon={toIcon(post.icon_set, post.icon_name)}
             visible={visible}
             privateUri={ownPhoto.data}
-            showName={false}
-            compact={!hasPhoto}
-            rounded={false}
+            hasPhoto={Boolean(post.photo_path)}
+            facts={post}
           />
         </Tappable>
       )}
@@ -806,9 +1010,6 @@ export function PostCard({
             </Tappable>
           )}
         </View>
-        <Text variant="bodyStrong" numberOfLines={2}>
-          {post.food_name}
-        </Text>
         {post.caption ? <Text numberOfLines={detail ? undefined : 2}>{post.caption}</Text> : null}
         {post.audience === 'followers' ? (
           <View className="flex-row items-center gap-1.5">
@@ -876,8 +1077,8 @@ export function PostCard({
           <>
             <Button
               fullWidth
-              variant="ghost"
-              contentClassName="justify-start"
+              variant="secondary"
+              leftIcon={<Icon set="ui" name="edit" size={20} />}
               onPress={() => {
                 afterDismiss.current = () =>
                   router.push({ pathname: '/social/compose', params: { postId: post.id } })
@@ -888,8 +1089,8 @@ export function PostCard({
             </Button>
             <Button
               fullWidth
-              variant="ghost"
-              contentClassName="justify-start"
+              variant="danger"
+              leftIcon={<Icon set="ui" name="delete" size={20} />}
               disabled={!online}
               onPress={() => setPanel('delete')}
             >
@@ -910,11 +1111,15 @@ export function PostTile({ post, visible = true }: { post: SocialPost; visible?:
   const status = post.quarantined ? 'quarantined' : post.review_status
   const privatePhoto = mine && status !== 'approved' ? (post.photo_path ?? undefined) : undefined
   const ownPhoto = useMealPhotoUrl(privatePhoto)
+  const foodLabel = useFoodLabel()
   return (
     <Tappable
       className="flex-1 overflow-hidden rounded-md bg-surface p-1"
       accessibilityRole="button"
-      accessibilityLabel={[post.food_name, mine && status !== 'approved' ? t(status) : '']
+      accessibilityLabel={[
+        foodLabel(post.food_name, post),
+        mine && status !== 'approved' ? t(status) : '',
+      ]
         .filter(Boolean)
         .join(', ')}
       onPress={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
@@ -925,6 +1130,8 @@ export function PostTile({ post, visible = true }: { post: SocialPost; visible?:
         icon={toIcon(post.icon_set, post.icon_name)}
         visible={visible}
         privateUri={ownPhoto.data}
+        facts={post}
+        variant="tile"
       />
       {mine && status !== 'approved' ? (
         <Badge className="absolute left-3 top-3" tone="kaya" size="sm">

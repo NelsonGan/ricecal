@@ -45,6 +45,11 @@ export type SocialPost = {
   icon_set: IconRef['set'] | null
   icon_name: string | null
   photo_path: string | null
+  /** The meal's totals when it was shared. Null only if the diary had none. */
+  kcal: number | null
+  carbs_g: number | null
+  protein_g: number | null
+  fat_g: number | null
   caption: string
   audience: SocialAudience
   review_status: SocialReview
@@ -273,7 +278,7 @@ export function useSocialEntry(entryId: string) {
     queryFn: async ({ signal }) => {
       const entry = supabase
         .from('food_log_details')
-        .select('id,food_name,photo_path,icon_set,icon_name')
+        .select('id,food_name,photo_path,icon_set,icon_name,kcal,carbs_g,protein_g,fat_g')
         .eq('id', entryId)
         .eq('user_id', viewer)
         .abortSignal(signal)

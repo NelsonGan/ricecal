@@ -62,7 +62,7 @@ export const zhHans = {
     everyoneHint: '所有已登录的用户都能看到这篇帖子。',
     followersHint: '只有你和你的粉丝能看到这篇帖子。',
     shareInfo: '关于分享',
-    shareHint: '仅分享这份食物和配文。删除日记记录时，也会删除对应帖子。',
+    shareHint: '仅分享这份食物、它的热量和三大营养素，以及配文。删除日记记录时，也会删除对应帖子。',
     post: '帖子',
     deletePost: '删除帖子',
     deletePostBody: '日记记录会保留。',

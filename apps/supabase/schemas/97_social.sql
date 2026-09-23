@@ -15,7 +15,8 @@ from public.social_profiles p;
 
 create or replace view public.social_post_details with (security_invoker = true) as
 select p.id, p.author_id, a.handle, a.display_name, a.avatar_path,
-  p.food_name, p.icon_set, p.icon_name, p.photo_path, p.caption, p.audience,
+  p.food_name, p.icon_set, p.icon_name, p.photo_path, p.kcal, p.carbs_g, p.protein_g, p.fat_g,
+  p.caption, p.audience,
   p.review_status, p.review_reason, p.revision, p.quarantined, p.created_at, p.published_at,
   private.social_count(p.id, 'likes') as like_count,
   private.social_count(p.id, 'comments') as comment_count,

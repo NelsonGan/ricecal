@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 import { useAvatarUrl, useUserId } from '@/data'
 import {
   type SocialComment,
@@ -24,9 +24,55 @@ import {
 } from '@/features/social/components'
 import { socialRequestId } from '@/features/social/request-id'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Icon, IconButton, Screen, Sheet, Tappable, Text, TextField } from '@/ui'
+import { Button, cn, Icon, IconButton, Screen, Sheet, Tappable, Text, TextField } from '@/ui'
 
 const COMMENT_LIMIT = 500
+
+/**
+ * Round and flat. An `IconButton` keeps its slab under the face, which pushed
+ * the face above the middle of the comment field.
+ */
+function SendButton({
+  ready,
+  pending,
+  onPress,
+}: {
+  ready: boolean
+  pending: boolean
+  onPress: () => void
+}) {
+  const { t } = useTranslation('social')
+  const colors = useThemeColors()
+  return (
+    <Tappable
+      accessibilityRole="button"
+      accessibilityLabel={t('send')}
+      accessibilityState={{ disabled: !ready || pending, busy: pending }}
+      disabled={!ready || pending}
+      hitSlop={8}
+      onPress={onPress}
+      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+    >
+      <View
+        className={cn(
+          'h-9 w-9 items-center justify-center rounded-full',
+          ready ? 'bg-pandan' : 'bg-disabled',
+        )}
+      >
+        {pending ? (
+          <ActivityIndicator size="small" color={colors.onPandan} />
+        ) : (
+          <Icon
+            set="ui"
+            name="arrow-up"
+            size={18}
+            tintColor={ready ? colors.onPandan : colors.onDisabled}
+          />
+        )}
+      </View>
+    </Tappable>
+  )
+}
 
 function CommentRow({
   comment,
@@ -223,8 +269,8 @@ function CommentRow({
           <>
             <Button
               fullWidth
-              variant="ghost"
-              contentClassName="justify-start"
+              variant="secondary"
+              leftIcon={<Icon set="ui" name="edit" size={20} />}
               disabled={!online}
               onPress={() => {
                 afterDismiss.current = () => {
@@ -238,8 +284,8 @@ function CommentRow({
             </Button>
             <Button
               fullWidth
-              variant="ghost"
-              contentClassName="justify-start"
+              variant="danger"
+              leftIcon={<Icon set="ui" name="delete" size={20} />}
               disabled={!online}
               onPress={() => setPanel('delete')}
             >
@@ -265,7 +311,6 @@ function Post({ id }: { id: string }) {
   const own = useSocialProfile()
   const online = useSocialOnline()
   const action = useSocialTask()
-  const colors = useThemeColors()
   const [body, setBody] = useState('')
   const bodyLength = body.length
   const canSend = Boolean(body.trim()) && bodyLength <= COMMENT_LIMIT
@@ -309,20 +354,16 @@ function Post({ id }: { id: string }) {
             editable={!action.isPending}
             multiline
             maxLength={COMMENT_LIMIT}
+            className="pr-2.5"
             inputClassName="max-h-[100px] py-2"
             rightSlot={
-              <IconButton
-                variant="ghost"
-                size="sm"
-                accessibilityLabel={t('send')}
-                disabled={!online || !canSend}
-                loading={action.isPending}
+              <SendButton
+                ready={online && canSend}
+                pending={action.isPending}
                 onPress={() => {
                   void send()
                 }}
-              >
-                <Icon set="system" name="send" size={23} tintColor={colors.pandanInk} />
-              </IconButton>
+              />
             }
           />
         ) : undefined
@@ -340,30 +381,37 @@ function Post({ id }: { id: string }) {
           header={
             <View>
               <PostCard post={post.data} detail />
-              <View className="gap-3 px-5 py-4">
-                {!own.data && (own.isPending || own.isError) ? (
-                  <QueryNotice
-                    pending={own.isPending}
-                    error={own.isError}
-                    paused={own.fetchStatus === 'paused'}
-                    retry={own.refetch}
-                  />
-                ) : null}
-                {!own.data && !own.isPending && !own.isError ? <JoinPrompt /> : null}
-                {own.data && (own.data.review_status !== 'approved' || own.data.quarantined) ? (
-                  <>
-                    <ReviewNotice
-                      status={own.data.quarantined ? 'quarantined' : own.data.review_status}
-                      reason={own.data.review_reason}
-                      kind="profile"
-                      id={own.data.user_id}
+              {/* Only when there is something to say: empty, its padding sat
+                  between the post and its first comment as a blank band. */}
+              {own.data?.review_status !== 'approved' || own.data.quarantined ? (
+                <View className="gap-3 px-5 py-4">
+                  {!own.data && (own.isPending || own.isError) ? (
+                    <QueryNotice
+                      pending={own.isPending}
+                      error={own.isError}
+                      paused={own.fetchStatus === 'paused'}
+                      retry={own.refetch}
                     />
-                    <Button variant="secondary" onPress={() => router.push('/social/edit-profile')}>
-                      {t('editProfile')}
-                    </Button>
-                  </>
-                ) : null}
-              </View>
+                  ) : null}
+                  {!own.data && !own.isPending && !own.isError ? <JoinPrompt /> : null}
+                  {own.data ? (
+                    <>
+                      <ReviewNotice
+                        status={own.data.quarantined ? 'quarantined' : own.data.review_status}
+                        reason={own.data.review_reason}
+                        kind="profile"
+                        id={own.data.user_id}
+                      />
+                      <Button
+                        variant="secondary"
+                        onPress={() => router.push('/social/edit-profile')}
+                      >
+                        {t('editProfile')}
+                      </Button>
+                    </>
+                  ) : null}
+                </View>
+              ) : null}
             </View>
           }
         />

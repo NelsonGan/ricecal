@@ -183,8 +183,8 @@ function Profile({ id }: { id: string }) {
       >
         <Button
           fullWidth
-          variant="ghost"
-          contentClassName="justify-start"
+          variant="secondary"
+          leftIcon={<Icon set="system" name="shield" size={20} />}
           onPress={() => {
             afterDismiss.current = () => router.push('/social/blocked')
             setOptions(false)

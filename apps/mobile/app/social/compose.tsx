@@ -1,4 +1,3 @@
-import { Image } from 'expo-image'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -13,6 +12,7 @@ import {
   useSocialProfile,
 } from '@/data/social'
 import {
+  FoodPreview,
   JoinPrompt,
   QueryNotice,
   ReviewNotice,
@@ -151,50 +151,39 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
         />
       ) : (
         <>
+          {/* The post as others will see it, figures and all, so what is
+              shared is on the screen before Share rather than in a hint. */}
+          <View className="overflow-hidden rounded-tile">
+            <FoodPreview
+              name={foodName}
+              icon={icon}
+              privateUri={privatePhoto.data}
+              hasPhoto={Boolean(existing?.photo_path ?? entry?.photo_path)}
+              facts={existing ?? entry}
+            />
+          </View>
           <View className="gap-2">
-            <View className="flex-row items-start gap-3">
-              <View className="h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-tile bg-pandan-soft">
-                <View className="absolute items-center justify-center">
-                  <Icon {...(icon ?? { set: 'food', name: 'cooking-pot' })} size={58} />
-                </View>
-                {privatePhoto.data ? (
-                  <Image
-                    source={{ uri: privatePhoto.data }}
-                    cachePolicy="none"
-                    contentFit="cover"
-                    style={{ width: '100%', height: '100%' }}
-                    accessibilityLabel={foodName}
-                  />
-                ) : null}
-              </View>
-
-              <View className="min-w-0 flex-1 gap-2">
-                <View className="flex-row items-start gap-1">
-                  <Text variant="bodyStrong" className="min-w-0 flex-1" numberOfLines={2}>
-                    {foodName}
-                  </Text>
-                  <IconButton
-                    variant="ghost"
-                    size="xs"
-                    hitSlop={3}
-                    accessibilityLabel={t('shareInfo')}
-                    onPress={() => setDetailsOpen(true)}
-                  >
-                    <Icon set="ui" name="info" size={20} />
-                  </IconButton>
-                </View>
-                <TextField
-                  accessibilityLabel={t('caption')}
-                  placeholder={t('captionPlaceholder')}
-                  value={caption}
-                  onChangeText={setCaption}
-                  maxLength={280}
-                  multiline
-                  className="min-h-[76px] items-start px-4"
-                  inputClassName="min-h-[68px] py-3"
-                />
-              </View>
-            </View>
+            <TextField
+              label={t('caption')}
+              labelAction={
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  hitSlop={3}
+                  accessibilityLabel={t('shareInfo')}
+                  onPress={() => setDetailsOpen(true)}
+                >
+                  <Icon set="ui" name="info" size={20} />
+                </IconButton>
+              }
+              placeholder={t('captionPlaceholder')}
+              value={caption}
+              onChangeText={setCaption}
+              maxLength={280}
+              multiline
+              className="min-h-[76px] items-start px-4"
+              inputClassName="min-h-[68px] py-3"
+            />
             {caption.length >= 240 ? (
               <Text variant="meta" className="text-right">
                 {t('characterCount', { count: caption.length, limit: 280 })}

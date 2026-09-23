@@ -615,7 +615,11 @@ CREATE FUNCTION public.create_social_post (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-declare v_user uuid := private.social_require_user(); v_id uuid; v_entry public.food_logs;
+declare
+  v_user uuid := private.social_require_user();
+  v_id uuid;
+  v_entry public.food_logs;
+  v_totals record;
 begin
   -- The source lock also serializes publication against its deletion or photo replacement.
   select * into v_entry from public.food_logs where id = p_entry_id and user_id = v_user for share;
@@ -623,10 +627,16 @@ begin
   select id into v_id from public.social_posts where source_entry_id = p_entry_id and author_id = v_user;
   if found then return v_id; end if;
   if not private.social_claim(v_user, 'post', 30) then raise exception 'Try again later' using errcode = 'P0001'; end if;
-  insert into public.social_posts(author_id, source_entry_id, food_name, icon_set, icon_name, photo_path, caption, audience)
+  -- The diary's own arithmetic (typed overrides, then parts, then the portion),
+  -- so a post never disagrees with the entry it was shared from.
+  select d.kcal, d.carbs_g, d.protein_g, d.fat_g into v_totals
+  from public.food_log_details d where d.id = p_entry_id;
+  insert into public.social_posts(author_id, source_entry_id, food_name, icon_set, icon_name, photo_path,
+    kcal, carbs_g, protein_g, fat_g, caption, audience)
   values (v_user, p_entry_id, left(coalesce(v_entry.display_label, v_entry.item_name), 160),
     coalesce(v_entry.icon_set, v_entry.item_icon_set), coalesce(v_entry.icon_name, v_entry.item_icon_name),
     case when v_entry.photo_path like 'meals/' || v_user::text || '/%' then v_entry.photo_path end,
+    v_totals.kcal, v_totals.carbs_g, v_totals.protein_g, v_totals.fat_g,
     btrim(coalesce(p_caption, '')), p_audience)
   on conflict (source_entry_id) do nothing returning id into v_id;
   if v_id is null then
@@ -1363,6 +1373,10 @@ CREATE TABLE public.social_posts (
   icon_name       text,
   photo_path      text,
   photo_etag      text,
+  kcal            integer,
+  carbs_g         numeric(8,1),
+  protein_g       numeric(8,1),
+  fat_g           numeric(8,1),
   caption         text                     DEFAULT ''::text NOT NULL,
   audience        public.social_audience   DEFAULT 'public'::public.social_audience NOT NULL,
   review_status   public.recipe_review     DEFAULT 'pending'::public.recipe_review NOT NULL,
@@ -1381,10 +1395,19 @@ ALTER TABLE public.social_posts
   ADD CONSTRAINT social_posts_caption_check CHECK (char_length(caption) <= 280);
 
 ALTER TABLE public.social_posts
+  ADD CONSTRAINT social_posts_carbs_g_check CHECK (carbs_g >= 0::numeric);
+
+ALTER TABLE public.social_posts
+  ADD CONSTRAINT social_posts_fat_g_check CHECK (fat_g >= 0::numeric);
+
+ALTER TABLE public.social_posts
   ADD CONSTRAINT social_posts_food_name_check CHECK (char_length(food_name) >= 1 AND char_length(food_name) <= 160);
 
 ALTER TABLE public.social_posts
   ADD CONSTRAINT social_posts_icon_complete CHECK ((icon_set IS NULL) = (icon_name IS NULL));
+
+ALTER TABLE public.social_posts
+  ADD CONSTRAINT social_posts_kcal_check CHECK (kcal >= 0);
 
 ALTER TABLE public.social_posts
   ADD CONSTRAINT social_posts_photo_owned CHECK (photo_path IS NULL OR photo_path ~~ (('meals/'::text || author_id::text) || '/%'::text));
@@ -1402,6 +1425,9 @@ ALTER TABLE public.social_notifications
   ADD CONSTRAINT social_notifications_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.social_posts(id) ON DELETE CASCADE;
 
 ALTER TABLE public.social_posts
+  ADD CONSTRAINT social_posts_protein_g_check CHECK (protein_g >= 0::numeric);
+
+ALTER TABLE public.social_posts
   ADD CONSTRAINT social_posts_revision_check CHECK (revision > 0);
 
 ALTER TABLE public.social_posts
@@ -1411,8 +1437,8 @@ ALTER TABLE public.social_posts
   ADD CONSTRAINT social_posts_source_entry_id_key UNIQUE (source_entry_id);
 
 GRANT SELECT
-  (audience, author_id, caption, created_at, food_name, icon_name, icon_set, id, photo_etag, photo_path, published_at, quarantined, review_reason, review_status, revision,
-  updated_at) ON public.social_posts TO authenticated;
+  (audience, author_id, caption, carbs_g, created_at, fat_g, food_name, icon_name, icon_set, id, kcal, photo_etag, photo_path, protein_g, published_at, quarantined, review_reason,
+  review_status, revision, updated_at) ON public.social_posts TO authenticated;
 
 GRANT ALL ON public.social_posts TO service_role;
 
@@ -1664,6 +1690,10 @@ CREATE VIEW public.social_post_details WITH (security_invoker=true) AS SELECT p.
     p.icon_set,
     p.icon_name,
     p.photo_path,
+    p.kcal,
+    p.carbs_g,
+    p.protein_g,
+    p.fat_g,
     p.caption,
     p.audience,
     p.review_status,
@@ -1855,8 +1885,8 @@ grant all on public.social_profiles, public.social_follows, public.social_posts,
 grant select on public.social_profiles, public.social_follows, public.social_likes,
   public.social_reports, public.social_notifications to authenticated;
 
-grant select (id, author_id, food_name, icon_set, icon_name, photo_path, caption,
-  audience, review_status, review_reason, revision, quarantined, photo_etag, created_at, published_at, updated_at)
+grant select (id, author_id, food_name, icon_set, icon_name, photo_path, kcal, carbs_g, protein_g, fat_g,
+  caption, audience, review_status, review_reason, revision, quarantined, photo_etag, created_at, published_at, updated_at)
   on public.social_posts to authenticated;
 
 grant select (id, post_id, author_id, body, review_status, review_reason, revision,
