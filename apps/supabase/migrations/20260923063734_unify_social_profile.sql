@@ -82,6 +82,10 @@ DROP POLICY "social profiles: visible identities" ON public.social_profiles;
 
 DROP TABLE public.social_profiles;
 
+-- These development rows have no foreign keys to the recreated content.
+-- Clear them with the posts and identities they counted or reported.
+TRUNCATE TABLE public.social_counters, public.social_reports, public.social_rate_limits;
+
 CREATE OR REPLACE FUNCTION private.social_can_view_profile (
   p_user uuid
 )
