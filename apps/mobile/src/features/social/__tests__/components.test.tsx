@@ -112,7 +112,7 @@ it('asks a reader without public identity to create one before following', async
   })
   await render(<FollowButton id="someone" following={false} />)
   await userEvent.setup().press(screen.getByRole('button', { name: 'Follow' }))
-  expect(mockPush).toHaveBeenCalledWith('/social/edit-profile')
+  expect(mockPush).toHaveBeenCalledWith('/settings/account')
   expect(mockMutate).not.toHaveBeenCalled()
 })
 
@@ -166,7 +166,7 @@ it('does not treat an unresolved public identity as permission to like', async (
   await view.rerender(<PostCard post={post} />)
   await userEvent.setup().press(screen.getByRole('button', { name: 'Like, 0 likes' }))
   expect(mockMutate).toHaveBeenCalledWith({ action: 'like', id: 'post', liked: true })
-  expect(mockPush).not.toHaveBeenCalledWith('/social/edit-profile')
+  expect(mockPush).not.toHaveBeenCalledWith('/settings/account')
 })
 
 it('lays the name, calories and macros over the food and reads them out', async () => {

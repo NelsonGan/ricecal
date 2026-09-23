@@ -593,6 +593,9 @@ export function useSocialAction() {
         (input.action === 'follow' && !input.following)
       ) {
         await resetSocial()
+        if (input.action === 'profile') {
+          await client.invalidateQueries({ queryKey: keys.profile(viewer) })
+        }
       } else if (input.action === 'comment') {
         // One post changed. An approved comment also adds to its count wherever
         // that post is drawn; a pending one counts once review approves it.

@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import * as Clipboard from 'expo-clipboard'
 import * as ImagePicker from 'expo-image-picker'
@@ -12,12 +13,13 @@ import {
   useProfile,
   useSession,
   useUpdateProfile,
+  useUserId,
 } from '@/data'
 import { changeAccountPassword, hasAccountPassword } from '@/data/account-password'
 import { asAuthProblem, deleteAccount } from '@/data/auth'
-import { openManageSubscriptions } from '@/data/purchases'
+import { keys } from '@/data/keys'
+import { reviewSocial, useSocialAction, useSocialOnline, useSocialProfile } from '@/data/social'
 import { CaptchaProvider, PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
-import { usePlanSummary } from '@/features/paywall'
 import { datePattern } from '@/lib/dates'
 import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal'
 import { useBack } from '@/lib/navigation'
@@ -39,22 +41,33 @@ import {
 } from '@/ui'
 
 export default function AccountScreen() {
-  const { t } = useTranslation(['profile', 'common', 'onboarding'])
+  const { t } = useTranslation(['profile', 'common', 'onboarding', 'social'])
   const goBack = useBack('/me')
   const toast = useToast()
   const { session } = useSession()
   const { data: profile } = useProfile()
   const updateProfile = useUpdateProfile()
-  const plan = usePlanSummary()
+  const publicAction = useSocialAction()
+  const publicProfile = useSocialProfile()
+  const online = useSocialOnline()
+  const viewer = useUserId()
+  const queryClient = useQueryClient()
   const { data: avatarUri } = useAvatarUrl(profile?.avatar_path ?? undefined)
   const memberSince = profile?.created_at ?? session?.user.created_at
   const avatar = storedImageSource(profile?.avatar_path ?? undefined, avatarUri)
   const [photoPending, setPhotoPending] = useState(false)
   const pickingPhoto = useRef(false)
-  const busy = photoPending || updateProfile.isPending
+  const busy = photoPending || updateProfile.isPending || publicAction.isPending
   // An untouched draft follows the query, including a profile that loads late.
   const [draft, setDraft] = useState<string>()
   const name = draft ?? profile?.display_name ?? ''
+  const [handleDraft, setHandleDraft] = useState<string>()
+  const [bioDraft, setBioDraft] = useState<string>()
+  const handle = handleDraft ?? profile?.handle ?? ''
+  const bio = bioDraft ?? profile?.bio ?? ''
+  const [publicSubmitted, setPublicSubmitted] = useState(false)
+  const [handleTaken, setHandleTaken] = useState(false)
+  const [handleHelpOpen, setHandleHelpOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -78,6 +91,10 @@ export default function AccountScreen() {
     saving.current = (async () => {
       try {
         await updateProfile.mutateAsync({ displayName: name.trim() })
+        if (profile.handle) {
+          await reviewSocial('profile', viewer)
+          await queryClient.invalidateQueries({ queryKey: keys.social(viewer) })
+        }
         setDraft((current) => (current === draft ? undefined : current))
         toast.show({ title: t('profile:account.saved') })
         return true
@@ -89,6 +106,33 @@ export default function AccountScreen() {
       }
     })()
     return saving.current
+  }
+
+  const savePublic = async () => {
+    setPublicSubmitted(true)
+    const normalized = handle.trim().toLowerCase()
+    if (!profile || !/^[a-z0-9_]{3,24}$/.test(normalized) || !name.trim() || !online) return
+    if (!(await save())) return
+    if (normalized === profile.handle && bio.trim() === profile.bio) return
+    try {
+      await publicAction.mutateAsync({
+        action: 'profile',
+        handle: normalized,
+        name: name.trim(),
+        bio: bio.trim(),
+        avatar: profile.avatar_path,
+      })
+      setHandleDraft(undefined)
+      setBioDraft(undefined)
+      setHandleTaken(false)
+      toast.show({ title: t('social:saved') })
+    } catch (error) {
+      if (typeof error === 'object' && error && 'code' in error && error.code === '23505') {
+        setHandleTaken(true)
+      } else {
+        toast.show({ title: t('social:saveFailed'), tone: 'error' })
+      }
+    }
   }
 
   const copyEmail = async () => {
@@ -119,6 +163,10 @@ export default function AccountScreen() {
       if (result.canceled || !result.assets[0]) return
       const avatarPath = await uploadAvatar(result.assets[0].uri)
       await updateProfile.mutateAsync({ avatarPath })
+      if (profile.handle) {
+        await reviewSocial('profile', viewer)
+        await queryClient.invalidateQueries({ queryKey: keys.social(viewer) })
+      }
       toast.show({ title: t('profile:account.photoSaved') })
     } catch {
       toast.show({ title: t('profile:account.photoFailed'), tone: 'error' })
@@ -210,7 +258,7 @@ export default function AccountScreen() {
             </View>
           </View>
         ) : null}
-        <View className="border-b-2 border-track py-4">
+        <View className="gap-4 border-b-2 border-track py-4">
           <TextField
             label={t('profile:account.name')}
             value={name}
@@ -224,6 +272,64 @@ export default function AccountScreen() {
             onSubmitEditing={() => Keyboard.dismiss()}
             error={submitted && !name.trim() ? t('profile:account.nameRequired') : undefined}
           />
+          <TextField
+            label={t('social:handle')}
+            labelAction={
+              <IconButton
+                variant="ghost"
+                size="xs"
+                hitSlop={3}
+                accessibilityLabel={t('social:handleHint')}
+                onPress={() => setHandleHelpOpen(true)}
+              >
+                <Icon set="ui" name="info" size={18} />
+              </IconButton>
+            }
+            value={handle}
+            onChangeText={(value) => {
+              setHandleDraft(value.toLowerCase())
+              setHandleTaken(false)
+            }}
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={24}
+            editable={Boolean(profile) && !busy}
+            error={
+              handleTaken
+                ? t('social:handleTaken')
+                : publicSubmitted && !/^[a-z0-9_]{3,24}$/.test(handle.trim())
+                  ? t('social:handleInvalid')
+                  : undefined
+            }
+          />
+          <TextField
+            label={t('social:bio')}
+            value={bio}
+            onChangeText={setBioDraft}
+            maxLength={160}
+            multiline
+            editable={Boolean(profile) && !busy}
+          />
+          {profile?.handle &&
+          (publicProfile.data?.review_status !== 'approved' || publicProfile.data?.quarantined) ? (
+            <Text variant="meta">
+              {t(
+                `social:${publicProfile.data?.quarantined ? 'quarantined' : (publicProfile.data?.review_status ?? 'pending')}`,
+              )}
+            </Text>
+          ) : null}
+          <Button
+            size="sm"
+            onPress={savePublic}
+            disabled={
+              !profile ||
+              busy ||
+              !online ||
+              (handle.trim() === profile.handle && bio.trim() === profile.bio)
+            }
+          >
+            {t('social:save')}
+          </Button>
         </View>
         <ListRow
           title={t('profile:account.changePassword')}
@@ -252,19 +358,6 @@ export default function AccountScreen() {
           </View>
         </Tappable>
       </Card>
-      {plan.renews ? (
-        <View className="gap-2">
-          <Text variant="meta">{t('profile:account.cancelFirst')}</Text>
-          <Button
-            variant="ghost"
-            size="sm"
-            onPress={() => openManageSubscriptions('cancel', 'account')}
-          >
-            {t('profile:subscription.manage')}
-          </Button>
-        </View>
-      ) : null}
-
       <View className="flex-row flex-wrap justify-center gap-x-5 gap-y-1">
         {[
           [PRIVACY_URL, t('profile:account.privacy')],
@@ -283,6 +376,14 @@ export default function AccountScreen() {
         ))}
       </View>
 
+      <Sheet
+        visible={handleHelpOpen}
+        onClose={() => setHandleHelpOpen(false)}
+        title={t('social:handle')}
+        closeLabel={t('common:action.close')}
+      >
+        <Text>{t('social:handleHint')}</Text>
+      </Sheet>
       {passwordOpen ? <ChangePassword onClose={() => setPasswordOpen(false)} /> : null}
       {confirming ? <DeleteAccount onClose={() => setConfirming(false)} /> : null}
     </Screen>

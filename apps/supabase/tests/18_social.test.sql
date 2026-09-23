@@ -64,16 +64,18 @@ select throws_ok($q$select public.set_social_profile('a handle', 'Alice', '', nu
   '23514', null, 'spaces cannot become a handle');
 select throws_ok($q$select public.set_social_profile('名字名字', 'Alice', '', null)$q$,
   '23514', null, 'non-ASCII handles cannot bypass normalized uniqueness');
-select throws_ok($q$update public.social_profiles set review_status = 'approved'$q$, '42501', null,
+select throws_ok($q$update public.profiles set review_status = 'approved'$q$, '42501', null,
   'an ordinary client cannot approve its profile');
 reset role;
 
 select public.review_social_content('profile', :'alice', 1, 'approved', null);
-insert into public.social_profiles (user_id, handle, display_name, review_status)
-values (:'bob', 'social_bob', 'Bob fixture', 'approved'),
-       (:'carol', 'social_carol', 'Carol fixture', 'approved'),
-       (:'dan', 'social_dan', 'Dan fixture', 'approved'),
-       (:'eve', 'social_eve', 'Eve fixture', 'approved');
+update public.profiles p set handle = v.handle, display_name = v.name, review_status = 'approved'
+from (values (:'bob'::uuid, 'social_bob', 'Bob fixture'),
+             (:'carol'::uuid, 'social_carol', 'Carol fixture'),
+             (:'dan'::uuid, 'social_dan', 'Dan fixture'),
+             (:'eve'::uuid, 'social_eve', 'Eve fixture')) v(id, handle, name)
+where p.id = v.id;
+update public.profiles set review_status = 'approved' where id in (:'bob', :'carol', :'dan', :'eve');
 
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -169,7 +171,7 @@ select is(public.social_unread_notification_count(), 2,
   'the unread badge reports each missed notification');
 reset role;
 
-update public.social_profiles set review_status = 'pending' where user_id = :'bob';
+update public.profiles set review_status = 'pending' where id = :'bob';
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select lives_ok(format('select public.set_social_follow(%L, false)', :'alice'),
@@ -185,7 +187,7 @@ select is((select count(*)::int from public.social_follows where follower_id = :
   'the pending-profile unfollow actually removes its edge');
 select is((select count(*)::int from public.social_likes where user_id = :'bob' and post_id = :'post'), 0,
   'the pending-profile unlike actually removes its edge');
-update public.social_profiles set review_status = 'approved' where user_id = :'bob';
+update public.profiles set review_status = 'approved' where id = :'bob';
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select public.set_social_follow(:'alice', true);
@@ -475,7 +477,7 @@ select is(array(
   order by 1
 ), '{}'::text[], 'every social foreign key leads an index its cascade can use');
 select is((select c.collname::text from pg_attribute a join pg_collation c on c.oid = a.attcollation
-    where a.attrelid = 'public.social_profiles'::regclass and a.attname = 'handle'), 'C',
+    where a.attrelid = 'public.profiles'::regclass and a.attname = 'handle'), 'C',
   'handles sort in byte order, so one unique index bounds every search page');
 
 select * from finish();

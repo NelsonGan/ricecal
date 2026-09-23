@@ -41,7 +41,7 @@ import {
   Icon,
   IconButton,
   Sheet,
-  Spinner,
+  Skeleton,
   Tappable,
   Text,
   useToast,
@@ -57,6 +57,51 @@ export function socialTime(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return formatDistanceToNowStrict(date, { addSuffix: true })
+}
+
+function SocialSkeleton({
+  variant = 'cards',
+  count = 3,
+}: {
+  variant?: 'cards' | 'feed' | 'rows' | 'grid'
+  count?: number
+}) {
+  const { t } = useTranslation('social')
+  const slots = ['first', 'second', 'third', 'fourth']
+  if (variant === 'grid') {
+    return (
+      <View
+        accessibilityRole="progressbar"
+        accessibilityLabel={t('loading')}
+        className="flex-row flex-wrap p-1"
+      >
+        {slots.slice(0, count === 3 ? 4 : 2).map((slot) => (
+          <View key={slot} className="w-1/2 p-0.5">
+            <Skeleton height={170} rounded={false} />
+          </View>
+        ))}
+      </View>
+    )
+  }
+  return (
+    <View accessibilityRole="progressbar" accessibilityLabel={t('loading')} className="gap-4 p-5">
+      {slots.slice(0, count).map((slot) => (
+        <View key={slot} className="gap-3 rounded-md bg-surface p-4">
+          <View className="flex-row items-center gap-3">
+            <Skeleton width={42} height={42} rounded={false} />
+            <View className="flex-1 gap-2">
+              <Skeleton width="55%" />
+              <Skeleton width="30%" height={10} />
+            </View>
+          </View>
+          {variant === 'feed' || variant === 'cards' ? (
+            <Skeleton height={180} rounded={false} />
+          ) : null}
+          {variant !== 'rows' ? <Skeleton width="70%" height={12} /> : null}
+        </View>
+      ))}
+    </View>
+  )
 }
 
 const minuteListeners = new Set<() => void>()
@@ -434,39 +479,15 @@ export function FoodPreview({
 }
 
 export function JoinPrompt() {
-  const { t } = useTranslation(['social', 'common'])
+  const { t } = useTranslation('social')
   const router = useRouter()
-  const colors = useThemeColors()
-  const [details, setDetails] = useState(false)
   return (
-    <>
-      <Card>
-        <View className="flex-row items-center gap-2">
-          <Text variant="subtitle" className="min-w-0 flex-1">
-            {t('join')}
-          </Text>
-          <IconButton
-            size="sm"
-            variant="ghost"
-            accessibilityLabel={t('shareInfo')}
-            onPress={() => setDetails(true)}
-          >
-            <Icon set="ui" name="info" size={20} tintColor={colors.muted} />
-          </IconButton>
-        </View>
-        <Button size="sm" onPress={() => router.push('/social/edit-profile')}>
-          {t('join')}
-        </Button>
-      </Card>
-      <Sheet
-        visible={details}
-        onClose={() => setDetails(false)}
-        closeLabel={t('common:action.close')}
-        title={t('join')}
-      >
-        <Text>{t('joinBody')}</Text>
-      </Sheet>
-    </>
+    <Card>
+      <Text variant="subtitle">{t('myProfile')}</Text>
+      <Button size="sm" onPress={() => router.push('/settings/account')}>
+        {t('editProfile')}
+      </Button>
+    </Card>
   )
 }
 
@@ -518,7 +539,7 @@ function FollowButtonControl({
             router.push(
               own
                 ? { pathname: '/social/profile/[id]', params: { id: viewer } }
-                : '/social/edit-profile',
+                : '/settings/account',
             )
             return
           }
@@ -867,9 +888,7 @@ export function PostCard({
       if (own === undefined) return
       if (own === null || own.review_status !== 'approved' || own.quarantined) {
         router.push(
-          own
-            ? { pathname: '/social/profile/[id]', params: { id: viewer } }
-            : '/social/edit-profile',
+          own ? { pathname: '/social/profile/[id]', params: { id: viewer } } : '/settings/account',
         )
         return
       }
@@ -1248,7 +1267,7 @@ export function SocialList<T>({
       onEndReachedThreshold={0.6}
       ListEmptyComponent={
         query.isPending && query.fetchStatus !== 'paused' ? (
-          <Spinner label={t('loading')} />
+          <SocialSkeleton variant={variant} />
         ) : (
           <EmptyState
             title={
@@ -1278,7 +1297,7 @@ export function SocialList<T>({
             {t('retry')}
           </Button>
         ) : query.isFetchingNextPage ? (
-          <Spinner label={t('loading')} />
+          <SocialSkeleton variant={variant} count={1} />
         ) : query.hasNextPage ? (
           <Button
             size="sm"
@@ -1314,7 +1333,7 @@ export function QueryNotice({
   retry: () => unknown
 }) {
   const { t } = useTranslation('social')
-  if (pending && !paused) return <Spinner label={t('loading')} />
+  if (pending && !paused) return <SocialSkeleton />
   return (
     <View className="gap-3">
       <EmptyState

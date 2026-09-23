@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -16,7 +17,10 @@ const mockUpload = jest.fn().mockResolvedValue('avatars/user/new.jpg')
 const mockCopy = jest.fn().mockResolvedValue(true)
 const mockBack = jest.fn()
 const mockDelete = jest.fn().mockResolvedValue(undefined)
-let mockProfile: { display_name: string } | undefined = { display_name: 'Alex' }
+const mockSocialAction = jest.fn().mockResolvedValue({})
+let mockProfile:
+  | { display_name: string; handle?: string | null; bio?: string; avatar_path?: string | null }
+  | undefined = { display_name: 'Alex' }
 
 jest.mock('@/data', () => ({
   useAvatarUrl: () => ({ data: undefined }),
@@ -25,6 +29,13 @@ jest.mock('@/data', () => ({
   useProfile: () => ({ data: mockProfile }),
   useSession: () => ({ session: { user: { email: 'account@example.test' } } }),
   useUpdateProfile: () => ({ mutateAsync: mockUpdateProfile, isPending: false }),
+  useUserId: () => 'user',
+}))
+jest.mock('@/data/social', () => ({
+  useSocialAction: () => ({ mutateAsync: mockSocialAction, isPending: false }),
+  useSocialOnline: () => true,
+  useSocialProfile: () => ({ data: null }),
+  reviewSocial: jest.fn().mockResolvedValue('approved'),
 }))
 jest.mock('@/data/auth', () => ({
   asAuthProblem: (error: unknown) => error,
@@ -34,8 +45,6 @@ jest.mock('@/data/account-password', () => ({
   hasAccountPassword: () => mockHasPassword(),
   changeAccountPassword: (...args: unknown[]) => mockUpdatePassword(...args),
 }))
-jest.mock('@/data/purchases', () => ({ openManageSubscriptions: jest.fn() }))
-jest.mock('@/features/paywall', () => ({ usePlanSummary: () => ({ renews: false }) }))
 jest.mock('@/features/auth', () => {
   const React = jest.requireActual<typeof import('react')>('react')
   const Context = React.createContext(false)
@@ -56,16 +65,18 @@ jest.mock('@/lib/navigation', () => ({ useBack: () => mockBack }))
 
 function Providers({ children }: { children: ReactNode }) {
   return (
-    <SafeAreaProvider
-      initialMetrics={{
-        frame: { x: 0, y: 0, width: 390, height: 844 },
-        insets: { top: 47, left: 0, right: 0, bottom: 34 },
-      }}
-    >
-      <ThemeProvider>
-        <ToastProvider>{children}</ToastProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <QueryClientProvider client={new QueryClient()}>
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 390, height: 844 },
+          insets: { top: 47, left: 0, right: 0, bottom: 34 },
+        }}
+      >
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </QueryClientProvider>
   )
 }
 const user = userEvent.setup()
@@ -111,6 +122,33 @@ it('rejects a blank name and saves only the trimmed name', async () => {
   await user.type(screen.getByLabelText('NAME'), 'Sam  ', { skipBlur: true })
   await fireEvent(screen.getByLabelText('NAME'), 'blur')
   expect(mockUpdateProfile).toHaveBeenCalledWith({ displayName: 'Sam' })
+})
+
+it('saves handle and bio from the existing account page', async () => {
+  mockProfile = { display_name: 'Alex', handle: null, bio: '', avatar_path: null }
+  await mount()
+  expect(screen.queryByText('My profile')).toBeNull()
+  expect(
+    screen.queryByText('Choose what people see. Your diary stays private until you share a meal.'),
+  ).toBeNull()
+  expect(screen.queryByText('3 to 24 lowercase letters, numbers or underscores.')).toBeNull()
+  await user.press(
+    screen.getByRole('button', { name: '3 to 24 lowercase letters, numbers or underscores.' }),
+  )
+  expect(screen.getByText('3 to 24 lowercase letters, numbers or underscores.')).toBeTruthy()
+  await user.press(screen.getByRole('button', { name: 'Close' }))
+  await user.type(screen.getByLabelText('Handle'), 'alex_cooks')
+  await user.type(screen.getByLabelText('Bio'), 'Rice and noodles')
+  await user.press(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() =>
+    expect(mockSocialAction).toHaveBeenCalledWith({
+      action: 'profile',
+      handle: 'alex_cooks',
+      name: 'Alex',
+      bio: 'Rice and noodles',
+      avatar: null,
+    }),
+  )
 })
 
 it('keeps a failed name draft available for retry', async () => {
