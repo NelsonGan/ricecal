@@ -35,7 +35,6 @@ import {
   Avatar,
   Badge,
   Button,
-  Card,
   cn,
   EmptyState,
   Icon,
@@ -158,6 +157,7 @@ export function SocialPhoto({
   size = 'sm',
   label,
   onShown,
+  onFailed,
 }: {
   path?: string | null
   privateUri?: string
@@ -167,6 +167,7 @@ export function SocialPhoto({
   label: string
   /** Whether the picture is on screen, so what sits over it can match. */
   onShown?: (shown: boolean) => void
+  onFailed?: () => void
 }) {
   const [focused, setFocused] = useState(false)
   useFocusEffect(
@@ -176,21 +177,14 @@ export function SocialPhoto({
     }, []),
   )
   const photo = useSocialPhoto(path, visible && focused && !privateUri)
-  const [, tick] = useState(0)
-  useEffect(() => {
-    if (!photo.data) return
-    const timer = setTimeout(
-      () => tick((value) => value + 1),
-      Math.max(0, photo.data.expiresAt - Date.now()),
-    )
-    return () => clearTimeout(timer)
-  }, [photo.data])
   const box = { sm: 40, md: 52, lg: 64 }[size]
-  const signed =
-    visible && !privateUri && !photo.isError && photo.data && photo.data.expiresAt > Date.now()
+  const signed = visible && !privateUri && !photo.isError && photo.data
   useEffect(() => {
-    if (!signed) onShown?.(false)
-  }, [signed, onShown])
+    if (visible && !signed) onShown?.(false)
+  }, [visible, signed, onShown])
+  useEffect(() => {
+    if (photo.isError) onFailed?.()
+  }, [photo.isError, onFailed])
   if (visible && privateUri) {
     return (
       <Image
@@ -211,9 +205,8 @@ export function SocialPhoto({
   }
   return (
     <Image
-      // Keyed on the reviewed bytes, not the URL, which changes with every
-      // signature. Memory only: re-signing no longer downloads the same image
-      // again, and nothing reaches disk.
+      // Keyed on the object's ETag, since the URL changes with every signature.
+      // Memory cache avoids downloading the same bytes after a tab switch.
       source={{
         uri: photo.data.url,
         headers: photo.data.headers,
@@ -229,7 +222,10 @@ export function SocialPhoto({
       }
       accessibilityLabel={label}
       onLoad={() => onShown?.(true)}
-      onError={() => onShown?.(false)}
+      onError={() => {
+        onShown?.(false)
+        onFailed?.()
+      }}
     />
   )
 }
@@ -414,6 +410,7 @@ export function FoodPreview({
   visible = true,
   privateUri,
   hasPhoto,
+  photoUnavailable = false,
   facts,
   variant = 'card',
 }: {
@@ -424,16 +421,21 @@ export function FoodPreview({
   privateUri?: string
   /** A private photo's link arrives after the post does; this keeps its square meanwhile. */
   hasPhoto?: boolean
+  photoUnavailable?: boolean
   facts?: Partial<FoodFacts> | null
   variant?: 'card' | 'tile'
 }) {
+  const { t } = useTranslation('social')
   const drawing = icon ?? { set: 'food', name: 'cooking-pot' }
   const tile = variant === 'tile'
-  // The box is a photo's square from the start so nothing moves when it loads,
-  // but the panel only darkens once the photo is really there: until then, and
-  // if it never arrives, it sits on the drawing's pale tile.
-  const [shown, setShown] = useState(false)
+  // Keep the photo square stable while its link and bytes arrive. Use the food
+  // drawing only for a post that has no photo at all.
+  const [shownSource, setShownSource] = useState<string | null>(null)
+  const [failedSource, setFailedSource] = useState<string | null>(null)
   const expectsPhoto = hasPhoto ?? Boolean(privateUri || photo)
+  const source = privateUri || photo || ''
+  const shown = Boolean(source) && shownSource === source
+  const failed = photoUnavailable || (Boolean(source) && failedSource === source)
   const caption = (
     <FoodCaption name={name} facts={facts} compact={tile} onPhoto={expectsPhoto && shown} />
   )
@@ -448,16 +450,27 @@ export function FoodPreview({
     )
   }
   return (
-    <View className={cn('aspect-square overflow-hidden bg-pandan-soft', tile && 'rounded-tile')}>
-      {/* Under the photograph while it loads, and in its place if it cannot. */}
-      <View
-        className={cn(
-          'absolute inset-x-0 top-0 items-center justify-center',
-          tile ? 'bottom-12' : 'bottom-0',
-        )}
-      >
-        <Icon {...drawing} size={tile ? 84 : 120} />
-      </View>
+    <View className={cn('aspect-square overflow-hidden bg-track', tile && 'rounded-tile')}>
+      {!expectsPhoto ? (
+        <View className="absolute inset-0 items-center justify-center bg-pandan-soft">
+          <Icon {...drawing} size={84} />
+        </View>
+      ) : null}
+      {expectsPhoto && !shown && !failed ? (
+        <View
+          className="absolute inset-0"
+          accessible
+          accessibilityRole="progressbar"
+          accessibilityLabel={t('loading')}
+        >
+          <Skeleton width="100%" height="100%" rounded={false} />
+        </View>
+      ) : null}
+      {failed ? (
+        <View className="absolute inset-0 items-center justify-center">
+          <Icon set="system" name="photo" size={tile ? 36 : 48} />
+        </View>
+      ) : null}
       {privateUri ? (
         <Image
           source={{ uri: privateUri }}
@@ -465,29 +478,31 @@ export function FoodPreview({
           contentFit="cover"
           style={{ width: '100%', height: '100%' }}
           accessibilityLabel={name}
-          onLoad={() => setShown(true)}
-          onError={() => setShown(false)}
+          onLoad={() => {
+            setShownSource(source)
+            setFailedSource(null)
+          }}
+          onError={() => {
+            setShownSource(null)
+            setFailedSource(source)
+          }}
         />
       ) : photo ? (
-        <SocialPhoto path={photo} visible={visible} label={name} onShown={setShown} />
+        <SocialPhoto
+          path={photo}
+          visible={visible}
+          label={name}
+          onShown={(value) => {
+            setShownSource(value ? source : null)
+            if (value) setFailedSource(null)
+          }}
+          onFailed={() => setFailedSource(source)}
+        />
       ) : null}
       <View className={cn('absolute', tile ? 'inset-x-1.5 bottom-1.5' : 'inset-x-3 bottom-3')}>
         {caption}
       </View>
     </View>
-  )
-}
-
-export function JoinPrompt() {
-  const { t } = useTranslation('social')
-  const router = useRouter()
-  return (
-    <Card>
-      <Text variant="subtitle">{t('myProfile')}</Text>
-      <Button size="sm" onPress={() => router.push('/settings/account')}>
-        {t('editProfile')}
-      </Button>
-    </Card>
   )
 }
 
@@ -535,7 +550,7 @@ function FollowButtonControl({
             if (ownError) retryOwn()
             return
           }
-          if (own === null || own.review_status !== 'approved' || own.quarantined) {
+          if (own?.quarantined) {
             router.push(
               own
                 ? { pathname: '/social/profile/[id]', params: { id: viewer } }
@@ -655,7 +670,7 @@ export function ReviewNotice({
         >
           <Icon set="ui" name="info" size={20} tintColor={colors.muted} />
         </IconButton>
-        {status === 'pending' ? (
+        {status === 'pending' && kind !== 'post' ? (
           <Button
             size="sm"
             variant="neutral"
@@ -873,6 +888,7 @@ export function PostCard({
   const [panel, setPanel] = useState<'options' | 'delete' | null>(null)
   const afterDismiss = useRef<(() => void) | null>(null)
   const mine = post.author_id === viewer
+  const authorName = post.display_name.trim() || t('unknownPerson')
   const own = ownProfile.data
   const privatePhoto =
     mine && (post.review_status !== 'approved' || post.quarantined)
@@ -886,7 +902,7 @@ export function PostCard({
   const toggleLike = () => {
     if (!post.is_liked) {
       if (own === undefined) return
-      if (own === null || own.review_status !== 'approved' || own.quarantined) {
+      if (own?.quarantined) {
         router.push(
           own ? { pathname: '/social/profile/[id]', params: { id: viewer } } : '/settings/account',
         )
@@ -904,7 +920,7 @@ export function PostCard({
             router.push({ pathname: '/social/profile/[id]', params: { id: post.author_id } })
           }
           accessibilityRole="button"
-          accessibilityLabel={[post.display_name, `@${post.handle}`, time]
+          accessibilityLabel={[authorName, post.handle ? `@${post.handle}` : '', time]
             .filter(Boolean)
             .join(', ')}
         >
@@ -913,14 +929,14 @@ export function PostCard({
             privateUri={ownAvatar.data}
             visible={visible}
             avatar
-            label={post.display_name}
+            label={authorName}
           />
           <View className="min-w-0 flex-1">
             <Text variant="label" numberOfLines={1}>
-              {post.display_name}
+              {authorName}
             </Text>
             <Text variant="meta" numberOfLines={1}>
-              {[`@${post.handle}`, time].filter(Boolean).join(' · ')}
+              {[post.handle ? `@${post.handle}` : '', time].filter(Boolean).join(' · ')}
             </Text>
           </View>
         </Tappable>
@@ -965,6 +981,9 @@ export function PostCard({
             visible={visible}
             privateUri={ownPhoto.data}
             hasPhoto={Boolean(post.photo_path)}
+            photoUnavailable={Boolean(
+              privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
+            )}
             facts={post}
           />
         </View>
@@ -981,6 +1000,9 @@ export function PostCard({
             visible={visible}
             privateUri={ownPhoto.data}
             hasPhoto={Boolean(post.photo_path)}
+            photoUnavailable={Boolean(
+              privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
+            )}
             facts={post}
           />
         </Tappable>
@@ -1151,6 +1173,10 @@ export function PostTile({ post, visible = true }: { post: SocialPost; visible?:
         icon={toIcon(post.icon_set, post.icon_name)}
         visible={visible}
         privateUri={ownPhoto.data}
+        hasPhoto={Boolean(post.photo_path)}
+        photoUnavailable={Boolean(
+          privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
+        )}
         facts={post}
         variant="tile"
       />

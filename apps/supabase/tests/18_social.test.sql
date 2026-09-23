@@ -51,8 +51,8 @@ select ok(not exists (
 
 select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select throws_ok(format('select public.create_social_post(%L, %L, %L)', :'entry', '', 'public'),
-  '42501', null, 'publication requires an explicit public identity');
+select is((select count(*)::int from public.social_profiles where user_id = :'alice'), 1,
+  'an account can see its own social profile before choosing a handle');
 select public.set_social_profile('Social_ALICE', 'Alice fixture', '爱吃饭', null);
 select is((select handle from public.social_profiles where user_id = :'alice'), 'social_alice',
   'handles normalize to lowercase while profile text accepts other languages');
@@ -124,12 +124,13 @@ reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*)::int from public.social_posts where id = :'post'), 0,
-  'pending post text and media cannot be read by another account');
+select is((select count(*)::int from public.social_posts where id = :'post'), 1,
+  'a new post is visible immediately without review');
 select throws_ok(format('select public.review_social_content(%L, %L, 1, %L, null)', 'post', :'post', 'approved'),
   '42501', null, 'clients cannot invoke service-only review approval');
 reset role;
-select is(public.review_social_content('post', :'post', 1, 'approved', null, '"fixture-etag"'), true, 'the service approves the revision it actually reviewed');
+select is(public.review_social_content('post', :'post', 1, 'approved', null, '"fixture-etag"'), false,
+  'an already published post has no pending review');
 
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -178,15 +179,15 @@ select lives_ok(format('select public.set_social_follow(%L, false)', :'alice'),
   'a pending profile can withdraw an existing follow');
 select lives_ok(format('select public.set_social_like(%L, false)', :'post'),
   'a pending profile can withdraw an existing like');
-select throws_ok(format('select public.set_social_follow(%L, true)', :'alice'), '42501', null,
-  'a pending profile still cannot create a follow');
-select throws_ok(format('select public.set_social_like(%L, true)', :'post'), '42501', null,
-  'a pending profile still cannot create a like');
+select lives_ok(format('select public.set_social_follow(%L, true)', :'alice'),
+  'an existing account can follow without waiting for profile review');
+select lives_ok(format('select public.set_social_like(%L, true)', :'post'),
+  'an existing account can like without waiting for profile review');
 reset role;
-select is((select count(*)::int from public.social_follows where follower_id = :'bob' and followed_id = :'alice'), 0,
-  'the pending-profile unfollow actually removes its edge');
-select is((select count(*)::int from public.social_likes where user_id = :'bob' and post_id = :'post'), 0,
-  'the pending-profile unlike actually removes its edge');
+select is((select count(*)::int from public.social_follows where follower_id = :'bob' and followed_id = :'alice'), 1,
+  'the later follow restores its edge');
+select is((select count(*)::int from public.social_likes where user_id = :'bob' and post_id = :'post'), 1,
+  'the later like restores its edge');
 update public.profiles set review_status = 'approved' where id = :'bob';
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -202,8 +203,8 @@ select public.update_social_post(:'post', 'Edited lunch', 'followers');
 reset role;
 select is(public.review_social_content('post', :'post', 1, 'approved', null, '"fixture-etag"'), false,
   'a delayed review cannot approve text edited after the request');
-select is(public.review_social_content('post', :'post', 2, 'approved', null, '"fixture-etag"'), true,
-  'review of the latest revision can approve the edit');
+select is((select review_status::text from public.social_posts where id = :'post'), 'approved',
+  'editing a post stays published');
 select public.review_social_content('comment', :'comment', 1, 'approved', null);
 select id as comment_activity from public.social_notifications
   where comment_id = :'comment' \gset

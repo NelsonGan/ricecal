@@ -151,6 +151,22 @@ it('saves handle and bio from the existing account page', async () => {
   )
 })
 
+it('saves a bio while leaving the handle empty', async () => {
+  mockProfile = { display_name: 'Alex', handle: null, bio: '', avatar_path: null }
+  await mount()
+  await user.type(screen.getByLabelText('Bio'), 'Rice and noodles')
+  await user.press(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() =>
+    expect(mockSocialAction).toHaveBeenCalledWith({
+      action: 'profile',
+      handle: '',
+      name: 'Alex',
+      bio: 'Rice and noodles',
+      avatar: null,
+    }),
+  )
+})
+
 it('keeps a failed name draft available for retry', async () => {
   mockUpdateProfile.mockRejectedValueOnce(new Error('offline'))
   await mount()

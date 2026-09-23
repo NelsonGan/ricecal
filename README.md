@@ -2446,7 +2446,7 @@ out of the middle.
 This is an explicit publication system. Logging a meal never publishes it. The
 saved entry offers **Share to feed**, which opens a preview of the food name,
 photograph or drawing, calories and macros, an optional caption (280 characters), and an audience:
-Everyone or Followers. Only pressing Share creates a post. A failed publication
+Everyone or Followers. Only pressing Post creates a post. A failed publication
 does not undo the meal. The source is one committed entry owned by the caller;
 the server constructs the snapshot and accepts no client-supplied author or food.
 
@@ -2460,10 +2460,10 @@ The first implementation includes:
 
 - Following, newest first, containing the viewer and accounts they follow;
   Discover, containing public posts from other accounts they do not follow.
-- Public identity fields in the existing Settings profile: a unique handle,
-  display name, short bio and avatar. Existing accounts stay out of discovery
-  until they choose a handle. Their own profile still shows with placeholders
-  and an empty post list. No health-profile fields are exposed.
+- Public identity fields in the existing Settings profile: an optional unique
+  handle, display name, optional short bio and avatar. Existing accounts stay
+  out of discovery until they take a social action or choose a handle. Their
+  own profile remains visible to them. No health-profile fields are exposed.
 - Profile posts, follower and following lists, follow/unfollow, follower removal,
   handle search and suggested people. Suggestions exclude self, existing follows,
   unavailable profiles and blocks in either direction.
@@ -2474,8 +2474,8 @@ The first implementation includes:
 - Reports for posts, comments and public profiles, symmetric blocking, and an
   unblock screen. Blocking removes follow edges in both directions. Unblocking
   does not recreate them.
-- Moderation before another account can read submitted text or media. Rejected
-  content can be corrected; unavailable moderation leaves it pending with retry.
+- Posts and profile edits publish immediately. Comments still use moderation;
+  rejected comments can be corrected. Reports can quarantine social content.
 
 Public profiles do not expose a private account mode. Followers-only is a post
 audience: follows are accepted immediately, and the composer states who will see
@@ -2487,10 +2487,10 @@ are separate products, not prerequisites for a food following system.
 `profiles` contains birth date, sex, height and weight goals and remains
 owner-only. Handle and bio live on that row beside the account name and avatar.
 The `social_profiles` view returns only public identity fields and applies
-review, report and block visibility. Installing an update creates no public
-identity because handle starts null. An account can browse, report and block
-without one. Publishing, following, liking and commenting require an approved
-handle. Handles are normalized lowercase ASCII, 3 to 24 characters, unique
+report and block visibility. Installing an update creates no public identity:
+`social_joined_at` and handle start null. The first social action opts the
+account in. Posting, following, liking and commenting need no handle or bio.
+Handles, when set, are normalized lowercase ASCII, 3 to 24 characters, unique
 under a database constraint. Names and bios accept the app's languages.
 
 `social_posts` holds only the food name, drawing, owned photo key, the meal's
@@ -2508,8 +2508,8 @@ post; the entry is the retry key and a post carries no request token. A client
 request UUID makes a retry of an interrupted comment submission the same
 operation. Follow and like writes set the desired state instead of toggling it,
 so repeated requests converge.
-Caption edits keep the original publication position and create a new review
-revision. Changing the diary does not silently rewrite the published words or figures.
+Caption edits keep the original publication position and appear immediately.
+Changing the diary does not silently rewrite the published words or figures.
 Deleting the diary entry removes its post and dependent comments, likes and
 activity. The entry screen's delete confirmation says so when the meal has a
 post. A diary swipe asks the server at that moment: a meal with no post is
@@ -2612,16 +2612,14 @@ no follows; if there are no eligible people or posts, the screen says so.
 
 ### Publication, moderation and media
 
-Authenticated RPCs create or edit pending content and increment its revision.
-Only the service role can approve it. The `social` edge function checks the
-caller, claims an atomic per-account review budget, loads exactly that caller's
-pending content and reviews text and any attached image. It sends no diary or
-health data to the reviewer. Approval compares the revision it read; a concurrent
-edit, deletion or report cannot be approved by a stale response. Errors and
-missing production credentials leave content pending. Local deterministic review
-is explicitly restricted to the local stack and supports rejection/failure
-fixtures. Social moderation is available to free accounts and never consumes
-their scan allowance.
+Authenticated RPCs publish posts and profile edits immediately and increment
+their revision. Comments still enter review. The `social` edge function checks
+the caller, claims an atomic per-account review budget, loads exactly that
+caller's pending comment and reviews it. Approval compares the revision it read;
+a concurrent edit, deletion or report cannot be approved by a stale response.
+Errors and missing production credentials leave comments pending. Local
+deterministic review is restricted to the local stack. Comment moderation is
+available to free accounts and never consumes their scan allowance.
 
 The report button hides the target from its reporter immediately. Three distinct
 reports quarantine content for everyone pending moderator action. A normal
@@ -2644,17 +2642,18 @@ answer rather than refusing the batch: one batch is a whole screen, and edits,
 reports, blocks and retention revoke single posts routinely. The old diary and
 recipe requests keep their existing response contract and lifetime. Social images
 never use the diary's disk-first resolver. They are cached in memory under their
-key and reviewed ETag, so a fresh signature does not download them again, are
+key and ETag, so a fresh signature does not download them again, are
 never written to disk and do not reuse a photo key as permanent authorization. A previously delivered signed URL can work
 until its short expiry; downloaded bytes cannot be recalled. Blocking/deletion
 invalidates visible content immediately in the acting client and on the next
 authorized read elsewhere.
 
 An upload URL can be reused until it expires, so a unique object key alone does
-not prove that an approved photograph stayed unchanged. Review records the ETag
-of the exact bytes it inspected. Social GET signatures require a signed
-`If-Match` header with that ETag; an overwrite fails with 412 instead of showing
-an unreviewed replacement. The signer never accepts a client-supplied ETag.
+not prove that a photograph stayed unchanged. For an immediate post, the signer
+reads the current ETag from R2; previously reviewed images keep their recorded
+ETag. Social GET signatures require a signed `If-Match` header with that ETag;
+an overwrite fails with 412 until the next authorized signature. The signer
+never accepts a client-supplied ETag.
 [R2 supports conditional GETs](https://developers.cloudflare.com/r2/api/s3/api/).
 This adds no copied objects or new cleanup domain.
 

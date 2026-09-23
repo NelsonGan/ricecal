@@ -15,6 +15,7 @@ import {
   ALLOWED_TYPES,
   type AssetKind,
   deleteObject,
+  headObjectEtag,
   MAX_UPLOAD_BYTES,
   newKey,
   READ_TTL_SECONDS,
@@ -131,8 +132,10 @@ Deno.serve(async (req: Request) => {
           const headers: Record<string, { 'If-Match': string }> = {}
           await Promise.all(
             claim.keys.map(async (key) => {
-              urls[key] = await signGet(key, SOCIAL_READ_TTL_SECONDS, claim.etags[key])
-              headers[key] = { 'If-Match': claim.etags[key] }
+              const etag = claim.etags[key] ?? (await headObjectEtag(key))
+              if (!etag) return
+              urls[key] = await signGet(key, SOCIAL_READ_TTL_SECONDS, etag)
+              headers[key] = { 'If-Match': etag }
             }),
           )
           return json({ ok: true, urls, headers, expiresIn: SOCIAL_READ_TTL_SECONDS })
