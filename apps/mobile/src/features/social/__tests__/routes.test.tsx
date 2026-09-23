@@ -7,6 +7,8 @@ import PostScreen from '../../../../app/social/post/[id]'
 let mockParams: { entryId?: string; postId?: string; id?: string } = {}
 const mockRun = jest.fn()
 const mockReplace = jest.fn()
+const mockMealPhotoUrl = jest.fn((_path?: string) => ({ data: undefined }))
+const mockFoodPreview = jest.fn()
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
@@ -14,20 +16,20 @@ jest.mock('expo-router', () => ({
 }))
 jest.mock('@/data', () => ({
   useUserId: () => 'viewer',
-  useMealPhotoUrl: () => ({ data: undefined }),
+  useMealPhotoUrl: (path?: string) => mockMealPhotoUrl(path),
 }))
 jest.mock('@/data/social', () => ({
   useSocialOnline: () => true,
   useSocialProfile: () => ({ data: { user_id: 'viewer', review_status: 'approved' } }),
   useSocialEntry: (entryId: string) => ({
     data: {
-      postId: entryId === 'shared-entry' ? 'shared-post' : null,
+      postId: entryId === 'shared-entry' || entryId === 'changed-entry' ? 'shared-post' : null,
       entry: {
         food_name: entryId,
-        icon_set: null,
-        icon_name: null,
-        photo_path: null,
-        kcal: 640,
+        icon_set: entryId === 'changed-entry' ? 'food' : null,
+        icon_name: entryId === 'changed-entry' ? 'pizza' : null,
+        photo_path: entryId === 'changed-entry' ? 'meals/viewer/new-photo' : null,
+        kcal: entryId === 'changed-entry' ? 900 : 640,
         carbs_g: 80,
         protein_g: 18,
         fat_g: 28,
@@ -41,6 +43,13 @@ jest.mock('@/data/social', () => ({
           author_id: 'viewer',
           review_status: 'approved',
           food_name: 'Rice',
+          icon_set: null,
+          icon_name: null,
+          photo_path: null,
+          kcal: 206,
+          carbs_g: 45,
+          protein_g: 4,
+          fat_g: 0,
           caption: 'An existing caption',
           audience: 'followers',
         }
@@ -54,12 +63,14 @@ jest.mock('@/features/social/components', () => {
     SocialBar: ({ action }: { action?: React.ReactNode }) =>
       require('react').createElement(require('react-native').View, {}, action),
     // What the composer previews: the name and the figures that will be shared.
-    FoodPreview: ({ name, facts }: { name: string; facts?: { kcal: number } | null }) =>
-      require('react').createElement(
+    FoodPreview: (props: { name: string; facts?: { kcal: number } | null }) => {
+      mockFoodPreview(props)
+      return require('react').createElement(
         require('react-native').Text,
         {},
-        facts ? `${name}, ${facts.kcal} kcal` : name,
-      ),
+        props.facts ? `${props.name}, ${props.facts.kcal} kcal` : props.name,
+      )
+    },
     JoinPrompt: () => null,
     QueryNotice: () => null,
     ReviewNotice: () => null,
@@ -84,6 +95,21 @@ jest.mock('@/ui', () => ({
 beforeEach(() => {
   jest.clearAllMocks()
   mockRun.mockResolvedValue({ id: 'saved' })
+})
+
+it('previews the existing post snapshot when its diary source has changed', async () => {
+  mockParams = { entryId: 'changed-entry' }
+  await render(<ComposeScreen />)
+
+  expect(mockMealPhotoUrl).toHaveBeenLastCalledWith(undefined)
+  expect(mockFoodPreview).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      name: 'Rice',
+      icon: undefined,
+      hasPhoto: false,
+      facts: expect.objectContaining({ id: 'shared-post', kcal: 206, photo_path: null }),
+    }),
+  )
 })
 
 it('does not carry a shared meal caption or audience into another source entry', async () => {

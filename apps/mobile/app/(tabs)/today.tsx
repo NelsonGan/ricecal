@@ -18,6 +18,7 @@ import {
 } from '@/data'
 import { socialEntryPost } from '@/data/social'
 import {
+  createDeleteGate,
   DayMeals,
   dayInMonth,
   MonthCalendar,
@@ -117,30 +118,32 @@ export default function TodayScreen() {
   // One with a post, or one that cannot be checked, asks first, because its
   // comments are other people's words. Resolves with whether the meal went, so
   // a swiped row the user keeps slides back.
+  const deleteGate = useRef(createDeleteGate()).current
   const decided = useRef<((deleted: boolean) => void) | undefined>(undefined)
   const settleDelete = (deleted: boolean) => {
     decided.current?.(deleted)
     decided.current = undefined
   }
   const requestDelete = useCallback(
-    async (entry: Entry): Promise<boolean> => {
-      if ((await socialEntryPost(entry.id)) !== null) {
-        return await new Promise<boolean>((resolve) => {
-          decided.current = resolve
-          setSharedDelete(entry)
+    async (entry: Entry): Promise<boolean> =>
+      await deleteGate(async () => {
+        if ((await socialEntryPost(entry.id)) !== null) {
+          return await new Promise<boolean>((resolve) => {
+            decided.current = resolve
+            setSharedDelete(entry)
+          })
+        }
+        queueRemove({
+          id: entry.id,
+          logDate: entry.logDate,
+          photoPath: entry.photoPath,
+          source: entry.source,
+          shared: false,
         })
-      }
-      queueRemove({
-        id: entry.id,
-        logDate: entry.logDate,
-        photoPath: entry.photoPath,
-        source: entry.source,
-        shared: false,
-      })
-      toast.show({ title: t('logging:added.removedToast') })
-      return true
-    },
-    [queueRemove, t, toast],
+        toast.show({ title: t('logging:added.removedToast') })
+        return true
+      }),
+    [deleteGate, queueRemove, t, toast],
   )
   const pending = usePendingSnaps()
   // The day's movement, if a health store is connected. Null on every account

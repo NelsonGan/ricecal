@@ -56,9 +56,11 @@ create table public.social_posts (
   -- The meal's totals when it was shared, a snapshot like its name: correcting
   -- the diary afterwards does not rewrite what followers were shown.
   kcal integer check (kcal >= 0),
-  carbs_g numeric(8, 1) check (carbs_g >= 0),
-  protein_g numeric(8, 1) check (protein_g >= 0),
-  fat_g numeric(8, 1) check (fat_g >= 0),
+  -- Match food_log_details' unbounded numeric totals. The diary accepts factors
+  -- and quantities whose product can exceed a fixed snapshot precision.
+  carbs_g numeric check (carbs_g >= 0),
+  protein_g numeric check (protein_g >= 0),
+  fat_g numeric check (fat_g >= 0),
   caption text not null default '' check (char_length(caption) <= 280),
   audience public.social_audience not null default 'public',
   review_status public.recipe_review not null default 'pending',

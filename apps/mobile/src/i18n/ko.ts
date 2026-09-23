@@ -168,7 +168,8 @@ export const ko = {
       kg: 'kg',
       lb: 'lb',
       cm: 'cm',
-      gramsLong: '{{value}} 그램',
+      gramsLong_one: '{{count}} 그램',
+      gramsLong_other: '{{count}} 그램',
     },
 
     volume: {

@@ -2,6 +2,8 @@ import {
   type InfiniteData,
   onlineManager,
   type Query,
+  type QueryClient,
+  type QueryKey,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -91,10 +93,34 @@ export type SocialNotification = {
 }
 export type SocialCursor = { at: string; id: string } | { handle: string } | null
 export type SocialPage<T> = { rows: T[]; next: SocialCursor }
+type LikeState = Pick<SocialPost, 'is_liked' | 'like_count'>
+type LikeSnapshot = { queryKey: QueryKey; previous: LikeState; optimistic: LikeState }
 const PAGE_SIZE = 20
 const MEMORY_OPTIONS = { gcTime: 60_000, staleTime: 15_000, retry: 1 } as const
 const subscribeOnline = (listener: () => void) => onlineManager.subscribe(listener)
 const onlineSnapshot = () => onlineManager.isOnline()
+
+// A post can be visible in more than one mounted screen. Keep the latest Like
+// per client so a failed older request cannot undo a newer tap on the same post.
+const latestLike = new WeakMap<QueryClient, Map<string, symbol>>()
+const likeRequests = new WeakMap<QueryClient, Map<string, Promise<void>>>()
+const staleLikeFailures = new WeakMap<QueryClient, Set<string>>()
+
+async function sendLikeInOrder(client: QueryClient, postId: string, write: () => Promise<void>) {
+  let requests = likeRequests.get(client)
+  if (!requests) {
+    requests = new Map()
+    likeRequests.set(client, requests)
+  }
+  const previous = requests.get(postId) ?? Promise.resolve()
+  const request = previous.catch(() => undefined).then(write)
+  requests.set(postId, request)
+  try {
+    await request
+  } finally {
+    if (requests.get(postId) === request) requests.delete(postId)
+  }
+}
 
 // The backend RPCs return a sentinel row. It is never drawn or used as a cursor,
 // because the next request must include that row rather than skip it.
@@ -385,6 +411,53 @@ export function useSocialAction() {
         ? { ...post, is_liked: liked, like_count: Math.max(0, post.like_count + (liked ? 1 : -1)) }
         : post,
     )
+  const likeState = (post: SocialPost, liked: boolean): Omit<LikeSnapshot, 'queryKey'> => {
+    const previous = { is_liked: post.is_liked, like_count: post.like_count }
+    return {
+      previous,
+      optimistic:
+        post.is_liked === liked
+          ? previous
+          : {
+              is_liked: liked,
+              like_count: Math.max(0, post.like_count + (liked ? 1 : -1)),
+            },
+    }
+  }
+  const snapshotLike = (postId: string, liked: boolean): LikeSnapshot[] =>
+    client
+      .getQueriesData({ queryKey: socialKey, predicate: holdsPosts })
+      .flatMap(([queryKey, data]) => {
+        const name = String(queryKey[2])
+        const post = postLists.has(name)
+          ? (data as InfiniteData<SocialPage<SocialPost>, SocialCursor> | undefined)?.pages
+              .flatMap((page) => page.rows)
+              .find((row) => row.id === postId)
+          : (data as SocialPost | null | undefined)
+        return post?.id === postId ? [{ queryKey, ...likeState(post, liked) }] : []
+      })
+  const restoreLike = (postId: string, snapshot: LikeSnapshot) => {
+    const restore = (post: SocialPost) =>
+      post.id === postId &&
+      post.is_liked === snapshot.optimistic.is_liked &&
+      post.like_count === snapshot.optimistic.like_count
+        ? { ...post, ...snapshot.previous }
+        : post
+    if (postLists.has(String(snapshot.queryKey[2]))) {
+      client.setQueryData<InfiniteData<SocialPage<SocialPost>, SocialCursor>>(
+        snapshot.queryKey,
+        (data) =>
+          data && {
+            ...data,
+            pages: data.pages.map((page) => ({ ...page, rows: page.rows.map(restore) })),
+          },
+      )
+    } else {
+      client.setQueryData<SocialPost | null>(snapshot.queryKey, (post) =>
+        post ? restore(post) : post,
+      )
+    }
+  }
   return useMutation({
     // Fail an offline tap immediately, even if connectivity changed after the
     // button rendered. A social action must never sit in an offline write queue.
@@ -426,7 +499,12 @@ export function useSocialAction() {
           await rpc('remove_social_follower', { p_follower_id: input.id })
           break
         case 'like':
-          await rpc('set_social_like', { p_post_id: input.id, p_liked: input.liked })
+          // Two cards can represent the same post. Keep their UI optimistic, but
+          // send their desired states in tap order so an older Like cannot land
+          // after a newer Unlike and become the server's final answer.
+          await sendLikeInOrder(client, input.id, async () => {
+            await rpc('set_social_like', { p_post_id: input.id, p_liked: input.liked })
+          })
           break
         case 'comment': {
           const id = await rpc('create_social_comment', {
@@ -476,14 +554,37 @@ export function useSocialAction() {
       }
       return {}
     },
-    onMutate: (input) => {
+    onMutate: async (input) => {
       if (input.action !== 'like') return undefined
-      const previous = client.getQueriesData({ queryKey: socialKey, predicate: holdsPosts })
+      // A feed request that began before this write can carry the old Like
+      // state. Stop only queries that hold posts before taking the rollback
+      // snapshot, or their late response can erase a successful optimistic Like.
+      await client.cancelQueries({ queryKey: socialKey, predicate: holdsPosts })
+      let versions = latestLike.get(client)
+      if (!versions) {
+        versions = new Map()
+        latestLike.set(client, versions)
+      }
+      const version = Symbol(input.id)
+      versions.set(input.id, version)
+      const previous = snapshotLike(input.id, input.liked)
       setLiked(input.id, input.liked)
-      return { previous }
+      return { previous, version }
     },
-    onError: (_error, _input, context) => {
-      for (const [queryKey, data] of context?.previous ?? []) client.setQueryData(queryKey, data)
+    onError: (_error, input, context) => {
+      if (input.action !== 'like' || !context) return
+      if (latestLike.get(client)?.get(input.id) !== context.version) {
+        // Let the newer tap settle before reconciling. Refetching here could put
+        // the older server state over its still-optimistic choice.
+        let failures = staleLikeFailures.get(client)
+        if (!failures) {
+          failures = new Set()
+          staleLikeFailures.set(client, failures)
+        }
+        failures.add(input.id)
+        return
+      }
+      for (const snapshot of context.previous) restoreLike(input.id, snapshot)
     },
     onSuccess: async (result, input) => {
       if (input.action === 'like') return
@@ -571,6 +672,15 @@ export function useSocialAction() {
       }
       if (input.action === 'block' || input.action === 'unblock') {
         await client.invalidateQueries({ queryKey: keys.recipesAll(viewer) })
+      }
+    },
+    onSettled: (_data, _error, input, context) => {
+      if (input.action !== 'like' || !context) return
+      const versions = latestLike.get(client)
+      if (versions?.get(input.id) === context.version) versions.delete(input.id)
+      const failures = staleLikeFailures.get(client)
+      if (!versions?.has(input.id) && failures?.delete(input.id)) {
+        void client.invalidateQueries({ queryKey: socialKey, predicate: holdsPosts })
       }
     },
   })

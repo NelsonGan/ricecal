@@ -4,6 +4,7 @@ import i18n from '@/i18n'
 import { act, fireEvent, render, screen, userEvent } from '@/test-utils'
 import {
   FollowButton,
+  FoodPreview,
   PersonRow,
   PostCard,
   QueryNotice,
@@ -180,6 +181,30 @@ it('lays the name, calories and macros over the food and reads them out', async 
   for (const text of ['Carbs', '45g', 'Protein', '4g', 'Fat', '0g']) {
     expect(screen.getByText(text)).toBeTruthy()
   }
+})
+
+it('announces one gram with the singular unit', async () => {
+  await render(<PostCard post={{ ...post, carbs_g: 1, protein_g: 1, fat_g: 1 }} />)
+  expect(
+    screen.getByRole('button', {
+      name: 'Rice, 206 kcal, Carbs 1 gram, Protein 1 gram, Fat 1 gram',
+    }),
+  ).toBeTruthy()
+})
+
+it('keeps small nutrition text opaque over photographs', async () => {
+  const data = { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 50_000 }
+  mockPhoto.mockReturnValue({ data, isError: false })
+  const view = await render(<FoodPreview name="Rice" photo="meals/person/photo" facts={post} />)
+  await act(async () => {
+    fireEvent(screen.getByTestId('social-photo'), 'load')
+  })
+  expect(screen.getByText('Carbs').props.className.split(' ')).toContain('text-white')
+
+  await view.rerender(
+    <FoodPreview name="Rice" photo="meals/person/photo" facts={post} variant="tile" />,
+  )
+  expect(screen.getByText('206 kcal').props.className.split(' ')).toContain('text-white')
 })
 
 it('says when a photograph is on screen, so the caption over it can match', async () => {

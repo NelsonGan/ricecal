@@ -58,3 +58,14 @@ it('says nobody matched when nothing typed could be a handle', async () => {
   expect(screen.getByText('No people found')).toBeOnTheScreen()
   expect(mockSearch).not.toHaveBeenCalledWith(expect.stringMatching(/[^a-z0-9_]/))
 })
+
+it('does not search a truncated prefix when the visible handle is too long', async () => {
+  await render(people)
+  const field = screen.getByPlaceholderText('Search handles')
+  await fireEvent.changeText(field, 'a'.repeat(24))
+  await waitFor(() => expect(mockSearch).toHaveBeenLastCalledWith('a'.repeat(24)))
+
+  await fireEvent.changeText(field, 'a'.repeat(25))
+  expect(screen.getByText('No people found')).toBeOnTheScreen()
+  await waitFor(() => expect(mockSearch).toHaveBeenLastCalledWith(''))
+})

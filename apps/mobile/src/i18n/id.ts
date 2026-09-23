@@ -172,7 +172,8 @@ export const id = {
       kg: 'kg',
       lb: 'lb',
       cm: 'cm',
-      gramsLong: '{{value}} gram',
+      gramsLong_one: '{{count}} gram',
+      gramsLong_other: '{{count}} gram',
     },
 
     volume: {

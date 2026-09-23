@@ -2,6 +2,7 @@ export { AddPartSheet, type AddPartSheetProps } from './AddPartSheet'
 export { DayMeals, type DayMealsProps } from './DayMeals'
 export { DescribePanel, type DescribePanelProps } from './DescribePanel'
 export { DetailsSheet, type DetailsSheetProps, type EntryDetails } from './DetailsSheet'
+export { createDeleteGate } from './deleteGate'
 export { FixSheet, type FixSheetProps } from './FixSheet'
 export {
   FoodSearchPanel,

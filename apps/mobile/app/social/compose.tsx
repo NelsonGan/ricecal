@@ -65,16 +65,17 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
     }
   }, [existing])
   const entry = source.data?.entry
-  const privatePhoto = useMealPhotoUrl(existing?.photo_path ?? entry?.photo_path ?? undefined)
   const editing = Boolean(postId || source.data?.postId)
   const missingSource = !entryId && !postId
-  const loaded = editing ? existing : entry
+  // Editing changes only the caption and audience. The post's nullable photo
+  // and icon fields are part of its snapshot, so a null there must not fall
+  // through to a newer photo or drawing on the source diary entry.
+  const preview = editing ? existing : entry
+  const privatePhoto = useMealPhotoUrl(preview?.photo_path ?? undefined)
+  const loaded = preview
   const reading = editing ? post : source
-  const foodName = existing?.food_name ?? entry?.food_name ?? ''
-  const icon = toIcon(
-    existing?.icon_set ?? entry?.icon_set ?? null,
-    existing?.icon_name ?? entry?.icon_name ?? null,
-  )
+  const foodName = preview?.food_name ?? ''
+  const icon = toIcon(preview?.icon_set ?? null, preview?.icon_name ?? null)
   const save = async () => {
     try {
       const result = await action.run(
@@ -158,8 +159,8 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
               name={foodName}
               icon={icon}
               privateUri={privatePhoto.data}
-              hasPhoto={Boolean(existing?.photo_path ?? entry?.photo_path)}
-              facts={existing ?? entry}
+              hasPhoto={Boolean(preview?.photo_path)}
+              facts={preview}
             />
           </View>
           <View className="gap-2">

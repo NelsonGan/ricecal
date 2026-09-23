@@ -30,7 +30,7 @@ import {
   useUpdateEntry,
   withCataloguePortions,
 } from '@/data'
-import { useSocialEntry } from '@/data/social'
+import { socialEntryPost, useSocialEntry } from '@/data/social'
 import {
   type Clock,
   clockOf,
@@ -257,6 +257,9 @@ export default function FoodDetail() {
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
   const [servingId, setServingId] = useState(existing?.servingId ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteShared, setDeleteShared] = useState(true)
+  const [checkingDelete, setCheckingDelete] = useState(false)
+  const deleteCheck = useRef(false)
   /** The fix-by-typing sheet, and the words in it. */
   const [fixing, setFixing] = useState(false)
   const [instruction, setInstruction] = useState('')
@@ -967,11 +970,27 @@ export default function FoodDetail() {
         logDate: existing.logDate,
         photoPath: existing.photoPath,
         source: existing.source,
-        shared: feedPost === null ? false : undefined,
+        shared: deleteShared ? undefined : false,
       })
     }
     setConfirmDelete(false)
     goBack()
+  }
+
+  const requestDelete = async () => {
+    if (!existing || deleteCheck.current) return
+    deleteCheck.current = true
+    setCheckingDelete(true)
+    try {
+      // The cached entry query can be stale if this meal was published from
+      // another device. Check again at the destructive tap so that post and
+      // comment removal is always disclosed before the diary row cascades.
+      setDeleteShared((await socialEntryPost(existing.id)) !== null)
+      setConfirmDelete(true)
+    } finally {
+      deleteCheck.current = false
+      setCheckingDelete(false)
+    }
   }
 
   const headerActions = existing ? (
@@ -998,7 +1017,8 @@ export default function FoodDetail() {
       <IconButton
         size="sm"
         accessibilityLabel={t('logging:detail.deleteEntry')}
-        onPress={() => setConfirmDelete(true)}
+        loading={checkingDelete}
+        onPress={() => void requestDelete()}
       >
         <Icon set="ui" name="delete" size={20} tintColor={colors.hibiscusInk} />
       </IconButton>
@@ -1031,21 +1051,26 @@ export default function FoodDetail() {
       }
       footer={
         existing ? (
-          /* ONE BUTTON, and it is not a save. Save used to sit here beside it,
-             writing everything the page had staged — and once every section moved
-             into a sheet with a save of its own there was nothing left for a
-             footer button to write. What remains is the thing that is not a
-             section of this entry: handing the whole meal back to the model, which
-             can return a different one, which is why it opens a question first
-             rather than doing anything. */
-          <View>
+          /* These are the two whole-meal actions. The cards save their own edits,
+             while Fix it can rebuild the meal and Share publishes its snapshot. */
+          <View className="flex-row gap-2.5">
             <Button
               variant="secondary"
-              fullWidth
+              size="sm"
+              className="flex-1"
               leftIcon={<Icon set="system" name="sparkle" size={20} />}
               onPress={() => setFixing(true)}
             >
               {t('logging:detail.fixAction')}
+            </Button>
+            <Button
+              size="sm"
+              className="flex-1"
+              onPress={() =>
+                router.push({ pathname: '/social/compose', params: { entryId: existing.id } })
+              }
+            >
+              {t(feedPost ? 'social:editPost' : 'social:share')}
             </Button>
           </View>
         ) : (
@@ -1179,17 +1204,6 @@ export default function FoodDetail() {
             </Text>
           ) : null}
         </View>
-
-        {existing ? (
-          <Button
-            variant="secondary"
-            onPress={() =>
-              router.push({ pathname: '/social/compose', params: { entryId: existing.id } })
-            }
-          >
-            {t(feedPost ? 'social:editPost' : 'social:share')}
-          </Button>
-        ) : null}
 
         <IconPicker
           visible={pickingIcon}
@@ -1527,7 +1541,7 @@ export default function FoodDetail() {
           onClose={() => setConfirmDelete(false)}
           onConfirm={remove}
           title={t('logging:detail.deleteTitle')}
-          description={t(feedPost === null ? 'logging:detail.deleteBody' : 'social:sourceDelete')}
+          description={t(deleteShared ? 'social:sourceDelete' : 'logging:detail.deleteBody')}
           confirmLabel={t('common:action.delete')}
           cancelLabel={t('common:action.keep')}
           tone="danger"
