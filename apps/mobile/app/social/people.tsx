@@ -4,12 +4,20 @@ import { View } from 'react-native'
 import { useSocialSearch, useSocialSuggestions } from '@/data/social'
 import { PersonRow, SocialBar, SocialList } from '@/features/social/components'
 import { useDebouncedValue } from '@/lib/use-debounce'
-import { Screen, SearchField, Text } from '@/ui'
+import { EmptyState, Screen, SearchField, Text } from '@/ui'
 
 export default function PeopleScreen() {
   const { t } = useTranslation(['social', 'recipes'])
   const [query, setQuery] = useState('')
-  const debounced = useDebouncedValue(query.trim().toLowerCase().replace(/^@/, ''))
+  // Handles are lowercase letters, digits and underscores, and the server
+  // refuses anything else. Typing a name with a space or in another script used
+  // to show "Could not load this"; it now searches the handle characters in it.
+  const handle = query
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '')
+    .slice(0, 24)
+  const debounced = useDebouncedValue(handle)
   const search = useSocialSearch(debounced)
   const suggestions = useSocialSuggestions()
   const suggested = {
@@ -39,7 +47,11 @@ export default function PeopleScreen() {
         </View>
       }
     >
-      {query.trim() ? (
+      {query.trim() && !handle ? (
+        <View className="px-5">
+          <EmptyState title={t('emptyPeople')} />
+        </View>
+      ) : query.trim() ? (
         <SocialList
           key={debounced}
           query={search}
