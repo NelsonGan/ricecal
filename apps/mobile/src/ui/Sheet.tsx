@@ -1,9 +1,10 @@
 import { cssInterop } from 'nativewind'
-import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   Modal,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  Platform,
   Pressable,
   useWindowDimensions,
   View,
@@ -62,7 +63,7 @@ const DISMISS_VELOCITY = 900
  * No `onShow` and no `onBack`: a surface without a window of its own is never
  * presented, and never takes a back press — the route hosting it does.
  */
-export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow' | 'onBack'> & {
+export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow' | 'onDismiss' | 'onBack'> & {
   /**
    * Whether this surface should draw the app's toasts. See the outlet at the foot
    * of `SheetSurface`.
@@ -77,6 +78,14 @@ export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow' | 'onBack'
    * A route sheet has no window of its own and never passes it.
    */
   hosting?: boolean
+  /**
+   * The owning `Sheet` keeps its native window mounted while this changes to
+   * false, so the panel can leave before the window disappears. Route sheets
+   * omit it and stay presented for their whole mount.
+   */
+  presented?: boolean
+  /** The panel has finished leaving. Used by `Sheet` to remove its window. */
+  onExitComplete?: () => void
 }
 
 export type SheetProps = {
@@ -98,6 +107,8 @@ export type SheetProps = {
    * dropped. Ignored by `SheetSurface`, which has no window of its own.
    */
   onShow?: () => void
+  /** The native modal is fully gone, so another modal or route can open safely. */
+  onDismiss?: () => void
   /**
    * What a screen reader calls the handle, which is a button as well as a drag
    * target. Defaulted rather than required, as `Stepper` defaults its two, or a
@@ -167,7 +178,30 @@ export type SheetProps = {
  * A sheet with a text field rides above the keyboard itself: a `Modal` is its
  * own window, so the `Screen` shell's keyboard handling does not reach inside.
  */
-export function Sheet({ visible, onShow, ...rest }: SheetProps) {
+export function Sheet({ visible, onShow, onDismiss, ...rest }: SheetProps) {
+  // A controlled close used to remove the native window in the same commit as
+  // `visible=false`, so Cancel, a successful save and Android's hardware back
+  // skipped the panel's fall altogether. Keep the window until the surface says
+  // its exit has landed.
+  const [mounted, setMounted] = useState(visible)
+  const wasMounted = useRef(mounted)
+  const dismissCallback = useRef(onDismiss)
+  dismissCallback.current = onDismiss
+
+  useLayoutEffect(() => {
+    if (visible) setMounted(true)
+  }, [visible])
+
+  useEffect(() => {
+    const justDismissed = wasMounted.current && !mounted
+    wasMounted.current = mounted
+    // React Native reports native dismissal on iOS. Android removes the modal
+    // in this commit, so the next frame is the equivalent safe handoff point.
+    if (!justDismissed || Platform.OS === 'ios' || !dismissCallback.current) return
+    const frame = requestAnimationFrame(() => dismissCallback.current?.())
+    return () => cancelAnimationFrame(frame)
+  }, [mounted])
+
   return (
     /**
      * `animationType="none"`, not `"slide"`. The platform slide animates the
@@ -177,10 +211,12 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
      * travels.
      */
     <Modal
-      visible={visible}
+      testID="sheet-modal"
+      visible={mounted}
       transparent
       animationType="none"
       onShow={onShow}
+      onDismiss={() => dismissCallback.current?.()}
       /* Up one level if there is one, and only then out. See `onBack`. */
       onRequestClose={rest.dismissible === false ? () => {} : (rest.onBack ?? rest.onClose)}
     >
@@ -189,10 +225,18 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
           pan would simply never fire. A root of its own inside the window is what
           the library documents for exactly this case. Sheets that are ROUTES do
           not need it: they are in the app tree, under the root in `_layout`. */}
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        {/* The outlet follows the WINDOW, not the mount. See `hosting`. */}
-        <SheetSurface {...rest} hosting={visible} />
-      </GestureHandlerRootView>
+      {mounted ? (
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          {/* The outlet follows the requested visibility, not the retained
+              window. A toast fired by the closing action belongs below it. */}
+          <SheetSurface
+            {...rest}
+            hosting={visible}
+            presented={visible}
+            onExitComplete={() => setMounted(false)}
+          />
+        </GestureHandlerRootView>
+      ) : null}
     </Modal>
   )
 }
@@ -208,6 +252,8 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
  */
 export function SheetSurface({
   hosting = true,
+  presented = true,
+  onExitComplete,
   dismissible = true,
   onClose,
   closeLabel,
@@ -238,14 +284,80 @@ export function SheetSurface({
    * measured on the frame that has to start offscreen.
    */
   const rise = useSharedValue(height)
+  const entered = useSharedValue(false)
+  const falling = useSharedValue(false)
+  const dragAccepted = useSharedValue(false)
+  const closing = useRef(false)
+  const exited = useRef(false)
+  const exitDelivered = useRef(false)
+  const presentedRef = useRef(presented)
+  const closeCallback = useRef(onClose)
+  const exitCallback = useRef(onExitComplete)
+  presentedRef.current = presented
+  closeCallback.current = onClose
+  exitCallback.current = onExitComplete
+
+  const deliverExit = useCallback(() => {
+    if (exitDelivered.current) return
+    exitDelivered.current = true
+    exitCallback.current?.()
+  }, [])
+
+  const finishFall = useCallback(
+    (requestClose: boolean) => {
+      exited.current = true
+      if (requestClose) closeCallback.current()
+      // An internal handle/scrim dismissal asks the owner to change `visible`
+      // only after this animation. The resulting render delivers the exit. An
+      // external close was false before the animation began and can deliver it
+      // immediately.
+      if (!presentedRef.current) deliverExit()
+    },
+    [deliverExit],
+  )
+
+  const fall = useCallback(
+    (requestClose: boolean) => {
+      closing.current = true
+      falling.value = true
+      entered.value = false
+      dragAccepted.value = false
+      rise.value = withTiming(
+        height,
+        { duration: FALL_MS, easing: Easing.in(Easing.cubic) },
+        (finished) => {
+          if (finished) runOnJS(finishFall)(requestClose)
+        },
+      )
+    },
+    [dragAccepted, entered, falling, finishFall, height, rise],
+  )
 
   // A LAYOUT effect, not a passive one: passive effects flush after the frame is
   // painted, so the first frame every sheet showed was the panel parked offscreen
   // with the animation not yet started. This runs in the same commit, so the panel is
   // already travelling on the frame it first appears.
   useLayoutEffect(() => {
-    rise.value = withTiming(0, { duration: RISE_MS, easing: Easing.out(Easing.cubic) })
-  }, [rise])
+    if (!presented) {
+      if (exited.current) deliverExit()
+      else fall(false)
+      return
+    }
+
+    closing.current = false
+    exited.current = false
+    exitDelivered.current = false
+    falling.value = false
+    entered.value = false
+    dragAccepted.value = false
+    rise.value = withTiming(
+      0,
+      { duration: RISE_MS, easing: Easing.out(Easing.cubic) },
+      (finished) => {
+        if (finished) entered.value = true
+      },
+    )
+  }, [dragAccepted, deliverExit, entered, fall, falling, presented, rise])
 
   const panel = useAnimatedStyle(() => ({ transform: [{ translateY: rise.value }] }))
 
@@ -257,8 +369,8 @@ export function SheetSurface({
    * scroll or has to be taught to yield per child. The handle's only job is to be
    * grabbed.
    *
-   * It moves the same shared value the entrance animation uses, so a drag picks
-   * up where the rise left off.
+   * It moves the same shared value as the entrance once that entrance has
+   * landed. A gesture begun while the panel is still rising is ignored below.
    *
    * The close fires once, whatever asks: a tap, a drag past the threshold and a
    * press on the scrim can all arrive for one dismissal, and `onClose` unwinds a
@@ -266,46 +378,28 @@ export function SheetSurface({
    * must be true on the same tick. The scrim goes through here too, and it did
    * not, which is how a sheet closed twice with this guard in place.
    */
-  const closing = useRef(false)
-  /**
-   * The same fact, on the UI thread, where the pan gesture can read it. A shared
-   * value rather than the ref beside it, because a worklet reading a ref reads an
-   * object it has frozen (see `Numpad`). It exists so nothing writes `rise` once
-   * the panel is on its way out.
-   */
-  const falling = useSharedValue(false)
-
   const dismiss = useCallback(() => {
     if (!dismissible || closing.current) return
-    closing.current = true
-    falling.value = true
-    rise.value = withTiming(
-      height,
-      { duration: FALL_MS, easing: Easing.in(Easing.cubic) },
-      (finished) => {
-        // After the panel is gone: `onClose` unmounts this, so calling it first
-        // takes the surface off screen with no animation at all.
-        //
-        // Only when the animation ran to its end. Reanimated calls back a second
-        // time when the animation is cancelled, which is what unmounting the
-        // surface does to it, so written unconditionally one dismissal unwound
-        // two screens.
-        if (finished) runOnJS(onClose)()
-      },
-    )
-  }, [rise, falling, height, onClose, dismissible])
+    fall(true)
+  }, [dismissible, fall])
 
   const dragHandle = Gesture.Pan()
     .enabled(dismissible)
+    .onBegin(() => {
+      // A gesture that begins while the panel is rising belongs to the entrance,
+      // not the handle. Letting its first update write a small translation over
+      // the large in-flight offset made the panel jump to the finger.
+      dragAccepted.value = entered.value && !falling.value
+    })
     .onUpdate((event) => {
       // Nothing moves the panel once it is leaving. See `falling`.
-      if (falling.value) return
+      if (!dragAccepted.value || falling.value) return
       // Downward only. Dragging up would lift the panel off the bottom of the
       // screen and show the scrim under it.
       rise.value = Math.max(0, event.translationY)
     })
     .onEnd((event) => {
-      if (falling.value) return
+      if (!dragAccepted.value || falling.value) return
       if (event.translationY > DISMISS_DISTANCE || event.velocityY > DISMISS_VELOCITY) {
         runOnJS(dismiss)()
         return
@@ -314,6 +408,10 @@ export function SheetSurface({
       // as the sheet settling rather than snapping.
       rise.value = withTiming(0, { duration: RISE_MS, easing: Easing.out(Easing.cubic) })
     })
+    .onFinalize(() => {
+      dragAccepted.value = false
+    })
+    .withTestId('sheet-drag')
 
   /**
    * The number pad, which a sheet accounts for itself: a `Sheet` is a native

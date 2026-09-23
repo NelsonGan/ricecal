@@ -294,6 +294,13 @@ export function useUpdateEntry() {
       return row
     },
     onSuccess: (_row, patch) => {
+      if (patch.photoPath !== undefined) {
+        // Replacing the diary picture revokes the copy shown by its feed post. A
+        // post keeps the drawing it was published with, so an icon edit is not.
+        void queryClient
+          .cancelQueries({ queryKey: keys.social(userId) })
+          .then(() => queryClient.resetQueries({ queryKey: keys.social(userId) }))
+      }
       track('Entry Updated', { changed: changedFields(patch) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, patch.logDate) })
       // The day it moved TO, when it moved. Without this the meal arrives on a
@@ -331,7 +338,8 @@ export function useRemoveEntry() {
     // the day this row belongs to. `source` is read by neither, and is carried so the
     // analytics event can say which kind of entry was thrown away, which is the
     // closest thing the app has to a quality signal on the scan cascade that does not
-    // involve reading anybody's diary.
+    // involve reading anybody's diary. `shared` is false only when the caller has
+    // checked that the meal has no feed post.
     mutationFn: async ({
       id,
       photoPath,
@@ -340,6 +348,7 @@ export function useRemoveEntry() {
       logDate: string
       photoPath?: string
       source?: EntrySource
+      shared?: boolean
     }) => {
       unwrap(
         await supabase.from('food_logs').delete().eq('id', id).eq('user_id', userId).select('id'),
@@ -369,8 +378,15 @@ export function useRemoveEntry() {
     // On success rather than on settled: an optimistic removal that the server
     // refused puts the row back, and counting that as a deletion would report
     // a failed request as a user throwing their meal away.
-    onSuccess: (_data, { source }) => {
+    onSuccess: (_data, { source, shared }) => {
       track('Entry Deleted', { source: source ?? 'unknown' })
+      // Its feed post left with it. Not awaited, so the delete never waits on a
+      // feed refetch, and skipped for a meal known to have no post.
+      if (shared !== false) {
+        void queryClient
+          .cancelQueries({ queryKey: keys.social(userId) })
+          .then(() => queryClient.resetQueries({ queryKey: keys.social(userId) }))
+      }
     },
     onSettled: (_data, _error, { logDate }) => {
       queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })

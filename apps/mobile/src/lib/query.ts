@@ -110,6 +110,9 @@ export const persistOptions = {
      * query off the disk.
      */
     shouldDehydrateQuery: (query: Query) =>
-      query.queryKey[0] !== 'photo' && defaultShouldDehydrateQuery(query),
+      // Social visibility can be revoked between launches. Never rehydrate it.
+      query.queryKey[0] !== 'social' &&
+      query.queryKey[0] !== 'photo' &&
+      defaultShouldDehydrateQuery(query),
   },
 }

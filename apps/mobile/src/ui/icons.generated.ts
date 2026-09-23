@@ -495,6 +495,8 @@ export const icons = {
     'font-size': require('../../assets/icons/system/font-size.png'),
     gift: require('../../assets/icons/system/gift.png'),
     'guide-book': require('../../assets/icons/system/guide-book.png'),
+    heart: require('../../assets/icons/system/heart.png'),
+    'heart-filled': require('../../assets/icons/system/heart-filled.png'),
     help: require('../../assets/icons/system/help.png'),
     invoice: require('../../assets/icons/system/invoice.png'),
     key: require('../../assets/icons/system/key.png'),

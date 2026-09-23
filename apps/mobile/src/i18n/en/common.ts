@@ -71,8 +71,9 @@ export const common = {
     kg: 'kg',
     lb: 'lb',
     cm: 'cm',
-    /** Screen-reader expansion. "182 g" reads better than "182g". */
-    gramsLong: '{{value}} grams',
+    /** Screen-reader expansion. "182 grams" reads better than "182g". */
+    gramsLong_one: '{{count}} gram',
+    gramsLong_other: '{{count}} grams',
   },
 
   /**

@@ -172,14 +172,21 @@ export async function signPut(
 }
 
 /** A presigned GET, for rendering the object in the app. */
-export async function signGet(key: string, expiresIn = READ_TTL_SECONDS): Promise<string> {
+export async function signGet(
+  key: string,
+  expiresIn = READ_TTL_SECONDS,
+  ifMatch?: string,
+): Promise<string> {
   const { client, base } = mustR2()
   const target = new URL(`${base}/${key}`)
   target.searchParams.set('X-Amz-Expires', String(expiresIn))
 
   const signed = await client.sign(target.toString(), {
     method: 'GET',
-    aws: { signQuery: true },
+    // Social reads bind approval to the reviewed bytes. Reusing an upload URL
+    // to replace them must fail the read, not inherit the earlier approval.
+    headers: ifMatch ? { 'If-Match': ifMatch } : undefined,
+    aws: { signQuery: true, allHeaders: Boolean(ifMatch) },
   })
   return signed.url
 }

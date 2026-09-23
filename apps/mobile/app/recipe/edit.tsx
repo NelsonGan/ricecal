@@ -82,7 +82,7 @@ const DEFAULT_RECIPE_ICON: IconRef = { set: 'food', name: 'cooking-pot' }
 export default function RecipeFormScreen() {
   const { t } = useTranslation(['recipes', 'common', 'paywall'])
   const router = useRouter()
-  const goBack = useBack('/recipes')
+  const goBack = useBack('/settings/foods')
   const toast = useToast()
   const requirePro = useRequirePro()
 

@@ -1,11 +1,81 @@
 import { assertEquals } from 'jsr:@std/assert@^1'
 
-import { claimOwnedKeys, claimReadableKeys, isRecipeShareSlug } from './access.ts'
+import { claimOwnedKeys, claimReadableKeys, claimSocialKeys, isRecipeShareSlug } from './access.ts'
 
 const READER = '11111111-1111-1111-1111-111111111111'
 const COOK = '22222222-2222-2222-2222-222222222222'
 const OWN = `meals/${READER}/own.jpg`
 const COMMUNITY = `meals/${COOK}/community.jpg`
+
+Deno.test('social reads require a currently visible approved image version, including for self', async () => {
+  assertEquals(await claimSocialKeys([OWN], async () => []), {
+    error: 'not a visible reviewed social photo',
+    status: 403,
+  })
+  assertEquals(
+    await claimSocialKeys([COMMUNITY, COMMUNITY], async () => [
+      {
+        owner_id: COOK,
+        photo_path: COMMUNITY,
+        photo_etag: '"abc123"',
+        kind: 'meal',
+      },
+    ]),
+    { keys: [COMMUNITY], etags: { [COMMUNITY]: '"abc123"' } },
+  )
+})
+
+Deno.test('social image grants cannot borrow a foreign key, private avatar, or wildcard version', async () => {
+  for (const row of [
+    { owner_id: READER, photo_path: COMMUNITY, photo_etag: '"abc"', kind: 'meal' as const },
+    { owner_id: COOK, photo_path: COMMUNITY, photo_etag: '*', kind: 'meal' as const },
+    { owner_id: COOK, photo_path: COMMUNITY, photo_etag: null, kind: 'meal' as const },
+    { owner_id: COOK, photo_path: COMMUNITY, photo_etag: '"abc"', kind: 'avatar' as const },
+  ]) {
+    assertEquals(await claimSocialKeys([COMMUNITY], async () => [row]), {
+      error: 'not a visible reviewed social photo',
+      status: 403,
+    })
+  }
+  const avatar = `avatars/${COOK}/avatar.jpg`
+  assertEquals(
+    await claimSocialKeys([avatar], async () => [
+      {
+        owner_id: COOK,
+        photo_path: avatar,
+        photo_etag: '"123"',
+        kind: 'avatar',
+      },
+    ]),
+    { keys: [avatar], etags: { [avatar]: '"123"' } },
+  )
+})
+
+Deno.test('a revoked social image is left out without refusing its neighbours', async () => {
+  assertEquals(
+    await claimSocialKeys([OWN, COMMUNITY], async () => [
+      {
+        owner_id: COOK,
+        photo_path: COMMUNITY,
+        photo_etag: '"abc"',
+        kind: 'meal',
+      },
+    ]),
+    { keys: [COMMUNITY], etags: { [COMMUNITY]: '"abc"' } },
+  )
+  assertEquals(await claimSocialKeys([OWN, COMMUNITY], async () => []), {
+    error: 'not a visible reviewed social photo',
+    status: 403,
+  })
+  assertEquals(await claimSocialKeys([], async () => []), {
+    error: 'keys must be a non-empty array',
+    status: 400,
+  })
+  assertEquals(await claimSocialKeys(Array(101).fill(OWN), async () => []), {
+    error: 'at most 100 keys per request',
+    status: 400,
+  })
+})
 
 Deno.test('private recipe credentials accept only opaque share tokens', () => {
   assertEquals(isRecipeShareSlug('0123456789abcdef0123456789abcdef'), true)
