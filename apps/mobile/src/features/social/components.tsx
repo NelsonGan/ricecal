@@ -1,4 +1,5 @@
 import { formatDistanceToNowStrict } from 'date-fns'
+import * as Haptics from 'expo-haptics'
 import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
 import {
@@ -52,9 +53,10 @@ export function SocialBar({ title, action }: { title: string; action?: ReactNode
   return <AppBar title={title} onBack={back} backLabel={t('back')} action={action} />
 }
 
-export function socialTime(value: string) {
+export function socialTime(value: string, justNow: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
+  if (Math.abs(Date.now() - date.getTime()) < 60_000) return justNow
   return formatDistanceToNowStrict(date, { addSuffix: true })
 }
 
@@ -124,8 +126,9 @@ const subscribeMinute = (listener: () => void) => {
 
 /** One shared clock keeps every visible relative time current without a timer per row. */
 export function useSocialTime(value: string) {
+  const { t } = useTranslation('social')
   useSyncExternalStore(subscribeMinute, minuteSnapshot, minuteSnapshot)
-  return socialTime(value)
+  return socialTime(value, t('justNow'))
 }
 
 export function useSocialTask() {
@@ -702,6 +705,7 @@ type ContentSafetyProps = {
   onBlocked?: () => void
   extraAction?: {
     label: string
+    title?: string
     description: string
     input: SocialAction
     disabled?: boolean
@@ -751,7 +755,7 @@ function ContentSafetyControl({
             : panel === 'block'
               ? t('social:block')
               : panel === 'extra' && extraAction
-                ? extraAction.label
+                ? (extraAction.title ?? extraAction.label)
                 : t('social:options')
         }
         description={
@@ -1239,6 +1243,7 @@ export function SocialList<T>({
   }
   const refresh = async () => {
     setRefreshing(true)
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
     try {
       await query.refetch()
     } finally {

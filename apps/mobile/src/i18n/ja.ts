@@ -68,6 +68,7 @@ export const ja = {
     comments_one: 'コメント{{count}}件',
     comments_other: 'コメント{{count}}件',
     comment: 'コメント',
+    justNow: 'たった今',
     commentPlaceholder: 'コメントを書く',
     send: '送信',
     deleteComment: 'コメントを削除',

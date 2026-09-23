@@ -60,6 +60,7 @@ export const social = {
   comments_one: '{{count}} comment',
   comments_other: '{{count}} comments',
   comment: 'Comment',
+  justNow: 'Just now',
   commentPlaceholder: 'Add a comment',
   send: 'Send',
   deleteComment: 'Delete comment',

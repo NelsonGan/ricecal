@@ -67,6 +67,7 @@ export const bn = {
     comments_one: '{{count}}টি মন্তব্য',
     comments_other: '{{count}}টি মন্তব্য',
     comment: 'মন্তব্য',
+    justNow: 'এইমাত্র',
     commentPlaceholder: 'মন্তব্য যোগ করুন',
     send: 'পাঠান',
     deleteComment: 'মন্তব্য মুছুন',

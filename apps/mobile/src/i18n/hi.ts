@@ -68,6 +68,7 @@ export const hi = {
     comments_one: '{{count}} टिप्पणी',
     comments_other: '{{count}} टिप्पणियां',
     comment: 'टिप्पणी',
+    justNow: 'अभी-अभी',
     commentPlaceholder: 'टिप्पणी जोड़ें',
     send: 'भेजें',
     deleteComment: 'टिप्पणी हटाएं',
