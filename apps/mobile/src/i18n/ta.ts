@@ -68,6 +68,7 @@ export const ta = {
     comments_one: '{{count}} கருத்து',
     comments_other: '{{count}} கருத்துகள்',
     comment: 'கருத்து',
+    justNow: 'இப்போதுதான்',
     commentPlaceholder: 'கருத்தைச் சேர்',
     send: 'அனுப்பு',
     deleteComment: 'கருத்தை நீக்கு',

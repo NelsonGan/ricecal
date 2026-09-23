@@ -68,6 +68,7 @@ export const vi = {
     comments_one: '{{count}} bình luận',
     comments_other: '{{count}} bình luận',
     comment: 'Bình luận',
+    justNow: 'Vừa xong',
     commentPlaceholder: 'Thêm bình luận',
     send: 'Gửi',
     deleteComment: 'Xóa bình luận',

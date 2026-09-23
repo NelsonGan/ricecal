@@ -75,6 +75,7 @@ export const ms = {
     comments_one: '{{count}} komen',
     comments_other: '{{count}} komen',
     comment: 'Komen',
+    justNow: 'Sebentar tadi',
     commentPlaceholder: 'Tambah komen',
     send: 'Hantar',
     deleteComment: 'Padam komen',

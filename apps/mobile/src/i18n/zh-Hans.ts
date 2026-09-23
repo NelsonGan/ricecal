@@ -74,6 +74,7 @@ export const zhHans = {
     comments_one: '{{count}} 条评论',
     comments_other: '{{count}} 条评论',
     comment: '评论',
+    justNow: '刚刚',
     commentPlaceholder: '添加评论',
     send: '发送',
     deleteComment: '删除评论',

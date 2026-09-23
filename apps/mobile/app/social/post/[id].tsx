@@ -216,7 +216,8 @@ function CommentRow({
               extraAction={
                 owner === viewer
                   ? {
-                      label: t('deleteComment'),
+                      label: t('common:action.delete'),
+                      title: t('deleteComment'),
                       description: t('deleteCommentBody'),
                       input: { action: 'deleteComment', id: comment.id },
                       disabled: !online,
@@ -257,7 +258,7 @@ function CommentRow({
                   setPanel(null)
                 }}
               >
-                {t('deleteComment')}
+                {t('common:action.delete')}
               </Button>
               <Button
                 variant="neutral"
@@ -295,7 +296,7 @@ function CommentRow({
               disabled={!online}
               onPress={() => setPanel('delete')}
             >
-              {t('deleteComment')}
+              {t('common:action.delete')}
             </Button>
           </>
         ) : null}

@@ -69,6 +69,7 @@ export const ko = {
     comments_one: '댓글 {{count}}개',
     comments_other: '댓글 {{count}}개',
     comment: '댓글',
+    justNow: '방금',
     commentPlaceholder: '댓글 추가',
     send: '보내기',
     deleteComment: '댓글 삭제',

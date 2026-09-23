@@ -73,6 +73,7 @@ export const id = {
     comments_one: '{{count}} komentar',
     comments_other: '{{count}} komentar',
     comment: 'Komentar',
+    justNow: 'Baru saja',
     commentPlaceholder: 'Tambah komentar',
     send: 'Kirim',
     deleteComment: 'Hapus komentar',
