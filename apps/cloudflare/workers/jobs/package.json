@@ -5,6 +5,7 @@
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
+    "test": "node --no-warnings --test src/**/*.test.mjs",
     "typecheck": "tsc --noEmit && node --no-warnings scripts/check-crons.mjs"
   },
   "devDependencies": {

@@ -2,6 +2,7 @@ import { View } from 'react-native'
 import type { SocialPost, SocialProfile } from '@/data/social'
 import i18n from '@/i18n'
 import { act, fireEvent, render, screen, userEvent } from '@/test-utils'
+import { icons } from '@/ui'
 import {
   FollowButton,
   FoodPreview,
@@ -205,6 +206,24 @@ it('keeps small nutrition text opaque over photographs', async () => {
     <FoodPreview name="Rice" photo="meals/person/photo" facts={post} variant="tile" />,
   )
   expect(screen.getByText('206 kcal').props.className.split(' ')).toContain('text-white')
+})
+
+it('keeps the saved drawing when a retained photograph is unavailable', async () => {
+  mockPhoto.mockReturnValue({ data: undefined, isError: true })
+  const view = await render(
+    <FoodPreview
+      name="Rice"
+      photo="meals/person/deleted-photo"
+      icon={{ set: 'food', name: 'rice-bowl' }}
+      facts={post}
+    />,
+  )
+
+  expect(screen.queryByTestId('social-photo')).toBeNull()
+  expect(view.root?.queryAll((node) => node.props.source === icons.food['rice-bowl'])).toHaveLength(
+    1,
+  )
+  expect(screen.getByText('Rice').props.className.split(' ')).toContain('text-heading')
 })
 
 it('says when a photograph is on screen, so the caption over it can match', async () => {
