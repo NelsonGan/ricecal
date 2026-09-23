@@ -55,7 +55,8 @@ export const vi = {
     everyoneHint: 'Ai đã đăng nhập đều có thể xem bài này.',
     followersHint: 'Chỉ bạn và người theo dõi bạn có thể xem bài này.',
     shareInfo: 'Về việc chia sẻ',
-    shareHint: 'Chỉ chia sẻ món này và chú thích. Xóa mục nhật ký cũng xóa bài đăng.',
+    shareHint:
+      'Chỉ chia sẻ món này, calo và dưỡng chất chính, cùng chú thích. Xóa mục nhật ký cũng xóa bài đăng.',
     post: 'Bài đăng',
     deletePost: 'Xóa bài đăng',
     deletePostBody: 'Mục nhật ký vẫn được giữ.',

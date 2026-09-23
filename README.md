@@ -2444,7 +2444,7 @@ out of the middle.
 
 This is an explicit publication system. Logging a meal never publishes it. The
 saved entry offers **Share to feed**, which opens a preview of the food name,
-photograph or drawing, an optional caption (280 characters), and an audience:
+photograph or drawing, calories and macros, an optional caption (280 characters), and an audience:
 Everyone or Followers. Only pressing Share creates a post. A failed publication
 does not undo the meal. The source is one committed entry owned by the caller;
 the server constructs the snapshot and accepts no client-supplied author or food.
@@ -2488,10 +2488,13 @@ following, liking and commenting require an approved public identity. Its handle
 is normalized lowercase ASCII, 3 to 24 characters,
 unique under a database constraint. Names and bios accept the app's languages.
 
-`social_posts` holds only the food name, drawing, owned photo key, caption and
-audience. It never contains diary notes, meal dates/times, nutrition, goals,
-weight, location or account email. Publication time is new, not the time the
-meal was logged. A source-entry reference exists for ownership and deletion,
+`social_posts` holds only the food name, drawing, owned photo key, the meal's
+calories and three macros, caption and audience. Calories and macros are what
+the feed is for, so each post shows them over its photo. They are copied from
+`food_log_details` when the post is created, so they match the diary's own
+arithmetic and never expose how it was reached (base values, serving, quantity).
+A post never contains diary notes, meal dates/times, goals, weight, location or
+account email. Publication time is new, not the time the meal was logged. A source-entry reference exists for ownership and deletion,
 not as permission to join the private diary. Read RPCs return explicit public
 fields. Diary and recipe RLS are never widened to implement the feed.
 
@@ -2501,7 +2504,7 @@ request UUID makes a retry of an interrupted comment submission the same
 operation. Follow and like writes set the desired state instead of toggling it,
 so repeated requests converge.
 Caption edits keep the original publication position and create a new review
-revision. Changing the diary does not silently rewrite the published words.
+revision. Changing the diary does not silently rewrite the published words or figures.
 Deleting the diary entry removes its post and dependent comments, likes and
 activity. The entry screen's delete confirmation says so when the meal has a
 post. A diary swipe asks the server at that moment: a meal with no post is

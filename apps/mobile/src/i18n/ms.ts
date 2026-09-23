@@ -63,7 +63,7 @@ export const ms = {
     followersHint: 'Hanya anda dan pengikut anda boleh melihat siaran ini.',
     shareInfo: 'Tentang perkongsian',
     shareHint:
-      'Hanya makanan ini dan kapsyen anda dikongsi. Memadam rekod diari turut membuang siarannya.',
+      'Hanya makanan ini, kalori dan makronya, serta kapsyen anda dikongsi. Memadam rekod diari turut membuang siarannya.',
     post: 'Siaran',
     deletePost: 'Padam siaran',
     deletePostBody: 'Rekod diari anda kekal.',

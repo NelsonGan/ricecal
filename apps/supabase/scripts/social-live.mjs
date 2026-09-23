@@ -161,10 +161,11 @@ async function run() {
   const [dto] = await rpc('social_post', arun.token, { p_id: postId })
   check(
     dto.food_name === 'Nasi lemak' &&
+      [dto.kcal, dto.carbs_g, dto.protein_g, dto.fat_g].map(Number).join() === '640,80,18,28' &&
       !('note' in dto) &&
       !('source_entry_id' in dto) &&
       !('base_kcal' in dto),
-    'public DTO excludes diary provenance, notes and nutrition',
+    'public DTO carries the meal totals but no diary provenance, notes or serving arithmetic',
   )
   const foreign = await request('/functions/v1/social', arun.token, {
     action: 'review',

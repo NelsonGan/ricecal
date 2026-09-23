@@ -1,7 +1,7 @@
 import { View } from 'react-native'
 import type { SocialPost, SocialProfile } from '@/data/social'
 import i18n from '@/i18n'
-import { act, render, screen, userEvent } from '@/test-utils'
+import { act, fireEvent, render, screen, userEvent } from '@/test-utils'
 import {
   FollowButton,
   PersonRow,
@@ -70,6 +70,10 @@ const post: SocialPost = {
   icon_set: null,
   icon_name: null,
   photo_path: null,
+  kcal: 206,
+  carbs_g: 44.5,
+  protein_g: 4.3,
+  fat_g: 0.4,
   caption: '',
   audience: 'public',
   review_status: 'approved',
@@ -161,6 +165,38 @@ it('does not treat an unresolved public identity as permission to like', async (
   await userEvent.setup().press(screen.getByRole('button', { name: 'Like, 0 likes' }))
   expect(mockMutate).toHaveBeenCalledWith({ action: 'like', id: 'post', liked: true })
   expect(mockPush).not.toHaveBeenCalledWith('/social/edit-profile')
+})
+
+it('lays the name, calories and macros over the food and reads them out', async () => {
+  await render(<PostCard post={post} />)
+  expect(
+    screen.getByRole('button', {
+      name: 'Rice, 206 kcal, Carbs 45 grams, Protein 4 grams, Fat 0 grams',
+    }),
+  ).toBeTruthy()
+  // Once, on the picture: the line under the actions that repeated it is gone.
+  expect(screen.getAllByText('Rice')).toHaveLength(1)
+  expect(screen.getByText('206')).toBeTruthy()
+  for (const text of ['Carbs', '45g', 'Protein', '4g', 'Fat', '0g']) {
+    expect(screen.getByText(text)).toBeTruthy()
+  }
+})
+
+it('says when a photograph is on screen, so the caption over it can match', async () => {
+  const onShown = jest.fn()
+  const data = { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 50_000 }
+  mockPhoto.mockReturnValue({ data, isError: false })
+  const view = await render(
+    <SocialPhoto path="meals/person/photo" label="Rice" onShown={onShown} />,
+  )
+  expect(onShown).not.toHaveBeenCalledWith(true)
+  await act(async () => {
+    fireEvent(screen.getByTestId('social-photo'), 'load')
+  })
+  expect(onShown).toHaveBeenLastCalledWith(true)
+  mockPhoto.mockReturnValue({ data, isError: true })
+  await view.rerender(<SocialPhoto path="meals/person/photo" label="Rice" onShown={onShown} />)
+  expect(onShown).toHaveBeenLastCalledWith(false)
 })
 
 it('keeps blocked people static while regular people remain navigable', async () => {

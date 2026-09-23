@@ -43,7 +43,7 @@ select ok(not exists (
   and table_name in ('social_profiles', 'social_posts')
   and column_name in ('email', 'birth_date', 'sex', 'height_cm', 'target_weight_kg', 'log_date',
     'logged_at', 'note', 'base_kcal', 'base_carbs_g', 'base_protein_g', 'base_fat_g')
-), 'social storage contains no private identity, diary dates, notes or nutrition');
+), 'social storage copies no private identity, diary dates, notes or serving arithmetic');
 
 select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -92,6 +92,9 @@ select is(public.create_social_post(:'entry', 'A different caption', 'followers'
   'a source entry has at most one published snapshot');
 select is((select food_name from public.social_posts where id = :'post'), 'Fixture nasi lemak',
   'the server derives the public food name from the owned diary entry');
+select is((select array[kcal, carbs_g, protein_g, fat_g]::numeric[] from public.social_posts where id = :'post'),
+  array[600, 60, 25, 28]::numeric[],
+  'the post snapshots the entry''s calories and macros, as the diary totals them');
 select is((select caption from public.social_posts where id = :'post'), 'A good lunch',
   'a repeated publication cannot silently edit the first snapshot');
 select ok((select created_at > '2025-01-01'::timestamptz from public.social_posts where id = :'post'),
@@ -101,9 +104,12 @@ select throws_ok(format('select public.update_social_post(%L, repeat(%L, 281), %
 select throws_ok($q$insert into public.social_posts (author_id, source_entry_id, food_name, review_status)
   values (auth.uid(), gen_random_uuid(), 'Forged', 'approved')$q$, '42501', null,
   'direct writes cannot forge an approved snapshot');
-update public.food_logs set item_name = 'Changed private food', note = 'More private notes' where id = :'entry';
+update public.food_logs set item_name = 'Changed private food', note = 'More private notes',
+  override_kcal = 900 where id = :'entry';
 select is((select food_name from public.social_posts where id = :'post'), 'Fixture nasi lemak',
   'editing the diary never silently rewrites published words');
+select is((select kcal from public.social_posts where id = :'post'), 600,
+  'correcting the diary never silently rewrites published figures');
 reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);

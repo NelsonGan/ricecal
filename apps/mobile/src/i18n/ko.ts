@@ -56,7 +56,8 @@ export const ko = {
     everyoneHint: '로그인한 모든 사람이 이 게시물을 볼 수 있습니다.',
     followersHint: '나와 내 팔로워만 볼 수 있습니다.',
     shareInfo: '공유 정보',
-    shareHint: '이 음식과 문구만 공유됩니다. 일기에서 식사를 삭제하면 게시물도 삭제됩니다.',
+    shareHint:
+      '이 음식과 칼로리, 영양소, 문구만 공유됩니다. 일기에서 식사를 삭제하면 게시물도 삭제됩니다.',
     post: '게시물',
     deletePost: '게시물 삭제',
     deletePostBody: '일기 기록은 유지됩니다.',

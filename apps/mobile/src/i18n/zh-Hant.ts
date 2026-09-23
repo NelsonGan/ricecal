@@ -61,7 +61,8 @@ export const zhHant = {
     everyoneHint: '所有已登入的用戶都能看到這篇貼文。',
     followersHint: '只有你和你的追蹤者能看到這篇貼文。',
     shareInfo: '關於分享',
-    shareHint: '僅分享這份食物和文字說明。刪除日記紀錄時，也會刪除對應貼文。',
+    shareHint:
+      '僅分享這份食物、它的熱量和三大營養素，以及文字說明。刪除日記紀錄時，也會刪除對應貼文。',
     post: '貼文',
     deletePost: '刪除貼文',
     deletePostBody: '日記紀錄會保留。',

@@ -48,7 +48,7 @@ export const social = {
   followersHint: 'Only you and your followers can see this post.',
   shareInfo: 'About sharing',
   shareHint:
-    'Only this food and your caption are shared. Deleting the diary entry also removes its post.',
+    'Only this food, its calories and macros, and your caption are shared. Deleting the diary entry also removes its post.',
   post: 'Post',
   deletePost: 'Delete post',
   deletePostBody: 'Your diary entry will stay.',

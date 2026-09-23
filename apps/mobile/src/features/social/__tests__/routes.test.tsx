@@ -22,7 +22,16 @@ jest.mock('@/data/social', () => ({
   useSocialEntry: (entryId: string) => ({
     data: {
       postId: entryId === 'shared-entry' ? 'shared-post' : null,
-      entry: { food_name: entryId, icon_set: null, icon_name: null, photo_path: null },
+      entry: {
+        food_name: entryId,
+        icon_set: null,
+        icon_name: null,
+        photo_path: null,
+        kcal: 640,
+        carbs_g: 80,
+        protein_g: 18,
+        fat_g: 28,
+      },
     },
   }),
   useSocialPost: (id: string) => ({
@@ -44,7 +53,13 @@ jest.mock('@/features/social/components', () => {
     useSocialTask: () => ({ run: mockRun, isPending: false }),
     SocialBar: ({ action }: { action?: React.ReactNode }) =>
       require('react').createElement(require('react-native').View, {}, action),
-    FoodPreview: () => null,
+    // What the composer previews: the name and the figures that will be shared.
+    FoodPreview: ({ name, facts }: { name: string; facts?: { kcal: number } | null }) =>
+      require('react').createElement(
+        require('react-native').Text,
+        {},
+        facts ? `${name}, ${facts.kcal} kcal` : name,
+      ),
     JoinPrompt: () => null,
     QueryNotice: () => null,
     ReviewNotice: () => null,
@@ -105,9 +120,9 @@ it('keeps sharing details in the audience picker and info sheet', async () => {
   const user = userEvent.setup()
   const audience = screen.getByLabelText('Who can see this?')
   const shareHint =
-    'Only this food and your caption are shared. Deleting the diary entry also removes its post.'
+    'Only this food, its calories and macros, and your caption are shared. Deleting the diary entry also removes its post.'
 
-  expect(screen.getByText('fresh-entry')).toBeOnTheScreen()
+  expect(screen.getByText('fresh-entry, 640 kcal')).toBeOnTheScreen()
   expect(screen.getByLabelText('Caption')).toHaveProp('maxLength', 280)
   expect(audience).toHaveAccessibilityValue({ text: 'Everyone' })
   expect(screen.queryByText('Anyone signed in can see this post.')).toBeNull()

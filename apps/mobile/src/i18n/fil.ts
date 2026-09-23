@@ -64,7 +64,7 @@ export const fil = {
     followersHint: 'Ikaw at ang mga tagasunod mo lang ang makakakita nito.',
     shareInfo: 'Tungkol sa pagbabahagi',
     shareHint:
-      'Pagkain at caption lang ang ibabahagi. Kapag binura ang tala sa talaarawan, mabubura rin ang post.',
+      'Ang pagkain, ang calories at macros nito, at ang caption lang ang ibabahagi. Kapag binura ang tala sa talaarawan, mabubura rin ang post.',
     post: 'Post',
     deletePost: 'Burahin ang post',
     deletePostBody: 'Mananatili ang tala sa talaarawan.',
