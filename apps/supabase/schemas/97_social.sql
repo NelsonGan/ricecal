@@ -93,8 +93,8 @@ begin
         select v_user as user_id
         union all
         select f.followed_id from public.social_follows f
-          join public.social_profiles a on a.user_id = f.followed_id
-        where f.follower_id = v_user and a.review_status = 'approved' and not a.quarantined
+          join public.profiles a on a.id = f.followed_id
+        where f.follower_id = v_user and a.handle is not null and a.review_status = 'approved' and not a.quarantined
           and f.followed_id not in (select h.user_id from hidden_authors h)
       ), candidates as materialized (
         select p.id, p.created_at from authors a cross join lateral (
@@ -116,9 +116,9 @@ begin
         union select r.content_id from public.social_reports r where r.reporter_id = v_user and r.kind = 'profile'
       )
       select sp.id, sp.created_at from public.social_posts sp
-        join public.social_profiles a on a.user_id = sp.author_id
+        join public.profiles a on a.id = sp.author_id
       where sp.audience = 'public' and sp.review_status = 'approved' and not sp.quarantined
-        and a.review_status = 'approved' and not a.quarantined
+        and a.handle is not null and a.review_status = 'approved' and not a.quarantined
         and sp.author_id not in (select e.user_id from excluded_authors e)
         and sp.id not in (select r.content_id from public.social_reports r where r.reporter_id = v_user and r.kind = 'post')
         and (p_before_at is null or (sp.created_at, sp.id) < (p_before_at, p_before_id))
@@ -231,27 +231,27 @@ begin
       union select r.content_id from public.social_reports r where r.reporter_id = v_user and r.kind = 'profile'
     ), seeds as materialized (
       select f.followed_id from public.social_follows f
-        join public.social_profiles a on a.user_id = f.followed_id
-      where f.follower_id = v_user and a.review_status = 'approved' and not a.quarantined
+        join public.profiles a on a.id = f.followed_id
+      where f.follower_id = v_user and a.handle is not null and a.review_status = 'approved' and not a.quarantined
         and f.followed_id not in (select h.user_id from hidden_authors h)
       order by f.created_at desc, f.followed_id desc limit 64
     ), paths as materialized (
       select f.followed_id from seeds s cross join lateral (
         select edge.followed_id from public.social_follows edge
-          join public.social_profiles a on a.user_id = edge.followed_id
+          join public.profiles a on a.id = edge.followed_id
         where edge.follower_id = s.followed_id
-          and (a.user_id = v_user or (a.review_status = 'approved' and not a.quarantined
-            and a.user_id not in (select h.user_id from hidden_authors h)))
+          and (a.id = v_user or (a.handle is not null and a.review_status = 'approved' and not a.quarantined
+            and a.id not in (select h.user_id from hidden_authors h)))
         order by edge.created_at desc, edge.followed_id desc limit 64
       ) f
     ), mutual as materialized (
       select p.followed_id as user_id, count(*) as weight from paths p group by p.followed_id
       order by count(*) desc, p.followed_id limit 256
     ), recent as materialized (
-      select p.user_id, 0::bigint as weight from public.social_profiles p
-      where p.review_status = 'approved' and not p.quarantined
-        and p.user_id not in (select h.user_id from hidden_authors h)
-      order by p.created_at desc, p.user_id desc limit 512
+      select p.id as user_id, 0::bigint as weight from public.profiles p
+      where p.handle is not null and p.review_status = 'approved' and not p.quarantined
+        and p.id not in (select h.user_id from hidden_authors h)
+      order by p.created_at desc, p.id desc limit 512
     ), candidates as materialized (
       select c.user_id, max(c.weight) as weight from (
         select * from mutual union all select * from recent
@@ -298,7 +298,7 @@ begin
     ''::text, null::text, coalesce(p.review_status, 'pending'::public.recipe_review), null::text,
     coalesce(p.revision, 1), coalesce(p.quarantined, false),
     0::bigint, 0::bigint, 0::bigint, false, false, coalesce(p.created_at, b.created_at), b.created_at
-  from public.blocked_authors b left join public.social_profiles p on p.user_id = b.author_id
+  from public.blocked_authors b left join public.profiles p on p.id = b.author_id
   where b.user_id = v_user and (p_before_at is null or (b.created_at, b.author_id) < (p_before_at, p_before_id))
   order by b.created_at desc, b.author_id desc limit p_limit + 1;
 end;
@@ -336,8 +336,8 @@ $$;
 
 create index social_posts_photo_idx on public.social_posts(photo_path)
   where photo_path is not null and review_status = 'approved' and not quarantined;
-create index social_profiles_avatar_idx on public.social_profiles(avatar_path)
-  where avatar_path is not null and review_status = 'approved' and not quarantined;
+create index social_profiles_avatar_idx on public.profiles(avatar_path)
+  where handle is not null and avatar_path is not null and review_status = 'approved' and not quarantined;
 
 create or replace function public.social_photo_claims(p_keys text[])
 returns table (owner_id uuid, photo_path text, photo_etag text, kind text)

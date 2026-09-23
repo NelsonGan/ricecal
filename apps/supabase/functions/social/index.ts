@@ -35,10 +35,10 @@ async function loadSubmission(
   const state = 'revision,review_status,review_reason,quarantined'
   if (kind === 'profile') {
     const { data, error } = await db
-      .from('social_profiles')
+      .from('profiles')
       .select(`handle,display_name,bio,avatar_path,${state}`)
-      .eq('user_id', id)
-      .eq('user_id', owner)
+      .eq('id', id)
+      .eq('id', owner)
       .maybeSingle()
     if (error) throw error
     return data

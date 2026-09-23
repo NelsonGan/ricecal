@@ -109,7 +109,7 @@ function Profile({ id }: { id: string }) {
             kind="profile"
             id={person.user_id}
           />
-          <Button fullWidth variant="secondary" onPress={() => router.push('/social/edit-profile')}>
+          <Button fullWidth variant="secondary" onPress={() => router.push('/settings/account')}>
             {t('editProfile')}
           </Button>
         </>

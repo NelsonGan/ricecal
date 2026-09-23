@@ -11,7 +11,7 @@ $$;
 grant execute on function pg_temp.social_bench_id(text, integer) to authenticated;
 
 do $$ begin
-  if exists(select 1 from public.social_profiles where handle like 'zz_bench_%') then
+  if exists(select 1 from public.profiles where handle like 'zz_bench_%') then
     raise exception 'Unexpected persistent benchmark fixtures; refusing to overwrite them';
   end if;
 end $$;
@@ -29,7 +29,7 @@ select pg_temp.social_bench_id('user', n), '00000000-0000-0000-0000-000000000000
        'authenticated', 'authenticated', 'zz-bench-' || n || '@social.example.test', '{}', '{}'
 from generate_series(1, 15050) n;
 
-insert into public.social_profiles (user_id, handle, display_name, review_status)
+insert into public.profiles (id, handle, display_name, review_status)
 select pg_temp.social_bench_id('user', n), 'zz_bench_' || lpad(n::text, 5, '0'),
        'Benchmark cook ' || n, 'approved'
 from generate_series(1, 15050) n;
@@ -90,8 +90,8 @@ insert into public.blocked_authors (user_id, author_id)
 select pg_temp.social_bench_id('user', 15004), pg_temp.social_bench_id('user', n)
 from generate_series(5501,5600) n;
 insert into public.blocked_authors (user_id, author_id)
-select pg_temp.social_bench_id('user', viewer), p.user_id
-from generate_series(15001,15050) viewer cross join public.social_profiles p
+select pg_temp.social_bench_id('user', viewer), p.id
+from generate_series(15001,15050) viewer cross join public.profiles p
 where p.handle not like 'zz_bench_%';
 
 -- A popular post exercises bounded sharded sums instead of full edge counts.
@@ -103,11 +103,11 @@ from generate_series(2,15000) n;
 -- role-executed correctness tests independently verify trigger reconciliation.
 insert into public.social_counters (entity_id, metric, shard, value)
 select followed_id, 'followers'::public.social_counter_metric, (hashtextextended(follower_id::text, 0) & 31)::int, count(*)
-from public.social_follows where followed_id in (select user_id from public.social_profiles where handle like 'zz_bench_%')
+from public.social_follows where followed_id in (select id from public.profiles where handle like 'zz_bench_%')
 group by followed_id, (hashtextextended(follower_id::text, 0) & 31)::int
 union all
 select follower_id, 'following'::public.social_counter_metric, (hashtextextended(followed_id::text, 0) & 31)::int, count(*)
-from public.social_follows where follower_id in (select user_id from public.social_profiles where handle like 'zz_bench_%')
+from public.social_follows where follower_id in (select id from public.profiles where handle like 'zz_bench_%')
 group by follower_id, (hashtextextended(followed_id::text, 0) & 31)::int
 union all
 select author_id, 'posts'::public.social_counter_metric, (hashtextextended(id::text, 0) & 31)::int, count(*)
@@ -119,7 +119,7 @@ from public.social_likes where post_id = pg_temp.social_bench_id('post', 1)
 group by post_id, (hashtextextended(user_id::text, 0) & 31)::int;
 set local session_replication_role = origin;
 
-analyze public.social_profiles;
+analyze public.profiles;
 analyze public.social_posts;
 analyze public.social_follows;
 analyze public.social_likes;
