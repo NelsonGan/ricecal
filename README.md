@@ -2462,7 +2462,8 @@ The first implementation includes:
   Discover, containing public posts from other accounts they do not follow.
 - Public identity fields in the existing Settings profile: a unique handle,
   display name, short bio and avatar. Existing accounts stay out of discovery
-  until they choose a handle. No health-profile fields are exposed.
+  until they choose a handle. Their own profile still shows with placeholders
+  and an empty post list. No health-profile fields are exposed.
 - Profile posts, follower and following lists, follow/unfollow, follower removal,
   handle search and suggested people. Suggestions exclude self, existing follows,
   unavailable profiles and blocks in either direction.
