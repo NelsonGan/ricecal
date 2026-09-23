@@ -103,7 +103,12 @@ export const retention: Job = {
 
       const rows = cleared.map((row) => {
         const icon = iconFor(row.item_name)
-        return { id: row.id, icon_set: icon?.set ?? null, icon_name: icon?.name ?? null }
+        return {
+          id: row.id,
+          photo_path: row.photo_path,
+          icon_set: icon?.set ?? null,
+          icon_name: icon?.name ?? null,
+        }
       })
       swept += await rpc<number>('clear_meal_photos', { p_rows: rows })
 

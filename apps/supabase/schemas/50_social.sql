@@ -478,8 +478,25 @@ create or replace function private.social_source_photo_changed()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   if new.photo_path is distinct from old.photo_path then
-    update public.social_posts set photo_path = null, photo_etag = null, revision = revision + 1, updated_at = now()
-    where source_entry_id = new.id and photo_path is not null;
+    update public.social_posts p
+       set photo_path = null,
+           photo_etag = null,
+           -- Current entries already snapshot their food drawing at publication.
+           -- Retention also matches one for older rows that did not carry it yet.
+           -- Fill that legacy gap without rewriting an existing post snapshot.
+           icon_set = case
+             when p.icon_set is not null then p.icon_set
+             when new.icon_set is not null and new.icon_name is not null then new.icon_set
+             when new.item_icon_set is not null and new.item_icon_name is not null then new.item_icon_set
+           end,
+           icon_name = case
+             when p.icon_name is not null then p.icon_name
+             when new.icon_set is not null and new.icon_name is not null then new.icon_name
+             when new.item_icon_set is not null and new.item_icon_name is not null then new.item_icon_name
+           end,
+           revision = revision + 1,
+           updated_at = now()
+     where p.source_entry_id = new.id and p.photo_path is not null;
   end if;
   return null;
 end;

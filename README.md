@@ -3632,8 +3632,11 @@ The sweep is a job rather than a statement in Postgres, because Postgres cannot
 reach R2 and the **order** is the whole problem. Delete the object, then clear
 the column. A crash between the two is picked up by the next run, since deleting
 a key that is already gone is a no-op; the other order strands the bytes for
-ever, the key being their only name. The row keeps a drawing where the plate
-was, or a swept month would be a column of grey tiles.
+ever, the key being their only name. The clear also matches the key it deleted,
+so a photo replaced while R2 is answering is left alone. Only a bounded,
+well-formed meal key inside that row owner's folder can reach the bucket
+credential. The row keeps a drawing where the plate was, or a swept month would
+be a column of grey tiles.
 
 Most rows now reach the sweep already carrying one, in `item_icon_*`, which the
 scan writes (see "Every entry carries the dish's own drawing"). The match

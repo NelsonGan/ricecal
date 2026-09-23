@@ -96,9 +96,16 @@ security definer
 set search_path = ''
 as $$
   select f.id, f.photo_path, f.item_name
-    from public.food_logs f
+   from public.food_logs f
     left join public.subscriptions s on s.user_id = f.user_id
    where f.photo_path is not null
+     -- The Worker deletes with bucket credentials. Apply the same key boundary
+     -- as the photo signer before untrusted diary text can reach that credential:
+     -- owned meals only, bounded, URL-safe and unable to walk out with `..`.
+     and f.photo_path like 'meals/' || f.user_id::text || '/%'
+     and pg_catalog.char_length(f.photo_path) <= 512
+     and f.photo_path ~ '^[A-Za-z0-9/_.-]+$'
+     and pg_catalog.strpos(f.photo_path, '..') = 0
      and f.logged_at < now() - pg_catalog.make_interval(
            days => public.free_photo_retention_days()
          )
@@ -145,10 +152,12 @@ create index if not exists food_logs_photo_sweep_idx
 -- which reads as the app having lost the diary. A name `icon-match.ts` cannot
 -- place passes null and keeps the placeholder.
 --
--- Takes ids rather than keys, and is called after the delete: a crash between the
--- two leaves a row naming an object that is gone, and the next sweep asks R2 to
--- delete a key that is already absent and clears it. The other order would orphan
--- the bytes for ever.
+-- Takes both ids and the keys selected for deletion, and is called after the
+-- delete. Matching both keeps a photo replaced during the R2 call from being
+-- cleared even though that replacement object was never deleted. A crash between
+-- the two leaves a row naming an object that is gone, and the next sweep asks R2
+-- to delete a key that is already absent and clears it. The other order would
+-- orphan the bytes for ever.
 --
 -- One statement rather than a loop, because a sweep is hundreds of rows.
 -- ---------------------------------------------------------------------------
@@ -180,9 +189,9 @@ begin
                         else f.icon_name
                       end
     from pg_catalog.jsonb_to_recordset(coalesce(p_rows, '[]'::jsonb))
-      as r(id uuid, icon_set text, icon_name text)
+      as r(id uuid, photo_path text, icon_set text, icon_name text)
    where f.id = r.id
-     and f.photo_path is not null;
+     and f.photo_path = r.photo_path;
 
   get diagnostics v_count = row_count;
   return v_count;
