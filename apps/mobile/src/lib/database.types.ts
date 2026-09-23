@@ -738,6 +738,7 @@ export type Database = {
           review_status: Database['public']['Enums']['recipe_review']
           revision: number
           sex: Database['public']['Enums']['sex'] | null
+          social_joined_at: string | null
           target_weight_kg: number | null
           timezone: string
           updated_at: string
@@ -761,6 +762,7 @@ export type Database = {
           review_status?: Database['public']['Enums']['recipe_review']
           revision?: number
           sex?: Database['public']['Enums']['sex'] | null
+          social_joined_at?: string | null
           target_weight_kg?: number | null
           timezone?: string
           updated_at?: string
@@ -784,6 +786,7 @@ export type Database = {
           review_status?: Database['public']['Enums']['recipe_review']
           revision?: number
           sex?: Database['public']['Enums']['sex'] | null
+          social_joined_at?: string | null
           target_weight_kg?: number | null
           timezone?: string
           updated_at?: string
@@ -2187,7 +2190,7 @@ export type Database = {
           display_name?: string | null
           follower_count?: never
           following_count?: never
-          handle?: string | null
+          handle?: never
           is_followed_by?: never
           is_following?: never
           post_count?: never
@@ -2204,7 +2207,7 @@ export type Database = {
           display_name?: string | null
           follower_count?: never
           following_count?: never
-          handle?: string | null
+          handle?: never
           is_followed_by?: never
           is_following?: never
           post_count?: never
@@ -2236,7 +2239,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
-          handle?: string | null
+          handle?: never
           photo_etag?: string | null
           quarantined?: boolean | null
           review_reason?: string | null
@@ -2250,7 +2253,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
-          handle?: string | null
+          handle?: never
           photo_etag?: string | null
           quarantined?: boolean | null
           review_reason?: string | null

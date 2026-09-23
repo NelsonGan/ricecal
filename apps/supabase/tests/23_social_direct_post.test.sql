@@ -1,0 +1,58 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select no_plan();
+
+\set writer 'a8600000-0000-4000-8000-000000000001'
+\set reader 'a8600000-0000-4000-8000-000000000002'
+\set entry  'a8610000-0000-4000-8000-000000000001'
+
+insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
+select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+  id::text || '@direct-post.example.test', '{}', '{}'
+from unnest(array[:'writer'::uuid, :'reader'::uuid]) id;
+update public.profiles set display_name = 'Dinner cook' where id = :'writer';
+insert into public.food_logs
+  (id, user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor, photo_path)
+values
+  (:'entry', :'writer', 'Rice bowl', 280, 45, 8, 6, '1 bowl', 1,
+    'meals/' || :'writer' || '/bowl.jpg');
+
+select is((select count(*)::int from public.social_profiles where user_id = :'writer'), 0,
+  'an unused account has no public social identity');
+
+select set_config('request.jwt.claims', json_build_object('sub', :'writer', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.create_social_post(:'entry', 'Dinner', 'public') as post \gset
+select is((select review_status::text from public.social_posts where id = :'post'), 'approved',
+  'posting publishes immediately');
+select ok((select published_at is not null from public.social_posts where id = :'post'),
+  'an immediate post has a publication time');
+select is((select handle from public.social_profiles where user_id = :'writer'), '',
+  'posting does not require a handle');
+select public.set_social_profile('', 'Dinner cook', 'Likes rice', null);
+select is((select revision from public.social_profiles where user_id = :'writer'), 2,
+  'editing a handleless public profile advances its moderation revision');
+select public.update_social_post(:'post', 'Later dinner', 'public');
+select is((select review_status::text from public.social_posts where id = :'post'), 'approved',
+  'editing a post stays published');
+reset role;
+
+select set_config('request.jwt.claims', json_build_object('sub', :'reader', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is((select count(*)::int from public.social_profiles where user_id = :'writer'), 1,
+  'a handleless author is visible after choosing to post');
+select is((select count(*)::int from public.social_post(:'post')), 1,
+  'another account can read the post without a review step');
+select is((select count(*)::int from public.social_feed('discover') where id = :'post'), 1,
+  'Discover includes an immediate post from a handleless author');
+select is((select count(*)::int from public.social_photo_claims(array['meals/' || :'writer' || '/bowl.jpg'])), 1,
+  'a visible immediate post authorizes its photo key');
+select is((select photo_etag from public.social_photo_claims(array['meals/' || :'writer' || '/bowl.jpg'])), null,
+  'the signer will pin the current bytes when an immediate post has no reviewed ETag');
+select public.set_social_follow(:'writer', true);
+select is((select count(*)::int from public.social_feed('following') where id = :'post'), 1,
+  'following works without setting a handle or bio');
+reset role;
+
+select * from finish();
+rollback;

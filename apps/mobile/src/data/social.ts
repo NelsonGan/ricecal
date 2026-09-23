@@ -472,7 +472,7 @@ export function useSocialAction() {
             p_bio: input.bio,
             p_avatar_path: input.avatar ?? undefined,
           })
-          return { id, status: await reviewSocial('profile', id) }
+          return { id, status: 'approved' }
         }
         case 'post': {
           const id = await rpc('create_social_post', {
@@ -480,7 +480,7 @@ export function useSocialAction() {
             p_caption: input.caption,
             p_audience: input.audience,
           })
-          return { id, status: await reviewSocial('post', id) }
+          return { id, status: 'approved' }
         }
         case 'editPost':
           await rpc('update_social_post', {
@@ -488,7 +488,7 @@ export function useSocialAction() {
             p_caption: input.caption,
             p_audience: input.audience,
           })
-          return { id: input.id, status: await reviewSocial('post', input.id) }
+          return { id: input.id, status: 'approved' }
         case 'deletePost':
           await rpc('delete_social_post', { p_id: input.id })
           break
@@ -698,8 +698,8 @@ export function useSocialPhoto(path: string | null | undefined, visible: boolean
       if (!path) throw new Error('photo unavailable')
       return await signSocialPhoto(viewer, path, signal)
     },
-    gcTime: 0,
-    staleTime: 0,
+    gcTime: 5 * 60_000,
+    staleTime: 35_000,
     retry: false,
     refetchInterval: visible ? 40_000 : false,
     refetchIntervalInBackground: false,

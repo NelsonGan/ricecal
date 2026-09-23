@@ -4,23 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useMealPhotoUrl, useUserId } from '@/data'
 import { toIcon } from '@/data/mappers'
-import {
-  type SocialAudience,
-  useSocialEntry,
-  useSocialOnline,
-  useSocialPost,
-  useSocialProfile,
-} from '@/data/social'
-import {
-  FoodPreview,
-  JoinPrompt,
-  QueryNotice,
-  ReviewNotice,
-  SocialBar,
-  useSocialTask,
-} from '@/features/social/components'
+import { type SocialAudience, useSocialEntry, useSocialOnline, useSocialPost } from '@/data/social'
+import { FoodPreview, QueryNotice, SocialBar, useSocialTask } from '@/features/social/components'
 import { useBack } from '@/lib/navigation'
-import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, Screen, Select, Sheet, Text, TextField } from '@/ui'
 
 export default function ComposeScreen() {
@@ -34,9 +20,7 @@ export default function ComposeScreen() {
 function Composer({ entryId, postId }: { entryId: string; postId: string }) {
   const { t } = useTranslation(['social', 'common'])
   const router = useRouter()
-  const colors = useThemeColors()
   const viewer = useUserId()
-  const own = useSocialProfile()
   const source = useSocialEntry(entryId)
   const post = useSocialPost(postId || source.data?.postId || '')
   const action = useSocialTask()
@@ -93,55 +77,24 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
   }
   return (
     <Screen
-      header={
-        <SocialBar
-          title={t(editing ? 'editPost' : 'newPost')}
-          action={
-            own.data?.review_status === 'approved' && !own.data.quarantined && loaded ? (
-              <IconButton
-                size="sm"
-                variant="ghost"
-                accessibilityLabel={t(editing ? 'save' : 'publish')}
-                disabled={!online}
-                loading={action.isPending}
-                onPress={() => {
-                  void save()
-                }}
-              >
-                {editing ? (
-                  <Icon set="ui" name="check" size={22} tintColor={colors.pandanInk} />
-                ) : (
-                  <Icon set="system" name="send" size={22} tintColor={colors.pandanInk} />
-                )}
-              </IconButton>
-            ) : undefined
-          }
-        />
+      header={<SocialBar title={t(editing ? 'editPost' : 'newPost')} />}
+      footer={
+        loaded ? (
+          <Button
+            fullWidth
+            disabled={!online || action.isPending}
+            loading={action.isPending}
+            onPress={() => {
+              void save()
+            }}
+          >
+            {t(editing ? 'save' : 'post')}
+          </Button>
+        ) : undefined
       }
     >
       {missingSource ? (
         <QueryNotice unavailable retry={() => undefined} />
-      ) : own.isPending || own.isError ? (
-        <QueryNotice
-          pending={own.isPending}
-          error={own.isError}
-          paused={own.fetchStatus === 'paused'}
-          retry={own.refetch}
-        />
-      ) : !own.data ? (
-        <JoinPrompt />
-      ) : own.data.review_status !== 'approved' || own.data.quarantined ? (
-        <>
-          <ReviewNotice
-            status={own.data.quarantined ? 'quarantined' : own.data.review_status}
-            reason={own.data.review_reason}
-            kind="profile"
-            id={own.data.user_id}
-          />
-          <Button variant="secondary" onPress={() => router.push('/settings/account')}>
-            {t('editProfile')}
-          </Button>
-        </>
       ) : !loaded ? (
         <QueryNotice
           pending={reading.isPending}
@@ -160,6 +113,10 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
               icon={icon}
               privateUri={privatePhoto.data}
               hasPhoto={Boolean(preview?.photo_path)}
+              photoUnavailable={Boolean(
+                preview?.photo_path &&
+                  (privatePhoto.isError || (privatePhoto.isSuccess && !privatePhoto.data)),
+              )}
               facts={preview}
             />
           </View>

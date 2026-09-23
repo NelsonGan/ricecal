@@ -44,12 +44,8 @@ select is((select count(*)::int from public.social_post(:'post')), 1,
   'an account can browse before opting into a public identity');
 select is((select count(*)::int from public.social_suggestions() where user_id = :'alice'), 1,
   'suggestions work for a new account with no graph');
-select throws_ok(format('select public.set_social_like(%L, true)', :'post'), '42501', null,
-  'a browsing-only account cannot create likes');
-select throws_ok(format('select public.create_social_comment(%L, %L, gen_random_uuid())', :'post', 'Hi'), '42501', null,
-  'a browsing-only account cannot create comments');
-select throws_ok(format('select public.set_social_follow(%L, true)', :'alice'), '42501', null,
-  'a browsing-only account cannot follow people');
+select is((select count(*)::int from public.social_profiles where user_id = :'fresh'), 1,
+  'a new account can view its own social identity without a handle');
 reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);

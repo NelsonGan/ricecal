@@ -12,7 +12,6 @@ import {
 } from '@/data/social'
 import {
   ContentSafety,
-  JoinPrompt,
   PostCard,
   QueryNotice,
   ReviewNotice,
@@ -107,7 +106,11 @@ function CommentRow({
             className="h-[44px] w-[44px] items-center justify-center"
             onPress={openAuthor}
             accessibilityRole="button"
-            accessibilityLabel={[comment.display_name, `@${comment.handle}`, time]
+            accessibilityLabel={[
+              comment.display_name,
+              comment.handle ? `@${comment.handle}` : '',
+              time,
+            ]
               .filter(Boolean)
               .join(', ')}
           >
@@ -125,7 +128,10 @@ function CommentRow({
                 hitSlop={10}
                 onPress={openAuthor}
                 accessibilityRole="button"
-                accessibilityLabel={[comment.display_name, `@${comment.handle}`]
+                accessibilityLabel={[
+                  comment.display_name,
+                  comment.handle ? `@${comment.handle}` : '',
+                ]
                   .filter(Boolean)
                   .join(', ')}
               >
@@ -336,9 +342,7 @@ function Post({ id }: { id: string }) {
       flush
       header={<SocialBar title={t('post')} />}
       footer={
-        post.data?.review_status === 'approved' &&
-        own.data?.review_status === 'approved' &&
-        !own.data.quarantined ? (
+        post.data?.review_status === 'approved' && !own.data?.quarantined ? (
           <TextField
             accessibilityLabel={t('comment')}
             labelAction={
@@ -383,21 +387,12 @@ function Post({ id }: { id: string }) {
               <PostCard post={post.data} detail />
               {/* Only when there is something to say: empty, its padding sat
                   between the post and its first comment as a blank band. */}
-              {own.data?.review_status !== 'approved' || own.data.quarantined ? (
+              {own.data?.quarantined ? (
                 <View className="gap-3 px-5 py-4">
-                  {!own.data && (own.isPending || own.isError) ? (
-                    <QueryNotice
-                      pending={own.isPending}
-                      error={own.isError}
-                      paused={own.fetchStatus === 'paused'}
-                      retry={own.refetch}
-                    />
-                  ) : null}
-                  {!own.data && !own.isPending && !own.isError ? <JoinPrompt /> : null}
                   {own.data ? (
                     <>
                       <ReviewNotice
-                        status={own.data.quarantined ? 'quarantined' : own.data.review_status}
+                        status="quarantined"
                         reason={own.data.review_reason}
                         kind="profile"
                         id={own.data.user_id}

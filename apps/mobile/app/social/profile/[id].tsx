@@ -35,7 +35,7 @@ function Profile({ id }: { id: string }) {
   const mine = id === viewer
   const account = mine ? ownProfile.data : null
   const visible = Boolean(person || account)
-  const name = person?.display_name || account?.display_name || t('displayName')
+  const name = person?.display_name || account?.display_name || t('unknownPerson')
   const handle = person?.handle ?? account?.handle
   const bio = person?.bio || account?.bio
   const avatarPath = person?.avatar_path ?? account?.avatar_path
@@ -55,9 +55,11 @@ function Profile({ id }: { id: string }) {
             {name}
           </Text>
           <View className="flex-row flex-wrap items-center gap-2">
-            <Text variant="meta" className={handle ? undefined : 'text-muted'} numberOfLines={1}>
-              {handle ? `@${handle}` : t('handle')}
-            </Text>
+            {handle ? (
+              <Text variant="meta" numberOfLines={1}>
+                @{handle}
+              </Text>
+            ) : null}
             {person?.is_followed_by ? (
               <Badge tone="neutral" size="sm">
                 {t('followsYou')}
@@ -67,7 +69,7 @@ function Profile({ id }: { id: string }) {
         </View>
       </View>
 
-      {bio ? <Text>{bio}</Text> : mine ? <Text className="text-muted">{t('bio')}</Text> : null}
+      {bio ? <Text>{bio}</Text> : null}
 
       <View className="flex-row items-stretch rounded-md bg-track px-1 py-1">
         <View className="min-h-sm flex-1 items-center justify-center px-1">
@@ -109,7 +111,7 @@ function Profile({ id }: { id: string }) {
 
       {mine ? (
         <>
-          {person ? (
+          {person?.quarantined ? (
             <ReviewNotice
               status={person.quarantined ? 'quarantined' : person.review_status}
               reason={person.review_reason}
