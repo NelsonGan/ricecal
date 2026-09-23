@@ -2542,7 +2542,9 @@ concurrent inserts appear on refresh. Deleting the cursor row does not invalidat
 the cursor because its values travel with the request.
 Handle search is ordered by the current handle. A renamed account may move
 across the search cursor; refresh to see its new position. The client deduplicates
-by account id while paging. Handles are `collate "C"`, so their unique index
+by account id while paging. The app searches only the handle characters in what
+was typed, since the server refuses anything else: a name with a space or in
+another script finds nobody rather than failing. Handles are `collate "C"`, so their unique index
 turns a prefix into a range and serves every page. Under the database's ICU
 collation the prefix could not bound the scan, and the page after the last match
 walked every later handle in the table.
