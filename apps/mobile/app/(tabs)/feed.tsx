@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router'
+import { useIsFocused, useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
@@ -15,7 +15,7 @@ export default function FeedScreen() {
   const [mode, setMode] = useState<'following' | 'discover'>('following')
   const feed = useSocialFeed(mode)
   const own = useSocialProfile()
-  const unread = useSocialUnread()
+  const unread = useSocialUnread(useIsFocused())
   const unreadCount = unread.data ?? 0
   const unreadLabel =
     unreadCount > 99
@@ -90,7 +90,8 @@ export default function FeedScreen() {
         variant="feed"
         rowKey={(post) => post.id}
         renderRow={(post, visible) => <PostCard post={post} visible={visible} />}
-        empty={t(mode === 'following' ? 'emptyFollowing' : 'emptyDiscover')}
+        empty={t(mode === 'following' ? 'emptyFollowing' : 'end')}
+        end={t('end')}
         header={
           own.isError ? (
             <View className="m-5">

@@ -315,11 +315,6 @@ begin
 end;
 $$;
 
-create or replace function public.social_has_unread_notifications()
-returns boolean language sql stable security invoker set search_path = '' as $$
-  select exists (select 1 from public.social_notifications n where n.recipient_id = (select auth.uid()) and n.read_at is null);
-$$;
-
 create or replace function public.social_unread_notification_count()
 returns integer language sql stable security invoker set search_path = '' as $$
   select count(*)::integer from (
@@ -367,12 +362,12 @@ $$;
 revoke execute on function public.social_profile, public.social_post, public.social_entry_post,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
-  public.social_notifications, public.social_has_unread_notifications, public.social_unread_notification_count,
+  public.social_notifications, public.social_unread_notification_count,
   public.mark_social_notifications_read,
   public.social_photo_claims from public, anon;
 grant execute on function public.social_profile, public.social_post, public.social_entry_post,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
-  public.social_notifications, public.social_has_unread_notifications, public.social_unread_notification_count,
+  public.social_notifications, public.social_unread_notification_count,
   public.mark_social_notifications_read,
   public.social_photo_claims to authenticated, service_role;

@@ -89,8 +89,8 @@ try {
       (id, user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor)
     values (${quote(entry)}, ${quote(alice)}, 'Race rice', 200, 44, 4, 1, '1 bowl', 1),
            (${quote(secondEntry)}, ${quote(alice)}, 'Retry rice', 200, 44, 4, 1, '1 bowl', 1);
-    insert into public.social_posts(id, author_id, source_entry_id, request_id, food_name, review_status)
-    values (${quote(post)}, ${quote(alice)}, ${quote(entry)}, ${quote(id('request', 1))}, 'Race rice', 'approved');
+    insert into public.social_posts(id, author_id, source_entry_id, food_name, review_status)
+    values (${quote(post)}, ${quote(alice)}, ${quote(entry)}, 'Race rice', 'approved');
     commit;`)
 
   await Promise.all(
@@ -147,13 +147,9 @@ try {
     'pending concurrent comments do not expose activity before review',
   )
 
-  const publishRequest = id('request', 2)
   await Promise.all(
     Array.from({ length: 6 }, () =>
-      as(
-        alice,
-        `select public.create_social_post(${quote(secondEntry)}, 'One lunch', 'public', ${quote(publishRequest)});`,
-      ),
+      as(alice, `select public.create_social_post(${quote(secondEntry)}, 'One lunch', 'public');`),
     ),
   )
   await assertSql(

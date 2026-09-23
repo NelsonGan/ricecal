@@ -29,7 +29,13 @@ export type SocialKeyClaim =
   | { keys: string[]; etags: Record<string, string> }
   | { error: string; status: number }
 
-/** Even the owner's social read goes through visibility and reviewed bytes. */
+/**
+ * Even the owner's social read goes through visibility and reviewed bytes.
+ *
+ * Unlike a diary read, a refused key does not refuse its neighbours. A social
+ * batch is a whole screen, and an edit, block, report or retention sweep
+ * routinely revokes one post; failing the batch blanked every other photo.
+ */
 export async function claimSocialKeys(
   raw: unknown,
   visiblePhotos: (keys: string[]) => Promise<readonly VisibleSocialPhoto[]>,
@@ -48,10 +54,9 @@ export async function claimSocialKeys(
       etags[row.photo_path] = row.photo_etag
     }
   }
-  if (!claim.keys.every((key) => Object.hasOwn(etags, key))) {
-    return { error: 'not a visible reviewed social photo', status: 403 }
-  }
-  return { keys: [...new Set(claim.keys)], etags }
+  const keys = [...new Set(claim.keys)].filter((key) => Object.hasOwn(etags, key))
+  if (keys.length === 0) return { error: 'not a visible reviewed social photo', status: 403 }
+  return { keys, etags: Object.fromEntries(keys.map((key) => [key, etags[key]])) }
 }
 
 export function isRecipeShareSlug(value: unknown): value is string {

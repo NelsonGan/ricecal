@@ -157,8 +157,15 @@ export function SocialPhoto({
   }
   return (
     <Image
-      source={{ uri: photo.data.url, headers: photo.data.headers }}
-      cachePolicy="none"
+      // Keyed on the reviewed bytes, not the URL, which changes with every
+      // signature. Memory only: re-signing no longer downloads the same image
+      // again, and nothing reaches disk.
+      source={{
+        uri: photo.data.url,
+        headers: photo.data.headers,
+        cacheKey: `${path}#${photo.data.headers['If-Match'] ?? ''}`,
+      }}
+      cachePolicy="memory"
       recyclingKey={path ?? undefined}
       contentFit="cover"
       style={
@@ -945,6 +952,7 @@ export function SocialList<T>({
   rowKey,
   renderRow,
   empty,
+  end,
   header,
   variant = 'cards',
   columns = 1,
@@ -953,6 +961,8 @@ export function SocialList<T>({
   rowKey: (row: T) => string
   renderRow: (row: T, visible: boolean) => ReactElement
   empty: string
+  /** Said under the last row once there are no more pages. */
+  end?: string
   header?: ReactElement
   variant?: 'cards' | 'feed' | 'rows' | 'grid'
   columns?: number
@@ -1070,6 +1080,10 @@ export function SocialList<T>({
           >
             {t('loadMore')}
           </Button>
+        ) : end && rows.length > 0 ? (
+          <Text variant="meta" className="text-center">
+            {end}
+          </Text>
         ) : null
       }
       ListFooterComponentStyle={{ padding: 16 }}

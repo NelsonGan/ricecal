@@ -124,7 +124,6 @@ async function post(user, entry, caption, audience = 'public') {
     p_entry_id: entry,
     p_caption: caption,
     p_audience: audience,
-    p_request_id: randomUUID(),
   })
 }
 async function run() {
@@ -310,6 +309,25 @@ async function run() {
     `overwritten image cannot inherit approval (status ${overwritten.status}; expected ${signed.headers[upload.key]['If-Match']}; received ${overwritten.headers.get('etag')})`,
   )
   await overwritten.arrayBuffer()
+  const neighbour = await ok('/functions/v1/photos', mina.token, {
+    action: 'upload',
+    kind: 'meal',
+    contentType: 'image/png',
+    size: 68,
+  })
+  uploaded.set(neighbour.key, mina.token)
+  const neighbourPut = await fetch(neighbour.url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'image/png' },
+    body: png,
+  })
+  await neighbourPut.arrayBuffer()
+  const neighbourPost = await post(
+    mina,
+    await meal(mina, 'Neighbour photo meal', neighbour.key),
+    'Another photo from my diary',
+  )
+  await review('post', neighbourPost, mina.token)
   await ok(`/rest/v1/food_logs?id=eq.${photoEntry}`, mina.token, { photo_path: null }, 'PATCH')
   const denied = await request('/functions/v1/photos', arun.token, {
     action: 'read',
@@ -317,8 +335,21 @@ async function run() {
     keys: [upload.key],
   })
   check(denied.status === 403, 'photo replacement or retention immediately revokes social signing')
-  await ok('/functions/v1/photos', mina.token, { action: 'delete', keys: [upload.key] })
+  const mixed = await ok('/functions/v1/photos', arun.token, {
+    action: 'read',
+    scope: 'social',
+    keys: [upload.key, neighbour.key],
+  })
+  check(
+    !mixed.urls[upload.key] && Boolean(mixed.urls[neighbour.key]),
+    'a revoked image leaves the rest of its screen signed',
+  )
+  await ok('/functions/v1/photos', mina.token, {
+    action: 'delete',
+    keys: [upload.key, neighbour.key],
+  })
   uploaded.delete(upload.key)
+  uploaded.delete(neighbour.key)
   await ok(`/rest/v1/food_logs?id=eq.${photoEntry}`, mina.token, undefined, 'DELETE')
   check(
     (await rpc('social_post', mina.token, { p_id: photoPost })).length === 0,

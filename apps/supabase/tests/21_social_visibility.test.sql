@@ -29,8 +29,8 @@ insert into public.food_logs
   (id, user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor, photo_path)
 values (:'entry', :'alice', 'Visible rice', 200, 44, 4, 1, '1 bowl', 1, 'meals/' || :'alice' || '/fixture.jpg');
 insert into public.social_posts
-  (id, author_id, source_entry_id, request_id, food_name, review_status, photo_path, photo_etag)
-values (:'post', :'alice', :'entry', gen_random_uuid(), 'Visible rice', 'approved', 'meals/' || :'alice' || '/fixture.jpg', '"meal-etag"');
+  (id, author_id, source_entry_id, food_name, review_status, photo_path, photo_etag)
+values (:'post', :'alice', :'entry', 'Visible rice', 'approved', 'meals/' || :'alice' || '/fixture.jpg', '"meal-etag"');
 insert into public.social_comments (id, post_id, author_id, request_id, body, review_status)
 values (:'comment', :'post', :'carol', gen_random_uuid(), 'A public comment', 'approved');
 
@@ -69,8 +69,8 @@ select throws_ok($q$select * from public.social_photo_claims(array_fill('x'::tex
   'media authorization has a bounded batch size');
 select throws_ok(format('select source_entry_id from public.social_posts where id = %L', :'post'), '42501', null,
   'a raw public post read cannot expose the private source diary ID');
-select throws_ok(format('select request_id from public.social_posts where id = %L', :'post'), '42501', null,
-  'a raw public post read cannot expose client retry tokens');
+select throws_ok(format('select request_id from public.social_comments where id = %L', :'comment'), '42501', null,
+  'a raw public comment read cannot expose client retry tokens');
 select is(public.social_entry_post(:'entry'), null,
   'the private diary-to-post lookup only answers its owner');
 select ok(not (select to_jsonb(p) ?| array['source_entry_id','request_id','note','email','photo_etag'] from public.social_post(:'post') p),
@@ -113,7 +113,7 @@ select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role
 set local role authenticated;
 select is(public.social_entry_post(:'entry'), :'post'::uuid,
   'the owner can find the post belonging to a historical logged meal');
-select is(public.social_has_unread_notifications(), true,
+select ok(public.social_unread_notification_count() > 0,
   'visible interactions create unread activity for the recipient');
 select is(public.social_unread_notification_count(),
   (select count(*)::integer from public.social_notifications()),
@@ -129,8 +129,6 @@ select is((select count(*)::int from public.social_notifications where recipient
 select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select public.mark_social_notifications_read(:'activity_ids'::uuid[]);
-select is(public.social_has_unread_notifications(), false,
-  'marking the recipient''s own activity clears the unread indicator');
 select is(public.social_unread_notification_count(), 0,
   'marking the recipient''s own activity clears the unread count');
 select throws_ok($q$select public.mark_social_notifications_read(array_fill(gen_random_uuid(), array[101]))$q$,

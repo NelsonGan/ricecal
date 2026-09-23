@@ -19,7 +19,6 @@ import {
   SocialBar,
   useSocialTask,
 } from '@/features/social/components'
-import { socialRequestId } from '@/features/social/request-id'
 import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, Screen, Select, Sheet, Text, TextField } from '@/ui'
@@ -45,7 +44,6 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
   const [caption, setCaption] = useState('')
   const [audience, setAudience] = useState<SocialAudience>('public')
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const requestId = useRef(socialRequestId()).current
   const initialized = useRef(false)
   const mounted = useRef(true)
   useEffect(() => {
@@ -82,14 +80,14 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
       const result = await action.run(
         existing
           ? { action: 'editPost', id: existing.id, caption: caption.trim(), audience }
-          : { action: 'post', entryId, caption: caption.trim(), audience, requestId },
+          : { action: 'post', entryId, caption: caption.trim(), audience },
       )
       if (mounted.current && result.id) {
         if (existing) finishEdit()
         else router.replace({ pathname: '/social/post/[id]', params: { id: result.id } })
       }
     } catch {
-      /* A retry uses the same id and keeps the user's draft. */
+      /* A retry keeps the draft, and the server returns the entry's one post. */
     }
   }
   return (

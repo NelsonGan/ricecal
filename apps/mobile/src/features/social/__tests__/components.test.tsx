@@ -204,6 +204,43 @@ it('announces social loading states in the active language', async () => {
   for (const indicator of loading) expect(indicator).toHaveProp('accessibilityRole', 'progressbar')
 })
 
+it('says the feed has ended under its last post, and not while more can load', async () => {
+  const query = {
+    data: { pages: [{ rows: [{ id: 'post' }], next: null }] },
+    isPending: false,
+    isError: false,
+    isFetching: false,
+    isFetchingNextPage: false,
+    isFetchNextPageError: false,
+    hasNextPage: false,
+    fetchStatus: 'idle',
+    fetchNextPage: jest.fn(async () => undefined),
+    refetch: jest.fn(async () => undefined),
+  }
+  const list = (
+    <SocialList
+      query={query}
+      rowKey={(row) => row.id}
+      renderRow={() => <View />}
+      empty="Empty"
+      end="You have reached the end"
+    />
+  )
+  const view = await render(list)
+  expect(screen.getByText('You have reached the end')).toBeOnTheScreen()
+  await view.rerender(<SocialList {...list.props} query={{ ...query, hasNextPage: true }} />)
+  expect(screen.queryByText('You have reached the end')).toBeNull()
+  expect(screen.getByText('Load more')).toBeOnTheScreen()
+  await view.rerender(
+    <SocialList
+      {...list.props}
+      query={{ ...query, data: { pages: [{ rows: [], next: null }] } }}
+    />,
+  )
+  expect(screen.queryByText('You have reached the end')).toBeNull()
+  expect(screen.getByText('Empty')).toBeOnTheScreen()
+})
+
 it('shows pull-to-refresh only for an explicit refresh', async () => {
   let finishRefresh: (() => void) | undefined
   const refetch = jest.fn(
@@ -269,11 +306,13 @@ it('passes reviewed-image validators and removes an expired photograph', async (
     isError: false,
   })
   const view = await render(<SocialPhoto path="meals/person/photo" label="Rice" />)
+  // A fresh signature for the same reviewed bytes reuses the image in memory.
   expect(screen.getByTestId('social-photo')).toHaveProp('source', {
     uri: 'https://images.example/photo',
     headers: { 'If-Match': 'reviewed-etag' },
+    cacheKey: 'meals/person/photo#reviewed-etag',
   })
-  expect(screen.getByTestId('social-photo')).toHaveProp('cachePolicy', 'none')
+  expect(screen.getByTestId('social-photo')).toHaveProp('cachePolicy', 'memory')
   await act(async () => {
     jest.advanceTimersByTime(50_000)
   })

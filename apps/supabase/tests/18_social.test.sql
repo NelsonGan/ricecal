@@ -47,7 +47,7 @@ select ok(not exists (
 
 select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select throws_ok(format('select public.create_social_post(%L, %L, %L, gen_random_uuid())', :'entry', '', 'public'),
+select throws_ok(format('select public.create_social_post(%L, %L, %L)', :'entry', '', 'public'),
   '42501', null, 'publication requires an explicit public identity');
 select public.set_social_profile('Social_ALICE', 'Alice fixture', '爱吃饭', null);
 select is((select handle from public.social_profiles where user_id = :'alice'), 'social_alice',
@@ -75,7 +75,7 @@ select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role',
 set local role authenticated;
 select throws_ok($q$select public.set_social_profile('SOCIAL_ALICE', 'Imposter', '', null)$q$,
   '23505', null, 'normalized handles remain unique across accounts');
-select throws_ok(format('select public.create_social_post(%L, %L, %L, gen_random_uuid())', :'entry', 'Stolen', 'public'),
+select throws_ok(format('select public.create_social_post(%L, %L, %L)', :'entry', 'Stolen', 'public'),
   '42501', null, 'another account cannot publish a private diary entry');
 select is((select count(*)::int from public.food_logs where user_id = :'alice'), 0,
   'public identity does not expose its private diary');
@@ -85,10 +85,10 @@ reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select public.create_social_post(:'entry', 'A good lunch', 'public', 'a8120000-0000-4000-8000-000000000001') as post \gset
-select is(public.create_social_post(:'entry', 'A good lunch', 'public', 'a8120000-0000-4000-8000-000000000001'), :'post'::uuid,
+select public.create_social_post(:'entry', 'A good lunch', 'public') as post \gset
+select is(public.create_social_post(:'entry', 'A good lunch', 'public'), :'post'::uuid,
   'retrying a publication returns its original post');
-select is(public.create_social_post(:'entry', 'A different caption', 'followers', 'a8120000-0000-4000-8000-000000000002'), :'post'::uuid,
+select is(public.create_social_post(:'entry', 'A different caption', 'followers'), :'post'::uuid,
   'a source entry has at most one published snapshot');
 select is((select food_name from public.social_posts where id = :'post'), 'Fixture nasi lemak',
   'the server derives the public food name from the owned diary entry');
@@ -153,8 +153,6 @@ select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role
 set local role authenticated;
 select is(public.social_unread_notification_count(), 2,
   'the unread badge reports each missed notification');
-select ok(public.social_has_unread_notifications(),
-  'the old unread boolean remains available to released clients');
 reset role;
 
 update public.social_profiles set review_status = 'pending' where user_id = :'bob';
@@ -399,7 +397,7 @@ set local role authenticated;
 select public.delete_social_comment(:'comment');
 select is((select count(*)::int from public.social_comments where id = :'comment'), 0,
   'the post author can remove a reviewed comment on their post');
-select public.create_social_post(:'second_entry', '', 'public', 'a8120000-0000-4000-8000-000000000003') as second_post \gset
+select public.create_social_post(:'second_entry', '', 'public') as second_post \gset
 select public.delete_social_post(:'second_post');
 select is((select count(*)::int from public.food_logs where id = :'second_entry'), 1,
   'deleting a post preserves the logged meal');
@@ -435,8 +433,8 @@ select ok(not exists(select 1 from public.social_counters where shard < 0 or sha
   'counter shards remain in their fixed range and never go negative');
 
 insert into public.social_follows (follower_id, followed_id) values (:'dan', :'alice'), (:'alice', :'eve');
-insert into public.social_posts (author_id, source_entry_id, request_id, food_name, review_status)
-values (:'alice', :'second_entry', gen_random_uuid(), 'Account cascade fixture', 'approved');
+insert into public.social_posts (author_id, source_entry_id, food_name, review_status)
+values (:'alice', :'second_entry', 'Account cascade fixture', 'approved');
 delete from auth.users where id = :'alice';
 select is((select count(*)::int from public.social_profiles where user_id = :'alice'), 0,
   'account deletion cascades public identity');
@@ -444,6 +442,27 @@ select is((select count(*)::int from public.social_notifications where recipient
   'account deletion cascades inbound and outbound activity');
 select is((select count(*)::int from public.social_counters where entity_id = :'alice'), 0,
   'account deletion leaves no profile counters');
+
+-- A cascade finds its rows through an index only if the key leads one whose
+-- predicate the cascade's own `col = $1` implies. Activity once had post and
+-- comment indexes partial on `kind`, so every deletion scanned the whole table.
+select is(array(
+  select c.conrelid::regclass::text || '.' || a.attname
+  from pg_constraint c
+  join pg_attribute a on a.attrelid = c.conrelid and a.attnum = c.conkey[1]
+  where c.contype = 'f' and c.connamespace = 'public'::regnamespace
+    and c.conrelid::regclass::text like 'social\_%'
+    and not exists (
+      select 1 from pg_index i
+      where i.indrelid = c.conrelid and i.indkey[0] = c.conkey[1]
+        and (i.indpred is null
+          or pg_get_expr(i.indpred, i.indrelid) = format('(%I IS NOT NULL)', a.attname))
+    )
+  order by 1
+), '{}'::text[], 'every social foreign key leads an index its cascade can use');
+select is((select c.collname::text from pg_attribute a join pg_collation c on c.oid = a.attcollation
+    where a.attrelid = 'public.social_profiles'::regclass and a.attname = 'handle'), 'C',
+  'handles sort in byte order, so one unique index bounds every search page');
 
 select * from finish();
 rollback;

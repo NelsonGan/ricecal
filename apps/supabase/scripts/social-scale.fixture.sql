@@ -48,9 +48,9 @@ select pg_temp.social_bench_id('entry', n), pg_temp.social_bench_id('user', auth
        'Benchmark rice', 200, 44, 4, 1, '1 bowl', 1
 from social_bench_sources;
 insert into public.social_posts
-  (id, author_id, source_entry_id, request_id, food_name, caption, audience, review_status, created_at, published_at)
+  (id, author_id, source_entry_id, food_name, caption, audience, review_status, created_at, published_at)
 select pg_temp.social_bench_id('post', n), pg_temp.social_bench_id('user', author_number),
-       pg_temp.social_bench_id('entry', n), pg_temp.social_bench_id('request', n),
+       pg_temp.social_bench_id('entry', n),
        'Benchmark rice', 'A local benchmark fixture', 'public', 'approved', created_at, created_at
 from social_bench_sources;
 

@@ -1,5 +1,7 @@
 import {
+  type InfiniteData,
   onlineManager,
+  type Query,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -172,8 +174,14 @@ function useSocialPages<T>(request: ListRequest, cursor: (row: T) => SocialCurso
   return {
     ...query,
     // After old pages are evicted, React Query refetch starts at the retained
-    // cursor. Pull-to-refresh must instead return to the newest posts.
-    refetch: () => client.resetQueries({ queryKey, exact: true }),
+    // cursor. Pull-to-refresh must instead return to the newest posts, and it
+    // keeps the first loaded page on screen rather than blanking the list.
+    refetch: async () => {
+      client.setQueryData<InfiniteData<SocialPage<T>, SocialCursor>>(queryKey, (data) =>
+        data ? { pages: data.pages.slice(0, 1), pageParams: [null] } : data,
+      )
+      return await query.refetch()
+    },
   }
 }
 const timeCursor = (row: { id: string; created_at: string }): SocialCursor => ({
@@ -241,12 +249,17 @@ export function useSocialSuggestions() {
     ...MEMORY_OPTIONS,
   })
 }
-export function useSocialUnread() {
+/**
+ * Polls only while the badge is on screen. The Feed tab stays mounted after its
+ * first visit, and it used to ask every minute for as long as the app was open.
+ */
+export function useSocialUnread(active: boolean) {
   const viewer = useUserId()
   return useQuery({
     queryKey: keys.socialRead(viewer, 'unread'),
     queryFn: async ({ signal }) =>
       await rpc('social_unread_notification_count', undefined as never, signal),
+    enabled: active,
     refetchInterval: 60_000,
     ...MEMORY_OPTIONS,
   })
@@ -275,15 +288,30 @@ export function useSocialEntry(entryId: string) {
   })
 }
 
+/**
+ * The caller's post for one diary entry: its id, null for none, or undefined when
+ * that cannot be known in time. Offline, failed and slow all read as unknown, so
+ * a delete waiting on this never hangs on a bad connection.
+ */
+export async function socialEntryPost(
+  entryId: string,
+  timeoutMs = 2000,
+): Promise<string | null | undefined> {
+  if (!onlineManager.isOnline()) return undefined
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return (await rpc('social_entry_post', { p_entry_id: entryId }, controller.signal)) ?? null
+  } catch {
+    return undefined
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export type SocialAction =
   | { action: 'profile'; handle: string; name: string; bio: string; avatar: string | null }
-  | {
-      action: 'post'
-      entryId: string
-      caption: string
-      audience: SocialAudience
-      requestId: string
-    }
+  | { action: 'post'; entryId: string; caption: string; audience: SocialAudience }
   | { action: 'editPost'; id: string; caption: string; audience: SocialAudience }
   | { action: 'deletePost'; id: string }
   | { action: 'follow'; id: string; following: boolean }
@@ -324,34 +352,34 @@ export function useSocialAction() {
     await client.cancelQueries({ queryKey: socialKey })
     await client.resetQueries({ queryKey: socialKey })
   }
-  const markAuthorFollowed = (authorId: string) => {
-    const listNames = new Set(['social_feed', 'social_profile_posts'])
-    client.setQueriesData<{ pages: SocialPage<SocialPost>[]; pageParams: SocialCursor[] }>(
-      {
-        queryKey: socialKey,
-        predicate: (query) => listNames.has(String(query.queryKey[2])),
-      },
-      (data) => {
-        if (!data) return data
-        return {
+  // Every cached copy of a post: feed pages, profile grids and the post screen.
+  const postLists = new Set(['social_feed', 'social_profile_posts'])
+  const holdsPosts = (query: Query) =>
+    postLists.has(String(query.queryKey[2])) || String(query.queryKey[2]) === 'social_post'
+  const patchPosts = (patch: (post: SocialPost) => SocialPost) => {
+    client.setQueriesData<InfiniteData<SocialPage<SocialPost>, SocialCursor>>(
+      { queryKey: socialKey, predicate: (query) => postLists.has(String(query.queryKey[2])) },
+      (data) =>
+        data && {
           ...data,
-          pages: data.pages.map((page) => ({
-            ...page,
-            rows: page.rows.map((post) =>
-              post.author_id === authorId ? { ...post, is_following: true } : post,
-            ),
-          })),
-        }
-      },
+          pages: data.pages.map((page) => ({ ...page, rows: page.rows.map(patch) })),
+        },
     )
     client.setQueriesData<SocialPost | null>(
-      {
-        queryKey: socialKey,
-        predicate: (query) => String(query.queryKey[2]) === 'social_post',
-      },
-      (post) => (post?.author_id === authorId ? { ...post, is_following: true } : post),
+      { queryKey: socialKey, predicate: (query) => String(query.queryKey[2]) === 'social_post' },
+      (post) => (post ? patch(post) : post),
     )
   }
+  const markAuthorFollowed = (authorId: string) =>
+    patchPosts((post) => (post.author_id === authorId ? { ...post, is_following: true } : post))
+  // Likes are the most frequent write. Drawing one in place keeps the card still
+  // and spares the server a refetch of every loaded feed page per tap.
+  const setLiked = (postId: string, liked: boolean) =>
+    patchPosts((post) =>
+      post.id === postId && post.is_liked !== liked
+        ? { ...post, is_liked: liked, like_count: Math.max(0, post.like_count + (liked ? 1 : -1)) }
+        : post,
+    )
   return useMutation({
     // Fail an offline tap immediately, even if connectivity changed after the
     // button rendered. A social action must never sit in an offline write queue.
@@ -373,7 +401,6 @@ export function useSocialAction() {
             p_entry_id: input.entryId,
             p_caption: input.caption,
             p_audience: input.audience,
-            p_request_id: input.requestId,
           })
           return { id, status: await reviewSocial('post', id) }
         }
@@ -444,12 +471,40 @@ export function useSocialAction() {
       }
       return {}
     },
-    onSuccess: async (_result, input) => {
+    onMutate: (input) => {
+      if (input.action !== 'like') return undefined
+      const previous = client.getQueriesData({ queryKey: socialKey, predicate: holdsPosts })
+      setLiked(input.id, input.liked)
+      return { previous }
+    },
+    onError: (_error, _input, context) => {
+      for (const [queryKey, data] of context?.previous ?? []) client.setQueryData(queryKey, data)
+    },
+    onSuccess: async (result, input) => {
+      if (input.action === 'like') return
       if (
         ['block', 'report', 'deletePost', 'editPost', 'profile'].includes(input.action) ||
         (input.action === 'follow' && !input.following)
       ) {
         await resetSocial()
+      } else if (input.action === 'comment') {
+        // One post changed. An approved comment also adds to its count wherever
+        // that post is drawn; a pending one counts once review approves it.
+        if (result.status === 'approved') {
+          patchPosts((post) =>
+            post.id === input.postId ? { ...post, comment_count: post.comment_count + 1 } : post,
+          )
+        }
+        await Promise.all([
+          client.invalidateQueries({
+            queryKey: keys.socialRead(viewer, 'social_comments', { p_post_id: input.postId }),
+            exact: true,
+          }),
+          client.invalidateQueries({
+            queryKey: keys.socialRead(viewer, 'social_post', { id: input.postId }),
+            exact: true,
+          }),
+        ])
       } else if (input.action === 'follow') {
         // Keep the card containing the Follow button in place. A deliberate
         // Discover refresh can apply server eligibility after the interaction.
@@ -472,45 +527,41 @@ export function useSocialAction() {
         const names =
           input.action === 'read'
             ? ['social_notifications', 'unread']
-            : input.action === 'like'
-              ? ['social_feed', 'social_profile_posts', 'social_post']
-              : input.action === 'comment'
-                ? ['social_feed', 'social_profile_posts', 'social_post', 'social_comments']
-                : input.action === 'post'
-                  ? ['social_feed', 'social_profile_posts', 'social_profile', 'entry']
-                  : input.action === 'removeFollower'
-                    ? [
-                        'social_feed',
-                        'social_profile',
-                        'social_connections',
-                        'social_suggestions',
-                        'social_search_profiles',
-                        'social_notifications',
-                        'unread',
-                      ]
-                    : input.action === 'unblock'
-                      ? [
-                          'social_feed',
-                          'social_profile',
-                          'social_profile_posts',
-                          'social_post',
-                          'social_comments',
-                          'social_connections',
-                          'social_suggestions',
-                          'social_search_profiles',
-                          'social_blocked_profiles',
-                          'social_notifications',
-                          'unread',
-                        ]
-                      : [
-                          'social_feed',
-                          'social_profile',
-                          'social_profile_posts',
-                          'social_post',
-                          'social_comments',
-                          'social_notifications',
-                          'unread',
-                        ]
+            : input.action === 'post'
+              ? ['social_feed', 'social_profile_posts', 'social_profile', 'entry']
+              : input.action === 'removeFollower'
+                ? [
+                    'social_feed',
+                    'social_profile',
+                    'social_connections',
+                    'social_suggestions',
+                    'social_search_profiles',
+                    'social_notifications',
+                    'unread',
+                  ]
+                : input.action === 'unblock'
+                  ? [
+                      'social_feed',
+                      'social_profile',
+                      'social_profile_posts',
+                      'social_post',
+                      'social_comments',
+                      'social_connections',
+                      'social_suggestions',
+                      'social_search_profiles',
+                      'social_blocked_profiles',
+                      'social_notifications',
+                      'unread',
+                    ]
+                  : [
+                      'social_feed',
+                      'social_profile',
+                      'social_profile_posts',
+                      'social_post',
+                      'social_comments',
+                      'social_notifications',
+                      'unread',
+                    ]
         await refresh(names)
       }
       if (input.action === 'block' || input.action === 'unblock') {

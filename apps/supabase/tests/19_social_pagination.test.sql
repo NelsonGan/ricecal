@@ -25,9 +25,9 @@ insert into public.food_logs
 select ('a8210000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid, :'author',
        'Pagination rice ' || n, 200, 44, 4, 1, '1 bowl', 1 from generate_series(1, 60) n;
 insert into public.social_posts
-  (id, author_id, source_entry_id, request_id, food_name, caption, audience, review_status, created_at, published_at)
+  (id, author_id, source_entry_id, food_name, caption, audience, review_status, created_at, published_at)
 select ('a8220000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid, :'author',
-       ('a8210000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid, gen_random_uuid(),
+       ('a8210000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
        'Pagination rice ' || n, '', 'public', 'approved', '2026-01-01 12:00:00+00', '2026-01-01 12:00:00+00'
 from generate_series(1, 60) n;
 insert into public.social_comments
@@ -113,9 +113,9 @@ insert into public.food_logs
   (id, user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor)
 values ('a8210000-0000-4000-8000-000000000061', :'author', 'New rice', 200, 44, 4, 1, '1 bowl', 1);
 insert into public.social_posts
-  (id, author_id, source_entry_id, request_id, food_name, audience, review_status, created_at, published_at)
+  (id, author_id, source_entry_id, food_name, audience, review_status, created_at, published_at)
 values ('a8220000-0000-4000-8000-000000000061', :'author',
-  'a8210000-0000-4000-8000-000000000061', gen_random_uuid(), 'New rice', 'public', 'approved',
+  'a8210000-0000-4000-8000-000000000061', 'New rice', 'public', 'approved',
   '2026-01-02 12:00:00+00', '2026-01-02 12:00:00+00');
 select set_config('request.jwt.claims', json_build_object('sub', :'viewer', 'role', 'authenticated')::text, true);
 set local role authenticated;

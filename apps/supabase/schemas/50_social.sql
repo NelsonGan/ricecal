@@ -11,7 +11,10 @@ create type public.social_counter_metric as enum ('followers', 'following', 'pos
 
 create table public.social_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  handle text not null unique check (handle ~ '^[a-z0-9_]{3,24}$'),
+  -- Byte order, so the unique index also serves prefix search and its pages.
+  -- Under the database's ICU collation, the page after the last match walked
+  -- every later handle in the table.
+  handle text collate "C" not null unique check (handle ~ '^[a-z0-9_]{3,24}$'),
   display_name text not null check (char_length(btrim(display_name)) between 1 and 60),
   bio text not null default '' check (char_length(bio) <= 160),
   avatar_path text,
@@ -28,7 +31,6 @@ create table public.social_profiles (
 );
 create index social_profiles_discover_idx on public.social_profiles(created_at desc, user_id desc)
   where review_status = 'approved' and not quarantined;
-create index social_profiles_handle_prefix_idx on public.social_profiles(handle text_pattern_ops);
 
 create table public.social_follows (
   follower_id uuid not null references public.social_profiles(user_id) on delete cascade,
@@ -44,8 +46,8 @@ create index blocked_authors_reverse_idx on public.blocked_authors(author_id, us
 create table public.social_posts (
   id uuid primary key default gen_random_uuid(),
   author_id uuid not null references public.social_profiles(user_id) on delete cascade,
+  -- One post per entry is also what makes a retried publish the same operation.
   source_entry_id uuid not null unique references public.food_logs(id) on delete cascade,
-  request_id uuid not null,
   food_name text not null check (char_length(food_name) between 1 and 160),
   icon_set public.icon_set,
   icon_name text,
@@ -60,7 +62,6 @@ create table public.social_posts (
   created_at timestamptz not null default now(),
   published_at timestamptz,
   updated_at timestamptz not null default now(),
-  unique (author_id, request_id),
   constraint social_posts_icon_complete check ((icon_set is null) = (icon_name is null)),
   constraint social_posts_photo_owned check (
     photo_path is null or photo_path like 'meals/' || author_id::text || '/%'
@@ -92,10 +93,10 @@ create table public.social_comments (
   quarantined boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  -- Also the index an author's deletion cascades through.
   unique (author_id, request_id)
 );
 create index social_comments_post_idx on public.social_comments(post_id, created_at desc, id desc);
-create index social_comments_author_idx on public.social_comments(author_id);
 
 create table public.social_reports (
   kind public.social_content_kind not null,
@@ -109,9 +110,8 @@ create table public.social_reports (
 );
 -- Resolution closes a counting cycle without deleting its audit rows. Every
 -- row still hides that target from its reporter, including after resolution.
+-- The quarantine count reads a revision's few rows through the primary key.
 create index social_reports_reporter_idx on public.social_reports(reporter_id, kind, content_id, content_revision);
-create index social_reports_unresolved_idx on public.social_reports(kind, content_id, content_revision)
-  where resolved_at is null;
 
 -- At most 32 lazily created rows per counter. Popular accounts and posts do
 -- not make every writer contend on the same counter row.
@@ -139,14 +139,18 @@ create table public.social_notifications (
     or (kind = 'comment' and post_id is not null and comment_id is not null)
   )
 );
+-- Every foreign key leads an index, and the post and comment ones are partial on
+-- the column itself. Partial on `kind`, a deleted post, comment or account
+-- scanned the whole table for its activity. Likes need no unique index: only a
+-- like's insert writes one, and the like's own key allows one per pair.
 create unique index social_notifications_follow_unique on public.social_notifications(recipient_id, actor_id)
   where kind = 'follow';
-create unique index social_notifications_like_unique on public.social_notifications(post_id, actor_id)
-  where kind = 'like';
+create index social_notifications_post_idx on public.social_notifications(post_id, actor_id)
+  where post_id is not null;
 create unique index social_notifications_comment_unique on public.social_notifications(comment_id)
-  where kind = 'comment';
+  where comment_id is not null;
+create index social_notifications_actor_idx on public.social_notifications(actor_id, recipient_id);
 create index social_notifications_recipient_idx on public.social_notifications(recipient_id, created_at desc, id desc);
-create index social_notifications_pair_idx on public.social_notifications(recipient_id, actor_id);
 create index social_notifications_unread_idx on public.social_notifications(recipient_id, created_at desc, id desc)
   where read_at is null;
 
@@ -396,7 +400,7 @@ begin
     select author_id into v_owner from public.social_posts where id = v_row.post_id;
     if v_owner <> v_row.user_id then
       insert into public.social_notifications(recipient_id, actor_id, kind, post_id)
-      values (v_owner, v_row.user_id, 'like', v_row.post_id) on conflict do nothing;
+      values (v_owner, v_row.user_id, 'like', v_row.post_id);
     end if;
   else
     delete from public.social_notifications where post_id = v_row.post_id and actor_id = v_row.user_id and kind = 'like';
@@ -498,7 +502,7 @@ end;
 $$;
 
 create or replace function public.create_social_post(
-  p_entry_id uuid, p_caption text, p_audience public.social_audience, p_request_id uuid
+  p_entry_id uuid, p_caption text, p_audience public.social_audience
 )
 returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.social_require_user(); v_id uuid; v_entry public.food_logs;
@@ -506,19 +510,18 @@ begin
   -- The source lock also serializes publication against its deletion or photo replacement.
   select * into v_entry from public.food_logs where id = p_entry_id and user_id = v_user for share;
   if not found then raise exception 'Meal unavailable' using errcode = '42501'; end if;
-  select id into v_id from public.social_posts where author_id = v_user
-    and (source_entry_id = p_entry_id or request_id = p_request_id);
+  select id into v_id from public.social_posts where source_entry_id = p_entry_id and author_id = v_user;
   if found then return v_id; end if;
-  if p_request_id is null then raise exception 'A request id is required' using errcode = '22023'; end if;
   if not private.social_claim(v_user, 'post', 30) then raise exception 'Try again later' using errcode = 'P0001'; end if;
-  insert into public.social_posts(author_id, source_entry_id, request_id, food_name, icon_set, icon_name, photo_path, caption, audience)
-  values (v_user, p_entry_id, p_request_id, left(coalesce(v_entry.display_label, v_entry.item_name), 160),
+  insert into public.social_posts(author_id, source_entry_id, food_name, icon_set, icon_name, photo_path, caption, audience)
+  values (v_user, p_entry_id, left(coalesce(v_entry.display_label, v_entry.item_name), 160),
     coalesce(v_entry.icon_set, v_entry.item_icon_set), coalesce(v_entry.icon_name, v_entry.item_icon_name),
     case when v_entry.photo_path like 'meals/' || v_user::text || '/%' then v_entry.photo_path end,
     btrim(coalesce(p_caption, '')), p_audience)
-  on conflict do nothing returning id into v_id;
-  if v_id is null then select id into v_id from public.social_posts where author_id = v_user
-    and (source_entry_id = p_entry_id or request_id = p_request_id); end if;
+  on conflict (source_entry_id) do nothing returning id into v_id;
+  if v_id is null then
+    select id into v_id from public.social_posts where source_entry_id = p_entry_id and author_id = v_user;
+  end if;
   return v_id;
 end;
 $$;

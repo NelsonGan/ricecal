@@ -28,8 +28,11 @@ export type EntryListProps = {
    * has no dish to open — the only thing to do with it is name it by hand.
    */
   onFixEntry?: (entry: Entry) => void
-  /** Swiping a row left reveals this. Rows are not swipeable without it. */
-  onDeleteEntry?: (entry: Entry) => void
+  /**
+   * Swiping a row left reveals this. Rows are not swipeable without it. A delete
+   * that may ask first answers whether the row went, so a kept row comes back.
+   */
+  onDeleteEntry?: ((entry: Entry) => void) | ((entry: Entry) => Promise<boolean>)
   /**
    * A snap the scan found no food in. Nothing was logged, so there is nothing
    * to delete — the row is dismissed and goes.
@@ -131,7 +134,7 @@ function EntryRow({
   entry: Entry
   onPress?: (entry: Entry) => void
   onFix?: (entry: Entry) => void
-  onDelete?: (entry: Entry) => void
+  onDelete?: ((entry: Entry) => void) | ((entry: Entry) => Promise<boolean>)
   onDismiss?: (entry: Entry) => void
   onSwipeOpenChange?: (open: boolean) => void
 }) {
