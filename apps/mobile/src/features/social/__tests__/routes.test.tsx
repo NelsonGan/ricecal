@@ -71,7 +71,6 @@ jest.mock('@/features/social/components', () => {
         props.facts ? `${props.name}, ${props.facts.kcal} kcal` : props.name,
       )
     },
-    JoinPrompt: () => null,
     QueryNotice: () => null,
     ReviewNotice: () => null,
     PostCard: () => null,
@@ -120,7 +119,7 @@ it('does not carry a shared meal caption or audience into another source entry',
   mockParams = { entryId: 'fresh-entry' }
   await view.rerender(<ComposeScreen />)
   expect(screen.getByLabelText('Caption')).toHaveProp('value', '')
-  await userEvent.setup().press(screen.getByRole('button', { name: 'Share' }))
+  await userEvent.setup().press(screen.getByRole('button', { name: 'Post' }))
   expect(mockRun).toHaveBeenLastCalledWith(
     expect.objectContaining({
       action: 'post',
@@ -164,7 +163,7 @@ it('keeps sharing details in the audience picker and info sheet', async () => {
   await user.press(screen.getByRole('button', { name: 'About sharing' }))
   expect(screen.getByText(shareHint)).toBeOnTheScreen()
   await user.press(screen.getByRole('button', { name: 'Close' }))
-  await user.press(screen.getByRole('button', { name: 'Share' }))
+  await user.press(screen.getByRole('button', { name: 'Post' }))
   expect(mockRun).toHaveBeenLastCalledWith(
     expect.objectContaining({ action: 'post', entryId: 'fresh-entry', audience: 'followers' }),
   )
@@ -176,9 +175,9 @@ it('retains a failed meal draft only while editing the same source', async () =>
   const view = await render(<ComposeScreen />)
   const user = userEvent.setup()
   await user.type(screen.getByLabelText('Caption'), 'First meal')
-  await user.press(screen.getByRole('button', { name: 'Share' }))
+  await user.press(screen.getByRole('button', { name: 'Post' }))
   expect(screen.getByLabelText('Caption')).toHaveProp('value', 'First meal')
-  await user.press(screen.getByRole('button', { name: 'Share' }))
+  await user.press(screen.getByRole('button', { name: 'Post' }))
   // The entry is the retry key: the server answers a repeat with its one post.
   expect(mockRun.mock.calls[1][0]).toEqual(mockRun.mock.calls[0][0])
   expect(mockRun.mock.calls[1][0]).toEqual(
@@ -188,7 +187,7 @@ it('retains a failed meal draft only while editing the same source', async () =>
   mockParams = { entryId: 'second-entry' }
   await view.rerender(<ComposeScreen />)
   expect(screen.getByLabelText('Caption')).toHaveProp('value', '')
-  await user.press(screen.getByRole('button', { name: 'Share' }))
+  await user.press(screen.getByRole('button', { name: 'Post' }))
   expect(mockRun.mock.calls[2][0]).toEqual(
     expect.objectContaining({ action: 'post', entryId: 'second-entry', caption: '' }),
   )
@@ -224,7 +223,7 @@ it('does not navigate back to a previous source when its pending publication fin
   )
   mockParams = { entryId: 'first-entry' }
   const view = await render(<ComposeScreen />)
-  await userEvent.setup().press(screen.getByRole('button', { name: 'Share' }))
+  await userEvent.setup().press(screen.getByRole('button', { name: 'Post' }))
   mockParams = { entryId: 'second-entry' }
   await view.rerender(<ComposeScreen />)
   await act(async () => {

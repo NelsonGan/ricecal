@@ -103,7 +103,7 @@ beforeEach(async () => {
   mockMutate.mockResolvedValue({})
 })
 
-it('asks a reader without public identity to create one before following', async () => {
+it('allows following without a handle or bio', async () => {
   mockProfile.mockReturnValue({
     data: null,
     isPending: false,
@@ -112,8 +112,8 @@ it('asks a reader without public identity to create one before following', async
   })
   await render(<FollowButton id="someone" following={false} />)
   await userEvent.setup().press(screen.getByRole('button', { name: 'Follow' }))
-  expect(mockPush).toHaveBeenCalledWith('/settings/account')
-  expect(mockMutate).not.toHaveBeenCalled()
+  expect(mockPush).not.toHaveBeenCalled()
+  expect(mockMutate).toHaveBeenCalledWith({ action: 'follow', id: 'someone', following: true })
 })
 
 it('unfollows by setting the desired state and never offers following yourself', async () => {
@@ -208,7 +208,55 @@ it('keeps small nutrition text opaque over photographs', async () => {
   expect(screen.getByText('206 kcal').props.className.split(' ')).toContain('text-white')
 })
 
-it('keeps the saved drawing when a retained photograph is unavailable', async () => {
+it('shows a neutral skeleton while a post photo loads', async () => {
+  mockPhoto.mockReturnValue({ data: undefined, isError: false })
+  const view = await render(
+    <FoodPreview
+      name="Rice"
+      photo="meals/person/photo"
+      icon={{ set: 'food', name: 'rice-bowl' }}
+    />,
+  )
+  expect(screen.getByRole('progressbar', { name: 'Loading' })).toBeOnTheScreen()
+  expect(view.root?.queryAll((node) => node.props.source === icons.food['rice-bowl'])).toHaveLength(
+    0,
+  )
+  mockPhoto.mockReturnValue({
+    data: { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 50_000 },
+    isError: false,
+  })
+  await view.rerender(
+    <FoodPreview
+      name="Rice"
+      photo="meals/person/photo"
+      icon={{ set: 'food', name: 'rice-bowl' }}
+    />,
+  )
+  await act(async () => {
+    fireEvent(screen.getByTestId('social-photo'), 'load')
+  })
+  expect(screen.queryByRole('progressbar', { name: 'Loading' })).toBeNull()
+})
+
+it('keeps the food drawing on tiles without a photo', async () => {
+  const view = await render(
+    <FoodPreview name="Rice" icon={{ set: 'food', name: 'rice-bowl' }} variant="tile" />,
+  )
+  expect(screen.queryByRole('progressbar', { name: 'Loading' })).toBeNull()
+  expect(view.root?.queryAll((node) => node.props.source === icons.food['rice-bowl'])).toHaveLength(
+    1,
+  )
+})
+
+it('ends the skeleton when a private photo is unavailable', async () => {
+  const view = await render(<FoodPreview name="Rice" hasPhoto photoUnavailable facts={post} />)
+  expect(screen.queryByRole('progressbar', { name: 'Loading' })).toBeNull()
+  expect(
+    view.root?.queryAll((node) => node.props.source === icons.food['cooking-pot']),
+  ).toHaveLength(0)
+})
+
+it('uses a neutral photo fallback instead of a food icon when an image fails', async () => {
   mockPhoto.mockReturnValue({ data: undefined, isError: true })
   const view = await render(
     <FoodPreview
@@ -221,7 +269,7 @@ it('keeps the saved drawing when a retained photograph is unavailable', async ()
 
   expect(screen.queryByTestId('social-photo')).toBeNull()
   expect(view.root?.queryAll((node) => node.props.source === icons.food['rice-bowl'])).toHaveLength(
-    1,
+    0,
   )
   expect(screen.getByText('Rice').props.className.split(' ')).toContain('text-heading')
 })
@@ -368,6 +416,8 @@ it('offers retry only for pending moderation and retains the revision identity',
   )
   await userEvent.setup().press(screen.getByRole('button', { name: 'Retry review' }))
   expect(mockMutate).toHaveBeenCalledWith({ action: 'review', kind: 'comment', id: 'comment' })
+  await view.rerender(<ReviewNotice status="pending" reason={null} kind="post" id="post" />)
+  expect(screen.queryByRole('button', { name: 'Retry review' })).toBeNull()
   await view.rerender(
     <ReviewNotice status="quarantined" reason={null} kind="comment" id="comment" />,
   )
@@ -375,7 +425,7 @@ it('offers retry only for pending moderation and retains the revision identity',
   expect(screen.getByText('Under review')).toBeTruthy()
 })
 
-it('passes reviewed-image validators and removes an expired photograph', async () => {
+it('keeps the cached image visible while its signature refreshes', async () => {
   jest.useFakeTimers()
   mockPhoto.mockReturnValue({
     data: {
@@ -396,7 +446,7 @@ it('passes reviewed-image validators and removes an expired photograph', async (
   await act(async () => {
     jest.advanceTimersByTime(50_000)
   })
-  expect(screen.queryByTestId('social-photo')).toBeNull()
+  expect(screen.getByTestId('social-photo')).toBeOnTheScreen()
   await view.unmount()
   jest.useRealTimers()
 })

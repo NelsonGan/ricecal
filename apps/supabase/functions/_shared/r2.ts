@@ -191,6 +191,15 @@ export async function signGet(
   return signed.url
 }
 
+/** Pin an immediately published photo to the bytes present when it is signed. */
+export async function headObjectEtag(key: string): Promise<string | null> {
+  const { client, base } = mustR2()
+  const response = await client.fetch(`${base}/${key}`, { method: 'HEAD' })
+  if (!response.ok) return null
+  const etag = response.headers.get('ETag')
+  return etag && /^"[a-zA-Z0-9-]+"$/.test(etag) ? etag : null
+}
+
 /**
  * The object's bytes, read by the function itself. Header-signed rather than
  * presigned: nobody else holds this request, so there is no reason to put a

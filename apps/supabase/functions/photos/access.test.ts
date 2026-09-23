@@ -7,9 +7,9 @@ const COOK = '22222222-2222-2222-2222-222222222222'
 const OWN = `meals/${READER}/own.jpg`
 const COMMUNITY = `meals/${COOK}/community.jpg`
 
-Deno.test('social reads require a currently visible approved image version, including for self', async () => {
+Deno.test('social reads require a currently visible image, including for self', async () => {
   assertEquals(await claimSocialKeys([OWN], async () => []), {
-    error: 'not a visible reviewed social photo',
+    error: 'not a visible social photo',
     status: 403,
   })
   assertEquals(
@@ -29,14 +29,19 @@ Deno.test('social image grants cannot borrow a foreign key, private avatar, or w
   for (const row of [
     { owner_id: READER, photo_path: COMMUNITY, photo_etag: '"abc"', kind: 'meal' as const },
     { owner_id: COOK, photo_path: COMMUNITY, photo_etag: '*', kind: 'meal' as const },
-    { owner_id: COOK, photo_path: COMMUNITY, photo_etag: null, kind: 'meal' as const },
     { owner_id: COOK, photo_path: COMMUNITY, photo_etag: '"abc"', kind: 'avatar' as const },
   ]) {
     assertEquals(await claimSocialKeys([COMMUNITY], async () => [row]), {
-      error: 'not a visible reviewed social photo',
+      error: 'not a visible social photo',
       status: 403,
     })
   }
+  assertEquals(
+    await claimSocialKeys([COMMUNITY], async () => [
+      { owner_id: COOK, photo_path: COMMUNITY, photo_etag: null, kind: 'meal' },
+    ]),
+    { keys: [COMMUNITY], etags: { [COMMUNITY]: null } },
+  )
   const avatar = `avatars/${COOK}/avatar.jpg`
   assertEquals(
     await claimSocialKeys([avatar], async () => [
@@ -64,7 +69,7 @@ Deno.test('a revoked social image is left out without refusing its neighbours', 
     { keys: [COMMUNITY], etags: { [COMMUNITY]: '"abc"' } },
   )
   assertEquals(await claimSocialKeys([OWN, COMMUNITY], async () => []), {
-    error: 'not a visible reviewed social photo',
+    error: 'not a visible social photo',
     status: 403,
   })
   assertEquals(await claimSocialKeys([], async () => []), {

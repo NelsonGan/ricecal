@@ -59,8 +59,8 @@ it('shows the existing account as an empty profile before a handle is chosen', a
   await render(<ProfileScreen />)
 
   expect(screen.getByText('Alex')).toBeOnTheScreen()
-  expect(screen.getByText('Handle')).toBeOnTheScreen()
-  expect(screen.getByText('Bio')).toBeOnTheScreen()
+  expect(screen.queryByText('Handle')).toBeNull()
+  expect(screen.queryByText('Bio')).toBeNull()
   expect(screen.getByText('0 posts')).toBeOnTheScreen()
   expect(screen.getByText('No posts yet')).toBeOnTheScreen()
   expect(screen.getByRole('button', { name: 'Edit profile' })).toBeOnTheScreen()
