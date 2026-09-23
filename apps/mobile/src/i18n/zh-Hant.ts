@@ -74,6 +74,7 @@ export const zhHant = {
     comments_one: '{{count}} 則留言',
     comments_other: '{{count}} 則留言',
     comment: '留言',
+    justNow: '剛剛',
     commentPlaceholder: '新增留言',
     send: '送出',
     deleteComment: '刪除留言',

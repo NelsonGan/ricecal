@@ -73,6 +73,7 @@ export const th = {
     comments_one: '{{count}} ความคิดเห็น',
     comments_other: '{{count}} ความคิดเห็น',
     comment: 'แสดงความคิดเห็น',
+    justNow: 'เมื่อครู่นี้',
     commentPlaceholder: 'เพิ่มความคิดเห็น',
     send: 'ส่ง',
     deleteComment: 'ลบความคิดเห็น',
