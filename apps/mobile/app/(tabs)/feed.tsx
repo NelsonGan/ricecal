@@ -6,7 +6,7 @@ import { useUserId } from '@/data'
 import { useSocialFeed, useSocialProfile, useSocialUnread } from '@/data/social'
 import { ScreenTitle } from '@/features/shared'
 import { JoinPrompt, PostCard, QueryNotice, SocialList } from '@/features/social/components'
-import { Icon, IconButton, Screen, Tabs } from '@/ui'
+import { CountBadge, Icon, IconButton, Screen, Tabs } from '@/ui'
 
 export default function FeedScreen() {
   const { t } = useTranslation('social')
@@ -16,6 +16,11 @@ export default function FeedScreen() {
   const feed = useSocialFeed(mode)
   const own = useSocialProfile()
   const unread = useSocialUnread()
+  const unreadCount = unread.data ?? 0
+  const unreadLabel =
+    unreadCount > 99
+      ? t('unreadNotificationsOverflow')
+      : t('unreadNotifications', { count: unreadCount })
   return (
     <Screen
       scroll={false}
@@ -37,19 +42,19 @@ export default function FeedScreen() {
                 <IconButton
                   size="sm"
                   variant="ghost"
-                  accessibilityLabel={[t('notifications'), unread.data ? t('unread') : '']
+                  accessibilityLabel={[t('notifications'), unreadCount ? unreadLabel : '']
                     .filter(Boolean)
                     .join(', ')}
                   onPress={() => router.push('/social/notifications')}
                 >
                   <View className="h-6 w-6 items-center justify-center">
                     <Icon set="ui" name="notification" size={22} />
-                    {unread.data ? (
-                      <View
-                        className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-canvas bg-hibiscus"
-                        accessibilityElementsHidden
-                      />
-                    ) : null}
+                    <CountBadge
+                      count={unreadCount}
+                      className="absolute -right-2 -top-2 h-5 min-w-5 px-1"
+                      accessibilityElementsHidden
+                      importantForAccessibility="no-hide-descendants"
+                    />
                   </View>
                 </IconButton>
                 <IconButton

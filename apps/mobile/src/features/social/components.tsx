@@ -959,6 +959,7 @@ export function SocialList<T>({
 }) {
   const { t } = useTranslation('social')
   const [visible, setVisible] = useState<Set<string>>(new Set())
+  const [refreshing, setRefreshing] = useState(false)
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<T>[] }) =>
     setVisible(new Set(viewableItems.map((item) => item.key))),
   ).current
@@ -971,6 +972,14 @@ export function SocialList<T>({
   })
   const next = () => {
     if (query.hasNextPage && !query.isFetching) void query.fetchNextPage()
+  }
+  const refresh = async () => {
+    setRefreshing(true)
+    try {
+      await query.refetch()
+    } finally {
+      setRefreshing(false)
+    }
   }
   const contentContainerStyle =
     variant === 'feed'
@@ -1010,9 +1019,11 @@ export function SocialList<T>({
       initialNumToRender={4}
       maxToRenderPerBatch={4}
       windowSize={5}
-      refreshing={query.isFetching && !query.isFetchingNextPage}
+      // Background invalidation, such as a completed Like, must not open the
+      // native pull-to-refresh control and move the viewport.
+      refreshing={refreshing}
       onRefresh={() => {
-        void query.refetch()
+        void refresh()
       }}
       onEndReached={next}
       onEndReachedThreshold={0.6}

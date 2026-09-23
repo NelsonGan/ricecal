@@ -2466,7 +2466,8 @@ The first implementation includes:
   unavailable profiles and blocks in either direction.
 - Post editing/deletion, likes, short comments (500 characters), comment editing and deletion
   by its author or the post author, and an in-app activity list for follows,
-  likes and comments. Activity does not send push notifications.
+  likes and comments. The feed bell shows up to 99 missed activities, then 99+.
+  Activity does not send push notifications.
 - Reports for posts, comments and public profiles, symmetric blocking, and an
   unblock screen. Blocking removes follow edges in both directions. Unblocking
   does not recreate them.
@@ -2640,6 +2641,8 @@ during account changes cannot refill another viewer's cache. Offline social
 writes are disabled with visible feedback; private diary offline behavior stays
 as it is. Reusable social cards, people rows, photo rendering, lists and report
 controls live under `features/social` rather than being copied into routes.
+A newly followed author stays in the loaded Discover results until a deliberate
+refresh, while the card updates immediately and the Following feed is refreshed.
 
 Implementation order is deliberate:
 
@@ -2691,9 +2694,9 @@ node apps/supabase/scripts/social-scale.mjs --repeat=21 --save=/tmp/social-scale
 
 The concurrency suite uses separate authenticated database sessions and removes
 its exact fixture accounts in `finally`. Scale fixtures contain 110,000 posts,
-15,050 profiles, dense and sparse 5,000-follow graphs, 15,000 followers and
-14,999 likes on one post. They are local-only and roll back. Use
-`--plans=/tmp/social-plans.log` in a separate benchmark run for nested
+15,050 profiles, dense and sparse 5,000-follow graphs, 15,000 followers,
+14,999 likes on one post and 15,000 activity rows. They are local-only and roll
+back. Use `--plans=/tmp/social-plans.log` in a separate benchmark run for nested
 `EXPLAIN (ANALYZE, BUFFERS)` output; profiling affects timings. The HTTP suite
 uses real local Auth, PostgREST and edge functions, and `--keep` leaves fictional
 accounts in gitignored `.secrets/social-ui.json` for simulator testing.
@@ -2709,18 +2712,19 @@ and set the matching R2 credentials in the gitignored function `.env`, then
 fully stop/start Supabase so the edge container picks up the values. This is
 local test infrastructure only; production continues to use R2.
 
-On 22 September 2026, all 24 scale scenarios returned their expected page sizes.
+On 23 September 2026, all 25 scale scenarios returned their expected page sizes.
 Each case ran once cold and 20 times warm against local Postgres. The following
 are warm database p95 measurements, not network latency or production throughput:
 
 | Read | Warm p95 |
 | --- | ---: |
-| Following, 5,000 active followed authors | 57.6 ms |
-| Following, 5,000 sparse followed authors | 18.3 ms |
-| Following, deep cursor | 46.9 ms |
-| Discover, skipping 100,000 followed posts | 21.0 ms |
-| Suggestions, 64 by 64 graph paths | 5.1 ms |
-| Followers page, 15,000 followers | 4.3 ms |
+| Following, 5,000 active followed authors | 57.9 ms |
+| Following, 5,000 sparse followed authors | 15.5 ms |
+| Following, deep cursor | 53.4 ms |
+| Discover, skipping 100,000 followed posts | 81.6 ms |
+| Suggestions, 64 by 64 graph paths | 15.9 ms |
+| Followers page, 15,000 followers | 28.0 ms |
+| Unread badge, 15,000 activity rows | 117.3 ms |
 
 The original policy-per-candidate plan took 14.5 seconds for dense Following
 and 18.4 seconds for filtered Discover. Private candidate selectors now apply
@@ -2728,7 +2732,7 @@ the same viewer-specific conditions using indexed joins, then public invoker
 functions hydrate only the resulting page through RLS. Relationship flags use
 single indexed lookups, so a card cannot make PostgreSQL read the entire graph.
 The same approach keeps suggestion traversal bounded before loading profile
-details and counts. Final local verification passed 482 SQL assertions and
+details and counts. Final local verification passed 488 SQL assertions and
 21 concurrent-session behavior assertions, followed by cleanup verification.
 Re-run the benchmark when visibility predicates or candidate queries change;
 these figures describe this fixture and machine, not an unlimited capacity

@@ -246,7 +246,7 @@ export function useSocialUnread() {
   return useQuery({
     queryKey: keys.socialRead(viewer, 'unread'),
     queryFn: async ({ signal }) =>
-      await rpc('social_has_unread_notifications', undefined as never, signal),
+      await rpc('social_unread_notification_count', undefined as never, signal),
     refetchInterval: 60_000,
     ...MEMORY_OPTIONS,
   })
@@ -323,6 +323,34 @@ export function useSocialAction() {
     // request can put them back in the cache.
     await client.cancelQueries({ queryKey: socialKey })
     await client.resetQueries({ queryKey: socialKey })
+  }
+  const markAuthorFollowed = (authorId: string) => {
+    const listNames = new Set(['social_feed', 'social_profile_posts'])
+    client.setQueriesData<{ pages: SocialPage<SocialPost>[]; pageParams: SocialCursor[] }>(
+      {
+        queryKey: socialKey,
+        predicate: (query) => listNames.has(String(query.queryKey[2])),
+      },
+      (data) => {
+        if (!data) return data
+        return {
+          ...data,
+          pages: data.pages.map((page) => ({
+            ...page,
+            rows: page.rows.map((post) =>
+              post.author_id === authorId ? { ...post, is_following: true } : post,
+            ),
+          })),
+        }
+      },
+    )
+    client.setQueriesData<SocialPost | null>(
+      {
+        queryKey: socialKey,
+        predicate: (query) => String(query.queryKey[2]) === 'social_post',
+      },
+      (post) => (post?.author_id === authorId ? { ...post, is_following: true } : post),
+    )
   }
   return useMutation({
     // Fail an offline tap immediately, even if connectivity changed after the
@@ -422,6 +450,24 @@ export function useSocialAction() {
         (input.action === 'follow' && !input.following)
       ) {
         await resetSocial()
+      } else if (input.action === 'follow') {
+        // Keep the card containing the Follow button in place. A deliberate
+        // Discover refresh can apply server eligibility after the interaction.
+        markAuthorFollowed(input.id)
+        await Promise.all([
+          client.invalidateQueries({
+            queryKey: keys.socialRead(viewer, 'social_feed', { p_mode: 'following' }),
+            exact: true,
+          }),
+          refresh([
+            'social_profile',
+            'social_profile_posts',
+            'social_post',
+            'social_connections',
+            'social_suggestions',
+            'social_search_profiles',
+          ]),
+        ])
       } else {
         const names =
           input.action === 'read'
@@ -432,49 +478,39 @@ export function useSocialAction() {
                 ? ['social_feed', 'social_profile_posts', 'social_post', 'social_comments']
                 : input.action === 'post'
                   ? ['social_feed', 'social_profile_posts', 'social_profile', 'entry']
-                  : input.action === 'follow'
+                  : input.action === 'removeFollower'
                     ? [
                         'social_feed',
                         'social_profile',
-                        'social_profile_posts',
-                        'social_post',
                         'social_connections',
                         'social_suggestions',
                         'social_search_profiles',
+                        'social_notifications',
+                        'unread',
                       ]
-                    : input.action === 'removeFollower'
+                    : input.action === 'unblock'
                       ? [
                           'social_feed',
                           'social_profile',
+                          'social_profile_posts',
+                          'social_post',
+                          'social_comments',
                           'social_connections',
                           'social_suggestions',
                           'social_search_profiles',
+                          'social_blocked_profiles',
                           'social_notifications',
                           'unread',
                         ]
-                      : input.action === 'unblock'
-                        ? [
-                            'social_feed',
-                            'social_profile',
-                            'social_profile_posts',
-                            'social_post',
-                            'social_comments',
-                            'social_connections',
-                            'social_suggestions',
-                            'social_search_profiles',
-                            'social_blocked_profiles',
-                            'social_notifications',
-                            'unread',
-                          ]
-                        : [
-                            'social_feed',
-                            'social_profile',
-                            'social_profile_posts',
-                            'social_post',
-                            'social_comments',
-                            'social_notifications',
-                            'unread',
-                          ]
+                      : [
+                          'social_feed',
+                          'social_profile',
+                          'social_profile_posts',
+                          'social_post',
+                          'social_comments',
+                          'social_notifications',
+                          'unread',
+                        ]
         await refresh(names)
       }
       if (input.action === 'block' || input.action === 'unblock') {
