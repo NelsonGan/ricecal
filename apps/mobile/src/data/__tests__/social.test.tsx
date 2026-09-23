@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { persistOptions } from '@/lib/query'
 import { keys } from '../keys'
 import {
+  type SocialPage,
   type SocialPost,
   socialCursorArgs,
   socialPage,
@@ -11,6 +12,7 @@ import {
   useSocialFeed,
   useSocialPhoto,
   useSocialSearch,
+  useSocialUnread,
 } from '../social'
 
 const mockRpc = jest.fn()
@@ -164,6 +166,16 @@ it('refuses offline actions immediately without queueing them', async () => {
   client.clear()
 })
 
+it('reads the missed notification count for the feed badge', async () => {
+  mockRpc.mockImplementation(() => response(7))
+  const { client, wrapper } = setup()
+  const { result, unmount } = await renderHook(useSocialUnread, { wrapper })
+  await waitFor(() => expect(result.current.data).toBe(7))
+  expect(mockRpc).toHaveBeenCalledWith('social_unread_notification_count', undefined)
+  await unmount()
+  client.clear()
+})
+
 it.each([
   {
     name: 'like',
@@ -176,20 +188,6 @@ it.each([
     action: { action: 'read', ids: ['notification'] as string[] } as const,
     invalidated: ['social_notifications', 'unread'],
     preserved: ['social_feed', 'social_profile_posts', 'social_post'],
-  },
-  {
-    name: 'follow',
-    action: { action: 'follow', id: 'author', following: true } as const,
-    invalidated: [
-      'social_feed',
-      'social_profile',
-      'social_profile_posts',
-      'social_post',
-      'social_connections',
-      'social_suggestions',
-      'social_search_profiles',
-    ],
-    preserved: ['social_notifications', 'unread'],
   },
   {
     name: 'remove follower',
@@ -254,6 +252,47 @@ it.each([
     client.clear()
   },
 )
+
+it('keeps Discover stable after Follow and refreshes only the Following feed', async () => {
+  mockRpc.mockImplementation(() => response(null))
+  const { client, wrapper } = setup()
+  const discoverKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'discover' })
+  const followingKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'following' })
+  const profileKey = keys.socialRead('viewer', 'social_profile', { p_user_id: 'author' })
+  const target = {
+    id: 'target',
+    author_id: 'author',
+    is_following: false,
+  } as SocialPost
+  const other = { id: 'other', author_id: 'other-author', is_following: false } as SocialPost
+  client.setQueryData(discoverKey, {
+    pages: [{ rows: [target, other], next: null }],
+    pageParams: [null],
+  })
+  client.setQueryData(followingKey, {
+    pages: [{ rows: [], next: null }],
+    pageParams: [null],
+  })
+  client.setQueryData(profileKey, { fixture: true })
+
+  const { result, unmount } = await renderHook(useSocialAction, { wrapper })
+  await act(async () => {
+    await result.current.mutateAsync({ action: 'follow', id: 'author', following: true })
+  })
+
+  const discover = client.getQueryData<{
+    pages: SocialPage<SocialPost>[]
+  }>(discoverKey)
+  expect(discover?.pages[0].rows).toEqual([
+    expect.objectContaining({ id: 'target', is_following: true }),
+    expect.objectContaining({ id: 'other', is_following: false }),
+  ])
+  expect(client.getQueryState(discoverKey)?.isInvalidated).toBe(false)
+  expect(client.getQueryState(followingKey)?.isInvalidated).toBe(true)
+  expect(client.getQueryState(profileKey)?.isInvalidated).toBe(true)
+  await unmount()
+  client.clear()
+})
 
 it('keeps loaded pages and retries the same cursor after the next page fails', async () => {
   let nextAttempts = 0

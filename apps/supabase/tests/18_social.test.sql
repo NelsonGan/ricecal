@@ -149,6 +149,14 @@ select is((select count(*)::int from public.social_notifications where recipient
 select is((select count(*)::int from public.social_notifications where recipient_id = :'alice' and actor_id = :'bob' and kind = 'like'), 1,
   'a duplicate like creates no extra activity');
 
+select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is(public.social_unread_notification_count(), 2,
+  'the unread badge reports each missed notification');
+select ok(public.social_has_unread_notifications(),
+  'the old unread boolean remains available to released clients');
+reset role;
+
 update public.social_profiles set review_status = 'pending' where user_id = :'bob';
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
 set local role authenticated;

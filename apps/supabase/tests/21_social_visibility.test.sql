@@ -115,6 +115,9 @@ select is(public.social_entry_post(:'entry'), :'post'::uuid,
   'the owner can find the post belonging to a historical logged meal');
 select is(public.social_has_unread_notifications(), true,
   'visible interactions create unread activity for the recipient');
+select is(public.social_unread_notification_count(),
+  (select count(*)::integer from public.social_notifications()),
+  'the badge counts every visible unread activity row');
 select array_agg(id)::text as activity_ids from public.social_notifications() \gset
 reset role;
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
@@ -128,6 +131,8 @@ set local role authenticated;
 select public.mark_social_notifications_read(:'activity_ids'::uuid[]);
 select is(public.social_has_unread_notifications(), false,
   'marking the recipient''s own activity clears the unread indicator');
+select is(public.social_unread_notification_count(), 0,
+  'marking the recipient''s own activity clears the unread count');
 select throws_ok($q$select public.mark_social_notifications_read(array_fill(gen_random_uuid(), array[101]))$q$,
   '22023', null, 'activity updates are bounded to 100 IDs');
 reset role;
@@ -157,6 +162,12 @@ select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role
 set local role authenticated;
 select is((select count(*)::int from public.social_notifications() where comment_id = :'comment'), 0,
   'quarantined comment activity is hidden from its recipient');
+reset role;
+update public.social_notifications set read_at = null where comment_id = :'comment';
+select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is(public.social_unread_notification_count(), 0,
+  'hidden activity does not contribute to the unread badge');
 reset role;
 
 -- A report on a profile governs all surfaces, including direct photo requests.
@@ -216,6 +227,25 @@ select is((select count(*)::int from public.subscriptions where user_id = :'alic
   'social publication and moderation do not require a paid subscription');
 select is((select count(*)::int from public.scan_usage where user_id = :'alice'), 0,
   'social interaction and review never consume scan allowance');
+
+-- The badge stops at a bounded 99+ sentinel even when the history is larger.
+insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
+select ('a8600000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
+  '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+  'badge-' || n || '@visibility.example.test', '{}', '{}'
+from generate_series(1, 101) n;
+insert into public.social_profiles (user_id, handle, display_name, review_status)
+select ('a8600000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
+  'badge_actor_' || n, 'Badge actor ' || n, 'approved'
+from generate_series(1, 101) n;
+insert into public.social_notifications (recipient_id, actor_id, kind)
+select :'alice', ('a8600000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid, 'follow'
+from generate_series(1, 101) n;
+select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is(public.social_unread_notification_count(), 100,
+  'the unread badge returns its 99+ sentinel without counting an unbounded history');
+reset role;
 
 select * from finish();
 rollback;

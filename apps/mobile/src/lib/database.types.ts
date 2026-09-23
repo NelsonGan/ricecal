@@ -2950,6 +2950,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      social_unread_notification_count: { Args: never; Returns: number }
       sync_weight_readings: {
         Args: {
           p_provider: Database['public']['Enums']['health_provider']

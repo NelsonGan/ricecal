@@ -84,6 +84,11 @@ cases.push(
       p_before_at => '2026-01-15 09:00:00+00', p_before_id => 'ffffffff-ffff-ffff-ffff-ffffffffffff')`,
   },
   {
+    name: 'activity/15000_interactions/unread_count',
+    viewer: 15020,
+    query: 'select public.social_unread_notification_count()',
+  },
+  {
     name: 'suggestions/new_account',
     viewer: 15030,
     query: 'select * from public.social_suggestions(p_limit => 12)',
@@ -179,7 +184,9 @@ if (results.length !== cases.length * repeat)
 for (const result of results) {
   const expectedRows = result.name.startsWith('suggestions/')
     ? 12
-    : result.name.startsWith('profile/') || result.name.startsWith('post/')
+    : result.name.startsWith('profile/') ||
+        result.name.startsWith('post/') ||
+        result.name.endsWith('/unread_count')
       ? 1
       : result.name === 'following/sparse/10'
         ? 10

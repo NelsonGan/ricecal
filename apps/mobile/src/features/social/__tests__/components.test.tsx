@@ -204,6 +204,47 @@ it('announces social loading states in the active language', async () => {
   for (const indicator of loading) expect(indicator).toHaveProp('accessibilityRole', 'progressbar')
 })
 
+it('shows pull-to-refresh only for an explicit refresh', async () => {
+  let finishRefresh: (() => void) | undefined
+  const refetch = jest.fn(
+    async () =>
+      await new Promise<void>((resolve) => {
+        finishRefresh = resolve
+      }),
+  )
+  const query = {
+    data: { pages: [{ rows: [{ id: 'post' }], next: null }] },
+    isPending: false,
+    isError: false,
+    isFetching: false,
+    isFetchingNextPage: false,
+    isFetchNextPageError: false,
+    hasNextPage: false,
+    fetchStatus: 'idle',
+    fetchNextPage: jest.fn(async () => undefined),
+    refetch,
+  }
+  const list = (
+    <SocialList query={query} rowKey={(row) => row.id} renderRow={() => <View />} empty="Empty" />
+  )
+  const view = await render(list)
+  const refreshControl = () =>
+    view.root?.queryAll((node) => typeof node.props.refreshing === 'boolean')[0]
+
+  expect(refreshControl()?.props.refreshing).toBe(false)
+  await view.rerender(<SocialList {...list.props} query={{ ...query, isFetching: true }} />)
+  expect(refreshControl()?.props.refreshing).toBe(false)
+
+  await act(async () => {
+    refreshControl()?.props.onRefresh()
+    await Promise.resolve()
+  })
+  expect(refreshControl()?.props.refreshing).toBe(true)
+  await act(async () => finishRefresh?.())
+  expect(refreshControl()?.props.refreshing).toBe(false)
+  expect(refetch).toHaveBeenCalledTimes(1)
+})
+
 it('offers retry only for pending moderation and retains the revision identity', async () => {
   const view = await render(
     <ReviewNotice status="pending" reason={null} kind="comment" id="comment" />,
