@@ -402,10 +402,7 @@ function Post({ id }: { id: string }) {
                         kind="profile"
                         id={own.data.user_id}
                       />
-                      <Button
-                        variant="secondary"
-                        onPress={() => router.push('/social/edit-profile')}
-                      >
+                      <Button variant="secondary" onPress={() => router.push('/settings/account')}>
                         {t('editProfile')}
                       </Button>
                     </>

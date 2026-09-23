@@ -2,12 +2,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useAvatarUrl, useUserId } from '@/data'
+import { useAvatarUrl, useProfile, useUserId } from '@/data'
 import { useSocialPosts, useSocialProfile } from '@/data/social'
 import {
   ContentSafety,
   FollowButton,
-  JoinPrompt,
   PostTile,
   QueryNotice,
   ReviewNotice,
@@ -26,6 +25,7 @@ function Profile({ id }: { id: string }) {
   const { t } = useTranslation('social')
   const router = useRouter()
   const viewer = useUserId()
+  const ownProfile = useProfile()
   const profile = useSocialProfile(id)
   const posts = useSocialPosts(id)
   const leaveProfile = useCallback(() => router.dismissTo('/feed'), [router])
@@ -33,26 +33,32 @@ function Profile({ id }: { id: string }) {
   const afterDismiss = useRef<(() => void) | null>(null)
   const person = profile.data
   const mine = id === viewer
-  const ownAvatar = useAvatarUrl(mine ? (person?.avatar_path ?? undefined) : undefined)
-  const header = person ? (
+  const account = mine ? ownProfile.data : null
+  const visible = Boolean(person || account)
+  const name = person?.display_name || account?.display_name || t('displayName')
+  const handle = person?.handle ?? account?.handle
+  const bio = person?.bio || account?.bio
+  const avatarPath = person?.avatar_path ?? account?.avatar_path
+  const ownAvatar = useAvatarUrl(mine ? (avatarPath ?? undefined) : undefined)
+  const header = visible ? (
     <View className="gap-4 border-b-2 border-track bg-surface px-5 pb-5 pt-2">
       <View className="flex-row items-center gap-4">
         <SocialPhoto
-          path={mine ? null : person.avatar_path}
+          path={mine ? null : person?.avatar_path}
           privateUri={ownAvatar.data}
           avatar
           size="lg"
-          label={person.display_name}
+          label={name}
         />
         <View className="min-w-0 flex-1 gap-1">
           <Text variant="subtitle" numberOfLines={1}>
-            {person.display_name}
+            {name}
           </Text>
           <View className="flex-row flex-wrap items-center gap-2">
-            <Text variant="meta" numberOfLines={1}>
-              @{person.handle}
+            <Text variant="meta" className={handle ? undefined : 'text-muted'} numberOfLines={1}>
+              {handle ? `@${handle}` : t('handle')}
             </Text>
-            {person.is_followed_by ? (
+            {person?.is_followed_by ? (
               <Badge tone="neutral" size="sm">
                 {t('followsYou')}
               </Badge>
@@ -61,18 +67,18 @@ function Profile({ id }: { id: string }) {
         </View>
       </View>
 
-      {person.bio ? <Text>{person.bio}</Text> : null}
+      {bio ? <Text>{bio}</Text> : mine ? <Text className="text-muted">{t('bio')}</Text> : null}
 
       <View className="flex-row items-stretch rounded-md bg-track px-1 py-1">
         <View className="min-h-sm flex-1 items-center justify-center px-1">
           <Text variant="label" className="text-center" numberOfLines={2}>
-            {t('posts', { count: person.post_count })}
+            {t('posts', { count: person?.post_count ?? 0 })}
           </Text>
         </View>
         <Tappable
           className="min-h-sm flex-1 items-center justify-center px-1"
           accessibilityRole="button"
-          accessibilityLabel={t('followers', { count: person.follower_count })}
+          accessibilityLabel={t('followers', { count: person?.follower_count ?? 0 })}
           onPress={() =>
             router.push({
               pathname: '/social/connections/[id]',
@@ -81,13 +87,13 @@ function Profile({ id }: { id: string }) {
           }
         >
           <Text variant="label" className="text-center" numberOfLines={2}>
-            {t('followers', { count: person.follower_count })}
+            {t('followers', { count: person?.follower_count ?? 0 })}
           </Text>
         </Tappable>
         <Tappable
           className="min-h-sm flex-1 items-center justify-center px-1"
           accessibilityRole="button"
-          accessibilityLabel={`${person.following_count} ${t('following')}`}
+          accessibilityLabel={`${person?.following_count ?? 0} ${t('following')}`}
           onPress={() =>
             router.push({
               pathname: '/social/connections/[id]',
@@ -96,29 +102,31 @@ function Profile({ id }: { id: string }) {
           }
         >
           <Text variant="label" className="text-center" numberOfLines={2}>
-            {person.following_count} {t('following')}
+            {person?.following_count ?? 0} {t('following')}
           </Text>
         </Tappable>
       </View>
 
       {mine ? (
         <>
-          <ReviewNotice
-            status={person.quarantined ? 'quarantined' : person.review_status}
-            reason={person.review_reason}
-            kind="profile"
-            id={person.user_id}
-          />
-          <Button fullWidth variant="secondary" onPress={() => router.push('/social/edit-profile')}>
+          {person ? (
+            <ReviewNotice
+              status={person.quarantined ? 'quarantined' : person.review_status}
+              reason={person.review_reason}
+              kind="profile"
+              id={person.user_id}
+            />
+          ) : null}
+          <Button fullWidth variant="secondary" onPress={() => router.push('/settings/account')}>
             {t('editProfile')}
           </Button>
         </>
       ) : (
-        <FollowButton id={id} following={person.is_following} fullWidth />
+        <FollowButton id={id} following={person?.is_following ?? false} fullWidth />
       )}
     </View>
   ) : undefined
-  const action = person ? (
+  const action = visible ? (
     mine ? (
       <IconButton
         size="sm"
@@ -139,7 +147,7 @@ function Profile({ id }: { id: string }) {
         flush
         header={<SocialBar title={t(mine ? 'myProfile' : 'profile')} action={action} />}
       >
-        {person ? (
+        {visible ? (
           <SocialList
             query={posts}
             rowKey={(post) => post.id}
@@ -151,22 +159,16 @@ function Profile({ id }: { id: string }) {
           />
         ) : (
           <View className="p-5">
-            {mine && !profile.isPending && !profile.isError && !profile.data ? (
-              <View className="gap-3">
-                <JoinPrompt />
-                <Button variant="neutral" onPress={() => router.push('/social/blocked')}>
-                  {t('blocked')}
-                </Button>
-              </View>
-            ) : (
-              <QueryNotice
-                pending={profile.isPending}
-                error={profile.isError}
-                paused={profile.fetchStatus === 'paused'}
-                unavailable
-                retry={profile.refetch}
-              />
-            )}
+            <QueryNotice
+              pending={mine ? ownProfile.isPending || profile.isPending : profile.isPending}
+              error={mine ? ownProfile.isError && profile.isError : profile.isError}
+              paused={mine ? ownProfile.fetchStatus === 'paused' : profile.fetchStatus === 'paused'}
+              unavailable
+              retry={() => {
+                void profile.refetch()
+                if (mine) void ownProfile.refetch()
+              }}
+            />
           </View>
         )}
       </Screen>

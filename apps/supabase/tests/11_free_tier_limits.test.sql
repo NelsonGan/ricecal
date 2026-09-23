@@ -127,8 +127,8 @@ select is(
 -- must fill both the private diary and its public snapshot after the object goes.
 select id as old_entry from public.food_logs
  where user_id = :'free' and item_name = 'Old plate' \gset
-insert into public.social_profiles (user_id, handle, display_name, review_status)
-values (:'free', 'retention_free', 'Retention fixture', 'approved');
+update public.profiles set handle = 'retention_free', display_name = 'Retention fixture', review_status = 'approved' where id = :'free';
+update public.profiles set review_status = 'approved' where id = :'free';
 select set_config('request.jwt.claims', json_build_object('sub', :'free', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select public.create_social_post(:'old_entry', '', 'public') as retained_post \gset

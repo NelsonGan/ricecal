@@ -81,7 +81,7 @@ try {
     select u, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
            u::text || '@concurrency.example.test', '{}', '{}'
     from unnest(array[${allIds.map(quote).join(',')}]::uuid[]) u;
-    insert into public.social_profiles(user_id, handle, display_name, review_status)
+    insert into public.profiles(id, handle, display_name, review_status)
     select u, 'cc_' || substr(replace(u::text, '-', ''), 1, 20), 'Concurrent fixture', 'approved'
     from unnest(array[${allIds.map(quote).join(',')}]::uuid[]) u;
     set local session_replication_role = origin;
@@ -242,7 +242,7 @@ try {
 } finally {
   await sql(`delete from auth.users where id = any(array[${allIds.map(quote).join(',')}]::uuid[]);`)
   await assertSql(
-    `not exists(select 1 from public.social_profiles where user_id = any(array[${allIds.map(quote).join(',')}]::uuid[]))`,
+    `not exists(select 1 from public.profiles where id = any(array[${allIds.map(quote).join(',')}]::uuid[]))`,
     'the exact temporary fixture identities have been removed',
   )
 }
