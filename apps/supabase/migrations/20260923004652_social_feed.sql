@@ -182,13 +182,81 @@ begin
       insert into public.social_notifications(recipient_id, actor_id, kind, post_id, comment_id)
       values (v_owner, v_row.author_id, 'comment', v_row.post_id, v_row.id) on conflict do nothing;
     end if;
-  else
-    delete from public.social_notifications where comment_id = v_row.id;
   end if;
   if tg_op = 'DELETE' then delete from public.social_reports where kind = 'comment' and content_id = old.id; end if;
   return null;
 end;
 $function$;
+
+CREATE FUNCTION private.social_feed_candidates (
+  p_mode      text,
+  p_before_at timestamp with time zone,
+  p_before_id uuid,
+  p_limit     integer
+)
+  RETURNS TABLE (
+    id         uuid,
+    created_at timestamp with time zone
+  )
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare v_user uuid := (select auth.uid());
+begin
+  perform private.social_validate_page(p_before_at, p_before_id, p_limit);
+  if p_mode not in ('following', 'discover') or p_mode is null then raise exception 'Invalid feed' using errcode = '22023'; end if;
+  if v_user is null then return; end if;
+  if p_mode = 'following' then
+    return query
+      with hidden_authors as materialized (
+        select b.author_id as user_id from public.blocked_authors b where b.user_id = v_user
+        union select b.user_id from public.blocked_authors b where b.author_id = v_user
+        union select r.content_id from public.social_reports r where r.reporter_id = v_user and r.kind = 'profile'
+      ), hidden_posts as materialized (
+        select r.content_id from public.social_reports r where r.reporter_id = v_user and r.kind = 'post'
+      ), authors as materialized (
+        select v_user as user_id
+        union all
+        select f.followed_id from public.social_follows f
+          join public.social_profiles a on a.user_id = f.followed_id
+        where f.follower_id = v_user and a.review_status = 'approved' and not a.quarantined
+          and f.followed_id not in (select h.user_id from hidden_authors h)
+      ), candidates as materialized (
+        select p.id, p.created_at from authors a cross join lateral (
+          select sp.id, sp.created_at from public.social_posts sp
+          where sp.author_id = a.user_id and sp.review_status = 'approved' and not sp.quarantined
+            and (p_before_at is null or (sp.created_at, sp.id) < (p_before_at, p_before_id))
+            and (sp.author_id = v_user or sp.id not in (select h.content_id from hidden_posts h))
+          order by sp.created_at desc, sp.id desc limit p_limit + 1
+        ) p
+      )
+      select c.id, c.created_at from candidates c order by c.created_at desc, c.id desc limit p_limit + 1;
+  else
+    return query
+      with excluded_authors as materialized (
+        select v_user as user_id
+        union select f.followed_id from public.social_follows f where f.follower_id = v_user
+        union select b.author_id from public.blocked_authors b where b.user_id = v_user
+        union select b.user_id from public.blocked_authors b where b.author_id = v_user
+        union select r.content_id from public.social_reports r where r.reporter_id = v_user and r.kind = 'profile'
+      )
+      select sp.id, sp.created_at from public.social_posts sp
+        join public.social_profiles a on a.user_id = sp.author_id
+      where sp.audience = 'public' and sp.review_status = 'approved' and not sp.quarantined
+        and a.review_status = 'approved' and not a.quarantined
+        and sp.author_id not in (select e.user_id from excluded_authors e)
+        and sp.id not in (select r.content_id from public.social_reports r where r.reporter_id = v_user and r.kind = 'post')
+        and (p_before_at is null or (sp.created_at, sp.id) < (p_before_at, p_before_id))
+      order by sp.created_at desc, sp.id desc limit p_limit + 1;
+  end if;
+end;
+$function$;
+
+GRANT ALL ON FUNCTION private.social_feed_candidates(text, timestamp WITH time zone, uuid, integer) TO authenticated;
+
+GRANT ALL ON FUNCTION private.social_feed_candidates(text, timestamp WITH time zone, uuid, integer) TO service_role;
 
 CREATE FUNCTION private.social_follow_changed()
   RETURNS TRIGGER
@@ -232,7 +300,7 @@ begin
     select author_id into v_owner from public.social_posts where id = v_row.post_id;
     if v_owner <> v_row.user_id then
       insert into public.social_notifications(recipient_id, actor_id, kind, post_id)
-      values (v_owner, v_row.user_id, 'like', v_row.post_id) on conflict do nothing;
+      values (v_owner, v_row.user_id, 'like', v_row.post_id);
     end if;
   else
     delete from public.social_notifications where post_id = v_row.post_id and actor_id = v_row.user_id and kind = 'like';
@@ -344,6 +412,66 @@ begin
 end;
 $function$;
 
+CREATE FUNCTION private.social_suggestion_candidates (
+  p_limit integer
+)
+  RETURNS TABLE (
+    user_id uuid,
+    weight  bigint
+  )
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare v_user uuid := (select auth.uid());
+begin
+  perform private.social_validate_page(null, null, p_limit);
+  if v_user is null then return; end if;
+  return query
+    with hidden_authors as materialized (
+      select b.author_id as user_id from public.blocked_authors b where b.user_id = v_user
+      union select b.user_id from public.blocked_authors b where b.author_id = v_user
+      union select r.content_id from public.social_reports r where r.reporter_id = v_user and r.kind = 'profile'
+    ), seeds as materialized (
+      select f.followed_id from public.social_follows f
+        join public.social_profiles a on a.user_id = f.followed_id
+      where f.follower_id = v_user and a.review_status = 'approved' and not a.quarantined
+        and f.followed_id not in (select h.user_id from hidden_authors h)
+      order by f.created_at desc, f.followed_id desc limit 64
+    ), paths as materialized (
+      select f.followed_id from seeds s cross join lateral (
+        select edge.followed_id from public.social_follows edge
+          join public.social_profiles a on a.user_id = edge.followed_id
+        where edge.follower_id = s.followed_id
+          and (a.user_id = v_user or (a.review_status = 'approved' and not a.quarantined
+            and a.user_id not in (select h.user_id from hidden_authors h)))
+        order by edge.created_at desc, edge.followed_id desc limit 64
+      ) f
+    ), mutual as materialized (
+      select p.followed_id as user_id, count(*) as weight from paths p group by p.followed_id
+      order by count(*) desc, p.followed_id limit 256
+    ), recent as materialized (
+      select p.user_id, 0::bigint as weight from public.social_profiles p
+      where p.review_status = 'approved' and not p.quarantined
+        and p.user_id not in (select h.user_id from hidden_authors h)
+      order by p.created_at desc, p.user_id desc limit 512
+    ), candidates as materialized (
+      select c.user_id, max(c.weight) as weight from (
+        select * from mutual union all select * from recent
+      ) c group by c.user_id
+    )
+    select c.user_id, c.weight from candidates c
+    where c.user_id <> v_user
+      and not exists (select 1 from public.social_follows f where f.follower_id = v_user and f.followed_id = c.user_id)
+    order by c.weight desc, c.user_id limit p_limit;
+end;
+$function$;
+
+GRANT ALL ON FUNCTION private.social_suggestion_candidates(integer) TO authenticated;
+
+GRANT ALL ON FUNCTION private.social_suggestion_candidates(integer) TO service_role;
+
 CREATE FUNCTION private.social_validate_page (
   p_before_at timestamp with time zone,
   p_before_id uuid,
@@ -421,10 +549,18 @@ CREATE FUNCTION private.social_counter_change (
   SET search_path TO ''
   AS $function$
 begin
-  insert into public.social_counters(entity_id, metric, shard, value)
-  values (p_entity, p_metric, (hashtextextended(p_actor::text, 0) & 31)::smallint, greatest(p_delta, 0))
-  on conflict (entity_id, metric, shard) do update
-    set value = greatest(0, social_counters.value + p_delta);
+  -- A parent deletion can remove counters before child cascade triggers run.
+  -- Decrements must never recreate a counter for that deleted entity.
+  if p_delta < 0 then
+    update public.social_counters set value = greatest(0, value + p_delta)
+    where entity_id = p_entity and metric = p_metric
+      and shard = (hashtextextended(p_actor::text, 0) & 31)::smallint;
+  else
+    insert into public.social_counters(entity_id, metric, shard, value)
+    values (p_entity, p_metric, (hashtextextended(p_actor::text, 0) & 31)::smallint, p_delta)
+    on conflict (entity_id, metric, shard) do update
+      set value = social_counters.value + p_delta;
+  end if;
 end;
 $function$;
 
@@ -470,10 +606,9 @@ GRANT ALL ON FUNCTION public.create_social_comment(uuid, text, uuid) TO authenti
 GRANT ALL ON FUNCTION public.create_social_comment(uuid, text, uuid) TO service_role;
 
 CREATE FUNCTION public.create_social_post (
-  p_entry_id   uuid,
-  p_caption    text,
-  p_audience   public.social_audience,
-  p_request_id uuid
+  p_entry_id uuid,
+  p_caption  text,
+  p_audience public.social_audience
 )
   RETURNS uuid
   LANGUAGE plpgsql
@@ -485,26 +620,25 @@ begin
   -- The source lock also serializes publication against its deletion or photo replacement.
   select * into v_entry from public.food_logs where id = p_entry_id and user_id = v_user for share;
   if not found then raise exception 'Meal unavailable' using errcode = '42501'; end if;
-  select id into v_id from public.social_posts where author_id = v_user
-    and (source_entry_id = p_entry_id or request_id = p_request_id);
+  select id into v_id from public.social_posts where source_entry_id = p_entry_id and author_id = v_user;
   if found then return v_id; end if;
-  if p_request_id is null then raise exception 'A request id is required' using errcode = '22023'; end if;
   if not private.social_claim(v_user, 'post', 30) then raise exception 'Try again later' using errcode = 'P0001'; end if;
-  insert into public.social_posts(author_id, source_entry_id, request_id, food_name, icon_set, icon_name, photo_path, caption, audience)
-  values (v_user, p_entry_id, p_request_id, left(coalesce(v_entry.display_label, v_entry.item_name), 160),
+  insert into public.social_posts(author_id, source_entry_id, food_name, icon_set, icon_name, photo_path, caption, audience)
+  values (v_user, p_entry_id, left(coalesce(v_entry.display_label, v_entry.item_name), 160),
     coalesce(v_entry.icon_set, v_entry.item_icon_set), coalesce(v_entry.icon_name, v_entry.item_icon_name),
     case when v_entry.photo_path like 'meals/' || v_user::text || '/%' then v_entry.photo_path end,
     btrim(coalesce(p_caption, '')), p_audience)
-  on conflict do nothing returning id into v_id;
-  if v_id is null then select id into v_id from public.social_posts where author_id = v_user
-    and (source_entry_id = p_entry_id or request_id = p_request_id); end if;
+  on conflict (source_entry_id) do nothing returning id into v_id;
+  if v_id is null then
+    select id into v_id from public.social_posts where source_entry_id = p_entry_id and author_id = v_user;
+  end if;
   return v_id;
 end;
 $function$;
 
-GRANT ALL ON FUNCTION public.create_social_post(uuid, text, public.social_audience, uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.create_social_post(uuid, text, public.social_audience) TO authenticated;
 
-GRANT ALL ON FUNCTION public.create_social_post(uuid, text, public.social_audience, uuid) TO service_role;
+GRANT ALL ON FUNCTION public.create_social_post(uuid, text, public.social_audience) TO service_role;
 
 CREATE FUNCTION public.delete_social_comment (
   p_id uuid
@@ -591,24 +725,42 @@ CREATE FUNCTION public.report_social_content (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-declare v_user uuid := private.social_require_user(false); v_author uuid;
+declare
+  v_user uuid := private.social_require_user(false);
+  v_author uuid;
+  v_revision integer;
+  v_visible boolean;
 begin
-  if exists (select 1 from public.social_reports where kind = p_kind and content_id = p_id and reporter_id = v_user) then return; end if;
+  if p_kind is null or p_id is null then raise exception 'Invalid report' using errcode = '22023'; end if;
+  if exists (select 1 from public.social_reports
+      where kind = p_kind and content_id = p_id and reporter_id = v_user) then return; end if;
+  perform pg_advisory_xact_lock(hashtextextended('social-report:' || p_kind::text || ':' || p_id::text, 0));
+  if exists (select 1 from public.social_reports
+      where kind = p_kind and content_id = p_id and reporter_id = v_user) then return; end if;
   case p_kind
-    when 'profile' then select user_id into v_author from public.social_profiles where user_id = p_id and private.social_can_view_profile(user_id);
-    when 'post' then select author_id into v_author from public.social_posts where id = p_id and private.social_can_view_post(id);
-    when 'comment' then select author_id into v_author from public.social_comments where id = p_id and private.social_can_view_comment(id);
+    when 'profile' then select p.user_id, p.revision, private.social_can_view_profile(p.user_id)
+      into v_author, v_revision, v_visible from public.social_profiles p where p.user_id = p_id for update;
+    when 'post' then select p.author_id, p.revision, private.social_can_view_post(p.id)
+      into v_author, v_revision, v_visible from public.social_posts p where p.id = p_id for update;
+    when 'comment' then select c.author_id, c.revision, private.social_can_view_comment(c.id)
+      into v_author, v_revision, v_visible from public.social_comments c where c.id = p_id for update;
     else raise exception 'Invalid report' using errcode = '22023';
   end case;
   if v_author is null or v_author = v_user then raise exception 'Content unavailable' using errcode = '42501'; end if;
+  if not v_visible then raise exception 'Content unavailable' using errcode = '42501'; end if;
   if not private.social_claim(v_user, 'report', 30) then raise exception 'Try again later' using errcode = 'P0001'; end if;
-  perform pg_advisory_xact_lock(hashtextextended('social-report:' || p_kind::text || ':' || p_id::text, 0));
-  insert into public.social_reports(kind, content_id, reporter_id, reason) values (p_kind, p_id, v_user, p_reason) on conflict do nothing;
-  if (select count(*) from (select 1 from public.social_reports where kind = p_kind and content_id = p_id limit 3) reports) >= 3 then
+  insert into public.social_reports(kind, content_id, content_revision, reporter_id, reason)
+  values (p_kind, p_id, v_revision, v_user, p_reason) on conflict do nothing;
+  if (select count(*) from (select 1 from public.social_reports
+      where kind = p_kind and content_id = p_id and content_revision = v_revision
+        and resolved_at is null limit 3) reports) >= 3 then
     case p_kind
-      when 'profile' then update public.social_profiles set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now() where user_id = p_id and not quarantined;
-      when 'post' then update public.social_posts set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now() where id = p_id and not quarantined;
-      when 'comment' then update public.social_comments set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now() where id = p_id and not quarantined;
+      when 'profile' then update public.social_profiles set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now()
+        where user_id = p_id and revision = v_revision and not quarantined;
+      when 'post' then update public.social_posts set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now()
+        where id = p_id and revision = v_revision and not quarantined;
+      when 'comment' then update public.social_comments set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now()
+        where id = p_id and revision = v_revision and not quarantined;
     end case;
   end if;
 end;
@@ -634,9 +786,10 @@ CREATE FUNCTION public.resolve_social_report (
 declare v_count integer; v_has_photo boolean := false;
 begin
   if p_revision is null then raise exception 'The reviewed revision is required' using errcode = '22023'; end if;
+  perform pg_advisory_xact_lock(hashtextextended('social-report:' || p_kind::text || ':' || p_id::text, 0));
   if p_kind = 'profile' then select avatar_path is not null into v_has_photo from public.social_profiles where user_id = p_id;
   elsif p_kind = 'post' then select photo_path is not null into v_has_photo from public.social_posts where id = p_id; end if;
-  if p_status = 'approved' and v_has_photo and (p_photo_etag is null or char_length(p_photo_etag) not between 1 and 128 or p_photo_etag ~ E'[\r\n]') then
+  if p_status = 'approved' and v_has_photo and (p_photo_etag is null or char_length(p_photo_etag) not between 1 and 128 or p_photo_etag !~ '^"[a-zA-Z0-9-]+"$' ) then
     raise exception 'A reviewed image ETag is required' using errcode = '22023';
   end if;
   if p_status not in ('approved', 'rejected') then raise exception 'Invalid review status' using errcode = '22023'; end if;
@@ -650,6 +803,10 @@ begin
     else raise exception 'Invalid content kind' using errcode = '22023';
   end case;
   get diagnostics v_count = row_count;
+  if v_count = 1 then
+    update public.social_reports set resolved_at = pg_catalog.clock_timestamp()
+    where kind = p_kind and content_id = p_id and resolved_at is null;
+  end if;
   return v_count = 1;
 end;
 $function$;
@@ -673,7 +830,7 @@ declare v_count integer; v_has_photo boolean := false;
 begin
   if p_kind = 'profile' then select avatar_path is not null into v_has_photo from public.social_profiles where user_id = p_id;
   elsif p_kind = 'post' then select photo_path is not null into v_has_photo from public.social_posts where id = p_id; end if;
-  if p_status = 'approved' and v_has_photo and (p_photo_etag is null or char_length(p_photo_etag) not between 1 and 128 or p_photo_etag ~ E'[\r\n]') then
+  if p_status = 'approved' and v_has_photo and (p_photo_etag is null or char_length(p_photo_etag) not between 1 and 128 or p_photo_etag !~ '^"[a-zA-Z0-9-]+"$' ) then
     raise exception 'A reviewed image ETag is required' using errcode = '22023';
   end if;
   if p_status not in ('approved', 'rejected') then raise exception 'Invalid review status' using errcode = '22023'; end if;
@@ -705,11 +862,12 @@ CREATE FUNCTION public.set_social_follow (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-declare v_user uuid := private.social_require_user();
+declare v_user uuid := private.social_require_user(false);
 begin
   if p_target_id is null or p_target_id = v_user or p_following is null then
     raise exception 'Invalid follow' using errcode = '22023';
   end if;
+  if p_following then perform private.social_require_user(); end if;
   perform pg_advisory_xact_lock(hashtextextended('social-following:' || v_user::text, 0));
   perform private.social_lock_pair(v_user, p_target_id);
   if not p_following then
@@ -737,10 +895,11 @@ CREATE FUNCTION public.set_social_like (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-declare v_user uuid := private.social_require_user();
+declare v_user uuid := private.social_require_user(false);
 begin
   if p_liked is null then raise exception 'Invalid like' using errcode = '22023'; end if;
   if not p_liked then delete from public.social_likes where post_id = p_post_id and user_id = v_user; return; end if;
+  perform private.social_require_user();
   if not private.social_can_view_post(p_post_id) then raise exception 'Post unavailable' using errcode = '42501'; end if;
   if exists (select 1 from public.social_likes where post_id = p_post_id and user_id = v_user) then return; end if;
   if not private.social_claim(v_user, 'like', 600) then raise exception 'Try again later' using errcode = 'P0001'; end if;
@@ -810,12 +969,13 @@ CREATE FUNCTION public.social_blocked_profiles (
 declare v_user uuid := private.social_require_user(false);
 begin
   perform private.social_validate_page(p_before_at, p_before_id, p_limit);
-  return query select p.user_id,
+  return query select b.author_id,
     case when p.review_status = 'approved' and not p.quarantined then p.handle else '' end,
-    case when p.review_status = 'approved' and not p.quarantined then p.display_name else 'Someone' end,
-    ''::text, null::text, p.review_status, null::text, p.revision, p.quarantined,
-    0::bigint, 0::bigint, 0::bigint, false, false, p.created_at, b.created_at
-  from public.blocked_authors b join public.social_profiles p on p.user_id = b.author_id
+    case when p.review_status = 'approved' and not p.quarantined then p.display_name else '' end,
+    ''::text, null::text, coalesce(p.review_status, 'pending'::public.recipe_review), null::text,
+    coalesce(p.revision, 1), coalesce(p.quarantined, false),
+    0::bigint, 0::bigint, 0::bigint, false, false, coalesce(p.created_at, b.created_at), b.created_at
+  from public.blocked_authors b left join public.social_profiles p on p.user_id = b.author_id
   where b.user_id = v_user and (p_before_at is null or (b.created_at, b.author_id) < (p_before_at, p_before_id))
   order by b.created_at desc, b.author_id desc limit p_limit + 1;
 end;
@@ -896,19 +1056,6 @@ GRANT ALL ON FUNCTION public.social_entry_post(uuid) TO authenticated;
 
 GRANT ALL ON FUNCTION public.social_entry_post(uuid) TO service_role;
 
-CREATE FUNCTION public.social_has_unread_notifications()
-  RETURNS boolean
-  LANGUAGE sql
-  STABLE
-  SET search_path TO ''
-  AS $function$
-  select exists (select 1 from public.social_notifications n where n.recipient_id = (select auth.uid()) and n.read_at is null);
-$function$;
-
-GRANT ALL ON FUNCTION public.social_has_unread_notifications() TO authenticated;
-
-GRANT ALL ON FUNCTION public.social_has_unread_notifications() TO service_role;
-
 CREATE FUNCTION public.social_photo_claims (
   p_keys text[]
 )
@@ -943,6 +1090,47 @@ $function$;
 GRANT ALL ON FUNCTION public.social_photo_claims(text[]) TO authenticated;
 
 GRANT ALL ON FUNCTION public.social_photo_claims(text[]) TO service_role;
+
+CREATE FUNCTION public.social_unread_notification_count()
+  RETURNS integer
+  LANGUAGE sql
+  STABLE
+  SET search_path TO ''
+  AS $function$
+  select count(*)::integer from (
+    select 1 from public.social_notifications n
+    where n.recipient_id = (select auth.uid()) and n.read_at is null
+    limit 100
+  ) unread;
+$function$;
+
+GRANT ALL ON FUNCTION public.social_unread_notification_count() TO authenticated;
+
+GRANT ALL ON FUNCTION public.social_unread_notification_count() TO service_role;
+
+CREATE FUNCTION public.update_social_comment (
+  p_id   uuid,
+  p_body text
+)
+  RETURNS uuid
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare v_user uuid := private.social_require_user();
+begin
+  if not private.social_claim(v_user, 'comment-edit', 60) then raise exception 'Try again later' using errcode = 'P0001'; end if;
+  update public.social_comments set body = btrim(p_body), review_status = 'pending', review_reason = null,
+    revision = revision + 1, updated_at = now()
+  where id = p_id and author_id = v_user and private.social_can_view_post(post_id);
+  if not found then raise exception 'Comment unavailable' using errcode = '42501'; end if;
+  return p_id;
+end;
+$function$;
+
+GRANT ALL ON FUNCTION public.update_social_comment(uuid, text) TO authenticated;
+
+GRANT ALL ON FUNCTION public.update_social_comment(uuid, text) TO service_role;
 
 CREATE FUNCTION public.update_social_post (
   p_id       uuid,
@@ -1018,8 +1206,6 @@ ALTER TABLE public.social_comments
 GRANT SELECT (author_id, body, created_at, id, post_id, quarantined, review_reason, review_status, revision, updated_at) ON public.social_comments TO authenticated;
 
 GRANT ALL ON public.social_comments TO service_role;
-
-CREATE INDEX social_comments_author_idx ON public.social_comments (author_id);
 
 CREATE INDEX social_comments_post_idx ON public.social_comments (post_id, created_at DESC, id DESC);
 
@@ -1150,16 +1336,18 @@ GRANT ALL ON public.social_notifications TO service_role;
 CREATE INDEX social_notifications_recipient_idx ON public.social_notifications (recipient_id, created_at DESC, id DESC);
 
 CREATE UNIQUE INDEX social_notifications_comment_unique ON public.social_notifications (comment_id)
-  WHERE kind = 'comment'::public.social_activity_kind;
-
-CREATE UNIQUE INDEX social_notifications_like_unique ON public.social_notifications (post_id, actor_id)
-  WHERE kind = 'like'::public.social_activity_kind;
+  WHERE comment_id IS NOT NULL;
 
 CREATE UNIQUE INDEX social_notifications_follow_unique ON public.social_notifications (recipient_id, actor_id)
   WHERE kind = 'follow'::public.social_activity_kind;
 
 CREATE INDEX social_notifications_unread_idx ON public.social_notifications (recipient_id, created_at DESC, id DESC)
   WHERE read_at IS NULL;
+
+CREATE INDEX social_notifications_post_idx ON public.social_notifications (post_id, actor_id)
+  WHERE post_id IS NOT NULL;
+
+CREATE INDEX social_notifications_actor_idx ON public.social_notifications (actor_id, recipient_id);
 
 CREATE POLICY "social notifications: recipient and visible content" ON public.social_notifications
   FOR SELECT
@@ -1170,7 +1358,6 @@ CREATE TABLE public.social_posts (
   id              uuid                     DEFAULT gen_random_uuid() NOT NULL,
   author_id       uuid                     NOT NULL,
   source_entry_id uuid                     NOT NULL,
-  request_id      uuid                     NOT NULL,
   food_name       text                     NOT NULL,
   icon_set        public.icon_set,
   icon_name       text,
@@ -1189,9 +1376,6 @@ CREATE TABLE public.social_posts (
 
 ALTER TABLE public.social_posts
   ENABLE ROW LEVEL SECURITY;
-
-ALTER TABLE public.social_posts
-  ADD CONSTRAINT social_posts_author_id_request_id_key UNIQUE (author_id, request_id);
 
 ALTER TABLE public.social_posts
   ADD CONSTRAINT social_posts_caption_check CHECK (char_length(caption) <= 280);
@@ -1234,11 +1418,14 @@ GRANT ALL ON public.social_posts TO service_role;
 
 CREATE INDEX social_posts_author_idx ON public.social_posts (author_id, created_at DESC, id DESC);
 
-CREATE INDEX social_posts_discover_idx ON public.social_posts (created_at DESC, id DESC)
-  WHERE audience = 'public'::public.social_audience AND review_status = 'approved'::public.recipe_review AND NOT quarantined;
+CREATE INDEX social_posts_author_feed_idx ON public.social_posts (author_id, created_at DESC, id DESC)
+  WHERE review_status = 'approved'::public.recipe_review AND NOT quarantined;
 
 CREATE INDEX social_posts_photo_idx ON public.social_posts (photo_path)
   WHERE photo_path IS NOT NULL AND review_status = 'approved'::public.recipe_review AND NOT quarantined;
+
+CREATE INDEX social_posts_discover_idx ON public.social_posts (created_at DESC, id DESC)
+  WHERE audience = 'public'::public.social_audience AND review_status = 'approved'::public.recipe_review AND NOT quarantined;
 
 CREATE TRIGGER social_post_changed
   AFTER INSERT OR DELETE OR UPDATE ON public.social_posts
@@ -1252,7 +1439,7 @@ CREATE POLICY "social posts: approved audience or own" ON public.social_posts
 
 CREATE TABLE public.social_profiles (
   user_id       uuid                     NOT NULL,
-  handle        text                     NOT NULL,
+  handle        text                     COLLATE "C" NOT NULL,
   display_name  text                     NOT NULL,
   bio           text                     DEFAULT ''::text NOT NULL,
   avatar_path   text,
@@ -1317,13 +1504,11 @@ GRANT SELECT ON public.social_profiles TO authenticated;
 
 GRANT ALL ON public.social_profiles TO service_role;
 
-CREATE INDEX social_profiles_handle_prefix_idx ON public.social_profiles (handle text_pattern_ops);
+CREATE INDEX social_profiles_avatar_idx ON public.social_profiles (avatar_path)
+  WHERE avatar_path IS NOT NULL AND review_status = 'approved'::public.recipe_review AND NOT quarantined;
 
 CREATE INDEX social_profiles_discover_idx ON public.social_profiles (created_at DESC, user_id DESC)
   WHERE review_status = 'approved'::public.recipe_review AND NOT quarantined;
-
-CREATE INDEX social_profiles_avatar_idx ON public.social_profiles (avatar_path)
-  WHERE avatar_path IS NOT NULL AND review_status = 'approved'::public.recipe_review AND NOT quarantined;
 
 CREATE TRIGGER social_profile_deleted
   AFTER DELETE ON public.social_profiles
@@ -1357,18 +1542,23 @@ ALTER TABLE public.social_rate_limits
 GRANT ALL ON public.social_rate_limits TO service_role;
 
 CREATE TABLE public.social_reports (
-  kind        public.social_content_kind NOT NULL,
-  content_id  uuid                       NOT NULL,
-  reporter_id uuid                       NOT NULL,
-  reason      public.report_reason       NOT NULL,
-  created_at  timestamp with time zone   DEFAULT now() NOT NULL
+  kind             public.social_content_kind NOT NULL,
+  content_id       uuid                       NOT NULL,
+  content_revision integer                    NOT NULL,
+  reporter_id      uuid                       NOT NULL,
+  reason           public.report_reason       NOT NULL,
+  created_at       timestamp with time zone   DEFAULT now() NOT NULL,
+  resolved_at      timestamp with time zone
 );
 
 ALTER TABLE public.social_reports
   ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.social_reports
-  ADD CONSTRAINT social_reports_pkey PRIMARY KEY (kind, content_id, reporter_id);
+  ADD CONSTRAINT social_reports_content_revision_check CHECK (content_revision > 0);
+
+ALTER TABLE public.social_reports
+  ADD CONSTRAINT social_reports_pkey PRIMARY KEY (kind, content_id, content_revision, reporter_id);
 
 ALTER TABLE public.social_reports
   ADD CONSTRAINT social_reports_reporter_id_fkey FOREIGN KEY (reporter_id) REFERENCES auth.users(id) ON DELETE CASCADE;
@@ -1377,7 +1567,7 @@ GRANT SELECT ON public.social_reports TO authenticated;
 
 GRANT ALL ON public.social_reports TO service_role;
 
-CREATE INDEX social_reports_reporter_idx ON public.social_reports (reporter_id, kind, content_id);
+CREATE INDEX social_reports_reporter_idx ON public.social_reports (reporter_id, kind, content_id, content_revision);
 
 CREATE POLICY "social reports: own" ON public.social_reports
   FOR SELECT
@@ -1484,12 +1674,14 @@ CREATE VIEW public.social_post_details WITH (security_invoker=true) AS SELECT p.
     p.published_at,
     private.social_count(p.id, 'likes'::public.social_counter_metric) AS like_count,
     private.social_count(p.id, 'comments'::public.social_counter_metric) AS comment_count,
-    (EXISTS ( SELECT 1
+    COALESCE(( SELECT true
            FROM public.social_likes l
-          WHERE ((l.post_id = p.id) AND (l.user_id = ( SELECT auth.uid() AS uid))))) AS is_liked,
-    (EXISTS ( SELECT 1
+          WHERE ((l.post_id = p.id) AND (l.user_id = ( SELECT auth.uid() AS uid)))
+         LIMIT 1), false) AS is_liked,
+    COALESCE(( SELECT true
            FROM public.social_follows f
-          WHERE ((f.follower_id = ( SELECT auth.uid() AS uid)) AND (f.followed_id = p.author_id)))) AS is_following
+          WHERE ((f.follower_id = ( SELECT auth.uid() AS uid)) AND (f.followed_id = p.author_id))
+         LIMIT 1), false) AS is_following
    FROM (public.social_posts p
      JOIN public.social_profiles a ON ((a.user_id = p.author_id)));
 
@@ -1505,37 +1697,11 @@ CREATE FUNCTION public.social_feed (
   SET search_path TO ''
   AS $function$
 begin
-  perform private.social_validate_page(p_before_at, p_before_id, p_limit);
-  if p_mode not in ('following', 'discover') or p_mode is null then raise exception 'Invalid feed' using errcode = '22023'; end if;
-  if p_mode = 'following' then
-    return query
-      with authors as materialized (
-        select (select auth.uid()) as user_id
-        union all
-        select f.followed_id from public.social_follows f where f.follower_id = (select auth.uid())
-      ), candidates as materialized (
-        select p.id, p.created_at from authors a cross join lateral (
-          select sp.id, sp.created_at from public.social_posts sp
-          where sp.author_id = a.user_id and sp.review_status = 'approved' and not sp.quarantined
-            and (p_before_at is null or (sp.created_at, sp.id) < (p_before_at, p_before_id))
-          order by sp.created_at desc, sp.id desc limit p_limit + 1
-        ) p
-      ), page as materialized (
-        select c.id, c.created_at from candidates c order by c.created_at desc, c.id desc limit p_limit + 1
-      )
-      select d.* from page p join public.social_post_details d on d.id = p.id order by p.created_at desc, p.id desc;
-  else
-    return query
-      with page as materialized (
-        select sp.id, sp.created_at from public.social_posts sp
-        where sp.audience = 'public' and sp.review_status = 'approved' and not sp.quarantined
-          and sp.author_id <> (select auth.uid())
-          and not exists (select 1 from public.social_follows f where f.follower_id = (select auth.uid()) and f.followed_id = sp.author_id)
-          and (p_before_at is null or (sp.created_at, sp.id) < (p_before_at, p_before_id))
-        order by sp.created_at desc, sp.id desc limit p_limit + 1
-      )
-      select d.* from page p join public.social_post_details d on d.id = p.id order by p.created_at desc, p.id desc;
-  end if;
+  return query
+    with page as materialized (
+      select c.id, c.created_at from private.social_feed_candidates(p_mode, p_before_at, p_before_id, p_limit) c
+    )
+    select d.* from page p join public.social_post_details d on d.id = p.id order by p.created_at desc, p.id desc;
 end;
 $function$;
 
@@ -1597,12 +1763,14 @@ CREATE VIEW public.social_profile_details WITH (security_invoker=true) AS SELECT
     private.social_count(user_id, 'followers'::public.social_counter_metric) AS follower_count,
     private.social_count(user_id, 'following'::public.social_counter_metric) AS following_count,
     private.social_count(user_id, 'posts'::public.social_counter_metric) AS post_count,
-    (EXISTS ( SELECT 1
+    COALESCE(( SELECT true
            FROM public.social_follows f
-          WHERE ((f.follower_id = ( SELECT auth.uid() AS uid)) AND (f.followed_id = p.user_id)))) AS is_following,
-    (EXISTS ( SELECT 1
+          WHERE ((f.follower_id = ( SELECT auth.uid() AS uid)) AND (f.followed_id = p.user_id))
+         LIMIT 1), false) AS is_following,
+    COALESCE(( SELECT true
            FROM public.social_follows f
-          WHERE ((f.followed_id = ( SELECT auth.uid() AS uid)) AND (f.follower_id = p.user_id)))) AS is_followed_by,
+          WHERE ((f.followed_id = ( SELECT auth.uid() AS uid)) AND (f.follower_id = p.user_id))
+         LIMIT 1), false) AS is_followed_by,
     created_at
    FROM public.social_profiles p;
 
@@ -1655,32 +1823,9 @@ CREATE FUNCTION public.social_suggestions (
   SET search_path TO ''
   AS $function$
 begin
-  perform private.social_validate_page(null, null, p_limit);
   return query
-    with seeds as materialized (
-      select f.followed_id from public.social_follows f where f.follower_id = (select auth.uid())
-      order by f.created_at desc, f.followed_id desc limit 64
-    ), paths as materialized (
-      select f.followed_id from seeds s cross join lateral (
-        select edge.followed_id from public.social_follows edge where edge.follower_id = s.followed_id
-        order by edge.created_at desc, edge.followed_id desc limit 64
-      ) f
-    ), mutual as materialized (
-      select p.followed_id as user_id, count(*) as weight from paths p group by p.followed_id
-      order by count(*) desc, p.followed_id limit 256
-    ), recent as materialized (
-      select p.user_id, 0::bigint as weight from public.social_profiles p
-      where p.review_status = 'approved' and not p.quarantined
-      order by p.created_at desc, p.user_id desc limit 512
-    ), candidates as materialized (
-      select c.user_id, max(c.weight) as weight from (
-        select * from mutual union all select * from recent
-      ) c group by c.user_id
-    ), page as materialized (
-      select c.user_id, c.weight from candidates c
-      where c.user_id <> (select auth.uid()) and private.social_can_view_profile(c.user_id)
-        and not exists (select 1 from public.social_follows f where f.follower_id = (select auth.uid()) and f.followed_id = c.user_id)
-      order by c.weight desc, c.user_id limit p_limit
+    with page as materialized (
+      select c.user_id, c.weight from private.social_suggestion_candidates(p_limit) c
     )
     select d.* from page p join public.social_profile_details d on d.user_id = p.user_id order by p.weight desc, p.user_id;
 end;
@@ -1737,11 +1882,11 @@ revoke execute on function private.social_require_user, private.social_claim,
 
 revoke execute on function public.set_social_profile, public.create_social_post, public.update_social_post,
   public.delete_social_post, public.set_social_follow, public.remove_social_follower, public.set_social_like,
-  public.create_social_comment, public.delete_social_comment, public.report_social_content from public, anon;
+  public.create_social_comment, public.update_social_comment, public.delete_social_comment, public.report_social_content from public, anon;
 
 grant execute on function public.set_social_profile, public.create_social_post, public.update_social_post,
   public.delete_social_post, public.set_social_follow, public.remove_social_follower, public.set_social_like,
-  public.create_social_comment, public.delete_social_comment, public.report_social_content to authenticated, service_role;
+  public.create_social_comment, public.update_social_comment, public.delete_social_comment, public.report_social_content to authenticated, service_role;
 
 revoke execute on function public.claim_social_review, public.review_social_content, public.resolve_social_report from public, anon, authenticated;
 
@@ -1760,14 +1905,24 @@ revoke execute on function private.social_validate_page from public, anon;
 
 grant execute on function private.social_validate_page to authenticated, service_role;
 
+revoke execute on function private.social_feed_candidates from public, anon;
+
+grant execute on function private.social_feed_candidates to authenticated, service_role;
+
+revoke execute on function private.social_suggestion_candidates from public, anon;
+
+grant execute on function private.social_suggestion_candidates to authenticated, service_role;
+
 revoke execute on function public.social_profile, public.social_post, public.social_entry_post,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
-  public.social_notifications, public.social_has_unread_notifications, public.mark_social_notifications_read,
+  public.social_notifications, public.social_unread_notification_count,
+  public.mark_social_notifications_read,
   public.social_photo_claims from public, anon;
 
 grant execute on function public.social_profile, public.social_post, public.social_entry_post,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
-  public.social_notifications, public.social_has_unread_notifications, public.mark_social_notifications_read,
+  public.social_notifications, public.social_unread_notification_count,
+  public.mark_social_notifications_read,
   public.social_photo_claims to authenticated, service_role;

@@ -2495,14 +2495,18 @@ meal was logged. A source-entry reference exists for ownership and deletion,
 not as permission to join the private diary. Read RPCs return explicit public
 fields. Diary and recipe RLS are never widened to implement the feed.
 
-There is at most one post per source entry. A client request UUID makes a retry
-of an interrupted comment submission the same operation. Follow and like writes
-set the desired state instead of toggling it, so repeated requests converge.
+There is at most one post per source entry, so a retried publish returns that
+post; the entry is the retry key and a post carries no request token. A client
+request UUID makes a retry of an interrupted comment submission the same
+operation. Follow and like writes set the desired state instead of toggling it,
+so repeated requests converge.
 Caption edits keep the original publication position and create a new review
 revision. Changing the diary does not silently rewrite the published words.
 Deleting the diary entry removes its post and dependent comments, likes and
-activity. The entry screen and delete confirmation must make this consequence
-clear. Deleting a post keeps the diary entry.
+activity. The entry screen's delete confirmation says so when the meal has a
+post. A diary swipe asks the server at that moment: a meal with no post is
+deleted at once, as it always was, and one with a post, or one it cannot check
+within two seconds or offline, asks first. Deleting a post keeps the diary entry.
 
 The existing `blocked_authors` rows remain private to their writers. Social read
 policies use a narrowly scoped private helper to check both directions without
@@ -2538,7 +2542,10 @@ concurrent inserts appear on refresh. Deleting the cursor row does not invalidat
 the cursor because its values travel with the request.
 Handle search is ordered by the current handle. A renamed account may move
 across the search cursor; refresh to see its new position. The client deduplicates
-by account id while paging.
+by account id while paging. Handles are `collate "C"`, so their unique index
+turns a prefix into a range and serves every page. Under the database's ICU
+collation the prefix could not bound the scan, and the page after the last match
+walked every later handle in the table.
 
 Popular posts and people must not run `count(*)` over their entire history for
 each card. Counts are maintained in fixed shards selected by the acting account,
@@ -2552,6 +2559,13 @@ Activity is one recipient per interaction, not one recipient per follower of a
 publisher. It stores references, not copied captions or comments that survive
 deletion. Its read path rechecks the referenced content. Recipient/time/id and
 recipient/unread indexes keep history paging and the unread indicator bounded.
+Every social foreign key leads an index that its cascade can use, which pgTAP
+asserts. Activity once indexed posts and comments only under a `kind` predicate,
+so each post, comment or account deletion scanned the whole activity table: 42 ms
+per post against a million rows, growing with the table, where it now takes about
+1 ms. Like activity has no unique key of its own: only the like's insert writes
+it, and the like's key already allows one per pair. Comment activity keeps one,
+because an edited comment's re-approval writes it again.
 
 ### Growth strategy and its limits
 
@@ -2615,10 +2629,13 @@ same two existing R2 prefixes before cascading all social rows.
 
 The photo endpoint gains an explicit social scope. It signs only keys attached to
 content the caller can currently see, verifies that the key belongs to its
-author, and uses a 60-second URL lifetime. The old diary and recipe requests keep
-their existing response contract and lifetime. Social images never use the
-diary's disk-first resolver. They are not written to disk and do not reuse a
-photo key as permanent authorization. A previously delivered signed URL can work
+author, and uses a 60-second URL lifetime. A refused key is left out of the
+answer rather than refusing the batch: one batch is a whole screen, and edits,
+reports, blocks and retention revoke single posts routinely. The old diary and
+recipe requests keep their existing response contract and lifetime. Social images
+never use the diary's disk-first resolver. They are cached in memory under their
+key and reviewed ETag, so a fresh signature does not download them again, are
+never written to disk and do not reuse a photo key as permanent authorization. A previously delivered signed URL can work
 until its short expiry; downloaded bytes cannot be recalled. Blocking/deletion
 invalidates visible content immediately in the acting client and on the next
 authorized read elsewhere.
@@ -2643,6 +2660,11 @@ as it is. Reusable social cards, people rows, photo rendering, lists and report
 controls live under `features/social` rather than being copied into routes.
 A newly followed author stays in the loaded Discover results until a deliberate
 refresh, while the card updates immediately and the Following feed is refreshed.
+A like is drawn at once on every cached copy of its post and put back if the
+server refuses it; it never refetches a feed, since it is the most frequent write
+and a refetch reloads every loaded page. A comment refreshes only its post. The
+unread badge polls once a minute only while Feed is on screen. Pull-to-refresh
+keeps the first loaded page visible while the newest one loads.
 
 Implementation order is deliberate:
 
@@ -2718,13 +2740,21 @@ are warm database p95 measurements, not network latency or production throughput
 
 | Read | Warm p95 |
 | --- | ---: |
-| Following, 5,000 active followed authors | 57.9 ms |
-| Following, 5,000 sparse followed authors | 15.5 ms |
-| Following, deep cursor | 53.4 ms |
-| Discover, skipping 100,000 followed posts | 81.6 ms |
-| Suggestions, 64 by 64 graph paths | 15.9 ms |
-| Followers page, 15,000 followers | 28.0 ms |
-| Unread badge, 15,000 activity rows | 117.3 ms |
+| Following, 5,000 active followed authors | 57.7 ms |
+| Following, 5,000 sparse followed authors | 15.7 ms |
+| Following, deep cursor | 62.4 ms |
+| Discover, skipping 100,000 followed posts | 20.8 ms |
+| Suggestions, 64 by 64 graph paths | 5.3 ms |
+| Followers page, 15,000 followers | 4.2 ms |
+| Unread badge, 15,000 activity rows | 21.5 ms |
+| Handle search, 15,050 profiles | 1.9 ms |
+
+After the changes that bounded search and deletion, every case above read no more
+buffers than before, give or take 0.2%. One author index for posts, carrying review state as
+included columns, was measured against the full and approved pair: Following at
+1,000 and 5,000 authors was up to 40% slower, so the pair stays. Writes are not in
+that fixture. Deleting one post against a million unrelated activity rows took
+41.9 ms while its cascade scanned the table and 1.3 ms once the keys led indexes.
 
 The original policy-per-candidate plan took 14.5 seconds for dense Following
 and 18.4 seconds for filtered Discover. Private candidate selectors now apply
@@ -2732,8 +2762,9 @@ the same viewer-specific conditions using indexed joins, then public invoker
 functions hydrate only the resulting page through RLS. Relationship flags use
 single indexed lookups, so a card cannot make PostgreSQL read the entire graph.
 The same approach keeps suggestion traversal bounded before loading profile
-details and counts. Final local verification passed 488 SQL assertions and
-21 concurrent-session behavior assertions, followed by cleanup verification.
+details and counts. Final local verification passed 488 SQL assertions,
+21 concurrent-session behavior assertions followed by cleanup verification, and
+32 HTTP checks against real local Auth, PostgREST, edge functions and MinIO.
 Re-run the benchmark when visibility predicates or candidate queries change;
 these figures describe this fixture and machine, not an unlimited capacity
 guarantee.

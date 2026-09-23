@@ -51,7 +51,7 @@ Deno.test('social image grants cannot borrow a foreign key, private avatar, or w
   )
 })
 
-Deno.test('one unauthorized social image denies the entire bounded batch', async () => {
+Deno.test('a revoked social image is left out without refusing its neighbours', async () => {
   assertEquals(
     await claimSocialKeys([OWN, COMMUNITY], async () => [
       {
@@ -61,8 +61,12 @@ Deno.test('one unauthorized social image denies the entire bounded batch', async
         kind: 'meal',
       },
     ]),
-    { error: 'not a visible reviewed social photo', status: 403 },
+    { keys: [COMMUNITY], etags: { [COMMUNITY]: '"abc"' } },
   )
+  assertEquals(await claimSocialKeys([OWN, COMMUNITY], async () => []), {
+    error: 'not a visible reviewed social photo',
+    status: 403,
+  })
   assertEquals(await claimSocialKeys([], async () => []), {
     error: 'keys must be a non-empty array',
     status: 400,

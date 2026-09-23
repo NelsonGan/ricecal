@@ -30,6 +30,7 @@ import {
   useUpdateEntry,
   withCataloguePortions,
 } from '@/data'
+import { useSocialEntry } from '@/data/social'
 import {
   type Clock,
   clockOf,
@@ -232,6 +233,9 @@ export default function FoodDetail() {
    * and this one is disabled while the day is still loading.
    */
   const { data: ingredients = [], isLoading: partsLoading } = useEntryIngredients(existing?.id)
+  // The meal's feed post: null for none, undefined until that is known, so the
+  // delete sheet warns about a post whenever it cannot rule one out.
+  const feedPost = useSocialEntry(existing?.id ?? '').data?.postId
 
   /**
    * The food this screen is about, and which one depends on why we are here.
@@ -963,6 +967,7 @@ export default function FoodDetail() {
         logDate: existing.logDate,
         photoPath: existing.photoPath,
         source: existing.source,
+        shared: feedPost === null ? false : undefined,
       })
     }
     setConfirmDelete(false)
@@ -1182,7 +1187,7 @@ export default function FoodDetail() {
               router.push({ pathname: '/social/compose', params: { entryId: existing.id } })
             }
           >
-            {t('social:share')}
+            {t(feedPost ? 'social:editPost' : 'social:share')}
           </Button>
         ) : null}
 
@@ -1522,7 +1527,7 @@ export default function FoodDetail() {
           onClose={() => setConfirmDelete(false)}
           onConfirm={remove}
           title={t('logging:detail.deleteTitle')}
-          description={t('social:sourceDelete')}
+          description={t(feedPost === null ? 'logging:detail.deleteBody' : 'social:sourceDelete')}
           confirmLabel={t('common:action.delete')}
           cancelLabel={t('common:action.keep')}
           tone="danger"

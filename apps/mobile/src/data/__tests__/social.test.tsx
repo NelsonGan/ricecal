@@ -7,6 +7,7 @@ import {
   type SocialPage,
   type SocialPost,
   socialCursorArgs,
+  socialEntryPost,
   socialPage,
   useSocialAction,
   useSocialFeed,
@@ -169,20 +170,171 @@ it('refuses offline actions immediately without queueing them', async () => {
 it('reads the missed notification count for the feed badge', async () => {
   mockRpc.mockImplementation(() => response(7))
   const { client, wrapper } = setup()
-  const { result, unmount } = await renderHook(useSocialUnread, { wrapper })
+  const { result, unmount } = await renderHook(() => useSocialUnread(true), { wrapper })
   await waitFor(() => expect(result.current.data).toBe(7))
   expect(mockRpc).toHaveBeenCalledWith('social_unread_notification_count', undefined)
   await unmount()
   client.clear()
 })
 
+it('does not ask for the unread count while the feed is off screen', async () => {
+  jest.useFakeTimers()
+  mockRpc.mockImplementation(() => response(3))
+  const { client, wrapper } = setup()
+  const { result, rerender, unmount } = await renderHook(
+    ({ active }: { active: boolean }) => useSocialUnread(active),
+    { wrapper, initialProps: { active: true } },
+  )
+  await waitFor(() => expect(result.current.data).toBe(3))
+  await rerender({ active: false })
+  await act(async () => {
+    jest.advanceTimersByTime(5 * 60_000)
+  })
+  expect(mockRpc).toHaveBeenCalledTimes(1)
+  expect(result.current.data).toBe(3)
+  // Coming back to a stale badge asks once.
+  await rerender({ active: true })
+  await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2))
+  await unmount()
+  client.clear()
+  jest.useRealTimers()
+})
+
+it('draws a like on every cached copy of the post without refetching a feed', async () => {
+  mockRpc.mockImplementation(() => response(null))
+  const { client, wrapper } = setup()
+  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'following' })
+  const postKey = keys.socialRead('viewer', 'social_post', { id: 'post' })
+  const liked = { id: 'post', is_liked: false, like_count: 4 } as SocialPost
+  const other = { id: 'other', is_liked: false, like_count: 1 } as SocialPost
+  client.setQueryData(feedKey, {
+    pages: [{ rows: [liked, other], next: null }],
+    pageParams: [null],
+  })
+  client.setQueryData(postKey, liked)
+
+  const { result, unmount } = await renderHook(useSocialAction, { wrapper })
+  await act(async () => {
+    await result.current.mutateAsync({ action: 'like', id: 'post', liked: true })
+  })
+
+  expect(mockRpc).toHaveBeenCalledWith('set_social_like', { p_post_id: 'post', p_liked: true })
+  expect(client.getQueryData<{ pages: SocialPage<SocialPost>[] }>(feedKey)?.pages[0].rows).toEqual([
+    expect.objectContaining({ id: 'post', is_liked: true, like_count: 5 }),
+    expect.objectContaining({ id: 'other', is_liked: false, like_count: 1 }),
+  ])
+  expect(client.getQueryData(postKey)).toEqual(
+    expect.objectContaining({ is_liked: true, like_count: 5 }),
+  )
+  expect(client.getQueryState(feedKey)?.isInvalidated).toBe(false)
+  expect(client.getQueryState(postKey)?.isInvalidated).toBe(false)
+  await unmount()
+  client.clear()
+})
+
+it('puts a like back when the server refuses it', async () => {
+  mockRpc.mockImplementation(() => response(null, new Error('Post unavailable')))
+  const { client, wrapper } = setup()
+  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'discover' })
+  const post = { id: 'post', is_liked: true, like_count: 2 } as SocialPost
+  client.setQueryData(feedKey, { pages: [{ rows: [post], next: null }], pageParams: [null] })
+
+  const { result, unmount } = await renderHook(useSocialAction, { wrapper })
+  await act(async () => {
+    await expect(
+      result.current.mutateAsync({ action: 'like', id: 'post', liked: false }),
+    ).rejects.toThrow('Post unavailable')
+  })
+  expect(
+    client.getQueryData<{ pages: SocialPage<SocialPost>[] }>(feedKey)?.pages[0].rows[0],
+  ).toEqual(expect.objectContaining({ is_liked: true, like_count: 2 }))
+  await unmount()
+  client.clear()
+})
+
+it('refreshes only the commented post and counts an approved comment in place', async () => {
+  mockRpc.mockImplementation(() => response('comment-id'))
+  const { client, wrapper } = setup()
+  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'following' })
+  const commentsKey = keys.socialRead('viewer', 'social_comments', { p_post_id: 'post' })
+  const otherCommentsKey = keys.socialRead('viewer', 'social_comments', { p_post_id: 'other' })
+  const postKey = keys.socialRead('viewer', 'social_post', { id: 'post' })
+  const post = { id: 'post', comment_count: 1 } as SocialPost
+  client.setQueryData(feedKey, { pages: [{ rows: [post], next: null }], pageParams: [null] })
+  for (const key of [commentsKey, otherCommentsKey, postKey]) {
+    client.setQueryData(key, { fixture: true })
+  }
+
+  const { result, unmount } = await renderHook(useSocialAction, { wrapper })
+  await act(async () => {
+    await result.current.mutateAsync({
+      action: 'comment',
+      postId: 'post',
+      body: 'Looks good',
+      requestId: 'request',
+    })
+  })
+
+  expect(
+    client.getQueryData<{ pages: SocialPage<SocialPost>[] }>(feedKey)?.pages[0].rows[0],
+  ).toEqual(expect.objectContaining({ comment_count: 2 }))
+  expect(client.getQueryState(feedKey)?.isInvalidated).toBe(false)
+  expect(client.getQueryState(commentsKey)?.isInvalidated).toBe(true)
+  expect(client.getQueryState(postKey)?.isInvalidated).toBe(true)
+  expect(client.getQueryState(otherCommentsKey)?.isInvalidated).toBe(false)
+  await unmount()
+  client.clear()
+})
+
+it('keeps the loaded posts on screen while a pull-to-refresh reloads the head', async () => {
+  let release: (() => void) | undefined
+  mockRpc.mockImplementation((_name, params) => {
+    if (params.p_before_id) return response(rows(Number(params.p_before_id) + 1))
+    const head = new Promise((resolve) => {
+      release = () => resolve({ data: rows(100), error: null })
+    })
+    return Object.assign(head, { abortSignal: () => head })
+  })
+  mockRpc.mockImplementationOnce(() => response(rows(0)))
+  const { client, wrapper } = setup()
+  const { result, unmount } = await renderHook(() => useSocialFeed('following'), { wrapper })
+  await waitFor(() => expect(result.current.isSuccess).toBe(true))
+  await act(async () => {
+    await result.current.fetchNextPage()
+  })
+  await waitFor(() => expect(result.current.data?.pages).toHaveLength(2))
+
+  let refreshed: Promise<unknown> | undefined
+  await act(async () => {
+    refreshed = result.current.refetch()
+  })
+  // Resetting the query instead would leave no data here, and an empty list.
+  await waitFor(() => expect(result.current.data?.pages).toHaveLength(1))
+  expect(result.current.data?.pages[0].rows[0].id).toBe('0')
+  expect(result.current.isFetching).toBe(true)
+  await act(async () => {
+    release?.()
+    await refreshed
+  })
+  await waitFor(() => expect(result.current.data?.pages[0].rows[0].id).toBe('100'))
+  await unmount()
+  client.clear()
+})
+
+it('answers whether a meal has a post, and says so only when it knows', async () => {
+  mockRpc.mockImplementationOnce(() => response('post-id'))
+  await expect(socialEntryPost('shared')).resolves.toBe('post-id')
+  mockRpc.mockImplementationOnce(() => response(null))
+  await expect(socialEntryPost('private')).resolves.toBeNull()
+  mockRpc.mockImplementationOnce(() => response(null, new Error('unavailable')))
+  await expect(socialEntryPost('failed')).resolves.toBeUndefined()
+  onlineManager.setOnline(false)
+  await expect(socialEntryPost('offline')).resolves.toBeUndefined()
+  expect(mockRpc).toHaveBeenCalledTimes(3)
+  onlineManager.setOnline(true)
+})
+
 it.each([
-  {
-    name: 'like',
-    action: { action: 'like', id: 'post', liked: true } as const,
-    invalidated: ['social_feed', 'social_profile_posts', 'social_post'],
-    preserved: ['social_notifications', 'unread', 'social_profile'],
-  },
   {
     name: 'read',
     action: { action: 'read', ids: ['notification'] as string[] } as const,

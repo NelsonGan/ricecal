@@ -1314,7 +1314,6 @@ export type Database = {
           photo_path: string | null
           published_at: string | null
           quarantined: boolean
-          request_id: string
           review_reason: string | null
           review_status: Database['public']['Enums']['recipe_review']
           revision: number
@@ -1334,7 +1333,6 @@ export type Database = {
           photo_path?: string | null
           published_at?: string | null
           quarantined?: boolean
-          request_id: string
           review_reason?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           revision?: number
@@ -1354,7 +1352,6 @@ export type Database = {
           photo_path?: string | null
           published_at?: string | null
           quarantined?: boolean
-          request_id?: string
           review_reason?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           revision?: number
@@ -2324,7 +2321,6 @@ export type Database = {
           p_audience: Database['public']['Enums']['social_audience']
           p_caption: string
           p_entry_id: string
-          p_request_id: string
         }
         Returns: string
       }
@@ -2772,7 +2768,6 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      social_has_unread_notifications: { Args: never; Returns: boolean }
       social_notifications: {
         Args: { p_before_at?: string; p_before_id?: string; p_limit?: number }
         Returns: {

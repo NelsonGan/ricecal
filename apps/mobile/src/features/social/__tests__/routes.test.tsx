@@ -129,23 +129,28 @@ it('keeps sharing details in the audience picker and info sheet', async () => {
   )
 })
 
-it('retains a failed meal draft and request id only while editing the same source', async () => {
+it('retains a failed meal draft only while editing the same source', async () => {
   mockRun.mockRejectedValue(new Error('offline'))
   mockParams = { entryId: 'first-entry' }
   const view = await render(<ComposeScreen />)
   const user = userEvent.setup()
   await user.type(screen.getByLabelText('Caption'), 'First meal')
   await user.press(screen.getByRole('button', { name: 'Share' }))
-  const firstRequest = mockRun.mock.calls[0][0].requestId
   expect(screen.getByLabelText('Caption')).toHaveProp('value', 'First meal')
   await user.press(screen.getByRole('button', { name: 'Share' }))
-  expect(mockRun.mock.calls[1][0].requestId).toBe(firstRequest)
+  // The entry is the retry key: the server answers a repeat with its one post.
+  expect(mockRun.mock.calls[1][0]).toEqual(mockRun.mock.calls[0][0])
+  expect(mockRun.mock.calls[1][0]).toEqual(
+    expect.objectContaining({ action: 'post', entryId: 'first-entry', caption: 'First meal' }),
+  )
 
   mockParams = { entryId: 'second-entry' }
   await view.rerender(<ComposeScreen />)
   expect(screen.getByLabelText('Caption')).toHaveProp('value', '')
   await user.press(screen.getByRole('button', { name: 'Share' }))
-  expect(mockRun.mock.calls[2][0].requestId).not.toBe(firstRequest)
+  expect(mockRun.mock.calls[2][0]).toEqual(
+    expect.objectContaining({ action: 'post', entryId: 'second-entry', caption: '' }),
+  )
 })
 
 it('starts a new comment draft and request id when the post route changes', async () => {

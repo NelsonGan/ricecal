@@ -16,6 +16,7 @@ import {
   useStreak,
   useTargets,
 } from '@/data'
+import { socialEntryPost } from '@/data/social'
 import {
   DayMeals,
   dayInMonth,
@@ -111,10 +112,36 @@ export default function TodayScreen() {
     },
     [queueRemove, removeAsync, t, toast],
   )
-  // The shared state cannot be trusted offline and can change on another
-  // device between a lookup and deletion. One concise confirmation tells the
-  // truth in every state: if a feed post exists, it leaves with this meal.
-  const requestDelete = useCallback((entry: Entry) => setSharedDelete(entry), [])
+  // Asked when the meal is deleted, since a post can be made or removed on
+  // another device. A meal with no post goes at once, as a swipe always did.
+  // One with a post, or one that cannot be checked, asks first, because its
+  // comments are other people's words. Resolves with whether the meal went, so
+  // a swiped row the user keeps slides back.
+  const decided = useRef<((deleted: boolean) => void) | undefined>(undefined)
+  const settleDelete = (deleted: boolean) => {
+    decided.current?.(deleted)
+    decided.current = undefined
+  }
+  const requestDelete = useCallback(
+    async (entry: Entry): Promise<boolean> => {
+      if ((await socialEntryPost(entry.id)) !== null) {
+        return await new Promise<boolean>((resolve) => {
+          decided.current = resolve
+          setSharedDelete(entry)
+        })
+      }
+      queueRemove({
+        id: entry.id,
+        logDate: entry.logDate,
+        photoPath: entry.photoPath,
+        source: entry.source,
+        shared: false,
+      })
+      toast.show({ title: t('logging:added.removedToast') })
+      return true
+    },
+    [queueRemove, t, toast],
+  )
   const pending = usePendingSnaps()
   // The day's movement, if a health store is connected. Null on every account
   // that has not connected one, which is what keeps `burned` at zero below.
@@ -265,12 +292,17 @@ export default function TodayScreen() {
       icon: { set: 'ui', name: 'check' },
       action: {
         label: t('common:action.undo'),
-        onPress: () => {
-          void requestDelete(justAdded)
-        },
+        // A meal added seconds ago has no feed post to warn about.
+        onPress: () =>
+          queueRemove({
+            id: justAdded.id,
+            logDate: justAdded.logDate,
+            photoPath: justAdded.photoPath,
+            source: justAdded.source,
+          }),
       },
     })
-  }, [justAdded, toast, t, requestDelete])
+  }, [justAdded, toast, t, queueRemove])
 
   /**
    * The way back to today, and only when there is one. The strip can put any day
@@ -587,9 +619,7 @@ export default function TodayScreen() {
               // Swipe left, tap the bin. A wrong scan is the common case and it took
               // two screens to undo; this is the shortcut, and the detail screen's
               // delete is still there for anyone who wants to look first.
-              onDeleteEntry={(entry) => {
-                void requestDelete(entry)
-              }}
+              onDeleteEntry={requestDelete}
               onSwipeOpenChange={setSwipeOpen}
             />
           )}
@@ -597,7 +627,11 @@ export default function TodayScreen() {
       )}
       <ConfirmSheet
         visible={Boolean(sharedDelete)}
-        onClose={() => setSharedDelete(null)}
+        onClose={() => {
+          setSharedDelete(null)
+          // After a confirmed delete this has already been answered.
+          settleDelete(false)
+        }}
         title={t('logging:detail.deleteTitle')}
         description={t('social:sourceDelete')}
         confirmLabel={t('common:action.delete')}
@@ -606,6 +640,7 @@ export default function TodayScreen() {
           if (!sharedDelete) return
           try {
             await deleteEntry(sharedDelete)
+            settleDelete(true)
           } catch (error) {
             toast.show({ title: t('social:saveFailed'), tone: 'error' })
             throw error
