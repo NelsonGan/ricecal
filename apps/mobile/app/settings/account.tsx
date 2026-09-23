@@ -18,7 +18,7 @@ import {
 import { changeAccountPassword, hasAccountPassword } from '@/data/account-password'
 import { asAuthProblem, deleteAccount } from '@/data/auth'
 import { keys } from '@/data/keys'
-import { reviewSocial, useSocialAction, useSocialOnline, useSocialProfile } from '@/data/social'
+import { useSocialAction, useSocialOnline, useSocialProfile } from '@/data/social'
 import { CaptchaProvider, PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
 import { datePattern } from '@/lib/dates'
 import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal'
@@ -91,10 +91,7 @@ export default function AccountScreen() {
     saving.current = (async () => {
       try {
         await updateProfile.mutateAsync({ displayName: name.trim() })
-        if (profile.handle) {
-          await reviewSocial('profile', viewer)
-          await queryClient.invalidateQueries({ queryKey: keys.social(viewer) })
-        }
+        await queryClient.invalidateQueries({ queryKey: keys.social(viewer) })
         setDraft((current) => (current === draft ? undefined : current))
         toast.show({ title: t('profile:account.saved') })
         return true
@@ -111,9 +108,15 @@ export default function AccountScreen() {
   const savePublic = async () => {
     setPublicSubmitted(true)
     const normalized = handle.trim().toLowerCase()
-    if (!profile || !/^[a-z0-9_]{3,24}$/.test(normalized) || !name.trim() || !online) return
+    if (
+      !profile ||
+      (normalized && !/^[a-z0-9_]{3,24}$/.test(normalized)) ||
+      !name.trim() ||
+      !online
+    )
+      return
     if (!(await save())) return
-    if (normalized === profile.handle && bio.trim() === profile.bio) return
+    if (normalized === (profile.handle ?? '') && bio.trim() === profile.bio) return
     try {
       await publicAction.mutateAsync({
         action: 'profile',
@@ -163,10 +166,7 @@ export default function AccountScreen() {
       if (result.canceled || !result.assets[0]) return
       const avatarPath = await uploadAvatar(result.assets[0].uri)
       await updateProfile.mutateAsync({ avatarPath })
-      if (profile.handle) {
-        await reviewSocial('profile', viewer)
-        await queryClient.invalidateQueries({ queryKey: keys.social(viewer) })
-      }
+      await queryClient.invalidateQueries({ queryKey: keys.social(viewer) })
       toast.show({ title: t('profile:account.photoSaved') })
     } catch {
       toast.show({ title: t('profile:account.photoFailed'), tone: 'error' })
@@ -297,7 +297,9 @@ export default function AccountScreen() {
             error={
               handleTaken
                 ? t('social:handleTaken')
-                : publicSubmitted && !/^[a-z0-9_]{3,24}$/.test(handle.trim())
+                : publicSubmitted &&
+                    handle.trim() &&
+                    !/^[a-z0-9_]{3,24}$/.test(handle.trim().toLowerCase())
                   ? t('social:handleInvalid')
                   : undefined
             }
@@ -325,7 +327,7 @@ export default function AccountScreen() {
               !profile ||
               busy ||
               !online ||
-              (handle.trim() === profile.handle && bio.trim() === profile.bio)
+              (handle.trim() === (profile.handle ?? '') && bio.trim() === profile.bio)
             }
           >
             {t('social:save')}

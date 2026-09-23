@@ -13,6 +13,7 @@ create type public.social_counter_metric as enum ('followers', 'following', 'pos
 -- optional so installing an update never publishes a private account.
 alter table public.profiles
   add column handle text collate "C" unique check (handle ~ '^[a-z0-9_]{3,24}$'),
+  add column social_joined_at timestamptz,
   add column bio text not null default '' check (char_length(bio) <= 160),
   add column photo_etag text,
   add column review_status public.recipe_review not null default 'pending',
@@ -33,7 +34,8 @@ grant update (display_name, avatar_path, handle, bio, sex, birth_date, height_cm
   target_weight_kg, activity_level, food_styles, referral_source, timezone, onboarded_at)
   on public.profiles to authenticated;
 create index social_profiles_discover_idx on public.profiles(created_at desc, id desc)
-  where handle is not null and review_status = 'approved' and not quarantined;
+  where (handle is not null or social_joined_at is not null)
+    and review_status = 'approved' and not quarantined;
 
 create table public.social_follows (
   follower_id uuid not null references public.profiles(id) on delete cascade,
@@ -209,9 +211,10 @@ $$;
 create or replace function private.social_can_view_profile(p_user uuid)
 returns boolean language sql stable security definer set search_path = '' as $$
   select (select auth.uid()) is not null and exists (
-    select 1 from public.profiles p where p.id = p_user and p.handle is not null and (
+    select 1 from public.profiles p where p.id = p_user and (
       p.id = (select auth.uid()) or (
-        p.review_status = 'approved' and not p.quarantined
+        (p.social_joined_at is not null or p.handle is not null)
+        and p.review_status = 'approved' and not p.quarantined
         and not private.social_pair_blocked(p.id)
         and not exists (select 1 from public.social_reports r
           where r.kind = 'profile' and r.content_id = p.id
@@ -224,11 +227,11 @@ $$;
 -- This view exposes only social fields. The underlying profiles row stays
 -- owner-only, including all body measurements and goals.
 create or replace view public.social_profiles as
-select p.id as user_id, p.handle, p.display_name, p.bio, p.avatar_path,
+select p.id as user_id, coalesce(p.handle, '') as handle, p.display_name, p.bio, p.avatar_path,
   p.photo_etag, p.review_status, p.review_reason, p.revision, p.quarantined,
   p.created_at, p.updated_at
 from public.profiles p
-where p.handle is not null and private.social_can_view_profile(p.id);
+where private.social_can_view_profile(p.id);
 revoke all on public.social_profiles from public, anon, authenticated;
 grant select on public.social_profiles to authenticated, service_role;
 
@@ -295,15 +298,19 @@ create policy "social notifications: recipient and visible content" on public.so
   to authenticated using (recipient_id = (select auth.uid()) and private.social_can_view_notification(id));
 
 create or replace function private.social_require_user(p_identity boolean default true)
-returns uuid language plpgsql stable security definer set search_path = '' as $$
+returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := (select auth.uid());
 begin
   if v_user is null or not exists (select 1 from auth.users where id = v_user) then
     raise exception 'Sign in to continue' using errcode = '42501';
   end if;
-  if p_identity and not exists (select 1 from public.profiles p where p.id = v_user and p.handle is not null
-      and p.review_status = 'approved' and not p.quarantined) then
-    raise exception 'Create an approved public profile first' using errcode = '42501';
+  if p_identity then
+    update public.profiles set social_joined_at = coalesce(social_joined_at, now()),
+      review_status = 'approved', review_reason = null
+      where id = v_user and (social_joined_at is null or review_status = 'pending') and not quarantined;
+    if not exists (select 1 from public.profiles p where p.id = v_user and not p.quarantined) then
+      raise exception 'Profile unavailable' using errcode = '42501';
+    end if;
   end if;
   return v_user;
 end;
@@ -490,10 +497,11 @@ returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   if new.handle is distinct from old.handle or new.display_name is distinct from old.display_name
       or new.bio is distinct from old.bio or new.avatar_path is distinct from old.avatar_path then
-    new.review_status := 'pending';
+    new.review_status := case when new.social_joined_at is not null then 'approved' else 'pending' end;
     new.review_reason := null;
     new.photo_etag := null;
-    new.revision := case when old.handle is null then 1 else old.revision + 1 end;
+    new.revision := case when old.handle is null and old.social_joined_at is null
+      then 1 else old.revision + 1 end;
   end if;
   return new;
 end;
@@ -547,8 +555,9 @@ returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.social_require_user(false);
 begin
   if not private.social_claim(v_user, 'profile', 20) then raise exception 'Try again later' using errcode = 'P0001'; end if;
-  update public.profiles set handle = lower(btrim(p_handle)), display_name = btrim(p_display_name),
-    bio = btrim(coalesce(p_bio, '')), avatar_path = p_avatar_path
+  update public.profiles set handle = nullif(lower(btrim(p_handle)), ''), display_name = btrim(p_display_name),
+    bio = btrim(coalesce(p_bio, '')), avatar_path = p_avatar_path,
+    social_joined_at = coalesce(social_joined_at, now()), review_status = 'approved', review_reason = null
     where id = v_user;
   if not found then raise exception 'Profile unavailable' using errcode = '42501'; end if;
   return v_user;
@@ -576,12 +585,12 @@ begin
   select d.kcal, d.carbs_g, d.protein_g, d.fat_g into v_totals
   from public.food_log_details d where d.id = p_entry_id;
   insert into public.social_posts(author_id, source_entry_id, food_name, icon_set, icon_name, photo_path,
-    kcal, carbs_g, protein_g, fat_g, caption, audience)
+    kcal, carbs_g, protein_g, fat_g, caption, audience, review_status, published_at)
   values (v_user, p_entry_id, left(coalesce(v_entry.display_label, v_entry.item_name), 160),
     coalesce(v_entry.icon_set, v_entry.item_icon_set), coalesce(v_entry.icon_name, v_entry.item_icon_name),
     case when v_entry.photo_path like 'meals/' || v_user::text || '/%' then v_entry.photo_path end,
     v_totals.kcal, v_totals.carbs_g, v_totals.protein_g, v_totals.fat_g,
-    btrim(coalesce(p_caption, '')), p_audience)
+    btrim(coalesce(p_caption, '')), p_audience, 'approved', now())
   on conflict (source_entry_id) do nothing returning id into v_id;
   if v_id is null then
     select id into v_id from public.social_posts where source_entry_id = p_entry_id and author_id = v_user;
@@ -595,8 +604,9 @@ returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.social_require_user();
 begin
   if not private.social_claim(v_user, 'post-edit', 30) then raise exception 'Try again later' using errcode = 'P0001'; end if;
-  update public.social_posts set caption = btrim(coalesce(p_caption, '')), audience = p_audience, photo_etag = null,
-    review_status = 'pending', review_reason = null, revision = revision + 1, updated_at = now()
+  update public.social_posts set caption = btrim(coalesce(p_caption, '')), audience = p_audience,
+    review_status = 'approved', review_reason = null, revision = revision + 1, updated_at = now(),
+    published_at = coalesce(published_at, now())
   where id = p_id and author_id = v_user;
   if not found then raise exception 'Post unavailable' using errcode = '42501'; end if;
   return p_id;

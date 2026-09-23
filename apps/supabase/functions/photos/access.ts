@@ -26,11 +26,11 @@ export type VisibleSocialPhoto = {
 }
 
 export type SocialKeyClaim =
-  | { keys: string[]; etags: Record<string, string> }
+  | { keys: string[]; etags: Record<string, string | null> }
   | { error: string; status: number }
 
 /**
- * Even the owner's social read goes through visibility and reviewed bytes.
+ * Even the owner's social read goes through current visibility.
  *
  * Unlike a diary read, a refused key does not refuse its neighbours. A social
  * batch is a whole screen, and an edit, block, report or retention sweep
@@ -43,19 +43,18 @@ export async function claimSocialKeys(
   const claim = validKeys(raw)
   if ('error' in claim) return claim
   const rows = await visiblePhotos(claim.keys)
-  const etags: Record<string, string> = {}
+  const etags: Record<string, string | null> = {}
   for (const row of rows) {
     if (
       row.photo_path &&
-      row.photo_etag &&
-      /^"[a-zA-Z0-9-]+"$/.test(row.photo_etag) &&
+      (!row.photo_etag || /^"[a-zA-Z0-9-]+"$/.test(row.photo_etag)) &&
       ownsKey(row.photo_path, row.owner_id, row.kind)
     ) {
       etags[row.photo_path] = row.photo_etag
     }
   }
   const keys = [...new Set(claim.keys)].filter((key) => Object.hasOwn(etags, key))
-  if (keys.length === 0) return { error: 'not a visible reviewed social photo', status: 403 }
+  if (keys.length === 0) return { error: 'not a visible social photo', status: 403 }
   return { keys, etags: Object.fromEntries(keys.map((key) => [key, etags[key]])) }
 }
 

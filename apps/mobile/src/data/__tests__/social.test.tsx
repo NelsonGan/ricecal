@@ -158,6 +158,26 @@ it('persists a committed comment when moderation is unavailable', async () => {
   client.clear()
 })
 
+it('publishes a post without calling the review function', async () => {
+  mockRpc.mockImplementation(() => response('post-id'))
+  mockInvoke.mockResolvedValue({ data: null, error: new Error('unavailable') })
+  const { client, wrapper } = setup()
+  const { result, unmount } = await renderHook(useSocialAction, { wrapper })
+  let saved: unknown
+  await act(async () => {
+    saved = await result.current.mutateAsync({
+      action: 'post',
+      entryId: 'entry',
+      caption: '',
+      audience: 'public',
+    })
+  })
+  expect(saved).toEqual({ id: 'post-id', status: 'approved' })
+  expect(mockInvoke).not.toHaveBeenCalled()
+  await unmount()
+  client.clear()
+})
+
 it('refuses offline actions immediately without queueing them', async () => {
   const { client, wrapper } = setup()
   const { result, unmount } = await renderHook(useSocialAction, { wrapper })
@@ -710,6 +730,26 @@ it('batches the visible viewport with reviewed validators and no private photo s
   })
   expect(result.current[1].data?.headers).toEqual({ 'If-Match': 'etag-b' })
   await unmount()
+  client.clear()
+})
+
+it('reuses a signed image when a tab remounts shortly after leaving', async () => {
+  mockInvoke.mockResolvedValue({
+    data: {
+      ok: true,
+      urls: { a: 'url-a' },
+      headers: { a: { 'If-Match': 'etag-a' } },
+    },
+    error: null,
+  })
+  const { client, wrapper } = setup()
+  const first = await renderHook(() => useSocialPhoto('a', true), { wrapper })
+  await waitFor(() => expect(first.result.current.isSuccess).toBe(true))
+  await first.unmount()
+  const second = await renderHook(() => useSocialPhoto('a', true), { wrapper })
+  expect(second.result.current.data?.url).toBe('url-a')
+  expect(mockInvoke).toHaveBeenCalledTimes(1)
+  await second.unmount()
   client.clear()
 })
 
