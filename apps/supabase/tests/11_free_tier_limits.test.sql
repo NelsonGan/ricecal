@@ -14,7 +14,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(15);
+select plan(23);
 
 \set free '44444444-4444-4444-4444-444444444444'
 \set pro  '55555555-5555-5555-5555-555555555555'
@@ -81,6 +81,23 @@ values
   (:'free', 'Old plate', 500, 60, 20, 18, '1 plate', 1,
    'meals/44444444-4444-4444-4444-444444444444/old.jpg', 'camera',
    now() - make_interval(days => public.free_photo_retention_days() + 1)),
+  -- Client-written rows are not trusted deletion instructions. Neither another
+  -- account's meal key nor an avatar key may reach the bucket credential.
+  (:'free', 'Forged foreign plate', 500, 60, 20, 18, '1 plate', 1,
+   'meals/55555555-5555-5555-5555-555555555555/borrowed.jpg', 'camera',
+   now() - make_interval(days => public.free_photo_retention_days() + 1)),
+  (:'free', 'Forged avatar', 500, 60, 20, 18, '1 plate', 1,
+   'avatars/55555555-5555-5555-5555-555555555555/avatar.jpg', 'camera',
+   now() - make_interval(days => public.free_photo_retention_days() + 1)),
+  (:'free', 'Forged long key', 500, 60, 20, 18, '1 plate', 1,
+   'meals/44444444-4444-4444-4444-444444444444/' || repeat('x', 513), 'camera',
+   now() - make_interval(days => public.free_photo_retention_days() + 1)),
+  (:'free', 'Forged unsafe key', 500, 60, 20, 18, '1 plate', 1,
+   'meals/44444444-4444-4444-4444-444444444444/bad?key.jpg', 'camera',
+   now() - make_interval(days => public.free_photo_retention_days() + 1)),
+  (:'free', 'Forged traversal key', 500, 60, 20, 18, '1 plate', 1,
+   'meals/44444444-4444-4444-4444-444444444444/../borrowed.jpg', 'camera',
+   now() - make_interval(days => public.free_photo_retention_days() + 1)),
   (:'free', 'Fresh plate', 500, 60, 20, 18, '1 plate', 1,
    'meals/44444444-4444-4444-4444-444444444444/fresh.jpg', 'camera', now()),
   (:'pro', 'Old plate, paid for', 500, 60, 20, 18, '1 plate', 1,
@@ -99,12 +116,41 @@ select is(
   'and it is the old one, not the one logged today'
 );
 
+select is(
+  (select count(*)::integer from public.expired_meal_photos()
+    where item_name like 'Forged %'),
+  0,
+  'foreign, avatar, oversized, unsafe and traversal keys never reach the deletion job'
+);
+
+-- Share a legacy photographed row with no saved drawing. The retention match
+-- must fill both the private diary and its public snapshot after the object goes.
+select id as old_entry from public.food_logs
+ where user_id = :'free' and item_name = 'Old plate' \gset
+insert into public.social_profiles (user_id, handle, display_name, review_status)
+values (:'free', 'retention_free', 'Retention fixture', 'approved');
+select set_config('request.jwt.claims', json_build_object('sub', :'free', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.create_social_post(:'old_entry', '', 'public') as retained_post \gset
+reset role;
+select is(
+  (select icon_name from public.social_posts where id = :'retained_post'),
+  null,
+  'the fixture starts as a legacy photographed post without a drawing snapshot'
+);
+select public.review_social_content('post', :'retained_post', 1, 'approved', null, '"retention-etag"');
+
 -- What the sweep writes back, once R2 has answered. The entry survives: only
 -- the picture goes, and a drawing takes its place so the row is not a grey
 -- square in a diary of photographs.
 select is(
   public.clear_meal_photos(
-    (select jsonb_agg(jsonb_build_object('id', id, 'icon_set', 'food', 'icon_name', 'rice-bowl'))
+    (select jsonb_agg(jsonb_build_object(
+      'id', id,
+      'photo_path', photo_path,
+      'icon_set', 'food',
+      'icon_name', 'rice-bowl'
+    ))
        from public.expired_meal_photos())
   ),
   1,
@@ -122,6 +168,57 @@ select is(
     where user_id = :'free' and item_name = 'Old plate'),
   'rice-bowl',
   'the entry keeps its place in the diary, with a drawing where the plate was'
+);
+
+select is(
+  (select photo_path from public.social_posts where id = :'retained_post'),
+  null,
+  'retention removes the deleted object key from the shared post'
+);
+
+select is(
+  (select photo_etag from public.social_posts where id = :'retained_post'),
+  null,
+  'retention also revokes the shared photo validator'
+);
+
+select is(
+  (select icon_name from public.social_posts where id = :'retained_post'),
+  'rice-bowl',
+  'a legacy shared post receives the drawing matched during retention'
+);
+
+select set_config('request.jwt.claims', json_build_object('sub', :'pro', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is(
+  (select icon_name from public.social_feed('discover') where id = :'retained_post'),
+  'rice-bowl',
+  'the swept post remains in the feed with its drawing'
+);
+reset role;
+
+-- Selection and deletion are separate network operations. If the row changes
+-- between them, the stale result must not clear a replacement object that R2
+-- never deleted.
+select id as fresh_entry from public.food_logs
+ where user_id = :'free' and item_name = 'Fresh plate' \gset
+update public.food_logs
+   set photo_path = 'meals/44444444-4444-4444-4444-444444444444/fresh-replacement.jpg'
+ where id = :'fresh_entry';
+select is(
+  public.clear_meal_photos(jsonb_build_array(jsonb_build_object(
+    'id', :'fresh_entry',
+    'photo_path', 'meals/44444444-4444-4444-4444-444444444444/fresh.jpg',
+    'icon_set', 'food',
+    'icon_name', 'rice-bowl'
+  ))),
+  0,
+  'a stale retention result cannot clear a replacement photo'
+);
+select is(
+  (select photo_path from public.food_logs where id = :'fresh_entry'),
+  'meals/44444444-4444-4444-4444-444444444444/fresh-replacement.jpg',
+  'the replacement key remains attached to its diary row'
 );
 
 -- -- WHAT WAS PAID FOR STAYS PAID FOR --------------------------------------

@@ -9,6 +9,7 @@
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
+import { readBoundedBytes } from '../_shared/http.ts'
 
 import {
   ALLOWED_TYPES,
@@ -24,12 +25,14 @@ import {
 import {
   claimOwnedKeys,
   claimReadableKeys,
+  claimSocialKeys,
   isRecipeShareSlug,
+  SOCIAL_READ_TTL_SECONDS,
   type VisibleRecipePhoto,
 } from './access.ts'
 
 type UploadRequest = { action: 'upload'; kind?: AssetKind; contentType?: string; size?: number }
-type ReadRequest = { action: 'read'; keys?: string[]; shareSlug?: string }
+type ReadRequest = { action: 'read'; keys?: string[]; shareSlug?: string; scope?: 'social' }
 type DeleteRequest = { action: 'delete'; keys?: string[] }
 type PhotosRequest = UploadRequest | ReadRequest | DeleteRequest
 
@@ -65,7 +68,9 @@ Deno.serve(async (req: Request) => {
 
   let body: PhotosRequest
   try {
-    const parsed = await req.json()
+    const parsed = JSON.parse(
+      new TextDecoder().decode(await readBoundedBytes(req.body, 128 * 1024)),
+    )
     // `null` and `[1,2]` are both valid JSON, and reading `.action` off the
     // first one throws — which would land in the catch below and answer 500 to
     // what is plainly a bad request.
@@ -109,6 +114,29 @@ Deno.serve(async (req: Request) => {
       }
 
       case 'read': {
+        if (body.scope !== undefined && body.scope !== 'social') {
+          return json({ ok: false, error: 'unknown read scope' }, 400)
+        }
+        if (body.scope === 'social') {
+          if (body.shareSlug !== undefined) {
+            return json({ ok: false, error: 'social reads cannot use a recipe share' }, 400)
+          }
+          const claim = await claimSocialKeys(body.keys, async (keys) => {
+            const { data, error } = await anonClient.rpc('social_photo_claims', { p_keys: keys })
+            if (error) throw error
+            return data ?? []
+          })
+          if ('error' in claim) return json({ ok: false, error: claim.error }, claim.status)
+          const urls: Record<string, string> = {}
+          const headers: Record<string, { 'If-Match': string }> = {}
+          await Promise.all(
+            claim.keys.map(async (key) => {
+              urls[key] = await signGet(key, SOCIAL_READ_TTL_SECONDS, claim.etags[key])
+              headers[key] = { 'If-Match': claim.etags[key] }
+            }),
+          )
+          return json({ ok: true, urls, headers, expiresIn: SOCIAL_READ_TTL_SECONDS })
+        }
         if (body.shareSlug !== undefined && !isRecipeShareSlug(body.shareSlug)) {
           return json({ ok: false, error: 'shareSlug is not valid' }, 400)
         }

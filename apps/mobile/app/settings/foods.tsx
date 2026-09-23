@@ -6,10 +6,19 @@ import { Keyboard, type TextInput, View } from 'react-native'
 import { type RecipeShelf, useRecipeQuota, useRecipes } from '@/data'
 import { useRequirePro } from '@/features/paywall'
 import { RecipeTile } from '@/features/recipes'
-import { ScreenTitle } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
-import { EmptyState, Icon, IconButton, Screen, SearchField, SegmentedControl, Skeleton } from '@/ui'
+import {
+  AppBar,
+  EmptyState,
+  Icon,
+  IconButton,
+  Screen,
+  SearchField,
+  SegmentedControl,
+  Skeleton,
+} from '@/ui'
 
 const SHELVES: RecipeShelf[] = ['mine', 'community']
 
@@ -17,7 +26,7 @@ const SKELETON_TILES = ['t1', 't2', 't3', 't4', 't5', 't6'] as const
 const GRID_FILLERS = ['first', 'second'] as const
 
 /**
- * The two shelves of food people write, and the Food tab.
+ * The two shelves of food people write, reached from Settings.
  *
  * One screen and not two, because they are one list read two ways: the same row,
  * the same tap target, the same numbers. What changes is who wrote the food, and
@@ -27,13 +36,12 @@ const GRID_FILLERS = ['first', 'second'] as const
  * ever put on it, and a permanently empty shelf is a tab that teaches people the
  * app has nothing.
  *
- * A root screen, so it carries a `ScreenTitle` rather than an `AppBar`. The
- * heading changes with the shelf, unlike the other tabs' titles: "My foods" and
- * "Community" are different places.
+ * The fixed bar keeps Back reachable while the gallery scrolls.
  */
 export default function RecipesScreen() {
   const { t } = useTranslation(['recipes', 'common'])
   const router = useRouter()
+  const goBack = useBack('/me')
   const requirePro = useRequirePro()
   const quota = useRecipeQuota()
   const colors = useThemeColors()
@@ -71,49 +79,53 @@ export default function RecipesScreen() {
   }
 
   return (
-    <Screen>
-      <ScreenTitle
-        title={t(`recipes:heading.${shelf}`)}
-        trailing={
-          <View className="flex-row items-center gap-2">
-            <IconButton
-              variant="primary"
-              size="sm"
-              className="self-center"
-              accessibilityLabel={
-                searchOpen ? t('common:action.close') : t(`recipes:search.${shelf}`)
-              }
-              accessibilityState={{ expanded: searchOpen }}
-              onPress={toggleSearch}
-            >
-              <Icon
-                set="ui"
-                name={searchOpen ? 'close' : 'search'}
-                size={20}
-                // Search is a shaded illustration, so a flat tint erases the
-                // lens and handle. Close is a single-colour control glyph.
-                tintColor={searchOpen ? colors.onPandan : undefined}
-              />
-            </IconButton>
+    <Screen
+      header={
+        <AppBar
+          title={t(`recipes:heading.${shelf}`)}
+          onBack={goBack}
+          backLabel={t('common:action.back')}
+          action={
+            <View className="flex-row items-center gap-2">
+              <IconButton
+                variant="primary"
+                size="sm"
+                className="self-center"
+                accessibilityLabel={
+                  searchOpen ? t('common:action.close') : t(`recipes:search.${shelf}`)
+                }
+                accessibilityState={{ expanded: searchOpen }}
+                onPress={toggleSearch}
+              >
+                <Icon
+                  set="ui"
+                  name={searchOpen ? 'close' : 'search'}
+                  size={20}
+                  // Search is a shaded illustration, so a flat tint erases the
+                  // lens and handle. Close is a single-colour control glyph.
+                  tintColor={searchOpen ? colors.onPandan : undefined}
+                />
+              </IconButton>
 
-            <IconButton
-              variant="primary"
-              size="sm"
-              className="self-center"
-              accessibilityLabel={t('recipes:new.title')}
-              onPress={() => {
-                // The database enforces the same three (`recipes_enforce_free_limit`).
-                // This is the half that opens the paywall instead of erroring.
-                if (quota.atLimit && !requirePro('new_recipe')) return
-                router.push('/recipe/edit')
-              }}
-            >
-              <Icon set="ui" name="plus" size={20} tintColor={colors.onPandan} />
-            </IconButton>
-          </View>
-        }
-      />
-
+              <IconButton
+                variant="primary"
+                size="sm"
+                className="self-center"
+                accessibilityLabel={t('recipes:new.title')}
+                onPress={() => {
+                  // The database enforces the same three (`recipes_enforce_free_limit`).
+                  // This is the half that opens the paywall instead of erroring.
+                  if (quota.atLimit && !requirePro('new_recipe')) return
+                  router.push('/recipe/edit')
+                }}
+              >
+                <Icon set="ui" name="plus" size={20} tintColor={colors.onPandan} />
+              </IconButton>
+            </View>
+          }
+        />
+      }
+    >
       <SegmentedControl
         options={SHELVES.map((value) => ({ value, label: t(`recipes:shelf.${value}`) }))}
         value={shelf}

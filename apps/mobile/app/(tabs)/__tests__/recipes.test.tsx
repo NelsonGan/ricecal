@@ -5,13 +5,13 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import '@/i18n'
 import type { Recipe } from '@/data'
 import { ThemeProvider } from '@/theme/ThemeProvider'
-import RecipesScreen from '../recipes'
+import RecipesScreen from '../../settings/foods'
 
 const mockPush = jest.fn()
 const mockUseRecipes = jest.fn()
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, canDismiss: () => false, replace: mockPush }),
 }))
 
 jest.mock('@/data', () => ({

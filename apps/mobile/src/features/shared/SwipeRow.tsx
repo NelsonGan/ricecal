@@ -42,7 +42,13 @@ export type SwipeAction = {
    * flies out and comes straight back.
    */
   exits?: boolean
-  onPress: () => void
+  /**
+   * May answer whether the row really left, for an exiting action that can be
+   * called off, such as a delete that asks first. False slides the row back and
+   * lets the action run again; without it a kept row stayed slid out, and its
+   * next delete did nothing.
+   */
+  onPress: (() => void) | (() => Promise<boolean>)
 }
 
 export type SwipeRowProps = {
@@ -172,10 +178,22 @@ export function SwipeRow({
    * exactly once, and "the animation was interrupted" is not the same question.
    */
   const fired = useSharedValue(false)
-  const run = useCallback((action: SwipeAction) => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-    action.onPress()
-  }, [])
+  const restore = useCallback(() => {
+    fired.value = false
+    offset.value = withTiming(0, { duration: SETTLE_MS })
+  }, [fired, offset])
+  const run = useCallback(
+    (action: SwipeAction) => {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+      const left = action.onPress()
+      if (left instanceof Promise) {
+        void left.then((gone) => {
+          if (!gone) restore()
+        }, restore)
+      }
+    },
+    [restore],
+  )
 
   const press = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
@@ -201,6 +219,7 @@ export function SwipeRow({
       runOnJS(settle)(willOpen)
       offset.value = withTiming(willOpen ? -reveal : 0, { duration: SETTLE_MS })
     })
+    .withTestId('swipe-row')
 
   // A tap on an open row closes it rather than opening the dish behind it,
   // which is what every list with a parked action does.

@@ -16,6 +16,49 @@ export type VisibleRecipePhoto = {
   photo_path: string | null
 }
 
+export const SOCIAL_READ_TTL_SECONDS = 60
+
+export type VisibleSocialPhoto = {
+  owner_id: string
+  photo_path: string | null
+  photo_etag: string | null
+  kind: 'meal' | 'avatar'
+}
+
+export type SocialKeyClaim =
+  | { keys: string[]; etags: Record<string, string> }
+  | { error: string; status: number }
+
+/**
+ * Even the owner's social read goes through visibility and reviewed bytes.
+ *
+ * Unlike a diary read, a refused key does not refuse its neighbours. A social
+ * batch is a whole screen, and an edit, block, report or retention sweep
+ * routinely revokes one post; failing the batch blanked every other photo.
+ */
+export async function claimSocialKeys(
+  raw: unknown,
+  visiblePhotos: (keys: string[]) => Promise<readonly VisibleSocialPhoto[]>,
+): Promise<SocialKeyClaim> {
+  const claim = validKeys(raw)
+  if ('error' in claim) return claim
+  const rows = await visiblePhotos(claim.keys)
+  const etags: Record<string, string> = {}
+  for (const row of rows) {
+    if (
+      row.photo_path &&
+      row.photo_etag &&
+      /^"[a-zA-Z0-9-]+"$/.test(row.photo_etag) &&
+      ownsKey(row.photo_path, row.owner_id, row.kind)
+    ) {
+      etags[row.photo_path] = row.photo_etag
+    }
+  }
+  const keys = [...new Set(claim.keys)].filter((key) => Object.hasOwn(etags, key))
+  if (keys.length === 0) return { error: 'not a visible reviewed social photo', status: 403 }
+  return { keys, etags: Object.fromEntries(keys.map((key) => [key, etags[key]])) }
+}
+
 export function isRecipeShareSlug(value: unknown): value is string {
   return typeof value === 'string' && RECIPE_SHARE_SLUG.test(value)
 }
@@ -25,8 +68,8 @@ function validKeys(raw: unknown): KeyClaim {
     return { error: 'keys must be a non-empty array', status: 400 }
   }
   if (raw.length > MAX_KEYS) return { error: `at most ${MAX_KEYS} keys per request`, status: 400 }
-  if (!raw.every((key) => typeof key === 'string' && key.length > 0)) {
-    return { error: 'every key must be a string', status: 400 }
+  if (!raw.every((key) => typeof key === 'string' && key.length > 0 && key.length <= 512)) {
+    return { error: 'every key must be a string of 1 to 512 characters', status: 400 }
   }
   return { keys: raw as string[] }
 }

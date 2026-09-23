@@ -65,7 +65,7 @@ import {
 export default function RecipeDetailScreen() {
   const { t } = useTranslation(['recipes', 'common'])
   const router = useRouter()
-  const goBack = useBack('/recipes')
+  const goBack = useBack('/settings/foods')
   const toast = useToast()
   const colors = useThemeColors()
 
@@ -120,7 +120,7 @@ export default function RecipeDetailScreen() {
     try {
       await report.mutateAsync({ recipeId: recipe.id, reason })
       toast.show({ title: t('recipes:report.done') })
-      router.replace('/recipes')
+      router.replace('/settings/foods')
     } catch {
       toast.show({ title: t('recipes:report.failed'), tone: 'error' })
     }
@@ -132,7 +132,7 @@ export default function RecipeDetailScreen() {
     try {
       await block.mutateAsync(recipe.ownerId)
       toast.show({ title: t('recipes:report.blocked') })
-      router.replace('/recipes')
+      router.replace('/settings/foods')
     } catch {
       toast.show({ title: t('recipes:report.failed'), tone: 'error' })
     }
@@ -532,7 +532,7 @@ export default function RecipeDetailScreen() {
           await remove.mutateAsync({ id: recipe.id, photoPath: recipe.photoPath })
           setDeleting(false)
           toast.show({ title: t('recipes:detail.deleted'), tone: 'neutral' })
-          router.replace('/recipes')
+          router.replace('/settings/foods')
         }}
       />
     </Screen>

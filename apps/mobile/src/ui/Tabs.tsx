@@ -87,7 +87,13 @@ export function Tabs<T extends string>({
       accessibilityLabel={accessibilityLabel}
     >
       {scrollable ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={
+            align === 'center' ? { flexGrow: 1, justifyContent: 'center' } : undefined
+          }
+        >
           {content}
         </ScrollView>
       ) : (
