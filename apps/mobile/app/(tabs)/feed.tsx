@@ -3,9 +3,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useUserId } from '@/data'
-import { useSocialFeed, useSocialProfile, useSocialUnread } from '@/data/social'
+import { useSocialFeed, useSocialUnread } from '@/data/social'
 import { ScreenTitle } from '@/features/shared'
-import { JoinPrompt, PostCard, QueryNotice, SocialList } from '@/features/social/components'
+import { PostCard, SocialList } from '@/features/social/components'
 import { CountBadge, Icon, IconButton, Screen, Tabs } from '@/ui'
 
 export default function FeedScreen() {
@@ -14,7 +14,6 @@ export default function FeedScreen() {
   const viewer = useUserId()
   const [mode, setMode] = useState<'following' | 'discover'>('following')
   const feed = useSocialFeed(mode)
-  const own = useSocialProfile()
   const unread = useSocialUnread(useIsFocused())
   const unreadCount = unread.data ?? 0
   const unreadLabel =
@@ -92,17 +91,6 @@ export default function FeedScreen() {
         renderRow={(post, visible) => <PostCard post={post} visible={visible} />}
         empty={t(mode === 'following' ? 'emptyFollowing' : 'end')}
         end={t('end')}
-        header={
-          own.isError ? (
-            <View className="m-5">
-              <QueryNotice error paused={own.fetchStatus === 'paused'} retry={own.refetch} />
-            </View>
-          ) : !own.isPending && !own.data ? (
-            <View className="m-5">
-              <JoinPrompt />
-            </View>
-          ) : undefined
-        }
       />
     </Screen>
   )
