@@ -76,6 +76,7 @@ export const fil = {
     comments_one: '{{count}} komento',
     comments_other: '{{count}} komento',
     comment: 'Komento',
+    justNow: 'Ngayon lang',
     commentPlaceholder: 'Magdagdag ng komento',
     send: 'Ipadala',
     deleteComment: 'Burahin ang komento',

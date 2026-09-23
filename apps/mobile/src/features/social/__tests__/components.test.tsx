@@ -1,3 +1,4 @@
+import { impactAsync } from 'expo-haptics'
 import { View } from 'react-native'
 import type { SocialPost, SocialProfile } from '@/data/social'
 import i18n from '@/i18n'
@@ -12,6 +13,7 @@ import {
   ReviewNotice,
   SocialList,
   SocialPhoto,
+  socialTime,
 } from '../components'
 
 const mockPush = jest.fn()
@@ -20,6 +22,10 @@ const mockProfile = jest.fn()
 const mockPhoto = jest.fn()
 const mockRefetchProfile = jest.fn()
 const mockToast = jest.fn()
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn(async () => undefined),
+  ImpactFeedbackStyle: { Light: 'light' },
+}))
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
   useFocusEffect: (callback: () => void) => require('react').useEffect(callback, [callback]),
@@ -101,6 +107,12 @@ beforeEach(async () => {
   })
   mockPhoto.mockReturnValue({ data: undefined, isError: false })
   mockMutate.mockResolvedValue({})
+})
+
+it('shows just now for a recently published social item', () => {
+  expect(socialTime(new Date(Date.now() - 20_000).toISOString(), i18n.t('social:justNow'))).toBe(
+    'Just now',
+  )
 })
 
 it('allows following without a handle or bio', async () => {
@@ -405,6 +417,7 @@ it('shows pull-to-refresh only for an explicit refresh', async () => {
     await Promise.resolve()
   })
   expect(refreshControl()?.props.refreshing).toBe(true)
+  expect(impactAsync).toHaveBeenCalledWith('light')
   await act(async () => finishRefresh?.())
   expect(refreshControl()?.props.refreshing).toBe(false)
   expect(refetch).toHaveBeenCalledTimes(1)
