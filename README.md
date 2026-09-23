@@ -2460,8 +2460,10 @@ The first implementation includes:
 
 - Following, newest first, containing the viewer and accounts they follow;
   Discover, containing public posts from other accounts they do not follow.
-- Opt-in public identity with a unique handle, display name, short bio and an
-  optional explicitly selected avatar. No health-profile fields are copied.
+- Public identity fields in the existing Settings profile: a unique handle,
+  display name, short bio and avatar. Existing accounts stay out of discovery
+  until they choose a handle. Their own profile still shows with placeholders
+  and an empty post list. No health-profile fields are exposed.
 - Profile posts, follower and following lists, follow/unfollow, follower removal,
   handle search and suggested people. Suggestions exclude self, existing follows,
   unavailable profiles and blocks in either direction.
@@ -2480,14 +2482,16 @@ audience: follows are accepted immediately, and the composer states who will see
 the post. Direct messages, video, stories, contact-book uploads and push delivery
 are separate products, not prerequisites for a food following system.
 
-### The privacy boundary is a separate set of rows
+### The privacy boundary is a public-only view
 
 `profiles` contains birth date, sex, height and weight goals and remains
-owner-only. `social_profiles` is opt-in; installing an update creates no public
-identity. An account can browse, report and block without opting in. Publishing,
-following, liking and commenting require an approved public identity. Its handle
-is normalized lowercase ASCII, 3 to 24 characters,
-unique under a database constraint. Names and bios accept the app's languages.
+owner-only. Handle and bio live on that row beside the account name and avatar.
+The `social_profiles` view returns only public identity fields and applies
+review, report and block visibility. Installing an update creates no public
+identity because handle starts null. An account can browse, report and block
+without one. Publishing, following, liking and commenting require an approved
+handle. Handles are normalized lowercase ASCII, 3 to 24 characters, unique
+under a database constraint. Names and bios accept the app's languages.
 
 `social_posts` holds only the food name, drawing, owned photo key, the meal's
 calories and three macros, caption and audience. Calories and macros are what
@@ -2701,7 +2705,7 @@ follower removal, source entry deletion, photo replacement/retention, account
 cascades, counter reconciliation and anonymous grants. Run assertions as actual
 authenticated roles, not just as the database owner.
 
-Required app cases include empty/error/loading/offline states, profile opt-in and
+Required app cases include empty/error/loading/offline states, handle setup and
 handle collisions, caption/comment boundaries, retries without duplicates, draft
 retention after errors, both feed modes, suggestions/search, profile and graph
 pagination, following and follower removal, likes/comments/activity, reports,
@@ -2740,23 +2744,24 @@ and set the matching R2 credentials in the gitignored function `.env`, then
 fully stop/start Supabase so the edge container picks up the values. This is
 local test infrastructure only; production continues to use R2.
 
-On 23 September 2026, all 25 scale scenarios returned their expected page sizes.
-Each case ran once cold and 20 times warm against local Postgres. The following
+On 23 September 2026, after unifying account and public profiles, all 25 scale
+scenarios returned their expected page sizes. Each case ran once before warmup
+and 20 times warm against local Postgres. The following
 are warm database p95 measurements, not network latency or production throughput:
 
 | Read | Warm p95 |
 | --- | ---: |
-| Following, 5,000 active followed authors | 57.7 ms |
-| Following, 5,000 sparse followed authors | 15.7 ms |
-| Following, deep cursor | 62.4 ms |
-| Discover, skipping 100,000 followed posts | 20.8 ms |
-| Suggestions, 64 by 64 graph paths | 5.3 ms |
-| Followers page, 15,000 followers | 4.2 ms |
-| Unread badge, 15,000 activity rows | 21.5 ms |
-| Handle search, 15,050 profiles | 1.9 ms |
+| Following, 5,000 active followed authors | 60.0 ms |
+| Following, 5,000 sparse followed authors | 17.6 ms |
+| Following, deep cursor | 47.8 ms |
+| Discover, skipping 100,000 followed posts | 20.0 ms |
+| Suggestions, 64 by 64 graph paths | 5.5 ms |
+| Followers page, 15,000 followers | 4.5 ms |
+| Unread badge, 15,000 activity rows | 15.2 ms |
+| Handle search, 15,050 profiles | 2.1 ms |
 
-After the changes that bounded search and deletion, every case above read no more
-buffers than before, give or take 0.2%. One author index for posts, carrying review state as
+Candidate selectors read directly from the unified profiles table, then public
+views apply visibility checks to the final page. One author index for posts, carrying review state as
 included columns, was measured against the full and approved pair: Following at
 1,000 and 5,000 authors was up to 40% slower, so the pair stays. Writes are not in
 that fixture. Deleting one post against a million unrelated activity rows took
@@ -2768,8 +2773,8 @@ the same viewer-specific conditions using indexed joins, then public invoker
 functions hydrate only the resulting page through RLS. Relationship flags use
 single indexed lookups, so a card cannot make PostgreSQL read the entire graph.
 The same approach keeps suggestion traversal bounded before loading profile
-details and counts. Final local verification passed 491 SQL assertions,
-21 concurrent-session behavior assertions followed by cleanup verification, and
+details and counts. Final local verification passed 511 SQL assertions,
+22 concurrent-session behavior assertions followed by cleanup verification, and
 32 HTTP checks against real local Auth, PostgREST, edge functions and MinIO.
 Re-run the benchmark when visibility predicates or candidate queries change;
 these figures describe this fixture and machine, not an unlimited capacity

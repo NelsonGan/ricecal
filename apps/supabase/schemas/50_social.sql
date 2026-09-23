@@ -9,32 +9,35 @@ create type public.social_content_kind as enum ('profile', 'post', 'comment');
 create type public.social_activity_kind as enum ('follow', 'like', 'comment');
 create type public.social_counter_metric as enum ('followers', 'following', 'posts', 'likes', 'comments');
 
-create table public.social_profiles (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  -- Byte order, so the unique index also serves prefix search and its pages.
-  -- Under the database's ICU collation, the page after the last match walked
-  -- every later handle in the table.
-  handle text collate "C" not null unique check (handle ~ '^[a-z0-9_]{3,24}$'),
-  display_name text not null check (char_length(btrim(display_name)) between 1 and 60),
-  bio text not null default '' check (char_length(bio) <= 160),
-  avatar_path text,
-  photo_etag text,
-  review_status public.recipe_review not null default 'pending',
-  review_reason text,
-  revision integer not null default 1 check (revision > 0),
-  quarantined boolean not null default false,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint social_profiles_avatar_owned check (
-    avatar_path is null or avatar_path like 'avatars/' || user_id::text || '/%'
-  )
-);
-create index social_profiles_discover_idx on public.social_profiles(created_at desc, user_id desc)
-  where review_status = 'approved' and not quarantined;
+-- Public identity is part of the existing account profile. The handle is
+-- optional so installing an update never publishes a private account.
+alter table public.profiles
+  add column handle text collate "C" unique check (handle ~ '^[a-z0-9_]{3,24}$'),
+  add column bio text not null default '' check (char_length(bio) <= 160),
+  add column photo_etag text,
+  add column review_status public.recipe_review not null default 'pending',
+  add column review_reason text,
+  add column revision integer not null default 1 check (revision > 0),
+  add column quarantined boolean not null default false,
+  add constraint social_profiles_name_present check (
+    handle is null or char_length(btrim(display_name)) between 1 and 60
+  ),
+  add constraint social_profiles_avatar_owned check (
+    handle is null or avatar_path is null or avatar_path like 'avatars/' || id::text || '/%'
+  );
+
+-- Keep the old profile writes available without letting a client approve its
+-- own public identity or replace the ETag of a reviewed avatar.
+revoke update on public.profiles from authenticated;
+grant update (display_name, avatar_path, handle, bio, sex, birth_date, height_cm,
+  target_weight_kg, activity_level, food_styles, referral_source, timezone, onboarded_at)
+  on public.profiles to authenticated;
+create index social_profiles_discover_idx on public.profiles(created_at desc, id desc)
+  where handle is not null and review_status = 'approved' and not quarantined;
 
 create table public.social_follows (
-  follower_id uuid not null references public.social_profiles(user_id) on delete cascade,
-  followed_id uuid not null references public.social_profiles(user_id) on delete cascade,
+  follower_id uuid not null references public.profiles(id) on delete cascade,
+  followed_id uuid not null references public.profiles(id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (follower_id, followed_id),
   constraint social_follows_not_self check (follower_id <> followed_id)
@@ -45,7 +48,7 @@ create index blocked_authors_reverse_idx on public.blocked_authors(author_id, us
 
 create table public.social_posts (
   id uuid primary key default gen_random_uuid(),
-  author_id uuid not null references public.social_profiles(user_id) on delete cascade,
+  author_id uuid not null references public.profiles(id) on delete cascade,
   -- One post per entry is also what makes a retried publish the same operation.
   source_entry_id uuid not null unique references public.food_logs(id) on delete cascade,
   food_name text not null check (char_length(food_name) between 1 and 160),
@@ -83,7 +86,7 @@ create index social_posts_discover_idx on public.social_posts(created_at desc, i
 
 create table public.social_likes (
   post_id uuid not null references public.social_posts(id) on delete cascade,
-  user_id uuid not null references public.social_profiles(user_id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (post_id, user_id)
 );
@@ -92,7 +95,7 @@ create index social_likes_user_idx on public.social_likes(user_id, post_id);
 create table public.social_comments (
   id uuid primary key default gen_random_uuid(),
   post_id uuid not null references public.social_posts(id) on delete cascade,
-  author_id uuid not null references public.social_profiles(user_id) on delete cascade,
+  author_id uuid not null references public.profiles(id) on delete cascade,
   request_id uuid not null,
   body text not null check (char_length(btrim(body)) between 1 and 500),
   review_status public.recipe_review not null default 'pending',
@@ -133,8 +136,8 @@ create table public.social_counters (
 
 create table public.social_notifications (
   id uuid primary key default gen_random_uuid(),
-  recipient_id uuid not null references public.social_profiles(user_id) on delete cascade,
-  actor_id uuid not null references public.social_profiles(user_id) on delete cascade,
+  recipient_id uuid not null references public.profiles(id) on delete cascade,
+  actor_id uuid not null references public.profiles(id) on delete cascade,
   kind public.social_activity_kind not null,
   post_id uuid references public.social_posts(id) on delete cascade,
   comment_id uuid references public.social_comments(id) on delete cascade,
@@ -172,7 +175,6 @@ create table public.social_rate_limits (
   primary key (user_id, action)
 );
 
-alter table public.social_profiles enable row level security;
 alter table public.social_follows enable row level security;
 alter table public.social_posts enable row level security;
 alter table public.social_likes enable row level security;
@@ -181,13 +183,13 @@ alter table public.social_reports enable row level security;
 alter table public.social_counters enable row level security;
 alter table public.social_notifications enable row level security;
 alter table public.social_rate_limits enable row level security;
-revoke all on public.social_profiles, public.social_follows, public.social_posts,
+revoke all on public.social_follows, public.social_posts,
   public.social_likes, public.social_comments, public.social_reports, public.social_counters,
   public.social_notifications, public.social_rate_limits from anon, authenticated;
-grant all on public.social_profiles, public.social_follows, public.social_posts,
+grant all on public.social_follows, public.social_posts,
   public.social_likes, public.social_comments, public.social_reports, public.social_counters,
   public.social_notifications, public.social_rate_limits to service_role;
-grant select on public.social_profiles, public.social_follows, public.social_likes,
+grant select on public.social_follows, public.social_likes,
   public.social_reports, public.social_notifications to authenticated;
 grant select (id, author_id, food_name, icon_set, icon_name, photo_path, kcal, carbs_g, protein_g, fat_g,
   caption, audience, review_status, review_reason, revision, quarantined, photo_etag, created_at, published_at, updated_at)
@@ -207,17 +209,28 @@ $$;
 create or replace function private.social_can_view_profile(p_user uuid)
 returns boolean language sql stable security definer set search_path = '' as $$
   select (select auth.uid()) is not null and exists (
-    select 1 from public.social_profiles p where p.user_id = p_user and (
-      p.user_id = (select auth.uid()) or (
+    select 1 from public.profiles p where p.id = p_user and p.handle is not null and (
+      p.id = (select auth.uid()) or (
         p.review_status = 'approved' and not p.quarantined
-        and not private.social_pair_blocked(p.user_id)
+        and not private.social_pair_blocked(p.id)
         and not exists (select 1 from public.social_reports r
-          where r.kind = 'profile' and r.content_id = p.user_id
+          where r.kind = 'profile' and r.content_id = p.id
             and r.reporter_id = (select auth.uid()))
       )
     )
   );
 $$;
+
+-- This view exposes only social fields. The underlying profiles row stays
+-- owner-only, including all body measurements and goals.
+create or replace view public.social_profiles as
+select p.id as user_id, p.handle, p.display_name, p.bio, p.avatar_path,
+  p.photo_etag, p.review_status, p.review_reason, p.revision, p.quarantined,
+  p.created_at, p.updated_at
+from public.profiles p
+where p.handle is not null and private.social_can_view_profile(p.id);
+revoke all on public.social_profiles from public, anon, authenticated;
+grant select on public.social_profiles to authenticated, service_role;
 
 create or replace function private.social_can_view_post(p_id uuid)
 returns boolean language sql stable security definer set search_path = '' as $$
@@ -268,8 +281,6 @@ grant execute on function private.social_pair_blocked, private.social_can_view_p
   private.social_can_view_post, private.social_can_view_comment,
   private.social_can_view_notification to authenticated, service_role;
 
-create policy "social profiles: visible identities" on public.social_profiles for select
-  to authenticated using (private.social_can_view_profile(user_id));
 create policy "social follows: visible endpoints" on public.social_follows for select
   to authenticated using (private.social_can_view_profile(follower_id) and private.social_can_view_profile(followed_id));
 create policy "social posts: approved audience or own" on public.social_posts for select
@@ -290,7 +301,7 @@ begin
   if v_user is null or not exists (select 1 from auth.users where id = v_user) then
     raise exception 'Sign in to continue' using errcode = '42501';
   end if;
-  if p_identity and not exists (select 1 from public.social_profiles p where p.user_id = v_user
+  if p_identity and not exists (select 1 from public.profiles p where p.id = v_user and p.handle is not null
       and p.review_status = 'approved' and not p.quarantined) then
     raise exception 'Create an approved public profile first' using errcode = '42501';
   end if;
@@ -464,13 +475,31 @@ create trigger social_comment_changed after insert or update or delete on public
 create or replace function private.social_profile_deleted()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  delete from public.social_counters where entity_id = old.user_id;
-  delete from public.social_reports where kind = 'profile' and content_id = old.user_id;
+  delete from public.social_counters where entity_id = old.id;
+  delete from public.social_reports where kind = 'profile' and content_id = old.id;
   return null;
 end;
 $$;
-create trigger social_profile_deleted after delete on public.social_profiles
+create trigger social_profile_deleted after delete on public.profiles
   for each row execute function private.social_profile_deleted();
+
+-- Existing account edits can change public words or bytes too. Every such
+-- change needs a fresh review before other accounts see it.
+create or replace function private.social_profile_changed()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.handle is distinct from old.handle or new.display_name is distinct from old.display_name
+      or new.bio is distinct from old.bio or new.avatar_path is distinct from old.avatar_path then
+    new.review_status := 'pending';
+    new.review_reason := null;
+    new.photo_etag := null;
+    new.revision := case when old.handle is null then 1 else old.revision + 1 end;
+  end if;
+  return new;
+end;
+$$;
+create trigger social_profile_changed before update of handle, display_name, bio, avatar_path
+  on public.profiles for each row execute function private.social_profile_changed();
 
 -- The image remains governed by diary retention. Replacing it must not attach
 -- an unreviewed new image to a published post.
@@ -508,6 +537,7 @@ revoke execute on function private.social_require_user, private.social_claim,
   private.social_counter_change, private.social_lock_pair, private.social_block_before,
   private.social_block_after, private.social_follow_changed, private.social_like_changed,
   private.social_post_changed, private.social_comment_changed, private.social_profile_deleted,
+  private.social_profile_changed,
   private.social_source_photo_changed from public, anon, authenticated;
 
 create or replace function public.set_social_profile(
@@ -517,11 +547,10 @@ returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.social_require_user(false);
 begin
   if not private.social_claim(v_user, 'profile', 20) then raise exception 'Try again later' using errcode = 'P0001'; end if;
-  insert into public.social_profiles(user_id, handle, display_name, bio, avatar_path)
-  values (v_user, lower(btrim(p_handle)), btrim(p_display_name), btrim(coalesce(p_bio, '')), p_avatar_path)
-  on conflict (user_id) do update set handle = excluded.handle, display_name = excluded.display_name,
-    bio = excluded.bio, avatar_path = excluded.avatar_path, photo_etag = null, review_status = 'pending', review_reason = null,
-    revision = social_profiles.revision + 1, updated_at = now();
+  update public.profiles set handle = lower(btrim(p_handle)), display_name = btrim(p_display_name),
+    bio = btrim(coalesce(p_bio, '')), avatar_path = p_avatar_path
+    where id = v_user;
+  if not found then raise exception 'Profile unavailable' using errcode = '42501'; end if;
   return v_user;
 end;
 $$;
@@ -680,8 +709,8 @@ begin
   if exists (select 1 from public.social_reports
       where kind = p_kind and content_id = p_id and reporter_id = v_user) then return; end if;
   case p_kind
-    when 'profile' then select p.user_id, p.revision, private.social_can_view_profile(p.user_id)
-      into v_author, v_revision, v_visible from public.social_profiles p where p.user_id = p_id for update;
+    when 'profile' then select p.id, p.revision, private.social_can_view_profile(p.id)
+      into v_author, v_revision, v_visible from public.profiles p where p.id = p_id for update;
     when 'post' then select p.author_id, p.revision, private.social_can_view_post(p.id)
       into v_author, v_revision, v_visible from public.social_posts p where p.id = p_id for update;
     when 'comment' then select c.author_id, c.revision, private.social_can_view_comment(c.id)
@@ -697,8 +726,8 @@ begin
       where kind = p_kind and content_id = p_id and content_revision = v_revision
         and resolved_at is null limit 3) reports) >= 3 then
     case p_kind
-      when 'profile' then update public.social_profiles set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now()
-        where user_id = p_id and revision = v_revision and not quarantined;
+      when 'profile' then update public.profiles set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now()
+        where id = p_id and revision = v_revision and not quarantined;
       when 'post' then update public.social_posts set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now()
         where id = p_id and revision = v_revision and not quarantined;
       when 'comment' then update public.social_comments set quarantined = true, review_status = 'pending', revision = revision + 1, updated_at = now()
@@ -720,16 +749,16 @@ create or replace function public.review_social_content(
 returns boolean language plpgsql security definer set search_path = '' as $$
 declare v_count integer; v_has_photo boolean := false;
 begin
-  if p_kind = 'profile' then select avatar_path is not null into v_has_photo from public.social_profiles where user_id = p_id;
+  if p_kind = 'profile' then select avatar_path is not null into v_has_photo from public.profiles where id = p_id;
   elsif p_kind = 'post' then select photo_path is not null into v_has_photo from public.social_posts where id = p_id; end if;
   if p_status = 'approved' and v_has_photo and (p_photo_etag is null or char_length(p_photo_etag) not between 1 and 128 or p_photo_etag !~ '^"[a-zA-Z0-9-]+"$' ) then
     raise exception 'A reviewed image ETag is required' using errcode = '22023';
   end if;
   if p_status not in ('approved', 'rejected') then raise exception 'Invalid review status' using errcode = '22023'; end if;
   case p_kind
-    when 'profile' then update public.social_profiles set review_status = p_status, review_reason = left(p_reason, 280), updated_at = now(),
+    when 'profile' then update public.profiles set review_status = p_status, review_reason = left(p_reason, 280), updated_at = now(),
         photo_etag = case when p_status = 'approved' and avatar_path is not null then p_photo_etag end
-      where user_id = p_id and revision = p_revision and review_status = 'pending' and not quarantined;
+      where id = p_id and revision = p_revision and review_status = 'pending' and not quarantined;
     when 'post' then update public.social_posts set review_status = p_status, review_reason = left(p_reason, 280), updated_at = now(),
         photo_etag = case when p_status = 'approved' and photo_path is not null then p_photo_etag end,
         published_at = case when p_status = 'approved' then coalesce(published_at, now()) else published_at end
@@ -754,15 +783,15 @@ declare v_count integer; v_has_photo boolean := false;
 begin
   if p_revision is null then raise exception 'The reviewed revision is required' using errcode = '22023'; end if;
   perform pg_advisory_xact_lock(hashtextextended('social-report:' || p_kind::text || ':' || p_id::text, 0));
-  if p_kind = 'profile' then select avatar_path is not null into v_has_photo from public.social_profiles where user_id = p_id;
+  if p_kind = 'profile' then select avatar_path is not null into v_has_photo from public.profiles where id = p_id;
   elsif p_kind = 'post' then select photo_path is not null into v_has_photo from public.social_posts where id = p_id; end if;
   if p_status = 'approved' and v_has_photo and (p_photo_etag is null or char_length(p_photo_etag) not between 1 and 128 or p_photo_etag !~ '^"[a-zA-Z0-9-]+"$' ) then
     raise exception 'A reviewed image ETag is required' using errcode = '22023';
   end if;
   if p_status not in ('approved', 'rejected') then raise exception 'Invalid review status' using errcode = '22023'; end if;
   case p_kind
-    when 'profile' then update public.social_profiles set quarantined = false, review_status = p_status, review_reason = left(p_reason, 280), revision = revision + 1, updated_at = now(),
-      photo_etag = case when p_status = 'approved' and avatar_path is not null then p_photo_etag end where user_id = p_id and revision = p_revision;
+    when 'profile' then update public.profiles set quarantined = false, review_status = p_status, review_reason = left(p_reason, 280), revision = revision + 1, updated_at = now(),
+      photo_etag = case when p_status = 'approved' and avatar_path is not null then p_photo_etag end where id = p_id and revision = p_revision;
     when 'post' then update public.social_posts set quarantined = false, review_status = p_status, review_reason = left(p_reason, 280), revision = revision + 1, updated_at = now(),
       photo_etag = case when p_status = 'approved' and photo_path is not null then p_photo_etag end,
       published_at = case when p_status = 'approved' then coalesce(published_at, now()) else published_at end where id = p_id and revision = p_revision;

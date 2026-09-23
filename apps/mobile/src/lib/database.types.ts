@@ -722,14 +722,21 @@ export type Database = {
         Row: {
           activity_level: Database['public']['Enums']['activity_level']
           avatar_path: string | null
+          bio: string
           birth_date: string | null
           created_at: string
           display_name: string
           food_styles: string[]
+          handle: string | null
           height_cm: number | null
           id: string
           onboarded_at: string | null
+          photo_etag: string | null
+          quarantined: boolean
           referral_source: string | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review']
+          revision: number
           sex: Database['public']['Enums']['sex'] | null
           target_weight_kg: number | null
           timezone: string
@@ -738,14 +745,21 @@ export type Database = {
         Insert: {
           activity_level?: Database['public']['Enums']['activity_level']
           avatar_path?: string | null
+          bio?: string
           birth_date?: string | null
           created_at?: string
           display_name?: string
           food_styles?: string[]
+          handle?: string | null
           height_cm?: number | null
           id: string
           onboarded_at?: string | null
+          photo_etag?: string | null
+          quarantined?: boolean
           referral_source?: string | null
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review']
+          revision?: number
           sex?: Database['public']['Enums']['sex'] | null
           target_weight_kg?: number | null
           timezone?: string
@@ -754,14 +768,21 @@ export type Database = {
         Update: {
           activity_level?: Database['public']['Enums']['activity_level']
           avatar_path?: string | null
+          bio?: string
           birth_date?: string | null
           created_at?: string
           display_name?: string
           food_styles?: string[]
+          handle?: string | null
           height_cm?: number | null
           id?: string
           onboarded_at?: string | null
+          photo_etag?: string | null
+          quarantined?: boolean
           referral_source?: string | null
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review']
+          revision?: number
           sex?: Database['public']['Enums']['sex'] | null
           target_weight_kg?: number | null
           timezone?: string
@@ -1069,6 +1090,13 @@ export type Database = {
             foreignKeyName: 'social_comments_author_id_fkey'
             columns: ['author_id']
             isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_comments_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
             referencedRelation: 'social_profile_details'
             referencedColumns: ['user_id']
           },
@@ -1137,6 +1165,13 @@ export type Database = {
             foreignKeyName: 'social_follows_followed_id_fkey'
             columns: ['followed_id']
             isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_follows_followed_id_fkey'
+            columns: ['followed_id']
+            isOneToOne: false
             referencedRelation: 'social_profile_details'
             referencedColumns: ['user_id']
           },
@@ -1146,6 +1181,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'social_profiles'
             referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'social_follows_follower_id_fkey'
+            columns: ['follower_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
           {
             foreignKeyName: 'social_follows_follower_id_fkey'
@@ -1192,6 +1234,13 @@ export type Database = {
             columns: ['post_id']
             isOneToOne: false
             referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_likes_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
           {
@@ -1246,6 +1295,13 @@ export type Database = {
             foreignKeyName: 'social_notifications_actor_id_fkey'
             columns: ['actor_id']
             isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_notifications_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
             referencedRelation: 'social_profile_details'
             referencedColumns: ['user_id']
           },
@@ -1282,6 +1338,13 @@ export type Database = {
             columns: ['post_id']
             isOneToOne: false
             referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_notifications_recipient_id_fkey'
+            columns: ['recipient_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
           {
@@ -1375,6 +1438,13 @@ export type Database = {
             foreignKeyName: 'social_posts_author_id_fkey'
             columns: ['author_id']
             isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
             referencedRelation: 'social_profile_details'
             referencedColumns: ['user_id']
           },
@@ -1400,51 +1470,6 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
-      }
-      social_profiles: {
-        Row: {
-          avatar_path: string | null
-          bio: string
-          created_at: string
-          display_name: string
-          handle: string
-          photo_etag: string | null
-          quarantined: boolean
-          review_reason: string | null
-          review_status: Database['public']['Enums']['recipe_review']
-          revision: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          avatar_path?: string | null
-          bio?: string
-          created_at?: string
-          display_name: string
-          handle: string
-          photo_etag?: string | null
-          quarantined?: boolean
-          review_reason?: string | null
-          review_status?: Database['public']['Enums']['recipe_review']
-          revision?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          avatar_path?: string | null
-          bio?: string
-          created_at?: string
-          display_name?: string
-          handle?: string
-          photo_etag?: string | null
-          quarantined?: boolean
-          review_reason?: string | null
-          review_status?: Database['public']['Enums']['recipe_review']
-          revision?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       social_rate_limits: {
         Row: {
@@ -1987,6 +2012,13 @@ export type Database = {
             foreignKeyName: 'social_comments_author_id_fkey'
             columns: ['author_id']
             isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_comments_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
             referencedRelation: 'social_profile_details'
             referencedColumns: ['user_id']
           },
@@ -2027,6 +2059,13 @@ export type Database = {
           read_at: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'social_notifications_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'social_notifications_actor_id_fkey'
             columns: ['actor_id']
@@ -2104,6 +2143,13 @@ export type Database = {
             foreignKeyName: 'social_posts_author_id_fkey'
             columns: ['author_id']
             isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
             referencedRelation: 'social_profile_details'
             referencedColumns: ['user_id']
           },
@@ -2166,6 +2212,51 @@ export type Database = {
           review_reason?: string | null
           review_status?: Database['public']['Enums']['recipe_review'] | null
           revision?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      social_profiles: {
+        Row: {
+          avatar_path: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          handle: string | null
+          photo_etag: string | null
+          quarantined: boolean | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review'] | null
+          revision: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_path?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          handle?: string | null
+          photo_etag?: string | null
+          quarantined?: boolean | null
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review'] | null
+          revision?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_path?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          handle?: string | null
+          photo_etag?: string | null
+          quarantined?: boolean | null
+          review_reason?: string | null
+          review_status?: Database['public']['Enums']['recipe_review'] | null
+          revision?: number | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: []

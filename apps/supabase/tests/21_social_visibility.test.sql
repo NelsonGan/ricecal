@@ -16,11 +16,15 @@ insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, ra
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
        id::text || '@visibility.example.test', '{}', '{}'
 from unnest(array[:'alice'::uuid, :'bob'::uuid, :'carol'::uuid, :'dan'::uuid, :'fresh'::uuid]) id;
-insert into public.social_profiles (user_id, handle, display_name, review_status, avatar_path, photo_etag)
-values (:'alice', 'visibility_alice', 'Alice fixture', 'approved', 'avatars/' || :'alice' || '/fixture.jpg', '"avatar-etag"'),
-       (:'bob', 'visibility_bob', 'Bob fixture', 'approved', null, null),
-       (:'carol', 'visibility_carol', 'Carol fixture', 'approved', null, null),
-       (:'dan', 'visibility_dan', 'Dan fixture', 'approved', null, null);
+update public.profiles p set handle = v.handle, display_name = v.name, review_status = 'approved',
+  avatar_path = v.avatar_path, photo_etag = v.photo_etag
+from (values (:'alice'::uuid, 'visibility_alice', 'Alice fixture', 'avatars/' || :'alice' || '/fixture.jpg', '"avatar-etag"'),
+             (:'bob'::uuid, 'visibility_bob', 'Bob fixture', null, null),
+             (:'carol'::uuid, 'visibility_carol', 'Carol fixture', null, null),
+             (:'dan'::uuid, 'visibility_dan', 'Dan fixture', null, null)) v(id, handle, name, avatar_path, photo_etag)
+where p.id = v.id;
+update public.profiles set review_status = 'approved', photo_etag = case when id = :'alice' then '"avatar-etag"' end
+where id in (:'alice', :'bob', :'carol', :'dan');
 insert into public.blocked_authors (user_id, author_id)
 select viewer, p.user_id from unnest(array[:'alice'::uuid, :'bob'::uuid, :'carol'::uuid, :'dan'::uuid, :'fresh'::uuid]) viewer
 cross join public.social_profiles p
@@ -190,7 +194,7 @@ select set_config('request.jwt.claims', json_build_object('sub', :'dan', 'role',
 set local role authenticated;
 select public.report_social_content('profile', :'alice', 'spam');
 reset role;
-select is((select quarantined from public.social_profiles where user_id = :'alice'), true,
+select is((select quarantined from public.profiles where id = :'alice'), true,
   'three independent profile reports quarantine the identity');
 select set_config('request.jwt.claims', json_build_object('sub', :'fresh', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -202,7 +206,7 @@ select is((select count(*)::int from private.social_suggestion_candidates(12) wh
   'the privileged suggestion selector excludes a quarantined identity');
 reset role;
 
-select revision as profile_revision from public.social_profiles where user_id = :'alice' \gset
+select revision as profile_revision from public.profiles where id = :'alice' \gset
 select throws_ok(format('select public.resolve_social_report(%L, %L, %L, null, %s)',
   'profile', :'alice', 'approved', :profile_revision), '22023', null,
   'a moderator cannot approve a public avatar without its reviewed byte validator');
@@ -232,10 +236,10 @@ select ('a8600000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
   '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
   'badge-' || n || '@visibility.example.test', '{}', '{}'
 from generate_series(1, 101) n;
-insert into public.social_profiles (user_id, handle, display_name, review_status)
-select ('a8600000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
-  'badge_actor_' || n, 'Badge actor ' || n, 'approved'
-from generate_series(1, 101) n;
+update public.profiles p set handle = 'badge_actor_' || n, display_name = 'Badge actor ' || n
+from generate_series(1, 101) n
+where p.id = ('a8600000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid;
+update public.profiles set review_status = 'approved' where handle like 'badge_actor_%';
 insert into public.social_notifications (recipient_id, actor_id, kind)
 select :'alice', ('a8600000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid, 'follow'
 from generate_series(1, 101) n;

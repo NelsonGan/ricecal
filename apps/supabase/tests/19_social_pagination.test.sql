@@ -11,10 +11,12 @@ insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, ra
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
        id::text || '@paging.example.test', '{}', '{}'
 from unnest(array[:'viewer'::uuid, :'author'::uuid, :'other'::uuid]) id;
-insert into public.social_profiles (user_id, handle, display_name, review_status)
-values (:'viewer', 'paging_viewer', 'Viewer fixture', 'approved'),
-       (:'author', 'paging_author', 'Author fixture', 'approved'),
-       (:'other', 'paging_other', 'Other fixture', 'approved');
+update public.profiles p set handle = v.handle, display_name = v.name, review_status = 'approved'
+from (values (:'viewer'::uuid, 'paging_viewer', 'Viewer fixture'),
+             (:'author'::uuid, 'paging_author', 'Author fixture'),
+             (:'other'::uuid, 'paging_other', 'Other fixture')) v(id, handle, name)
+where p.id = v.id;
+update public.profiles set review_status = 'approved' where id in (:'viewer', :'author', :'other');
 -- Existing simulator fixtures must not become extra Discover rows. These
 -- temporary blocks affect only this newly created reader and roll back below.
 insert into public.blocked_authors (user_id, author_id)
