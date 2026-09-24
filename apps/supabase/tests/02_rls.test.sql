@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(23);
+select plan(24);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -188,6 +188,17 @@ select is(
        or pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE'))),
   0,
   'trigger-only functions are not callable through the API'
+);
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname in ('handle_new_user', 'profiles_sync_recipe_author', 'recipes_reset_review')
+     and pg_catalog.has_function_privilege('service_role', p.oid, 'EXECUTE')),
+  3,
+  'the service role retains execution rights for the three trigger functions'
 );
 
 select is(
