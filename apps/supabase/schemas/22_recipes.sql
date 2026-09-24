@@ -130,6 +130,7 @@ create table public.recipe_saves (
 
 alter table public.recipe_saves enable row level security;
 
+revoke all on public.recipe_saves from public, anon, authenticated;
 grant select, insert, delete on public.recipe_saves to service_role;
 
 
@@ -321,6 +322,9 @@ begin
 end;
 $$;
 
+revoke execute on function public.recipes_reset_review from public, anon, authenticated;
+grant execute on function public.recipes_reset_review to service_role;
+
 -- The same, reached from the ingredient triggers, where the change is a row in
 -- another table. The nutrition IS reviewable — "calories that do not follow
 -- from the ingredients" is one of the two grounds — so swapping the ingredient
@@ -363,6 +367,9 @@ begin
   return null;
 end;
 $$;
+
+revoke execute on function public.profiles_sync_recipe_author from public, anon, authenticated;
+grant execute on function public.profiles_sync_recipe_author to service_role;
 
 create trigger profiles_sync_recipe_author
   after update of display_name on public.profiles

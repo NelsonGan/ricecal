@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(22);
+select plan(26);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -183,6 +183,29 @@ select is(
    from pg_catalog.pg_proc p
    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
+     and p.proname in ('handle_new_user', 'profiles_sync_recipe_author', 'recipes_reset_review')
+     and (pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE')
+       or pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE'))),
+  0,
+  'trigger-only functions are not callable through the API'
+);
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname in ('handle_new_user', 'profiles_sync_recipe_author', 'recipes_reset_review')
+     and pg_catalog.has_function_privilege('service_role', p.oid, 'EXECUTE')),
+  3,
+  'the service role retains execution rights for the three trigger functions'
+);
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
      and p.proname in ('add_ingredient', 'set_ingredient_quantity',
                        'remove_ingredient')
      and pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE')),
@@ -318,6 +341,42 @@ select is(
    where n.nspname = 'public' and c.relname = 'job_runs'),
   true,
   'job_runs has row level security enabled'
+);
+
+-- These are service-only working tables. No client grant plus default-deny RLS
+-- keeps them closed even if one of those two defenses changes by mistake.
+select is(
+  (select count(*)::integer
+   from (values ('barcode_misses'), ('food_scan_items'), ('food_scan_misses'),
+                ('job_runs'), ('recipe_saves'), ('social_counters'),
+                ('social_rate_limits')) expected(table_name)
+   join pg_catalog.pg_class c on c.relname = expected.table_name
+   join pg_catalog.pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
+   where c.relrowsecurity
+     and not exists (select 1 from pg_catalog.pg_policy p where p.polrelid = c.oid)
+     and not exists (
+       select 1
+       from (values ('anon'), ('authenticated')) roles(role_name)
+       cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'),
+                          ('TRUNCATE'), ('REFERENCES'), ('TRIGGER'),
+                          ('MAINTAIN')) privileges(privilege_name)
+       where pg_catalog.has_table_privilege(roles.role_name, c.oid, privileges.privilege_name)
+     )),
+  7,
+  'all seven service-only tables deny every client table privilege and have default-deny RLS'
+);
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_class c
+   join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+   cross join (values ('anon'), ('authenticated')) roles(role_name)
+   cross join (values ('TRUNCATE'), ('REFERENCES'), ('TRIGGER'),
+                      ('MAINTAIN')) privileges(privilege_name)
+   where n.nspname = 'public' and c.relkind in ('r', 'p')
+     and pg_catalog.has_table_privilege(roles.role_name, c.oid, privileges.privilege_name)),
+  0,
+  'client roles cannot bypass or change RLS through table-wide privileges'
 );
 
 select * from finish();
