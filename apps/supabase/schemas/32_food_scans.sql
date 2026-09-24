@@ -61,6 +61,7 @@ alter table public.food_scan_items enable row level security;
 
 -- service_role only. RLS stays enabled with no policies, so a grant added by
 -- mistake still exposes nothing.
+revoke all on public.food_scan_items from public, anon, authenticated;
 grant select, insert, update, delete on public.food_scan_items to service_role;
 
 
@@ -76,6 +77,7 @@ create table public.food_scan_misses (
 -- normalized query; no index earns its keep until the table is large.
 alter table public.food_scan_misses enable row level security;
 
+revoke all on public.food_scan_misses from public, anon, authenticated;
 grant select, insert, delete on public.food_scan_misses to service_role;
 
 
@@ -106,6 +108,7 @@ create index barcode_misses_code_idx on public.barcode_misses (code);
 
 alter table public.barcode_misses enable row level security;
 
+revoke all on public.barcode_misses from public, anon, authenticated;
 grant select, insert, delete on public.barcode_misses to service_role;
 
 

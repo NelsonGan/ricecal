@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(50);
+select plan(51);
 
 \set cook  '33333333-3333-3333-3333-333333333333'
 \set other '44444444-4444-4444-4444-444444444444'
@@ -36,6 +36,14 @@ values (:'cook', 'fixture-pot-a', 6, 'Fry the rempah until it darkens.',
         'client-chosen-and-guessable');
 
 select id as recipe_id from public.recipes where name = 'fixture-pot-a' \gset
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'cook', 'role', 'authenticated')::text, true);
+set local role authenticated;
+update public.profiles set display_name = 'Updated cook' where id = :'cook';
+reset role;
+select is((select author_name from public.recipes where id = :'recipe_id'), 'Updated cook',
+  'a signed-in profile edit refreshes the recipe credit through its trigger');
 
 select ok(
   (select share_slug ~ '^[0-9a-f]{32}$' from public.recipes where id = :'recipe_id'),
@@ -201,7 +209,11 @@ select is(
 -- way round a reviewer that only ever reads a recipe once.
 reset role;
 
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'cook', 'role', 'authenticated')::text, true);
+set local role authenticated;
 update public.recipes set steps = 'Buy my rendang at example.com' where id = :'recipe_id';
+reset role;
 
 select is(
   (select review_status::text from public.recipes where id = :'recipe_id'),
