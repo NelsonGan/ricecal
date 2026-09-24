@@ -55,6 +55,7 @@ create index job_runs_job_started_idx on public.job_runs (job, started_at desc);
 
 alter table public.job_runs enable row level security;
 
+revoke all on public.job_runs from public, anon, authenticated;
 grant select, insert, update, delete on public.job_runs to service_role;
 
 -- ---------------------------------------------------------------------------

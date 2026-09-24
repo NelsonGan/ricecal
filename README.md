@@ -288,6 +288,12 @@ The `auth` schema is **not** one of these. The diff tracks triggers on
 made the next diff emit `DROP TRIGGER` for it. It stays declarative, in
 `16_new_user.sql`.
 
+Seven service-only tables have RLS enabled with no policies. That denies all
+row reads and writes by default; their client table grants are revoked too.
+`98_client_table_privileges.sql` also removes `TRUNCATE`, `REFERENCES`, `TRIGGER`
+and `MAINTAIN` from client roles on every public table. These operations do not
+need an RLS policy to run. `02_rls.test.sql` checks both boundaries.
+
 ### The tables
 
 ```
@@ -2486,7 +2492,7 @@ are separate products, not prerequisites for a food following system.
 
 `profiles` contains birth date, sex, height and weight goals and remains
 owner-only. Handle and bio live on that row beside the account name and avatar.
-The `social_profiles` view returns only public identity fields and applies
+The `social_profiles` view returns social identity and review state fields and applies
 report and block visibility. Installing an update creates no public identity:
 `social_joined_at` and handle start null. The first social action opts the
 account in. Posting, following, liking and commenting need no handle or bio.
