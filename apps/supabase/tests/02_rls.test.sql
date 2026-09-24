@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(22);
+select plan(23);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -177,6 +177,18 @@ select is(
 --
 -- Asserted here because it is invisible: the app works either way, and the
 -- functions do not fail until someone widens a table grant somewhere else.
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname in ('handle_new_user', 'profiles_sync_recipe_author', 'recipes_reset_review')
+     and (pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE')
+       or pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE'))),
+  0,
+  'trigger-only functions are not callable through the API'
+);
 
 select is(
   (select count(*)::integer

@@ -60,6 +60,9 @@ begin
 end;
 $$;
 
+revoke execute on function public.handle_new_user from public, anon, authenticated;
+grant execute on function public.handle_new_user to service_role;
+
 comment on function public.handle_new_user is
   'Creates the rows every signed-in screen assumes exist. Deliberately '
   'strict: if it raises, signup fails, which is louder and more fixable than '

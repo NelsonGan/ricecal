@@ -2490,6 +2490,11 @@ The `social_profiles` view returns only public identity fields and applies
 report and block visibility. Installing an update creates no public identity:
 `social_joined_at` and handle start null. The first social action opts the
 account in. Posting, following, liking and commenting need no handle or bio.
+The Security Advisor flags this one view as a definer view. That is deliberate:
+an invoker view would apply the owner-only `profiles` policy and hide every
+other person's public identity. Its selected columns contain no body or account
+fields, and `social_can_view_profile` enforces the viewer's block and report
+rules. The social RLS tests exercise those boundaries as client roles.
 Handles, when set, are normalized lowercase ASCII, 3 to 24 characters, unique
 under a database constraint. Names and bios accept the app's languages.
 
