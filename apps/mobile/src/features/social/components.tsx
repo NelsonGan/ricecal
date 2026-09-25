@@ -13,6 +13,14 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, View, type ViewToken } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated'
 import { useAvatarUrl, useMealPhotoUrl, useUserId } from '@/data'
 import { toIcon } from '@/data/mappers'
 import {
@@ -84,6 +92,28 @@ function SocialSkeleton({
       </View>
     )
   }
+  if (variant === 'rows') {
+    return (
+      <View accessibilityRole="progressbar" accessibilityLabel={t('loading')}>
+        {slots.slice(0, count).map((slot, index) => (
+          <View
+            key={slot}
+            className={cn(
+              'min-h-[68px] flex-row items-center gap-3 py-3',
+              index < count - 1 && 'border-b-2 border-track',
+            )}
+          >
+            <Skeleton width={40} height={40} rounded={false} />
+            <View className="min-w-0 flex-1 gap-2">
+              <Skeleton width={112} />
+              <Skeleton width={78} height={10} />
+            </View>
+            <Skeleton width={88} height={44} rounded={false} />
+          </View>
+        ))}
+      </View>
+    )
+  }
   return (
     <View accessibilityRole="progressbar" accessibilityLabel={t('loading')} className="gap-4 p-5">
       {slots.slice(0, count).map((slot) => (
@@ -95,10 +125,8 @@ function SocialSkeleton({
               <Skeleton width="30%" height={10} />
             </View>
           </View>
-          {variant === 'feed' || variant === 'cards' ? (
-            <Skeleton height={180} rounded={false} />
-          ) : null}
-          {variant !== 'rows' ? <Skeleton width="70%" height={12} /> : null}
+          <Skeleton height={180} rounded={false} />
+          <Skeleton width="70%" height={12} />
         </View>
       ))}
     </View>
@@ -416,6 +444,7 @@ export function FoodPreview({
   photoUnavailable = false,
   facts,
   variant = 'card',
+  mediaStyle,
 }: {
   name: string
   photo?: string | null
@@ -427,6 +456,7 @@ export function FoodPreview({
   photoUnavailable?: boolean
   facts?: Partial<FoodFacts> | null
   variant?: 'card' | 'tile'
+  mediaStyle?: ReturnType<typeof useAnimatedStyle>
 }) {
   const { t } = useTranslation('social')
   const drawing = icon ?? { set: 'food', name: 'cooking-pot' }
@@ -454,54 +484,56 @@ export function FoodPreview({
   }
   return (
     <View className={cn('aspect-square overflow-hidden bg-track', tile && 'rounded-tile')}>
-      {!expectsPhoto ? (
-        <View className="absolute inset-0 items-center justify-center bg-pandan-soft">
-          <Icon {...drawing} size={84} />
-        </View>
-      ) : null}
-      {expectsPhoto && !shown && !failed ? (
-        <View
-          className="absolute inset-0"
-          accessible
-          accessibilityRole="progressbar"
-          accessibilityLabel={t('loading')}
-        >
-          <Skeleton width="100%" height="100%" rounded={false} />
-        </View>
-      ) : null}
-      {failed ? (
-        <View className="absolute inset-0 items-center justify-center">
-          <Icon set="system" name="photo" size={tile ? 36 : 48} />
-        </View>
-      ) : null}
-      {privateUri ? (
-        <Image
-          source={{ uri: privateUri }}
-          cachePolicy="none"
-          contentFit="cover"
-          style={{ width: '100%', height: '100%' }}
-          accessibilityLabel={name}
-          onLoad={() => {
-            setShownSource(source)
-            setFailedSource(null)
-          }}
-          onError={() => {
-            setShownSource(null)
-            setFailedSource(source)
-          }}
-        />
-      ) : photo ? (
-        <SocialPhoto
-          path={photo}
-          visible={visible}
-          label={name}
-          onShown={(value) => {
-            setShownSource(value ? source : null)
-            if (value) setFailedSource(null)
-          }}
-          onFailed={() => setFailedSource(source)}
-        />
-      ) : null}
+      <Animated.View className="absolute inset-0" style={mediaStyle}>
+        {!expectsPhoto ? (
+          <View className="absolute inset-0 items-center justify-center bg-pandan-soft">
+            <Icon {...drawing} size={84} />
+          </View>
+        ) : null}
+        {expectsPhoto && !shown && !failed ? (
+          <View
+            className="absolute inset-0"
+            accessible
+            accessibilityRole="progressbar"
+            accessibilityLabel={t('loading')}
+          >
+            <Skeleton width="100%" height="100%" rounded={false} />
+          </View>
+        ) : null}
+        {failed ? (
+          <View className="absolute inset-0 items-center justify-center">
+            <Icon set="system" name="photo" size={tile ? 36 : 48} />
+          </View>
+        ) : null}
+        {privateUri ? (
+          <Image
+            source={{ uri: privateUri }}
+            cachePolicy="none"
+            contentFit="cover"
+            style={{ width: '100%', height: '100%' }}
+            accessibilityLabel={name}
+            onLoad={() => {
+              setShownSource(source)
+              setFailedSource(null)
+            }}
+            onError={() => {
+              setShownSource(null)
+              setFailedSource(source)
+            }}
+          />
+        ) : photo ? (
+          <SocialPhoto
+            path={photo}
+            visible={visible}
+            label={name}
+            onShown={(value) => {
+              setShownSource(value ? source : null)
+              if (value) setFailedSource(null)
+            }}
+            onFailed={() => setFailedSource(source)}
+          />
+        ) : null}
+      </Animated.View>
       <View className={cn('absolute', tile ? 'inset-x-1.5 bottom-1.5' : 'inset-x-3 bottom-3')}>
         {caption}
       </View>
@@ -889,6 +921,7 @@ export function PostCard({
   const followAction = useSocialTask()
   const menuAction = useSocialTask()
   const online = useSocialOnline()
+  const colors = useThemeColors()
   const [panel, setPanel] = useState<'options' | 'delete' | null>(null)
   const afterDismiss = useRef<(() => void) | null>(null)
   const mine = post.author_id === viewer
@@ -903,6 +936,19 @@ export function PostCard({
   const open = () => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })
   const time = useSocialTime(post.published_at ?? post.created_at)
   const foodLabel = useFoodLabel()
+  const zoom = useSharedValue(1)
+  const zoomX = useSharedValue(0)
+  const zoomY = useSharedValue(0)
+  const mediaSize = useSharedValue(0)
+  const heartScale = useSharedValue(0.5)
+  const heartOpacity = useSharedValue(0)
+  const mediaStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: zoomX.value }, { translateY: zoomY.value }, { scale: zoom.value }],
+  }))
+  const heartStyle = useAnimatedStyle(() => ({
+    opacity: heartOpacity.value,
+    transform: [{ scale: heartScale.value }],
+  }))
   const toggleLike = () => {
     if (!post.is_liked) {
       if (own === undefined) return
@@ -915,6 +961,54 @@ export function PostCard({
     }
     likeAction.press({ action: 'like', id: post.id, liked: !post.is_liked })
   }
+  const doubleLike = () => {
+    if (!online || post.review_status !== 'approved' || likeAction.isPending) return
+    if (!post.is_liked && own === undefined) return
+    if (!post.is_liked && own?.quarantined) {
+      toggleLike()
+      return
+    }
+    heartScale.value = 0.5
+    heartOpacity.value = 1
+    heartScale.value = withSpring(1, { damping: 12, stiffness: 220 })
+    heartOpacity.value = withDelay(550, withTiming(0, { duration: 260 }))
+    if (!post.is_liked) toggleLike()
+  }
+  const doubleTap = Gesture.Tap()
+    .numberOfTaps(2)
+    .runOnJS(true)
+    .onEnd(doubleLike)
+    .withTestId(`post-double-tap-${post.id}`)
+  const pinch = Gesture.Pinch()
+    .enabled(Boolean(post.photo_path))
+    .onUpdate((event) => {
+      const scale = Math.min(3, Math.max(1, event.scale))
+      zoom.value = scale
+      zoomX.value = (mediaSize.value / 2 - event.focalX) * (scale - 1)
+      zoomY.value = (mediaSize.value / 2 - event.focalY) * (scale - 1)
+    })
+    .onFinalize(() => {
+      zoom.value = withSpring(1)
+      zoomX.value = withSpring(0)
+      zoomY.value = withSpring(0)
+    })
+    .withTestId(`post-pinch-${post.id}`)
+  const mediaGesture = Gesture.Simultaneous(doubleTap, pinch)
+  const preview = (
+    <FoodPreview
+      name={post.food_name}
+      photo={privatePhoto ? null : post.photo_path}
+      icon={toIcon(post.icon_set, post.icon_name)}
+      visible={visible}
+      privateUri={ownPhoto.data}
+      hasPhoto={Boolean(post.photo_path)}
+      photoUnavailable={Boolean(
+        privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
+      )}
+      facts={post}
+      mediaStyle={mediaStyle}
+    />
+  )
   return (
     <View className="overflow-hidden border-b-2 border-track bg-surface">
       <View className="flex-row items-center gap-3 px-5 py-3">
@@ -976,41 +1070,27 @@ export function PostCard({
           />
         )}
       </View>
-      {detail ? (
-        <View accessible accessibilityLabel={foodLabel(post.food_name, post)}>
-          <FoodPreview
-            name={post.food_name}
-            photo={privatePhoto ? null : post.photo_path}
-            icon={toIcon(post.icon_set, post.icon_name)}
-            visible={visible}
-            privateUri={ownPhoto.data}
-            hasPhoto={Boolean(post.photo_path)}
-            photoUnavailable={Boolean(
-              privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
-            )}
-            facts={post}
-          />
-        </View>
-      ) : (
-        <Tappable
-          onPress={open}
-          accessibilityRole="button"
+      <GestureDetector gesture={mediaGesture}>
+        <View
+          accessible
+          accessibilityRole="image"
           accessibilityLabel={foodLabel(post.food_name, post)}
+          onLayout={(event) => {
+            mediaSize.value = event.nativeEvent.layout.width
+          }}
         >
-          <FoodPreview
-            name={post.food_name}
-            photo={privatePhoto ? null : post.photo_path}
-            icon={toIcon(post.icon_set, post.icon_name)}
-            visible={visible}
-            privateUri={ownPhoto.data}
-            hasPhoto={Boolean(post.photo_path)}
-            photoUnavailable={Boolean(
-              privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
-            )}
-            facts={post}
-          />
-        </Tappable>
-      )}
+          {preview}
+          <Animated.View
+            pointerEvents="none"
+            className="absolute inset-0 items-center justify-center"
+            style={heartStyle}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            <Icon set="system" name="heart-filled" size={96} tintColor={colors.hibiscus} />
+          </Animated.View>
+        </View>
+      </GestureDetector>
       <View className="gap-2 px-5 pb-4 pt-2">
         <View className="flex-row items-center gap-5">
           <Tappable

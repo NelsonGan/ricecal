@@ -39,8 +39,16 @@ jest.mock('@/features/social/components', () => {
   return {
     SocialBar: () => null,
     PersonRow: () => null,
-    SocialList: ({ empty }: { empty: string }) =>
-      createElement(View, { accessibilityLabel: `list: ${empty}` }),
+    SocialList: ({
+      empty,
+      query,
+    }: {
+      empty: string
+      query: { data?: unknown; isPending: boolean }
+    }) =>
+      createElement(View, {
+        accessibilityLabel: `list: ${empty}, ${query.isPending ? 'pending' : 'ready'}, ${query.data ? 'current' : 'empty'}`,
+      }),
   }
 })
 
@@ -50,6 +58,19 @@ it('searches spaces as dots in a typed name', async () => {
   await render(people)
   await fireEvent.changeText(screen.getByPlaceholderText('Search handles'), '@Lily Lim')
   await waitFor(() => expect(mockSearch).toHaveBeenLastCalledWith('lily.lim'))
+})
+
+it('hides the previous handle results while the new search waits', async () => {
+  await render(people)
+  const field = screen.getByPlaceholderText('Search handles')
+  await fireEvent.changeText(field, 'alice')
+  await waitFor(() => expect(mockSearch).toHaveBeenLastCalledWith('alice'))
+  expect(screen.getByLabelText('list: No people found, ready, current')).toBeOnTheScreen()
+
+  await fireEvent.changeText(field, 'bob')
+  expect(screen.getByLabelText('list: No people found, pending, empty')).toBeOnTheScreen()
+  await waitFor(() => expect(mockSearch).toHaveBeenLastCalledWith('bob'))
+  expect(screen.getByLabelText('list: No people found, ready, current')).toBeOnTheScreen()
 })
 
 it('says nobody matched when nothing typed could be a handle', async () => {

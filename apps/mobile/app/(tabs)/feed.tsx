@@ -1,8 +1,10 @@
-import { useIsFocused, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useFocusEffect, useIsFocused, useRouter } from 'expo-router'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useUserId } from '@/data'
+import { keys } from '@/data/keys'
 import { useSocialFeed, useSocialUnread } from '@/data/social'
 import { ScreenTitle } from '@/features/shared'
 import { PostCard, SocialList } from '@/features/social/components'
@@ -14,6 +16,16 @@ export default function FeedScreen() {
   const viewer = useUserId()
   const [mode, setMode] = useState<'following' | 'discover'>('following')
   const feed = useSocialFeed(mode)
+  const queryClient = useQueryClient()
+  useFocusEffect(
+    useCallback(() => {
+      // A food can publish while this tab is mounted behind the diary.
+      void queryClient.invalidateQueries({
+        queryKey: keys.socialRead(viewer, 'social_feed', { p_mode: mode }),
+        exact: true,
+      })
+    }, [mode, queryClient, viewer]),
+  )
   const unread = useSocialUnread(useIsFocused())
   const unreadCount = unread.data ?? 0
   const unreadLabel =

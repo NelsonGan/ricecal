@@ -1,5 +1,7 @@
 import { impactAsync } from 'expo-haptics'
 import { View } from 'react-native'
+import { State } from 'react-native-gesture-handler'
+import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils'
 import type { SocialPost, SocialProfile } from '@/data/social'
 import i18n from '@/i18n'
 import { act, fireEvent, render, screen, userEvent } from '@/test-utils'
@@ -184,7 +186,7 @@ it('does not treat an unresolved public identity as permission to like', async (
 it('lays the name, calories and macros over the food and reads them out', async () => {
   await render(<PostCard post={post} />)
   expect(
-    screen.getByRole('button', {
+    screen.getByRole('image', {
       name: 'Rice, 206 kcal, Carbs 45 grams, Protein 4 grams, Fat 0 grams',
     }),
   ).toBeTruthy()
@@ -196,10 +198,52 @@ it('lays the name, calories and macros over the food and reads them out', async 
   }
 })
 
+it('opens comments from the comment button, not the food image', async () => {
+  await render(<PostCard post={post} />)
+  expect(screen.queryByRole('button', { name: /Rice, 206 kcal/ })).toBeNull()
+  expect(screen.getByRole('image', { name: /Rice, 206 kcal/ })).toBeTruthy()
+  await userEvent.setup().press(screen.getByRole('button', { name: '0 comments' }))
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/social/post/[id]', params: { id: 'post' } })
+})
+
+it('likes once on image double tap and keeps an existing like', async () => {
+  const view = await render(<PostCard post={post} />)
+  await act(async () => {
+    fireGestureHandler(getByGestureTestId('post-double-tap-post'), [{ state: State.END }])
+  })
+  expect(mockMutate).toHaveBeenCalledWith({ action: 'like', id: 'post', liked: true })
+  expect(mockPush).not.toHaveBeenCalledWith({
+    pathname: '/social/post/[id]',
+    params: { id: 'post' },
+  })
+
+  mockMutate.mockClear()
+  await view.rerender(<PostCard post={{ ...post, is_liked: true, like_count: 1 }} />)
+  await act(async () => {
+    fireGestureHandler(getByGestureTestId('post-double-tap-post'), [{ state: State.END }])
+  })
+  expect(mockMutate).not.toHaveBeenCalled()
+})
+
+it('accepts pinch gestures on a feed photograph', async () => {
+  await render(<PostCard post={{ ...post, photo_path: 'meals/someone/rice.jpg' }} />)
+  await act(async () => {
+    fireGestureHandler(getByGestureTestId('post-pinch-post'), [
+      { state: State.BEGAN, scale: 1, focalX: 140, focalY: 140 },
+      { state: State.ACTIVE, scale: 2, focalX: 140, focalY: 140 },
+      { state: State.END, scale: 2, focalX: 140, focalY: 140 },
+    ])
+  })
+  expect(mockPush).not.toHaveBeenCalledWith({
+    pathname: '/social/post/[id]',
+    params: { id: 'post' },
+  })
+})
+
 it('announces one gram with the singular unit', async () => {
   await render(<PostCard post={{ ...post, carbs_g: 1, protein_g: 1, fat_g: 1 }} />)
   expect(
-    screen.getByRole('button', {
+    screen.getByRole('image', {
       name: 'Rice, 206 kcal, Carbs 1 gram, Protein 1 gram, Fat 1 gram',
     }),
   ).toBeTruthy()

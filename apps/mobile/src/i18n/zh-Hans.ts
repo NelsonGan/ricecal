@@ -34,6 +34,8 @@ export const zhHans = {
     bio: '简介',
     privateProfile: '私人主页',
     privateProfileHint: '不在搜索、推荐和发现中显示。关注者仍可看到你的帖子。',
+    autoPostFoods: '自动发布食物',
+    autoPostFoodsHint: '新记录的食物会自动发布到动态。私人主页仅与关注者分享。',
     avatar: '选择照片',
     removeAvatar: '移除照片',
     handleInvalid: '请使用 3 至 24 个小写英文字母、数字、句点或下划线。',

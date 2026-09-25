@@ -28,6 +28,9 @@ export const ja = {
     privateProfile: '非公開プロフィール',
     privateProfileHint:
       '検索、おすすめ、見つけるに表示しません。フォロワーは投稿を引き続き見られます。',
+    autoPostFoods: '食事を自動投稿',
+    autoPostFoodsHint:
+      '新しく記録した食事を自動で投稿します。非公開プロフィールではフォロワーだけに共有します。',
     avatar: '写真を選ぶ',
     removeAvatar: '写真を削除',
     handleInvalid: '半角英小文字、数字、ピリオド、アンダースコアで3〜24文字にしてください。',

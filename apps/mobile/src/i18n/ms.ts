@@ -35,6 +35,9 @@ export const ms = {
     privateProfile: 'Profil peribadi',
     privateProfileHint:
       'Sembunyikan daripada carian, cadangan dan Teroka. Pengikut masih boleh melihat siaran anda.',
+    autoPostFoods: 'Siarkan makanan automatik',
+    autoPostFoodsHint:
+      'Makanan baharu yang dicatat disiarkan secara automatik. Profil peribadi berkongsi dengan pengikut sahaja.',
     avatar: 'Pilih foto',
     removeAvatar: 'Buang foto',
     handleInvalid: 'Gunakan 3 hingga 24 huruf kecil, nombor, titik atau garis bawah.',
