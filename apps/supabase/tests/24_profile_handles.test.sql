@@ -38,11 +38,12 @@ update public.profiles set handle = null where id = :'first';
 select is((select handle from public.profiles where id = :'first'), 'nelson.new.name',
   'an older client clearing a handle gets one from the current name');
 
-update public.profiles set review_status = 'approved' where id = :'first';
 select set_config('request.jwt.claims', json_build_object('sub', :'viewer', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*)::int from public.social_profiles where user_id = :'first'), 0,
-  'an inferred handle alone does not publish a profile');
+select is((select count(*)::int from public.social_profiles where user_id = :'first'), 1,
+  'a new account appears in discovery without a social action');
+select is((select count(*)::int from public.social_search_profiles('nelson.new')
+  where handle = 'nelson.new.name'), 1, 'an inferred handle can be found in search');
 reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'first', 'role', 'authenticated')::text, true);
@@ -52,8 +53,8 @@ reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'viewer', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select handle from public.social_search_profiles('nelson.')), 'nelson.new.name',
-  'a joined profile can be found with a dotted handle prefix');
+select is((select count(*)::int from public.social_search_profiles('nelson.')
+  where handle = 'nelson.new.name'), 1, 'a joined profile can be found with a dotted handle prefix');
 reset role;
 
 select * from finish();

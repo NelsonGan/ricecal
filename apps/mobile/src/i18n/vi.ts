@@ -25,6 +25,9 @@ export const vi = {
     handleHint: '3 đến 24 chữ thường, số, dấu chấm hoặc dấu gạch dưới.',
     displayName: 'Tên',
     bio: 'Giới thiệu',
+    privateProfile: 'Hồ sơ riêng tư',
+    privateProfileHint:
+      'Ẩn khỏi tìm kiếm, gợi ý và Khám phá. Người theo dõi vẫn xem được bài đăng của bạn.',
     avatar: 'Chọn ảnh',
     removeAvatar: 'Xóa ảnh',
     handleInvalid: 'Dùng 3 đến 24 chữ thường, số, dấu chấm hoặc dấu gạch dưới.',

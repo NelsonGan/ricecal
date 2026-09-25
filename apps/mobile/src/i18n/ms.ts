@@ -32,6 +32,9 @@ export const ms = {
     handleHint: '3 hingga 24 huruf kecil, nombor, titik atau garis bawah.',
     displayName: 'Nama',
     bio: 'Bio',
+    privateProfile: 'Profil peribadi',
+    privateProfileHint:
+      'Sembunyikan daripada carian, cadangan dan Teroka. Pengikut masih boleh melihat siaran anda.',
     avatar: 'Pilih foto',
     removeAvatar: 'Buang foto',
     handleInvalid: 'Gunakan 3 hingga 24 huruf kecil, nombor, titik atau garis bawah.',

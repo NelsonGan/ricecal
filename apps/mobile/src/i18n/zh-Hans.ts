@@ -32,6 +32,8 @@ export const zhHans = {
     handleHint: '3 至 24 个小写英文字母、数字、句点或下划线。',
     displayName: '名称',
     bio: '简介',
+    privateProfile: '私人主页',
+    privateProfileHint: '不在搜索、推荐和发现中显示。关注者仍可看到你的帖子。',
     avatar: '选择照片',
     removeAvatar: '移除照片',
     handleInvalid: '请使用 3 至 24 个小写英文字母、数字、句点或下划线。',

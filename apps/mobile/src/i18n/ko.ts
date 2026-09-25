@@ -26,6 +26,8 @@ export const ko = {
     handleHint: '영문 소문자, 숫자, 마침표 또는 밑줄 3~24자.',
     displayName: '이름',
     bio: '소개',
+    privateProfile: '비공개 프로필',
+    privateProfileHint: '검색, 추천, 둘러보기에서 숨깁니다. 팔로워는 게시물을 계속 볼 수 있습니다.',
     avatar: '사진 선택',
     removeAvatar: '사진 삭제',
     handleInvalid: '영문 소문자, 숫자, 마침표 또는 밑줄 3~24자를 사용하세요.',

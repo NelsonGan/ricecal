@@ -25,6 +25,9 @@ export const ja = {
     handleHint: '半角英小文字、数字、ピリオド、アンダースコアで3〜24文字。',
     displayName: '名前',
     bio: '自己紹介',
+    privateProfile: '非公開プロフィール',
+    privateProfileHint:
+      '検索、おすすめ、見つけるに表示しません。フォロワーは投稿を引き続き見られます。',
     avatar: '写真を選ぶ',
     removeAvatar: '写真を削除',
     handleInvalid: '半角英小文字、数字、ピリオド、アンダースコアで3〜24文字にしてください。',

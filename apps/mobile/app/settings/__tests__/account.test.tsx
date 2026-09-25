@@ -19,7 +19,13 @@ const mockBack = jest.fn()
 const mockDelete = jest.fn().mockResolvedValue(undefined)
 const mockSocialAction = jest.fn().mockResolvedValue({})
 let mockProfile:
-  | { display_name: string; handle?: string | null; bio?: string; avatar_path?: string | null }
+  | {
+      display_name: string
+      handle?: string | null
+      bio?: string
+      avatar_path?: string | null
+      is_private?: boolean
+    }
   | undefined = { display_name: 'Alex' }
 
 jest.mock('@/data', () => ({
@@ -168,6 +174,17 @@ it('accepts a dotted handle', async () => {
       avatar: null,
     }),
   )
+})
+
+it('lets the owner hide their profile from discovery', async () => {
+  mockProfile = { display_name: 'Alex', handle: 'alex', bio: '', is_private: false }
+  await mount()
+  expect(screen.getByRole('switch', { name: 'Private profile' })).toHaveProp('accessibilityState', {
+    checked: false,
+    disabled: false,
+  })
+  await user.press(screen.getByRole('switch', { name: 'Private profile' }))
+  await waitFor(() => expect(mockUpdateProfile).toHaveBeenCalledWith({ isPrivate: true }))
 })
 
 it('saves a bio while leaving the handle empty', async () => {

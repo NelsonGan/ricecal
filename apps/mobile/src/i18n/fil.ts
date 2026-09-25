@@ -33,6 +33,9 @@ export const fil = {
     handleHint: '3 hanggang 24 na maliliit na titik, numero, tuldok, o underscore.',
     displayName: 'Pangalan',
     bio: 'Tungkol sa iyo',
+    privateProfile: 'Pribadong profile',
+    privateProfileHint:
+      'Itago sa paghahanap, mga mungkahi at Discover. Makikita pa rin ng mga follower ang mga post mo.',
     avatar: 'Pumili ng larawan',
     removeAvatar: 'Alisin ang larawan',
     handleInvalid: 'Gumamit ng 3 hanggang 24 na maliliit na titik, numero, tuldok, o underscore.',

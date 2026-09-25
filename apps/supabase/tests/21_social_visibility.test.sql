@@ -101,8 +101,8 @@ select throws_ok($q$select * from public.social_search_profiles('%')$q$, '22023'
 insert into public.blocked_authors (user_id, author_id) values (:'bob', :'fresh');
 select is((select count(*)::int from public.social_blocked_profiles() where user_id = :'fresh'), 1,
   'a legacy recipe block remains manageable when its author has no public social profile');
-select is((select handle from public.social_blocked_profiles() where user_id = :'fresh'), '',
-  'a legacy block does not invent a public handle');
+select ok((select handle ~ '^[a-z0-9_.]{3,24}$' from public.social_blocked_profiles()
+  where user_id = :'fresh'), 'a block list shows the assigned handle of a discoverable account');
 select is((select avatar_path from public.social_blocked_profiles() where user_id = :'fresh'), null,
   'a legacy block exposes no private avatar');
 delete from public.blocked_authors where user_id = :'bob' and author_id = :'fresh';

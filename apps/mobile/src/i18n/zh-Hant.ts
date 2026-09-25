@@ -31,6 +31,8 @@ export const zhHant = {
     handleHint: '3 至 24 個小寫英文字母、數字、句點或底線。',
     displayName: '名稱',
     bio: '簡介',
+    privateProfile: '私人個人頁面',
+    privateProfileHint: '不會顯示於搜尋、推薦和探索。追蹤者仍可看到你的貼文。',
     avatar: '選擇照片',
     removeAvatar: '移除照片',
     handleInvalid: '請使用 3 至 24 個小寫英文字母、數字、句點或底線。',

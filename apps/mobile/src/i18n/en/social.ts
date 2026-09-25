@@ -17,6 +17,9 @@ export const social = {
   handleHint: '3 to 24 lowercase letters, numbers, dots or underscores.',
   displayName: 'Name',
   bio: 'Bio',
+  privateProfile: 'Private profile',
+  privateProfileHint:
+    'Hide from search, suggestions and Discover. Followers can still see your posts.',
   avatar: 'Choose photo',
   removeAvatar: 'Remove photo',
   handleInvalid: 'Use 3 to 24 lowercase letters, numbers, dots or underscores.',

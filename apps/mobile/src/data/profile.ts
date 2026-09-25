@@ -47,6 +47,7 @@ export type ProfilePatch = {
    * every row rather than a different base to sign against.
    */
   avatarPath?: string | null
+  isPrivate?: boolean
   sex?: Sex
   birthDate?: string
   heightCm?: number
@@ -63,6 +64,7 @@ function toRow(patch: ProfilePatch): TablesUpdate<'profiles'> {
   const row: TablesUpdate<'profiles'> = {}
   if (patch.displayName !== undefined) row.display_name = patch.displayName
   if (patch.avatarPath !== undefined) row.avatar_path = patch.avatarPath
+  if (patch.isPrivate !== undefined) row.is_private = patch.isPrivate
   if (patch.sex !== undefined) row.sex = patch.sex
   if (patch.birthDate !== undefined) row.birth_date = patch.birthDate
   if (patch.heightCm !== undefined) row.height_cm = patch.heightCm

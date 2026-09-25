@@ -30,6 +30,9 @@ export const id = {
     handleHint: '3 hingga 24 huruf kecil, angka, titik, atau garis bawah.',
     displayName: 'Nama',
     bio: 'Bio',
+    privateProfile: 'Profil privat',
+    privateProfileHint:
+      'Sembunyikan dari pencarian, saran, dan Jelajahi. Pengikut tetap dapat melihat postingan Anda.',
     avatar: 'Pilih foto',
     removeAvatar: 'Hapus foto',
     handleInvalid: 'Gunakan 3 hingga 24 huruf kecil, angka, titik, atau garis bawah.',

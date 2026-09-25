@@ -34,8 +34,8 @@ values
    1, 2000, 2000, 2000, '50 large servings', 50, null, null);
 update public.food_logs set quantity = 100 where id = :'wide_entry';
 
-select is((select count(*)::int from public.social_profiles where user_id = :'alice'), 0,
-  'creating an account does not opt it into a public identity');
+select is((select is_private from public.profiles where id = :'alice'), false,
+  'new accounts start discoverable');
 select is((select count(*)::int from public.social_posts where author_id = :'alice'), 0,
   'logging a meal never publishes it');
 select ok(not exists (
