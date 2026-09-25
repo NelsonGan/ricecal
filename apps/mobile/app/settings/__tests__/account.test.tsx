@@ -131,11 +131,13 @@ it('saves handle and bio from the existing account page', async () => {
   expect(
     screen.queryByText('Choose what people see. Your diary stays private until you share a meal.'),
   ).toBeNull()
-  expect(screen.queryByText('3 to 24 lowercase letters, numbers or underscores.')).toBeNull()
+  expect(screen.queryByText('3 to 24 lowercase letters, numbers, dots or underscores.')).toBeNull()
   await user.press(
-    screen.getByRole('button', { name: '3 to 24 lowercase letters, numbers or underscores.' }),
+    screen.getByRole('button', {
+      name: '3 to 24 lowercase letters, numbers, dots or underscores.',
+    }),
   )
-  expect(screen.getByText('3 to 24 lowercase letters, numbers or underscores.')).toBeTruthy()
+  expect(screen.getByText('3 to 24 lowercase letters, numbers, dots or underscores.')).toBeTruthy()
   await user.press(screen.getByRole('button', { name: 'Close' }))
   await user.type(screen.getByLabelText('Handle'), 'alex_cooks')
   await user.type(screen.getByLabelText('Bio'), 'Rice and noodles')
@@ -146,6 +148,23 @@ it('saves handle and bio from the existing account page', async () => {
       handle: 'alex_cooks',
       name: 'Alex',
       bio: 'Rice and noodles',
+      avatar: null,
+    }),
+  )
+})
+
+it('accepts a dotted handle', async () => {
+  mockProfile = { display_name: 'Nelson Gan', handle: 'nelson_gan', bio: '', avatar_path: null }
+  await mount()
+  await user.clear(screen.getByLabelText('Handle'))
+  await user.type(screen.getByLabelText('Handle'), 'Nelson.Gan')
+  await user.press(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() =>
+    expect(mockSocialAction).toHaveBeenCalledWith({
+      action: 'profile',
+      handle: 'nelson.gan',
+      name: 'Nelson Gan',
+      bio: '',
       avatar: null,
     }),
   )

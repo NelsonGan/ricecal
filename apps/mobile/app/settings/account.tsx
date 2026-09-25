@@ -110,7 +110,7 @@ export default function AccountScreen() {
     const normalized = handle.trim().toLowerCase()
     if (
       !profile ||
-      (normalized && !/^[a-z0-9_]{3,24}$/.test(normalized)) ||
+      (normalized && !/^[a-z0-9_.]{3,24}$/.test(normalized)) ||
       !name.trim() ||
       !online
     )
@@ -299,7 +299,7 @@ export default function AccountScreen() {
                 ? t('social:handleTaken')
                 : publicSubmitted &&
                     handle.trim() &&
-                    !/^[a-z0-9_]{3,24}$/.test(handle.trim().toLowerCase())
+                    !/^[a-z0-9_.]{3,24}$/.test(handle.trim().toLowerCase())
                   ? t('social:handleInvalid')
                   : undefined
             }

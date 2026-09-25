@@ -69,7 +69,8 @@ select throws_ok($q$update public.profiles set review_status = 'approved'$q$, '4
 reset role;
 
 select public.review_social_content('profile', :'alice', 1, 'approved', null);
-update public.profiles p set handle = v.handle, display_name = v.name, review_status = 'approved'
+update public.profiles p set handle = v.handle, display_name = v.name,
+  social_joined_at = now(), review_status = 'approved'
 from (values (:'bob'::uuid, 'social_bob', 'Bob fixture'),
              (:'carol'::uuid, 'social_carol', 'Carol fixture'),
              (:'dan'::uuid, 'social_dan', 'Dan fixture'),
