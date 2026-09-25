@@ -94,7 +94,7 @@ begin
         union all
         select f.followed_id from public.social_follows f
           join public.profiles a on a.id = f.followed_id
-        where f.follower_id = v_user and (a.handle is not null or a.social_joined_at is not null)
+        where f.follower_id = v_user and a.social_joined_at is not null
           and a.review_status = 'approved' and not a.quarantined
           and f.followed_id not in (select h.user_id from hidden_authors h)
       ), candidates as materialized (
@@ -119,8 +119,7 @@ begin
       select sp.id, sp.created_at from public.social_posts sp
         join public.profiles a on a.id = sp.author_id
       where sp.audience = 'public' and sp.review_status = 'approved' and not sp.quarantined
-        and (a.handle is not null or a.social_joined_at is not null)
-        and a.review_status = 'approved' and not a.quarantined
+        and not a.is_private and a.review_status = 'approved' and not a.quarantined
         and sp.author_id not in (select e.user_id from excluded_authors e)
         and sp.id not in (select r.content_id from public.social_reports r where r.reporter_id = v_user and r.kind = 'post')
         and (p_before_at is null or (sp.created_at, sp.id) < (p_before_at, p_before_id))
@@ -209,10 +208,12 @@ returns setof public.social_profile_details language plpgsql stable security inv
 declare v_query text := lower(btrim(p_query));
 begin
   perform private.social_validate_page(null, null, p_limit);
-  if v_query is null or v_query !~ '^[a-z0-9_]{1,24}$' then raise exception 'Invalid handle search' using errcode = '22023'; end if;
-  if p_after_handle is not null and p_after_handle !~ '^[a-z0-9_]{3,24}$' then raise exception 'Invalid search cursor' using errcode = '22023'; end if;
-  return query select d.* from public.social_profile_details d
-    where starts_with(d.handle, v_query) and (p_after_handle is null or d.handle > p_after_handle)
+  if v_query is null or v_query !~ '^[a-z0-9_.]{1,24}$' then raise exception 'Invalid handle search' using errcode = '22023'; end if;
+  if p_after_handle is not null and p_after_handle !~ '^[a-z0-9_.]{3,24}$' then raise exception 'Invalid search cursor' using errcode = '22023'; end if;
+  return query select d.* from public.social_profiles p
+    join public.social_profile_details d on d.user_id = p.user_id
+    where starts_with(p.handle, v_query) and not p.is_private
+      and (p_after_handle is null or d.handle > p_after_handle)
     order by d.handle limit p_limit + 1;
 end;
 $$;
@@ -234,7 +235,7 @@ begin
     ), seeds as materialized (
       select f.followed_id from public.social_follows f
         join public.profiles a on a.id = f.followed_id
-      where f.follower_id = v_user and (a.handle is not null or a.social_joined_at is not null)
+      where f.follower_id = v_user
         and a.review_status = 'approved' and not a.quarantined
         and f.followed_id not in (select h.user_id from hidden_authors h)
       order by f.created_at desc, f.followed_id desc limit 64
@@ -243,7 +244,7 @@ begin
         select edge.followed_id from public.social_follows edge
           join public.profiles a on a.id = edge.followed_id
         where edge.follower_id = s.followed_id
-          and (a.id = v_user or ((a.handle is not null or a.social_joined_at is not null)
+          and (a.id = v_user or (not a.is_private
             and a.review_status = 'approved' and not a.quarantined
             and a.id not in (select h.user_id from hidden_authors h)))
         order by edge.created_at desc, edge.followed_id desc limit 64
@@ -253,8 +254,7 @@ begin
       order by count(*) desc, p.followed_id limit 256
     ), recent as materialized (
       select p.id as user_id, 0::bigint as weight from public.profiles p
-      where (p.handle is not null or p.social_joined_at is not null)
-        and p.review_status = 'approved' and not p.quarantined
+      where not p.is_private and p.review_status = 'approved' and not p.quarantined
         and p.id not in (select h.user_id from hidden_authors h)
       order by p.created_at desc, p.id desc limit 512
     ), candidates as materialized (
@@ -342,8 +342,7 @@ $$;
 create index social_posts_photo_idx on public.social_posts(photo_path)
   where photo_path is not null and review_status = 'approved' and not quarantined;
 create index social_profiles_avatar_idx on public.profiles(avatar_path)
-  where (handle is not null or social_joined_at is not null)
-    and avatar_path is not null and review_status = 'approved' and not quarantined;
+  where avatar_path is not null and review_status = 'approved' and not quarantined;
 
 create or replace function public.social_photo_claims(p_keys text[])
 returns table (owner_id uuid, photo_path text, photo_etag text, kind text)

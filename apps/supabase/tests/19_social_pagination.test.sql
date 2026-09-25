@@ -11,7 +11,8 @@ insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, ra
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
        id::text || '@paging.example.test', '{}', '{}'
 from unnest(array[:'viewer'::uuid, :'author'::uuid, :'other'::uuid]) id;
-update public.profiles p set handle = v.handle, display_name = v.name, review_status = 'approved'
+update public.profiles p set handle = v.handle, display_name = v.name,
+  social_joined_at = now(), review_status = 'approved'
 from (values (:'viewer'::uuid, 'paging_viewer', 'Viewer fixture'),
              (:'author'::uuid, 'paging_author', 'Author fixture'),
              (:'other'::uuid, 'paging_other', 'Other fixture')) v(id, handle, name)

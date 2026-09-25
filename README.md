@@ -1170,6 +1170,9 @@ failed saves keep the draft for another attempt when the field loses focus.
 The Back button waits for that save, and photo picking saves the name first so
 two profile writes cannot overwrite each other in the cache.
 Tapping the avatar opens the system image picker and the existing avatar upload.
+The same page has a Private profile switch. It hides the account from people
+search, suggestions and Discover while leaving direct links and existing follows
+available.
 Clipboard support requires a native 1.0.5 build; the app-version runtime keeps this bundle off older binaries.
 
 **Password setup and changes are different forms.** `has_account_password()`
@@ -2466,10 +2469,10 @@ The first implementation includes:
 
 - Following, newest first, containing the viewer and accounts they follow;
   Discover, containing public posts from other accounts they do not follow.
-- Public identity fields in the existing Settings profile: an optional unique
-  handle, display name, optional short bio and avatar. Existing accounts stay
-  out of discovery until they take a social action or choose a handle. Their
-  own profile remains visible to them. No health-profile fields are exposed.
+- Public identity fields in the existing Settings profile: a unique
+  handle, display name, optional short bio and avatar. Accounts appear in
+  discovery by default and can choose a private profile to leave search,
+  suggestions and Discover. No health-profile fields are exposed.
 - Profile posts, follower and following lists, follow/unfollow, follower removal,
   handle search and suggested people. Suggestions exclude self, existing follows,
   unavailable profiles and blocks in either direction.
@@ -2483,9 +2486,10 @@ The first implementation includes:
 - Posts and profile edits publish immediately. Comments still use moderation;
   rejected comments can be corrected. Reports can quarantine social content.
 
-Public profiles do not expose a private account mode. Followers-only is a post
-audience: follows are accepted immediately, and the composer states who will see
-the post. Direct messages, video, stories, contact-book uploads and push delivery
+Private profile hides an account from public discovery while existing followers
+and shared profile links continue to work. Followers-only is a post audience:
+follows are accepted immediately, and the composer states who will see the post.
+Direct messages, video, stories, contact-book uploads and push delivery
 are separate products, not prerequisites for a food following system.
 
 ### The privacy boundary is a public-only view
@@ -2493,16 +2497,20 @@ are separate products, not prerequisites for a food following system.
 `profiles` contains birth date, sex, height and weight goals and remains
 owner-only. Handle and bio live on that row beside the account name and avatar.
 The `social_profiles` view returns social identity and review state fields and applies
-report and block visibility. Installing an update creates no public identity:
-`social_joined_at` and handle start null. The first social action opts the
-account in. Posting, following, liking and commenting need no handle or bio.
+report and block visibility. Every profile gets a handle from its name, with spaces
+changed to dots and a numeric suffix if the name is taken. Existing profiles
+without a handle are backfilled. A name without usable Latin letters gets a
+short account ID instead. Accounts are discoverable unless the owner turns on
+Private profile in Edit profile. The `social_joined_at` field still records a
+social action, but it does not govern discovery.
+Posting, following, liking and commenting need no manual handle setup or bio.
 The Security Advisor flags this one view as a definer view. That is deliberate:
 an invoker view would apply the owner-only `profiles` policy and hide every
 other person's public identity. Its selected columns exclude email, body
 measurements, goals and diary fields. `social_can_view_profile` enforces the
 viewer's block and report rules. The social RLS tests exercise those boundaries
 as client roles.
-Handles, when set, are normalized lowercase ASCII, 3 to 24 characters, unique
+Handles are normalized lowercase ASCII, 3 to 24 characters, unique
 under a database constraint. Names and bios accept the app's languages.
 
 `social_posts` holds only the food name, drawing, owned photo key, the meal's
@@ -2562,9 +2570,9 @@ concurrent inserts appear on refresh. Deleting the cursor row does not invalidat
 the cursor because its values travel with the request.
 Handle search is ordered by the current handle. A renamed account may move
 across the search cursor; refresh to see its new position. The client deduplicates
-by account id while paging. The app searches only the handle characters in what
-was typed, since the server refuses anything else: a name with a space or in
-another script finds nobody rather than failing. Handles are `collate "C"`, so their unique index
+by account id while paging. The app changes spaces to dots and searches only
+handle characters in what was typed, since the server refuses anything else:
+a name in another script finds nobody rather than failing. Handles are `collate "C"`, so their unique index
 turns a prefix into a range and serves every page. Under the database's ICU
 collation the prefix could not bound the scan, and the page after the last match
 walked every later handle in the table.

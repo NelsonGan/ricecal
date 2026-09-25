@@ -46,17 +46,17 @@ jest.mock('@/features/social/components', () => {
 
 beforeEach(() => mockSearch.mockClear())
 
-it('searches the handle characters in a typed name instead of failing', async () => {
+it('searches spaces as dots in a typed name', async () => {
   await render(people)
   await fireEvent.changeText(screen.getByPlaceholderText('Search handles'), '@Lily Lim')
-  await waitFor(() => expect(mockSearch).toHaveBeenLastCalledWith('lilylim'))
+  await waitFor(() => expect(mockSearch).toHaveBeenLastCalledWith('lily.lim'))
 })
 
 it('says nobody matched when nothing typed could be a handle', async () => {
   await render(people)
   await fireEvent.changeText(screen.getByPlaceholderText('Search handles'), '莉莉 🍜')
   expect(screen.getByText('No people found')).toBeOnTheScreen()
-  expect(mockSearch).not.toHaveBeenCalledWith(expect.stringMatching(/[^a-z0-9_]/))
+  expect(mockSearch).not.toHaveBeenCalledWith(expect.stringMatching(/[^a-z0-9_.]/))
 })
 
 it('does not search a truncated prefix when the visible handle is too long', async () => {

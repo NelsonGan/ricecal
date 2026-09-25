@@ -12,9 +12,9 @@ select ('a8300000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
        '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
        'limit-' || n || '@social.example.test', '{}', '{}'
 from generate_series(1, 5002) n;
-insert into public.profiles (id, handle, display_name, review_status)
+insert into public.profiles (id, handle, display_name, social_joined_at, review_status)
 select ('a8300000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
-       'limit_' || lpad(n::text, 5, '0'), 'Limit fixture ' || n, 'approved'
+       'limit_' || lpad(n::text, 5, '0'), 'Limit fixture ' || n, now(), 'approved'
 from generate_series(1, 5002) n;
 set local session_replication_role = origin;
 insert into public.social_follows (follower_id, followed_id)

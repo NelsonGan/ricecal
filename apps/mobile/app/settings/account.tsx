@@ -34,6 +34,7 @@ import {
   ListRow,
   Screen,
   Sheet,
+  Switch,
   Tappable,
   Text,
   TextField,
@@ -110,7 +111,7 @@ export default function AccountScreen() {
     const normalized = handle.trim().toLowerCase()
     if (
       !profile ||
-      (normalized && !/^[a-z0-9_]{3,24}$/.test(normalized)) ||
+      (normalized && !/^[a-z0-9_.]{3,24}$/.test(normalized)) ||
       !name.trim() ||
       !online
     )
@@ -135,6 +136,17 @@ export default function AccountScreen() {
       } else {
         toast.show({ title: t('social:saveFailed'), tone: 'error' })
       }
+    }
+  }
+
+  const setPrivate = async (value: boolean) => {
+    if (!profile || busy || !online) return
+    try {
+      if (!(await save())) return
+      await updateProfile.mutateAsync({ isPrivate: value })
+      await queryClient.invalidateQueries({ queryKey: keys.social(viewer) })
+    } catch {
+      toast.show({ title: t('social:saveFailed'), tone: 'error' })
     }
   }
 
@@ -299,7 +311,7 @@ export default function AccountScreen() {
                 ? t('social:handleTaken')
                 : publicSubmitted &&
                     handle.trim() &&
-                    !/^[a-z0-9_]{3,24}$/.test(handle.trim().toLowerCase())
+                    !/^[a-z0-9_.]{3,24}$/.test(handle.trim().toLowerCase())
                   ? t('social:handleInvalid')
                   : undefined
             }
@@ -332,6 +344,18 @@ export default function AccountScreen() {
           >
             {t('social:save')}
           </Button>
+          <View className="flex-row items-center gap-3 border-t border-line pt-4">
+            <View className="min-w-0 flex-1 gap-0.5">
+              <Text variant="label">{t('social:privateProfile')}</Text>
+              <Text variant="meta">{t('social:privateProfileHint')}</Text>
+            </View>
+            <Switch
+              value={profile?.is_private ?? false}
+              onValueChange={setPrivate}
+              disabled={!profile || busy || !online}
+              accessibilityLabel={t('social:privateProfile')}
+            />
+          </View>
         </View>
         <ListRow
           title={t('profile:account.changePassword')}

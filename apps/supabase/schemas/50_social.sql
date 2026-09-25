@@ -9,33 +9,74 @@ create type public.social_content_kind as enum ('profile', 'post', 'comment');
 create type public.social_activity_kind as enum ('follow', 'like', 'comment');
 create type public.social_counter_metric as enum ('followers', 'following', 'posts', 'likes', 'comments');
 
--- Public identity is part of the existing account profile. The handle is
--- optional so installing an update never publishes a private account.
+-- Public identity is part of the existing account profile. People can hide
+-- themselves from discovery without breaking existing follows or shared links.
 alter table public.profiles
-  add column handle text collate "C" unique check (handle ~ '^[a-z0-9_]{3,24}$'),
+  add column handle text collate "C" unique check (handle ~ '^[a-z0-9_.]{3,24}$'),
   add column social_joined_at timestamptz,
+  add column is_private boolean not null default false,
   add column bio text not null default '' check (char_length(bio) <= 160),
   add column photo_etag text,
-  add column review_status public.recipe_review not null default 'pending',
+  add column review_status public.recipe_review not null default 'approved',
   add column review_reason text,
   add column revision integer not null default 1 check (revision > 0),
   add column quarantined boolean not null default false,
   add constraint social_profiles_name_present check (
-    handle is null or char_length(btrim(display_name)) between 1 and 60
+    social_joined_at is null or char_length(btrim(display_name)) between 1 and 60
   ),
   add constraint social_profiles_avatar_owned check (
-    handle is null or avatar_path is null or avatar_path like 'avatars/' || id::text || '/%'
+    social_joined_at is null or avatar_path is null or avatar_path like 'avatars/' || id::text || '/%'
   );
+
+-- Assign a stable handle when a profile is created or an older client clears it.
+-- Serialize each candidate so a signup and a manual edit cannot claim it together.
+create or replace function private.assign_profile_handle()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  v_base text;
+  v_candidate text;
+  v_suffix text;
+  v_number integer := 0;
+begin
+  if new.handle is not null and new.handle <> '' then
+    perform pg_advisory_xact_lock(hashtextextended('profile.handle:' || new.handle, 0));
+    return new;
+  end if;
+
+  v_base := lower(extensions.unaccent('extensions.unaccent'::regdictionary, coalesce(new.display_name, '')));
+  v_base := regexp_replace(v_base, '[[:space:]]+', '.', 'g');
+  v_base := regexp_replace(v_base, '[^a-z0-9._]', '', 'g');
+  v_base := trim(both '.' from regexp_replace(v_base, '[.]+', '.', 'g'));
+  v_base := left(v_base, 24);
+  if char_length(v_base) < 3 then
+    v_base := 'user.' || left(replace(new.id::text, '-', ''), 8);
+  end if;
+
+  loop
+    v_suffix := case when v_number = 0 then '' else '.' || v_number::text end;
+    v_candidate := left(v_base, 24 - char_length(v_suffix)) || v_suffix;
+    perform pg_advisory_xact_lock(hashtextextended('profile.handle:' || v_candidate, 0));
+    exit when not exists (
+      select 1 from public.profiles p where p.handle = v_candidate and p.id <> new.id
+    );
+    v_number := v_number + 1;
+  end loop;
+  new.handle := v_candidate;
+  return new;
+end;
+$$;
+create trigger assign_profile_handle before insert or update of handle, display_name
+  on public.profiles for each row execute function private.assign_profile_handle();
+revoke execute on function private.assign_profile_handle from public, anon, authenticated;
 
 -- Keep the old profile writes available without letting a client approve its
 -- own public identity or replace the ETag of a reviewed avatar.
 revoke update on public.profiles from authenticated;
-grant update (display_name, avatar_path, handle, bio, sex, birth_date, height_cm,
+grant update (display_name, avatar_path, handle, bio, is_private, sex, birth_date, height_cm,
   target_weight_kg, activity_level, food_styles, referral_source, timezone, onboarded_at)
   on public.profiles to authenticated;
 create index social_profiles_discover_idx on public.profiles(created_at desc, id desc)
-  where (handle is not null or social_joined_at is not null)
-    and review_status = 'approved' and not quarantined;
+  where not is_private and review_status = 'approved' and not quarantined;
 
 create table public.social_follows (
   follower_id uuid not null references public.profiles(id) on delete cascade,
@@ -213,8 +254,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
   select (select auth.uid()) is not null and exists (
     select 1 from public.profiles p where p.id = p_user and (
       p.id = (select auth.uid()) or (
-        (p.social_joined_at is not null or p.handle is not null)
-        and p.review_status = 'approved' and not p.quarantined
+        p.review_status = 'approved' and not p.quarantined
         and not private.social_pair_blocked(p.id)
         and not exists (select 1 from public.social_reports r
           where r.kind = 'profile' and r.content_id = p.id
@@ -227,9 +267,11 @@ $$;
 -- This view exposes only social fields. The underlying profiles row stays
 -- owner-only, including all body measurements and goals.
 create or replace view public.social_profiles as
-select p.id as user_id, coalesce(p.handle, '') as handle, p.display_name, p.bio, p.avatar_path,
-  p.photo_etag, p.review_status, p.review_reason, p.revision, p.quarantined,
-  p.created_at, p.updated_at
+select p.id as user_id, coalesce(p.handle, '') as handle, p.display_name, p.bio,
+  case when p.avatar_path like 'avatars/' || p.id::text || '/%' then p.avatar_path end as avatar_path,
+  case when p.avatar_path like 'avatars/' || p.id::text || '/%' then p.photo_etag end as photo_etag,
+  p.review_status, p.review_reason, p.revision, p.quarantined,
+  p.created_at, p.updated_at, p.is_private
 from public.profiles p
 where private.social_can_view_profile(p.id);
 revoke all on public.social_profiles from public, anon, authenticated;
@@ -490,17 +532,17 @@ $$;
 create trigger social_profile_deleted after delete on public.profiles
   for each row execute function private.social_profile_deleted();
 
--- Existing account edits can change public words or bytes too. Every such
--- change needs a fresh review before other accounts see it.
+-- Existing account edits can change public words or bytes too. Publish them
+-- immediately, then use reports and quarantine for moderation.
 create or replace function private.social_profile_changed()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   if new.handle is distinct from old.handle or new.display_name is distinct from old.display_name
       or new.bio is distinct from old.bio or new.avatar_path is distinct from old.avatar_path then
-    new.review_status := case when new.social_joined_at is not null then 'approved' else 'pending' end;
+    new.review_status := 'approved';
     new.review_reason := null;
     new.photo_etag := null;
-    new.revision := case when old.handle is null and old.social_joined_at is null
+    new.revision := case when old.social_joined_at is null
       then 1 else old.revision + 1 end;
   end if;
   return new;
