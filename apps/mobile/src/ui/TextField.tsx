@@ -168,8 +168,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
       {label || labelAction ? (
         <View
           className={cn(
-            'min-h-[20px] flex-row items-center gap-1',
-            !labelActionInline && 'justify-between',
+            'min-h-[20px] flex-row items-center',
+            labelActionInline ? 'gap-0' : 'justify-between gap-1',
           )}
         >
           <Text variant="label" numberOfLines={1} className="min-w-0 shrink">
