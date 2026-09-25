@@ -302,8 +302,8 @@ export default function AccountScreen() {
             labelAction={
               <IconButton
                 variant="ghost"
-                size="xs"
-                hitSlop={3}
+                size="xxs"
+                hitSlop={8}
                 accessibilityLabel={t('social:handleHint')}
                 onPress={() => setHandleHelpOpen(true)}
               >
@@ -358,14 +358,14 @@ export default function AccountScreen() {
             {t('social:save')}
           </Button>
           <View className="flex-row items-center gap-3 border-t border-line pt-4">
-            <View className="min-w-0 flex-1 flex-row items-center gap-1">
+            <View className="min-w-0 flex-1 flex-row items-center gap-0">
               <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
                 {t('social:privateProfile')}
               </Text>
               <IconButton
                 variant="ghost"
-                size="xs"
-                hitSlop={3}
+                size="xxs"
+                hitSlop={8}
                 accessibilityLabel={t('social:privateProfileHint')}
                 onPress={() => setPrivateHelpOpen(true)}
               >
@@ -380,14 +380,14 @@ export default function AccountScreen() {
             />
           </View>
           <View className="flex-row items-center gap-3 border-t border-line pt-4">
-            <View className="min-w-0 flex-1 flex-row items-center gap-1">
+            <View className="min-w-0 flex-1 flex-row items-center gap-0">
               <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
                 {t('social:autoPostFoods')}
               </Text>
               <IconButton
                 variant="ghost"
-                size="xs"
-                hitSlop={3}
+                size="xxs"
+                hitSlop={8}
                 accessibilityLabel={t('social:autoPostFoodsHint')}
                 onPress={() => setAutoPostHelpOpen(true)}
               >
