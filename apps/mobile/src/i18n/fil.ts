@@ -36,6 +36,9 @@ export const fil = {
     privateProfile: 'Pribadong profile',
     privateProfileHint:
       'Itago sa paghahanap, mga mungkahi at Discover. Makikita pa rin ng mga follower ang mga post mo.',
+    autoPostFoods: 'Awtomatikong i-post ang pagkain',
+    autoPostFoodsHint:
+      'Awtomatikong lalabas sa feed ang bagong ni-log na pagkain. Sa pribadong profile, mga follower lang ang makakakita.',
     avatar: 'Pumili ng larawan',
     removeAvatar: 'Alisin ang larawan',
     handleInvalid: 'Gumamit ng 3 hanggang 24 na maliliit na titik, numero, tuldok, o underscore.',

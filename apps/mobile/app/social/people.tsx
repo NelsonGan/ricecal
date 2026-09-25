@@ -21,8 +21,12 @@ export default function PeopleScreen() {
   // longer. A handle cannot exceed 24 characters, so that visible query has no
   // possible match.
   const searchableHandle = handle.length <= 24 ? handle : ''
-  const debounced = useDebouncedValue(searchableHandle)
+  const debounced = useDebouncedValue(searchableHandle, 350)
   const search = useSocialSearch(debounced)
+  const visibleSearch =
+    searchableHandle === debounced
+      ? search
+      : { ...search, data: undefined, isPending: true, fetchStatus: 'fetching' as const }
   const suggestions = useSocialSuggestions()
   const suggested = {
     ...suggestions,
@@ -58,7 +62,7 @@ export default function PeopleScreen() {
       ) : query.trim() ? (
         <SocialList
           key={debounced}
-          query={search}
+          query={visibleSearch}
           rowKey={(person) => person.user_id}
           renderRow={(person, visible) => <PersonRow person={person} visible={visible} />}
           empty={t('emptyPeople')}

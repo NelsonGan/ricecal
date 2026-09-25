@@ -721,6 +721,7 @@ export type Database = {
       profiles: {
         Row: {
           activity_level: Database['public']['Enums']['activity_level']
+          auto_post_foods: boolean
           avatar_path: string | null
           bio: string
           birth_date: string | null
@@ -746,6 +747,7 @@ export type Database = {
         }
         Insert: {
           activity_level?: Database['public']['Enums']['activity_level']
+          auto_post_foods?: boolean
           avatar_path?: string | null
           bio?: string
           birth_date?: string | null
@@ -771,6 +773,7 @@ export type Database = {
         }
         Update: {
           activity_level?: Database['public']['Enums']['activity_level']
+          auto_post_foods?: boolean
           avatar_path?: string | null
           bio?: string
           birth_date?: string | null

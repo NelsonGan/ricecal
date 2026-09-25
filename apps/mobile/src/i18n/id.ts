@@ -33,6 +33,9 @@ export const id = {
     privateProfile: 'Profil privat',
     privateProfileHint:
       'Sembunyikan dari pencarian, saran, dan Jelajahi. Pengikut tetap dapat melihat postingan Anda.',
+    autoPostFoods: 'Posting makanan otomatis',
+    autoPostFoodsHint:
+      'Makanan baru yang dicatat otomatis masuk ke feed. Profil privat hanya berbagi dengan pengikut.',
     avatar: 'Pilih foto',
     removeAvatar: 'Hapus foto',
     handleInvalid: 'Gunakan 3 hingga 24 huruf kecil, angka, titik, atau garis bawah.',
