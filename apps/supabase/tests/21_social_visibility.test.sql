@@ -16,7 +16,8 @@ insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, ra
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
        id::text || '@visibility.example.test', '{}', '{}'
 from unnest(array[:'alice'::uuid, :'bob'::uuid, :'carol'::uuid, :'dan'::uuid, :'fresh'::uuid]) id;
-update public.profiles p set handle = v.handle, display_name = v.name, review_status = 'approved',
+update public.profiles p set handle = v.handle, display_name = v.name,
+  social_joined_at = now(), review_status = 'approved',
   avatar_path = v.avatar_path, photo_etag = v.photo_etag
 from (values (:'alice'::uuid, 'visibility_alice', 'Alice fixture', 'avatars/' || :'alice' || '/fixture.jpg', '"avatar-etag"'),
              (:'bob'::uuid, 'visibility_bob', 'Bob fixture', null, null),
@@ -100,8 +101,8 @@ select throws_ok($q$select * from public.social_search_profiles('%')$q$, '22023'
 insert into public.blocked_authors (user_id, author_id) values (:'bob', :'fresh');
 select is((select count(*)::int from public.social_blocked_profiles() where user_id = :'fresh'), 1,
   'a legacy recipe block remains manageable when its author has no public social profile');
-select is((select handle from public.social_blocked_profiles() where user_id = :'fresh'), '',
-  'a legacy block does not invent a public handle');
+select ok((select handle ~ '^[a-z0-9_.]{3,24}$' from public.social_blocked_profiles()
+  where user_id = :'fresh'), 'a block list shows the assigned handle of a discoverable account');
 select is((select avatar_path from public.social_blocked_profiles() where user_id = :'fresh'), null,
   'a legacy block exposes no private avatar');
 delete from public.blocked_authors where user_id = :'bob' and author_id = :'fresh';
@@ -232,7 +233,8 @@ select ('a8600000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
   '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
   'badge-' || n || '@visibility.example.test', '{}', '{}'
 from generate_series(1, 101) n;
-update public.profiles p set handle = 'badge_actor_' || n, display_name = 'Badge actor ' || n
+update public.profiles p set handle = 'badge_actor_' || n, display_name = 'Badge actor ' || n,
+  social_joined_at = now()
 from generate_series(1, 101) n
 where p.id = ('a8600000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid;
 update public.profiles set review_status = 'approved' where handle like 'badge_actor_%';

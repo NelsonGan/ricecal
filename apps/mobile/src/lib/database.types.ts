@@ -730,6 +730,7 @@ export type Database = {
           handle: string | null
           height_cm: number | null
           id: string
+          is_private: boolean
           onboarded_at: string | null
           photo_etag: string | null
           quarantined: boolean
@@ -754,6 +755,7 @@ export type Database = {
           handle?: string | null
           height_cm?: number | null
           id: string
+          is_private?: boolean
           onboarded_at?: string | null
           photo_etag?: string | null
           quarantined?: boolean
@@ -778,6 +780,7 @@ export type Database = {
           handle?: string | null
           height_cm?: number | null
           id?: string
+          is_private?: boolean
           onboarded_at?: string | null
           photo_etag?: string | null
           quarantined?: boolean
@@ -2184,7 +2187,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          avatar_path?: string | null
+          avatar_path?: never
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -2201,7 +2204,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          avatar_path?: string | null
+          avatar_path?: never
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -2226,6 +2229,7 @@ export type Database = {
           created_at: string | null
           display_name: string | null
           handle: string | null
+          is_private: boolean | null
           photo_etag: string | null
           quarantined: boolean | null
           review_reason: string | null
@@ -2235,12 +2239,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          avatar_path?: string | null
+          avatar_path?: never
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
           handle?: never
-          photo_etag?: string | null
+          is_private?: boolean | null
+          photo_etag?: never
           quarantined?: boolean | null
           review_reason?: string | null
           review_status?: Database['public']['Enums']['recipe_review'] | null
@@ -2249,12 +2254,13 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          avatar_path?: string | null
+          avatar_path?: never
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
           handle?: never
-          photo_etag?: string | null
+          is_private?: boolean | null
+          photo_etag?: never
           quarantined?: boolean | null
           review_reason?: string | null
           review_status?: Database['public']['Enums']['recipe_review'] | null

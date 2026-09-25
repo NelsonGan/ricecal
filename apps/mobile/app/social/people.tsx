@@ -9,13 +9,14 @@ import { EmptyState, Screen, SearchField, Text } from '@/ui'
 export default function PeopleScreen() {
   const { t } = useTranslation(['social', 'recipes'])
   const [query, setQuery] = useState('')
-  // Handles are lowercase letters, digits and underscores, and the server
-  // refuses anything else. Typing a name with a space or in another script used
-  // to show "Could not load this"; it now searches the handle characters in it.
-  const handle = query
+  // Match the dots generated from spaces in names before searching handles.
+  const handleCharacters = query
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9_]/g, '')
+    .replace(/\s+/g, '.')
+    .replace(/[^a-z0-9_.]/g, '')
+  // A name in another script can leave only the dot created from its space.
+  const handle = /[a-z0-9_]/.test(handleCharacters) ? handleCharacters : ''
   // Do not silently search a truncated prefix while the field shows something
   // longer. A handle cannot exceed 24 characters, so that visible query has no
   // possible match.

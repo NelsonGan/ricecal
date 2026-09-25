@@ -29,12 +29,15 @@ export const ms = {
     joinBody:
       'Pilih apa yang orang lihat. Diari anda kekal peribadi sehingga anda berkongsi makanan.',
     handle: 'Nama pengguna',
-    handleHint: '3 hingga 24 huruf kecil, nombor atau garis bawah.',
+    handleHint: '3 hingga 24 huruf kecil, nombor, titik atau garis bawah.',
     displayName: 'Nama',
     bio: 'Bio',
+    privateProfile: 'Profil peribadi',
+    privateProfileHint:
+      'Sembunyikan daripada carian, cadangan dan Teroka. Pengikut masih boleh melihat siaran anda.',
     avatar: 'Pilih foto',
     removeAvatar: 'Buang foto',
-    handleInvalid: 'Gunakan 3 hingga 24 huruf kecil, nombor atau garis bawah.',
+    handleInvalid: 'Gunakan 3 hingga 24 huruf kecil, nombor, titik atau garis bawah.',
     nameInvalid: 'Masukkan nama.',
     save: 'Simpan',
     saved: 'Disimpan',
