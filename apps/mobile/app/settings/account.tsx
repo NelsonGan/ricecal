@@ -69,6 +69,8 @@ export default function AccountScreen() {
   const [publicSubmitted, setPublicSubmitted] = useState(false)
   const [handleTaken, setHandleTaken] = useState(false)
   const [handleHelpOpen, setHandleHelpOpen] = useState(false)
+  const [privateHelpOpen, setPrivateHelpOpen] = useState(false)
+  const [autoPostHelpOpen, setAutoPostHelpOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -145,6 +147,16 @@ export default function AccountScreen() {
       if (!(await save())) return
       await updateProfile.mutateAsync({ isPrivate: value })
       await queryClient.invalidateQueries({ queryKey: keys.social(viewer) })
+    } catch {
+      toast.show({ title: t('social:saveFailed'), tone: 'error' })
+    }
+  }
+
+  const setAutoPost = async (value: boolean) => {
+    if (!profile || busy || !online) return
+    try {
+      if (!(await save())) return
+      await updateProfile.mutateAsync({ autoPostFoods: value })
     } catch {
       toast.show({ title: t('social:saveFailed'), tone: 'error' })
     }
@@ -286,11 +298,12 @@ export default function AccountScreen() {
           />
           <TextField
             label={t('social:handle')}
+            labelActionInline
             labelAction={
               <IconButton
                 variant="ghost"
-                size="xs"
-                hitSlop={3}
+                size="xxs"
+                hitSlop={8}
                 accessibilityLabel={t('social:handleHint')}
                 onPress={() => setHandleHelpOpen(true)}
               >
@@ -345,15 +358,47 @@ export default function AccountScreen() {
             {t('social:save')}
           </Button>
           <View className="flex-row items-center gap-3 border-t border-line pt-4">
-            <View className="min-w-0 flex-1 gap-0.5">
-              <Text variant="label">{t('social:privateProfile')}</Text>
-              <Text variant="meta">{t('social:privateProfileHint')}</Text>
+            <View className="min-w-0 flex-1 flex-row items-center gap-0">
+              <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
+                {t('social:privateProfile')}
+              </Text>
+              <IconButton
+                variant="ghost"
+                size="xxs"
+                hitSlop={8}
+                accessibilityLabel={t('social:privateProfileHint')}
+                onPress={() => setPrivateHelpOpen(true)}
+              >
+                <Icon set="ui" name="info" size={18} />
+              </IconButton>
             </View>
             <Switch
               value={profile?.is_private ?? false}
               onValueChange={setPrivate}
               disabled={!profile || busy || !online}
               accessibilityLabel={t('social:privateProfile')}
+            />
+          </View>
+          <View className="flex-row items-center gap-3 border-t border-line pt-4">
+            <View className="min-w-0 flex-1 flex-row items-center gap-0">
+              <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
+                {t('social:autoPostFoods')}
+              </Text>
+              <IconButton
+                variant="ghost"
+                size="xxs"
+                hitSlop={8}
+                accessibilityLabel={t('social:autoPostFoodsHint')}
+                onPress={() => setAutoPostHelpOpen(true)}
+              >
+                <Icon set="ui" name="info" size={18} />
+              </IconButton>
+            </View>
+            <Switch
+              value={profile?.auto_post_foods ?? false}
+              onValueChange={setAutoPost}
+              disabled={!profile || busy || !online}
+              accessibilityLabel={t('social:autoPostFoods')}
             />
           </View>
         </View>
@@ -409,6 +454,22 @@ export default function AccountScreen() {
         closeLabel={t('common:action.close')}
       >
         <Text>{t('social:handleHint')}</Text>
+      </Sheet>
+      <Sheet
+        visible={privateHelpOpen}
+        onClose={() => setPrivateHelpOpen(false)}
+        title={t('social:privateProfile')}
+        closeLabel={t('common:action.close')}
+      >
+        <Text>{t('social:privateProfileHint')}</Text>
+      </Sheet>
+      <Sheet
+        visible={autoPostHelpOpen}
+        onClose={() => setAutoPostHelpOpen(false)}
+        title={t('social:autoPostFoods')}
+        closeLabel={t('common:action.close')}
+      >
+        <Text>{t('social:autoPostFoodsHint')}</Text>
       </Sheet>
       {passwordOpen ? <ChangePassword onClose={() => setPasswordOpen(false)} /> : null}
       {confirming ? <DeleteAccount onClose={() => setConfirming(false)} /> : null}

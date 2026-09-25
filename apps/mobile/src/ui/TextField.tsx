@@ -25,6 +25,8 @@ export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
    * sign-in form anybody has used puts it.
    */
   labelAction?: ReactNode
+  /** Keep a short help action beside the field label. */
+  labelActionInline?: boolean
   /** Shown under the field, in hibiscus, and flips the border. */
   error?: string
   /** Shown under the field when there is no error. */
@@ -68,6 +70,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   {
     label,
     labelAction,
+    labelActionInline = false,
     error,
     hint,
     leftSlot,
@@ -163,7 +166,12 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           rather than the action opening a line of its own. `min-w-0` on the
           label so a long one truncates instead of pushing the action off. */}
       {label || labelAction ? (
-        <View className="min-h-[20px] flex-row items-center justify-between gap-3">
+        <View
+          className={cn(
+            'min-h-[20px] flex-row items-center',
+            labelActionInline ? 'gap-0' : 'justify-between gap-1',
+          )}
+        >
           <Text variant="label" numberOfLines={1} className="min-w-0 shrink">
             {label}
           </Text>

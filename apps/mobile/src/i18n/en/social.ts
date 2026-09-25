@@ -20,6 +20,9 @@ export const social = {
   privateProfile: 'Private profile',
   privateProfileHint:
     'Hide from search, suggestions and Discover. Followers can still see your posts.',
+  autoPostFoods: 'Auto post foods',
+  autoPostFoodsHint:
+    'New foods you log appear in your feed automatically. Private profiles share with followers only.',
   avatar: 'Choose photo',
   removeAvatar: 'Remove photo',
   handleInvalid: 'Use 3 to 24 lowercase letters, numbers, dots or underscores.',

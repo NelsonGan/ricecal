@@ -1173,6 +1173,9 @@ Tapping the avatar opens the system image picker and the existing avatar upload.
 The same page has a Private profile switch. It hides the account from people
 search, suggestions and Discover while leaving direct links and existing follows
 available.
+The switch's explanation sits behind its info button. Auto post foods sits below
+it, off by default. Turning it on shares each new food to the feed as the food
+is committed. A private profile shares those posts with followers only.
 Clipboard support requires a native 1.0.5 build; the app-version runtime keeps this bundle off older binaries.
 
 **Password setup and changes are different forms.** `has_account_password()`
@@ -2452,10 +2455,10 @@ out of the middle.
 
 ### Product contract and implementation plan
 
-This is an explicit publication system. Logging a meal never publishes it. The
-saved entry offers **Share to feed**, which opens a preview of the food name,
+Posting is explicit by default. With Auto post foods off, logging a meal never
+publishes it. The saved entry offers **Share to feed**, which opens a preview of the food name,
 photograph or drawing, calories and macros, an optional caption (280 characters), and an audience:
-Everyone or Followers. Only pressing Post creates a post. A failed publication
+Everyone or Followers. With automatic posting off, only pressing Post creates a post. A failed publication
 does not undo the meal. The source is one committed entry owned by the caller;
 the server constructs the snapshot and accepts no client-supplied author or food.
 
@@ -2522,6 +2525,17 @@ A post never contains diary notes, meal dates/times, goals, weight, location or
 account email. Publication time is new, not the time the meal was logged. A source-entry reference exists for ownership and deletion,
 not as permission to join the private diary. Read RPCs return explicit public
 fields. Diary and recipe RLS are never widened to implement the feed.
+
+Auto post foods is a private profile preference, false for every new and existing
+account. A deferred insert trigger publishes each new food after its transaction
+finishes, so a scan's components and any same-transaction correction are in the
+snapshot. It uses the same diary totals and ownership rules as manual sharing.
+Public profiles post to Everyone; private profiles post to Followers. Existing
+posts stay as they were when the preference is switched off. A manual share of
+an automatically posted entry opens its existing post instead of making another.
+Automatic posts join the account to the social feed and use the same hourly post
+limit as Share. A quarantined profile does not publish; neither condition blocks
+the private diary entry.
 
 There is at most one post per source entry, so a retried publish returns that
 post; the entry is the retry key and a post carries no request token. A client
@@ -2694,6 +2708,10 @@ server refuses it; it never refetches a feed, since it is the most frequent writ
 and a refetch reloads every loaded page. A comment refreshes only its post. The
 unread badge polls once a minute only while Feed is on screen. Pull-to-refresh
 keeps the first loaded page visible while the newest one loads.
+The feed image itself stays in place on a tap. A double tap likes it and briefly
+shows a heart, and a pinch zooms the photograph while held. Only the comment
+button opens the post's comment screen. People search waits 350 ms after typing
+stops; its loading rows match the avatar, identity and follow control layout.
 
 Implementation order is deliberate:
 
