@@ -25,6 +25,7 @@ let mockProfile:
       bio?: string
       avatar_path?: string | null
       is_private?: boolean
+      auto_post_foods?: boolean
     }
   | undefined = { display_name: 'Alex' }
 
@@ -185,6 +186,26 @@ it('lets the owner hide their profile from discovery', async () => {
   })
   await user.press(screen.getByRole('switch', { name: 'Private profile' }))
   await waitFor(() => expect(mockUpdateProfile).toHaveBeenCalledWith({ isPrivate: true }))
+})
+
+it('shows private profile details only when its info button opens', async () => {
+  await mount()
+  const explanation =
+    'Hide from search, suggestions and Discover. Followers can still see your posts.'
+  expect(screen.queryByText(explanation)).toBeNull()
+  await user.press(screen.getByRole('button', { name: explanation }))
+  expect(screen.getByText(explanation)).toBeOnTheScreen()
+})
+
+it('keeps automatic food posting off until the owner opts in', async () => {
+  mockProfile = { display_name: 'Alex', handle: 'alex', bio: '', auto_post_foods: false }
+  await mount()
+  expect(screen.getByRole('switch', { name: 'Auto post foods' })).toHaveProp('accessibilityState', {
+    checked: false,
+    disabled: false,
+  })
+  await user.press(screen.getByRole('switch', { name: 'Auto post foods' }))
+  await waitFor(() => expect(mockUpdateProfile).toHaveBeenCalledWith({ autoPostFoods: true }))
 })
 
 it('saves a bio while leaving the handle empty', async () => {

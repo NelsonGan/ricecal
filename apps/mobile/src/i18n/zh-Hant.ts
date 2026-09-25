@@ -33,6 +33,8 @@ export const zhHant = {
     bio: '簡介',
     privateProfile: '私人個人頁面',
     privateProfileHint: '不會顯示於搜尋、推薦和探索。追蹤者仍可看到你的貼文。',
+    autoPostFoods: '自動發布食物',
+    autoPostFoodsHint: '新記錄的食物會自動發布到動態。私人頁面只與追蹤者分享。',
     avatar: '選擇照片',
     removeAvatar: '移除照片',
     handleInvalid: '請使用 3 至 24 個小寫英文字母、數字、句點或底線。',

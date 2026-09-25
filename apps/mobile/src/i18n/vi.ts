@@ -28,6 +28,9 @@ export const vi = {
     privateProfile: 'Hồ sơ riêng tư',
     privateProfileHint:
       'Ẩn khỏi tìm kiếm, gợi ý và Khám phá. Người theo dõi vẫn xem được bài đăng của bạn.',
+    autoPostFoods: 'Tự động đăng món ăn',
+    autoPostFoodsHint:
+      'Món ăn mới ghi lại sẽ tự động xuất hiện trên bảng tin. Hồ sơ riêng tư chỉ chia sẻ với người theo dõi.',
     avatar: 'Chọn ảnh',
     removeAvatar: 'Xóa ảnh',
     handleInvalid: 'Dùng 3 đến 24 chữ thường, số, dấu chấm hoặc dấu gạch dưới.',
