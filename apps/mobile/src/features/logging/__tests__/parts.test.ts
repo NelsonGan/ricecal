@@ -146,33 +146,32 @@ it('stops a weight at the top of the range', () => {
  *
  * The property under test is that it NEVER moves the amount it describes: the
  * grams a row holds are what the person typed, and this rounds a copy of the
- * multiplier for the line under the field. A test that let the rounding write
- * back would still pass every case below and would break the weight field, so
- * the exactness flag is what each of these actually pins down.
+ * multiplier for the line under the field. The weight conversion tests above
+ * pin down the value that is actually stored.
  */
-it('says a whole count as itself, with no approximation', () => {
-  expect(roundedCount(2)).toEqual({ amount: 2, exact: true })
+it('says a whole count as itself', () => {
+  expect(roundedCount(2)).toBe(2)
 })
 
 it('says a clean quarter as itself', () => {
-  expect(roundedCount(1.25)).toEqual({ amount: 1.25, exact: true })
+  expect(roundedCount(1.25)).toBe(1.25)
 })
 
-it('rounds a typed weight to the nearest quarter and admits it is not exact', () => {
+it('rounds a typed weight to the nearest quarter', () => {
   // 200 g of something that comes in 180 g pieces: 1.11, which is about one.
-  expect(roundedCount(1.11)).toEqual({ amount: 1, exact: false })
-  expect(roundedCount(1.22)).toEqual({ amount: 1.25, exact: false })
+  expect(roundedCount(1.11)).toBe(1)
+  expect(roundedCount(1.22)).toBe(1.25)
 })
 
 it('never rounds a part down to nothing', () => {
   // The floor is a quarter of one unit, which is where `stepGrams` stops too:
   // below it the row is removed rather than shrunk, so "0" is not an amount
   // this can be asked to show.
-  expect(roundedCount(0.1)).toEqual({ amount: 0.25, exact: false })
+  expect(roundedCount(0.1)).toBe(0.25)
 })
 
-it('does not call a stored quarter approximate over a floating-point hair', () => {
-  expect(roundedCount(0.25 * 3).exact).toBe(true)
+it('keeps a stored quarter steady over a floating-point hair', () => {
+  expect(roundedCount(0.25 * 3)).toBe(0.75)
 })
 
 /**
@@ -188,7 +187,8 @@ it('prints a quarter as a glyph rather than a decimal', () => {
   expect(countLabel(1.25)).toBe('1¼')
 })
 
-it('marks a count the weight has moved off a quarter with a tilde', () => {
-  expect(countLabel(1.11)).toBe('~1')
-  expect(countLabel(1.22)).toBe('~1¼')
+it('prints the nearest count without a prefix after a weight change', () => {
+  expect(countLabel(1.11)).toBe('1')
+  expect(countLabel(1.22)).toBe('1¼')
+  expect(countLabel(0.74)).toBe('¾')
 })
