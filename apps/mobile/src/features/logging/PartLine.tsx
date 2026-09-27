@@ -13,8 +13,7 @@ import { countLabel } from './parts'
  * Shown at one as well, for the reason `detail.times` gives: a count that appears
  * only above one reads as a badge rather than the amount every row has.
  *
- * Rounded to a quarter, so it can disagree with an exact weight beside it, which
- * is what the "~" from `countLabel` says.
+ * Rounded to a quarter for display, while the weight beside it stays exact.
  *
  * Here rather than in the two screens, because the × costs three elements and a
  * paragraph to place, and two copies would drift.
