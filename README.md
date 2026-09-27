@@ -1917,16 +1917,15 @@ row heading, which is the one spot with room for a long name.
 
 Editing moves the weight. `quantityForGrams` is the seam:
 `set_ingredient_quantity` takes a quantity, `food_log_ingredients.quantity` is
-`numeric(6, 2)`, so a weight lands within a gram or two of what was asked for.
+`numeric(8, 4)`, so a typed weight reads back at the gram that was asked for.
 A part nobody weighed keeps its multiplier and cannot be typed into.
 
-**The count is rounded to a quarter and the weight is not**, which is why the
-two are allowed to disagree and why `countLabel` prefixes a "~" when they do:
-"~1¼ × Fried Rice (110 g)". Rounding the stored amount instead would cost the
+**The count is rounded to a quarter and the weight is not**, so the row can read
+"1¼ × Fried Rice (110 g)". Rounding the stored amount instead would cost the
 weight its resolution, since a 90 g part could then only ever weigh a multiple
 of 22.5 g and every 10 g tap of `GRAM_STEP` would round straight back to where
-it started. A scan lands on whole counts, so the "~" only ever appears on a
-part somebody has resized by hand.
+it started. A scan lands on whole counts; resizing by weight can show a rounded
+count beside the precise weight.
 
 Each sheet holds a draft and its Save writes it; leaving any other way drops
 what was typed. `stagedParts` in `features/logging/parts.ts` is shared between
