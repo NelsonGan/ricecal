@@ -1958,7 +1958,9 @@ things it cost:
 - it needs more rows than it shows, so am/pm is two buttons rather than a
   two-row wheel whose whole range is one snap step;
 - the sheet holding it is `scrollable={false}`, because a vertical scroller
-  inside a vertical scroller loses every drag.
+  inside a vertical scroller loses every drag;
+- the dismissing scrim sits behind the panel as a sibling, because wrapping the
+  panel in its `Pressable` claimed the wheels' drags before they could scroll.
 
 **When it was eaten is one question over two columns**, and
 `features/logging/when.ts` is the seam. `log_date` is the day the entry counts
