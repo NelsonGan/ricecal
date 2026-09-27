@@ -259,7 +259,7 @@ export function PlateEditor({
    * left a minus looking pressable that did nothing — the button asked whether
    * the QUANTITY was at its quarter while the arithmetic under it was stopping a
    * ten gram step short of the same floor, and between those two answers there
-   * is a part at "~¼ × / 14 g" with an enabled button and no effect.
+   * is a part at "¼ × / 14 g" with an enabled button and no effect.
    */
   const stepTarget = (ingredient: EntryIngredient, direction: 1 | -1): number | null => {
     const perUnit = perUnitGrams(ingredient)
@@ -410,7 +410,7 @@ export function PlateEditor({
                     {weighed ? (
                       /* THE WEIGHT, EXACT, and the count that reads it back is in the
                      heading above. Typing 200 g of something that comes in 180 g
-                     pieces leaves this reading 200 and the heading reading "~1 ×".
+                     pieces leaves this reading 200 and the heading reading "1 ×".
                      Snapping the weight to the quarter instead would make the two
                      always agree and this field useless: the buttons move 10 g at
                      a time and every one of those taps would round straight back

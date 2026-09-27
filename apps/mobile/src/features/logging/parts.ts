@@ -163,28 +163,14 @@ export function stepPart(quantity: number, direction: 1 | -1): number | null {
  *
  * Rounding the stored amount would cost the weight its resolution: a 180 g part
  * could only be 45, 90, 135, 180 or 225 g, and `GRAM_STEP` would be a no-op.
- *
- * `exact` is false where the two readings have parted company, which is what
- * the "~" on screen is for. A scan lands on whole counts, so only a hand-typed
- * weight says "~2".
  */
-export function roundedCount(quantity: number): { amount: number; exact: boolean } {
-  const amount = Math.max(PART_STEP, Math.round(quantity / PART_STEP) * PART_STEP)
-  // A hair either side of a quarter still reads as a quarter. This used to be
-  // half of what the column stored, which made it exactly the width of a
-  // rounding error; the column holds four decimals now and the tolerance is a
-  // judgement instead: 0.005 of a unit is about a gram on a plateful of rice,
-  // and printing "~1" for that would be pedantry rather than accuracy.
-  return { amount, exact: Math.abs(amount - quantity) < 0.005 }
+export function roundedCount(quantity: number): number {
+  return Math.max(PART_STEP, Math.round(quantity / PART_STEP) * PART_STEP)
 }
 
 /**
- * The count as a row prints it: "1", "¾", "~1¼". The "~" and the quarter glyphs
- * are symbols rather than copy, which is why they live here rather than in
- * `en/logging.ts`, as `formatPortion`'s fractions do. The × that follows on
- * screen stays in the screens because it is set smaller and needs its own run.
+ * The count as a row prints it: "1", "¾", "1¼". Quarter glyphs live here rather
+ * than in copy, as `formatPortion`'s fractions do. The × that follows on screen
+ * stays in the screens because it is set smaller and needs its own run.
  */
-export const countLabel = (quantity: number): string => {
-  const { amount, exact } = roundedCount(quantity)
-  return `${exact ? '' : '~'}${formatPortion(amount)}`
-}
+export const countLabel = (quantity: number): string => formatPortion(roundedCount(quantity))
