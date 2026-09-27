@@ -31,13 +31,6 @@ import { Text } from './Text'
 import { ToastHost } from './Toast'
 
 /**
- * The panel is a Pressable so a tap inside it can swallow the event before it
- * reaches the dismissing scrim, and animated so it can rise on its own while the
- * scrim stays exactly where it is.
- */
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
-
-/**
  * The body, taught `className`. NativeWind only converts it to a style for React
  * Native's own components, and a third-party one drops it silently, which loses
  * the panel's list the `flex-1` that gives it any height.
@@ -172,8 +165,8 @@ export type SheetProps = {
  * renders above native pickers and the keyboard and Android's hardware back
  * closes it through `onRequestClose`.
  *
- * The scrim is a Pressable that closes and the panel is a Pressable that
- * swallows the press, or every tap inside would bubble to the scrim.
+ * The scrim is a Pressable behind the panel, not its parent. A wrapping
+ * Pressable kept the picker's scroll views from claiming vertical drags.
  *
  * A sheet with a text field rides above the keyboard itself: a `Modal` is its
  * own window, so the `Screen` shell's keyboard handling does not reach inside.
@@ -473,17 +466,16 @@ export function SheetSurface({
   )
 
   return (
-    /* The scrim is deliberately NOT an accessibility element. Giving it a role
-       and a label makes the whole overlay one node, and VoiceOver then reads
-       "Close button" and nothing else — the sheet's own title and buttons never
-       reach the user. Dismissal stays available through the back gesture and
-       `onRequestClose`. */
-    <Pressable
-      className="flex-1 justify-end bg-black/40"
-      onPress={dismiss}
-      accessible={false}
-      importantForAccessibility="no"
-    >
+    <View className="flex-1 justify-end">
+      {/* Keep the scrim behind the panel so its press handler cannot claim the
+          wheels' drags. It is not an accessibility element: a labelled scrim
+          would hide the sheet's own controls. */}
+      <Pressable
+        className="absolute inset-0 bg-black/40"
+        onPress={dismiss}
+        accessible={false}
+        importantForAccessibility="no"
+      />
       {/* A host of its own, and this is why there is more than one. A sheet is a
           native modal WINDOW: nothing rendered in the app's tree below it can
           draw over it, so the pad a field in here opens has to be drawn in
@@ -511,7 +503,7 @@ export function SheetSurface({
           // flush to the top edge reads as a screen from the wrong direction.
           style={fullHeight ? { flex: 1, marginTop: insets.top } : undefined}
         >
-          <AnimatedPressable
+          <Animated.View
             className={cn(
               'gap-md rounded-t-card bg-surface px-gutter pt-md',
               fullHeight && 'flex-1',
@@ -535,7 +527,6 @@ export function SheetSurface({
                   Math.max(insets.bottom, spacing.gutter) + (fullHeight ? 0 : numpad.height),
               },
             ]}
-            onPress={(event) => event.stopPropagation()}
             accessibilityViewIsModal
             accessible={false}
           >
@@ -573,7 +564,7 @@ export function SheetSurface({
 
             {children ? body : null}
             {footer}
-          </AnimatedPressable>
+          </Animated.View>
         </KeyboardAvoidingView>
       </NumpadHost>
 
@@ -589,6 +580,6 @@ export function SheetSurface({
           see `hosting`, which is what stops a sheet that has just been closed
           from swallowing the toast explaining why. */}
       {hosting ? <ToastHost placement="top" /> : null}
-    </Pressable>
+    </View>
   )
 }
