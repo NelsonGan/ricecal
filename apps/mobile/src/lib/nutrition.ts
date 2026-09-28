@@ -11,11 +11,25 @@ import { DEFAULT_WATER_ML } from './water'
 export const ZERO_MACROS: Macros = { kcal: 0, carbs: 0, protein: 0, fat: 0 }
 
 /**
+ * Rounds the way Postgres rounds a `numeric`: a true half goes up.
+ *
+ * `Math.round` alone does not, because in binary a half is often a hair under.
+ * Scaling a figure by a plate's portion lands on halves all the time, and
+ * 50 x 0.29 is 14.499999999999998, so the screen editing an entry rounded to 14
+ * where the view counting the day said 15. Snapping to nine places first takes
+ * the hair off without moving any number the arithmetic can really produce.
+ */
+export function roundHalfUp(value: number, places = 0): number {
+  const scale = 10 ** places
+  return Math.round(Number((value * scale).toFixed(9))) / scale
+}
+
+/**
  * One decimal place, and no float droppings. Grams arrive as `numeric(6,1)`, but
  * 24.3 + 51.3 is 75.60000000000001 in binary floating point, which is a string
  * the moment anything interpolates it.
  */
-const round1 = (value: number) => Math.round(value * 10) / 10
+const round1 = (value: number) => roundHalfUp(value, 1)
 
 /**
  * Adds up entries that already carry their own costed macros. Rounded here
@@ -58,10 +72,18 @@ export function entryTotals(input: {
   typed?: Partial<Macros>
   /** The plate's parts, when the scan broke it down. Empty is "it did not". */
   parts?: readonly Macros[]
+  /**
+   * How much of the plate was eaten. It scales the parts' sum and nothing else,
+   * since an entry without parts has no plate for it to scale. All of it when
+   * left out.
+   */
+  plateQuantity?: number
   /** The dish at this portion — the catalogue's answer, and the fallback. */
   portion: Macros
 }): Macros {
-  const parts = input.parts?.length ? sumMacroList(input.parts) : undefined
+  const parts = input.parts?.length
+    ? sumMacroList(input.parts, input.plateQuantity ?? 1)
+    : undefined
   const typed = input.typed ?? {}
   const pick = (field: keyof Macros) => typed[field] ?? parts?.[field] ?? input.portion[field]
 
@@ -73,8 +95,12 @@ export function entryTotals(input: {
   }
 }
 
-/** `sumMacros` for anything carrying macros directly rather than on `.macros`. */
-function sumMacroList(items: readonly Macros[]): Macros {
+/**
+ * `sumMacros` for anything carrying macros directly rather than on `.macros`,
+ * scaled before it is rounded. The view rounds a scaled plate once, and rounding
+ * the sum and then the product would put a half-plate a calorie off it.
+ */
+function sumMacroList(items: readonly Macros[], scale = 1): Macros {
   const total = items.reduce<Macros>(
     (sum, item) => ({
       kcal: sum.kcal + item.kcal,
@@ -85,10 +111,10 @@ function sumMacroList(items: readonly Macros[]): Macros {
     ZERO_MACROS,
   )
   return {
-    kcal: Math.round(total.kcal),
-    carbs: round1(total.carbs),
-    protein: round1(total.protein),
-    fat: round1(total.fat),
+    kcal: roundHalfUp(total.kcal * scale),
+    carbs: round1(total.carbs * scale),
+    protein: round1(total.protein * scale),
+    fat: round1(total.fat * scale),
   }
 }
 

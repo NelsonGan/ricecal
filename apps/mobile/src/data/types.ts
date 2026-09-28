@@ -145,6 +145,18 @@ export type EntryStatus = 'analysing' | 'waiting' | 'failed' | 'nofood'
 export type Entry = {
   id: string
   quantity: number
+  /**
+   * How much of the plate was eaten, for an entry broken into ingredients: it
+   * scales the sum of the parts, and 1 where there are none. Optional because a
+   * day cached before the view carried it rehydrates without it.
+   */
+  plateQuantity?: number
+  /**
+   * How many ingredients the plate has, so a screen can tell which portion
+   * control to draw before it has the parts themselves. Optional for the same
+   * reason as `plateQuantity`.
+   */
+  ingredientCount?: number
   /** ISO instant. Orders the rows inside a meal. */
   loggedAt: string
   logDate: string

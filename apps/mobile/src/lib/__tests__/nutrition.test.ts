@@ -11,6 +11,7 @@ import {
   macroSplit,
   maintenanceRate,
   proteinBasisKg,
+  roundHalfUp,
   targetWeightRange,
   WEIGHT_RANGE,
   weeklyPace,
@@ -456,5 +457,65 @@ describe('entryTotals', () => {
   // nothing — reading it as zero calories is the dangerous direction.
   it('treats no parts as no breakdown rather than as zero', () => {
     expect(entryTotals({ parts: [], portion })).toEqual(portion)
+  })
+
+  // How much of the plate was eaten scales the parts' sum and rounds once,
+  // exactly as the view does, or half a plate lands a calorie off Today.
+  it('scales the parts by how much of the plate was eaten', () => {
+    const parts = [
+      { kcal: 330, carbs: 52, protein: 6, fat: 11 },
+      { kcal: 290, carbs: 9, protein: 24, fat: 18 },
+      { kcal: 95, carbs: 1.4, protein: 7.3, fat: 7 },
+    ]
+    // 715 x 0.5 is 357.5; 62.4 x 0.5 is 31.2; 37.3 x 0.5 is 18.65.
+    expect(entryTotals({ parts, plateQuantity: 0.5, portion })).toEqual({
+      kcal: 358,
+      carbs: 31.2,
+      protein: 18.7,
+      fat: 18,
+    })
+  })
+
+  it('leaves a whole plate as the sum of its parts', () => {
+    const parts = [{ kcal: 340, carbs: 55, protein: 6, fat: 11 }]
+    expect(entryTotals({ parts, plateQuantity: 1, portion })).toEqual(
+      entryTotals({ parts, portion }),
+    )
+  })
+
+  // Nothing multiplies it without parts: the portion stepper for such an entry
+  // moves `quantity`, which is already in the dish's own figure.
+  it('ignores the plate portion on an entry with no parts', () => {
+    expect(entryTotals({ parts: [], plateQuantity: 0.5, portion })).toEqual(portion)
+  })
+
+  // A typed figure is the user's own answer for what they ate, so it sits above
+  // the plate's arithmetic, portion and all.
+  it('takes a typed figure over half a plate', () => {
+    const parts = [{ kcal: 340, carbs: 55, protein: 6, fat: 11 }]
+    expect(entryTotals({ typed: { kcal: 500 }, parts, plateQuantity: 0.5, portion })).toEqual({
+      kcal: 500,
+      carbs: 27.5,
+      protein: 3,
+      fat: 5.5,
+    })
+  })
+})
+
+describe('roundHalfUp', () => {
+  // A half is a hair under in binary as often as not, and Postgres rounds the
+  // true decimal. These are real products of a sum and a plate's portion.
+  it('rounds a true half up, as the database does', () => {
+    expect(50 * 0.29).toBeLessThan(14.5)
+    expect(roundHalfUp(50 * 0.29)).toBe(15)
+    expect(roundHalfUp(1.4 * 0.75, 1)).toBe(1.1)
+    expect(roundHalfUp(14.2 * 0.75, 1)).toBe(10.7)
+  })
+
+  it('leaves everything that is not a half where plain rounding puts it', () => {
+    expect(roundHalfUp(14.49)).toBe(14)
+    expect(roundHalfUp(24.3 + 51.3, 1)).toBe(75.6)
+    expect(roundHalfUp(0.285, 2)).toBe(0.29)
+    expect(roundHalfUp(7)).toBe(7)
   })
 })

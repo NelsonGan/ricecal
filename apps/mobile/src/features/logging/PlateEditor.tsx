@@ -4,7 +4,8 @@ import { TextInput, View } from 'react-native'
 
 import type { EntryIngredient } from '@/data'
 import { SwipeRow } from '@/features/shared'
-import { titleCase } from '@/lib/portions'
+import { roundHalfUp } from '@/lib/nutrition'
+import { formatPortion, titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Card, cn, Divider, Icon, IconButton, Text, useNumpadField } from '@/ui'
 import { PartLine } from './PartLine'
@@ -110,6 +111,11 @@ export type PlateEditorProps = {
   /** The plate as it stands. The staging below is laid over this. */
   ingredients: readonly EntryIngredient[]
   /**
+   * How much of the plate was eaten, set on the entry's own page. It scales
+   * the total and nothing edited here: the parts are the plate as served.
+   */
+  plateQuantity?: number
+  /**
    * Writes whatever has been staged. Called on a debounce as the plate is
    * edited, and once more on the way out; it is handed the whole overlay and
    * works out for itself which parts actually moved.
@@ -161,6 +167,7 @@ export type PlateEditorProps = {
  */
 export function PlateEditor({
   ingredients,
+  plateQuantity = 1,
   onSave,
   onError,
   onAdd,
@@ -239,6 +246,7 @@ export function PlateEditor({
   }
 
   const parts = stagedParts(ingredients, draft)
+  const plateKcal = parts.reduce((sum, item) => sum + item.kcal, 0)
 
   /**
    * A tap on the plus or the minus, IN GRAMS wherever grams are known.
@@ -451,12 +459,25 @@ export function PlateEditor({
       <View className="flex-row items-baseline justify-between gap-3 px-card py-md">
         <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
         <View className="flex-row items-baseline gap-1">
-          <Text variant="numeric">
-            {parts.reduce((sum, item) => sum + item.kcal, 0).toLocaleString()}
-          </Text>
+          <Text variant="numeric">{plateKcal.toLocaleString()}</Text>
           <Text variant="caption">{t('common:unit.kcal')}</Text>
         </View>
       </View>
+      {/* And what counts of it, when not all of it was eaten. The same line the
+          entry's own ingredient card draws, for the same reason: every figure
+          above is the plate as served. Tucked under the total rather than given
+          its own padding, so the pair reads as one sum. */}
+      {plateQuantity === 1 ? null : (
+        <View className="-mt-md flex-row items-baseline justify-between gap-3 px-card pb-md">
+          <Text variant="bodyStrong">
+            {t('logging:detail.times', { amount: formatPortion(plateQuantity) })}
+          </Text>
+          <View className="flex-row items-baseline gap-1">
+            <Text variant="numeric">{roundHalfUp(plateKcal * plateQuantity).toLocaleString()}</Text>
+            <Text variant="caption">{t('common:unit.kcal')}</Text>
+          </View>
+        </View>
+      )}
     </Card>
   )
 

@@ -33,6 +33,7 @@ import { useRequirePro } from '@/features/paywall'
 import { dateOffset, type LogMethod, track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
+import { eatenQuantity } from '@/lib/portions'
 import { SheetSurface, Tabs, Text, useToast } from '@/ui'
 
 /**
@@ -511,8 +512,8 @@ export default function LogSheet() {
              eaten at — which is what `snapshotFromEntry` copies verbatim rather
              than deriving, so "the same again" lands on the same calories to
              the digit. The quantity travels with it for the same reason: two
-             plates yesterday is two plates today. */
-          onPickHistory={(entry) => add(snapshotFromEntry(entry), 'history', entry.quantity)}
+             plates yesterday is two plates today, and half of one is half. */
+          onPickHistory={(entry) => add(snapshotFromEntry(entry), 'history', eatenQuantity(entry))}
           /* One serving of something the user wrote themselves, written the way
              a repeat is: the figures are theirs and the size is the one they
              said the pot feeds. Any other number of servings is a question, and

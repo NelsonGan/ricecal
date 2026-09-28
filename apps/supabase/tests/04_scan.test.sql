@@ -23,7 +23,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(37);
+select plan(58);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -472,6 +472,230 @@ select throws_ok(
 );
 
 reset role;
+
+
+-- How much of the plate was eaten ---------------------------------------------
+--
+-- A photographed plate is priced whole, and a plate is not always finished.
+-- `plate_quantity` scales the sum of the parts in one place, so half a plate is
+-- half of every part at once, and it scales nothing on an entry without parts.
+
+insert into public.food_logs
+  (user_id, log_date, quantity, source, item_name,
+   base_kcal, base_carbs_g, base_protein_g, base_fat_g, base_fibre_g,
+   serving_label, serving_factor)
+values
+  (:'user_a', current_date, 1, 'camera', 'Nasi lemak',
+   580, 62.0, 20.0, 26.0, 4.0, '1 serving', 1);
+
+select e.id as half_id from public.food_logs e
+where e.user_id = :'user_a' and e.item_name = 'Nasi lemak' \gset
+
+-- 400 + 2 x 90: the rice and two eggs.
+insert into public.food_log_ingredients
+  (food_log_id, quantity, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor, position)
+values
+  (:'half_id', 1, 'Coconut rice', 400, 60.0, 8.0, 12.0, '1 plate', 1, 0),
+  (:'half_id', 2, 'Fried egg', 90, 1.0, 6.0, 7.0, '1 egg', 1, 1);
+
+select i.id as egg_id from public.food_log_ingredients i
+where i.food_log_id = :'half_id'::uuid and i.item_name = 'Fried egg' \gset
+select i.id as rice_id from public.food_log_ingredients i
+where i.food_log_id = :'half_id'::uuid and i.item_name = 'Coconut rice' \gset
+
+select is(
+  (select array[kcal, ingredient_count] from public.food_log_details where id = :'half_id'::uuid),
+  array[580, 2],
+  'a plate starts whole, and the entry says how many parts it has'
+);
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'user_a', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+-- Written straight onto the row, the way the portion stepper writes it.
+select lives_ok(
+  format('update public.food_logs set plate_quantity = 0.5 where id = %L', :'half_id'),
+  'the owner can say how much of the plate was eaten'
+);
+
+select is(
+  (select array[kcal::numeric, carbs_g, protein_g, fat_g]
+   from public.food_log_details where id = :'half_id'::uuid),
+  array[290, 31.0, 10.0, 13.0]::numeric[],
+  'half a plate is half of every part at once'
+);
+
+-- Fibre, sugar and salt are the parent's own rather than the parts', and they
+-- follow the plate too: 4 g of fibre on a half-eaten plate is 2.
+select is(
+  (select fibre_g from public.food_log_details where id = :'half_id'::uuid),
+  2.0,
+  'the nutrients outside the budget follow the plate as well'
+);
+
+-- The parts are the plate as it was served, so a part's count and its calories
+-- keep describing the same amount.
+select is(
+  (select sum(kcal)::integer from public.food_log_ingredient_details
+   where food_log_id = :'half_id'::uuid),
+  580,
+  'the parts still describe the whole plate'
+);
+
+reset role;
+
+-- A typed figure still outranks the arithmetic, portion and all.
+update public.food_logs set override_kcal = 350 where id = :'half_id'::uuid;
+
+select is(
+  (select kcal from public.food_log_details where id = :'half_id'::uuid),
+  350,
+  'a typed figure outranks half a plate'
+);
+
+update public.food_logs set override_kcal = null where id = :'half_id'::uuid;
+
+-- Nothing multiplies it on an entry without parts, so a value there cannot move
+-- a total, and the view reads 1 so no reader has to ask which case it is in.
+insert into public.food_logs
+  (user_id, log_date, quantity, source, item_name,
+   base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor, plate_quantity)
+values
+  (:'user_a', current_date, 1, 'search', 'Teh tarik',
+   120, 18.0, 3.0, 4.0, '1 cup', 1, 0.5);
+
+select e.id as tea_id from public.food_logs e
+where e.user_id = :'user_a' and e.item_name = 'Teh tarik' \gset
+
+select is(
+  (select array[kcal::numeric, plate_quantity, ingredient_count]
+   from public.food_log_details where id = :'tea_id'::uuid),
+  array[120, 1, 0]::numeric[],
+  'an entry with no parts ignores the plate portion'
+);
+
+select throws_ok(
+  format('update public.food_logs set plate_quantity = 0 where id = %L', :'half_id'),
+  '23514',
+  null,
+  'a plate portion of nothing is refused'
+);
+
+select throws_ok(
+  format('update public.food_logs set plate_quantity = 25 where id = %L', :'half_id'),
+  '23514',
+  null,
+  'and so is one past twenty plates'
+);
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'user_a', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+select lives_ok(
+  format('select public.remove_ingredient(%L::uuid)', :'egg_id'),
+  'a part comes off a half-eaten plate'
+);
+
+select is(
+  (select array[kcal::numeric, plate_quantity]
+   from public.food_log_details where id = :'half_id'::uuid),
+  array[200, 0.5]::numeric[],
+  'and what is left is still half eaten'
+);
+
+select lives_ok(
+  format('select public.remove_ingredient(%L::uuid)', :'rice_id'),
+  'the last part comes off'
+);
+
+-- The entry counts as one dish again, its own 580 kcal, at the half the plate
+-- was. Folded rather than dropped, or emptying a half-eaten plate would double
+-- it.
+select is(
+  (select array[e.quantity, e.plate_quantity] from public.food_logs e
+   where e.id = :'half_id'::uuid),
+  array[0.5, 1]::numeric[],
+  'emptying a plate folds its portion into the entry''s own'
+);
+
+select is(
+  (select kcal from public.food_log_details where id = :'half_id'::uuid),
+  290,
+  'so an emptied half-eaten plate still counts half'
+);
+
+-- A new plate starts whole. The tea above carries a portion nothing has read,
+-- and from its first part on, something would.
+select lives_ok(
+  format('select public.add_ingredient(%L::uuid, %L, 40, 8, 1, 1)', :'tea_id', 'Kuih'),
+  'a food goes onto an entry holding a stale plate portion'
+);
+
+select is(
+  (select array[kcal::numeric, plate_quantity]
+   from public.food_log_details where id = :'tea_id'::uuid),
+  array[160, 1]::numeric[],
+  'and the plate it starts is whole'
+);
+
+reset role;
+
+-- Folding the portion into the plate, which `scan-refine` does before a
+-- correction edits the parts: the total stays where it was, and the parts are
+-- what carry the half from then on.
+insert into public.food_logs
+  (user_id, log_date, quantity, source, item_name,
+   base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor, plate_quantity)
+values
+  (:'user_a', current_date, 1, 'camera', 'Satay',
+   400, 20.0, 30.0, 20.0, '1 serving', 1, 0.5);
+
+select e.id as fold_id from public.food_logs e
+where e.user_id = :'user_a' and e.item_name = 'Satay' \gset
+
+-- Six sticks at 40 and a bowl of sauce at 160: a 400 kcal plate, half eaten.
+insert into public.food_log_ingredients
+  (food_log_id, quantity, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor, position)
+values
+  (:'fold_id', 6, 'Chicken satay', 40, 1.0, 4.0, 2.0, '1 stick', 1, 0),
+  (:'fold_id', 1, 'Peanut sauce', 160, 8.0, 6.0, 12.0, '1 bowl', 1, 1);
+
+select is(
+  (select kcal from public.food_log_details where id = :'fold_id'::uuid),
+  200,
+  'a half-eaten plate of satay counts half'
+);
+
+select lives_ok(
+  format('select public.fold_plate_quantity(%L::uuid)', :'fold_id'),
+  'the portion folds into the plate'
+);
+
+select is(
+  (select array_agg(quantity order by position)
+   from public.food_log_ingredients where food_log_id = :'fold_id'::uuid),
+  array[3, 0.5]::numeric[],
+  'every part carries the half now'
+);
+
+select is(
+  (select array[kcal::numeric, plate_quantity]
+   from public.food_log_details where id = :'fold_id'::uuid),
+  array[200, 1]::numeric[],
+  'and the total has not moved'
+);
+
+select is(
+  (select quantity from public.food_logs where id = :'fold_id'::uuid),
+  0.50,
+  'the entry''s own portion takes the half as well'
+);
 
 
 -- The paper trail is service_role's alone -------------------------------------
