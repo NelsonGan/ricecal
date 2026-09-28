@@ -12,6 +12,7 @@ import {
 import { FoodSearchPanel, type FoodSearchSource } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import { useBack } from '@/lib/navigation'
+import { eatenQuantity } from '@/lib/portions'
 import { AppBar, Screen } from '@/ui'
 
 /**
@@ -91,7 +92,8 @@ export default function SearchScreen() {
         onPickHistory={(entry) => {
           logFood.mutate({
             snapshot: snapshotFromEntry(entry),
-            quantity: entry.quantity,
+            // What was eaten, so half a plate logged again is half a plate.
+            quantity: eatenQuantity(entry),
             logDate: selectedDate,
             source: 'quickAdd',
             method: 'history',

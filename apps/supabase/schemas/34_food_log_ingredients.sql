@@ -173,16 +173,31 @@ declare
   v_log_id  uuid;
   v_user_id uuid;
 begin
+  -- The entry is locked, so two parts swiped off one plate at once are taken
+  -- one after the other. Otherwise each could still see the other's row when
+  -- it asks below whether the plate is empty, and neither would fold.
   select i.food_log_id, e.user_id into v_log_id, v_user_id
   from public.food_log_ingredients i
   join public.food_logs e on e.id = i.food_log_id
-  where i.id = p_ingredient_id;
+  where i.id = p_ingredient_id
+  for update of e;
 
   if v_log_id is null or v_user_id is distinct from auth.uid() then
     raise exception 'ingredient not found';
   end if;
 
   delete from public.food_log_ingredients where id = p_ingredient_id;
+
+  -- The last part takes the plate's portion with it, into the entry's own
+  -- quantity. The entry counts as one dish again, and a plate that was half
+  -- eaten is half of that dish rather than all of it. Clamped to what the
+  -- column accepts, which only an absurd pair of numbers reaches.
+  update public.food_logs e
+  set quantity = least(100, greatest(0.01, round(e.quantity * e.plate_quantity, 2))),
+      plate_quantity = 1
+  where e.id = v_log_id
+    and e.plate_quantity <> 1
+    and not exists (select 1 from public.food_log_ingredients i where i.food_log_id = v_log_id);
 end;
 $$;
 
@@ -192,6 +207,64 @@ comment on function public.remove_ingredient is
 
 revoke execute on function public.remove_ingredient from public, anon;
 grant execute on function public.remove_ingredient to authenticated, service_role;
+
+
+-- ---------------------------------------------------------------------------
+-- Writing how much of a plate was eaten into the plate itself.
+--
+-- `plate_quantity` scales the sum of the parts while the parts stay the plate
+-- as it was served. A correction typed about a meal speaks about what was
+-- eaten: "only 3 skewers" on a plate half finished is three skewers, not six.
+-- So `scan-refine` folds the portion in before it changes a part. Every part
+-- and the entry's own quantity are multiplied by it and it goes back to 1; the
+-- total does not move, only which column carries the half.
+--
+-- One transaction, because a fold that stopped partway would count the parts
+-- it had reached twice.
+--
+-- The service role's alone. The app never folds a plate: its stepper writes
+-- the column directly, and a correction is the one caller that needs the parts
+-- in the terms the user is speaking in.
+-- ---------------------------------------------------------------------------
+create or replace function public.fold_plate_quantity(p_food_log_id uuid)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_portion numeric;
+begin
+  select e.plate_quantity into v_portion
+  from public.food_logs e
+  where e.id = p_food_log_id
+  for update;
+
+  -- Nothing to fold: a whole plate, an entry that is not there, or one with no
+  -- parts for the portion to have been scaling.
+  if v_portion is null or v_portion = 1
+     or not exists (select 1 from public.food_log_ingredients i where i.food_log_id = p_food_log_id)
+  then
+    return;
+  end if;
+
+  update public.food_log_ingredients i
+  set quantity = least(100, greatest(0.0001, round(i.quantity * v_portion, 4)))
+  where i.food_log_id = p_food_log_id;
+
+  update public.food_logs e
+  set quantity = least(100, greatest(0.01, round(e.quantity * v_portion, 2))),
+      plate_quantity = 1
+  where e.id = p_food_log_id;
+end;
+$$;
+
+comment on function public.fold_plate_quantity is
+  'Write an entry''s plate_quantity into its parts and its own quantity, and '
+  'set it back to 1, leaving the total where it was. For scan-refine, before a '
+  'correction edits the parts.';
+
+revoke execute on function public.fold_plate_quantity from public, anon, authenticated;
+grant execute on function public.fold_plate_quantity to service_role;
 
 
 -- ---------------------------------------------------------------------------
@@ -315,6 +388,13 @@ begin
       end,
       0
     );
+
+    -- And the new plate starts whole. The seeded part already carries the
+    -- entry's quantity, so a portion left over from an earlier breakdown would
+    -- count it twice. Nothing multiplied that value while the entry had no
+    -- parts; from this row on, something does.
+    update public.food_logs set plate_quantity = 1
+    where id = v_entry.id and plate_quantity <> 1;
   end if;
 
   insert into public.food_log_ingredients (

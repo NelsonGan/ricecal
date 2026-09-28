@@ -123,6 +123,20 @@ describe('toEntry', () => {
     expect(empty.quantity).toBe(1)
     expect(empty.source).toBe('search')
   })
+
+  it('reads how much of the plate was eaten, and how many parts it has', () => {
+    const entry = toEntry(logRow({ plate_quantity: 0.5, ingredient_count: 6 }))
+    expect(entry.plateQuantity).toBe(0.5)
+    expect(entry.ingredientCount).toBe(6)
+  })
+
+  // A database without the migration answers without both columns, and a whole
+  // plate with no parts is the only safe reading of that.
+  it('takes a row without the plate columns as a whole plate with no parts', () => {
+    const entry = toEntry(logRow({ plate_quantity: undefined, ingredient_count: undefined }))
+    expect(entry.plateQuantity).toBe(1)
+    expect(entry.ingredientCount).toBe(0)
+  })
 })
 
 describe('toFood', () => {

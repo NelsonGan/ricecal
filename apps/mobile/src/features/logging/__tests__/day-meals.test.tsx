@@ -53,3 +53,15 @@ it('does not open a client-only pending scan as a database entry', async () => {
   expect(screen.queryByRole('button', { name: /What I wrote/ })).not.toBeOnTheScreen()
   expect(onPress).not.toHaveBeenCalled()
 })
+
+it('reads a half-eaten plate as half of it', async () => {
+  await render(
+    <DayMeals
+      date="2026-09-15"
+      entries={[entry({ plateQuantity: 0.5, ingredientCount: 6 })]}
+      onPressEntry={jest.fn()}
+    />,
+  )
+
+  expect(screen.getByText(/0\.5 × plate/)).toBeOnTheScreen()
+})

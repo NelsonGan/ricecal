@@ -90,6 +90,23 @@ create table public.food_logs (
 
   quantity     numeric(6, 2) not null default 1 check (quantity > 0 and quantity <= 100),
 
+  -- How much of the PLATE was eaten, for an entry broken into ingredients.
+  --
+  -- `quantity` counts the dish this row snapshots, and an entry with a breakdown
+  -- does not count that dish at all: `food_log_details` sums the parts instead.
+  -- This scales the whole of that sum, so a plate photographed full and half
+  -- eaten is half of every part at once rather than a dozen steppers each moved
+  -- by hand.
+  --
+  -- Nothing reads it on an entry without parts, which is why a value left behind
+  -- there cannot change a total. `remove_ingredient` folds it into `quantity`
+  -- when a plate is emptied, and `add_ingredient` starts every new plate whole.
+  --
+  -- Defaulted, so every row that predates it and every insert from a build that
+  -- has never heard of it counts exactly what it did.
+  plate_quantity numeric(6, 2) not null default 1
+    check (plate_quantity > 0 and plate_quantity <= 20),
+
   logged_at    timestamptz not null default now(),
   -- A free-text correction: "no sambal", "kurang manis". Not parsed.
   note         text check (char_length(note) <= 500),

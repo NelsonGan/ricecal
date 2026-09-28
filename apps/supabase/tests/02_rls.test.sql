@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(26);
+select plan(28);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -224,6 +224,33 @@ select is(
      and pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')),
   3,
   'but a signed-in user can still edit the parts of their own plate'
+);
+
+-- Folding a plate's portion into its parts is `scan-refine`'s, and nobody
+-- else's. It is not owner-checked, because its one caller is the service role,
+-- so a client that could reach it could rewrite any plate in the database.
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname = 'fold_plate_quantity'
+     and (pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE')
+       or pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE')
+       or pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE'))),
+  0,
+  'fold_plate_quantity is not callable through the API'
+);
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname = 'fold_plate_quantity'
+     and pg_catalog.has_function_privilege('service_role', p.oid, 'EXECUTE')),
+  1,
+  'but scan-refine, as the service role, can fold a plate'
 );
 
 -- The same pair for `day_marks`, which is new and reads one week of a diary.

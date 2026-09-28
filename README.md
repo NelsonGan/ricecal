@@ -1815,6 +1815,30 @@ minus have nowhere to put a Save, and written per tap they are three round trips
 to reach two and a half plates. A pending edit is flushed on unmount through a
 ref.
 
+**On a plate with ingredients the stepper counts the plate.** An entry with a
+breakdown is counted from its parts and never from its own `quantity`, so there
+the stepper writes `food_logs.plate_quantity` instead: how much of the plate was
+eaten, 1 until somebody says otherwise. It scales every part at once, so a plate
+photographed full and half eaten is one tap rather than a stepper per
+ingredient, and the serving chips are not drawn, because a plate has no
+catalogue portions to choose between. The parts stay the plate as it was served:
+the ingredient card and the ingredients page print their total and, under it,
+"× ½" and what that comes to. Which stepper to draw comes from
+`food_log_details.ingredient_count` until the parts themselves arrive, so it is
+right from the first frame.
+
+The server moves that portion itself in two places, both on the ingredients page
+while the entry waits behind it: emptying a plate folds the portion into the
+entry's own `quantity`, so half a plate emptied still counts half, and a first
+part starts a new plate whole. The steppers are seeded once so a refetch cannot
+snap one back under the user's finger, and read both amounts again only when the
+row gains or loses its parts.
+
+A build older than the portion never writes it and never reads it. Its diary
+still counts the half, because the view does that arithmetic, but its own detail
+screen sums the parts itself and shows the whole plate. Only an account using
+two builds at once can see both.
+
 The add path is a staged form, because there is nothing to write until Add.
 
 ### The layout
@@ -1902,7 +1926,8 @@ and that is the interesting half of `add_ingredient`. `food_log_details` prefers
 the sum of the parts over the row's own figures, so one added ingredient would
 otherwise redefine a 780 kcal nasi lemak as the 90 kcal egg just put on it. The
 seeded row carries the entry's own base figures, factor AND quantity, so the sum
-the view now takes is the same arithmetic it was already doing. Two entries are
+the view now takes is the same arithmetic it was already doing, and the entry's
+`plate_quantity` goes back to 1: a new plate starts whole. Two entries are
 refused outright, both because the addition would not show: one whose calorie
 total the user typed over — `override_kcal` sits above the parts — and one
 logged at more than twenty servings, which is past what a part's portion may be
@@ -1995,10 +2020,24 @@ the first rung that fits:
 
 ```
 none        not a correction, or has no calories in it ("extra spicy")
-quantity    only the amount changed: rescale the entry and every part under it
+quantity    only the amount changed: rescale the entry and every part under it,
+            or a plate's portion when it was not eaten whole
 adjust      one part added, removed, resized or swapped; re-price from the parts
 redescribe  the food itself was wrong: re-run the whole cascade
 ```
+
+**A plate not eaten whole is corrected in eaten terms.** The interpreter is shown
+each part at `plate_quantity` of itself, because a correction speaks about what
+was eaten: "only 3 skewers" on a plate half finished is three skewers, not six,
+and "add a fried egg" is an egg rather than half of one. A `quantity` answer
+rescales the portion itself, with the stepper's quarter as the floor, and leaves
+the parts as served. An `adjust` folds the portion into the parts just before it
+writes (`fold_plate_quantity`, the service role's alone, one transaction), so
+the rows it changes are in the same terms as the words; one that is declined
+leaves the portion where the user put it. A redescribe resets
+it to 1, since the corrected dish was described from the meal as eaten. Folding
+can leave a part below a quarter, so no arm that shrinks a part may raise one
+back up to it, which `refineQuantity`'s floor would otherwise do.
 
 Offered as a flat menu the model reached for `redescribe` whenever it was
 unsure, which is the one answer that throws away everything the user has already
@@ -4560,8 +4599,12 @@ Break these and the feature is wrong in ways tests may not catch.
 
 **An entry with a breakdown IS its breakdown.** `food_log_details` coalesces
 three sources in order: what the user typed (`override_*`), what the parts add up
-to, what the dish costs at this portion. `lib/nutrition.ts`'s `entryTotals` is
-the client's copy of that same rule, and they must agree. Scaling one parent row
+to times `plate_quantity` (how much of the plate was eaten, read only when there
+are parts), what the dish costs at this portion. `lib/nutrition.ts`'s
+`entryTotals` is the client's copy of that same rule, and they must agree down to
+the rounding: the client rounds a true half up with `roundHalfUp`, as Postgres
+does, because scaling a sum by a portion lands on halves all the time and a plain
+`Math.round` put the screen a calorie below the day. Scaling one parent row
 moves all four macros in lockstep, which is why editing an ingredient once
 changed only the calories.
 
