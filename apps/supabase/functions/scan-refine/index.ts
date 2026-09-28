@@ -11,9 +11,11 @@
 //   none        the text is not a food correction, or has no calories in it
 //               ("extra spicy"): nothing changes
 //   quantity    only the amount changed: rescale the entry's quantity, and every
-//               ingredient under it by the same factor. A calorie total for the
-//               whole dish lands here too, since "more like 500 calories" is a
-//               different amount of this food rather than a different food.
+//               ingredient under it by the same factor, or on a plate that was
+//               not eaten whole, how much of it was (`plate_quantity`) instead.
+//               A calorie total for the whole dish lands here too, since "more
+//               like 500 calories" is a different amount of this food rather than
+//               a different food.
 //               Not `override_kcal`, which would hit the figure exactly: the
 //               override sits above the parts in `food_log_details`, so an entry
 //               with a breakdown would show the typed number while its own
@@ -81,6 +83,14 @@ type RefineRequest = {
 const REMOVES_THE_PART = 0.6
 
 /**
+ * A plate's portion as a correction leaves it: twentieths, like the quantity
+ * rung, and inside what the portion stepper can show. The floor is the
+ * stepper's own quarter, so a correction never sets an amount nobody could have
+ * set by hand.
+ */
+const refinePortion = (q: number): number => Math.round(Math.min(20, Math.max(0.25, q)) * 20) / 20
+
+/**
  * The entry this function reasons over: the row, the dish it holds, the portion
  * it is measured in, and the parts hanging off it. Exactly the select below,
  * named.
@@ -89,6 +99,8 @@ type RefineEntry = {
   id: string
   user_id: string
   quantity: number
+  /** How much of the plate was eaten. Only read when there are parts. */
+  plate_quantity: number | string | null
   scan_id: string | null
   display_label: string | null
   food_id: string | null
@@ -285,7 +297,7 @@ Deno.serve(async (req: Request) => {
   const { data } = await db
     .from('food_logs')
     .select(
-      'id, user_id, quantity, scan_id, display_label, food_id, ' +
+      'id, user_id, quantity, plate_quantity, scan_id, display_label, food_id, ' +
         'item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, ' +
         'serving_label, serving_factor, ' +
         'food_log_ingredients(id, quantity, grams, serving_label, display_label, item_name)',
@@ -317,19 +329,68 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  /**
+   * How much of the plate was eaten, and 1 where there is no plate to scale.
+   *
+   * A correction speaks about what was EATEN: "only 3 skewers" on a plate half
+   * finished is three skewers, not six. So the interpreter is shown the parts at
+   * their eaten amounts. A correction that is about to edit them folds the
+   * portion in first, so the rows it writes are in the terms of the words it
+   * read, and one that is declined leaves the portion where the user put it.
+   * A correction to the amount alone goes through the portion instead: see the
+   * quantity rung.
+   */
+  const plateQuantity = parts.length ? Number(entry.plate_quantity ?? 1) : 1
+  const eaten = (amount: number, places: number) =>
+    Math.round(amount * plateQuantity * 10 ** places) / 10 ** places
+
+  /**
+   * Write the plate's portion into its parts and the entry's own quantity, in
+   * one transaction (`fold_plate_quantity`), and bring the rows in hand up to
+   * date so every arm below reads what is now stored. Nothing to do for a plate
+   * eaten whole.
+   */
+  const foldPlate = async () => {
+    if (plateQuantity === 1) return
+    const { error } = await db.rpc('fold_plate_quantity', { p_food_log_id: entry.id })
+    if (error) throw error
+    const [folded, row] = await Promise.all([
+      db.from('food_log_ingredients').select('id, quantity').eq('food_log_id', entry.id),
+      db.from('food_logs').select('quantity').eq('id', entry.id).single(),
+    ])
+    if (folded.error) throw folded.error
+    if (row.error) throw row.error
+    const quantities = new Map(
+      ((folded.data ?? []) as Array<{ id: string; quantity: number | string }>).map((part) => [
+        part.id,
+        Number(part.quantity),
+      ]),
+    )
+    for (const part of parts) part.quantity = quantities.get(part.id) ?? part.quantity
+    entry.quantity = Number((row.data as { quantity: number | string }).quantity)
+  }
+
   try {
     const interpretation = await interpretInstruction(
       {
         name: entry.display_label ?? entry.item_name ?? '',
-        kcal: Math.round(
-          Number(entry.base_kcal ?? 0) * Number(entry.serving_factor ?? 1) * Number(entry.quantity),
-        ),
-        quantity: Number(entry.quantity),
+        // What the entry counts. A plate with parts counts their sum at the share
+        // of it that was eaten: the entry's own figure is the plate as it was
+        // first written, and does not follow a part changed by hand since.
+        kcal: parts.length
+          ? Math.round(plateQuantity * [...partKcal.values()].reduce((sum, kcal) => sum + kcal, 0))
+          : Math.round(
+              Number(entry.base_kcal ?? 0) *
+                Number(entry.serving_factor ?? 1) *
+                Number(entry.quantity),
+            ),
+        quantity: eaten(Number(entry.quantity), 2),
         servingLabel: entry.serving_label ?? '1 serving',
+        // The parts as eaten. See `plateQuantity`.
         ingredients: parts.map((part) => ({
           name: partName(part),
-          quantity: Number(part.quantity),
-          kcal: partKcal.get(part.id) ?? 0,
+          quantity: eaten(Number(part.quantity), 4),
+          kcal: (partKcal.get(part.id) ?? 0) * plateQuantity,
         })),
       },
       instruction,
@@ -351,6 +412,30 @@ Deno.serve(async (req: Request) => {
       })
 
     if (interpretation.action === 'quantity') {
+      // A plate with a portion is resized through the portion, which is the
+      // number the user moves on the entry's own page: "half of it" on a plate
+      // half eaten is a quarter of the plate, and the parts stay the plate as it
+      // was served. The factor is of the meal as eaten, which is what the
+      // interpreter was shown, so it applies to the portion as it stands.
+      //
+      // A plate eaten whole keeps the path below and rescales its parts. That is
+      // where a build that has never heard of the portion reads its total from.
+      if (plateQuantity !== 1) {
+        const portion = refinePortion(plateQuantity * interpretation.factor)
+        const { error } = await db
+          .from('food_logs')
+          .update({ plate_quantity: portion })
+          .eq('id', entry.id)
+        if (error) throw error
+        await recordRefine(null, entry.food_id, portion)
+        return json({
+          ok: true,
+          applied: true,
+          action: 'quantity',
+          quantity: Number(entry.quantity),
+        })
+      }
+
       const quantity = refineQuantity(Number(entry.quantity) * interpretation.factor)
       const { error } = await db.from('food_logs').update({ quantity }).eq('id', entry.id)
       if (error) throw error
@@ -361,9 +446,13 @@ Deno.serve(async (req: Request) => {
       // part.
       const applied = Math.max(0.01, quantity / Math.max(0.01, Number(entry.quantity)))
       for (const part of parts) {
+        const current = Number(part.quantity)
+        const scaled = refineQuantity(current * applied)
         await db
           .from('food_log_ingredients')
-          .update({ quantity: refineQuantity(Number(part.quantity) * applied) })
+          // Never up on the way down. `refineQuantity` stops at a quarter, and a
+          // part that a correction folded below one would grow when halved.
+          .update({ quantity: applied < 1 ? Math.min(current, scaled) : scaled })
           .eq('id', part.id)
       }
 
@@ -397,6 +486,13 @@ Deno.serve(async (req: Request) => {
       }
 
       /**
+       * EVERY ARM THAT WRITES FOLDS THE PLATE FIRST (`foldPlate`), because the
+       * numbers it writes are in the eaten terms the interpreter was shown. Not
+       * once up front: a correction that is declined, whether nothing on the
+       * plate answered or a replacement could not be priced, must leave the
+       * plate's portion where the user put it. An arm added here has to fold
+       * only once it knows it will write.
+       *
        * Whether any arm of the chain below actually moved something. The chain
        * has holes in it, and falling through all of them used to be
        * indistinguishable from succeeding: `rebuildFromParts` on an untouched
@@ -408,7 +504,6 @@ Deno.serve(async (req: Request) => {
       if (swapped && interpretation.part) {
         // Keep the measured portion and price the replacement itself. A fixed
         // 50/20/30 macro split made chicken mostly carbohydrate after a swap.
-        const held = Number(swapped.quantity)
         const grams = swapped.grams == null ? null : Number(swapped.grams)
         const nutrition = await estimateNutrition(
           {
@@ -436,6 +531,10 @@ Deno.serve(async (req: Request) => {
         ) {
           throw new Error('could not price replacement')
         }
+        // Priced per unit, so the pricing does not care which terms the plate is
+        // in. The amount it keeps does, and it is read after the fold.
+        await foldPlate()
+        const held = Number(swapped.quantity)
         const { error } = await db
           .from('food_log_ingredients')
           .update({
@@ -460,6 +559,7 @@ Deno.serve(async (req: Request) => {
         // three and leaves the rest of the plate alone — read as a change it
         // would be nine, and read as a portion of the whole dish (which is
         // where it used to land) it halved the lontong nobody mentioned.
+        await foldPlate()
         await db
           .from('food_log_ingredients')
           .update({ quantity: refineQuantity(interpretation.total) })
@@ -468,6 +568,7 @@ Deno.serve(async (req: Request) => {
         // The user counted them out. "Two more skewers" is two more skewers,
         // not the model's calorie estimate for two skewers divided by what one
         // costs — that arithmetic turned seven into ten.
+        await foldPlate()
         const next = Number(match.quantity) + interpretation.count
         if (next <= 0) {
           await db.from('food_log_ingredients').delete().eq('id', match.id)
@@ -481,6 +582,7 @@ Deno.serve(async (req: Request) => {
         // More of something already on the plate, with no number given. Adding
         // a SECOND satay row would leave the user with two steppers for one
         // thing and a list that reads like the scan saw double.
+        await foldPlate()
         const { data: rows } = await db
           .from('food_log_ingredient_details')
           .select('kcal, quantity')
@@ -497,6 +599,7 @@ Deno.serve(async (req: Request) => {
         // whether the part goes or shrinks. It used to always go, which is right
         // for "no sambal" and destructive otherwise: a small reduction took a
         // 384 kcal row of satay off the plate, and there is no undo.
+        await foldPlate()
         const { data: row } = await db
           .from('food_log_ingredient_details')
           .select('kcal, quantity')
@@ -510,10 +613,13 @@ Deno.serve(async (req: Request) => {
         if (partCost <= 0 || removed >= partCost * REMOVES_THE_PART) {
           await db.from('food_log_ingredients').delete().eq('id', match.id)
         } else {
-          const left = Number(row?.quantity ?? 1) * (1 - removed / partCost)
+          const current = Number(row?.quantity ?? 1)
+          const left = current * (1 - removed / partCost)
           await db
             .from('food_log_ingredients')
-            .update({ quantity: refineQuantity(Math.max(0.25, left)) })
+            // Never more than it was: a part folded below a quarter would
+            // otherwise come back up to a quarter when asked for less.
+            .update({ quantity: Math.min(current, refineQuantity(Math.max(0.25, left))) })
             .eq('id', match.id)
         }
       } else if (interpretation.kcal_delta < 0 && !interpretation.part && parts.length > 1) {
@@ -521,19 +627,33 @@ Deno.serve(async (req: Request) => {
         // the plate as a whole rather than pretending the list still adds up:
         // the largest part shrinks by the delta, which is where a removed
         // portion most likely came from.
-        const { data: rows } = await db
-          .from('food_log_ingredient_details')
-          .select('id, kcal, quantity')
-          .eq('food_log_id', entry.id)
-          .order('kcal', { ascending: false })
-          .limit(1)
-        const biggest = rows?.[0]
+        const biggestPart = async () => {
+          const { data: rows } = await db
+            .from('food_log_ingredient_details')
+            .select('id, kcal, quantity')
+            .eq('food_log_id', entry.id)
+            .order('kcal', { ascending: false })
+            .limit(1)
+          return rows?.[0]
+        }
+        let biggest = await biggestPart()
         if (biggest && biggest.kcal > 0) {
+          // Folded only once there is something to take the reduction out of,
+          // and read again, since the fold moved every part. Scaling them all by
+          // one number leaves the biggest the biggest.
+          if (plateQuantity !== 1) {
+            await foldPlate()
+            biggest = (await biggestPart()) ?? biggest
+          }
           const perUnit = biggest.kcal / Math.max(0.01, Number(biggest.quantity))
           const next = refineQuantity(
             Math.max(0.25, (biggest.kcal + interpretation.kcal_delta) / Math.max(1, perUnit)),
           )
-          await db.from('food_log_ingredients').update({ quantity: next }).eq('id', biggest.id)
+          // Never more than it was, for the reason the arm above gives.
+          await db
+            .from('food_log_ingredients')
+            .update({ quantity: Math.min(Number(biggest.quantity), next) })
+            .eq('id', biggest.id)
         } else {
           // A breakdown whose parts all cost nothing. Nothing to take the
           // reduction out of, and saying so is better than re-pricing a plate
@@ -544,6 +664,10 @@ Deno.serve(async (req: Request) => {
         // An addition: its own row, priced by the model's delta for that one
         // thing, with an Atwater-consistent split so the parent's macros stay
         // internally honest.
+        //
+        // Whole, on a plate in eaten terms: "add a fried egg" to a plate half
+        // eaten is an egg, not half of one.
+        await foldPlate()
         const added = interpretation.part ?? instruction
         const kcal = Math.round(interpretation.kcal_delta)
         await db.from('food_log_ingredients').insert({
@@ -715,6 +839,9 @@ Deno.serve(async (req: Request) => {
           serving_factor: 1,
           serving_grams: resolved.food.servingGrams,
           quantity: resolved.quantity,
+          // All of it: the corrected dish was described from the meal as eaten
+          // (see `plateQuantity`), so its new parts already are what was eaten.
+          plate_quantity: 1,
           display_label: resolved.displayLabel,
           scan_id: scanId,
           // The USER's picture of this plate, which is a different question

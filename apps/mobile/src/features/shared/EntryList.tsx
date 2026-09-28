@@ -12,7 +12,7 @@ import Reanimated, {
 import type { DayLog, Entry } from '@/data'
 import { storedImageSource, useMealPhotoUrl, useRefiningEntries } from '@/data'
 import { sumMacros } from '@/lib/nutrition'
-import { portionLabel } from '@/lib/portions'
+import { eatenQuantity, portionLabel } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, cn, Icon, IconButton, Text } from '@/ui'
 import { ItemRow, ROW_TILE, ROW_TILE_ICON } from './ItemRow'
@@ -209,8 +209,13 @@ function EntryRow({
   }
 
   // Cleaned, because the label is whatever the catalogue import carried: half
-  // of them are measurements rather than portions. See `servingUnit`.
-  const portion = portionLabel(entry.quantity, entry.servingLabel, t('logging:detail.servingWord'))
+  // of them are measurements rather than portions. See `servingUnit`. The
+  // amount is what was eaten, so half a photographed plate reads as half.
+  const portion = portionLabel(
+    eatenQuantity(entry),
+    entry.servingLabel,
+    t('logging:detail.servingWord'),
+  )
 
   const row = (open?: () => void) => (
     <ItemRow

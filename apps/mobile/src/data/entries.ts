@@ -127,6 +127,7 @@ function changedFields(patch: EntryPatch): string[] {
   const changed: string[] = []
   if (patch.when !== undefined) changed.push('when')
   if (patch.quantity !== undefined) changed.push('quantity')
+  if (patch.plateQuantity !== undefined) changed.push('plate')
   if (patch.servingId !== undefined || patch.servingFactor !== undefined) changed.push('serving')
   if (patch.name !== undefined) changed.push('name')
   if (patch.note !== undefined) changed.push('note')
@@ -155,6 +156,12 @@ export type EntryPatch = {
    */
   when?: { logDate: string; loggedAt: string }
   quantity?: number
+  /**
+   * How much of the plate was eaten, for an entry broken into ingredients. It
+   * scales the sum of the parts in `food_log_details`, which reads no
+   * `quantity` at all while there are parts.
+   */
+  plateQuantity?: number
   /**
    * A different portion, and all three columns of it. The id alone is a dangling
    * note, since `food_servings` is in D1 and no view joins to it. What the entry
@@ -211,6 +218,7 @@ export function useUpdateEntry() {
       id,
       when,
       quantity,
+      plateQuantity,
       servingId,
       servingLabel,
       servingFactor,
@@ -237,6 +245,7 @@ export function useUpdateEntry() {
             // Both or neither, for the reason on `when`.
             ...(when === undefined ? {} : { log_date: when.logDate, logged_at: when.loggedAt }),
             ...(quantity === undefined ? {} : { quantity }),
+            ...(plateQuantity === undefined ? {} : { plate_quantity: plateQuantity }),
             ...(servingId === undefined ? {} : { serving_id: servingId }),
             // The two that make a portion change count for anything. Sent
             // separately from the id rather than folded into it, because

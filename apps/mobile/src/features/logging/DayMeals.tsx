@@ -4,7 +4,7 @@ import { View } from 'react-native'
 import type { Entry } from '@/data'
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
-import { portionLabel } from '@/lib/portions'
+import { eatenQuantity, portionLabel } from '@/lib/portions'
 import { Card, Icon, SkeletonRow, Text } from '@/ui'
 import { ItemRow } from '../shared/ItemRow'
 
@@ -85,8 +85,9 @@ export function DayMeals({
               photoUri={entry.localPhotoUri}
               value={entry.macros.kcal}
               unit={t('common:unit.kcal')}
+              // The amount eaten, so half a photographed plate reads as half.
               detail={`${format(parseISO(entry.loggedAt), datePattern('time'))} · ${portionLabel(
-                entry.quantity,
+                eatenQuantity(entry),
                 entry.servingLabel,
                 t('detail.servingWord'),
               )}`}

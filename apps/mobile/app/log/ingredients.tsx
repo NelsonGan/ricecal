@@ -7,6 +7,7 @@ import {
   type Food,
   snapshotFromFood,
   useAddIngredient,
+  useDayLog,
   useEntryIngredients,
   useRemoveIngredient,
   useUpdateIngredient,
@@ -46,6 +47,13 @@ export default function IngredientsScreen() {
   const { entryId, logDate } = useLocalSearchParams<{ entryId: string; logDate: string }>()
 
   const { data: ingredients = [], isLoading } = useEntryIngredients(entryId)
+  /**
+   * How much of the plate was eaten, off the entry's row in the day it is on.
+   * The editor prints it under the total and never edits it: that is the
+   * entry's own page, and every figure here is the plate as served.
+   */
+  const plateQuantity =
+    useDayLog(logDate).entries.find((entry) => entry.id === entryId)?.plateQuantity ?? 1
   const updateIngredient = useUpdateIngredient()
   const removeIngredient = useRemoveIngredient()
   const addIngredient = useAddIngredient()
@@ -210,6 +218,7 @@ export default function IngredientsScreen() {
       {entryId && !isLoading ? (
         <PlateEditor
           ingredients={ingredients}
+          plateQuantity={plateQuantity}
           onSave={savePlate}
           onError={saveFailed}
           onAdd={() => setPicking({ replacing: null })}

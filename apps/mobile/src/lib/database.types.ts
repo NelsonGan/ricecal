@@ -425,6 +425,7 @@ export type Database = {
           override_kcal: number | null
           override_protein_g: number | null
           photo_path: string | null
+          plate_quantity: number
           quantity: number
           recipe_id: string | null
           scan_id: string | null
@@ -464,6 +465,7 @@ export type Database = {
           override_kcal?: number | null
           override_protein_g?: number | null
           photo_path?: string | null
+          plate_quantity?: number
           quantity?: number
           recipe_id?: string | null
           scan_id?: string | null
@@ -503,6 +505,7 @@ export type Database = {
           override_kcal?: number | null
           override_protein_g?: number | null
           photo_path?: string | null
+          plate_quantity?: number
           quantity?: number
           recipe_id?: string | null
           scan_id?: string | null
@@ -1709,6 +1712,7 @@ export type Database = {
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string | null
+          ingredient_count: number | null
           item_brand: string | null
           item_name: string | null
           kcal: number | null
@@ -1721,6 +1725,7 @@ export type Database = {
           override_protein_g: number | null
           photo_path: string | null
           place: Database['public']['Enums']['food_place'] | null
+          plate_quantity: number | null
           protein_g: number | null
           quantity: number | null
           recipe_id: string | null
@@ -1733,94 +1738,6 @@ export type Database = {
           sugar_g: number | null
           suggested_edits: Json | null
           user_id: string | null
-        }
-        Insert: {
-          base_carbs_g?: number | null
-          base_fat_g?: number | null
-          base_fibre_g?: number | null
-          base_kcal?: number | null
-          base_protein_g?: number | null
-          base_serving_grams?: number | null
-          base_sodium_mg?: number | null
-          base_sugar_g?: number | null
-          carbs_g?: never
-          fat_g?: never
-          fibre_g?: never
-          food_brand?: string | null
-          food_id?: string | null
-          food_name?: never
-          grams?: never
-          icon_name?: never
-          icon_set?: never
-          id?: string | null
-          item_brand?: string | null
-          item_name?: string | null
-          kcal?: never
-          log_date?: string | null
-          logged_at?: string | null
-          note?: string | null
-          override_carbs_g?: number | null
-          override_fat_g?: number | null
-          override_kcal?: number | null
-          override_protein_g?: number | null
-          photo_path?: string | null
-          place?: Database['public']['Enums']['food_place'] | null
-          protein_g?: never
-          quantity?: number | null
-          recipe_id?: string | null
-          scan_id?: string | null
-          serving_factor?: number | null
-          serving_id?: string | null
-          serving_label?: string | null
-          sodium_mg?: never
-          source?: Database['public']['Enums']['entry_source'] | null
-          sugar_g?: never
-          suggested_edits?: Json | null
-          user_id?: string | null
-        }
-        Update: {
-          base_carbs_g?: number | null
-          base_fat_g?: number | null
-          base_fibre_g?: number | null
-          base_kcal?: number | null
-          base_protein_g?: number | null
-          base_serving_grams?: number | null
-          base_sodium_mg?: number | null
-          base_sugar_g?: number | null
-          carbs_g?: never
-          fat_g?: never
-          fibre_g?: never
-          food_brand?: string | null
-          food_id?: string | null
-          food_name?: never
-          grams?: never
-          icon_name?: never
-          icon_set?: never
-          id?: string | null
-          item_brand?: string | null
-          item_name?: string | null
-          kcal?: never
-          log_date?: string | null
-          logged_at?: string | null
-          note?: string | null
-          override_carbs_g?: number | null
-          override_fat_g?: number | null
-          override_kcal?: number | null
-          override_protein_g?: number | null
-          photo_path?: string | null
-          place?: Database['public']['Enums']['food_place'] | null
-          protein_g?: never
-          quantity?: number | null
-          recipe_id?: string | null
-          scan_id?: string | null
-          serving_factor?: number | null
-          serving_id?: string | null
-          serving_label?: string | null
-          sodium_mg?: never
-          source?: Database['public']['Enums']['entry_source'] | null
-          sugar_g?: never
-          suggested_edits?: Json | null
-          user_id?: string | null
         }
         Relationships: []
       }
