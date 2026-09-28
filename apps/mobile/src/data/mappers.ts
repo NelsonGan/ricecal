@@ -175,6 +175,10 @@ export function toEntry(row: FoodLogRow): Entry {
   return {
     id: row.id ?? '',
     quantity: Number(row.quantity ?? 1),
+    // Defaulted rather than trusted: a database without the migration that
+    // added these answers without them, and this build still has to read it.
+    plateQuantity: Number(row.plate_quantity ?? 1),
+    ingredientCount: row.ingredient_count ?? 0,
     loggedAt: row.logged_at ?? new Date(0).toISOString(),
     logDate: row.log_date ?? '',
     note: row.note ?? undefined,

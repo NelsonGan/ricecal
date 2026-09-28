@@ -53,8 +53,8 @@ import { useRequirePro } from '@/features/paywall'
 import { formatTime, MacroBars, MealPhoto } from '@/features/shared'
 import { track } from '@/lib/analytics'
 import { useBack, useDismissTo } from '@/lib/navigation'
-import { entryTotals } from '@/lib/nutrition'
-import { servingUnit } from '@/lib/portions'
+import { entryTotals, roundHalfUp } from '@/lib/nutrition'
+import { formatPortion, servingUnit } from '@/lib/portions'
 import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -101,6 +101,14 @@ const CONTENT_LIFT = 22
  * feel like waiting. See `savePortion` for why this alone is debounced.
  */
 const PORTION_DEBOUNCE_MS = 500
+
+/**
+ * What the portion stepper changes, which depends on the entry. A dish counts
+ * servings of itself, at one of its catalogue portions. A plate broken into
+ * ingredients counts how much of the plate was eaten, which scales every part
+ * at once and has no portions to choose between.
+ */
+type PortionEdit = { quantity: number; servingId: string } | { plateQuantity: number }
 
 /**
  * What the user is told when a correction changed nothing. A table rather than a
@@ -256,6 +264,8 @@ export default function FoodDetail() {
 
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
   const [servingId, setServingId] = useState(existing?.servingId ?? '')
+  /** How much of the plate was eaten, for an entry with parts. See `PortionEdit`. */
+  const [plateQuantity, setPlateQuantity] = useState(existing?.plateQuantity ?? 1)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleteShared, setDeleteShared] = useState(true)
   const [checkingDelete, setCheckingDelete] = useState(false)
@@ -319,7 +329,7 @@ export default function FoodDetail() {
    * so the screen knows to leave. Read once, in the sheet's `onClose`.
    */
   const movedAway = useRef(false)
-  const pendingPortion = useRef<{ quantity: number; servingId: string }>(undefined)
+  const pendingPortion = useRef<PortionEdit>(undefined)
   const portionTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const flushRef = useRef<() => void>(() => {})
   const [attaching, setAttaching] = useState(false)
@@ -378,6 +388,15 @@ export default function FoodDetail() {
   const parts = ingredients
 
   /**
+   * Whether this entry is a plate of parts, which decides what the portion
+   * stepper counts. The parts answer once they are here. Until then the day's
+   * row says how many there are, so the right stepper is drawn from the first
+   * frame rather than swapped for another a moment later: the card used to
+   * appear on a broken-down plate while its parts loaded, and then vanish.
+   */
+  const hasPlate = partsLoading ? (existing?.ingredientCount ?? 0) > 0 : parts.length > 0
+
+  /**
    * Whether the controls have been filled in from the row yet. They are seeded
    * in an effect, and on a cold deep link the day query has not answered for the
    * first render or two, so anything reading the staged values has to wait or it
@@ -391,6 +410,7 @@ export default function FoodDetail() {
     if (!existing || seededId === existing.id) return
     setSeededId(existing.id)
     setQuantity(existing.quantity)
+    setPlateQuantity(existing.plateQuantity ?? 1)
     // Empty rather than undefined: this drives a controlled selection and
     // `chosen` falls back to the base serving. An entry whose portion was never
     // a catalogue row has no `servingId`, which is not a reason to leave the
@@ -406,6 +426,29 @@ export default function FoodDetail() {
       fat: existing.overrides?.fat?.toString() ?? '',
     })
   }, [existing, seededId])
+
+  /**
+   * Both amounts again, when the plate gains or loses its parts.
+   *
+   * They are seeded once and then belong to the stepper, so a refetch cannot
+   * snap it back under the user's finger. The one time the server moves them
+   * itself is on the ingredients page, while this screen waits behind it:
+   * emptying a plate folds its portion into the entry's own quantity, and a
+   * first part starts a new plate whole. Coming back to the seeded values would
+   * show one amount while the day counted another, and the next tap would write
+   * the stale one over the server's. An edit still waiting to be sent wins.
+   */
+  const rowHasPlate = (existing?.ingredientCount ?? 0) > 0
+  const seenPlate = useRef<{ id: string; hasPlate: boolean }>(undefined)
+  useEffect(() => {
+    if (!existing || seededId !== existing.id) return
+    const last = seenPlate.current
+    seenPlate.current = { id: existing.id, hasPlate: rowHasPlate }
+    if (!last || last.id !== existing.id || last.hasPlate === rowHasPlate) return
+    if (pendingPortion.current) return
+    setQuantity(existing.quantity)
+    setPlateQuantity(existing.plateQuantity ?? 1)
+  }, [existing, seededId, rowHasPlate])
 
   // The uploaded-but-unreferenced photo, on every exit at once. See `orphanShot`.
   useEffect(
@@ -572,6 +615,7 @@ export default function FoodDetail() {
             fat: figure(typed.fat) ?? undefined,
           },
           parts,
+          plateQuantity,
           portion: computed,
         })
     : computed
@@ -582,16 +626,23 @@ export default function FoodDetail() {
    * figures folded in, so an entry carrying a hand-typed 400 would offer 400 as
    * the number to go back to.
    */
-  const appFigures = existing ? entryTotals({ parts, portion: computed }) : computed
+  const appFigures = existing ? entryTotals({ parts, plateQuantity, portion: computed }) : computed
+
+  /** The plate as it was served: the sum the ingredient card prints. */
+  const plateKcal = parts.reduce((sum, item) => sum + item.kcal, 0)
 
   /**
    * The same scaling for the nutrients that are not part of the budget.
    * `undefined` survives it, because these columns are null for most of the
    * imported catalogue and null means nobody recorded the number. One decimal,
    * which is what the database stores.
+   *
+   * A plate's portion scales them as well, the way `food_log_details` does:
+   * half a plate is half of everything on it, salt included.
    */
+  const extrasFactor = factor * (hasPlate ? plateQuantity : 1)
   const scale = (value: number | undefined, dp = 1) =>
-    value === undefined ? undefined : Math.round(value * factor * 10 ** dp) / 10 ** dp
+    value === undefined ? undefined : roundHalfUp(value * extrasFactor, dp)
 
   const grams = (value: number | undefined) =>
     value === undefined ? undefined : t('common:unit.grams', { value })
@@ -827,8 +878,18 @@ export default function FoodDetail() {
    * tapped three times to get from one plate to two and a half, with nowhere to
    * put a Save. Written per tap it is three round trips for one decision.
    */
-  const savePortion = async (next: { quantity: number; servingId: string }) => {
+  const savePortion = async (next: PortionEdit) => {
     if (!existing) return
+    // A plate's portion is one column, and nothing else about the entry moves:
+    // the parts stay the plate as it was served.
+    if ('plateQuantity' in next) {
+      await patchEntry(
+        next.plateQuantity === (existing.plateQuantity ?? 1)
+          ? {}
+          : { plateQuantity: next.plateQuantity },
+      )
+      return
+    }
     const option = food.servings.find((one) => one.id === next.servingId)
     await patchEntry({
       ...(next.quantity === existing.quantity ? {} : { quantity: next.quantity }),
@@ -869,7 +930,7 @@ export default function FoodDetail() {
   }
   flushRef.current = () => void flushPortion()
 
-  const schedulePortion = (next: { quantity: number; servingId: string }) => {
+  const schedulePortion = (next: PortionEdit) => {
     // Only for an entry that exists, and only once the controls have been filled
     // in from it. Composing one is a staged form — there is nothing to write until
     // Add — and a write before the seeding would send the default of one portion.
@@ -1240,44 +1301,61 @@ export default function FoodDetail() {
           SHORT DEBOUNCE is: three taps to reach two and a half plates is one
           write. See `savePortion`.
 
-          Absent for a plate the scan broke down. An entry with a breakdown IS its
-          breakdown — `food_log_details` reads the sum of the parts and never the
-          parent's portion — so this stepper moved a number on screen and nothing
-          in the diary. The ingredient card below is where that plate's amounts are
-          edited, one part at a time, which is the whole reason the breakdown
-          exists.
+          ON A PLATE THE SCAN BROKE DOWN IT COUNTS THE PLATE. An entry with a
+          breakdown IS its breakdown: `food_log_details` reads the sum of the
+          parts and never the entry's own `quantity`, so this card used to be
+          absent there, because a stepper moving `quantity` moved a number on
+          screen and nothing in the diary. There it writes `plate_quantity`
+          instead, how much of the plate was eaten, which scales every part at
+          once. A plate photographed full and half eaten is one tap, where it
+          used to be a stepper per ingredient. The parts are still edited one at
+          a time in the ingredient card below, and the chips stay away: a plate
+          has no catalogue portions to choose between.
 
           `serving?.label`, not `serving.label`. `find(...) ?? servings[0]` is
           `Serving` to the compiler and `undefined` at runtime when the list is
           empty, because `noUncheckedIndexedAccess` is off — and reading `.label`
           off it crashed the whole screen. `toFood` guarantees a portion now, so
           this is the belt to that braces. */}
-        {parts.length ? null : (
-          <Card>
-            <Stepper
-              value={quantity}
-              onChange={(next) => {
+        <Card>
+          <Stepper
+            value={hasPlate ? plateQuantity : quantity}
+            onChange={(next) => {
+              if (hasPlate) {
+                // Hundredths, which is what `plate_quantity` stores: a typed
+                // 0.333 would otherwise count here as something the day does not.
+                const portion = roundHalfUp(next, 2)
+                setPlateQuantity(portion)
+                schedulePortion({ plateQuantity: portion })
+              } else {
                 setQuantity(next)
                 schedulePortion({ quantity: next, servingId: chosen })
-              }}
-              // Quarters, matching the parts of a broken-down plate: a portion
-              // is the same kind of quantity either way, and two controls moving
-              // by different amounts is a thing to discover rather than use.
-              min={0.25}
-              max={20}
-              step={0.25}
-              // And for the amounts quarters cannot express — 0.3 of a tub — the
-              // number itself is a field.
-              editable
-              editLabel={t('logging:detail.typeServings')}
-              accessibilityLabel={t('logging:detail.servings')}
-              decrementLabel={t('common:a11y.decrease')}
-              incrementLabel={t('common:a11y.increase')}
-              // The unit is the serving the user picked below, not a generic
-              // "pieces" — a plate and a piece are different amounts of food.
-              unit={servingUnit(serving?.label) ?? t('logging:detail.servingWord')}
-            />
+              }
+            }}
+            // Quarters, matching the parts of a broken-down plate: a portion
+            // is the same kind of quantity either way, and two controls moving
+            // by different amounts is a thing to discover rather than use.
+            min={0.25}
+            max={20}
+            step={0.25}
+            // And for the amounts quarters cannot express — 0.3 of a tub — the
+            // number itself is a field.
+            editable
+            editLabel={t('logging:detail.typeServings')}
+            accessibilityLabel={t('logging:detail.servings')}
+            decrementLabel={t('common:a11y.decrease')}
+            incrementLabel={t('common:a11y.increase')}
+            // The unit is the serving the user picked below, not a generic
+            // "pieces" — a plate and a piece are different amounts of food. A
+            // plate of parts has no serving to name, and one of it is the plate.
+            unit={
+              hasPlate
+                ? t('logging:detail.servingWord')
+                : (servingUnit(serving?.label) ?? t('logging:detail.servingWord'))
+            }
+          />
 
+          {hasPlate ? null : (
             <View className="flex-row flex-wrap gap-2">
               {food.servings.map((option) => (
                 <Chip
@@ -1292,8 +1370,8 @@ export default function FoodDetail() {
                 </Chip>
               ))}
             </View>
-          </Card>
-        )}
+          )}
+        </Card>
 
         {/* THE FIGURES, read here and edited in a sheet. The title is the card's
           own now rather than a caption beside the number, because the header row
@@ -1459,12 +1537,28 @@ export default function FoodDetail() {
                 <View className="flex-row items-baseline justify-between gap-3">
                   <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
                   <View className="flex-row items-baseline gap-1">
-                    <Text variant="numeric">
-                      {parts.reduce((sum, item) => sum + item.kcal, 0).toLocaleString()}
-                    </Text>
+                    <Text variant="numeric">{plateKcal.toLocaleString()}</Text>
                     <Text variant="caption">{t('common:unit.kcal')}</Text>
                   </View>
                 </View>
+                {/* HOW MUCH OF IT WAS EATEN, under the plate it scales, once the
+                    stepper above says it was not all of it. The rows and their
+                    total stay the plate as it was served, so without this line
+                    the card would read 915 under a total of 458 with nothing to
+                    say why. */}
+                {plateQuantity === 1 ? null : (
+                  <View className="flex-row items-baseline justify-between gap-3">
+                    <Text variant="bodyStrong">
+                      {t('logging:detail.times', { amount: formatPortion(plateQuantity) })}
+                    </Text>
+                    <View className="flex-row items-baseline gap-1">
+                      <Text variant="numeric">
+                        {roundHalfUp(plateKcal * plateQuantity).toLocaleString()}
+                      </Text>
+                      <Text variant="caption">{t('common:unit.kcal')}</Text>
+                    </View>
+                  </View>
+                )}
               </>
             ) : (
               <Text variant="meta">{t('logging:detail.plateNone')}</Text>

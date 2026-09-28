@@ -37,6 +37,10 @@
 -- an entry uses the same rounding as everything else. The parent entry's own
 -- macros stay authoritative; these rows explain them.
 --
+-- They are the plate as it was served. How much of it was eaten is the entry's
+-- `plate_quantity`, applied to their sum in `food_log_details` and never to a
+-- row here, so a part's count and its calories always describe the same amount.
+--
 -- No joins left. The two this had, into `foods` for the name and macros and into
 -- `food_servings` for the factor, are columns on the row now.
 -- ---------------------------------------------------------------------------
@@ -120,39 +124,39 @@ select
   e.override_fat_g,
 
   -- THREE SOURCES, IN ORDER, and this is the invariant the client's
-  -- `entryTotals` is a copy of: what the user typed, what the parts add up to,
-  -- what the dish costs at this portion. Only the last of the three changed —
-  -- it reads the row itself now instead of a catalogue join.
+  -- `entryTotals` is a copy of: what the user typed, what the parts add up to
+  -- at the share of the plate that was eaten, what the dish costs at this
+  -- portion. The middle one is 1 x the sum for every plate nobody has said they
+  -- left some of.
   coalesce(
     e.override_kcal,
-    (select round(sum(i.base_kcal * i.serving_factor * i.quantity))::integer
-       from public.food_log_ingredients i where i.food_log_id = e.id),
+    round(plate.portion * plate.kcal)::integer,
     round(e.base_kcal * e.serving_factor * e.quantity)::integer
   )                                      as kcal,
   coalesce(
     e.override_carbs_g,
-    (select round(sum(i.base_carbs_g * i.serving_factor * i.quantity), 1)
-       from public.food_log_ingredients i where i.food_log_id = e.id),
+    round(plate.portion * plate.carbs_g, 1),
     round(e.base_carbs_g * e.serving_factor * e.quantity, 1)
   )                                      as carbs_g,
   coalesce(
     e.override_protein_g,
-    (select round(sum(i.base_protein_g * i.serving_factor * i.quantity), 1)
-       from public.food_log_ingredients i where i.food_log_id = e.id),
+    round(plate.portion * plate.protein_g, 1),
     round(e.base_protein_g * e.serving_factor * e.quantity, 1)
   )                                      as protein_g,
   coalesce(
     e.override_fat_g,
-    (select round(sum(i.base_fat_g * i.serving_factor * i.quantity), 1)
-       from public.food_log_ingredients i where i.food_log_id = e.id),
+    round(plate.portion * plate.fat_g, 1),
     round(e.base_fat_g * e.serving_factor * e.quantity, 1)
   )                                      as fat_g,
   -- No override and no per-part figure for these three: nothing in the app
   -- lets a user type a fibre correction, and the breakdown does not carry them.
-  round(e.base_fibre_g   * e.serving_factor * e.quantity, 1)       as fibre_g,
-  round(e.base_sugar_g   * e.serving_factor * e.quantity, 1)       as sugar_g,
-  round(e.base_sodium_mg * e.serving_factor * e.quantity)::integer as sodium_mg,
-  round(e.serving_grams  * e.quantity, 1)                          as grams,
+  -- They do follow the plate's portion, because half a plate is half of
+  -- everything on it and a day that halved the calories but kept all the salt
+  -- would be counting two different meals.
+  round(e.base_fibre_g   * e.serving_factor * e.quantity * plate.portion, 1)       as fibre_g,
+  round(e.base_sugar_g   * e.serving_factor * e.quantity * plate.portion, 1)       as sugar_g,
+  round(e.base_sodium_mg * e.serving_factor * e.quantity * plate.portion)::integer as sodium_mg,
+  round(e.serving_grams  * e.quantity * plate.portion, 1)                          as grams,
   e.recipe_id,
 
   -- The snapshot itself, unmultiplied, because one caller wants to copy an entry
@@ -169,8 +173,32 @@ select
   e.base_fibre_g,
   e.base_sugar_g,
   e.base_sodium_mg,
-  e.serving_grams as base_serving_grams
-from public.food_logs e;
+  e.serving_grams as base_serving_grams,
+
+  -- Last, because a view can only grow at its end, and a build already in a
+  -- store reads every column above by name.
+  --
+  -- How many parts the plate has, so a screen knows which portion control to
+  -- draw before it has fetched the parts themselves.
+  plate.parts                            as ingredient_count,
+  -- How much of the plate was eaten, and 1 where there is no plate: nothing
+  -- multiplies it there, so a reader never has to ask which case it is in.
+  plate.portion                          as plate_quantity
+from public.food_logs e
+-- The breakdown, added up once per entry. It was four correlated subqueries,
+-- one per macro, and the portion needs a fifth question of the same rows:
+-- whether there are any.
+cross join lateral (
+  select
+    count(*)::integer                                         as parts,
+    case when count(*) > 0 then e.plate_quantity else 1 end   as portion,
+    sum(i.base_kcal      * i.serving_factor * i.quantity)     as kcal,
+    sum(i.base_carbs_g   * i.serving_factor * i.quantity)     as carbs_g,
+    sum(i.base_protein_g * i.serving_factor * i.quantity)     as protein_g,
+    sum(i.base_fat_g     * i.serving_factor * i.quantity)     as fat_g
+  from public.food_log_ingredients i
+  where i.food_log_id = e.id
+) plate;
 
 grant select on public.food_log_details to authenticated, service_role;
 

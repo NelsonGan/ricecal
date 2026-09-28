@@ -1,3 +1,5 @@
+import { roundHalfUp } from './nutrition'
+
 /**
  * Serving labels, made fit to read. An imported label is written for a database
  * row rather than a person: "1 medium paper (8-5/8" dia)", "383 GRM", "Quantity
@@ -75,6 +77,21 @@ export function servingUnit(raw: string | null | undefined): string | null {
 export function portionLabel(quantity: number, raw: string | null | undefined, fallback: string) {
   const unit = servingUnit(raw) ?? fallback
   return quantity === 1 ? unit : `${quantity} × ${unit}`
+}
+
+/**
+ * How much of its own dish an entry amounts to, with the share of the plate that
+ * was eaten folded in. It is what the row reads as, and what logging it again
+ * copies: half a plate yesterday is half a plate today, not a whole one.
+ *
+ * `plateQuantity` is 1 wherever there is no plate, so this is `quantity` for
+ * every entry nobody has halved. Rounded to what `food_logs.quantity` stores,
+ * which also keeps `0.1 × 3` from printing as 0.30000000000000004, and kept
+ * inside the column's check.
+ */
+export function eatenQuantity(entry: { quantity: number; plateQuantity?: number }) {
+  const eaten = roundHalfUp(entry.quantity * (entry.plateQuantity ?? 1), 2)
+  return Math.min(100, Math.max(0.01, eaten))
 }
 
 /**

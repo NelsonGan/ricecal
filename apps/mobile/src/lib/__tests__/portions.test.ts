@@ -1,4 +1,4 @@
-import { portionLabel, servingUnit } from '@/lib/portions'
+import { eatenQuantity, portionLabel, servingUnit } from '@/lib/portions'
 
 /**
  * Serving labels out of the catalogue import.
@@ -65,5 +65,25 @@ describe('portionLabel', () => {
 
   it('falls back to the caller’s word when the label is unusable', () => {
     expect(portionLabel(2, '383 GRM', 'serving')).toBe('2 × serving')
+  })
+})
+
+describe('eatenQuantity', () => {
+  it('is the entry’s own quantity when nobody left any of the plate', () => {
+    expect(eatenQuantity({ quantity: 2 })).toBe(2)
+    expect(eatenQuantity({ quantity: 1.25, plateQuantity: 1 })).toBe(1.25)
+  })
+
+  it('folds in how much of the plate was eaten', () => {
+    expect(eatenQuantity({ quantity: 1, plateQuantity: 0.5 })).toBe(0.5)
+    expect(eatenQuantity({ quantity: 2, plateQuantity: 0.75 })).toBe(1.5)
+  })
+
+  // What `food_logs.quantity` stores, and what a row prints: never a float
+  // dropping, and never outside the column's check.
+  it('keeps to hundredths and to the column', () => {
+    expect(eatenQuantity({ quantity: 0.1, plateQuantity: 3 })).toBe(0.3)
+    expect(eatenQuantity({ quantity: 0.25, plateQuantity: 0.03 })).toBe(0.01)
+    expect(eatenQuantity({ quantity: 20, plateQuantity: 20 })).toBe(100)
   })
 })
