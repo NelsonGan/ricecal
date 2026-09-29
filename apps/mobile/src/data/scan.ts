@@ -134,6 +134,7 @@ export function useUpdateIngredient() {
     },
     onSettled: (_data, _error, input) => {
       queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
+      queryClient.invalidateQueries({ queryKey: keys.social(userId) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
@@ -209,6 +210,7 @@ export function useAddIngredient() {
     },
     onSettled: (_data, _error, input) => {
       queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
+      queryClient.invalidateQueries({ queryKey: keys.social(userId) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
@@ -252,6 +254,7 @@ export function useRemoveIngredient() {
     },
     onSettled: (_data, _error, input) => {
       queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
+      queryClient.invalidateQueries({ queryKey: keys.social(userId) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
@@ -357,6 +360,7 @@ export function useRefineEntry() {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) }),
           queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) }),
+          queryClient.invalidateQueries({ queryKey: keys.social(userId) }),
         ])
         queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
         queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })

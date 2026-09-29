@@ -95,6 +95,8 @@ export function useLogFood() {
       // below it is at risk. See `lib/rating`.
       recordMealLogged(userId)
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
+      // Auto post may have published this entry in the same transaction.
+      queryClient.invalidateQueries({ queryKey: keys.social(userId) })
       // And the search panel's "My foods" tab, whose whole content is the
       // newest of these. Invalidated on the write rather than left to go stale,
       // because the common way back into that list is straight after using it:
@@ -303,12 +305,14 @@ export function useUpdateEntry() {
       return row
     },
     onSuccess: (_row, patch) => {
-      if (patch.photoPath !== undefined) {
-        // Replacing the diary picture revokes the copy shown by its feed post. A
-        // post keeps the drawing it was published with, so an icon edit is not.
+      // Feed cards read this entry's current figures and drawing. A removed
+      // photo needs the old card discarded at once; other edits can refetch.
+      if (patch.photoPath !== undefined || (patch.icon !== undefined && patch.currentPhotoPath)) {
         void queryClient
           .cancelQueries({ queryKey: keys.social(userId) })
           .then(() => queryClient.resetQueries({ queryKey: keys.social(userId) }))
+      } else {
+        queryClient.invalidateQueries({ queryKey: keys.social(userId) })
       }
       track('Entry Updated', { changed: changedFields(patch) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, patch.logDate) })
