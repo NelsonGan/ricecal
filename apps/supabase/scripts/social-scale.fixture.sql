@@ -29,9 +29,9 @@ select pg_temp.social_bench_id('user', n), '00000000-0000-0000-0000-000000000000
        'authenticated', 'authenticated', 'zz-bench-' || n || '@social.example.test', '{}', '{}'
 from generate_series(1, 15050) n;
 
-insert into public.profiles (id, handle, display_name, review_status)
+insert into public.profiles (id, handle, display_name, review_status, social_joined_at)
 select pg_temp.social_bench_id('user', n), 'zz_bench_' || lpad(n::text, 5, '0'),
-       'Benchmark cook ' || n, 'approved'
+       'Benchmark cook ' || n, 'approved', now()
 from generate_series(1, 15050) n;
 
 create temp table social_bench_sources as
