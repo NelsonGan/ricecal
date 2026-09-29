@@ -193,7 +193,7 @@ for (const result of results) {
         : 21
   if (result.explain[0].Plan['Actual Rows'] !== expectedRows) {
     throw new Error(
-      `${result.name} returned an incomplete page; fast missing rows are not a valid benchmark`,
+      `${result.name} returned ${result.explain[0].Plan['Actual Rows']} rows, expected ${expectedRows}; fast missing rows are not a valid benchmark`,
     )
   }
 }

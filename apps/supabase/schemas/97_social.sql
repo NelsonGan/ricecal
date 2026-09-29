@@ -2,6 +2,38 @@
 -- request tokens and reviewed image validators never travel with a feed card.
 -- Scalar relationship lookups keep both index keys. An EXISTS projection can
 -- instead hash the entire graph and run its visibility checks for every edge.
+-- A published post reveals only these fields of its source entry. The diary
+-- stays owner-only, so this helper checks post visibility before reading it.
+create or replace function private.social_post_food(p_post_id uuid)
+returns table (
+  food_name text, icon_set public.icon_set, icon_name text, photo_path text,
+  kcal integer, carbs_g numeric, protein_g numeric, fat_g numeric
+)
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_entry_id uuid;
+  v_author_id uuid;
+  v_photo_path text;
+begin
+  select p.source_entry_id, p.author_id, p.photo_path
+    into v_entry_id, v_author_id, v_photo_path
+  from public.social_posts p
+  where p.id = p_post_id and private.social_can_view_post(p.id);
+  if not found then return; end if;
+
+  -- Look up the one entry by primary key. Joining the expanded diary view to
+  -- posts made Postgres scan every logged meal belonging to a busy author.
+  return query select left(d.food_name, 160), d.icon_set, d.icon_name,
+    -- A replacement photo must pass the existing review and signing path.
+    case when d.photo_path = v_photo_path then d.photo_path end,
+    d.kcal, d.carbs_g, d.protein_g, d.fat_g
+  from public.food_log_details d
+  where d.id = v_entry_id and d.user_id = v_author_id;
+end;
+$$;
+revoke execute on function private.social_post_food from public, anon;
+grant execute on function private.social_post_food to authenticated, service_role;
+
 create or replace view public.social_profile_details with (security_invoker = true) as
 select p.user_id, p.handle, p.display_name, p.bio, p.avatar_path,
   p.review_status, p.review_reason, p.revision, p.quarantined,
@@ -15,14 +47,17 @@ from public.social_profiles p;
 
 create or replace view public.social_post_details with (security_invoker = true) as
 select p.id, p.author_id, a.handle, a.display_name, a.avatar_path,
-  p.food_name, p.icon_set, p.icon_name, p.photo_path, p.kcal, p.carbs_g, p.protein_g, p.fat_g,
+  food.food_name, food.icon_set, food.icon_name, food.photo_path,
+  food.kcal, food.carbs_g, food.protein_g, food.fat_g,
   p.caption, p.audience,
   p.review_status, p.review_reason, p.revision, p.quarantined, p.created_at, p.published_at,
   private.social_count(p.id, 'likes') as like_count,
   private.social_count(p.id, 'comments') as comment_count,
   coalesce((select true from public.social_likes l where l.post_id = p.id and l.user_id = (select auth.uid()) limit 1), false) as is_liked,
   coalesce((select true from public.social_follows f where f.follower_id = (select auth.uid()) and f.followed_id = p.author_id limit 1), false) as is_following
-from public.social_posts p join public.social_profiles a on a.user_id = p.author_id;
+from public.social_posts p
+join public.social_profiles a on a.user_id = p.author_id
+join lateral private.social_post_food(p.id) food on true;
 
 create or replace view public.social_comment_details with (security_invoker = true) as
 select c.id, c.post_id, c.author_id, a.handle, a.display_name, a.avatar_path,

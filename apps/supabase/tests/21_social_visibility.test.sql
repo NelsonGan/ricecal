@@ -175,6 +175,8 @@ set local role authenticated;
 select public.report_social_content('profile', :'alice', 'spam');
 select is((select count(*)::int from public.social_post(:'post')), 0,
   'reporting a profile hides that author''s direct post reads');
+select is((select count(*)::int from private.social_post_food(:'post')), 0,
+  'the privileged food reader cannot reveal a hidden post''s diary details');
 select is((select count(*)::int from private.social_feed_candidates('following', null, null, 50) where id = :'post'), 0,
   'the privileged selector excludes posts from a reported followed profile');
 select is((select count(*)::int from public.social_photo_claims(array[

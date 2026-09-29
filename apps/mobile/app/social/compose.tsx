@@ -51,9 +51,8 @@ function Composer({ entryId, postId }: { entryId: string; postId: string }) {
   const entry = source.data?.entry
   const editing = Boolean(postId || source.data?.postId)
   const missingSource = !entryId && !postId
-  // Editing changes only the caption and audience. The post's nullable photo
-  // and icon fields are part of its snapshot, so a null there must not fall
-  // through to a newer photo or drawing on the source diary entry.
+  // Editing changes only the caption and audience. The post preview reads the
+  // entry's current food details, including its current drawing and totals.
   const preview = editing ? existing : entry
   const privatePhoto = useMealPhotoUrl(preview?.photo_path ?? undefined)
   const loaded = preview
