@@ -2500,7 +2500,7 @@ publishes it. The saved entry offers **Share to feed**, which opens a preview of
 photograph or drawing, calories and macros, an optional caption (280 characters), and an audience:
 Everyone or Followers. With automatic posting off, only pressing Post creates a post. A failed publication
 does not undo the meal. The source is one committed entry owned by the caller;
-the server constructs the snapshot and accepts no client-supplied author or food.
+the server records that reference and accepts no client-supplied author or food.
 
 Feed takes the second bottom tab. **My foods** moves into the Settings card on
 Me, retaining both the personal and community recipe shelves. Existing recipe
@@ -2556,20 +2556,23 @@ as client roles.
 Handles are normalized lowercase ASCII, 3 to 24 characters, unique
 under a database constraint. Names and bios accept the app's languages.
 
-`social_posts` holds only the food name, drawing, owned photo key, the meal's
-calories and three macros, caption and audience. Calories and macros are what
-the feed is for, so each post shows them over its photo. They are copied from
-`food_log_details` when the post is created, so they match the diary's own
-arithmetic and never expose how it was reached (base values, serving, quantity).
+`social_posts` links one source diary entry and holds the caption and audience.
+The feed reads the current food name, drawing, calories and macros from
+`food_log_details` through a narrow visibility-checked server function. Editing
+the entry, its portion or its ingredients therefore updates the post as well.
+The old copied columns remain in the table for schema compatibility, but feed reads
+do not use them. A replacement photo is not shown automatically, because it has
+not passed photo review; removing a photo removes it from the post.
 A post never contains diary notes, meal dates/times, goals, weight, location or
-account email. Publication time is new, not the time the meal was logged. A source-entry reference exists for ownership and deletion,
-not as permission to join the private diary. Read RPCs return explicit public
-fields. Diary and recipe RLS are never widened to implement the feed.
+account email. Publication time is new, not the time the meal was logged. The
+source-entry reference drives reads and deletion through the post visibility
+check. Read RPCs return explicit public fields. Diary and recipe RLS are never
+widened to implement the feed.
 
 Auto post foods is a private profile preference, false for every new and existing
 account. A deferred insert trigger publishes each new food after its transaction
-finishes, so a scan's components and any same-transaction correction are in the
-snapshot. It uses the same diary totals and ownership rules as manual sharing.
+finishes, so a scan's components and any same-transaction correction are ready
+when it posts. It uses the same diary totals and ownership rules as manual sharing.
 Public profiles post to Everyone; private profiles post to Followers. Existing
 posts stay as they were when the preference is switched off. A manual share of
 an automatically posted entry opens its existing post instead of making another.
@@ -2583,7 +2586,7 @@ request UUID makes a retry of an interrupted comment submission the same
 operation. Follow and like writes set the desired state instead of toggling it,
 so repeated requests converge.
 Caption edits keep the original publication position and appear immediately.
-Changing the diary does not silently rewrite the published words or figures.
+Changing the diary updates the published food details without moving the post.
 Deleting the diary entry removes its post and dependent comments, likes and
 activity. The entry screen's delete confirmation says so when the meal has a
 post. A diary swipe asks the server at that moment: a meal with no post is
@@ -2798,6 +2801,7 @@ The local verification entrypoints are:
 pnpm exec supabase test db --workdir apps
 node apps/supabase/scripts/social-concurrency.mjs
 node apps/supabase/scripts/social-live.mjs
+node apps/supabase/scripts/social-reference-live.mjs
 node apps/supabase/scripts/social-scale.mjs --repeat=21 --save=/tmp/social-scale.json
 ```
 
@@ -2809,6 +2813,9 @@ back. Use `--plans=/tmp/social-plans.log` in a separate benchmark run for nested
 `EXPLAIN (ANALYZE, BUFFERS)` output; profiling affects timings. The HTTP suite
 uses real local Auth, PostgREST and edge functions, and `--keep` leaves fictional
 accounts in gitignored `.secrets/social-ui.json` for simulator testing.
+The focused reference check exercises edits and deletion through local Auth and
+PostgREST. Its `--keep` option leaves fictional accounts in gitignored
+`.secrets/social-reference-ui.json` for simulator testing.
 
 Media verification needs an S3 server that enforces `If-Match`. Supabase's local
 S3 endpoint verifies that the header is signed but, in the tested version,

@@ -118,15 +118,23 @@ select throws_ok($q$insert into public.social_posts (author_id, source_entry_id,
 update public.food_logs set item_name = 'Changed private food', note = 'More private notes',
   override_kcal = 900 where id = :'entry';
 select is((select food_name from public.social_posts where id = :'post'), 'Fixture nasi lemak',
-  'editing the diary never silently rewrites published words');
+  'the legacy copied name remains a compatible table field');
 select is((select kcal from public.social_posts where id = :'post'), 600,
-  'correcting the diary never silently rewrites published figures');
+  'the legacy copied calories remain a compatible table field');
+select is((select food_name from public.social_post(:'post')), 'Changed private food',
+  'the post reads the current food name from its source entry');
+select is((select kcal from public.social_post(:'post')), 900,
+  'the post reads a corrected calorie figure from its source entry');
 reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select is((select count(*)::int from public.social_posts where id = :'post'), 1,
   'a new post is visible immediately without review');
+select is((select food_name from public.social_post(:'post')), 'Changed private food',
+  'a reader sees the edited food name without diary access');
+select is((select kcal from public.social_post(:'post')), 900,
+  'a reader sees the edited calories without diary access');
 select throws_ok(format('select public.review_social_content(%L, %L, 1, %L, null)', 'post', :'post', 'approved'),
   '42501', null, 'clients cannot invoke service-only review approval');
 reset role;
@@ -140,6 +148,8 @@ select is((select count(*)::int from public.social_posts where id = :'post'), 1,
 select throws_ok(format('select public.set_social_follow(%L, true)', :'bob'), '22023', null, 'self-follow is rejected');
 select public.set_social_follow(:'alice', true);
 select public.set_social_follow(:'alice', true);
+select is((select kcal from public.social_feed('following') where id = :'post'), 900,
+  'the following feed reads corrected diary calories');
 select public.set_social_like(:'post', true);
 select public.set_social_like(:'post', true);
 select public.create_social_comment(:'post', 'Looks good', 'a8130000-0000-4000-8000-000000000001') as comment \gset
@@ -151,6 +161,25 @@ select throws_ok(format('select public.create_social_comment(%L, %L, gen_random_
   '23514', null, 'blank comments are rejected');
 select throws_ok(format('select public.update_social_post(%L, %L, %L)', :'post', 'Hijack', 'public'),
   '42501', null, 'a reader cannot edit another account''s post');
+reset role;
+update public.food_logs set override_kcal = null, quantity = 2 where id = :'entry';
+select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is((select kcal from public.social_post(:'post')), 1200,
+  'changing the source portion changes the published calories');
+reset role;
+insert into public.food_log_ingredients
+  (food_log_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_factor, quantity)
+values (:'entry', 'Rice and egg', 120, 12, 4, 2, 1, 2);
+update public.food_logs set plate_quantity = 0.5 where id = :'entry';
+select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is((select array[kcal, carbs_g, protein_g, fat_g]::numeric[] from public.social_post(:'post')),
+  array[120, 12, 4, 2]::numeric[],
+  'the published figures follow ingredient edits and the plate portion');
+select is((select count(*)::int from public.food_log_details where id = :'entry'), 0,
+  'the published reference does not grant access to the private diary');
 reset role;
 select is((select count(*)::int from public.social_follows where follower_id = :'bob' and followed_id = :'alice'), 1,
   'repeating a follow inserts only one canonical edge');

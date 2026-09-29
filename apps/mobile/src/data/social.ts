@@ -47,7 +47,7 @@ export type SocialPost = {
   icon_set: IconRef['set'] | null
   icon_name: string | null
   photo_path: string | null
-  /** The meal's totals when it was shared. Null only if the diary had none. */
+  /** The source meal's current totals. */
   kcal: number | null
   carbs_g: number | null
   protein_g: number | null

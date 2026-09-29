@@ -99,8 +99,8 @@ create table public.social_posts (
   icon_name text,
   photo_path text,
   photo_etag text,
-  -- The meal's totals when it was shared, a snapshot like its name: correcting
-  -- the diary afterwards does not rewrite what followers were shown.
+  -- Legacy copies remain for schema compatibility. Feed reads follow the source
+  -- entry through social_post_details, including later corrections.
   kcal integer check (kcal >= 0),
   -- Match food_log_details' unbounded numeric totals. The diary accepts factors
   -- and quantities whose product can exceed a fixed snapshot precision.
