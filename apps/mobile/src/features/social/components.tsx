@@ -209,14 +209,14 @@ export function SocialPhoto({
   )
   const photo = useSocialPhoto(path, visible && focused && !privateUri)
   const box = { sm: 40, md: 52, lg: 64 }[size]
-  const signed = visible && !privateUri && !photo.isError && photo.data
+  const signed = visible && focused && !privateUri && !photo.isError && photo.data
   useEffect(() => {
     if (visible && !signed) onShown?.(false)
   }, [visible, signed, onShown])
   useEffect(() => {
     if (photo.isError) onFailed?.()
   }, [photo.isError, onFailed])
-  if (visible && privateUri) {
+  if (visible && focused && privateUri) {
     return (
       <Image
         source={{ uri: privateUri }}
@@ -245,6 +245,7 @@ export function SocialPhoto({
       }}
       cachePolicy="memory"
       recyclingKey={path ?? undefined}
+      // Early resizing fits inside the box, leaving too few pixels for a crop.
       contentFit="cover"
       style={
         avatar
@@ -1306,11 +1307,16 @@ export function SocialList<T>({
   columns?: number
 }) {
   const { t } = useTranslation('social')
-  const [visible, setVisible] = useState<Set<string>>(new Set())
+  const [viewport, setViewport] = useState({ first: 0, last: columns - 1 })
   const [refreshing, setRefreshing] = useState(false)
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<T>[] }) =>
-    setVisible(new Set(viewableItems.map((item) => item.key))),
-  ).current
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<T>[] }) => {
+    const indices = viewableItems.flatMap((item) => (item.index === null ? [] : [item.index]))
+    const first = indices.length ? Math.min(...indices) : -1
+    const last = indices.length ? Math.max(...indices) : -1
+    setViewport((previous) =>
+      previous.first === first && previous.last === last ? previous : { first, last },
+    )
+  }).current
   const seen = new Set<string>()
   const rows = (query.data?.pages.flatMap((page) => page.rows) ?? []).filter((row) => {
     const id = rowKey(row)
@@ -1342,8 +1348,15 @@ export function SocialList<T>({
     <FlatList
       data={rows}
       keyExtractor={rowKey}
-      renderItem={({ item }) => {
-        const row = renderRow(item, visible.has(rowKey(item)))
+      extraData={viewport}
+      renderItem={({ item, index }) => {
+        // Authorize and decode two nearby rows before a scroll reveals them.
+        // Keep the window bounded, including both directions and grid columns.
+        const nearby =
+          viewport.first >= 0 &&
+          index >= viewport.first - 2 * columns &&
+          index <= viewport.last + 2 * columns
+        const row = renderRow(item, nearby)
         return variant === 'grid' ? (
           <View style={{ flex: 1 / columns }} className="p-0.5">
             {row}
@@ -1375,7 +1388,9 @@ export function SocialList<T>({
         void refresh()
       }}
       onEndReached={next}
-      onEndReachedThreshold={0.6}
+      // A feed card takes almost a viewport. Fetch its next page early enough
+      // for the two upcoming cards to authorize and decode their photos too.
+      onEndReachedThreshold={variant === 'feed' ? 2 : 0.6}
       ListEmptyComponent={
         query.isPending && query.fetchStatus !== 'paused' ? (
           <SocialSkeleton variant={variant} />

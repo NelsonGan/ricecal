@@ -1,6 +1,8 @@
 import { Image } from 'expo-image'
+import { manipulateAsync } from 'expo-image-manipulator'
+import { Image as NativeImage } from 'react-native'
 
-import { clearImageCache, resolveStoredImage, storedImageSource } from '@/data/photos'
+import { clearImageCache, resolveStoredImage, storedImageSource, uploadAvatar } from '@/data/photos'
 
 jest.mock('@/lib/supabase', () => ({
   supabase: { functions: { invoke: jest.fn() } },
@@ -30,6 +32,53 @@ const cache = Image as unknown as {
 const KEY = 'meals/user-1/1f0c9a5e-0000-4000-8000-000000000001.jpg'
 const SIGNED = `https://bucket.r2.example/${KEY}?X-Amz-Date=20260806T000000Z&X-Amz-Signature=aaa`
 const RESIGNED = `https://bucket.r2.example/${KEY}?X-Amz-Date=20260806T010000Z&X-Amz-Signature=bbb`
+
+describe('avatar uploads', () => {
+  const manipulate = jest.mocked(manipulateAsync)
+  let getSize: jest.SpyInstance
+  let originalFetch: typeof fetch
+
+  beforeEach(() => {
+    originalFetch = global.fetch
+    global.fetch = jest.fn().mockResolvedValue({ ok: true })
+    getSize = jest.spyOn(NativeImage, 'getSize')
+    manipulate.mockResolvedValue({
+      uri: 'file:///small.jpg',
+      width: 128,
+      height: 256,
+      base64: 'AQID',
+    })
+    supabase.functions.invoke.mockResolvedValue({ data: { ok: true, key: KEY, url: SIGNED } })
+    cache.writeToCacheAsync.mockClear()
+  })
+
+  afterEach(() => {
+    global.fetch = originalFetch
+    getSize.mockRestore()
+  })
+
+  it('caps the longer edge without stretching a portrait and caches the uploaded bytes', async () => {
+    getSize.mockImplementation((_uri, success) => success(1024, 2048))
+    await expect(uploadAvatar('file:///portrait.jpg')).resolves.toBe(KEY)
+    expect(manipulate).toHaveBeenCalledWith('file:///portrait.jpg', [{ resize: { height: 256 } }], {
+      compress: 0.7,
+      format: 'jpeg',
+      base64: true,
+    })
+    expect(global.fetch).toHaveBeenCalledWith(SIGNED, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/jpeg' },
+      body: new Uint8Array([1, 2, 3]),
+    })
+    expect(cache.writeToCacheAsync).toHaveBeenCalledWith('file:///small.jpg', KEY)
+  })
+
+  it('does not enlarge a small avatar', async () => {
+    getSize.mockImplementation((_uri, success) => success(120, 80))
+    await uploadAvatar('file:///small-original.jpg')
+    expect(manipulate).toHaveBeenCalledWith('file:///small-original.jpg', [], expect.anything())
+  })
+})
 
 describe('storedImageSource', () => {
   it('files the bytes under the stored key, not the signed URL', () => {

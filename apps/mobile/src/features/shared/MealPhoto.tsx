@@ -24,11 +24,8 @@ export type MealPhotoProps = {
  * box it is put in; see `photoCropFill`, and note the caller owes it a size and
  * an `overflow-hidden` to crop against.
  *
- * Faded in, because a plate can still be a moment late. It used to be late by a
- * request, since signed URLs are kept out of the persisted cache, so every launch
- * re-signed them and a day of snapped meals hard-cut from grey squares to
- * photographs. A launch now asks the disk first, and the fade stays for the
- * launch that does have to fetch.
+ * Keep decoded pictures in memory beside the disk copy, and draw them as soon
+ * as the bytes are ready.
  */
 export function MealPhoto({ source, dimmed = false, accessibilityLabel }: MealPhotoProps) {
   return (
@@ -38,8 +35,12 @@ export function MealPhoto({ source, dimmed = false, accessibilityLabel }: MealPh
       // The box is rarely the photo's shape — square on a row, a wide card on a
       // detail screen — so it crops rather than letterboxing. Bars around a
       // plate read as a broken image.
+      // Early resizing fits inside this box, then cover enlarges that thumbnail
+      // and blurs wide or tall photos. Let the view downscale after decoding.
       contentFit="cover"
-      transition={180}
+      cachePolicy="memory-disk"
+      // A signed URI can already be cached. A fade delays that hit too.
+      transition={0}
       accessibilityLabel={accessibilityLabel}
     />
   )
