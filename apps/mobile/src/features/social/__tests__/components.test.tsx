@@ -24,13 +24,18 @@ const mockProfile = jest.fn()
 const mockPhoto = jest.fn()
 const mockRefetchProfile = jest.fn()
 const mockToast = jest.fn()
+let mockFocused = true
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(async () => undefined),
   ImpactFeedbackStyle: { Light: 'light' },
 }))
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
-  useFocusEffect: (callback: () => void) => require('react').useEffect(callback, [callback]),
+  useFocusEffect: (callback: () => void) =>
+    require('react').useEffect(
+      () => (mockFocused ? callback() : undefined),
+      [callback, mockFocused],
+    ),
 }))
 jest.mock('expo-image', () => ({
   Image: (props: { source?: { uri?: string } }) =>
@@ -100,6 +105,7 @@ const post: SocialPost = {
 
 beforeEach(async () => {
   jest.clearAllMocks()
+  mockFocused = true
   await i18n.changeLanguage('en')
   mockProfile.mockReturnValue({
     data: { ...person, user_id: 'viewer' },
@@ -518,3 +524,90 @@ it('never draws stale signed data after access is refused or the row leaves the 
   expect(screen.queryByTestId('social-photo')).toBeNull()
   expect(mockPhoto).toHaveBeenLastCalledWith('meals/person/photo', false)
 })
+
+it.each([undefined, 'file:///private-photo.jpg'])(
+  'releases a photo when its screen loses focus (private source: %s)',
+  async (privateUri) => {
+    mockPhoto.mockReturnValue({
+      data: { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 50_000 },
+      isError: false,
+    })
+    const photo = <SocialPhoto path="meals/person/photo" privateUri={privateUri} label="Rice" />
+    const view = await render(photo)
+    expect(screen.getByTestId('social-photo')).toBeOnTheScreen()
+    mockFocused = false
+    await view.rerender(
+      <SocialPhoto path="meals/person/photo" privateUri={privateUri} label="Rice" />,
+    )
+    expect(screen.queryByTestId('social-photo')).toBeNull()
+    expect(mockPhoto).toHaveBeenLastCalledWith('meals/person/photo', false)
+    await view.unmount()
+  },
+)
+
+it.each([1, 2, 3])(
+  'prepares two nearby rows in a %s-column list and releases distant photos',
+  async (columns) => {
+    const rows = Array.from({ length: 30 }, (_, index) => ({ id: String(index) }))
+    const query = {
+      data: { pages: [{ rows, next: null }] },
+      isPending: false,
+      isError: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      isFetchNextPageError: false,
+      hasNextPage: false,
+      fetchStatus: 'idle' as const,
+      fetchNextPage: jest.fn(),
+      refetch: jest.fn(),
+    }
+    const renderRow = jest.fn((_row: { id: string }, _nearby: boolean) => <View />)
+    const view = await render(
+      <SocialList
+        query={query}
+        columns={columns}
+        variant={columns === 1 ? 'feed' : 'grid'}
+        rowKey={(row) => row.id}
+        renderRow={renderRow}
+        empty="Empty"
+      />,
+    )
+    const list = () =>
+      view.root?.queryAll(
+        (node) => Array.isArray(node.props.data) && typeof node.props.renderItem === 'function',
+      )[0]
+    const prepared = () => {
+      renderRow.mockClear()
+      for (let index = 0; index < rows.length; index += columns) {
+        list()?.props.renderItem({
+          item: columns === 1 ? rows[index] : rows.slice(index, index + columns),
+          index: index / columns,
+        })
+      }
+      return renderRow.mock.calls.flatMap((call) => (call[1] ? [call[0].id] : []))
+    }
+    expect(prepared()).toEqual(rows.slice(0, 3 * columns).map((row) => row.id))
+    await act(async () => {
+      list()?.props.viewabilityConfigCallbackPairs[0].onViewableItemsChanged({
+        viewableItems: [
+          {
+            item: columns === 1 ? rows[12] : rows.slice(12, 12 + columns),
+            index: 12 / columns,
+            key: 'viewport',
+            isViewable: true,
+          },
+        ],
+        changed: [],
+      })
+    })
+    expect(prepared()).toEqual(rows.slice(12 - 2 * columns, 12 + 3 * columns).map((row) => row.id))
+    await act(async () =>
+      list()?.props.viewabilityConfigCallbackPairs[0].onViewableItemsChanged({
+        viewableItems: [],
+        changed: [],
+      }),
+    )
+    expect(prepared()).toEqual([])
+    await view.unmount()
+  },
+)

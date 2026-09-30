@@ -129,6 +129,8 @@ export function Avatar({
             source={{ uri, cacheKey }}
             style={{ width: metrics.box, height: metrics.box }}
             contentFit="cover"
+            cachePolicy="memory-disk"
+            enforceEarlyResizing
           />
         ) : showInitial ? (
           <Text className={cn('font-display', metrics.font, palette.label)}>{initial}</Text>
