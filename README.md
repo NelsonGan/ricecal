@@ -3469,9 +3469,13 @@ The server still checks current access, and social bytes remain memory-only,
 keyed by the object and its ETag. Never prefetch a signed social URL with the
 default disk policy.
 
-Diary and recipe images keep both disk bytes and decoded memory copies. Local
-files appear without a fade. iOS resizes photos to their display size early,
-which keeps a grid of thumbnails from decoding each one at full resolution.
+Diary and recipe images keep both disk bytes and decoded memory copies. Meal
+photos appear without a fade, including cache hits whose query still holds a
+signed URL. Keep `enforceEarlyResizing` off for cropped photos:
+iOS fits that early thumbnail inside the box, then `cover` enlarges it again.
+A 1024 × 256 photo decoded to 367 × 92 pixels before filling a square recipe
+tile, blurring it. The native view's normal downscaling preserves enough pixels
+for the crop instead.
 Avatars upload with a 256-pixel longest edge, enough for the largest 64-point
 avatar at four pixels per point. Meal uploads stay at 1024 pixels for the model
 and the detail view.

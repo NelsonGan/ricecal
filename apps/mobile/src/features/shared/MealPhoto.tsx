@@ -24,8 +24,8 @@ export type MealPhotoProps = {
  * box it is put in; see `photoCropFill`, and note the caller owes it a size and
  * an `overflow-hidden` to crop against.
  *
- * Keep decoded pictures in memory beside the disk copy. A familiar plate should
- * appear at once; only a network source needs a fade while it arrives.
+ * Keep decoded pictures in memory beside the disk copy, and draw them as soon
+ * as the bytes are ready.
  */
 export function MealPhoto({ source, dimmed = false, accessibilityLabel }: MealPhotoProps) {
   return (
@@ -35,10 +35,12 @@ export function MealPhoto({ source, dimmed = false, accessibilityLabel }: MealPh
       // The box is rarely the photo's shape — square on a row, a wide card on a
       // detail screen — so it crops rather than letterboxing. Bars around a
       // plate read as a broken image.
+      // Early resizing fits inside this box, then cover enlarges that thumbnail
+      // and blurs wide or tall photos. Let the view downscale after decoding.
       contentFit="cover"
       cachePolicy="memory-disk"
-      enforceEarlyResizing
-      transition={source.uri.startsWith('file://') ? 0 : 180}
+      // A signed URI can already be cached. A fade delays that hit too.
+      transition={0}
       accessibilityLabel={accessibilityLabel}
     />
   )

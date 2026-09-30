@@ -244,8 +244,8 @@ export function SocialPhoto({
         cacheKey: `${path}#${photo.data.headers['If-Match'] ?? ''}`,
       }}
       cachePolicy="memory"
-      enforceEarlyResizing
       recyclingKey={path ?? undefined}
+      // Early resizing fits inside the box, leaving too few pixels for a crop.
       contentFit="cover"
       style={
         avatar
