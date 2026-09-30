@@ -3461,6 +3461,31 @@ the server to name it. A launch into a familiar diary draws off the disk and
 invokes the function not at all. An upload seeds that cache with what it just
 sent, so the phone never downloads back a plate it photographed.
 
+Social lists authorize and decode photos for two nearby rows in each direction,
+counting all columns as one row on a profile grid. Only that small window loads
+social media; leaving the screen disables signing and rendering. Feed pagination
+starts two viewports from the end so the next page can fill the same window.
+The server still checks current access, and social bytes remain memory-only,
+keyed by the object and its ETag. Never prefetch a signed social URL with the
+default disk policy.
+
+Diary and recipe images keep both disk bytes and decoded memory copies. Local
+files appear without a fade. iOS resizes photos to their display size early,
+which keeps a grid of thumbnails from decoding each one at full resolution.
+Avatars upload with a 256-pixel longest edge, enough for the largest 64-point
+avatar at four pixels per point. Meal uploads stay at 1024 pixels for the model
+and the detail view.
+
+On 30 September 2026, the iPhone 18 Pro simulator was tested with 64 distinct
+1024-pixel JPEGs (42 KB on average), local Supabase and MinIO. A local media proxy
+added 200 ms before each response and delivered about 400 KB/s. Three runs of
+14 controlled swipes measured each newly visible photo against its native display
+event. Before these changes, 29 photos waited a median 669 ms and p95 734 ms.
+After the first screen loaded, all 30 newly revealed photos in three verification
+runs were ready before entering view, including the next-page boundary. This
+measures scrolling on the simulator, not production latency. A first visit to
+an unseen photo still needs authorization and a download.
+
 Deleting an account is the one operation that goes at the folder rather than at
 a key: `deleteUserObjects` lists `meals/<id>/` and `avatars/<id>/` and empties
 both. See [Deleting an account](#deleting-an-account) for why it lists rather

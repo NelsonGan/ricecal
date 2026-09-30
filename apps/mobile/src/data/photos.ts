@@ -84,7 +84,7 @@ const PHOTO_MAX_EDGE = 1024
  * An avatar is drawn at 64pt at its largest, and no model reads it, so anything
  * past this is bytes nobody will see.
  */
-const AVATAR_MAX_EDGE = 512
+const AVATAR_MAX_EDGE = 256
 /**
  * JPEG quality for the re-encode. File size only, since tokens are resolution.
  */
