@@ -129,8 +129,6 @@ async function initAnalytics() {
   let firebase: FirebaseAnalyticsBridge | null = null
   try {
     const bridge = firebaseAnalytics()
-    await bridge?.setUserId(null)
-    await bridge?.setDefaultEventParameters?.({ revenuecat_revenue_enabled: 0 })
     firebase = await configureGa4Collection(bridge, ga4Enabled)
   } catch (error) {
     reportAnalyticsFailure('Firebase', 'initialization', error)

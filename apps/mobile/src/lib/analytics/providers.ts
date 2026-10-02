@@ -1,4 +1,5 @@
 import type { AnalyticsClient } from './client'
+import type { PersonProps, SuperProps } from './events'
 import { ga4EventName, ga4EventParameters, ga4UserProperties } from './ga4'
 import type { RevenueAnalytics } from './revenue'
 
@@ -14,6 +15,21 @@ export type FirebaseAnalyticsBridge = {
 }
 
 type ReportFailure = (provider: 'Mixpanel' | 'Firebase', operation: string, error: unknown) => void
+
+// Firebase properties belong to the handset, so changing user_id alone keeps
+// the preceding account's answers. Clear every app-owned field at that boundary.
+const clearedUserProperties: Record<Exclude<keyof PersonProps, '$email'> | keyof SuperProps, null> =
+  {
+    onboarded: null,
+    onboarded_at: null,
+    plan_direction: null,
+    activity_level: null,
+    referral_source: null,
+    health_provider: null,
+    meal_reminders: null,
+    widgets_installed: null,
+    entitled: null,
+  }
 
 /**
  * Fan the app's one analytics seam out to both providers.
@@ -39,6 +55,8 @@ export function createAnalyticsProviders(
   let desiredUserId: string | null = null
   let firebaseGeneration = 0
   let mixpanelGeneration = 0
+  let mixpanelUserId: string | null = null
+  let firebasePropertyOwner: string | null = null
 
   function scheduleFirebase(
     operation: string,
@@ -52,11 +70,15 @@ export function createAnalyticsProviders(
       .then(async () => {
         if (firebaseGeneration !== generation) {
           firebaseUserId = null
+          if (firebasePropertyOwner !== null && firebasePropertyOwner !== userId) {
+            await target.setUserProperties(clearedUserProperties)
+          }
           await target.setDefaultEventParameters?.({ revenuecat_revenue_enabled: 0 })
           await target.setUserId(userId)
           if (userId === null) await target.resetData()
           await target.setCollectionEnabled(true)
           firebaseUserId = userId
+          firebasePropertyOwner = userId
           firebaseGeneration = generation
         }
         await work(target)
@@ -74,8 +96,14 @@ export function createAnalyticsProviders(
     mixpanelTail = mixpanelTail
       .then(async () => {
         if (mixpanelGeneration !== generation) {
-          if (userId === null) await target.reset()
-          else await target.identify(userId)
+          if (userId === null || (mixpanelUserId !== null && mixpanelUserId !== userId)) {
+            await target.reset()
+            mixpanelUserId = null
+          }
+          if (userId !== null) {
+            mixpanelUserId = userId
+            await target.identify(userId)
+          }
           mixpanelGeneration = generation
         }
         await work(target)

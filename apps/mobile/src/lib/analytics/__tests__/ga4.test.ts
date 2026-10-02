@@ -93,3 +93,22 @@ describe('the GA4 shape', () => {
     })
   })
 })
+
+it.each([true, false])(
+  'disables collection before identity cleanup can fail (enabled=%s)',
+  async (enabled) => {
+    const calls: string[] = []
+    const bridge = {
+      setCollectionEnabled: async (value: boolean) => {
+        calls.push(`collection:${value}`)
+      },
+      setUserId: async () => {
+        calls.push('identity')
+        throw new Error('identity unavailable')
+      },
+      setDefaultEventParameters: jest.fn(),
+    }
+    await expect(configureGa4Collection(bridge, enabled)).rejects.toThrow('identity unavailable')
+    expect(calls).toEqual(['collection:false', 'identity'])
+  },
+)

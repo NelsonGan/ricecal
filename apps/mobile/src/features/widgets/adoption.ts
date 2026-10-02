@@ -17,6 +17,7 @@ import { setPersonProps, track } from '@/lib/analytics'
 const storage = createMMKV({ id: 'ricecal-widgets' })
 
 const KEY = 'installed'
+let profileOwner: string | null = null
 
 export type WidgetDiff = {
   added: WidgetKind[]
@@ -65,28 +66,33 @@ function stored(): WidgetKind[] | null {
 /**
  * Compare, report, remember.
  *
- * The person property is written whenever the set changes, including to zero:
+ * Each account gets its first count, then updates when the set changes, including
+ * to zero:
  * "used to have widgets and took them all off" is a real answer and leaving the
  * old count in place would file that account under "has three".
  */
-export function reportWidgets(current: WidgetKind[]): WidgetDiff {
+export function reportWidgets(current: WidgetKind[], userId?: string): WidgetDiff {
   const previous = stored()
   storage.set(KEY, JSON.stringify(current))
+  const owner = userId ?? null
 
   // The first look on this install. Recorded so the next poll has something to
   // compare against, and counted so the property is right, but not reported as
   // a burst of installs that may have happened months ago.
   if (previous === null) {
     setPersonProps({ widgets_installed: current.length })
+    profileOwner = owner
     return { added: [], removed: [] }
   }
 
   const diff = diffWidgets(previous, current)
-  if (diff.added.length === 0 && diff.removed.length === 0) return diff
-
   for (const widget of diff.added) track('Widget Added', { widget })
   for (const widget of diff.removed) track('Widget Removed', { widget })
-  setPersonProps({ widgets_installed: current.length })
+  if (diff.added.length > 0 || diff.removed.length > 0 || profileOwner !== owner) {
+    // The baseline belongs to the handset, but each account needs its own count.
+    setPersonProps({ widgets_installed: current.length })
+    profileOwner = owner
+  }
 
   return diff
 }
@@ -101,4 +107,5 @@ export function reportWidgets(current: WidgetKind[]): WidgetDiff {
  */
 export function forgetWidgetsForTest(): void {
   storage.remove(KEY)
+  profileOwner = null
 }
