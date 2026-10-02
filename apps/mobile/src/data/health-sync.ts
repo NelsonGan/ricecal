@@ -611,6 +611,8 @@ export function useHealthAutoSync(provider: ProviderId | null): {
   const run = useCallback(
     (force: boolean) => {
       if (!provider) return
+      // This branch captures persisted local fixtures on a simulator with no Health data.
+      if (__DEV__ && process.env.EXPO_PUBLIC_SCREENSHOT_MODE === 'true') return
       if (running.current) return
       const now = Date.now()
       if (!force && now - lastRun.current < MIN_INTERVAL_MS) return
