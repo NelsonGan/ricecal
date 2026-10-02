@@ -13,6 +13,8 @@ Write for a reviewer who has not seen the conversation. Describe the final chang
 - Review the actual changes and available verification results. Run the checks required by the repository for code changes; when only rewriting a description, reuse verified results for the same code and identify any gaps.
 - When creating a PR, commit only the intended changes, follow the repository's branch and commit conventions, and push the branch. Preserve unrelated work. When rewriting a PR, update that PR instead of opening a duplicate or making unrelated code changes.
 
+- For analytics or RevenueCat integration changes, apply `maintain-analytics-tracking`, synchronize the canonical README tables, run the inventory test, and report dashboard verification and any remaining app-release or ingestion gap.
+
 ## Description
 
 Start with one sentence explaining what the PR achieves. No Summary heading is needed. Then use these sections, with a blank line before each list:

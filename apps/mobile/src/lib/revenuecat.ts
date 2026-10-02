@@ -1,6 +1,8 @@
 import { Platform } from 'react-native'
-
+import { ga4CollectionEnabled } from './analytics/ga4'
+import { revenueAnalyticsLink } from './analytics/revenue'
 import { env, isConfigured } from './env'
+import { deliverRevenueAttributes } from './revenuecat-attributes'
 
 /**
  * The RevenueCat SDK's lifecycle: configure it, tell it who is signed in, and
@@ -8,7 +10,7 @@ import { env, isConfigured } from './env'
  *
  * Its own file rather than a corner of `startup.ts`, because `session.tsx` needs
  * the identify half and `startup.ts` imports Mixpanel at module scope, which jest
- * cannot transform. This module imports nothing but the env.
+ * cannot transform. This module keeps native analytics behind a bridge.
  *
  * The import is the fragile part rather than the key: `react-native-purchases`
  * reaches for its native module at module scope, so pulling it in threw on any
@@ -28,6 +30,7 @@ type PurchasesSdk = {
   logOut(): Promise<unknown>
   setEmail(email: string | null): Promise<void>
   setMixpanelDistinctID(distinctId: string | null): Promise<void>
+  setFirebaseAppInstanceID?(id: string): Promise<void>
   getCustomerInfo(): Promise<StoreCustomerInfo>
   addCustomerInfoUpdateListener(listener: (info: StoreCustomerInfo) => void): void
   removeCustomerInfoUpdateListener(listener: (info: StoreCustomerInfo) => void): boolean
@@ -70,6 +73,9 @@ export function setPurchasesForTest(fake: PurchasesSdk | null): void {
   load = fake ? async () => fake : loadPurchases
   configured = null
   lifecycle = Promise.resolve()
+  purchaser = null
+  identifiedUserId = null
+  lastDelivery = null
 }
 
 let configured: Promise<boolean> | null = null
@@ -99,6 +105,11 @@ function purchasesApiKey(): string {
     return env.EXPO_PUBLIC_RC_TEST_STORE_KEY as string
   }
   return Platform.OS === 'ios' ? env.EXPO_PUBLIC_RC_IOS_KEY : env.EXPO_PUBLIC_RC_ANDROID_KEY
+}
+
+/** The paywall and SDK must agree, including the development-only Test Store. */
+export function hasPurchasesConfiguration(): boolean {
+  return isConfigured(purchasesApiKey())
 }
 
 /** Answers whether it configured, so the caller can log a skip. */
@@ -143,6 +154,9 @@ async function configureOnce(): Promise<boolean> {
  * events said.
  */
 let lifecycle: Promise<void> = Promise.resolve()
+let purchaser: { userId: string; traits: PurchaserTraits } | null = null
+let identifiedUserId: string | null = null
+let lastDelivery: string | null = null
 
 function inOrder(work: () => Promise<void>): Promise<void> {
   // `then(work, work)`, so a link that somehow rejects does not strand every
@@ -182,11 +196,14 @@ export type PurchaserTraits = {
  * about somebody else's purchases.
  */
 export function identifyPurchaser(userId: string, traits: PurchaserTraits): Promise<void> {
+  purchaser = { userId, traits }
   return inOrder(async () => {
     if (!(await ensurePurchasesConfigured())) return
     try {
       const Purchases = await load()
+      identifiedUserId = null
       await Purchases.logIn(userId)
+      identifiedUserId = userId
 
       // After the log in, never before: an attribute is filed against whichever
       // app user id the SDK holds at the time, which before this call is the
@@ -208,6 +225,7 @@ export function identifyPurchaser(userId: string, traits: PurchaserTraits): Prom
       if (traits.mixpanelDistinctId) {
         await Purchases.setMixpanelDistinctID(traits.mixpanelDistinctId)
       }
+      await syncAnalyticsAttributes(userId, traits, Purchases)
     } catch (error) {
       if (__DEV__) console.log('[revenuecat] identify failed:', error)
     }
@@ -220,7 +238,10 @@ export function identifyPurchaser(userId: string, traits: PurchaserTraits): Prom
  * whose reordering leaves a signed-in person anonymous.
  */
 export function forgetPurchaser(): Promise<void> {
+  purchaser = null
+  lastDelivery = null
   return inOrder(async () => {
+    identifiedUserId = null
     if (!(await ensurePurchasesConfigured())) return
     try {
       const Purchases = await load()
@@ -229,6 +250,106 @@ export function forgetPurchaser(): Promise<void> {
       if (__DEV__) console.log('[revenuecat] logOut failed:', error)
     }
   })
+}
+
+/** Analytics is best-effort; a stalled native bridge must not hold checkout forever. */
+async function syncAnalyticsAttributes(userId: string, traits: PurchaserTraits, sdk: PurchasesSdk) {
+  if (__DEV__ || env.EXPO_PUBLIC_ANALYTICS_ENABLED === 'false') return
+  const target = purchaser
+  if (!target || target.userId !== userId) return
+  let finished = false
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const current = () => !finished && purchaser === target && identifiedUserId === userId
+  const sync = async () => {
+    const link = ga4CollectionEnabled(__DEV__, env.EXPO_PUBLIC_GA4_ENABLED)
+      ? await revenueAnalyticsLink(userId).catch(() => null)
+      : null
+    if (!current()) return
+    const values: Record<string, string> = {}
+    if (traits.mixpanelDistinctId) values.$mixpanelDistinctId = traits.mixpanelDistinctId
+    if (link) {
+      values.$firebaseAppInstanceId = link.appInstanceId
+      // This setter caches locally. HTTP delivery below is the acknowledgement;
+      // failure of the local cache must not prevent that independent delivery.
+      await sdk.setFirebaseAppInstanceID?.(link.appInstanceId).catch(() => {})
+    }
+    if (!current() || !Object.keys(values).length) return
+    const signature = JSON.stringify([userId, values])
+    if (lastDelivery !== signature) {
+      if (!(await deliverRevenueAttributes(purchasesApiKey(), userId, values)) || !current()) return
+      lastDelivery = signature
+    }
+    if (current()) await link?.confirm()
+  }
+  try {
+    await Promise.race([
+      sync(),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, 5000)
+      }),
+    ])
+  } finally {
+    finished = true
+    clearTimeout(timer)
+  }
+}
+
+/** Retry a failed login or attribute delivery on startup, foreground and checkout. */
+export function syncPurchaserAnalytics(): Promise<void> {
+  const target = purchaser
+  return inOrder(async () => {
+    if (!target || purchaser !== target) return
+    if (!(await ensurePurchasesConfigured())) return
+    try {
+      const sdk = await load()
+      if (identifiedUserId !== target.userId) {
+        identifiedUserId = null
+        await sdk.logIn(target.userId)
+        identifiedUserId = target.userId
+        if (purchaser !== target) return
+        await sdk.setEmail(target.traits.email)
+        if (target.traits.mixpanelDistinctId)
+          await sdk.setMixpanelDistinctID(target.traits.mixpanelDistinctId)
+      }
+      await syncAnalyticsAttributes(target.userId, target.traits, sdk)
+    } catch (error) {
+      if (__DEV__) console.log('[revenuecat] analytics linking failed:', error)
+    }
+  })
+}
+
+/** A fast checkout must never buy on the anonymous customer before login completes. */
+export async function preparePurchaser(): Promise<boolean> {
+  const target = purchaser
+  await lifecycle
+  if (!target || purchaser !== target) return false
+  await syncPurchaserAnalytics()
+  return purchaser === target && identifiedUserId === target.userId
+}
+
+export class PurchasesUnavailable extends Error {
+  constructor() {
+    super('Purchases are not configured yet')
+    this.name = 'PurchasesUnavailable'
+  }
+}
+
+/** Keep receipt ownership fixed through the store call, including offering lookup. */
+export async function withPurchaser<T>(work: () => Promise<T>): Promise<T> {
+  const target = purchaser
+  if (!(await preparePurchaser())) throw new PurchasesUnavailable()
+  const operation = lifecycle.then(async () => {
+    if (!target || purchaser !== target || identifiedUserId !== target.userId)
+      throw new PurchasesUnavailable()
+    return work()
+  })
+  // Identity changes made while the store sheet is open wait for its result.
+  // A rejected purchase still releases the queue and reaches its caller.
+  lifecycle = operation.then(
+    () => {},
+    () => {},
+  )
+  return operation
 }
 
 /**

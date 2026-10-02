@@ -4090,15 +4090,16 @@ The one secret is set by hand, once per environment:
 
 ## Analytics
 
-Mixpanel and GA4. `src/lib/analytics/events.ts` is the authority for RiceCal's
-product events: every event is declared there with the exact properties it
-carries, and `track` accepts nothing else. Both providers receive that same plan.
+Mixpanel and GA4. The canonical tables below are the source of truth for RiceCal's
+tracking, including dashboard settings and revenue ownership. The typed plan in
+`src/lib/analytics/events.ts` enforces app event names and their properties, and
+`track` accepts nothing else. Both providers receive that same plan.
 GA4 also records the Firebase SDK's own lifecycle events, such as first open,
 session start and app update. Those are kept separate from RiceCal's namespaced
 custom events.
 
 ```
-client.ts      the seam. Imports nothing, so anything may track.
+client.ts      the seam. No native imports, so anything may track.
 events.ts      the plan, as a type. A typo does not compile.
 ga4.ts         GA4 names, value conversion, limits and PII exclusions.
 providers.ts   the ordered fan-out to Mixpanel and Firebase Analytics.
@@ -4113,19 +4114,20 @@ most of the test suite. Firebase Analytics is loaded lazily as well, so an OTA
 bundle stays safe on a native binary built before the module existed.
 
 Events fired before the SDKs finish starting are queued and drained on
-registration. Firebase operations then run serially, so an async user-id write
-cannot race the event after it and file that event under the anonymous install.
+registration. Each provider has its own serial queue. Identification finishes before profiles
+and events; failed identity writes retry before later work. Work is dropped if
+identity still cannot be confirmed, so it cannot use the preceding account.
 
-Nothing is sent to GA4 in development or from an internal `preview` build. The
+Nothing is sent to Mixpanel or GA4 in development or from an internal `preview` build. The
 preview profile keeps the release identifiers so store prices work, then sets
-`EXPO_PUBLIC_GA4_ENABLED=false`. Firebase remembers runtime collection settings
+`EXPO_PUBLIC_ANALYTICS_ENABLED=false` and `EXPO_PUBLIC_GA4_ENABLED=false`. Firebase remembers runtime collection settings
 across launches, so JavaScript writes both the disabled and enabled states at
 startup. Production omits the flag and enables collection. The pull-request
 workflow also writes false into the environment file used by EAS Update because
 build-profile variables are not available to an update export.
 
 The Firebase project is the existing `ricecal` Google Cloud project. It is linked
-to GA4 property **RiceCal Mobile App** (`553863111`) in Analytics account
+to GA4 property **RiceCal** (`553863111`) in Analytics account
 `350740029`. Firebase holds four app registrations: release and `.dev` variants
 for both Android and iOS. The Android config contains both packages; dynamic Expo
 config selects the matching iOS plist. These client config files contain public
@@ -4140,11 +4142,11 @@ registration, ad storage, ad user data and ad personalisation signals are
 disabled. iOS builds the Analytics pod without AdSupport.
 
 The live property keeps event and user data for 14 months, reports in MYR, has
-Google Signals off, and disallows ads personalisation in every region. Its 37
-custom dimensions and 11 custom metrics mirror the parameters in the event plan.
+Google Signals off, and disallows ads personalisation in every region. Its 45
+custom dimensions and 11 custom metrics include app and website parameters.
 `Onboarding Completed` and `Meal Logged` are key events, and saved funnel
-explorations cover onboarding, meal logging and purchase conversion. The release
-Android stream is linked to the Play app. The unused internal-traffic filter is
+explorations cover onboarding, meal logging and purchase conversion. The independent Google Play revenue import was removed on 2026-10-02 so it cannot
+count a second copy of RevenueCat purchases or renewals. The unused internal-traffic filter is
 inactive because preview builds never send to this property.
 
 The public privacy policy names Google Firebase Analytics beside Mixpanel and
@@ -4160,6 +4162,214 @@ dropped, `Entry Updated`'s field-name array becomes one comma-separated value,
 and names, values and counts are capped at GA4's documented limits. Person and
 super properties become GA4 user properties. A null clears the old value instead
 of leaving stale state behind.
+
+### Canonical app event table
+
+This table is the source of truth for the tracking contract. Update it in the same change as the typed plan, call sites, provider mapping, or dashboard setup. `events.ts` enforces the names and property types in code; this table records the names that reports use and where each is sent. All rows go to both providers in production. GA4 changes boolean values to 1/0, drops null event values, and joins `changed` into a comma-separated string. Union aliases are defined beside `Events` in the typed plan.
+
+<!-- analytics-app-events:start -->
+| Mixpanel event | GA4 event | Allowed app properties | Source (relative to apps/mobile) |
+| --- | --- | --- | --- |
+| Onboarding Started | ricecal_onboarding_started | none | `app/(onboarding)/welcome.tsx` |
+| Onboarding Step Completed | ricecal_onboarding_step_completed | step: string; step_number: number | `src/features/onboarding/OnboardingStep.tsx`<br>`app/(onboarding)/target.tsx` |
+| Onboarding Completed | ricecal_onboarding_completed | plan_direction: PlanDirection; referral_source: string | `app/(onboarding)/finish.tsx` |
+| Login Link Requested | ricecal_login_link_requested | none | `src/data/auth.ts` |
+| Password Reset Requested | ricecal_password_reset_requested | none | `src/data/auth.ts` |
+| Signed In | ricecal_signed_in | method: SignInMethod; is_new_account: boolean | `src/data/auth.ts` |
+| Sign In Failed | ricecal_sign_in_failed | method: SignInMethod; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/data/auth.ts` |
+| Signed Out | ricecal_signed_out | none | `src/data/auth.ts`<br>`src/lib/analytics/client.ts` |
+| Account Deleted | ricecal_account_deleted | none | `src/data/auth.ts` |
+| Log Sheet Opened | ricecal_log_sheet_opened | panel: string; date_offset: number | `app/log/index.tsx` |
+| Meal Logged | ricecal_meal_logged | method: LogMethod; date_offset: number | `src/data/entries.ts`<br>`src/data/snap.ts` |
+| Meal Scan Completed | ricecal_meal_scan_completed | method: 'camera' &#124; 'describe'; outcome: ScanOutcome; duration_ms: number; tier: number &#124; null; components: number | `src/data/snap.ts` |
+| Barcode Scanned | ricecal_barcode_scanned | outcome: 'found' &#124; 'not_found' &#124; 'error' | `app/log/food/[id].tsx` |
+| Entry Updated | ricecal_entry_updated | changed: string[] | `src/data/entries.ts` |
+| Entry Deleted | ricecal_entry_deleted | source: string | `src/data/entries.ts` |
+| Entry Refined | ricecal_entry_refined | outcome: 'applied' &#124; 'not_applied' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled'; from_chip: boolean; duration_ms: number | `src/data/scan.ts` |
+| Food Searched | ricecal_food_searched | results: number; query_length: number | `src/features/logging/FoodSearchPanel.tsx` |
+| Food Picked | ricecal_food_picked | position: number; results: number; source?: 'history' &#124; 'recipe' | `src/features/logging/FoodSearchPanel.tsx` |
+| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` |
+| Suggestions Shown | ricecal_suggestions_shown | meal: Meal; cuisine: TrackedCuisine; count: number | `src/features/suggest/SuggestAction.tsx` |
+| Plan Selected | ricecal_plan_selected | screen: PaywallScreen; plan: Plan | `src/features/paywall/PaywallOffer.tsx` |
+| Purchase Started | ricecal_purchase_started | screen: PaywallScreen; plan: Plan | `src/features/paywall/tracking.ts` |
+| Purchase Abandoned | ricecal_purchase_abandoned | screen: PaywallScreen; plan: Plan; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/features/paywall/tracking.ts` |
+| Restore Requested | ricecal_restore_requested | outcome: 'restored' &#124; 'nothing' &#124; 'unavailable' | `src/features/paywall/PaywallOffer.tsx` |
+| Manage Subscription Opened | ricecal_manage_subscription_opened | intent: 'cancel' &#124; 'switch' &#124; 'manage'; source: 'subscription' &#124; 'account' | `src/data/purchases.ts` |
+| Share Platform Opened | ricecal_share_platform_opened | platform: string | `app/settings/share.tsx` |
+| Share Claim Opened | ricecal_share_claim_opened | none | `app/settings/share.tsx` |
+| Health Connected | ricecal_health_connected | provider: string; granted: boolean; days: number | `src/data/health-sync.ts` |
+| Health Disconnected | ricecal_health_disconnected | provider: string | `src/data/activity.ts` |
+| Reminder Toggled | ricecal_reminder_toggled | meal: string; enabled: boolean | `src/data/settings.ts` |
+| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' | `src/features/settings/useReportLinks.ts` |
+| Weight Logged | ricecal_weight_logged | none | `src/data/weight.ts` |
+| Recipe Saved | ricecal_recipe_saved | is_new: boolean; ingredients: number; servings: number | `src/data/recipes.ts` |
+| Recipe Drafted | ricecal_recipe_drafted | source: 'photo' &#124; 'text'; outcome: 'drafted' &#124; 'empty' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled' | `src/data/recipes.ts` |
+| Recipe Published | ricecal_recipe_published | outcome: 'approved' &#124; 'rejected' &#124; 'pending' | `src/data/recipes.ts` |
+| Recipe Copied | ricecal_recipe_copied | none | `src/data/recipes.ts` |
+| Recipe Reported | ricecal_recipe_reported | reason: ReportReason | `src/data/moderation.ts` |
+| Author Blocked | ricecal_author_blocked | none | `src/data/moderation.ts` |
+| Review Opened | ricecal_review_opened | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` |
+| Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` |
+| Meal Shared | ricecal_meal_shared | picture: 'photo' &#124; 'drawing' | `app/log/food/[id].tsx` |
+| Widget Added | ricecal_widget_added | widget: WidgetKind | `src/features/widgets/adoption.ts` |
+| Widget Removed | ricecal_widget_removed | widget: WidgetKind | `src/features/widgets/adoption.ts` |
+| Widget Opened | ricecal_widget_opened | widget: WidgetKind; target: WidgetTarget | `app/widget/[action].tsx` |
+| Widget Water Added | ricecal_widget_water_added | preset: number | `src/features/widgets/WidgetSync.tsx` |
+| Rating Prompt Shown | ricecal_rating_prompt_shown | trigger: RatingTrigger | `src/lib/rating/prompt.ts` |
+| Rating Prompt Skipped | ricecal_rating_prompt_skipped | trigger: RatingTrigger; reason: RatingSkipReason | `src/lib/rating/prompt.ts` |
+| Rating Prompt Answered | ricecal_rating_prompt_answered | trigger: RatingTrigger; answer: 'liked' &#124; 'disliked' &#124; 'dismissed' | `src/lib/rating/prompt.ts` |
+| Rating Feedback Opened | ricecal_rating_feedback_opened | trigger: RatingTrigger | `src/lib/rating/prompt.ts` |
+<!-- analytics-app-events:end -->
+
+### Canonical revenue and automatic event table
+
+RevenueCat owns settled purchase revenue. App events describe purchase intent only
+and never contain a price, currency or revenue value. Both integrations use gross
+revenue; Mixpanel receives USD, and GA4 receives USD before conversion to the
+property's MYR reporting currency. Compare matching dates, time zones, currency,
+store, production environment and gross/net definitions. GA4 is not a financial
+ledger: RevenueCat's GA4 integration does not send negative refund revenue.
+[RevenueCat GA4 setup](https://www.revenuecat.com/docs/integrations/third-party-integrations/firebase-integration),
+[Mixpanel setup](https://www.revenuecat.com/docs/integrations/third-party-integrations/mixpanel).
+
+| Producer / trigger | Mixpanel event | GA4 event | Revenue treatment |
+| --- | --- | --- | --- |
+| RevenueCat initial paid subscription | `rc_initial_purchase_event` | `purchase` | Settled gross charge |
+| RevenueCat trial start | `rc_trial_started_event` | `rc_trial_start` | No sale yet |
+| RevenueCat trial conversion | `rc_trial_converted_event` | `purchase` | First settled charge |
+| RevenueCat renewal | `rc_renewal_event` | `purchase` | Settled recurring charge |
+| RevenueCat lifetime / non-renewing purchase | `rc_non_subscription_purchase_event` | `purchase` | Settled one-time charge |
+| RevenueCat trial cancellation | `rc_trial_cancelled_event` | `rc_cancellation` | No new sale |
+| RevenueCat paid cancellation | `rc_cancellation_event` | `rc_cancellation` | No new sale; refunds adjust Mixpanel revenue when applicable |
+| RevenueCat auto-renew enabled again | `rc_uncancellation_event` | `rc_uncancellation` | No new sale |
+| RevenueCat pause | `rc_subscription_paused_event` | `rc_subscription_paused` | No new sale |
+| RevenueCat expiration | `rc_expiration_event` | `rc_expiration` | No new sale |
+| RevenueCat billing issue | `rc_billing_issue_event` | `rc_billing_issue` | No new sale |
+| RevenueCat product change | `rc_product_change_event` | `rc_product_change` | Intent; charge belongs to purchase/renewal |
+| RevenueCat web purchase redeemed | `rc_purchase_redeemed` | No documented mapping | Identity link; never add a second charge |
+| RevenueCat entitlement transfer | No configured event | `rc_transfer_event` | Two identity events; no sale |
+| Mixpanel native lifecycle | `$ae_first_open`, `$ae_session`, `$ae_updated` | Not forwarded | Automatic production-only usage events |
+| Mixpanel iOS legacy StoreKit observer | `$ae_iap` with `$ae_iap_price`, `$ae_iap_quantity`, `$ae_iap_name` | Not forwarded | SDK diagnostic; exclude from settled revenue and conversion totals, which use RevenueCat only |
+| Firebase native lifecycle | Not forwarded | `first_open`, `session_start`, `app_update`, `user_engagement` and SDK lifecycle | Automatic production-only usage; screen reporting disabled |
+| Firebase native purchase / App Store lifecycle | Not forwarded | `in_app_purchase`, `app_store_*` | Legacy fallback only; conditional rules rename linked native revenue to `ricecal_store_revenue_observed` |
+| Separate GA4 Google Play import | Not forwarded | Disabled | Removed 2026-10-02 to avoid a second purchase/renewal feed |
+| RevenueCat paywall UI and web funnel events | Disabled | No separate app custom producer | Custom RiceCal paywalls already own intent; additional funnel purchase events would overlap |
+
+RevenueCat supplies transaction/event IDs, product, period, store, environment,
+currency and charge values on its server events. Mixpanel's `$insert_id` provides
+its event deduplication key. Its paired delivery rows are an event and a profile
+update (`$transactions` / `rc_total_spend`), not two events to add together. Do not
+sum charge events and profile lifetime spend together. GA4 app streams do not
+promise transaction-ID deduplication across producers; use one revenue owner.
+[GA4 transaction IDs](https://support.google.com/analytics/answer/12313109?hl=en).
+
+### Canonical identity and profile table
+
+| Property / identifier | Mixpanel | GA4 / RevenueCat | Source and send condition |
+| --- | --- | --- | --- |
+| Supabase account UUID | `distinct_id` | GA4 `user_id`; RevenueCat App User ID | `data/session.tsx`; identify before profiles/events and before checkout or restore |
+| Account email | People `$email` | RevenueCat `$email`; excluded from GA4 | `identifyUser` / `identifyPurchaser`; support lookup only |
+| Firebase installation ID | Not used | RevenueCat `$firebaseAppInstanceId` | Native Firebase `getAppInstanceId`; never a UUID, email, fabricated value or Firebase app ID |
+| Mixpanel account ID | Same Supabase UUID | RevenueCat `$mixpanelDistinctId` | Identified production account, confirmed attribute delivery |
+| `onboarded`, `onboarded_at` | People properties | GA4 user properties | Profile/onboarding completion; only allowed typed properties |
+| `plan_direction`, `activity_level`, `referral_source` | People properties | GA4 user properties | Stated preferences; never body measurements or free-text diary data |
+| `health_provider`, `meal_reminders`, `widgets_installed` | People properties | GA4 user properties | Connection/preferences/widget changes; health provider cleared with null on disconnect |
+| `entitled` | Super property on every custom event | GA4 user property | After a real entitlement answer; no false value while offline with unknown status |
+| `revenuecat_revenue_enabled` | Not sent | Firebase default event parameter, 0 or 1 | Starts at 0; set to 1 only after HTTP 200 acknowledges this account's current installation attribute |
+| RevenueCat spend/subscription profile | Server-managed `rc_total_spend`, subscription properties, `$transactions` | Integration-owned parameters | Never manually increment from checkout or restore |
+
+Identity changes invalidate pending revenue acknowledgement. Attribute delivery
+retries on startup, app foreground and checkout. A five-second budget keeps
+analytics from holding checkout indefinitely; RevenueCat login must still finish
+successfully before a purchase. Failed uploads leave native fallback enabled.
+A new account or logout clears the native revenue marker. Firebase starts with a
+cleared user ID before collection is enabled. No raw foods, search terms, calorie
+totals, weights, photos or error messages are allowed in product analytics.
+
+### Canonical live integration settings
+
+Verified 2026-10-02; credentials remain in the dashboards and local ignored files.
+
+| Setting | Live value |
+| --- | --- |
+| RevenueCat project | RiceCal `projeb2883d3`, dashboard `eb2883d3` |
+| Store apps | iOS `app14d94549cb`; Android `app8b52836439`; Test Store `app36022b58af` |
+| Mixpanel destination | RiceCal Mobile App project `4054270`, workspace `4550575`, US; reports use `Asia/Singapore` (UTC+8); website project `4054271` is separate |
+| Mixpanel integration | Existing production token verified; existing delayed-event secret configured; sandbox token empty; gross USD; total spend `rc_total_spend` |
+| Extra RevenueCat Mixpanel events | Paywall UI and web funnel switches off; 13 purchase/lifecycle event names above preserved |
+| GA4 destination | RiceCal property `553863111`, account `350740029`, Firebase project `ricecal`; property reports MYR |
+| GA4 reporting controls | 14-month event and user retention; Google Signals off; ads personalization allowed in 0 of 307 regions; 45 custom dimensions and 11 custom metrics, including website definitions |
+| iOS production stream | `15763208820`; Firebase app ID `1:829952813471:ios:c27979f69fbc022a54b5aa` |
+| Android production stream | `15763216343`; Firebase app ID `1:829952813471:android:f6d8a81a4b134ff254b5aa` |
+| GA4 credentials | Separate `RevenueCat iOS production` and `RevenueCat Android production` Measurement Protocol secrets; disclosure acknowledgement accepted by owner authorization |
+| RevenueCat GA4 reporting | Gross USD; sandbox off; hashed email off; web fields empty; Firebase Extension unused (Supabase owns accounts/entitlements) |
+| iOS native revenue rules | `in_app_purchase` and prefix `app_store_`, each AND `revenuecat_revenue_enabled = 1`; preserve original name in `legacy_event_name`, rename to `ricecal_store_revenue_observed` |
+| Android native revenue rule | `in_app_purchase` AND `revenuecat_revenue_enabled = 1`; same preserve/rename action; separate Google Play import removed |
+| Dev / preview / PR updates | Both providers disabled by `EXPO_PUBLIC_ANALYTICS_ENABLED=false`; GA4 additionally disabled by its existing flag; native automatic Mixpanel SDK is not initialized |
+| Backend entitlement webhook | Existing Supabase `revenuecat` function preserved; sandbox entitlements follow `REVENUECAT_SANDBOX_SUBSCRIBERS` policy independently of analytics sandbox exclusion |
+
+The native rename rules affect incoming client events, not RevenueCat's Measurement
+Protocol `purchase` events. Older releases lack the installation attribute and
+marker: their native initial purchases remain legacy fallback, but complete GA4
+subscription coverage starts when accounts run the updated app. The removed
+Google Play import also means old releases cannot supply the former independent
+Play renewal feed. Historical revenue is not backfilled by enabling an integration.
+Keep RevenueCat as the financial source while adoption grows, and reconcile GA4
+`purchase` events by store and transaction against RevenueCat. Changes to event
+rules may need an hour to propagate.
+[Google's event modification behavior](https://support.google.com/analytics/answer/10085872?hl=en),
+[Play import behavior](https://support.google.com/analytics/answer/11548051?hl=en).
+
+Before Mixpanel retires project secrets on 2027-03-03, migrate RevenueCat's delayed
+event authentication to its supported replacement and repeat delayed refund/import
+verification. Do not delete the existing working secret without a replacement.
+[Mixpanel project secret lifecycle](https://docs.mixpanel.com/reference/project-secret).
+
+### Monitoring usage and verification
+
+Use the app event table to review Mixpanel volume. Events fire on user decisions,
+not renders or every keystroke. `Food Searched` fires after typing settles;
+`Rating Prompt Skipped` is bounded by meal checkpoint crossings. Widget changes
+and offline sync may arrive when the app next opens. `Meal Logged` includes the
+optimistic camera/describe insert; subtract unsuccessful scan outcomes when
+measuring completed meals. Session/install events are automatic SDK events.
+Track counts by event and app version, and investigate a new name, a sharp volume
+change, unexpected free-text properties, missing identity, or purchase events from
+a second producer. RevenueCat retries and profile writes are not extra product
+usage events to count.
+
+| Check | Evidence / result |
+| --- | --- |
+| RevenueCat store credentials | App Store Connect key, subscription key and Play service account all validated successfully through RevenueCat |
+| Existing Mixpanel feed | Production dispatch rows read back as Sent; event/profile pair distinguished; production token matches the mobile project |
+| Mixpanel charge baseline | 2026-09-26 through 2026-10-02 in Asia/Singapore, queried 2026-10-02: initial purchases USD 29.25, trial conversions USD 250.12, renewals USD 0, non-subscription purchases USD 0; positive charges USD 279.37; refund adjustment USD -39.55; adjusted total USD 239.82 |
+| Closed-period revenue reconciliation | September 26 through October 1 UTC: RevenueCat gross USD 200.71; Mixpanel hourly charges plus refunds, converted from Asia/Singapore timestamps and restricted to the same UTC window, USD 200.70. Aggregate difference USD 0.01; individual receipts were not reconciled |
+| GA4 live configuration | Both production app IDs and separate secrets saved and read back; sandbox/email/web/extension options checked; native ownership rules saved |
+| Regression checks | `pnpm check` passed: mobile typecheck, 107 suites / 1,036 tests, workspace checks and Biome; 24 backend pure Deno tests and email checks passed separately. Coverage includes identity ordering/retry, checkout ownership, failed/stale delivery, disabled previews, bounded transport and the actual installed Mixpanel wrapper patch |
+| iOS native Test Store | Cancellation and simulated purchase failure return safely; annual purchase unlocks Pro; native restore recovers the active sandbox entitlement; local Supabase account, production analytics disabled |
+| Android native Test Store | Local debug build installed on visible Pixel emulator (Android 16 / API 36); cancellation and simulated failure return safely; annual purchase unlocks Pro; native restore returns the active sandbox entitlement. RevenueCat readback contains one initial purchase and no additional charge from restore; local backend and production analytics disabled |
+| Subscriber attribute transport | Real Test Store customer accepted the new attribute writer with HTTP 200; Mixpanel identity attribute read back through RevenueCat; no sandbox revenue sent to production analytics |
+| End-to-end ingestion limit | HTTP success alone does not prove GA4 reporting; verify a genuine new linked receipt in RevenueCat dispatch history and GA4 after the app reaches production |
+
+
+The 2026-10-02 reconciliation first found USD 234.95 in RevenueCat's UTC revenue
+chart for September 26 through October 2, versus USD 239.82 in Mixpanel after
+refunds for those calendar dates in Singapore time. These are different time
+windows, and October 2 was still in progress. Daily results place the USD 39.55
+refund on October 1 in RevenueCat and October 2 in Mixpanel. A second comparison
+used the closed September 26–October 1 UTC interval: converting Mixpanel's hourly
+buckets from Singapore time and including negative refunds gives USD 200.70,
+versus RevenueCat's USD 200.71. That one-cent aggregate difference is consistent
+with conversion/rounding, but does not prove every individual receipt matches.
+Use completed UTC periods when reconciling. Exclude trial starts, ordinary
+cancellations, profile spend and SDK purchase diagnostics; include charge events
+and negative refund adjustments. The Pro Conversion board was reviewed: it
+counts intent through opening the store sheet, and explicitly leaves settled
+charges to RevenueCat.
+[RevenueCat chart time zones](https://www.revenuecat.com/docs/dashboard-and-metrics/charts),
+[RevenueCat refunds](https://www.revenuecat.com/docs/dashboard-and-metrics/charts/revenue-chart),
+[Mixpanel time zones](https://docs.mixpanel.com/docs/orgs-and-projects/managing-projects#manage-timezones-for-projects).
+
 
 ### The rules this plan was written against
 
@@ -4221,6 +4431,9 @@ user's whole session as free.
 3. Prefer a property on an existing event to a new event. `Meal Logged` with a
    `method` is one thing to reason about; six events are six.
 4. If the property is a number off somebody's diary, send its shape instead.
+5. Update every affected canonical table in the same change, including properties,
+   send conditions, provider settings and verification evidence. Apply the
+   `maintain-analytics-tracking` skill and run the inventory consistency test.
 
 ---
 
@@ -5370,7 +5583,7 @@ real webhook, all on a simulator with no store account.
 only under `__DEV__` so a release bundle cannot reach it.
 
 Two things it costs: the periods are compressed (a "year" is an hour, a "month"
-ten minutes), which is a gift for testing expiry and a surprise otherwise; and
+five minutes), which is a gift for testing expiry and a surprise otherwise; and
 the products carry no introductory offer, so the purchase comes back `active`
 rather than `trial`.
 
@@ -5426,15 +5639,12 @@ moving the words leaves a sentence with too many clauses in it.
 **RevenueCat is live**, and the dashboard has caught up with the code: the `pro`
 entitlement exists with all six store products attached, and the webhook points
 at the `revenuecat` function with no environment filter, which is the right
-setting because the function drops anything that is not `PRODUCTION` itself.
+setting because the function applies the production/sandbox policy itself.
 
 What cannot be read back from the API, and so is worth checking by hand when a
 purchase does not land: `REVENUECAT_WEBHOOK_TOKEN` set on the edge functions and
 matched in the dashboard's webhook, and an App Store Connect API key uploaded to
 RevenueCat before an iOS receipt can be validated.
 
-**The RevenueCat → Mixpanel integration is dashboard configuration**, and the app
-has done its half: every signed-in customer carries `$mixpanelDistinctId`. Until
-the integration is switched on in RevenueCat, purchases never reach Mixpanel and
-the funnel stops at `Purchase Started`, which reads as nobody buying anything
-rather than as a missing integration.
+**RevenueCat → Mixpanel and GA4 are configured.** The canonical Analytics tables
+record their settings, revenue ownership, verification and rollout limits.

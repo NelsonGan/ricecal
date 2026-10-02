@@ -1,4 +1,11 @@
-import { freeTrialDuration, hasFreeTrial, isUserCancelled, yearlySavingPercent } from '../purchases'
+import { env } from '@/lib/env'
+import {
+  freeTrialDuration,
+  hasFreeTrial,
+  isUserCancelled,
+  purchasesAvailable,
+  yearlySavingPercent,
+} from '../purchases'
 
 /**
  * The saving badge, and the two failures the purchase screens must tell apart.
@@ -100,4 +107,14 @@ describe('freeTrialDuration', () => {
       freeTrialDuration('android', { defaultOption: { freePhase: { billingPeriod: null } } }),
     ).toBeUndefined()
   })
+})
+
+it('offers Test Store checkout in development without platform production keys', () => {
+  const original = env.EXPO_PUBLIC_RC_TEST_STORE_KEY
+  env.EXPO_PUBLIC_RC_TEST_STORE_KEY = 'test_qa_key'
+  try {
+    expect(purchasesAvailable()).toBe(true)
+  } finally {
+    env.EXPO_PUBLIC_RC_TEST_STORE_KEY = original
+  }
 })

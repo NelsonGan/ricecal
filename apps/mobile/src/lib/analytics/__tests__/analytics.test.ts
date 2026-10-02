@@ -1,3 +1,4 @@
+import { env } from '../../env'
 import {
   type AnalyticsClient,
   forgetPerson,
@@ -189,6 +190,23 @@ describe('the analytics seam', () => {
     global.__DEV__ = true
 
     expect(identifyUser('user-1', null)).toBeNull()
+  })
+
+  it('does not queue preview events or identities even in a release bundle', () => {
+    const previous = env.EXPO_PUBLIC_ANALYTICS_ENABLED
+    try {
+      env.EXPO_PUBLIC_ANALYTICS_ENABLED = 'false'
+      track('Signed Out', {})
+      expect(identifyUser('preview-user', 'preview@example.com')).toBeNull()
+      setPersonProps({ onboarded: true })
+      const fake = fakeClient()
+      registerAnalytics(fake.client)
+      expect(fake.events).toEqual([])
+      expect(fake.identified).toEqual([])
+      expect(fake.people).toEqual([])
+    } finally {
+      env.EXPO_PUBLIC_ANALYTICS_ENABLED = previous
+    }
   })
 
   /**
