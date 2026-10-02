@@ -57,7 +57,8 @@
       "workerd"
     ],
     "patchedDependencies": {
-      "@shopify/react-native-skia@2.6.2": "patches/@shopify__react-native-skia@2.6.2.patch"
+      "@shopify/react-native-skia@2.6.2": "patches/@shopify__react-native-skia@2.6.2.patch",
+      "mixpanel-react-native@3.6.0": "patches/mixpanel-react-native@3.6.0.patch"
     }
   },
   "devDependencies": {

@@ -121,3 +121,15 @@ describe('reportWidgets', () => {
     expect(people).not.toHaveBeenCalled()
   })
 })
+
+it('sets the handset widget count for a new account without inventing an addition', () => {
+  reportWidgets(['kcal', 'water'], 'first')
+  client.track.mockClear()
+  people.mockClear()
+  reportWidgets(['kcal', 'water'], 'second')
+  expect(client.track).not.toHaveBeenCalled()
+  expect(people).toHaveBeenCalledWith({ widgets_installed: 2 })
+  people.mockClear()
+  reportWidgets(['kcal', 'water'], 'second')
+  expect(people).not.toHaveBeenCalled()
+})

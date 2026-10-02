@@ -11,7 +11,8 @@
       "environment": "development",
       "env": {
         "APP_VARIANT": "development",
-        "EXPO_PUBLIC_GA4_ENABLED": "false"
+        "EXPO_PUBLIC_GA4_ENABLED": "false",
+        "EXPO_PUBLIC_ANALYTICS_ENABLED": "false"
       }
     },
     "preview": {
@@ -19,7 +20,8 @@
       "channel": "preview",
       "environment": "preview",
       "env": {
-        "EXPO_PUBLIC_GA4_ENABLED": "false"
+        "EXPO_PUBLIC_GA4_ENABLED": "false",
+        "EXPO_PUBLIC_ANALYTICS_ENABLED": "false"
       }
     },
     "production": {
