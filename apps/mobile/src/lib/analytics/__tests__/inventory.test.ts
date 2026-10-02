@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import ts from 'typescript'
 import { ga4EventName } from '../ga4'
@@ -32,6 +32,11 @@ it('documents every app event exactly once with its real GA4 name', () => {
     const row = rows.find((line) => line.split('|')[1].trim() === name)
     expect(row?.split('|')[2].trim()).toBe(ga4EventName(name))
     expect(row?.split('|')[4]).toMatch(/`(?:src|app)\//)
+    const sources = [...(row?.split('|')[4].matchAll(/`((?:src|app)\/[^`]+)`/g) ?? [])]
+    for (const [, source] of sources) {
+      expect(existsSync(resolve(__dirname, '../../../../', source))).toBe(true)
+    }
+    expect(row?.split('|')[5].trim()).toMatch(/\S/)
   }
 })
 
