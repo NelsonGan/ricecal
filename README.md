@@ -4589,12 +4589,14 @@ Setup prepares the gitignored mobile env from the local stack. It saves an
 existing non-capture env under `.secrets/` before replacing it. External service
 keys remain placeholders, analytics is disabled, and the development-only
 `EXPO_PUBLIC_SCREENSHOT_MODE=true` flag stops the empty simulator's Health store
-from replacing the activity fixtures. Local photo storage must be configured
+from replacing the activity fixtures. It also keeps the describe input from
+automatically opening the keyboard and its first-use system tutorial. Local photo storage must be configured
 for the `photos` function as described under photo storage and media verification.
 
 The seeder refuses hosted Supabase. It creates confirmed fictional accounts,
 stores their random credentials only in `.secrets/screenshots.json`, and replaces
-only accounts carrying its `screenshot_fixture` marker. Each gets 90 days of
+only accounts carrying its `screenshot_fixture` marker. A failed seed remains
+unready until a successful rerun, and cached photos are checked in object storage. Each gets 90 days of
 diary, water and activity history, weigh-ins, six saved recipes and a local Pro
 subscription. Nutrition figures are illustrative display data. Rerun before
 capture so Today and the last seven days match the simulator's date. Pass app
@@ -4620,7 +4622,12 @@ already offered, dismisses transient notices, waits for data, and saves six
 1320 x 2868 PNGs per language. `--locale ja,ko` recaptures a subset while keeping
 other capture records. A describe screen contains a local draft; it never calls
 the model. The output records screen, market, date and device without account
-identifiers. Review the final PNGs, then run the creator's `npm run check:screenshots`.
+identifiers, and records checksums for each PNG and its food provenance. Capture
+requires a fully verified seed and stages the requested screenshots before
+replacing the existing set. Failed data queries abort capture. After changing
+food images, recapture all locales together so provenance stays accurate.
+Run `pnpm screenshots:test` for the tooling's failure-path checks.
+Review the final PNGs, then run the creator's `npm run check:screenshots`.
 
 The food images were generated with OpenAI image generation in ten batches,
 using the Malaysian sheet as the reference for the other nine. All use the same

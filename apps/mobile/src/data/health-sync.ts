@@ -15,6 +15,7 @@ import type {
 } from '@/lib/health'
 import { providerFor } from '@/lib/health'
 import { ageFrom, basalRate } from '@/lib/nutrition'
+import { screenshotMode } from '@/lib/screenshot-mode'
 import { supabase } from '@/lib/supabase'
 import { daysAgo } from './activity'
 import { dateKey } from './client'
@@ -612,7 +613,7 @@ export function useHealthAutoSync(provider: ProviderId | null): {
     (force: boolean) => {
       if (!provider) return
       // This branch captures persisted local fixtures on a simulator with no Health data.
-      if (__DEV__ && process.env.EXPO_PUBLIC_SCREENSHOT_MODE === 'true') return
+      if (screenshotMode) return
       if (running.current) return
       const now = Date.now()
       if (!force && now - lastRun.current < MIN_INTERVAL_MS) return
