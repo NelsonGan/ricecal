@@ -46,6 +46,7 @@
     "build:android": "pnpm --filter @ricecal/mobile exec eas build --profile development --platform android",
     "build:ios": "pnpm --filter @ricecal/mobile exec eas build --profile development --platform ios",
     "eval:refine": "node --no-warnings apps/supabase/scripts/refine-eval.mjs",
+    "screenshots:test": "node --test scripts/screenshots/*.test.mjs",
     "screenshots:seed": "node scripts/screenshots/seed.mjs",
     "screenshots:capture": "node scripts/screenshots/capture.mjs",
     "screenshots:setup": "node scripts/screenshots/setup.mjs",

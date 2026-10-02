@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { screenshotMode } from '@/lib/screenshot-mode'
 import { Button, TextField } from '@/ui'
 
 export type DescribePanelProps = {
@@ -43,7 +44,7 @@ export function DescribePanel({ onSubmit, autoFocus = false }: DescribePanelProp
         value={text}
         onChangeText={setText}
         placeholder={t('logging:describe.placeholder')}
-        autoFocus={autoFocus}
+        autoFocus={autoFocus && !screenshotMode}
         multiline
         // The keyboard's return key inserts a newline in a multiline field, so
         // it cannot double as send — the button is the only way, which is why

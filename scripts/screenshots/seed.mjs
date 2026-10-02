@@ -1,11 +1,15 @@
 import { execFileSync } from 'node:child_process'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { dishesFor, LOCALES } from './fixtures.mjs'
+import { sha256, writeJson } from './safety.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
-const photos = JSON.parse(await readFile(new URL('./photos.json', import.meta.url), 'utf8'))
+const manifest = await readFile(new URL('./photos.json', import.meta.url))
+const photos = JSON.parse(manifest)
+const fixtureHash = sha256(await readFile(new URL('./fixtures.mjs', import.meta.url)))
+const manifestHash = sha256(manifest)
 for (const photo of photos) {
   const bytes = await readFile(new URL(`./photos/${photo.filename}`, import.meta.url))
   if (createHash('sha256').update(bytes).digest('hex') !== photo.sha256)
@@ -53,6 +57,7 @@ const rest = (table, body, conflict) =>
     prefer: conflict ? 'resolution=merge-duplicates,return=minimal' : 'return=minimal',
   })
 const stateFile = new URL('screenshots.json', secrets)
+const save = () => writeJson(stateFile, state, 0o600)
 const state = await readFile(stateFile, 'utf8')
   .then(JSON.parse)
   .catch((error) => {
@@ -91,11 +96,15 @@ for (const locale of locales) {
     })
     account = { id: user.id, email, password, photos: {} }
     state.accounts[locale] = account
-    await writeFile(stateFile, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 })
+    await save()
   }
   const user = await request(`/auth/v1/admin/users/${account.id}`)
   if (!user.app_metadata?.screenshot_fixture || user.app_metadata.locale !== locale)
     throw new Error('Refusing to replace data outside a screenshot fixture account.')
+  // Invalidate readiness before any writes, including a same-day retry.
+  account.ready = false
+  delete account.heroId
+  await save()
   await rest(
     'subscriptions',
     [
@@ -140,18 +149,17 @@ for (const locale of locales) {
     method: 'POST',
     body: { email: account.email, password: account.password },
   })
-  for (const food of foods) {
-    const bytes = await readFile(new URL(`./photos/${food.photo}`, import.meta.url))
-    const digest = createHash('sha256').update(bytes).digest('hex')
-    account.photoHashes ??= {}
-    if (account.photos[food.photo] && account.photoHashes[food.photo] === digest) continue
-    const signed = await request('/functions/v1/photos', {
-      key: stack.ANON_KEY,
-      token: session.access_token,
-      method: 'POST',
-      body: { action: 'upload', contentType: 'image/jpeg', size: bytes.length },
-    })
-    const target = new URL(signed.url)
+  const cachedKeys = foods.map((food) => account.photos[food.photo]).filter(Boolean)
+  const cachedReads = cachedKeys.length
+    ? await request('/functions/v1/photos', {
+        key: stack.ANON_KEY,
+        token: session.access_token,
+        method: 'POST',
+        body: { action: 'read', keys: cachedKeys },
+      })
+    : { urls: {} }
+  const localObjectUrl = (value) => {
+    const target = new URL(value)
     if (
       target.protocol !== 'http:' ||
       !/^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/.test(
@@ -159,6 +167,27 @@ for (const locale of locales) {
       )
     )
       throw new Error('The local photos function must point to local object storage.')
+    return target
+  }
+  for (const food of foods) {
+    const bytes = await readFile(new URL(`./photos/${food.photo}`, import.meta.url))
+    const digest = createHash('sha256').update(bytes).digest('hex')
+    account.photoHashes ??= {}
+    const cachedUrl = cachedReads.urls?.[account.photos[food.photo]]
+    if (cachedUrl && account.photoHashes[food.photo] === digest) {
+      localObjectUrl(cachedUrl)
+      const stored = await fetch(cachedUrl)
+      if (stored.ok && sha256(Buffer.from(await stored.arrayBuffer())) === digest) continue
+      if (!stored.ok && stored.status !== 404)
+        throw new Error(`Stored fixture image could not be read: ${stored.status}`)
+    }
+    const signed = await request('/functions/v1/photos', {
+      key: stack.ANON_KEY,
+      token: session.access_token,
+      method: 'POST',
+      body: { action: 'upload', contentType: 'image/jpeg', size: bytes.length },
+    })
+    localObjectUrl(signed.url)
     const upload = await fetch(signed.url, {
       method: 'PUT',
       headers: { 'Content-Type': 'image/jpeg' },
@@ -167,7 +196,7 @@ for (const locale of locales) {
     if (!upload.ok) throw new Error(`Photo upload: ${upload.status}`)
     account.photos[food.photo] = signed.key
     account.photoHashes[food.photo] = digest
-    await writeFile(stateFile, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 })
+    await save()
   }
   // Only this marked fixture account is replaced. Other local users are untouched.
   for (const table of [
@@ -325,14 +354,35 @@ for (const locale of locales) {
       fat_g_per_unit: foods[index].fat,
     })),
   )
-  account.date = date
-  await writeFile(stateFile, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 })
   // Read as the account: this verifies the same row policies the app uses.
   const check = await request(
     `/rest/v1/food_log_details?log_date=eq.${date}&select=id,item_name,kcal`,
     { key: stack.ANON_KEY, token: session.access_token },
   )
-  if (check.length !== 3) throw new Error(`Diary verification failed for ${locale}`)
+  if (check.length !== 3 || !check.some((row) => row.id === account.heroId))
+    throw new Error(`Diary verification failed for ${locale}`)
+  for (const [table, expected] of [
+    ['food_logs', logs.length],
+    ['daily_logs', water.length],
+    ['weight_logs', weights.length],
+    ['activity_days', activity.length],
+    ['activity_sessions', workouts.length],
+    ['recipes', recipes.length],
+    ['daily_goals', 1],
+    ['health_connections', 1],
+  ]) {
+    const owner = table === 'recipes' ? 'owner_id' : 'user_id'
+    const rows = await request(`/rest/v1/${table}?${owner}=eq.${account.id}&select=${owner}`, {
+      key: stack.ANON_KEY,
+      token: session.access_token,
+    })
+    if (rows.length !== expected) throw new Error(`Fixture verification failed: ${locale}/${table}`)
+  }
+  account.date = date
+  account.fixtureSha256 = fixtureHash
+  account.photoManifestSha256 = manifestHash
+  account.ready = true
+  await save()
   console.log(
     `${locale}: ${LOCALES[locale].market}, ${logs.length} meals, ${recipes.length} recipes, ${activity.length} activity days`,
   )
