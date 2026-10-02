@@ -15,6 +15,7 @@ const raw = {
   EXPO_PUBLIC_RC_TEST_STORE_KEY: process.env.EXPO_PUBLIC_RC_TEST_STORE_KEY,
   EXPO_PUBLIC_MIXPANEL_TOKEN: process.env.EXPO_PUBLIC_MIXPANEL_TOKEN,
   EXPO_PUBLIC_GA4_ENABLED: process.env.EXPO_PUBLIC_GA4_ENABLED,
+  EXPO_PUBLIC_ANALYTICS_ENABLED: process.env.EXPO_PUBLIC_ANALYTICS_ENABLED,
   EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
@@ -62,6 +63,8 @@ const schema = z.object({
    * so an internal purchase walk does not become product behaviour.
    */
   EXPO_PUBLIC_GA4_ENABLED: z.enum(['true', 'false']).optional(),
+  /** Internal releases must not send either product analytics provider. */
+  EXPO_PUBLIC_ANALYTICS_ENABLED: z.enum(['true', 'false']).optional(),
   EXPO_PUBLIC_SENTRY_DSN: z.string().min(1),
   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: z.string().min(1),
   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: z.string().min(1),

@@ -1,0 +1,33 @@
+diff --git a/index.js b/index.js
+--- a/index.js
++++ b/index.js
+@@ -411,3 +411,3 @@
+     }
+-    this.mixpanelImpl.track(this.token, eventName, {
++    return this.mixpanelImpl.track(this.token, eventName, {
+       ...Helper.getMetaData(),
+@@ -561,3 +561,3 @@
+     }
+-    this.mixpanelImpl.registerSuperProperties(this.token, properties || {});
++    return this.mixpanelImpl.registerSuperProperties(this.token, properties || {});
+   }
+@@ -652,3 +652,3 @@
+   reset() {
+-    this.mixpanelImpl.reset(this.token).then(() => {
++    return this.mixpanelImpl.reset(this.token).then(() => {
+       if (this._flags) {
+@@ -707,3 +707,3 @@
+   flush() {
+-    this.mixpanelImpl.flush(this.token);
++    return this.mixpanelImpl.flush(this.token);
+   }
+@@ -812,3 +812,3 @@
+     }
+-    this.mixpanelImpl.set(this.token, properties);
++    return this.mixpanelImpl.set(this.token, properties);
+   }
+@@ -982,3 +982,3 @@
+   deleteUser() {
+-    this.mixpanelImpl.deleteUser(this.token);
++    return this.mixpanelImpl.deleteUser(this.token);
+   }

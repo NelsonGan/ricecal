@@ -1,11 +1,13 @@
 import * as Sentry from '@sentry/react-native'
 import { Mixpanel } from 'mixpanel-react-native'
+import { AppState } from 'react-native'
 
 import { type AnalyticsClient, registerAnalytics } from './analytics'
 import { configureGa4Collection, ga4CollectionEnabled } from './analytics/ga4'
 import { createAnalyticsProviders, type FirebaseAnalyticsBridge } from './analytics/providers'
+import { registerRevenueAnalytics } from './analytics/revenue'
 import { env, isConfigured } from './env'
-import { configurePurchases } from './revenuecat'
+import { configurePurchases, syncPurchaserAnalytics } from './revenuecat'
 
 /**
  * Each remote SDK is gated on the configuration it needs. Initialising one with
@@ -64,6 +66,7 @@ export function initSentry() {
  * answer to the same question.
  */
 async function initMixpanel(): Promise<AnalyticsClient | null> {
+  if (__DEV__ || env.EXPO_PUBLIC_ANALYTICS_ENABLED === 'false') return null
   if (!isConfigured(env.EXPO_PUBLIC_MIXPANEL_TOKEN)) {
     skipped.push('Mixpanel')
     return null
@@ -88,6 +91,9 @@ function firebaseAnalytics(): FirebaseAnalyticsBridge | null {
       setUserProperties: (properties) => sdk.setUserProperties(instance, properties),
       logEvent: (event, properties) => sdk.logEvent(instance, event, properties),
       resetData: () => sdk.resetAnalyticsData(instance),
+      getAppInstanceId: () => sdk.getAppInstanceId(instance),
+      setDefaultEventParameters: (parameters) =>
+        sdk.setDefaultEventParameters(instance, parameters),
     }
   } catch (error) {
     skipped.push('Firebase Analytics')
@@ -110,15 +116,22 @@ function reportAnalyticsFailure(
   })
 }
 
+let revenueForegroundListener: ReturnType<typeof AppState.addEventListener> | null = null
+
 async function initAnalytics() {
   // A preview build uses the release bundle id so the real store can price its
   // products. It is still an internal build, and EAS sets this flag to keep its
   // taps out of the production property. Firebase persists a runtime override,
   // so startup must write false as deliberately as it writes true.
-  const ga4Enabled = ga4CollectionEnabled(__DEV__, env.EXPO_PUBLIC_GA4_ENABLED)
+  const ga4Enabled =
+    env.EXPO_PUBLIC_ANALYTICS_ENABLED !== 'false' &&
+    ga4CollectionEnabled(__DEV__, env.EXPO_PUBLIC_GA4_ENABLED)
   let firebase: FirebaseAnalyticsBridge | null = null
   try {
-    firebase = await configureGa4Collection(firebaseAnalytics(), ga4Enabled)
+    const bridge = firebaseAnalytics()
+    await bridge?.setUserId(null)
+    await bridge?.setDefaultEventParameters?.({ revenuecat_revenue_enabled: 0 })
+    firebase = await configureGa4Collection(bridge, ga4Enabled)
   } catch (error) {
     reportAnalyticsFailure('Firebase', 'initialization', error)
   }
@@ -131,12 +144,19 @@ async function initAnalytics() {
    * Registering last drains startup calls into providers that are ready. The
    * adapter serializes Firebase identity and events in that same order.
    */
-  registerAnalytics(createAnalyticsProviders(mixpanel, firebase, reportAnalyticsFailure).client)
+  const providers = createAnalyticsProviders(mixpanel, firebase, reportAnalyticsFailure)
+  registerRevenueAnalytics(providers.revenueAnalytics)
+  registerAnalytics(providers.client)
+  void syncPurchaserAnalytics()
+  revenueForegroundListener?.remove()
+  revenueForegroundListener = AppState.addEventListener('change', (state) => {
+    if (state === 'active') void syncPurchaserAnalytics()
+  })
 }
 
 /**
- * RevenueCat. The SDK's lifecycle lives in `./revenuecat`, which imports
- * nothing but the env — see the note there for why it is not in this file.
+ * RevenueCat. Its lifecycle defers native imports so session and data code can
+ * identify the purchaser without importing the SDKs in this file.
  */
 export async function initPurchases() {
   if (!(await configurePurchases())) skipped.push('RevenueCat')
