@@ -4163,63 +4163,246 @@ and names, values and counts are capped at GA4's documented limits. Person and
 super properties become GA4 user properties. A null clears the old value instead
 of leaving stale state behind.
 
+### Product analytics coverage
+
+Audited 2026-10-02 against the mobile tracking plan and call sites. This is the
+full mobile product tracking reference. The website section records the separate
+acquisition surface and links its own repository contract. A defined event is
+eligible for delivery; its presence here is not proof of ingestion or billing.
+
+| Surface / operation | Definitions | Destinations / counting rule |
+| --- | --- | --- |
+| Native app custom decisions | 49 | All 49 go to Mixpanel and GA4 in production; no GA4-only app group and no sampling |
+| Website decisions | 6 | Separate Mixpanel website project; five namespaced GA4 events plus manually managed `page_view` in the shared property |
+| Native screen views | 0 | No app `screen_view` emitter; Firebase automatic screen reporting is disabled |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 49 custom app definitions |
+| Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
+| Per-install first-use/milestone event budget | None | RiceCal has no Money2Time-style adoption cap; repeatable product use contributes Mixpanel volume |
+
 ### Canonical app event table
 
 This table is the source of truth for the tracking contract. Update it in the same change as the typed plan, call sites, provider mapping, or dashboard setup. `events.ts` enforces the names and property types in code; this table records the names that reports use and where each is sent. All rows go to both providers in production. GA4 changes boolean values to 1/0, drops null event values, and joins `changed` into a comma-separated string. Union aliases are defined beside `Events` in the typed plan.
 
 <!-- analytics-app-events:start -->
-| Mixpanel event | GA4 event | Allowed app properties | Source (relative to apps/mobile) |
-| --- | --- | --- | --- |
-| Onboarding Started | ricecal_onboarding_started | none | `app/(onboarding)/welcome.tsx` |
-| Onboarding Step Completed | ricecal_onboarding_step_completed | step: string; step_number: number | `src/features/onboarding/OnboardingStep.tsx`<br>`app/(onboarding)/target.tsx` |
-| Onboarding Completed | ricecal_onboarding_completed | plan_direction: PlanDirection; referral_source: string | `app/(onboarding)/finish.tsx` |
-| Login Link Requested | ricecal_login_link_requested | none | `src/data/auth.ts` |
-| Password Reset Requested | ricecal_password_reset_requested | none | `src/data/auth.ts` |
-| Signed In | ricecal_signed_in | method: SignInMethod; is_new_account: boolean | `src/data/auth.ts` |
-| Sign In Failed | ricecal_sign_in_failed | method: SignInMethod; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/data/auth.ts` |
-| Signed Out | ricecal_signed_out | none | `src/data/auth.ts`<br>`src/lib/analytics/client.ts` |
-| Account Deleted | ricecal_account_deleted | none | `src/data/auth.ts` |
-| Log Sheet Opened | ricecal_log_sheet_opened | panel: string; date_offset: number | `app/log/index.tsx` |
-| Meal Logged | ricecal_meal_logged | method: LogMethod; date_offset: number | `src/data/entries.ts`<br>`src/data/snap.ts` |
-| Meal Scan Completed | ricecal_meal_scan_completed | method: 'camera' &#124; 'describe'; outcome: ScanOutcome; duration_ms: number; tier: number &#124; null; components: number | `src/data/snap.ts` |
-| Barcode Scanned | ricecal_barcode_scanned | outcome: 'found' &#124; 'not_found' &#124; 'error' | `app/log/food/[id].tsx` |
-| Entry Updated | ricecal_entry_updated | changed: string[] | `src/data/entries.ts` |
-| Entry Deleted | ricecal_entry_deleted | source: string | `src/data/entries.ts` |
-| Entry Refined | ricecal_entry_refined | outcome: 'applied' &#124; 'not_applied' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled'; from_chip: boolean; duration_ms: number | `src/data/scan.ts` |
-| Food Searched | ricecal_food_searched | results: number; query_length: number | `src/features/logging/FoodSearchPanel.tsx` |
-| Food Picked | ricecal_food_picked | position: number; results: number; source?: 'history' &#124; 'recipe' | `src/features/logging/FoodSearchPanel.tsx` |
-| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` |
-| Suggestions Shown | ricecal_suggestions_shown | meal: Meal; cuisine: TrackedCuisine; count: number | `src/features/suggest/SuggestAction.tsx` |
-| Plan Selected | ricecal_plan_selected | screen: PaywallScreen; plan: Plan | `src/features/paywall/PaywallOffer.tsx` |
-| Purchase Started | ricecal_purchase_started | screen: PaywallScreen; plan: Plan | `src/features/paywall/tracking.ts` |
-| Purchase Abandoned | ricecal_purchase_abandoned | screen: PaywallScreen; plan: Plan; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/features/paywall/tracking.ts` |
-| Restore Requested | ricecal_restore_requested | outcome: 'restored' &#124; 'nothing' &#124; 'unavailable' | `src/features/paywall/PaywallOffer.tsx` |
-| Manage Subscription Opened | ricecal_manage_subscription_opened | intent: 'cancel' &#124; 'switch' &#124; 'manage'; source: 'subscription' &#124; 'account' | `src/data/purchases.ts` |
-| Share Platform Opened | ricecal_share_platform_opened | platform: string | `app/settings/share.tsx` |
-| Share Claim Opened | ricecal_share_claim_opened | none | `app/settings/share.tsx` |
-| Health Connected | ricecal_health_connected | provider: string; granted: boolean; days: number | `src/data/health-sync.ts` |
-| Health Disconnected | ricecal_health_disconnected | provider: string | `src/data/activity.ts` |
-| Reminder Toggled | ricecal_reminder_toggled | meal: string; enabled: boolean | `src/data/settings.ts` |
-| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' | `src/features/settings/useReportLinks.ts` |
-| Weight Logged | ricecal_weight_logged | none | `src/data/weight.ts` |
-| Recipe Saved | ricecal_recipe_saved | is_new: boolean; ingredients: number; servings: number | `src/data/recipes.ts` |
-| Recipe Drafted | ricecal_recipe_drafted | source: 'photo' &#124; 'text'; outcome: 'drafted' &#124; 'empty' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled' | `src/data/recipes.ts` |
-| Recipe Published | ricecal_recipe_published | outcome: 'approved' &#124; 'rejected' &#124; 'pending' | `src/data/recipes.ts` |
-| Recipe Copied | ricecal_recipe_copied | none | `src/data/recipes.ts` |
-| Recipe Reported | ricecal_recipe_reported | reason: ReportReason | `src/data/moderation.ts` |
-| Author Blocked | ricecal_author_blocked | none | `src/data/moderation.ts` |
-| Review Opened | ricecal_review_opened | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` |
-| Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` |
-| Meal Shared | ricecal_meal_shared | picture: 'photo' &#124; 'drawing' | `app/log/food/[id].tsx` |
-| Widget Added | ricecal_widget_added | widget: WidgetKind | `src/features/widgets/adoption.ts` |
-| Widget Removed | ricecal_widget_removed | widget: WidgetKind | `src/features/widgets/adoption.ts` |
-| Widget Opened | ricecal_widget_opened | widget: WidgetKind; target: WidgetTarget | `app/widget/[action].tsx` |
-| Widget Water Added | ricecal_widget_water_added | preset: number | `src/features/widgets/WidgetSync.tsx` |
-| Rating Prompt Shown | ricecal_rating_prompt_shown | trigger: RatingTrigger | `src/lib/rating/prompt.ts` |
-| Rating Prompt Skipped | ricecal_rating_prompt_skipped | trigger: RatingTrigger; reason: RatingSkipReason | `src/lib/rating/prompt.ts` |
-| Rating Prompt Answered | ricecal_rating_prompt_answered | trigger: RatingTrigger; answer: 'liked' &#124; 'disliked' &#124; 'dismissed' | `src/lib/rating/prompt.ts` |
-| Rating Feedback Opened | ricecal_rating_feedback_opened | trigger: RatingTrigger | `src/lib/rating/prompt.ts` |
+
+| Mixpanel event | GA4 event | Allowed app properties | Source (relative to apps/mobile) | Trigger and frequency |
+| --- | --- | --- | --- | --- |
+| Onboarding Started | ricecal_onboarding_started | none | `app/(onboarding)/welcome.tsx` | Get started on welcome; each tap that starts the flow, not a welcome-screen render. |
+| Onboarding Step Completed | ricecal_onboarding_step_completed | step: string; step_number: number | `src/features/onboarding/OnboardingStep.tsx`<br>`app/(onboarding)/target.tsx` | Primary advance on a named step, plus target submission; each advance. Secondary skips and the timed calculating step are not counted. |
+| Onboarding Completed | ricecal_onboarding_completed | plan_direction: PlanDirection; referral_source: string | `app/(onboarding)/finish.tsx` | Onboarding profile save succeeds; each successful completion, before health/notification permission steps. |
+| Login Link Requested | ricecal_login_link_requested | none | `src/data/auth.ts` | Email login-code/link request is accepted; each successful request, before the user returns to sign in. |
+| Password Reset Requested | ricecal_password_reset_requested | none | `src/data/auth.ts` | Password-reset request returns; each request, without revealing whether an account exists. |
+| Signed In | ricecal_signed_in | method: SignInMethod; is_new_account: boolean | `src/data/auth.ts` | An explicit Apple, Google, email-link/code or password sign-in succeeds; each success. Restored sessions/token refreshes are not acquisitions. |
+| Sign In Failed | ricecal_sign_in_failed | method: SignInMethod; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/data/auth.ts` | Instrumented Apple/Google sign-in rejection or cancellation; each reported result. Email/password failures are not covered by this event. |
+| Signed Out | ricecal_signed_out | none | `src/data/auth.ts`<br>`src/lib/analytics/client.ts` | Explicit sign-out completes; each completion, before resetting analytics identity. |
+| Account Deleted | ricecal_account_deleted | none | `src/data/auth.ts` | Server confirms account deletion; each success, before deleting the Mixpanel profile and signing out. |
+| Log Sheet Opened | ricecal_log_sheet_opened | panel: string; date_offset: number | `app/log/index.tsx` | Log sheet opens; once per presentation using its initial panel and selected date, not on panel changes. |
+| Meal Logged | ricecal_meal_logged | method: LogMethod; date_offset: number | `src/data/entries.ts`<br>`src/data/snap.ts` | Local insert succeeds, or camera/describe starts its optimistic row; once per logging action, not per decomposed food component. |
+| Meal Scan Completed | ricecal_meal_scan_completed | method: 'camera' &#124; 'describe'; outcome: ScanOutcome; duration_ms: number; tier: number &#124; null; components: number | `src/data/snap.ts` | Camera/describe request reaches a reported outcome; once per attempt, including refusals, empty food, failure and detached requests. |
+| Barcode Scanned | ricecal_barcode_scanned | outcome: 'found' &#124; 'not_found' &#124; 'error' | `app/log/food/[id].tsx` | Barcode lookup settles; once per barcode value on the mounted food route. Reopening the route can count again. |
+| Entry Updated | ricecal_entry_updated | changed: string[] | `src/data/entries.ts` | Entry update succeeds; each successful save, with names of changed fields. |
+| Entry Deleted | ricecal_entry_deleted | source: string | `src/data/entries.ts` | Entry deletion succeeds; each successful deletion, with the calling source or unknown. |
+| Entry Refined | ricecal_entry_refined | outcome: 'applied' &#124; 'not_applied' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled'; from_chip: boolean; duration_ms: number | `src/data/scan.ts` | Refinement attempt reaches its outcome; each attempt, including refusal/failure and no applied change. |
+| Food Searched | ricecal_food_searched | results: number; query_length: number | `src/features/logging/FoodSearchPanel.tsx` | Catalogue query has a settled results/empty answer for 1,200 ms after the 140 ms input debounce; changed nonempty queries only. History/own-food filtering is excluded. |
+| Food Picked | ricecal_food_picked | position: number; results: number; source?: 'history' &#124; 'recipe' | `src/features/logging/FoodSearchPanel.tsx` | Catalogue, own recipe or history result is opened; each selection. Opening a result does not prove it was logged. |
+| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or eligible nudge requests navigation, or intro/reminder/ended presentation mounts; repeated visits count. Nudge has a two-day per-account clock. |
+| Suggestions Shown | ricecal_suggestions_shown | meal: Meal; cuisine: TrackedCuisine; count: number | `src/features/suggest/SuggestAction.tsx` | Suggestions answer returns; each answer, including count 0. Refused/failed requests without an answer do not prove suggestions were shown. |
+| Plan Selected | ricecal_plan_selected | screen: PaywallScreen; plan: Plan | `src/features/paywall/PaywallOffer.tsx` | Paywall plan changes; each change. The default selected plan emits nothing until changed. |
+| Purchase Started | ricecal_purchase_started | screen: PaywallScreen; plan: Plan | `src/features/paywall/tracking.ts` | An available checkout is requested; once per accepted attempt, before offering lookup/store call. A missing configuration warning emits nothing. |
+| Purchase Abandoned | ricecal_purchase_abandoned | screen: PaywallScreen; plan: Plan; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/features/paywall/tracking.ts` | Checkout/entitlement-wait path throws; once per caught attempt. A post-purchase entitlement-wait error can also reach this event. |
+| Restore Requested | ricecal_restore_requested | outcome: 'restored' &#124; 'nothing' &#124; 'unavailable' | `src/features/paywall/PaywallOffer.tsx` | Restore returns restored/nothing, or configuration is unavailable; once per reported result. A thrown restore is shown as an error without this event. |
+| Manage Subscription Opened | ricecal_manage_subscription_opened | intent: 'cancel' &#124; 'switch' &#124; 'manage'; source: 'subscription' &#124; 'account' | `src/data/purchases.ts` | Store subscription-management navigation is requested; each request, before the external page is opened. It does not confirm a cancellation or switch. |
+| Share Platform Opened | ricecal_share_platform_opened | platform: string | `app/settings/share.tsx` | Share-and-earn platform shortcut is tapped; each tap, before the external handoff. |
+| Share Claim Opened | ricecal_share_claim_opened | none | `app/settings/share.tsx` | Discord claim link is requested; each tap. It does not prove the claim or promotional grant was accepted. |
+| Health Connected | ricecal_health_connected | provider: string; granted: boolean; days: number | `src/data/health-sync.ts` | Connection/permission flow returns; each successful flow result, including granted false. Background health sync is excluded. |
+| Health Disconnected | ricecal_health_disconnected | provider: string | `src/data/activity.ts` | Health disconnect mutation succeeds; each success. |
+| Reminder Toggled | ricecal_reminder_toggled | meal: string; enabled: boolean | `src/data/settings.ts` | Meal reminder setting mutation succeeds; each successful write. |
+| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' | `src/features/settings/useReportLinks.ts` | Recognized weekly/monthly report notification response is handled; each tap. Cold-launch response is cleared after reading; meal reminders are excluded. |
+| Weight Logged | ricecal_weight_logged | none | `src/data/weight.ts` | Manual weight-log write succeeds; each success, without its value. Health-imported readings are excluded. |
+| Recipe Saved | ricecal_recipe_saved | is_new: boolean; ingredients: number; servings: number | `src/data/recipes.ts` | Recipe save succeeds; each new/edit save, with ingredient/serving counts only. |
+| Recipe Drafted | ricecal_recipe_drafted | source: 'photo' &#124; 'text'; outcome: 'drafted' &#124; 'empty' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled' | `src/data/recipes.ts` | Photo/text drafting reaches its outcome; each attempt, including refusals, empty and failure. It does not prove a recipe was saved. |
+| Recipe Published | ricecal_recipe_published | outcome: 'approved' &#124; 'rejected' &#124; 'pending' | `src/data/recipes.ts` | A public save or publish operation returns moderation status; each result. Unpublishing emits nothing. |
+| Recipe Copied | ricecal_recipe_copied | none | `src/data/recipes.ts` | Copying a community recipe succeeds; each successful copy. |
+| Recipe Reported | ricecal_recipe_reported | reason: ReportReason | `src/data/moderation.ts` | Moderation report write succeeds; each successful report, with its controlled reason only. |
+| Author Blocked | ricecal_author_blocked | none | `src/data/moderation.ts` | Blocking an author succeeds; each success, without the author identity. |
+| Review Opened | ricecal_review_opened | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Review period resolves; once per resolved period in a mounted route. Locked reviews count before redirecting; this is not a read-completion event. |
+| Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Card share helper reports sent; each card send. Android share intent cannot confirm completion. |
+| Meal Shared | ricecal_meal_shared | picture: 'photo' &#124; 'drawing' | `app/log/food/[id].tsx` | Meal picture share helper reports sent; each send. Android share intent cannot confirm completion. |
+| Widget Added | ricecal_widget_added | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a widget kind absent from the previous stored set; one per newly observed kind. The first poll is a silent baseline. |
+| Widget Removed | ricecal_widget_removed | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a previously stored widget kind absent now; one per removed kind. Intermediate add/remove changes between polls can be missed. |
+| Widget Opened | ricecal_widget_opened | widget: WidgetKind; target: WidgetTarget | `app/widget/[action].tsx` | Supported widget deep link is handled; once per handled widget route. Legacy recipes target remains a valid reported value. |
+| Widget Water Added | ricecal_widget_water_added | preset: number | `src/features/widgets/WidgetSync.tsx` | Queued home-screen water action successfully syncs on app foreground; one per successful queued action, recorded at sync time. |
+| Rating Prompt Shown | ricecal_rating_prompt_shown | trigger: RatingTrigger | `src/lib/rating/prompt.ts` | App rating question is delivered to a listener; each delivery, including manual requests. It does not prove the store review dialog appeared. |
+| Rating Prompt Skipped | ricecal_rating_prompt_skipped | trigger: RatingTrigger; reason: RatingSkipReason | `src/lib/rating/prompt.ts` | Automatic meal/review checkpoint fails a gate; once per tested checkpoint, with the first failing reason. Not every logged meal. |
+| Rating Prompt Answered | ricecal_rating_prompt_answered | trigger: RatingTrigger; answer: 'liked' &#124; 'disliked' &#124; 'dismissed' | `src/lib/rating/prompt.ts` | App rating question receives liked/disliked/dismissed; each answer. It does not report a store rating. |
+| Rating Feedback Opened | ricecal_rating_feedback_opened | trigger: RatingTrigger | `src/lib/rating/prompt.ts` | Feedback link after disliking is requested; each request, without claiming a message was sent. |
 <!-- analytics-app-events:end -->
+
+### Common context and provider conversion
+
+The app event table lists custom payload keys. Mixpanel also adds its SDK-managed
+platform/device/app metadata and anonymous or account identity. Those SDK fields
+are not extra permitted diary fields. Firebase adds its own app/device/session
+context. `entitled` is a Mixpanel super property and a GA4 user property after a
+known entitlement answer; early events can lack it. It is the last reported
+state, not proof that the customer had a settled charge at that instant.
+
+| Contract | Mixpanel | GA4 |
+| --- | --- | --- |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 49 mappings are tested for uniqueness |
+| Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
+| String values | Typed payload as supplied | Maximum 100 characters |
+| Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
+| `changed` array | Array of changed field names | Comma-separated string, maximum 100 characters |
+| Null, undefined or unsupported event values | SDK behavior applies to typed payload | Omitted; non-finite numbers are also dropped. A null scan `tier` is absent in GA4 |
+| Custom event parameter limit | No extra app-side sampling or parameter cap | First 25 accepted parameters per call, before Firebase's own context |
+| User property keys/values | People properties preserve typed values | Keys maximum 24 characters; values stringified and limited to 36 characters; first 25 per call |
+| Clearing user properties | Explicit null where supplied | Null clears; undefined is omitted. Both `email` and `$email` are excluded |
+| `date_offset` | Calendar-day offset computed on the phone | Same numeric value: 0 today, positive for past dates, negative for future dates; invalid date inputs fall back to 0 |
+| Event timing | Client/SDK timing, possibly delayed by SDK transport | Client/SDK timing. Widget water events are recorded when queued actions sync, not at the original home-screen tap |
+
+The converter is `apps/mobile/src/lib/analytics/ga4.ts`; shared derivations are
+in `props.ts`. GA4 dimensions and metrics are report configuration, not additional
+producers. Registration does not backfill historical custom definitions.
+
+### Property vocabulary and interpretation
+
+Inline unions are shown in the app table. These shared aliases and derived fields
+complete that contract; a field typed `string` is not permission to send arbitrary
+user text. Extend the source type and these tables together when its domain changes.
+
+| Property / alias | Current values or meaning | Source / reporting limit |
+| --- | --- | --- |
+| `method` / `LogMethod` | `camera`, `describe`, `search`, `barcode`, `recipe`, `quick_add`, `history` | `events.ts`; compare logging actions, not individual food components |
+| `method` / `SignInMethod` | `apple`, `google`, `email`, `password` | `email` means code/link. Failure coverage currently covers Apple/Google only |
+| `screen` / `PaywallScreen` | `hard`, `intro`, `reminder`, `ended` | Paywall surfaces below; no generic screen-view event |
+| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `suggest`, `trend_range`, `review`, `nudge` | Refused capability or standing offer; trial expiration is a paywall screen value, not a feature |
+| `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
+| `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |
+| `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder and suggestion category only |
+| `cuisine` / `TrackedCuisine` | `malay`, `chinese`, `indian`, `custom` | Custom cuisine text is reduced to `custom`; no user-entered cuisine is sent |
+| `plan_direction` | `lose`, `gain`, `maintain` | Locally derived; a missing target or absolute target/current weight difference below 0.5 kg means maintain. Body values never leave the app through analytics |
+| `activity_level` | `sedentary`, `light`, `onFeet`, `veryActive` | Client vocabulary; normalized from database spellings |
+| `step`, `step_number` | `setup` 1, `about` 2, `activity` 3, `source` 4, `calculating` 5, `target` 6, `account` 7, `health` 8, `notifications` 9 | `features/onboarding/steps.ts`; calculating has no completion event, and secondary skips do not emit one |
+| `referral_source` | `xiaohongshu`, `instagram`, `tiktok`, `youtube`, `threads`, `facebook`, `reddit`, `friend`, `other`, `appStore`, `googlePlay` | `app/(onboarding)/source.tsx`; selected answer, not verified acquisition attribution |
+| Log-sheet `panel` | `camera`, `describe`, `search` | `app/log/index.tsx`; legacy `barcode`/`label` map to camera and `recipes` maps to search. Initial panel only |
+| Entry `changed` | Any supplied patch fields among `when`, `quantity`, `plate`, `serving`, `name`, `note`, `icon`, `photo`, `overrides` | `data/entries.ts`; field names only, never edited values |
+| Share `platform` | `instagram`, `tiktok`, `xiaohongshu`, `facebook`, `threads`, `x` | `features/settings/social.ts`; requested external shortcut, not verified sharing |
+| Entry deletion `source` | Calling source string, or `unknown` when absent | `data/entries.ts`; not an unrestricted note or an automatic screen name |
+| Health `provider` | Production providers `apple_health`, `health_connect`; database also declares `demo` for demo data | `lib/health/index.ts`, `database.types.ts`; count connection decisions separately from imported readings |
+| `widget` / `WidgetKind` | `kcal`, `water`, `weight`, `day`, `quick_log`, `today` | Native widget module; installed count measures kinds, not the number of widget instances |
+| Widget `target` | `open`, `camera`, `search`, `barcode`, `recipes`, `water`, `weight` | Legacy recipes deep links still report recipes while opening My foods |
+| Moderation `reason` / `ReportReason` | `inappropriate`, `spam`, `dangerous`, `stolen` | Controlled report category; no recipe, author or report text |
+| Rating `trigger` / `RatingTrigger` | `meal_milestone`, `review_opened`, `manual` | App rating question, not a store review result |
+| Rating skip `reason` / `RatingSkipReason` | `too_soon_after_install`, `too_soon_after_update`, `too_few_meals`, `too_few_active_days`, `asked_recently`, `asked_on_this_version` | `lib/rating/state.ts`; first failing gate at a checkpoint |
+| Counts and durations | `results`, `position`, `ingredients`, `servings`, `components`, `count`, `days`, `duration_ms`, `tier` | Shape/operation diagnostics. Search result counts/positions describe the answer or selected result, not diary nutrition |
+| Widget water `preset` | Home-screen action preset volume | Widget action choice; no daily water total or diary history |
+
+### Instrumented surfaces, paywalls and frequency gates
+
+| Surface / source | Instrumented decision | Gate / implication |
+| --- | --- | --- |
+| Welcome and onboarding | Start, primary step advance, successful profile completion | Repeated starts/advances count. Completion precedes permission steps, so requiring every step as a conversion prerequisite excludes valid users |
+| Account and sign-in | Explicit login requests/results, sign-out and deletion | Restored sessions are not Signed In. No complete email/password failure funnel exists |
+| Log sheet, food route and data mutations | Sheet entry, catalogue answer/selection, logging, scan/refinement outcome, entry edits/deletes | Search debounces; mutations distinguish intent/optimistic inserts from confirmed success as listed above |
+| Recipes and suggestions | Draft/save/publish/copy/report/block and suggestion answers | Public moderation outcomes count separately; draft/pick/suggestion is not a meal or a saved recipe |
+| Activity, reminders and reports | Health connection/disconnection, reminder writes, report notification taps and review opens/shares | No background health-import events. Locked review opens count before the paywall redirect |
+| Home-screen widgets | Observed kind additions/removals, supported deep links and queued water actions | First observation is a silent baseline; later foreground diffs can miss intermediate changes. Stored baseline belongs to the handset, not reset on account switches |
+| Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
+| Hard paywall `/paywall` | `Paywall Shown` with `screen: hard` and refused `ProFeature` | `data/refusals.ts` records before navigation; review redirects also record. Free camera allowance is three scans/day; a further refusal can reach camera trigger |
+| Intro, reminder and ended paywalls | `Paywall Shown` with the respective screen as trigger | `useTrackPaywallShown` records once per mounted presentation; revisits count again |
+| Standing Pro nudge | `Paywall Shown`, `screen: hard`, `trigger: nudge` | At timer scheduling: known free entitlement, tutorial already offered, due per-account clock and not offered in this mounted launch; any recorded paywall restarts its two-day clock |
+| Checkout | Optional plan change, checkout attempt and caught cancellation/error | Default selection sends no Plan Selected. Purchase Started precedes offering lookup. Purchase Abandoned can include a post-purchase entitlement-wait error |
+| Restore | Returned restored/nothing or unavailable result | Restore Requested is a result event; thrown restores have no row. Restoration never adds settled revenue |
+| Automatic rating checkpoints | Crossing each 15-meal boundary; second unlocked review read, then each fifth read | Gates require five days since install, two since version change, at least 15 meals, three active days, 60 days since last ask and no ask on this version |
+| Manual rating request | App rating question requested manually | Bypasses automatic gates. Answers still update the cooldown; shown/answered is not a published store rating |
+
+### Product reports and funnel definitions
+
+| Product question | Events / segmentation | Interpretation |
+| --- | --- | --- |
+| Do new users finish setup? | Onboarding Started → Onboarding Completed; inspect step/step_number and referral_source | Count unique users as well as total starts. Permission steps happen after completion; skips/calculating make a nine-event mandatory funnel invalid |
+| Which logging method is used? | Meal Logged by method, date_offset and last known entitled | One logging action can yield several component rows. Camera/describe includes optimistic work; use scan outcomes and database completion to measure successful persisted meals |
+| Is catalogue search useful? | Food Searched → Food Picked, then Meal Logged with matching method | Catalogue only; counts describe settled answers. Picked is not saved. Keep mobile/web streams separate before comparing result positions or query behavior |
+| Are scans/refinements reliable? | Meal Scan Completed or Entry Refined by outcome, duration_ms and entitled | Refusals are product limits, not service failures; detached scans can complete later. No attempt ID exists to promise an exact event-to-row join |
+| Which feature creates purchase intent? | Paywall Shown → Purchase Started; break down trigger, screen and plan | Plan Selected is optional. The existing Pro Conversion board's Plan Selected step measures the plan-changing cohort, not all checkout conversion |
+| Which attempts become paid charges? | App intent alongside positive RevenueCat initial/trial-converted/renewal/non-subscription events | Use RevenueCat for settled charges. Trial starts, restore, ordinary cancellation and Purchase Abandoned are not definitive paid/unpaid evidence |
+| Do people retain and adopt widgets? | SDK sessions, repeated logging, observed Widget Added/Removed and Widget Opened | Distinguish anonymous/account users and app versions. Widget baseline is not lifetime first-use; kinds are not instances. RiceCal has no bounded first-use/milestone stream |
+| Are reports/reminders useful? | Notification Opened, Review Opened and Review Card Shared by kind | Notification taps exclude meal reminders; locked review opens count. Open/share does not prove the full report was read |
+| Does the public site drive demand? | Website page_view → App Download Clicked, by placement/target/live and site_region | Clicks are acquisition intent; no browser-to-account installation or purchase join is implemented |
+| Are rating prompts timely? | Rating Prompt Skipped/Shown/Answered, by trigger/reason | Skips are checkpoint results. Liked/disliked/dismissed is the app question; no star rating or store review completion is collected |
+
+Use unique users for adoption/conversion and event totals for operation volume.
+Order funnels with the product's actual optional steps. Use SDK sessions for
+retention and RevenueCat for finance; neither is the count of custom app events.
+
+### Website product analytics
+
+The public acquisition site is maintained in
+[NelsonGan/ricecal-web](https://github.com/NelsonGan/ricecal-web).
+This cross-product reference was checked against website revision
+[`46bd531`](https://github.com/NelsonGan/ricecal-web/tree/46bd531) on 2026-10-02.
+The site's [README Analytics contract](https://github.com/NelsonGan/ricecal-web/blob/46bd531/README.md#analytics)
+and [typed emitter/mapping](https://github.com/NelsonGan/ricecal-web/blob/46bd531/src/lib/analytics.ts)
+remain the authority for its implementation. Recheck that repository when its
+tracking changes and update this section; the mobile inventory test cannot inspect
+another repository in CI.
+
+The website uses **Mixpanel project `4054271`**, separate from mobile `4054270`.
+GA4 shares RiceCal property `553863111` through web stream `15786444693`, public
+measurement ID `G-5Q45RV0KMX`, and Firebase web app
+`1:829952813471:web:3af4db99307026f954b5aa`. Website code does not identify a Supabase
+account or send RevenueCat attributes/charges. Shared GA4 names below require
+stream/platform filters in mobile reports.
+
+| Website decision / frequency | Mixpanel name and custom properties | GA4 name and custom mapping | Source in ricecal-web |
+| --- | --- | --- | --- |
+| Public page entry/client path change; explicitly managed page view | `Page Viewed`: `path`, `pageType` | `page_view`: `content_group`, query-free `page_location`, `page_title`, safe `page_referrer` | `src/components/analytics.tsx` |
+| Region selection changes | `Region Changed`: `from`, `to`, `fromLocalisedPage` | `ricecal_region_changed`: `region_from`, `region_to`, `from_localised_page` (`yes`/`no`) | `src/components/region-picker.tsx` |
+| Search answer/error settles, not each keystroke or aborted request | `Food Searched`: `query`, `results`, `failed`, `source` | `ricecal_food_searched`: `query_length` (Unicode code points), `results`, `search_failed` (`yes`/`no`), `source`; no query text | `src/components/home/food-search.tsx` |
+| Search/seeded result is chosen | `Search Result Clicked`: `query`, `rank`, `results`, `seeded`, `slug`, `source` | `ricecal_food_picked`: public `content_id`, `content_type: food`, `position`, `results`, `source`; no query text or separate seeded boolean | `src/components/home/food-search.tsx` |
+| Download/store call to action is pressed, before navigation | `App Download Clicked`: `placement`, `target`, `live`, optional `plan` | `ricecal_app_download_clicked`: `placement`, `target`, `link_live` (`yes`/`no`), optional `plan`; configured website key event | `src/components/download-link.tsx`, `src/components/store-buttons.tsx` |
+| Valid contact form requests a mail handoff | `Contact Submitted`: `topic` only | `ricecal_contact_submitted`: `topic` only; no name, address or message | `src/app/contact/contact-form.tsx` |
+
+| Website context / domain | Contract |
+| --- | --- |
+| `pageType` | `contact`, `country-dishes`, `country-home`, `dish`, `home`, `legal`, `other`; grouped page shape rather than tens of thousands of food paths |
+| Download `placement` | `country-dishes`, `dish`, `final-cta`, `header`, `hero`, `pricing` |
+| Download `target`, `plan` | `app_store`, `play_store`, `none`; optional `free` / `pro`. `live: false` means no live store handoff, including unresolved desktop/iPad detection; clicks are not installs |
+| Contact `topic` | `Something is broken`, `Trouble logging a meal`, `A calorie figure looks wrong`, `Billing or subscription`, `Delete my account`, `Something else`; selected form category only |
+| Search `source` | `chip` / `typed`; result clicks additionally use `seeded` |
+| Search text | Mixpanel-only, normalized/capped at 80 characters; separate from mobile's no-search-text policy. GA4 receives length and counts only |
+| Region / RegionSlug | `asia`, `china`, `hong-kong`, `india`, `indonesia`, `japan`, `malaysia`, `myanmar`, `pakistan`, `philippines`, `singapore`, `south-korea`, `sri-lanka`, `taiwan`, `thailand`, `vietnam`; Mixpanel `region` super property and GA4 `site_region` event parameter, not account identity |
+| Campaign attribution | Six explicitly allowed `utm_campaign`, `utm_content`, `utm_id`, `utm_medium`, `utm_source`, `utm_term` values mapped to GA4 campaign fields, capped at 100 characters; Mixpanel uses its campaign/referrer context |
+| URLs/referrers | GA4 location/referrer omit query strings; external referrer reduced to origin, internal referrer retains public path. Arbitrary URL parameters are not forwarded as page dimensions |
+| Private recipe links | `/r/<token>` excluded before provider loading and checked again when tracking; never send the bearer token as a page URL |
+| Production/preview gates | GA4 only on `ricecal.app` / `www.ricecal.app`. Mixpanel requires its build token; its gate is not a hostname restriction |
+| Browser opt-out | Do Not Track `1` or `yes` prevents starting either provider |
+| Automatic capture | Mixpanel autocapture/pageview/replay off, IP collection off, localStorage persistence. GA4 automatic pageview and configured Enhanced Measurement off; SDK session lifecycle remains separate |
+| Delivery | Dynamic Mixpanel load queues at most 20 calls while starting. Leaving-page calls use immediate sendBeacon; GA4 manages its own transport. Neither guarantees delivery or delays navigation |
+| Handoff success | Contact submission proves validation and a requested mail handoff, not delivered email; store click proves intent, not an installation |
+
+### Delivery limits and uninstrumented behavior
+
+The mobile startup queue holds **50 operations**, not 50 guaranteed events: an
+identify plus email profile write consumes two slots. It exists in memory and
+is not a durable offline ledger. Disabled development/preview builds do not queue
+production tracking. Once registered, each provider serializes its own work;
+Mixpanel's native promise-return patch preserves identify/reset/profile ordering.
+An identity failure retries before later work, which is dropped if the account
+cannot be confirmed. SDK completion is not a destination ingestion receipt.
+SDK transport/retry behavior applies after handoff; this app does not add a
+universal durable event replay layer.
+
+| Not in the custom product inventory | Current owner / limit |
+| --- | --- |
+| Generic app screen views, tab/render/scroll/keystroke events | No active emitter; important surfaces have explicit decisions. Automatic Firebase screen reporting is off |
+| Errors and stack traces | Sentry; only controlled product outcomes are sent to analytics |
+| Raw mobile food names, search/describe text, calorie totals, weight values, photos or private recipe/report text | Database/domain flows, never custom product analytics; email support identity and widget preset are explicit exceptions above |
+| Scan pipeline quality and catalogue misses | Database scan-item/miss records; distinct from user behavior tracking |
+| Session restoration and background health imports | Session/health state, not acquisitions or manual logging |
+| Proof of an external share, email, claim, installation or published rating | No completion confirmation in the listed handoff events |
+| Settled app-side purchase/refund revenue | RevenueCat server feed below; no manual price/revenue logger |
 
 ### Canonical revenue and automatic event table
 
@@ -4271,9 +4454,14 @@ promise transaction-ID deduplication across producers; use one revenue owner.
 | Account email | People `$email` | RevenueCat `$email`; excluded from GA4 | `identifyUser` / `identifyPurchaser`; support lookup only |
 | Firebase installation ID | Not used | RevenueCat `$firebaseAppInstanceId` | Native Firebase `getAppInstanceId`; never a UUID, email, fabricated value or Firebase app ID |
 | Mixpanel account ID | Same Supabase UUID | RevenueCat `$mixpanelDistinctId` | Identified production account, confirmed attribute delivery |
-| `onboarded`, `onboarded_at` | People properties | GA4 user properties | Profile/onboarding completion; only allowed typed properties |
-| `plan_direction`, `activity_level`, `referral_source` | People properties | GA4 user properties | Stated preferences; never body measurements or free-text diary data |
-| `health_provider`, `meal_reminders`, `widgets_installed` | People properties | GA4 user properties | Connection/preferences/widget changes; health provider cleared with null on disconnect |
+| `onboarded` | People boolean | GA4 user-property string | Onboarding success, then profile sync; whether an onboarding timestamp exists |
+| `onboarded_at` | People timestamp string | GA4 user-property string | Onboarding success/profile sync; undefined values are omitted, not cleared |
+| `plan_direction` | People `lose`, `gain`, `maintain` | GA4 user-property string | Onboarding success only; inferred locally from weights with a 0.5 kg neutral band. Not refreshed when goals/weight change later |
+| `activity_level` | People `sedentary`, `light`, `onFeet`, `veryActive` | GA4 user-property string | Onboarding success/profile sync; database spellings normalized to the client vocabulary |
+| `referral_source` | People controlled source | GA4 user-property string | Onboarding success/profile sync; also present on Onboarding Completed |
+| `health_provider` | People provider or null | GA4 string or null | Successful granted connection; null clears it on disconnect. Background imports are not connection decisions |
+| `meal_reminders` | People count | GA4 user-property string | Number of enabled meal reminders; hook writes on mount/changed count, not every refetch |
+| `widgets_installed` | People count | GA4 user-property string | Current handset widget-kind count; first poll and detected changes, including zero |
 | `entitled` | Super property on every custom event | GA4 user property | After a real entitlement answer; no false value while offline with unknown status |
 | `revenuecat_revenue_enabled` | Not sent | Firebase default event parameter, 0 or 1 | Starts at 0; set to 1 only after HTTP 200 acknowledges this account's current installation attribute |
 | RevenueCat spend/subscription profile | Server-managed `rc_total_spend`, subscription properties, `$transactions` | Integration-owned parameters | Never manually increment from checkout or restore |
@@ -4284,7 +4472,8 @@ analytics from holding checkout indefinitely; RevenueCat login must still finish
 successfully before a purchase. Failed uploads leave native fallback enabled.
 A new account or logout clears the native revenue marker. Firebase starts with a
 cleared user ID before collection is enabled. No raw foods, search terms, calorie
-totals, weights, photos or error messages are allowed in product analytics.
+totals, weights, photos or error messages are allowed in mobile product analytics.
+The website has a separate, explicitly documented Mixpanel-only search-text policy.
 
 ### Canonical live integration settings
 
@@ -4331,8 +4520,9 @@ Use the app event table to review Mixpanel volume. Events fire on user decisions
 not renders or every keystroke. `Food Searched` fires after typing settles;
 `Rating Prompt Skipped` is bounded by meal checkpoint crossings. Widget changes
 and offline sync may arrive when the app next opens. `Meal Logged` includes the
-optimistic camera/describe insert; subtract unsuccessful scan outcomes when
-measuring completed meals. Session/install events are automatic SDK events.
+optimistic camera/describe insert. It is not a persisted-meal total; review scan
+outcomes and database completion rather than subtracting unrelated event counts.
+Detached requests can complete after the client stops observing them. Session/install events are automatic SDK events.
 Track counts by event and app version, and investigate a new name, a sharp volume
 change, unexpected free-text properties, missing identity, or purchase events from
 a second producer. RevenueCat retries and profile writes are not extra product
@@ -4365,7 +4555,9 @@ Use completed UTC periods when reconciling. Exclude trial starts, ordinary
 cancellations, profile spend and SDK purchase diagnostics; include charge events
 and negative refund adjustments. The Pro Conversion board was reviewed: it
 counts intent through opening the store sheet, and explicitly leaves settled
-charges to RevenueCat.
+charges to RevenueCat. Its Plan Selected step covers users who changed a plan;
+the default plan emits no selection event, so that funnel is not the conversion
+rate for every paywall visitor.
 [RevenueCat chart time zones](https://www.revenuecat.com/docs/dashboard-and-metrics/charts),
 [RevenueCat refunds](https://www.revenuecat.com/docs/dashboard-and-metrics/charts/revenue-chart),
 [Mixpanel time zones](https://docs.mixpanel.com/docs/orgs-and-projects/managing-projects#manage-timezones-for-projects).
@@ -4379,7 +4571,7 @@ about anybody; a button being pressed is.
 **Every event answers a question somebody would actually ask.** If the answer
 would not change what gets built next, the event is not here.
 
-**Nothing off the diary.** No calorie totals, no weights, no dish names, no
+**No raw mobile diary values.** No calorie totals, no weights, no dish names, no
 search text. They are health data, they answer none of the questions, and
 Postgres already holds every one of them next to the arithmetic that produced it.
 Where a number is genuinely wanted, its *shape* is sent instead: which way a
@@ -4429,11 +4621,22 @@ user's whole session as free.
    not worth having.
 2. Track it at the point of **decision**, not the point of render.
 3. Prefer a property on an existing event to a new event. `Meal Logged` with a
-   `method` is one thing to reason about; six events are six.
+   `method` is one thing to reason about; separate method events multiply the inventory.
 4. If the property is a number off somebody's diary, send its shape instead.
 5. Update every affected canonical table in the same change, including properties,
-   send conditions, provider settings and verification evidence. Apply the
-   `maintain-analytics-tracking` skill and run the inventory consistency test.
+   vocabulary, sources, triggers/frequency, funnel interpretation, provider settings
+   and verification evidence. Apply the `maintain-analytics-tracking` skill and run
+   the inventory consistency test. Update the website reference when that separate
+   repository changes; audit its current revision rather than assuming mobile CI
+   validates it. A change without analytics impact needs no artificial table edit.
+
+The mobile inventory test checks all 49 names, exact GA4 mappings, typed payloads,
+source-file existence and a nonempty trigger/frequency column, and forbids
+app-side settled revenue fields. Trigger prose, property domains, report meaning,
+SDK/server settings and the separate website still require call-site review.
+Keep both copies of the analytics maintenance skill synchronized. Documentation
+and live verification dates must describe observed evidence, never a planned
+release or HTTP response as proven report ingestion.
 
 ---
 
