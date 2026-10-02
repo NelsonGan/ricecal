@@ -3220,13 +3220,17 @@ widgets_installed   how many are on this handset
 nothing about when it changed, so `reportWidgets` polls on foreground and
 compares against MMKV. Two consequences before building a chart on it: it is
 late, and it is per handset rather than per account. The first poll of an
-install reports nothing at all — deleting the app leaves the widgets on the home
+install emits no add/remove events. Deleting the app leaves the widgets on the home
 screen, so a reinstall would otherwise report three installs that happened
-months ago.
+months ago. The current count still reaches each signed-in account on its first
+valid poll, even if the handset's widget set did not change. Pending results from
+an account that left are discarded; returning to it does not revive the old poll.
 
 `Widget Water Added` is fired when the queue drains, not when the button was
 pressed, because the button runs in a process with no analytics client in it. A drink
 whose sync failed is never counted, which is the honest direction to be wrong in.
+An action completing after its account leaves is also excluded from tracking so
+it cannot be filed against the account that follows.
 
 ---
 
@@ -4117,12 +4121,22 @@ Events fired before the SDKs finish starting are queued and drained on
 registration. Each provider has its own serial queue. Identification finishes before profiles
 and events; failed identity writes retry before later work. Work is dropped if
 identity still cannot be confirmed, so it cannot use the preceding account.
+Switching directly between accounts resets Mixpanel's device/super-property state
+before identifying the new account and clears every app-owned Firebase user
+property before its next event. Re-identifying the same account, including an
+email update, preserves its state. Profile and reminder deduplication includes
+the account UUID, so identical answers on two accounts still reach both profiles.
+[Mixpanel account boundaries](https://docs.mixpanel.com/docs/tracking-methods/id-management/identifying-users-simplified),
+[Firebase persisted user properties](https://firebase.google.com/docs/reference/android/com/google/firebase/analytics/FirebaseAnalytics#setUserProperty(java.lang.String,%20java.lang.String)).
 
 Nothing is sent to Mixpanel or GA4 in development or from an internal `preview` build. The
 preview profile keeps the release identifiers so store prices work, then sets
 `EXPO_PUBLIC_ANALYTICS_ENABLED=false` and `EXPO_PUBLIC_GA4_ENABLED=false`. Firebase remembers runtime collection settings
 across launches, so JavaScript writes both the disabled and enabled states at
-startup. Production omits the flag and enables collection. The pull-request
+startup. Collection is disabled before clearing the user ID and native revenue
+marker, then enabled for production. If cleanup fails, collection stays disabled
+and initialization is reported to Sentry. Production omits the flag and enables
+collection. The pull-request
 workflow also writes false into the environment file used by EAS Update because
 build-profile variables are not available to an update export.
 
@@ -4205,7 +4219,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Entry Refined | ricecal_entry_refined | outcome: 'applied' &#124; 'not_applied' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled'; from_chip: boolean; duration_ms: number | `src/data/scan.ts` | Refinement attempt reaches its outcome; each attempt, including refusal/failure and no applied change. |
 | Food Searched | ricecal_food_searched | results: number; query_length: number | `src/features/logging/FoodSearchPanel.tsx` | Catalogue query has a settled results/empty answer for 1,200 ms after the 140 ms input debounce; changed nonempty queries only. History/own-food filtering is excluded. |
 | Food Picked | ricecal_food_picked | position: number; results: number; source?: 'history' &#124; 'recipe' | `src/features/logging/FoodSearchPanel.tsx` | Catalogue, own recipe or history result is opened; each selection. Opening a result does not prove it was logged. |
-| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or eligible nudge requests navigation, or intro/reminder/ended presentation mounts; repeated visits count. Nudge has a two-day per-account clock. |
+| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or eligible nudge requests navigation, or intro/reminder/ended presentation mounts; repeated visits count. Nudge has a two-day per-account clock; account/entitlement changes cancel its pending timer and the clock is checked again before sending. |
 | Suggestions Shown | ricecal_suggestions_shown | meal: Meal; cuisine: TrackedCuisine; count: number | `src/features/suggest/SuggestAction.tsx` | Suggestions answer returns; each answer, including count 0. Refused/failed requests without an answer do not prove suggestions were shown. |
 | Plan Selected | ricecal_plan_selected | screen: PaywallScreen; plan: Plan | `src/features/paywall/PaywallOffer.tsx` | Paywall plan changes; each change. The default selected plan emits nothing until changed. |
 | Purchase Started | ricecal_purchase_started | screen: PaywallScreen; plan: Plan | `src/features/paywall/tracking.ts` | An available checkout is requested; once per accepted attempt, before offering lookup/store call. A missing configuration warning emits nothing. |
@@ -4231,7 +4245,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Widget Added | ricecal_widget_added | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a widget kind absent from the previous stored set; one per newly observed kind. The first poll is a silent baseline. |
 | Widget Removed | ricecal_widget_removed | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a previously stored widget kind absent now; one per removed kind. Intermediate add/remove changes between polls can be missed. |
 | Widget Opened | ricecal_widget_opened | widget: WidgetKind; target: WidgetTarget | `app/widget/[action].tsx` | Supported widget deep link is handled; once per handled widget route. Legacy recipes target remains a valid reported value. |
-| Widget Water Added | ricecal_widget_water_added | preset: number | `src/features/widgets/WidgetSync.tsx` | Queued home-screen water action successfully syncs on app foreground; one per successful queued action, recorded at sync time. |
+| Widget Water Added | ricecal_widget_water_added | preset: number | `src/features/widgets/WidgetSync.tsx` | Queued home-screen water action successfully syncs on app foreground; one per successful queued action, recorded at sync time. Completion after the owning account leaves is not attributed to its successor. |
 | Rating Prompt Shown | ricecal_rating_prompt_shown | trigger: RatingTrigger | `src/lib/rating/prompt.ts` | App rating question is delivered to a listener; each delivery, including manual requests. It does not prove the store review dialog appeared. |
 | Rating Prompt Skipped | ricecal_rating_prompt_skipped | trigger: RatingTrigger; reason: RatingSkipReason | `src/lib/rating/prompt.ts` | Automatic meal/review checkpoint fails a gate; once per tested checkpoint, with the first failing reason. Not every logged meal. |
 | Rating Prompt Answered | ricecal_rating_prompt_answered | trigger: RatingTrigger; answer: 'liked' &#124; 'disliked' &#124; 'dismissed' | `src/lib/rating/prompt.ts` | App rating question receives liked/disliked/dismissed; each answer. It does not report a store rating. |
@@ -4307,11 +4321,11 @@ user text. Extend the source type and these tables together when its domain chan
 | Log sheet, food route and data mutations | Sheet entry, catalogue answer/selection, logging, scan/refinement outcome, entry edits/deletes | Search debounces; mutations distinguish intent/optimistic inserts from confirmed success as listed above |
 | Recipes and suggestions | Draft/save/publish/copy/report/block and suggestion answers | Public moderation outcomes count separately; draft/pick/suggestion is not a meal or a saved recipe |
 | Activity, reminders and reports | Health connection/disconnection, reminder writes, report notification taps and review opens/shares | No background health-import events. Locked review opens count before the paywall redirect |
-| Home-screen widgets | Observed kind additions/removals, supported deep links and queued water actions | First observation is a silent baseline; later foreground diffs can miss intermediate changes. Stored baseline belongs to the handset, not reset on account switches |
+| Home-screen widgets | Observed kind additions/removals, supported deep links and queued water actions | First observation is a silent baseline; later foreground diffs can miss intermediate changes. Stored baseline belongs to the handset, not reset on account switches. Each account gets the current count without fabricated add/remove events; results from a cancelled account's poll are discarded even if it returns |
 | Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
 | Hard paywall `/paywall` | `Paywall Shown` with `screen: hard` and refused `ProFeature` | `data/refusals.ts` records before navigation; review redirects also record. Free camera allowance is three scans/day; a further refusal can reach camera trigger |
 | Intro, reminder and ended paywalls | `Paywall Shown` with the respective screen as trigger | `useTrackPaywallShown` records once per mounted presentation; revisits count again |
-| Standing Pro nudge | `Paywall Shown`, `screen: hard`, `trigger: nudge` | At timer scheduling: known free entitlement, tutorial already offered, due per-account clock and not offered in this mounted launch; any recorded paywall restarts its two-day clock |
+| Standing Pro nudge | `Paywall Shown`, `screen: hard`, `trigger: nudge` | At timer scheduling: known free entitlement, tutorial already offered, due per-account clock and not offered in this mounted launch. Account/entitlement changes cancel the timer; a newly eligible account schedules its own. Any recorded paywall restarts the two-day clock, which is rechecked when the timer fires |
 | Checkout | Optional plan change, checkout attempt and caught cancellation/error | Default selection sends no Plan Selected. Purchase Started precedes offering lookup. Purchase Abandoned can include a post-purchase entitlement-wait error |
 | Restore | Returned restored/nothing or unavailable result | Restore Requested is a result event; thrown restores have no row. Restoration never adds settled revenue |
 | Automatic rating checkpoints | Crossing each 15-meal boundary; second unlocked review read, then each fifth read | Gates require five days since install, two since version change, at least 15 meals, three active days, 60 days since last ask and no ask on this version |
@@ -4450,19 +4464,19 @@ promise transaction-ID deduplication across producers; use one revenue owner.
 
 | Property / identifier | Mixpanel | GA4 / RevenueCat | Source and send condition |
 | --- | --- | --- | --- |
-| Supabase account UUID | `distinct_id` | GA4 `user_id`; RevenueCat App User ID | `data/session.tsx`; identify before profiles/events and before checkout or restore |
+| Supabase account UUID | `distinct_id` | GA4 `user_id`; RevenueCat App User ID | `data/session.tsx`; identify before profiles/events and before checkout or restore. Direct account switches reset Mixpanel and clear app-owned Firebase user properties before identifying the successor |
 | Account email | People `$email` | RevenueCat `$email`; excluded from GA4 | `identifyUser` / `identifyPurchaser`; support lookup only |
 | Firebase installation ID | Not used | RevenueCat `$firebaseAppInstanceId` | Native Firebase `getAppInstanceId`; never a UUID, email, fabricated value or Firebase app ID |
 | Mixpanel account ID | Same Supabase UUID | RevenueCat `$mixpanelDistinctId` | Identified production account, confirmed attribute delivery |
-| `onboarded` | People boolean | GA4 user-property string | Onboarding success, then profile sync; whether an onboarding timestamp exists |
-| `onboarded_at` | People timestamp string | GA4 user-property string | Onboarding success/profile sync; undefined values are omitted, not cleared |
+| `onboarded` | People boolean | GA4 user-property string | Onboarding success, then profile sync; whether an onboarding timestamp exists. Profile deduplication includes account UUID |
+| `onboarded_at` | People timestamp string | GA4 user-property string | Onboarding success/profile sync; undefined values are omitted, not cleared within the same account. Firebase clears the previous account's value at a switch |
 | `plan_direction` | People `lose`, `gain`, `maintain` | GA4 user-property string | Onboarding success only; inferred locally from weights with a 0.5 kg neutral band. Not refreshed when goals/weight change later |
 | `activity_level` | People `sedentary`, `light`, `onFeet`, `veryActive` | GA4 user-property string | Onboarding success/profile sync; database spellings normalized to the client vocabulary |
 | `referral_source` | People controlled source | GA4 user-property string | Onboarding success/profile sync; also present on Onboarding Completed |
 | `health_provider` | People provider or null | GA4 string or null | Successful granted connection; null clears it on disconnect. Background imports are not connection decisions |
-| `meal_reminders` | People count | GA4 user-property string | Number of enabled meal reminders; hook writes on mount/changed count, not every refetch |
-| `widgets_installed` | People count | GA4 user-property string | Current handset widget-kind count; first poll and detected changes, including zero |
-| `entitled` | Super property on every custom event | GA4 user property | After a real entitlement answer; no false value while offline with unknown status |
+| `meal_reminders` | People count | GA4 user-property string | Number of enabled meal reminders; hook writes on mount, account change or changed count, not every refetch |
+| `widgets_installed` | People count | GA4 user-property string | Current handset widget-kind count; first valid poll for each signed-in account and detected changes, including zero. An unchanged widget set on account change updates the profile without emitting Widget Added/Removed |
+| `entitled` | Super property on every custom event | GA4 user property | After a real entitlement answer for the current account; account switches clear the preceding answer, and each account publishes its known answer even if identical. No false value while offline with unknown status |
 | `revenuecat_revenue_enabled` | Not sent | Firebase default event parameter, 0 or 1 | Starts at 0; set to 1 only after HTTP 200 acknowledges this account's current installation attribute |
 | RevenueCat spend/subscription profile | Server-managed `rc_total_spend`, subscription properties, `$transactions` | Integration-owned parameters | Never manually increment from checkout or restore |
 
@@ -4531,15 +4545,16 @@ usage events to count.
 | Check | Evidence / result |
 | --- | --- |
 | RevenueCat store credentials | App Store Connect key, subscription key and Play service account all validated successfully through RevenueCat |
-| Existing Mixpanel feed | Production dispatch rows read back as Sent; event/profile pair distinguished; production token matches the mobile project |
+| Existing Mixpanel feed | Rechecked 2026-10-02: production dispatch rows read back as Sent; event/profile pair distinguished; production token matches the mobile project; Mixpanel issues endpoint returned no reported issues |
 | Mixpanel charge baseline | 2026-09-26 through 2026-10-02 in Asia/Singapore, queried 2026-10-02: initial purchases USD 29.25, trial conversions USD 250.12, renewals USD 0, non-subscription purchases USD 0; positive charges USD 279.37; refund adjustment USD -39.55; adjusted total USD 239.82 |
 | Closed-period revenue reconciliation | September 26 through October 1 UTC: RevenueCat gross USD 200.71; Mixpanel hourly charges plus refunds, converted from Asia/Singapore timestamps and restricted to the same UTC window, USD 200.70. Aggregate difference USD 0.01; individual receipts were not reconciled |
-| GA4 live configuration | Both production app IDs and separate secrets saved and read back; sandbox/email/web/extension options checked; native ownership rules saved |
-| Regression checks | `pnpm check` passed: mobile typecheck, 107 suites / 1,036 tests, workspace checks and Biome; 24 backend pure Deno tests and email checks passed separately. Coverage includes identity ordering/retry, checkout ownership, failed/stale delivery, disabled previews, bounded transport and the actual installed Mixpanel wrapper patch |
+| GA4 live configuration | Both production app IDs and separate secrets saved and read back; sandbox/email/web/extension options checked; native ownership rule conditions and rename actions reviewed. RevenueCat Firebase integration still has no dispatch events to inspect |
+| Mixpanel Pro Conversion board | 2026-10-02: introduction and checkout-outcome notes corrected and read back. Purchase Started precedes offering lookup/store call; Plan Selected is optional; an entitlement-wait error can follow a real charge. Existing chart queries preserved |
+| Regression checks | `pnpm check` passed after the account-isolation review: mobile typecheck, 109 suites / 1,050 tests, seven workspace tasks and Biome. Coverage includes identity ordering/retry, direct account switches, identical per-account profile/reminder answers, failed startup cleanup, stale widget polls/drinks, delayed nudge eligibility, checkout ownership, failed/stale attribute delivery, disabled previews, bounded transport and the actual installed Mixpanel wrapper patch. The unchanged backend previously passed 24 pure Deno tests and email checks |
 | iOS native Test Store | Cancellation and simulated purchase failure return safely; annual purchase unlocks Pro; native restore recovers the active sandbox entitlement; local Supabase account, production analytics disabled |
 | Android native Test Store | Local debug build installed on visible Pixel emulator (Android 16 / API 36); cancellation and simulated failure return safely; annual purchase unlocks Pro; native restore returns the active sandbox entitlement. RevenueCat readback contains one initial purchase and no additional charge from restore; local backend and production analytics disabled |
 | Subscriber attribute transport | Real Test Store customer accepted the new attribute writer with HTTP 200; Mixpanel identity attribute read back through RevenueCat; no sandbox revenue sent to production analytics |
-| End-to-end ingestion limit | HTTP success alone does not prove GA4 reporting; verify a genuine new linked receipt in RevenueCat dispatch history and GA4 after the app reaches production |
+| End-to-end ingestion limit | HTTP success alone does not prove GA4 reporting. On the 2026-10-02 review, RevenueCat's Firebase integration showed no dispatch events and GA4 purchase showed no stream data. Verify a genuine new linked receipt in RevenueCat dispatch history and GA4 after the app reaches production |
 
 
 The 2026-10-02 reconciliation first found USD 234.95 in RevenueCat's UTC revenue
@@ -4554,8 +4569,10 @@ with conversion/rounding, but does not prove every individual receipt matches.
 Use completed UTC periods when reconciling. Exclude trial starts, ordinary
 cancellations, profile spend and SDK purchase diagnostics; include charge events
 and negative refund adjustments. The Pro Conversion board was reviewed: it
-counts intent through opening the store sheet, and explicitly leaves settled
-charges to RevenueCat. Its Plan Selected step covers users who changed a plan;
+counts checkout requests before offering lookup and the store call, and explicitly
+leaves settled charges to RevenueCat. Its notes were corrected and read back
+during the account-isolation review. Its Plan Selected step covers users who
+changed a plan;
 the default plan emits no selection event, so that funnel is not the conversion
 rate for every paywall visitor.
 [RevenueCat chart time zones](https://www.revenuecat.com/docs/dashboard-and-metrics/charts),

@@ -5,7 +5,7 @@ import {
   setWidgetSnapshot,
   takePendingWidgetActions,
 } from '@modules/ricecal-widgets'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { AppState, type AppStateStatus } from 'react-native'
 import {
   useActivityDay,
@@ -175,38 +175,46 @@ const settled = (isPending: boolean, isPaused: boolean) => !isPending || isPause
  * app is not running.
  */
 function useWidgetForeground() {
+  const { userId } = useSession()
+  const owner = useRef(userId)
+  owner.current = userId
   // The mutation's own function rather than the object around it. React Query
   // returns a fresh result object on every render and a stable `mutateAsync`,
   // so depending on the object would rebuild the callback below on every render
   // and re-subscribe the AppState listener with it.
   const { mutateAsync: addWater } = useAddQueuedWater()
 
-  const sync = useCallback(async () => {
-    /**
-     * The drinks first. `takePendingWidgetActions` empties the queue as it reads
-     * it, so a failure loses the drink. The alternative is a queue that has to be
-     * acknowledged, and every version of that logs a drink twice on a phone
-     * killed mid-sync.
-     */
-    for (const action of takePendingWidgetActions()) {
-      try {
-        await addWater({ ml: action.ml, date: action.date })
-        // Tracked on the SYNC rather than on the tap, because the tap happens
-        // where there is no Mixpanel. So this is late by however long it took
-        // somebody to open the app, and a drink that failed above is never
-        // counted — which is the honest direction to be wrong in.
-        track('Widget Water Added', { preset: action.ml })
-      } catch {
-        // Nothing to say to the user: they pressed this on a home screen
-        // possibly hours ago and are not looking at a water tank now. The
-        // failure is the request's, and Sentry has the ones worth seeing.
-      }
-    }
-
-    reportWidgets(await installedWidgets())
-  }, [addWater])
-
   useEffect(() => {
+    let cancelled = false
+    owner.current = userId
+    const isCurrent = () => !cancelled && !!userId && owner.current === userId
+    const sync = async () => {
+      if (!isCurrent()) return
+      /**
+       * The drinks first. `takePendingWidgetActions` empties the queue as it reads
+       * it, so a failure loses the drink. The alternative is a queue that has to be
+       * acknowledged, and every version of that logs a drink twice on a phone
+       * killed mid-sync.
+       */
+      for (const action of takePendingWidgetActions()) {
+        if (!isCurrent()) return
+        try {
+          await addWater({ ml: action.ml, date: action.date })
+          // Tracked on the SYNC rather than on the tap, because the tap happens
+          // where there is no Mixpanel. So this is late by however long it took
+          // somebody to open the app, and a drink that failed above is never
+          // counted — which is the honest direction to be wrong in.
+          if (isCurrent()) track('Widget Water Added', { preset: action.ml })
+        } catch {
+          // Nothing to say to the user: they pressed this on a home screen
+          // possibly hours ago and are not looking at a water tank now. The
+          // failure is the request's, and Sentry has the ones worth seeing.
+        }
+      }
+
+      const installed = await installedWidgets()
+      if (isCurrent()) reportWidgets(installed, userId ?? undefined)
+    }
     // Once on mount as well as on every foreground. A cold launch IS the app
     // coming forward, and it is the launch a widget tap produces — which is
     // exactly when there is most likely to be something queued.
@@ -216,6 +224,10 @@ function useWidgetForeground() {
       if (state === 'active') void sync()
     })
 
-    return () => listener.remove()
-  }, [sync])
+    return () => {
+      cancelled = true
+      owner.current = null
+      listener.remove()
+    }
+  }, [addWater, userId])
 }

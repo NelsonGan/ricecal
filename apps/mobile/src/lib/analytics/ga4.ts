@@ -20,6 +20,8 @@ export function ga4CollectionEnabled(
 
 type Ga4CollectionBridge = {
   setCollectionEnabled(enabled: boolean): Promise<void> | void
+  setUserId?(userId: string | null): Promise<void> | void
+  setDefaultEventParameters?(parameters: Record<string, string | number>): Promise<void> | void
 }
 
 /**
@@ -32,7 +34,11 @@ export async function configureGa4Collection<T extends Ga4CollectionBridge>(
   enabled: boolean,
 ): Promise<T | null> {
   if (!bridge) return null
-  await bridge.setCollectionEnabled(enabled)
+  // A persisted production override must be off even if identity cleanup fails.
+  await bridge.setCollectionEnabled(false)
+  await bridge.setUserId?.(null)
+  await bridge.setDefaultEventParameters?.({ revenuecat_revenue_enabled: 0 })
+  if (enabled) await bridge.setCollectionEnabled(true)
   return enabled ? bridge : null
 }
 

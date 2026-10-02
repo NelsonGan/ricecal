@@ -157,3 +157,42 @@ it('drops work when identity still cannot be confirmed', async () => {
   expect(mixpanel.calls).toEqual([])
   expect(firebase.calls).toEqual([])
 })
+
+it('clears the previous account state before a direct account switch', async () => {
+  const mixpanel = fakeMixpanel()
+  const firebase = fakeFirebase()
+  const providers = createAnalyticsProviders(mixpanel.client, firebase.bridge, jest.fn())
+  providers.client.identify('first')
+  providers.client.registerSuperProperties({ entitled: true })
+  providers.client.getPeople().set({ health_provider: 'apple_health' })
+  await Promise.all([providers.whenMixpanelIdle(), providers.whenFirebaseIdle()])
+  mixpanel.calls.length = 0
+  firebase.calls.length = 0
+  providers.client.identify('second')
+  providers.client.track('Meal Logged', { method: 'search', date_offset: 0 })
+  await Promise.all([providers.whenMixpanelIdle(), providers.whenFirebaseIdle()])
+  expect(mixpanel.calls[0]).toEqual(['reset'])
+  expect(mixpanel.calls[1]).toEqual(['identify', 'second'])
+  expect(firebase.calls).toContainEqual([
+    'user properties',
+    expect.objectContaining({ entitled: null, health_provider: null, plan_direction: null }),
+  ])
+  expect(firebase.calls.findIndex(([op]) => op === 'user properties')).toBeLessThan(
+    firebase.calls.findIndex(([op]) => op === 'event'),
+  )
+})
+
+it('keeps current account properties when reidentifying the same user', async () => {
+  const mixpanel = fakeMixpanel()
+  const firebase = fakeFirebase()
+  const providers = createAnalyticsProviders(mixpanel.client, firebase.bridge, jest.fn())
+  providers.client.identify('same')
+  providers.client.registerSuperProperties({ entitled: true })
+  await Promise.all([providers.whenMixpanelIdle(), providers.whenFirebaseIdle()])
+  mixpanel.calls.length = 0
+  firebase.calls.length = 0
+  providers.client.identify('same')
+  await Promise.all([providers.whenMixpanelIdle(), providers.whenFirebaseIdle()])
+  expect(mixpanel.calls).not.toContainEqual(['reset'])
+  expect(firebase.calls.some(([op]) => op === 'user properties')).toBe(false)
+})
