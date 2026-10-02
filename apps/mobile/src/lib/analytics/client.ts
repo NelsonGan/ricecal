@@ -1,3 +1,4 @@
+import { env } from '../env'
 import type { EventName, Events, PersonProps, SuperProps } from './events'
 
 /**
@@ -18,14 +19,14 @@ import type { EventName, Events, PersonProps, SuperProps } from './events'
  * from either native SDK, because doing that here would import the module too.
  */
 export type AnalyticsClient = {
-  track(event: string, properties?: Record<string, unknown>): void
+  track(event: string, properties?: Record<string, unknown>): Promise<void> | void
   identify(distinctId: string): Promise<void> | void
-  reset(): void
-  registerSuperProperties(properties: Record<string, unknown>): void
+  reset(): Promise<void> | void
+  registerSuperProperties(properties: Record<string, unknown>): Promise<void> | void
   getPeople(): {
-    set(properties: Record<string, unknown>): void
+    set(properties: Record<string, unknown>): Promise<void> | void
     /** See `forgetPerson`. The one call here that removes rather than records. */
-    deleteUser(): void
+    deleteUser(): Promise<void> | void
   }
 }
 
@@ -53,7 +54,7 @@ let queue: Array<(target: AnalyticsClient) => void> = []
  * buys is a test that can exercise the shipping branch.
  */
 function sending(): boolean {
-  return !__DEV__
+  return !__DEV__ && env.EXPO_PUBLIC_ANALYTICS_ENABLED !== 'false'
 }
 
 /**

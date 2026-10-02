@@ -315,6 +315,11 @@ jobs:
           else
             printf '\nEXPO_PUBLIC_GA4_ENABLED=false\n' >> .env.local
           fi
+          if grep -q '^EXPO_PUBLIC_ANALYTICS_ENABLED=' .env.local; then
+            sed -i.bak 's|^EXPO_PUBLIC_ANALYTICS_ENABLED=.*|EXPO_PUBLIC_ANALYTICS_ENABLED=false|' .env.local
+          else
+            printf '\nEXPO_PUBLIC_ANALYTICS_ENABLED=false\n' >> .env.local
+          fi
           rm -f .env.local.bak
           # Say which values it ended up on. The failures these replaced were
           # invisible precisely because nothing ever printed what was used.

@@ -58,6 +58,12 @@ will catch it, and it goes red on a change that is genuinely in the repo.
 **Do not add a documentation file.** Everything goes in `README.md`. Scattered
 docs are what this layout replaced.
 
+**Analytics changes require table synchronization.** Apply
+`.agents/skills/maintain-analytics-tracking/SKILL.md` whenever changing or reviewing
+Mixpanel, GA4, RevenueCat revenue, identity, provider gates or dashboard settings.
+Update the canonical Analytics tables in README.md in the same change. Keep the
+`.agents` and `.claude` skill copies synchronized and run the inventory test.
+
 ## Writing
 
 **Comments explain why, in plain English.** Worth the space when the reason is

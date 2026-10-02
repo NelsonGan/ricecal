@@ -1,0 +1,21 @@
+---
+name: maintain-analytics-tracking
+description: Keep RiceCal's canonical README Mixpanel, GA4 and RevenueCat tracking tables synchronized when adding, changing, removing or reviewing analytics, identity, purchases or integration settings.
+---
+
+# Maintain RiceCal tracking
+
+Read README.md's Analytics section before changing tracking or a tracked product flow. Its canonical app event, property vocabulary, surface/funnel, revenue/automatic event, identity/profile, live settings and verification tables are the source of truth. The typed Events plan enforces the code contract. The website reference links the separate ricecal-web repository's own contract and audited revision; mobile CI cannot validate that repository.
+
+Assess analytics impact for every product/code change. If names, payloads, triggers, frequency, sources, property domains, identity, routing, SDK behavior, reports or external integration settings change, update the affected tables in the same change. A stale reference means the work is unfinished. Changes without analytics impact need no artificial documentation edit.
+
+1. Review affected call sites, property types, provider mappings, production/preview gates, identity ordering and RevenueCat dashboard configuration.
+2. Update every affected table in README.md in the same change. Include exact names for both providers, allowed properties and values, source files, triggers/frequency, send conditions, optional funnel steps, revenue owner, currencies and gross/net definitions. Remove retired rows and explain legacy fallback or rollout limits. Review optimistic actions, delayed sync and external handoffs before treating an event as successful completion. Update coverage counts and distinguish custom events from SDK/server events and profile operations.
+3. Never add app-side settled purchase revenue alongside RevenueCat. Verify Firebase installation IDs come from the native SDK, attribute delivery is acknowledged before native suppression, and sign-out/account switches invalidate pending work.
+4. Keep SDK automatic events, RevenueCat profile writes and repeated delivery attempts separate from product event usage. Review volume bounds and avoid tracking renders/keystrokes or raw mobile diary data. RiceCal sends all 49 current app events to both providers and has no first-use/milestone cap; do not assume Money2Time's Mixpanel routing applies here. Plan Selected only records a changed selection, Meal Logged includes optimistic camera/describe work, and a handoff or review open does not prove completion. Reconcile reports with these actual semantics.
+5. Read live setup back after dashboard mutations. Record verification dates and actual evidence without credentials, private emails, customer IDs or fabricated transaction data. HTTP 200/204 alone is not proof of GA4 report ingestion.
+6. Recheck ricecal-web's typed events, mappings, gates and call sites when its tracking changes; update the linked revision and website reference. Keep its separate Mixpanel project and shared GA4 web stream explicit. Website search text is a Mixpanel-only exception, not permission to add mobile diary text. Filter shared GA4 search names by stream/platform; website clicks are not proven mobile installs or charges.
+7. Run the tracking inventory consistency test and pnpm check for code changes. The test validates all app names, exact mappings, typed properties, source-file existence and nonempty trigger/frequency cells, and forbids app-side revenue fields. Prose, property domains, live settings and website tracking still need manual review. Include relevant native purchase/restore checks and report any ingestion or platform gap honestly.
+8. Keep this skill's .agents and .claude copies identical. PR descriptions must confirm the canonical tables were synchronized and state whether dashboard setup, app release or receipt ingestion is still pending. Documentation-only additions do not change event volume; distinguish them from the full PR's runtime changes.
+
+All documentation stays in README.md. Do not create a parallel analytics document. Dashboard changes are not source-controlled: record their verified configuration and rollout implications in the canonical tables.

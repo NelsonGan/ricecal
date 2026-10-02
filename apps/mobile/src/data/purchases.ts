@@ -1,8 +1,13 @@
 import { Linking, Platform } from 'react-native'
 
 import { type Events, track } from '@/lib/analytics'
-import { env, isConfigured } from '@/lib/env'
-import { ensurePurchasesConfigured, PRO_ENTITLEMENT } from '@/lib/revenuecat'
+import {
+  ensurePurchasesConfigured,
+  hasPurchasesConfiguration,
+  PRO_ENTITLEMENT,
+  PurchasesUnavailable,
+  withPurchaser,
+} from '@/lib/revenuecat'
 import type { Plan } from './types'
 
 /**
@@ -10,7 +15,7 @@ import type { Plan } from './types'
  * that module started reading the entitlement itself, and this file may import
  * downwards while that one may not import up.
  */
-export { PRO_ENTITLEMENT }
+export { PRO_ENTITLEMENT, PurchasesUnavailable }
 
 /**
  * Buying, restoring and managing the subscription.
@@ -32,8 +37,7 @@ export { PRO_ENTITLEMENT }
  * each call below instead.
  */
 export function purchasesAvailable(): boolean {
-  const key = Platform.OS === 'ios' ? env.EXPO_PUBLIC_RC_IOS_KEY : env.EXPO_PUBLIC_RC_ANDROID_KEY
-  return isConfigured(key)
+  return hasPurchasesConfiguration()
 }
 
 /**
@@ -45,13 +49,6 @@ export function isUserCancelled(error: unknown): boolean {
   return (error as { userCancelled?: boolean })?.userCancelled === true
 }
 
-export class PurchasesUnavailable extends Error {
-  constructor() {
-    super('Purchases are not configured yet')
-    this.name = 'PurchasesUnavailable'
-  }
-}
-
 /**
  * Starts a purchase. Imported lazily so the module is not loaded on a build whose
  * key is a placeholder: `react-native-purchases` throws on first use when it has
@@ -59,27 +56,28 @@ export class PurchasesUnavailable extends Error {
  */
 export async function purchasePlan(plan: Plan): Promise<void> {
   if (!(await ensurePurchasesConfigured())) throw new PurchasesUnavailable()
-
   const Purchases = (await import('react-native-purchases')).default
-  const offerings = await Purchases.getOfferings()
-  const current = offerings.current
-  if (!current) throw new Error('No offering is live')
+  await withPurchaser(async () => {
+    const offerings = await Purchases.getOfferings()
+    const current = offerings.current
+    if (!current) throw new Error('No offering is live')
 
-  // Named packages first, `availablePackages` as the fallback. RevenueCat only
-  // fills `annual` / `monthly` / `lifetime` when the package carries the
-  // matching `$rc_` identifier, and a renamed package would otherwise make the
-  // button do nothing with no way to tell why.
-  const byLookupKey = (key: string) => current.availablePackages.find((p) => p.identifier === key)
+    // Named packages first, `availablePackages` as the fallback. RevenueCat only
+    // fills `annual` / `monthly` / `lifetime` when the package carries the
+    // matching `$rc_` identifier, and a renamed package would otherwise make the
+    // button do nothing with no way to tell why.
+    const byLookupKey = (key: string) => current.availablePackages.find((p) => p.identifier === key)
 
-  const target =
-    plan === 'lifetime'
-      ? (current.lifetime ?? byLookupKey('$rc_lifetime'))
-      : plan === 'yearly'
-        ? (current.annual ?? byLookupKey('$rc_annual'))
-        : (current.monthly ?? byLookupKey('$rc_monthly'))
-  if (!target) throw new Error('That plan is not available')
+    const target =
+      plan === 'lifetime'
+        ? (current.lifetime ?? byLookupKey('$rc_lifetime'))
+        : plan === 'yearly'
+          ? (current.annual ?? byLookupKey('$rc_annual'))
+          : (current.monthly ?? byLookupKey('$rc_monthly'))
+    if (!target) throw new Error('That plan is not available')
 
-  await Purchases.purchasePackage(target)
+    await Purchases.purchasePackage(target)
+  })
   // Nothing is written here. The webhook updates `subscriptions`, and the app
   // reads it — one source of truth for what the user is entitled to.
 }
@@ -292,7 +290,7 @@ export async function fetchPlanPrices(): Promise<PlanPrices> {
 export async function restorePurchases(): Promise<boolean> {
   if (!(await ensurePurchasesConfigured())) throw new PurchasesUnavailable()
   const Purchases = (await import('react-native-purchases')).default
-  const info = await Purchases.restorePurchases()
+  const info = await withPurchaser(() => Purchases.restorePurchases())
   return Boolean(info?.entitlements?.active?.[PRO_ENTITLEMENT])
 }
 

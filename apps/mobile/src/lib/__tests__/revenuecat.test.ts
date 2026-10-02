@@ -1,10 +1,14 @@
+import { registerRevenueAnalytics } from '../analytics/revenue'
 import {
   forgetPurchaser,
   identifyPurchaser,
   onStoreEntitlementChange,
+  preparePurchaser,
   proEntitlementOf,
   readStoreEntitlement,
   setPurchasesForTest,
+  syncPurchaserAnalytics,
+  withPurchaser,
 } from '../revenuecat'
 
 /**
@@ -73,6 +77,7 @@ function fakeSdk() {
     logOut: async () => void calls.push('logOut'),
     setEmail: async (email: string | null) => void calls.push(`setEmail:${email}`),
     setMixpanelDistinctID: async (id: string | null) => void calls.push(`mixpanel:${id}`),
+    setFirebaseAppInstanceID: async (id: string) => void calls.push(`firebase:${id}`),
     getCustomerInfo: async () => {
       calls.push('getCustomerInfo')
       return customerInfo()
@@ -102,11 +107,174 @@ beforeEach(() => {
   setPurchasesForTest(fakeSdk())
 })
 
-afterEach(() => setPurchasesForTest(null))
+afterEach(() => {
+  setPurchasesForTest(null)
+  registerRevenueAnalytics(null)
+})
 
 const traits = (email: string | null, mixpanelDistinctId: string | null = 'user-1') => ({
   email,
   mixpanelDistinctId,
+})
+
+it('waits for account identification before allowing checkout', async () => {
+  holdLogIn = true
+  const login = identifyPurchaser('user-1', traits(null))
+  let ready: boolean | undefined
+  const checkout = preparePurchaser().then((value) => {
+    ready = value
+  })
+  await settle()
+  expect(ready).toBeUndefined()
+  releaseLogIn?.()
+  await Promise.all([login, checkout])
+  expect(ready).toBe(true)
+  await forgetPurchaser()
+  expect(await preparePurchaser()).toBe(false)
+})
+
+it('keeps the native purchaser fixed until a purchase or restore finishes', async () => {
+  await identifyPurchaser('user-1', traits(null))
+  let complete!: () => void
+  const operation = withPurchaser(async () => {
+    calls.push('purchase:start')
+    await new Promise<void>((resolve) => {
+      complete = resolve
+    })
+    calls.push('purchase:finish')
+    return 'receipt'
+  })
+  await settle()
+  const nextLogin = identifyPurchaser('user-2', traits(null, 'user-2'))
+  await settle()
+  expect(calls).not.toContain('logIn:user-2')
+  complete()
+  expect(await operation).toBe('receipt')
+  await nextLogin
+  expect(calls.indexOf('purchase:finish')).toBeLessThan(calls.indexOf('logIn:user-2'))
+})
+
+it('does not start a purchase when the account changes while checkout is preparing', async () => {
+  holdLogIn = true
+  const login = identifyPurchaser('user-1', traits(null))
+  const purchase = jest.fn(async () => {})
+  const operation = withPurchaser(purchase)
+  const rejected = expect(operation).rejects.toMatchObject({ name: 'PurchasesUnavailable' })
+  await settle()
+  const logout = forgetPurchaser()
+  releaseLogIn?.()
+  await Promise.all([login, logout, rejected])
+  expect(purchase).not.toHaveBeenCalled()
+})
+
+it('unlocks identity changes after a failed native purchase', async () => {
+  await identifyPurchaser('user-1', traits(null))
+  await expect(
+    withPurchaser(async () => {
+      throw new Error('declined')
+    }),
+  ).rejects.toThrow('declined')
+  await identifyPurchaser('user-2', traits(null, 'user-2'))
+  expect(calls).toContain('logIn:user-2')
+})
+
+describe('production revenue linking', () => {
+  const wasDev = __DEV__
+  const originalFetch = global.fetch
+  beforeEach(() => {
+    // @ts-expect-error The bundler global is writable only in this test.
+    global.__DEV__ = false
+  })
+  afterEach(() => {
+    // @ts-expect-error Restore the development guard for other cases.
+    global.__DEV__ = wasDev
+    global.fetch = originalFetch
+  })
+
+  it('only confirms GA4 after RevenueCat accepts the real installation ID', async () => {
+    const confirm = jest.fn()
+    registerRevenueAnalytics({
+      link: async () => ({ appInstanceId: 'real-installation', confirm }),
+    })
+    const request = jest
+      .fn()
+      .mockResolvedValueOnce({ status: 500 })
+      .mockResolvedValue({ status: 200 })
+    global.fetch = request
+    await identifyPurchaser('user-1', traits(null))
+    expect(confirm).not.toHaveBeenCalled()
+    await syncPurchaserAnalytics()
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(request.mock.calls[1][1].body).attributes).toMatchObject({
+      $firebaseAppInstanceId: { value: 'real-installation' },
+      $mixpanelDistinctId: { value: 'user-1' },
+    })
+  })
+
+  it('retries a failed Firebase delivery after a Mixpanel-only upload succeeds', async () => {
+    const confirm = jest.fn()
+    const link = jest
+      .fn()
+      .mockResolvedValueOnce({ appInstanceId: 'real-installation', confirm })
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue({ appInstanceId: 'real-installation', confirm })
+    registerRevenueAnalytics({ link })
+    const request = jest
+      .fn()
+      .mockResolvedValueOnce({ status: 500 })
+      .mockResolvedValue({ status: 200 })
+    global.fetch = request
+    await identifyPurchaser('user-1', traits(null))
+    await syncPurchaserAnalytics()
+    expect(confirm).not.toHaveBeenCalled()
+    await syncPurchaserAnalytics()
+    expect(request).toHaveBeenCalledTimes(3)
+    expect(confirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not hold the purchase lifecycle on a stalled Firebase installation lookup', async () => {
+    jest.useFakeTimers()
+    let release!: (value: { appInstanceId: string; confirm: () => Promise<void> }) => void
+    const confirm = jest.fn()
+    registerRevenueAnalytics({
+      link: () =>
+        new Promise((resolve) => {
+          release = resolve
+        }),
+    })
+    global.fetch = jest.fn().mockResolvedValue({ status: 200 })
+    try {
+      const login = identifyPurchaser('user-1', traits(null))
+      await jest.advanceTimersByTimeAsync(5000)
+      await login
+      release({ appInstanceId: 'late-installation', confirm })
+      await jest.advanceTimersByTimeAsync(0)
+      expect(confirm).not.toHaveBeenCalled()
+      expect(global.fetch).not.toHaveBeenCalled()
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('does not confirm an upload that completes after sign-out', async () => {
+    const confirm = jest.fn()
+    registerRevenueAnalytics({
+      link: async () => ({ appInstanceId: 'real-installation', confirm }),
+    })
+    let finish!: (response: { status: number }) => void
+    global.fetch = jest.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          finish = resolve as typeof finish
+        }),
+    )
+    const login = identifyPurchaser('user-1', traits(null))
+    await settle()
+    const logout = forgetPurchaser()
+    finish({ status: 200 })
+    await Promise.all([login, logout])
+    expect(confirm).not.toHaveBeenCalled()
+  })
 })
 
 it('names the account before it says anything about them', async () => {
@@ -277,4 +445,21 @@ it('forwards store changes until it is unsubscribed', async () => {
   // Nothing new: the listener was detached, so a change arriving after the
   // subscriber has gone cannot write into a cache it no longer owns.
   expect(seen).toEqual([true])
+})
+
+it('retries a failed RevenueCat login before checkout', async () => {
+  const sdk = fakeSdk()
+  sdk.logIn = jest.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(undefined)
+  setPurchasesForTest(sdk)
+  await identifyPurchaser('user-1', traits('one@example.com'))
+  expect(await preparePurchaser()).toBe(true)
+  expect(sdk.logIn).toHaveBeenCalledTimes(2)
+})
+
+it('refuses checkout when RevenueCat still cannot identify the account', async () => {
+  const sdk = fakeSdk()
+  sdk.logIn = jest.fn().mockRejectedValue(new Error('offline'))
+  setPurchasesForTest(sdk)
+  await identifyPurchaser('user-1', traits('one@example.com'))
+  expect(await preparePurchaser()).toBe(false)
 })

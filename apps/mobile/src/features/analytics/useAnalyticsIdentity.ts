@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-import { fromDbActivity, useEntitlement, useMealTimes, useProfile } from '@/data'
+import { fromDbActivity, useEntitlement, useMealTimes, useProfile, useSession } from '@/data'
 import { setPersonProps, setSuperProps } from '@/lib/analytics'
 
 /**
@@ -20,6 +20,7 @@ import { setPersonProps, setSuperProps } from '@/lib/analytics'
  * analytics module underneath imports nothing at all.
  */
 export function useAnalyticsIdentity(): void {
+  const { userId } = useSession()
   const { data: profile } = useProfile()
   const { data: mealTimes } = useMealTimes()
   const { entitled, loading, unknown } = useEntitlement()
@@ -35,7 +36,7 @@ export function useAnalyticsIdentity(): void {
   const lastPerson = useRef<string | undefined>(undefined)
 
   useEffect(() => {
-    if (!profile) return
+    if (!userId || !profile) return
 
     const props = {
       onboarded: Boolean(profile.onboarded_at),
@@ -60,21 +61,22 @@ export function useAnalyticsIdentity(): void {
     // their goal. `finish.tsx` sets it, and the goals screen is where it would
     // be worth updating if it ever needs to be.
 
-    const signature = JSON.stringify(props)
+    const signature = JSON.stringify([userId, props])
     if (lastPerson.current === signature) return
     lastPerson.current = signature
     setPersonProps(props)
-  }, [profile])
+  }, [profile, userId])
 
-  const lastReminders = useRef<number | undefined>(undefined)
+  const lastReminders = useRef<string | undefined>(undefined)
 
   useEffect(() => {
-    if (!mealTimes) return
+    if (!userId || !mealTimes) return
     const count = mealTimes.filter((row) => row.reminder_enabled).length
-    if (lastReminders.current === count) return
-    lastReminders.current = count
+    const signature = JSON.stringify([userId, count])
+    if (lastReminders.current === signature) return
+    lastReminders.current = signature
     setPersonProps({ meal_reminders: count })
-  }, [mealTimes])
+  }, [mealTimes, userId])
 
   /**
    * The one super property, stamped on every event from here on.
@@ -86,7 +88,7 @@ export function useAnalyticsIdentity(): void {
    * which reads honestly in Mixpanel as "not set" rather than as a lie.
    */
   useEffect(() => {
-    if (loading || unknown) return
+    if (!userId || loading || unknown) return
     setSuperProps({ entitled })
-  }, [entitled, loading, unknown])
+  }, [userId, entitled, loading, unknown])
 }

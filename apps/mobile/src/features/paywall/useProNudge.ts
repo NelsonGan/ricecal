@@ -40,11 +40,6 @@ export function useProNudge(): void {
   const { userId } = useSession()
   const { entitled, loading, unknown } = useEntitlement()
 
-  /**
-   * Refs rather than a dependency list, as `useTutorialOffer` does it. The
-   * naive shape — cleanup clears the timer, a guard stops it being rescheduled
-   * — drops the offer entirely if anything re-renders inside the delay.
-   */
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const offered = useRef(false)
 
@@ -61,6 +56,9 @@ export function useProNudge(): void {
     if (!tutorialOffered(userId)) return
 
     timer.current = setTimeout(() => {
+      timer.current = null
+      // A different paywall may have moved this account's clock during the wait.
+      if (!paywallDue(userId)) return
       offered.current = true
       // Marked when shown rather than when answered, and here as well as by the
       // screen: a push dropped because the user was already navigating would
@@ -69,16 +67,12 @@ export function useProNudge(): void {
       track('Paywall Shown', { screen: 'hard', trigger: 'nudge' })
       router.push('/paywall')
     }, DELAY_MS)
-  }, [userId, entitled, loading, unknown, router])
 
-  // Unmount only. A pending timer would push the paywall over whatever replaced
-  // this screen. Nulled as well as cleared, so a mount torn down and rebuilt on
-  // the same fiber books a new timer rather than seeing a spent handle.
-  useEffect(
-    () => () => {
+    // Eligibility and account changes cancel the old offer. Clearing the ref
+    // also lets a newly eligible account book its own timer.
+    return () => {
       if (timer.current) clearTimeout(timer.current)
       timer.current = null
-    },
-    [],
-  )
+    }
+  }, [userId, entitled, loading, unknown, router])
 }
