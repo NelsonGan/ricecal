@@ -227,8 +227,6 @@ export const ja = {
   },
 
   activity: {
-    title: '活動',
-
     connect: {
       title: '数えるのは時計にまかせる',
       body: '端末のヘルスアプリをつなぐと、散歩もランニングもバドミントンも、今日の枠に足し戻されます。',
@@ -359,10 +357,6 @@ export const ja = {
       rowing: 'ローイング',
       stairs: '階段',
       other: 'ワークアウト',
-    },
-
-    unit: {
-      kcal: '{{value}} kcal',
     },
   },
 

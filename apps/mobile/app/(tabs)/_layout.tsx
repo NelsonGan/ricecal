@@ -1,7 +1,7 @@
 import { Redirect, useRouter } from 'expo-router'
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui'
 import { useTranslation } from 'react-i18next'
-import { useSession } from '@/data'
+import { useHealthAutoSync, useHealthConnection, useSession } from '@/data'
 import { useAnalyticsIdentity } from '@/features/analytics'
 import { useReminderSync, useReportLinks } from '@/features/settings'
 import { NavAction, NavBar, NavInsetProvider, NavItem, useNavBarFootprint } from '@/ui'
@@ -66,6 +66,10 @@ function SignedInTabs() {
   // step with the profile, which matters most on a handset that never ran
   // onboarding — a reinstall, or signing in on a second phone.
   useAnalyticsIdentity()
+  // And the health sync. It used to run on the Activity tab; here it also
+  // covers a launch that lands on another tab, such as a report notification.
+  const health = useHealthConnection()
+  useHealthAutoSync(health.data?.connected ? health.data.provider : null)
 
   return (
     // The bar floats over the screens, so each one is told how much of its

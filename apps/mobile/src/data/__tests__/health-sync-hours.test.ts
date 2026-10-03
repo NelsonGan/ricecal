@@ -110,3 +110,19 @@ it('a failed atomic replacement fails the sync for retry', async () => {
     syncRange('account-a', { ...demoHealth, read }, '2026-10-01', '2026-10-03'),
   ).rejects.toThrow('request interrupted')
 })
+
+it('folds the repeated hour of a daylight-saving night into one row', async () => {
+  const read = jest.fn().mockResolvedValue({
+    ...empty(),
+    hours: [
+      { date: '2026-10-02', hour: 1, steps: 100, activeKcal: 4, distanceM: null },
+      { date: '2026-10-02', hour: 1, steps: 50, activeKcal: 2, distanceM: 30 },
+      { date: '2026-10-02', hour: 2, steps: 10, activeKcal: 1, distanceM: null },
+    ],
+  })
+  await syncRange('account-a', { ...demoHealth, read }, '2026-10-01', '2026-10-03')
+  expect(supabase.rpc.mock.calls[0][1].p_hours).toEqual([
+    { log_date: '2026-10-02', hour: 1, steps: 150, active_kcal: 6, distance_m: 30 },
+    { log_date: '2026-10-02', hour: 2, steps: 10, active_kcal: 1, distance_m: null },
+  ])
+})

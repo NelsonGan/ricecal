@@ -11,8 +11,6 @@ import {
   useActivityDay,
   useActivitySessions,
   useDayLog,
-  useHealthAutoSync,
-  useHealthConnection,
   usePendingSnaps,
   useRemoveEntry,
   useSelectedDate,
@@ -161,15 +159,6 @@ export default function TodayScreen() {
   // whose meals are ready should not hold for the list of sessions, which on
   // most accounts is empty.
   const sessions = useActivitySessions(selectedDate).data ?? []
-
-  /**
-   * The health sync runs here, on the screen that opens first and where the
-   * steps and workouts are read. It used to run on the Activity tab, which is
-   * gone. Tabs stay mounted, so this still catches every return to the
-   * foreground.
-   */
-  const connection = useHealthConnection()
-  useHealthAutoSync(connection.data?.connected ? connection.data.provider : null)
 
   /**
    * Everything under the strip waits together.

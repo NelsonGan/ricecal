@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useWindowDimensions, View } from 'react-native'
 
 import type { ActivitySession } from '@/data'
+import { formatTime } from '@/features/shared'
 import { datePattern } from '@/lib/dates'
 import { ZONE_KEY, ZONE_ORDER, type ZoneName } from '@/lib/health'
 import { Card, cn, Icon, type IconProps, Text } from '@/ui'
@@ -52,7 +53,7 @@ export function WorkoutDetails({ session }: { session: ActivitySession }) {
         <Text variant="meta" className="mt-0.5">
           {format(parseISO(session.startedAt), datePattern('dayMonthYear'))}
           {' · '}
-          {format(parseISO(session.startedAt), datePattern('time'))}
+          {formatTime(session.startedAt)}
         </Text>
 
         <View className="mt-2 min-h-[112px] flex-row items-center gap-2">
@@ -273,10 +274,14 @@ function HeartMetric({
   const { t } = useTranslation('activity')
   return (
     <View
-      className={cn('min-w-0', className)}
+      className={cn('min-w-0 gap-1', className)}
       accessible
       accessibilityLabel={`${label}, ${t('workout.bpm', { value })}`}
     >
+      {/* Label over figure, as every other measurement on the page reads. */}
+      <Text variant="overlineSm" className="text-muted">
+        {label}
+      </Text>
       <Text
         variant="displayMd"
         className="text-hibiscus-ink"
@@ -288,9 +293,6 @@ function HeartMetric({
           {' '}
           {t('workout.bpmUnit')}
         </Text>
-      </Text>
-      <Text variant="overlineSm" className="text-muted">
-        {label}
       </Text>
     </View>
   )

@@ -231,8 +231,6 @@ export const zhHans = {
   },
 
   activity: {
-    title: '活动',
-
     connect: {
       title: '让手表来数',
       body: '连接手机上的健康应用，散步、跑步、打羽毛球都会加回今天的额度。',
@@ -358,10 +356,6 @@ export const zhHans = {
       rowing: '划船',
       stairs: '爬楼梯',
       other: '锻炼',
-    },
-
-    unit: {
-      kcal: '{{value}} 千卡',
     },
   },
 

@@ -227,8 +227,6 @@ export const ko = {
   },
 
   activity: {
-    title: '활동',
-
     connect: {
       title: '시계에게 세는 일을 맡기세요',
       body: '휴대폰의 건강 앱을 연결하면 걷기, 달리기, 배드민턴까지 모두 오늘의 예산에 다시 더해집니다.',
@@ -358,10 +356,6 @@ export const ko = {
       rowing: '로잉',
       stairs: '계단',
       other: '운동',
-    },
-
-    unit: {
-      kcal: '{{value}} kcal',
     },
   },
 

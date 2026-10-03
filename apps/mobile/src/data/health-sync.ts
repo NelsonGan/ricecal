@@ -10,6 +10,7 @@ import type {
   AccessResult,
   HealthProvider,
   HealthReading,
+  HourReading,
   ProviderId,
   WorkoutReading,
 } from '@/lib/health'
@@ -201,13 +202,7 @@ async function persist(
       p_user_id: userId,
       p_from: window.from,
       p_to: window.to,
-      p_hours: reading.hours.map((hour) => ({
-        log_date: hour.date,
-        hour: hour.hour,
-        steps: hour.steps,
-        active_kcal: hour.activeKcal,
-        distance_m: hour.distanceM,
-      })),
+      p_hours: hourRows(reading.hours),
     })
     if (error) throw error
   }
@@ -331,6 +326,43 @@ export async function syncRange(
   }
 
   return { days: written, deviceName }
+}
+
+/**
+ * One row per local hour. The night clocks go back has two 1am hours, and
+ * Health Connect returns a bucket for each; sent as two rows, the upsert would
+ * touch one row twice and Postgres refuses the whole statement, every sync, for
+ * as long as that day is in the window.
+ */
+function hourRows(hours: readonly HourReading[]) {
+  const rows = new Map<
+    string,
+    {
+      log_date: string
+      hour: number
+      steps: number
+      active_kcal: number
+      distance_m: number | null
+    }
+  >()
+  for (const hour of hours) {
+    const key = `${hour.date}T${hour.hour}`
+    const row = rows.get(key)
+    if (row) {
+      row.steps += hour.steps
+      row.active_kcal += hour.activeKcal
+      if (hour.distanceM != null) row.distance_m = (row.distance_m ?? 0) + hour.distanceM
+    } else {
+      rows.set(key, {
+        log_date: hour.date,
+        hour: hour.hour,
+        steps: hour.steps,
+        active_kcal: hour.activeKcal,
+        distance_m: hour.distanceM,
+      })
+    }
+  }
+  return [...rows.values()]
 }
 
 /** Split at the hourly cutoff so a longer backfill never writes extra old hours. */

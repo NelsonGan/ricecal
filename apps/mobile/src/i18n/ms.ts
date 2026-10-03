@@ -234,8 +234,6 @@ export const ms = {
   },
 
   activity: {
-    title: 'Aktiviti',
-
     connect: {
       title: 'Biar jam tangan yang kira',
       body: 'Sambungkan apl kesihatan telefon anda dan setiap jalan kaki, larian dan permainan badminton akan menambah semula bajet hari ini.',
@@ -366,10 +364,6 @@ export const ms = {
       rowing: 'Mendayung',
       stairs: 'Tangga',
       other: 'Senaman',
-    },
-
-    unit: {
-      kcal: '{{value}} kcal',
     },
   },
 

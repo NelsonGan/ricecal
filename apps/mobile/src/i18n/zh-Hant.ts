@@ -231,8 +231,6 @@ export const zhHant = {
   },
 
   activity: {
-    title: '活動',
-
     connect: {
       title: '讓手錶來數',
       body: '連接手機上的健康 App，散步、跑步、打羽球都會加回今天的額度。',
@@ -358,10 +356,6 @@ export const zhHant = {
       rowing: '划船',
       stairs: '爬樓梯',
       other: '運動',
-    },
-
-    unit: {
-      kcal: '{{value}} 大卡',
     },
   },
 
