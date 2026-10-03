@@ -3,12 +3,16 @@ import { format, parseISO, subDays } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { View } from 'react-native'
 import {
   dateKey,
   ENTRY_FOOD_ID,
   type Entry,
   useActivityDay,
+  useActivitySessions,
   useDayLog,
+  useHealthAutoSync,
+  useHealthConnection,
   usePendingSnaps,
   useRemoveEntry,
   useSelectedDate,
@@ -17,6 +21,7 @@ import {
   useTargets,
 } from '@/data'
 import { socialEntryPost } from '@/data/social'
+import { count, SessionItem } from '@/features/activity'
 import {
   createDeleteGate,
   DayMeals,
@@ -153,6 +158,20 @@ export default function TodayScreen() {
     isPaused: activityPaused,
   } = useActivityDay(selectedDate)
   const { data: settings, isPending: settingsPending, isPaused: settingsPaused } = useSettings()
+  // The day's workouts, drawn among its meals. Not part of the wait below: a day
+  // whose meals are ready should not hold for the list of sessions, which on
+  // most accounts is empty.
+  const sessions = useActivitySessions(selectedDate).data ?? []
+
+  /**
+   * The health sync runs here, on the screen that opens first, rather than on
+   * the Activity tab. Today is where the steps and the workouts are read now,
+   * and a sync that only ran once somebody opened Activity left them a day old
+   * on the screen people actually look at. Tabs stay mounted, so this still
+   * catches every return to the foreground.
+   */
+  const connection = useHealthConnection()
+  useHealthAutoSync(connection.data?.connected ? connection.data.provider : null)
 
   /**
    * Everything under the strip waits together.
@@ -481,19 +500,19 @@ export default function TodayScreen() {
           anything logged while it is selected. */}
           <WeekPicker />
 
-          <Card>
+          {/* Less padding than a standard card. The ring and its three macro
+              lines are one compact reading, and the card's own 28 points around
+              them made it the tallest thing on the screen. */}
+          <Card contentClassName="px-5 py-4">
             {loading ? (
-              <Skeleton className="h-[132px] w-full" />
+              <Skeleton className="h-[104px] w-full" />
             ) : targets ? (
               <>
-                {/* Tapping the summary swaps every number in it from "what is left"
-                to "what of the allowance is used". Both readings answer a real
+                {/* Tapping the summary swaps the ring from "what is left" to
+                "what of the allowance is used". Both readings answer a real
                 question and neither fits beside the other at this size, so they
-                share the space rather than the card growing a second row. */}
-                {/* Tapping the summary swaps every number in it from "what is
-                left" to "what of the allowance is used". Both readings answer a
-                real question and neither fits beside the other at this size, so
-                they share the space rather than the card growing a second row. */}
+                share the space rather than the card growing a second row. The
+                macros carry both halves already, so they do not change. */}
                 <Tappable
                   className="flex-row items-center gap-4"
                   onPress={() => setShowGoals((open) => !open)}
@@ -505,8 +524,8 @@ export default function TodayScreen() {
                   <CalorieRing
                     value={eaten.kcal}
                     goal={budget}
-                    size={132}
-                    thickness={16}
+                    size={104}
+                    thickness={12}
                     centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
                     centerCaption={
                       showGoals
@@ -517,33 +536,16 @@ export default function TodayScreen() {
                     }
                   />
                   {/* Sharing the row with the ring, so it asks for the space the
-                    ring leaves. Stacked callers do not. */}
-                  <MacroBars
-                    className="flex-1"
-                    eaten={eaten}
-                    targets={targets}
-                    showGoal={showGoals}
-                  />
+                    ring leaves. One line per macro, eaten against the goal, so
+                    the three rows stand no taller than the ring. */}
+                  <MacroBars className="flex-1" eaten={eaten} targets={targets} showGoal inline />
                 </Tappable>
 
-                {/* Where the extra came from.
-                Without this line the goal simply reads higher than the one set
-                in Settings, and the first thought is that the app has changed
-                it. Only shown when there IS movement credited, so an account
-                with no health store sees the screen it always saw. */}
-                {burned > 0 ? (
-                  <Text variant="meta" className="pt-1 text-pandan-ink">
-                    {t(isToday ? 'logging:today.burnedNote' : 'logging:today.burnedNoteOn', {
-                      kcal: burned.toLocaleString(),
-                    })}
-                  </Text>
-                ) : null}
-
-                {over ? (
-                  <Text variant="meta" className="pt-1">
-                    {t(isToday ? 'logging:today.overNote' : 'logging:today.overNoteOn')}
-                  </Text>
-                ) : null}
+                {/* No line under the ring any more. "+360 from moving" explained
+                    a budget higher than the one in Settings, and "A bit over"
+                    softened a ring already reading KCAL OVER; both made the card
+                    taller to say what the ring and the day list below it say.
+                    The workouts that earned the extra are rows in that list. */}
               </>
             ) : (
               <EmptyState
@@ -579,7 +581,9 @@ export default function TodayScreen() {
               <SkeletonRow />
               <SkeletonRow />
             </Card>
-          ) : day.entries.length === 0 ? /* No "Nothing logged yet" block. A day
+          ) : day.entries.length === 0 &&
+            sessions.length === 0 &&
+            !activity ? /* No "Nothing logged yet" block. A day
           before its first meal is the state this screen is in every morning,
           and a card announcing it pushed the water tracker and the ring apart
           to say something the empty list already said. The FAB is the answer to
@@ -590,6 +594,38 @@ export default function TodayScreen() {
            an add button, so two entries filled a screen with furniture. */
             <EntryList
               day={day}
+              title={t('logging:today.dayHeading')}
+              action={
+                // Only when a health store reported the day. Zero steps on an
+                // account with no store would be a claim about the user rather
+                // than about the phone.
+                activity ? (
+                  <View className="flex-row items-center gap-1">
+                    <Icon set="scenes" name="sneakers" size={18} />
+                    <Text variant="caption">
+                      {t('logging:today.steps', {
+                        count: activity.steps,
+                        steps: count(activity.steps),
+                      })}
+                    </Text>
+                  </View>
+                ) : undefined
+              }
+              extras={sessions.map((session) => ({
+                key: session.id,
+                at: session.startedAt,
+                node: (
+                  <SessionItem
+                    session={session}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/activity/workout/[id]',
+                        params: { id: session.id },
+                      })
+                    }
+                  />
+                ),
+              }))}
               onPressEntry={(entry) =>
                 router.push({
                   pathname: '/log/food/[id]',

@@ -312,8 +312,6 @@ export const ja = {
       historyRowValue_other: 'ワークアウト {{count}} 件 · {{time}}',
       historyNone: 'まだワークアウトはありません',
 
-      syncing: '同期中…',
-
       demoBadge: 'デモデータ',
 
       storeEmpty:
@@ -754,11 +752,9 @@ export const ja = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'その日の枠を表示',
       showLeft: '残りを表示',
-      overNote: '今日は少し超えました。明日はまた新しく数えます。',
-      overNoteOn: 'その日は少し超えました。',
-      burnedNote: '今日の運動で +{{kcal}}',
-      burnedNoteOn: 'その日の運動で +{{kcal}}',
-      logHeading: '摂取 · {{kcal}} KCAL',
+      dayHeading: 'あなたの1日',
+      steps_one: '{{steps}} 歩',
+      steps_other: '{{steps}} 歩',
       analysing: 'お皿を読み取っています',
       analysingHint: '何かわかり次第、数えます',
       describing: '書かれた内容を読んでいます',

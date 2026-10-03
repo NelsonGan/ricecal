@@ -311,8 +311,6 @@ export const ta = {
       historyRowValue_other: '{{count}} பயிற்சி · {{time}}',
       historyNone: 'இன்னும் பயிற்சி இல்லை',
 
-      syncing: 'ஒத்திசைக்கிறது…',
-
       demoBadge: 'மாதிரித் தரவு',
 
       storeEmpty:
@@ -755,11 +753,9 @@ export const ta = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'அன்றைய வரவைக் காட்டு',
       showLeft: 'மீதியைக் காட்டு',
-      overNote: 'இன்று சற்று அதிகம், நாளை புதிய கணக்கு.',
-      overNoteOn: 'அன்று சற்று அதிகம்.',
-      burnedNote: 'இன்றைய நகர்விலிருந்து +{{kcal}}',
-      burnedNoteOn: 'அன்றைய நகர்விலிருந்து +{{kcal}}',
-      logHeading: 'உண்டது · {{kcal}} KCAL',
+      dayHeading: 'உங்கள் நாள்',
+      steps_one: '{{steps}} அடி',
+      steps_other: '{{steps}} அடிகள்',
       analysing: 'உங்கள் தட்டைப் படிக்கிறோம்',
       analysingHint: 'இது என்னவென்று தெரிந்ததும் எண்ணுவோம்',
       describing: 'நீங்கள் எழுதியதைப் படிக்கிறோம்',

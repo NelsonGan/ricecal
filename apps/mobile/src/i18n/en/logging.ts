@@ -15,24 +15,14 @@ export const logging = {
     kcalOfGoal: '/{{goal}} KCAL',
     showGoals: 'Show the day’s allowance',
     showLeft: 'Show what is left',
-    /** Shown when the day is over budget. Never scold. */
-    overNote: 'A bit over today, tomorrow is a new count.',
     /**
-     * The same, for a day reached through the week strip. "Tomorrow is a new
-     * count" is a kindness about a day still running and wrong about last
-     * Tuesday, whose tomorrow has been and gone.
+     * The heading over the day's list: meals and workouts, newest first. See
+     * `EntryList`.
      */
-    overNoteOn: 'A bit over that day.',
-    /**
-     * Under the ring when a health store credited movement, so a goal higher
-     * than the one in Settings is explained where it is noticed. "+360 from
-     * moving" rather than "360 burned": movement adds, and the plus says so.
-     */
-    burnedNote: '+{{kcal}} from moving today',
-    /** The same line about a day the strip went back to. */
-    burnedNoteOn: '+{{kcal}} from moving that day',
-    /** Everything logged today, in one list. See `EntryList` for why. */
-    logHeading: 'EATEN · {{kcal}} KCAL',
+    dayHeading: 'Your day',
+    /** Opposite the heading, when a health store reported the day. */
+    steps_one: '{{steps}} step',
+    steps_other: '{{steps}} steps',
     /** A snapped plate whose dish is still being worked out. */
     analysing: 'Reading your plate',
     analysingHint: 'Counting once it knows what this is',

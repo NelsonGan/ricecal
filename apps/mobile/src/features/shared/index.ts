@@ -18,7 +18,7 @@ export {
   sameBudget,
 } from './BudgetEditor'
 export { CheckList, type CheckListProps } from './CheckList'
-export { EntryList, type EntryListProps, formatTime } from './EntryList'
+export { EntryList, type EntryListProps, formatTime, type TimedRow } from './EntryList'
 export {
   ItemRow,
   type ItemRowProps,

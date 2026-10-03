@@ -313,8 +313,6 @@ export const zhHans = {
       historyRowValue_other: '{{count}} 次锻炼 · {{time}}',
       historyNone: '还没有锻炼记录',
 
-      syncing: '正在同步…',
-
       demoBadge: '演示数据',
 
       storeEmpty:
@@ -746,11 +744,9 @@ export const zhHans = {
       kcalOfGoal: '/{{goal}} 千卡',
       showGoals: '显示这一天的额度',
       showLeft: '显示还剩多少',
-      overNote: '今天稍微超了一点，明天重新开始。',
-      overNoteOn: '那天稍微超了一点。',
-      burnedNote: '今天活动增加了 {{kcal}}',
-      burnedNoteOn: '那天活动增加了 {{kcal}}',
-      logHeading: '已吃 · {{kcal}} 千卡',
+      dayHeading: '你的一天',
+      steps_one: '{{steps}} 步',
+      steps_other: '{{steps}} 步',
       analysing: '正在看你的这盘',
       analysingHint: '认出来之后就开始算',
       describing: '正在读你写的内容',

@@ -311,8 +311,6 @@ export const vi = {
       historyRowValue_other: '{{count}} buổi tập · {{time}}',
       historyNone: 'Chưa có buổi tập nào',
 
-      syncing: 'Đang đồng bộ…',
-
       demoBadge: 'Dữ liệu mẫu',
 
       storeEmpty:
@@ -753,11 +751,9 @@ export const vi = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'Hiện hạn mức của ngày',
       showLeft: 'Hiện phần còn lại',
-      overNote: 'Hôm nay hơi quá một chút, mai tính lại từ đầu.',
-      overNoteOn: 'Hôm đó hơi quá một chút.',
-      burnedNote: '+{{kcal}} nhờ vận động hôm nay',
-      burnedNoteOn: '+{{kcal}} nhờ vận động hôm đó',
-      logHeading: 'ĐÃ ĂN · {{kcal}} KCAL',
+      dayHeading: 'Ngày của bạn',
+      steps_one: '{{steps}} bước',
+      steps_other: '{{steps}} bước',
       analysing: 'Đang đọc đĩa của bạn',
       analysingHint: 'Sẽ tính ngay khi biết đây là món gì',
       describing: 'Đang đọc điều bạn viết',

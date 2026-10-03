@@ -320,8 +320,6 @@ export const fil = {
       historyRowValue_other: '{{count}} workout · {{time}}',
       historyNone: 'Wala pang workout',
 
-      syncing: 'Nagsi-sync…',
-
       demoBadge: 'Demo data',
 
       storeEmpty:
@@ -772,11 +770,9 @@ export const fil = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'Ipakita ang badyet ng araw',
       showLeft: 'Ipakita ang natitira',
-      overNote: 'Bahagyang lampas ngayon, bukas bagong bilang.',
-      overNoteOn: 'Bahagyang lampas noong araw na iyon.',
-      burnedNote: '+{{kcal}} mula sa paggalaw ngayong araw',
-      burnedNoteOn: '+{{kcal}} mula sa paggalaw noong araw na iyon',
-      logHeading: 'NAKAIN · {{kcal}} KCAL',
+      dayHeading: 'Ang araw mo',
+      steps_one: '{{steps}} hakbang',
+      steps_other: '{{steps}} hakbang',
       analysing: 'Binabasa ang plato mo',
       analysingHint: 'Bibilangin pagkaalam kung ano ito',
       describing: 'Binabasa ang isinulat mo',

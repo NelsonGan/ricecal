@@ -79,6 +79,12 @@ export type MacroBarProps = {
   amount: string
   value: number
   tone?: ProgressTone
+  /**
+   * Label, bar and amount on one line rather than the label and amount above
+   * the bar. For Today's calorie card, where three stacked rows made the card
+   * taller than the ring beside it.
+   */
+  inline?: boolean
   className?: string
 }
 
@@ -102,7 +108,36 @@ export type MacroBarProps = {
  * column with a constrained height then squeezes every bar to a few points. A
  * caller laying these out in a row asks for `flex-1`.
  */
-export function MacroBar({ label, amount, value, tone = 'kaya', className }: MacroBarProps) {
+export function MacroBar({
+  label,
+  amount,
+  value,
+  tone = 'kaya',
+  inline = false,
+  className,
+}: MacroBarProps) {
+  if (inline) {
+    return (
+      <View className={cn('flex-row items-center gap-2', className)}>
+        {/* A fixed width so the three bars start at the same x whatever the
+            label's length in the language the app is set to. */}
+        <Text variant="caption" className="w-[60px] text-ink" numberOfLines={1}>
+          {label}
+        </Text>
+        <ProgressBar
+          value={value}
+          tone={tone}
+          height={8}
+          className="flex-1"
+          accessibilityLabel={`${label} ${amount}`}
+        />
+        <Text variant="caption" className="min-w-[64px] text-right" numberOfLines={1}>
+          {amount}
+        </Text>
+      </View>
+    )
+  }
+
   return (
     <View className={cn('gap-2', className)}>
       <View className="flex-row items-center justify-between">

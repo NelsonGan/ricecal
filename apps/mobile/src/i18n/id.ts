@@ -317,8 +317,6 @@ export const id = {
       historyRowValue_other: '{{count}} olahraga · {{time}}',
       historyNone: 'Belum ada olahraga',
 
-      syncing: 'Menyinkronkan…',
-
       demoBadge: 'Data demo',
 
       storeEmpty:
@@ -763,11 +761,9 @@ export const id = {
       kcalOfGoal: '/{{goal}} KKAL',
       showGoals: 'Tampilkan jatah hari ini',
       showLeft: 'Tampilkan sisanya',
-      overNote: 'Sedikit lebih hari ini, besok hitungan baru.',
-      overNoteOn: 'Sedikit lebih di hari itu.',
-      burnedNote: '+{{kcal}} dari bergerak hari ini',
-      burnedNoteOn: '+{{kcal}} dari bergerak di hari itu',
-      logHeading: 'DIMAKAN · {{kcal}} KKAL',
+      dayHeading: 'Harimu',
+      steps_one: '{{steps}} langkah',
+      steps_other: '{{steps}} langkah',
       analysing: 'Membaca piringmu',
       analysingHint: 'Menghitung begitu tahu ini apa',
       describing: 'Membaca yang kamu tulis',
