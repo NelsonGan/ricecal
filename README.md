@@ -4446,7 +4446,7 @@ ledger: RevenueCat's GA4 integration does not send negative refund revenue.
 | RevenueCat web purchase redeemed | `rc_purchase_redeemed` | No documented mapping | Identity link; never add a second charge |
 | RevenueCat entitlement transfer | No configured event | `rc_transfer_event` | Two identity events; no sale |
 | Mixpanel native lifecycle | `$ae_first_open`, `$ae_session`, `$ae_updated` | Not forwarded | Automatic production-only usage events |
-| Mixpanel iOS legacy StoreKit observer | `$ae_iap` with `$ae_iap_price`, `$ae_iap_quantity`, `$ae_iap_name` | Not forwarded | SDK diagnostic; exclude from settled revenue and conversion totals, which use RevenueCat only |
+| Mixpanel iOS legacy StoreKit observer | `$ae_iap` with `$ae_iap_price`, `$ae_iap_quantity`, `$ae_iap_name` | Not forwarded | SDK diagnostic, hidden in Lexicon on 2026-10-02; exclude from settled revenue and conversion totals, which use RevenueCat only. Hiding does not stop SDK ingestion |
 | Firebase native lifecycle | Not forwarded | `first_open`, `session_start`, `app_update`, `user_engagement` and SDK lifecycle | Automatic production-only usage; screen reporting disabled |
 | Firebase native purchase / App Store lifecycle | Not forwarded | `in_app_purchase`, `app_store_*` | Legacy fallback only; conditional rules rename linked native revenue to `ricecal_store_revenue_observed` |
 | Separate GA4 Google Play import | Not forwarded | Disabled | Removed 2026-10-02 to avoid a second purchase/renewal feed |
@@ -4500,6 +4500,7 @@ Verified 2026-10-02; credentials remain in the dashboards and local ignored file
 | Mixpanel destination | RiceCal Mobile App project `4054270`, workspace `4550575`, US; reports use `Asia/Singapore` (UTC+8); website project `4054271` is separate |
 | Mixpanel integration | Existing production token verified; existing delayed-event secret configured; sandbox token empty; gross USD; total spend `rc_total_spend` |
 | Extra RevenueCat Mixpanel events | Paywall UI and web funnel switches off; 13 purchase/lifecycle event names above preserved |
+| Mixpanel catalog cleanup | Verified 2026-10-02: all current app and RevenueCat names preserved; only SDK `$ae_iap` hidden. No ordinary event blocked. Native lifecycle and virtual session definitions retained; website project untouched |
 | GA4 destination | RiceCal property `553863111`, account `350740029`, Firebase project `ricecal`; property reports MYR |
 | GA4 reporting controls | 14-month event and user retention; Google Signals off; ads personalization allowed in 0 of 307 regions; 45 custom dimensions and 11 custom metrics, including website definitions |
 | iOS production stream | `15763208820`; Firebase app ID `1:829952813471:ios:c27979f69fbc022a54b5aa` |
@@ -4528,6 +4529,34 @@ event authentication to its supported replacement and repeat delayed refund/impo
 verification. Do not delete the existing working secret without a replacement.
 [Mixpanel project secret lifecycle](https://docs.mixpanel.com/reference/project-secret).
 
+### Mixpanel catalog cleanup
+
+Reviewed **2026-10-02** against the canonical app and RevenueCat tables. All 61
+existing mobile-project definitions were checked. None of the ordinary product
+or subscription names was obsolete. Only the duplicate SDK purchase diagnostic
+was hidden; a full catalog readback confirmed 60 visible definitions, one hidden
+definition and zero blocked events. All other visibility and ingestion settings
+were unchanged.
+
+| Scope | Existing names | Live action and contract |
+| --- | --- | --- |
+| Approved app events | 46 observed of 49 defined | Preserved. `Password Reset Requested`, `Recipe Reported` and `Author Blocked` had not appeared; keep their approved routing |
+| RevenueCat server events | 9 observed of 13 configured | Preserved, including future delivery of configured names absent from the catalog |
+| Native usage events | 3 | `$ae_first_open`, `$ae_session` and `$ae_updated` preserved; these intentionally support usage reporting |
+| Legacy StoreKit diagnostic | 1 | `$ae_iap` hidden only; RevenueCat remains the sole settled-revenue producer |
+| Mixpanel virtual session events | 2 | `$session_start` and `$session_end` preserved |
+
+Hiding removes the diagnostic from normal report selectors and can change All
+Events/Flows views. It retains historical data and does not stop ingestion or
+billing. Mixpanel does not permit blocking this SDK `$` event; automatic native
+usage tracking remains enabled as documented. Revenue reports must continue to
+exclude SDK purchases even when explicitly selecting hidden events. An approved
+event with no recent activity is not obsolete. Before reintroducing any retired
+name, review its blocked/hidden status and update this contract in the same change.
+The separate website project was not changed.
+[Mixpanel cleanup guidance](https://docs.mixpanel.com/docs/data-governance/data-clean-up),
+[Lexicon behavior](https://docs.mixpanel.com/docs/data-governance/lexicon).
+
 ### Monitoring usage and verification
 
 Use the app event table to review Mixpanel volume. Events fire on user decisions,
@@ -4546,6 +4575,7 @@ usage events to count.
 | --- | --- |
 | RevenueCat store credentials | App Store Connect key, subscription key and Play service account all validated successfully through RevenueCat |
 | Existing Mixpanel feed | Rechecked 2026-10-02: production dispatch rows read back as Sent; event/profile pair distinguished; production token matches the mobile project; Mixpanel issues endpoint returned no reported issues |
+| Mixpanel catalog cleanup | 2026-10-02: compared all 61 definitions with the canonical app/server inventories; zero obsolete ordinary names, `$ae_iap` hidden only. Readback confirmed 60 visible, one hidden, zero blocked; every other definition unchanged |
 | Mixpanel charge baseline | 2026-09-26 through 2026-10-02 in Asia/Singapore, queried 2026-10-02: initial purchases USD 29.25, trial conversions USD 250.12, renewals USD 0, non-subscription purchases USD 0; positive charges USD 279.37; refund adjustment USD -39.55; adjusted total USD 239.82 |
 | Closed-period revenue reconciliation | September 26 through October 1 UTC: RevenueCat gross USD 200.71; Mixpanel hourly charges plus refunds, converted from Asia/Singapore timestamps and restricted to the same UTC window, USD 200.70. Aggregate difference USD 0.01; individual receipts were not reconciled |
 | GA4 live configuration | Both production app IDs and separate secrets saved and read back; sandbox/email/web/extension options checked; native ownership rule conditions and rename actions reviewed. RevenueCat Firebase integration still has no dispatch events to inspect |
