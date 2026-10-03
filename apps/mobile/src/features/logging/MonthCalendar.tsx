@@ -113,7 +113,13 @@ function Cell({ date, plate, mark, ahead, onSelect, label }: CellProps) {
       accessibilityState={{ disabled: ahead }}
       accessibilityLabel={label}
     >
-      <Text className="font-display text-[11px] leading-[13px] text-faint">
+      {/* Fixed calendar cells keep dates on one line; the button announces
+          the full translated date and verdict. */}
+      <Text
+        className="font-display text-[11px] leading-[13px] text-faint"
+        numberOfLines={1}
+        maxFontSizeMultiplier={1.3}
+      >
         {parseISO(date).getDate()}
       </Text>
 
@@ -164,7 +170,8 @@ export function MonthCalendar({
   const { data: settings } = useSettings()
 
   const weeks = useMemo(() => monthWeeks(month), [month])
-  const columns = useMemo(() => weekdayColumns((date) => format(date, 'EEEEE')), [])
+  // These seven labels follow the date locale when the language changes.
+  const columns = weekdayColumns((date) => format(date, 'EEEEE'))
 
   const extendsBudget = settings?.activity_extends_budget !== false
   /**
@@ -192,7 +199,9 @@ export function MonthCalendar({
               accent beside a month name. */}
           <Icon set="ui" name="chevron-left" size={18} tintColor={colors.muted} />
         </IconButton>
-        <Text variant="subtitle">{format(parseISO(month), datePattern('monthYear'))}</Text>
+        <Text variant="subtitle" className="min-w-0 flex-1 text-center">
+          {format(parseISO(month), datePattern('monthYear'))}
+        </Text>
         <IconButton
           size="sm"
           onPress={next ? () => onMonthChange(next) : undefined}
@@ -205,7 +214,13 @@ export function MonthCalendar({
 
       <View className="flex-row gap-[5px]">
         {columns.map((column) => (
-          <Text key={column.key} variant="micro" className="flex-1 text-center">
+          <Text
+            key={column.key}
+            variant="micro"
+            className="flex-1 text-center"
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.3}
+          >
             {column.label}
           </Text>
         ))}
@@ -256,11 +271,13 @@ export function MonthCalendar({
           the colour the grid uses, not a dot in it. A legend that speaks a
           different language from the thing it explains has to be translated
           before it can be read. */}
-      <View className="flex-row items-center gap-4">
+      <View className="flex-row flex-wrap items-center gap-4">
         {(['under', 'over', 'missed'] as const).map((kind) => (
-          <View key={kind} className="flex-row items-center gap-1.5">
+          <View key={kind} className="max-w-full flex-row items-center gap-1.5">
             <View className={cn('h-3 w-3 rounded-[3px] border-2', outlines[kind])} />
-            <Text variant="micro">{t(`calendar.legend.${kind}`)}</Text>
+            <Text variant="micro" className="shrink">
+              {t(`calendar.legend.${kind}`)}
+            </Text>
           </View>
         ))}
       </View>

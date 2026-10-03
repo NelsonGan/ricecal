@@ -20,6 +20,7 @@ export {
   syncedAgo,
 } from './format'
 export { SessionItem, type SessionItemProps } from './SessionItem'
+export { WorkoutDetails } from './WorkoutDetails'
 export {
   asWorkoutKind,
   showsDistance,

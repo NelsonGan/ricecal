@@ -284,6 +284,13 @@ export const id = {
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'Detak jantung',
+      energy: 'Energi aktif',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: 'JARAK',
       time: 'WAKTU',
       pace: 'PACE',
@@ -751,8 +758,7 @@ export const id = {
       title: 'Foto piringmu',
       analysing: 'Mencari tahu apa yang ada di piring',
       permissionTitle: 'Butuh akses kamera',
-      permissionBody:
-        'RiceCal memakai kamera untuk membaca piringmu. Tidak ada yang keluar dari ponselmu.',
+      permissionBody: 'RiceCal memakai kamera untuk membaca piringmu.',
       permissionSettings: 'Buka Pengaturan',
       shutter: 'Ambil foto',
       library: 'Pilih dari galeri',

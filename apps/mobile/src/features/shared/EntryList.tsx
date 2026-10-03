@@ -1,6 +1,6 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Animated, Easing, View } from 'react-native'
+import { Animated, Easing, useWindowDimensions, View } from 'react-native'
 import Reanimated, {
   Easing as ReanimatedEasing,
   useAnimatedStyle,
@@ -37,13 +37,6 @@ export type EntryListProps = {
    * to delete — the row is dismissed and goes.
    */
   onDismissEntry?: (entry: Entry) => void
-  /**
-   * Whether any row is parked open with its Delete showing, for a screen that
-   * draws over this list: Today's floating log button lands on a revealed Delete
-   * and takes the tap. Counted rather than passed through, because nothing stops
-   * two rows being open at once.
-   */
-  onSwipeOpenChange?: (open: boolean) => void
   /** The card's heading. */
   title: string
   /** Opposite the heading: on Today, the day's steps. */
@@ -73,35 +66,12 @@ export function EntryList({
   onFixEntry,
   onDeleteEntry,
   onDismissEntry,
-  onSwipeOpenChange,
   title,
   action,
   extras = [],
 }: EntryListProps) {
-  /**
-   * How many rows are parked open, so "any" survives one closing as another
-   * opens: a boolean forwarded from each row would flicker shut on the closing
-   * one.
-   *
-   * A ref plus a call rather than state, since nothing here renders differently.
-   * `SwipeRow` reports closed on unmount, so a deleted row cannot leave the count
-   * above zero.
-   */
-  const openRows = useRef(0)
-  /** What the screen above was last told, so it hears only the changes. */
-  const reported = useRef(false)
-  const reportOpen = useCallback(
-    (open: boolean) => {
-      openRows.current = Math.max(0, openRows.current + (open ? 1 : -1))
-      const anyOpen = openRows.current > 0
-      if (anyOpen !== reported.current) {
-        reported.current = anyOpen
-        onSwipeOpenChange?.(anyOpen)
-      }
-    },
-    [onSwipeOpenChange],
-  )
-
+  const { fontScale } = useWindowDimensions()
+  const wideText = fontScale > 1.3
   // Newest first. The day used to read in the order it happened, which put the
   // meal just logged at the bottom of a growing list — and the thing a user
   // looks at right after logging is the thing they just logged. By evening it
@@ -121,7 +91,6 @@ export function EntryList({
           onFix={onFixEntry}
           onDelete={onDeleteEntry}
           onDismiss={onDismissEntry}
-          onSwipeOpenChange={reportOpen}
         />
       ),
     })),
@@ -136,11 +105,16 @@ export function EntryList({
     // between rows: the list is the day read top to bottom, and the dividers
     // are what let compact rows sit close without running together.
     <Card contentClassName="gap-0 px-4 pb-2 pt-4">
-      <View className="flex-row items-center justify-between gap-3 border-track border-b-2 pb-3">
-        <Text variant="subtitle" className="shrink" numberOfLines={1}>
+      <View
+        className={cn(
+          'border-track border-b-2 pb-3',
+          wideText ? 'items-start gap-2' : 'flex-row items-center justify-between gap-3',
+        )}
+      >
+        <Text variant="subtitle" className="shrink" numberOfLines={wideText ? undefined : 1}>
           {title}
         </Text>
-        {action}
+        {action ? <View className="max-w-full">{action}</View> : null}
       </View>
       {rows.map((row, index) => (
         <View key={row.key} className={cn('py-2.5', index > 0 && 'border-track border-t-2')}>
@@ -163,14 +137,12 @@ function EntryRow({
   onFix,
   onDelete,
   onDismiss,
-  onSwipeOpenChange,
 }: {
   entry: Entry
   onPress?: (entry: Entry) => void
   onFix?: (entry: Entry) => void
   onDelete?: ((entry: Entry) => void) | ((entry: Entry) => Promise<boolean>)
   onDismiss?: (entry: Entry) => void
-  onSwipeOpenChange?: (open: boolean) => void
 }) {
   const { t } = useTranslation(['logging', 'common'])
 
@@ -287,7 +259,6 @@ function EntryRow({
         },
       ]}
       onPress={onPress ? () => onPress(entry) : undefined}
-      onOpenChange={onSwipeOpenChange}
     >
       {row()}
     </SwipeRow>

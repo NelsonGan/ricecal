@@ -1,10 +1,4 @@
-import {
-  PixelRatio,
-  Platform,
-  Text as RNText,
-  type TextProps as RNTextProps,
-  StyleSheet,
-} from 'react-native'
+import { Platform, Text as RNText, type TextProps as RNTextProps, StyleSheet } from 'react-native'
 
 import { cn } from './cn'
 import { useTextScript } from './TextScript'
@@ -15,8 +9,9 @@ import { useTextScript } from './TextScript'
  * anything read as a sentence.
  *
  * Size and leading are data as well as classes, because the leading is recomputed
- * at runtime from the reader's Dynamic Type setting and the script being
- * rendered. See `resolveLineHeight`.
+ * at runtime from the font and script being rendered. The native text renderer
+ * scales size and leading together. See
+ * `resolveLineHeight`.
  *
  * Baloo 2 has a deeper native line box than Nunito. React Native clips that box
  * when a caller asks for tighter leading, so `resolveLineHeight` also applies a
@@ -120,14 +115,8 @@ function classMetrics(className: string): { size?: number; leading?: number } {
 }
 
 /**
- * Dynamic Type scales the font size and leaves an absolute `lineHeight` where
- * it was, so the ratio between them collapses as the reader turns text up: at
- * XXXL the 1.19x on `displayMd` is nearer 0.9x and the line box crops the
- * glyphs rather than the other way round. English survives it because Baloo 2's
- * caps are short. 没有上限 does not.
- *
- * Multiplying by the same scale the platform applied to the size restores the
- * ratio at every setting, for every script.
+ * Keep this in unscaled points. React Native scales lineHeight with the font
+ * on both platforms; doing it here too made large text's leading grow twice.
  */
 function resolveLineHeight(
   variant: TextVariant,
@@ -141,7 +130,7 @@ function resolveLineHeight(
   const leading = inline?.lineHeight ?? custom.leading ?? variants[variant].leading
   const fontLeading = className.includes('font-display') ? displayLeading : 1
   const minimumLeading = Math.max(scriptLeading[script], fontLeading)
-  return Math.round(Math.max(leading, size * minimumLeading) * PixelRatio.getFontScale())
+  return Math.round(Math.max(leading, size * minimumLeading))
 }
 
 export type TextProps = RNTextProps & {

@@ -1,14 +1,12 @@
-import { Redirect } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { AppState, View } from 'react-native'
 
 import {
   useClearDemoActivity,
   useConnectHealth,
   useDisconnectHealth,
   useHealthConnection,
-  useSession,
   useSettings,
   useSyncHealth,
   useUpdateSettings,
@@ -32,27 +30,6 @@ import {
 } from '@/ui'
 
 /**
- * The session guard, as its own component. Everything below reaches `useUserId`,
- * which throws by design without a session, and two things reach this screen
- * without one: a deep link, which never passes the guard at `/`, and a Fast
- * Refresh, where `SessionProvider` re-initialises and every mounted screen
- * re-renders into the gap.
- *
- * A wrapper rather than an early return, because the check has to happen before
- * any hook below runs. The sibling screens in `app/settings/` have the same
- * exposure and are left alone: a shared `_layout.tsx` would fix all six and would
- * also nest them in a new navigator.
- */
-export default function HealthSettingsRoute() {
-  const { session, loading } = useSession()
-
-  if (loading) return null
-  if (!session) return <Redirect href="/sign-in" />
-
-  return <HealthSettingsScreen />
-}
-
-/**
  * N6: what is connected, what it gives us, and how to stop it.
  *
  * The "WHAT WE READ" list is per data type rather than per app. On Android each
@@ -67,7 +44,7 @@ export default function HealthSettingsRoute() {
  *
  * Disconnecting keeps the history. See `useDisconnectHealth` for why.
  */
-function HealthSettingsScreen() {
+export default function HealthSettingsScreen() {
   const { t } = useTranslation(['activity', 'profile', 'common'])
   const goBack = useBack('/me')
 
@@ -80,14 +57,21 @@ function HealthSettingsScreen() {
 
   const [confirming, setConfirming] = useState(false)
 
-  // What the platform will allow, asked once on mount. State rather than a
-  // query because it is a question about this device, not about this account,
-  // and nothing invalidates it but the user going to Settings and coming back.
+  // Availability belongs to this device. Returning from the Play Store or
+  // Settings can change it without changing anything in the database.
   const [availability, setAvailability] = useState<Availability | null>(null)
   const check = useCallback(() => {
-    offeredProviders().then(({ native }) => setAvailability(native.availability))
+    offeredProviders()
+      .then(({ native }) => setAvailability(native.availability))
+      .catch(() => setAvailability({ ok: false, reason: 'wrong-platform' }))
   }, [])
-  useEffect(check, [check])
+  useEffect(() => {
+    check()
+    const listener = AppState.addEventListener('change', (state) => {
+      if (state === 'active') check()
+    })
+    return () => listener.remove()
+  }, [check])
 
   const connect = useConnectHealth()
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
@@ -109,8 +93,11 @@ function HealthSettingsScreen() {
   const connected = connection.data?.connected ?? false
   const synced = syncedAgo(connection.data?.lastSyncedAt ?? null)
   const granted = new Set(connection.data?.permissions ?? [])
+  // The connection is recorded before its backfill. Keep the progress and
+  // empty-read guidance visible until that first read has something to show.
+  const showConnection = provider && connected && !connect.isPending && !cameBackEmpty
 
-  if (connection.isPending) {
+  if (connection.isPending || (!showConnection && !availability)) {
     return (
       <Screen
         header={
@@ -138,7 +125,7 @@ function HealthSettingsScreen() {
         />
       }
     >
-      {provider && connected ? (
+      {showConnection ? (
         <>
           <Card title={t('activity:settings.connectedTitle')}>
             <View className="gap-4">

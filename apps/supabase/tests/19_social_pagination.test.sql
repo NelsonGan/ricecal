@@ -20,9 +20,10 @@ where p.id = v.id;
 update public.profiles set review_status = 'approved' where id in (:'viewer', :'author', :'other');
 -- Existing simulator fixtures must not become extra Discover rows. These
 -- temporary blocks affect only this newly created reader and roll back below.
+-- The legacy view requires a user claim, which the fixture setup has not set.
 insert into public.blocked_authors (user_id, author_id)
-select :'viewer', user_id from public.social_profiles
-where user_id not in (:'viewer', :'author', :'other');
+select :'viewer', id from public.profiles
+where id not in (:'viewer', :'author', :'other');
 insert into public.food_logs
   (id, user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor)
 select ('a8210000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid, :'author',

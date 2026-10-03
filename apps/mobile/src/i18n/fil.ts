@@ -287,6 +287,13 @@ export const fil = {
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'Tibok ng puso',
+      energy: 'Aktibong enerhiya',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: 'DISTANSYA',
       time: 'ORAS',
       pace: 'PACE',
@@ -762,8 +769,7 @@ export const fil = {
       title: 'Kunan ang plato mo',
       analysing: 'Inaalam kung ano ang nasa plato',
       permissionTitle: 'Kailangan ng access sa camera',
-      permissionBody:
-        'Ginagamit ng RiceCal ang camera para basahin ang plato mo. Walang umaalis sa telepono mo.',
+      permissionBody: 'Ginagamit ng RiceCal ang camera para basahin ang plato mo.',
       permissionSettings: 'Buksan ang Settings',
       shutter: 'Kumuha ng litrato',
       library: 'Pumili mula sa mga litrato',

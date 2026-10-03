@@ -26,10 +26,11 @@ from (values (:'alice'::uuid, 'visibility_alice', 'Alice fixture', 'avatars/' ||
 where p.id = v.id;
 update public.profiles set review_status = 'approved', photo_etag = case when id = :'alice' then '"avatar-etag"' end
 where id in (:'alice', :'bob', :'carol', :'dan');
+-- Isolate these readers from simulator accounts before setting a user claim.
 insert into public.blocked_authors (user_id, author_id)
-select viewer, p.user_id from unnest(array[:'alice'::uuid, :'bob'::uuid, :'carol'::uuid, :'dan'::uuid, :'fresh'::uuid]) viewer
-cross join public.social_profiles p
-where p.user_id not in (:'alice', :'bob', :'carol', :'dan', :'fresh');
+select viewer, p.id from unnest(array[:'alice'::uuid, :'bob'::uuid, :'carol'::uuid, :'dan'::uuid, :'fresh'::uuid]) viewer
+cross join public.profiles p
+where p.id not in (:'alice', :'bob', :'carol', :'dan', :'fresh');
 insert into public.food_logs
   (id, user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor, photo_path)
 values (:'entry', :'alice', 'Visible rice', 200, 44, 4, 1, '1 bowl', 1, 'meals/' || :'alice' || '/fixture.jpg');

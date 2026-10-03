@@ -14,10 +14,8 @@ import { Text } from './Text'
  * How much of the bottom of the screen the bar occupies, safe area aside: the
  * pill, and nothing else.
  *
- * The tab column supplies the height — 12 + a 26 icon + a 6 gap + a 17 caption
- * line + 12 — and there is no padding above it. There was 8pt, and on a canvas
- * background that is a grey stripe between the screen's content and the bar;
- * whatever spacing the last card wants is the screen's business, not the bar's.
+ * Each tab is 71pt high, plus the pill's borders. Single-line captions fit
+ * within that height even when the phone uses larger text.
  *
  * Exported so a floating element — the toast — can clear the bar without
  * measuring, which would otherwise mean a layout pass before it could animate in.
@@ -136,10 +134,9 @@ export function NavItem({ label, icon, isFocused = false, href, style, ...rest }
     // screen and felt like nothing.
     <Tappable
       {...rest}
-      // `py-3` is the pill's interior padding, living on the tab rather than on
-      // the row: it is what gives the pill its height, and it makes the whole
-      // depth of the bar tappable instead of just the icon and its label.
-      className="min-w-0 flex-1 items-center gap-1.5 py-3"
+      // Keep the measured footprint stable. Captions can grow within it, while
+      // the full label remains available to a screen reader.
+      className="h-[71px] min-w-0 flex-1 items-center justify-center gap-1.5"
       accessibilityRole="tab"
       accessibilityState={{ selected: isFocused }}
       accessibilityLabel={label}
@@ -155,7 +152,14 @@ export function NavItem({ label, icon, isFocused = false, href, style, ...rest }
         style={isFocused ? undefined : { tintColor: colors.faint }}
         tintColor={isFocused ? undefined : colors.faint}
       />
-      <Text variant="caption" className={isFocused ? 'text-pandan-ink' : 'text-faint'}>
+      <Text
+        variant="caption"
+        className={cn('max-w-full', isFocused ? 'text-pandan-ink' : 'text-faint')}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        maxFontSizeMultiplier={1.3}
+        minimumFontScale={0.7}
+      >
         {label}
       </Text>
     </Tappable>
@@ -206,7 +210,7 @@ export type BottomNavProps<T extends string> = {
   onChange: (value: T) => void
   /** The add action at the right end. Omit to render four plain tabs. */
   onPressAction?: () => void
-  actionLabel?: string
+  actionLabel: string
   className?: string
 }
 
@@ -220,7 +224,7 @@ export function BottomNav<T extends string>({
   value,
   onChange,
   onPressAction,
-  actionLabel = 'Add',
+  actionLabel,
   className,
 }: BottomNavProps<T>) {
   const renderTab = (tab: NavTab<T>) => (

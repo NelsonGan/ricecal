@@ -1,7 +1,8 @@
+import { format, parseISO } from 'date-fns'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { type TextInput, View } from 'react-native'
 
 import {
   type LogSnapshot,
@@ -19,6 +20,7 @@ import {
   useSettings,
   useSnapFood,
   useTargets,
+  useUserId,
 } from '@/data'
 import { announceRefusal, scanLimitAhead } from '@/data/refusals'
 import {
@@ -29,11 +31,14 @@ import {
   InlineCamera,
   QuickAction,
 } from '@/features/logging'
+import { type LogPanel, storedLogPanel, storeLogPanel } from '@/features/logging/preference'
 import { useRequirePro } from '@/features/paywall'
 import { dateOffset, type LogMethod, track } from '@/lib/analytics'
+import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
 import { eatenQuantity } from '@/lib/portions'
+import { SessionGate } from '@/lib/SessionGate'
 import { SheetSurface, Tabs, Text, useToast } from '@/ui'
 
 /**
@@ -51,7 +56,7 @@ import { SheetSurface, Tabs, Text, useToast } from '@/ui'
  * depending on who had written the dish, and the one word somebody types is the
  * same word either way.
  */
-type Panel = 'camera' | 'describe' | 'search' | null
+type Panel = LogPanel | null
 
 const PANELS = ['camera', 'describe', 'search'] as const
 
@@ -75,14 +80,14 @@ const isPanel = (value: string | undefined): value is NonNullable<Panel> =>
  * than left to the fallback below, which would answer a tap on a cooking pot
  * with a camera.
  */
-const openingPanel = (value: string | undefined): NonNullable<Panel> =>
+const openingPanel = (value: string | undefined, fallback: LogPanel): LogPanel =>
   value === 'barcode' || value === 'label'
     ? 'camera'
     : value === 'recipes'
       ? 'search'
       : isPanel(value)
         ? value
-        : 'camera'
+        : fallback
 
 const openingMode = (value: string | undefined): CaptureMode =>
   value === 'barcode' ? 'barcode' : 'meal'
@@ -98,14 +103,23 @@ const openingMode = (value: string | undefined): CaptureMode =>
  * transition had to finish before a second window began presenting, which is why
  * tapping the log button felt slow.
  */
-export default function LogSheet() {
+export default function LogRoute() {
+  return (
+    <SessionGate>
+      <LogSheet />
+    </SessionGate>
+  )
+}
+
+function LogSheet() {
+  const userId = useUserId()
   const { t } = useTranslation(['logging', 'common'])
   const router = useRouter()
   const goBack = useBack('/today')
   const logFood = useLogFood()
   const snapFood = useSnapFood()
   const describeFood = useDescribeFood()
-  const { selectedDate } = useSelectedDate()
+  const { selectedDate, todayKey } = useSelectedDate()
   const day = useDayLog(selectedDate)
   const { data: targets } = useTargets()
   const { data: activity } = useActivityDay(selectedDate)
@@ -142,11 +156,22 @@ export default function LogSheet() {
    * rather than in screens of their own, so the day stays visible and nothing has
    * to be dismissed twice.
    *
-   * Snap is the default, so the log button opens on a camera pointed at the food:
-   * the other two are how you log a meal you are not looking at. Tapping Snap
-   * again closes it.
+   * The last option is remembered on this phone. A link that names an option
+   * overrides that preference, so "Scan again" still opens the scanner.
+   * Tapping the selected option again closes its panel without forgetting it.
    */
-  const [panel, setPanel] = useState<Panel>(() => openingPanel(opening))
+  const [initialPanel] = useState(() => openingPanel(opening, storedLogPanel(userId)))
+  const [panel, setPanel] = useState<Panel>(initialPanel)
+  useEffect(() => {
+    if (panel) storeLogPanel(userId, panel)
+  }, [panel, userId])
+  const [entered, setEntered] = useState(false)
+  const field = useRef<TextInput>(null)
+  useEffect(() => {
+    // Focusing during the rise measures the field below the screen and scrolls
+    // a long food list past its search box before the sheet has settled.
+    if (entered && (panel === 'search' || panel === 'describe')) field.current?.focus()
+  }, [entered, panel])
   /**
    * Meal or barcode, within the camera. Seeded from the route so "Scan again"
    * lands on the scanner, and kept while the panel is closed and reopened so
@@ -180,10 +205,10 @@ export default function LogSheet() {
     if (announced.current) return
     announced.current = true
     track('Log Sheet Opened', {
-      panel: openingPanel(opening),
+      panel: initialPanel,
       date_offset: dateOffset(selectedDate, today()),
     })
-  }, [opening, selectedDate])
+  }, [initialPanel, selectedDate])
 
   /**
    * `goal + active - eaten`, the same sum the ring on Today draws. It was `goal -
@@ -324,6 +349,7 @@ export default function LogSheet() {
       onClose={() => goBack()}
       scrollable={panel !== 'describe'}
       fullHeight={panel !== null}
+      onEntered={() => setEntered(true)}
     >
       {/* The heading is rendered here rather than through `title` so the
           remaining count can sit on the same line, right aligned, the way the
@@ -336,6 +362,12 @@ export default function LogSheet() {
           {t('logging:selector.remaining', { count: Math.max(0, left) })}
         </Text>
       </View>
+
+      {/* The add action is on every tab. A previous day can still be selected
+          when the diary behind this sheet is no longer visible. */}
+      {selectedDate !== todayKey ? (
+        <Text variant="meta">{format(parseISO(selectedDate), datePattern('weekdayDayMonth'))}</Text>
+      ) : null}
 
       <View className="flex-row gap-2.5">
         <QuickAction
@@ -478,7 +510,7 @@ export default function LogSheet() {
         // closes, because the cascade takes several seconds and the day is a
         // better place to wait than a sheet.
         <DescribePanel
-          autoFocus
+          fieldRef={field}
           onSubmit={(text) => {
             // The same guard again, and not redundant: the panel can be opened
             // by a ROUTE PARAM (`/log?panel=describe`) without going through the
@@ -493,7 +525,7 @@ export default function LogSheet() {
       ) : null}
       {panel === 'search' ? (
         <FoodSearchPanel
-          autoFocus
+          fieldRef={field}
           // The widget's fourth button used to open a shelf of the user's own
           // food, and still asks for one. See `openingPanel`.
           initialSource={opening === 'recipes' ? 'mine' : undefined}

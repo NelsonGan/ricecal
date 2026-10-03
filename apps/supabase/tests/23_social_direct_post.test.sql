@@ -10,6 +10,9 @@ insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, ra
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
   id::text || '@direct-post.example.test', '{}', '{}'
 from unnest(array[:'writer'::uuid, :'reader'::uuid]) id;
+-- Existing simulator profiles must not fill this reader's suggestions page.
+insert into public.blocked_authors (user_id, author_id)
+select :'reader', id from public.profiles where id not in (:'writer', :'reader');
 update public.profiles set display_name = 'Dinner cook' where id = :'writer';
 insert into public.food_logs
   (id, user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor, photo_path)

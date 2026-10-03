@@ -10,12 +10,8 @@ import { keys } from './keys'
 import { useUserId } from './session'
 
 /**
- * Movement, on the read side: the same three shapes Trends uses, plus the
- * sessions and the hours of a day.
- *
- * The bucketing and every average live in `activity_series` and
- * `activity_summary`, because a figure computed in the client is one the weekly
- * report cannot reuse.
+ * Movement on the read side: individual days, sessions and the connection.
+ * The retired Activity tab's aggregates remain in Postgres for old binaries.
  *
  * The write side is `data/health-sync.ts`, a separate file because nothing on a
  * screen calls it directly and it is the only place that writes these tables.

@@ -275,6 +275,13 @@ export const bn = {
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'হৃদস্পন্দন',
+      energy: 'সক্রিয় শক্তি',
+      swimPaceUnit: '{{value}} /100 মি',
+      rowPaceUnit: '{{value}} /500 মি',
       distance: 'দূরত্ব',
       time: 'সময়',
       pace: 'গতি',
@@ -729,7 +736,7 @@ export const bn = {
       title: 'আপনার থালার ছবি তুলুন',
       analysing: 'থালায় কী আছে তা বোঝা হচ্ছে',
       permissionTitle: 'ক্যামেরার অনুমতি দরকার',
-      permissionBody: 'RiceCal আপনার থালা পড়তে ক্যামেরা ব্যবহার করে। কিছুই ফোন থেকে বেরোয় না।',
+      permissionBody: 'RiceCal আপনার থালা পড়তে ক্যামেরা ব্যবহার করে।',
       permissionSettings: 'সেটিংস খুলুন',
       shutter: 'ছবি তুলুন',
       library: 'ছবি থেকে বাছুন',

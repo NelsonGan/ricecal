@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PixelRatio, StyleSheet } from 'react-native'
+import { StyleSheet } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { fireEvent, render, screen, userEvent, waitFor } from '../../test-utils'
@@ -91,7 +91,7 @@ describe('Numpad', () => {
     const style = StyleSheet.flatten(screen.getByText('7').props.style) as {
       lineHeight?: number
     }
-    expect(style.lineHeight).toBe(Math.round(24 * 1.36 * PixelRatio.getFontScale()))
+    expect(style.lineHeight).toBe(Math.round(24 * 1.36))
   })
 
   /**

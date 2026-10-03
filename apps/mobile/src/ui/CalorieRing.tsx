@@ -103,6 +103,7 @@ export function CalorieRing({
 
       <View
         className="absolute items-center justify-center"
+        style={{ width: size - thickness * 2 - 12 }}
         accessibilityRole="progressbar"
         accessibilityLabel={`${value} of ${goal} kcal`}
         accessibilityValue={{ min: 0, max: goal, now: value }}
@@ -110,6 +111,10 @@ export function CalorieRing({
         <Text
           className="font-display text-heading"
           style={{ fontSize: labelSize, lineHeight: Math.round(labelSize * 1.2) }}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          maxFontSizeMultiplier={1.3}
+          minimumFontScale={0.7}
         >
           {centerLabel ?? remaining.toLocaleString()}
         </Text>
@@ -122,6 +127,7 @@ export function CalorieRing({
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.7}
+          maxFontSizeMultiplier={1.3}
           style={{
             fontSize: Math.max(10, Math.round(size * 0.065)),
             maxWidth: size - thickness * 2 - 22,

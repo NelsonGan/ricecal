@@ -8,6 +8,8 @@ let mockState = 'trial'
 let mockTrialUnit: string | undefined = 'day'
 let mockTrialCount: string | undefined = '3'
 
+jest.mock('@/data', () => ({ useSession: () => ({ session: {}, loading: false }) }))
+
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({
     plan: mockPlan,

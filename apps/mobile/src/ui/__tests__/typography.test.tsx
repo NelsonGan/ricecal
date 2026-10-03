@@ -14,8 +14,8 @@ import { TextScriptProvider } from '../TextScript'
  * slightly cut off in mandarin". Appearance is otherwise left to the gallery
  * route on a device.
  *
- * React Native's jest preset reports a font scale of 2. Pinned to 1 here so the
- * numbers are the ramp's own; the scaling is the subject of the last test.
+ * Native rendering scales the resolved leading with the font. These numbers
+ * are the ramp's unscaled points, even when Dynamic Type is turned up.
  */
 beforeEach(() => {
   jest.spyOn(PixelRatio, 'getFontScale').mockReturnValue(1)
@@ -132,14 +132,13 @@ it('still floors a caller-set pair for a script that needs more', async () => {
   expect(leadingOf(screen.getByText('每天 2,710'))).toBe(46)
 })
 
-it('follows the reader up when they turn Dynamic Type on', async () => {
+it('lets the native renderer scale leading once when Dynamic Type is on', async () => {
   jest.spyOn(PixelRatio, 'getFontScale').mockReturnValue(1.35)
 
   await renderIn('cjk', <Text variant="screenTitle">8月17日 周一</Text>)
 
-  // The platform scaled the 26px type by 1.35 and left an absolute lineHeight
-  // where it was, which is what cropped the glyphs. 35 x 1.35 keeps the ratio.
-  expect(leadingOf(screen.getByText('8月17日 周一'))).toBe(48)
+  // Native iOS and Android text scale both the font and this line height.
+  expect(leadingOf(screen.getByText('8月17日 周一'))).toBe(35)
 })
 
 /**

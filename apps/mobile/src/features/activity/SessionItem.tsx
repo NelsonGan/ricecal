@@ -26,7 +26,7 @@ export function SessionItem({ session, onPress }: SessionItemProps) {
 
   return (
     <ItemRow
-      title={session.kindLabel ?? t(workoutKindKey(session.kind))}
+      title={session.kindLabel?.trim() || t(workoutKindKey(session.kind))}
       icon={workoutIcon(session.kind)}
       detail={parts.join(' · ')}
       value={count(session.activeKcal)}

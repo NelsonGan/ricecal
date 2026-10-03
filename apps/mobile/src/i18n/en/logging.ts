@@ -183,7 +183,7 @@ export const logging = {
     title: 'Snap your plate',
     analysing: 'Working out what is on the plate',
     permissionTitle: 'Camera access needed',
-    permissionBody: 'RiceCal uses the camera to read your plate. Nothing leaves your phone.',
+    permissionBody: 'RiceCal uses the camera to read your plate.',
     /**
      * The label is `common:action.continue` now. Guideline 5.1.1(iv): a button in
      * front of a system permission sheet may not be worded as the ask.
