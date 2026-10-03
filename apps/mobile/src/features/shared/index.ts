@@ -18,12 +18,11 @@ export {
   sameBudget,
 } from './BudgetEditor'
 export { CheckList, type CheckListProps } from './CheckList'
-export { EntryList, type EntryListProps, formatTime, type TimedRow } from './EntryList'
+export { EntryList, type EntryListProps, formatTime } from './EntryList'
 export {
   ItemRow,
   type ItemRowProps,
   ROW_TILE,
-  ROW_TILE_ICON,
 } from './ItemRow'
 export { LanguageAiNote, LanguageHelpButton } from './LanguageHelp'
 export { MacroBars, type MacroBarsProps } from './MacroBars'

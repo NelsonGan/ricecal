@@ -76,7 +76,9 @@ function Cell({ date, plate, mark, ahead, onSelect, label }: CellProps) {
   const { data: photoUrl, isLoading: resolving } = useMealPhotoUrl(plate?.photoPath)
   const photo = storedImageSource(plate?.photoPath, photoUrl)
 
-  if (!date) return <View className="h-[66px] flex-1" />
+  // The same border and padding as a day, or a part week shares its row out
+  // differently from a full one and its days drift off their weekday columns.
+  if (!date) return <View className={cn('h-[66px] flex-1 px-0.5', BORDER)} />
 
   /**
    * A day the diary has something to say about.

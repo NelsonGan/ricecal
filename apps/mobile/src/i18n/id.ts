@@ -232,8 +232,6 @@ export const id = {
   },
 
   activity: {
-    title: 'Aktivitas',
-
     connect: {
       title: 'Biar jam tanganmu yang menghitung',
       body: 'Hubungkan aplikasi kesehatan di ponselmu dan setiap jalan kaki, lari dan main bulu tangkis akan menambah jatah hari ini.',
@@ -364,10 +362,6 @@ export const id = {
       rowing: 'Dayung',
       stairs: 'Tangga',
       other: 'Olahraga',
-    },
-
-    unit: {
-      kcal: '{{value}} kkal',
     },
   },
 

@@ -93,17 +93,10 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   /** Content pinned below the scroll area — the footer CTA. Never scrolls away. */
   footer?: ReactNode
   /**
-   * Content laid over the scroll area, pinned to its bottom-right corner, and
+   * Content laid over the scroll area, pinned to its bottom-left corner, and
    * above the floating nav bar on a tab. Unlike `footer`, which the content is
    * laid out above, this overlaps, so a screen using it owes its scroll content
    * enough bottom padding that the last row can be read.
-   */
-  floating?: ReactNode
-  /**
-   * The same overlay, pinned to the bottom left. Its own slot rather than a row
-   * inside `floating`, because the two corners appear on different conditions and
-   * a single row would need an invisible spacer for the absent half, which over a
-   * scroll view eats taps.
    */
   floatingLeading?: ReactNode
   /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
@@ -173,7 +166,6 @@ export function Screen({
   overlayHeader,
   scrollOffset,
   footer,
-  floating,
   floatingLeading,
   flush = false,
   safeAreaTop = true,
@@ -206,7 +198,7 @@ export function Screen({
   const bottomOffset = Math.max(footerHeight - insets.bottom, 0) + FIELD_CLEARANCE
 
   /**
-   * How far the footer and the floating controls ride up, tracked on the UI thread:
+   * How far the footer and the floating control ride up, tracked on the UI thread:
    * up by the keyboard, less the home indicator's inset, which would otherwise be
    * a band of canvas between the buttons and the keys.
    *
@@ -387,25 +379,6 @@ export function Screen({
           Styled rather than classed: the position is what makes this an overlay
           at all, and NativeWind's support for a third-party animated view is
           not worth depending on for that. */}
-        {floating ? (
-          <Reanimated.View
-            style={[
-              {
-                position: 'absolute',
-                right: spacing.gutter,
-                bottom: spacing.gutter + navInset,
-                alignItems: 'flex-end',
-              },
-              lift,
-            ]}
-            pointerEvents="box-none"
-          >
-            {floating}
-          </Reanimated.View>
-        ) : null}
-
-        {/* The other corner, on the same lift and the same reasoning about the
-            safe area. See `floatingLeading`. */}
         {floatingLeading ? (
           <Reanimated.View
             style={[

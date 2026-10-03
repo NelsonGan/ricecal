@@ -832,7 +832,7 @@ system's and a native tab bar cannot be made to look like them.
 of its own, so content scrolls on under the pill. `NavInsetProvider` in the tabs
 layout tells each screen how much of its bottom the bar covers (its height plus
 the home indicator), and `Screen` pads the last row and lifts its floating
-corners by that much. Zero on a pushed page. A list that `Screen` does not scroll,
+corner by that much. Zero on a pushed page. A list that `Screen` does not scroll,
 the feed, reads `useNavInset` and pads itself.
 
 **The log button is at the right end of the bar**, a `NavAction` beside the pill
@@ -2835,10 +2835,8 @@ and it opens the workout's own page.
 not import the activity feature.
 
 **A way back to today sits in the bottom-left corner, only while there is one.**
-`Screen`'s `floatingLeading` is its own slot rather than a row inside
-`floating`: the two corners hold unrelated things and appear on different
-conditions, and a single row would need an invisible spacer over a scroll view,
-eating taps. Absent on today rather than disabled.
+`Screen`'s `floatingLeading` slot holds it, above the floating nav bar and
+riding up with the keyboard. Absent on today rather than disabled.
 
 **The dot under each number is that day's verdict**, and there are three plus
 silence: under goal, over goal, a hollow ring for a past day with nothing on it,
@@ -3387,10 +3385,10 @@ summaries, zero values, indoor cycling and an unknown sport with a long label.
 `src/data/health-sync.ts`. A **week-deep backfill** on connect, then the last
 **seven days** re-read on every foreground.
 
-**The automatic pass is mounted on Today**, which opens first and is where the
-steps and workouts are read. It used to live on the Activity tab, which is gone.
-Tabs stay mounted, so foreground events still reach it. The manual pass is
-**Settings, Health, Sync now**.
+**The automatic pass is mounted in the tabs layout**, beside the reminder sync,
+so it runs whichever tab a launch lands on and hears every return to the
+foreground. It used to live on the Activity tab, which is gone. The manual pass
+is **Settings, Health, Sync now**.
 
 Settings keeps the connection progress visible until the first read finishes.
 An empty read keeps its retry guidance and the development demo option visible,

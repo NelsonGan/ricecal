@@ -227,8 +227,6 @@ export const vi = {
   },
 
   activity: {
-    title: 'Hoạt động',
-
     connect: {
       title: 'Để đồng hồ đếm hộ bạn',
       body: 'Kết nối ứng dụng sức khoẻ trên máy và mỗi lần đi bộ, chạy hay đánh cầu lông đều được cộng lại vào hạn mức hôm nay.',
@@ -358,10 +356,6 @@ export const vi = {
       rowing: 'Chèo thuyền',
       stairs: 'Leo cầu thang',
       other: 'Buổi tập',
-    },
-
-    unit: {
-      kcal: '{{value}} kcal',
     },
   },
 

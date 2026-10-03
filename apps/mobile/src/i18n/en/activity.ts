@@ -11,8 +11,6 @@
  * app responsible: "not available" tells a user nothing they can act on.
  */
 export const activity = {
-  title: 'Activity',
-
   connect: {
     title: 'Let your watch do the counting',
     body: "Connect your phone's health app and every walk, run and badminton game adds back to today's budget.",
@@ -184,15 +182,5 @@ export const activity = {
     rowing: 'Rowing',
     stairs: 'Stairs',
     other: 'Workout',
-  },
-
-  /**
-   * Units used across the tab. One, now: `km`, `steps`, `minutes` and
-   * `hoursMinutes` were never rendered, because the formats they duplicate live
-   * in `features/activity/format.ts` beside the decision about when not to show a
-   * figure at all.
-   */
-  unit: {
-    kcal: '{{value}} kcal',
   },
 } as const

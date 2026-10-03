@@ -235,8 +235,6 @@ export const fil = {
   },
 
   activity: {
-    title: 'Aktibidad',
-
     connect: {
       title: 'Hayaang ang relo ang magbilang',
       body: 'Ikonekta ang health app ng telepono mo at bawat lakad, takbo at laro ng badminton ay idadagdag pabalik sa badyet ngayong araw.',
@@ -367,10 +365,6 @@ export const fil = {
       rowing: 'Rowing',
       stairs: 'Hagdan',
       other: 'Workout',
-    },
-
-    unit: {
-      kcal: '{{value}} kcal',
     },
   },
 

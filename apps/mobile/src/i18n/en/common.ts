@@ -31,7 +31,7 @@ export const common = {
     recipes: 'Food',
     trends: 'Trends',
     me: 'Me',
-    /** The floating button on Today. Not a tab — it opens the log sheet. */
+    /** The add button at the right end of the nav bar. Not a tab: it opens the log sheet. */
     log: 'Log food',
   },
 
@@ -100,8 +100,9 @@ export const common = {
 
   /**
    * What the language setting does not change. Every word of the interface is
-   * translated; the model that reads a plate and reads a typed meal is not. It works best in English, and it answers against a
-   * catalogue whose dish names and serving labels are stored in English.
+   * translated; the model that reads a plate and reads a typed meal is not. It
+   * works best in English, and it answers against a catalogue whose dish names
+   * and serving labels are stored in English.
    *
    * Said where a language is chosen, and said twice: `note` under the control for
    * anybody who picked something other than English, and the longer version behind
