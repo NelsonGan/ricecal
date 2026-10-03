@@ -2784,6 +2784,19 @@ calendar week, each fetching only its own seven days. Picking a day moves
 client-owned state) and everything below follows it: the ring, the water, the
 entry list, and anything logged while it is selected.
 
+**The calorie card is one compact reading.** A 104pt ring beside the three
+macros, each on one line as label, bar and "eaten/goal g", inside less padding
+than a standard card. Nothing sits under the ring: "+360 from moving" and "A bit
+over" both made the card taller to repeat what the ring and the list below
+already say. Movement still extends the budget exactly as before.
+
+**The list under the water is "Your day"**: the meals and the health store's
+workouts in one list, newest first, with the day's steps beside the heading when
+a store reported the day. A workout is an `ItemRow` like a meal, its calories in
+hibiscus because they were burned, and it opens the workout's own page.
+`EntryList` takes those rows as `extras`, already drawn, so the shared list does
+not import the activity feature.
+
 **A way back to today sits in the bottom-left corner, only while there is one.**
 `Screen`'s `floatingLeading` is its own slot rather than a row inside
 `floating`: the two corners hold unrelated things and appear on different
@@ -2870,6 +2883,12 @@ two waves at different speeds so it reads as liquid rather than as a moving
 graph, and tips its surface left and right when the card first appears and on
 every drink. Everything else is drawn on it, in the top-right corner: the figure,
 small, and an Add button beside it.
+
+**A full tank is still.** Once the goal is met it is drawn solid, with no waves,
+no slosh and no brim, and only the copy of the figure that sits on water. A
+surface still moving at the top read as a day not yet done, and it was a frame of
+work every 16 ms for a picture with nothing left to say. `TANK_HEIGHT` is 60, so
+the card is no taller than its readout needs.
 
 There is no heading. The word "Water" over a tank of water is a label the picture
 already carries, and the drop beside the figure is what identifies it on a day
@@ -3298,6 +3317,13 @@ not a body.
 
 `src/data/health-sync.ts`. A **week-deep backfill** on connect, then the last
 **seven days** re-read on every foreground.
+
+**The automatic pass is mounted on Today**, not on the Activity tab. Today opens
+first and is where the steps and workouts are read, so a sync that waited for
+somebody to open Activity left them stale on the screen people look at. Tabs stay
+mounted, so foreground events still reach it. The Activity tab reads the same
+queries, says how fresh they are in its header, and has no pull to refresh; the
+manual pass is **Settings, Health, Sync now**.
 
 It was a year, then a month, then a week, and each cut was the same argument
 carried further: the backfill exists so the Activity tab is not empty on the day

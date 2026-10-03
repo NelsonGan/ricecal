@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Animated, Easing, View } from 'react-native'
 import Reanimated, {
@@ -11,7 +11,6 @@ import Reanimated, {
 
 import type { DayLog, Entry } from '@/data'
 import { storedImageSource, useMealPhotoUrl, useRefiningEntries } from '@/data'
-import { sumMacros } from '@/lib/nutrition'
 import { eatenQuantity, portionLabel } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, cn, Icon, IconButton, Text } from '@/ui'
@@ -45,12 +44,25 @@ export type EntryListProps = {
    * two rows being open at once.
    */
   onSwipeOpenChange?: (open: boolean) => void
+  /** The card's heading. */
+  title: string
+  /** Opposite the heading: on Today, the day's steps. */
+  action?: ReactNode
+  /**
+   * Rows that are not meals, slotted in by time: on Today, the day's workouts.
+   * Passed in already drawn, because this list is shared and the rows belong to
+   * the activity feature.
+   */
+  extras?: readonly TimedRow[]
 }
 
+/** A row from somewhere else, and when it happened. See `extras`. */
+export type TimedRow = { key: string; at: string; node: ReactNode }
+
 /**
- * Everything logged today, in one list, in the order it was eaten, which is why
- * the detail line carries the time: it is the only thing saying where in the day
- * a row belongs.
+ * Everything that happened in a day, in one list, newest first, which is why the
+ * detail line carries the time: it is the only thing saying where in the day a
+ * row belongs. Meals, and whatever `extras` a caller adds between them.
  *
  * Nothing here looks a dish up. `food_log_details` returns each entry with its
  * name, illustration and macros already costed.
@@ -62,9 +74,10 @@ export function EntryList({
   onDeleteEntry,
   onDismissEntry,
   onSwipeOpenChange,
+  title,
+  action,
+  extras = [],
 }: EntryListProps) {
-  const { t } = useTranslation(['logging', 'common'])
-
   /**
    * How many rows are parked open, so "any" survives one closing as another
    * opens: a boolean forwarded from each row would flicker shut on the closing
@@ -93,18 +106,16 @@ export function EntryList({
   // meal just logged at the bottom of a growing list — and the thing a user
   // looks at right after logging is the thing they just logged. By evening it
   // was a scroll away, under breakfast.
-  const entries = [...day.entries].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt))
-  if (entries.length === 0) return null
-
-  return (
-    <Card
-      title={t('logging:today.logHeading', {
-        kcal: sumMacros(entries).kcal.toLocaleString(),
-      })}
-    >
-      {entries.map((entry) => (
+  //
+  // Compared as instants rather than as strings: an entry's time comes from
+  // Postgres and a workout's from the health store, and the two do not write
+  // their offsets the same way.
+  const rows: TimedRow[] = [
+    ...day.entries.map((entry) => ({
+      key: entry.id,
+      at: entry.loggedAt,
+      node: (
         <EntryRow
-          key={entry.id}
           entry={entry}
           onPress={onPressEntry}
           onFix={onFixEntry}
@@ -112,6 +123,18 @@ export function EntryList({
           onDismiss={onDismissEntry}
           onSwipeOpenChange={reportOpen}
         />
+      ),
+    })),
+    ...extras,
+  ].sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+  // A heading with something beside it is still worth a card on its own: on
+  // Today that is a morning's steps before the first meal.
+  if (rows.length === 0 && !action) return null
+
+  return (
+    <Card title={title} action={action}>
+      {rows.map((row) => (
+        <Fragment key={row.key}>{row.node}</Fragment>
       ))}
     </Card>
   )

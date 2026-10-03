@@ -308,8 +308,6 @@ export const bn = {
       historyRowValue_other: '{{count}} ব্যায়াম · {{time}}',
       historyNone: 'এখনো কোনো ব্যায়াম নেই',
 
-      syncing: 'সিঙ্ক হচ্ছে…',
-
       demoBadge: 'ডেমো তথ্য',
 
       storeEmpty:
@@ -742,11 +740,9 @@ export const bn = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'দিনের হিসাব দেখান',
       showLeft: 'যা বাকি তা দেখান',
-      overNote: 'আজ একটু বেশি হয়েছে, কাল আবার নতুন হিসাব।',
-      overNoteOn: 'সেদিন একটু বেশি হয়েছিল।',
-      burnedNote: 'আজকের নড়াচড়া থেকে +{{kcal}}',
-      burnedNoteOn: 'সেদিনের নড়াচড়া থেকে +{{kcal}}',
-      logHeading: 'খাওয়া · {{kcal}} KCAL',
+      dayHeading: 'আপনার দিন',
+      steps_one: '{{steps}} কদম',
+      steps_other: '{{steps}} কদম',
       analysing: 'আপনার থালা পড়া হচ্ছে',
       analysingHint: 'কী তা বোঝা মাত্রই গোনা হবে',
       describing: 'আপনি যা লিখেছেন তা পড়া হচ্ছে',

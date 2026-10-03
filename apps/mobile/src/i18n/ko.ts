@@ -312,8 +312,6 @@ export const ko = {
       historyRowValue_other: '운동 {{count}}회 · {{time}}',
       historyNone: '아직 운동이 없습니다',
 
-      syncing: '동기화 중…',
-
       demoBadge: '데모 데이터',
 
       storeEmpty:
@@ -749,11 +747,9 @@ export const ko = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: '그날의 예산 보기',
       showLeft: '남은 양 보기',
-      overNote: '오늘은 조금 넘었어요. 내일 다시 셉니다.',
-      overNoteOn: '그날은 조금 넘었어요.',
-      burnedNote: '오늘 움직여서 +{{kcal}}',
-      burnedNoteOn: '그날 움직여서 +{{kcal}}',
-      logHeading: '섭취 · {{kcal}} KCAL',
+      dayHeading: '나의 하루',
+      steps_one: '{{steps}}걸음',
+      steps_other: '{{steps}}걸음',
       analysing: '접시를 읽는 중',
       analysingHint: '무엇인지 알면 바로 계산합니다',
       describing: '적으신 내용을 읽는 중',

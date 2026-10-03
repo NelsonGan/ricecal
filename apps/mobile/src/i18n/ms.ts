@@ -319,8 +319,6 @@ export const ms = {
       historyRowValue_other: '{{count}} senaman · {{time}}',
       historyNone: 'Belum ada senaman',
 
-      syncing: 'Menyegerak…',
-
       demoBadge: 'Data demo',
 
       storeEmpty:
@@ -774,11 +772,9 @@ export const ms = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'Tunjuk peruntukan hari ini',
       showLeft: 'Tunjuk apa yang tinggal',
-      overNote: 'Sedikit lebih hari ini, esok kiraan baharu.',
-      overNoteOn: 'Sedikit lebih pada hari itu.',
-      burnedNote: '+{{kcal}} daripada bergerak hari ini',
-      burnedNoteOn: '+{{kcal}} daripada bergerak pada hari itu',
-      logHeading: 'DIMAKAN · {{kcal}} KCAL',
+      dayHeading: 'Hari anda',
+      steps_one: '{{steps}} langkah',
+      steps_other: '{{steps}} langkah',
       analysing: 'Membaca pinggan anda',
       analysingHint: 'Mengira sebaik sahaja ia tahu ini apa',
       describing: 'Membaca apa yang anda tulis',

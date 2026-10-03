@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { RefreshControl, View } from 'react-native'
+import { View } from 'react-native'
 import {
   today as todayKey,
   useActivityDay,
@@ -9,7 +9,6 @@ import {
   useActivitySummary,
   useConnectHealth,
   useDayLog,
-  useHealthAutoSync,
   useHealthConnection,
   useSettings,
   useTargets,
@@ -27,7 +26,6 @@ import {
 import { ScreenTitle } from '@/features/shared'
 import { type Availability, canOfferDemo, offeredProviders, type ProviderId } from '@/lib/health'
 import { sumMacros } from '@/lib/nutrition'
-import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Button, Card, Icon, ListRow, Screen, Skeleton, Text } from '@/ui'
 
 /**
@@ -36,10 +34,9 @@ import { Badge, Button, Card, Icon, ListRow, Screen, Skeleton, Text } from '@/ui
  * who connected last week and left their watch at home gets empty rings rather
  * than the sales pitch again.
  *
- * The sync is mounted here rather than in the tab layout, because
- * `useHealthAutoSync` needs a provider id from a query and the tab layout renders
- * before the session resolves. Today's budget refreshes for free, since the sync
- * invalidates the day.
+ * The sync is not mounted here. It runs on Today, which opens first and is where
+ * the day's steps and workouts are read; this tab reads the same queries, which
+ * the sync invalidates. `syncedAgo` in the header says how fresh they are.
  *
  * The third tile is stand hours where the store reports them and steps where it
  * never will, decided here because this is the screen that knows the provider.
@@ -57,7 +54,6 @@ import { Badge, Button, Card, Icon, ListRow, Screen, Skeleton, Text } from '@/ui
 export default function ActivityScreen() {
   const { t } = useTranslation(['activity', 'common'])
   const router = useRouter()
-  const colors = useThemeColors()
 
   const date = todayKey()
 
@@ -70,11 +66,6 @@ export default function ActivityScreen() {
   const targets = useTargets()
   const { data: settings } = useSettings()
   const food = useDayLog(date)
-
-  // `syncNow` forces a pass past the throttle, which is exactly what a deliberate
-  // pull means: the automatic one already ran on mount and on the last
-  // foreground, so an unforced call would spin and do nothing.
-  const { syncNow, isSyncing, isBusy } = useHealthAutoSync(provider)
 
   // What the platform will allow, asked once on mount. State rather than a
   // query because it is a question about this device, not about this account —
@@ -269,33 +260,18 @@ export default function ActivityScreen() {
   const weekSessions = summary.data?.sessions ?? 0
 
   return (
-    <Screen
-      /**
-       * The pull the freshness badge implies. `isSyncing` is the pull rather than
-       * every pass: a refreshing control holds the scroll view pushed down under
-       * its spinner, and the automatic sync runs on mount, so the tab opened with
-       * its header parked below the notch. An automatic pass reports itself in
-       * the badge.
-       */
-      refreshControl={
-        <RefreshControl refreshing={isSyncing} onRefresh={syncNow} tintColor={colors.muted} />
-      }
-    >
+    <Screen>
       <ScreenTitle
         title={t('activity:title')}
         trailing={
           <Badge tone={provider === 'demo' ? 'kaya' : 'neutral'}>
             <Icon set="system" name="sync" size={16} />
             <Text variant="caption" className={provider === 'demo' ? 'text-kaya-ink' : ''}>
-              {/* Syncing outranks the stamp, and only for a real store: on demo
-                  data the badge names where the numbers came from, which is the
-                  more important thing to say and does not stop being true for
-                  the length of a pass. */}
+              {/* On demo data the badge names where the numbers came from, which
+                  is the more important thing to say. */}
               {provider === 'demo'
                 ? t('activity:today.demoBadge')
-                : isBusy
-                  ? t('activity:today.syncing')
-                  : t(`activity:today.${synced.key}`, { count: synced.count })}
+                : t(`activity:today.${synced.key}`, { count: synced.count })}
             </Text>
           </Badge>
         }

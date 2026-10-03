@@ -312,8 +312,6 @@ export const th = {
       historyRowValue_other: '{{count}} ครั้ง · {{time}}',
       historyNone: 'ยังไม่มีการออกกำลังกาย',
 
-      syncing: 'กำลังซิงค์…',
-
       demoBadge: 'ข้อมูลตัวอย่าง',
 
       storeEmpty:
@@ -745,11 +743,9 @@ export const th = {
       kcalOfGoal: '/{{goal}} แคล',
       showGoals: 'แสดงโควตาของวันนี้',
       showLeft: 'แสดงส่วนที่เหลือ',
-      overNote: 'วันนี้เกินไปนิดหน่อย พรุ่งนี้เริ่มนับใหม่',
-      overNoteOn: 'วันนั้นเกินไปนิดหน่อย',
-      burnedNote: '+{{kcal}} จากการเคลื่อนไหววันนี้',
-      burnedNoteOn: '+{{kcal}} จากการเคลื่อนไหววันนั้น',
-      logHeading: 'กินไป · {{kcal}} แคล',
+      dayHeading: 'วันของคุณ',
+      steps_one: '{{steps}} ก้าว',
+      steps_other: '{{steps}} ก้าว',
       analysing: 'กำลังอ่านจานของคุณ',
       analysingHint: 'จะนับให้ทันทีที่รู้ว่านี่คืออะไร',
       describing: 'กำลังอ่านสิ่งที่คุณเขียน',

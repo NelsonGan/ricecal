@@ -147,11 +147,6 @@ export const activity = {
     // the normal state of this screen before the afternoon, and a card saying so
     // was a screenful spent reporting that nothing had happened yet.
 
-    /**
-     * The badge while a pass is running, in place of the "13 min ago" stamp.
-     */
-    syncing: 'Syncing…',
-
     /** The one thing separating generated data from a watch. */
     demoBadge: 'Demo data',
 

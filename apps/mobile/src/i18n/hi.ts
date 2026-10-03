@@ -309,8 +309,6 @@ export const hi = {
       historyRowValue_other: '{{count}} वर्कआउट · {{time}}',
       historyNone: 'अभी कोई वर्कआउट नहीं',
 
-      syncing: 'सिंक हो रहा है…',
-
       demoBadge: 'डेमो डेटा',
 
       storeEmpty:
@@ -743,11 +741,9 @@ export const hi = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'दिन का हिसाब दिखाएं',
       showLeft: 'जो बचा है वह दिखाएं',
-      overNote: 'आज थोड़ा ऊपर, कल फिर नई गिनती।',
-      overNoteOn: 'उस दिन थोड़ा ऊपर रहा।',
-      burnedNote: 'आज की हलचल से +{{kcal}}',
-      burnedNoteOn: 'उस दिन की हलचल से +{{kcal}}',
-      logHeading: 'खाया · {{kcal}} KCAL',
+      dayHeading: 'आपका दिन',
+      steps_one: '{{steps}} कदम',
+      steps_other: '{{steps}} कदम',
       analysing: 'आपकी थाली पढ़ी जा रही है',
       analysingHint: 'पता चलते ही गिनती शुरू',
       describing: 'आपका लिखा पढ़ा जा रहा है',

@@ -35,6 +35,7 @@ export {
   hourlySummary,
 } from './HourBars'
 export { type RingStat, RingTrio, type RingTrioProps } from './RingTrio'
+export { SessionItem, type SessionItemProps } from './SessionItem'
 export { SessionRow, type SessionRowProps } from './SessionRow'
 export { SplitBar, type SplitBarProps, type SplitPart } from './SplitBar'
 export {

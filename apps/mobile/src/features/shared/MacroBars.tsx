@@ -19,6 +19,8 @@ export type MacroBarsProps = {
    * meant to be getting — nowhere on the screen.
    */
   showGoal?: boolean
+  /** One line per macro. See `MacroBar`'s `inline`. */
+  inline?: boolean
   className?: string
 }
 
@@ -32,7 +34,13 @@ export type MacroBarsProps = {
  * "take the leftover height from a basis of nothing", and a card whose height is
  * bounded then collapsed all three bars into a band with their labels gone.
  */
-export function MacroBars({ eaten, targets, showGoal = false, className }: MacroBarsProps) {
+export function MacroBars({
+  eaten,
+  targets,
+  showGoal = false,
+  inline = false,
+  className,
+}: MacroBarsProps) {
   const { t } = useTranslation()
 
   const rows = [
@@ -54,7 +62,7 @@ export function MacroBars({ eaten, targets, showGoal = false, className }: Macro
   ] as const
 
   return (
-    <View className={cn('gap-2.5', className)}>
+    <View className={cn(inline ? 'gap-2' : 'gap-2.5', className)}>
       {rows.map((row) => (
         <MacroBar
           key={row.key}
@@ -69,6 +77,7 @@ export function MacroBars({ eaten, targets, showGoal = false, className }: Macro
           }
           value={progressOf(row.grams, row.goal)}
           tone={row.tone}
+          inline={inline}
         />
       ))}
     </View>

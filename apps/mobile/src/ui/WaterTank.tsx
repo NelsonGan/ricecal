@@ -96,8 +96,8 @@ const EMPTY_FILL = 5
  * water is added, which is the difference between a picture of water and a
  * progress bar that happens to be blue. The level springs for the same reason.
  *
- * The wave never stops while this is mounted, which is two paths of about sixty
- * points rebuilt per frame on the UI thread.
+ * The wave runs until the goal is met, which is two paths of about sixty points
+ * rebuilt per frame on the UI thread. A full tank is drawn still. See `full`.
  */
 /**
  * Where the surface sits, in points from the top of the tank.
@@ -135,6 +135,13 @@ export function WaterTank({
   const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)
 
   const filled = goal > 0 ? Math.min(1, Math.max(0, value / goal)) : 0
+  /**
+   * The goal is met. The tank is drawn full and still: no waves, no slosh and no
+   * brim. A surface still moving at the top of a full tank read as a day not yet
+   * finished, and the loop was a frame of work every sixteen milliseconds for a
+   * picture that has nothing more to say.
+   */
+  const full = filled >= 1
 
   // Primitives and shared values only, and pulled out of every object before a
   // worklet can see one: a worklet FREEZES what it closes over, and a frozen
@@ -153,7 +160,7 @@ export function WaterTank({
   // navigation animation, where nobody is looking at it yet.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `filled` is the trigger, not a read — a new level is a new pour
   useEffect(() => {
-    if (reduceMotion) return
+    if (reduceMotion || full) return
     tilt.value = withDelay(
       120,
       withSequence(
@@ -167,10 +174,10 @@ export function WaterTank({
     return () => {
       tilt.value = 0
     }
-  }, [filled, tilt, reduceMotion])
+  }, [filled, tilt, reduceMotion, full])
 
   useEffect(() => {
-    if (reduceMotion) return
+    if (reduceMotion || full) return
     // Linear, and it must be: any easing on a loop makes the wave hesitate once
     // a cycle, which reads as a dropped frame rather than as a current.
     const loop = (duration: number) =>
@@ -181,7 +188,7 @@ export function WaterTank({
       phase.value = 0
       phaseBack.value = 0
     }
-  }, [phase, phaseBack, reduceMotion])
+  }, [phase, phaseBack, reduceMotion, full])
 
   const corner = radius ?? Math.min(14, height / 3)
 
@@ -264,17 +271,27 @@ export function WaterTank({
           <Canvas style={{ width, height }}>
             {/* The empty tank, then the water clipped to it, then the outline
                 over both so the water never covers it. */}
-            <Path path={tank} color={colors.waterSoft} />
-            <Group clip={tank}>
-              <Path path={back} color={colors.waterSoftLine} />
-              <Path path={front} color={colors.water} />
-            </Group>
+            {full ? (
+              <Path path={tank} color={colors.water} />
+            ) : (
+              <>
+                <Path path={tank} color={colors.waterSoft} />
+                <Group clip={tank}>
+                  <Path path={back} color={colors.waterSoftLine} />
+                  <Path path={front} color={colors.water} />
+                </Group>
+              </>
+            )}
             <Path path={outline} style="stroke" strokeWidth={STROKE} color={colors.waterSoftLine} />
           </Canvas>
         ) : null}
       </View>
 
-      {children ? (
+      {children && full ? (
+        // Everything is under water, so only the wet copy is drawn, and it is
+        // the one that can be touched.
+        <View style={StyleSheet.absoluteFill}>{children(true)}</View>
+      ) : children ? (
         <>
           {/* The dry copy, and the only one anything can touch or announce. */}
           <View style={StyleSheet.absoluteFill}>{children(false)}</View>
