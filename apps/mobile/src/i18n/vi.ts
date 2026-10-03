@@ -140,7 +140,6 @@ export const vi = {
     nav: {
       today: 'Hôm nay',
       recipes: 'Món ăn',
-      activity: 'Hoạt động',
       trends: 'Xu hướng',
       me: 'Tôi',
       log: 'Ghi món ăn',
@@ -195,7 +194,7 @@ export const vi = {
     aiLanguage: {
       open: 'Các tính năng AI dùng ngôn ngữ nào',
       title: 'Các tính năng AI hoạt động bằng tiếng Anh',
-      body: 'Chụp một đĩa, nói bằng lời bạn đã ăn gì và hỏi nên ăn gì tiếp đều được gửi tới một mô hình đọc tiếng Anh tốt nhất. Hãy mô tả món ăn bằng tiếng Anh để nó hiểu bạn sát hơn.',
+      body: 'Chụp một đĩa và nói bằng lời bạn đã ăn gì đều được gửi tới một mô hình đọc tiếng Anh tốt nhất. Hãy mô tả món ăn bằng tiếng Anh để nó hiểu bạn sát hơn.',
       results:
         'Thứ trả về cũng bằng tiếng Anh. Tên món, nguyên liệu và khẩu phần đều được lưu bằng tiếng Anh trong danh mục món ăn, nên đó là ngôn ngữ chúng xuất hiện, dù ứng dụng đang đặt ở ngôn ngữ nào.',
       dishes: 'Tên món ăn giữ nguyên ngôn ngữ lúc được viết ra.',
@@ -228,8 +227,6 @@ export const vi = {
   },
 
   activity: {
-    title: 'Hoạt động',
-
     connect: {
       title: 'Để đồng hồ đếm hộ bạn',
       body: 'Kết nối ứng dụng sức khoẻ trên máy và mỗi lần đi bộ, chạy hay đánh cầu lông đều được cộng lại vào hạn mức hôm nay.',
@@ -276,53 +273,16 @@ export const vi = {
       syncedHours: '{{count}} giờ trước',
       syncedDays: '{{count}} ngày trước',
       syncedNever: 'Chưa đồng bộ',
-
-      move: 'Vận động',
-      exercise: 'Tập luyện',
-      stand: 'Đứng',
-      stepsRing: 'Bước',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}} phút',
-      standUnit: '/ {{goal}} giờ',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ trung bình {{value}}',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: 'phút',
-      noGoalHours: 'giờ',
-
-      budgetTitle: 'HẠN MỨC KÈM VẬN ĐỘNG',
-      goal: 'MỤC TIÊU',
-      eaten: 'ĐÃ ĂN',
-      burned: 'ĐÃ ĐỐT',
-      left: 'CÒN LẠI',
-      over: 'VƯỢT',
-      budgetOff: 'Vận động chưa kéo dài hạn mức của bạn. Bật trong cài đặt Hoạt động.',
-
-      todayTitle: 'HÔM NAY',
-      weekTitle: 'TUẦN NÀY',
-      stepsRow: 'Bước',
-      stepsRowValue: '{{steps}} hôm nay',
-      balanceRow: 'Cân đối',
-      balanceDeficit: 'thiếu hụt {{value}} mỗi ngày',
-      balanceSurplus: 'dư {{value}} mỗi ngày',
-      balanceUnknown: 'Chưa đủ dữ liệu',
-      historyRowValue_one: '{{count}} buổi tập · {{time}}',
-      historyRowValue_other: '{{count}} buổi tập · {{time}}',
-      historyNone: 'Chưa có buổi tập nào',
-
-      syncing: 'Đang đồng bộ…',
-
-      demoBadge: 'Dữ liệu mẫu',
-
-      storeEmpty:
-        'Kho sức khoẻ này đã kết nối nhưng không có dữ liệu bên trong, đúng như trình giả lập. Dữ liệu tạo sẵn sẽ lấp đầy các màn hình này.',
-
-      noStandNoteGeneric:
-        'Ứng dụng sức khoẻ của bạn không báo giờ đứng, nên chúng tôi hiển thị số bước thay vào đó.',
     },
 
     workout: {
+      bpmUnit: 'nhịp/phút',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'Nhịp tim',
+      energy: 'Năng lượng vận động',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: 'QUÃNG ĐƯỜNG',
       time: 'THỜI GIAN',
       pace: 'TỐC ĐỘ PHÚT',
@@ -337,68 +297,7 @@ export const vi = {
 
       zonesTitle: 'VÙNG NHỊP TIM',
 
-      from: 'Từ {{source}}',
       missing: 'Buổi tập này không còn trong ứng dụng sức khoẻ của bạn.',
-    },
-
-    steps: {
-      title: 'Bước',
-      todaySoFar: 'Hôm nay tới giờ',
-      goalLine: 'Mục tiêu {{goal}} bước',
-      over: 'vượt {{value}}',
-      under: 'còn {{value}}',
-      unit: 'bước · {{distance}}',
-
-      morning: 'Buổi sáng',
-      afternoon: 'Buổi chiều',
-      evening: 'Buổi tối',
-      noHours: 'Không có chi tiết theo giờ cho ngày này.',
-
-      weekTitle: 'TUẦN NÀY',
-      dailyAvg: 'TB MỖI NGÀY',
-      goalDays: 'NGÀY ĐẠT',
-      best: 'CAO NHẤT',
-
-      steadyNote: 'Các ngày của bạn khá đều. Dù bạn đang làm gì, nó đã thành thói quen.',
-      shortNote: 'Chưa đủ ngày để thấy quy luật.',
-    },
-
-    balance: {
-      chartTitle: 'Vào so với ra',
-      deficit: 'thiếu hụt {{value}}',
-      surplus: 'dư {{value}}',
-      even: 'Cân bằng',
-      eatenLegend: 'Đã ăn',
-      burnedLegend: 'Đã đốt',
-
-      splitTitle7d: 'LƯỢNG ĐỐT ĐẾN TỪ ĐÂU · 7 NGÀY',
-      splitTitle30d: 'LƯỢNG ĐỐT ĐẾN TỪ ĐÂU · 30 NGÀY',
-      splitTitle1y: 'LƯỢNG ĐỐT ĐẾN TỪ ĐÂU · 12 THÁNG',
-      resting: 'Nghỉ ngơi',
-      restingBody: 'Chỉ cần sống thôi',
-      workouts: 'Buổi tập',
-      workoutsBody: 'Phần các buổi tập tiêu tốn',
-      walking: 'Đi bộ',
-      walkingBody: 'Bước chân và việc vặt',
-      kcal: '{{value}} kcal',
-
-      partial:
-        'Dựa trên {{days}} trên {{total}} ngày có cả nhật ký ăn uống và số liệu trao đổi chất khi nghỉ.',
-      noRestingTitle: 'Không có năng lượng nghỉ',
-      noRestingBody:
-        'Ứng dụng sức khoẻ của bạn không báo lượng cơ thể đốt khi nghỉ, nên không có cân đối hằng ngày để vẽ. Bước, buổi tập và năng lượng vận động không bị ảnh hưởng.',
-      empty: 'Ghi vài bữa ăn khi đang đeo đồng hồ và phần này sẽ được lấp đầy.',
-    },
-
-    history: {
-      title: 'Lịch sử',
-      weekTitle: 'TUẦN NÀY',
-      sessions: 'SỐ BUỔI',
-      time: 'THỜI GIAN',
-      burned: 'ĐÃ ĐỐT',
-      allTitle: 'TẤT CẢ CÁC BUỔI',
-      empty: 'Chưa ghi được buổi tập nào.',
-      emptyBody: 'Bất cứ gì đồng hồ hay điện thoại của bạn ghi lại sẽ xuất hiện ở đây.',
     },
 
     settings: {
@@ -457,10 +356,6 @@ export const vi = {
       rowing: 'Chèo thuyền',
       stairs: 'Leo cầu thang',
       other: 'Buổi tập',
-    },
-
-    unit: {
-      kcal: '{{value}} kcal',
     },
   },
 
@@ -753,11 +648,9 @@ export const vi = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'Hiện hạn mức của ngày',
       showLeft: 'Hiện phần còn lại',
-      overNote: 'Hôm nay hơi quá một chút, mai tính lại từ đầu.',
-      overNoteOn: 'Hôm đó hơi quá một chút.',
-      burnedNote: '+{{kcal}} nhờ vận động hôm nay',
-      burnedNoteOn: '+{{kcal}} nhờ vận động hôm đó',
-      logHeading: 'ĐÃ ĂN · {{kcal}} KCAL',
+      dayHeading: 'Ngày của bạn',
+      steps_one: '{{steps}} bước',
+      steps_other: '{{steps}} bước',
       analysing: 'Đang đọc đĩa của bạn',
       analysingHint: 'Sẽ tính ngay khi biết đây là món gì',
       describing: 'Đang đọc điều bạn viết',
@@ -805,9 +698,6 @@ export const vi = {
         over: 'Trên mục tiêu',
         missed: 'Không ghi',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: 'Hôm đó không ghi gì.',
     },
 
     selector: {
@@ -850,7 +740,7 @@ export const vi = {
       title: 'Chụp đĩa của bạn',
       analysing: 'Đang xem trên đĩa có gì',
       permissionTitle: 'Cần quyền truy cập máy ảnh',
-      permissionBody: 'RiceCal dùng máy ảnh để đọc đĩa của bạn. Không có gì rời khỏi máy bạn.',
+      permissionBody: 'RiceCal dùng máy ảnh để đọc đĩa của bạn.',
       permissionSettings: 'Mở Cài đặt',
       shutter: 'Chụp ảnh',
       library: 'Chọn từ thư viện ảnh',
@@ -1441,11 +1331,6 @@ export const vi = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: 'Hỏi nên ăn gì tiếp',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: 'Lưu món bạn nấu',
           free: '{{recipes}} món ăn',
@@ -1495,33 +1380,8 @@ export const vi = {
       later: 'Có thể để sau',
     },
 
-    reminder: {
-      title_one: 'còn {{count}} ngày trong đợt dùng thử',
-      title_other: 'còn {{count}} ngày trong đợt dùng thử',
-      body: 'Bạn đã ghi {{days}} ngày liên tiếp và giảm {{kg}} kg. Cứ giữ đà này.',
-      daysLogged: 'NGÀY ĐÃ GHI',
-      meals: 'BỮA ĂN',
-      kgDown: 'KG GIẢM',
-      starts: 'Gói của bạn bắt đầu {{date}} với giá {{price}} mỗi năm.',
-      startsMonthly: 'Gói của bạn bắt đầu {{date}} với giá {{price}} mỗi tháng.',
-      keep: 'Giữ gói của tôi',
-      manage: 'Quản lý gói đăng ký',
-    },
-
     ended: {
-      heading: 'Hôm nay',
-      previewMode: 'Chế độ xem thử',
-      title: 'Đợt dùng thử của bạn đã kết thúc',
-      body: '{{days}} ngày lịch sử của bạn vẫn an toàn và vẫn đọc được.',
-      dataWaiting: 'DỮ LIỆU CỦA BẠN ĐANG CHỜ',
-      days: 'NGÀY',
-      meals: 'BỮA ĂN',
-      kgDown: 'KG GIẢM',
-      lockedEntry: 'Đã khoá',
       resume: 'Tiếp tục với Pro',
-      terms: '{{price}} mỗi năm, tự động gia hạn cho đến khi bạn hủy.',
-      termsPending: 'Tự động gia hạn hằng năm cho đến khi bạn hủy.',
-      browse: 'Tiếp tục xem miễn phí',
     },
 
     limit: {
@@ -1535,7 +1395,6 @@ export const vi = {
         refine: 'Sửa một bữa bằng cách mô tả cần RiceCal Pro.',
         read_recipe: 'Điền món ăn từ một tấm ảnh cần RiceCal Pro.',
         new_recipe: 'Giữ hơn {{recipes}} món ăn của mình cần RiceCal Pro.',
-        suggest: 'Hỏi nên ăn gì tiếp cần RiceCal Pro.',
         trend_range: 'Nhìn lại xa hơn một tuần cần RiceCal Pro.',
         review: 'Đọc một bản tổng kết cũ hơn cần RiceCal Pro.',
         nudge: 'RiceCal Pro gỡ bỏ giới hạn.',
@@ -1553,7 +1412,6 @@ export const vi = {
       perks: {
         log: 'Chụp, quét hoặc nói',
         database: 'Mọi món và mọi gói',
-        suggest: 'Hỏi nên ăn gì',
       },
       manageNote: 'Quản lý hoặc huỷ bất cứ lúc nào ở Hồ sơ, Gói đăng ký.',
       manageNoteLifetime: 'Trả một lần. Không có gì để gia hạn hay huỷ.',
@@ -1844,88 +1702,5 @@ export const vi = {
       burnValue: '{{value}} kcal',
       distanceValue: 'đi được {{value}} km',
     },
-  },
-
-  suggest: {
-    card: {
-      title: 'Chưa biết ăn gì?',
-    },
-
-    ask: {
-      title: 'Bạn đang muốn gì?',
-      meal: 'BỮA',
-      focus: 'DƯỠNG CHẤT',
-      cuisine: 'ẨM THỰC',
-      limit: 'GIỚI HẠN CALO',
-      editCuisines: 'Sửa danh sách ẩm thực',
-      addCuisine: 'Thêm một nền ẩm thực',
-      addCuisinePlaceholder: 'Thái, Nyonya, Nhật',
-      removeCuisine: 'Bỏ {{cuisine}}',
-      kcal: 'kcal',
-      less: 'Bớt calo',
-      more: 'Thêm calo',
-      leftToday: 'còn {{kcal}}',
-      healthy: 'Nhẹ hơn',
-      anything: 'Gì cũng được',
-      healthyA11y: 'Nghiêng về những món nhẹ hơn',
-      action: 'Gợi ý gì đó đi',
-    },
-
-    picks: {
-      title: 'Gợi ý cho {{meal}}',
-      thinking: 'Đang tìm gì đó cho {{meal}}',
-      thinkingA11y: 'Đang nghĩ xem nên gợi ý gì',
-      summary: '{{focus}}, {{cuisine}}, dưới {{kcal}} kcal',
-      protein: '{{grams}}g đạm',
-      retry: 'Thử lại',
-      emptyTitle: 'Không nghĩ ra gì cả',
-      emptyBody: 'Hỏi lại, hoặc nới lỏng một trong các lựa chọn.',
-    },
-
-    detail: {
-      unit: 'KCAL, {{portion}}',
-      leftAfter: 'còn {{kcal}} kcal sau đó',
-      overAfter: 'vượt {{kcal}} kcal sau đó',
-      why: 'VÌ SAO MÓN NÀY HỢP',
-      protein: 'Đạm',
-      carbs: 'Tinh bột',
-      fat: 'Chất béo',
-      sodium: 'Natri',
-    },
-
-    meal: {
-      breakfast: 'Bữa sáng',
-      lunch: 'Bữa trưa',
-      dinner: 'Bữa tối',
-      snack: 'Ăn vặt',
-    },
-    mealFor: {
-      breakfast: 'bữa sáng',
-      lunch: 'bữa trưa',
-      dinner: 'bữa tối',
-      snack: 'bữa ăn vặt',
-    },
-    focus: {
-      protein: 'Đạm',
-      balanced: 'Cân bằng',
-      carbs: 'Tinh bột',
-    },
-    focusShort: {
-      protein: 'Nhiều đạm',
-      balanced: 'Cân bằng',
-      carbs: 'Nhiều tinh bột',
-    },
-
-    sodium: {
-      low: 'thấp',
-      medium: 'trung bình',
-      high: 'cao',
-    },
-
-    ready_one: '{{count}} gợi ý đã sẵn sàng',
-    ready_other: '{{count}} gợi ý đã sẵn sàng',
-    readyAction: 'Xem ngay',
-
-    failed: 'Không lấy được gợi ý nào. Thử lại sau một lát.',
   },
 } satisfies Bundle

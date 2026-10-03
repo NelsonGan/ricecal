@@ -147,7 +147,6 @@ export const ms = {
     nav: {
       today: 'Hari ini',
       recipes: 'Makanan',
-      activity: 'Aktiviti',
       trends: 'Trend',
       me: 'Saya',
       log: 'Rekod makanan',
@@ -202,7 +201,7 @@ export const ms = {
     aiLanguage: {
       open: 'Bahasa yang digunakan ciri AI',
       title: 'Ciri AI berfungsi dalam bahasa Inggeris',
-      body: 'Snap pinggan, cakap apa yang anda makan dan tanya apa hendak dimakan seterusnya semuanya pergi kepada model yang paling memahami bahasa Inggeris. Terangkan makanan anda dalam bahasa Inggeris dan ia memahami anda dengan lebih tepat.',
+      body: 'Snap pinggan dan cakap apa yang anda makan kedua-duanya pergi kepada model yang paling memahami bahasa Inggeris. Terangkan makanan anda dalam bahasa Inggeris dan ia memahami anda dengan lebih tepat.',
       results:
         'Apa yang kembali juga dalam bahasa Inggeris. Nama hidangan, bahan dan saiz hidangan disimpan dalam bahasa Inggeris di dalam katalog makanan, jadi itulah bahasa yang akan muncul walau apa pun tetapan apl.',
       dishes: 'Nama hidangan kekal dalam bahasa ia ditulis.',
@@ -235,8 +234,6 @@ export const ms = {
   },
 
   activity: {
-    title: 'Aktiviti',
-
     connect: {
       title: 'Biar jam tangan yang kira',
       body: 'Sambungkan apl kesihatan telefon anda dan setiap jalan kaki, larian dan permainan badminton akan menambah semula bajet hari ini.',
@@ -284,53 +281,16 @@ export const ms = {
       syncedHours: '{{count}} jam lalu',
       syncedDays: '{{count}} hari lalu',
       syncedNever: 'Belum disegerakkan',
-
-      move: 'Gerak',
-      exercise: 'Senam',
-      stand: 'Berdiri',
-      stepsRing: 'Langkah',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}} min',
-      standUnit: '/ {{goal}} jam',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ {{value}} purata',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: 'min',
-      noGoalHours: 'jam',
-
-      budgetTitle: 'BAJET DENGAN PERGERAKAN',
-      goal: 'SASARAN',
-      eaten: 'DIMAKAN',
-      burned: 'DIBAKAR',
-      left: 'BAKI',
-      over: 'LEBIH',
-      budgetOff: 'Pergerakan tidak memanjangkan bajet anda. Hidupkannya dalam tetapan Aktiviti.',
-
-      todayTitle: 'HARI INI',
-      weekTitle: 'MINGGU INI',
-      stepsRow: 'Langkah',
-      stepsRowValue: '{{steps}} hari ini',
-      balanceRow: 'Imbangan',
-      balanceDeficit: 'defisit {{value}} sehari',
-      balanceSurplus: 'lebihan {{value}} sehari',
-      balanceUnknown: 'Rekod belum cukup',
-      historyRowValue_one: '{{count}} senaman · {{time}}',
-      historyRowValue_other: '{{count}} senaman · {{time}}',
-      historyNone: 'Belum ada senaman',
-
-      syncing: 'Menyegerak…',
-
-      demoBadge: 'Data demo',
-
-      storeEmpty:
-        'Stor kesihatan ini bersambung tetapi kosong, macam mana rupa simulator. Data yang dijana akan mengisi skrin ini.',
-
-      noStandNoteGeneric:
-        'Apl kesihatan anda tidak melaporkan jam berdiri, jadi kami tunjukkan langkah.',
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'Denyutan jantung',
+      energy: 'Tenaga aktif',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: 'JARAK',
       time: 'MASA',
       pace: 'RENTAK',
@@ -345,68 +305,7 @@ export const ms = {
 
       zonesTitle: 'ZON KADAR DENYUTAN',
 
-      from: 'Daripada {{source}}',
       missing: 'Senaman ini sudah tiada dalam apl kesihatan anda.',
-    },
-
-    steps: {
-      title: 'Langkah',
-      todaySoFar: 'Hari ini setakat ini',
-      goalLine: 'Sasaran {{goal}} langkah',
-      over: '{{value}} lebih',
-      under: '{{value}} lagi',
-      unit: 'langkah · {{distance}}',
-
-      morning: 'Pagi',
-      afternoon: 'Tengah hari',
-      evening: 'Petang',
-      noHours: 'Tiada pecahan mengikut jam untuk hari ini.',
-
-      weekTitle: 'MINGGU INI',
-      dailyAvg: 'PURATA HARIAN',
-      goalDays: 'HARI SASARAN',
-      best: 'TERBAIK',
-
-      steadyNote: 'Hari anda sekata. Apa sahaja yang anda buat, ia sudah jadi tabiat.',
-      shortNote: 'Belum cukup hari untuk melihat coraknya.',
-    },
-
-    balance: {
-      chartTitle: 'Masuk lawan keluar',
-      deficit: 'defisit {{value}}',
-      surplus: 'lebihan {{value}}',
-      even: 'Seimbang',
-      eatenLegend: 'Dimakan',
-      burnedLegend: 'Dibakar',
-
-      splitTitle7d: 'DARI MANA BAKARAN ITU DATANG · 7 HARI',
-      splitTitle30d: 'DARI MANA BAKARAN ITU DATANG · 30 HARI',
-      splitTitle1y: 'DARI MANA BAKARAN ITU DATANG · 12 BULAN',
-      resting: 'Rehat',
-      restingBody: 'Sekadar hidup',
-      workouts: 'Senaman',
-      workoutsBody: 'Kos sesi anda',
-      walking: 'Berjalan',
-      walkingBody: 'Langkah dan urusan harian',
-      kcal: '{{value}} kcal',
-
-      partial:
-        'Berdasarkan {{days}} daripada {{total}} hari yang mempunyai rekod makanan dan angka tenaga rehat.',
-      noRestingTitle: 'Tiada tenaga rehat',
-      noRestingBody:
-        'Apl kesihatan anda tidak melaporkan apa yang badan anda bakar semasa rehat, jadi tiada imbangan harian untuk dilukis. Langkah, senaman dan tenaga aktif tidak terjejas.',
-      empty: 'Rekod beberapa hidangan dengan jam tangan anda dipakai dan ini akan terisi.',
-    },
-
-    history: {
-      title: 'Sejarah',
-      weekTitle: 'MINGGU INI',
-      sessions: 'SESI',
-      time: 'MASA',
-      burned: 'DIBAKAR',
-      allTitle: 'SEMUA SESI',
-      empty: 'Belum ada senaman direkodkan.',
-      emptyBody: 'Apa sahaja yang jam tangan atau telefon anda rekod akan muncul di sini.',
     },
 
     settings: {
@@ -465,10 +364,6 @@ export const ms = {
       rowing: 'Mendayung',
       stairs: 'Tangga',
       other: 'Senaman',
-    },
-
-    unit: {
-      kcal: '{{value}} kcal',
     },
   },
 
@@ -774,11 +669,9 @@ export const ms = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'Tunjuk peruntukan hari ini',
       showLeft: 'Tunjuk apa yang tinggal',
-      overNote: 'Sedikit lebih hari ini, esok kiraan baharu.',
-      overNoteOn: 'Sedikit lebih pada hari itu.',
-      burnedNote: '+{{kcal}} daripada bergerak hari ini',
-      burnedNoteOn: '+{{kcal}} daripada bergerak pada hari itu',
-      logHeading: 'DIMAKAN · {{kcal}} KCAL',
+      dayHeading: 'Hari anda',
+      steps_one: '{{steps}} langkah',
+      steps_other: '{{steps}} langkah',
       analysing: 'Membaca pinggan anda',
       analysingHint: 'Mengira sebaik sahaja ia tahu ini apa',
       describing: 'Membaca apa yang anda tulis',
@@ -826,9 +719,6 @@ export const ms = {
         over: 'Atas sasaran',
         missed: 'Tiada rekod',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: 'Tiada rekod pada hari itu.',
     },
 
     selector: {
@@ -872,8 +762,7 @@ export const ms = {
       title: 'Snap pinggan anda',
       analysing: 'Mengenal pasti apa yang ada pada pinggan',
       permissionTitle: 'Akses kamera diperlukan',
-      permissionBody:
-        'RiceCal guna kamera untuk membaca pinggan anda. Tiada apa-apa meninggalkan telefon anda.',
+      permissionBody: 'RiceCal guna kamera untuk membaca pinggan anda.',
       permissionSettings: 'Buka Tetapan',
       shutter: 'Ambil gambar',
       library: 'Pilih dari galeri',
@@ -1469,11 +1358,6 @@ export const ms = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: 'Tanya apa hendak dimakan seterusnya',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: 'Simpan apa yang anda masak',
           free: '{{recipes}} makanan',
@@ -1523,33 +1407,8 @@ export const ms = {
       later: 'Mungkin nanti',
     },
 
-    reminder: {
-      title_one: 'baki {{count}} hari dalam percubaan anda',
-      title_other: 'baki {{count}} hari dalam percubaan anda',
-      body: 'Anda sudah merekod {{days}} hari berturut-turut dan turun {{kg}} kg. Teruskan.',
-      daysLogged: 'HARI DIREKOD',
-      meals: 'HIDANGAN',
-      kgDown: 'KG TURUN',
-      starts: 'Pelan anda bermula {{date}} pada {{price}} setahun.',
-      startsMonthly: 'Pelan anda bermula {{date}} pada {{price}} sebulan.',
-      keep: 'Kekalkan pelan saya',
-      manage: 'Urus langganan',
-    },
-
     ended: {
-      heading: 'Hari ini',
-      previewMode: 'Mod pratonton',
-      title: 'Percubaan anda sudah tamat',
-      body: 'Sejarah {{days}} hari anda selamat dan masih boleh dibaca.',
-      dataWaiting: 'DATA ANDA MENUNGGU',
-      days: 'HARI',
-      meals: 'HIDANGAN',
-      kgDown: 'KG TURUN',
-      lockedEntry: 'Berkunci',
       resume: 'Teruskan dengan Pro',
-      terms: '{{price}} setahun, diperbaharui sehingga anda batalkan.',
-      termsPending: 'Diperbaharui setiap tahun sehingga anda batalkan.',
-      browse: 'Terus melayari secara percuma',
     },
 
     limit: {
@@ -1564,7 +1423,6 @@ export const ms = {
         refine: 'Membetulkan hidangan dengan menerangkannya memerlukan RiceCal Pro.',
         read_recipe: 'Mengisi makanan daripada gambar memerlukan RiceCal Pro.',
         new_recipe: 'Menyimpan lebih daripada {{recipes}} makanan sendiri memerlukan RiceCal Pro.',
-        suggest: 'Bertanya apa hendak dimakan seterusnya memerlukan RiceCal Pro.',
         trend_range: 'Melihat lebih jauh daripada seminggu memerlukan RiceCal Pro.',
         review: 'Membaca ulasan lama memerlukan RiceCal Pro.',
         nudge: 'RiceCal Pro membuang hadnya.',
@@ -1582,7 +1440,6 @@ export const ms = {
       perks: {
         log: 'Snap, imbas atau cakap',
         database: 'Setiap hidangan dan bungkusan',
-        suggest: 'Tanya apa hendak dimakan',
       },
       manageNote: 'Urus atau batalkan bila-bila masa dalam Profil, Langganan.',
       manageNoteLifetime: 'Dibayar sekali. Tiada apa-apa untuk diperbaharui atau dibatalkan.',
@@ -1876,88 +1733,5 @@ export const ms = {
       burnValue: '{{value}} kcal',
       distanceValue: '{{value}} km dilalui',
     },
-  },
-
-  suggest: {
-    card: {
-      title: 'Tak pasti nak makan apa?',
-    },
-
-    ask: {
-      title: 'Apa yang anda cari?',
-      meal: 'HIDANGAN',
-      focus: 'MAKRO',
-      cuisine: 'MASAKAN',
-      limit: 'HAD KALORI',
-      editCuisines: 'Sunting masakan',
-      addCuisine: 'Tambah satu masakan',
-      addCuisinePlaceholder: 'Thai, Nyonya, Jepun',
-      removeCuisine: 'Buang {{cuisine}}',
-      kcal: 'kcal',
-      less: 'Kurangkan kalori',
-      more: 'Tambahkan kalori',
-      leftToday: 'baki {{kcal}}',
-      healthy: 'Lebih ringan',
-      anything: 'Apa sahaja',
-      healthyA11y: 'Cenderung ke hidangan yang lebih ringan',
-      action: 'Cadangkan sesuatu',
-    },
-
-    picks: {
-      title: 'Idea untuk {{meal}}',
-      thinking: 'Mencari sesuatu untuk {{meal}}',
-      thinkingA11y: 'Memikirkan apa hendak dicadangkan',
-      summary: '{{focus}}, {{cuisine}}, bawah {{kcal}} kcal',
-      protein: '{{grams}}g protein',
-      retry: 'Cuba lagi',
-      emptyTitle: 'Tiada apa-apa terlintas',
-      emptyBody: 'Tanya sekali lagi, atau longgarkan salah satu jawapan.',
-    },
-
-    detail: {
-      unit: 'KCAL, {{portion}}',
-      leftAfter: 'baki {{kcal}} kcal selepasnya',
-      overAfter: 'lebih {{kcal}} kcal selepasnya',
-      why: 'KENAPA INI SESUAI',
-      protein: 'Protein',
-      carbs: 'Karbo',
-      fat: 'Lemak',
-      sodium: 'Natrium',
-    },
-
-    meal: {
-      breakfast: 'Sarapan',
-      lunch: 'Makan tengah hari',
-      dinner: 'Makan malam',
-      snack: 'Snek',
-    },
-    mealFor: {
-      breakfast: 'sarapan',
-      lunch: 'makan tengah hari',
-      dinner: 'makan malam',
-      snack: 'snek',
-    },
-    focus: {
-      protein: 'Protein',
-      balanced: 'Seimbang',
-      carbs: 'Karbo',
-    },
-    focusShort: {
-      protein: 'Tinggi protein',
-      balanced: 'Seimbang',
-      carbs: 'Tinggi karbo',
-    },
-
-    sodium: {
-      low: 'rendah',
-      medium: 'sederhana',
-      high: 'tinggi',
-    },
-
-    ready_one: '{{count}} idea sudah sedia',
-    ready_other: '{{count}} idea sudah sedia',
-    readyAction: 'Lihat',
-
-    failed: 'Tidak dapat mengambil sebarang cadangan. Cuba lagi sebentar nanti.',
   },
 } satisfies Bundle

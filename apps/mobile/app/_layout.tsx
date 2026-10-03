@@ -334,10 +334,7 @@ function RootStack() {
           the search dropped the user two panels back, onto the dish. A page
           keeps the search over it and reveals the plate again. */}
       <Stack.Screen name="log/ingredients" />
-      {/* ONE recipe pushes; the LIST is a tab. Singular and plural, and the
-          split is the information hierarchy rather than a naming quirk: the
-          collection is somewhere the app IS, and a recipe is somewhere you go,
-          edit and come back from.
+      {/* A recipe pushes from My foods in Settings or the log search.
 
           One entry, not two: the group has a layout of its own, because a
           shared recipe is a link and a link is opened cold. See
@@ -361,13 +358,10 @@ function RootStack() {
           logged — so it takes the stack's default push and wears a back
           chevron like every other full page here.
 
-          These three do present. Welcome and ended are arrivals rather than
-          places: one lands after a purchase settles and the other after a
-          subscription lapses, and neither has a screen behind it worth
-          returning to. The reminder is a sheet-sized nudge. */}
+          Welcome does present. It is an arrival rather than a place: it lands
+          after a purchase settles, with no screen behind it worth returning
+          to. */}
       <Stack.Screen name="paywall/welcome" options={{ presentation: 'fullScreenModal' }} />
-      <Stack.Screen name="paywall/reminder" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="paywall/ended" options={{ presentation: 'fullScreenModal' }} />
     </Stack>
   )
 }

@@ -55,6 +55,7 @@ import { track } from '@/lib/analytics'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals, roundHalfUp } from '@/lib/nutrition'
 import { formatPortion, servingUnit } from '@/lib/portions'
+import { SessionGate } from '@/lib/SessionGate'
 import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -166,7 +167,15 @@ function CardEdit({ label, onPress }: { label: string; onPress: () => void }) {
  * The add path is still a staged form, because there is nothing to write until
  * Add.
  */
-export default function FoodDetail() {
+export default function FoodDetailRoute() {
+  return (
+    <SessionGate>
+      <FoodDetail />
+    </SessionGate>
+  )
+}
+
+function FoodDetail() {
   const { t } = useTranslation(['logging', 'common', 'social'])
   const goBack = useBack('/today')
   /**

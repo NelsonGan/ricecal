@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { View } from 'react-native'
+import { useWindowDimensions, View } from 'react-native'
 
 import { cn, Text } from '@/ui'
 
@@ -27,35 +27,28 @@ export type ScreenTitleProps = {
  * back button. A root screen has neither, so its larger title stays left aligned.
  */
 export function ScreenTitle({ title, leading, trailing, className }: ScreenTitleProps) {
+  const { fontScale } = useWindowDimensions()
+  const wideText = fontScale > 1.3
   return (
-    <View
-      className={cn('flex-row items-center justify-between gap-md pt-1', className)}
-      accessibilityRole="header"
-    >
-      {leading}
-      {/*
-        Shrinks rather than ellipsises.
-
-        The title shares its row with a streak pill and a view toggle, and what
-        goes in it is sometimes a date. "8月17日 周一" at the largest Dynamic Type
-        setting did not fit and came back as "8月17日…", which is a title that
-        has stopped saying which day it is about. A point or two smaller is
-        legible; a truncated date is not.
-
-        Safe beside `adjustsFontSizeToFit` because `Text` deliberately sets no
-        `lineHeight` when it sees that prop — the React Native bug `StatTile`
-        documents needs both together.
-      */}
-      <Text
-        variant="screenTitle"
-        className="flex-1 text-left"
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.85}
-      >
-        {title}
-      </Text>
-      {trailing}
+    <View className={cn('gap-3 pt-1', className)} accessibilityRole="header">
+      <View className="flex-row items-center justify-between gap-md">
+        {leading}
+        {/* Dates must remain complete. With large text the title wraps and
+            the badge gets its own row; at ordinary sizes the title can shrink.
+            Text omits lineHeight when shrinking to avoid the native bug
+            documented in StatTile. */}
+        <Text
+          variant="screenTitle"
+          className="flex-1 text-left"
+          numberOfLines={wideText ? undefined : 1}
+          adjustsFontSizeToFit={!wideText}
+          minimumFontScale={0.85}
+        >
+          {title}
+        </Text>
+        {!wideText ? trailing : null}
+      </View>
+      {wideText && trailing ? <View className="max-w-full self-start">{trailing}</View> : null}
     </View>
   )
 }

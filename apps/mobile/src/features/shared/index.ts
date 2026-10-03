@@ -22,9 +22,7 @@ export { EntryList, type EntryListProps, formatTime } from './EntryList'
 export {
   ItemRow,
   type ItemRowProps,
-  ROW_TEXT_INDENT,
   ROW_TILE,
-  ROW_TILE_ICON,
 } from './ItemRow'
 export { LanguageAiNote, LanguageHelpButton } from './LanguageHelp'
 export { MacroBars, type MacroBarsProps } from './MacroBars'

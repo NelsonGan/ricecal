@@ -198,6 +198,7 @@ export function FeedbackSection() {
           value={navTab}
           onChange={setNavTab}
           onPressAction={() => toast.show({ title: 'Quick add' })}
+          actionLabel="Add"
         />
       </Card>
     </>

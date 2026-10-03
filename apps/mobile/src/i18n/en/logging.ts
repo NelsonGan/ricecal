@@ -15,24 +15,14 @@ export const logging = {
     kcalOfGoal: '/{{goal}} KCAL',
     showGoals: 'Show the day’s allowance',
     showLeft: 'Show what is left',
-    /** Shown when the day is over budget. Never scold. */
-    overNote: 'A bit over today, tomorrow is a new count.',
     /**
-     * The same, for a day reached through the week strip. "Tomorrow is a new
-     * count" is a kindness about a day still running and wrong about last
-     * Tuesday, whose tomorrow has been and gone.
+     * The heading over the day's list: meals and workouts, newest first. See
+     * `EntryList`.
      */
-    overNoteOn: 'A bit over that day.',
-    /**
-     * Under the ring when a health store credited movement, so a goal higher
-     * than the one in Settings is explained where it is noticed. "+360 from
-     * moving" rather than "360 burned": movement adds, and the plus says so.
-     */
-    burnedNote: '+{{kcal}} from moving today',
-    /** The same line about a day the strip went back to. */
-    burnedNoteOn: '+{{kcal}} from moving that day',
-    /** Everything logged today, in one list. See `EntryList` for why. */
-    logHeading: 'EATEN · {{kcal}} KCAL',
+    dayHeading: 'Your day',
+    /** Opposite the heading, when a health store reported the day. */
+    steps_one: '{{steps}} step',
+    steps_other: '{{steps}} steps',
     /** A snapped plate whose dish is still being worked out. */
     analysing: 'Reading your plate',
     analysingHint: 'Counting once it knows what this is',
@@ -118,14 +108,6 @@ export const logging = {
       over: 'Over goal',
       missed: 'Not logged',
     },
-    /**
-     * The card under the grid, headed by the day and nothing else. It carried
-     * the meal count too, which the list directly under it already gives.
-     */
-    dayHeading: '{{day}}',
-    dayKcal: '{{kcal}} kcal',
-    /** A day with nothing on it. Not a failure, and not scolded. */
-    dayEmpty: 'Nothing logged that day.',
   },
 
   selector: {
@@ -201,7 +183,7 @@ export const logging = {
     title: 'Snap your plate',
     analysing: 'Working out what is on the plate',
     permissionTitle: 'Camera access needed',
-    permissionBody: 'RiceCal uses the camera to read your plate. Nothing leaves your phone.',
+    permissionBody: 'RiceCal uses the camera to read your plate.',
     /**
      * The label is `common:action.continue` now. Guideline 5.1.1(iv): a button in
      * front of a system permission sheet may not be worded as the ask.

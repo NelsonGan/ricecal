@@ -143,7 +143,6 @@ export const th = {
     nav: {
       today: 'วันนี้',
       recipes: 'อาหาร',
-      activity: 'กิจกรรม',
       trends: 'แนวโน้ม',
       me: 'ฉัน',
       log: 'บันทึกอาหาร',
@@ -198,7 +197,7 @@ export const th = {
     aiLanguage: {
       open: 'ฟีเจอร์ AI ใช้ภาษาอะไร',
       title: 'ฟีเจอร์ AI ทำงานเป็นภาษาอังกฤษ',
-      body: 'การถ่ายรูปจาน การพิมพ์บอกว่ากินอะไร และการถามว่ามื้อต่อไปกินอะไรดี ล้วนส่งไปยังโมเดลที่เข้าใจภาษาอังกฤษดีที่สุด ถ้าคุณบรรยายอาหารเป็นภาษาอังกฤษ มันจะเข้าใจได้แม่นยำกว่า',
+      body: 'การถ่ายรูปจานและการพิมพ์บอกว่ากินอะไร ล้วนส่งไปยังโมเดลที่เข้าใจภาษาอังกฤษดีที่สุด ถ้าคุณบรรยายอาหารเป็นภาษาอังกฤษ มันจะเข้าใจได้แม่นยำกว่า',
       results:
         'สิ่งที่ได้กลับมาก็เป็นภาษาอังกฤษเช่นกัน ชื่ออาหาร ส่วนประกอบ และขนาดที่เสิร์ฟถูกเก็บเป็นภาษาอังกฤษในคลังอาหาร ดังนั้นไม่ว่าแอปจะตั้งเป็นภาษาใด สิ่งเหล่านี้ก็จะมาเป็นภาษาอังกฤษ',
       dishes: 'ชื่ออาหารจะคงภาษาเดิมตามที่ถูกเขียนไว้',
@@ -231,8 +230,6 @@ export const th = {
   },
 
   activity: {
-    title: 'กิจกรรม',
-
     connect: {
       title: 'ให้นาฬิกาเป็นคนนับ',
       body: 'เชื่อมต่อแอปสุขภาพในเครื่อง แล้วทุกการเดิน วิ่ง และตีแบด จะถูกบวกกลับเข้าโควตาของวันนี้',
@@ -277,52 +274,16 @@ export const th = {
       syncedHours: '{{count}} ชม.ที่แล้ว',
       syncedDays: '{{count}} วันที่แล้ว',
       syncedNever: 'ยังไม่ได้ซิงค์',
-
-      move: 'เคลื่อนไหว',
-      exercise: 'ออกกำลังกาย',
-      stand: 'ยืน',
-      stepsRing: 'ก้าว',
-      moveUnit: '/ {{goal}} แคล',
-      exerciseUnit: '/ {{goal}} นาที',
-      standUnit: '/ {{goal}} ชม.',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ เฉลี่ย {{value}}',
-      none: '—',
-      noGoal: 'แคล',
-      noGoalMinutes: 'นาที',
-      noGoalHours: 'ชม.',
-
-      budgetTitle: 'โควตารวมการเคลื่อนไหว',
-      goal: 'เป้าหมาย',
-      eaten: 'กินไป',
-      burned: 'เผาผลาญ',
-      left: 'เหลือ',
-      over: 'เกิน',
-      budgetOff: 'การเคลื่อนไหวยังไม่ได้ต่อโควตาของคุณ เปิดได้ในการตั้งค่ากิจกรรม',
-
-      todayTitle: 'วันนี้',
-      weekTitle: 'สัปดาห์นี้',
-      stepsRow: 'ก้าว',
-      stepsRowValue: 'วันนี้ {{steps}}',
-      balanceRow: 'สมดุล',
-      balanceDeficit: 'ขาดดุลวันละ {{value}}',
-      balanceSurplus: 'เกินดุลวันละ {{value}}',
-      balanceUnknown: 'บันทึกยังไม่พอ',
-      historyRowValue_one: '{{count}} ครั้ง · {{time}}',
-      historyRowValue_other: '{{count}} ครั้ง · {{time}}',
-      historyNone: 'ยังไม่มีการออกกำลังกาย',
-
-      syncing: 'กำลังซิงค์…',
-
-      demoBadge: 'ข้อมูลตัวอย่าง',
-
-      storeEmpty:
-        'ที่เก็บข้อมูลสุขภาพนี้เชื่อมต่อแล้วแต่ไม่มีข้อมูลอยู่ ซึ่งเป็นลักษณะของซิมูเลเตอร์ ข้อมูลที่สร้างขึ้นจะเติมหน้าจอเหล่านี้ให้',
-
-      noStandNoteGeneric: 'แอปสุขภาพของคุณไม่รายงานชั่วโมงยืน เราจึงแสดงจำนวนก้าวแทน',
     },
 
     workout: {
+      bpmUnit: 'ครั้ง/นาที',
+      metresUnit: 'ม.',
+      kilometresUnit: 'กม.',
+      heartRate: 'อัตราการเต้นหัวใจ',
+      energy: 'พลังงานจากกิจกรรม',
+      swimPaceUnit: '{{value}} /100 ม.',
+      rowPaceUnit: '{{value}} /500 ม.',
       distance: 'ระยะทาง',
       time: 'เวลา',
       pace: 'เพซ',
@@ -337,67 +298,7 @@ export const th = {
 
       zonesTitle: 'โซนอัตราการเต้นหัวใจ',
 
-      from: 'จาก {{source}}',
       missing: 'การออกกำลังกายครั้งนี้ไม่อยู่ในแอปสุขภาพของคุณแล้ว',
-    },
-
-    steps: {
-      title: 'ก้าว',
-      todaySoFar: 'วันนี้ถึงตอนนี้',
-      goalLine: 'เป้าหมาย {{goal}} ก้าว',
-      over: 'เกิน {{value}}',
-      under: 'อีก {{value}}',
-      unit: 'ก้าว · {{distance}}',
-
-      morning: 'เช้า',
-      afternoon: 'บ่าย',
-      evening: 'เย็น',
-      noHours: 'ไม่มีรายละเอียดรายชั่วโมงของวันนี้',
-
-      weekTitle: 'สัปดาห์นี้',
-      dailyAvg: 'เฉลี่ยต่อวัน',
-      goalDays: 'วันที่ถึงเป้า',
-      best: 'สูงสุด',
-
-      steadyNote: 'แต่ละวันของคุณสม่ำเสมอ ไม่ว่าคุณทำอะไรอยู่ มันกลายเป็นนิสัยแล้ว',
-      shortNote: 'ยังมีวันไม่พอที่จะเห็นรูปแบบ',
-    },
-
-    balance: {
-      chartTitle: 'เข้าเทียบออก',
-      deficit: 'ขาดดุล {{value}}',
-      surplus: 'เกินดุล {{value}}',
-      even: 'เท่ากัน',
-      eatenLegend: 'กินไป',
-      burnedLegend: 'เผาผลาญ',
-
-      splitTitle7d: 'การเผาผลาญมาจากไหน · 7 วัน',
-      splitTitle30d: 'การเผาผลาญมาจากไหน · 30 วัน',
-      splitTitle1y: 'การเผาผลาญมาจากไหน · 12 เดือน',
-      resting: 'ขณะพัก',
-      restingBody: 'แค่มีชีวิตอยู่',
-      workouts: 'ออกกำลังกาย',
-      workoutsBody: 'สิ่งที่การออกกำลังกายใช้ไป',
-      walking: 'เดิน',
-      walkingBody: 'ก้าวเดินและธุระประจำวัน',
-      kcal: '{{value}} แคล',
-
-      partial: 'อ้างอิงจาก {{days}} วัน จาก {{total}} วันที่มีทั้งบันทึกอาหารและค่าเผาผลาญขณะพัก',
-      noRestingTitle: 'ไม่มีพลังงานขณะพัก',
-      noRestingBody:
-        'แอปสุขภาพของคุณไม่รายงานการเผาผลาญขณะพัก จึงไม่มีสมดุลรายวันให้วาด ก้าว การออกกำลังกาย และพลังงานจากการเคลื่อนไหวไม่ได้รับผลกระทบ',
-      empty: 'บันทึกอาหารสักสองสามมื้อโดยใส่นาฬิกาไว้ แล้วตรงนี้จะเติมเอง',
-    },
-
-    history: {
-      title: 'ประวัติ',
-      weekTitle: 'สัปดาห์นี้',
-      sessions: 'จำนวนครั้ง',
-      time: 'เวลา',
-      burned: 'เผาผลาญ',
-      allTitle: 'ทั้งหมด',
-      empty: 'ยังไม่มีการออกกำลังกายที่บันทึกไว้',
-      emptyBody: 'อะไรก็ตามที่นาฬิกาหรือโทรศัพท์บันทึกไว้จะมาอยู่ตรงนี้',
     },
 
     settings: {
@@ -454,10 +355,6 @@ export const th = {
       rowing: 'พายเรือ',
       stairs: 'ขึ้นบันได',
       other: 'ออกกำลังกาย',
-    },
-
-    unit: {
-      kcal: '{{value}} แคล',
     },
   },
 
@@ -745,11 +642,9 @@ export const th = {
       kcalOfGoal: '/{{goal}} แคล',
       showGoals: 'แสดงโควตาของวันนี้',
       showLeft: 'แสดงส่วนที่เหลือ',
-      overNote: 'วันนี้เกินไปนิดหน่อย พรุ่งนี้เริ่มนับใหม่',
-      overNoteOn: 'วันนั้นเกินไปนิดหน่อย',
-      burnedNote: '+{{kcal}} จากการเคลื่อนไหววันนี้',
-      burnedNoteOn: '+{{kcal}} จากการเคลื่อนไหววันนั้น',
-      logHeading: 'กินไป · {{kcal}} แคล',
+      dayHeading: 'วันของคุณ',
+      steps_one: '{{steps}} ก้าว',
+      steps_other: '{{steps}} ก้าว',
       analysing: 'กำลังอ่านจานของคุณ',
       analysingHint: 'จะนับให้ทันทีที่รู้ว่านี่คืออะไร',
       describing: 'กำลังอ่านสิ่งที่คุณเขียน',
@@ -797,9 +692,6 @@ export const th = {
         over: 'เกินเป้า',
         missed: 'ไม่ได้บันทึก',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} แคล',
-      dayEmpty: 'วันนั้นไม่มีบันทึก',
     },
 
     selector: {
@@ -841,7 +733,7 @@ export const th = {
       title: 'ถ่ายจานของคุณ',
       analysing: 'กำลังดูว่าในจานมีอะไร',
       permissionTitle: 'ต้องขอสิทธิ์เข้าถึงกล้อง',
-      permissionBody: 'RiceCal ใช้กล้องอ่านจานของคุณ ไม่มีอะไรออกจากเครื่อง',
+      permissionBody: 'RiceCal ใช้กล้องอ่านจานของคุณ',
       permissionSettings: 'เปิดการตั้งค่า',
       shutter: 'ถ่ายรูป',
       library: 'เลือกจากคลังรูป',
@@ -1424,11 +1316,6 @@ export const th = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: 'ถามว่ามื้อต่อไปกินอะไรดี',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: 'บันทึกสิ่งที่คุณทำเอง',
           free: '{{recipes}} อย่าง',
@@ -1478,33 +1365,8 @@ export const th = {
       later: 'ไว้ทีหลัง',
     },
 
-    reminder: {
-      title_one: 'เหลืออีก {{count}} วันในช่วงทดลองใช้',
-      title_other: 'เหลืออีก {{count}} วันในช่วงทดลองใช้',
-      body: 'คุณบันทึกติดต่อกันมา {{days}} วันและลดไป {{kg}} กก. ทำต่อไปเลย',
-      daysLogged: 'วันที่บันทึก',
-      meals: 'มื้อ',
-      kgDown: 'กก.ที่ลดได้',
-      starts: 'แผนของคุณเริ่ม {{date}} ที่ {{price}} ต่อปี',
-      startsMonthly: 'แผนของคุณเริ่ม {{date}} ที่ {{price}} ต่อเดือน',
-      keep: 'เก็บแผนของฉันไว้',
-      manage: 'จัดการการสมัคร',
-    },
-
     ended: {
-      heading: 'วันนี้',
-      previewMode: 'โหมดดูตัวอย่าง',
-      title: 'ช่วงทดลองใช้ของคุณจบแล้ว',
-      body: 'ประวัติ {{days}} วันของคุณยังปลอดภัยและอ่านได้อยู่',
-      dataWaiting: 'ข้อมูลของคุณยังรออยู่',
-      days: 'วัน',
-      meals: 'มื้อ',
-      kgDown: 'กก.ที่ลดได้',
-      lockedEntry: 'ล็อกอยู่',
       resume: 'ใช้ต่อด้วย Pro',
-      terms: '{{price}} ต่อปี ต่ออายุอัตโนมัติจนกว่าคุณจะยกเลิก',
-      termsPending: 'ต่ออายุทุกปีจนกว่าคุณจะยกเลิก',
-      browse: 'ดูต่อแบบฟรี',
     },
 
     limit: {
@@ -1518,7 +1380,6 @@ export const th = {
         refine: 'การแก้มื้ออาหารด้วยการบรรยายต้องใช้ RiceCal Pro',
         read_recipe: 'การกรอกอาหารจากรูปถ่ายต้องใช้ RiceCal Pro',
         new_recipe: 'การเก็บอาหารของตัวเองเกิน {{recipes}} อย่างต้องใช้ RiceCal Pro',
-        suggest: 'การถามว่ามื้อต่อไปกินอะไรดีต้องใช้ RiceCal Pro',
         trend_range: 'การย้อนดูเกินหนึ่งสัปดาห์ต้องใช้ RiceCal Pro',
         review: 'การอ่านสรุปเก่ากว่านี้ต้องใช้ RiceCal Pro',
         nudge: 'RiceCal Pro ปลดขีดจำกัดออก',
@@ -1536,7 +1397,6 @@ export const th = {
       perks: {
         log: 'ถ่าย สแกน หรือพูด',
         database: 'ทุกจานและทุกซอง',
-        suggest: 'ถามว่ากินอะไรดี',
       },
       manageNote: 'จัดการหรือยกเลิกได้ทุกเมื่อที่โปรไฟล์ การสมัครสมาชิก',
       manageNoteLifetime: 'จ่ายครั้งเดียว ไม่มีอะไรต้องต่ออายุหรือยกเลิก',
@@ -1823,88 +1683,5 @@ export const th = {
       burnValue: '{{value}} แคล',
       distanceValue: 'ไปได้ {{value}} กม.',
     },
-  },
-
-  suggest: {
-    card: {
-      title: 'ไม่รู้จะกินอะไรดี',
-    },
-
-    ask: {
-      title: 'คุณอยากได้แบบไหน',
-      meal: 'มื้อ',
-      focus: 'สารอาหารหลัก',
-      cuisine: 'ประเภทอาหาร',
-      limit: 'ขีดจำกัดแคลอรี',
-      editCuisines: 'แก้ไขประเภทอาหาร',
-      addCuisine: 'เพิ่มประเภทอาหาร',
-      addCuisinePlaceholder: 'ไทย เนียนหยา ญี่ปุ่น',
-      removeCuisine: 'เอา{{cuisine}}ออก',
-      kcal: 'แคล',
-      less: 'ลดแคลอรี',
-      more: 'เพิ่มแคลอรี',
-      leftToday: 'เหลือ {{kcal}}',
-      healthy: 'เบากว่า',
-      anything: 'อะไรก็ได้',
-      healthyA11y: 'เอนไปทางจานที่เบากว่า',
-      action: 'ช่วยแนะนำหน่อย',
-    },
-
-    picks: {
-      title: 'ไอเดียสำหรับ{{meal}}',
-      thinking: 'กำลังหาอะไรสักอย่างสำหรับ{{meal}}',
-      thinkingA11y: 'กำลังคิดว่าจะแนะนำอะไร',
-      summary: '{{focus}} {{cuisine}} ไม่เกิน {{kcal}} แคล',
-      protein: 'โปรตีน {{grams}} ก.',
-      retry: 'ลองอีกครั้ง',
-      emptyTitle: 'นึกไม่ออกเลย',
-      emptyBody: 'ถามอีกครั้ง หรือผ่อนเงื่อนไขสักข้อ',
-    },
-
-    detail: {
-      unit: 'แคล, {{portion}}',
-      leftAfter: 'กินแล้วเหลือ {{kcal}} แคล',
-      overAfter: 'กินแล้วเกิน {{kcal}} แคล',
-      why: 'ทำไมจานนี้ถึงเข้ากัน',
-      protein: 'โปรตีน',
-      carbs: 'คาร์บ',
-      fat: 'ไขมัน',
-      sodium: 'โซเดียม',
-    },
-
-    meal: {
-      breakfast: 'อาหารเช้า',
-      lunch: 'อาหารกลางวัน',
-      dinner: 'อาหารเย็น',
-      snack: 'ของว่าง',
-    },
-    mealFor: {
-      breakfast: 'อาหารเช้า',
-      lunch: 'อาหารกลางวัน',
-      dinner: 'อาหารเย็น',
-      snack: 'ของว่าง',
-    },
-    focus: {
-      protein: 'โปรตีน',
-      balanced: 'สมดุล',
-      carbs: 'คาร์บ',
-    },
-    focusShort: {
-      protein: 'โปรตีนสูง',
-      balanced: 'สมดุล',
-      carbs: 'คาร์บสูง',
-    },
-
-    sodium: {
-      low: 'ต่ำ',
-      medium: 'ปานกลาง',
-      high: 'สูง',
-    },
-
-    ready_one: 'ไอเดีย {{count}} อย่างพร้อมแล้ว',
-    ready_other: 'ไอเดีย {{count}} อย่างพร้อมแล้ว',
-    readyAction: 'ดูเลย',
-
-    failed: 'ดึงคำแนะนำมาไม่ได้ ลองใหม่อีกสักครู่',
   },
 } satisfies Bundle

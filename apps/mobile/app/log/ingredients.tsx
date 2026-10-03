@@ -14,6 +14,7 @@ import {
 } from '@/data'
 import { AddPartSheet, type PartEdits, PlateEditor, partChanges } from '@/features/logging'
 import { useBack } from '@/lib/navigation'
+import { SessionGate } from '@/lib/SessionGate'
 import { AppBar, Screen, useToast } from '@/ui'
 
 /**
@@ -31,7 +32,15 @@ import { AppBar, Screen, useToast } from '@/ui'
  * overlay of staged edits. The edits live here until Save, and the food detail
  * behind refetches into the result.
  */
-export default function IngredientsScreen() {
+export default function IngredientsRoute() {
+  return (
+    <SessionGate>
+      <IngredientsScreen />
+    </SessionGate>
+  )
+}
+
+function IngredientsScreen() {
   const { t } = useTranslation(['logging', 'common'])
   const goBack = useBack('/today')
   const toast = useToast()

@@ -135,7 +135,7 @@ function HealthStep() {
      * see `requestAccess` in `lib/health/apple.ts`.
      *
      * The sync is not fired either: there is no permission to read with, and a
-     * connection row would tell the Activity tab it was connected.
+     * connection row would tell Settings, Health it was connected.
      */
     if (!access.granted) {
       next()
@@ -197,7 +197,7 @@ function HealthStep() {
           "daily habit, not a target") on a screen whose whole job is to get a
           permission sheet in front of somebody. What is being read is a list,
           and a list wants to be scanned. The bodies still exist for the
-          Activity tab's panel, which is a screen somebody CAME to read. */}
+          panel in Settings, Health, which is a screen somebody CAME to read. */}
       <Card title={t('activity:connect.readTitle')}>
         <View className="gap-3.5">
           <FactRow

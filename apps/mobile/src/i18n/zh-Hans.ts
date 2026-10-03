@@ -144,7 +144,6 @@ export const zhHans = {
     nav: {
       today: '今天',
       recipes: '食物',
-      activity: '活动',
       trends: '趋势',
       me: '我的',
       log: '记录饮食',
@@ -199,7 +198,7 @@ export const zhHans = {
     aiLanguage: {
       open: 'AI 功能用什么语言',
       title: 'AI 功能以英文运作',
-      body: '拍照识别、用文字描述、问接下来吃什么，都会交给一个最擅长英文的模型。用英文描述你的食物，它能理解得更准确。',
+      body: '拍照识别和用文字描述，都会交给一个最擅长英文的模型。用英文描述你的食物，它能理解得更准确。',
       results:
         '返回的内容也是英文。菜名、食材和份量在食物库里都是以英文存放的，所以不管应用设成哪种语言，它们都会以英文出现。',
       dishes: '菜名会保持它被写下时的语言。',
@@ -232,8 +231,6 @@ export const zhHans = {
   },
 
   activity: {
-    title: '活动',
-
     connect: {
       title: '让手表来数',
       body: '连接手机上的健康应用，散步、跑步、打羽毛球都会加回今天的额度。',
@@ -278,52 +275,16 @@ export const zhHans = {
       syncedHours: '{{count}} 小时前',
       syncedDays: '{{count}} 天前',
       syncedNever: '还没有同步',
-
-      move: '活动',
-      exercise: '锻炼',
-      stand: '站立',
-      stepsRing: '步数',
-      moveUnit: '/ {{goal}} 千卡',
-      exerciseUnit: '/ {{goal}} 分钟',
-      standUnit: '/ {{goal}} 小时',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ 平均 {{value}}',
-      none: '—',
-      noGoal: '千卡',
-      noGoalMinutes: '分钟',
-      noGoalHours: '小时',
-
-      budgetTitle: '算上运动的额度',
-      goal: '目标',
-      eaten: '已吃',
-      burned: '消耗',
-      left: '剩余',
-      over: '超出',
-      budgetOff: '运动目前没有拉高你的额度。可以在活动设置里打开。',
-
-      todayTitle: '今天',
-      weekTitle: '本周',
-      stepsRow: '步数',
-      stepsRowValue: '今天 {{steps}}',
-      balanceRow: '收支',
-      balanceDeficit: '每天缺口 {{value}}',
-      balanceSurplus: '每天盈余 {{value}}',
-      balanceUnknown: '记录还不够',
-      historyRowValue_one: '{{count}} 次锻炼 · {{time}}',
-      historyRowValue_other: '{{count}} 次锻炼 · {{time}}',
-      historyNone: '还没有锻炼记录',
-
-      syncing: '正在同步…',
-
-      demoBadge: '演示数据',
-
-      storeEmpty:
-        '这个健康存储已连接，但里面没有数据，模拟器就是这样。这些页面会用生成的数据填充。',
-
-      noStandNoteGeneric: '你的健康应用不提供站立小时数，所以这里显示步数。',
     },
 
     workout: {
+      bpmUnit: '次/分',
+      metresUnit: '米',
+      kilometresUnit: '公里',
+      heartRate: '心率',
+      energy: '活动能量',
+      swimPaceUnit: '{{value}} /100 米',
+      rowPaceUnit: '{{value}} /500 米',
       distance: '距离',
       time: '时长',
       pace: '配速',
@@ -338,67 +299,7 @@ export const zhHans = {
 
       zonesTitle: '心率区间',
 
-      from: '来自 {{source}}',
       missing: '这次锻炼已经不在你的健康应用里了。',
-    },
-
-    steps: {
-      title: '步数',
-      todaySoFar: '今天到现在',
-      goalLine: '目标 {{goal}} 步',
-      over: '超出 {{value}}',
-      under: '还差 {{value}}',
-      unit: '步 · {{distance}}',
-
-      morning: '上午',
-      afternoon: '下午',
-      evening: '晚上',
-      noHours: '这一天没有分时段的数据。',
-
-      weekTitle: '本周',
-      dailyAvg: '日均',
-      goalDays: '达标天数',
-      best: '最高',
-
-      steadyNote: '你每天都很平均。不管你在做什么，它已经是习惯了。',
-      shortNote: '天数还不够，看不出规律。',
-    },
-
-    balance: {
-      chartTitle: '吃进和消耗',
-      deficit: '缺口 {{value}}',
-      surplus: '盈余 {{value}}',
-      even: '持平',
-      eatenLegend: '吃进',
-      burnedLegend: '消耗',
-
-      splitTitle7d: '消耗来自哪里 · 7 天',
-      splitTitle30d: '消耗来自哪里 · 30 天',
-      splitTitle1y: '消耗来自哪里 · 12 个月',
-      resting: '基础代谢',
-      restingBody: '活着本身就在消耗',
-      workouts: '锻炼',
-      workoutsBody: '你的运动花掉的',
-      walking: '走路',
-      walkingBody: '走动和跑腿',
-      kcal: '{{value}} 千卡',
-
-      partial: '基于 {{total}} 天里既有饮食记录又有基础代谢数据的 {{days}} 天。',
-      noRestingTitle: '没有基础代谢数据',
-      noRestingBody:
-        '你的健康应用不提供身体静息时的消耗，所以画不出每日收支。步数、锻炼和活动消耗不受影响。',
-      empty: '戴着手表记录几餐，这里就会填上。',
-    },
-
-    history: {
-      title: '历史',
-      weekTitle: '本周',
-      sessions: '次数',
-      time: '时长',
-      burned: '消耗',
-      allTitle: '全部锻炼',
-      empty: '还没有锻炼记录。',
-      emptyBody: '手表或手机记录的任何运动都会出现在这里。',
     },
 
     settings: {
@@ -455,10 +356,6 @@ export const zhHans = {
       rowing: '划船',
       stairs: '爬楼梯',
       other: '锻炼',
-    },
-
-    unit: {
-      kcal: '{{value}} 千卡',
     },
   },
 
@@ -746,11 +643,9 @@ export const zhHans = {
       kcalOfGoal: '/{{goal}} 千卡',
       showGoals: '显示这一天的额度',
       showLeft: '显示还剩多少',
-      overNote: '今天稍微超了一点，明天重新开始。',
-      overNoteOn: '那天稍微超了一点。',
-      burnedNote: '今天活动增加了 {{kcal}}',
-      burnedNoteOn: '那天活动增加了 {{kcal}}',
-      logHeading: '已吃 · {{kcal}} 千卡',
+      dayHeading: '你的一天',
+      steps_one: '{{steps}} 步',
+      steps_other: '{{steps}} 步',
       analysing: '正在看你的这盘',
       analysingHint: '认出来之后就开始算',
       describing: '正在读你写的内容',
@@ -798,9 +693,6 @@ export const zhHans = {
         over: '超过目标',
         missed: '没有记录',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} 千卡',
-      dayEmpty: '那天没有记录。',
     },
 
     selector: {
@@ -842,7 +734,7 @@ export const zhHans = {
       title: '拍下你的这盘',
       analysing: '正在弄清楚盘子里是什么',
       permissionTitle: '需要相机权限',
-      permissionBody: 'RiceCal 用相机来读你的这盘。什么都不会离开你的手机。',
+      permissionBody: 'RiceCal 用相机来读你的这盘。',
       permissionSettings: '打开设置',
       shutter: '拍照',
       library: '从相册里选',
@@ -1425,11 +1317,6 @@ export const zhHans = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: '问接下来吃什么',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: '保存你做的菜',
           free: '{{recipes}} 个食物',
@@ -1479,33 +1366,8 @@ export const zhHans = {
       later: '以后再说',
     },
 
-    reminder: {
-      title_one: '试用还剩 {{count}} 天',
-      title_other: '试用还剩 {{count}} 天',
-      body: '你已经连续记录 {{days}} 天，减了 {{kg}} 公斤。保持下去。',
-      daysLogged: '记录天数',
-      meals: '餐数',
-      kgDown: '减掉公斤',
-      starts: '你的方案从 {{date}} 开始，每年 {{price}}。',
-      startsMonthly: '你的方案从 {{date}} 开始，每月 {{price}}。',
-      keep: '保留我的方案',
-      manage: '管理订阅',
-    },
-
     ended: {
-      heading: '今天',
-      previewMode: '预览模式',
-      title: '你的试用已经结束',
-      body: '你 {{days}} 天的历史都还在，也还能看。',
-      dataWaiting: '你的数据还在等你',
-      days: '天',
-      meals: '餐',
-      kgDown: '减掉公斤',
-      lockedEntry: '已锁定',
       resume: '继续使用 Pro',
-      terms: '每年 {{price}}，在你取消前自动续订。',
-      termsPending: '在你取消前每年自动续订。',
-      browse: '继续免费浏览',
     },
 
     limit: {
@@ -1519,7 +1381,6 @@ export const zhHans = {
         refine: '用描述修正一餐需要 RiceCal Pro。',
         read_recipe: '用照片填好一个食物需要 RiceCal Pro。',
         new_recipe: '保存超过 {{recipes}} 个自己的食物需要 RiceCal Pro。',
-        suggest: '问接下来吃什么需要 RiceCal Pro。',
         trend_range: '往前看超过一周需要 RiceCal Pro。',
         review: '看更早的回顾需要 RiceCal Pro。',
         nudge: 'RiceCal Pro 把上限拿掉。',
@@ -1537,7 +1398,6 @@ export const zhHans = {
       perks: {
         log: '拍照、扫码或者说一句',
         database: '每道菜和每件包装',
-        suggest: '问问吃什么',
       },
       manageNote: '随时在「我的」里的订阅中管理或取消。',
       manageNoteLifetime: '一次付清。没有什么要续费或者取消的。',
@@ -1824,88 +1684,5 @@ export const zhHans = {
       burnValue: '{{value}} 千卡',
       distanceValue: '走了 {{value}} 公里',
     },
-  },
-
-  suggest: {
-    card: {
-      title: '不知道吃什么？',
-    },
-
-    ask: {
-      title: '你想要什么样的？',
-      meal: '这一餐',
-      focus: '营养素',
-      cuisine: '菜系',
-      limit: '热量上限',
-      editCuisines: '编辑菜系',
-      addCuisine: '添加一个菜系',
-      addCuisinePlaceholder: '泰式、娘惹、日式',
-      removeCuisine: '移除{{cuisine}}',
-      kcal: '千卡',
-      less: '少一点热量',
-      more: '多一点热量',
-      leftToday: '还剩 {{kcal}}',
-      healthy: '清淡一些',
-      anything: '都可以',
-      healthyA11y: '偏向清淡一些的菜',
-      action: '给我一些建议',
-    },
-
-    picks: {
-      title: '{{meal}}的点子',
-      thinking: '正在给{{meal}}找点什么',
-      thinkingA11y: '正在想推荐什么',
-      summary: '{{focus}}，{{cuisine}}，{{kcal}} 千卡以内',
-      protein: '{{grams}}克蛋白质',
-      retry: '再试一次',
-      emptyTitle: '一时想不出来',
-      emptyBody: '再问一次，或者放宽其中一个条件。',
-    },
-
-    detail: {
-      unit: '千卡，{{portion}}',
-      leftAfter: '吃完还剩 {{kcal}} 千卡',
-      overAfter: '吃完超出 {{kcal}} 千卡',
-      why: '为什么合适',
-      protein: '蛋白质',
-      carbs: '碳水',
-      fat: '脂肪',
-      sodium: '钠',
-    },
-
-    meal: {
-      breakfast: '早餐',
-      lunch: '午餐',
-      dinner: '晚餐',
-      snack: '加餐',
-    },
-    mealFor: {
-      breakfast: '早餐',
-      lunch: '午餐',
-      dinner: '晚餐',
-      snack: '加餐',
-    },
-    focus: {
-      protein: '蛋白质',
-      balanced: '均衡',
-      carbs: '碳水',
-    },
-    focusShort: {
-      protein: '高蛋白',
-      balanced: '均衡',
-      carbs: '高碳水',
-    },
-
-    sodium: {
-      low: '低',
-      medium: '中',
-      high: '高',
-    },
-
-    ready_one: '{{count}} 个点子准备好了',
-    ready_other: '{{count}} 个点子准备好了',
-    readyAction: '看看',
-
-    failed: '没能拿到任何建议。过一会儿再试。',
   },
 } satisfies Bundle

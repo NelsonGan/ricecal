@@ -1,19 +1,19 @@
-import { Redirect, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { AppState, View } from 'react-native'
 
 import {
   useClearDemoActivity,
+  useConnectHealth,
   useDisconnectHealth,
   useHealthConnection,
-  useSession,
   useSettings,
   useSyncHealth,
   useUpdateSettings,
 } from '@/data'
-import { count, syncedAgo } from '@/features/activity'
+import { ConnectPanel, count, syncedAgo } from '@/features/activity'
 import { ToggleRow } from '@/features/shared'
+import { type Availability, canOfferDemo, offeredProviders, type ProviderId } from '@/lib/health'
 import { useBack } from '@/lib/navigation'
 import {
   AppBar,
@@ -30,27 +30,6 @@ import {
 } from '@/ui'
 
 /**
- * The session guard, as its own component. Everything below reaches `useUserId`,
- * which throws by design without a session, and two things reach this screen
- * without one: a deep link, which never passes the guard at `/`, and a Fast
- * Refresh, where `SessionProvider` re-initialises and every mounted screen
- * re-renders into the gap.
- *
- * A wrapper rather than an early return, because the check has to happen before
- * any hook below runs. The sibling screens in `app/settings/` have the same
- * exposure and are left alone: a shared `_layout.tsx` would fix all six and would
- * also nest them in a new navigator.
- */
-export default function HealthSettingsRoute() {
-  const { session, loading } = useSession()
-
-  if (loading) return null
-  if (!session) return <Redirect href="/sign-in" />
-
-  return <HealthSettingsScreen />
-}
-
-/**
  * N6: what is connected, what it gives us, and how to stop it.
  *
  * The "WHAT WE READ" list is per data type rather than per app. On Android each
@@ -58,14 +37,16 @@ export default function HealthSettingsRoute() {
  * returns the permissions it gave; on iOS every row says "On", because HealthKit
  * refuses to report whether a READ was allowed — deliberately, since knowing an
  * app was denied is itself information about the user. The honest signal there
- * is an empty Activity tab, not a row on this screen.
+ * is an empty day list on Today, not a row on this screen.
+ *
+ * Not connected, it is where a store is connected: the Activity tab that used to
+ * do it is gone, and this is the screen Me already links to by the same name.
  *
  * Disconnecting keeps the history. See `useDisconnectHealth` for why.
  */
-function HealthSettingsScreen() {
+export default function HealthSettingsScreen() {
   const { t } = useTranslation(['activity', 'profile', 'common'])
   const goBack = useBack('/me')
-  const router = useRouter()
 
   const connection = useHealthConnection()
   const { data: settings } = useSettings()
@@ -76,12 +57,47 @@ function HealthSettingsScreen() {
 
   const [confirming, setConfirming] = useState(false)
 
+  // Availability belongs to this device. Returning from the Play Store or
+  // Settings can change it without changing anything in the database.
+  const [availability, setAvailability] = useState<Availability | null>(null)
+  const check = useCallback(() => {
+    offeredProviders()
+      .then(({ native }) => setAvailability(native.availability))
+      .catch(() => setAvailability({ ok: false, reason: 'wrong-platform' }))
+  }, [])
+  useEffect(() => {
+    check()
+    const listener = AppState.addEventListener('change', (state) => {
+      if (state === 'active') check()
+    })
+    return () => listener.remove()
+  }, [check])
+
+  const connect = useConnectHealth()
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
+  const [cameBackEmpty, setCameBackEmpty] = useState(false)
+  const onConnect = (id: ProviderId) => {
+    setCameBackEmpty(false)
+    setProgress(null)
+    connect.mutate(
+      { provider: id, onProgress: setProgress },
+      {
+        // Zero days after a granted-looking connect is the only signal iOS
+        // gives that the read was refused. See `apple.ts`.
+        onSuccess: (result) => setCameBackEmpty(result.granted && result.days === 0),
+      },
+    )
+  }
+
   const provider = connection.data?.provider ?? null
   const connected = connection.data?.connected ?? false
   const synced = syncedAgo(connection.data?.lastSyncedAt ?? null)
   const granted = new Set(connection.data?.permissions ?? [])
+  // The connection is recorded before its backfill. Keep the progress and
+  // empty-read guidance visible until that first read has something to show.
+  const showConnection = provider && connected && !connect.isPending && !cameBackEmpty
 
-  if (connection.isPending) {
+  if (connection.isPending || (!showConnection && !availability)) {
     return (
       <Screen
         header={
@@ -109,7 +125,7 @@ function HealthSettingsScreen() {
         />
       }
     >
-      {provider && connected ? (
+      {showConnection ? (
         <>
           <Card title={t('activity:settings.connectedTitle')}>
             <View className="gap-4">
@@ -187,22 +203,15 @@ function HealthSettingsScreen() {
           </Card>
         </>
       ) : (
-        <Card>
-          <View className="gap-3">
-            <Text variant="body">{t('activity:connect.body')}</Text>
-            {/* `/(tabs)/activity`, NOT `/activity`.
-                Two route files are named `activity` — this tab and the
-                onboarding question about how active your day is — and a route
-                GROUP contributes no path segment, so both are `/activity` and
-                expo-router picks one. It picked onboarding. Tapping this button
-                after disconnecting dropped the user into "How active is your
-                day?", progress bar and all, with no way back to the screen they
-                had asked for. */}
-            <Button fullWidth onPress={() => router.push('/(tabs)/activity')}>
-              {t('activity:title')}
-            </Button>
-          </View>
-        </Card>
+        <ConnectPanel
+          availability={availability ?? { ok: false, reason: 'wrong-platform' }}
+          demo={canOfferDemo(availability ?? { ok: true }, cameBackEmpty)}
+          busy={connect.isPending}
+          progress={progress}
+          cameBackEmpty={cameBackEmpty}
+          onConnect={onConnect}
+          onRecheck={check}
+        />
       )}
 
       <Card flush>

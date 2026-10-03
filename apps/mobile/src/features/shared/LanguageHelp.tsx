@@ -8,8 +8,8 @@ import { Icon, IconButton, Sheet, Text } from '@/ui'
 /**
  * What the language setting does not change, said where it is chosen.
  *
- * Everything on screen is translated. The scanning, describing and suggestions
- * are not: they go to a model that reads English best, against a catalogue whose
+ * Everything on screen is translated. The scanning and describing are not:
+ * they go to a model that reads English best, against a catalogue whose
  * dish names and serving labels are stored in English. Somebody who sets the app
  * to Thai and types a Thai description gets a worse read, and the answer arrives
  * in English either way.

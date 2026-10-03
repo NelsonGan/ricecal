@@ -2,32 +2,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 
 import { setPersonProps, track } from '@/lib/analytics'
-import type { Database, Tables } from '@/lib/database.types'
+import type { Tables } from '@/lib/database.types'
 import { type ProviderId, parseHrZones, providerFor, sourceLabel } from '@/lib/health'
 import { supabase } from '@/lib/supabase'
 import { dateKey, datesBetween, seedMissing, unwrap, unwrapMaybe } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
-import type { TrendRange } from './types'
 
 /**
- * Movement, on the read side: the same three shapes Trends uses, plus the
- * sessions and the hours of a day.
- *
- * The bucketing and every average live in `activity_series` and
- * `activity_summary`, because a figure computed in the client is one the weekly
- * report cannot reuse.
+ * Movement on the read side: individual days, sessions and the connection.
+ * The retired Activity tab's aggregates remain in Postgres for old binaries.
  *
  * The write side is `data/health-sync.ts`, a separate file because nothing on a
  * screen calls it directly and it is the only place that writes these tables.
  */
-
-type SeriesRow = Database['public']['Functions']['activity_series']['Returns'][number]
-type SummaryRow = Database['public']['Functions']['activity_summary']['Returns'][number]
-
-/** See `data/trends.ts`: PostgREST sends `numeric` as a string. */
-const num = (value: number | null): number | null => (value === null ? null : Number(value))
-const orZero = (value: number | null): number => (value === null ? 0 : Number(value))
 
 export type ActivityDay = {
   date: string
@@ -69,68 +57,6 @@ export type ActivitySession = {
   elevationM: number | null
   hrZones: { easy: number; steady: number; hard: number; peak: number } | null
   sourceName: string | null
-}
-
-export type ActivityHour = {
-  hour: number
-  steps: number
-  activeKcal: number
-  distanceM: number | null
-}
-
-export type ActivityBucket = {
-  start: string
-  end: string
-  days: number
-  activeDays: number
-  activeKcal: number | null
-  activeKcalTotal: number
-  restingKcal: number | null
-  burn: number | null
-  steps: number | null
-  stepsTotal: number
-  stepsBest: number
-  stepGoalDays: number
-  stepGoal: number
-  distanceTotalM: number
-  exerciseMinutes: number | null
-  standHours: number | null
-  sessions: number
-  sessionKcal: number
-  sessionMinutes: number
-  eaten: number | null
-  balance: number | null
-}
-
-export type ActivitySummary = {
-  from: string
-  to: string
-  days: number
-  activeDays: number
-  activeKcal: number | null
-  activeKcalTotal: number
-  restingKcal: number | null
-  restingKcalTotal: number
-  burn: number | null
-  steps: number | null
-  stepsTotal: number
-  stepsBest: number
-  stepGoalDays: number
-  stepGoal: number
-  distanceTotalM: number
-  exerciseMinutes: number | null
-  exerciseMinutesTotal: number
-  standHours: number | null
-  sessions: number
-  sessionKcal: number
-  sessionMinutes: number
-  /** Active energy no session accounts for. Clamped at zero in SQL. */
-  walkingKcal: number
-  eaten: number | null
-  eatenTotal: number
-  balance: number | null
-  /** Days with BOTH food and a resting figure — what `balance` is an average over. */
-  balanceDays: number
 }
 
 export type HealthConnection = {
@@ -203,63 +129,6 @@ function toConnection(row: Tables<'health_connections'>): HealthConnection {
     deviceName: writer(row.provider, row.device_name),
     backfilledFrom: row.backfilled_from,
     lastSyncedAt: row.last_synced_at,
-  }
-}
-
-function toBucket(row: SeriesRow): ActivityBucket {
-  return {
-    start: row.bucket_start,
-    end: row.bucket_end,
-    days: orZero(row.days),
-    activeDays: orZero(row.active_days),
-    activeKcal: num(row.active_kcal_avg),
-    activeKcalTotal: orZero(row.active_kcal_total),
-    restingKcal: num(row.resting_kcal_avg),
-    burn: num(row.burn_avg),
-    steps: num(row.steps_avg),
-    stepsTotal: orZero(row.steps_total),
-    stepsBest: orZero(row.steps_best),
-    stepGoalDays: orZero(row.step_goal_days),
-    stepGoal: orZero(row.step_goal),
-    distanceTotalM: orZero(row.distance_total_m),
-    exerciseMinutes: num(row.exercise_min_avg),
-    standHours: num(row.stand_hours_avg),
-    sessions: orZero(row.sessions),
-    sessionKcal: orZero(row.session_kcal),
-    sessionMinutes: orZero(row.session_minutes),
-    eaten: num(row.eaten_avg),
-    balance: num(row.balance_avg),
-  }
-}
-
-function toSummary(row: SummaryRow): ActivitySummary {
-  return {
-    from: row.from_date,
-    to: row.to_date,
-    days: orZero(row.days),
-    activeDays: orZero(row.active_days),
-    activeKcal: num(row.active_kcal_avg),
-    activeKcalTotal: orZero(row.active_kcal_total),
-    restingKcal: num(row.resting_kcal_avg),
-    restingKcalTotal: orZero(row.resting_kcal_total),
-    burn: num(row.burn_avg),
-    steps: num(row.steps_avg),
-    stepsTotal: orZero(row.steps_total),
-    stepsBest: orZero(row.steps_best),
-    stepGoalDays: orZero(row.step_goal_days),
-    stepGoal: orZero(row.step_goal),
-    distanceTotalM: orZero(row.distance_total_m),
-    exerciseMinutes: num(row.exercise_min_avg),
-    exerciseMinutesTotal: orZero(row.exercise_min_total),
-    standHours: num(row.stand_hours_avg),
-    sessions: orZero(row.sessions),
-    sessionKcal: orZero(row.session_kcal),
-    sessionMinutes: orZero(row.session_minutes),
-    walkingKcal: orZero(row.walking_kcal),
-    eaten: num(row.eaten_avg),
-    eatenTotal: orZero(row.eaten_total),
-    balance: num(row.balance_avg),
-    balanceDays: orZero(row.balance_days),
   }
 }
 
@@ -382,58 +251,6 @@ export function useActivitySession(id: string | undefined) {
           .maybeSingle(),
       )
       return row ? toSession(row) : null
-    },
-  })
-}
-
-/** Steps by hour for one day. Only the last month has any. */
-export function useActivityHours(date: string) {
-  const userId = useUserId()
-
-  return useQuery({
-    queryKey: keys.activityHours(userId, date),
-    queryFn: async (): Promise<ActivityHour[]> =>
-      unwrap(
-        await supabase
-          .from('activity_hours')
-          .select('hour, steps, active_kcal, distance_m')
-          .eq('user_id', userId)
-          .eq('log_date', date)
-          .order('hour'),
-      ).map((row) => ({
-        hour: row.hour,
-        steps: row.steps,
-        activeKcal: row.active_kcal,
-        distanceM: row.distance_m,
-      })),
-  })
-}
-
-/** The columns of whichever Activity chart is on screen. */
-export function useActivitySeries(range: TrendRange) {
-  const userId = useUserId()
-
-  return useQuery({
-    queryKey: keys.activitySeries(userId, range),
-    queryFn: async (): Promise<ActivityBucket[]> =>
-      (unwrap(await supabase.rpc('activity_series', { p_range: range })) as SeriesRow[]).map(
-        toBucket,
-      ),
-  })
-}
-
-/** The same range folded to one row: the tiles, and every footnote. */
-export function useActivitySummary(range: TrendRange) {
-  const userId = useUserId()
-
-  return useQuery({
-    queryKey: keys.activitySummary(userId, range),
-    queryFn: async (): Promise<ActivitySummary | null> => {
-      const rows = unwrap(
-        await supabase.rpc('activity_summary', { p_range: range }),
-      ) as SummaryRow[]
-      const row = rows[0]
-      return row ? toSummary(row) : null
     },
   })
 }

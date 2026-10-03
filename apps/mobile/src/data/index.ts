@@ -12,20 +12,14 @@
  */
 
 export {
-  type ActivityBucket,
   type ActivityDay,
-  type ActivityHour,
   type ActivitySession,
-  type ActivitySummary,
   daysAgo,
   type HealthConnection,
   providerFor,
   useActivityDay,
-  useActivityHours,
-  useActivitySeries,
   useActivitySession,
   useActivitySessions,
-  useActivitySummary,
   useClearDemoActivity,
   useDisconnectHealth,
   useHealthConnection,
@@ -152,16 +146,6 @@ export {
   useStoreEntitlement,
   useSubscription,
 } from './subscription'
-export {
-  type Cuisine,
-  type Focus,
-  type MealPick,
-  type Reason,
-  type ReasonKind,
-  type Sodium,
-  type SuggestRequest,
-  useSuggestMeals,
-} from './suggestions'
 export { useTrendSeries, useTrendSummary } from './trends'
 export * from './types'
 export { useCurrentWeight, useDeleteWeighIn, useLogWeight, useWeighIns } from './weight'

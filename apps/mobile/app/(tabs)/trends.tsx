@@ -110,6 +110,18 @@ export default function TrendsScreen() {
         unit={unit}
       />
 
+      {/* Keep Reviews available even before a finished period has much data. */}
+      <Card contentClassName="gap-0 px-5 py-1">
+        <ListRow
+          title={t('reviews:entry.title')}
+          subtitle={t('reviews:entry.subtitle')}
+          leading={<Icon set="ui" name="calendar-view" size={28} />}
+          divider={false}
+          className="py-1.5"
+          onPress={() => router.push('/reviews')}
+        />
+      </Card>
+
       {loading || !buckets ? (
         // One block, not three. The panels differ in how many cards they have,
         // and a skeleton that guesses wrong is a layout that jumps twice.
@@ -129,25 +141,6 @@ export default function TrendsScreen() {
           onEdit={setWeighingIn}
         />
       )}
-
-      {/* At the foot rather than beside the title: a review is a place you go
-          when you have finished reading this screen, and a control up there
-          would compete with the range switch that governs everything under it.
-
-          Always here, and it used to appear only once some period had enough
-          logged in it to be worth opening. That made the one route into the
-          feature invisible to exactly the person who had not found it yet, and
-          it made "where did that row go" a question the app could not answer.
-          The list behind it draws every finished week either way. */}
-      <Card contentClassName="gap-0 p-card">
-        <ListRow
-          title={t('reviews:entry.title')}
-          subtitle={t('reviews:entry.subtitle')}
-          leading={<Icon set="ui" name="calendar-view" size={34} />}
-          divider={false}
-          onPress={() => router.push('/reviews')}
-        />
-      </Card>
 
       <WeighInSheet
         date={weighingIn}

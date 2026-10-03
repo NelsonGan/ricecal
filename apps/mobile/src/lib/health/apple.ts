@@ -332,9 +332,7 @@ export const appleHealth: HealthProvider = {
         standHours: stand == null ? null : Math.min(24, Math.round(stand / 60)),
         flights: null,
         // Ring goals live on `HKActivitySummary`, which this library does not
-        // bind, so on iOS these are always null. Null rather than a guess: the
-        // Activity tab compares the tile against the user's own recent average,
-        // which is a real figure it already has.
+        // bind, so on iOS these are always null. Null rather than a guess.
         moveGoalKcal: null,
         exerciseGoalMin: null,
         standGoalHr: null,

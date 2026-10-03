@@ -3,11 +3,13 @@ import { format, parseISO, subDays } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useWindowDimensions, View } from 'react-native'
 import {
   dateKey,
   ENTRY_FOOD_ID,
   type Entry,
   useActivityDay,
+  useActivitySessions,
   useDayLog,
   usePendingSnaps,
   useRemoveEntry,
@@ -17,10 +19,9 @@ import {
   useTargets,
 } from '@/data'
 import { socialEntryPost } from '@/data/social'
+import { count, SessionItem } from '@/features/activity'
 import {
   createDeleteGate,
-  DayMeals,
-  dayInMonth,
   MonthCalendar,
   monthStart,
   WaterCard,
@@ -28,7 +29,6 @@ import {
 } from '@/features/logging'
 import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
-import { SuggestAction } from '@/features/suggest'
 import { useTutorialOffer } from '@/features/tutorial'
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
@@ -40,7 +40,6 @@ import {
   Card,
   ConfirmSheet,
   EmptyState,
-  FloatingAction,
   Icon,
   IconButton,
   Screen,
@@ -76,6 +75,8 @@ export default function TodayScreen() {
   const { t } = useTranslation(['logging', 'common', 'social'])
   const router = useRouter()
   const toast = useToast()
+  const { width, fontScale } = useWindowDimensions()
+  const stackedSummary = width < 380 || fontScale > 1.3
 
   /**
    * The tour, offered once and never again.
@@ -154,6 +155,10 @@ export default function TodayScreen() {
     isPaused: activityPaused,
   } = useActivityDay(selectedDate)
   const { data: settings, isPending: settingsPending, isPaused: settingsPaused } = useSettings()
+  // The day's workouts, drawn among its meals. Not part of the wait below: a day
+  // whose meals are ready should not hold for the list of sessions, which on
+  // most accounts is empty.
+  const sessions = useActivitySessions(selectedDate).data ?? []
 
   /**
    * Everything under the strip waits together.
@@ -212,28 +217,13 @@ export default function TodayScreen() {
    */
   const [calendar, setCalendar] = useState(false)
   /**
-   * The month the grid is showing. Paging changes it and moves the selection
-   * with it, so the card under the grid never describes a day that is off
-   * screen. Seeded from the strip's day and re-seeded each time the calendar
-   * opens, or coming back a week later would land on last month's grid.
+   * The month the grid is showing. Seeded from the strip's day and re-seeded
+   * each time the calendar opens, or coming back a week later would land on
+   * last month's grid.
    */
   const [month, setMonth] = useState(() => monthStart(selectedDate))
 
-  /**
-   * A row is parked open with its Delete showing. See the `floating` slot.
-   * Declared beside the view mode, because the two are one piece of state about
-   * what is on screen.
-   */
-  const [swipeOpen, setSwipeOpen] = useState(false)
-
-  /**
-   * Switching views takes the swipe state with it. `swipeOpen` is reported by
-   * `EntryList`, and the calendar unmounts that list, so a row left open leaves
-   * the flag true with nothing able to clear it and the log button simply
-   * disappears. Cleared here, the one place that knows the list is going away.
-   */
   const showCalendar = (on: boolean) => {
-    setSwipeOpen(false)
     if (on) setMonth(monthStart(selectedDate))
     setCalendar(on)
   }
@@ -257,7 +247,7 @@ export default function TodayScreen() {
    * Movement extends the budget and never shrinks what was eaten. `activeKcal`
    * rather than the day's total burn: the goal is already a Mifflin-St Jeor
    * figure containing basal metabolism, so resting energy would credit a user for
-   * being alive twice. Same rule as `BudgetStrip` on the Activity tab.
+   * being alive twice.
    *
    * Zero on an account with no health connection.
    */
@@ -365,24 +355,7 @@ export default function TodayScreen() {
     // The one screen with swipeable rows on it, and the one that needs
     // gesture-handler's scroll view for them to work. Nothing here takes
     // typing, which is what makes that trade free — see `gestureScroll`.
-    <Screen
-      gestureScroll
-      /**
-       * Out of the way while a row is open for delete. `floating` overlaps the
-       * scroll content by design, and this button's corner is where a swiped
-       * row's Delete comes to rest, so it took the tap: aim at the bin and the log
-       * sheet opened.
-       *
-       * Hidden rather than moved: there is nowhere to move it that is not over
-       * another row, and a control that jumps aside is a second thing happening.
-       */
-      floating={
-        swipeOpen ? null : (
-          <FloatingAction onPress={() => router.push('/log')} label={t('common:nav.log')} />
-        )
-      }
-      floatingLeading={backToToday}
-    >
+    <Screen gestureScroll floatingLeading={backToToday}>
       <ScreenTitle
         title={title}
         leading={
@@ -427,54 +400,20 @@ export default function TodayScreen() {
       />
 
       {calendar ? (
-        <>
-          <MonthCalendar
-            month={month}
-            onMonthChange={(start) => {
-              setMonth(start)
-              // The selection follows the grid. Left where it was, the card
-              // under a July calendar would go on describing a day in August,
-              // and tapping a July day would be the only way to notice.
-              setSelectedDate(dayInMonth(start, selectedDate, todayKey))
-            }}
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            today={todayKey}
-          />
-
-          <DayMeals
-            date={selectedDate}
-            entries={day.entries}
-            loading={loading}
-            onPressEntry={(entry) =>
-              router.push({
-                pathname: '/log/food/[id]',
-                params: { id: entry.foodId ?? ENTRY_FOOD_ID, entryId: entry.id },
-              })
-            }
-          />
-
-          {/* And what they drank, which the month view had no answer for at all.
-              A day read back through the calendar is the same day the diary
-              shows, and water is half of what this app records about one — the
-              tank being missing here meant the only way to see Tuesday's water
-              was to leave the calendar, find Tuesday on the strip and come back.
-
-              The card, not a figure: it is the app's water surface, it knows how
-              to say "1.2 of 2 litres" in one picture, and somebody looking at
-              yesterday is as likely to be correcting a drink as reading one.
-
-              The bottom padding is on the LAST card rather than on the block,
-              for the reason the floating slot documents: it overlaps the scroll
-              content, so whatever ends the screen owes itself room to be read. */}
-          <WaterCard
-            className="mb-[76px]"
-            date={selectedDate}
-            ml={day.waterMl}
-            goalMl={waterGoal}
-            loading={loading}
-          />
-        </>
+        /* The month on its own, with no day selected and nothing under it. A
+           tap is a way to get to a day: it leaves the calendar and opens that
+           day here, exactly as picking it on the week strip would. It used to
+           select the day in place and list its meals and water under the grid,
+           a second, smaller copy of the diary on the same screen. */
+        <MonthCalendar
+          month={month}
+          onMonthChange={setMonth}
+          onSelect={(date) => {
+            setSelectedDate(date)
+            setCalendar(false)
+          }}
+          today={todayKey}
+        />
       ) : (
         <>
           {/* The week, above everything it explains. A day is picked here and the
@@ -482,29 +421,21 @@ export default function TodayScreen() {
           anything logged while it is selected. */}
           <WeekPicker />
 
-          {/* "I do not know what to eat", one row high, directly under the day
-              it would be answering about. It lived in the log sheet, beside the
-              heading, which was two taps deep inside a sheet whose four tiles
-              all assume the meal has been decided — so an account that never
-              pressed the log button never learnt the feature was there. See
-              `SuggestAction`. */}
-          <SuggestAction date={selectedDate} kcalLeft={left} hasBudget={Boolean(targets)} />
-
-          <Card>
+          {/* Less padding than a standard card. The ring and its three macro
+              lines are one compact reading, and the card's own 28 points around
+              them made it the tallest thing on the screen. */}
+          <Card contentClassName="px-4 py-4">
             {loading ? (
-              <Skeleton className="h-[132px] w-full" />
+              <Skeleton className="h-[112px] w-full" />
             ) : targets ? (
               <>
-                {/* Tapping the summary swaps every number in it from "what is left"
-                to "what of the allowance is used". Both readings answer a real
+                {/* Tapping the summary swaps the ring from "what is left" to
+                "what of the allowance is used". Both readings answer a real
                 question and neither fits beside the other at this size, so they
-                share the space rather than the card growing a second row. */}
-                {/* Tapping the summary swaps every number in it from "what is
-                left" to "what of the allowance is used". Both readings answer a
-                real question and neither fits beside the other at this size, so
-                they share the space rather than the card growing a second row. */}
+                share the space rather than the card growing a second row. The
+                macros carry both halves already, so they do not change. */}
                 <Tappable
-                  className="flex-row items-center gap-4"
+                  className={stackedSummary ? 'items-center gap-5' : 'flex-row items-center gap-4'}
                   onPress={() => setShowGoals((open) => !open)}
                   accessibilityRole="button"
                   accessibilityLabel={
@@ -514,8 +445,8 @@ export default function TodayScreen() {
                   <CalorieRing
                     value={eaten.kcal}
                     goal={budget}
-                    size={132}
-                    thickness={16}
+                    size={stackedSummary ? 154 : 112}
+                    thickness={12}
                     centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
                     centerCaption={
                       showGoals
@@ -526,33 +457,22 @@ export default function TodayScreen() {
                     }
                   />
                   {/* Sharing the row with the ring, so it asks for the space the
-                    ring leaves. Stacked callers do not. */}
+                    ring leaves. One line per macro, eaten against the goal, so
+                    the three rows stand no taller than the ring. */}
                   <MacroBars
-                    className="flex-1"
+                    className={stackedSummary ? 'w-full' : 'flex-1'}
                     eaten={eaten}
                     targets={targets}
-                    showGoal={showGoals}
+                    showGoal
+                    inline={!stackedSummary}
                   />
                 </Tappable>
 
-                {/* Where the extra came from.
-                Without this line the goal simply reads higher than the one set
-                in Settings, and the first thought is that the app has changed
-                it. Only shown when there IS movement credited, so an account
-                with no health store sees the screen it always saw. */}
-                {burned > 0 ? (
-                  <Text variant="meta" className="pt-1 text-pandan-ink">
-                    {t(isToday ? 'logging:today.burnedNote' : 'logging:today.burnedNoteOn', {
-                      kcal: burned.toLocaleString(),
-                    })}
-                  </Text>
-                ) : null}
-
-                {over ? (
-                  <Text variant="meta" className="pt-1">
-                    {t(isToday ? 'logging:today.overNote' : 'logging:today.overNoteOn')}
-                  </Text>
-                ) : null}
+                {/* No line under the ring any more. "+360 from moving" explained
+                    a budget higher than the one in Settings, and "A bit over"
+                    softened a ring already reading KCAL OVER; both made the card
+                    taller to say what the ring and the day list below it say.
+                    The workouts that earned the extra are rows in that list. */}
               </>
             ) : (
               <EmptyState
@@ -588,7 +508,9 @@ export default function TodayScreen() {
               <SkeletonRow />
               <SkeletonRow />
             </Card>
-          ) : day.entries.length === 0 ? /* No "Nothing logged yet" block. A day
+          ) : day.entries.length === 0 &&
+            sessions.length === 0 &&
+            !activity ? /* No "Nothing logged yet" block. A day
           before its first meal is the state this screen is in every morning,
           and a card announcing it pushed the water tracker and the ring apart
           to say something the empty list already said. The FAB is the answer to
@@ -599,6 +521,38 @@ export default function TodayScreen() {
            an add button, so two entries filled a screen with furniture. */
             <EntryList
               day={day}
+              title={t('logging:today.dayHeading')}
+              action={
+                // Only when a health store reported the day. Zero steps on an
+                // account with no store would be a claim about the user rather
+                // than about the phone.
+                activity ? (
+                  <View className="flex-row items-center gap-1">
+                    <Icon set="scenes" name="sneakers" size={18} />
+                    <Text variant="caption" className="shrink">
+                      {t('logging:today.steps', {
+                        count: activity.steps,
+                        steps: count(activity.steps),
+                      })}
+                    </Text>
+                  </View>
+                ) : undefined
+              }
+              extras={sessions.map((session) => ({
+                key: session.id,
+                at: session.startedAt,
+                node: (
+                  <SessionItem
+                    session={session}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/activity/workout/[id]',
+                        params: { id: session.id },
+                      })
+                    }
+                  />
+                ),
+              }))}
               onPressEntry={(entry) =>
                 router.push({
                   pathname: '/log/food/[id]',
@@ -623,7 +577,6 @@ export default function TodayScreen() {
               // two screens to undo; this is the shortcut, and the detail screen's
               // delete is still there for anyone who wants to look first.
               onDeleteEntry={requestDelete}
-              onSwipeOpenChange={setSwipeOpen}
             />
           )}
         </>

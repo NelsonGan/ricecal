@@ -140,7 +140,6 @@ export const ko = {
     nav: {
       today: '오늘',
       recipes: '음식',
-      activity: '활동',
       trends: '추이',
       me: '내 정보',
       log: '식사 기록',
@@ -195,7 +194,7 @@ export const ko = {
     aiLanguage: {
       open: 'AI 기능이 쓰는 언어',
       title: 'AI 기능은 영어로 작동합니다',
-      body: '접시 촬영, 먹은 것을 말로 적기, 다음에 뭘 먹을지 묻기는 모두 영어를 가장 잘 읽는 모델로 갑니다. 음식을 영어로 적어 주시면 더 정확하게 읽습니다.',
+      body: '접시 촬영과 먹은 것을 말로 적기는 모두 영어를 가장 잘 읽는 모델로 갑니다. 음식을 영어로 적어 주시면 더 정확하게 읽습니다.',
       results:
         '돌아오는 것도 영어입니다. 음식 이름, 재료, 1인분 크기는 모두 음식 목록에 영어로 저장되어 있어서, 앱을 어떤 언어로 설정하든 영어로 도착합니다.',
       dishes: '음식 이름은 적힐 때의 언어 그대로 남습니다.',
@@ -228,8 +227,6 @@ export const ko = {
   },
 
   activity: {
-    title: '활동',
-
     connect: {
       title: '시계에게 세는 일을 맡기세요',
       body: '휴대폰의 건강 앱을 연결하면 걷기, 달리기, 배드민턴까지 모두 오늘의 예산에 다시 더해집니다.',
@@ -277,52 +274,16 @@ export const ko = {
       syncedHours: '{{count}}시간 전',
       syncedDays: '{{count}}일 전',
       syncedNever: '아직 동기화 안 됨',
-
-      move: '움직임',
-      exercise: '운동',
-      stand: '일어서기',
-      stepsRing: '걸음',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}}분',
-      standUnit: '/ {{goal}}시간',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ 평균 {{value}}',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: '분',
-      noGoalHours: '시간',
-
-      budgetTitle: '움직임을 더한 예산',
-      goal: '목표',
-      eaten: '섭취',
-      burned: '소모',
-      left: '남음',
-      over: '초과',
-      budgetOff: '움직임이 예산을 늘리고 있지 않습니다. 활동 설정에서 켜세요.',
-
-      todayTitle: '오늘',
-      weekTitle: '이번 주',
-      stepsRow: '걸음',
-      stepsRowValue: '오늘 {{steps}}',
-      balanceRow: '수지',
-      balanceDeficit: '하루 {{value}} 부족',
-      balanceSurplus: '하루 {{value}} 초과',
-      balanceUnknown: '기록이 부족합니다',
-      historyRowValue_one: '운동 {{count}}회 · {{time}}',
-      historyRowValue_other: '운동 {{count}}회 · {{time}}',
-      historyNone: '아직 운동이 없습니다',
-
-      syncing: '동기화 중…',
-
-      demoBadge: '데모 데이터',
-
-      storeEmpty:
-        '이 건강 저장소는 연결됐지만 안에 데이터가 없습니다. 시뮬레이터가 딱 이런 모습입니다. 생성된 데이터가 이 화면들을 채웁니다.',
-
-      noStandNoteGeneric: '건강 앱이 일어선 시간을 알려주지 않아 대신 걸음 수를 보여줍니다.',
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: '심박수',
+      energy: '활동 에너지',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: '거리',
       time: '시간',
       pace: '페이스',
@@ -337,67 +298,7 @@ export const ko = {
 
       zonesTitle: '심박 구간',
 
-      from: '{{source}}에서',
       missing: '이 운동은 건강 앱에 더 이상 없습니다.',
-    },
-
-    steps: {
-      title: '걸음',
-      todaySoFar: '오늘 지금까지',
-      goalLine: '목표 {{goal}}걸음',
-      over: '{{value}} 초과',
-      under: '{{value}} 남음',
-      unit: '걸음 · {{distance}}',
-
-      morning: '오전',
-      afternoon: '오후',
-      evening: '저녁',
-      noHours: '이 날의 시간대별 내역이 없습니다.',
-
-      weekTitle: '이번 주',
-      dailyAvg: '하루 평균',
-      goalDays: '달성 일수',
-      best: '최고',
-
-      steadyNote: '하루하루가 고릅니다. 무엇을 하고 있든, 이제 습관입니다.',
-      shortNote: '패턴을 보기에는 아직 날짜가 부족합니다.',
-    },
-
-    balance: {
-      chartTitle: '들어온 것과 나간 것',
-      deficit: '{{value}} 부족',
-      surplus: '{{value}} 초과',
-      even: '균형',
-      eatenLegend: '섭취',
-      burnedLegend: '소모',
-
-      splitTitle7d: '소모는 어디에서 왔나 · 7일',
-      splitTitle30d: '소모는 어디에서 왔나 · 30일',
-      splitTitle1y: '소모는 어디에서 왔나 · 12개월',
-      resting: '기초대사',
-      restingBody: '살아 있는 것만으로',
-      workouts: '운동',
-      workoutsBody: '세션이 쓴 양',
-      walking: '걷기',
-      walkingBody: '걸음과 일상의 볼일',
-      kcal: '{{value}} kcal',
-
-      partial: '식사 기록과 기초대사 수치가 모두 있는 {{total}}일 중 {{days}}일을 기준으로 합니다.',
-      noRestingTitle: '기초대사 데이터가 없습니다',
-      noRestingBody:
-        '건강 앱이 쉬는 동안 몸이 태우는 양을 알려주지 않아 하루 수지를 그릴 수 없습니다. 걸음, 운동, 활동 에너지는 영향을 받지 않습니다.',
-      empty: '시계를 찬 채로 몇 끼를 기록하면 여기가 채워집니다.',
-    },
-
-    history: {
-      title: '기록',
-      weekTitle: '이번 주',
-      sessions: '횟수',
-      time: '시간',
-      burned: '소모',
-      allTitle: '모든 세션',
-      empty: '아직 기록된 운동이 없습니다.',
-      emptyBody: '시계나 휴대폰이 기록한 것은 모두 여기로 들어옵니다.',
     },
 
     settings: {
@@ -455,10 +356,6 @@ export const ko = {
       rowing: '로잉',
       stairs: '계단',
       other: '운동',
-    },
-
-    unit: {
-      kcal: '{{value}} kcal',
     },
   },
 
@@ -749,11 +646,9 @@ export const ko = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: '그날의 예산 보기',
       showLeft: '남은 양 보기',
-      overNote: '오늘은 조금 넘었어요. 내일 다시 셉니다.',
-      overNoteOn: '그날은 조금 넘었어요.',
-      burnedNote: '오늘 움직여서 +{{kcal}}',
-      burnedNoteOn: '그날 움직여서 +{{kcal}}',
-      logHeading: '섭취 · {{kcal}} KCAL',
+      dayHeading: '나의 하루',
+      steps_one: '{{steps}}걸음',
+      steps_other: '{{steps}}걸음',
       analysing: '접시를 읽는 중',
       analysingHint: '무엇인지 알면 바로 계산합니다',
       describing: '적으신 내용을 읽는 중',
@@ -801,9 +696,6 @@ export const ko = {
         over: '목표 초과',
         missed: '기록 없음',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: '그날은 기록이 없습니다.',
     },
 
     selector: {
@@ -845,7 +737,7 @@ export const ko = {
       title: '접시 찍기',
       analysing: '접시에 무엇이 있는지 파악하는 중',
       permissionTitle: '카메라 접근이 필요합니다',
-      permissionBody: 'RiceCal은 카메라로 접시를 읽습니다. 휴대폰 밖으로 나가는 것은 없습니다.',
+      permissionBody: 'RiceCal은 카메라로 접시를 읽습니다.',
       permissionSettings: '설정 열기',
       shutter: '사진 찍기',
       library: '사진에서 고르기',
@@ -1433,11 +1325,6 @@ export const ko = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: '다음에 뭘 먹을지 묻기',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: '만든 요리 저장',
           free: '음식 {{recipes}}개',
@@ -1487,33 +1374,8 @@ export const ko = {
       later: '나중에',
     },
 
-    reminder: {
-      title_one: '체험 {{count}}일 남음',
-      title_other: '체험 {{count}}일 남음',
-      body: '{{days}}일 연속으로 기록했고 {{kg}} kg 줄었습니다. 이대로 이어가세요.',
-      daysLogged: '기록한 날',
-      meals: '식사',
-      kgDown: '줄어든 KG',
-      starts: '요금제는 {{date}}에 연 {{price}}로 시작합니다.',
-      startsMonthly: '요금제는 {{date}}에 월 {{price}}로 시작합니다.',
-      keep: '내 요금제 유지',
-      manage: '구독 관리',
-    },
-
     ended: {
-      heading: '오늘',
-      previewMode: '미리보기',
-      title: '체험이 끝났습니다',
-      body: '{{days}}일치 기록은 안전하고 지금도 볼 수 있습니다.',
-      dataWaiting: '데이터가 기다리고 있습니다',
-      days: '일',
-      meals: '식사',
-      kgDown: '줄어든 KG',
-      lockedEntry: '잠김',
       resume: 'Pro로 계속하기',
-      terms: '연 {{price}}, 해지할 때까지 자동 갱신됩니다.',
-      termsPending: '해지할 때까지 매년 자동 갱신됩니다.',
-      browse: '무료로 계속 둘러보기',
     },
 
     limit: {
@@ -1527,7 +1389,6 @@ export const ko = {
         refine: '설명으로 식사를 고치려면 RiceCal Pro가 필요합니다.',
         read_recipe: '사진으로 음식을 채우려면 RiceCal Pro가 필요합니다.',
         new_recipe: '내 음식을 {{recipes}}개 넘게 두려면 RiceCal Pro가 필요합니다.',
-        suggest: '다음에 뭘 먹을지 물으려면 RiceCal Pro가 필요합니다.',
         trend_range: '한 주보다 더 거슬러 보려면 RiceCal Pro가 필요합니다.',
         review: '더 오래된 돌아보기를 읽으려면 RiceCal Pro가 필요합니다.',
         nudge: 'RiceCal Pro는 한도를 없앱니다.',
@@ -1545,7 +1406,6 @@ export const ko = {
       perks: {
         log: '찍고, 읽고, 말하고',
         database: '모든 음식과 제품',
-        suggest: '뭘 먹을지 묻기',
       },
       manageNote: '프로필의 구독에서 언제든 관리하거나 해지할 수 있습니다.',
       manageNoteLifetime: '한 번 결제로 끝. 갱신도 해지도 없습니다.',
@@ -1832,88 +1692,5 @@ export const ko = {
       burnValue: '{{value}} kcal',
       distanceValue: '{{value}} km 이동',
     },
-  },
-
-  suggest: {
-    card: {
-      title: '뭘 먹을지 모르겠나요?',
-    },
-
-    ask: {
-      title: '어떤 걸 찾으시나요?',
-      meal: '식사',
-      focus: '영양소',
-      cuisine: '요리 종류',
-      limit: '칼로리 한도',
-      editCuisines: '요리 종류 편집',
-      addCuisine: '요리 종류 추가',
-      addCuisinePlaceholder: '태국, 뇨냐, 일식',
-      removeCuisine: '{{cuisine}} 빼기',
-      kcal: 'kcal',
-      less: '칼로리 줄이기',
-      more: '칼로리 늘리기',
-      leftToday: '{{kcal}} 남음',
-      healthy: '가볍게',
-      anything: '아무거나',
-      healthyA11y: '가벼운 음식 쪽으로',
-      action: '뭔가 추천해 주세요',
-    },
-
-    picks: {
-      title: '{{meal}} 아이디어',
-      thinking: '{{meal}}에 맞는 것을 찾는 중',
-      thinkingA11y: '무엇을 추천할지 생각하는 중',
-      summary: '{{focus}}, {{cuisine}}, {{kcal}} kcal 이하',
-      protein: '단백질 {{grams}}g',
-      retry: '다시 시도',
-      emptyTitle: '떠오르는 것이 없습니다',
-      emptyBody: '다시 물어보거나, 조건 하나를 느슨하게 해보세요.',
-    },
-
-    detail: {
-      unit: 'KCAL, {{portion}}',
-      leftAfter: '먹어도 {{kcal}} kcal 남음',
-      overAfter: '먹으면 {{kcal}} kcal 초과',
-      why: '왜 잘 맞나요',
-      protein: '단백질',
-      carbs: '탄수화물',
-      fat: '지방',
-      sodium: '나트륨',
-    },
-
-    meal: {
-      breakfast: '아침',
-      lunch: '점심',
-      dinner: '저녁',
-      snack: '간식',
-    },
-    mealFor: {
-      breakfast: '아침',
-      lunch: '점심',
-      dinner: '저녁',
-      snack: '간식',
-    },
-    focus: {
-      protein: '단백질',
-      balanced: '균형',
-      carbs: '탄수화물',
-    },
-    focusShort: {
-      protein: '고단백',
-      balanced: '균형',
-      carbs: '고탄수',
-    },
-
-    sodium: {
-      low: '낮음',
-      medium: '보통',
-      high: '높음',
-    },
-
-    ready_one: '아이디어 {{count}}개가 준비됐습니다',
-    ready_other: '아이디어 {{count}}개가 준비됐습니다',
-    readyAction: '보기',
-
-    failed: '추천을 가져오지 못했습니다. 잠시 후 다시 시도하세요.',
   },
 } satisfies Bundle
