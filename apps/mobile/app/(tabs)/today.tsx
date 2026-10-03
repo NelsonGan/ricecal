@@ -24,8 +24,6 @@ import { socialEntryPost } from '@/data/social'
 import { count, SessionItem } from '@/features/activity'
 import {
   createDeleteGate,
-  DayMeals,
-  dayInMonth,
   MonthCalendar,
   monthStart,
   WaterCard,
@@ -44,7 +42,6 @@ import {
   Card,
   ConfirmSheet,
   EmptyState,
-  FloatingAction,
   Icon,
   IconButton,
   Screen,
@@ -164,11 +161,10 @@ export default function TodayScreen() {
   const sessions = useActivitySessions(selectedDate).data ?? []
 
   /**
-   * The health sync runs here, on the screen that opens first, rather than on
-   * the Activity tab. Today is where the steps and the workouts are read now,
-   * and a sync that only ran once somebody opened Activity left them a day old
-   * on the screen people actually look at. Tabs stay mounted, so this still
-   * catches every return to the foreground.
+   * The health sync runs here, on the screen that opens first and where the
+   * steps and workouts are read. It used to run on the Activity tab, which is
+   * gone. Tabs stay mounted, so this still catches every return to the
+   * foreground.
    */
   const connection = useHealthConnection()
   useHealthAutoSync(connection.data?.connected ? connection.data.provider : null)
@@ -230,28 +226,13 @@ export default function TodayScreen() {
    */
   const [calendar, setCalendar] = useState(false)
   /**
-   * The month the grid is showing. Paging changes it and moves the selection
-   * with it, so the card under the grid never describes a day that is off
-   * screen. Seeded from the strip's day and re-seeded each time the calendar
-   * opens, or coming back a week later would land on last month's grid.
+   * The month the grid is showing. Seeded from the strip's day and re-seeded
+   * each time the calendar opens, or coming back a week later would land on
+   * last month's grid.
    */
   const [month, setMonth] = useState(() => monthStart(selectedDate))
 
-  /**
-   * A row is parked open with its Delete showing. See the `floating` slot.
-   * Declared beside the view mode, because the two are one piece of state about
-   * what is on screen.
-   */
-  const [swipeOpen, setSwipeOpen] = useState(false)
-
-  /**
-   * Switching views takes the swipe state with it. `swipeOpen` is reported by
-   * `EntryList`, and the calendar unmounts that list, so a row left open leaves
-   * the flag true with nothing able to clear it and the log button simply
-   * disappears. Cleared here, the one place that knows the list is going away.
-   */
   const showCalendar = (on: boolean) => {
-    setSwipeOpen(false)
     if (on) setMonth(monthStart(selectedDate))
     setCalendar(on)
   }
@@ -275,7 +256,7 @@ export default function TodayScreen() {
    * Movement extends the budget and never shrinks what was eaten. `activeKcal`
    * rather than the day's total burn: the goal is already a Mifflin-St Jeor
    * figure containing basal metabolism, so resting energy would credit a user for
-   * being alive twice. Same rule as `BudgetStrip` on the Activity tab.
+   * being alive twice.
    *
    * Zero on an account with no health connection.
    */
@@ -383,24 +364,7 @@ export default function TodayScreen() {
     // The one screen with swipeable rows on it, and the one that needs
     // gesture-handler's scroll view for them to work. Nothing here takes
     // typing, which is what makes that trade free — see `gestureScroll`.
-    <Screen
-      gestureScroll
-      /**
-       * Out of the way while a row is open for delete. `floating` overlaps the
-       * scroll content by design, and this button's corner is where a swiped
-       * row's Delete comes to rest, so it took the tap: aim at the bin and the log
-       * sheet opened.
-       *
-       * Hidden rather than moved: there is nowhere to move it that is not over
-       * another row, and a control that jumps aside is a second thing happening.
-       */
-      floating={
-        swipeOpen ? null : (
-          <FloatingAction onPress={() => router.push('/log')} label={t('common:nav.log')} />
-        )
-      }
-      floatingLeading={backToToday}
-    >
+    <Screen gestureScroll floatingLeading={backToToday}>
       <ScreenTitle
         title={title}
         leading={
@@ -445,54 +409,20 @@ export default function TodayScreen() {
       />
 
       {calendar ? (
-        <>
-          <MonthCalendar
-            month={month}
-            onMonthChange={(start) => {
-              setMonth(start)
-              // The selection follows the grid. Left where it was, the card
-              // under a July calendar would go on describing a day in August,
-              // and tapping a July day would be the only way to notice.
-              setSelectedDate(dayInMonth(start, selectedDate, todayKey))
-            }}
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            today={todayKey}
-          />
-
-          <DayMeals
-            date={selectedDate}
-            entries={day.entries}
-            loading={loading}
-            onPressEntry={(entry) =>
-              router.push({
-                pathname: '/log/food/[id]',
-                params: { id: entry.foodId ?? ENTRY_FOOD_ID, entryId: entry.id },
-              })
-            }
-          />
-
-          {/* And what they drank, which the month view had no answer for at all.
-              A day read back through the calendar is the same day the diary
-              shows, and water is half of what this app records about one — the
-              tank being missing here meant the only way to see Tuesday's water
-              was to leave the calendar, find Tuesday on the strip and come back.
-
-              The card, not a figure: it is the app's water surface, it knows how
-              to say "1.2 of 2 litres" in one picture, and somebody looking at
-              yesterday is as likely to be correcting a drink as reading one.
-
-              The bottom padding is on the LAST card rather than on the block,
-              for the reason the floating slot documents: it overlaps the scroll
-              content, so whatever ends the screen owes itself room to be read. */}
-          <WaterCard
-            className="mb-[76px]"
-            date={selectedDate}
-            ml={day.waterMl}
-            goalMl={waterGoal}
-            loading={loading}
-          />
-        </>
+        /* The month on its own, with no day selected and nothing under it. A
+           tap is a way to get to a day: it leaves the calendar and opens that
+           day here, exactly as picking it on the week strip would. It used to
+           select the day in place and list its meals and water under the grid,
+           a second, smaller copy of the diary on the same screen. */
+        <MonthCalendar
+          month={month}
+          onMonthChange={setMonth}
+          onSelect={(date) => {
+            setSelectedDate(date)
+            setCalendar(false)
+          }}
+          today={todayKey}
+        />
       ) : (
         <>
           {/* The week, above everything it explains. A day is picked here and the
@@ -503,9 +433,9 @@ export default function TodayScreen() {
           {/* Less padding than a standard card. The ring and its three macro
               lines are one compact reading, and the card's own 28 points around
               them made it the tallest thing on the screen. */}
-          <Card contentClassName="px-5 py-4">
+          <Card contentClassName="px-4 py-4">
             {loading ? (
-              <Skeleton className="h-[104px] w-full" />
+              <Skeleton className="h-[112px] w-full" />
             ) : targets ? (
               <>
                 {/* Tapping the summary swaps the ring from "what is left" to
@@ -524,7 +454,7 @@ export default function TodayScreen() {
                   <CalorieRing
                     value={eaten.kcal}
                     goal={budget}
-                    size={104}
+                    size={112}
                     thickness={12}
                     centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
                     centerCaption={
@@ -650,7 +580,6 @@ export default function TodayScreen() {
               // two screens to undo; this is the shortcut, and the detail screen's
               // delete is still there for anyone who wants to look first.
               onDeleteEntry={requestDelete}
-              onSwipeOpenChange={setSwipeOpen}
             />
           )}
         </>

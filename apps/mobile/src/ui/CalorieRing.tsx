@@ -113,10 +113,19 @@ export function CalorieRing({
         >
           {centerLabel ?? remaining.toLocaleString()}
         </Text>
+        {/* Held inside the ring's hole and allowed to shrink. "/2,292 KCAL" with
+            the overline's tracking is wider than the hole of a 112pt ring, and
+            ran out over the arc on either side. */}
         <Text
           variant="overline"
           className="text-muted"
-          style={{ fontSize: Math.max(10, Math.round(size * 0.065)) }}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+          style={{
+            fontSize: Math.max(10, Math.round(size * 0.065)),
+            maxWidth: size - thickness * 2 - 22,
+          }}
         >
           {centerCaption}
         </Text>

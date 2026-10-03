@@ -36,7 +36,7 @@ import { AppBar, Card, EmptyState, Icon, Screen, Skeleton, StatTile, Text } from
  */
 export default function WorkoutScreen() {
   const { t } = useTranslation(['activity', 'common'])
-  const goBack = useBack('/(tabs)/activity')
+  const goBack = useBack('/today')
   const { id } = useLocalSearchParams<{ id: string }>()
 
   const { data: session, isPending } = useActivitySession(id)

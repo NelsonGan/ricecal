@@ -156,12 +156,8 @@ export const keys = {
    * cannot overwrite each other.
    */
   activityDay: (userId: string, date: string) => ['activity', userId, 'day', date] as const,
-  activityHours: (userId: string, date: string) => ['activity', userId, 'hours', date] as const,
   activitySessions: (userId: string, date: string | null) =>
     ['activity', userId, 'sessions', date ?? 'all'] as const,
-  activitySeries: (userId: string, range: string) => ['activity', userId, range, 'series'] as const,
-  activitySummary: (userId: string, range: string) =>
-    ['activity', userId, range, 'summary'] as const,
   /**
    * The prefix of all of the above, and what the sync invalidates. One pass
    * moves a day, a chart column, a summary tile and possibly a session list,

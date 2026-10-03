@@ -207,48 +207,9 @@ export const paywall = {
     later: 'Maybe later',
   },
 
-  reminder: {
-    title_one: '{{count}} day left in your trial',
-    title_other: '{{count}} days left in your trial',
-    body: 'You have logged {{days}} days in a row and dropped {{kg}} kg. Keep the run going.',
-    daysLogged: 'DAYS LOGGED',
-    meals: 'MEALS',
-    kgDown: 'KG DOWN',
-    starts: 'Your plan starts {{date}} at {{price}} a year.',
-    startsMonthly: 'Your plan starts {{date}} at {{price}} a month.',
-    keep: 'Keep my plan',
-    manage: 'Manage subscription',
-  },
-
+  /** What is left of the trial-ended screen: Subscription still offers this. */
   ended: {
-    heading: 'Today',
-    previewMode: 'Preview mode',
-    title: 'Your trial has ended',
-    body: 'Your {{days}} days of history are safe and still readable.',
-    dataWaiting: 'YOUR DATA IS WAITING',
-    days: 'DAYS',
-    meals: 'MEALS',
-    kgDown: 'KG DOWN',
-    /**
-     * The detail line on an entry the trial has put out of reach. It used to name
-     * the meal, and an entry has no meal any more, so the leftover interpolation
-     * rendered as ", locked".
-     */
-    lockedEntry: 'Locked',
     resume: 'Continue with Pro',
-    /**
-     * What "Continue with Pro" charges for, said on the screen that charges. This
-     * sells one plan with one tap, and for a while said nothing about price,
-     * period or renewal, all three of which guideline 3.1.2 requires beside the
-     * button.
-     *
-     * Not `hard.smallPrintYearly`, which promises another free period:
-     * everybody who sees this screen has just finished that trial.
-     */
-    terms: '{{price}} a year, renewing until you cancel.',
-    /** Until the store answers, so the sentence is never half a price. */
-    termsPending: 'Renews yearly until you cancel.',
-    browse: 'Keep browsing free',
   },
 
   /**

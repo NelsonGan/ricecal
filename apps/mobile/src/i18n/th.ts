@@ -143,7 +143,6 @@ export const th = {
     nav: {
       today: 'วันนี้',
       recipes: 'อาหาร',
-      activity: 'กิจกรรม',
       trends: 'แนวโน้ม',
       me: 'ฉัน',
       log: 'บันทึกอาหาร',
@@ -277,47 +276,6 @@ export const th = {
       syncedHours: '{{count}} ชม.ที่แล้ว',
       syncedDays: '{{count}} วันที่แล้ว',
       syncedNever: 'ยังไม่ได้ซิงค์',
-
-      move: 'เคลื่อนไหว',
-      exercise: 'ออกกำลังกาย',
-      stand: 'ยืน',
-      stepsRing: 'ก้าว',
-      moveUnit: '/ {{goal}} แคล',
-      exerciseUnit: '/ {{goal}} นาที',
-      standUnit: '/ {{goal}} ชม.',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ เฉลี่ย {{value}}',
-      none: '—',
-      noGoal: 'แคล',
-      noGoalMinutes: 'นาที',
-      noGoalHours: 'ชม.',
-
-      budgetTitle: 'โควตารวมการเคลื่อนไหว',
-      goal: 'เป้าหมาย',
-      eaten: 'กินไป',
-      burned: 'เผาผลาญ',
-      left: 'เหลือ',
-      over: 'เกิน',
-      budgetOff: 'การเคลื่อนไหวยังไม่ได้ต่อโควตาของคุณ เปิดได้ในการตั้งค่ากิจกรรม',
-
-      todayTitle: 'วันนี้',
-      weekTitle: 'สัปดาห์นี้',
-      stepsRow: 'ก้าว',
-      stepsRowValue: 'วันนี้ {{steps}}',
-      balanceRow: 'สมดุล',
-      balanceDeficit: 'ขาดดุลวันละ {{value}}',
-      balanceSurplus: 'เกินดุลวันละ {{value}}',
-      balanceUnknown: 'บันทึกยังไม่พอ',
-      historyRowValue_one: '{{count}} ครั้ง · {{time}}',
-      historyRowValue_other: '{{count}} ครั้ง · {{time}}',
-      historyNone: 'ยังไม่มีการออกกำลังกาย',
-
-      demoBadge: 'ข้อมูลตัวอย่าง',
-
-      storeEmpty:
-        'ที่เก็บข้อมูลสุขภาพนี้เชื่อมต่อแล้วแต่ไม่มีข้อมูลอยู่ ซึ่งเป็นลักษณะของซิมูเลเตอร์ ข้อมูลที่สร้างขึ้นจะเติมหน้าจอเหล่านี้ให้',
-
-      noStandNoteGeneric: 'แอปสุขภาพของคุณไม่รายงานชั่วโมงยืน เราจึงแสดงจำนวนก้าวแทน',
     },
 
     workout: {
@@ -337,65 +295,6 @@ export const th = {
 
       from: 'จาก {{source}}',
       missing: 'การออกกำลังกายครั้งนี้ไม่อยู่ในแอปสุขภาพของคุณแล้ว',
-    },
-
-    steps: {
-      title: 'ก้าว',
-      todaySoFar: 'วันนี้ถึงตอนนี้',
-      goalLine: 'เป้าหมาย {{goal}} ก้าว',
-      over: 'เกิน {{value}}',
-      under: 'อีก {{value}}',
-      unit: 'ก้าว · {{distance}}',
-
-      morning: 'เช้า',
-      afternoon: 'บ่าย',
-      evening: 'เย็น',
-      noHours: 'ไม่มีรายละเอียดรายชั่วโมงของวันนี้',
-
-      weekTitle: 'สัปดาห์นี้',
-      dailyAvg: 'เฉลี่ยต่อวัน',
-      goalDays: 'วันที่ถึงเป้า',
-      best: 'สูงสุด',
-
-      steadyNote: 'แต่ละวันของคุณสม่ำเสมอ ไม่ว่าคุณทำอะไรอยู่ มันกลายเป็นนิสัยแล้ว',
-      shortNote: 'ยังมีวันไม่พอที่จะเห็นรูปแบบ',
-    },
-
-    balance: {
-      chartTitle: 'เข้าเทียบออก',
-      deficit: 'ขาดดุล {{value}}',
-      surplus: 'เกินดุล {{value}}',
-      even: 'เท่ากัน',
-      eatenLegend: 'กินไป',
-      burnedLegend: 'เผาผลาญ',
-
-      splitTitle7d: 'การเผาผลาญมาจากไหน · 7 วัน',
-      splitTitle30d: 'การเผาผลาญมาจากไหน · 30 วัน',
-      splitTitle1y: 'การเผาผลาญมาจากไหน · 12 เดือน',
-      resting: 'ขณะพัก',
-      restingBody: 'แค่มีชีวิตอยู่',
-      workouts: 'ออกกำลังกาย',
-      workoutsBody: 'สิ่งที่การออกกำลังกายใช้ไป',
-      walking: 'เดิน',
-      walkingBody: 'ก้าวเดินและธุระประจำวัน',
-      kcal: '{{value}} แคล',
-
-      partial: 'อ้างอิงจาก {{days}} วัน จาก {{total}} วันที่มีทั้งบันทึกอาหารและค่าเผาผลาญขณะพัก',
-      noRestingTitle: 'ไม่มีพลังงานขณะพัก',
-      noRestingBody:
-        'แอปสุขภาพของคุณไม่รายงานการเผาผลาญขณะพัก จึงไม่มีสมดุลรายวันให้วาด ก้าว การออกกำลังกาย และพลังงานจากการเคลื่อนไหวไม่ได้รับผลกระทบ',
-      empty: 'บันทึกอาหารสักสองสามมื้อโดยใส่นาฬิกาไว้ แล้วตรงนี้จะเติมเอง',
-    },
-
-    history: {
-      title: 'ประวัติ',
-      weekTitle: 'สัปดาห์นี้',
-      sessions: 'จำนวนครั้ง',
-      time: 'เวลา',
-      burned: 'เผาผลาญ',
-      allTitle: 'ทั้งหมด',
-      empty: 'ยังไม่มีการออกกำลังกายที่บันทึกไว้',
-      emptyBody: 'อะไรก็ตามที่นาฬิกาหรือโทรศัพท์บันทึกไว้จะมาอยู่ตรงนี้',
     },
 
     settings: {
@@ -793,9 +692,6 @@ export const th = {
         over: 'เกินเป้า',
         missed: 'ไม่ได้บันทึก',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} แคล',
-      dayEmpty: 'วันนั้นไม่มีบันทึก',
     },
 
     selector: {
@@ -1469,33 +1365,8 @@ export const th = {
       later: 'ไว้ทีหลัง',
     },
 
-    reminder: {
-      title_one: 'เหลืออีก {{count}} วันในช่วงทดลองใช้',
-      title_other: 'เหลืออีก {{count}} วันในช่วงทดลองใช้',
-      body: 'คุณบันทึกติดต่อกันมา {{days}} วันและลดไป {{kg}} กก. ทำต่อไปเลย',
-      daysLogged: 'วันที่บันทึก',
-      meals: 'มื้อ',
-      kgDown: 'กก.ที่ลดได้',
-      starts: 'แผนของคุณเริ่ม {{date}} ที่ {{price}} ต่อปี',
-      startsMonthly: 'แผนของคุณเริ่ม {{date}} ที่ {{price}} ต่อเดือน',
-      keep: 'เก็บแผนของฉันไว้',
-      manage: 'จัดการการสมัคร',
-    },
-
     ended: {
-      heading: 'วันนี้',
-      previewMode: 'โหมดดูตัวอย่าง',
-      title: 'ช่วงทดลองใช้ของคุณจบแล้ว',
-      body: 'ประวัติ {{days}} วันของคุณยังปลอดภัยและอ่านได้อยู่',
-      dataWaiting: 'ข้อมูลของคุณยังรออยู่',
-      days: 'วัน',
-      meals: 'มื้อ',
-      kgDown: 'กก.ที่ลดได้',
-      lockedEntry: 'ล็อกอยู่',
       resume: 'ใช้ต่อด้วย Pro',
-      terms: '{{price}} ต่อปี ต่ออายุอัตโนมัติจนกว่าคุณจะยกเลิก',
-      termsPending: 'ต่ออายุทุกปีจนกว่าคุณจะยกเลิก',
-      browse: 'ดูต่อแบบฟรี',
     },
 
     limit: {

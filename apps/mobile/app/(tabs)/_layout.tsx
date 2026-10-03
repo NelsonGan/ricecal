@@ -1,10 +1,10 @@
-import { Redirect } from 'expo-router'
+import { Redirect, useRouter } from 'expo-router'
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui'
 import { useTranslation } from 'react-i18next'
 import { useSession } from '@/data'
 import { useAnalyticsIdentity } from '@/features/analytics'
 import { useReminderSync, useReportLinks } from '@/features/settings'
-import { NavBar, NavItem } from '@/ui'
+import { NavAction, NavBar, NavInsetProvider, NavItem, useNavBarFootprint } from '@/ui'
 
 /**
  * Today is the first tab, and saying so is not decoration.
@@ -21,7 +21,8 @@ import { NavBar, NavItem } from '@/ui'
 export const unstable_settings = { anchor: 'today' }
 
 /**
- * Five tabs, and no action among them.
+ * Four tabs, and the add action at the right end of the bar. It used to float
+ * over Today alone; in the bar it is one tap away on every tab. See `NavBar`.
  *
  * Still the headless `expo-router/ui` tabs rather than a styled navigator,
  * because `NavBar` / `NavItem` are the design system's and a native tab bar
@@ -51,6 +52,8 @@ export default function TabsLayout() {
 
 function SignedInTabs() {
   const { t } = useTranslation(['common', 'social'])
+  const router = useRouter()
+  const navFootprint = useNavBarFootprint()
 
   // Here rather than in the root layout: they need a session, and this is the
   // first thing that only renders with one. One rewrites the phone's scheduled
@@ -65,34 +68,30 @@ function SignedInTabs() {
   useAnalyticsIdentity()
 
   return (
-    <Tabs>
-      <TabSlot />
-      <TabList asChild>
-        <NavBar>
-          <TabTrigger name="today" href="/today" asChild>
-            <NavItem label={t('nav.today')} icon={{ set: 'ui', name: 'home' }} />
-          </TabTrigger>
+    // The bar floats over the screens, so each one is told how much of its
+    // bottom the bar covers. See `useNavInset`.
+    <NavInsetProvider value={navFootprint}>
+      <Tabs>
+        <TabSlot />
+        <TabList asChild>
+          <NavBar action={<NavAction onPress={() => router.push('/log')} label={t('nav.log')} />}>
+            <TabTrigger name="today" href="/today" asChild>
+              <NavItem label={t('nav.today')} icon={{ set: 'ui', name: 'home' }} />
+            </TabTrigger>
 
-          <TabTrigger name="feed" href="/feed" asChild>
-            <NavItem label={t('social:feed')} icon={{ set: 'system', name: 'users-group' }} />
-          </TabTrigger>
+            <TabTrigger name="feed" href="/feed" asChild>
+              <NavItem label={t('social:feed')} icon={{ set: 'system', name: 'users-group' }} />
+            </TabTrigger>
 
-          {/* A `body` icon rather than a `ui` one. The other tabs are interface
-              nouns and have interface glyphs; this tab is about a body moving,
-              and the set that has a running figure in it is the set the workout
-              rows already draw from. */}
-          <TabTrigger name="activity" href="/activity" asChild>
-            <NavItem label={t('nav.activity')} icon={{ set: 'body', name: 'running-shoe' }} />
-          </TabTrigger>
-
-          <TabTrigger name="trends" href="/trends" asChild>
-            <NavItem label={t('nav.trends')} icon={{ set: 'ui', name: 'trends' }} />
-          </TabTrigger>
-          <TabTrigger name="me" href="/me" asChild>
-            <NavItem label={t('nav.me')} icon={{ set: 'ui', name: 'profile' }} />
-          </TabTrigger>
-        </NavBar>
-      </TabList>
-    </Tabs>
+            <TabTrigger name="trends" href="/trends" asChild>
+              <NavItem label={t('nav.trends')} icon={{ set: 'ui', name: 'trends' }} />
+            </TabTrigger>
+            <TabTrigger name="me" href="/me" asChild>
+              <NavItem label={t('nav.me')} icon={{ set: 'ui', name: 'profile' }} />
+            </TabTrigger>
+          </NavBar>
+        </TabList>
+      </Tabs>
+    </NavInsetProvider>
   )
 }

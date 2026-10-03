@@ -52,6 +52,7 @@ import {
   Skeleton,
   Tappable,
   Text,
+  useNavInset,
   useToast,
 } from '@/ui'
 
@@ -1309,6 +1310,7 @@ export function SocialList<T>({
   const { t } = useTranslation('social')
   const [viewport, setViewport] = useState({ first: 0, last: columns - 1 })
   const [refreshing, setRefreshing] = useState(false)
+  const navInset = useNavInset()
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<T>[] }) => {
     const indices = viewableItems.flatMap((item) => (item.index === null ? [] : [item.index]))
     const first = indices.length ? Math.min(...indices) : -1
@@ -1336,14 +1338,17 @@ export function SocialList<T>({
       setRefreshing(false)
     }
   }
+  // On a tab the nav bar floats over the end of the list, so the last row needs
+  // that much more room to scroll clear of it. Zero on a pushed page.
+  const bottom = 32 + navInset
   const contentContainerStyle =
     variant === 'feed'
-      ? { paddingBottom: 32 }
+      ? { paddingBottom: bottom }
       : variant === 'rows'
-        ? { paddingHorizontal: 20, paddingBottom: 32 }
+        ? { paddingHorizontal: 20, paddingBottom: bottom }
         : variant === 'grid'
-          ? { padding: 2, paddingBottom: 32 }
-          : { padding: 20, gap: 16, paddingBottom: 32 }
+          ? { padding: 2, paddingBottom: bottom }
+          : { padding: 20, gap: 16, paddingBottom: bottom }
   return (
     <FlatList
       data={rows}

@@ -29,7 +29,6 @@ export const common = {
     today: 'Today',
     /** The tab, and the key is still `recipes` because the route is. */
     recipes: 'Food',
-    activity: 'Activity',
     trends: 'Trends',
     me: 'Me',
     /** The floating button on Today. Not a tab — it opens the log sheet. */

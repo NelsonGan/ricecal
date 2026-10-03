@@ -140,7 +140,6 @@ export const ko = {
     nav: {
       today: '오늘',
       recipes: '음식',
-      activity: '활동',
       trends: '추이',
       me: '내 정보',
       log: '식사 기록',
@@ -277,47 +276,6 @@ export const ko = {
       syncedHours: '{{count}}시간 전',
       syncedDays: '{{count}}일 전',
       syncedNever: '아직 동기화 안 됨',
-
-      move: '움직임',
-      exercise: '운동',
-      stand: '일어서기',
-      stepsRing: '걸음',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}}분',
-      standUnit: '/ {{goal}}시간',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ 평균 {{value}}',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: '분',
-      noGoalHours: '시간',
-
-      budgetTitle: '움직임을 더한 예산',
-      goal: '목표',
-      eaten: '섭취',
-      burned: '소모',
-      left: '남음',
-      over: '초과',
-      budgetOff: '움직임이 예산을 늘리고 있지 않습니다. 활동 설정에서 켜세요.',
-
-      todayTitle: '오늘',
-      weekTitle: '이번 주',
-      stepsRow: '걸음',
-      stepsRowValue: '오늘 {{steps}}',
-      balanceRow: '수지',
-      balanceDeficit: '하루 {{value}} 부족',
-      balanceSurplus: '하루 {{value}} 초과',
-      balanceUnknown: '기록이 부족합니다',
-      historyRowValue_one: '운동 {{count}}회 · {{time}}',
-      historyRowValue_other: '운동 {{count}}회 · {{time}}',
-      historyNone: '아직 운동이 없습니다',
-
-      demoBadge: '데모 데이터',
-
-      storeEmpty:
-        '이 건강 저장소는 연결됐지만 안에 데이터가 없습니다. 시뮬레이터가 딱 이런 모습입니다. 생성된 데이터가 이 화면들을 채웁니다.',
-
-      noStandNoteGeneric: '건강 앱이 일어선 시간을 알려주지 않아 대신 걸음 수를 보여줍니다.',
     },
 
     workout: {
@@ -337,65 +295,6 @@ export const ko = {
 
       from: '{{source}}에서',
       missing: '이 운동은 건강 앱에 더 이상 없습니다.',
-    },
-
-    steps: {
-      title: '걸음',
-      todaySoFar: '오늘 지금까지',
-      goalLine: '목표 {{goal}}걸음',
-      over: '{{value}} 초과',
-      under: '{{value}} 남음',
-      unit: '걸음 · {{distance}}',
-
-      morning: '오전',
-      afternoon: '오후',
-      evening: '저녁',
-      noHours: '이 날의 시간대별 내역이 없습니다.',
-
-      weekTitle: '이번 주',
-      dailyAvg: '하루 평균',
-      goalDays: '달성 일수',
-      best: '최고',
-
-      steadyNote: '하루하루가 고릅니다. 무엇을 하고 있든, 이제 습관입니다.',
-      shortNote: '패턴을 보기에는 아직 날짜가 부족합니다.',
-    },
-
-    balance: {
-      chartTitle: '들어온 것과 나간 것',
-      deficit: '{{value}} 부족',
-      surplus: '{{value}} 초과',
-      even: '균형',
-      eatenLegend: '섭취',
-      burnedLegend: '소모',
-
-      splitTitle7d: '소모는 어디에서 왔나 · 7일',
-      splitTitle30d: '소모는 어디에서 왔나 · 30일',
-      splitTitle1y: '소모는 어디에서 왔나 · 12개월',
-      resting: '기초대사',
-      restingBody: '살아 있는 것만으로',
-      workouts: '운동',
-      workoutsBody: '세션이 쓴 양',
-      walking: '걷기',
-      walkingBody: '걸음과 일상의 볼일',
-      kcal: '{{value}} kcal',
-
-      partial: '식사 기록과 기초대사 수치가 모두 있는 {{total}}일 중 {{days}}일을 기준으로 합니다.',
-      noRestingTitle: '기초대사 데이터가 없습니다',
-      noRestingBody:
-        '건강 앱이 쉬는 동안 몸이 태우는 양을 알려주지 않아 하루 수지를 그릴 수 없습니다. 걸음, 운동, 활동 에너지는 영향을 받지 않습니다.',
-      empty: '시계를 찬 채로 몇 끼를 기록하면 여기가 채워집니다.',
-    },
-
-    history: {
-      title: '기록',
-      weekTitle: '이번 주',
-      sessions: '횟수',
-      time: '시간',
-      burned: '소모',
-      allTitle: '모든 세션',
-      empty: '아직 기록된 운동이 없습니다.',
-      emptyBody: '시계나 휴대폰이 기록한 것은 모두 여기로 들어옵니다.',
     },
 
     settings: {
@@ -797,9 +696,6 @@ export const ko = {
         over: '목표 초과',
         missed: '기록 없음',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: '그날은 기록이 없습니다.',
     },
 
     selector: {
@@ -1478,33 +1374,8 @@ export const ko = {
       later: '나중에',
     },
 
-    reminder: {
-      title_one: '체험 {{count}}일 남음',
-      title_other: '체험 {{count}}일 남음',
-      body: '{{days}}일 연속으로 기록했고 {{kg}} kg 줄었습니다. 이대로 이어가세요.',
-      daysLogged: '기록한 날',
-      meals: '식사',
-      kgDown: '줄어든 KG',
-      starts: '요금제는 {{date}}에 연 {{price}}로 시작합니다.',
-      startsMonthly: '요금제는 {{date}}에 월 {{price}}로 시작합니다.',
-      keep: '내 요금제 유지',
-      manage: '구독 관리',
-    },
-
     ended: {
-      heading: '오늘',
-      previewMode: '미리보기',
-      title: '체험이 끝났습니다',
-      body: '{{days}}일치 기록은 안전하고 지금도 볼 수 있습니다.',
-      dataWaiting: '데이터가 기다리고 있습니다',
-      days: '일',
-      meals: '식사',
-      kgDown: '줄어든 KG',
-      lockedEntry: '잠김',
       resume: 'Pro로 계속하기',
-      terms: '연 {{price}}, 해지할 때까지 자동 갱신됩니다.',
-      termsPending: '해지할 때까지 매년 자동 갱신됩니다.',
-      browse: '무료로 계속 둘러보기',
     },
 
     limit: {

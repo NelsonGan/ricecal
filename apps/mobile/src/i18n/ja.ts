@@ -140,7 +140,6 @@ export const ja = {
     nav: {
       today: '今日',
       recipes: 'フード',
-      activity: '活動',
       trends: 'トレンド',
       me: '自分',
       log: '食事を記録',
@@ -277,48 +276,6 @@ export const ja = {
       syncedHours: '{{count}} 時間前',
       syncedDays: '{{count}} 日前',
       syncedNever: 'まだ同期していません',
-
-      move: 'ムーブ',
-      exercise: 'エクササイズ',
-      stand: 'スタンド',
-      stepsRing: '歩数',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}} 分',
-      standUnit: '/ {{goal}} 時間',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ 平均 {{value}}',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: '分',
-      noGoalHours: '時間',
-
-      budgetTitle: '運動を含めた枠',
-      goal: '目標',
-      eaten: '摂取',
-      burned: '消費',
-      left: '残り',
-      over: '超過',
-      budgetOff: '運動は今のところ枠を広げていません。活動の設定でオンにできます。',
-
-      todayTitle: '今日',
-      weekTitle: '今週',
-      stepsRow: '歩数',
-      stepsRowValue: '今日 {{steps}}',
-      balanceRow: '収支',
-      balanceDeficit: '1日あたり {{value}} の不足',
-      balanceSurplus: '1日あたり {{value}} の余剰',
-      balanceUnknown: '記録が足りません',
-      historyRowValue_one: 'ワークアウト {{count}} 件 · {{time}}',
-      historyRowValue_other: 'ワークアウト {{count}} 件 · {{time}}',
-      historyNone: 'まだワークアウトはありません',
-
-      demoBadge: 'デモデータ',
-
-      storeEmpty:
-        'このヘルスデータは接続済みですが中身が空で、まさにシミュレータの状態です。生成されたデータがこれらの画面を埋めます。',
-
-      noStandNoteGeneric:
-        'お使いのヘルスアプリはスタンド時間を返さないため、代わりに歩数を表示しています。',
     },
 
     workout: {
@@ -338,66 +295,6 @@ export const ja = {
 
       from: '{{source}} より',
       missing: 'このワークアウトはヘルスアプリにもう存在しません。',
-    },
-
-    steps: {
-      title: '歩数',
-      todaySoFar: '今日ここまで',
-      goalLine: '目標 {{goal}} 歩',
-      over: '{{value}} 超過',
-      under: 'あと {{value}}',
-      unit: '歩 · {{distance}}',
-
-      morning: '午前',
-      afternoon: '午後',
-      evening: '夜',
-      noHours: 'この日の時間別の内訳はありません。',
-
-      weekTitle: '今週',
-      dailyAvg: '1日平均',
-      goalDays: '達成日数',
-      best: '最高',
-
-      steadyNote: '毎日が均等です。何をしているにせよ、もう習慣になっています。',
-      shortNote: '傾向を見るにはまだ日数が足りません。',
-    },
-
-    balance: {
-      chartTitle: '摂取と消費',
-      deficit: '{{value}} の不足',
-      surplus: '{{value}} の余剰',
-      even: '同じ',
-      eatenLegend: '摂取',
-      burnedLegend: '消費',
-
-      splitTitle7d: '消費の内訳 · 7日',
-      splitTitle30d: '消費の内訳 · 30日',
-      splitTitle1y: '消費の内訳 · 12か月',
-      resting: '安静時',
-      restingBody: '生きているだけで',
-      workouts: 'ワークアウト',
-      workoutsBody: 'セッションで使った分',
-      walking: '歩行',
-      walkingBody: '歩数と日々の用事',
-      kcal: '{{value}} kcal',
-
-      partial:
-        '食事の記録と安静時代謝の両方がそろった {{total}} 日中 {{days}} 日に基づいています。',
-      noRestingTitle: '安静時エネルギーがありません',
-      noRestingBody:
-        'お使いのヘルスアプリは安静時の消費を返さないため、日々の収支を描けません。歩数、ワークアウト、アクティブエネルギーには影響しません。',
-      empty: '時計をつけたまま何食か記録すると、ここが埋まります。',
-    },
-
-    history: {
-      title: '履歴',
-      weekTitle: '今週',
-      sessions: '回数',
-      time: '時間',
-      burned: '消費',
-      allTitle: 'すべてのセッション',
-      empty: 'まだワークアウトの記録はありません。',
-      emptyBody: '時計やスマホが記録したものは、すべてここに届きます。',
     },
 
     settings: {
@@ -802,9 +699,6 @@ export const ja = {
         over: '目標超え',
         missed: '記録なし',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: 'その日は記録がありません。',
     },
 
     selector: {
@@ -1484,33 +1378,8 @@ export const ja = {
       later: 'あとで',
     },
 
-    reminder: {
-      title_one: 'トライアル残り {{count}} 日',
-      title_other: 'トライアル残り {{count}} 日',
-      body: '{{days}} 日連続で記録し、{{kg}} kg 減りました。この調子で。',
-      daysLogged: '記録日数',
-      meals: '食事',
-      kgDown: '減った KG',
-      starts: 'プランは {{date}} から、年 {{price}} で始まります。',
-      startsMonthly: 'プランは {{date}} から、月 {{price}} で始まります。',
-      keep: 'このプランを続ける',
-      manage: 'サブスクリプションを管理',
-    },
-
     ended: {
-      heading: '今日',
-      previewMode: 'プレビュー',
-      title: 'トライアルが終了しました',
-      body: '{{days}} 日分の履歴は安全で、今も読めます。',
-      dataWaiting: 'データはそのまま残っています',
-      days: '日',
-      meals: '食事',
-      kgDown: '減った KG',
-      lockedEntry: 'ロック中',
       resume: 'Pro で続ける',
-      terms: '年額 {{price}}。解約するまで自動更新されます。',
-      termsPending: '解約するまで毎年自動更新されます。',
-      browse: '無料のまま見る',
     },
 
     limit: {

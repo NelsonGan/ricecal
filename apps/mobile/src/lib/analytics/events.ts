@@ -72,8 +72,8 @@ export type ProFeature =
   /** The standing offer on launch, which no button refused. See `useProNudge`. */
   | 'nudge'
 
-/** Which of the four paywalls. `hard` is `/paywall`, reached from a refusal. */
-export type PaywallScreen = 'hard' | 'intro' | 'reminder' | 'ended'
+/** Which of the two paywalls. `hard` is `/paywall`, reached from a refusal. */
+export type PaywallScreen = 'hard' | 'intro'
 
 export type Plan = 'monthly' | 'yearly' | 'lifetime'
 

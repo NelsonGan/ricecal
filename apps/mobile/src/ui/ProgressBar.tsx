@@ -118,20 +118,20 @@ export function MacroBar({
 }: MacroBarProps) {
   if (inline) {
     return (
-      <View className={cn('flex-row items-center gap-2', className)}>
+      <View className={cn('flex-row items-center gap-2.5', className)}>
         {/* A fixed width so the three bars start at the same x whatever the
             label's length in the language the app is set to. */}
-        <Text variant="caption" className="w-[60px] text-ink" numberOfLines={1}>
+        <Text variant="caption" className="w-[58px] text-ink" numberOfLines={1}>
           {label}
         </Text>
         <ProgressBar
           value={value}
           tone={tone}
-          height={8}
+          height={10}
           className="flex-1"
           accessibilityLabel={`${label} ${amount}`}
         />
-        <Text variant="caption" className="min-w-[64px] text-right" numberOfLines={1}>
+        <Text variant="caption" className="min-w-[62px] text-right" numberOfLines={1}>
           {amount}
         </Text>
       </View>

@@ -99,19 +99,3 @@ export function weekdayColumns(
     return { key: dateKey(at), label: label(at) }
   })
 }
-
-/**
- * Which day to select when the calendar moves to another month.
- *
- * The same day of the month where there is one, so paging back from the 27th
- * lands on the 27th and the card under the grid keeps describing a comparable
- * day. Clamped twice: to the month's own length, because the 31st does not
- * exist in June, and to today, because a day that has not happened cannot be
- * selected here any more than it can in the grid.
- */
-export function dayInMonth(start: string, selected: string, today: string): string {
-  const wanted = parseISO(selected).getDate()
-  const last = endOfMonth(parseISO(start)).getDate()
-  const at = dateKey(addDays(parseISO(start), Math.min(wanted, last) - 1))
-  return at > today ? today : at
-}

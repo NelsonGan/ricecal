@@ -24,6 +24,7 @@ import Reanimated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
+import { useNavInset } from './BottomNav'
 import { cn } from './cn'
 import { NumpadHost, useNumpadZone } from './Numpad'
 
@@ -92,10 +93,10 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   /** Content pinned below the scroll area — the footer CTA. Never scrolls away. */
   footer?: ReactNode
   /**
-   * Content laid over the scroll area, pinned to its bottom-right corner: the
-   * floating action on Today. Unlike `footer`, which the content is laid out
-   * above, this overlaps, so a screen using it owes its scroll content enough
-   * bottom padding that the last row can be read.
+   * Content laid over the scroll area, pinned to its bottom-right corner, and
+   * above the floating nav bar on a tab. Unlike `footer`, which the content is
+   * laid out above, this overlaps, so a screen using it owes its scroll content
+   * enough bottom padding that the last row can be read.
    */
   floating?: ReactNode
   /**
@@ -183,6 +184,8 @@ export function Screen({
   ...rest
 }: ScreenProps) {
   const insets = useSafeAreaInsets()
+  // A tab screen's bottom is under the floating nav bar. Zero everywhere else.
+  const navInset = useNavInset()
   const { height: windowHeight } = useWindowDimensions()
 
   /**
@@ -203,7 +206,7 @@ export function Screen({
   const bottomOffset = Math.max(footerHeight - insets.bottom, 0) + FIELD_CLEARANCE
 
   /**
-   * How far the footer and the floating action ride up, tracked on the UI thread:
+   * How far the footer and the floating controls ride up, tracked on the UI thread:
    * up by the keyboard, less the home indicator's inset, which would otherwise be
    * a band of canvas between the buttons and the keys.
    *
@@ -291,7 +294,8 @@ export function Screen({
         // The pad's own share, so a field near the end of a screen has
         // somewhere to be scrolled TO. Without it the reveal asks for an offset
         // past the end of the content and the scroll view declines.
-        paddingBottom: (flush ? 0 : spacing.gutter) + (footer ? 0 : insets.bottom) + numpad.height,
+        paddingBottom:
+          (flush ? 0 : spacing.gutter) + (footer ? 0 : navInset || insets.bottom) + numpad.height,
         gap: spacing.stack,
       }}
       bottomOffset={bottomOffset}
@@ -334,6 +338,8 @@ export function Screen({
         // No scroll view to inset, so the content box is what shrinks — the
         // same thing `behavior="padding"` does for the shell when a system
         // keyboard opens.
+        // Not the nav bar's inset: a list in here pads itself so it can scroll
+        // on under the floating bar. See `useNavInset`.
         paddingBottom: numpad.height,
       }}
     >
@@ -375,13 +381,8 @@ export function Screen({
         {/* Rides up with the footer, so a floating control is never left under an
           open keyboard.
 
-          One gutter off this view's bottom and NO safe-area inset, which looks
-          like an oversight and is the correction for one. A floating control's
-          host is a tab screen, and `TabSlot` is a sibling of the nav bar rather
-          than its parent: the slot's frame already stops where the bar begins,
-          and the bar is what pads for the home indicator. Adding `insets.bottom`
-          here counted it a second time and left the button floating a
-          thumb-width too high.
+          One gutter above the floating nav bar, whose footprint already
+          includes the home indicator, so the safe area is not added again.
 
           Styled rather than classed: the position is what makes this an overlay
           at all, and NativeWind's support for a third-party animated view is
@@ -392,7 +393,7 @@ export function Screen({
               {
                 position: 'absolute',
                 right: spacing.gutter,
-                bottom: spacing.gutter,
+                bottom: spacing.gutter + navInset,
                 alignItems: 'flex-end',
               },
               lift,
@@ -411,7 +412,7 @@ export function Screen({
               {
                 position: 'absolute',
                 left: spacing.gutter,
-                bottom: spacing.gutter,
+                bottom: spacing.gutter + navInset,
                 alignItems: 'flex-start',
               },
               lift,
