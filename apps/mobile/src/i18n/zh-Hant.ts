@@ -144,7 +144,6 @@ export const zhHant = {
     nav: {
       today: '今天',
       recipes: '食物',
-      activity: '活動',
       trends: '趨勢',
       me: '我的',
       log: '記錄飲食',
@@ -278,47 +277,6 @@ export const zhHant = {
       syncedHours: '{{count}} 小時前',
       syncedDays: '{{count}} 天前',
       syncedNever: '還沒同步',
-
-      move: '活動',
-      exercise: '運動',
-      stand: '站立',
-      stepsRing: '步數',
-      moveUnit: '/ {{goal}} 大卡',
-      exerciseUnit: '/ {{goal}} 分鐘',
-      standUnit: '/ {{goal}} 小時',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ 平均 {{value}}',
-      none: '—',
-      noGoal: '大卡',
-      noGoalMinutes: '分鐘',
-      noGoalHours: '小時',
-
-      budgetTitle: '算上運動的額度',
-      goal: '目標',
-      eaten: '已吃',
-      burned: '消耗',
-      left: '剩餘',
-      over: '超出',
-      budgetOff: '運動目前沒有拉高你的額度。可以在活動設定裡開啟。',
-
-      todayTitle: '今天',
-      weekTitle: '本週',
-      stepsRow: '步數',
-      stepsRowValue: '今天 {{steps}}',
-      balanceRow: '收支',
-      balanceDeficit: '每天缺口 {{value}}',
-      balanceSurplus: '每天盈餘 {{value}}',
-      balanceUnknown: '紀錄還不夠',
-      historyRowValue_one: '{{count}} 次運動 · {{time}}',
-      historyRowValue_other: '{{count}} 次運動 · {{time}}',
-      historyNone: '還沒有運動紀錄',
-
-      demoBadge: '示範資料',
-
-      storeEmpty:
-        '這個健康資料庫已連接，但裡面沒有資料，模擬器就是這樣。這些畫面會用產生的資料填入。',
-
-      noStandNoteGeneric: '你的健康 App 不提供站立時數，所以這裡顯示步數。',
     },
 
     workout: {
@@ -338,65 +296,6 @@ export const zhHant = {
 
       from: '來自 {{source}}',
       missing: '這次運動已經不在你的健康 App 裡了。',
-    },
-
-    steps: {
-      title: '步數',
-      todaySoFar: '今天到現在',
-      goalLine: '目標 {{goal}} 步',
-      over: '超出 {{value}}',
-      under: '還差 {{value}}',
-      unit: '步 · {{distance}}',
-
-      morning: '上午',
-      afternoon: '下午',
-      evening: '晚上',
-      noHours: '這一天沒有分時段的資料。',
-
-      weekTitle: '本週',
-      dailyAvg: '日平均',
-      goalDays: '達標天數',
-      best: '最高',
-
-      steadyNote: '你每天都很平均。不管你在做什麼，它已經是習慣了。',
-      shortNote: '天數還不夠，看不出規律。',
-    },
-
-    balance: {
-      chartTitle: '吃進和消耗',
-      deficit: '缺口 {{value}}',
-      surplus: '盈餘 {{value}}',
-      even: '打平',
-      eatenLegend: '吃進',
-      burnedLegend: '消耗',
-
-      splitTitle7d: '消耗來自哪裡 · 7 天',
-      splitTitle30d: '消耗來自哪裡 · 30 天',
-      splitTitle1y: '消耗來自哪裡 · 12 個月',
-      resting: '基礎代謝',
-      restingBody: '活著本身就在消耗',
-      workouts: '運動',
-      workoutsBody: '你的運動花掉的',
-      walking: '走路',
-      walkingBody: '走動和跑腿',
-      kcal: '{{value}} 大卡',
-
-      partial: '根據 {{total}} 天中同時有飲食紀錄和基礎代謝數值的 {{days}} 天。',
-      noRestingTitle: '沒有基礎代謝資料',
-      noRestingBody:
-        '你的健康 App 不提供身體靜止時的消耗，所以畫不出每日收支。步數、運動和活動消耗不受影響。',
-      empty: '戴著手錶記幾餐，這裡就會填上。',
-    },
-
-    history: {
-      title: '紀錄',
-      weekTitle: '本週',
-      sessions: '次數',
-      time: '時間',
-      burned: '消耗',
-      allTitle: '所有運動',
-      empty: '還沒有運動紀錄。',
-      emptyBody: '手錶或手機記錄的任何運動都會出現在這裡。',
     },
 
     settings: {
@@ -794,9 +693,6 @@ export const zhHant = {
         over: '超過目標',
         missed: '沒有紀錄',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} 大卡',
-      dayEmpty: '那天沒有紀錄。',
     },
 
     selector: {
@@ -1470,33 +1366,8 @@ export const zhHant = {
       later: '以後再說',
     },
 
-    reminder: {
-      title_one: '試用還剩 {{count}} 天',
-      title_other: '試用還剩 {{count}} 天',
-      body: '你已經連續記錄 {{days}} 天，減了 {{kg}} 公斤。保持下去。',
-      daysLogged: '記錄天數',
-      meals: '餐數',
-      kgDown: '減掉公斤',
-      starts: '你的方案從 {{date}} 開始，每年 {{price}}。',
-      startsMonthly: '你的方案從 {{date}} 開始，每月 {{price}}。',
-      keep: '保留我的方案',
-      manage: '管理訂閱',
-    },
-
     ended: {
-      heading: '今天',
-      previewMode: '預覽模式',
-      title: '你的試用已經結束',
-      body: '你 {{days}} 天的紀錄都還在，也還看得到。',
-      dataWaiting: '你的資料還在等你',
-      days: '天',
-      meals: '餐',
-      kgDown: '減掉公斤',
-      lockedEntry: '已鎖定',
       resume: '繼續使用 Pro',
-      terms: '每年 {{price}}，在你取消前自動續訂。',
-      termsPending: '在你取消前每年自動續訂。',
-      browse: '繼續免費瀏覽',
     },
 
     limit: {

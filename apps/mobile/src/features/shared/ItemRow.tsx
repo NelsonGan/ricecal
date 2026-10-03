@@ -28,6 +28,12 @@ export const ROW_TILE = 'h-[72px] w-[72px]'
 /** Tile plus the row's `gap-3`. */
 export const ROW_TEXT_INDENT = 'pl-[84px]'
 export const ROW_TILE_ICON = 52
+/**
+ * The same, for `compact` rows: Today's day list, where meals and workouts share
+ * one card and a 72pt tile made three rows fill the screen.
+ */
+export const ROW_TILE_COMPACT = 'h-[56px] w-[56px]'
+export const ROW_TILE_COMPACT_ICON = 42
 
 /**
  * What a row shows when it has neither a photograph nor a drawing of its own.
@@ -73,6 +79,11 @@ export type ItemRowProps = {
   unit?: string
   /** Put the value directly below the title instead of at the right edge. */
   valueUnderTitle?: boolean
+  /**
+   * A smaller tile, one line of title, and the figure stacked over its unit, for
+   * a list dense enough to read a day at a glance. See `ROW_TILE_COMPACT`.
+   */
+  compact?: boolean
   /** Calories burned read in hibiscus; everything else in ink. */
   valueTone?: keyof typeof valueTones
   /**
@@ -104,6 +115,7 @@ export function ItemRow({
   value,
   unit,
   valueUnderTitle = false,
+  compact = false,
   valueTone = 'ink',
   busy = false,
   trailing,
@@ -114,18 +126,18 @@ export function ItemRow({
   const photo = storedImageSource(photoPath, photoUrl, photoUri)
 
   const valueLabel = (
-    <View className="flex-row items-baseline gap-1">
+    <View className={compact ? 'items-end' : 'flex-row items-baseline gap-1'}>
       <Text
         variant="numeric"
         className={cn(
-          valueUnderTitle ? 'text-[16px] leading-[20px]' : 'text-[19px] leading-[24px]',
+          valueUnderTitle || compact ? 'text-[17px] leading-[21px]' : 'text-[19px] leading-[24px]',
           valueTones[valueTone],
         )}
       >
         {typeof value === 'number' ? value.toLocaleString() : value}
       </Text>
       {unit ? (
-        <Text variant={valueUnderTitle ? 'micro' : 'caption'} className="text-muted">
+        <Text variant={valueUnderTitle || compact ? 'micro' : 'caption'} className="text-muted">
           {unit}
         </Text>
       ) : null}
@@ -134,7 +146,11 @@ export function ItemRow({
 
   const tile = (
     <View
-      className={cn(ROW_TILE, 'items-center justify-center overflow-hidden rounded-tile bg-track')}
+      className={cn(
+        compact ? ROW_TILE_COMPACT : ROW_TILE,
+        'items-center justify-center overflow-hidden bg-track',
+        compact ? 'rounded-sm' : 'rounded-tile',
+      )}
     >
       {photo ? (
         <MealPhoto source={photo} dimmed={busy} />
@@ -147,9 +163,12 @@ export function ItemRow({
         // icon is what a missing object falls through to, below.
         // `bg-line` rather than the skeleton's own `bg-track`, which is what
         // the tile behind it already is — track on track does not pulse.
-        <Skeleton width="100%" height={72} rounded={false} className="bg-line" />
+        <Skeleton width="100%" height={compact ? 56 : 72} rounded={false} className="bg-line" />
       ) : busy ? null : (
-        <Icon {...(icon ?? PLACEHOLDER_ICON)} size={ROW_TILE_ICON} />
+        <Icon
+          {...(icon ?? PLACEHOLDER_ICON)}
+          size={compact ? ROW_TILE_COMPACT_ICON : ROW_TILE_ICON}
+        />
       )}
       {/* Over the photo rather than beside it: the thing being worked on is the
           picture, and the row has no spare width at this size. With no photo the
@@ -173,7 +192,7 @@ export function ItemRow({
             prawns" truncated to "Char kuey teow wi…", which is the half that
             says least. Both lines plus the detail come to 69pt against a 72pt
             tile, so a wrapped title costs no height and the rows stay even. */}
-        <Text variant="bodyStrong" numberOfLines={titleLines}>
+        <Text variant="bodyStrong" numberOfLines={compact ? 1 : titleLines}>
           {title}
         </Text>
         {valueUnderTitle && !busy ? valueLabel : null}

@@ -79,94 +79,13 @@ export const activity = {
     checkAgain: 'Check again',
   },
 
+  /** How long ago the last sync was. Settings, Health reads these. */
   today: {
-    /** The freshness stamp beside the title. */
     syncedJustNow: 'Just now',
     syncedMinutes: '{{count}} min ago',
     syncedHours: '{{count}} hr ago',
     syncedDays: '{{count}}d ago',
     syncedNever: 'Not synced yet',
-
-    move: 'Move',
-    exercise: 'Exercise',
-    stand: 'Stand',
-    stepsRing: 'Steps',
-    moveUnit: '/ {{goal}} kcal',
-    exerciseUnit: '/ {{goal}} min',
-    standUnit: '/ {{goal}} hr',
-    stepsUnit: '/ {{goal}}',
-    /**
-     * The reference when the store sets no goal, which on Apple is always and
-     * used to leave three tiles drawing an empty track. Reads in the same grammar
-     * as the goal units above, and drops the quantity like `stepsUnit`: the tile
-     * is a third of a phone wide and the label already says what is counted.
-     */
-    avgUnit: '/ {{value}} avg',
-    /**
-     * The provider has no opinion on this measurement — an em dash, never a
-     * zero. Steps is the one tile that cannot show it: that column really is
-     * `not null`, so a zero there is a phone that spent the day on a table.
-     * Active energy joined the nullable tiles when it turned out that a Health
-     * Connect store can report a day's steps and no energy at all.
-     */
-    none: '—',
-    /** Neither a goal nor a history to average: a connection minutes old. */
-    noGoal: 'kcal',
-    noGoalMinutes: 'min',
-    noGoalHours: 'hr',
-
-    budgetTitle: 'BUDGET WITH MOVEMENT',
-    goal: 'GOAL',
-    eaten: 'EATEN',
-    burned: 'BURNED',
-    left: 'LEFT',
-    over: 'OVER',
-    budgetOff: 'Movement is not extending your budget. Turn it on in Activity settings.',
-
-    todayTitle: 'TODAY',
-    /**
-     * The second section, and the reason there is one.
-     *
-     * Balance and History are seven-day figures and sat under "TODAY", where the
-     * balance read as this morning's. A heading each is cheaper than a
-     * qualifier on every row.
-     */
-    weekTitle: 'THIS WEEK',
-    stepsRow: 'Steps',
-    stepsRowValue: '{{steps}} today',
-    balanceRow: 'Balance',
-    balanceDeficit: '{{value}} deficit a day',
-    balanceSurplus: '{{value}} surplus a day',
-    balanceUnknown: 'Not enough logged',
-    /** What History has to say without opening it. */
-    historyRowValue_one: '{{count}} workout · {{time}}',
-    historyRowValue_other: '{{count}} workouts · {{time}}',
-    historyNone: 'No workouts yet',
-
-    // No `noSessionsTitle` / `noSessionsBody`. A day with nothing recorded is
-    // the normal state of this screen before the afternoon, and a card saying so
-    // was a screenful spent reporting that nothing had happened yet.
-
-    /** The one thing separating generated data from a watch. */
-    demoBadge: 'Demo data',
-
-    /**
-     * A connected store with nothing in it. Development builds only.
-     *
-     * The simulator's, in practice: iOS 26 reports HealthKit as available and
-     * shows the real permission sheet, then has no data behind it.
-     */
-    storeEmpty:
-      'This health store is connected but has no data in it, which is what a simulator looks like. Generated data will fill these screens in.',
-
-    /**
-     * Android, where the third ring has nothing behind it.
-     *
-     * Generic only. There was a `{{source}}` variant naming the writing app and
-     * nothing ever rendered it — Health Connect names the app that wrote a
-     * SESSION, not the one that failed to write a record type nobody has.
-     */
-    noStandNoteGeneric: 'Your health app does not report stand hours, so we show steps instead.',
   },
 
   workout: {
@@ -193,89 +112,6 @@ export const activity = {
 
     from: 'From {{source}}',
     missing: 'This workout is no longer in your health app.',
-  },
-
-  steps: {
-    title: 'Steps',
-    todaySoFar: 'Today so far',
-    goalLine: 'Goal {{goal}} steps',
-    over: '{{value}} over',
-    under: '{{value}} to go',
-    unit: 'steps · {{distance}}',
-
-    /**
-     * The three-block fallback's labels. It used to carry a footnote explaining
-     * the grouping; the labels say it themselves, and the sentence was the app
-     * narrating its own plumbing.
-     */
-    morning: 'Morning',
-    afternoon: 'Afternoon',
-    evening: 'Evening',
-    noHours: 'No hourly breakdown for this day.',
-
-    weekTitle: 'THIS WEEK',
-    dailyAvg: 'DAILY AVG',
-    goalDays: 'GOAL DAYS',
-    best: 'BEST',
-
-    /**
-     * Does not say "week". `weekShape` compares a daily best
-     * against a daily average, so it is range-agnostic arithmetic — but the copy
-     * was not, and the range switch above it left "Your week is even" sitting
-     * under twelve months of columns.
-     */
-    steadyNote: 'Your days are even. Whatever you are doing, it is a habit now.',
-    shortNote: 'Not enough days yet to see a pattern.',
-  },
-
-  balance: {
-    chartTitle: 'In versus out',
-    deficit: '{{value}} deficit',
-    surplus: '{{value}} surplus',
-    even: 'Even',
-    eatenLegend: 'Eaten',
-    burnedLegend: 'Burned',
-
-    /**
-     * The heading names the range, because the figures under it are range totals.
-     * Without it, "Resting 48,775 kcal" on the 30-day view is either a month's
-     * resting burn or a claim that the user is a furnace.
-     */
-    splitTitle7d: 'WHERE THE BURN CAME FROM · 7 DAYS',
-    splitTitle30d: 'WHERE THE BURN CAME FROM · 30 DAYS',
-    splitTitle1y: 'WHERE THE BURN CAME FROM · 12 MONTHS',
-    resting: 'Resting',
-    restingBody: 'Just being alive',
-    workouts: 'Workouts',
-    workoutsBody: 'What your sessions cost',
-    walking: 'Walking',
-    walkingBody: 'Steps and errands',
-    kcal: '{{value}} kcal',
-
-    /**
-     * Both sides are needed for a balance, and saying so beats drawing half of
-     * one. Named counts rather than "not enough data", so it is obvious which
-     * half is missing.
-     */
-    partial: 'Based on {{days}} of {{total}} days that had both a meal log and a resting figure.',
-    noRestingTitle: 'No resting energy',
-    /**
-     * What is missing and what it costs, and nothing more.
-     */
-    noRestingBody:
-      'Your health app does not report what your body burns at rest, so there is no daily balance to draw. Steps, workouts and active energy are unaffected.',
-    empty: 'Log a few meals with your watch on and this fills in.',
-  },
-
-  history: {
-    title: 'History',
-    weekTitle: 'THIS WEEK',
-    sessions: 'SESSIONS',
-    time: 'TIME',
-    burned: 'BURNED',
-    allTitle: 'ALL SESSIONS',
-    empty: 'No workouts recorded yet.',
-    emptyBody: 'Anything your watch or phone records lands here.',
   },
 
   settings: {

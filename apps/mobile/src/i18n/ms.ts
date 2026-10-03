@@ -147,7 +147,6 @@ export const ms = {
     nav: {
       today: 'Hari ini',
       recipes: 'Makanan',
-      activity: 'Aktiviti',
       trends: 'Trend',
       me: 'Saya',
       log: 'Rekod makanan',
@@ -284,48 +283,6 @@ export const ms = {
       syncedHours: '{{count}} jam lalu',
       syncedDays: '{{count}} hari lalu',
       syncedNever: 'Belum disegerakkan',
-
-      move: 'Gerak',
-      exercise: 'Senam',
-      stand: 'Berdiri',
-      stepsRing: 'Langkah',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}} min',
-      standUnit: '/ {{goal}} jam',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ {{value}} purata',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: 'min',
-      noGoalHours: 'jam',
-
-      budgetTitle: 'BAJET DENGAN PERGERAKAN',
-      goal: 'SASARAN',
-      eaten: 'DIMAKAN',
-      burned: 'DIBAKAR',
-      left: 'BAKI',
-      over: 'LEBIH',
-      budgetOff: 'Pergerakan tidak memanjangkan bajet anda. Hidupkannya dalam tetapan Aktiviti.',
-
-      todayTitle: 'HARI INI',
-      weekTitle: 'MINGGU INI',
-      stepsRow: 'Langkah',
-      stepsRowValue: '{{steps}} hari ini',
-      balanceRow: 'Imbangan',
-      balanceDeficit: 'defisit {{value}} sehari',
-      balanceSurplus: 'lebihan {{value}} sehari',
-      balanceUnknown: 'Rekod belum cukup',
-      historyRowValue_one: '{{count}} senaman · {{time}}',
-      historyRowValue_other: '{{count}} senaman · {{time}}',
-      historyNone: 'Belum ada senaman',
-
-      demoBadge: 'Data demo',
-
-      storeEmpty:
-        'Stor kesihatan ini bersambung tetapi kosong, macam mana rupa simulator. Data yang dijana akan mengisi skrin ini.',
-
-      noStandNoteGeneric:
-        'Apl kesihatan anda tidak melaporkan jam berdiri, jadi kami tunjukkan langkah.',
     },
 
     workout: {
@@ -345,66 +302,6 @@ export const ms = {
 
       from: 'Daripada {{source}}',
       missing: 'Senaman ini sudah tiada dalam apl kesihatan anda.',
-    },
-
-    steps: {
-      title: 'Langkah',
-      todaySoFar: 'Hari ini setakat ini',
-      goalLine: 'Sasaran {{goal}} langkah',
-      over: '{{value}} lebih',
-      under: '{{value}} lagi',
-      unit: 'langkah · {{distance}}',
-
-      morning: 'Pagi',
-      afternoon: 'Tengah hari',
-      evening: 'Petang',
-      noHours: 'Tiada pecahan mengikut jam untuk hari ini.',
-
-      weekTitle: 'MINGGU INI',
-      dailyAvg: 'PURATA HARIAN',
-      goalDays: 'HARI SASARAN',
-      best: 'TERBAIK',
-
-      steadyNote: 'Hari anda sekata. Apa sahaja yang anda buat, ia sudah jadi tabiat.',
-      shortNote: 'Belum cukup hari untuk melihat coraknya.',
-    },
-
-    balance: {
-      chartTitle: 'Masuk lawan keluar',
-      deficit: 'defisit {{value}}',
-      surplus: 'lebihan {{value}}',
-      even: 'Seimbang',
-      eatenLegend: 'Dimakan',
-      burnedLegend: 'Dibakar',
-
-      splitTitle7d: 'DARI MANA BAKARAN ITU DATANG · 7 HARI',
-      splitTitle30d: 'DARI MANA BAKARAN ITU DATANG · 30 HARI',
-      splitTitle1y: 'DARI MANA BAKARAN ITU DATANG · 12 BULAN',
-      resting: 'Rehat',
-      restingBody: 'Sekadar hidup',
-      workouts: 'Senaman',
-      workoutsBody: 'Kos sesi anda',
-      walking: 'Berjalan',
-      walkingBody: 'Langkah dan urusan harian',
-      kcal: '{{value}} kcal',
-
-      partial:
-        'Berdasarkan {{days}} daripada {{total}} hari yang mempunyai rekod makanan dan angka tenaga rehat.',
-      noRestingTitle: 'Tiada tenaga rehat',
-      noRestingBody:
-        'Apl kesihatan anda tidak melaporkan apa yang badan anda bakar semasa rehat, jadi tiada imbangan harian untuk dilukis. Langkah, senaman dan tenaga aktif tidak terjejas.',
-      empty: 'Rekod beberapa hidangan dengan jam tangan anda dipakai dan ini akan terisi.',
-    },
-
-    history: {
-      title: 'Sejarah',
-      weekTitle: 'MINGGU INI',
-      sessions: 'SESI',
-      time: 'MASA',
-      burned: 'DIBAKAR',
-      allTitle: 'SEMUA SESI',
-      empty: 'Belum ada senaman direkodkan.',
-      emptyBody: 'Apa sahaja yang jam tangan atau telefon anda rekod akan muncul di sini.',
     },
 
     settings: {
@@ -822,9 +719,6 @@ export const ms = {
         over: 'Atas sasaran',
         missed: 'Tiada rekod',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: 'Tiada rekod pada hari itu.',
     },
 
     selector: {
@@ -1514,33 +1408,8 @@ export const ms = {
       later: 'Mungkin nanti',
     },
 
-    reminder: {
-      title_one: 'baki {{count}} hari dalam percubaan anda',
-      title_other: 'baki {{count}} hari dalam percubaan anda',
-      body: 'Anda sudah merekod {{days}} hari berturut-turut dan turun {{kg}} kg. Teruskan.',
-      daysLogged: 'HARI DIREKOD',
-      meals: 'HIDANGAN',
-      kgDown: 'KG TURUN',
-      starts: 'Pelan anda bermula {{date}} pada {{price}} setahun.',
-      startsMonthly: 'Pelan anda bermula {{date}} pada {{price}} sebulan.',
-      keep: 'Kekalkan pelan saya',
-      manage: 'Urus langganan',
-    },
-
     ended: {
-      heading: 'Hari ini',
-      previewMode: 'Mod pratonton',
-      title: 'Percubaan anda sudah tamat',
-      body: 'Sejarah {{days}} hari anda selamat dan masih boleh dibaca.',
-      dataWaiting: 'DATA ANDA MENUNGGU',
-      days: 'HARI',
-      meals: 'HIDANGAN',
-      kgDown: 'KG TURUN',
-      lockedEntry: 'Berkunci',
       resume: 'Teruskan dengan Pro',
-      terms: '{{price}} setahun, diperbaharui sehingga anda batalkan.',
-      termsPending: 'Diperbaharui setiap tahun sehingga anda batalkan.',
-      browse: 'Terus melayari secara percuma',
     },
 
     limit: {

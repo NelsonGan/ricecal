@@ -145,7 +145,6 @@ export const id = {
     nav: {
       today: 'Hari ini',
       recipes: 'Makanan',
-      activity: 'Aktivitas',
       trends: 'Tren',
       me: 'Saya',
       log: 'Catat makanan',
@@ -282,48 +281,6 @@ export const id = {
       syncedHours: '{{count}} jam lalu',
       syncedDays: '{{count}} hr lalu',
       syncedNever: 'Belum disinkronkan',
-
-      move: 'Gerak',
-      exercise: 'Olahraga',
-      stand: 'Berdiri',
-      stepsRing: 'Langkah',
-      moveUnit: '/ {{goal}} kkal',
-      exerciseUnit: '/ {{goal}} mnt',
-      standUnit: '/ {{goal}} jam',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ rata-rata {{value}}',
-      none: '—',
-      noGoal: 'kkal',
-      noGoalMinutes: 'mnt',
-      noGoalHours: 'jam',
-
-      budgetTitle: 'JATAH DENGAN GERAKAN',
-      goal: 'TARGET',
-      eaten: 'DIMAKAN',
-      burned: 'DIBAKAR',
-      left: 'SISA',
-      over: 'LEBIH',
-      budgetOff: 'Gerakan tidak memperpanjang jatahmu. Nyalakan di pengaturan Aktivitas.',
-
-      todayTitle: 'HARI INI',
-      weekTitle: 'MINGGU INI',
-      stepsRow: 'Langkah',
-      stepsRowValue: '{{steps}} hari ini',
-      balanceRow: 'Neraca',
-      balanceDeficit: 'defisit {{value}} per hari',
-      balanceSurplus: 'surplus {{value}} per hari',
-      balanceUnknown: 'Catatan belum cukup',
-      historyRowValue_one: '{{count}} olahraga · {{time}}',
-      historyRowValue_other: '{{count}} olahraga · {{time}}',
-      historyNone: 'Belum ada olahraga',
-
-      demoBadge: 'Data demo',
-
-      storeEmpty:
-        'Penyimpanan kesehatan ini terhubung tapi kosong, persis seperti simulator. Data buatan akan mengisi layar ini.',
-
-      noStandNoteGeneric:
-        'Aplikasi kesehatanmu tidak melaporkan jam berdiri, jadi kami tampilkan langkah.',
     },
 
     workout: {
@@ -343,66 +300,6 @@ export const id = {
 
       from: 'Dari {{source}}',
       missing: 'Olahraga ini sudah tidak ada di aplikasi kesehatanmu.',
-    },
-
-    steps: {
-      title: 'Langkah',
-      todaySoFar: 'Hari ini sejauh ini',
-      goalLine: 'Target {{goal}} langkah',
-      over: '{{value}} lebih',
-      under: '{{value}} lagi',
-      unit: 'langkah · {{distance}}',
-
-      morning: 'Pagi',
-      afternoon: 'Siang',
-      evening: 'Malam',
-      noHours: 'Tidak ada rincian per jam untuk hari ini.',
-
-      weekTitle: 'MINGGU INI',
-      dailyAvg: 'RATA HARIAN',
-      goalDays: 'HARI TARGET',
-      best: 'TERBAIK',
-
-      steadyNote: 'Hari-harimu merata. Apa pun yang kamu lakukan, itu sudah jadi kebiasaan.',
-      shortNote: 'Belum cukup hari untuk melihat polanya.',
-    },
-
-    balance: {
-      chartTitle: 'Masuk versus keluar',
-      deficit: 'defisit {{value}}',
-      surplus: 'surplus {{value}}',
-      even: 'Seimbang',
-      eatenLegend: 'Dimakan',
-      burnedLegend: 'Dibakar',
-
-      splitTitle7d: 'DARI MANA BAKARANNYA · 7 HARI',
-      splitTitle30d: 'DARI MANA BAKARANNYA · 30 HARI',
-      splitTitle1y: 'DARI MANA BAKARANNYA · 12 BULAN',
-      resting: 'Istirahat',
-      restingBody: 'Sekadar hidup',
-      workouts: 'Olahraga',
-      workoutsBody: 'Yang sesimu habiskan',
-      walking: 'Berjalan',
-      walkingBody: 'Langkah dan urusan sehari-hari',
-      kcal: '{{value}} kkal',
-
-      partial:
-        'Berdasarkan {{days}} dari {{total}} hari yang punya catatan makan dan angka istirahat.',
-      noRestingTitle: 'Tidak ada energi istirahat',
-      noRestingBody:
-        'Aplikasi kesehatanmu tidak melaporkan yang dibakar tubuhmu saat istirahat, jadi tidak ada neraca harian untuk digambar. Langkah, olahraga dan energi aktif tidak terpengaruh.',
-      empty: 'Catat beberapa makan sambil memakai jam tanganmu dan ini akan terisi.',
-    },
-
-    history: {
-      title: 'Riwayat',
-      weekTitle: 'MINGGU INI',
-      sessions: 'SESI',
-      time: 'WAKTU',
-      burned: 'DIBAKAR',
-      allTitle: 'SEMUA SESI',
-      empty: 'Belum ada olahraga tercatat.',
-      emptyBody: 'Apa pun yang direkam jam tangan atau ponselmu akan muncul di sini.',
     },
 
     settings: {
@@ -811,9 +708,6 @@ export const id = {
         over: 'Di atas target',
         missed: 'Tidak dicatat',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kkal',
-      dayEmpty: 'Tidak ada catatan di hari itu.',
     },
 
     selector: {
@@ -1498,33 +1392,8 @@ export const id = {
       later: 'Mungkin nanti',
     },
 
-    reminder: {
-      title_one: 'sisa {{count}} hari di uji cobamu',
-      title_other: 'sisa {{count}} hari di uji cobamu',
-      body: 'Kamu sudah mencatat {{days}} hari berturut-turut dan turun {{kg}} kg. Lanjutkan.',
-      daysLogged: 'HARI DICATAT',
-      meals: 'MAKAN',
-      kgDown: 'KG TURUN',
-      starts: 'Paketmu mulai {{date}} seharga {{price}} per tahun.',
-      startsMonthly: 'Paketmu mulai {{date}} seharga {{price}} per bulan.',
-      keep: 'Pertahankan paketku',
-      manage: 'Kelola langganan',
-    },
-
     ended: {
-      heading: 'Hari ini',
-      previewMode: 'Mode pratinjau',
-      title: 'Uji cobamu sudah berakhir',
-      body: 'Riwayat {{days}} harimu aman dan masih bisa dibaca.',
-      dataWaiting: 'DATAMU MENUNGGU',
-      days: 'HARI',
-      meals: 'MAKAN',
-      kgDown: 'KG TURUN',
-      lockedEntry: 'Terkunci',
       resume: 'Lanjutkan dengan Pro',
-      terms: '{{price}} per tahun, diperpanjang sampai Anda batalkan.',
-      termsPending: 'Diperpanjang tiap tahun sampai Anda batalkan.',
-      browse: 'Terus jelajahi gratis',
     },
 
     limit: {

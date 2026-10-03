@@ -139,7 +139,6 @@ export const hi = {
     nav: {
       today: 'आज',
       recipes: 'खाना',
-      activity: 'गतिविधि',
       trends: 'रुझान',
       me: 'मैं',
       log: 'खाना दर्ज करें',
@@ -274,47 +273,6 @@ export const hi = {
       syncedHours: '{{count}} घंटे पहले',
       syncedDays: '{{count}} दिन पहले',
       syncedNever: 'अभी सिंक नहीं हुआ',
-
-      move: 'हलचल',
-      exercise: 'व्यायाम',
-      stand: 'खड़े रहना',
-      stepsRing: 'कदम',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}} मिनट',
-      standUnit: '/ {{goal}} घंटे',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ औसत {{value}}',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: 'मिनट',
-      noGoalHours: 'घंटे',
-
-      budgetTitle: 'हलचल समेत हिसाब',
-      goal: 'लक्ष्य',
-      eaten: 'खाया',
-      burned: 'खर्च',
-      left: 'बचा',
-      over: 'ऊपर',
-      budgetOff: 'हलचल अभी आपका हिसाब नहीं बढ़ा रही। इसे गतिविधि सेटिंग में चालू करें।',
-
-      todayTitle: 'आज',
-      weekTitle: 'इस हफ़्ते',
-      stepsRow: 'कदम',
-      stepsRowValue: 'आज {{steps}}',
-      balanceRow: 'संतुलन',
-      balanceDeficit: 'रोज़ {{value}} की कमी',
-      balanceSurplus: 'रोज़ {{value}} अधिक',
-      balanceUnknown: 'दर्ज किया हुआ कम है',
-      historyRowValue_one: '{{count}} वर्कआउट · {{time}}',
-      historyRowValue_other: '{{count}} वर्कआउट · {{time}}',
-      historyNone: 'अभी कोई वर्कआउट नहीं',
-
-      demoBadge: 'डेमो डेटा',
-
-      storeEmpty:
-        'यह स्वास्थ्य स्टोर जुड़ा है पर खाली है, सिम्युलेटर ऐसा ही दिखता है। बनाया गया डेटा इन स्क्रीन को भर देगा।',
-
-      noStandNoteGeneric: 'आपका हेल्थ ऐप खड़े रहने के घंटे नहीं बताता, इसलिए हम कदम दिखाते हैं।',
     },
 
     workout: {
@@ -334,66 +292,6 @@ export const hi = {
 
       from: '{{source}} से',
       missing: 'यह वर्कआउट अब आपके हेल्थ ऐप में नहीं है।',
-    },
-
-    steps: {
-      title: 'कदम',
-      todaySoFar: 'आज अब तक',
-      goalLine: 'लक्ष्य {{goal}} कदम',
-      over: '{{value}} ऊपर',
-      under: '{{value}} बाक़ी',
-      unit: 'कदम · {{distance}}',
-
-      morning: 'सुबह',
-      afternoon: 'दोपहर',
-      evening: 'शाम',
-      noHours: 'इस दिन का घंटेवार ब्यौरा नहीं है।',
-
-      weekTitle: 'इस हफ़्ते',
-      dailyAvg: 'रोज़ का औसत',
-      goalDays: 'लक्ष्य वाले दिन',
-      best: 'सबसे ज़्यादा',
-
-      steadyNote: 'आपके दिन एक जैसे हैं। आप जो भी कर रहे हैं, अब वह आदत बन चुका है।',
-      shortNote: 'पैटर्न देखने के लिए अभी दिन कम हैं।',
-    },
-
-    balance: {
-      chartTitle: 'अंदर बनाम बाहर',
-      deficit: '{{value}} की कमी',
-      surplus: '{{value}} अधिक',
-      even: 'बराबर',
-      eatenLegend: 'खाया',
-      burnedLegend: 'खर्च',
-
-      splitTitle7d: 'खर्च कहां से आया · 7 दिन',
-      splitTitle30d: 'खर्च कहां से आया · 30 दिन',
-      splitTitle1y: 'खर्च कहां से आया · 12 महीने',
-      resting: 'आराम',
-      restingBody: 'सिर्फ़ ज़िंदा रहने में',
-      workouts: 'वर्कआउट',
-      workoutsBody: 'आपके सत्रों ने जो खर्च किया',
-      walking: 'चलना',
-      walkingBody: 'कदम और रोज़मर्रा के काम',
-      kcal: '{{value}} kcal',
-
-      partial:
-        '{{total}} में से उन {{days}} दिनों के आधार पर जिनमें खाने का रिकॉर्ड और आराम का आंकड़ा दोनों थे।',
-      noRestingTitle: 'आराम की ऊर्जा नहीं है',
-      noRestingBody:
-        'आपका हेल्थ ऐप यह नहीं बताता कि आराम में आपका शरीर कितना खर्च करता है, इसलिए रोज़ का संतुलन नहीं बनाया जा सकता। कदम, वर्कआउट और सक्रिय ऊर्जा पर कोई असर नहीं।',
-      empty: 'घड़ी पहनकर कुछ भोजन दर्ज करें और यह भर जाएगा।',
-    },
-
-    history: {
-      title: 'इतिहास',
-      weekTitle: 'इस हफ़्ते',
-      sessions: 'सत्र',
-      time: 'समय',
-      burned: 'खर्च',
-      allTitle: 'सभी सत्र',
-      empty: 'अभी कोई वर्कआउट दर्ज नहीं हुआ।',
-      emptyBody: 'आपकी घड़ी या फ़ोन जो भी दर्ज करेगा, वह यहां आ जाएगा।',
     },
 
     settings: {
@@ -791,9 +689,6 @@ export const hi = {
         over: 'लक्ष्य से ऊपर',
         missed: 'दर्ज नहीं',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: 'उस दिन कुछ दर्ज नहीं हुआ।',
     },
 
     selector: {
@@ -1472,33 +1367,8 @@ export const hi = {
       later: 'शायद बाद में',
     },
 
-    reminder: {
-      title_one: 'ट्रायल में {{count}} दिन बचा',
-      title_other: 'ट्रायल में {{count}} दिन बचे',
-      body: 'आपने लगातार {{days}} दिन दर्ज किए और {{kg}} kg घटाया। यही रफ़्तार बनाए रखें।',
-      daysLogged: 'दर्ज दिन',
-      meals: 'भोजन',
-      kgDown: 'KG घटा',
-      starts: 'आपका प्लान {{date}} से {{price}} सालाना पर शुरू होगा।',
-      startsMonthly: 'आपका प्लान {{date}} से {{price}} महीना पर शुरू होगा।',
-      keep: 'मेरा प्लान रखें',
-      manage: 'सदस्यता प्रबंधित करें',
-    },
-
     ended: {
-      heading: 'आज',
-      previewMode: 'झलक',
-      title: 'आपका ट्रायल ख़त्म हो गया',
-      body: 'आपके {{days}} दिन का इतिहास सुरक्षित है और अब भी पढ़ा जा सकता है।',
-      dataWaiting: 'आपका डेटा इंतज़ार में है',
-      days: 'दिन',
-      meals: 'भोजन',
-      kgDown: 'KG घटा',
-      lockedEntry: 'बंद',
       resume: 'Pro के साथ जारी रखें',
-      terms: '{{price}} प्रति वर्ष, रद्द करने तक नवीनीकृत होता रहेगा।',
-      termsPending: 'रद्द करने तक हर साल नवीनीकृत होगा।',
-      browse: 'मुफ़्त में देखते रहें',
     },
 
     limit: {

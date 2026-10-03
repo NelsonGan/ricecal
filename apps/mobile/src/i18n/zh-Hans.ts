@@ -144,7 +144,6 @@ export const zhHans = {
     nav: {
       today: '今天',
       recipes: '食物',
-      activity: '活动',
       trends: '趋势',
       me: '我的',
       log: '记录饮食',
@@ -278,47 +277,6 @@ export const zhHans = {
       syncedHours: '{{count}} 小时前',
       syncedDays: '{{count}} 天前',
       syncedNever: '还没有同步',
-
-      move: '活动',
-      exercise: '锻炼',
-      stand: '站立',
-      stepsRing: '步数',
-      moveUnit: '/ {{goal}} 千卡',
-      exerciseUnit: '/ {{goal}} 分钟',
-      standUnit: '/ {{goal}} 小时',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ 平均 {{value}}',
-      none: '—',
-      noGoal: '千卡',
-      noGoalMinutes: '分钟',
-      noGoalHours: '小时',
-
-      budgetTitle: '算上运动的额度',
-      goal: '目标',
-      eaten: '已吃',
-      burned: '消耗',
-      left: '剩余',
-      over: '超出',
-      budgetOff: '运动目前没有拉高你的额度。可以在活动设置里打开。',
-
-      todayTitle: '今天',
-      weekTitle: '本周',
-      stepsRow: '步数',
-      stepsRowValue: '今天 {{steps}}',
-      balanceRow: '收支',
-      balanceDeficit: '每天缺口 {{value}}',
-      balanceSurplus: '每天盈余 {{value}}',
-      balanceUnknown: '记录还不够',
-      historyRowValue_one: '{{count}} 次锻炼 · {{time}}',
-      historyRowValue_other: '{{count}} 次锻炼 · {{time}}',
-      historyNone: '还没有锻炼记录',
-
-      demoBadge: '演示数据',
-
-      storeEmpty:
-        '这个健康存储已连接，但里面没有数据，模拟器就是这样。这些页面会用生成的数据填充。',
-
-      noStandNoteGeneric: '你的健康应用不提供站立小时数，所以这里显示步数。',
     },
 
     workout: {
@@ -338,65 +296,6 @@ export const zhHans = {
 
       from: '来自 {{source}}',
       missing: '这次锻炼已经不在你的健康应用里了。',
-    },
-
-    steps: {
-      title: '步数',
-      todaySoFar: '今天到现在',
-      goalLine: '目标 {{goal}} 步',
-      over: '超出 {{value}}',
-      under: '还差 {{value}}',
-      unit: '步 · {{distance}}',
-
-      morning: '上午',
-      afternoon: '下午',
-      evening: '晚上',
-      noHours: '这一天没有分时段的数据。',
-
-      weekTitle: '本周',
-      dailyAvg: '日均',
-      goalDays: '达标天数',
-      best: '最高',
-
-      steadyNote: '你每天都很平均。不管你在做什么，它已经是习惯了。',
-      shortNote: '天数还不够，看不出规律。',
-    },
-
-    balance: {
-      chartTitle: '吃进和消耗',
-      deficit: '缺口 {{value}}',
-      surplus: '盈余 {{value}}',
-      even: '持平',
-      eatenLegend: '吃进',
-      burnedLegend: '消耗',
-
-      splitTitle7d: '消耗来自哪里 · 7 天',
-      splitTitle30d: '消耗来自哪里 · 30 天',
-      splitTitle1y: '消耗来自哪里 · 12 个月',
-      resting: '基础代谢',
-      restingBody: '活着本身就在消耗',
-      workouts: '锻炼',
-      workoutsBody: '你的运动花掉的',
-      walking: '走路',
-      walkingBody: '走动和跑腿',
-      kcal: '{{value}} 千卡',
-
-      partial: '基于 {{total}} 天里既有饮食记录又有基础代谢数据的 {{days}} 天。',
-      noRestingTitle: '没有基础代谢数据',
-      noRestingBody:
-        '你的健康应用不提供身体静息时的消耗，所以画不出每日收支。步数、锻炼和活动消耗不受影响。',
-      empty: '戴着手表记录几餐，这里就会填上。',
-    },
-
-    history: {
-      title: '历史',
-      weekTitle: '本周',
-      sessions: '次数',
-      time: '时长',
-      burned: '消耗',
-      allTitle: '全部锻炼',
-      empty: '还没有锻炼记录。',
-      emptyBody: '手表或手机记录的任何运动都会出现在这里。',
     },
 
     settings: {
@@ -794,9 +693,6 @@ export const zhHans = {
         over: '超过目标',
         missed: '没有记录',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} 千卡',
-      dayEmpty: '那天没有记录。',
     },
 
     selector: {
@@ -1470,33 +1366,8 @@ export const zhHans = {
       later: '以后再说',
     },
 
-    reminder: {
-      title_one: '试用还剩 {{count}} 天',
-      title_other: '试用还剩 {{count}} 天',
-      body: '你已经连续记录 {{days}} 天，减了 {{kg}} 公斤。保持下去。',
-      daysLogged: '记录天数',
-      meals: '餐数',
-      kgDown: '减掉公斤',
-      starts: '你的方案从 {{date}} 开始，每年 {{price}}。',
-      startsMonthly: '你的方案从 {{date}} 开始，每月 {{price}}。',
-      keep: '保留我的方案',
-      manage: '管理订阅',
-    },
-
     ended: {
-      heading: '今天',
-      previewMode: '预览模式',
-      title: '你的试用已经结束',
-      body: '你 {{days}} 天的历史都还在，也还能看。',
-      dataWaiting: '你的数据还在等你',
-      days: '天',
-      meals: '餐',
-      kgDown: '减掉公斤',
-      lockedEntry: '已锁定',
       resume: '继续使用 Pro',
-      terms: '每年 {{price}}，在你取消前自动续订。',
-      termsPending: '在你取消前每年自动续订。',
-      browse: '继续免费浏览',
     },
 
     limit: {

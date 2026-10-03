@@ -108,14 +108,6 @@ export const logging = {
       over: 'Over goal',
       missed: 'Not logged',
     },
-    /**
-     * The card under the grid, headed by the day and nothing else. It carried
-     * the meal count too, which the list directly under it already gives.
-     */
-    dayHeading: '{{day}}',
-    dayKcal: '{{kcal}} kcal',
-    /** A day with nothing on it. Not a failure, and not scolded. */
-    dayEmpty: 'Nothing logged that day.',
   },
 
   selector: {

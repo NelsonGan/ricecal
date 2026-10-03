@@ -361,13 +361,10 @@ function RootStack() {
           logged — so it takes the stack's default push and wears a back
           chevron like every other full page here.
 
-          These three do present. Welcome and ended are arrivals rather than
-          places: one lands after a purchase settles and the other after a
-          subscription lapses, and neither has a screen behind it worth
-          returning to. The reminder is a sheet-sized nudge. */}
+          Welcome does present. It is an arrival rather than a place: it lands
+          after a purchase settles, with no screen behind it worth returning
+          to. */}
       <Stack.Screen name="paywall/welcome" options={{ presentation: 'fullScreenModal' }} />
-      <Stack.Screen name="paywall/reminder" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="paywall/ended" options={{ presentation: 'fullScreenModal' }} />
     </Stack>
   )
 }

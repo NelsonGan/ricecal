@@ -12,20 +12,14 @@
  */
 
 export {
-  type ActivityBucket,
   type ActivityDay,
-  type ActivityHour,
   type ActivitySession,
-  type ActivitySummary,
   daysAgo,
   type HealthConnection,
   providerFor,
   useActivityDay,
-  useActivityHours,
-  useActivitySeries,
   useActivitySession,
   useActivitySessions,
-  useActivitySummary,
   useClearDemoActivity,
   useDisconnectHealth,
   useHealthConnection,

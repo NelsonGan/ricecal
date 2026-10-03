@@ -23,42 +23,17 @@ import { markFor } from './week'
 const PLACEHOLDER_ICON = { set: 'food', name: 'empty-plate' } as const
 
 /**
- * THE VERDICT IS THE CELL'S OUTLINE, in each of its three states, on both
- * backgrounds.
+ * THE VERDICT IS THE CELL'S OUTLINE: pandan under goal, kaya over, and a dashed
+ * line for a day with nothing on it, because absence is not a result.
  *
- * `missed` keeps the dashed line it already had, which is now one member of this
- * set rather than a special case: a day with nothing on it is the one outline
- * that is not a colour, because absence is not a result.
+ * Nothing on the grid is selected. A tap leaves the calendar for that day, so a
+ * filled cell would be marking a choice the grid is about to stop showing.
  */
-const outlines: Record<DateStripMark, { on: string; off: string }> = {
-  under: { on: 'border-pandan', off: 'border-pandan' },
-  over: { on: 'border-kaya', off: 'border-kaya' },
-  missed: { on: 'border-line-strong border-dashed', off: 'border-line border-dashed' },
+const outlines: Record<DateStripMark, string> = {
+  under: 'border-pandan',
+  over: 'border-kaya',
+  missed: 'border-line border-dashed',
 }
-
-/**
- * The selected cell is filled in its own verdict's colour. `bg-pandan` for every
- * selected day was right while the outline alone carried the verdict, and stopped
- * being right once both were on the same cell: an over-goal day drew a kaya ring
- * around a green square, so the one cell the reader is looking at was the one
- * whose colour did not mean anything.
- *
- * The ink is paired with the fill rather than assumed, because `kaya-ink` is the
- * same value as `kaya` in the dark palette. `on-kaya` and `on-pandan` hold in all
- * four combinations of theme and verdict.
- */
-const selections: Record<DateStripMark, { fill: string; ink: string }> = {
-  under: { fill: 'bg-pandan', ink: 'text-on-pandan' },
-  over: { fill: 'bg-kaya', ink: 'text-on-kaya' },
-  missed: { fill: 'bg-line', ink: 'text-ink' },
-}
-
-/**
- * And the selection on a day with no verdict: today before breakfast, or a day
- * the account had no budget on. Pandan, which is what selection has always
- * looked like in this app and is not a claim about the day.
- */
-const PLAIN_SELECTION = { fill: 'bg-pandan', ink: 'text-on-pandan' } as const
 
 /**
  * Every cell reserves the border's width, drawn or not.
@@ -77,7 +52,6 @@ type CellProps = {
   date: string | null
   plate?: DayPlate
   mark?: DateStripMark
-  selected: boolean
   /** A day that has not happened: dimmed, and not selectable. */
   ahead: boolean
   onSelect: (date: string) => void
@@ -89,16 +63,13 @@ type CellProps = {
  * day went. The picture is why this view exists, since a month of dots is
  * `day_marks` in a different shape, so the cell is almost entirely picture.
  *
- * Selection is the fill rather than the outline, which is what makes the outline
- * usable for the verdict: a pandan border meant both selected and under goal, so
- * one cell claimed two things with one mark. Which fill is the verdict's own; see
- * `selections`.
+ * A tap opens that day in the diary. See `outlines` for why no cell is selected.
  *
  * A day that has been and gone with nothing on it gets the dashed outline. Today
  * before breakfast, a day still ahead and a day the account had no budget on get
  * none: a day nobody has had yet has not been missed.
  */
-function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps) {
+function Cell({ date, plate, mark, ahead, onSelect, label }: CellProps) {
   // Called unconditionally, on `undefined` for a day with no photograph, which
   // is what the hook takes: a cell is a component so that the rule about hooks
   // holds for the empty ones as well as for the full ones.
@@ -127,32 +98,22 @@ function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps
     <Icon {...(plate.icon ?? PLACEHOLDER_ICON)} size={PLATE} />
   ) : null
 
-  /* A SOLID fill, which is what selection looks like everywhere else in this app
-     — the week strip's selected day is the same. It was `bg-pandan-soft`, which
-     is two greys away from the `bg-track` a logged day already has: picking one
-     changed almost nothing on screen, and on a month where most days are logged
-     the selection was invisible. */
-  const selection = selected ? (mark ? selections[mark] : PLAIN_SELECTION) : null
-
   return (
     <Tappable
       className={cn(
         'h-[66px] flex-1 items-center justify-center gap-0.5 rounded-[14px] px-0.5 py-1',
         BORDER,
         logged && 'bg-track',
-        selection?.fill,
-        mark && outlines[mark][selected ? 'on' : 'off'],
+        mark && outlines[mark],
         ahead && 'opacity-40',
       )}
       onPress={ahead ? undefined : () => onSelect(date)}
       disabled={ahead}
       accessibilityRole="button"
-      accessibilityState={{ selected, disabled: ahead }}
+      accessibilityState={{ disabled: ahead }}
       accessibilityLabel={label}
     >
-      <Text
-        className={cn('font-display text-[11px] leading-[13px]', selection?.ink ?? 'text-faint')}
-      >
+      <Text className="font-display text-[11px] leading-[13px] text-faint">
         {parseISO(date).getDate()}
       </Text>
 
@@ -170,7 +131,6 @@ export type MonthCalendarProps = {
   /** First day of the month on screen, `yyyy-MM-dd`. */
   month: string
   onMonthChange: (start: string) => void
-  selected: string
   onSelect: (date: string) => void
   today: string
   className?: string
@@ -191,7 +151,6 @@ export type MonthCalendarProps = {
 export function MonthCalendar({
   month,
   onMonthChange,
-  selected,
   onSelect,
   today,
   className,
@@ -277,7 +236,6 @@ export function MonthCalendar({
                   date={date}
                   plate={date ? plates?.[date] : undefined}
                   mark={mark}
-                  selected={date === selected}
                   ahead={ahead}
                   onSelect={onSelect}
                   label={
@@ -301,7 +259,7 @@ export function MonthCalendar({
       <View className="flex-row items-center gap-4">
         {(['under', 'over', 'missed'] as const).map((kind) => (
           <View key={kind} className="flex-row items-center gap-1.5">
-            <View className={cn('h-3 w-3 rounded-[3px] border-2', outlines[kind].off)} />
+            <View className={cn('h-3 w-3 rounded-[3px] border-2', outlines[kind])} />
             <Text variant="micro">{t(`calendar.legend.${kind}`)}</Text>
           </View>
         ))}

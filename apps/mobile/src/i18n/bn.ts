@@ -138,7 +138,6 @@ export const bn = {
     nav: {
       today: 'আজ',
       recipes: 'খাবার',
-      activity: 'কার্যকলাপ',
       trends: 'প্রবণতা',
       me: 'আমি',
       log: 'খাবার লিখুন',
@@ -273,47 +272,6 @@ export const bn = {
       syncedHours: '{{count}} ঘণ্টা আগে',
       syncedDays: '{{count}} দিন আগে',
       syncedNever: 'এখনো সিঙ্ক হয়নি',
-
-      move: 'নড়াচড়া',
-      exercise: 'ব্যায়াম',
-      stand: 'দাঁড়ানো',
-      stepsRing: 'পদক্ষেপ',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}} মিনিট',
-      standUnit: '/ {{goal}} ঘণ্টা',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ গড় {{value}}',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: 'মিনিট',
-      noGoalHours: 'ঘণ্টা',
-
-      budgetTitle: 'নড়াচড়াসহ হিসাব',
-      goal: 'লক্ষ্য',
-      eaten: 'খাওয়া',
-      burned: 'পোড়ানো',
-      left: 'বাকি',
-      over: 'বেশি',
-      budgetOff: 'নড়াচড়া আপনার হিসাব বাড়াচ্ছে না। কার্যকলাপ সেটিংসে এটি চালু করুন।',
-
-      todayTitle: 'আজ',
-      weekTitle: 'এই সপ্তাহে',
-      stepsRow: 'পদক্ষেপ',
-      stepsRowValue: 'আজ {{steps}}',
-      balanceRow: 'ভারসাম্য',
-      balanceDeficit: 'দিনে {{value}} ঘাটতি',
-      balanceSurplus: 'দিনে {{value}} উদ্বৃত্ত',
-      balanceUnknown: 'যথেষ্ট লেখা হয়নি',
-      historyRowValue_one: '{{count}} ব্যায়াম · {{time}}',
-      historyRowValue_other: '{{count}} ব্যায়াম · {{time}}',
-      historyNone: 'এখনো কোনো ব্যায়াম নেই',
-
-      demoBadge: 'ডেমো তথ্য',
-
-      storeEmpty:
-        'এই স্বাস্থ্য ভাণ্ডার যুক্ত আছে কিন্তু ভেতরে কিছু নেই, সিমুলেটর ঠিক এমনই দেখায়। তৈরি করা তথ্য এই পর্দাগুলো ভরিয়ে দেবে।',
-
-      noStandNoteGeneric: 'আপনার হেলথ অ্যাপ দাঁড়ানোর ঘণ্টা জানায় না, তাই আমরা পদক্ষেপ দেখাচ্ছি।',
     },
 
     workout: {
@@ -333,66 +291,6 @@ export const bn = {
 
       from: '{{source}} থেকে',
       missing: 'এই ব্যায়ামটি আর আপনার হেলথ অ্যাপে নেই।',
-    },
-
-    steps: {
-      title: 'পদক্ষেপ',
-      todaySoFar: 'আজ এ পর্যন্ত',
-      goalLine: 'লক্ষ্য {{goal}} পদক্ষেপ',
-      over: '{{value}} বেশি',
-      under: 'আরও {{value}}',
-      unit: 'পদক্ষেপ · {{distance}}',
-
-      morning: 'সকাল',
-      afternoon: 'দুপুর',
-      evening: 'সন্ধ্যা',
-      noHours: 'এই দিনের ঘণ্টাভিত্তিক হিসাব নেই।',
-
-      weekTitle: 'এই সপ্তাহে',
-      dailyAvg: 'দৈনিক গড়',
-      goalDays: 'লক্ষ্যের দিন',
-      best: 'সর্বোচ্চ',
-
-      steadyNote: 'আপনার দিনগুলো সমান। যা-ই করছেন, এখন সেটা অভ্যাস হয়ে গেছে।',
-      shortNote: 'ধরন বোঝার মতো যথেষ্ট দিন এখনো হয়নি।',
-    },
-
-    balance: {
-      chartTitle: 'ভেতরে বনাম বাইরে',
-      deficit: '{{value}} ঘাটতি',
-      surplus: '{{value}} উদ্বৃত্ত',
-      even: 'সমান',
-      eatenLegend: 'খাওয়া',
-      burnedLegend: 'পোড়ানো',
-
-      splitTitle7d: 'পোড়ানো কোথা থেকে এল · ৭ দিন',
-      splitTitle30d: 'পোড়ানো কোথা থেকে এল · ৩০ দিন',
-      splitTitle1y: 'পোড়ানো কোথা থেকে এল · ১২ মাস',
-      resting: 'বিশ্রাম',
-      restingBody: 'শুধু বেঁচে থাকতেই',
-      workouts: 'ব্যায়াম',
-      workoutsBody: 'আপনার সেশনগুলো যা খরচ করেছে',
-      walking: 'হাঁটা',
-      walkingBody: 'পদক্ষেপ আর রোজকার কাজ',
-      kcal: '{{value}} kcal',
-
-      partial:
-        '{{total}} দিনের মধ্যে যে {{days}} দিনে খাবারের হিসাব ও বিশ্রামের সংখ্যা দুটোই ছিল, তার ভিত্তিতে।',
-      noRestingTitle: 'বিশ্রামের শক্তি নেই',
-      noRestingBody:
-        'বিশ্রামে আপনার শরীর কতটা পোড়ায় তা আপনার হেলথ অ্যাপ জানায় না, তাই দৈনিক ভারসাম্য আঁকা যায় না। পদক্ষেপ, ব্যায়াম ও সক্রিয় শক্তি অপরিবর্তিত থাকে।',
-      empty: 'ঘড়ি পরে কয়েকটি খাবার লিখুন, এটি ভরে যাবে।',
-    },
-
-    history: {
-      title: 'ইতিহাস',
-      weekTitle: 'এই সপ্তাহে',
-      sessions: 'সেশন',
-      time: 'সময়',
-      burned: 'পোড়ানো',
-      allTitle: 'সব সেশন',
-      empty: 'এখনো কোনো ব্যায়াম লেখা হয়নি।',
-      emptyBody: 'আপনার ঘড়ি বা ফোন যা কিছু রেকর্ড করবে তা এখানেই আসবে।',
     },
 
     settings: {
@@ -790,9 +688,6 @@ export const bn = {
         over: 'লক্ষ্যের উপরে',
         missed: 'লেখা হয়নি',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: 'সেদিন কিছুই লেখা হয়নি।',
     },
 
     selector: {
@@ -1469,33 +1364,8 @@ export const bn = {
       later: 'হয়তো পরে',
     },
 
-    reminder: {
-      title_one: 'আপনার ট্রায়ালে {{count}} দিন বাকি',
-      title_other: 'আপনার ট্রায়ালে {{count}} দিন বাকি',
-      body: 'আপনি টানা {{days}} দিন লিখেছেন আর {{kg}} kg কমিয়েছেন। এভাবেই চালিয়ে যান।',
-      daysLogged: 'লেখা দিন',
-      meals: 'খাবার',
-      kgDown: 'KG কমেছে',
-      starts: 'আপনার প্ল্যান {{date}} থেকে বছরে {{price}} এ শুরু হবে।',
-      startsMonthly: 'আপনার প্ল্যান {{date}} থেকে মাসে {{price}} এ শুরু হবে।',
-      keep: 'আমার প্ল্যান রাখুন',
-      manage: 'সাবস্ক্রিপশন পরিচালনা করুন',
-    },
-
     ended: {
-      heading: 'আজ',
-      previewMode: 'ঝলক দেখা',
-      title: 'আপনার ট্রায়াল শেষ হয়েছে',
-      body: 'আপনার {{days}} দিনের ইতিহাস নিরাপদ আছে আর এখনো পড়া যায়।',
-      dataWaiting: 'আপনার তথ্য অপেক্ষা করছে',
-      days: 'দিন',
-      meals: 'খাবার',
-      kgDown: 'KG কমেছে',
-      lockedEntry: 'তালাবদ্ধ',
       resume: 'Pro দিয়ে চালিয়ে যান',
-      terms: 'বছরে {{price}}, বাতিল না করা পর্যন্ত নবায়ন হবে।',
-      termsPending: 'বাতিল না করা পর্যন্ত প্রতি বছর নবায়ন হবে।',
-      browse: 'বিনামূল্যেই দেখতে থাকুন',
     },
 
     limit: {

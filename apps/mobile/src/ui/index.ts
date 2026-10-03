@@ -34,15 +34,16 @@ export { Badge, type BadgeProps, type BadgeTone, CountBadge, type CountBadgeProp
 export {
   BottomNav,
   type BottomNavProps,
-  FloatingAction,
-  type FloatingActionProps,
   NAV_BAR_HEIGHT,
   NavAction,
   type NavActionProps,
   NavBar,
+  NavInsetProvider,
   NavItem,
   type NavItemProps,
   type NavTab,
+  useNavBarFootprint,
+  useNavInset,
 } from './BottomNav'
 export { BrandMark, type BrandMarkProps } from './BrandMark'
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './Button'

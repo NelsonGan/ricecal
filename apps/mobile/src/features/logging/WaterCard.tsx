@@ -17,7 +17,14 @@ import {
   useToast,
   WaterTank,
 } from '@/ui'
-import { TANK_HEIGHT, TankFigure } from './TankFigure'
+import { TankFigure } from './TankFigure'
+
+/**
+ * The tank's height on Today. Shorter than Trends' `TANK_HEIGHT`: the readout and
+ * its add button take about 48 points, which leaves a band of water under them
+ * without the card standing as tall as the ring card above it.
+ */
+const TODAY_TANK_HEIGHT = 60
 
 export type WaterCardProps = {
   /** The day the strip has selected. Drinks are recorded against it, not against now. */
@@ -101,7 +108,7 @@ export function WaterCard({
           value={ml}
           goal={goalMl}
           loading={loading}
-          height={TANK_HEIGHT}
+          height={TODAY_TANK_HEIGHT}
           radius={radius.card}
           accessibilityLabel={t('logging:water.level', {
             filled: millilitres(ml),

@@ -62,7 +62,9 @@ export function MacroBars({
   ] as const
 
   return (
-    <View className={cn(inline ? 'gap-2' : 'gap-2.5', className)}>
+    // Inline rows are spaced wider than stacked ones: with nothing above each bar,
+    // three rows at the stacked gap read as one block beside the ring.
+    <View className={cn(inline ? 'gap-4' : 'gap-2.5', className)}>
       {rows.map((row) => (
         <MacroBar
           key={row.key}

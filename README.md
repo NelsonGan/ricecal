@@ -739,7 +739,7 @@ before a permission request has to lead to the request. Saying no is the sheet's
 own "Don't Allow" now, which is where the decision always actually was.
 
 The notifications step had the same pair — "Enable notifications" and "Maybe
-later" — and now has neither. `ConnectPanel` on the Activity tab is the third,
+later" — and now has neither. `ConnectPanel` in Settings, Health is the third,
 whose button used to read "Apple Health". None of the three carries a label
 naming the permission, and none of them offers a way past the sheet.
 
@@ -816,18 +816,28 @@ same My foods results instead of Today or All foods. `openOwn` and `openCreate`
 sit beside `openPicked`, and the page does not focus its field when any of them
 sent it, since a keyboard would come up under the screen on top.
 
-Five tabs (Today, Food, Activity, Trends, Me) on the headless
-`expo-router/ui` Tabs rather than a styled navigator, because `NavBar` and
-`NavItem` are the design system's and a native tab bar cannot be made to look
-like them.
+Four tabs (Today, Feed, Trends, Me) on the headless `expo-router/ui` Tabs
+rather than a styled navigator, because `NavBar` and `NavItem` are the design
+system's and a native tab bar cannot be made to look like them.
 
-**The log button is not in the bar.** It used to be, raised, in the middle, and
-that is what capped the bar at four tabs: a centre action is centred by having
-the same number of tabs either side of it, so a fifth put it a tenth of the bar
-off to one side. It is a `FloatingAction` at the bottom right of Today now,
-through `Screen`'s `floating` slot, which overlaps the scroll content rather
-than sitting above it like `footer`. A screen using it owes its last row enough
-bottom padding to be read.
+**The bar floats.** It is drawn over the bottom of the screen with no background
+of its own, so content scrolls on under the pill. `NavInsetProvider` in the tabs
+layout tells each screen how much of its bottom the bar covers (its height plus
+the home indicator), and `Screen` pads the last row and lifts its floating
+corners by that much. Zero on a pushed page. A list that `Screen` does not scroll,
+the feed, reads `useNavInset` and pads itself.
+
+**The log button is at the right end of the bar**, a `NavAction` beside the pill
+that holds the tabs, on every tab. It has been raised in the middle of the bar,
+which capped it at four tabs because a centre action needs the same number on
+each side, and then a floating button on Today alone, which sat over the last
+row of the day and over the Delete of any row swiped open beneath it. Beside the
+pill it covers nothing.
+
+There is no Activity tab. A day's steps and workouts are read in Today's "Your
+day" list, a workout opens `activity/workout/[id]`, and a health store is
+connected in Settings, Health. The tab's steps, balance and history pages had no
+other way in and are gone with it.
 
 Singular and plural is the information hierarchy, not a naming quirk. `/recipes`
 is the tab, and `/recipe/[id]` and `/recipe/edit` are pages you go to and come
@@ -2784,7 +2794,7 @@ calendar week, each fetching only its own seven days. Picking a day moves
 client-owned state) and everything below follows it: the ring, the water, the
 entry list, and anything logged while it is selected.
 
-**The calorie card is one compact reading.** A 104pt ring beside the three
+**The calorie card is one compact reading.** A 112pt ring beside the three
 macros, each on one line as label, bar and "eaten/goal g", inside less padding
 than a standard card. Nothing sits under the ring: "+360 from moving" and "A bit
 over" both made the card taller to repeat what the ring and the list below
@@ -2792,8 +2802,11 @@ already say. Movement still extends the budget exactly as before.
 
 **The list under the water is "Your day"**: the meals and the health store's
 workouts in one list, newest first, with the day's steps beside the heading when
-a store reported the day. A workout is an `ItemRow` like a meal, its calories in
-hibiscus because they were burned, and it opens the workout's own page.
+a store reported the day. The heading is a word rather than an overline, and
+hairlines sit under it and between rows. Rows are `ItemRow` at its `compact`
+size (a 56pt tile, one line of title, the figure stacked over its unit). A
+workout is a row like a meal, its calories in hibiscus because they were burned,
+and it opens the workout's own page.
 `EntryList` takes those rows as `extras`, already drawn, so the shared list does
 not import the activity feature.
 
@@ -2819,8 +2832,10 @@ The toggle beside the heading swaps the week strip for a month grid, and it
 **replaces** the screen under it. The two views answer different questions
 ("what did I eat" and "what have I been eating") and the month can only answer
 its one by being mostly pictures, which leaves no room for the ring, the water
-and the list. What is under the grid instead is the selected day as an
-`ItemRow` list, oldest first, and the water tank for that day.
+and the list. Nothing is under the grid and no day on it is selected: a tap
+leaves the calendar and opens that day in the diary, as picking it on the week
+strip would. It used to select the day in place and list its meals and water
+under the grid, a second, smaller copy of the diary on one screen.
 
 **Every cell carries the day's biggest plate**, from `day_plates(from, to)`: the
 photograph where there is one and the drawing where there is not. Biggest rather
@@ -2832,18 +2847,9 @@ The strip asks that one for a week on every swipe and has no use for a picture;
 joining the diary twice more per day, fifty-two weeks back, would be a cost paid
 by the screen that does not want it.
 
-**The selected cell is filled in its own verdict's colour**, not always pandan.
-The verdict is the cell's outline and the selection is its fill, and while the
-fill was pandan for every selected day an over-goal day drew a kaya ring around
-a green square. Under goal fills pandan, over goal kaya, a missed day grey. The
-ink is paired with the fill rather than assumed, because `kaya-ink` is the same
-value as `kaya` in the dark palette.
-
 Arrows rather than a pager: twelve taps reaches a year where the strip needs
 fifty-two swipes, and a paging grid a screen tall would fight the vertical
-scroll of everything under it. Paging moves the selection with it (`dayInMonth`,
-same day of the month, clamped to the month's length and to today), because a
-card describing a day that is not on screen is a card nobody can act on.
+scroll of the screen.
 
 The view mode is not persisted. The diary is the screen this app opens on, and a
 launch landing on a month grid because of a tap three days ago would be the app
@@ -2882,13 +2888,15 @@ card produced "0 ml / 2 L", a fraction whose two halves are in different units.
 two waves at different speeds so it reads as liquid rather than as a moving
 graph, and tips its surface left and right when the card first appears and on
 every drink. Everything else is drawn on it, in the top-right corner: the figure,
-small, and an Add button beside it.
+small, and an Add button beside it. On Today it is 60pt tall, enough for that
+readout and a band of water; Trends draws it at `TANK_HEIGHT`. A short bar inside
+the card with the button beside it was tried and reverted: the tank as the card
+is the design.
 
 **A full tank is still.** Once the goal is met it is drawn solid, with no waves,
-no slosh and no brim, and only the copy of the figure that sits on water. A
-surface still moving at the top read as a day not yet done, and it was a frame of
-work every 16 ms for a picture with nothing left to say. `TANK_HEIGHT` is 60, so
-the card is no taller than its readout needs.
+no slosh and no brim. A surface still moving at the top read as a day not yet
+done, and it was a frame of work every 16 ms for a picture with nothing left to
+say.
 
 There is no heading. The word "Water" over a tank of water is a label the picture
 already carries, and the drop beside the figure is what identifies it on a day
@@ -3318,16 +3326,14 @@ not a body.
 `src/data/health-sync.ts`. A **week-deep backfill** on connect, then the last
 **seven days** re-read on every foreground.
 
-**The automatic pass is mounted on Today**, not on the Activity tab. Today opens
-first and is where the steps and workouts are read, so a sync that waited for
-somebody to open Activity left them stale on the screen people look at. Tabs stay
-mounted, so foreground events still reach it. The Activity tab reads the same
-queries, says how fresh they are in its header, and has no pull to refresh; the
-manual pass is **Settings, Health, Sync now**.
+**The automatic pass is mounted on Today**, which opens first and is where the
+steps and workouts are read. It used to live on the Activity tab, which is gone.
+Tabs stay mounted, so foreground events still reach it. The manual pass is
+**Settings, Health, Sync now**.
 
 It was a year, then a month, then a week, and each cut was the same argument
-carried further: the backfill exists so the Activity tab is not empty on the day
-it is turned on, and a week answers that. What it costs is the 30-day range,
+carried further: the backfill exists so the day list is not empty on the day
+health sync is turned on, and a week answers that. What it costs is the 30-day range,
 which starts three-quarters empty and fills in over the following weeks. That is
 the accepted trade against a permission screen somebody waits through inside
 onboarding.
@@ -3455,11 +3461,12 @@ today's offer duration.
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the
 terms of use and the privacy policy. `PurchaseTerms` renders Terms and Privacy in
-one compact row, with Restore Purchase at the front on both paywalls. The
-trial-ended screen uses the same row without restore. There are three screens
-that can charge somebody: `paywall/intro`, `paywall/index` and `paywall/ended`.
-The third once sold a year with one tap and had no price, period or renewal
-anywhere on it at all. `lib/legal.ts` holds the two addresses, and the same pair
+one compact row, with Restore Purchase at the front on both paywalls.
+There are two screens that can charge somebody: `paywall/intro` and
+`paywall/index`. A third, the trial-ended screen at `paywall/ended`, once sold a
+year with one tap and had no price, period or renewal anywhere on it at all. It
+and the `paywall/reminder` sheet were never linked from anywhere and have been
+deleted. `lib/legal.ts` holds the two addresses, and the same pair
 is on **Me, Edit** for everybody who never reaches a paywall.
 
 ### What each tier gets
@@ -4130,7 +4137,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Entry Refined | ricecal_entry_refined | outcome: 'applied' &#124; 'not_applied' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled'; from_chip: boolean; duration_ms: number | `src/data/scan.ts` | Refinement attempt reaches its outcome; each attempt, including refusal/failure and no applied change. |
 | Food Searched | ricecal_food_searched | results: number; query_length: number | `src/features/logging/FoodSearchPanel.tsx` | Catalogue query has a settled results/empty answer for 1,200 ms after the 140 ms input debounce; changed nonempty queries only. History/own-food filtering is excluded. |
 | Food Picked | ricecal_food_picked | position: number; results: number; source?: 'history' &#124; 'recipe' | `src/features/logging/FoodSearchPanel.tsx` | Catalogue, own recipe or history result is opened; each selection. Opening a result does not prove it was logged. |
-| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or eligible nudge requests navigation, or intro/reminder/ended presentation mounts; repeated visits count. Nudge has a two-day per-account clock; account/entitlement changes cancel its pending timer and the clock is checked again before sending. |
+| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or eligible nudge requests navigation, or the intro paywall mounts; repeated visits count. Nudge has a two-day per-account clock; account/entitlement changes cancel its pending timer and the clock is checked again before sending. |
 | Plan Selected | ricecal_plan_selected | screen: PaywallScreen; plan: Plan | `src/features/paywall/PaywallOffer.tsx` | Paywall plan changes; each change. The default selected plan emits nothing until changed. |
 | Purchase Started | ricecal_purchase_started | screen: PaywallScreen; plan: Plan | `src/features/paywall/tracking.ts` | An available checkout is requested; once per accepted attempt, before offering lookup/store call. A missing configuration warning emits nothing. |
 | Purchase Abandoned | ricecal_purchase_abandoned | screen: PaywallScreen; plan: Plan; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/features/paywall/tracking.ts` | Checkout/entitlement-wait path throws; once per caught attempt. A post-purchase entitlement-wait error can also reach this event. |
@@ -4199,7 +4206,7 @@ user text. Extend the source type and these tables together when its domain chan
 | --- | --- | --- |
 | `method` / `LogMethod` | `camera`, `describe`, `search`, `barcode`, `recipe`, `quick_add`, `history` | `events.ts`; compare logging actions, not individual food components |
 | `method` / `SignInMethod` | `apple`, `google`, `email`, `password` | `email` means code/link. Failure coverage currently covers Apple/Google only |
-| `screen` / `PaywallScreen` | `hard`, `intro`, `reminder`, `ended` | Paywall surfaces below; no generic screen-view event |
+| `screen` / `PaywallScreen` | `hard`, `intro` | Paywall surfaces below; no generic screen-view event. `reminder` and `ended` appear only in data from app versions released before those two screens were deleted; no build ever navigated to them |
 | `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `trend_range`, `review`, `nudge` | Refused capability or standing offer; trial expiration is a paywall screen value, not a feature. `suggest` appears only in data from app versions released before "what to eat next" was removed |
 | `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
 | `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |
@@ -4233,7 +4240,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Home-screen widgets | Observed kind additions/removals, supported deep links and queued water actions | First observation is a silent baseline; later foreground diffs can miss intermediate changes. Stored baseline belongs to the handset, not reset on account switches. Each account gets the current count without fabricated add/remove events; results from a cancelled account's poll are discarded even if it returns |
 | Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
 | Hard paywall `/paywall` | `Paywall Shown` with `screen: hard` and refused `ProFeature` | `data/refusals.ts` records before navigation; review redirects also record. Free camera allowance is three scans/day; a further refusal can reach camera trigger |
-| Intro, reminder and ended paywalls | `Paywall Shown` with the respective screen as trigger | `useTrackPaywallShown` records once per mounted presentation; revisits count again |
+| Intro paywall | `Paywall Shown` with `intro` as screen and trigger | `useTrackPaywallShown` records once per mounted presentation; revisits count again |
 | Standing Pro nudge | `Paywall Shown`, `screen: hard`, `trigger: nudge` | At timer scheduling: known free entitlement, tutorial already offered, due per-account clock and not offered in this mounted launch. Account/entitlement changes cancel the timer; a newly eligible account schedules its own. Any recorded paywall restarts the two-day clock, which is rechecked when the timer fires |
 | Checkout | Optional plan change, checkout attempt and caught cancellation/error | Default selection sends no Plan Selected. Purchase Started precedes offering lookup. Purchase Abandoned can include a post-purchase entitlement-wait error |
 | Restore | Returned restored/nothing or unavailable result | Restore Requested is a result event; thrown restores have no row. Restoration never adds settled revenue |
@@ -5686,7 +5693,7 @@ covering the difference puts Save under somebody else's control.
 documented as having no Health app; that stopped being true. iOS 26 reports
 `isHealthDataAvailable()` as true and shows the real permission sheet, then reads
 a year and returns nothing, which looks like a broken feature rather than an
-empty device. The Activity tab offers generated data once a connected store turns
+empty device. Settings, Health offers generated data once a connected store turns
 out to have no days in it.
 
 **Built with Xcode 27, the app must adopt the UIScene lifecycle or iOS 27 kills

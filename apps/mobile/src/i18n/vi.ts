@@ -140,7 +140,6 @@ export const vi = {
     nav: {
       today: 'Hôm nay',
       recipes: 'Món ăn',
-      activity: 'Hoạt động',
       trends: 'Xu hướng',
       me: 'Tôi',
       log: 'Ghi món ăn',
@@ -276,48 +275,6 @@ export const vi = {
       syncedHours: '{{count}} giờ trước',
       syncedDays: '{{count}} ngày trước',
       syncedNever: 'Chưa đồng bộ',
-
-      move: 'Vận động',
-      exercise: 'Tập luyện',
-      stand: 'Đứng',
-      stepsRing: 'Bước',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}} phút',
-      standUnit: '/ {{goal}} giờ',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ trung bình {{value}}',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: 'phút',
-      noGoalHours: 'giờ',
-
-      budgetTitle: 'HẠN MỨC KÈM VẬN ĐỘNG',
-      goal: 'MỤC TIÊU',
-      eaten: 'ĐÃ ĂN',
-      burned: 'ĐÃ ĐỐT',
-      left: 'CÒN LẠI',
-      over: 'VƯỢT',
-      budgetOff: 'Vận động chưa kéo dài hạn mức của bạn. Bật trong cài đặt Hoạt động.',
-
-      todayTitle: 'HÔM NAY',
-      weekTitle: 'TUẦN NÀY',
-      stepsRow: 'Bước',
-      stepsRowValue: '{{steps}} hôm nay',
-      balanceRow: 'Cân đối',
-      balanceDeficit: 'thiếu hụt {{value}} mỗi ngày',
-      balanceSurplus: 'dư {{value}} mỗi ngày',
-      balanceUnknown: 'Chưa đủ dữ liệu',
-      historyRowValue_one: '{{count}} buổi tập · {{time}}',
-      historyRowValue_other: '{{count}} buổi tập · {{time}}',
-      historyNone: 'Chưa có buổi tập nào',
-
-      demoBadge: 'Dữ liệu mẫu',
-
-      storeEmpty:
-        'Kho sức khoẻ này đã kết nối nhưng không có dữ liệu bên trong, đúng như trình giả lập. Dữ liệu tạo sẵn sẽ lấp đầy các màn hình này.',
-
-      noStandNoteGeneric:
-        'Ứng dụng sức khoẻ của bạn không báo giờ đứng, nên chúng tôi hiển thị số bước thay vào đó.',
     },
 
     workout: {
@@ -337,66 +294,6 @@ export const vi = {
 
       from: 'Từ {{source}}',
       missing: 'Buổi tập này không còn trong ứng dụng sức khoẻ của bạn.',
-    },
-
-    steps: {
-      title: 'Bước',
-      todaySoFar: 'Hôm nay tới giờ',
-      goalLine: 'Mục tiêu {{goal}} bước',
-      over: 'vượt {{value}}',
-      under: 'còn {{value}}',
-      unit: 'bước · {{distance}}',
-
-      morning: 'Buổi sáng',
-      afternoon: 'Buổi chiều',
-      evening: 'Buổi tối',
-      noHours: 'Không có chi tiết theo giờ cho ngày này.',
-
-      weekTitle: 'TUẦN NÀY',
-      dailyAvg: 'TB MỖI NGÀY',
-      goalDays: 'NGÀY ĐẠT',
-      best: 'CAO NHẤT',
-
-      steadyNote: 'Các ngày của bạn khá đều. Dù bạn đang làm gì, nó đã thành thói quen.',
-      shortNote: 'Chưa đủ ngày để thấy quy luật.',
-    },
-
-    balance: {
-      chartTitle: 'Vào so với ra',
-      deficit: 'thiếu hụt {{value}}',
-      surplus: 'dư {{value}}',
-      even: 'Cân bằng',
-      eatenLegend: 'Đã ăn',
-      burnedLegend: 'Đã đốt',
-
-      splitTitle7d: 'LƯỢNG ĐỐT ĐẾN TỪ ĐÂU · 7 NGÀY',
-      splitTitle30d: 'LƯỢNG ĐỐT ĐẾN TỪ ĐÂU · 30 NGÀY',
-      splitTitle1y: 'LƯỢNG ĐỐT ĐẾN TỪ ĐÂU · 12 THÁNG',
-      resting: 'Nghỉ ngơi',
-      restingBody: 'Chỉ cần sống thôi',
-      workouts: 'Buổi tập',
-      workoutsBody: 'Phần các buổi tập tiêu tốn',
-      walking: 'Đi bộ',
-      walkingBody: 'Bước chân và việc vặt',
-      kcal: '{{value}} kcal',
-
-      partial:
-        'Dựa trên {{days}} trên {{total}} ngày có cả nhật ký ăn uống và số liệu trao đổi chất khi nghỉ.',
-      noRestingTitle: 'Không có năng lượng nghỉ',
-      noRestingBody:
-        'Ứng dụng sức khoẻ của bạn không báo lượng cơ thể đốt khi nghỉ, nên không có cân đối hằng ngày để vẽ. Bước, buổi tập và năng lượng vận động không bị ảnh hưởng.',
-      empty: 'Ghi vài bữa ăn khi đang đeo đồng hồ và phần này sẽ được lấp đầy.',
-    },
-
-    history: {
-      title: 'Lịch sử',
-      weekTitle: 'TUẦN NÀY',
-      sessions: 'SỐ BUỔI',
-      time: 'THỜI GIAN',
-      burned: 'ĐÃ ĐỐT',
-      allTitle: 'TẤT CẢ CÁC BUỔI',
-      empty: 'Chưa ghi được buổi tập nào.',
-      emptyBody: 'Bất cứ gì đồng hồ hay điện thoại của bạn ghi lại sẽ xuất hiện ở đây.',
     },
 
     settings: {
@@ -801,9 +698,6 @@ export const vi = {
         over: 'Trên mục tiêu',
         missed: 'Không ghi',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: 'Hôm đó không ghi gì.',
     },
 
     selector: {
@@ -1486,33 +1380,8 @@ export const vi = {
       later: 'Có thể để sau',
     },
 
-    reminder: {
-      title_one: 'còn {{count}} ngày trong đợt dùng thử',
-      title_other: 'còn {{count}} ngày trong đợt dùng thử',
-      body: 'Bạn đã ghi {{days}} ngày liên tiếp và giảm {{kg}} kg. Cứ giữ đà này.',
-      daysLogged: 'NGÀY ĐÃ GHI',
-      meals: 'BỮA ĂN',
-      kgDown: 'KG GIẢM',
-      starts: 'Gói của bạn bắt đầu {{date}} với giá {{price}} mỗi năm.',
-      startsMonthly: 'Gói của bạn bắt đầu {{date}} với giá {{price}} mỗi tháng.',
-      keep: 'Giữ gói của tôi',
-      manage: 'Quản lý gói đăng ký',
-    },
-
     ended: {
-      heading: 'Hôm nay',
-      previewMode: 'Chế độ xem thử',
-      title: 'Đợt dùng thử của bạn đã kết thúc',
-      body: '{{days}} ngày lịch sử của bạn vẫn an toàn và vẫn đọc được.',
-      dataWaiting: 'DỮ LIỆU CỦA BẠN ĐANG CHỜ',
-      days: 'NGÀY',
-      meals: 'BỮA ĂN',
-      kgDown: 'KG GIẢM',
-      lockedEntry: 'Đã khoá',
       resume: 'Tiếp tục với Pro',
-      terms: '{{price}} mỗi năm, tự động gia hạn cho đến khi bạn hủy.',
-      termsPending: 'Tự động gia hạn hằng năm cho đến khi bạn hủy.',
-      browse: 'Tiếp tục xem miễn phí',
     },
 
     limit: {

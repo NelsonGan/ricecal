@@ -1,7 +1,7 @@
 import { differenceInMinutes, parseISO } from 'date-fns'
 
 /**
- * The number formats the Activity tab uses, in one place.
+ * The number formats the workout rows and pages use, in one place.
  *
  * Not in `@/ui` and not in `lib/nutrition.ts`: every one of these is a decision
  * about how movement reads, and several of them are decisions about when NOT to
@@ -55,13 +55,6 @@ export function pace(seconds: number, metres: number | null): string | null {
 export function speed(seconds: number, metres: number | null): string | null {
   if (metres == null || metres < 100 || seconds < 30) return null
   return ((metres / 1000 / seconds) * 3600).toFixed(1)
-}
-
-/** "3pm", "9am" — labels on the hourly axis. */
-export function hourLabel(hour: number): string {
-  if (hour === 0) return '12am'
-  if (hour === 12) return '12pm'
-  return hour < 12 ? `${hour}am` : `${hour - 12}pm`
 }
 
 /**

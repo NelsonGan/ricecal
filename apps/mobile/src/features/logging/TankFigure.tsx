@@ -66,14 +66,8 @@ export function TankFigure({ ml, goalMl, onWater }: TankFigureProps) {
   )
 }
 
-/**
- * What a tank drawn as a card is tall. Shared so the two surfaces agree.
- *
- * Was 88, which made the water the tallest card on Today after the ring. The
- * readout and its add button take about 48 points, so this leaves a band of
- * water under them without the card standing taller than it needs to.
- */
-export const TANK_HEIGHT = 60
+/** What a tank drawn as a card is tall, on Trends. */
+export const TANK_HEIGHT = 88
 
 /** The overline a tank card wears when it needs to say which day it is about. */
 export function TankLabel({ children, onWater }: { children: string; onWater: boolean }) {

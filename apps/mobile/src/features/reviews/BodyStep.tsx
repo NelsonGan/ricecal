@@ -150,8 +150,7 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
                     ? format(parseISO(bucket.start), 'EEEEE')
                     : t('progress:range.week', { index: position + 1 }),
                 value: Math.round(bucket.steps ?? 0),
-                // Green where the goal was met, grey where it was not, which is
-                // the same reading the Activity tab gives a day.
+                // Green where the goal was met, grey where it was not.
                 highlight: (bucket.steps ?? 0) >= (summary.stepGoal ?? 0),
               }))}
               accessibilityLabel={t('reviews:body.stepsChart')}

@@ -1,5 +1,4 @@
 export { AddPartSheet, type AddPartSheetProps } from './AddPartSheet'
-export { DayMeals, type DayMealsProps } from './DayMeals'
 export { DescribePanel, type DescribePanelProps } from './DescribePanel'
 export { DetailsSheet, type DetailsSheetProps, type EntryDetails } from './DetailsSheet'
 export { createDeleteGate } from './deleteGate'
@@ -19,7 +18,7 @@ export {
   useMealShare,
 } from './MealShareCard'
 export { MonthCalendar, type MonthCalendarProps } from './MonthCalendar'
-export { dayInMonth, MONTHS_BACK, monthEnd, monthStart, monthWeeks, stepMonth } from './month'
+export { MONTHS_BACK, monthEnd, monthStart, monthWeeks, stepMonth } from './month'
 export {
   NO_FIGURES,
   NutritionSheet,

@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Animated, Easing, View } from 'react-native'
 import Reanimated, {
@@ -14,7 +14,7 @@ import { storedImageSource, useMealPhotoUrl, useRefiningEntries } from '@/data'
 import { eatenQuantity, portionLabel } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, cn, Icon, IconButton, Text } from '@/ui'
-import { ItemRow, ROW_TILE, ROW_TILE_ICON } from './ItemRow'
+import { ItemRow, ROW_TILE_COMPACT, ROW_TILE_COMPACT_ICON } from './ItemRow'
 import { MealPhoto } from './MealPhoto'
 import { SwipeRow } from './SwipeRow'
 
@@ -132,9 +132,20 @@ export function EntryList({
   if (rows.length === 0 && !action) return null
 
   return (
-    <Card title={title} action={action}>
-      {rows.map((row) => (
-        <Fragment key={row.key}>{row.node}</Fragment>
+    // A heading in words rather than an overline, and a hairline under it and
+    // between rows: the list is the day read top to bottom, and the dividers
+    // are what let compact rows sit close without running together.
+    <Card contentClassName="gap-0 px-4 pb-2 pt-4">
+      <View className="flex-row items-center justify-between gap-3 border-track border-b-2 pb-3">
+        <Text variant="subtitle" className="shrink" numberOfLines={1}>
+          {title}
+        </Text>
+        {action}
+      </View>
+      {rows.map((row, index) => (
+        <View key={row.key} className={cn('py-2.5', index > 0 && 'border-track border-t-2')}>
+          {row.node}
+        </View>
       ))}
     </Card>
   )
@@ -202,6 +213,7 @@ function EntryRow({
         icon={{ set: 'system', name: entry.source === 'text' ? 'sparkle' : 'camera' }}
         photoUri={entry.localPhotoUri}
         value=""
+        compact
         detail={t('logging:today.noFoodHint')}
         trailing={
           <IconButton
@@ -223,6 +235,7 @@ function EntryRow({
         icon={{ set: 'system', name: entry.source === 'text' ? 'sparkle' : 'camera' }}
         photoUri={entry.localPhotoUri}
         value="—"
+        compact
         // A failed typed meal still has the sentence on it, which is the one
         // thing worth showing: it is what the user would have to type again.
         detail={entry.foodName || t('logging:today.analysisFailedHint')}
@@ -251,6 +264,7 @@ function EntryRow({
       // not — the time is where in the day this was, the portion is what the
       // calories are for.
       detail={`${formatTime(entry.loggedAt)} · ${portion}`}
+      compact
       onPress={open}
     />
   )
@@ -367,7 +381,7 @@ function AnalysingRow({
 
   return (
     <View
-      className="flex-row items-center gap-3 rounded-tile"
+      className="flex-row items-center gap-3"
       accessibilityRole="progressbar"
       accessibilityLabel={label}
       accessibilityState={{ busy: true }}
@@ -375,8 +389,8 @@ function AnalysingRow({
       {/* ItemRow's own tile, so this row sits flush with the ones around it. */}
       <View
         className={cn(
-          ROW_TILE,
-          'items-center justify-center overflow-hidden rounded-tile bg-track',
+          ROW_TILE_COMPACT,
+          'items-center justify-center overflow-hidden rounded-sm bg-track',
         )}
       >
         {photo ? (
@@ -384,7 +398,7 @@ function AnalysingRow({
           // busy one, and the plate under it has no dish yet.
           <MealPhoto source={photo} dimmed />
         ) : (
-          <Icon set="system" name={typed ? 'sparkle' : 'camera'} size={ROW_TILE_ICON} />
+          <Icon set="system" name={typed ? 'sparkle' : 'camera'} size={ROW_TILE_COMPACT_ICON} />
         )}
       </View>
 

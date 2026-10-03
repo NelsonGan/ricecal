@@ -13,11 +13,9 @@ export type SessionItemProps = {
 /**
  * A workout as a row of Today's day list, between the meals.
  *
- * Not `SessionRow`, which is drawn for a list of workouts: a smaller icon, its
- * own divider and the figure stacked over its unit. Here it sits among food
- * rows, so it takes their shape (the same tile, the time first in the detail
- * line, the figure and unit on one line) and differs only where it means
- * something else: the calories are burned, so they read in hibiscus.
+ * It sits among food rows, so it takes their shape (the same tile, the time
+ * first in the detail line) and differs only where it means something else: the
+ * calories are burned, so they read in hibiscus.
  */
 export function SessionItem({ session, onPress }: SessionItemProps) {
   const { t } = useTranslation(['activity', 'common'])
@@ -34,6 +32,7 @@ export function SessionItem({ session, onPress }: SessionItemProps) {
       value={count(session.activeKcal)}
       unit={t('common:unit.kcal')}
       valueTone="hibiscus"
+      compact
       onPress={onPress}
     />
   )
