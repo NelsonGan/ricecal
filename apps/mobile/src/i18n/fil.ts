@@ -308,7 +308,6 @@ export const fil = {
 
       zonesTitle: 'MGA ZONE NG TIBOK NG PUSO',
 
-      from: 'Mula sa {{source}}',
       missing: 'Wala na ang workout na ito sa health app mo.',
     },
 

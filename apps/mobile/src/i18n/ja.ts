@@ -300,7 +300,6 @@ export const ja = {
 
       zonesTitle: '心拍ゾーン',
 
-      from: '{{source}} より',
       missing: 'このワークアウトはヘルスアプリにもう存在しません。',
     },
 
