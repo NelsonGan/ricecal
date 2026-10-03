@@ -140,7 +140,6 @@ export const ja = {
     nav: {
       today: '今日',
       recipes: 'フード',
-      activity: '活動',
       trends: 'トレンド',
       me: '自分',
       log: '食事を記録',
@@ -195,7 +194,7 @@ export const ja = {
     aiLanguage: {
       open: 'AI 機能が読み書きする言語',
       title: 'AI 機能は英語で動きます',
-      body: '皿の撮影、食べたものを言葉で書くこと、次に何を食べるか尋ねること。どれも英語をいちばんよく読むモデルに渡されます。英語で書いていただくほど、正確に読み取れます。',
+      body: '皿の撮影も、食べたものを言葉で書くことも、英語をいちばんよく読むモデルに渡されます。英語で書いていただくほど、正確に読み取れます。',
       results:
         '返ってくるものも英語です。料理名、材料、分量はいずれも食品カタログに英語で保存されているため、アプリをどの言語に設定していても英語で届きます。',
       dishes: '料理名は書かれたときの言語のままです。',
@@ -228,8 +227,6 @@ export const ja = {
   },
 
   activity: {
-    title: '活動',
-
     connect: {
       title: '数えるのは時計にまかせる',
       body: '端末のヘルスアプリをつなぐと、散歩もランニングもバドミントンも、今日の枠に足し戻されます。',
@@ -277,53 +274,16 @@ export const ja = {
       syncedHours: '{{count}} 時間前',
       syncedDays: '{{count}} 日前',
       syncedNever: 'まだ同期していません',
-
-      move: 'ムーブ',
-      exercise: 'エクササイズ',
-      stand: 'スタンド',
-      stepsRing: '歩数',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}} 分',
-      standUnit: '/ {{goal}} 時間',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ 平均 {{value}}',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: '分',
-      noGoalHours: '時間',
-
-      budgetTitle: '運動を含めた枠',
-      goal: '目標',
-      eaten: '摂取',
-      burned: '消費',
-      left: '残り',
-      over: '超過',
-      budgetOff: '運動は今のところ枠を広げていません。活動の設定でオンにできます。',
-
-      todayTitle: '今日',
-      weekTitle: '今週',
-      stepsRow: '歩数',
-      stepsRowValue: '今日 {{steps}}',
-      balanceRow: '収支',
-      balanceDeficit: '1日あたり {{value}} の不足',
-      balanceSurplus: '1日あたり {{value}} の余剰',
-      balanceUnknown: '記録が足りません',
-      historyRowValue_one: 'ワークアウト {{count}} 件 · {{time}}',
-      historyRowValue_other: 'ワークアウト {{count}} 件 · {{time}}',
-      historyNone: 'まだワークアウトはありません',
-
-      syncing: '同期中…',
-
-      demoBadge: 'デモデータ',
-
-      storeEmpty:
-        'このヘルスデータは接続済みですが中身が空で、まさにシミュレータの状態です。生成されたデータがこれらの画面を埋めます。',
-
-      noStandNoteGeneric:
-        'お使いのヘルスアプリはスタンド時間を返さないため、代わりに歩数を表示しています。',
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: '心拍数',
+      energy: 'アクティブエネルギー',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: '距離',
       time: '時間',
       pace: 'ペース',
@@ -338,68 +298,7 @@ export const ja = {
 
       zonesTitle: '心拍ゾーン',
 
-      from: '{{source}} より',
       missing: 'このワークアウトはヘルスアプリにもう存在しません。',
-    },
-
-    steps: {
-      title: '歩数',
-      todaySoFar: '今日ここまで',
-      goalLine: '目標 {{goal}} 歩',
-      over: '{{value}} 超過',
-      under: 'あと {{value}}',
-      unit: '歩 · {{distance}}',
-
-      morning: '午前',
-      afternoon: '午後',
-      evening: '夜',
-      noHours: 'この日の時間別の内訳はありません。',
-
-      weekTitle: '今週',
-      dailyAvg: '1日平均',
-      goalDays: '達成日数',
-      best: '最高',
-
-      steadyNote: '毎日が均等です。何をしているにせよ、もう習慣になっています。',
-      shortNote: '傾向を見るにはまだ日数が足りません。',
-    },
-
-    balance: {
-      chartTitle: '摂取と消費',
-      deficit: '{{value}} の不足',
-      surplus: '{{value}} の余剰',
-      even: '同じ',
-      eatenLegend: '摂取',
-      burnedLegend: '消費',
-
-      splitTitle7d: '消費の内訳 · 7日',
-      splitTitle30d: '消費の内訳 · 30日',
-      splitTitle1y: '消費の内訳 · 12か月',
-      resting: '安静時',
-      restingBody: '生きているだけで',
-      workouts: 'ワークアウト',
-      workoutsBody: 'セッションで使った分',
-      walking: '歩行',
-      walkingBody: '歩数と日々の用事',
-      kcal: '{{value}} kcal',
-
-      partial:
-        '食事の記録と安静時代謝の両方がそろった {{total}} 日中 {{days}} 日に基づいています。',
-      noRestingTitle: '安静時エネルギーがありません',
-      noRestingBody:
-        'お使いのヘルスアプリは安静時の消費を返さないため、日々の収支を描けません。歩数、ワークアウト、アクティブエネルギーには影響しません。',
-      empty: '時計をつけたまま何食か記録すると、ここが埋まります。',
-    },
-
-    history: {
-      title: '履歴',
-      weekTitle: '今週',
-      sessions: '回数',
-      time: '時間',
-      burned: '消費',
-      allTitle: 'すべてのセッション',
-      empty: 'まだワークアウトの記録はありません。',
-      emptyBody: '時計やスマホが記録したものは、すべてここに届きます。',
     },
 
     settings: {
@@ -458,10 +357,6 @@ export const ja = {
       rowing: 'ローイング',
       stairs: '階段',
       other: 'ワークアウト',
-    },
-
-    unit: {
-      kcal: '{{value}} kcal',
     },
   },
 
@@ -754,11 +649,9 @@ export const ja = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'その日の枠を表示',
       showLeft: '残りを表示',
-      overNote: '今日は少し超えました。明日はまた新しく数えます。',
-      overNoteOn: 'その日は少し超えました。',
-      burnedNote: '今日の運動で +{{kcal}}',
-      burnedNoteOn: 'その日の運動で +{{kcal}}',
-      logHeading: '摂取 · {{kcal}} KCAL',
+      dayHeading: 'あなたの1日',
+      steps_one: '{{steps}} 歩',
+      steps_other: '{{steps}} 歩',
       analysing: 'お皿を読み取っています',
       analysingHint: '何かわかり次第、数えます',
       describing: '書かれた内容を読んでいます',
@@ -806,9 +699,6 @@ export const ja = {
         over: '目標超え',
         missed: '記録なし',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: 'その日は記録がありません。',
     },
 
     selector: {
@@ -851,8 +741,7 @@ export const ja = {
       title: 'お皿を撮る',
       analysing: 'お皿の中身を判定しています',
       permissionTitle: 'カメラへのアクセスが必要です',
-      permissionBody:
-        'RiceCal はカメラでお皿を読み取ります。端末から何かが出ていくことはありません。',
+      permissionBody: 'RiceCal はカメラでお皿を読み取ります。',
       permissionSettings: '設定を開く',
       shutter: '撮影',
       library: '写真から選ぶ',
@@ -1439,11 +1328,6 @@ export const ja = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: '次に何を食べるか聞く',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: '作った料理を保存',
           free: 'フード {{recipes}} 件',
@@ -1493,33 +1377,8 @@ export const ja = {
       later: 'あとで',
     },
 
-    reminder: {
-      title_one: 'トライアル残り {{count}} 日',
-      title_other: 'トライアル残り {{count}} 日',
-      body: '{{days}} 日連続で記録し、{{kg}} kg 減りました。この調子で。',
-      daysLogged: '記録日数',
-      meals: '食事',
-      kgDown: '減った KG',
-      starts: 'プランは {{date}} から、年 {{price}} で始まります。',
-      startsMonthly: 'プランは {{date}} から、月 {{price}} で始まります。',
-      keep: 'このプランを続ける',
-      manage: 'サブスクリプションを管理',
-    },
-
     ended: {
-      heading: '今日',
-      previewMode: 'プレビュー',
-      title: 'トライアルが終了しました',
-      body: '{{days}} 日分の履歴は安全で、今も読めます。',
-      dataWaiting: 'データはそのまま残っています',
-      days: '日',
-      meals: '食事',
-      kgDown: '減った KG',
-      lockedEntry: 'ロック中',
       resume: 'Pro で続ける',
-      terms: '年額 {{price}}。解約するまで自動更新されます。',
-      termsPending: '解約するまで毎年自動更新されます。',
-      browse: '無料のまま見る',
     },
 
     limit: {
@@ -1533,7 +1392,6 @@ export const ja = {
         refine: '言葉で書いて食事を修正するには RiceCal Pro が必要です。',
         read_recipe: '写真からフードを埋めるには RiceCal Pro が必要です。',
         new_recipe: '自分のフードを {{recipes}} 件より多く持つには RiceCal Pro が必要です。',
-        suggest: '次に何を食べるか聞くには RiceCal Pro が必要です。',
         trend_range: '1 週間より前を見るには RiceCal Pro が必要です。',
         review: '古い振り返りを読むには RiceCal Pro が必要です。',
         nudge: 'RiceCal Pro なら上限がなくなります。',
@@ -1551,7 +1409,6 @@ export const ja = {
       perks: {
         log: '撮る、読み取る、書く',
         database: 'すべての料理と商品',
-        suggest: '何を食べるか聞く',
       },
       manageNote: 'プロフィールのサブスクリプションから、いつでも管理・解約できます。',
       manageNoteLifetime: '一度きりの支払いです。更新も解約もありません。',
@@ -1840,88 +1697,5 @@ export const ja = {
       burnValue: '{{value}} kcal',
       distanceValue: '{{value}} km 移動',
     },
-  },
-
-  suggest: {
-    card: {
-      title: '何を食べるか迷っていますか',
-    },
-
-    ask: {
-      title: 'どんなものにしますか',
-      meal: '食事',
-      focus: 'マクロ',
-      cuisine: 'ジャンル',
-      limit: 'カロリー上限',
-      editCuisines: 'ジャンルを編集',
-      addCuisine: 'ジャンルを追加',
-      addCuisinePlaceholder: 'タイ、ニョニャ、和食',
-      removeCuisine: '{{cuisine}} を外す',
-      kcal: 'kcal',
-      less: 'カロリーを減らす',
-      more: 'カロリーを増やす',
-      leftToday: '残り {{kcal}}',
-      healthy: '軽め',
-      anything: 'なんでも',
-      healthyA11y: '軽めの料理に寄せる',
-      action: '何かおすすめして',
-    },
-
-    picks: {
-      title: '{{meal}}のアイデア',
-      thinking: '{{meal}}に合うものを探しています',
-      thinkingA11y: '何をすすめるか考えています',
-      summary: '{{focus}}、{{cuisine}}、{{kcal}} kcal 以内',
-      protein: 'たんぱく質 {{grams}}g',
-      retry: 'もう一度試す',
-      emptyTitle: '思いつきませんでした',
-      emptyBody: 'もう一度聞くか、条件をどれかゆるめてください。',
-    },
-
-    detail: {
-      unit: 'KCAL、{{portion}}',
-      leftAfter: '食べても {{kcal}} kcal 残る',
-      overAfter: '食べると {{kcal}} kcal 超える',
-      why: 'これが合う理由',
-      protein: 'たんぱく質',
-      carbs: '炭水化物',
-      fat: '脂質',
-      sodium: 'ナトリウム',
-    },
-
-    meal: {
-      breakfast: '朝食',
-      lunch: '昼食',
-      dinner: '夕食',
-      snack: '間食',
-    },
-    mealFor: {
-      breakfast: '朝食',
-      lunch: '昼食',
-      dinner: '夕食',
-      snack: '間食',
-    },
-    focus: {
-      protein: 'たんぱく質',
-      balanced: 'バランス',
-      carbs: '炭水化物',
-    },
-    focusShort: {
-      protein: 'たんぱく質多め',
-      balanced: 'バランス',
-      carbs: '炭水化物多め',
-    },
-
-    sodium: {
-      low: '低い',
-      medium: '普通',
-      high: '高い',
-    },
-
-    ready_one: 'アイデアが {{count}} 件そろいました',
-    ready_other: 'アイデアが {{count}} 件そろいました',
-    readyAction: '見る',
-
-    failed: 'おすすめを取得できませんでした。少し経ってからお試しください。',
   },
 } satisfies Bundle

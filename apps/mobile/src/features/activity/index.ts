@@ -1,42 +1,26 @@
 /**
  * Activity: what the phone's health store says the body did.
  *
- * The tab in `app/(tabs)/activity.tsx` owns the queries and hands the answers
- * down, as Trends does. Nothing in here fetches, so navigating between the five
- * Activity screens cannot cost a request and two screens cannot disagree about
- * today.
- *
- * The charts are deliberately not in `@/ui`. Each encodes a decision about its
- * own measurement: an hour column with no steps is drawn rather than skipped
- * because the gaps are the shape of a day; a balance pair shares one scale
- * because two scales would make a matched day look mismatched.
+ * There is no Activity tab any more. What is left is read elsewhere: a workout
+ * as a row of Today's day list and on its own page, the connect flow in
+ * Settings, Health. Nothing in here fetches; the screens own the queries.
  *
  * The providers live in `lib/health`, because they talk to a platform rather than
  * a screen, which is what lets `data/health-sync.ts` use them without a data
  * layer reaching into a feature.
  */
-export { type BalanceBar, BalanceBars, type BalanceBarsProps, BalanceLegend } from './BalanceBars'
-export { BudgetStrip, type BudgetStripProps } from './BudgetStrip'
 export { ConnectPanel, type ConnectPanelProps } from './ConnectPanel'
 export {
   clock,
   count,
   distance,
   duration,
-  hourLabel,
   pace,
   speed,
   syncedAgo,
 } from './format'
-export {
-  HourBars,
-  type HourBarsProps,
-  hasHourlyShape,
-  hourlySummary,
-} from './HourBars'
-export { type RingStat, RingTrio, type RingTrioProps } from './RingTrio'
-export { SessionRow, type SessionRowProps } from './SessionRow'
-export { SplitBar, type SplitBarProps, type SplitPart } from './SplitBar'
+export { SessionItem, type SessionItemProps } from './SessionItem'
+export { WorkoutDetails } from './WorkoutDetails'
 export {
   asWorkoutKind,
   showsDistance,

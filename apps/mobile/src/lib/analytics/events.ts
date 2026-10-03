@@ -3,19 +3,10 @@
 // union somebody else owns, where a copy here would drift from what the
 // dashboard groups by.
 import type { WidgetKind } from '@modules/ricecal-widgets'
-import type { ActivityLevel, Meal, ReportReason } from '@/data/types'
+import type { ActivityLevel, ReportReason } from '@/data/types'
 // The trigger list and the skip reasons are the rating gate, so a trigger added
 // there and forgotten here should be a compile error.
 import type { RatingSkipReason, RatingTrigger } from '@/lib/rating/state'
-
-/**
- * The kitchens this file is willing to name, and one word for all the rest.
- *
- * A closed union rather than `Cuisine`, which is a free string now: see
- * `Suggestions Shown`. `trackedCuisine` in `features/suggest` maps one to the
- * other, and it is the only thing that may.
- */
-export type TrackedCuisine = 'malay' | 'chinese' | 'indian' | 'custom'
 
 /**
  * The tracking plan, as a type.
@@ -74,8 +65,6 @@ export type ProFeature =
   | 'refine'
   | 'read_recipe'
   | 'new_recipe'
-  /** "What should I eat?" — the model asked what to eat next, from Today. */
-  | 'suggest'
   /** A range on Trends that a free account cannot see: 30 days, or a year. */
   | 'trend_range'
   /** An older weekly or monthly review. The latest one is free. */
@@ -83,8 +72,8 @@ export type ProFeature =
   /** The standing offer on launch, which no button refused. See `useProNudge`. */
   | 'nudge'
 
-/** Which of the four paywalls. `hard` is `/paywall`, reached from a refusal. */
-export type PaywallScreen = 'hard' | 'intro' | 'reminder' | 'ended'
+/** Which of the two paywalls. `hard` is `/paywall`, reached from a refusal. */
+export type PaywallScreen = 'hard' | 'intro'
 
 export type Plan = 'monthly' | 'yearly' | 'lifetime'
 
@@ -262,17 +251,6 @@ export type Events = {
    * not followed by a purchase is the dismissal.
    */
   'Paywall Shown': { screen: PaywallScreen; trigger: ProFeature | PaywallScreen }
-  /**
-   * The model answered "what should I eat?". The two choices and how many came
-   * back, and nothing else: which sitting and which kitchen people ask about is
-   * what stops the cuisine list being a guess. `count` is 0 when the model would
-   * not answer, which is the only way to see that failure from outside.
-   *
-   * A union rather than the string the request carries, because the list is
-   * editable now and a cuisine is free text somebody typed. See
-   * `trackedCuisine`.
-   */
-  'Suggestions Shown': { meal: Meal; cuisine: TrackedCuisine; count: number }
 
   'Plan Selected': { screen: PaywallScreen; plan: Plan }
   /** The store sheet was asked for. RevenueCat reports what happened after. */

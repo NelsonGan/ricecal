@@ -6,6 +6,7 @@
  * job is a file beside this one, a line here, and a cron there.
  */
 import type { Job } from '../job.ts'
+import { activityHours } from './activity-hours.ts'
 import { retention } from './retention.ts'
 
-export const JOBS: Job[] = [retention]
+export const JOBS: Job[] = [retention, activityHours]

@@ -1,6 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-
 import {
   type Meal,
   snapshotFromEntry,
@@ -13,6 +12,7 @@ import { FoodSearchPanel, type FoodSearchSource } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import { useBack } from '@/lib/navigation'
 import { eatenQuantity } from '@/lib/portions'
+import { SessionGate } from '@/lib/SessionGate'
 import { AppBar, Screen } from '@/ui'
 
 /**
@@ -40,7 +40,15 @@ const asSource = (value: string | undefined): FoodSearchSource | undefined =>
  * plate this screen is standing in for is one the app failed to read, and the
  * likeliest true answer is something the person has eaten before.
  */
-export default function SearchScreen() {
+export default function SearchRoute() {
+  return (
+    <SessionGate>
+      <SearchScreen />
+    </SessionGate>
+  )
+}
+
+function SearchScreen() {
   const { t } = useTranslation(['logging', 'common'])
   const router = useRouter()
   const goBack = useBack('/today')

@@ -66,7 +66,7 @@ export function TankFigure({ ml, goalMl, onWater }: TankFigureProps) {
   )
 }
 
-/** What a tank drawn as a card is tall. Shared so the two surfaces agree. */
+/** What a tank drawn as a card is tall, on Trends. */
 export const TANK_HEIGHT = 88
 
 /** The overline a tank card wears when it needs to say which day it is about. */

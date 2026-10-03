@@ -1,4 +1,4 @@
-import { dayInMonth, MONTHS_BACK, monthEnd, monthStart, monthWeeks, stepMonth } from '../month'
+import { MONTHS_BACK, monthEnd, monthStart, monthWeeks, stepMonth } from '../month'
 
 /**
  * The month grid on Today.
@@ -47,15 +47,4 @@ it('will not page back further than the calendar reaches', () => {
   expect(stepMonth(oldest as string, -1, TODAY)).toBeNull()
   // Which is a year, spelled the way the constant spells it.
   expect(MONTHS_BACK).toBe(12)
-})
-
-it('keeps the day of the month when the month changes', () => {
-  expect(dayInMonth('2026-07-01', '2026-08-19', TODAY)).toBe('2026-07-19')
-})
-
-it('clamps to the month it lands in, and never to a day still ahead', () => {
-  // The 31st does not exist in June.
-  expect(dayInMonth('2026-06-01', '2026-05-31', TODAY)).toBe('2026-06-30')
-  // And stepping forward into this month lands on today rather than past it.
-  expect(dayInMonth('2026-08-01', '2026-07-28', TODAY)).toBe(TODAY)
 })

@@ -314,7 +314,7 @@ auth.users
        └── health_connections  which health store, and how far back it has read
             ├── activity_days ───── one day of movement, keyed by local date
             ├── activity_sessions  one workout, keyed by the store's own id
-            └── activity_hours ──── steps by local hour, last month only
+            └── activity_hours ──── steps by local hour, month plus timezone buffer
 
 food_scan_items       what the model claimed, and where it landed
 food_scan_misses      the catalogue-widening backlog
@@ -648,6 +648,14 @@ pointing at nothing. It asks three questions in order, and the order is the flow
 2. Is there a session?
 3. Does the profile have `onboarded_at`?
 
+Deep links can bypass that index. The logging pages and paywalls therefore use
+`SessionGate` before mounting their account queries, just as the settings,
+activity, recipe, review and social layouts guard their children. Loading waits;
+a signed-out link returns to Welcome. This also covers old widgets that link
+straight to `/log?panel=barcode` or `/log?panel=recipes`. The guards add no
+navigator, so the logging sheet keeps its modal presentation and food pages
+keep their ordinary push.
+
 The first is the **keychain read and nothing else**, which is narrower than it
 used to be. `SessionProvider` asked Supabase, and Supabase answers that question
 last: it reads the same key first, then refreshes a token within 90 seconds of
@@ -739,7 +747,7 @@ before a permission request has to lead to the request. Saying no is the sheet's
 own "Don't Allow" now, which is where the decision always actually was.
 
 The notifications step had the same pair — "Enable notifications" and "Maybe
-later" — and now has neither. `ConnectPanel` on the Activity tab is the third,
+later" — and now has neither. `ConnectPanel` in Settings, Health is the third,
 whose button used to read "Apple Health". None of the three carries a label
 naming the permission, and none of them offers a way past the sheet.
 
@@ -816,22 +824,42 @@ same My foods results instead of Today or All foods. `openOwn` and `openCreate`
 sit beside `openPicked`, and the page does not focus its field when any of them
 sent it, since a keyboard would come up under the screen on top.
 
-Five tabs (Today, Food, Activity, Trends, Me) on the headless
-`expo-router/ui` Tabs rather than a styled navigator, because `NavBar` and
-`NavItem` are the design system's and a native tab bar cannot be made to look
-like them.
+Four tabs (Today, Feed, Trends, Me) on the headless `expo-router/ui` Tabs
+rather than a styled navigator, because `NavBar` and `NavItem` are the design
+system's and a native tab bar cannot be made to look like them.
 
-**The log button is not in the bar.** It used to be, raised, in the middle, and
-that is what capped the bar at four tabs: a centre action is centred by having
-the same number of tabs either side of it, so a fifth put it a tenth of the bar
-off to one side. It is a `FloatingAction` at the bottom right of Today now,
-through `Screen`'s `floating` slot, which overlaps the scroll content rather
-than sitting above it like `footer`. A screen using it owes its last row enough
-bottom padding to be read.
+**The bar floats.** It is drawn over the bottom of the screen with no background
+of its own, so content scrolls on under the pill. `NavInsetProvider` in the tabs
+layout tells each screen how much of its bottom the bar covers (its height plus
+the home indicator), and `Screen` pads the last row and lifts its floating
+corner by that much. Zero on a pushed page. A list that `Screen` does not scroll,
+the feed, reads `useNavInset` and pads itself.
 
-Singular and plural is the information hierarchy, not a naming quirk. `/recipes`
-is the tab, and `/recipe/[id]` and `/recipe/edit` are pages you go to and come
-back from. Those two have a layout of their own that waits for the session,
+**The log button is at the right end of the bar**, a `NavAction` beside the pill
+that holds the tabs, on every tab. It has been raised in the middle of the bar,
+which capped it at four tabs because a centre action needs the same number on
+each side, and then a floating button on Today alone, which sat over the last
+row of the day and over the Delete of any row swiped open beneath it. Beside the
+pill it covers nothing.
+
+If an earlier day remains selected, the log sheet shows its date. This matters
+when opening it from Feed, Trends or Me, where the diary's date is not visible.
+
+The log sheet remembers its last nonempty option, Snap, Describe or Search, in
+MMKV per account on this phone. A fresh account starts with Snap; reopening the
+sheet or relaunching the app restores the choice without waiting for a request.
+Closing an option leaves it remembered. An explicit `?panel=` link takes
+precedence, including the legacy barcode, label and recipes handoffs, and its
+opened option becomes the next default. No Supabase preference is added.
+
+There is no Activity tab. A day's steps and workouts are read in Today's "Your
+day" list, a workout opens `activity/workout/[id]`, and a health store is
+connected in Settings, Health. The tab's steps, balance and history pages had no
+other way in and are gone with it.
+
+My foods is in Settings. The old `/recipes` URL redirects there, while
+`/recipe/[id]` and `/recipe/edit` still open individual recipes. Those two have
+a layout of their own that waits for the session,
 because a shared recipe is a link and a link is opened cold, before the keychain
 read has finished.
 
@@ -985,14 +1013,14 @@ setting, a metric rather than a word. `Text` combines that script floor with a
 through classes or an inline style.
 Roomy Nunito prose keeps the leading it was designed with.
 
-**Dynamic Type scaled the size and not the leading.** An absolute `lineHeight`
-stays where it is while the platform multiplies the font size, so at the largest
-setting a 1.19x ramp is nearer 0.9x and every script crops. `Text` multiplies by
-`PixelRatio.getFontScale()` to hold the ratio. Callers that set their own
-`text-[34px] leading-[42px]` pair — around forty of them, sizing type against a
-ring or a stepper — are parsed back out of the class string and scaled the same
-way. Safe pairs stay unchanged, while a tight pair is raised to the font and
-script floors before it is scaled.
+**Let native text scale the leading once.** React Native scales `lineHeight`
+alongside font size on both iOS and Android. Multiplying it by
+`PixelRatio.getFontScale()` in `Text` too made large-text screens grow huge gaps
+and clipped single-line headings. `Text` resolves the floor in unscaled points
+and leaves scaling to the platform. Callers that set their own
+`text-[34px] leading-[42px]` pair, sizing type against a ring or a stepper, are
+parsed back out of the class string. Safe pairs stay unchanged, while a tight
+pair is raised to the font and script floors.
 
 `src/ui/__tests__/typography.test.tsx` pins the arithmetic, because the failure
 is silent and only visible in a language the person changing the code probably
@@ -2114,151 +2142,37 @@ not a plan.
 
 ---
 
-## What to eat next
+## What to eat next (retired from the app)
 
-The one model path that does not start from something the user already has. A
-scan reads a plate, a correction reads a sentence about one, a recipe read reads
-a pot; each has a subject. Here the subject is the rest of the day, and the
-answer is a suggestion rather than a fact.
+The app used to answer "not sure what to eat?" from a row on Today: an ask sheet
+(sitting, macros, cuisine, a calorie ceiling), seven picks from the model, and a
+detail for one pick. The app no longer has any of it: no row, no sheets, no
+`useSuggestMeals`, no `suggest` copy, and nothing about it on the paywall.
 
-A thin row on Today opens it, under the week strip: one line high, flat rather
-than raised, because everything raised on that screen writes something and this
-writes nothing.
+**The server half stays.** `suggest-meal` and `_shared/suggest.ts` are still
+deployed because every store binary released before the removal still calls
+them, and the backend can only be extended (see "The store holds copies of the
+app you cannot recall"). They must keep answering in the old shape until no
+supported binary carries the row. Removing them runs over a store release, not a
+deploy. Until then, what the function still does:
 
-```
-row (/today)   →  ask sheet     meal, macros, cuisine, a calorie ceiling
-                 ↓
-                 the same sheet, holding a skeleton while the model works
-                 ↓
-                 seven picks    name, kcal, protein, and the drawing
-                 ↓
-                 one pick       the figures, what the day has left after it,
-                                and why this fits
-```
+- It is Pro, and it claims a scan exactly as `scan-refine` does.
+- The day is assembled on the server, not sent by the client; a client-supplied
+  budget would size the meal off a stale day.
+- `cuisinePhrase` bounds the cuisine (trimmed, capped at 40 characters, line
+  breaks stripped) because it was free text from the user's own list.
+- `why` is required per pick and a pick without one is dropped; the reason's
+  `kind` is a closed set of five.
+- `PICK_COUNT` is seven. `keepToTheSitting` drops a breakfast-register reason
+  from a meal that is not breakfast without ever emptying a pick.
+- A failure is an empty list rather than an HTTP error.
+- Nothing it returns is written anywhere (see the rule below).
 
-**All four are one panel, and the last of them was a pushed page.** A `Sheet` is
-a native window drawing over the whole app, so a screen pushed under one arrives
-behind it: the panel had to be closed on the way into a pick and raised again on
-the way out, which made reading two picks four transitions with a frame of the
-diary in each gap. The pick is a body inside the picks sheet now. It slides in
-from the right, the title row swaps its "Try again" for a back chevron, and the
-panel itself does not move.
-
-Two things went with the page. The provider that held the picks above the
-navigator, which existed only because the sheet that produced them and the page
-that read one were different routes; `SuggestAction` holds them in ordinary
-state. And the counter that told the list a pick's page had left, which was
-there because focus cannot say when that is: a screen under a transparent
-presentation never loses focus, so a `useFocusEffect` never fired.
-
-`Sheet` grew three props for it: `titleLeading` (the back control, in the title
-row rather than at the top of a body that scrolls), `titleLines` (a dish name is
-not a screen name, and one line of "Nasi kandar ayam goreng berempah" identifies
-nothing), and `scrollResetKey` (the scroll view is the same instance either side
-of the swap, so a list read half way down opened its pick half way down too).
-
-**Every control opens on an answer.** A prefilled sitting costs nothing to be
-wrong about, because the answer is a list of suggestions. The sitting comes off
-the user's own `meal_times` (nearest within two and a half hours, otherwise a
-snack) so somebody whose dinner is at nine gets dinner at nine, and the ceiling
-opens on what is left of the day, capped at what one sitting plausibly is.
-
-**The cuisines are the user's own list, and it lives on the phone.** Malay,
-Chinese and Indian to begin with, and a pencil beside the dropdown edits them.
-MMKV rather than a column: it is a preference about a control rather than a fact
-about the account, and a column would be a query the sheet has to wait on.
-
-Two consequences. The server has no list to validate against, so `cuisinePhrase`
-bounds the string instead: trimmed, capped at 40 characters, and stripped of the
-line breaks that would let a text field pose as another instruction in the
-prompt. And the cuisine cannot be sent to Mixpanel as itself, so
-`trackedCuisine` maps it to one of the shipped defaults or to `custom`.
-
-**Nothing it returns is written anywhere, and the picks are view only.** No
-`food_logs` row, no catalogue row, no "Log it" button. A guess about a meal
-nobody has eaten is the last thing that should become a row other diaries are
-priced from. That is also why a pick has no id and why the detail is reached by
-index into a list that lives in memory and nowhere else.
-
-**The panel is one sheet at one size throughout.** A capped sheet sizes itself
-to its content, so the wait and the answer would be different heights and the
-panel would jump at the one moment this screen has to feel settled. The wait
-draws one skeleton row per pick, off `PICK_COUNT` rather than a literal.
-
-**Try again re-sends the last request** rather than reopening the question. It
-is absent while a pick is being read rather than disabled, because a new list
-under a dish reached by index is a different dish under the same heading. The
-model is not deterministic, so the same question genuinely answers differently,
-and changing the question is one tap away. The last request is held in a ref
-rather than read off the provider, which is only set once an answer has landed.
-
-**The reasons are the product.** A list of dish names against a calorie figure
-is a list anybody could write; "you are 39 g short on protein and one bowl
-covers most of it" is what makes it a suggestion. `why` is required per pick, a
-pick without one is dropped, and the reason's `kind` is a closed set of five so
-the screen can draw the right picture beside it.
-
-**The day is assembled on the server, not sent by the client.** A
-client-supplied budget decides how big a meal the model offers, and a stale one
-produces a suggestion for a day that has moved on. It is one round trip either
-way.
-
-**It is Pro, and it claims a scan**, exactly as `scan-refine` does: discretionary,
-repeatable at the press of a button, and with no cheaper tier underneath.
-
-**The gate is on "Suggest something", not on the row.** The question is the
-feature (the sitting, the macros, the user's own kitchens, the day's remaining
-budget) and a paywall in its place is an offer with the product hidden. It also
-refused a tap that costs nothing, since a scan is claimed by the request. The
-ask sheet is a `Sheet`, which is its own window, so a paywall pushed from under
-it would arrive behind it: `useRequirePro`'s `beforePaywall` closes the sheet
-first, and only on an actual refusal.
-
-`_shared/suggest.ts` holds the prompt. Five things it was taught after a live
-run broke it:
-
-- the sitting is a constraint rather than a label (asked for dinner it wrote "to
-  start your day");
-- the cuisine likewise (asked for Malay it offered roti canai);
-- a pick is a dish somebody orders by name and never a bare ingredient (released
-  from a named cuisine it answered with chicken breast and boiled eggs);
-- a dish's calories are never shrunk to fit the ceiling (asked for a 300 kcal
-  snack it offered "nasi lemak, one plate, 280 kcal");
-- the macros left are context for the reasons rather than a specification to
-  hit.
-
-`unslug` plus a capital is the belt behind the last of them: the icon list is
-the largest block in the prompt and the model answers in its register, with
-picks named `char-kuey-teow` and `hokkien-mee`.
-
-**Seven picks**, which is `PICK_COUNT` on the server and a deliberate copy in
-`features/suggest/ask.ts`. The two live either side of the Deno / React Native
-line and cannot import each other. The heading does not count them, because a
-heading that names a number lies whenever a pick is dropped.
-
-**It leans healthier on a toggle, and the lean is a tie-break rather than a
-filter.** Told to be healthy outright the model answers with boiled eggs and
-steamed fish, which is the bare-ingredient failure again. So the rule is written
-as a preference between dishes that both fit, and it is told not to mention
-health or dieting in the reasons. The switch lives in the *user* message because
-it changes per request, and Off is stated rather than left out, because silence
-reads as the default.
-
-**The sheet remembers the macros, the cuisine and the lean**, in MMKV, keyed by
-user, saved when the question is asked. Not the sitting, which is answered by
-the clock, and not the ceiling, which follows the sitting and the day's
-remaining budget: a 300 saved from a snack would open tomorrow's dinner at 300.
-
-**And the sitting has a belt of its own.** "To start your day" kept turning up
-on dinners; moved to the last line of the user message it fell to about one
-reason in fifteen picks and mutated rather than stopping.
-`keepToTheSitting` drops a reason written in the breakfast register from a meal
-that is not breakfast, and never empties a pick: losing a dish to a badly worded
-sentence is a worse answer than the sentence.
-
-A failure is an empty list rather than an HTTP error. In the cascade a diary
-that refuses the meal is worse than one that logs it roughly; here there is
-nothing to log, so the honest answer is to say nothing came to mind.
+The prompt's lessons from live runs still hold for anyone touching it: the
+sitting and the cuisine are constraints rather than labels, a pick is a dish
+somebody orders by name and never a bare ingredient, a dish's calories are never
+shrunk to fit the ceiling, and the "lighter" toggle is a tie-break between dishes
+that both fit rather than a filter.
 
 ---
 
@@ -2898,11 +2812,31 @@ calendar week, each fetching only its own seven days. Picking a day moves
 client-owned state) and everything below follows it: the ring, the water, the
 entry list, and anything logged while it is selected.
 
+**The calorie card is one compact reading.** A 112pt ring beside the three
+macros, each on one line as label, bar and "eaten/goal g", inside less padding
+than a standard card. Nothing sits under the ring: "+360 from moving" and "A bit
+over" both made the card taller to repeat what the ring and the list below
+already say. Movement still extends the budget exactly as before.
+
+On narrow phones and with large text, the ring sits above the macro rows, whose
+labels and amounts also stack. Ring figures stay on one line. The seven date
+cells and the four navigation captions limit text scaling to fit their fixed
+widths; their full translated labels remain available to screen readers.
+
+**The list under the water is "Your day"**: the meals and the health store's
+workouts in one list, newest first, with the day's steps beside the heading when
+a store reported the day. With large text, the steps sit below the complete
+heading. The heading is a word rather than an overline, and
+hairlines sit under it and between rows. Rows are `ItemRow` at its `compact`
+size (a 56pt tile, one line of title, the figure stacked over its unit). A
+workout is a row like a meal, its calories in hibiscus because they were burned,
+and it opens the workout's own page.
+`EntryList` takes those rows as `extras`, already drawn, so the shared list does
+not import the activity feature.
+
 **A way back to today sits in the bottom-left corner, only while there is one.**
-`Screen`'s `floatingLeading` is its own slot rather than a row inside
-`floating`: the two corners hold unrelated things and appear on different
-conditions, and a single row would need an invisible spacer over a scroll view,
-eating taps. Absent on today rather than disabled.
+`Screen`'s `floatingLeading` slot holds it, above the floating nav bar and
+riding up with the keyboard. Absent on today rather than disabled.
 
 **The dot under each number is that day's verdict**, and there are three plus
 silence: under goal, over goal, a hollow ring for a past day with nothing on it,
@@ -2920,8 +2854,10 @@ The toggle beside the heading swaps the week strip for a month grid, and it
 **replaces** the screen under it. The two views answer different questions
 ("what did I eat" and "what have I been eating") and the month can only answer
 its one by being mostly pictures, which leaves no room for the ring, the water
-and the list. What is under the grid instead is the selected day as an
-`ItemRow` list, oldest first, and the water tank for that day.
+and the list. Nothing is under the grid and no day on it is selected: a tap
+leaves the calendar and opens that day in the diary, as picking it on the week
+strip would. It used to select the day in place and list its meals and water
+under the grid, a second, smaller copy of the diary on one screen.
 
 **Every cell carries the day's biggest plate**, from `day_plates(from, to)`: the
 photograph where there is one and the drawing where there is not. Biggest rather
@@ -2933,18 +2869,11 @@ The strip asks that one for a week on every swipe and has no use for a picture;
 joining the diary twice more per day, fifty-two weeks back, would be a cost paid
 by the screen that does not want it.
 
-**The selected cell is filled in its own verdict's colour**, not always pandan.
-The verdict is the cell's outline and the selection is its fill, and while the
-fill was pandan for every selected day an over-goal day drew a kaya ring around
-a green square. Under goal fills pandan, over goal kaya, a missed day grey. The
-ink is paired with the fill rather than assumed, because `kaya-ink` is the same
-value as `kaya` in the dark palette.
-
 Arrows rather than a pager: twelve taps reaches a year where the strip needs
 fifty-two swipes, and a paging grid a screen tall would fight the vertical
-scroll of everything under it. Paging moves the selection with it (`dayInMonth`,
-same day of the month, clamped to the month's length and to today), because a
-card describing a day that is not on screen is a card nobody can act on.
+scroll of the screen. The month title wraps between the arrows and the legend
+wraps onto extra rows with large text. Fixed date cells limit scaling like the
+week strip; their buttons announce full translated dates and verdicts.
 
 The view mode is not persisted. The diary is the screen this app opens on, and a
 launch landing on a month grid because of a tap three days ago would be the app
@@ -2983,7 +2912,15 @@ card produced "0 ml / 2 L", a fraction whose two halves are in different units.
 two waves at different speeds so it reads as liquid rather than as a moving
 graph, and tips its surface left and right when the card first appears and on
 every drink. Everything else is drawn on it, in the top-right corner: the figure,
-small, and an Add button beside it.
+small, and an Add button beside it. On Today it is 60pt tall, enough for that
+readout and a band of water; Trends draws it at `TANK_HEIGHT`. A short bar inside
+the card with the button beside it was tried and reverted: the tank as the card
+is the design.
+
+**A full tank is still.** Once the goal is met it is drawn solid, with no waves,
+no slosh and no brim. A surface still moving at the top read as a day not yet
+done, and it was a frame of work every 16 ms for a picture with nothing left to
+say.
 
 There is no heading. The word "Water" over a tank of water is a label the picture
 already carries, and the drop beside the figure is what identifies it on a day
@@ -3236,8 +3173,9 @@ it cannot be filed against the account that follows.
 
 ## Weekly and monthly reviews
 
-A finished week or month, read as one column of cards. A row at the foot of
-Trends leads to `/reviews`, which lists the periods worth opening, and one of
+A finished week or month, read as one column of cards. A compact row directly
+below Trends' Calories, Water and Weight tiles leads to `/reviews`, which lists
+the periods worth opening, and one of
 them opens `/reviews/[id]` (`week-2026-08-03` or `month-2026-07-01`, the kind and
 the first day, from which the server works out the rest).
 
@@ -3408,14 +3346,58 @@ dropped and body fat would silently never appear. `asPercent` in `apple.ts`
 normalises it, branching on 1 rather than on the platform, because 1% body fat is
 not a body.
 
+### A workout's own page
+
+Every one of the 19 normalized sports opens `activity/workout/[id]`. Its hero
+uses the sport's illustration and a soft colour setting, with distance leading
+for travelling sports and time leading for everything else. Time and active
+energy stay together; supporting measurements sit below rather than becoming
+a fixed grid of mostly empty tiles.
+
+Running, walking and hiking read pace per kilometre, cycling reads km/h,
+swimming reads pace per 100 m, and rowing reads a split per 500 m. These are
+averages over the recorded duration, not moving-time pace or laps. A court
+sport's shuffling distance is still suppressed, along with anything derived
+from it. A travelling workout without a distance falls back to time. Elevation
+appears only when reported, including a measured zero.
+
+Heart rate is one card: average and maximum when reported, followed by four
+bars showing the recorded seconds in each zone. Summaries without samples keep
+their average and maximum; zones without summaries still draw their bars. No
+heart data means no heart card, and zero total zone time means no zone chart.
+There are no stored pulse traces, routes, laps, repetitions or personal records,
+so the page cannot draw them. `features/activity/WorkoutDetails.tsx` owns the
+layout and `workoutMetrics.ts` owns the sport-specific measurement choices.
+With large text, supporting measurements stack and the decorative illustration
+gives its space to the figures. Zone names can wrap instead of truncating.
+
+For local UI verification, `pnpm workouts:seed --user <local-account-uuid>`
+inserts all 19 sports plus 11 data variants into that account across six days.
+Use `--date yyyy-MM-dd` to choose the last day. The script connects only to
+`supabase_db_ricecal`, marks the rows as demo previews, and upserts its own
+external IDs, so repeating it does not duplicate or overwrite real workouts.
+It leaves health connections and day totals alone. The variants cover missing
+distance, missing heart readings, summaries without zones, zones without
+summaries, zero values, indoor cycling and an unknown sport with a long label.
+
 ### Syncing
 
 `src/data/health-sync.ts`. A **week-deep backfill** on connect, then the last
 **seven days** re-read on every foreground.
 
+**The automatic pass is mounted in the tabs layout**, beside the reminder sync,
+so it runs whichever tab a launch lands on and hears every return to the
+foreground. It used to live on the Activity tab, which is gone. The manual pass
+is **Settings, Health, Sync now**.
+
+Settings keeps the connection progress visible until the first read finishes.
+An empty read keeps its retry guidance and the development demo option visible,
+even though the connection row has already been written. Device availability
+is checked again when returning from Settings or the Play Store.
+
 It was a year, then a month, then a week, and each cut was the same argument
-carried further: the backfill exists so the Activity tab is not empty on the day
-it is turned on, and a week answers that. What it costs is the 30-day range,
+carried further: the backfill exists so the day list is not empty on the day
+health sync is turned on, and a week answers that. What it costs is the 30-day range,
 which starts three-quarters empty and fills in over the following weeks. That is
 the accepted trade against a permission screen somebody waits through inside
 onboarding.
@@ -3433,11 +3415,49 @@ so every query and delete treats it like a real one. Both native libraries are
 built before the dependency landed, and the symptom is a white screen rather than
 a broken tab.
 
-Hourly rows are deleted and replaced for each rolling window because an hour can
-disappear when a duplicate Health source is removed. The replacement is an
-upsert and the client admits one sync at a time: a foreground event and a manual
-refresh can otherwise both delete before either writes, making the second pass
-fail on the `(user_id, log_date, hour)` key.
+Hourly detail stays for older store binaries, whose Steps screen reads today's
+hours. Year charts, Trends, Reviews and calorie budgets use `activity_days` and
+`activity_sessions`, so hourly history does not drive their totals. Providers
+already omit empty step buckets, and Android drops flat buckets apportioned
+from a whole-day reading. Pulse samples are reduced on the phone to workout
+averages, maxima and four zone durations. Routes and raw pulse traces are not
+stored. Daily readings, workouts and weigh-ins keep their history.
+
+`replace_activity_hours` replaces a read window atomically: it deletes hours
+that disappeared when a duplicate source was removed, inserts new hours and
+updates changed measurements. Identical rows are left alone, avoiding the dead
+tuples caused by deleting and rewriting a week on every foreground. A failed
+replacement rolls back its deletes too. A read with no measured days or hours
+keeps the last good hourly data, since an unavailable store or revoked access
+is not a measurement of zero. A measured day with no hours still removes
+disappeared source buckets. The captured account must still match
+the session, including for an empty replacement. Older binaries keep their
+direct table grants and RLS policies. Long backfills split at local today minus
+30, so a chunk straddling that boundary cannot write extra historical hours.
+
+`activity-hours-retention` in the jobs Worker runs hourly at `:37` UTC. Its
+service-only `prune_activity_hours` RPC deletes dates **before UTC today minus
+31**, keeping the boundary day. The extra day preserves local today minus 30
+even in UTC-12. It uses the original scheduled time, capped at the database's
+current time, so retries and a future timestamp cannot prune recent hours.
+Each transaction deletes at most 1,000 rows through a date index and skips
+locked rows. A run stops after 20 batches or a locked backlog; `job_runs.detail`
+records `pruned`, `before`, `batches` and `drained`, and the next hour continues.
+Expired hours written again by an old backfill are removed on a later sweep.
+
+Deploy the generated migration before the jobs Worker and before the app that
+calls the replacement RPC. The migration extends the backend; existing tables,
+columns, inputs and read shapes stay available to old binaries. The database
+tests cover the retention boundary, old writes, account isolation, unchanged
+physical tuples, failed replacement, and unchanged activity and review totals.
+
+After rollout, check `job_runs` for `activity-hours-retention` and count hours
+older than `(now() at time zone 'UTC')::date - 31`. A persistent backlog or
+`drained: false` needs investigation. Compare `pg_total_relation_size` and
+`pg_stat_user_tables.n_dead_tup` before and after the catch-up. Deletes make
+space reusable after vacuum; they need not immediately reduce the allocated
+file size. Autovacuum handles normal cleanup. A one-off `VACUUM FULL` is a
+separate maintenance decision because it locks and rewrites the table.
 
 ---
 
@@ -3543,11 +3563,12 @@ today's offer duration.
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the
 terms of use and the privacy policy. `PurchaseTerms` renders Terms and Privacy in
-one compact row, with Restore Purchase at the front on both paywalls. The
-trial-ended screen uses the same row without restore. There are three screens
-that can charge somebody: `paywall/intro`, `paywall/index` and `paywall/ended`.
-The third once sold a year with one tap and had no price, period or renewal
-anywhere on it at all. `lib/legal.ts` holds the two addresses, and the same pair
+one compact row, with Restore Purchase at the front on both paywalls.
+There are two screens that can charge somebody: `paywall/intro` and
+`paywall/index`. A third, the trial-ended screen at `paywall/ended`, once sold a
+year with one tap and had no price, period or renewal anywhere on it at all. It
+and the `paywall/reminder` sheet were never linked from anywhere and have been
+deleted. `lib/legal.ts` holds the two addresses, and the same pair
 is on **Me, Edit** for everybody who never reaches a paywall.
 
 ### What each tier gets
@@ -3559,7 +3580,6 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 | a meal typed in words | no | yes |
 | a meal corrected in words | no | yes |
 | a recipe read out of a photograph | no | yes |
-| asking what to eat | no | yes |
 | recipes kept | 3 | unlimited |
 | trends | 7 days | 7d / 30d / a year |
 | reviews | the newest week | every week and month |
@@ -3935,6 +3955,7 @@ src/
   jobs/
     index.ts      the registry
     retention.ts  the photograph sweep
+    activity-hours.ts the hourly health-data sweep
 scripts/
   check-crons.mjs the registry and wrangler.jsonc must agree
 ```
@@ -3994,9 +4015,9 @@ export const digest: Job = {
 }
 ```
 
-**2. A line in `src/jobs/index.ts`:** `export const JOBS: Job[] = [retention, digest]`
+**2. A line in `src/jobs/index.ts`:** `export const JOBS: Job[] = [retention, activityHours, digest]`
 
-**3. The cron in `wrangler.jsonc`:** `"triggers": { "crons": ["17 * * * *", "0 2 * * MON"] }`
+**3. The cron in `wrangler.jsonc`:** `"triggers": { "crons": ["17 * * * *", "37 * * * *", "0 2 * * MON"] }`
 
 No new package, no new secret, no workflow edit. `cloudflare.yml` discovers
 Workers by globbing `apps/cloudflare/workers/*`.
@@ -4179,17 +4200,17 @@ of leaving stale state behind.
 
 ### Product analytics coverage
 
-Audited 2026-10-02 against the mobile tracking plan and call sites. This is the
+Audited 2026-10-03 against the mobile tracking plan and call sites. This is the
 full mobile product tracking reference. The website section records the separate
 acquisition surface and links its own repository contract. A defined event is
 eligible for delivery; its presence here is not proof of ingestion or billing.
 
 | Surface / operation | Definitions | Destinations / counting rule |
 | --- | --- | --- |
-| Native app custom decisions | 49 | All 49 go to Mixpanel and GA4 in production; no GA4-only app group and no sampling |
+| Native app custom decisions | 48 | All 48 go to Mixpanel and GA4 in production; no GA4-only app group and no sampling |
 | Website decisions | 6 | Separate Mixpanel website project; five namespaced GA4 events plus manually managed `page_view` in the shared property |
 | Native screen views | 0 | No app `screen_view` emitter; Firebase automatic screen reporting is disabled |
-| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 49 custom app definitions |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 48 custom app definitions |
 | Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
 | Per-install first-use/milestone event budget | None | RiceCal has no Money2Time-style adoption cap; repeatable product use contributes Mixpanel volume |
 
@@ -4210,7 +4231,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Sign In Failed | ricecal_sign_in_failed | method: SignInMethod; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/data/auth.ts` | Instrumented Apple/Google sign-in rejection or cancellation; each reported result. Email/password failures are not covered by this event. |
 | Signed Out | ricecal_signed_out | none | `src/data/auth.ts`<br>`src/lib/analytics/client.ts` | Explicit sign-out completes; each completion, before resetting analytics identity. |
 | Account Deleted | ricecal_account_deleted | none | `src/data/auth.ts` | Server confirms account deletion; each success, before deleting the Mixpanel profile and signing out. |
-| Log Sheet Opened | ricecal_log_sheet_opened | panel: string; date_offset: number | `app/log/index.tsx` | Log sheet opens; once per presentation using its initial panel and selected date, not on panel changes. |
+| Log Sheet Opened | ricecal_log_sheet_opened | panel: string; date_offset: number | `app/log/index.tsx` | Log sheet opens; once per presentation using its actual initial panel (explicit link, remembered choice, then camera) and selected date, not on panel changes. |
 | Meal Logged | ricecal_meal_logged | method: LogMethod; date_offset: number | `src/data/entries.ts`<br>`src/data/snap.ts` | Local insert succeeds, or camera/describe starts its optimistic row; once per logging action, not per decomposed food component. |
 | Meal Scan Completed | ricecal_meal_scan_completed | method: 'camera' &#124; 'describe'; outcome: ScanOutcome; duration_ms: number; tier: number &#124; null; components: number | `src/data/snap.ts` | Camera/describe request reaches a reported outcome; once per attempt, including refusals, empty food, failure and detached requests. |
 | Barcode Scanned | ricecal_barcode_scanned | outcome: 'found' &#124; 'not_found' &#124; 'error' | `app/log/food/[id].tsx` | Barcode lookup settles; once per barcode value on the mounted food route. Reopening the route can count again. |
@@ -4219,8 +4240,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Entry Refined | ricecal_entry_refined | outcome: 'applied' &#124; 'not_applied' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled'; from_chip: boolean; duration_ms: number | `src/data/scan.ts` | Refinement attempt reaches its outcome; each attempt, including refusal/failure and no applied change. |
 | Food Searched | ricecal_food_searched | results: number; query_length: number | `src/features/logging/FoodSearchPanel.tsx` | Catalogue query has a settled results/empty answer for 1,200 ms after the 140 ms input debounce; changed nonempty queries only. History/own-food filtering is excluded. |
 | Food Picked | ricecal_food_picked | position: number; results: number; source?: 'history' &#124; 'recipe' | `src/features/logging/FoodSearchPanel.tsx` | Catalogue, own recipe or history result is opened; each selection. Opening a result does not prove it was logged. |
-| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or eligible nudge requests navigation, or intro/reminder/ended presentation mounts; repeated visits count. Nudge has a two-day per-account clock; account/entitlement changes cancel its pending timer and the clock is checked again before sending. |
-| Suggestions Shown | ricecal_suggestions_shown | meal: Meal; cuisine: TrackedCuisine; count: number | `src/features/suggest/SuggestAction.tsx` | Suggestions answer returns; each answer, including count 0. Refused/failed requests without an answer do not prove suggestions were shown. |
+| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or eligible nudge requests navigation, or the intro paywall mounts; repeated visits count. Nudge has a two-day per-account clock; account/entitlement changes cancel its pending timer and the clock is checked again before sending. |
 | Plan Selected | ricecal_plan_selected | screen: PaywallScreen; plan: Plan | `src/features/paywall/PaywallOffer.tsx` | Paywall plan changes; each change. The default selected plan emits nothing until changed. |
 | Purchase Started | ricecal_purchase_started | screen: PaywallScreen; plan: Plan | `src/features/paywall/tracking.ts` | An available checkout is requested; once per accepted attempt, before offering lookup/store call. A missing configuration warning emits nothing. |
 | Purchase Abandoned | ricecal_purchase_abandoned | screen: PaywallScreen; plan: Plan; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/features/paywall/tracking.ts` | Checkout/entitlement-wait path throws; once per caught attempt. A post-purchase entitlement-wait error can also reach this event. |
@@ -4263,7 +4283,7 @@ state, not proof that the customer had a settled charge at that instant.
 
 | Contract | Mixpanel | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 49 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 48 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
@@ -4289,12 +4309,11 @@ user text. Extend the source type and these tables together when its domain chan
 | --- | --- | --- |
 | `method` / `LogMethod` | `camera`, `describe`, `search`, `barcode`, `recipe`, `quick_add`, `history` | `events.ts`; compare logging actions, not individual food components |
 | `method` / `SignInMethod` | `apple`, `google`, `email`, `password` | `email` means code/link. Failure coverage currently covers Apple/Google only |
-| `screen` / `PaywallScreen` | `hard`, `intro`, `reminder`, `ended` | Paywall surfaces below; no generic screen-view event |
-| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `suggest`, `trend_range`, `review`, `nudge` | Refused capability or standing offer; trial expiration is a paywall screen value, not a feature |
+| `screen` / `PaywallScreen` | `hard`, `intro` | Paywall surfaces below; no generic screen-view event. `reminder` and `ended` appear only in data from app versions released before those two screens were deleted; no build ever navigated to them |
+| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `trend_range`, `review`, `nudge` | Refused capability or standing offer; trial expiration is a paywall screen value, not a feature. `suggest` appears only in data from app versions released before "what to eat next" was removed |
 | `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
 | `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |
-| `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder and suggestion category only |
-| `cuisine` / `TrackedCuisine` | `malay`, `chinese`, `indian`, `custom` | Custom cuisine text is reduced to `custom`; no user-entered cuisine is sent |
+| `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder category only |
 | `plan_direction` | `lose`, `gain`, `maintain` | Locally derived; a missing target or absolute target/current weight difference below 0.5 kg means maintain. Body values never leave the app through analytics |
 | `activity_level` | `sedentary`, `light`, `onFeet`, `veryActive` | Client vocabulary; normalized from database spellings |
 | `step`, `step_number` | `setup` 1, `about` 2, `activity` 3, `source` 4, `calculating` 5, `target` 6, `account` 7, `health` 8, `notifications` 9 | `features/onboarding/steps.ts`; calculating has no completion event, and secondary skips do not emit one |
@@ -4319,12 +4338,12 @@ user text. Extend the source type and these tables together when its domain chan
 | Welcome and onboarding | Start, primary step advance, successful profile completion | Repeated starts/advances count. Completion precedes permission steps, so requiring every step as a conversion prerequisite excludes valid users |
 | Account and sign-in | Explicit login requests/results, sign-out and deletion | Restored sessions are not Signed In. No complete email/password failure funnel exists |
 | Log sheet, food route and data mutations | Sheet entry, catalogue answer/selection, logging, scan/refinement outcome, entry edits/deletes | Search debounces; mutations distinguish intent/optimistic inserts from confirmed success as listed above |
-| Recipes and suggestions | Draft/save/publish/copy/report/block and suggestion answers | Public moderation outcomes count separately; draft/pick/suggestion is not a meal or a saved recipe |
+| Recipes | Draft/save/publish/copy/report/block | Public moderation outcomes count separately; a draft is not a meal or a saved recipe. `Suggestions Shown` appears only in data from app versions released before "what to eat next" was removed |
 | Activity, reminders and reports | Health connection/disconnection, reminder writes, report notification taps and review opens/shares | No background health-import events. Locked review opens count before the paywall redirect |
 | Home-screen widgets | Observed kind additions/removals, supported deep links and queued water actions | First observation is a silent baseline; later foreground diffs can miss intermediate changes. Stored baseline belongs to the handset, not reset on account switches. Each account gets the current count without fabricated add/remove events; results from a cancelled account's poll are discarded even if it returns |
 | Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
 | Hard paywall `/paywall` | `Paywall Shown` with `screen: hard` and refused `ProFeature` | `data/refusals.ts` records before navigation; review redirects also record. Free camera allowance is three scans/day; a further refusal can reach camera trigger |
-| Intro, reminder and ended paywalls | `Paywall Shown` with the respective screen as trigger | `useTrackPaywallShown` records once per mounted presentation; revisits count again |
+| Intro paywall | `Paywall Shown` with `intro` as screen and trigger | `useTrackPaywallShown` records once per mounted presentation; revisits count again |
 | Standing Pro nudge | `Paywall Shown`, `screen: hard`, `trigger: nudge` | At timer scheduling: known free entitlement, tutorial already offered, due per-account clock and not offered in this mounted launch. Account/entitlement changes cancel the timer; a newly eligible account schedules its own. Any recorded paywall restarts the two-day clock, which is rechecked when the timer fires |
 | Checkout | Optional plan change, checkout attempt and caught cancellation/error | Default selection sends no Plan Selected. Purchase Started precedes offering lookup. Purchase Abandoned can include a post-purchase entitlement-wait error |
 | Restore | Returned restored/nothing or unavailable result | Restore Requested is a result event; thrown restores have no row. Restoration never adds settled revenue |
@@ -4677,7 +4696,7 @@ user's whole session as free.
    repository changes; audit its current revision rather than assuming mobile CI
    validates it. A change without analytics impact needs no artificial table edit.
 
-The mobile inventory test checks all 49 names, exact GA4 mappings, typed payloads,
+The mobile inventory test checks all 48 names, exact GA4 mappings, typed payloads,
 source-file existence and a nonempty trigger/frequency column, and forbids
 app-side settled revenue fields. Trigger prose, property domains, report meaning,
 SDK/server settings and the separate website still require call-site review.
@@ -5049,6 +5068,12 @@ version, or the job goes red on a change that is genuinely in the repo.
 `apps/supabase/tests/*.test.sql`, run with `pnpm db:test`. Each file is one
 transaction that is rolled back, including `create extension pgtap`, so running
 the suite leaves nothing behind and pgTAP never reaches production.
+
+Social fixtures block existing local profiles for their temporary readers.
+Fixture setup reads `profiles` directly: the legacy `social_profiles` view needs
+an authenticated user claim and cannot enumerate accounts before that claim is
+set. Without isolation, simulator profiles fill the limited suggestion pages
+and their posts interfere with pagination expectations.
 
 `02_rls.test.sql` is the one that matters. It runs as the `authenticated` role
 with a forged `request.jwt.claims`, which is what PostgREST does on every
@@ -5455,10 +5480,10 @@ only RevenueCat knows a subscription ended early. It bounds the damage of never
 hearing to the period that was actually paid for. The two copies cannot import
 each other across the Deno / React Native line and have to be changed together.
 
-**A suggestion is never written, and never becomes a row.** Nothing lands in
-`food_logs`, nothing lands in the catalogue, and the detail screen has no way to
-log. It follows that a pick has no id, which is why the detail is reached by
-index out of an in-memory provider.
+**A suggestion is never written, and never becomes a row.** `suggest-meal`
+writes nothing to `food_logs` or the catalogue. The app no longer asks for
+suggestions, but released binaries do, and a guess about a meal nobody has eaten
+is the last thing that should become a row other diaries are priced from.
 
 **The quota counts scans, not requests to OpenRouter, and it is claimed once
 before any of them.** Claimed afterwards, an account already at its ceiling would
@@ -5739,8 +5764,11 @@ for exactly this.
 
 **`autoFocus` inside a `Modal` is dropped.** The field mounts with the window,
 before the platform has presented it, and the keyboard never comes up. `Sheet`
-takes an `onShow` for this: fire `ref.focus()` there. `SheetSurface` is a route
-rather than a window and needs none of this.
+takes an `onShow` for this: fire `ref.focus()` there. A route's `SheetSurface`
+uses `onEntered` instead, after the panel finishes rising. Focusing a search
+field while it is still below the screen makes the keyboard's reveal scroll a
+long list past its own field. The logging sheet focuses after that callback
+and whenever switching into Search or Describe after the entrance.
 
 ### The number pad
 
@@ -5807,7 +5835,7 @@ covering the difference puts Save under somebody else's control.
 documented as having no Health app; that stopped being true. iOS 26 reports
 `isHealthDataAvailable()` as true and shows the real permission sheet, then reads
 a year and returns nothing, which looks like a broken feature rather than an
-empty device. The Activity tab offers generated data once a connected store turns
+empty device. Settings, Health offers generated data once a connected store turns
 out to have no days in it.
 
 **Built with Xcode 27, the app must adopt the UIScene lifecycle or iOS 27 kills

@@ -325,10 +325,10 @@ create policy "activity_sessions: delete own"
 -- local hour, since "3pm" is the claim being made, and a `timestamptz` would need
 -- every read to know the timezone the write happened in.
 --
--- Only the last month is ever written; older days keep their `activity_days`
--- total and lose their shape. Nothing on any screen asks for the hourly breakdown
--- of a day in March, and 24 rows a day for ever to answer a question nobody has
--- is a table that outgrows the diary it decorates.
+-- Older store binaries still draw today's hourly chart. Keep their table and
+-- write policies, but not an unlimited history of its shape: the jobs Worker
+-- prunes dates before UTC today minus 31, leaving a month plus a timezone buffer.
+-- Daily totals and workouts are separate and keep their history.
 -- ---------------------------------------------------------------------------
 
 create table public.activity_hours (
@@ -344,6 +344,9 @@ create table public.activity_hours (
 
   primary key (user_id, log_date, hour)
 );
+
+-- The primary key leads with the user; the sweep runs across all accounts.
+create index activity_hours_log_date_idx on public.activity_hours (log_date);
 
 alter table public.activity_hours enable row level security;
 

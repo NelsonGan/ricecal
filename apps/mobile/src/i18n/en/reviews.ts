@@ -12,7 +12,7 @@
 export const reviews = {
   title: 'Reviews',
 
-  /** The row at the foot of Trends that leads here. */
+  /** The compact link below Trends' metric tiles. */
   entry: {
     title: 'Reviews',
     subtitle: 'Look back at a week or a month',

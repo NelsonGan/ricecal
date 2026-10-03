@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { type RefObject, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { type TextInput, View } from 'react-native'
 
 import { Button, TextField } from '@/ui'
 
@@ -8,6 +8,7 @@ export type DescribePanelProps = {
   /** The meal, as typed. Trimmed and non-empty; the host does the logging. */
   onSubmit: (text: string) => void
   autoFocus?: boolean
+  fieldRef?: RefObject<TextInput | null>
 }
 
 /**
@@ -27,7 +28,7 @@ export type DescribePanelProps = {
  *
  * The sheet closes on send, and the wait belongs on the row on Today.
  */
-export function DescribePanel({ onSubmit, autoFocus = false }: DescribePanelProps) {
+export function DescribePanel({ onSubmit, autoFocus = false, fieldRef }: DescribePanelProps) {
   const { t } = useTranslation(['logging', 'common'])
   const [text, setText] = useState('')
 
@@ -40,6 +41,7 @@ export function DescribePanel({ onSubmit, autoFocus = false }: DescribePanelProp
   return (
     <View className="gap-3">
       <TextField
+        ref={fieldRef}
         value={text}
         onChangeText={setText}
         placeholder={t('logging:describe.placeholder')}

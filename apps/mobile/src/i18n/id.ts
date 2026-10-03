@@ -145,7 +145,6 @@ export const id = {
     nav: {
       today: 'Hari ini',
       recipes: 'Makanan',
-      activity: 'Aktivitas',
       trends: 'Tren',
       me: 'Saya',
       log: 'Catat makanan',
@@ -200,7 +199,7 @@ export const id = {
     aiLanguage: {
       open: 'Bahasa yang dipakai fitur AI',
       title: 'Fitur AI bekerja dalam bahasa Inggris',
-      body: 'Memotret piring, menceritakan apa yang kamu makan dan bertanya mau makan apa berikutnya semuanya dikirim ke model yang paling paham bahasa Inggris. Ceritakan makananmu dalam bahasa Inggris dan ia memahamimu lebih tepat.',
+      body: 'Memotret piring dan menceritakan apa yang kamu makan keduanya dikirim ke model yang paling paham bahasa Inggris. Ceritakan makananmu dalam bahasa Inggris dan ia memahamimu lebih tepat.',
       results:
         'Yang kembali juga dalam bahasa Inggris. Nama hidangan, bahan dan ukuran porsi disimpan dalam bahasa Inggris di katalog makanan, jadi itulah bahasa yang muncul apa pun setelan aplikasinya.',
       dishes: 'Nama hidangan tetap dalam bahasa saat ditulis.',
@@ -233,8 +232,6 @@ export const id = {
   },
 
   activity: {
-    title: 'Aktivitas',
-
     connect: {
       title: 'Biar jam tanganmu yang menghitung',
       body: 'Hubungkan aplikasi kesehatan di ponselmu dan setiap jalan kaki, lari dan main bulu tangkis akan menambah jatah hari ini.',
@@ -282,53 +279,16 @@ export const id = {
       syncedHours: '{{count}} jam lalu',
       syncedDays: '{{count}} hr lalu',
       syncedNever: 'Belum disinkronkan',
-
-      move: 'Gerak',
-      exercise: 'Olahraga',
-      stand: 'Berdiri',
-      stepsRing: 'Langkah',
-      moveUnit: '/ {{goal}} kkal',
-      exerciseUnit: '/ {{goal}} mnt',
-      standUnit: '/ {{goal}} jam',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ rata-rata {{value}}',
-      none: '—',
-      noGoal: 'kkal',
-      noGoalMinutes: 'mnt',
-      noGoalHours: 'jam',
-
-      budgetTitle: 'JATAH DENGAN GERAKAN',
-      goal: 'TARGET',
-      eaten: 'DIMAKAN',
-      burned: 'DIBAKAR',
-      left: 'SISA',
-      over: 'LEBIH',
-      budgetOff: 'Gerakan tidak memperpanjang jatahmu. Nyalakan di pengaturan Aktivitas.',
-
-      todayTitle: 'HARI INI',
-      weekTitle: 'MINGGU INI',
-      stepsRow: 'Langkah',
-      stepsRowValue: '{{steps}} hari ini',
-      balanceRow: 'Neraca',
-      balanceDeficit: 'defisit {{value}} per hari',
-      balanceSurplus: 'surplus {{value}} per hari',
-      balanceUnknown: 'Catatan belum cukup',
-      historyRowValue_one: '{{count}} olahraga · {{time}}',
-      historyRowValue_other: '{{count}} olahraga · {{time}}',
-      historyNone: 'Belum ada olahraga',
-
-      syncing: 'Menyinkronkan…',
-
-      demoBadge: 'Data demo',
-
-      storeEmpty:
-        'Penyimpanan kesehatan ini terhubung tapi kosong, persis seperti simulator. Data buatan akan mengisi layar ini.',
-
-      noStandNoteGeneric:
-        'Aplikasi kesehatanmu tidak melaporkan jam berdiri, jadi kami tampilkan langkah.',
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'Detak jantung',
+      energy: 'Energi aktif',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: 'JARAK',
       time: 'WAKTU',
       pace: 'PACE',
@@ -343,68 +303,7 @@ export const id = {
 
       zonesTitle: 'ZONA DETAK JANTUNG',
 
-      from: 'Dari {{source}}',
       missing: 'Olahraga ini sudah tidak ada di aplikasi kesehatanmu.',
-    },
-
-    steps: {
-      title: 'Langkah',
-      todaySoFar: 'Hari ini sejauh ini',
-      goalLine: 'Target {{goal}} langkah',
-      over: '{{value}} lebih',
-      under: '{{value}} lagi',
-      unit: 'langkah · {{distance}}',
-
-      morning: 'Pagi',
-      afternoon: 'Siang',
-      evening: 'Malam',
-      noHours: 'Tidak ada rincian per jam untuk hari ini.',
-
-      weekTitle: 'MINGGU INI',
-      dailyAvg: 'RATA HARIAN',
-      goalDays: 'HARI TARGET',
-      best: 'TERBAIK',
-
-      steadyNote: 'Hari-harimu merata. Apa pun yang kamu lakukan, itu sudah jadi kebiasaan.',
-      shortNote: 'Belum cukup hari untuk melihat polanya.',
-    },
-
-    balance: {
-      chartTitle: 'Masuk versus keluar',
-      deficit: 'defisit {{value}}',
-      surplus: 'surplus {{value}}',
-      even: 'Seimbang',
-      eatenLegend: 'Dimakan',
-      burnedLegend: 'Dibakar',
-
-      splitTitle7d: 'DARI MANA BAKARANNYA · 7 HARI',
-      splitTitle30d: 'DARI MANA BAKARANNYA · 30 HARI',
-      splitTitle1y: 'DARI MANA BAKARANNYA · 12 BULAN',
-      resting: 'Istirahat',
-      restingBody: 'Sekadar hidup',
-      workouts: 'Olahraga',
-      workoutsBody: 'Yang sesimu habiskan',
-      walking: 'Berjalan',
-      walkingBody: 'Langkah dan urusan sehari-hari',
-      kcal: '{{value}} kkal',
-
-      partial:
-        'Berdasarkan {{days}} dari {{total}} hari yang punya catatan makan dan angka istirahat.',
-      noRestingTitle: 'Tidak ada energi istirahat',
-      noRestingBody:
-        'Aplikasi kesehatanmu tidak melaporkan yang dibakar tubuhmu saat istirahat, jadi tidak ada neraca harian untuk digambar. Langkah, olahraga dan energi aktif tidak terpengaruh.',
-      empty: 'Catat beberapa makan sambil memakai jam tanganmu dan ini akan terisi.',
-    },
-
-    history: {
-      title: 'Riwayat',
-      weekTitle: 'MINGGU INI',
-      sessions: 'SESI',
-      time: 'WAKTU',
-      burned: 'DIBAKAR',
-      allTitle: 'SEMUA SESI',
-      empty: 'Belum ada olahraga tercatat.',
-      emptyBody: 'Apa pun yang direkam jam tangan atau ponselmu akan muncul di sini.',
     },
 
     settings: {
@@ -463,10 +362,6 @@ export const id = {
       rowing: 'Dayung',
       stairs: 'Tangga',
       other: 'Olahraga',
-    },
-
-    unit: {
-      kcal: '{{value}} kkal',
     },
   },
 
@@ -763,11 +658,9 @@ export const id = {
       kcalOfGoal: '/{{goal}} KKAL',
       showGoals: 'Tampilkan jatah hari ini',
       showLeft: 'Tampilkan sisanya',
-      overNote: 'Sedikit lebih hari ini, besok hitungan baru.',
-      overNoteOn: 'Sedikit lebih di hari itu.',
-      burnedNote: '+{{kcal}} dari bergerak hari ini',
-      burnedNoteOn: '+{{kcal}} dari bergerak di hari itu',
-      logHeading: 'DIMAKAN · {{kcal}} KKAL',
+      dayHeading: 'Harimu',
+      steps_one: '{{steps}} langkah',
+      steps_other: '{{steps}} langkah',
       analysing: 'Membaca piringmu',
       analysingHint: 'Menghitung begitu tahu ini apa',
       describing: 'Membaca yang kamu tulis',
@@ -815,9 +708,6 @@ export const id = {
         over: 'Di atas target',
         missed: 'Tidak dicatat',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kkal',
-      dayEmpty: 'Tidak ada catatan di hari itu.',
     },
 
     selector: {
@@ -861,8 +751,7 @@ export const id = {
       title: 'Foto piringmu',
       analysing: 'Mencari tahu apa yang ada di piring',
       permissionTitle: 'Butuh akses kamera',
-      permissionBody:
-        'RiceCal memakai kamera untuk membaca piringmu. Tidak ada yang keluar dari ponselmu.',
+      permissionBody: 'RiceCal memakai kamera untuk membaca piringmu.',
       permissionSettings: 'Buka Pengaturan',
       shutter: 'Ambil foto',
       library: 'Pilih dari galeri',
@@ -1453,11 +1342,6 @@ export const id = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: 'Tanya mau makan apa berikutnya',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: 'Simpan yang kamu masak',
           free: '{{recipes}} makanan',
@@ -1507,33 +1391,8 @@ export const id = {
       later: 'Mungkin nanti',
     },
 
-    reminder: {
-      title_one: 'sisa {{count}} hari di uji cobamu',
-      title_other: 'sisa {{count}} hari di uji cobamu',
-      body: 'Kamu sudah mencatat {{days}} hari berturut-turut dan turun {{kg}} kg. Lanjutkan.',
-      daysLogged: 'HARI DICATAT',
-      meals: 'MAKAN',
-      kgDown: 'KG TURUN',
-      starts: 'Paketmu mulai {{date}} seharga {{price}} per tahun.',
-      startsMonthly: 'Paketmu mulai {{date}} seharga {{price}} per bulan.',
-      keep: 'Pertahankan paketku',
-      manage: 'Kelola langganan',
-    },
-
     ended: {
-      heading: 'Hari ini',
-      previewMode: 'Mode pratinjau',
-      title: 'Uji cobamu sudah berakhir',
-      body: 'Riwayat {{days}} harimu aman dan masih bisa dibaca.',
-      dataWaiting: 'DATAMU MENUNGGU',
-      days: 'HARI',
-      meals: 'MAKAN',
-      kgDown: 'KG TURUN',
-      lockedEntry: 'Terkunci',
       resume: 'Lanjutkan dengan Pro',
-      terms: '{{price}} per tahun, diperpanjang sampai Anda batalkan.',
-      termsPending: 'Diperpanjang tiap tahun sampai Anda batalkan.',
-      browse: 'Terus jelajahi gratis',
     },
 
     limit: {
@@ -1547,7 +1406,6 @@ export const id = {
         refine: 'Memperbaiki makanan dengan menceritakannya butuh RiceCal Pro.',
         read_recipe: 'Mengisi makanan dari sebuah foto butuh RiceCal Pro.',
         new_recipe: 'Menyimpan lebih dari {{recipes}} makanan sendiri butuh RiceCal Pro.',
-        suggest: 'Bertanya mau makan apa berikutnya butuh RiceCal Pro.',
         trend_range: 'Melihat lebih jauh dari seminggu butuh RiceCal Pro.',
         review: 'Membaca ulasan yang lebih lama butuh RiceCal Pro.',
         nudge: 'RiceCal Pro melepas batasnya.',
@@ -1565,7 +1423,6 @@ export const id = {
       perks: {
         log: 'Foto, pindai atau ceritakan',
         database: 'Setiap hidangan dan kemasan',
-        suggest: 'Tanya mau makan apa',
       },
       manageNote: 'Kelola atau batalkan kapan saja di Profil, Langganan.',
       manageNoteLifetime: 'Dibayar sekali. Tidak ada yang perlu diperpanjang atau dibatalkan.',
@@ -1857,88 +1714,5 @@ export const id = {
       burnValue: '{{value}} kkal',
       distanceValue: '{{value}} km ditempuh',
     },
-  },
-
-  suggest: {
-    card: {
-      title: 'Bingung mau makan apa?',
-    },
-
-    ask: {
-      title: 'Kamu lagi cari apa?',
-      meal: 'MAKAN',
-      focus: 'MAKRO',
-      cuisine: 'MASAKAN',
-      limit: 'BATAS KALORI',
-      editCuisines: 'Ubah masakannya',
-      addCuisine: 'Tambah sebuah masakan',
-      addCuisinePlaceholder: 'Thai, Nyonya, Jepang',
-      removeCuisine: 'Hapus {{cuisine}}',
-      kcal: 'kkal',
-      less: 'Kurangi kalori',
-      more: 'Tambah kalori',
-      leftToday: 'sisa {{kcal}}',
-      healthy: 'Lebih ringan',
-      anything: 'Apa saja',
-      healthyA11y: 'Condong ke hidangan yang lebih ringan',
-      action: 'Sarankan sesuatu',
-    },
-
-    picks: {
-      title: 'Ide untuk {{meal}}',
-      thinking: 'Mencari sesuatu untuk {{meal}}',
-      thinkingA11y: 'Memikirkan apa yang mau disarankan',
-      summary: '{{focus}}, {{cuisine}}, di bawah {{kcal}} kkal',
-      protein: '{{grams}}g protein',
-      retry: 'Coba lagi',
-      emptyTitle: 'Tidak ada yang terlintas',
-      emptyBody: 'Tanya lagi, atau longgarkan salah satu jawabannya.',
-    },
-
-    detail: {
-      unit: 'KKAL, {{portion}}',
-      leftAfter: 'sisa {{kcal}} kkal sesudahnya',
-      overAfter: 'lebih {{kcal}} kkal sesudahnya',
-      why: 'KENAPA INI COCOK',
-      protein: 'Protein',
-      carbs: 'Karbo',
-      fat: 'Lemak',
-      sodium: 'Natrium',
-    },
-
-    meal: {
-      breakfast: 'Sarapan',
-      lunch: 'Makan siang',
-      dinner: 'Makan malam',
-      snack: 'Camilan',
-    },
-    mealFor: {
-      breakfast: 'sarapan',
-      lunch: 'makan siang',
-      dinner: 'makan malam',
-      snack: 'camilan',
-    },
-    focus: {
-      protein: 'Protein',
-      balanced: 'Seimbang',
-      carbs: 'Karbo',
-    },
-    focusShort: {
-      protein: 'Tinggi protein',
-      balanced: 'Seimbang',
-      carbs: 'Tinggi karbo',
-    },
-
-    sodium: {
-      low: 'rendah',
-      medium: 'sedang',
-      high: 'tinggi',
-    },
-
-    ready_one: '{{count}} ide sudah siap',
-    ready_other: '{{count}} ide sudah siap',
-    readyAction: 'Lihat',
-
-    failed: 'Tidak bisa mengambil saran apa pun. Coba lagi sebentar.',
   },
 } satisfies Bundle

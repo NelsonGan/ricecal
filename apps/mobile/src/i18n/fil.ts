@@ -148,7 +148,6 @@ export const fil = {
     nav: {
       today: 'Ngayon',
       recipes: 'Pagkain',
-      activity: 'Aktibidad',
       trends: 'Mga trend',
       me: 'Ako',
       log: 'I-log ang pagkain',
@@ -203,7 +202,7 @@ export const fil = {
     aiLanguage: {
       open: 'Anong wika ang ginagamit ng mga AI feature',
       title: 'Gumagana sa Ingles ang mga AI feature',
-      body: 'Ang pagkuha ng litrato ng plato, ang pagsasabi sa salita kung ano ang kinain mo at ang pagtatanong kung ano ang susunod na kakainin ay pumupunta lahat sa isang modelong pinakamahusay sa Ingles. Ilarawan ang pagkain mo sa Ingles at mas malapit ang pagkakaintindi nito.',
+      body: 'Ang pagkuha ng litrato ng plato at ang pagsasabi sa salita kung ano ang kinain mo ay parehong pumupunta sa isang modelong pinakamahusay sa Ingles. Ilarawan ang pagkain mo sa Ingles at mas malapit ang pagkakaintindi nito.',
       results:
         'Sa Ingles din ang bumabalik. Nakaimbak sa Ingles ang mga pangalan ng ulam, sangkap at laki ng serving sa food catalogue, kaya iyon ang wikang darating anuman ang naka-set sa app.',
       dishes: 'Nananatili ang pangalan ng ulam sa wikang isinulat ito.',
@@ -236,8 +235,6 @@ export const fil = {
   },
 
   activity: {
-    title: 'Aktibidad',
-
     connect: {
       title: 'Hayaang ang relo ang magbilang',
       body: 'Ikonekta ang health app ng telepono mo at bawat lakad, takbo at laro ng badminton ay idadagdag pabalik sa badyet ngayong araw.',
@@ -285,53 +282,16 @@ export const fil = {
       syncedHours: '{{count}} oras ang nakalipas',
       syncedDays: '{{count}} araw ang nakalipas',
       syncedNever: 'Hindi pa na-sync',
-
-      move: 'Galaw',
-      exercise: 'Ehersisyo',
-      stand: 'Tayo',
-      stepsRing: 'Hakbang',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}} min',
-      standUnit: '/ {{goal}} oras',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ {{value}} average',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: 'min',
-      noGoalHours: 'oras',
-
-      budgetTitle: 'BADYET KASAMA ANG GALAW',
-      goal: 'TARGET',
-      eaten: 'NAKAIN',
-      burned: 'NASUNOG',
-      left: 'NATITIRA',
-      over: 'LAMPAS',
-      budgetOff: 'Hindi pinahahaba ng galaw ang badyet mo. I-on ito sa Activity settings.',
-
-      todayTitle: 'NGAYON',
-      weekTitle: 'NGAYONG LINGGO',
-      stepsRow: 'Hakbang',
-      stepsRowValue: '{{steps}} ngayong araw',
-      balanceRow: 'Balanse',
-      balanceDeficit: '{{value}} kulang bawat araw',
-      balanceSurplus: '{{value}} sobra bawat araw',
-      balanceUnknown: 'Kulang pa ang naka-log',
-      historyRowValue_one: '{{count}} workout · {{time}}',
-      historyRowValue_other: '{{count}} workout · {{time}}',
-      historyNone: 'Wala pang workout',
-
-      syncing: 'Nagsi-sync…',
-
-      demoBadge: 'Demo data',
-
-      storeEmpty:
-        'Nakakonekta ang health store na ito pero walang laman, ganito ang hitsura ng simulator. Ginawang data ang pupuno sa mga screen na ito.',
-
-      noStandNoteGeneric:
-        'Hindi nagre-report ng oras ng pagtayo ang health app mo, kaya hakbang ang ipinapakita namin.',
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'Tibok ng puso',
+      energy: 'Aktibong enerhiya',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: 'DISTANSYA',
       time: 'ORAS',
       pace: 'PACE',
@@ -346,67 +306,7 @@ export const fil = {
 
       zonesTitle: 'MGA ZONE NG TIBOK NG PUSO',
 
-      from: 'Mula sa {{source}}',
       missing: 'Wala na ang workout na ito sa health app mo.',
-    },
-
-    steps: {
-      title: 'Hakbang',
-      todaySoFar: 'Ngayong araw hanggang ngayon',
-      goalLine: 'Target {{goal}} hakbang',
-      over: '{{value}} lampas',
-      under: '{{value}} pa',
-      unit: 'hakbang · {{distance}}',
-
-      morning: 'Umaga',
-      afternoon: 'Hapon',
-      evening: 'Gabi',
-      noHours: 'Walang breakdown kada oras para sa araw na ito.',
-
-      weekTitle: 'NGAYONG LINGGO',
-      dailyAvg: 'AVG KADA ARAW',
-      goalDays: 'ARAW NA TARGET',
-      best: 'PINAKAMATAAS',
-
-      steadyNote: 'Pantay ang mga araw mo. Anuman ang ginagawa mo, ugali na ito ngayon.',
-      shortNote: 'Kulang pa ang araw para makita ang pattern.',
-    },
-
-    balance: {
-      chartTitle: 'Pasok laban sa labas',
-      deficit: '{{value}} kulang',
-      surplus: '{{value}} sobra',
-      even: 'Patas',
-      eatenLegend: 'Nakain',
-      burnedLegend: 'Nasunog',
-
-      splitTitle7d: 'SAAN NANGGALING ANG NASUNOG · 7 ARAW',
-      splitTitle30d: 'SAAN NANGGALING ANG NASUNOG · 30 ARAW',
-      splitTitle1y: 'SAAN NANGGALING ANG NASUNOG · 12 BUWAN',
-      resting: 'Pahinga',
-      restingBody: 'Sa pagiging buhay lang',
-      workouts: 'Mga workout',
-      workoutsBody: 'Ang nagastos ng mga session mo',
-      walking: 'Paglalakad',
-      walkingBody: 'Hakbang at mga lakad-lakad',
-      kcal: '{{value}} kcal',
-
-      partial: 'Batay sa {{days}} sa {{total}} araw na may parehong food log at resting figure.',
-      noRestingTitle: 'Walang resting energy',
-      noRestingBody:
-        'Hindi nagre-report ang health app mo kung ano ang sinusunog ng katawan mo habang nagpapahinga, kaya walang araw-araw na balanse na maiguguhit. Hindi apektado ang hakbang, workout at aktibong enerhiya.',
-      empty: 'Mag-log ng ilang pagkain habang suot ang relo mo at mapupuno ito.',
-    },
-
-    history: {
-      title: 'Kasaysayan',
-      weekTitle: 'NGAYONG LINGGO',
-      sessions: 'SESSION',
-      time: 'ORAS',
-      burned: 'NASUNOG',
-      allTitle: 'LAHAT NG SESSION',
-      empty: 'Wala pang naitalang workout.',
-      emptyBody: 'Lahat ng naire-record ng relo o telepono mo ay dadating dito.',
     },
 
     settings: {
@@ -465,10 +365,6 @@ export const fil = {
       rowing: 'Rowing',
       stairs: 'Hagdan',
       other: 'Workout',
-    },
-
-    unit: {
-      kcal: '{{value}} kcal',
     },
   },
 
@@ -772,11 +668,9 @@ export const fil = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'Ipakita ang badyet ng araw',
       showLeft: 'Ipakita ang natitira',
-      overNote: 'Bahagyang lampas ngayon, bukas bagong bilang.',
-      overNoteOn: 'Bahagyang lampas noong araw na iyon.',
-      burnedNote: '+{{kcal}} mula sa paggalaw ngayong araw',
-      burnedNoteOn: '+{{kcal}} mula sa paggalaw noong araw na iyon',
-      logHeading: 'NAKAIN · {{kcal}} KCAL',
+      dayHeading: 'Ang araw mo',
+      steps_one: '{{steps}} hakbang',
+      steps_other: '{{steps}} hakbang',
       analysing: 'Binabasa ang plato mo',
       analysingHint: 'Bibilangin pagkaalam kung ano ito',
       describing: 'Binabasa ang isinulat mo',
@@ -824,9 +718,6 @@ export const fil = {
         over: 'Lampas sa target',
         missed: 'Hindi naka-log',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: 'Walang naka-log noong araw na iyon.',
     },
 
     selector: {
@@ -871,8 +762,7 @@ export const fil = {
       title: 'Kunan ang plato mo',
       analysing: 'Inaalam kung ano ang nasa plato',
       permissionTitle: 'Kailangan ng access sa camera',
-      permissionBody:
-        'Ginagamit ng RiceCal ang camera para basahin ang plato mo. Walang umaalis sa telepono mo.',
+      permissionBody: 'Ginagamit ng RiceCal ang camera para basahin ang plato mo.',
       permissionSettings: 'Buksan ang Settings',
       shutter: 'Kumuha ng litrato',
       library: 'Pumili mula sa mga litrato',
@@ -1466,11 +1356,6 @@ export const fil = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: 'Magtanong kung ano ang susunod na kakainin',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: 'I-save ang niluluto mo',
           free: '{{recipes}} pagkain',
@@ -1520,33 +1405,8 @@ export const fil = {
       later: 'Baka mamaya',
     },
 
-    reminder: {
-      title_one: '{{count}} araw na lang sa trial mo',
-      title_other: '{{count}} araw na lang sa trial mo',
-      body: 'Nakapag-log ka na ng {{days}} araw na sunod-sunod at bumaba ng {{kg}} kg. Ituloy mo lang.',
-      daysLogged: 'ARAW NA NAKA-LOG',
-      meals: 'PAGKAIN',
-      kgDown: 'KG NA BUMABA',
-      starts: 'Magsisimula ang plano mo sa {{date}} sa halagang {{price}} kada taon.',
-      startsMonthly: 'Magsisimula ang plano mo sa {{date}} sa halagang {{price}} kada buwan.',
-      keep: 'Panatilihin ang plano ko',
-      manage: 'Pamahalaan ang subscription',
-    },
-
     ended: {
-      heading: 'Ngayon',
-      previewMode: 'Preview mode',
-      title: 'Tapos na ang trial mo',
-      body: 'Ligtas at nababasa pa rin ang {{days}} araw ng kasaysayan mo.',
-      dataWaiting: 'NAGHIHINTAY ANG DATA MO',
-      days: 'ARAW',
-      meals: 'PAGKAIN',
-      kgDown: 'KG NA BUMABA',
-      lockedEntry: 'Naka-lock',
       resume: 'Magpatuloy sa Pro',
-      terms: "{{price}} bawat taon, mag-re-renew hangga't hindi mo kinakansela.",
-      termsPending: "Mag-re-renew taon-taon hangga't hindi mo kinakansela.",
-      browse: 'Magpatuloy nang libre',
     },
 
     limit: {
@@ -1562,7 +1422,6 @@ export const fil = {
         read_recipe: 'Kailangan ng RiceCal Pro para punan ang pagkain mula sa litrato.',
         new_recipe:
           'Kailangan ng RiceCal Pro para magtago ng higit sa {{recipes}} sariling pagkain.',
-        suggest: 'Kailangan ng RiceCal Pro para magtanong kung ano ang susunod na kakainin.',
         trend_range: 'Kailangan ng RiceCal Pro para tumingin nang lampas sa isang linggo.',
         review: 'Kailangan ng RiceCal Pro para magbasa ng mas lumang review.',
         nudge: 'Inaalis ng RiceCal Pro ang mga limitasyon.',
@@ -1580,7 +1439,6 @@ export const fil = {
       perks: {
         log: 'Kunan, i-scan o sabihin',
         database: 'Bawat ulam at pakete',
-        suggest: 'Magtanong kung ano ang kakainin',
       },
       manageNote: 'Pamahalaan o kanselahin anumang oras sa Profile, Subscription.',
       manageNoteLifetime: 'Bayad nang isang beses. Walang ire-renew o kakanselahin.',
@@ -1874,88 +1732,5 @@ export const fil = {
       burnValue: '{{value}} kcal',
       distanceValue: '{{value}} km ang nalakbay',
     },
-  },
-
-  suggest: {
-    card: {
-      title: 'Hindi sigurado kung ano ang kakainin?',
-    },
-
-    ask: {
-      title: 'Ano ang hinahanap mo?',
-      meal: 'PAGKAIN',
-      focus: 'MACROS',
-      cuisine: 'LUTUIN',
-      limit: 'LIMITASYON NG CALORIE',
-      editCuisines: 'I-edit ang mga lutuin',
-      addCuisine: 'Magdagdag ng lutuin',
-      addCuisinePlaceholder: 'Thai, Nyonya, Hapon',
-      removeCuisine: 'Alisin ang {{cuisine}}',
-      kcal: 'kcal',
-      less: 'Bawasan ang calories',
-      more: 'Dagdagan ang calories',
-      leftToday: '{{kcal}} ang natitira',
-      healthy: 'Mas magaan',
-      anything: 'Kahit ano',
-      healthyA11y: 'Kumiling sa mas magagaang ulam',
-      action: 'Magmungkahi ng kahit ano',
-    },
-
-    picks: {
-      title: 'Mga ideya para sa {{meal}}',
-      thinking: 'Naghahanap ng kahit ano para sa {{meal}}',
-      thinkingA11y: 'Iniisip kung ano ang imumungkahi',
-      summary: '{{focus}}, {{cuisine}}, mas mababa sa {{kcal}} kcal',
-      protein: '{{grams}}g na protina',
-      retry: 'Subukan ulit',
-      emptyTitle: 'Walang naisip',
-      emptyBody: 'Magtanong ulit, o luwagan ang isa sa mga sagot.',
-    },
-
-    detail: {
-      unit: 'KCAL, {{portion}}',
-      leftAfter: '{{kcal}} kcal ang matitira pagkatapos',
-      overAfter: '{{kcal}} kcal ang lalampas pagkatapos',
-      why: 'BAKIT ITO BAGAY',
-      protein: 'Protina',
-      carbs: 'Carbs',
-      fat: 'Taba',
-      sodium: 'Sodium',
-    },
-
-    meal: {
-      breakfast: 'Almusal',
-      lunch: 'Tanghalian',
-      dinner: 'Hapunan',
-      snack: 'Meryenda',
-    },
-    mealFor: {
-      breakfast: 'almusal',
-      lunch: 'tanghalian',
-      dinner: 'hapunan',
-      snack: 'meryenda',
-    },
-    focus: {
-      protein: 'Protina',
-      balanced: 'Balanse',
-      carbs: 'Carbs',
-    },
-    focusShort: {
-      protein: 'Mataas sa protina',
-      balanced: 'Balanse',
-      carbs: 'Mataas sa carbs',
-    },
-
-    sodium: {
-      low: 'mababa',
-      medium: 'katamtaman',
-      high: 'mataas',
-    },
-
-    ready_one: 'Handa na ang {{count}} ideya',
-    ready_other: 'Handa na ang {{count}} ideya',
-    readyAction: 'Tingnan',
-
-    failed: 'Hindi makakuha ng anumang mungkahi. Subukan ulit maya-maya.',
   },
 } satisfies Bundle

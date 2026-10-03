@@ -20,7 +20,6 @@ export type {
   ProFeature,
   ScanOutcome,
   SignInMethod,
-  TrackedCuisine,
   WidgetTarget,
 } from './events'
 export { dateOffset, planDirection } from './props'

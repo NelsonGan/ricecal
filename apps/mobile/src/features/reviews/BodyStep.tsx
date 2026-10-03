@@ -130,8 +130,7 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
                       and this card is only drawn when `activeDays > 0` at all.
                       Against `days` a month whose health store was connected
                       halfway through claimed the goal was missed on every day
-                      before the connection existed. Same reasoning as the steps
-                      card in `app/activity/steps.tsx`. */}
+                      before the connection existed. */}
                   {t('reviews:body.stepGoal', {
                     done: summary.stepGoalDays,
                     total: summary.activeDays,
@@ -150,8 +149,7 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
                     ? format(parseISO(bucket.start), 'EEEEE')
                     : t('progress:range.week', { index: position + 1 }),
                 value: Math.round(bucket.steps ?? 0),
-                // Green where the goal was met, grey where it was not, which is
-                // the same reading the Activity tab gives a day.
+                // Green where the goal was met, grey where it was not.
                 highlight: (bucket.steps ?? 0) >= (summary.stepGoal ?? 0),
               }))}
               accessibilityLabel={t('reviews:body.stepsChart')}

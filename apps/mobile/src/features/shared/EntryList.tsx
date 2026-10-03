@@ -1,6 +1,6 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Animated, Easing, View } from 'react-native'
+import { Animated, Easing, useWindowDimensions, View } from 'react-native'
 import Reanimated, {
   Easing as ReanimatedEasing,
   useAnimatedStyle,
@@ -11,11 +11,10 @@ import Reanimated, {
 
 import type { DayLog, Entry } from '@/data'
 import { storedImageSource, useMealPhotoUrl, useRefiningEntries } from '@/data'
-import { sumMacros } from '@/lib/nutrition'
 import { eatenQuantity, portionLabel } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, cn, Icon, IconButton, Text } from '@/ui'
-import { ItemRow, ROW_TILE, ROW_TILE_ICON } from './ItemRow'
+import { ItemRow, ROW_TILE_COMPACT, ROW_TILE_COMPACT_ICON } from './ItemRow'
 import { MealPhoto } from './MealPhoto'
 import { SwipeRow } from './SwipeRow'
 
@@ -38,19 +37,25 @@ export type EntryListProps = {
    * to delete — the row is dismissed and goes.
    */
   onDismissEntry?: (entry: Entry) => void
+  /** The card's heading. */
+  title: string
+  /** Opposite the heading: on Today, the day's steps. */
+  action?: ReactNode
   /**
-   * Whether any row is parked open with its Delete showing, for a screen that
-   * draws over this list: Today's floating log button lands on a revealed Delete
-   * and takes the tap. Counted rather than passed through, because nothing stops
-   * two rows being open at once.
+   * Rows that are not meals, slotted in by time: on Today, the day's workouts.
+   * Passed in already drawn, because this list is shared and the rows belong to
+   * the activity feature.
    */
-  onSwipeOpenChange?: (open: boolean) => void
+  extras?: readonly TimedRow[]
 }
 
+/** A row from somewhere else, and when it happened. See `extras`. */
+export type TimedRow = { key: string; at: string; node: ReactNode }
+
 /**
- * Everything logged today, in one list, in the order it was eaten, which is why
- * the detail line carries the time: it is the only thing saying where in the day
- * a row belongs.
+ * Everything that happened in a day, in one list, newest first, which is why the
+ * detail line carries the time: it is the only thing saying where in the day a
+ * row belongs. Meals, and whatever `extras` a caller adds between them.
  *
  * Nothing here looks a dish up. `food_log_details` returns each entry with its
  * name, illustration and macros already costed.
@@ -61,57 +66,60 @@ export function EntryList({
   onFixEntry,
   onDeleteEntry,
   onDismissEntry,
-  onSwipeOpenChange,
+  title,
+  action,
+  extras = [],
 }: EntryListProps) {
-  const { t } = useTranslation(['logging', 'common'])
-
-  /**
-   * How many rows are parked open, so "any" survives one closing as another
-   * opens: a boolean forwarded from each row would flicker shut on the closing
-   * one.
-   *
-   * A ref plus a call rather than state, since nothing here renders differently.
-   * `SwipeRow` reports closed on unmount, so a deleted row cannot leave the count
-   * above zero.
-   */
-  const openRows = useRef(0)
-  /** What the screen above was last told, so it hears only the changes. */
-  const reported = useRef(false)
-  const reportOpen = useCallback(
-    (open: boolean) => {
-      openRows.current = Math.max(0, openRows.current + (open ? 1 : -1))
-      const anyOpen = openRows.current > 0
-      if (anyOpen !== reported.current) {
-        reported.current = anyOpen
-        onSwipeOpenChange?.(anyOpen)
-      }
-    },
-    [onSwipeOpenChange],
-  )
-
+  const { fontScale } = useWindowDimensions()
+  const wideText = fontScale > 1.3
   // Newest first. The day used to read in the order it happened, which put the
   // meal just logged at the bottom of a growing list — and the thing a user
   // looks at right after logging is the thing they just logged. By evening it
   // was a scroll away, under breakfast.
-  const entries = [...day.entries].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt))
-  if (entries.length === 0) return null
-
-  return (
-    <Card
-      title={t('logging:today.logHeading', {
-        kcal: sumMacros(entries).kcal.toLocaleString(),
-      })}
-    >
-      {entries.map((entry) => (
+  //
+  // Compared as instants rather than as strings: an entry's time comes from
+  // Postgres and a workout's from the health store, and the two do not write
+  // their offsets the same way.
+  const rows: TimedRow[] = [
+    ...day.entries.map((entry) => ({
+      key: entry.id,
+      at: entry.loggedAt,
+      node: (
         <EntryRow
-          key={entry.id}
           entry={entry}
           onPress={onPressEntry}
           onFix={onFixEntry}
           onDelete={onDeleteEntry}
           onDismiss={onDismissEntry}
-          onSwipeOpenChange={reportOpen}
         />
+      ),
+    })),
+    ...extras,
+  ].sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+  // A heading with something beside it is still worth a card on its own: on
+  // Today that is a morning's steps before the first meal.
+  if (rows.length === 0 && !action) return null
+
+  return (
+    // A heading in words rather than an overline, and a hairline under it and
+    // between rows: the list is the day read top to bottom, and the dividers
+    // are what let compact rows sit close without running together.
+    <Card contentClassName="gap-0 px-4 pb-2 pt-4">
+      <View
+        className={cn(
+          'border-track border-b-2 pb-3',
+          wideText ? 'items-start gap-2' : 'flex-row items-center justify-between gap-3',
+        )}
+      >
+        <Text variant="subtitle" className="shrink" numberOfLines={wideText ? undefined : 1}>
+          {title}
+        </Text>
+        {action ? <View className="max-w-full">{action}</View> : null}
+      </View>
+      {rows.map((row, index) => (
+        <View key={row.key} className={cn('py-2.5', index > 0 && 'border-track border-t-2')}>
+          {row.node}
+        </View>
       ))}
     </Card>
   )
@@ -129,14 +137,12 @@ function EntryRow({
   onFix,
   onDelete,
   onDismiss,
-  onSwipeOpenChange,
 }: {
   entry: Entry
   onPress?: (entry: Entry) => void
   onFix?: (entry: Entry) => void
   onDelete?: ((entry: Entry) => void) | ((entry: Entry) => Promise<boolean>)
   onDismiss?: (entry: Entry) => void
-  onSwipeOpenChange?: (open: boolean) => void
 }) {
   const { t } = useTranslation(['logging', 'common'])
 
@@ -179,6 +185,7 @@ function EntryRow({
         icon={{ set: 'system', name: entry.source === 'text' ? 'sparkle' : 'camera' }}
         photoUri={entry.localPhotoUri}
         value=""
+        compact
         detail={t('logging:today.noFoodHint')}
         trailing={
           <IconButton
@@ -200,6 +207,7 @@ function EntryRow({
         icon={{ set: 'system', name: entry.source === 'text' ? 'sparkle' : 'camera' }}
         photoUri={entry.localPhotoUri}
         value="—"
+        compact
         // A failed typed meal still has the sentence on it, which is the one
         // thing worth showing: it is what the user would have to type again.
         detail={entry.foodName || t('logging:today.analysisFailedHint')}
@@ -228,6 +236,7 @@ function EntryRow({
       // not — the time is where in the day this was, the portion is what the
       // calories are for.
       detail={`${formatTime(entry.loggedAt)} · ${portion}`}
+      compact
       onPress={open}
     />
   )
@@ -250,7 +259,6 @@ function EntryRow({
         },
       ]}
       onPress={onPress ? () => onPress(entry) : undefined}
-      onOpenChange={onSwipeOpenChange}
     >
       {row()}
     </SwipeRow>
@@ -344,7 +352,7 @@ function AnalysingRow({
 
   return (
     <View
-      className="flex-row items-center gap-3 rounded-tile"
+      className="flex-row items-center gap-3"
       accessibilityRole="progressbar"
       accessibilityLabel={label}
       accessibilityState={{ busy: true }}
@@ -352,8 +360,8 @@ function AnalysingRow({
       {/* ItemRow's own tile, so this row sits flush with the ones around it. */}
       <View
         className={cn(
-          ROW_TILE,
-          'items-center justify-center overflow-hidden rounded-tile bg-track',
+          ROW_TILE_COMPACT,
+          'items-center justify-center overflow-hidden rounded-sm bg-track',
         )}
       >
         {photo ? (
@@ -361,7 +369,7 @@ function AnalysingRow({
           // busy one, and the plate under it has no dish yet.
           <MealPhoto source={photo} dimmed />
         ) : (
-          <Icon set="system" name={typed ? 'sparkle' : 'camera'} size={ROW_TILE_ICON} />
+          <Icon set="system" name={typed ? 'sparkle' : 'camera'} size={ROW_TILE_COMPACT_ICON} />
         )}
       </View>
 

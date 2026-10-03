@@ -138,7 +138,6 @@ export const bn = {
     nav: {
       today: 'আজ',
       recipes: 'খাবার',
-      activity: 'কার্যকলাপ',
       trends: 'প্রবণতা',
       me: 'আমি',
       log: 'খাবার লিখুন',
@@ -193,7 +192,7 @@ export const bn = {
     aiLanguage: {
       open: 'AI সুবিধাগুলো কোন ভাষায় চলে',
       title: 'AI সুবিধাগুলো ইংরেজিতে কাজ করে',
-      body: 'থালার ছবি তোলা, কী খেয়েছেন তা লিখে বলা আর এরপর কী খাবেন জিজ্ঞাসা করা, সবই এমন একটি মডেলের কাছে যায় যা ইংরেজি সবচেয়ে ভালো পড়ে। আপনার খাবার ইংরেজিতে লিখলে এটি আরও নিখুঁতভাবে বুঝবে।',
+      body: 'থালার ছবি তোলা আর কী খেয়েছেন তা লিখে বলা, দুটোই এমন একটি মডেলের কাছে যায় যা ইংরেজি সবচেয়ে ভালো পড়ে। আপনার খাবার ইংরেজিতে লিখলে এটি আরও নিখুঁতভাবে বুঝবে।',
       results:
         'যা ফিরে আসে তাও ইংরেজিতে। পদের নাম, উপকরণ আর পরিবেশনের মাপ সবই খাবারের তালিকায় ইংরেজিতে রাখা আছে, তাই অ্যাপ যে ভাষাতেই থাকুক, সেগুলো ইংরেজিতেই আসবে।',
       dishes: 'পদের নাম যে ভাষায় লেখা হয়েছিল সেই ভাষাতেই থাকে।',
@@ -226,8 +225,6 @@ export const bn = {
   },
 
   activity: {
-    title: 'কার্যকলাপ',
-
     connect: {
       title: 'গোনার কাজটা ঘড়ির উপর ছেড়ে দিন',
       body: 'ফোনের হেলথ অ্যাপ যুক্ত করুন, তাহলে প্রতিটি হাঁটা, দৌড় আর ব্যাডমিন্টন আজকের হিসাবে ফিরে যোগ হবে।',
@@ -273,52 +270,16 @@ export const bn = {
       syncedHours: '{{count}} ঘণ্টা আগে',
       syncedDays: '{{count}} দিন আগে',
       syncedNever: 'এখনো সিঙ্ক হয়নি',
-
-      move: 'নড়াচড়া',
-      exercise: 'ব্যায়াম',
-      stand: 'দাঁড়ানো',
-      stepsRing: 'পদক্ষেপ',
-      moveUnit: '/ {{goal}} kcal',
-      exerciseUnit: '/ {{goal}} মিনিট',
-      standUnit: '/ {{goal}} ঘণ্টা',
-      stepsUnit: '/ {{goal}}',
-      avgUnit: '/ গড় {{value}}',
-      none: '—',
-      noGoal: 'kcal',
-      noGoalMinutes: 'মিনিট',
-      noGoalHours: 'ঘণ্টা',
-
-      budgetTitle: 'নড়াচড়াসহ হিসাব',
-      goal: 'লক্ষ্য',
-      eaten: 'খাওয়া',
-      burned: 'পোড়ানো',
-      left: 'বাকি',
-      over: 'বেশি',
-      budgetOff: 'নড়াচড়া আপনার হিসাব বাড়াচ্ছে না। কার্যকলাপ সেটিংসে এটি চালু করুন।',
-
-      todayTitle: 'আজ',
-      weekTitle: 'এই সপ্তাহে',
-      stepsRow: 'পদক্ষেপ',
-      stepsRowValue: 'আজ {{steps}}',
-      balanceRow: 'ভারসাম্য',
-      balanceDeficit: 'দিনে {{value}} ঘাটতি',
-      balanceSurplus: 'দিনে {{value}} উদ্বৃত্ত',
-      balanceUnknown: 'যথেষ্ট লেখা হয়নি',
-      historyRowValue_one: '{{count}} ব্যায়াম · {{time}}',
-      historyRowValue_other: '{{count}} ব্যায়াম · {{time}}',
-      historyNone: 'এখনো কোনো ব্যায়াম নেই',
-
-      syncing: 'সিঙ্ক হচ্ছে…',
-
-      demoBadge: 'ডেমো তথ্য',
-
-      storeEmpty:
-        'এই স্বাস্থ্য ভাণ্ডার যুক্ত আছে কিন্তু ভেতরে কিছু নেই, সিমুলেটর ঠিক এমনই দেখায়। তৈরি করা তথ্য এই পর্দাগুলো ভরিয়ে দেবে।',
-
-      noStandNoteGeneric: 'আপনার হেলথ অ্যাপ দাঁড়ানোর ঘণ্টা জানায় না, তাই আমরা পদক্ষেপ দেখাচ্ছি।',
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'হৃদস্পন্দন',
+      energy: 'সক্রিয় শক্তি',
+      swimPaceUnit: '{{value}} /100 মি',
+      rowPaceUnit: '{{value}} /500 মি',
       distance: 'দূরত্ব',
       time: 'সময়',
       pace: 'গতি',
@@ -333,68 +294,7 @@ export const bn = {
 
       zonesTitle: 'হৃৎস্পন্দনের স্তর',
 
-      from: '{{source}} থেকে',
       missing: 'এই ব্যায়ামটি আর আপনার হেলথ অ্যাপে নেই।',
-    },
-
-    steps: {
-      title: 'পদক্ষেপ',
-      todaySoFar: 'আজ এ পর্যন্ত',
-      goalLine: 'লক্ষ্য {{goal}} পদক্ষেপ',
-      over: '{{value}} বেশি',
-      under: 'আরও {{value}}',
-      unit: 'পদক্ষেপ · {{distance}}',
-
-      morning: 'সকাল',
-      afternoon: 'দুপুর',
-      evening: 'সন্ধ্যা',
-      noHours: 'এই দিনের ঘণ্টাভিত্তিক হিসাব নেই।',
-
-      weekTitle: 'এই সপ্তাহে',
-      dailyAvg: 'দৈনিক গড়',
-      goalDays: 'লক্ষ্যের দিন',
-      best: 'সর্বোচ্চ',
-
-      steadyNote: 'আপনার দিনগুলো সমান। যা-ই করছেন, এখন সেটা অভ্যাস হয়ে গেছে।',
-      shortNote: 'ধরন বোঝার মতো যথেষ্ট দিন এখনো হয়নি।',
-    },
-
-    balance: {
-      chartTitle: 'ভেতরে বনাম বাইরে',
-      deficit: '{{value}} ঘাটতি',
-      surplus: '{{value}} উদ্বৃত্ত',
-      even: 'সমান',
-      eatenLegend: 'খাওয়া',
-      burnedLegend: 'পোড়ানো',
-
-      splitTitle7d: 'পোড়ানো কোথা থেকে এল · ৭ দিন',
-      splitTitle30d: 'পোড়ানো কোথা থেকে এল · ৩০ দিন',
-      splitTitle1y: 'পোড়ানো কোথা থেকে এল · ১২ মাস',
-      resting: 'বিশ্রাম',
-      restingBody: 'শুধু বেঁচে থাকতেই',
-      workouts: 'ব্যায়াম',
-      workoutsBody: 'আপনার সেশনগুলো যা খরচ করেছে',
-      walking: 'হাঁটা',
-      walkingBody: 'পদক্ষেপ আর রোজকার কাজ',
-      kcal: '{{value}} kcal',
-
-      partial:
-        '{{total}} দিনের মধ্যে যে {{days}} দিনে খাবারের হিসাব ও বিশ্রামের সংখ্যা দুটোই ছিল, তার ভিত্তিতে।',
-      noRestingTitle: 'বিশ্রামের শক্তি নেই',
-      noRestingBody:
-        'বিশ্রামে আপনার শরীর কতটা পোড়ায় তা আপনার হেলথ অ্যাপ জানায় না, তাই দৈনিক ভারসাম্য আঁকা যায় না। পদক্ষেপ, ব্যায়াম ও সক্রিয় শক্তি অপরিবর্তিত থাকে।',
-      empty: 'ঘড়ি পরে কয়েকটি খাবার লিখুন, এটি ভরে যাবে।',
-    },
-
-    history: {
-      title: 'ইতিহাস',
-      weekTitle: 'এই সপ্তাহে',
-      sessions: 'সেশন',
-      time: 'সময়',
-      burned: 'পোড়ানো',
-      allTitle: 'সব সেশন',
-      empty: 'এখনো কোনো ব্যায়াম লেখা হয়নি।',
-      emptyBody: 'আপনার ঘড়ি বা ফোন যা কিছু রেকর্ড করবে তা এখানেই আসবে।',
     },
 
     settings: {
@@ -451,10 +351,6 @@ export const bn = {
       rowing: 'নৌকা বাওয়া',
       stairs: 'সিঁড়ি',
       other: 'ব্যায়াম',
-    },
-
-    unit: {
-      kcal: '{{value}} kcal',
     },
   },
 
@@ -742,11 +638,9 @@ export const bn = {
       kcalOfGoal: '/{{goal}} KCAL',
       showGoals: 'দিনের হিসাব দেখান',
       showLeft: 'যা বাকি তা দেখান',
-      overNote: 'আজ একটু বেশি হয়েছে, কাল আবার নতুন হিসাব।',
-      overNoteOn: 'সেদিন একটু বেশি হয়েছিল।',
-      burnedNote: 'আজকের নড়াচড়া থেকে +{{kcal}}',
-      burnedNoteOn: 'সেদিনের নড়াচড়া থেকে +{{kcal}}',
-      logHeading: 'খাওয়া · {{kcal}} KCAL',
+      dayHeading: 'আপনার দিন',
+      steps_one: '{{steps}} কদম',
+      steps_other: '{{steps}} কদম',
       analysing: 'আপনার থালা পড়া হচ্ছে',
       analysingHint: 'কী তা বোঝা মাত্রই গোনা হবে',
       describing: 'আপনি যা লিখেছেন তা পড়া হচ্ছে',
@@ -794,9 +688,6 @@ export const bn = {
         over: 'লক্ষ্যের উপরে',
         missed: 'লেখা হয়নি',
       },
-      dayHeading: '{{day}}',
-      dayKcal: '{{kcal}} kcal',
-      dayEmpty: 'সেদিন কিছুই লেখা হয়নি।',
     },
 
     selector: {
@@ -838,7 +729,7 @@ export const bn = {
       title: 'আপনার থালার ছবি তুলুন',
       analysing: 'থালায় কী আছে তা বোঝা হচ্ছে',
       permissionTitle: 'ক্যামেরার অনুমতি দরকার',
-      permissionBody: 'RiceCal আপনার থালা পড়তে ক্যামেরা ব্যবহার করে। কিছুই ফোন থেকে বেরোয় না।',
+      permissionBody: 'RiceCal আপনার থালা পড়তে ক্যামেরা ব্যবহার করে।',
       permissionSettings: 'সেটিংস খুলুন',
       shutter: 'ছবি তুলুন',
       library: 'ছবি থেকে বাছুন',
@@ -1424,11 +1315,6 @@ export const bn = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: 'এরপর কী খাবেন জিজ্ঞাসা করুন',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: 'যা রাঁধেন তা সংরক্ষণ করুন',
           free: '{{recipes}} খাবার',
@@ -1478,33 +1364,8 @@ export const bn = {
       later: 'হয়তো পরে',
     },
 
-    reminder: {
-      title_one: 'আপনার ট্রায়ালে {{count}} দিন বাকি',
-      title_other: 'আপনার ট্রায়ালে {{count}} দিন বাকি',
-      body: 'আপনি টানা {{days}} দিন লিখেছেন আর {{kg}} kg কমিয়েছেন। এভাবেই চালিয়ে যান।',
-      daysLogged: 'লেখা দিন',
-      meals: 'খাবার',
-      kgDown: 'KG কমেছে',
-      starts: 'আপনার প্ল্যান {{date}} থেকে বছরে {{price}} এ শুরু হবে।',
-      startsMonthly: 'আপনার প্ল্যান {{date}} থেকে মাসে {{price}} এ শুরু হবে।',
-      keep: 'আমার প্ল্যান রাখুন',
-      manage: 'সাবস্ক্রিপশন পরিচালনা করুন',
-    },
-
     ended: {
-      heading: 'আজ',
-      previewMode: 'ঝলক দেখা',
-      title: 'আপনার ট্রায়াল শেষ হয়েছে',
-      body: 'আপনার {{days}} দিনের ইতিহাস নিরাপদ আছে আর এখনো পড়া যায়।',
-      dataWaiting: 'আপনার তথ্য অপেক্ষা করছে',
-      days: 'দিন',
-      meals: 'খাবার',
-      kgDown: 'KG কমেছে',
-      lockedEntry: 'তালাবদ্ধ',
       resume: 'Pro দিয়ে চালিয়ে যান',
-      terms: 'বছরে {{price}}, বাতিল না করা পর্যন্ত নবায়ন হবে।',
-      termsPending: 'বাতিল না করা পর্যন্ত প্রতি বছর নবায়ন হবে।',
-      browse: 'বিনামূল্যেই দেখতে থাকুন',
     },
 
     limit: {
@@ -1518,7 +1379,6 @@ export const bn = {
         refine: 'বর্ণনা করে খাবার ঠিক করতে RiceCal Pro লাগবে।',
         read_recipe: 'ছবি থেকে খাবার ভরতে RiceCal Pro লাগবে।',
         new_recipe: 'নিজের {{recipes}} এর বেশি খাবার রাখতে RiceCal Pro লাগবে।',
-        suggest: 'এরপর কী খাবেন জিজ্ঞাসা করতে RiceCal Pro লাগবে।',
         trend_range: 'এক সপ্তাহের বেশি পিছনে দেখতে RiceCal Pro লাগবে।',
         review: 'পুরোনো পর্যালোচনা পড়তে RiceCal Pro লাগবে।',
         nudge: 'RiceCal Pro সীমাগুলো সরিয়ে দেয়।',
@@ -1536,7 +1396,6 @@ export const bn = {
       perks: {
         log: 'ছবি, স্ক্যান বা কথা',
         database: 'প্রতিটি পদ আর প্যাকেট',
-        suggest: 'কী খাবেন জিজ্ঞাসা করুন',
       },
       manageNote: 'প্রোফাইল, সাবস্ক্রিপশনে যেকোনো সময় পরিচালনা বা বাতিল করুন।',
       manageNoteLifetime: 'একবারই দেওয়া। নবায়ন বা বাতিল করার কিছু নেই।',
@@ -1824,88 +1683,5 @@ export const bn = {
       burnValue: '{{value}} kcal',
       distanceValue: '{{value}} km পেরোনো',
     },
-  },
-
-  suggest: {
-    card: {
-      title: 'কী খাবেন বুঝতে পারছেন না?',
-    },
-
-    ask: {
-      title: 'আপনি কেমন কিছু চান?',
-      meal: 'খাবার',
-      focus: 'ম্যাক্রো',
-      cuisine: 'রান্নার ধরন',
-      limit: 'ক্যালরির সীমা',
-      editCuisines: 'রান্নার ধরন সম্পাদনা করুন',
-      addCuisine: 'একটি রান্নার ধরন যোগ করুন',
-      addCuisinePlaceholder: 'থাই, নিওনিয়া, জাপানি',
-      removeCuisine: '{{cuisine}} সরান',
-      kcal: 'kcal',
-      less: 'ক্যালরি কমান',
-      more: 'ক্যালরি বাড়ান',
-      leftToday: '{{kcal}} বাকি',
-      healthy: 'হালকা',
-      anything: 'যেকোনো কিছু',
-      healthyA11y: 'হালকা পদের দিকে ঝুঁকুন',
-      action: 'কিছু একটা প্রস্তাব দিন',
-    },
-
-    picks: {
-      title: '{{meal}} এর জন্য ভাবনা',
-      thinking: '{{meal}} এর জন্য কিছু খোঁজা হচ্ছে',
-      thinkingA11y: 'কী প্রস্তাব দেওয়া যায় ভাবা হচ্ছে',
-      summary: '{{focus}}, {{cuisine}}, {{kcal}} kcal এর নিচে',
-      protein: '{{grams}}g প্রোটিন',
-      retry: 'আবার চেষ্টা করুন',
-      emptyTitle: 'কিছুই মাথায় এল না',
-      emptyBody: 'আবার জিজ্ঞাসা করুন, বা একটি শর্ত একটু ঢিলে করুন।',
-    },
-
-    detail: {
-      unit: 'KCAL, {{portion}}',
-      leftAfter: 'এরপর {{kcal}} kcal বাকি',
-      overAfter: 'এরপর {{kcal}} kcal বেশি',
-      why: 'কেন এটি মানানসই',
-      protein: 'প্রোটিন',
-      carbs: 'কার্বস',
-      fat: 'চর্বি',
-      sodium: 'সোডিয়াম',
-    },
-
-    meal: {
-      breakfast: 'সকালের খাবার',
-      lunch: 'দুপুরের খাবার',
-      dinner: 'রাতের খাবার',
-      snack: 'হালকা খাবার',
-    },
-    mealFor: {
-      breakfast: 'সকালের খাবার',
-      lunch: 'দুপুরের খাবার',
-      dinner: 'রাতের খাবার',
-      snack: 'হালকা খাবার',
-    },
-    focus: {
-      protein: 'প্রোটিন',
-      balanced: 'সুষম',
-      carbs: 'কার্বস',
-    },
-    focusShort: {
-      protein: 'বেশি প্রোটিন',
-      balanced: 'সুষম',
-      carbs: 'বেশি কার্বস',
-    },
-
-    sodium: {
-      low: 'কম',
-      medium: 'মাঝারি',
-      high: 'বেশি',
-    },
-
-    ready_one: '{{count}} টি ভাবনা তৈরি',
-    ready_other: '{{count}} টি ভাবনা তৈরি',
-    readyAction: 'দেখুন',
-
-    failed: 'কোনো প্রস্তাব আনা গেল না। একটু পরে আবার চেষ্টা করুন।',
   },
 } satisfies Bundle
