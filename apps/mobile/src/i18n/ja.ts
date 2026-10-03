@@ -279,6 +279,13 @@ export const ja = {
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: '心拍数',
+      energy: 'アクティブエネルギー',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: '距離',
       time: '時間',
       pace: 'ペース',
@@ -741,8 +748,7 @@ export const ja = {
       title: 'お皿を撮る',
       analysing: 'お皿の中身を判定しています',
       permissionTitle: 'カメラへのアクセスが必要です',
-      permissionBody:
-        'RiceCal はカメラでお皿を読み取ります。端末から何かが出ていくことはありません。',
+      permissionBody: 'RiceCal はカメラでお皿を読み取ります。',
       permissionSettings: '設定を開く',
       shutter: '撮影',
       library: '写真から選ぶ',

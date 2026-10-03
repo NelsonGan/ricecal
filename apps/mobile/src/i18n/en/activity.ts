@@ -89,6 +89,13 @@ export const activity = {
   },
 
   workout: {
+    bpmUnit: 'bpm',
+    metresUnit: 'm',
+    kilometresUnit: 'km',
+    heartRate: 'Heart rate',
+    energy: 'Active energy',
+    swimPaceUnit: '{{value}} /100 m',
+    rowPaceUnit: '{{value}} /500 m',
     distance: 'DISTANCE',
     time: 'TIME',
     pace: 'PACE',

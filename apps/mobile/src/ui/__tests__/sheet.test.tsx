@@ -47,6 +47,27 @@ beforeEach(() => {
 })
 
 describe('SheetSurface', () => {
+  it('waits for the entrance to finish before allowing a field to focus', async () => {
+    const onEntered = jest.fn()
+    let finish: ((finished?: boolean) => void) | undefined
+    mockWithTiming.mockImplementation((toValue, _config, callback) => {
+      if (toValue === 0) finish = callback
+      return toValue
+    })
+    await render(
+      <SafeAreaProvider initialMetrics={METRICS}>
+        <SheetSurface onClose={jest.fn()} closeLabel="Close" onEntered={onEntered}>
+          <Text>Search</Text>
+        </SheetSurface>
+      </SafeAreaProvider>,
+    )
+    expect(onEntered).not.toHaveBeenCalled()
+    await act(() => finish?.(false))
+    expect(onEntered).not.toHaveBeenCalled()
+    await act(() => finish?.(true))
+    await waitFor(() => expect(onEntered).toHaveBeenCalledTimes(1))
+  })
+
   it('closes once when the handle is pressed twice', async () => {
     const onClose = jest.fn()
     await render(

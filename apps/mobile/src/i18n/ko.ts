@@ -279,6 +279,13 @@ export const ko = {
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: '심박수',
+      energy: '활동 에너지',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: '거리',
       time: '시간',
       pace: '페이스',
@@ -737,7 +744,7 @@ export const ko = {
       title: '접시 찍기',
       analysing: '접시에 무엇이 있는지 파악하는 중',
       permissionTitle: '카메라 접근이 필요합니다',
-      permissionBody: 'RiceCal은 카메라로 접시를 읽습니다. 휴대폰 밖으로 나가는 것은 없습니다.',
+      permissionBody: 'RiceCal은 카메라로 접시를 읽습니다.',
       permissionSettings: '설정 열기',
       shutter: '사진 찍기',
       library: '사진에서 고르기',

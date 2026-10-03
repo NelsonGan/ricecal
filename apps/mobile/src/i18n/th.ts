@@ -279,6 +279,13 @@ export const th = {
     },
 
     workout: {
+      bpmUnit: 'ครั้ง/นาที',
+      metresUnit: 'ม.',
+      kilometresUnit: 'กม.',
+      heartRate: 'อัตราการเต้นหัวใจ',
+      energy: 'พลังงานจากกิจกรรม',
+      swimPaceUnit: '{{value}} /100 ม.',
+      rowPaceUnit: '{{value}} /500 ม.',
       distance: 'ระยะทาง',
       time: 'เวลา',
       pace: 'เพซ',
@@ -733,7 +740,7 @@ export const th = {
       title: 'ถ่ายจานของคุณ',
       analysing: 'กำลังดูว่าในจานมีอะไร',
       permissionTitle: 'ต้องขอสิทธิ์เข้าถึงกล้อง',
-      permissionBody: 'RiceCal ใช้กล้องอ่านจานของคุณ ไม่มีอะไรออกจากเครื่อง',
+      permissionBody: 'RiceCal ใช้กล้องอ่านจานของคุณ',
       permissionSettings: 'เปิดการตั้งค่า',
       shutter: 'ถ่ายรูป',
       library: 'เลือกจากคลังรูป',

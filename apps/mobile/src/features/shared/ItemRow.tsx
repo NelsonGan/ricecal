@@ -25,8 +25,6 @@ const valueTones = {
  * the app runs produces no style at all.
  */
 export const ROW_TILE = 'h-[72px] w-[72px]'
-/** Tile plus the row's `gap-3`. */
-export const ROW_TEXT_INDENT = 'pl-[84px]'
 export const ROW_TILE_ICON = 52
 /**
  * The same, for `compact` rows: Today's day list, where meals and workouts share

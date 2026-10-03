@@ -286,6 +286,13 @@ export const ms = {
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'Denyutan jantung',
+      energy: 'Tenaga aktif',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: 'JARAK',
       time: 'MASA',
       pace: 'RENTAK',
@@ -762,8 +769,7 @@ export const ms = {
       title: 'Snap pinggan anda',
       analysing: 'Mengenal pasti apa yang ada pada pinggan',
       permissionTitle: 'Akses kamera diperlukan',
-      permissionBody:
-        'RiceCal guna kamera untuk membaca pinggan anda. Tiada apa-apa meninggalkan telefon anda.',
+      permissionBody: 'RiceCal guna kamera untuk membaca pinggan anda.',
       permissionSettings: 'Buka Tetapan',
       shutter: 'Ambil gambar',
       library: 'Pilih dari galeri',

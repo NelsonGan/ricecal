@@ -77,6 +77,8 @@ export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow' | 'onDismi
    * omit it and stay presented for their whole mount.
    */
   presented?: boolean
+  /** The entrance has settled, so fields can focus at their final position. */
+  onEntered?: () => void
   /** The panel has finished leaving. Used by `Sheet` to remove its window. */
   onExitComplete?: () => void
 }
@@ -246,6 +248,7 @@ export function Sheet({ visible, onShow, onDismiss, ...rest }: SheetProps) {
 export function SheetSurface({
   hosting = true,
   presented = true,
+  onEntered,
   onExitComplete,
   dismissible = true,
   onClose,
@@ -286,9 +289,15 @@ export function SheetSurface({
   const presentedRef = useRef(presented)
   const closeCallback = useRef(onClose)
   const exitCallback = useRef(onExitComplete)
+  const enterCallback = useRef(onEntered)
   presentedRef.current = presented
   closeCallback.current = onClose
   exitCallback.current = onExitComplete
+  enterCallback.current = onEntered
+
+  const finishRise = useCallback(() => {
+    if (!closing.current && presentedRef.current) enterCallback.current?.()
+  }, [])
 
   const deliverExit = useCallback(() => {
     if (exitDelivered.current) return
@@ -347,10 +356,13 @@ export function SheetSurface({
       0,
       { duration: RISE_MS, easing: Easing.out(Easing.cubic) },
       (finished) => {
-        if (finished) entered.value = true
+        if (finished) {
+          entered.value = true
+          runOnJS(finishRise)()
+        }
       },
     )
-  }, [dragAccepted, deliverExit, entered, fall, falling, presented, rise])
+  }, [dragAccepted, deliverExit, entered, fall, falling, finishRise, presented, rise])
 
   const panel = useAnimatedStyle(() => ({ transform: [{ translateY: rise.value }] }))
 

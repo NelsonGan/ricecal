@@ -1,4 +1,4 @@
-import { sessionBatches } from '@/data/health-sync'
+import { healthSyncChunks, sessionBatches } from '@/data/health-sync'
 import type { WorkoutReading } from '@/lib/health'
 
 /**
@@ -34,6 +34,37 @@ const only = (workouts: WorkoutReading[]) => {
   expect(batches).toHaveLength(1)
   return batches[0][0]
 }
+
+describe('hourly retention during backfill', () => {
+  it('keeps recent foreground reads unchanged', () => {
+    expect(healthSyncChunks('2026-09-26', '2026-10-03', '2026-09-03')).toEqual([
+      { from: '2026-09-26', to: '2026-10-03', withHours: true },
+    ])
+  })
+
+  it('splits at the cutoff without losing a day of totals, workouts or weigh-ins', () => {
+    expect(healthSyncChunks('2026-08-01', '2026-10-03', '2026-09-03')).toEqual([
+      { from: '2026-08-01', to: '2026-08-30', withHours: false },
+      { from: '2026-08-31', to: '2026-09-02', withHours: false },
+      { from: '2026-09-03', to: '2026-10-02', withHours: true },
+      { from: '2026-10-03', to: '2026-10-03', withHours: true },
+    ])
+  })
+
+  it('does not read any hours for entirely historical ranges', () => {
+    expect(healthSyncChunks('2026-01-01', '2026-01-31', '2026-09-03')).toEqual([
+      { from: '2026-01-01', to: '2026-01-30', withHours: false },
+      { from: '2026-01-31', to: '2026-01-31', withHours: false },
+    ])
+  })
+
+  it('includes the cutoff day and uses calendar days across a daylight-saving change', () => {
+    expect(healthSyncChunks('2026-03-01', '2026-03-31', '2026-03-08')).toEqual([
+      { from: '2026-03-01', to: '2026-03-07', withHours: false },
+      { from: '2026-03-08', to: '2026-03-31', withHours: true },
+    ])
+  })
+})
 
 describe('assembling session rows', () => {
   it('writes the heart rate it read', () => {

@@ -82,27 +82,16 @@ const DISTANCE_KINDS: ReadonlySet<WorkoutKind> = new Set<WorkoutKind>([
 
 export const showsDistance = (kind: string) => DISTANCE_KINDS.has(asWorkoutKind(kind))
 
-/**
- * Pace only reads as pace on foot.
- *
- * A cyclist thinks in km/h and a swimmer in minutes per 100 m, and "6:42 /km"
- * on a ride is a number nobody can place. Rather than grow three pace formats
- * for two of which there is no screen yet, the ones that do not walk simply do
- * not show a pace tile.
- */
-const PACE_KINDS: ReadonlySet<WorkoutKind> = new Set<WorkoutKind>(['run', 'walk', 'hike'])
+/** The denominator depends on the sport: 1 km on foot, 100 m swimming, 500 m rowing. */
+const PACE_KINDS: ReadonlySet<WorkoutKind> = new Set<WorkoutKind>([
+  'run',
+  'walk',
+  'hike',
+  'swim',
+  'rowing',
+])
 
 export const showsPace = (kind: string) => PACE_KINDS.has(asWorkoutKind(kind))
 
-/**
- * Kilometres per hour, for the kinds that travel but are not read in pace.
- *
- * The `showsDistance` half was missing, and it showed. A basketball game is not a
- * `PACE_KIND`, so "not a pace kind" alone said "show a speed", computed from the
- * shuffling distance `showsDistance` exists to suppress, and the detail screen
- * rendered "PACE 2.0 km/h" over a 53-minute game.
- *
- * If the distance is not worth showing then neither is anything derived from it,
- * so both questions are asked here rather than one at each call site.
- */
+/** Court sports once inherited speed from "not a pace kind". Require meaningful distance too. */
 export const showsSpeed = (kind: string) => showsDistance(kind) && !showsPace(kind)

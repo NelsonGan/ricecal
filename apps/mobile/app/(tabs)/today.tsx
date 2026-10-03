@@ -3,7 +3,7 @@ import { format, parseISO, subDays } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { useWindowDimensions, View } from 'react-native'
 import {
   dateKey,
   ENTRY_FOOD_ID,
@@ -77,6 +77,8 @@ export default function TodayScreen() {
   const { t } = useTranslation(['logging', 'common', 'social'])
   const router = useRouter()
   const toast = useToast()
+  const { width, fontScale } = useWindowDimensions()
+  const stackedSummary = width < 380 || fontScale > 1.3
 
   /**
    * The tour, offered once and never again.
@@ -444,7 +446,7 @@ export default function TodayScreen() {
                 share the space rather than the card growing a second row. The
                 macros carry both halves already, so they do not change. */}
                 <Tappable
-                  className="flex-row items-center gap-4"
+                  className={stackedSummary ? 'items-center gap-5' : 'flex-row items-center gap-4'}
                   onPress={() => setShowGoals((open) => !open)}
                   accessibilityRole="button"
                   accessibilityLabel={
@@ -454,7 +456,7 @@ export default function TodayScreen() {
                   <CalorieRing
                     value={eaten.kcal}
                     goal={budget}
-                    size={112}
+                    size={stackedSummary ? 154 : 112}
                     thickness={12}
                     centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
                     centerCaption={
@@ -468,7 +470,13 @@ export default function TodayScreen() {
                   {/* Sharing the row with the ring, so it asks for the space the
                     ring leaves. One line per macro, eaten against the goal, so
                     the three rows stand no taller than the ring. */}
-                  <MacroBars className="flex-1" eaten={eaten} targets={targets} showGoal inline />
+                  <MacroBars
+                    className={stackedSummary ? 'w-full' : 'flex-1'}
+                    eaten={eaten}
+                    targets={targets}
+                    showGoal
+                    inline={!stackedSummary}
+                  />
                 </Tappable>
 
                 {/* No line under the ring any more. "+360 from moving" explained
@@ -532,7 +540,7 @@ export default function TodayScreen() {
                 activity ? (
                   <View className="flex-row items-center gap-1">
                     <Icon set="scenes" name="sneakers" size={18} />
-                    <Text variant="caption">
+                    <Text variant="caption" className="shrink">
                       {t('logging:today.steps', {
                         count: activity.steps,
                         steps: count(activity.steps),

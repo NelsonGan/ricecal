@@ -278,6 +278,13 @@ export const vi = {
     },
 
     workout: {
+      bpmUnit: 'nhịp/phút',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'Nhịp tim',
+      energy: 'Năng lượng vận động',
+      swimPaceUnit: '{{value}} /100 m',
+      rowPaceUnit: '{{value}} /500 m',
       distance: 'QUÃNG ĐƯỜNG',
       time: 'THỜI GIAN',
       pace: 'TỐC ĐỘ PHÚT',
@@ -740,7 +747,7 @@ export const vi = {
       title: 'Chụp đĩa của bạn',
       analysing: 'Đang xem trên đĩa có gì',
       permissionTitle: 'Cần quyền truy cập máy ảnh',
-      permissionBody: 'RiceCal dùng máy ảnh để đọc đĩa của bạn. Không có gì rời khỏi máy bạn.',
+      permissionBody: 'RiceCal dùng máy ảnh để đọc đĩa của bạn.',
       permissionSettings: 'Mở Cài đặt',
       shutter: 'Chụp ảnh',
       library: 'Chọn từ thư viện ảnh',

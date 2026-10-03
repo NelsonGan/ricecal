@@ -15,6 +15,7 @@ import Animated, {
 import { usePlanSummary } from '@/features/paywall'
 import { isTrialUnit, trialDurationText } from '@/features/paywall/trial'
 import { useEnterApp } from '@/lib/navigation'
+import { SessionGate } from '@/lib/SessionGate'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, cn, Icon, type IconProps, Screen, Text } from '@/ui'
 
@@ -34,7 +35,15 @@ const PERKS = [
 ] as const satisfies ReadonlyArray<{ key: string; icon: IconProps; tint: string }>
 
 /** W5 WELCOME TO PRO */
-export default function WelcomeToPro() {
+export default function WelcomeToProRoute() {
+  return (
+    <SessionGate>
+      <WelcomeToPro />
+    </SessionGate>
+  )
+}
+
+function WelcomeToPro() {
   const { t } = useTranslation('paywall')
   const enterApp = useEnterApp()
   /**

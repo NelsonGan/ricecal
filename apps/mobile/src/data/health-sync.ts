@@ -43,7 +43,7 @@ import { useUserId } from './session'
  */
 
 /**
- * How far back a first connection reads. A week, so the Activity tab has
+ * How far back a first connection reads. A week, so Today has
  * something in it on the day it is turned on and the ask inside onboarding costs
  * one query.
  *
@@ -60,7 +60,8 @@ const BACKFILL_DAYS = 7
 const WINDOW_DAYS = 7
 
 /**
- * How much of the past keeps an hourly breakdown. Nothing draws older.
+ * Hourly detail for older store binaries. The server prunes beyond this
+ * window with an extra day for timezones; daily totals and workouts stay.
  */
 const HOURLY_DAYS = 30
 
@@ -191,40 +192,24 @@ async function persist(
     if (error) throw error
   }
 
-  /**
-   * Hours are replaced for the window rather than upserted into it, because an
-   * upsert cannot express "this hour no longer has any steps" and that happens
-   * when a duplicate source is removed in Health.
-   *
-   * Safe only because the delete covers exactly the dates the reading can
-   * contain. The write is still an upsert because two foreground passes can
-   * overlap: both can finish their delete before either inserts, and the second
-   * insert must replace the first one's hours instead of failing the whole sync
-   * on the primary key. The delete is still what removes a disappeared hour.
-   */
-  if (window.withHours) {
-    const { error: deleteError } = await supabase
-      .from('activity_hours')
-      .delete()
-      .eq('user_id', userId)
-      .gte('log_date', window.from)
-      .lte('log_date', window.to)
-    if (deleteError) throw deleteError
-
-    if (reading.hours.length > 0) {
-      const { error } = await supabase.from('activity_hours').upsert(
-        reading.hours.map((hour) => ({
-          user_id: userId,
-          log_date: hour.date,
-          hour: hour.hour,
-          steps: hour.steps,
-          active_kcal: hour.activeKcal,
-          distance_m: hour.distanceM,
-        })),
-        { onConflict: 'user_id,log_date,hour' },
-      )
-      if (error) throw error
-    }
+  // A duplicate source removed in Health can make an hour disappear. Replace
+  // atomically, keeping identical rows rather than rewriting them each time.
+  // An unavailable store or revoked access returns no readings. That is not
+  // a measured empty window and must not clear the last good hourly shape.
+  if (window.withHours && (reading.days.length > 0 || reading.hours.length > 0)) {
+    const { error } = await supabase.rpc('replace_activity_hours', {
+      p_user_id: userId,
+      p_from: window.from,
+      p_to: window.to,
+      p_hours: reading.hours.map((hour) => ({
+        log_date: hour.date,
+        hour: hour.hour,
+        steps: hour.steps,
+        active_kcal: hour.activeKcal,
+        distance_m: hour.distanceM,
+      })),
+    })
+    if (error) throw error
   }
 
   /**
@@ -325,41 +310,20 @@ export async function syncRange(
   // between two chunks of the same sync, and it is a round trip either way.
   const person = await personOf(userId)
 
-  const chunks: Array<{ from: string; to: string }> = []
-  const cursor = new Date(`${from}T00:00:00`)
-  const last = new Date(`${to}T00:00:00`)
-
-  while (cursor <= last) {
-    const chunkStart = dateKey(cursor)
-    const chunkEnd = new Date(cursor)
-    chunkEnd.setDate(chunkEnd.getDate() + CHUNK_DAYS - 1)
-    chunks.push({ from: chunkStart, to: dateKey(chunkEnd > last ? last : chunkEnd) })
-    cursor.setDate(cursor.getDate() + CHUNK_DAYS)
-  }
-
   const hourlyFrom = daysAgo(HOURLY_DAYS)
+  const chunks = healthSyncChunks(from, to, hourlyFrom)
   let written = 0
   let done = 0
-  // Overwritten as the loop advances rather than kept at the first hit. Chunks run
-  // oldest to newest, so the last one to name a device is the most recent, which
-  // is the watch the user is actually wearing.
+  // The latest chunk names the watch the user is actually wearing.
   let deviceName: string | null = null
   const total = chunks.length
 
   for (const chunk of chunks) {
-    // Only chunks inside the retention window pay for the hourly read: 24 rows
-    // a day to answer a question only asked about this month. The backfill is a
-    // week deep, so in practice every chunk qualifies.
-    const withHours = chunk.to >= hourlyFrom
-    const reading = await provider.read(chunk.from, chunk.to, { withHours, ...person })
-    // The hour window is the chunk, not the retention window. A provider hands back
-    // hours for everything it was asked to read, so this is the range the delete has
-    // to cover for the replace to be idempotent. See `persist`.
-    await persist(userId, provider.id, reading, {
-      from: chunk.from,
-      to: chunk.to,
-      withHours,
+    const reading = await provider.read(chunk.from, chunk.to, {
+      withHours: chunk.withHours,
+      ...person,
     })
+    await persist(userId, provider.id, reading, chunk)
     written += reading.days.length
     if (reading.deviceName) deviceName = reading.deviceName
     done += 1
@@ -367,6 +331,31 @@ export async function syncRange(
   }
 
   return { days: written, deviceName }
+}
+
+/** Split at the hourly cutoff so a longer backfill never writes extra old hours. */
+export function healthSyncChunks(from: string, to: string, hourlyFrom: string) {
+  const chunks: Array<{ from: string; to: string; withHours: boolean }> = []
+  const cursor = new Date(`${from}T00:00:00`)
+  const last = new Date(`${to}T00:00:00`)
+  const hourlyStart = new Date(`${hourlyFrom}T00:00:00`)
+
+  while (cursor <= last) {
+    const chunkStart = dateKey(cursor)
+    const chunkEnd = new Date(cursor)
+    chunkEnd.setDate(chunkEnd.getDate() + CHUNK_DAYS - 1)
+    // A chunk crossing the cutoff used to read and store up to 29 extra days
+    // of hours. Every day still gets its totals, workouts and weigh-ins.
+    if (cursor < hourlyStart && chunkEnd >= hourlyStart) {
+      chunkEnd.setTime(hourlyStart.getTime())
+      chunkEnd.setDate(chunkEnd.getDate() - 1)
+    }
+    const end = chunkEnd > last ? last : chunkEnd
+    chunks.push({ from: chunkStart, to: dateKey(end), withHours: chunkStart >= hourlyFrom })
+    cursor.setTime(end.getTime())
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return chunks
 }
 
 async function noteSync(

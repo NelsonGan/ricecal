@@ -2395,6 +2395,10 @@ export type Database = {
         Args: { p_detail?: Json; p_error?: string; p_id: number; p_ok: boolean }
         Returns: undefined
       }
+      fold_plate_quantity: {
+        Args: { p_food_log_id: string }
+        Returns: undefined
+      }
       free_daily_scans: { Args: never; Returns: number }
       free_photo_retention_days: { Args: never; Returns: number }
       free_recipe_limit: { Args: never; Returns: number }
@@ -2501,6 +2505,10 @@ export type Database = {
         Returns: undefined
       }
       pro_daily_scans: { Args: never; Returns: number }
+      prune_activity_hours: {
+        Args: { p_asof?: string; p_limit?: number }
+        Returns: Json
+      }
       recipe_mark_for_review: {
         Args: { p_recipe_id: string }
         Returns: undefined
@@ -2513,6 +2521,15 @@ export type Database = {
       remove_social_follower: {
         Args: { p_follower_id: string }
         Returns: undefined
+      }
+      replace_activity_hours: {
+        Args: {
+          p_from: string
+          p_hours?: Json
+          p_to: string
+          p_user_id?: string
+        }
+        Returns: number
       }
       report_social_content: {
         Args: {

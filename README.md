@@ -314,7 +314,7 @@ auth.users
        └── health_connections  which health store, and how far back it has read
             ├── activity_days ───── one day of movement, keyed by local date
             ├── activity_sessions  one workout, keyed by the store's own id
-            └── activity_hours ──── steps by local hour, last month only
+            └── activity_hours ──── steps by local hour, month plus timezone buffer
 
 food_scan_items       what the model claimed, and where it landed
 food_scan_misses      the catalogue-widening backlog
@@ -648,6 +648,14 @@ pointing at nothing. It asks three questions in order, and the order is the flow
 2. Is there a session?
 3. Does the profile have `onboarded_at`?
 
+Deep links can bypass that index. The logging pages and paywalls therefore use
+`SessionGate` before mounting their account queries, just as the settings,
+activity, recipe, review and social layouts guard their children. Loading waits;
+a signed-out link returns to Welcome. This also covers old widgets that link
+straight to `/log?panel=barcode` or `/log?panel=recipes`. The guards add no
+navigator, so the logging sheet keeps its modal presentation and food pages
+keep their ordinary push.
+
 The first is the **keychain read and nothing else**, which is narrower than it
 used to be. `SessionProvider` asked Supabase, and Supabase answers that question
 last: it reads the same key first, then refreshes a token within 90 seconds of
@@ -834,14 +842,24 @@ each side, and then a floating button on Today alone, which sat over the last
 row of the day and over the Delete of any row swiped open beneath it. Beside the
 pill it covers nothing.
 
+If an earlier day remains selected, the log sheet shows its date. This matters
+when opening it from Feed, Trends or Me, where the diary's date is not visible.
+
+The log sheet remembers its last nonempty option, Snap, Describe or Search, in
+MMKV per account on this phone. A fresh account starts with Snap; reopening the
+sheet or relaunching the app restores the choice without waiting for a request.
+Closing an option leaves it remembered. An explicit `?panel=` link takes
+precedence, including the legacy barcode, label and recipes handoffs, and its
+opened option becomes the next default. No Supabase preference is added.
+
 There is no Activity tab. A day's steps and workouts are read in Today's "Your
 day" list, a workout opens `activity/workout/[id]`, and a health store is
 connected in Settings, Health. The tab's steps, balance and history pages had no
 other way in and are gone with it.
 
-Singular and plural is the information hierarchy, not a naming quirk. `/recipes`
-is the tab, and `/recipe/[id]` and `/recipe/edit` are pages you go to and come
-back from. Those two have a layout of their own that waits for the session,
+My foods is in Settings. The old `/recipes` URL redirects there, while
+`/recipe/[id]` and `/recipe/edit` still open individual recipes. Those two have
+a layout of their own that waits for the session,
 because a shared recipe is a link and a link is opened cold, before the keychain
 read has finished.
 
@@ -995,14 +1013,14 @@ setting, a metric rather than a word. `Text` combines that script floor with a
 through classes or an inline style.
 Roomy Nunito prose keeps the leading it was designed with.
 
-**Dynamic Type scaled the size and not the leading.** An absolute `lineHeight`
-stays where it is while the platform multiplies the font size, so at the largest
-setting a 1.19x ramp is nearer 0.9x and every script crops. `Text` multiplies by
-`PixelRatio.getFontScale()` to hold the ratio. Callers that set their own
-`text-[34px] leading-[42px]` pair — around forty of them, sizing type against a
-ring or a stepper — are parsed back out of the class string and scaled the same
-way. Safe pairs stay unchanged, while a tight pair is raised to the font and
-script floors before it is scaled.
+**Let native text scale the leading once.** React Native scales `lineHeight`
+alongside font size on both iOS and Android. Multiplying it by
+`PixelRatio.getFontScale()` in `Text` too made large-text screens grow huge gaps
+and clipped single-line headings. `Text` resolves the floor in unscaled points
+and leaves scaling to the platform. Callers that set their own
+`text-[34px] leading-[42px]` pair, sizing type against a ring or a stepper, are
+parsed back out of the class string. Safe pairs stay unchanged, while a tight
+pair is raised to the font and script floors.
 
 `src/ui/__tests__/typography.test.tsx` pins the arithmetic, because the failure
 is silent and only visible in a language the person changing the code probably
@@ -2800,9 +2818,15 @@ than a standard card. Nothing sits under the ring: "+360 from moving" and "A bit
 over" both made the card taller to repeat what the ring and the list below
 already say. Movement still extends the budget exactly as before.
 
+On narrow phones and with large text, the ring sits above the macro rows, whose
+labels and amounts also stack. Ring figures stay on one line. The seven date
+cells and the four navigation captions limit text scaling to fit their fixed
+widths; their full translated labels remain available to screen readers.
+
 **The list under the water is "Your day"**: the meals and the health store's
 workouts in one list, newest first, with the day's steps beside the heading when
-a store reported the day. The heading is a word rather than an overline, and
+a store reported the day. With large text, the steps sit below the complete
+heading. The heading is a word rather than an overline, and
 hairlines sit under it and between rows. Rows are `ItemRow` at its `compact`
 size (a 56pt tile, one line of title, the figure stacked over its unit). A
 workout is a row like a meal, its calories in hibiscus because they were burned,
@@ -2849,7 +2873,9 @@ by the screen that does not want it.
 
 Arrows rather than a pager: twelve taps reaches a year where the strip needs
 fifty-two swipes, and a paging grid a screen tall would fight the vertical
-scroll of the screen.
+scroll of the screen. The month title wraps between the arrows and the legend
+wraps onto extra rows with large text. Fixed date cells limit scaling like the
+week strip; their buttons announce full translated dates and verdicts.
 
 The view mode is not persisted. The diary is the screen this app opens on, and a
 launch landing on a month grid because of a tap three days ago would be the app
@@ -3149,8 +3175,9 @@ it cannot be filed against the account that follows.
 
 ## Weekly and monthly reviews
 
-A finished week or month, read as one column of cards. A row at the foot of
-Trends leads to `/reviews`, which lists the periods worth opening, and one of
+A finished week or month, read as one column of cards. A compact row directly
+below Trends' Calories, Water and Weight tiles leads to `/reviews`, which lists
+the periods worth opening, and one of
 them opens `/reviews/[id]` (`week-2026-08-03` or `month-2026-07-01`, the kind and
 the first day, from which the server works out the rest).
 
@@ -3321,6 +3348,40 @@ dropped and body fat would silently never appear. `asPercent` in `apple.ts`
 normalises it, branching on 1 rather than on the platform, because 1% body fat is
 not a body.
 
+### A workout's own page
+
+Every one of the 19 normalized sports opens `activity/workout/[id]`. Its hero
+uses the sport's illustration and a soft colour setting, with distance leading
+for travelling sports and time leading for everything else. Time and active
+energy stay together; supporting measurements sit below rather than becoming
+a fixed grid of mostly empty tiles.
+
+Running, walking and hiking read pace per kilometre, cycling reads km/h,
+swimming reads pace per 100 m, and rowing reads a split per 500 m. These are
+averages over the recorded duration, not moving-time pace or laps. A court
+sport's shuffling distance is still suppressed, along with anything derived
+from it. A travelling workout without a distance falls back to time. Elevation
+appears only when reported, including a measured zero.
+
+Heart rate is one card: average and maximum when reported, followed by four
+bars showing the recorded seconds in each zone. Summaries without samples keep
+their average and maximum; zones without summaries still draw their bars. No
+heart data means no heart card, and zero total zone time means no zone chart.
+There are no stored pulse traces, routes, laps, repetitions or personal records,
+so the page cannot draw them. `features/activity/WorkoutDetails.tsx` owns the
+layout and `workoutMetrics.ts` owns the sport-specific measurement choices.
+With large text, supporting measurements stack and the decorative illustration
+gives its space to the figures. Zone names can wrap instead of truncating.
+
+For local UI verification, `pnpm workouts:seed --user <local-account-uuid>`
+inserts all 19 sports plus 11 data variants into that account across six days.
+Use `--date yyyy-MM-dd` to choose the last day. The script connects only to
+`supabase_db_ricecal`, marks the rows as demo previews, and upserts its own
+external IDs, so repeating it does not duplicate or overwrite real workouts.
+It leaves health connections and day totals alone. The variants cover missing
+distance, missing heart readings, summaries without zones, zones without
+summaries, zero values, indoor cycling and an unknown sport with a long label.
+
 ### Syncing
 
 `src/data/health-sync.ts`. A **week-deep backfill** on connect, then the last
@@ -3330,6 +3391,11 @@ not a body.
 steps and workouts are read. It used to live on the Activity tab, which is gone.
 Tabs stay mounted, so foreground events still reach it. The manual pass is
 **Settings, Health, Sync now**.
+
+Settings keeps the connection progress visible until the first read finishes.
+An empty read keeps its retry guidance and the development demo option visible,
+even though the connection row has already been written. Device availability
+is checked again when returning from Settings or the Play Store.
 
 It was a year, then a month, then a week, and each cut was the same argument
 carried further: the backfill exists so the day list is not empty on the day
@@ -3351,11 +3417,49 @@ so every query and delete treats it like a real one. Both native libraries are
 built before the dependency landed, and the symptom is a white screen rather than
 a broken tab.
 
-Hourly rows are deleted and replaced for each rolling window because an hour can
-disappear when a duplicate Health source is removed. The replacement is an
-upsert and the client admits one sync at a time: a foreground event and a manual
-refresh can otherwise both delete before either writes, making the second pass
-fail on the `(user_id, log_date, hour)` key.
+Hourly detail stays for older store binaries, whose Steps screen reads today's
+hours. Year charts, Trends, Reviews and calorie budgets use `activity_days` and
+`activity_sessions`, so hourly history does not drive their totals. Providers
+already omit empty step buckets, and Android drops flat buckets apportioned
+from a whole-day reading. Pulse samples are reduced on the phone to workout
+averages, maxima and four zone durations. Routes and raw pulse traces are not
+stored. Daily readings, workouts and weigh-ins keep their history.
+
+`replace_activity_hours` replaces a read window atomically: it deletes hours
+that disappeared when a duplicate source was removed, inserts new hours and
+updates changed measurements. Identical rows are left alone, avoiding the dead
+tuples caused by deleting and rewriting a week on every foreground. A failed
+replacement rolls back its deletes too. A read with no measured days or hours
+keeps the last good hourly data, since an unavailable store or revoked access
+is not a measurement of zero. A measured day with no hours still removes
+disappeared source buckets. The captured account must still match
+the session, including for an empty replacement. Older binaries keep their
+direct table grants and RLS policies. Long backfills split at local today minus
+30, so a chunk straddling that boundary cannot write extra historical hours.
+
+`activity-hours-retention` in the jobs Worker runs hourly at `:37` UTC. Its
+service-only `prune_activity_hours` RPC deletes dates **before UTC today minus
+31**, keeping the boundary day. The extra day preserves local today minus 30
+even in UTC-12. It uses the original scheduled time, capped at the database's
+current time, so retries and a future timestamp cannot prune recent hours.
+Each transaction deletes at most 1,000 rows through a date index and skips
+locked rows. A run stops after 20 batches or a locked backlog; `job_runs.detail`
+records `pruned`, `before`, `batches` and `drained`, and the next hour continues.
+Expired hours written again by an old backfill are removed on a later sweep.
+
+Deploy the generated migration before the jobs Worker and before the app that
+calls the replacement RPC. The migration extends the backend; existing tables,
+columns, inputs and read shapes stay available to old binaries. The database
+tests cover the retention boundary, old writes, account isolation, unchanged
+physical tuples, failed replacement, and unchanged activity and review totals.
+
+After rollout, check `job_runs` for `activity-hours-retention` and count hours
+older than `(now() at time zone 'UTC')::date - 31`. A persistent backlog or
+`drained: false` needs investigation. Compare `pg_total_relation_size` and
+`pg_stat_user_tables.n_dead_tup` before and after the catch-up. Deletes make
+space reusable after vacuum; they need not immediately reduce the allocated
+file size. Autovacuum handles normal cleanup. A one-off `VACUUM FULL` is a
+separate maintenance decision because it locks and rewrites the table.
 
 ---
 
@@ -3853,6 +3957,7 @@ src/
   jobs/
     index.ts      the registry
     retention.ts  the photograph sweep
+    activity-hours.ts the hourly health-data sweep
 scripts/
   check-crons.mjs the registry and wrangler.jsonc must agree
 ```
@@ -3912,9 +4017,9 @@ export const digest: Job = {
 }
 ```
 
-**2. A line in `src/jobs/index.ts`:** `export const JOBS: Job[] = [retention, digest]`
+**2. A line in `src/jobs/index.ts`:** `export const JOBS: Job[] = [retention, activityHours, digest]`
 
-**3. The cron in `wrangler.jsonc`:** `"triggers": { "crons": ["17 * * * *", "0 2 * * MON"] }`
+**3. The cron in `wrangler.jsonc`:** `"triggers": { "crons": ["17 * * * *", "37 * * * *", "0 2 * * MON"] }`
 
 No new package, no new secret, no workflow edit. `cloudflare.yml` discovers
 Workers by globbing `apps/cloudflare/workers/*`.
@@ -4128,7 +4233,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Sign In Failed | ricecal_sign_in_failed | method: SignInMethod; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/data/auth.ts` | Instrumented Apple/Google sign-in rejection or cancellation; each reported result. Email/password failures are not covered by this event. |
 | Signed Out | ricecal_signed_out | none | `src/data/auth.ts`<br>`src/lib/analytics/client.ts` | Explicit sign-out completes; each completion, before resetting analytics identity. |
 | Account Deleted | ricecal_account_deleted | none | `src/data/auth.ts` | Server confirms account deletion; each success, before deleting the Mixpanel profile and signing out. |
-| Log Sheet Opened | ricecal_log_sheet_opened | panel: string; date_offset: number | `app/log/index.tsx` | Log sheet opens; once per presentation using its initial panel and selected date, not on panel changes. |
+| Log Sheet Opened | ricecal_log_sheet_opened | panel: string; date_offset: number | `app/log/index.tsx` | Log sheet opens; once per presentation using its actual initial panel (explicit link, remembered choice, then camera) and selected date, not on panel changes. |
 | Meal Logged | ricecal_meal_logged | method: LogMethod; date_offset: number | `src/data/entries.ts`<br>`src/data/snap.ts` | Local insert succeeds, or camera/describe starts its optimistic row; once per logging action, not per decomposed food component. |
 | Meal Scan Completed | ricecal_meal_scan_completed | method: 'camera' &#124; 'describe'; outcome: ScanOutcome; duration_ms: number; tier: number &#124; null; components: number | `src/data/snap.ts` | Camera/describe request reaches a reported outcome; once per attempt, including refusals, empty food, failure and detached requests. |
 | Barcode Scanned | ricecal_barcode_scanned | outcome: 'found' &#124; 'not_found' &#124; 'error' | `app/log/food/[id].tsx` | Barcode lookup settles; once per barcode value on the mounted food route. Reopening the route can count again. |
@@ -4936,6 +5041,12 @@ version, or the job goes red on a change that is genuinely in the repo.
 transaction that is rolled back, including `create extension pgtap`, so running
 the suite leaves nothing behind and pgTAP never reaches production.
 
+Social fixtures block existing local profiles for their temporary readers.
+Fixture setup reads `profiles` directly: the legacy `social_profiles` view needs
+an authenticated user claim and cannot enumerate accounts before that claim is
+set. Without isolation, simulator profiles fill the limited suggestion pages
+and their posts interfere with pagination expectations.
+
 `02_rls.test.sql` is the one that matters. It runs as the `authenticated` role
 with a forged `request.jwt.claims`, which is what PostgREST does on every
 request. Running RLS tests as `postgres` proves nothing: the table owner bypasses
@@ -5625,8 +5736,11 @@ for exactly this.
 
 **`autoFocus` inside a `Modal` is dropped.** The field mounts with the window,
 before the platform has presented it, and the keyboard never comes up. `Sheet`
-takes an `onShow` for this: fire `ref.focus()` there. `SheetSurface` is a route
-rather than a window and needs none of this.
+takes an `onShow` for this: fire `ref.focus()` there. A route's `SheetSurface`
+uses `onEntered` instead, after the panel finishes rising. Focusing a search
+field while it is still below the screen makes the keyboard's reveal scroll a
+long list past its own field. The logging sheet focuses after that callback
+and whenever switching into Search or Describe after the entrance.
 
 ### The number pad
 

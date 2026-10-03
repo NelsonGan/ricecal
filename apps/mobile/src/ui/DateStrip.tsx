@@ -85,7 +85,11 @@ export function DateStrip({ days, value, onChange, className }: DateStripProps) 
             accessibilityState={{ selected, disabled: day.disabled }}
             accessibilityLabel={day.accessibilityLabel ?? `${day.initial} ${day.day}`}
           >
+            {/* Seven fixed-width cells cannot wrap a two-digit date. Their
+                full translated dates are announced by the button above. */}
             <Text
+              maxFontSizeMultiplier={1.3}
+              numberOfLines={1}
               className={cn(
                 'font-body-black text-[11px] leading-[14px]',
                 selected ? 'text-on-pandan opacity-80' : 'text-faint',
@@ -95,9 +99,10 @@ export function DateStrip({ days, value, onChange, className }: DateStripProps) 
               {day.initial}
             </Text>
             <Text
+              maxFontSizeMultiplier={1.3}
+              numberOfLines={1}
               className={cn(
-                // Baloo 2 needs about 1.2x leading. The old 20pt line box
-                // clipped these numerals on newer iOS text rendering.
+                // Text applies the Baloo leading floor before native scaling.
                 'font-display text-[18px] leading-[22px]',
                 selected ? 'text-on-pandan' : 'text-ink',
                 day.disabled && 'opacity-40',

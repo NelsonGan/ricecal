@@ -280,6 +280,13 @@ export const zhHans = {
     },
 
     workout: {
+      bpmUnit: '次/分',
+      metresUnit: '米',
+      kilometresUnit: '公里',
+      heartRate: '心率',
+      energy: '活动能量',
+      swimPaceUnit: '{{value}} /100 米',
+      rowPaceUnit: '{{value}} /500 米',
       distance: '距离',
       time: '时长',
       pace: '配速',
@@ -734,7 +741,7 @@ export const zhHans = {
       title: '拍下你的这盘',
       analysing: '正在弄清楚盘子里是什么',
       permissionTitle: '需要相机权限',
-      permissionBody: 'RiceCal 用相机来读你的这盘。什么都不会离开你的手机。',
+      permissionBody: 'RiceCal 用相机来读你的这盘。',
       permissionSettings: '打开设置',
       shutter: '拍照',
       library: '从相册里选',

@@ -22,7 +22,6 @@ export { EntryList, type EntryListProps, formatTime, type TimedRow } from './Ent
 export {
   ItemRow,
   type ItemRowProps,
-  ROW_TEXT_INDENT,
   ROW_TILE,
   ROW_TILE_ICON,
 } from './ItemRow'

@@ -19,12 +19,16 @@ describe('what a workout kind may show', () => {
     expect(showsDistance('strength')).toBe(false)
   })
 
-  it('reads on-foot kinds in pace and the rest in speed', () => {
+  it('reads running, swimming and rowing in pace, and cycling in speed', () => {
     expect(showsPace('run')).toBe(true)
     expect(showsSpeed('run')).toBe(false)
 
     expect(showsPace('cycle')).toBe(false)
     expect(showsSpeed('cycle')).toBe(true)
+    for (const kind of ['swim', 'rowing']) {
+      expect(showsPace(kind)).toBe(true)
+      expect(showsSpeed(kind)).toBe(false)
+    }
   })
 
   /**

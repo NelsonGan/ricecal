@@ -276,6 +276,13 @@ export const hi = {
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'हृदय गति',
+      energy: 'सक्रिय ऊर्जा',
+      swimPaceUnit: '{{value}} /100 मी',
+      rowPaceUnit: '{{value}} /500 मी',
       distance: 'दूरी',
       time: 'समय',
       pace: 'रफ़्तार',
@@ -730,7 +737,7 @@ export const hi = {
       title: 'अपनी थाली की फ़ोटो लें',
       analysing: 'पता लगाया जा रहा है कि थाली में क्या है',
       permissionTitle: 'कैमरे की अनुमति चाहिए',
-      permissionBody: 'RiceCal आपकी थाली पढ़ने के लिए कैमरा इस्तेमाल करता है। कुछ भी फ़ोन से बाहर नहीं जाता।',
+      permissionBody: 'RiceCal आपकी थाली पढ़ने के लिए कैमरा इस्तेमाल करता है।',
       permissionSettings: 'सेटिंग्स खोलें',
       shutter: 'फ़ोटो लें',
       library: 'फ़ोटो में से चुनें',

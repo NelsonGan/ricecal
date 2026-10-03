@@ -334,10 +334,7 @@ function RootStack() {
           the search dropped the user two panels back, onto the dish. A page
           keeps the search over it and reveals the plate again. */}
       <Stack.Screen name="log/ingredients" />
-      {/* ONE recipe pushes; the LIST is a tab. Singular and plural, and the
-          split is the information hierarchy rather than a naming quirk: the
-          collection is somewhere the app IS, and a recipe is somewhere you go,
-          edit and come back from.
+      {/* A recipe pushes from My foods in Settings or the log search.
 
           One entry, not two: the group has a layout of its own, because a
           shared recipe is a link and a link is opened cold. See

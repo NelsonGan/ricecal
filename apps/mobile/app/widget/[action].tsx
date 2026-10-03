@@ -39,7 +39,7 @@ const DESTINATIONS = {
 } as const satisfies Record<WidgetTarget, string>
 
 const isTarget = (value: string | undefined): value is WidgetTarget =>
-  value !== undefined && value in DESTINATIONS
+  value !== undefined && Object.hasOwn(DESTINATIONS, value)
 
 const isKind = (value: string | undefined): value is WidgetKind =>
   (WIDGET_KINDS as readonly string[]).includes(value ?? '')

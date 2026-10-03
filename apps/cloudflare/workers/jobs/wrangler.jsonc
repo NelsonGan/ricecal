@@ -29,7 +29,7 @@
   // gets 15 minutes of CPU, where anything shorter gets 30 seconds — so moving
   // a job to every half hour would quietly cut its ceiling by thirty times.
   "triggers": {
-    "crons": ["17 * * * *"]
+    "crons": ["17 * * * *", "37 * * * *"]
   },
 
   // NO HOSTNAME, AND THAT IS THE ENTIRE POINT OF THIS WORKER EXISTING.

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { View } from 'react-native'
+import { useWindowDimensions, View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -116,7 +116,9 @@ export function MacroBar({
   inline = false,
   className,
 }: MacroBarProps) {
-  if (inline) {
+  const { fontScale } = useWindowDimensions()
+  const wideText = fontScale > 1.3
+  if (inline && !wideText) {
     return (
       <View className={cn('flex-row items-center gap-2.5', className)}>
         {/* A fixed width so the three bars start at the same x whatever the
@@ -140,7 +142,9 @@ export function MacroBar({
 
   return (
     <View className={cn('gap-2', className)}>
-      <View className="flex-row items-center justify-between">
+      <View
+        className={wideText ? 'gap-1' : 'flex-row flex-wrap items-center justify-between gap-1'}
+      >
         <Text variant="label">{label}</Text>
         <Text variant="label" className="text-muted">
           {amount}

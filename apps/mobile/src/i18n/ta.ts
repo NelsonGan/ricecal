@@ -278,6 +278,13 @@ export const ta = {
     },
 
     workout: {
+      bpmUnit: 'bpm',
+      metresUnit: 'm',
+      kilometresUnit: 'km',
+      heartRate: 'இதயத் துடிப்பு',
+      energy: 'செயல்பாட்டு ஆற்றல்',
+      swimPaceUnit: '{{value}} /100 மீ',
+      rowPaceUnit: '{{value}} /500 மீ',
       distance: 'தூரம்',
       time: 'நேரம்',
       pace: 'வேகம்',
@@ -743,8 +750,7 @@ export const ta = {
       title: 'உங்கள் தட்டைப் படம் எடுங்கள்',
       analysing: 'தட்டில் என்ன இருக்கிறது எனக் கண்டறிகிறோம்',
       permissionTitle: 'கேமரா அனுமதி தேவை',
-      permissionBody:
-        'உங்கள் தட்டைப் படிக்க RiceCal கேமராவைப் பயன்படுத்துகிறது. எதுவும் தொலைபேசியை விட்டு வெளியேறாது.',
+      permissionBody: 'உங்கள் தட்டைப் படிக்க RiceCal கேமராவைப் பயன்படுத்துகிறது.',
       permissionSettings: 'அமைப்புகளைத் திற',
       shutter: 'படம் எடு',
       library: 'படங்களிலிருந்து தேர்ந்தெடு',

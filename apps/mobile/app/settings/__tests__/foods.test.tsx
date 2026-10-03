@@ -5,7 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import '@/i18n'
 import type { Recipe } from '@/data'
 import { ThemeProvider } from '@/theme/ThemeProvider'
-import RecipesScreen from '../../settings/foods'
+import FoodsScreen from '../foods'
 
 const mockPush = jest.fn()
 const mockUseRecipes = jest.fn()
@@ -69,7 +69,7 @@ beforeEach(() => {
 })
 
 it('opens search only on demand and keeps its field focused', async () => {
-  await render(<RecipesScreen />)
+  await render(<FoodsScreen />)
 
   expect(screen.queryByPlaceholderText('Search my foods')).toBeNull()
   await user.press(screen.getByRole('button', { name: 'Search my foods' }))
@@ -78,7 +78,7 @@ it('opens search only on demand and keeps its field focused', async () => {
 })
 
 it('uses the short Community heading on the shared shelf', async () => {
-  await render(<RecipesScreen />)
+  await render(<FoodsScreen />)
 
   await user.press(screen.getByRole('tab', { name: 'Community' }))
 
@@ -88,7 +88,7 @@ it('uses the short Community heading on the shared shelf', async () => {
 })
 
 it('keeps an incomplete row in the three-column grid', async () => {
-  await render(<RecipesScreen />)
+  await render(<FoodsScreen />)
 
   expect(screen.getAllByRole('button', { name: /kcal/ })).toHaveLength(4)
   expect(screen.getAllByTestId('recipe-grid-filler')).toHaveLength(2)
