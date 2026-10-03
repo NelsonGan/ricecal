@@ -218,12 +218,6 @@ export function WorkoutDetails({ session }: { session: ActivitySession }) {
           ) : null}
         </Card>
       ) : null}
-
-      {session.sourceName ? (
-        <Text variant="caption" className="mb-2 text-center">
-          {t('activity:workout.from', { source: session.sourceName })}
-        </Text>
-      ) : null}
     </>
   )
 }

@@ -305,7 +305,6 @@ export const id = {
 
       zonesTitle: 'ZONA DETAK JANTUNG',
 
-      from: 'Dari {{source}}',
       missing: 'Olahraga ini sudah tidak ada di aplikasi kesehatanmu.',
     },
 

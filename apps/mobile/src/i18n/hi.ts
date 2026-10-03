@@ -297,7 +297,6 @@ export const hi = {
 
       zonesTitle: 'हृदय गति ज़ोन',
 
-      from: '{{source}} से',
       missing: 'यह वर्कआउट अब आपके हेल्थ ऐप में नहीं है।',
     },
 

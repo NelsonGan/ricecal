@@ -299,7 +299,6 @@ export const vi = {
 
       zonesTitle: 'VÙNG NHỊP TIM',
 
-      from: 'Từ {{source}}',
       missing: 'Buổi tập này không còn trong ứng dụng sức khoẻ của bạn.',
     },
 

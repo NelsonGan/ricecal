@@ -300,7 +300,6 @@ export const ko = {
 
       zonesTitle: '심박 구간',
 
-      from: '{{source}}에서',
       missing: '이 운동은 건강 앱에 더 이상 없습니다.',
     },
 

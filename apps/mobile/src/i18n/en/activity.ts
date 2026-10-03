@@ -117,7 +117,6 @@ export const activity = {
 
     zonesTitle: 'HEART RATE ZONES',
 
-    from: 'From {{source}}',
     missing: 'This workout is no longer in your health app.',
   },
 

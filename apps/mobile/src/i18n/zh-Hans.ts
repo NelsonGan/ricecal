@@ -301,7 +301,6 @@ export const zhHans = {
 
       zonesTitle: '心率区间',
 
-      from: '来自 {{source}}',
       missing: '这次锻炼已经不在你的健康应用里了。',
     },
 

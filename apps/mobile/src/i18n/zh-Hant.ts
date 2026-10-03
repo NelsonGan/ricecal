@@ -301,7 +301,6 @@ export const zhHant = {
 
       zonesTitle: '心率區間',
 
-      from: '來自 {{source}}',
       missing: '這次運動已經不在你的健康 App 裡了。',
     },
 

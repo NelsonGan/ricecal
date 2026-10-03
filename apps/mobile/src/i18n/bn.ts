@@ -296,7 +296,6 @@ export const bn = {
 
       zonesTitle: 'হৃৎস্পন্দনের স্তর',
 
-      from: '{{source}} থেকে',
       missing: 'এই ব্যায়ামটি আর আপনার হেলথ অ্যাপে নেই।',
     },
 

@@ -307,7 +307,6 @@ export const ms = {
 
       zonesTitle: 'ZON KADAR DENYUTAN',
 
-      from: 'Daripada {{source}}',
       missing: 'Senaman ini sudah tiada dalam apl kesihatan anda.',
     },
 
