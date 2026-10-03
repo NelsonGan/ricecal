@@ -195,7 +195,7 @@ export const ja = {
     aiLanguage: {
       open: 'AI 機能が読み書きする言語',
       title: 'AI 機能は英語で動きます',
-      body: '皿の撮影、食べたものを言葉で書くこと、次に何を食べるか尋ねること。どれも英語をいちばんよく読むモデルに渡されます。英語で書いていただくほど、正確に読み取れます。',
+      body: '皿の撮影も、食べたものを言葉で書くことも、英語をいちばんよく読むモデルに渡されます。英語で書いていただくほど、正確に読み取れます。',
       results:
         '返ってくるものも英語です。料理名、材料、分量はいずれも食品カタログに英語で保存されているため、アプリをどの言語に設定していても英語で届きます。',
       dishes: '料理名は書かれたときの言語のままです。',
@@ -1439,11 +1439,6 @@ export const ja = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: '次に何を食べるか聞く',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: '作った料理を保存',
           free: 'フード {{recipes}} 件',
@@ -1533,7 +1528,6 @@ export const ja = {
         refine: '言葉で書いて食事を修正するには RiceCal Pro が必要です。',
         read_recipe: '写真からフードを埋めるには RiceCal Pro が必要です。',
         new_recipe: '自分のフードを {{recipes}} 件より多く持つには RiceCal Pro が必要です。',
-        suggest: '次に何を食べるか聞くには RiceCal Pro が必要です。',
         trend_range: '1 週間より前を見るには RiceCal Pro が必要です。',
         review: '古い振り返りを読むには RiceCal Pro が必要です。',
         nudge: 'RiceCal Pro なら上限がなくなります。',
@@ -1551,7 +1545,6 @@ export const ja = {
       perks: {
         log: '撮る、読み取る、書く',
         database: 'すべての料理と商品',
-        suggest: '何を食べるか聞く',
       },
       manageNote: 'プロフィールのサブスクリプションから、いつでも管理・解約できます。',
       manageNoteLifetime: '一度きりの支払いです。更新も解約もありません。',
@@ -1840,88 +1833,5 @@ export const ja = {
       burnValue: '{{value}} kcal',
       distanceValue: '{{value}} km 移動',
     },
-  },
-
-  suggest: {
-    card: {
-      title: '何を食べるか迷っていますか',
-    },
-
-    ask: {
-      title: 'どんなものにしますか',
-      meal: '食事',
-      focus: 'マクロ',
-      cuisine: 'ジャンル',
-      limit: 'カロリー上限',
-      editCuisines: 'ジャンルを編集',
-      addCuisine: 'ジャンルを追加',
-      addCuisinePlaceholder: 'タイ、ニョニャ、和食',
-      removeCuisine: '{{cuisine}} を外す',
-      kcal: 'kcal',
-      less: 'カロリーを減らす',
-      more: 'カロリーを増やす',
-      leftToday: '残り {{kcal}}',
-      healthy: '軽め',
-      anything: 'なんでも',
-      healthyA11y: '軽めの料理に寄せる',
-      action: '何かおすすめして',
-    },
-
-    picks: {
-      title: '{{meal}}のアイデア',
-      thinking: '{{meal}}に合うものを探しています',
-      thinkingA11y: '何をすすめるか考えています',
-      summary: '{{focus}}、{{cuisine}}、{{kcal}} kcal 以内',
-      protein: 'たんぱく質 {{grams}}g',
-      retry: 'もう一度試す',
-      emptyTitle: '思いつきませんでした',
-      emptyBody: 'もう一度聞くか、条件をどれかゆるめてください。',
-    },
-
-    detail: {
-      unit: 'KCAL、{{portion}}',
-      leftAfter: '食べても {{kcal}} kcal 残る',
-      overAfter: '食べると {{kcal}} kcal 超える',
-      why: 'これが合う理由',
-      protein: 'たんぱく質',
-      carbs: '炭水化物',
-      fat: '脂質',
-      sodium: 'ナトリウム',
-    },
-
-    meal: {
-      breakfast: '朝食',
-      lunch: '昼食',
-      dinner: '夕食',
-      snack: '間食',
-    },
-    mealFor: {
-      breakfast: '朝食',
-      lunch: '昼食',
-      dinner: '夕食',
-      snack: '間食',
-    },
-    focus: {
-      protein: 'たんぱく質',
-      balanced: 'バランス',
-      carbs: '炭水化物',
-    },
-    focusShort: {
-      protein: 'たんぱく質多め',
-      balanced: 'バランス',
-      carbs: '炭水化物多め',
-    },
-
-    sodium: {
-      low: '低い',
-      medium: '普通',
-      high: '高い',
-    },
-
-    ready_one: 'アイデアが {{count}} 件そろいました',
-    ready_other: 'アイデアが {{count}} 件そろいました',
-    readyAction: '見る',
-
-    failed: 'おすすめを取得できませんでした。少し経ってからお試しください。',
   },
 } satisfies Bundle

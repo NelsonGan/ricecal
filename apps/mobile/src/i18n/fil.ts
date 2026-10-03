@@ -203,7 +203,7 @@ export const fil = {
     aiLanguage: {
       open: 'Anong wika ang ginagamit ng mga AI feature',
       title: 'Gumagana sa Ingles ang mga AI feature',
-      body: 'Ang pagkuha ng litrato ng plato, ang pagsasabi sa salita kung ano ang kinain mo at ang pagtatanong kung ano ang susunod na kakainin ay pumupunta lahat sa isang modelong pinakamahusay sa Ingles. Ilarawan ang pagkain mo sa Ingles at mas malapit ang pagkakaintindi nito.',
+      body: 'Ang pagkuha ng litrato ng plato at ang pagsasabi sa salita kung ano ang kinain mo ay parehong pumupunta sa isang modelong pinakamahusay sa Ingles. Ilarawan ang pagkain mo sa Ingles at mas malapit ang pagkakaintindi nito.',
       results:
         'Sa Ingles din ang bumabalik. Nakaimbak sa Ingles ang mga pangalan ng ulam, sangkap at laki ng serving sa food catalogue, kaya iyon ang wikang darating anuman ang naka-set sa app.',
       dishes: 'Nananatili ang pangalan ng ulam sa wikang isinulat ito.',
@@ -1466,11 +1466,6 @@ export const fil = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: 'Magtanong kung ano ang susunod na kakainin',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: 'I-save ang niluluto mo',
           free: '{{recipes}} pagkain',
@@ -1562,7 +1557,6 @@ export const fil = {
         read_recipe: 'Kailangan ng RiceCal Pro para punan ang pagkain mula sa litrato.',
         new_recipe:
           'Kailangan ng RiceCal Pro para magtago ng higit sa {{recipes}} sariling pagkain.',
-        suggest: 'Kailangan ng RiceCal Pro para magtanong kung ano ang susunod na kakainin.',
         trend_range: 'Kailangan ng RiceCal Pro para tumingin nang lampas sa isang linggo.',
         review: 'Kailangan ng RiceCal Pro para magbasa ng mas lumang review.',
         nudge: 'Inaalis ng RiceCal Pro ang mga limitasyon.',
@@ -1580,7 +1574,6 @@ export const fil = {
       perks: {
         log: 'Kunan, i-scan o sabihin',
         database: 'Bawat ulam at pakete',
-        suggest: 'Magtanong kung ano ang kakainin',
       },
       manageNote: 'Pamahalaan o kanselahin anumang oras sa Profile, Subscription.',
       manageNoteLifetime: 'Bayad nang isang beses. Walang ire-renew o kakanselahin.',
@@ -1874,88 +1867,5 @@ export const fil = {
       burnValue: '{{value}} kcal',
       distanceValue: '{{value}} km ang nalakbay',
     },
-  },
-
-  suggest: {
-    card: {
-      title: 'Hindi sigurado kung ano ang kakainin?',
-    },
-
-    ask: {
-      title: 'Ano ang hinahanap mo?',
-      meal: 'PAGKAIN',
-      focus: 'MACROS',
-      cuisine: 'LUTUIN',
-      limit: 'LIMITASYON NG CALORIE',
-      editCuisines: 'I-edit ang mga lutuin',
-      addCuisine: 'Magdagdag ng lutuin',
-      addCuisinePlaceholder: 'Thai, Nyonya, Hapon',
-      removeCuisine: 'Alisin ang {{cuisine}}',
-      kcal: 'kcal',
-      less: 'Bawasan ang calories',
-      more: 'Dagdagan ang calories',
-      leftToday: '{{kcal}} ang natitira',
-      healthy: 'Mas magaan',
-      anything: 'Kahit ano',
-      healthyA11y: 'Kumiling sa mas magagaang ulam',
-      action: 'Magmungkahi ng kahit ano',
-    },
-
-    picks: {
-      title: 'Mga ideya para sa {{meal}}',
-      thinking: 'Naghahanap ng kahit ano para sa {{meal}}',
-      thinkingA11y: 'Iniisip kung ano ang imumungkahi',
-      summary: '{{focus}}, {{cuisine}}, mas mababa sa {{kcal}} kcal',
-      protein: '{{grams}}g na protina',
-      retry: 'Subukan ulit',
-      emptyTitle: 'Walang naisip',
-      emptyBody: 'Magtanong ulit, o luwagan ang isa sa mga sagot.',
-    },
-
-    detail: {
-      unit: 'KCAL, {{portion}}',
-      leftAfter: '{{kcal}} kcal ang matitira pagkatapos',
-      overAfter: '{{kcal}} kcal ang lalampas pagkatapos',
-      why: 'BAKIT ITO BAGAY',
-      protein: 'Protina',
-      carbs: 'Carbs',
-      fat: 'Taba',
-      sodium: 'Sodium',
-    },
-
-    meal: {
-      breakfast: 'Almusal',
-      lunch: 'Tanghalian',
-      dinner: 'Hapunan',
-      snack: 'Meryenda',
-    },
-    mealFor: {
-      breakfast: 'almusal',
-      lunch: 'tanghalian',
-      dinner: 'hapunan',
-      snack: 'meryenda',
-    },
-    focus: {
-      protein: 'Protina',
-      balanced: 'Balanse',
-      carbs: 'Carbs',
-    },
-    focusShort: {
-      protein: 'Mataas sa protina',
-      balanced: 'Balanse',
-      carbs: 'Mataas sa carbs',
-    },
-
-    sodium: {
-      low: 'mababa',
-      medium: 'katamtaman',
-      high: 'mataas',
-    },
-
-    ready_one: 'Handa na ang {{count}} ideya',
-    ready_other: 'Handa na ang {{count}} ideya',
-    readyAction: 'Tingnan',
-
-    failed: 'Hindi makakuha ng anumang mungkahi. Subukan ulit maya-maya.',
   },
 } satisfies Bundle

@@ -199,7 +199,7 @@ export const zhHant = {
     aiLanguage: {
       open: 'AI 功能用什麼語言',
       title: 'AI 功能以英文運作',
-      body: '拍照辨識、用文字描述、問接下來吃什麼，都會交給一個最擅長英文的模型。用英文描述你的食物，它能理解得更準確。',
+      body: '拍照辨識和用文字描述，都會交給一個最擅長英文的模型。用英文描述你的食物，它能理解得更準確。',
       results:
         '回傳的內容也是英文。菜名、食材和份量在食物資料庫裡都是以英文存放的，所以不管 App 設成哪種語言，它們都會以英文出現。',
       dishes: '菜名會保持它被寫下時的語言。',
@@ -1425,11 +1425,6 @@ export const zhHant = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: '問接下來吃什麼',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: '儲存你做的菜',
           free: '{{recipes}} 個食物',
@@ -1519,7 +1514,6 @@ export const zhHant = {
         refine: '用描述修正一餐需要 RiceCal Pro。',
         read_recipe: '用照片填好一個食物需要 RiceCal Pro。',
         new_recipe: '保留超過 {{recipes}} 個自己的食物需要 RiceCal Pro。',
-        suggest: '問接下來吃什麼需要 RiceCal Pro。',
         trend_range: '往前看超過一週需要 RiceCal Pro。',
         review: '看更早的回顧需要 RiceCal Pro。',
         nudge: 'RiceCal Pro 把上限拿掉。',
@@ -1537,7 +1531,6 @@ export const zhHant = {
       perks: {
         log: '拍照、掃碼或者說一句',
         database: '每道菜和每件包裝',
-        suggest: '問問吃什麼',
       },
       manageNote: '隨時在「我的」裡的訂閱中管理或取消。',
       manageNoteLifetime: '一次付清。沒有什麼要續訂或者取消的。',
@@ -1824,88 +1817,5 @@ export const zhHant = {
       burnValue: '{{value}} 大卡',
       distanceValue: '走了 {{value}} 公里',
     },
-  },
-
-  suggest: {
-    card: {
-      title: '不知道吃什麼？',
-    },
-
-    ask: {
-      title: '你想要什麼樣的？',
-      meal: '這一餐',
-      focus: '營養素',
-      cuisine: '菜系',
-      limit: '熱量上限',
-      editCuisines: '編輯菜系',
-      addCuisine: '新增一個菜系',
-      addCuisinePlaceholder: '泰式、娘惹、日式',
-      removeCuisine: '移除{{cuisine}}',
-      kcal: '大卡',
-      less: '少一點熱量',
-      more: '多一點熱量',
-      leftToday: '還剩 {{kcal}}',
-      healthy: '清淡一點',
-      anything: '都可以',
-      healthyA11y: '偏向清淡一點的菜',
-      action: '給我一些建議',
-    },
-
-    picks: {
-      title: '{{meal}}的點子',
-      thinking: '正在幫{{meal}}找點什麼',
-      thinkingA11y: '正在想要推薦什麼',
-      summary: '{{focus}}，{{cuisine}}，{{kcal}} 大卡以內',
-      protein: '{{grams}}公克蛋白質',
-      retry: '再試一次',
-      emptyTitle: '一時想不出來',
-      emptyBody: '再問一次，或者放寬其中一個條件。',
-    },
-
-    detail: {
-      unit: '大卡，{{portion}}',
-      leftAfter: '吃完還剩 {{kcal}} 大卡',
-      overAfter: '吃完超出 {{kcal}} 大卡',
-      why: '為什麼合適',
-      protein: '蛋白質',
-      carbs: '碳水',
-      fat: '脂肪',
-      sodium: '鈉',
-    },
-
-    meal: {
-      breakfast: '早餐',
-      lunch: '午餐',
-      dinner: '晚餐',
-      snack: '點心',
-    },
-    mealFor: {
-      breakfast: '早餐',
-      lunch: '午餐',
-      dinner: '晚餐',
-      snack: '點心',
-    },
-    focus: {
-      protein: '蛋白質',
-      balanced: '均衡',
-      carbs: '碳水',
-    },
-    focusShort: {
-      protein: '高蛋白',
-      balanced: '均衡',
-      carbs: '高碳水',
-    },
-
-    sodium: {
-      low: '低',
-      medium: '中',
-      high: '高',
-    },
-
-    ready_one: '{{count}} 個點子準備好了',
-    ready_other: '{{count}} 個點子準備好了',
-    readyAction: '看看',
-
-    failed: '沒能拿到任何建議。過一會兒再試。',
   },
 } satisfies Bundle

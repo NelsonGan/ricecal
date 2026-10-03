@@ -195,7 +195,7 @@ export const vi = {
     aiLanguage: {
       open: 'Các tính năng AI dùng ngôn ngữ nào',
       title: 'Các tính năng AI hoạt động bằng tiếng Anh',
-      body: 'Chụp một đĩa, nói bằng lời bạn đã ăn gì và hỏi nên ăn gì tiếp đều được gửi tới một mô hình đọc tiếng Anh tốt nhất. Hãy mô tả món ăn bằng tiếng Anh để nó hiểu bạn sát hơn.',
+      body: 'Chụp một đĩa và nói bằng lời bạn đã ăn gì đều được gửi tới một mô hình đọc tiếng Anh tốt nhất. Hãy mô tả món ăn bằng tiếng Anh để nó hiểu bạn sát hơn.',
       results:
         'Thứ trả về cũng bằng tiếng Anh. Tên món, nguyên liệu và khẩu phần đều được lưu bằng tiếng Anh trong danh mục món ăn, nên đó là ngôn ngữ chúng xuất hiện, dù ứng dụng đang đặt ở ngôn ngữ nào.',
       dishes: 'Tên món ăn giữ nguyên ngôn ngữ lúc được viết ra.',
@@ -1441,11 +1441,6 @@ export const vi = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: 'Hỏi nên ăn gì tiếp',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: 'Lưu món bạn nấu',
           free: '{{recipes}} món ăn',
@@ -1535,7 +1530,6 @@ export const vi = {
         refine: 'Sửa một bữa bằng cách mô tả cần RiceCal Pro.',
         read_recipe: 'Điền món ăn từ một tấm ảnh cần RiceCal Pro.',
         new_recipe: 'Giữ hơn {{recipes}} món ăn của mình cần RiceCal Pro.',
-        suggest: 'Hỏi nên ăn gì tiếp cần RiceCal Pro.',
         trend_range: 'Nhìn lại xa hơn một tuần cần RiceCal Pro.',
         review: 'Đọc một bản tổng kết cũ hơn cần RiceCal Pro.',
         nudge: 'RiceCal Pro gỡ bỏ giới hạn.',
@@ -1553,7 +1547,6 @@ export const vi = {
       perks: {
         log: 'Chụp, quét hoặc nói',
         database: 'Mọi món và mọi gói',
-        suggest: 'Hỏi nên ăn gì',
       },
       manageNote: 'Quản lý hoặc huỷ bất cứ lúc nào ở Hồ sơ, Gói đăng ký.',
       manageNoteLifetime: 'Trả một lần. Không có gì để gia hạn hay huỷ.',
@@ -1844,88 +1837,5 @@ export const vi = {
       burnValue: '{{value}} kcal',
       distanceValue: 'đi được {{value}} km',
     },
-  },
-
-  suggest: {
-    card: {
-      title: 'Chưa biết ăn gì?',
-    },
-
-    ask: {
-      title: 'Bạn đang muốn gì?',
-      meal: 'BỮA',
-      focus: 'DƯỠNG CHẤT',
-      cuisine: 'ẨM THỰC',
-      limit: 'GIỚI HẠN CALO',
-      editCuisines: 'Sửa danh sách ẩm thực',
-      addCuisine: 'Thêm một nền ẩm thực',
-      addCuisinePlaceholder: 'Thái, Nyonya, Nhật',
-      removeCuisine: 'Bỏ {{cuisine}}',
-      kcal: 'kcal',
-      less: 'Bớt calo',
-      more: 'Thêm calo',
-      leftToday: 'còn {{kcal}}',
-      healthy: 'Nhẹ hơn',
-      anything: 'Gì cũng được',
-      healthyA11y: 'Nghiêng về những món nhẹ hơn',
-      action: 'Gợi ý gì đó đi',
-    },
-
-    picks: {
-      title: 'Gợi ý cho {{meal}}',
-      thinking: 'Đang tìm gì đó cho {{meal}}',
-      thinkingA11y: 'Đang nghĩ xem nên gợi ý gì',
-      summary: '{{focus}}, {{cuisine}}, dưới {{kcal}} kcal',
-      protein: '{{grams}}g đạm',
-      retry: 'Thử lại',
-      emptyTitle: 'Không nghĩ ra gì cả',
-      emptyBody: 'Hỏi lại, hoặc nới lỏng một trong các lựa chọn.',
-    },
-
-    detail: {
-      unit: 'KCAL, {{portion}}',
-      leftAfter: 'còn {{kcal}} kcal sau đó',
-      overAfter: 'vượt {{kcal}} kcal sau đó',
-      why: 'VÌ SAO MÓN NÀY HỢP',
-      protein: 'Đạm',
-      carbs: 'Tinh bột',
-      fat: 'Chất béo',
-      sodium: 'Natri',
-    },
-
-    meal: {
-      breakfast: 'Bữa sáng',
-      lunch: 'Bữa trưa',
-      dinner: 'Bữa tối',
-      snack: 'Ăn vặt',
-    },
-    mealFor: {
-      breakfast: 'bữa sáng',
-      lunch: 'bữa trưa',
-      dinner: 'bữa tối',
-      snack: 'bữa ăn vặt',
-    },
-    focus: {
-      protein: 'Đạm',
-      balanced: 'Cân bằng',
-      carbs: 'Tinh bột',
-    },
-    focusShort: {
-      protein: 'Nhiều đạm',
-      balanced: 'Cân bằng',
-      carbs: 'Nhiều tinh bột',
-    },
-
-    sodium: {
-      low: 'thấp',
-      medium: 'trung bình',
-      high: 'cao',
-    },
-
-    ready_one: '{{count}} gợi ý đã sẵn sàng',
-    ready_other: '{{count}} gợi ý đã sẵn sàng',
-    readyAction: 'Xem ngay',
-
-    failed: 'Không lấy được gợi ý nào. Thử lại sau một lát.',
   },
 } satisfies Bundle

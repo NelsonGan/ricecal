@@ -31,7 +31,6 @@ export const PLAN_FEATURES = [
   { key: 'barcode', free: 'yes', pro: 'yes' },
   { key: 'search', free: 'yes', pro: 'yes' },
   { key: 'fix', free: 'no', pro: 'yes' },
-  { key: 'suggest', free: 'no', pro: 'yes' },
   { key: 'recipes', free: 'text', pro: 'text' },
   { key: 'recipeFill', free: 'no', pro: 'yes' },
   { key: 'budget', free: 'yes', pro: 'yes' },

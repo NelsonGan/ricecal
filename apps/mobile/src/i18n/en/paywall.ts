@@ -140,11 +140,6 @@ export const paywall = {
         free: '',
         pro: '',
       },
-      suggest: {
-        label: 'Ask what to eat next',
-        free: '',
-        pro: '',
-      },
       recipes: {
         label: 'Save what you cook',
         free: '{{recipes}} foods',
@@ -305,7 +300,6 @@ export const paywall = {
       refine: 'Fixing a meal by describing it needs RiceCal Pro.',
       read_recipe: 'Filling a food in from a photo needs RiceCal Pro.',
       new_recipe: 'Keeping more than {{recipes}} foods of your own needs RiceCal Pro.',
-      suggest: 'Asking what to eat next needs RiceCal Pro.',
       trend_range: 'Looking back further than a week needs RiceCal Pro.',
       review: 'Reading an older review needs RiceCal Pro.',
       /**
@@ -353,7 +347,6 @@ export const paywall = {
     perks: {
       log: 'Snap, scan or say it',
       database: 'Every dish and packet',
-      suggest: 'Ask what to eat',
     },
     manageNote: 'Manage or cancel any time in Profile, Subscription.',
     manageNoteLifetime: 'Paid once. There is nothing to renew or cancel.',

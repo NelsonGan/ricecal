@@ -28,7 +28,6 @@ import {
 } from '@/features/logging'
 import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
-import { SuggestAction } from '@/features/suggest'
 import { useTutorialOffer } from '@/features/tutorial'
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
@@ -481,14 +480,6 @@ export default function TodayScreen() {
           whole screen below follows it — the ring, the water, the entries and
           anything logged while it is selected. */}
           <WeekPicker />
-
-          {/* "I do not know what to eat", one row high, directly under the day
-              it would be answering about. It lived in the log sheet, beside the
-              heading, which was two taps deep inside a sheet whose four tiles
-              all assume the meal has been decided — so an account that never
-              pressed the log button never learnt the feature was there. See
-              `SuggestAction`. */}
-          <SuggestAction date={selectedDate} kcalLeft={left} hasBudget={Boolean(targets)} />
 
           <Card>
             {loading ? (
