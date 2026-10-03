@@ -327,15 +327,7 @@ export default function LogSheet() {
     >
       {/* The heading is rendered here rather than through `title` so the
           remaining count can sit on the same line, right aligned, the way the
-          design puts it.
-
-          NO SUGGESTION GLYPH BESIDE IT ANY MORE. "I do not know what to eat"
-          was here for a while, on the argument that somebody who opens this
-          sheet has not decided what the meal is — which is true and was not
-          enough. It was two taps deep, inside a sheet whose tiles all
-          assume the meal IS decided, so an account that never pressed the log
-          button never learnt the feature existed. It is a row on Today now,
-          under the week strip. See `SuggestAction`. */}
+          design puts it. */}
       <View className="flex-row items-center justify-between gap-2">
         <Text variant="subtitle" className="shrink" numberOfLines={1}>
           {t('logging:selector.title')}

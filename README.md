@@ -2114,151 +2114,37 @@ not a plan.
 
 ---
 
-## What to eat next
+## What to eat next (retired from the app)
 
-The one model path that does not start from something the user already has. A
-scan reads a plate, a correction reads a sentence about one, a recipe read reads
-a pot; each has a subject. Here the subject is the rest of the day, and the
-answer is a suggestion rather than a fact.
+The app used to answer "not sure what to eat?" from a row on Today: an ask sheet
+(sitting, macros, cuisine, a calorie ceiling), seven picks from the model, and a
+detail for one pick. The app no longer has any of it: no row, no sheets, no
+`useSuggestMeals`, no `suggest` copy, and nothing about it on the paywall.
 
-A thin row on Today opens it, under the week strip: one line high, flat rather
-than raised, because everything raised on that screen writes something and this
-writes nothing.
+**The server half stays.** `suggest-meal` and `_shared/suggest.ts` are still
+deployed because every store binary released before the removal still calls
+them, and the backend can only be extended (see "The store holds copies of the
+app you cannot recall"). They must keep answering in the old shape until no
+supported binary carries the row. Removing them runs over a store release, not a
+deploy. Until then, what the function still does:
 
-```
-row (/today)   →  ask sheet     meal, macros, cuisine, a calorie ceiling
-                 ↓
-                 the same sheet, holding a skeleton while the model works
-                 ↓
-                 seven picks    name, kcal, protein, and the drawing
-                 ↓
-                 one pick       the figures, what the day has left after it,
-                                and why this fits
-```
+- It is Pro, and it claims a scan exactly as `scan-refine` does.
+- The day is assembled on the server, not sent by the client; a client-supplied
+  budget would size the meal off a stale day.
+- `cuisinePhrase` bounds the cuisine (trimmed, capped at 40 characters, line
+  breaks stripped) because it was free text from the user's own list.
+- `why` is required per pick and a pick without one is dropped; the reason's
+  `kind` is a closed set of five.
+- `PICK_COUNT` is seven. `keepToTheSitting` drops a breakfast-register reason
+  from a meal that is not breakfast without ever emptying a pick.
+- A failure is an empty list rather than an HTTP error.
+- Nothing it returns is written anywhere (see the rule below).
 
-**All four are one panel, and the last of them was a pushed page.** A `Sheet` is
-a native window drawing over the whole app, so a screen pushed under one arrives
-behind it: the panel had to be closed on the way into a pick and raised again on
-the way out, which made reading two picks four transitions with a frame of the
-diary in each gap. The pick is a body inside the picks sheet now. It slides in
-from the right, the title row swaps its "Try again" for a back chevron, and the
-panel itself does not move.
-
-Two things went with the page. The provider that held the picks above the
-navigator, which existed only because the sheet that produced them and the page
-that read one were different routes; `SuggestAction` holds them in ordinary
-state. And the counter that told the list a pick's page had left, which was
-there because focus cannot say when that is: a screen under a transparent
-presentation never loses focus, so a `useFocusEffect` never fired.
-
-`Sheet` grew three props for it: `titleLeading` (the back control, in the title
-row rather than at the top of a body that scrolls), `titleLines` (a dish name is
-not a screen name, and one line of "Nasi kandar ayam goreng berempah" identifies
-nothing), and `scrollResetKey` (the scroll view is the same instance either side
-of the swap, so a list read half way down opened its pick half way down too).
-
-**Every control opens on an answer.** A prefilled sitting costs nothing to be
-wrong about, because the answer is a list of suggestions. The sitting comes off
-the user's own `meal_times` (nearest within two and a half hours, otherwise a
-snack) so somebody whose dinner is at nine gets dinner at nine, and the ceiling
-opens on what is left of the day, capped at what one sitting plausibly is.
-
-**The cuisines are the user's own list, and it lives on the phone.** Malay,
-Chinese and Indian to begin with, and a pencil beside the dropdown edits them.
-MMKV rather than a column: it is a preference about a control rather than a fact
-about the account, and a column would be a query the sheet has to wait on.
-
-Two consequences. The server has no list to validate against, so `cuisinePhrase`
-bounds the string instead: trimmed, capped at 40 characters, and stripped of the
-line breaks that would let a text field pose as another instruction in the
-prompt. And the cuisine cannot be sent to Mixpanel as itself, so
-`trackedCuisine` maps it to one of the shipped defaults or to `custom`.
-
-**Nothing it returns is written anywhere, and the picks are view only.** No
-`food_logs` row, no catalogue row, no "Log it" button. A guess about a meal
-nobody has eaten is the last thing that should become a row other diaries are
-priced from. That is also why a pick has no id and why the detail is reached by
-index into a list that lives in memory and nowhere else.
-
-**The panel is one sheet at one size throughout.** A capped sheet sizes itself
-to its content, so the wait and the answer would be different heights and the
-panel would jump at the one moment this screen has to feel settled. The wait
-draws one skeleton row per pick, off `PICK_COUNT` rather than a literal.
-
-**Try again re-sends the last request** rather than reopening the question. It
-is absent while a pick is being read rather than disabled, because a new list
-under a dish reached by index is a different dish under the same heading. The
-model is not deterministic, so the same question genuinely answers differently,
-and changing the question is one tap away. The last request is held in a ref
-rather than read off the provider, which is only set once an answer has landed.
-
-**The reasons are the product.** A list of dish names against a calorie figure
-is a list anybody could write; "you are 39 g short on protein and one bowl
-covers most of it" is what makes it a suggestion. `why` is required per pick, a
-pick without one is dropped, and the reason's `kind` is a closed set of five so
-the screen can draw the right picture beside it.
-
-**The day is assembled on the server, not sent by the client.** A
-client-supplied budget decides how big a meal the model offers, and a stale one
-produces a suggestion for a day that has moved on. It is one round trip either
-way.
-
-**It is Pro, and it claims a scan**, exactly as `scan-refine` does: discretionary,
-repeatable at the press of a button, and with no cheaper tier underneath.
-
-**The gate is on "Suggest something", not on the row.** The question is the
-feature (the sitting, the macros, the user's own kitchens, the day's remaining
-budget) and a paywall in its place is an offer with the product hidden. It also
-refused a tap that costs nothing, since a scan is claimed by the request. The
-ask sheet is a `Sheet`, which is its own window, so a paywall pushed from under
-it would arrive behind it: `useRequirePro`'s `beforePaywall` closes the sheet
-first, and only on an actual refusal.
-
-`_shared/suggest.ts` holds the prompt. Five things it was taught after a live
-run broke it:
-
-- the sitting is a constraint rather than a label (asked for dinner it wrote "to
-  start your day");
-- the cuisine likewise (asked for Malay it offered roti canai);
-- a pick is a dish somebody orders by name and never a bare ingredient (released
-  from a named cuisine it answered with chicken breast and boiled eggs);
-- a dish's calories are never shrunk to fit the ceiling (asked for a 300 kcal
-  snack it offered "nasi lemak, one plate, 280 kcal");
-- the macros left are context for the reasons rather than a specification to
-  hit.
-
-`unslug` plus a capital is the belt behind the last of them: the icon list is
-the largest block in the prompt and the model answers in its register, with
-picks named `char-kuey-teow` and `hokkien-mee`.
-
-**Seven picks**, which is `PICK_COUNT` on the server and a deliberate copy in
-`features/suggest/ask.ts`. The two live either side of the Deno / React Native
-line and cannot import each other. The heading does not count them, because a
-heading that names a number lies whenever a pick is dropped.
-
-**It leans healthier on a toggle, and the lean is a tie-break rather than a
-filter.** Told to be healthy outright the model answers with boiled eggs and
-steamed fish, which is the bare-ingredient failure again. So the rule is written
-as a preference between dishes that both fit, and it is told not to mention
-health or dieting in the reasons. The switch lives in the *user* message because
-it changes per request, and Off is stated rather than left out, because silence
-reads as the default.
-
-**The sheet remembers the macros, the cuisine and the lean**, in MMKV, keyed by
-user, saved when the question is asked. Not the sitting, which is answered by
-the clock, and not the ceiling, which follows the sitting and the day's
-remaining budget: a 300 saved from a snack would open tomorrow's dinner at 300.
-
-**And the sitting has a belt of its own.** "To start your day" kept turning up
-on dinners; moved to the last line of the user message it fell to about one
-reason in fifteen picks and mutated rather than stopping.
-`keepToTheSitting` drops a reason written in the breakfast register from a meal
-that is not breakfast, and never empties a pick: losing a dish to a badly worded
-sentence is a worse answer than the sentence.
-
-A failure is an empty list rather than an HTTP error. In the cascade a diary
-that refuses the meal is worse than one that logs it roughly; here there is
-nothing to log, so the honest answer is to say nothing came to mind.
+The prompt's lessons from live runs still hold for anyone touching it: the
+sitting and the cuisine are constraints rather than labels, a pick is a dish
+somebody orders by name and never a bare ingredient, a dish's calories are never
+shrunk to fit the ceiling, and the "lighter" toggle is a tie-break between dishes
+that both fit rather than a filter.
 
 ---
 
@@ -3559,7 +3445,6 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 | a meal typed in words | no | yes |
 | a meal corrected in words | no | yes |
 | a recipe read out of a photograph | no | yes |
-| asking what to eat | no | yes |
 | recipes kept | 3 | unlimited |
 | trends | 7 days | 7d / 30d / a year |
 | reviews | the newest week | every week and month |
@@ -4179,17 +4064,17 @@ of leaving stale state behind.
 
 ### Product analytics coverage
 
-Audited 2026-10-02 against the mobile tracking plan and call sites. This is the
+Audited 2026-10-03 against the mobile tracking plan and call sites. This is the
 full mobile product tracking reference. The website section records the separate
 acquisition surface and links its own repository contract. A defined event is
 eligible for delivery; its presence here is not proof of ingestion or billing.
 
 | Surface / operation | Definitions | Destinations / counting rule |
 | --- | --- | --- |
-| Native app custom decisions | 49 | All 49 go to Mixpanel and GA4 in production; no GA4-only app group and no sampling |
+| Native app custom decisions | 48 | All 48 go to Mixpanel and GA4 in production; no GA4-only app group and no sampling |
 | Website decisions | 6 | Separate Mixpanel website project; five namespaced GA4 events plus manually managed `page_view` in the shared property |
 | Native screen views | 0 | No app `screen_view` emitter; Firebase automatic screen reporting is disabled |
-| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 49 custom app definitions |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 48 custom app definitions |
 | Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
 | Per-install first-use/milestone event budget | None | RiceCal has no Money2Time-style adoption cap; repeatable product use contributes Mixpanel volume |
 
@@ -4220,7 +4105,6 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Food Searched | ricecal_food_searched | results: number; query_length: number | `src/features/logging/FoodSearchPanel.tsx` | Catalogue query has a settled results/empty answer for 1,200 ms after the 140 ms input debounce; changed nonempty queries only. History/own-food filtering is excluded. |
 | Food Picked | ricecal_food_picked | position: number; results: number; source?: 'history' &#124; 'recipe' | `src/features/logging/FoodSearchPanel.tsx` | Catalogue, own recipe or history result is opened; each selection. Opening a result does not prove it was logged. |
 | Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or eligible nudge requests navigation, or intro/reminder/ended presentation mounts; repeated visits count. Nudge has a two-day per-account clock; account/entitlement changes cancel its pending timer and the clock is checked again before sending. |
-| Suggestions Shown | ricecal_suggestions_shown | meal: Meal; cuisine: TrackedCuisine; count: number | `src/features/suggest/SuggestAction.tsx` | Suggestions answer returns; each answer, including count 0. Refused/failed requests without an answer do not prove suggestions were shown. |
 | Plan Selected | ricecal_plan_selected | screen: PaywallScreen; plan: Plan | `src/features/paywall/PaywallOffer.tsx` | Paywall plan changes; each change. The default selected plan emits nothing until changed. |
 | Purchase Started | ricecal_purchase_started | screen: PaywallScreen; plan: Plan | `src/features/paywall/tracking.ts` | An available checkout is requested; once per accepted attempt, before offering lookup/store call. A missing configuration warning emits nothing. |
 | Purchase Abandoned | ricecal_purchase_abandoned | screen: PaywallScreen; plan: Plan; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/features/paywall/tracking.ts` | Checkout/entitlement-wait path throws; once per caught attempt. A post-purchase entitlement-wait error can also reach this event. |
@@ -4263,7 +4147,7 @@ state, not proof that the customer had a settled charge at that instant.
 
 | Contract | Mixpanel | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 49 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 48 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
@@ -4290,11 +4174,10 @@ user text. Extend the source type and these tables together when its domain chan
 | `method` / `LogMethod` | `camera`, `describe`, `search`, `barcode`, `recipe`, `quick_add`, `history` | `events.ts`; compare logging actions, not individual food components |
 | `method` / `SignInMethod` | `apple`, `google`, `email`, `password` | `email` means code/link. Failure coverage currently covers Apple/Google only |
 | `screen` / `PaywallScreen` | `hard`, `intro`, `reminder`, `ended` | Paywall surfaces below; no generic screen-view event |
-| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `suggest`, `trend_range`, `review`, `nudge` | Refused capability or standing offer; trial expiration is a paywall screen value, not a feature |
+| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `trend_range`, `review`, `nudge` | Refused capability or standing offer; trial expiration is a paywall screen value, not a feature. `suggest` appears only in data from app versions released before "what to eat next" was removed |
 | `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
 | `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |
-| `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder and suggestion category only |
-| `cuisine` / `TrackedCuisine` | `malay`, `chinese`, `indian`, `custom` | Custom cuisine text is reduced to `custom`; no user-entered cuisine is sent |
+| `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder category only |
 | `plan_direction` | `lose`, `gain`, `maintain` | Locally derived; a missing target or absolute target/current weight difference below 0.5 kg means maintain. Body values never leave the app through analytics |
 | `activity_level` | `sedentary`, `light`, `onFeet`, `veryActive` | Client vocabulary; normalized from database spellings |
 | `step`, `step_number` | `setup` 1, `about` 2, `activity` 3, `source` 4, `calculating` 5, `target` 6, `account` 7, `health` 8, `notifications` 9 | `features/onboarding/steps.ts`; calculating has no completion event, and secondary skips do not emit one |
@@ -4319,7 +4202,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Welcome and onboarding | Start, primary step advance, successful profile completion | Repeated starts/advances count. Completion precedes permission steps, so requiring every step as a conversion prerequisite excludes valid users |
 | Account and sign-in | Explicit login requests/results, sign-out and deletion | Restored sessions are not Signed In. No complete email/password failure funnel exists |
 | Log sheet, food route and data mutations | Sheet entry, catalogue answer/selection, logging, scan/refinement outcome, entry edits/deletes | Search debounces; mutations distinguish intent/optimistic inserts from confirmed success as listed above |
-| Recipes and suggestions | Draft/save/publish/copy/report/block and suggestion answers | Public moderation outcomes count separately; draft/pick/suggestion is not a meal or a saved recipe |
+| Recipes | Draft/save/publish/copy/report/block | Public moderation outcomes count separately; a draft is not a meal or a saved recipe. `Suggestions Shown` appears only in data from app versions released before "what to eat next" was removed |
 | Activity, reminders and reports | Health connection/disconnection, reminder writes, report notification taps and review opens/shares | No background health-import events. Locked review opens count before the paywall redirect |
 | Home-screen widgets | Observed kind additions/removals, supported deep links and queued water actions | First observation is a silent baseline; later foreground diffs can miss intermediate changes. Stored baseline belongs to the handset, not reset on account switches. Each account gets the current count without fabricated add/remove events; results from a cancelled account's poll are discarded even if it returns |
 | Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
@@ -4647,7 +4530,7 @@ user's whole session as free.
    repository changes; audit its current revision rather than assuming mobile CI
    validates it. A change without analytics impact needs no artificial table edit.
 
-The mobile inventory test checks all 49 names, exact GA4 mappings, typed payloads,
+The mobile inventory test checks all 48 names, exact GA4 mappings, typed payloads,
 source-file existence and a nonempty trigger/frequency column, and forbids
 app-side settled revenue fields. Trigger prose, property domains, report meaning,
 SDK/server settings and the separate website still require call-site review.
@@ -5425,10 +5308,10 @@ only RevenueCat knows a subscription ended early. It bounds the damage of never
 hearing to the period that was actually paid for. The two copies cannot import
 each other across the Deno / React Native line and have to be changed together.
 
-**A suggestion is never written, and never becomes a row.** Nothing lands in
-`food_logs`, nothing lands in the catalogue, and the detail screen has no way to
-log. It follows that a pick has no id, which is why the detail is reached by
-index out of an in-memory provider.
+**A suggestion is never written, and never becomes a row.** `suggest-meal`
+writes nothing to `food_logs` or the catalogue. The app no longer asks for
+suggestions, but released binaries do, and a guess about a meal nobody has eaten
+is the last thing that should become a row other diaries are priced from.
 
 **The quota counts scans, not requests to OpenRouter, and it is claimed once
 before any of them.** Claimed afterwards, an account already at its ceiling would

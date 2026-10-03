@@ -19,23 +19,18 @@ import { useThemeColors } from '@/theme/useTheme'
 import { Button, cn, Icon, type IconProps, Screen, Text } from '@/ui'
 
 /**
- * The three things Pro just bought, as pictures rather than as sentences.
+ * What Pro just bought, as pictures rather than as sentences.
  *
  * IT WAS A TICKED LIST OF TWO LINES, under a paragraph, under a title, over a
  * note — four blocks of prose on the one screen in the app whose entire job is
  * to say "done". Nobody reads a feature list on the receipt; they have just
  * read the whole table on the paywall and pressed the button. So what is left
- * is three glyphs with three or four words under each, which is legible at a
- * glance and gets out of the way of the button.
- *
- * ASKING WHAT TO EAT IS ONE OF THEM, and it is the newest thing Pro does — the
- * paywall's own table has carried it since the feature landed, and this screen
- * was still describing a two-feature product.
+ * is a glyph per perk with three or four words under each, which is legible
+ * at a glance and gets out of the way of the button.
  */
 const PERKS = [
   { key: 'log', icon: { set: 'system', name: 'camera' }, tint: 'bg-pandan-soft' },
   { key: 'database', icon: { set: 'system', name: 'database' }, tint: 'bg-water-soft' },
-  { key: 'suggest', icon: { set: 'system', name: 'sparkle' }, tint: 'bg-kaya-soft' },
 ] as const satisfies ReadonlyArray<{ key: string; icon: IconProps; tint: string }>
 
 /** W5 WELCOME TO PRO */
@@ -119,7 +114,7 @@ export default function WelcomeToPro() {
         </Animated.View>
       </View>
 
-      {/* Three squares in a row rather than three ticked lines in a column: the
+      {/* Squares in a row rather than ticked lines in a column: the
           same information in a third of the height, and the height is what this
           screen was spending badly. Staggered so they land one after another,
           which is the only motion on the page that says "and this, and this". */}

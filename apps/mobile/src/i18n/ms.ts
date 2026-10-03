@@ -202,7 +202,7 @@ export const ms = {
     aiLanguage: {
       open: 'Bahasa yang digunakan ciri AI',
       title: 'Ciri AI berfungsi dalam bahasa Inggeris',
-      body: 'Snap pinggan, cakap apa yang anda makan dan tanya apa hendak dimakan seterusnya semuanya pergi kepada model yang paling memahami bahasa Inggeris. Terangkan makanan anda dalam bahasa Inggeris dan ia memahami anda dengan lebih tepat.',
+      body: 'Snap pinggan dan cakap apa yang anda makan kedua-duanya pergi kepada model yang paling memahami bahasa Inggeris. Terangkan makanan anda dalam bahasa Inggeris dan ia memahami anda dengan lebih tepat.',
       results:
         'Apa yang kembali juga dalam bahasa Inggeris. Nama hidangan, bahan dan saiz hidangan disimpan dalam bahasa Inggeris di dalam katalog makanan, jadi itulah bahasa yang akan muncul walau apa pun tetapan apl.',
       dishes: 'Nama hidangan kekal dalam bahasa ia ditulis.',
@@ -1469,11 +1469,6 @@ export const ms = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: 'Tanya apa hendak dimakan seterusnya',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: 'Simpan apa yang anda masak',
           free: '{{recipes}} makanan',
@@ -1564,7 +1559,6 @@ export const ms = {
         refine: 'Membetulkan hidangan dengan menerangkannya memerlukan RiceCal Pro.',
         read_recipe: 'Mengisi makanan daripada gambar memerlukan RiceCal Pro.',
         new_recipe: 'Menyimpan lebih daripada {{recipes}} makanan sendiri memerlukan RiceCal Pro.',
-        suggest: 'Bertanya apa hendak dimakan seterusnya memerlukan RiceCal Pro.',
         trend_range: 'Melihat lebih jauh daripada seminggu memerlukan RiceCal Pro.',
         review: 'Membaca ulasan lama memerlukan RiceCal Pro.',
         nudge: 'RiceCal Pro membuang hadnya.',
@@ -1582,7 +1576,6 @@ export const ms = {
       perks: {
         log: 'Snap, imbas atau cakap',
         database: 'Setiap hidangan dan bungkusan',
-        suggest: 'Tanya apa hendak dimakan',
       },
       manageNote: 'Urus atau batalkan bila-bila masa dalam Profil, Langganan.',
       manageNoteLifetime: 'Dibayar sekali. Tiada apa-apa untuk diperbaharui atau dibatalkan.',
@@ -1876,88 +1869,5 @@ export const ms = {
       burnValue: '{{value}} kcal',
       distanceValue: '{{value}} km dilalui',
     },
-  },
-
-  suggest: {
-    card: {
-      title: 'Tak pasti nak makan apa?',
-    },
-
-    ask: {
-      title: 'Apa yang anda cari?',
-      meal: 'HIDANGAN',
-      focus: 'MAKRO',
-      cuisine: 'MASAKAN',
-      limit: 'HAD KALORI',
-      editCuisines: 'Sunting masakan',
-      addCuisine: 'Tambah satu masakan',
-      addCuisinePlaceholder: 'Thai, Nyonya, Jepun',
-      removeCuisine: 'Buang {{cuisine}}',
-      kcal: 'kcal',
-      less: 'Kurangkan kalori',
-      more: 'Tambahkan kalori',
-      leftToday: 'baki {{kcal}}',
-      healthy: 'Lebih ringan',
-      anything: 'Apa sahaja',
-      healthyA11y: 'Cenderung ke hidangan yang lebih ringan',
-      action: 'Cadangkan sesuatu',
-    },
-
-    picks: {
-      title: 'Idea untuk {{meal}}',
-      thinking: 'Mencari sesuatu untuk {{meal}}',
-      thinkingA11y: 'Memikirkan apa hendak dicadangkan',
-      summary: '{{focus}}, {{cuisine}}, bawah {{kcal}} kcal',
-      protein: '{{grams}}g protein',
-      retry: 'Cuba lagi',
-      emptyTitle: 'Tiada apa-apa terlintas',
-      emptyBody: 'Tanya sekali lagi, atau longgarkan salah satu jawapan.',
-    },
-
-    detail: {
-      unit: 'KCAL, {{portion}}',
-      leftAfter: 'baki {{kcal}} kcal selepasnya',
-      overAfter: 'lebih {{kcal}} kcal selepasnya',
-      why: 'KENAPA INI SESUAI',
-      protein: 'Protein',
-      carbs: 'Karbo',
-      fat: 'Lemak',
-      sodium: 'Natrium',
-    },
-
-    meal: {
-      breakfast: 'Sarapan',
-      lunch: 'Makan tengah hari',
-      dinner: 'Makan malam',
-      snack: 'Snek',
-    },
-    mealFor: {
-      breakfast: 'sarapan',
-      lunch: 'makan tengah hari',
-      dinner: 'makan malam',
-      snack: 'snek',
-    },
-    focus: {
-      protein: 'Protein',
-      balanced: 'Seimbang',
-      carbs: 'Karbo',
-    },
-    focusShort: {
-      protein: 'Tinggi protein',
-      balanced: 'Seimbang',
-      carbs: 'Tinggi karbo',
-    },
-
-    sodium: {
-      low: 'rendah',
-      medium: 'sederhana',
-      high: 'tinggi',
-    },
-
-    ready_one: '{{count}} idea sudah sedia',
-    ready_other: '{{count}} idea sudah sedia',
-    readyAction: 'Lihat',
-
-    failed: 'Tidak dapat mengambil sebarang cadangan. Cuba lagi sebentar nanti.',
   },
 } satisfies Bundle

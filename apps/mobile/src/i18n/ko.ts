@@ -195,7 +195,7 @@ export const ko = {
     aiLanguage: {
       open: 'AI 기능이 쓰는 언어',
       title: 'AI 기능은 영어로 작동합니다',
-      body: '접시 촬영, 먹은 것을 말로 적기, 다음에 뭘 먹을지 묻기는 모두 영어를 가장 잘 읽는 모델로 갑니다. 음식을 영어로 적어 주시면 더 정확하게 읽습니다.',
+      body: '접시 촬영과 먹은 것을 말로 적기는 모두 영어를 가장 잘 읽는 모델로 갑니다. 음식을 영어로 적어 주시면 더 정확하게 읽습니다.',
       results:
         '돌아오는 것도 영어입니다. 음식 이름, 재료, 1인분 크기는 모두 음식 목록에 영어로 저장되어 있어서, 앱을 어떤 언어로 설정하든 영어로 도착합니다.',
       dishes: '음식 이름은 적힐 때의 언어 그대로 남습니다.',
@@ -1433,11 +1433,6 @@ export const ko = {
           free: '',
           pro: '',
         },
-        suggest: {
-          label: '다음에 뭘 먹을지 묻기',
-          free: '',
-          pro: '',
-        },
         recipes: {
           label: '만든 요리 저장',
           free: '음식 {{recipes}}개',
@@ -1527,7 +1522,6 @@ export const ko = {
         refine: '설명으로 식사를 고치려면 RiceCal Pro가 필요합니다.',
         read_recipe: '사진으로 음식을 채우려면 RiceCal Pro가 필요합니다.',
         new_recipe: '내 음식을 {{recipes}}개 넘게 두려면 RiceCal Pro가 필요합니다.',
-        suggest: '다음에 뭘 먹을지 물으려면 RiceCal Pro가 필요합니다.',
         trend_range: '한 주보다 더 거슬러 보려면 RiceCal Pro가 필요합니다.',
         review: '더 오래된 돌아보기를 읽으려면 RiceCal Pro가 필요합니다.',
         nudge: 'RiceCal Pro는 한도를 없앱니다.',
@@ -1545,7 +1539,6 @@ export const ko = {
       perks: {
         log: '찍고, 읽고, 말하고',
         database: '모든 음식과 제품',
-        suggest: '뭘 먹을지 묻기',
       },
       manageNote: '프로필의 구독에서 언제든 관리하거나 해지할 수 있습니다.',
       manageNoteLifetime: '한 번 결제로 끝. 갱신도 해지도 없습니다.',
@@ -1832,88 +1825,5 @@ export const ko = {
       burnValue: '{{value}} kcal',
       distanceValue: '{{value}} km 이동',
     },
-  },
-
-  suggest: {
-    card: {
-      title: '뭘 먹을지 모르겠나요?',
-    },
-
-    ask: {
-      title: '어떤 걸 찾으시나요?',
-      meal: '식사',
-      focus: '영양소',
-      cuisine: '요리 종류',
-      limit: '칼로리 한도',
-      editCuisines: '요리 종류 편집',
-      addCuisine: '요리 종류 추가',
-      addCuisinePlaceholder: '태국, 뇨냐, 일식',
-      removeCuisine: '{{cuisine}} 빼기',
-      kcal: 'kcal',
-      less: '칼로리 줄이기',
-      more: '칼로리 늘리기',
-      leftToday: '{{kcal}} 남음',
-      healthy: '가볍게',
-      anything: '아무거나',
-      healthyA11y: '가벼운 음식 쪽으로',
-      action: '뭔가 추천해 주세요',
-    },
-
-    picks: {
-      title: '{{meal}} 아이디어',
-      thinking: '{{meal}}에 맞는 것을 찾는 중',
-      thinkingA11y: '무엇을 추천할지 생각하는 중',
-      summary: '{{focus}}, {{cuisine}}, {{kcal}} kcal 이하',
-      protein: '단백질 {{grams}}g',
-      retry: '다시 시도',
-      emptyTitle: '떠오르는 것이 없습니다',
-      emptyBody: '다시 물어보거나, 조건 하나를 느슨하게 해보세요.',
-    },
-
-    detail: {
-      unit: 'KCAL, {{portion}}',
-      leftAfter: '먹어도 {{kcal}} kcal 남음',
-      overAfter: '먹으면 {{kcal}} kcal 초과',
-      why: '왜 잘 맞나요',
-      protein: '단백질',
-      carbs: '탄수화물',
-      fat: '지방',
-      sodium: '나트륨',
-    },
-
-    meal: {
-      breakfast: '아침',
-      lunch: '점심',
-      dinner: '저녁',
-      snack: '간식',
-    },
-    mealFor: {
-      breakfast: '아침',
-      lunch: '점심',
-      dinner: '저녁',
-      snack: '간식',
-    },
-    focus: {
-      protein: '단백질',
-      balanced: '균형',
-      carbs: '탄수화물',
-    },
-    focusShort: {
-      protein: '고단백',
-      balanced: '균형',
-      carbs: '고탄수',
-    },
-
-    sodium: {
-      low: '낮음',
-      medium: '보통',
-      high: '높음',
-    },
-
-    ready_one: '아이디어 {{count}}개가 준비됐습니다',
-    ready_other: '아이디어 {{count}}개가 준비됐습니다',
-    readyAction: '보기',
-
-    failed: '추천을 가져오지 못했습니다. 잠시 후 다시 시도하세요.',
   },
 } satisfies Bundle

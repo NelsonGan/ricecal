@@ -101,8 +101,7 @@ export const common = {
 
   /**
    * What the language setting does not change. Every word of the interface is
-   * translated; the model that reads a plate, reads a typed meal and answers "what
-   * should I eat" is not. It works best in English, and it answers against a
+   * translated; the model that reads a plate and reads a typed meal is not. It works best in English, and it answers against a
    * catalogue whose dish names and serving labels are stored in English.
    *
    * Said where a language is chosen, and said twice: `note` under the control for
@@ -112,7 +111,7 @@ export const common = {
   aiLanguage: {
     open: 'What the AI features read and write',
     title: 'The AI features work in English',
-    body: 'Snapping a plate, saying what you ate in words and asking what to eat next all go to a model that reads English best. Describe your food in English and it understands you more closely.',
+    body: 'Snapping a plate and saying what you ate in words both go to a model that reads English best. Describe your food in English and it understands you more closely.',
     results:
       'What comes back is in English too. Dish names, ingredients and serving sizes are stored in English in the food catalogue, so that is the language they arrive in whatever the app is set to.',
     /**
