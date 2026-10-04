@@ -70,7 +70,10 @@ function Probe() {
   return <Text>{loading ? 'loading' : `user:${userId ?? 'none'}`}</Text>
 }
 
+const clients = new Set<QueryClient>()
+
 function mount(client: QueryClient) {
+  clients.add(client)
   return render(
     <QueryClientProvider client={client}>
       <SessionProvider>
@@ -104,6 +107,11 @@ beforeEach(() => {
   // Shaped like the real one, which awaits the keychain read and then reports
   // what it found — so a test that sets one of these has set both.
   mockWhenStoredSession.mockImplementation(async () => mockStoredSession())
+})
+
+afterEach(() => {
+  for (const client of clients) client.clear()
+  clients.clear()
 })
 
 /** A promise that stays out, the way supabase's init does with no connection. */

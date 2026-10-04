@@ -34,7 +34,6 @@ export {
   useDayLog,
   useDayMarks,
   useDayPlates,
-  useNutritionRange,
   usePrefetchDays,
   useStreak,
 } from './day'
@@ -65,7 +64,6 @@ export {
   usePendingSnaps,
 } from './pending-snaps'
 export {
-  removeAvatar,
   removeMealPhoto,
   type StoredImageSource,
   storedImageSource,

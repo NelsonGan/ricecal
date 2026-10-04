@@ -29,9 +29,6 @@ type Native = {
 
 const native = requireOptionalNativeModule<Native>('RiceCalWidgets')
 
-/** Whether the home screen is reachable at all from this build. */
-export const widgetsAvailable = native !== null
-
 /**
  * Publish what the widgets should draw, and ask them to redraw.
  *

@@ -55,8 +55,6 @@ export const keys = {
    * budget, and the pass that wrote it has a window rather than a date.
    */
   dayAll: (userId: string) => ['day', userId] as const,
-  /** Totals for a date range, for the charts and the weekly report. */
-  nutrition: (userId: string, from: string, to: string) => ['nutrition', userId, from, to] as const,
   /**
    * One week of dots under the strip on Today: eaten, goal and movement per day.
    */
@@ -147,21 +145,13 @@ export const keys = {
   reviewMeals: (userId: string, kind: string, start: string) =>
     ['reviews', userId, kind, start, 'meals'] as const,
 
-  /**
-   * Movement: the same series and summary pair as Trends, plus the two lists
-   * the Activity tab needs, a day's sessions and a day's hours.
-   *
-   * `activitySessions` takes a nullable date because one query serves both the
-   * day's list and the whole history. The null is part of the key so the two
-   * cannot overwrite each other.
-   */
+  /** The selected day's movement and workouts. */
   activityDay: (userId: string, date: string) => ['activity', userId, 'day', date] as const,
-  activitySessions: (userId: string, date: string | null) =>
-    ['activity', userId, 'sessions', date ?? 'all'] as const,
+  activitySessions: (userId: string, date: string) =>
+    ['activity', userId, 'sessions', date] as const,
   /**
    * The prefix of all of the above, and what the sync invalidates. One pass
-   * moves a day, a chart column, a summary tile and possibly a session list,
-   * and it does not know which range or date is on screen.
+   * moves days and session lists without knowing which date is on screen.
    */
   activityAll: (userId: string) => ['activity', userId] as const,
   /** Keyed by session, since it is only asked for by id. */

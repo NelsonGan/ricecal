@@ -23,15 +23,6 @@ export function unwrap<T>(result: PostgrestResponse<T>): T[] {
 }
 
 /**
- * The same, for a request that must return exactly one row.
- *
- * `.single()` and `.select().single()` type their data as nullable because
- * PostgREST can answer with nothing. After an insert or an update that matched
- * by primary key, nothing means the write did not land — RLS refused it, or
- * the row is gone — and that has to be an error rather than a `null` handed to
- * a caller expecting a record.
- */
-/**
  * For `.maybeSingle()`: no row is an answer, not a failure.
  *
  * Typed against `PostgrestSingleResponse` rather than the maybe-single alias
@@ -43,6 +34,15 @@ export function unwrapMaybe<T>(result: PostgrestSingleResponse<T>): T {
   return result.data
 }
 
+/**
+ * The same, for a request that must return exactly one row.
+ *
+ * `.single()` and `.select().single()` type their data as nullable because
+ * PostgREST can answer with nothing. After an insert or an update that matched
+ * by primary key, nothing means the write did not land — RLS refused it, or
+ * the row is gone — and that has to be an error rather than a `null` handed to
+ * a caller expecting a record.
+ */
 export function unwrapOne<T>(result: PostgrestSingleResponse<T>): NonNullable<T> {
   if (result.error) throw result.error
   if (result.data === null || result.data === undefined) {
@@ -50,6 +50,13 @@ export function unwrapOne<T>(result: PostgrestSingleResponse<T>): NonNullable<T>
   }
   return result.data as NonNullable<T>
 }
+
+/** SQL numeric fields may arrive as strings. Keep unknown readings as null. */
+export const nullableNumber = (value: number | string | null): number | null =>
+  value === null ? null : Number(value)
+
+/** Counts and water treat an absent value as zero, unlike calories and weight. */
+export const numberOrZero = (value: number | string | null): number => Number(value ?? 0)
 
 /** `yyyy-MM-dd` for a date, in local time. `toISOString` shifts the day east of UTC. */
 export function dateKey(date: Date): string {

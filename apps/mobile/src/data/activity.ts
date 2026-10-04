@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
 
 import { setPersonProps, track } from '@/lib/analytics'
 import type { Tables } from '@/lib/database.types'
 import { type ProviderId, parseHrZones, providerFor, sourceLabel } from '@/lib/health'
 import { supabase } from '@/lib/supabase'
-import { dateKey, datesBetween, seedMissing, unwrap, unwrapMaybe } from './client'
+import { dateKey, unwrap, unwrapMaybe } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
+import { usePrefetchDateRange } from './use-prefetch-date-range'
 
 /**
  * Movement on the read side: individual days, sessions and the connection.
@@ -170,66 +170,43 @@ export function useActivityDay(date: string) {
  * A day with no row is seeded as `null`, which is what `useActivityDay` promises
  * and what most dates genuinely are.
  */
+async function fetchActivityDays(userId: string, from: string, to: string, dates: string[]) {
+  const rows = new Map(
+    unwrap(
+      await supabase
+        .from('activity_days')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('log_date', from)
+        .lte('log_date', to),
+    ).map((row) => [row.log_date, toDay(row)]),
+  )
+  return dates.map((date) => rows.get(date) ?? null)
+}
+
 export function usePrefetchActivityDays(from: string, to: string) {
   const userId = useUserId()
-  const queryClient = useQueryClient()
-
-  useEffect(() => {
-    const dates = datesBetween(from, to)
-    if (
-      dates.every((date) => queryClient.getQueryData(keys.activityDay(userId, date)) !== undefined)
-    ) {
-      return
-    }
-
-    let cancelled = false
-    ;(async () => {
-      const rows = new Map(
-        unwrap(
-          await supabase
-            .from('activity_days')
-            .select('*')
-            .eq('user_id', userId)
-            .gte('log_date', from)
-            .lte('log_date', to),
-        ).map((row) => [row.log_date, toDay(row)]),
-      )
-      if (cancelled) return
-      seedMissing(
-        queryClient,
-        dates.map((date) => [keys.activityDay(userId, date), rows.get(date) ?? null] as const),
-      )
-      // Silent, like the meals it runs beside: a warm-up that fails costs
-      // nothing, because the day the user picks fetches itself.
-    })().catch(() => {})
-
-    return () => {
-      cancelled = true
-    }
-  }, [userId, from, to, queryClient])
+  usePrefetchDateRange(userId, from, to, keys.activityDay, fetchActivityDays)
 }
 
 /**
- * The workouts of one day, or of every day when `date` is null.
- *
- * Two callers, one query: the Activity tab wants today's, and History wants all
- * of them. Splitting these into two hooks would mean two cache keys holding the
- * same rows, and a session deleted from one list still showing in the other.
+ * The selected day's workouts, newest first.
  */
-export function useActivitySessions(date: string | null, limit = 100) {
+export function useActivitySessions(date: string) {
   const userId = useUserId()
 
   return useQuery({
     queryKey: keys.activitySessions(userId, date),
     queryFn: async (): Promise<ActivitySession[]> => {
-      const query = supabase
-        .from('activity_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('started_at', { ascending: false })
-        .limit(limit)
-
-      const rows = unwrap(await (date ? query.eq('log_date', date) : query))
+      const rows = unwrap(
+        await supabase
+          .from('activity_sessions')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('log_date', date)
+          .order('started_at', { ascending: false })
+          .limit(100),
+      )
       return rows.map(toSession)
     },
   })
@@ -353,18 +330,21 @@ export function useClearDemoActivity() {
       ).map((row) => row.log_date)
 
       if (demoDays.length > 0) {
-        await supabase
-          .from('activity_hours')
-          .delete()
-          .eq('user_id', userId)
-          .in('log_date', demoDays)
+        unwrapMaybe(
+          await supabase
+            .from('activity_hours')
+            .delete()
+            .eq('user_id', userId)
+            .in('log_date', demoDays),
+        )
       }
 
-      await Promise.all([
+      const results = await Promise.all([
         supabase.from('activity_sessions').delete().eq('user_id', userId).eq('provider', 'demo'),
         supabase.from('activity_days').delete().eq('user_id', userId).eq('provider', 'demo'),
         supabase.from('health_connections').delete().eq('user_id', userId).eq('provider', 'demo'),
       ])
+      for (const result of results) unwrapMaybe(result)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })

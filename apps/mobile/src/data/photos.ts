@@ -439,13 +439,6 @@ export function removeMealPhoto(path: string): Promise<void> {
 }
 
 /**
- * Deletes a profile picture.
- */
-export function removeAvatar(path: string): Promise<void> {
-  return removeImages([path])
-}
-
-/**
  * Forgets every cached picture, on the way out of an account.
  *
  * Keyed on the signed URL, entries aged out on their own every hour. Keyed on

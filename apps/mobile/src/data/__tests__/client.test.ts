@@ -51,15 +51,19 @@ describe('datesBetween', () => {
 })
 
 describe('seedMissing', () => {
+  let client: QueryClient
+  beforeEach(() => {
+    client = new QueryClient()
+  })
+  afterEach(() => client.clear())
+
   it('fills in a key that holds nothing', () => {
-    const client = new QueryClient()
     seedMissing(client, [[['day', 'u1', '2026-03-02'], { kcal: 400 }]])
 
     expect(client.getQueryData(['day', 'u1', '2026-03-02'])).toEqual({ kcal: 400 })
   })
 
   it('leaves a key that already holds something', () => {
-    const client = new QueryClient()
     client.setQueryData(['day', 'u1', '2026-03-02'], { kcal: 900 })
 
     seedMissing(client, [[['day', 'u1', '2026-03-02'], { kcal: 400 }]])
@@ -73,7 +77,6 @@ describe('seedMissing', () => {
    * and the warm-up does nothing for exactly the days it is cheapest on.
    */
   it('seeds null, and then treats that day as known', () => {
-    const client = new QueryClient()
     const key = ['activity', 'u1', 'day', '2026-03-02']
 
     seedMissing(client, [[key, null]])

@@ -158,6 +158,9 @@ carries no secret, and the extra hop is gone. Measured, a search went from about
 420 ms to about 177 ms, having previously travelled to Singapore and back
 before it started.
 
+The Worker caches signing keys for ten minutes. Concurrent lookups share one
+request, including the refresh after a key rotation; a failed lookup can retry.
+
 Two credentials reach that Worker, and `ROUTES` in its `index.ts` is the policy:
 
 - A **user's JWT** reaches `/search` and `/food`, and nothing else.
@@ -916,6 +919,12 @@ network request exist. i18next is initialised synchronously at import time or th
 first render paints raw keys, and it cannot wait for a row. It is also the only
 store that works during onboarding, where the language is chosen on screen one
 and the account does not exist until the last.
+
+All thirteen languages ship in the binary, but startup evaluates only English
+and the selected language. `setLanguage()` synchronously loads every namespace
+before switching, so no network or loading frame is needed. Date locales use
+the same approach through individual date-fns entry points, avoiding evaluation
+of the library's full locale index. Already selected bundles are reused.
 
 `user_settings.language` is still written, by `LanguageSync`, **in one direction
 only**. The row is a copy the server can read; it never decides what is on
@@ -2206,6 +2215,10 @@ What that costs is the property people expect: correcting a recipe no longer
 moves last week's diary. It is the same trade the diary makes with the catalogue
 at large.
 
+Saving refreshes the recipe, its ingredients, the shelves and the ownership
+count. It leaves the diary and trend caches alone because their snapshots did
+not change.
+
 **Ingredients are stored per unit.** `kcal_per_unit` is what one gram, one
 millilitre or one of the thing costs, and `amount` is how many went in. That is
 what survives the amount being corrected: 400 ml of santan changed to 250
@@ -2658,6 +2671,8 @@ during account changes cannot refill another viewer's cache. Offline social
 writes are disabled with visible feedback; private diary offline behavior stays
 as it is. Reusable social cards, people rows, photo rendering, lists and report
 controls live under `features/social` rather than being copied into routes.
+`SocialList.tsx` owns paging, loading states and the media viewport; it reuses
+deduplicated rows while scrolling instead of folding every page on each viewport change.
 A newly followed author stays in the loaded Discover results until a deliberate
 refresh, while the card updates immediately and the Following feed is refreshed.
 A like is drawn at once on every cached copy of its post and put back if the
@@ -2811,6 +2826,12 @@ calendar week, each fetching only its own seven days. Picking a day moves
 `selectedDate` (`data/selected-date.tsx`, the one piece of genuinely
 client-owned state) and everything below follows it: the ring, the water, the
 entry list, and anything logged while it is selected.
+
+Meals and movement share `data/use-prefetch-date-range.ts` to warm the dates a
+week can reach. It skips known dates and offline requests, resumes on reconnect,
+and shares an in-flight request for the same account and range. Only missing
+date keys are filled, so a late warm-up cannot undo a drink just added or cache
+a second copy of the week.
 
 **The calorie card is one compact reading.** A 112pt ring beside the three
 macros, each on one line as label, bar and "eaten/goal g", inside less padding
@@ -3201,9 +3222,9 @@ seeing, while making the route into the feature invisible to exactly the person
 who had not found it yet.
 
 **How many sections a review has is data.** `reviewSteps` reads the summary: the
-card, the food and the calories always hold, and the body section exists only if
-there was a weigh-in or a watch. A month before the health store was connected is
-three sections rather than four, of which the last would be dashes.
+card and calories always hold, food needs meals, and the body section exists only if
+there was a weigh-in or a watch. A month with meals, before the health store was connected, has three sections
+rather than four, of which the last would be dashes.
 
 **A tap on a card shares it.** Every card draws itself into a picture through
 Skia's `makeImageFromView` and offers it in a sheet with a Share button. The
@@ -4138,6 +4159,12 @@ module that tracking is fired from would drag an untransformable dependency into
 most of the test suite. Firebase Analytics is loaded lazily as well, so an OTA
 bundle stays safe on a native binary built before the module existed.
 
+Startup shares one initialization promise across repeated root effects.
+Purchases, Mixpanel and Firebase initialize concurrently, and provider
+registration waits for both analytics providers to finish. Mixpanel is loaded
+only when production collection is configured. The foreground revenue retry
+listener is registered once.
+
 Events fired before the SDKs finish starting are queued and drained on
 registration. Each provider has its own serial queue. Identification finishes before profiles
 and events; failed identity writes retry before later work. Work is dropped if
@@ -4483,7 +4510,7 @@ promise transaction-ID deduplication across producers; use one revenue owner.
 
 | Property / identifier | Mixpanel | GA4 / RevenueCat | Source and send condition |
 | --- | --- | --- | --- |
-| Supabase account UUID | `distinct_id` | GA4 `user_id`; RevenueCat App User ID | `data/session.tsx`; identify before profiles/events and before checkout or restore. Direct account switches reset Mixpanel and clear app-owned Firebase user properties before identifying the successor |
+| Supabase account UUID | `distinct_id` | GA4 `user_id`; RevenueCat App User ID | `data/session.tsx`; independent SDKs start concurrently once, then queued identity is delivered after provider readiness, before profiles/events and before checkout or restore. Direct account switches reset Mixpanel and clear app-owned Firebase user properties before identifying the successor |
 | Account email | People `$email` | RevenueCat `$email`; excluded from GA4 | `identifyUser` / `identifyPurchaser`; support lookup only |
 | Firebase installation ID | Not used | RevenueCat `$firebaseAppInstanceId` | Native Firebase `getAppInstanceId`; never a UUID, email, fabricated value or Firebase app ID |
 | Mixpanel account ID | Same Supabase UUID | RevenueCat `$mixpanelDistinctId` | Identified production account, confirmed attribute delivery |
@@ -5081,6 +5108,9 @@ request. Running RLS tests as `postgres` proves nothing: the table owner bypasse
 RLS and every query passes.
 
 ### The catalogue
+
+`pnpm --filter @ricecal/catalogue-worker test` checks JWT verification, concurrent
+key lookups, rotation and recovery from a failed lookup without a live project.
 
 Not in Postgres, so pgTAP says nothing about it. `pnpm foods:gate` is what guards
 it: thirty queries and, for each, the dish somebody typing it is after, read from

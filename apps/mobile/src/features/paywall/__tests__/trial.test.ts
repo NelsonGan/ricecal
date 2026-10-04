@@ -1,5 +1,4 @@
-import '@/i18n'
-import i18n, { SUPPORTED_LANGUAGES } from '@/i18n'
+import i18n, { SUPPORTED_LANGUAGES, setLanguage } from '@/i18n'
 import { trialDurationText, trialProgress } from '../trial'
 
 it('translates day and month trial periods without a seven-day assumption', () => {
@@ -11,6 +10,7 @@ it('translates day and month trial periods without a seven-day assumption', () =
 
 it('provides each store period in every bundled language', () => {
   for (const language of SUPPORTED_LANGUAGES) {
+    setLanguage(language)
     const t = i18n.getFixedT(language, 'paywall')
     for (const unit of ['day', 'week', 'month', 'year'] as const) {
       const phrase = trialDurationText(t, { unit, count: 2 })
@@ -18,6 +18,7 @@ it('provides each store period in every bundled language', () => {
       expect(phrase).not.toContain('hard.trialDuration')
     }
   }
+  setLanguage('en')
 })
 
 it('uses the purchased trial dates for its progress', () => {

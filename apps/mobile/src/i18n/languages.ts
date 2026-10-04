@@ -1,5 +1,4 @@
 import type { Locale } from 'date-fns'
-import { bn, enGB, hi, id, ja, ko, ms, ta, th, vi, zhCN, zhTW } from 'date-fns/locale'
 import { getLocales } from 'expo-localization'
 
 import type { TextScript } from '@/ui'
@@ -30,29 +29,28 @@ import type { TextScript } from '@/ui'
  * it is for.
  */
 export const LANGUAGES = [
-  { code: 'en', label: 'English', script: 'latin', dateFns: enGB },
-  { code: 'zh-Hans', label: '简体中文', script: 'cjk', dateFns: zhCN },
-  { code: 'zh-Hant', label: '繁體中文', script: 'cjk', dateFns: zhTW },
-  { code: 'ms', label: 'Bahasa Melayu', script: 'latin', dateFns: ms },
-  { code: 'id', label: 'Bahasa Indonesia', script: 'latin', dateFns: id },
-  { code: 'th', label: 'ไทย', script: 'tall', dateFns: th },
-  { code: 'vi', label: 'Tiếng Việt', script: 'latin', dateFns: vi },
+  { code: 'en', label: 'English', script: 'latin' },
+  { code: 'zh-Hans', label: '简体中文', script: 'cjk' },
+  { code: 'zh-Hant', label: '繁體中文', script: 'cjk' },
+  { code: 'ms', label: 'Bahasa Melayu', script: 'latin' },
+  { code: 'id', label: 'Bahasa Indonesia', script: 'latin' },
+  { code: 'th', label: 'ไทย', script: 'tall' },
+  { code: 'vi', label: 'Tiếng Việt', script: 'latin' },
   // date-fns ships no Filipino locale, so dates in a Filipino interface are
   // formatted in English. Every word around them is translated; a month name is
   // the one thing this bundle cannot reach, and an English "October" beside
   // Filipino copy is a smaller fault than no Filipino at all.
-  { code: 'fil', label: 'Filipino', script: 'latin', dateFns: enGB },
-  { code: 'ja', label: '日本語', script: 'cjk', dateFns: ja },
-  { code: 'ko', label: '한국어', script: 'cjk', dateFns: ko },
-  { code: 'hi', label: 'हिन्दी', script: 'tall', dateFns: hi },
-  { code: 'ta', label: 'தமிழ்', script: 'tall', dateFns: ta },
-  { code: 'bn', label: 'বাংলা', script: 'tall', dateFns: bn },
+  { code: 'fil', label: 'Filipino', script: 'latin' },
+  { code: 'ja', label: '日本語', script: 'cjk' },
+  { code: 'ko', label: '한국어', script: 'cjk' },
+  { code: 'hi', label: 'हिन्दी', script: 'tall' },
+  { code: 'ta', label: 'தமிழ்', script: 'tall' },
+  { code: 'bn', label: 'বাংলা', script: 'tall' },
 ] as const satisfies readonly {
   code: string
   label: string
   /** How much vertical room a line of it needs. See `src/ui/TextScript.tsx`. */
   script: TextScript
-  dateFns: Locale
 }[]
 
 export type Language = (typeof LANGUAGES)[number]['code']
@@ -71,8 +69,24 @@ export function scriptFor(language: Language): TextScript {
 }
 
 /** The date-fns locale that goes with a language. See `applyDateLocale`. */
+const dateLocales: Record<Language, () => Locale> = {
+  en: () => require('date-fns/locale/en-GB').enGB,
+  'zh-Hans': () => require('date-fns/locale/zh-CN').zhCN,
+  'zh-Hant': () => require('date-fns/locale/zh-TW').zhTW,
+  ms: () => require('date-fns/locale/ms').ms,
+  id: () => require('date-fns/locale/id').id,
+  th: () => require('date-fns/locale/th').th,
+  vi: () => require('date-fns/locale/vi').vi,
+  fil: () => require('date-fns/locale/en-GB').enGB,
+  ja: () => require('date-fns/locale/ja').ja,
+  ko: () => require('date-fns/locale/ko').ko,
+  hi: () => require('date-fns/locale/hi').hi,
+  ta: () => require('date-fns/locale/ta').ta,
+  bn: () => require('date-fns/locale/bn').bn,
+}
+
 export function dateLocaleFor(language: Language): Locale {
-  return LANGUAGES.find((entry) => entry.code === language)?.dateFns ?? enGB
+  return dateLocales[language]()
 }
 
 /**

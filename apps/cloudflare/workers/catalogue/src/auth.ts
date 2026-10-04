@@ -32,6 +32,7 @@ type Jwk = JsonWebKey & { kid?: string; alg?: string }
  * up on its own and long enough that a busy isolate is not refetching.
  */
 let cache: { keys: Jwk[]; at: number } | null = null
+let inFlight: Promise<Jwk[]> | null = null
 
 const JWKS_TTL_MS = 10 * 60_000
 
@@ -70,9 +71,21 @@ function jsonPart(b64url: string): Record<string, unknown> | null {
 async function keys(supabaseUrl: string, force: boolean): Promise<Jwk[]> {
   const fresh = cache && Date.now() - cache.at < JWKS_TTL_MS
   if (fresh && !force) return cache?.keys ?? []
+  // A cold isolate or key rotation can receive several searches together.
+  // They all need the same document, so share the lookup until it settles.
+  if (inFlight) return inFlight
   if (force && Date.now() - lastFetchAttempt < REFETCH_FLOOR_MS) return cache?.keys ?? []
 
   lastFetchAttempt = Date.now()
+  inFlight = fetchKeys(supabaseUrl)
+  try {
+    return await inFlight
+  } finally {
+    inFlight = null
+  }
+}
+
+async function fetchKeys(supabaseUrl: string): Promise<Jwk[]> {
   try {
     const res = await fetch(`${supabaseUrl}/auth/v1/.well-known/jwks.json`, {
       // Cloudflare's own cache in front of a document that changes on rotation

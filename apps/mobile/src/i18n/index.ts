@@ -2,13 +2,8 @@ import { setDefaultOptions } from 'date-fns'
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
-import { bn } from './bn'
+import type { Bundle } from './bundle'
 import { en } from './en'
-import { fil } from './fil'
-import { hi } from './hi'
-import { id } from './id'
-import { ja } from './ja'
-import { ko } from './ko'
 import {
   DEFAULT_LANGUAGE,
   dateLocaleFor,
@@ -19,13 +14,7 @@ import {
   SUPPORTED_LANGUAGES,
   scriptFor,
 } from './languages'
-import { ms } from './ms'
 import { storedLanguage, storeLanguage } from './preference'
-import { ta } from './ta'
-import { th } from './th'
-import { vi } from './vi'
-import { zhHans } from './zh-Hans'
-import { zhHant } from './zh-Hant'
 
 export { storedLanguage } from './preference'
 export {
@@ -39,29 +28,24 @@ export {
 }
 
 /**
- * Every bundle, keyed by the code the picker and the device resolve to.
- *
- * Bundled rather than fetched, all of them, which is what keeps `t`
- * synchronous everywhere: there is no load to await and no frame where a screen
- * can render its own keys. Thirteen bundles of copy is a few hundred kilobytes
- * of strings against an app that ships typefaces and several hundred
- * illustrations.
+ * Every language still ships in the app. Require the selected one synchronously
+ * so switching works offline without evaluating twelve unused bundles at launch.
  */
-const resources = {
-  en,
-  'zh-Hans': zhHans,
-  'zh-Hant': zhHant,
-  ms,
-  id,
-  th,
-  vi,
-  fil,
-  ja,
-  ko,
-  hi,
-  ta,
-  bn,
-} satisfies Record<Language, unknown>
+const bundles: Record<Language, () => Bundle> = {
+  en: () => en,
+  'zh-Hans': () => require('./zh-Hans').zhHans,
+  'zh-Hant': () => require('./zh-Hant').zhHant,
+  ms: () => require('./ms').ms,
+  id: () => require('./id').id,
+  th: () => require('./th').th,
+  vi: () => require('./vi').vi,
+  fil: () => require('./fil').fil,
+  ja: () => require('./ja').ja,
+  ko: () => require('./ko').ko,
+  hi: () => require('./hi').hi,
+  ta: () => require('./ta').ta,
+  bn: () => require('./bn').bn,
+}
 
 /**
  * What the app opens in: the choice if there is one, the phone's language if it
@@ -90,7 +74,7 @@ function applyDateLocale(language: Language): void {
 applyDateLocale(initialLanguage)
 
 i18n.use(initReactI18next).init({
-  resources,
+  resources: { en, [initialLanguage]: bundles[initialLanguage]() },
   lng: initialLanguage,
   fallbackLng: DEFAULT_LANGUAGE,
   // Only ever given an exact code. `deviceLanguage()` resolves the phone's
@@ -98,8 +82,7 @@ i18n.use(initReactI18next).init({
   // bare `zh` cannot decide — so i18next never has to guess from a region tag.
   supportedLngs: SUPPORTED_LANGUAGES,
   defaultNS: 'common',
-  // Every namespace is bundled, so nothing is fetched and nothing can arrive
-  // late. Loading them all up front keeps `t` synchronous everywhere.
+  // Every namespace of the active language is ready before the first render.
   ns: Object.keys(en),
   interpolation: {
     // React escapes for us. Leaving i18next's escaping on would turn an
@@ -122,6 +105,11 @@ i18n.use(initReactI18next).init({
  * Supabase client at import time. `LanguageSync` catches the row up.
  */
 export function setLanguage(language: Language): void {
+  if (!i18n.hasResourceBundle(language, 'common')) {
+    for (const [namespace, resources] of Object.entries(bundles[language]())) {
+      i18n.addResourceBundle(language, namespace, resources)
+    }
+  }
   storeLanguage(language)
   applyDateLocale(language)
   void i18n.changeLanguage(language)
