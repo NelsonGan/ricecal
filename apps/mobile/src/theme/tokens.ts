@@ -12,25 +12,6 @@
  * literally against the RGB triples in global.css.
  */
 
-/** Brand ramps, independent of light/dark. Named after the food, not the role. */
-export const palette = {
-  /** Pandan — primary. Growth, "on track", the colour of a filled button. */
-  pandan: '#2FBF71',
-  pandanDeep: '#1B8A4E',
-  /** Hibiscus — accent. Exercise, protein, destructive. Never used for alarm. */
-  hibiscus: '#FF4D6D',
-  hibiscusDeep: '#D62F4E',
-  /** Kaya — carbs, rewards, "double check". */
-  kaya: '#FFC145',
-  kayaDeep: '#D99A1F',
-  /** Water — hydration. */
-  water: '#4CC9F0',
-  waterDeep: '#1B87A8',
-  /** Teh tarik — dietary fat. Warmth. */
-  teh: '#C98B5E',
-  tehDeep: '#A66C43',
-} as const
-
 /**
  * Role -> colour, per mode. Every key must exist in BOTH maps; a role defined
  * in only one resolves to nothing in the other, which renders as an invisible

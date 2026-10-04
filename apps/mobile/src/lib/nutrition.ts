@@ -118,22 +118,10 @@ function sumMacroList(items: readonly Macros[], scale = 1): Macros {
   }
 }
 
-// `entriesForMeal`, `mealKcal` and `mealForHour` lived here for the
-// card-per-meal day and the selector that guessed which meal you were logging.
-// Today is one chronological list now, so they are gone, along with the second
-// copy of `entriesForMeal` in `data/day.ts` that had drifted to a different sort
-// order.
-
 /** 0 to 1, clamped, for the ring and the bars. */
 export function progressOf(done: number, goal: number): number {
   if (goal <= 0) return 0
   return Math.min(1, Math.max(0, done / goal))
-}
-
-export function bmi(heightCm: number, weightKg: number): number {
-  const metres = heightCm / 100
-  if (metres <= 0) return 0
-  return Math.round((weightKg / (metres * metres)) * 10) / 10
 }
 
 /**

@@ -79,10 +79,13 @@ export function CaloriesPanel({ range, buckets, summary }: CaloriesPanelProps) {
 
   // Highest average first. Only buckets with something in them: a month nobody
   // logged is not a notable month.
-  const notable = [...buckets]
-    .filter((bucket) => bucket.kcal !== null)
-    .sort((a, b) => (b.kcal ?? 0) - (a.kcal ?? 0))
-    .slice(0, NOTABLE)
+  const notable =
+    range === '1y'
+      ? buckets
+          .filter((bucket) => bucket.kcal !== null)
+          .sort((a, b) => (b.kcal ?? 0) - (a.kcal ?? 0))
+          .slice(0, NOTABLE)
+      : []
 
   return (
     <>

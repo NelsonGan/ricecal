@@ -2,33 +2,13 @@ import { useQuery } from '@tanstack/react-query'
 
 import type { Database } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
-import { unwrap } from './client'
+import { nullableNumber as num, numberOrZero as orZero, unwrap } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
 import type { TrendBucket, TrendRange, TrendSummary } from './types'
 
 type SeriesRow = Database['public']['Functions']['trend_series']['Returns'][number]
 type SummaryRow = Database['public']['Functions']['trend_summary']['Returns'][number]
-
-/**
- * A `numeric` column, as a number or as nothing.
- *
- * PostgREST sends `numeric` as a STRING — it is arbitrary precision and a JSON
- * number is not — while `integer` arrives as a number. The generated types call
- * both of them `number`, so every average on these rows has to be converted
- * here or it reaches a chart as `"68.60"`, which renders, sorts like a word and
- * fails silently the first time something subtracts it.
- */
-const num = (value: number | null): number | null => (value === null ? null : Number(value))
-
-/**
- * The same, where absent means zero rather than unknown.
- *
- * Every count, and every water figure. A day nobody logged water on is a day of
- * no water, not a day whose water is a mystery — which is the one place these
- * two helpers must not be swapped, because `null` calories mean the opposite.
- */
-const orZero = (value: number | null): number => (value === null ? 0 : Number(value))
 
 function toBucket(row: SeriesRow): TrendBucket {
   return {

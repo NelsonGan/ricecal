@@ -53,7 +53,7 @@ export function WeighInSheet({ date, onClose, unit, onUnitChange }: WeighInSheet
 
   const existing = date ? weighIns.find((entry) => entry.date === date) : undefined
   /** The newest reading BEFORE this day, which is what the sheet compares against. */
-  const previous = date ? [...weighIns].reverse().find((entry) => entry.date < date) : undefined
+  const previous = date ? weighIns.findLast((entry) => entry.date < date) : undefined
 
   /**
    * Both adjustments below happen DURING render rather than in an effect.

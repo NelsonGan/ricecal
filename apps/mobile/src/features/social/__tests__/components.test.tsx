@@ -3,7 +3,7 @@ import { View } from 'react-native'
 import { State } from 'react-native-gesture-handler'
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils'
 import type { SocialPost, SocialProfile } from '@/data/social'
-import i18n from '@/i18n'
+import i18n, { setLanguage } from '@/i18n'
 import { act, fireEvent, render, screen, userEvent } from '@/test-utils'
 import { icons } from '@/ui'
 import {
@@ -106,7 +106,7 @@ const post: SocialPost = {
 beforeEach(async () => {
   jest.clearAllMocks()
   mockFocused = true
-  await i18n.changeLanguage('en')
+  setLanguage('en')
   mockProfile.mockReturnValue({
     data: { ...person, user_id: 'viewer' },
     isPending: false,
@@ -366,7 +366,7 @@ it('keeps blocked people static while regular people remain navigable', async ()
 })
 
 it('announces social loading states in the active language', async () => {
-  await i18n.changeLanguage('ms')
+  setLanguage('ms')
   await render(
     <>
       <QueryNotice pending retry={jest.fn()} />
@@ -587,6 +587,7 @@ it.each([1, 2, 3])(
       return renderRow.mock.calls.flatMap((call) => (call[1] ? [call[0].id] : []))
     }
     expect(prepared()).toEqual(rows.slice(0, 3 * columns).map((row) => row.id))
+    const pageRows = list()?.props.data
     await act(async () => {
       list()?.props.viewabilityConfigCallbackPairs[0].onViewableItemsChanged({
         viewableItems: [
@@ -601,6 +602,7 @@ it.each([1, 2, 3])(
       })
     })
     expect(prepared()).toEqual(rows.slice(12 - 2 * columns, 12 + 3 * columns).map((row) => row.id))
+    expect(list()?.props.data).toBe(pageRows)
     await act(async () =>
       list()?.props.viewabilityConfigCallbackPairs[0].onViewableItemsChanged({
         viewableItems: [],

@@ -181,10 +181,3 @@ export function useRecentFoods() {
     },
   })
 }
-
-// `useTopFoods` and `useUsualFoods` read `user_food_stats` by frequency for the
-// nutrition screen and the quick selector, and both are gone. `useRecentFoods`
-// replaced them and is above, in a shape that owes nothing to that block.
-//
-// `user_food_stats` is still there, so a screen wanting "what I eat most" can
-// have those back out of git.

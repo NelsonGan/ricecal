@@ -75,18 +75,7 @@ export function weekOfYear(start: string): number {
   return getISOWeek(parseISO(start))
 }
 
-/**
- * The steps a story actually has, in order.
- *
- * Not a constant list: a review of a month before the watch arrived has no
- * movement and may have no weigh-ins, and a fourth step drawn from nothing is
- * worse than three, because the progress bar promises something the tap does not
- * deliver.
- *
- * The first three always hold. A period only reaches a story if it qualifies,
- * which means days with food in them, which means there is a card, a dish list
- * and a calorie chart to draw.
- */
+/** The review's sections. Food needs meals; body needs a scale or watch reading. */
 export type ReviewStep = 'card' | 'food' | 'calories' | 'body'
 
 export function reviewSteps(summary: ReviewSummary | null, meals: number): ReviewStep[] {

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import type { Database } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
-import { unwrap } from './client'
+import { nullableNumber as num, numberOrZero as orZero, unwrap } from './client'
 import { keys } from './keys'
 import { toIcon } from './mappers'
 import { useUserId } from './session'
@@ -12,20 +12,6 @@ type PeriodRow = Database['public']['Functions']['review_periods']['Returns'][nu
 type SummaryRow = Database['public']['Functions']['review_summary']['Returns'][number]
 type SeriesRow = Database['public']['Functions']['review_series']['Returns'][number]
 type MealRow = Database['public']['Functions']['review_meals']['Returns'][number]
-
-/**
- * A `numeric` column, as a number or as nothing.
- *
- * The same conversion `trends.ts` opens with, and for the same reason:
- * PostgREST sends `numeric` as a STRING because it is arbitrary precision and a
- * JSON number is not, while the generated types call it `number`. Left alone,
- * an average reaches a chart as `"1962"` — which renders, sorts like a word,
- * and fails silently the first time something subtracts it.
- */
-const num = (value: number | null): number | null => (value === null ? null : Number(value))
-
-/** The same, where absent means zero rather than unknown: every count. */
-const orZero = (value: number | null): number => (value === null ? 0 : Number(value))
 
 function toPeriod(row: PeriodRow): ReviewPeriod {
   return {
@@ -37,8 +23,7 @@ function toPeriod(row: PeriodRow): ReviewPeriod {
 
     kcal: num(row.kcal_avg),
     weightChange: num(row.weight_change),
-    // A `numeric[]` arrives as an array of strings for the reason above, and
-    // its nulls are the sparkline's gaps — so this maps rather than coalesces.
+    // Nulls are the sparkline's gaps, so this maps rather than coalesces.
     marks: (row.marks ?? []).map((mark) => num(mark as number | null)),
   }
 }

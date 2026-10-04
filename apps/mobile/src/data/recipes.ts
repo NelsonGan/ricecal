@@ -353,13 +353,6 @@ export function useSaveRecipe() {
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.recipe(recipeId) })
       queryClient.invalidateQueries({ queryKey: keys.recipeIngredients(recipeId) })
-      // Editing a recipe reprices its mirror, and the mirror is what past
-      // entries point at — so every day that has ever logged it now shows a
-      // different number. Which days those are is not something this mutation
-      // can know, hence the whole prefix.
-      queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
     },
   })
 }
@@ -445,8 +438,6 @@ export function usePublishRecipe() {
       if (isPublic) track('Recipe Published', { outcome: result.status })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.recipe(id) })
-      // Publishing runs the reviewer, which is a model call. Unpublishing does
-      // not, but it is one wasted invalidation against a figure that is only
     },
   })
 }

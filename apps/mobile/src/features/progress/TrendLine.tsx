@@ -121,23 +121,17 @@ export function TrendLine({
   // the line; they are not readings and must not be drawn as if they were.
   const measured = plotted.filter((entry) => entry.measured)
 
-  const line =
+  const path =
     width > 0 && plotted.length > 1
-      ? Skia.Path.MakeFromSVGString(
-          plotted
-            .map((entry, index) => `${index === 0 ? 'M' : 'L'} ${entry.x} ${entry.y}`)
-            .join(' '),
-        )
+      ? plotted.map((entry, index) => `${index === 0 ? 'M' : 'L'} ${entry.x} ${entry.y}`).join(' ')
       : null
 
-  const area =
-    width > 0 && plotted.length > 1
-      ? Skia.Path.MakeFromSVGString(
-          `${plotted
-            .map((entry, index) => `${index === 0 ? 'M' : 'L'} ${entry.x} ${entry.y}`)
-            .join(' ')} L ${plotted[plotted.length - 1].x} ${height} L ${plotted[0].x} ${height} Z`,
-        )
-      : null
+  const line = path ? Skia.Path.MakeFromSVGString(path) : null
+  const area = path
+    ? Skia.Path.MakeFromSVGString(
+        `${path} L ${plotted[plotted.length - 1].x} ${height} L ${plotted[0].x} ${height} Z`,
+      )
+    : null
 
   return (
     <View

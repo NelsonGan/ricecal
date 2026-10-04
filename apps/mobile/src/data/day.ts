@@ -3,13 +3,12 @@ import { useEffect, useMemo } from 'react'
 
 import { supabase } from '@/lib/supabase'
 import { WATER_MAX_ML } from '@/lib/water'
-import { datesBetween, seedMissing, unwrap, unwrapMaybe } from './client'
+import { unwrap, unwrapMaybe } from './client'
 import { keys } from './keys'
 import { toEntry, toIcon } from './mappers'
 import { pendingAsEntry, usePendingSnaps } from './pending-snaps'
 import { useUserId } from './session'
 import type {
-  DailyNutritionRow,
   DayLog,
   DayMark,
   DayMarkRow,
@@ -19,6 +18,7 @@ import type {
   EntryStatus,
   FoodLogRow,
 } from './types'
+import { usePrefetchDateRange } from './use-prefetch-date-range'
 
 /**
  * One day: what was eaten, and how much water. Two tables in one request, because
@@ -187,7 +187,12 @@ export function useDayLog(date: string): DayView {
  * Days with nothing on them are in the result as empty days, because the point of
  * the warm-up is that the screen never has to wait to find out.
  */
-async function fetchDays(userId: string, from: string, to: string): Promise<DayLog[]> {
+async function fetchDays(
+  userId: string,
+  from: string,
+  to: string,
+  dates: string[],
+): Promise<DayLog[]> {
   const [entries, water] = await Promise.all([
     supabase
       .from('food_log_details')
@@ -212,10 +217,7 @@ async function fetchDays(userId: string, from: string, to: string): Promise<DayL
   )
 
   const days = new Map<string, DayLog>(
-    datesBetween(from, to).map((date) => [
-      date,
-      { date, entries: [], waterMl: millilitres.get(date) ?? 0 },
-    ]),
+    dates.map((date) => [date, { date, entries: [], waterMl: millilitres.get(date) ?? 0 }]),
   )
 
   // Bucketed on the MAPPED entry rather than on the row. Every column of a view
@@ -242,32 +244,7 @@ async function fetchDays(userId: string, from: string, to: string): Promise<DayL
  */
 export function usePrefetchDays(from: string, to: string) {
   const userId = useUserId()
-  const queryClient = useQueryClient()
-
-  useEffect(() => {
-    const dates = datesBetween(from, to)
-    // Nothing missing, nothing to do. This is the common case after the first
-    // visit, and it is what keeps a week the user pages back and forth over
-    // from re-requesting itself on every render.
-    if (dates.every((date) => queryClient.getQueryData(keys.day(userId, date)) !== undefined)) {
-      return
-    }
-
-    let cancelled = false
-    fetchDays(userId, from, to)
-      .then((days) => {
-        if (cancelled) return
-        seedMissing(
-          queryClient,
-          days.map((day) => [keys.day(userId, day.date), day] as const),
-        )
-      })
-      .catch(() => {})
-
-    return () => {
-      cancelled = true
-    }
-  }, [userId, from, to, queryClient])
+  usePrefetchDateRange(userId, from, to, keys.day, fetchDays)
 }
 
 /**
@@ -341,30 +318,6 @@ export function useAddQueuedWater() {
       queryClient.invalidateQueries({ queryKey: keys.day(userId, date) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
     },
-  })
-}
-
-/**
- * Daily totals across a range, for the charts and the weekly report.
- * `daily_nutrition` only has rows for days with something logged, so a caller
- * that wants a point per day fills the gaps itself: an absent day is not the same
- * as a day of zeros somebody recorded.
- */
-export function useNutritionRange(from: string, to: string) {
-  const userId = useUserId()
-
-  return useQuery({
-    queryKey: keys.nutrition(userId, from, to),
-    queryFn: async () =>
-      unwrap(
-        await supabase
-          .from('daily_nutrition')
-          .select('*')
-          .eq('user_id', userId)
-          .gte('log_date', from)
-          .lte('log_date', to)
-          .order('log_date'),
-      ) as DailyNutritionRow[],
   })
 }
 
@@ -453,8 +406,7 @@ export function useStreak(): { current: number; best: number; isPending: boolean
   const { data, isPending } = useQuery({
     queryKey: keys.streak(userId),
     queryFn: async () => {
-      const rows = unwrap(await supabase.rpc('logging_streak'))
-      const row = Array.isArray(rows) ? rows[0] : rows
+      const [row] = unwrap(await supabase.rpc('logging_streak'))
       return {
         current: row?.current_days ?? 0,
         best: row?.best_days ?? 0,
