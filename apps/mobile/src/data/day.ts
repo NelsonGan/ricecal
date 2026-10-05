@@ -9,7 +9,6 @@ import { toEntry, toIcon } from './mappers'
 import { pendingAsEntry, usePendingSnaps } from './pending-snaps'
 import { useUserId } from './session'
 import type {
-  DailyNutritionRow,
   DayLog,
   DayMark,
   DayMarkRow,
@@ -341,30 +340,6 @@ export function useAddQueuedWater() {
       queryClient.invalidateQueries({ queryKey: keys.day(userId, date) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
     },
-  })
-}
-
-/**
- * Daily totals across a range, for the charts and the weekly report.
- * `daily_nutrition` only has rows for days with something logged, so a caller
- * that wants a point per day fills the gaps itself: an absent day is not the same
- * as a day of zeros somebody recorded.
- */
-export function useNutritionRange(from: string, to: string) {
-  const userId = useUserId()
-
-  return useQuery({
-    queryKey: keys.nutrition(userId, from, to),
-    queryFn: async () =>
-      unwrap(
-        await supabase
-          .from('daily_nutrition')
-          .select('*')
-          .eq('user_id', userId)
-          .gte('log_date', from)
-          .lte('log_date', to)
-          .order('log_date'),
-      ) as DailyNutritionRow[],
   })
 }
 

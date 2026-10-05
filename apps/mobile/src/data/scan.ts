@@ -4,7 +4,7 @@ import { useCallback } from 'react'
 import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
-import { keys } from './keys'
+import { invalidateEatenTotals, keys } from './keys'
 import { useRefiningEntries } from './refining'
 import { announceRefusal, refusalFrom, ScanLimitError } from './refusals'
 import { useUserId } from './session'
@@ -136,13 +136,7 @@ export function useUpdateIngredient() {
       queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
       queryClient.invalidateQueries({ queryKey: keys.social(userId) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-      // Movement is measured against what was eaten: the balance chart, the
-      // "eaten" average and the deficit sentence all read `daily_nutrition`
-      // through `activity_summary`. Without this a meal logged today left
-      // the Activity tab still saying "Not enough logged".
-      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+      invalidateEatenTotals(queryClient, userId)
     },
   })
 }
@@ -212,9 +206,7 @@ export function useAddIngredient() {
       queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
       queryClient.invalidateQueries({ queryKey: keys.social(userId) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+      invalidateEatenTotals(queryClient, userId)
     },
   })
 }
@@ -256,9 +248,7 @@ export function useRemoveIngredient() {
       queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
       queryClient.invalidateQueries({ queryKey: keys.social(userId) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+      invalidateEatenTotals(queryClient, userId)
     },
   })
 }
@@ -362,9 +352,7 @@ export function useRefineEntry() {
           queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) }),
           queryClient.invalidateQueries({ queryKey: keys.social(userId) }),
         ])
-        queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-        queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-        queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+        invalidateEatenTotals(queryClient, userId)
         // A correction spends a scan like a plate does. Invisible today — the
         // count is only drawn for a free account and only Pro can refine — and
         // an off-by-one waiting to happen the moment either of those changes.

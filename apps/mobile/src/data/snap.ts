@@ -14,7 +14,7 @@ import { recordMealLogged } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
 import { today } from './client'
-import { keys } from './keys'
+import { invalidateEatenTotals, keys } from './keys'
 import { usePendingSnaps } from './pending-snaps'
 import { uploadMealPhoto } from './photos'
 import { announceRefusal, refusalFrom, ScanLimitError } from './refusals'
@@ -264,13 +264,7 @@ function useRecogniseMeal() {
           // meal is the one most likely to be wanted again.
           queryClient.invalidateQueries({ queryKey: keys.recentFoods(userId) })
           queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
-          queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-          queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-          // Movement is measured against what was eaten: the balance chart, the
-          // "eaten" average and the deficit sentence all read `daily_nutrition`
-          // through `activity_summary`. Without this a meal logged today left
-          // the Activity tab still saying "Not enough logged".
-          queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+          invalidateEatenTotals(queryClient, userId)
           // The scan is spent whichever way it turned out, so the count on the
           // camera panel has to move. Invalidated on the failure paths too, in
           // the catch below: a scan that ran out of budget is the one moment the

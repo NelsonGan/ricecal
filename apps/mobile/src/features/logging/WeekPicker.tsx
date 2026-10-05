@@ -144,7 +144,9 @@ export function WeekPicker({ className }: { className?: string }) {
             list.current?.scrollToOffset({ offset: width * index, animated: false })
           }
           initialNumToRender={1}
-          windowSize={3}
+          // The week either side and no further. Three made the list, which has
+          // no page after this week, spend the spare one two weeks back.
+          windowSize={2}
           renderItem={({ item }) => (
             <Week
               start={item}
