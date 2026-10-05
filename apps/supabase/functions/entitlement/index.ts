@@ -15,29 +15,16 @@
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
+import { signedIn } from '../_shared/auth.ts'
 import { entitledBy, reconcileEntitlement } from '../_shared/entitlement.ts'
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
+import { json } from '../_shared/http.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'POST only' }, 405)
 
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return json({ ok: false, error: 'missing Authorization header' }, 401)
-
-  const anonClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    { global: { headers: { Authorization: authHeader } } },
-  )
-  const { data: auth, error: authError } = await anonClient.auth.getUser()
-  const userId = auth.user?.id
-  if (authError || !userId) return json({ ok: false, error: 'not signed in' }, 401)
+  const caller = await signedIn(req)
+  if (caller instanceof Response) return caller
+  const { userId } = caller
 
   const db = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',

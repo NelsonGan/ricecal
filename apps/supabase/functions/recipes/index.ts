@@ -20,7 +20,7 @@
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-
+import { signedIn } from '../_shared/auth.ts'
 import {
   claimRecipeReview,
   claimScan,
@@ -29,6 +29,7 @@ import {
   requireEntitlement,
   ScanLimitReached,
 } from '../_shared/entitlement.ts'
+import { json } from '../_shared/http.ts'
 import { mockActive } from '../_shared/llm.ts'
 import { ownsKey, readObject } from '../_shared/r2.ts'
 import {
@@ -54,13 +55,6 @@ type ReadRequest = {
 }
 type ReviewRequest = { action: 'review'; recipe_id?: string; mock?: RecipeMockSteer }
 type RecipeRequest = ReadRequest | ReviewRequest
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
 
 /** The photo, base64'd for the vision call. Same shape as scan-meal's. */
 async function fetchPhoto(path: string): Promise<string> {
@@ -101,17 +95,9 @@ async function loadForReview(db: SupabaseClient, recipeId: string) {
 }
 
 Deno.serve(async (req: Request) => {
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return json({ ok: false, error: 'missing Authorization header' }, 401)
-
-  const anonClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    { global: { headers: { Authorization: authHeader } } },
-  )
-  const { data: auth, error: authError } = await anonClient.auth.getUser()
-  const userId = auth.user?.id
-  if (authError || !userId) return json({ ok: false, error: 'not signed in' }, 401)
+  const caller = await signedIn(req)
+  if (caller instanceof Response) return caller
+  const { userId } = caller
 
   // `req.json()` parses any JSON, including `null`, a bare string and a number,
   // and every one of those makes `body.action` throw a TypeError OUTSIDE the try
