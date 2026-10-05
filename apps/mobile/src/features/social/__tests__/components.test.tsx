@@ -529,6 +529,38 @@ it('signs again instead of failing when an uncached picture outlived its URL', a
   expect(onFailed).not.toHaveBeenCalled()
 })
 
+it('waits for a signature already on its way rather than failing the picture', async () => {
+  const refetch = jest.fn()
+  const onFailed = jest.fn()
+  mockPhoto.mockReturnValue({
+    data: { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 1_000 },
+    isError: false,
+    isFetching: true,
+    refetch,
+  })
+  await render(<SocialPhoto path="meals/person/photo" label="Rice" onFailed={onFailed} />)
+  await act(async () => {
+    fireEvent(screen.getByTestId('social-photo'), 'error')
+  })
+  expect(refetch).not.toHaveBeenCalled()
+  expect(onFailed).not.toHaveBeenCalled()
+})
+
+it('fails a picture whose signature was still fresh', async () => {
+  const onFailed = jest.fn()
+  mockPhoto.mockReturnValue({
+    data: { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 50_000 },
+    isError: false,
+    isFetching: false,
+    refetch: jest.fn(),
+  })
+  await render(<SocialPhoto path="meals/person/photo" label="Rice" onFailed={onFailed} />)
+  await act(async () => {
+    fireEvent(screen.getByTestId('social-photo'), 'error')
+  })
+  expect(onFailed).toHaveBeenCalledTimes(1)
+})
+
 it('never draws a photo once access is refused', async () => {
   const data = { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 50_000 }
   mockPhoto.mockReturnValue({ data, isError: false })
