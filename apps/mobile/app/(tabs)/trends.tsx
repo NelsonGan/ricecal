@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router, useIsFocused } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -39,6 +39,7 @@ import { Card, Icon, ListRow, Screen, SegmentedControl, Skeleton } from '@/ui'
  */
 export default function TrendsScreen() {
   const { t } = useTranslation(['progress', 'common', 'reviews'])
+  const focused = useIsFocused()
 
   const [range, setRange] = useState<TrendRange>('7d')
   const requirePro = useRequirePro()
@@ -131,7 +132,12 @@ export default function TrendsScreen() {
       ) : metric === 'calories' ? (
         <CaloriesPanel range={range} buckets={buckets} summary={summary.data ?? null} />
       ) : metric === 'water' ? (
-        <WaterPanel range={range} buckets={buckets} summary={summary.data ?? null} />
+        <WaterPanel
+          range={range}
+          buckets={buckets}
+          summary={summary.data ?? null}
+          paused={!focused}
+        />
       ) : (
         <WeightPanel
           range={range}
