@@ -2644,7 +2644,11 @@ authorized read elsewhere.
 An upload URL can be reused until it expires, so a unique object key alone does
 not prove that a photograph stayed unchanged. For an immediate post, the signer
 reads the current ETag from R2; previously reviewed images keep their recorded
-ETag. Social GET signatures require a signed `If-Match` header with that ETag;
+ETag. Once a post (or an avatar) is ten minutes old its upload URL has lapsed
+and the bytes cannot change, so the signer hands what it read to the
+service-only `record_social_photo_etags` and later signatures skip the HEAD. It
+only fills a missing tag and never overwrites one. Deploy that migration before
+the `photos` function that calls it. Social GET signatures require a signed `If-Match` header with that ETag;
 an overwrite fails with 412 until the next authorized signature. The signer
 never accepts a client-supplied ETag.
 [R2 supports conditional GETs](https://developers.cloudflare.com/r2/api/s3/api/).
