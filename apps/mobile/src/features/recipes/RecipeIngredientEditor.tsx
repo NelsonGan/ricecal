@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
 import type { RecipeIngredientInput } from '@/data'
-import { SwipeRow } from '@/features/shared'
+import { PartRow } from '@/features/shared/PartRow'
 import { useThemeColors } from '@/theme/useTheme'
-import { Card, cn, Divider, Icon, IconButton, Tappable, Text, useNumpadField } from '@/ui'
+import { Card, cn, Divider, Icon, Tappable, Text, useNumpadField } from '@/ui'
 import { ingredientTotal } from './basis'
 
 export type EditableRecipeIngredient = RecipeIngredientInput & { key: string }
@@ -107,7 +107,6 @@ export function RecipeIngredientEditor({
   onReplace,
 }: RecipeIngredientEditorProps) {
   const { t } = useTranslation(['recipes', 'logging', 'common'])
-  const colors = useThemeColors()
 
   return (
     <Card flush contentClassName="gap-0">
@@ -123,68 +122,26 @@ export function RecipeIngredientEditor({
         return (
           <View key={ingredient.key}>
             {index > 0 ? <Divider className="mx-card" /> : null}
-            <SwipeRow
-              square
-              actions={[
-                {
-                  label: t('logging:detail.replacePart'),
-                  a11yLabel: t('logging:detail.replaceOf', { name: ingredient.name }),
-                  icon: 'swap',
-                  tone: 'water',
-                  onPress: () => onReplace(ingredient),
-                },
-                {
-                  label: t('common:action.delete'),
-                  a11yLabel: `${t('recipes:ingredient.remove')}, ${ingredient.name}`,
-                  icon: 'delete',
-                  tone: 'hibiscus',
-                  exits: true,
-                  onPress: () => onRemove(ingredient),
-                },
-              ]}
+            <PartRow
+              name={ingredient.name}
+              title={<Text variant="bodyStrong">{ingredient.name}</Text>}
+              kcal={line.kcal}
+              removeLabel={`${t('recipes:ingredient.remove')}, ${ingredient.name}`}
+              onReplace={() => onReplace(ingredient)}
+              onRemove={() => onRemove(ingredient)}
+              onLess={less === null ? null : () => onAmountChange(ingredient.key, less)}
+              onMore={more === null ? null : () => onAmountChange(ingredient.key, more)}
             >
-              <View className="gap-2 bg-surface px-card py-md">
-                <Text variant="bodyStrong">{ingredient.name}</Text>
-                <View className="flex-row items-center justify-between gap-3">
-                  <Text variant="meta" className="min-w-0 flex-1">
-                    {t('logging:detail.partKcal', { kcal: line.kcal.toLocaleString() })}
-                  </Text>
-                  <View className="flex-row items-center gap-2">
-                    <IconButton
-                      size="sm"
-                      variant="neutral"
-                      accessibilityLabel={t('logging:detail.lessOf', { name: ingredient.name })}
-                      disabled={less === null}
-                      onPress={() => {
-                        if (less !== null) onAmountChange(ingredient.key, less)
-                      }}
-                    >
-                      <Icon set="ui" name="minus" size={16} tintColor={colors.ink} />
-                    </IconButton>
-                    <AmountField
-                      // Replacing preserves the row key so the swipe row stays
-                      // put. The field also needs the ingredient identity or a
-                      // half-typed amount can survive into the replacement.
-                      key={`${ingredient.key}:${ingredient.foodId ?? ingredient.name}:${ingredient.unit}`}
-                      ingredient={ingredient}
-                      measure={measure}
-                      onChange={(amount) => onAmountChange(ingredient.key, amount)}
-                    />
-                    <IconButton
-                      size="sm"
-                      variant="neutral"
-                      accessibilityLabel={t('logging:detail.moreOf', { name: ingredient.name })}
-                      disabled={more === null}
-                      onPress={() => {
-                        if (more !== null) onAmountChange(ingredient.key, more)
-                      }}
-                    >
-                      <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
-                    </IconButton>
-                  </View>
-                </View>
-              </View>
-            </SwipeRow>
+              <AmountField
+                // Replacing preserves the row key so the swipe row stays put. The
+                // field also needs the ingredient identity or a half-typed amount
+                // can survive into the replacement.
+                key={`${ingredient.key}:${ingredient.foodId ?? ingredient.name}:${ingredient.unit}`}
+                ingredient={ingredient}
+                measure={measure}
+                onChange={(amount) => onAmountChange(ingredient.key, amount)}
+              />
+            </PartRow>
           </View>
         )
       })}

@@ -32,7 +32,7 @@ export function useTheme() {
 
 /**
  * Just the colours, for imperative surfaces that cannot take a className:
- * Skia canvases, victory-native charts, StatusBar, native header tints.
+ * Skia canvases, StatusBar, native header tints.
  *
  * Prefer a Tailwind class wherever one will reach — those follow the theme
  * through CSS variables and re-render for free.

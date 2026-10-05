@@ -30,10 +30,30 @@ const num = (value: number | null): number | null => (value === null ? null : Nu
  */
 const orZero = (value: number | null): number => (value === null ? 0 : Number(value))
 
-function toBucket(row: SeriesRow): TrendBucket {
+/** The columns a chart bucket and a range summary share, named alike on both. */
+type SharedRow = Pick<
+  SeriesRow & SummaryRow,
+  | 'days'
+  | 'kcal_avg'
+  | 'carbs_g_avg'
+  | 'protein_g_avg'
+  | 'fat_g_avg'
+  | 'days_logged'
+  | 'kcal_goal'
+  | 'days_under_goal'
+  | 'water_avg'
+  | 'water_total'
+  | 'water_best'
+  | 'water_goal_days'
+  | 'water_habit_days'
+  | 'water_logged_days'
+  | 'water_goal'
+  | 'weight_avg'
+  | 'weigh_ins'
+>
+
+function toShared(row: SharedRow) {
   return {
-    start: row.bucket_start,
-    end: row.bucket_end,
     days: orZero(row.days),
 
     kcal: num(row.kcal_avg),
@@ -52,10 +72,18 @@ function toBucket(row: SeriesRow): TrendBucket {
     waterLoggedDays: orZero(row.water_logged_days),
     waterGoal: orZero(row.water_goal),
 
-    weight: num(row.weight_last),
     weightAvg: num(row.weight_avg),
-    weightMin: num(row.weight_min),
     weighIns: orZero(row.weigh_ins),
+  }
+}
+
+function toBucket(row: SeriesRow): TrendBucket {
+  return {
+    start: row.bucket_start,
+    end: row.bucket_end,
+    ...toShared(row),
+    weight: num(row.weight_last),
+    weightMin: num(row.weight_min),
   }
 }
 
@@ -63,31 +91,12 @@ function toSummary(row: SummaryRow): TrendSummary {
   return {
     from: row.from_date,
     to: row.to_date,
-    days: orZero(row.days),
-
-    kcal: num(row.kcal_avg),
-    carbs: num(row.carbs_g_avg),
-    protein: num(row.protein_g_avg),
-    fat: num(row.fat_g_avg),
-    daysLogged: orZero(row.days_logged),
-    kcalGoal: num(row.kcal_goal),
-    daysUnderGoal: orZero(row.days_under_goal),
-
-    water: orZero(row.water_avg),
-    waterTotal: orZero(row.water_total),
-    waterBest: orZero(row.water_best),
-    waterGoalDays: orZero(row.water_goal_days),
-    waterHabitDays: orZero(row.water_habit_days),
-    waterLoggedDays: orZero(row.water_logged_days),
-    waterGoal: orZero(row.water_goal),
-
+    ...toShared(row),
     weightBefore: num(row.weight_before),
     weightFirst: num(row.weight_first),
     weightLast: num(row.weight_last),
-    weightAvg: num(row.weight_avg),
     weightPeak: num(row.weight_peak),
     weightPeakOn: row.weight_peak_on,
-    weighIns: orZero(row.weigh_ins),
   }
 }
 
