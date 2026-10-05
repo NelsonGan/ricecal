@@ -266,9 +266,10 @@ export function SocialPhoto({
         if (drawn?.cacheKey !== cacheKey && cacheKey) setDrawn({ cacheKey, source })
       }}
       onError={() => {
-        // An uncached picture behind a lapsed signature. Sign again first.
-        if (signed.expiresAt - Date.now() < 5_000 && !photo.isFetching) {
-          void photo.refetch()
+        // An uncached picture behind a lapsed signature. Sign again, or wait
+        // for the signature already on its way, before calling it a failure.
+        if (signed.expiresAt - Date.now() < 5_000) {
+          if (!photo.isFetching) void photo.refetch()
           return
         }
         callbacks.current.onFailed?.()
