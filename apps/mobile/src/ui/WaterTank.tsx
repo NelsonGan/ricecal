@@ -43,6 +43,11 @@ export type WaterTankProps = {
    */
   children?: (onWater: boolean) => ReactNode
   className?: string
+  /**
+   * Stop the waves. For a screen nobody is looking at: tabs stay mounted, and
+   * the loop redrew this canvas every frame behind Feed and Trends.
+   */
+  paused?: boolean
 }
 
 /** How far a wave rides above and below the level it describes, in points. */
@@ -124,6 +129,7 @@ export function WaterTank({
   accessibilityLabel,
   children,
   className,
+  paused = false,
 }: WaterTankProps) {
   const colors = useThemeColors()
   const reduceMotion = useReducedMotion()
@@ -177,7 +183,7 @@ export function WaterTank({
   }, [filled, tilt, reduceMotion, full])
 
   useEffect(() => {
-    if (reduceMotion || full) return
+    if (reduceMotion || full || paused) return
     // Linear, and it must be: any easing on a loop makes the wave hesitate once
     // a cycle, which reads as a dropped frame rather than as a current.
     const loop = (duration: number) =>
@@ -188,7 +194,7 @@ export function WaterTank({
       phase.value = 0
       phaseBack.value = 0
     }
-  }, [phase, phaseBack, reduceMotion, full])
+  }, [phase, phaseBack, reduceMotion, full, paused])
 
   const corner = radius ?? Math.min(14, height / 3)
 
