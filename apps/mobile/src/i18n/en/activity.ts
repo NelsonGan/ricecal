@@ -57,7 +57,6 @@ export const activity = {
     emptyTitle: 'Nothing came back',
     emptyBody:
       "We could not read any activity. If you turned RiceCal off in Health's privacy settings, turn it back on and try again.",
-    retry: 'Try again',
 
     unavailableTitle: 'No health data here',
     /**
@@ -143,8 +142,6 @@ export const activity = {
     clearDemoBody: 'Removes every generated day and session from this account.',
     granted: 'On',
     notGranted: 'Not granted',
-    /** Android partial grants. iOS can never populate this — see the provider. */
-    partial: 'Some data is not shared',
   },
 
   /** Where a stat came from, when a screen has to name it. */

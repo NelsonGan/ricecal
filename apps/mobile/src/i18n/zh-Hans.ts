@@ -26,20 +26,15 @@ export const zhHans = {
     profile: '主页',
     myProfile: '我的主页',
     editProfile: '编辑主页',
-    join: '创建公开主页',
-    joinBody: '选择展示的内容。分享餐食前，日记始终私密。',
     handle: '用户名',
     handleHint: '3 至 24 个小写英文字母、数字、句点或下划线。',
-    displayName: '名称',
     bio: '简介',
     privateProfile: '私人主页',
     privateProfileHint: '不在搜索、推荐和发现中显示。关注者仍可看到你的帖子。',
     autoPostFoods: '自动发布食物',
     autoPostFoodsHint: '新记录的食物会自动发布到动态。私人主页仅与关注者分享。',
     avatar: '选择照片',
-    removeAvatar: '移除照片',
     handleInvalid: '请使用 3 至 24 个小写英文字母、数字、句点或下划线。',
-    nameInvalid: '请输入名称。',
     save: '保存',
     saved: '已保存',
     cancel: '取消',
@@ -55,7 +50,6 @@ export const zhHans = {
     removeFollower: '移除粉丝',
     removeFollowerBody: '对方将无法查看仅粉丝可见的帖子。',
     share: '分享到动态',
-    publish: '分享',
     newPost: '分享餐食',
     editPost: '编辑帖子',
     caption: '配文',
@@ -136,14 +130,12 @@ export const zhHans = {
       add: '添加',
       undo: '撤销',
       keep: '保留',
-      skip: '跳过',
       retry: '重试',
       close: '关闭',
     },
 
     nav: {
       today: '今天',
-      recipes: '食物',
       trends: '趋势',
       me: '我的',
       log: '记录饮食',
@@ -257,7 +249,6 @@ export const zhHans = {
       emptyTitle: '没有读到任何数据',
       emptyBody:
         '我们读不到任何活动记录。如果你在健康应用的隐私设置里关掉了 RiceCal，请重新打开再试一次。',
-      retry: '重试',
 
       unavailableTitle: '这台设备没有健康数据',
       simulator: '这台设备没有可读取的健康存储。在模拟器上，这些页面会用生成的数据填充。',
@@ -320,7 +311,6 @@ export const zhHans = {
       clearDemoBody: '从这个账号里删除所有生成的日期和锻炼。',
       granted: '已开启',
       notGranted: '未授权',
-      partial: '部分数据没有共享',
     },
 
     provider: {
@@ -715,8 +705,6 @@ export const zhHans = {
     barcode: {
       permissionTitle: '允许 RiceCal 使用相机',
       permissionBody: '相机用来读包装上的条码。不会录制，也不会上传。',
-      aim: '把相机对准包装上的条码。',
-      noCamera: '这台设备没有相机，这里没法扫。',
       failedTitle: '没有回应',
       failed: '我们暂时连不上食物库。包装本身可能没问题，是网络不行。',
       tryAgain: '重新扫',
@@ -731,15 +719,12 @@ export const zhHans = {
     },
 
     camera: {
-      title: '拍下你的这盘',
-      analysing: '正在弄清楚盘子里是什么',
       permissionTitle: '需要相机权限',
       permissionBody: 'RiceCal 用相机来读你的这盘。',
       permissionSettings: '打开设置',
       shutter: '拍照',
       library: '从相册里选',
       flip: '切换镜头',
-      captured: '你刚拍的照片',
       photoOf: '{{food}} 的照片',
     },
 
@@ -882,7 +867,6 @@ export const zhHans = {
     },
 
     water: {
-      title: '喝水',
       count: '{{filled}} / {{goal}} 毫升',
       addTitle: '加水',
       left: '还差 {{amount}} 毫升',
@@ -1237,7 +1221,6 @@ export const zhHans = {
       switchMonthly: '换成按月',
       switchYearly: '换成按年',
       manage: '在商店里管理',
-      switched: '方案已更新',
     },
   },
 
@@ -1361,8 +1344,6 @@ export const zhHans = {
     },
 
     intro: {
-      title: '都设置好了，开始记录吧？',
-      body: '不买也什么都能用。Pro 只是把上限拿掉。',
       later: '以后再说',
     },
 
@@ -1431,11 +1412,6 @@ export const zhHans = {
 
     servings_one: '{{count}} 份',
     servings_other: '{{count}} 份',
-    ingredients_one: '{{count}} 种食材',
-    ingredients_other: '{{count}} 种食材',
-    savedTimes_one: '被保存 {{count}} 次',
-    savedTimes_other: '被保存 {{count}} 次',
-    byAuthor: '{{name}} · {{saves}}',
     fromAuthor: '来自 {{name}}',
     someCook: '某位厨友',
 
@@ -1446,7 +1422,6 @@ export const zhHans = {
       scanLabel: '照片',
       describeLabel: '描述',
       scanTitle: '用照片填好',
-      or: '或者自己填',
       describeTitle: '用文字描述',
       describePlaceholder: '咖喱鸡。600 克鸡腿肉，一罐椰浆，3 个土豆。够 4 个人吃。',
       describeHint: '用量和够几个人吃，这两样最值得写。',
@@ -1474,7 +1449,6 @@ export const zhHans = {
       servings: '够几份',
       ingredients: '食材',
       ingredientsCount: '食材 · {{count}}',
-      ingredientsEmpty: '还什么都没有。搜出每一样，我们帮你把整锅加起来。',
       addIngredient: '添加一样食材',
       steps: '你怎么做',
       stepsSheetTitle: '你怎么做',
@@ -1503,11 +1477,9 @@ export const zhHans = {
       search: '搜索一样食材',
       ownTitle: '添加你自己的食材',
       ownBody: '列表里没有？给它起个名字，填上热量。',
-      customBody: '给只有你家才有的东西用。照着包装读，或者称一次。',
       name: '名称',
       namePlaceholder: '这是什么？',
       calories: '热量',
-      macros: '三大营养素，如果你知道的话',
       amount: '份量',
       add: '加进锅里',
       remove: '移除',
@@ -1575,9 +1547,6 @@ export const zhHans = {
       rejected: '未发布：{{reason}}',
       rejectedPlain: '这一个我们没能发布。',
       pending: '我们还在看这一个。通过之后就会出现。',
-      badgePending: '审核中',
-      badgeRejected: '未发布',
-      badgePublic: '公开',
     },
   },
 
