@@ -15,7 +15,7 @@
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
-
+import { signedIn } from '../_shared/auth.ts'
 import {
   claimScan,
   createMeter,
@@ -23,6 +23,7 @@ import {
   requireEntitlement,
   ScanLimitReached,
 } from '../_shared/entitlement.ts'
+import { json } from '../_shared/http.ts'
 import { mockActive } from '../_shared/llm.ts'
 import {
   type Cuisine,
@@ -70,28 +71,13 @@ const FOCUSES = new Set(['protein', 'balanced', 'carbs'])
 const MIN_KCAL = 100
 const MAX_KCAL = 2000
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
-
 /** A number the way the day is counted: whole, and never below zero. */
 const shortfall = (goal: number, eaten: number): number => Math.max(0, Math.round(goal - eaten))
 
 Deno.serve(async (req: Request) => {
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return json({ ok: false, error: 'missing Authorization header' }, 401)
-
-  const anonClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    { global: { headers: { Authorization: authHeader } } },
-  )
-  const { data: auth, error: authError } = await anonClient.auth.getUser()
-  const userId = auth.user?.id
-  if (authError || !userId) return json({ ok: false, error: 'not signed in' }, 401)
+  const caller = await signedIn(req)
+  if (caller instanceof Response) return caller
+  const { client: anonClient, userId } = caller
 
   let body: SuggestRequest
   try {

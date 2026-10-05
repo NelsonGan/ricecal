@@ -19,9 +19,10 @@
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
-
+import { signedIn } from '../_shared/auth.ts'
 import { gtin14 } from '../_shared/barcode.ts'
 import { type CatalogueProduct, cacheProduct, lookupBarcode } from '../_shared/catalogue.ts'
+import { json } from '../_shared/http.ts'
 import { iconFor } from '../_shared/icon-match.ts'
 
 /** Open Food Facts asks that clients identify themselves. */
@@ -52,13 +53,6 @@ const FIELDS = [
 ].join(',')
 
 type Json = Record<string, unknown>
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
 
 /**
  * One nutrient out of OFF's `nutriments` object, per 100 g.
@@ -149,16 +143,9 @@ function _slugFor(name: string, gtin: string): string {
 }
 
 Deno.serve(async (req: Request) => {
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return json({ ok: false, error: 'missing Authorization header' }, 401)
-
-  const anonClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    { global: { headers: { Authorization: authHeader } } },
-  )
-  const { data: auth, error: authError } = await anonClient.auth.getUser()
-  if (authError || !auth.user?.id) return json({ ok: false, error: 'not signed in' }, 401)
+  const caller = await signedIn(req)
+  if (caller instanceof Response) return caller
+  const { userId } = caller
 
   let body: { code?: string }
   try {
@@ -189,7 +176,7 @@ Deno.serve(async (req: Request) => {
   // which is the cheap direction to be wrong in for a lookup, not a purchase.
   {
     const { data: claim, error: claimError } = await admin
-      .rpc('claim_barcode_scan', { p_user: auth.user.id })
+      .rpc('claim_barcode_scan', { p_user: userId })
       .maybeSingle<{ allowed: boolean; used: number; hourly_limit: number }>()
     if (!claimError && claim && !claim.allowed) {
       return json({ ok: false, error: 'too many scans, try again shortly' }, 429)

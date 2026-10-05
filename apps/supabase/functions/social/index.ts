@@ -1,20 +1,16 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-
+import { signedIn } from '../_shared/auth.ts'
+import { readBoundedBytes, json as sharedJson } from '../_shared/http.ts'
 import {
   type ContentKind,
   loadReviewPhoto,
   parseReviewRequest,
-  readBoundedBytes,
   reviewSubmission,
 } from './review.ts'
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  })
-}
+const json = (body: unknown, status = 200) =>
+  sharedJson(body, status, { 'Cache-Control': 'no-store' })
 
 type Submission = {
   revision: number
@@ -73,15 +69,10 @@ async function loadSubmission(
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'use POST' }, 405)
-  const authorization = req.headers.get('Authorization')
-  if (!authorization) return json({ ok: false, error: 'not signed in' }, 401)
+  const signed = await signedIn(req)
+  if (signed instanceof Response) return signed
+  const { client: caller, userId: owner } = signed
   const url = Deno.env.get('SUPABASE_URL') ?? ''
-  const caller = createClient(url, Deno.env.get('SUPABASE_ANON_KEY') ?? '', {
-    global: { headers: { Authorization: authorization } },
-  })
-  const { data: auth, error: authError } = await caller.auth.getUser()
-  const owner = auth.user?.id
-  if (authError || !owner) return json({ ok: false, error: 'not signed in' }, 401)
 
   let body: ReturnType<typeof parseReviewRequest>
   try {
