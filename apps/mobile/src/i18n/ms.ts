@@ -25,12 +25,8 @@ export const ms = {
     profile: 'Profil',
     myProfile: 'Profil saya',
     editProfile: 'Sunting profil',
-    join: 'Cipta profil awam',
-    joinBody:
-      'Pilih apa yang orang lihat. Diari anda kekal peribadi sehingga anda berkongsi makanan.',
     handle: 'Nama pengguna',
     handleHint: '3 hingga 24 huruf kecil, nombor, titik atau garis bawah.',
-    displayName: 'Nama',
     bio: 'Bio',
     privateProfile: 'Profil peribadi',
     privateProfileHint:
@@ -39,9 +35,7 @@ export const ms = {
     autoPostFoodsHint:
       'Makanan baharu yang dicatat disiarkan secara automatik. Profil peribadi berkongsi dengan pengikut sahaja.',
     avatar: 'Pilih foto',
-    removeAvatar: 'Buang foto',
     handleInvalid: 'Gunakan 3 hingga 24 huruf kecil, nombor, titik atau garis bawah.',
-    nameInvalid: 'Masukkan nama.',
     save: 'Simpan',
     saved: 'Disimpan',
     cancel: 'Batal',
@@ -57,7 +51,6 @@ export const ms = {
     removeFollower: 'Buang pengikut',
     removeFollowerBody: 'Mereka tidak lagi boleh melihat siaran untuk pengikut sahaja.',
     share: 'Kongsi ke suapan',
-    publish: 'Kongsi',
     newPost: 'Kongsi makanan',
     editPost: 'Sunting siaran',
     caption: 'Kapsyen',
@@ -139,14 +132,12 @@ export const ms = {
       add: 'Tambah',
       undo: 'Buat asal',
       keep: 'Kekalkan',
-      skip: 'Langkau',
       retry: 'Cuba lagi',
       close: 'Tutup',
     },
 
     nav: {
       today: 'Hari ini',
-      recipes: 'Makanan',
       trends: 'Trend',
       me: 'Saya',
       log: 'Rekod makanan',
@@ -261,7 +252,6 @@ export const ms = {
       emptyTitle: 'Tiada apa-apa yang kembali',
       emptyBody:
         'Kami tidak dapat membaca sebarang aktiviti. Jika anda mematikan RiceCal dalam tetapan privasi Health, hidupkannya semula dan cuba lagi.',
-      retry: 'Cuba lagi',
 
       unavailableTitle: 'Tiada data kesihatan di sini',
       simulator:
@@ -328,7 +318,6 @@ export const ms = {
       clearDemoBody: 'Membuang setiap hari dan sesi yang dijana daripada akaun ini.',
       granted: 'Hidup',
       notGranted: 'Tidak dibenarkan',
-      partial: 'Sebahagian data tidak dikongsi',
     },
 
     provider: {
@@ -742,8 +731,6 @@ export const ms = {
       permissionTitle: 'Benarkan RiceCal guna kamera',
       permissionBody:
         'Kamera membaca barkod pada bungkusan. Tiada apa-apa dirakam atau dimuat naik.',
-      aim: 'Halakan kamera ke barkod pada bungkusan.',
-      noCamera: 'Peranti ini tiada kamera, jadi tiada apa-apa untuk mengimbas di sini.',
       failedTitle: 'Tiada jawapan',
       failed:
         'Kami tidak dapat menghubungi katalog buat masa ini. Bungkusan itu mungkin tiada masalah; sambungannya yang bermasalah.',
@@ -759,15 +746,12 @@ export const ms = {
     },
 
     camera: {
-      title: 'Snap pinggan anda',
-      analysing: 'Mengenal pasti apa yang ada pada pinggan',
       permissionTitle: 'Akses kamera diperlukan',
       permissionBody: 'RiceCal guna kamera untuk membaca pinggan anda.',
       permissionSettings: 'Buka Tetapan',
       shutter: 'Ambil gambar',
       library: 'Pilih dari galeri',
       flip: 'Tukar kamera',
-      captured: 'Gambar yang baru anda ambil',
       photoOf: 'Gambar {{food}}',
     },
 
@@ -917,7 +901,6 @@ export const ms = {
     },
 
     water: {
-      title: 'Air',
       count: '{{filled}} / {{goal}} ml',
       addTitle: 'Tambah air',
       left: 'baki {{amount}} ml',
@@ -1278,7 +1261,6 @@ export const ms = {
       switchMonthly: 'Tukar ke bulanan',
       switchYearly: 'Tukar ke tahunan',
       manage: 'Urus dalam gedung',
-      switched: 'Pelan dikemas kini',
     },
   },
 
@@ -1402,8 +1384,6 @@ export const ms = {
     },
 
     intro: {
-      title: 'Semuanya sudah sedia. Nak mula merekod?',
-      body: 'Semuanya berfungsi tanpanya. Pro membuang hadnya.',
       later: 'Mungkin nanti',
     },
 
@@ -1473,11 +1453,6 @@ export const ms = {
 
     servings_one: '{{count}} hidangan',
     servings_other: '{{count}} hidangan',
-    ingredients_one: '{{count}} bahan',
-    ingredients_other: '{{count}} bahan',
-    savedTimes_one: 'disimpan {{count}} kali',
-    savedTimes_other: 'disimpan {{count}} kali',
-    byAuthor: '{{name}} · {{saves}}',
     fromAuthor: 'Daripada {{name}}',
     someCook: 'Seseorang',
 
@@ -1488,7 +1463,6 @@ export const ms = {
       scanLabel: 'Gambar',
       describeLabel: 'Terangkan',
       scanTitle: 'Isi daripada gambar',
-      or: 'ATAU ISI SENDIRI',
       describeTitle: 'Terangkan ia',
       describePlaceholder:
         'Kari ayam. 600g peha ayam, satu tin santan, 3 biji kentang. Cukup untuk 4.',
@@ -1517,8 +1491,6 @@ export const ms = {
       servings: 'BERAPA HIDANGAN',
       ingredients: 'BAHAN',
       ingredientsCount: 'BAHAN · {{count}}',
-      ingredientsEmpty:
-        'Belum ada apa-apa. Cari setiap item dan kami jumlahkan periuk itu untuk anda.',
       addIngredient: 'Tambah satu bahan',
       steps: 'BAGAIMANA ANDA MASAK',
       stepsSheetTitle: 'Bagaimana anda masak',
@@ -1547,12 +1519,9 @@ export const ms = {
       search: 'Cari satu bahan',
       ownTitle: 'Tambah bahan anda sendiri',
       ownBody: 'Tiada dalam senarai? Beri ia nama dan kalorinya.',
-      customBody:
-        'Untuk benda yang hanya dapur anda ada. Baca dari bungkusan atau timbang ia sekali.',
       name: 'NAMA',
       namePlaceholder: 'Apa benda ini?',
       calories: 'KALORI',
-      macros: 'MAKRO, JIKA ANDA TAHU',
       amount: 'BAHAGIAN',
       add: 'Masukkan ke dalam periuk',
       remove: 'Buang',
@@ -1621,9 +1590,6 @@ export const ms = {
       rejected: 'Tidak diterbitkan: {{reason}}',
       rejectedPlain: 'Kami tidak dapat menerbitkan yang ini.',
       pending: 'Kami masih melihat yang ini. Ia akan muncul selepas ia lulus.',
-      badgePending: 'Dalam semakan',
-      badgeRejected: 'Tidak diterbitkan',
-      badgePublic: 'Awam',
     },
   },
 

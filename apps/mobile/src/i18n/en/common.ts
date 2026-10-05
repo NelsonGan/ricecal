@@ -20,15 +20,12 @@ export const common = {
      * this is the word for declining to destroy something.
      */
     keep: 'Keep',
-    skip: 'Skip',
     retry: 'Try again',
     close: 'Close',
   },
 
   nav: {
     today: 'Today',
-    /** The tab, and the key is still `recipes` because the route is. */
-    recipes: 'Food',
     trends: 'Trends',
     me: 'Me',
     /** The add button at the right end of the nav bar. Not a tab: it opens the log sheet. */

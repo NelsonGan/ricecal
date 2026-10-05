@@ -19,12 +19,8 @@ export const ko = {
     profile: '프로필',
     myProfile: '내 프로필',
     editProfile: '프로필 수정',
-    join: '공개 프로필 만들기',
-    joinBody:
-      '다른 사람에게 보여 줄 내용을 선택하세요. 식사를 공유하기 전까지 일기는 비공개입니다.',
     handle: '사용자 이름',
     handleHint: '영문 소문자, 숫자, 마침표 또는 밑줄 3~24자.',
-    displayName: '이름',
     bio: '소개',
     privateProfile: '비공개 프로필',
     privateProfileHint: '검색, 추천, 둘러보기에서 숨깁니다. 팔로워는 게시물을 계속 볼 수 있습니다.',
@@ -32,9 +28,7 @@ export const ko = {
     autoPostFoodsHint:
       '새로 기록한 음식이 피드에 자동 게시됩니다. 비공개 프로필은 팔로워에게만 공유합니다.',
     avatar: '사진 선택',
-    removeAvatar: '사진 삭제',
     handleInvalid: '영문 소문자, 숫자, 마침표 또는 밑줄 3~24자를 사용하세요.',
-    nameInvalid: '이름을 입력하세요.',
     save: '저장',
     saved: '저장됨',
     cancel: '취소',
@@ -50,7 +44,6 @@ export const ko = {
     removeFollower: '팔로워 삭제',
     removeFollowerBody: '팔로워 전용 게시물을 더 이상 볼 수 없게 됩니다.',
     share: '피드에 공유',
-    publish: '공유',
     newPost: '식사 공유',
     editPost: '게시물 수정',
     caption: '문구',
@@ -132,14 +125,12 @@ export const ko = {
       add: '추가',
       undo: '실행 취소',
       keep: '유지',
-      skip: '건너뛰기',
       retry: '다시 시도',
       close: '닫기',
     },
 
     nav: {
       today: '오늘',
-      recipes: '음식',
       trends: '추이',
       me: '내 정보',
       log: '식사 기록',
@@ -254,7 +245,6 @@ export const ko = {
       emptyTitle: '돌아온 데이터가 없습니다',
       emptyBody:
         '활동을 하나도 읽지 못했습니다. 건강 앱의 개인정보 설정에서 RiceCal을 껐다면 다시 켜고 시도해 보세요.',
-      retry: '다시 시도',
 
       unavailableTitle: '여기에는 건강 데이터가 없습니다',
       simulator:
@@ -320,7 +310,6 @@ export const ko = {
       clearDemoBody: '이 계정에서 생성된 날짜와 세션을 모두 지웁니다.',
       granted: '켜짐',
       notGranted: '권한 없음',
-      partial: '일부 데이터가 공유되지 않습니다',
     },
 
     provider: {
@@ -718,8 +707,6 @@ export const ko = {
     barcode: {
       permissionTitle: 'RiceCal의 카메라 사용 허용',
       permissionBody: '카메라는 포장의 바코드를 읽습니다. 녹화하거나 업로드하지 않습니다.',
-      aim: '카메라를 포장의 바코드에 맞추세요.',
-      noCamera: '이 기기에는 카메라가 없어 여기서 스캔할 수 없습니다.',
       failedTitle: '응답이 없습니다',
       failed: '지금은 목록에 연결하지 못했습니다. 제품은 멀쩡할 수 있고, 문제는 연결 쪽입니다.',
       tryAgain: '다시 스캔',
@@ -734,15 +721,12 @@ export const ko = {
     },
 
     camera: {
-      title: '접시 찍기',
-      analysing: '접시에 무엇이 있는지 파악하는 중',
       permissionTitle: '카메라 접근이 필요합니다',
       permissionBody: 'RiceCal은 카메라로 접시를 읽습니다.',
       permissionSettings: '설정 열기',
       shutter: '사진 찍기',
       library: '사진에서 고르기',
       flip: '카메라 전환',
-      captured: '방금 찍은 사진',
       photoOf: '{{food}} 사진',
     },
 
@@ -887,7 +871,6 @@ export const ko = {
     },
 
     water: {
-      title: '물',
       count: '{{filled}} / {{goal}} ml',
       addTitle: '물 추가',
       left: '{{amount}} ml 남음',
@@ -1245,7 +1228,6 @@ export const ko = {
       switchMonthly: '월간으로 변경',
       switchYearly: '연간으로 변경',
       manage: '스토어에서 관리',
-      switched: '요금제를 변경했습니다',
     },
   },
 
@@ -1369,8 +1351,6 @@ export const ko = {
     },
 
     intro: {
-      title: '준비가 끝났어요. 기록을 시작할까요?',
-      body: '없어도 전부 작동합니다. Pro는 한도를 없앨 뿐입니다.',
       later: '나중에',
     },
 
@@ -1439,11 +1419,6 @@ export const ko = {
 
     servings_one: '{{count}}인분',
     servings_other: '{{count}}인분',
-    ingredients_one: '재료 {{count}}가지',
-    ingredients_other: '재료 {{count}}가지',
-    savedTimes_one: '{{count}}번 저장됨',
-    savedTimes_other: '{{count}}번 저장됨',
-    byAuthor: '{{name}} · {{saves}}',
     fromAuthor: '{{name}}의 음식',
     someCook: '어떤 분',
 
@@ -1454,7 +1429,6 @@ export const ko = {
       scanLabel: '사진',
       describeLabel: '설명',
       scanTitle: '사진으로 채우기',
-      or: '또는 직접 입력',
       describeTitle: '말로 설명하기',
       describePlaceholder: '카리 아얌. 닭다리살 600g, 코코넛밀크 한 캔, 감자 3개. 4인분.',
       describeHint: '분량과 몇 인분인지, 이 둘은 적을 값어치가 있습니다.',
@@ -1482,7 +1456,6 @@ export const ko = {
       servings: '몇 인분',
       ingredients: '재료',
       ingredientsCount: '재료 · {{count}}',
-      ingredientsEmpty: '아직 없습니다. 하나씩 검색하면 냄비 전체를 합산해 드립니다.',
       addIngredient: '재료 추가',
       steps: '조리 방법',
       stepsSheetTitle: '조리 방법',
@@ -1511,11 +1484,9 @@ export const ko = {
       search: '재료 검색',
       ownTitle: '내 재료 추가',
       ownBody: '목록에 없나요? 이름과 칼로리를 넣어 주세요.',
-      customBody: '우리 집에만 있는 것들을 위한 것입니다. 포장을 읽거나 한 번 재어 보세요.',
       name: '이름',
       namePlaceholder: '이건 무엇인가요?',
       calories: '칼로리',
-      macros: '영양소, 아신다면',
       amount: '분량',
       add: '냄비에 넣기',
       remove: '빼기',
@@ -1583,9 +1554,6 @@ export const ko = {
       rejected: '게시되지 않음: {{reason}}',
       rejectedPlain: '이건 게시하지 못했습니다.',
       pending: '아직 확인 중입니다. 통과하면 보입니다.',
-      badgePending: '확인 중',
-      badgeRejected: '게시되지 않음',
-      badgePublic: '공개',
     },
   },
 

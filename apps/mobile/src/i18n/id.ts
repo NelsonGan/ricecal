@@ -24,11 +24,8 @@ export const id = {
     profile: 'Profil',
     myProfile: 'Profil saya',
     editProfile: 'Edit profil',
-    join: 'Buat profil publik',
-    joinBody: 'Pilih yang orang lain lihat. Jurnal tetap pribadi sampai Anda membagikan makanan.',
     handle: 'Nama pengguna',
     handleHint: '3 hingga 24 huruf kecil, angka, titik, atau garis bawah.',
-    displayName: 'Nama',
     bio: 'Bio',
     privateProfile: 'Profil privat',
     privateProfileHint:
@@ -37,9 +34,7 @@ export const id = {
     autoPostFoodsHint:
       'Makanan baru yang dicatat otomatis masuk ke feed. Profil privat hanya berbagi dengan pengikut.',
     avatar: 'Pilih foto',
-    removeAvatar: 'Hapus foto',
     handleInvalid: 'Gunakan 3 hingga 24 huruf kecil, angka, titik, atau garis bawah.',
-    nameInvalid: 'Masukkan nama.',
     save: 'Simpan',
     saved: 'Tersimpan',
     cancel: 'Batal',
@@ -55,7 +50,6 @@ export const id = {
     removeFollower: 'Hapus pengikut',
     removeFollowerBody: 'Mereka tidak lagi dapat melihat postingan khusus pengikut Anda.',
     share: 'Bagikan ke linimasa',
-    publish: 'Bagikan',
     newPost: 'Bagikan makanan',
     editPost: 'Edit postingan',
     caption: 'Keterangan',
@@ -137,14 +131,12 @@ export const id = {
       add: 'Tambah',
       undo: 'Urungkan',
       keep: 'Pertahankan',
-      skip: 'Lewati',
       retry: 'Coba lagi',
       close: 'Tutup',
     },
 
     nav: {
       today: 'Hari ini',
-      recipes: 'Makanan',
       trends: 'Tren',
       me: 'Saya',
       log: 'Catat makanan',
@@ -259,7 +251,6 @@ export const id = {
       emptyTitle: 'Tidak ada yang kembali',
       emptyBody:
         'Kami tidak bisa membaca aktivitas apa pun. Kalau kamu mematikan RiceCal di pengaturan privasi Health, nyalakan lagi lalu coba ulang.',
-      retry: 'Coba lagi',
 
       unavailableTitle: 'Tidak ada data kesehatan di sini',
       simulator:
@@ -326,7 +317,6 @@ export const id = {
       clearDemoBody: 'Menghapus setiap hari dan sesi buatan dari akun ini.',
       granted: 'Aktif',
       notGranted: 'Tidak diizinkan',
-      partial: 'Sebagian data tidak dibagikan',
     },
 
     provider: {
@@ -730,8 +720,6 @@ export const id = {
     barcode: {
       permissionTitle: 'Izinkan RiceCal memakai kamera',
       permissionBody: 'Kamera membaca barkode di kemasan. Tidak ada yang direkam atau diunggah.',
-      aim: 'Arahkan kamera ke barkode di kemasan.',
-      noCamera: 'Perangkat ini tidak punya kamera, jadi tidak ada yang bisa dipindai di sini.',
       failedTitle: 'Tidak ada jawaban',
       failed:
         'Kami tidak bisa menghubungi katalog saat ini. Kemasannya mungkin tidak apa-apa; koneksinya yang bermasalah.',
@@ -748,15 +736,12 @@ export const id = {
     },
 
     camera: {
-      title: 'Foto piringmu',
-      analysing: 'Mencari tahu apa yang ada di piring',
       permissionTitle: 'Butuh akses kamera',
       permissionBody: 'RiceCal memakai kamera untuk membaca piringmu.',
       permissionSettings: 'Buka Pengaturan',
       shutter: 'Ambil foto',
       library: 'Pilih dari galeri',
       flip: 'Balik kamera',
-      captured: 'Foto yang baru kamu ambil',
       photoOf: 'Foto {{food}}',
     },
 
@@ -902,7 +887,6 @@ export const id = {
     },
 
     water: {
-      title: 'Air',
       count: '{{filled}} / {{goal}} ml',
       addTitle: 'Tambah air',
       left: 'sisa {{amount}} ml',
@@ -1262,7 +1246,6 @@ export const id = {
       switchMonthly: 'Ganti ke bulanan',
       switchYearly: 'Ganti ke tahunan',
       manage: 'Kelola di toko',
-      switched: 'Paket diperbarui',
     },
   },
 
@@ -1386,8 +1369,6 @@ export const id = {
     },
 
     intro: {
-      title: 'Semua sudah siap. Mau mulai mencatat?',
-      body: 'Semuanya jalan tanpa itu. Pro cuma melepas batasnya.',
       later: 'Mungkin nanti',
     },
 
@@ -1456,11 +1437,6 @@ export const id = {
 
     servings_one: '{{count}} porsi',
     servings_other: '{{count}} porsi',
-    ingredients_one: '{{count}} bahan',
-    ingredients_other: '{{count}} bahan',
-    savedTimes_one: 'disimpan {{count}} kali',
-    savedTimes_other: 'disimpan {{count}} kali',
-    byAuthor: '{{name}} · {{saves}}',
     fromAuthor: 'Dari {{name}}',
     someCook: 'Seseorang',
 
@@ -1471,7 +1447,6 @@ export const id = {
       scanLabel: 'Foto',
       describeLabel: 'Ceritakan',
       scanTitle: 'Isi dari sebuah foto',
-      or: 'ATAU ISI SENDIRI',
       describeTitle: 'Ceritakan',
       describePlaceholder:
         'Kari ayam. 600g paha ayam, satu kaleng santan, 3 kentang. Untuk 4 orang.',
@@ -1500,7 +1475,6 @@ export const id = {
       servings: 'BERAPA PORSI',
       ingredients: 'BAHAN',
       ingredientsCount: 'BAHAN · {{count}}',
-      ingredientsEmpty: 'Belum ada apa-apa. Cari tiap item dan kami jumlahkan pancinya untukmu.',
       addIngredient: 'Tambah sebuah bahan',
       steps: 'CARA KAMU MEMASAK',
       stepsSheetTitle: 'Cara kamu memasak',
@@ -1529,11 +1503,9 @@ export const id = {
       search: 'Cari sebuah bahan',
       ownTitle: 'Tambah bahanmu sendiri',
       ownBody: 'Tidak ada di daftar? Beri nama dan kalorinya.',
-      customBody: 'Untuk yang hanya ada di dapurmu. Baca dari kemasannya atau timbang sekali.',
       name: 'NAMA',
       namePlaceholder: 'Ini apa?',
       calories: 'KALORI',
-      macros: 'MAKRO, KALAU KAMU TAHU',
       amount: 'PORSI',
       add: 'Masukkan ke panci',
       remove: 'Hapus',
@@ -1602,9 +1574,6 @@ export const id = {
       rejected: 'Tidak diterbitkan: {{reason}}',
       rejectedPlain: 'Kami tidak bisa menerbitkan yang ini.',
       pending: 'Kami masih melihatnya. Ia akan muncul setelah lolos.',
-      badgePending: 'Dalam tinjauan',
-      badgeRejected: 'Tidak diterbitkan',
-      badgePublic: 'Publik',
     },
   },
 

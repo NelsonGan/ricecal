@@ -26,12 +26,8 @@ export const fil = {
     profile: 'Profile',
     myProfile: 'Profile ko',
     editProfile: 'I-edit ang profile',
-    join: 'Gumawa ng pampublikong profile',
-    joinBody:
-      'Piliin ang makikita ng iba. Pribado ang talaarawan hanggang magbahagi ka ng pagkain.',
     handle: 'Username',
     handleHint: '3 hanggang 24 na maliliit na titik, numero, tuldok, o underscore.',
-    displayName: 'Pangalan',
     bio: 'Tungkol sa iyo',
     privateProfile: 'Pribadong profile',
     privateProfileHint:
@@ -40,9 +36,7 @@ export const fil = {
     autoPostFoodsHint:
       'Awtomatikong lalabas sa feed ang bagong ni-log na pagkain. Sa pribadong profile, mga follower lang ang makakakita.',
     avatar: 'Pumili ng larawan',
-    removeAvatar: 'Alisin ang larawan',
     handleInvalid: 'Gumamit ng 3 hanggang 24 na maliliit na titik, numero, tuldok, o underscore.',
-    nameInvalid: 'Maglagay ng pangalan.',
     save: 'I-save',
     saved: 'Na-save',
     cancel: 'Kanselahin',
@@ -58,7 +52,6 @@ export const fil = {
     removeFollower: 'Alisin ang tagasunod',
     removeFollowerBody: 'Hindi na nila makikita ang mga post para sa mga tagasunod lang.',
     share: 'Ibahagi sa feed',
-    publish: 'Ibahagi',
     newPost: 'Ibahagi ang pagkain',
     editPost: 'I-edit ang post',
     caption: 'Caption',
@@ -140,14 +133,12 @@ export const fil = {
       add: 'Idagdag',
       undo: 'I-undo',
       keep: 'Panatilihin',
-      skip: 'Laktawan',
       retry: 'Subukan ulit',
       close: 'Isara',
     },
 
     nav: {
       today: 'Ngayon',
-      recipes: 'Pagkain',
       trends: 'Mga trend',
       me: 'Ako',
       log: 'I-log ang pagkain',
@@ -262,7 +253,6 @@ export const fil = {
       emptyTitle: 'Walang bumalik',
       emptyBody:
         'Wala kaming nabasang aktibidad. Kung na-off mo ang RiceCal sa privacy settings ng Health, i-on mo ulit at subukan muli.',
-      retry: 'Subukan ulit',
 
       unavailableTitle: 'Walang health data dito',
       simulator:
@@ -329,7 +319,6 @@ export const fil = {
       clearDemoBody: 'Aalisin ang bawat ginawang araw at session mula sa account na ito.',
       granted: 'Naka-on',
       notGranted: 'Hindi pinayagan',
-      partial: 'May data na hindi ibinabahagi',
     },
 
     provider: {
@@ -741,8 +730,6 @@ export const fil = {
       permissionTitle: 'Payagan ang RiceCal na gamitin ang camera',
       permissionBody:
         'Binabasa ng camera ang barcode sa pakete. Walang naire-record o na-a-upload.',
-      aim: 'Itutok ang camera sa barcode ng pakete.',
-      noCamera: 'Walang camera ang device na ito, kaya walang mai-scan dito.',
       failedTitle: 'Walang sagot',
       failed:
         'Hindi namin maabot ang catalogue ngayon. Baka maayos naman ang pakete; ang koneksyon ang hindi.',
@@ -759,15 +746,12 @@ export const fil = {
     },
 
     camera: {
-      title: 'Kunan ang plato mo',
-      analysing: 'Inaalam kung ano ang nasa plato',
       permissionTitle: 'Kailangan ng access sa camera',
       permissionBody: 'Ginagamit ng RiceCal ang camera para basahin ang plato mo.',
       permissionSettings: 'Buksan ang Settings',
       shutter: 'Kumuha ng litrato',
       library: 'Pumili mula sa mga litrato',
       flip: 'Baligtarin ang camera',
-      captured: 'Ang litratong kakakuha mo lang',
       photoOf: 'Litrato ng {{food}}',
     },
 
@@ -913,7 +897,6 @@ export const fil = {
     },
 
     water: {
-      title: 'Tubig',
       count: '{{filled}} / {{goal}} ml',
       addTitle: 'Magdagdag ng tubig',
       left: '{{amount}} ml pa',
@@ -1276,7 +1259,6 @@ export const fil = {
       switchMonthly: 'Lumipat sa buwanan',
       switchYearly: 'Lumipat sa taunan',
       manage: 'Pamahalaan sa store',
-      switched: 'Na-update ang plano',
     },
   },
 
@@ -1400,8 +1382,6 @@ export const fil = {
     },
 
     intro: {
-      title: 'Handa ka na. Magsimula nang mag-log?',
-      body: 'Gumagana ang lahat kahit wala ito. Inaalis lang ng Pro ang mga limitasyon.',
       later: 'Baka mamaya',
     },
 
@@ -1472,11 +1452,6 @@ export const fil = {
 
     servings_one: '{{count}} serving',
     servings_other: '{{count}} serving',
-    ingredients_one: '{{count}} sangkap',
-    ingredients_other: '{{count}} sangkap',
-    savedTimes_one: 'na-save {{count}} beses',
-    savedTimes_other: 'na-save {{count}} beses',
-    byAuthor: '{{name}} · {{saves}}',
     fromAuthor: 'Mula kay {{name}}',
     someCook: 'May isang tao',
 
@@ -1487,7 +1462,6 @@ export const fil = {
       scanLabel: 'Litrato',
       describeLabel: 'Ilarawan',
       scanTitle: 'Punan mula sa litrato',
-      or: 'O PUNAN ITO MISMO',
       describeTitle: 'Ilarawan ito',
       describePlaceholder:
         'Kari ayam. 600g na hita ng manok, isang lata ng gata, 3 patatas. Para sa 4.',
@@ -1516,7 +1490,6 @@ export const fil = {
       servings: 'ILANG SERVING',
       ingredients: 'MGA SANGKAP',
       ingredientsCount: 'MGA SANGKAP · {{count}}',
-      ingredientsEmpty: 'Wala pa. Hanapin ang bawat item at kami ang magtotototal ng kaldero.',
       addIngredient: 'Magdagdag ng sangkap',
       steps: 'PAANO MO ITO NILULUTO',
       stepsSheetTitle: 'Paano mo ito niluluto',
@@ -1546,12 +1519,9 @@ export const fil = {
       search: 'Maghanap ng sangkap',
       ownTitle: 'Magdagdag ng sarili mong sangkap',
       ownBody: 'Wala sa listahan? Pangalanan ito at ilagay ang calories.',
-      customBody:
-        'Para sa mga bagay na nasa kusina mo lang. Basahin sa pakete o timbangin ito minsan.',
       name: 'PANGALAN',
       namePlaceholder: 'Ano ito?',
       calories: 'CALORIES',
-      macros: 'MACROS, KUNG ALAM MO',
       amount: 'BAHAGI',
       add: 'Ilagay sa kaldero',
       remove: 'Alisin',
@@ -1620,9 +1590,6 @@ export const fil = {
       rejected: 'Hindi na-publish: {{reason}}',
       rejectedPlain: 'Hindi namin ma-publish ito.',
       pending: 'Tinitingnan pa namin ito. Lilitaw ito kapag pumasa na.',
-      badgePending: 'Sinusuri',
-      badgeRejected: 'Hindi na-publish',
-      badgePublic: 'Pampubliko',
     },
   },
 
