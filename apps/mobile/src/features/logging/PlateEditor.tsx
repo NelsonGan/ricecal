@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
 import type { EntryIngredient } from '@/data'
-import { SwipeRow } from '@/features/shared'
+import { PartRow } from '@/features/shared/PartRow'
 import { roundHalfUp } from '@/lib/nutrition'
 import { formatPortion, titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Card, cn, Divider, Icon, IconButton, Text, useNumpadField } from '@/ui'
+import { Button, Card, cn, Divider, Text, useNumpadField } from '@/ui'
 import { PartLine } from './PartLine'
 import {
   type PartEdits,
@@ -175,7 +175,6 @@ export function PlateEditor({
   onReplace,
 }: PlateEditorProps) {
   const { t } = useTranslation(['logging', 'common'])
-  const colors = useThemeColors()
 
   /**
    * The staging, between one edit and the write that follows it.
@@ -335,118 +334,54 @@ export function PlateEditor({
                 so it stays put while the row slides over its buttons. */}
             {index > 0 ? <Divider className="mx-card" /> : null}
 
-            {/* THE TWO THINGS A SWIPE UNCOVERS, and between them they are why
-                the minus above no longer empties a row. Delete is where "there
-                wasn't any" went; Replace is the answer to a scan that named the
-                right kind of thing and the wrong one of it, which used to cost a
-                delete, a search and an add.
-
-                Replace nearest the row and Delete outermost: the destructive one
-                belongs at the end of the drag, which is where a long swipe puts
-                the thumb and where iOS has taught people to expect it. */}
-            <SwipeRow
-              square
-              actions={[
-                {
-                  label: t('logging:detail.replacePart'),
-                  a11yLabel: t('logging:detail.replaceOf', { name: ingredient.name }),
-                  icon: 'swap',
-                  tone: 'water',
-                  onPress: () => onReplace(ingredient),
-                },
-                {
-                  label: t('common:action.delete'),
-                  a11yLabel: t('logging:detail.removeOf', { name: ingredient.name }),
-                  icon: 'delete',
-                  tone: 'hibiscus',
-                  exits: true,
-                  onPress: () => {
-                    setEmptied(true)
-                    onRemove(ingredient)
-                  },
-                },
-              ]}
-            >
-              {/* Opaque, because the buttons are underneath: the row slides over
-                  them and anything see-through would show a bin through the
-                  ingredient's own name. */}
-              <View className="gap-2 bg-surface px-card py-md">
-                {/* The name on a line of its own, with the whole width to wrap into.
-                Beside the controls it had about half the row, which is what this
-                sheet exists to give back.
-
-                THE COUNT LEADS IT, the same cart line the ingredient card shows,
-                and this is where it has room: under the weight field it would be
-                a name wrapping inside a 70pt column between two buttons. It moves
-                as the weight does — the buttons and the field below set grams,
-                and this is those grams read back as a number of the thing. */}
+            {/* Replace is the answer to a scan that named the right kind of
+                thing and the wrong one of it, which used to cost a delete, a
+                search and an add. */}
+            <PartRow
+              name={ingredient.name}
+              // THE COUNT LEADS IT, the same cart line the ingredient card shows.
+              // It moves as the weight does: the buttons and the field set grams,
+              // and this is those grams read back as a number of the thing.
+              title={
                 <PartLine
                   quantity={ingredient.quantity}
                   name={ingredient.name}
                   variant="bodyStrong"
                 />
+              }
+              kcal={ingredient.kcal}
+              removeLabel={t('logging:detail.removeOf', { name: ingredient.name })}
+              onReplace={() => onReplace(ingredient)}
+              onRemove={() => {
+                setEmptied(true)
+                onRemove(ingredient)
+              }}
+              onLess={atFloor ? null : () => step(ingredient, -1)}
+              onMore={atCeiling ? null : () => step(ingredient, 1)}
+            >
+              {/* THE AMOUNT, IN GRAMS, AND IT IS A FIELD.
+                  A weight is the one thing about a part somebody can check
+                  against the plate in front of them, and "it was more like 200"
+                  is a sentence the buttons answer ten grams at a time. A part
+                  nobody weighed keeps its multiplier, read-only: there is no
+                  weight to type, and a count is what the buttons move.
 
-                <View className="flex-row items-center justify-between gap-3">
-                  {/* What it costs. The amount used to be here too and has moved to
-                  the field between the buttons, because the amount is the thing
-                  being edited and reading it two inches from the control that
-                  changes it is how the old card ended up truncating its names. */}
-                  <Text variant="meta" className="min-w-0 flex-1">
-                    {t('logging:detail.partKcal', { kcal: ingredient.kcal.toLocaleString() })}
-                  </Text>
-
-                  <View className="flex-row items-center gap-2">
-                    <IconButton
-                      size="sm"
-                      variant="neutral"
-                      accessibilityLabel={t('logging:detail.lessOf', { name: ingredient.name })}
-                      disabled={atFloor}
-                      onPress={() => step(ingredient, -1)}
-                    >
-                      <Icon set="ui" name="minus" size={16} tintColor={colors.ink} />
-                    </IconButton>
-
-                    {/* THE AMOUNT, IN GRAMS, AND IT IS A FIELD.
-                    A weight is the one thing about a part somebody can check
-                    against the plate in front of them, and "it was more like 200"
-                    is a sentence the buttons answer ten grams at a time. Typed on
-                    the app's own pad, which a capped `Sheet` makes room for.
-
-                    A part nobody weighed keeps its multiplier and keeps it
-                    read-only: there is no weight to type, and a count is what the
-                    buttons move. */}
-                    {weighed ? (
-                      /* THE WEIGHT, EXACT, and the count that reads it back is in the
-                     heading above. Typing 200 g of something that comes in 180 g
-                     pieces leaves this reading 200 and the heading reading "1 ×".
-                     Snapping the weight to the quarter instead would make the two
-                     always agree and this field useless: the buttons move 10 g at
-                     a time and every one of those taps would round straight back
-                     to where it started. */
-                      <GramsField
-                        grams={Math.round(ingredient.grams ?? 0)}
-                        label={titleCase(ingredient.name)}
-                        onChange={(grams) => setGrams(ingredient, grams)}
-                      />
-                    ) : (
-                      <Text variant="label" className="w-[70px] text-center">
-                        {t('logging:detail.times', { amount: ingredient.quantity })}
-                      </Text>
-                    )}
-
-                    <IconButton
-                      size="sm"
-                      variant="neutral"
-                      accessibilityLabel={t('logging:detail.moreOf', { name: ingredient.name })}
-                      disabled={atCeiling}
-                      onPress={() => step(ingredient, 1)}
-                    >
-                      <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
-                    </IconButton>
-                  </View>
-                </View>
-              </View>
-            </SwipeRow>
+                  Exact, and the count that reads it back is in the heading.
+                  Snapping the weight to the quarter instead would make the two
+                  always agree and this field useless: the buttons move 10 g at
+                  a time and every tap would round straight back. */}
+              {weighed ? (
+                <GramsField
+                  grams={Math.round(ingredient.grams ?? 0)}
+                  label={titleCase(ingredient.name)}
+                  onChange={(grams) => setGrams(ingredient, grams)}
+                />
+              ) : (
+                <Text variant="label" className="w-[70px] text-center">
+                  {t('logging:detail.times', { amount: ingredient.quantity })}
+                </Text>
+              )}
+            </PartRow>
           </View>
         )
       })}

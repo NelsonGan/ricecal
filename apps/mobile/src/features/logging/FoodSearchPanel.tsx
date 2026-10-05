@@ -35,6 +35,29 @@ import { whenLabel } from './when'
 const SKELETON_ROWS = ['s1', 's2', 's3', 's4', 's5', 's6'] as const
 
 /**
+ * Shaped like the row it replaces (a tile, two lines of text and a trailing
+ * number) so a list does not jump when its results land.
+ */
+function RowSkeletons() {
+  return (
+    <View className="gap-3" accessibilityRole="progressbar">
+      {SKELETON_ROWS.map((id) => (
+        <Card key={id}>
+          <View className="flex-row items-center gap-3">
+            <Skeleton className={ROW_TILE} />
+            <View className="flex-1 gap-2">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-3 w-2/5" />
+            </View>
+            <Skeleton className="h-6 w-12" />
+          </View>
+        </Card>
+      ))}
+    </View>
+  )
+}
+
+/**
  * How long a settled query has to stay settled before it counts as a search. The
  * catalogue is asked 140ms after a keystroke, which is right for a request and
  * wrong for a measurement: "nas" finding nothing says nothing about the
@@ -337,26 +360,7 @@ export function FoodSearchPanel({
         />
       ) : (
         <>
-          {state === 'loading' ? (
-            <View className="gap-3" accessibilityRole="progressbar">
-              {SKELETON_ROWS.map((id) => (
-                // Shaped like the row it replaces — a tile, two lines of text and a
-                // trailing number — so the list does not jump when the results
-                // land. The tile is part of that shape now: these rows were text
-                // only while a catalogue drawing was rare, and are not any more.
-                <Card key={id}>
-                  <View className="flex-row items-center gap-3">
-                    <Skeleton className={ROW_TILE} />
-                    <View className="flex-1 gap-2">
-                      <Skeleton className="h-4 w-2/3" />
-                      <Skeleton className="h-3 w-2/5" />
-                    </View>
-                    <Skeleton className="h-6 w-12" />
-                  </View>
-                </Card>
-              ))}
-            </View>
-          ) : null}
+          {state === 'loading' ? <RowSkeletons /> : null}
 
           {state === 'offline' ? (
             <EmptyState
@@ -482,20 +486,7 @@ function OwnFoodList({
     return (
       <>
         {create}
-        <View className="gap-3" accessibilityRole="progressbar">
-          {SKELETON_ROWS.map((id) => (
-            <Card key={id}>
-              <View className="flex-row items-center gap-3">
-                <Skeleton className={ROW_TILE} />
-                <View className="flex-1 gap-2">
-                  <Skeleton className="h-4 w-2/3" />
-                  <Skeleton className="h-3 w-2/5" />
-                </View>
-                <Skeleton className="h-6 w-12" />
-              </View>
-            </Card>
-          ))}
-        </View>
+        <RowSkeletons />
       </>
     )
   }
@@ -628,22 +619,7 @@ function HistoryList({ query, onPick }: { query: string; onPick: (entry: Entry) 
   // Paused is checked first for the reason the catalogue side gives — a list
   // that could not be fetched is not an empty history.
   if (isPending && !isPaused) {
-    return (
-      <View className="gap-3" accessibilityRole="progressbar">
-        {SKELETON_ROWS.map((id) => (
-          <Card key={id}>
-            <View className="flex-row items-center gap-3">
-              <Skeleton className={ROW_TILE} />
-              <View className="flex-1 gap-2">
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="h-3 w-2/5" />
-              </View>
-              <Skeleton className="h-6 w-12" />
-            </View>
-          </Card>
-        ))}
-      </View>
-    )
+    return <RowSkeletons />
   }
 
   if (isPaused && !data) {

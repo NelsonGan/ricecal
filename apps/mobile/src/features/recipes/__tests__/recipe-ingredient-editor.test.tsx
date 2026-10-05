@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { render, screen, userEvent } from '@/test-utils'
 import { type EditableRecipeIngredient, RecipeIngredientEditor } from '../RecipeIngredientEditor'
 
-jest.mock('@/features/shared', () => {
+jest.mock('@/features/shared/SwipeRow', () => {
   const { Pressable, Text, View } = jest.requireActual('react-native')
   return {
     SwipeRow: ({
