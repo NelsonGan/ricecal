@@ -130,12 +130,6 @@ export function progressOf(done: number, goal: number): number {
   return Math.min(1, Math.max(0, done / goal))
 }
 
-export function bmi(heightCm: number, weightKg: number): number {
-  const metres = heightCm / 100
-  if (metres <= 0) return 0
-  return Math.round((weightKg / (metres * metres)) * 10) / 10
-}
-
 /**
  * Standard activity multipliers against BMR. `onFeet` is the usual "moderately
  * active" 1.55 and `veryActive` the usual 1.725; the published scale has a fifth

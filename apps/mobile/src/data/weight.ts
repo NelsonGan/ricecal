@@ -15,25 +15,27 @@ import type { WeighIn } from './types'
  * scale syncs, the profile still says what onboarding recorded, and the budget
  * is computed from the stale one.
  */
-export function useWeighIns(limit = 90) {
+export async function fetchWeighIns(userId: string): Promise<WeighIn[]> {
+  const rows = unwrap(
+    await supabase
+      .from('weight_logs')
+      .select('measured_on, weight_kg')
+      .eq('user_id', userId)
+      // Newest first for the limit, then reversed: "the last 90 readings"
+      // is what a chart wants, not "the first 90 ever".
+      .order('measured_on', { ascending: false })
+      .limit(90),
+  )
+
+  return rows.map((row) => ({ date: row.measured_on, kg: Number(row.weight_kg) })).reverse()
+}
+
+export function useWeighIns() {
   const userId = useUserId()
 
   return useQuery({
     queryKey: keys.weighIns(userId),
-    queryFn: async (): Promise<WeighIn[]> => {
-      const rows = unwrap(
-        await supabase
-          .from('weight_logs')
-          .select('measured_on, weight_kg')
-          .eq('user_id', userId)
-          // Newest first for the limit, then reversed: "the last 90 readings"
-          // is what a chart wants, not "the first 90 ever".
-          .order('measured_on', { ascending: false })
-          .limit(limit),
-      )
-
-      return rows.map((row) => ({ date: row.measured_on, kg: Number(row.weight_kg) })).reverse()
-    },
+    queryFn: () => fetchWeighIns(userId),
   })
 }
 
