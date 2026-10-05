@@ -400,6 +400,44 @@ begin
 end;
 $$;
 
+-- A photo published straight away has no reviewed ETag, so the signer read one
+-- from R2 with a HEAD on every signature. A key's only upload URL is minted
+-- before the meal, and so the post, can name it, and it lapses after ten
+-- minutes (`UPLOAD_TTL_SECONDS` in functions/_shared/r2.ts). Past that the
+-- object cannot change under its key, and the signer records what it read so
+-- later signatures skip the round trip. Only ever fills a missing tag: a
+-- reviewed one, or one a photo change cleared, is left alone.
+create or replace function public.record_social_photo_etags(p_etags jsonb)
+returns integer language plpgsql security definer set search_path = '' as $$
+declare v_posts integer; v_avatars integer;
+begin
+  if p_etags is null or jsonb_typeof(p_etags) <> 'object' then
+    raise exception 'An object of photo key to ETag is required' using errcode = '22023';
+  end if;
+  with tags as (
+    select key, value from jsonb_each_text(p_etags)
+     where char_length(value) <= 128 and value ~ '^"[a-zA-Z0-9-]+"$'
+  )
+  update public.social_posts p set photo_etag = t.value
+    from tags t
+   where p.photo_path = t.key and p.photo_etag is null
+     and p.created_at < now() - interval '10 minutes';
+  get diagnostics v_posts = row_count;
+  with tags as (
+    select key, value from jsonb_each_text(p_etags)
+     where char_length(value) <= 128 and value ~ '^"[a-zA-Z0-9-]+"$'
+  )
+  update public.profiles p set photo_etag = t.value
+    from tags t
+   where p.avatar_path = t.key and p.photo_etag is null
+     and p.updated_at < now() - interval '10 minutes';
+  get diagnostics v_avatars = row_count;
+  return v_posts + v_avatars;
+end;
+$$;
+revoke execute on function public.record_social_photo_etags from public, anon, authenticated;
+grant execute on function public.record_social_photo_etags to service_role;
+
 revoke execute on function public.social_profile, public.social_post, public.social_entry_post,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,

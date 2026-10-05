@@ -8,6 +8,7 @@
 // The client never holds an R2 credential. It holds a URL that stops working.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
+import { createClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
 import { json, readBoundedBytes } from '../_shared/http.ts'
 import {
@@ -35,6 +36,13 @@ type UploadRequest = { action: 'upload'; kind?: AssetKind; contentType?: string;
 type ReadRequest = { action: 'read'; keys?: string[]; shareSlug?: string; scope?: 'social' }
 type DeleteRequest = { action: 'delete'; keys?: string[] }
 type PhotosRequest = UploadRequest | ReadRequest | DeleteRequest
+
+function serviceClient() {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  )
+}
 
 function isKind(value: unknown): value is AssetKind {
   return value === 'meal' || value === 'avatar'
@@ -112,14 +120,28 @@ Deno.serve(async (req: Request) => {
           if ('error' in claim) return json({ ok: false, error: claim.error }, claim.status)
           const urls: Record<string, string> = {}
           const headers: Record<string, { 'If-Match': string }> = {}
+          const learned: Record<string, string> = {}
           await Promise.all(
             claim.keys.map(async (key) => {
-              const etag = claim.etags[key] ?? (await headObjectEtag(key))
+              let etag = claim.etags[key]
+              if (!etag) {
+                etag = await headObjectEtag(key)
+                if (etag) learned[key] = etag
+              }
               if (!etag) return
               urls[key] = await signGet(key, SOCIAL_READ_TTL_SECONDS, etag)
               headers[key] = { 'If-Match': etag }
             }),
           )
+          // Remembered once the bytes can no longer change, so the next
+          // signature skips the HEAD. The database decides when that is. A
+          // failure costs a HEAD next time and nothing else.
+          if (Object.keys(learned).length > 0) {
+            const { error } = await serviceClient().rpc('record_social_photo_etags', {
+              p_etags: learned,
+            })
+            if (error) console.warn('[photos] could not record ETags', error.message)
+          }
           return json({ ok: true, urls, headers, expiresIn: SOCIAL_READ_TTL_SECONDS })
         }
         if (body.shareSlug !== undefined && !isRecipeShareSlug(body.shareSlug)) {
