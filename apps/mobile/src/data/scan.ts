@@ -5,6 +5,7 @@ import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
 import { invalidateEatenTotals, keys } from './keys'
+import { scalePart } from './part-scale'
 import { useRefiningEntries } from './refining'
 import { announceRefusal, refusalFrom, ScanLimitError } from './refusals'
 import { useUserId } from './session'
@@ -133,23 +134,11 @@ export function useUpdateIngredient() {
     },
     onMutate: (input) =>
       patchParts(queryClient, input.entryId, (parts) =>
-        parts.map((ingredient) => {
-          if (ingredient.id !== input.ingredientId) return ingredient
-          // Everything on the row scales with the portion, not just the
-          // calories: the totals above are a sum of these, so a patch that moved
-          // only kcal would show a plate whose macros disagreed with it until
-          // the refetch landed.
-          const factor = input.quantity / Math.max(0.01, ingredient.quantity)
-          const scale = (value: number) => Math.round(value * factor * 10) / 10
-          return {
-            ...ingredient,
-            quantity: input.quantity,
-            kcal: Math.round(ingredient.kcal * factor),
-            carbs: scale(ingredient.carbs),
-            protein: scale(ingredient.protein),
-            fat: scale(ingredient.fat),
-          }
-        }),
+        // Exactly what the editor's overlay drew, weight included, so the row
+        // does not move when the overlay hands over to this patch.
+        parts.map((ingredient) =>
+          ingredient.id === input.ingredientId ? scalePart(ingredient, input.quantity) : ingredient,
+        ),
       ),
     onError: (_error, input, context) => restoreParts(queryClient, input.entryId, context),
     onSettled: (_data, _error, input) => afterPlateWrite(queryClient, userId, input),
