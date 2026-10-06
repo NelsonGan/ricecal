@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query'
+
 /**
  * Every query key in the app.
  *
@@ -55,8 +57,6 @@ export const keys = {
    * budget, and the pass that wrote it has a window rather than a date.
    */
   dayAll: (userId: string) => ['day', userId] as const,
-  /** Totals for a date range, for the charts and the weekly report. */
-  nutrition: (userId: string, from: string, to: string) => ['nutrition', userId, from, to] as const,
   /**
    * One week of dots under the strip on Today: eaten, goal and movement per day.
    */
@@ -170,3 +170,16 @@ export const keys = {
 
   photo: (path: string, shareSlug?: string) => ['photo', path, shareSlug ?? 'visible'] as const,
 } as const
+
+/**
+ * Everything worked out from what was eaten, after a write that changed it: the
+ * trend charts on all three ranges, the dots under the week strip, and the
+ * activity balance, which reads `daily_nutrition` through `activity_summary`.
+ * Without that last one a meal logged today left Activity saying "Not enough
+ * logged". The day itself is the caller's, since only it knows which days moved.
+ */
+export function invalidateEatenTotals(queryClient: QueryClient, userId: string): void {
+  queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+  queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
+  queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+}

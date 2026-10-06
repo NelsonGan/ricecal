@@ -19,10 +19,12 @@ export default function FeedScreen() {
   const queryClient = useQueryClient()
   useFocusEffect(
     useCallback(() => {
-      // A food can publish while this tab is mounted behind the diary.
-      void queryClient.invalidateQueries({
+      // A food can publish while this tab is mounted behind the diary. Only when
+      // stale: coming straight back from a post refetched every loaded page.
+      void queryClient.refetchQueries({
         queryKey: keys.socialRead(viewer, 'social_feed', { p_mode: mode }),
         exact: true,
+        stale: true,
       })
     }, [mode, queryClient, viewer]),
   )

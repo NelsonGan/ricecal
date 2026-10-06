@@ -25,20 +25,15 @@ export const zhHant = {
     profile: '個人頁面',
     myProfile: '我的個人頁面',
     editProfile: '編輯個人頁面',
-    join: '建立公開個人頁面',
-    joinBody: '選擇展示的內容。分享餐點前，日記始終保持私密。',
     handle: '用戶名稱',
     handleHint: '3 至 24 個小寫英文字母、數字、句點或底線。',
-    displayName: '名稱',
     bio: '簡介',
     privateProfile: '私人個人頁面',
     privateProfileHint: '不會顯示於搜尋、推薦和探索。追蹤者仍可看到你的貼文。',
     autoPostFoods: '自動發布食物',
     autoPostFoodsHint: '新記錄的食物會自動發布到動態。私人頁面只與追蹤者分享。',
     avatar: '選擇照片',
-    removeAvatar: '移除照片',
     handleInvalid: '請使用 3 至 24 個小寫英文字母、數字、句點或底線。',
-    nameInvalid: '請輸入名稱。',
     save: '儲存',
     saved: '已儲存',
     cancel: '取消',
@@ -54,7 +49,6 @@ export const zhHant = {
     removeFollower: '移除追蹤者',
     removeFollowerBody: '對方將無法查看僅追蹤者可見的貼文。',
     share: '分享到動態',
-    publish: '分享',
     newPost: '分享餐點',
     editPost: '編輯貼文',
     caption: '文字說明',
@@ -136,14 +130,12 @@ export const zhHant = {
       add: '新增',
       undo: '復原',
       keep: '保留',
-      skip: '略過',
       retry: '再試一次',
       close: '關閉',
     },
 
     nav: {
       today: '今天',
-      recipes: '食物',
       trends: '趨勢',
       me: '我的',
       log: '記錄飲食',
@@ -257,7 +249,6 @@ export const zhHant = {
       emptyTitle: '沒有讀到任何資料',
       emptyBody:
         '我們讀不到任何活動紀錄。如果你在健康 App 的隱私設定裡關掉了 RiceCal，請重新開啟再試一次。',
-      retry: '再試一次',
 
       unavailableTitle: '這台裝置沒有健康資料',
       simulator: '這台裝置沒有可讀取的健康資料庫。在模擬器上，這些畫面會用產生的資料填入。',
@@ -320,7 +311,6 @@ export const zhHant = {
       clearDemoBody: '從這個帳號刪除所有產生的日期和運動。',
       granted: '已開啟',
       notGranted: '未授權',
-      partial: '部分資料沒有分享',
     },
 
     provider: {
@@ -715,8 +705,6 @@ export const zhHant = {
     barcode: {
       permissionTitle: '允許 RiceCal 使用相機',
       permissionBody: '相機用來讀包裝上的條碼。不會錄影，也不會上傳。',
-      aim: '把相機對準包裝上的條碼。',
-      noCamera: '這台裝置沒有相機，這裡沒辦法掃。',
       failedTitle: '沒有回應',
       failed: '我們暫時連不上食物資料庫。包裝本身可能沒問題，是網路不行。',
       tryAgain: '重新掃',
@@ -731,15 +719,12 @@ export const zhHant = {
     },
 
     camera: {
-      title: '拍下你這盤',
-      analysing: '正在弄清楚盤子裡是什麼',
       permissionTitle: '需要相機權限',
       permissionBody: 'RiceCal 用相機來讀你這盤。',
       permissionSettings: '開啟設定',
       shutter: '拍照',
       library: '從相簿裡選',
       flip: '切換鏡頭',
-      captured: '你剛拍的照片',
       photoOf: '{{food}} 的照片',
     },
 
@@ -882,7 +867,6 @@ export const zhHant = {
     },
 
     water: {
-      title: '喝水',
       count: '{{filled}} / {{goal}} 毫升',
       addTitle: '加水',
       left: '還差 {{amount}} 毫升',
@@ -1237,7 +1221,6 @@ export const zhHant = {
       switchMonthly: '換成月繳',
       switchYearly: '換成年繳',
       manage: '在商店裡管理',
-      switched: '方案已更新',
     },
   },
 
@@ -1361,8 +1344,6 @@ export const zhHant = {
     },
 
     intro: {
-      title: '都設定好了，開始記錄吧？',
-      body: '不買也什麼都能用。Pro 只是把上限拿掉。',
       later: '以後再說',
     },
 
@@ -1431,11 +1412,6 @@ export const zhHant = {
 
     servings_one: '{{count}} 份',
     servings_other: '{{count}} 份',
-    ingredients_one: '{{count}} 種食材',
-    ingredients_other: '{{count}} 種食材',
-    savedTimes_one: '被儲存 {{count}} 次',
-    savedTimes_other: '被儲存 {{count}} 次',
-    byAuthor: '{{name}} · {{saves}}',
     fromAuthor: '來自 {{name}}',
     someCook: '某位廚友',
 
@@ -1446,7 +1422,6 @@ export const zhHant = {
       scanLabel: '照片',
       describeLabel: '描述',
       scanTitle: '用照片填好',
-      or: '或者自己填',
       describeTitle: '用文字描述',
       describePlaceholder: '咖哩雞。600 公克雞腿肉，一罐椰漿，3 顆馬鈴薯。夠 4 個人吃。',
       describeHint: '用量和夠幾個人吃，這兩樣最值得寫。',
@@ -1474,7 +1449,6 @@ export const zhHant = {
       servings: '夠幾份',
       ingredients: '食材',
       ingredientsCount: '食材 · {{count}}',
-      ingredientsEmpty: '還什麼都沒有。搜出每一樣，我們幫你把整鍋加起來。',
       addIngredient: '新增一樣食材',
       steps: '你怎麼做',
       stepsSheetTitle: '你怎麼做',
@@ -1503,11 +1477,9 @@ export const zhHant = {
       search: '搜尋一樣食材',
       ownTitle: '新增你自己的食材',
       ownBody: '清單裡沒有？給它取個名字，填上熱量。',
-      customBody: '給只有你家才有的東西用。照著包裝讀，或者秤一次。',
       name: '名稱',
       namePlaceholder: '這是什麼？',
       calories: '熱量',
-      macros: '三大營養素，如果你知道的話',
       amount: '份量',
       add: '加進鍋裡',
       remove: '移除',
@@ -1575,9 +1547,6 @@ export const zhHant = {
       rejected: '未發布：{{reason}}',
       rejectedPlain: '這一個我們沒能發布。',
       pending: '我們還在看這一個。通過之後就會出現。',
-      badgePending: '審核中',
-      badgeRejected: '未發布',
-      badgePublic: '公開',
     },
   },
 

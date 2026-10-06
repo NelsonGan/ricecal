@@ -1,6 +1,6 @@
 import { onlineManager } from '@tanstack/react-query'
 import { format, parseISO, subDays } from 'date-fns'
-import { useRouter } from 'expo-router'
+import { useIsFocused, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWindowDimensions, View } from 'react-native'
@@ -74,6 +74,7 @@ const yesterday = (key: string) => dateKey(subDays(parseISO(key), 1))
 export default function TodayScreen() {
   const { t } = useTranslation(['logging', 'common', 'social'])
   const router = useRouter()
+  const focused = useIsFocused()
   const toast = useToast()
   const { width, fontScale } = useWindowDimensions()
   const stackedSummary = width < 380 || fontScale > 1.3
@@ -498,7 +499,13 @@ export default function TodayScreen() {
           throughout and only the level waits. That is why the placeholder is
           inside the card: nothing changes height, and the figure beside the
           heading is simply absent until there is one. */}
-          <WaterCard date={selectedDate} ml={day.waterMl} goalMl={waterGoal} loading={loading} />
+          <WaterCard
+            date={selectedDate}
+            ml={day.waterMl}
+            goalMl={waterGoal}
+            loading={loading}
+            paused={!focused}
+          />
 
           {/* Two rows of placeholder rather than one, because one reads as a card
           with a single meal in it and the point of the block is that nobody yet

@@ -15,6 +15,8 @@ export type WaterPanelProps = {
   range: TrendRange
   buckets: readonly TrendBucket[]
   summary: TrendSummary | null
+  /** The screen is out of sight, so the tank holds still. */
+  paused?: boolean
 }
 
 /**
@@ -38,7 +40,7 @@ const HABIT_SHARE = 0.75
  * thirty days and a year that is noise inside the window, so it becomes the
  * habit: how many days cleared the bar at all.
  */
-export function WaterPanel({ range, buckets, summary }: WaterPanelProps) {
+export function WaterPanel({ range, buckets, summary, paused = false }: WaterPanelProps) {
   const { t } = useTranslation(['progress', 'common', 'logging'])
 
   /** A volume as its figure and unit: "1.8 L" above a litre, "750 ml" below. */
@@ -195,6 +197,7 @@ export function WaterPanel({ range, buckets, summary }: WaterPanelProps) {
           <WaterTank
             value={todayMl}
             goal={goal}
+            paused={paused}
             height={TANK_HEIGHT}
             radius={radius.card}
             accessibilityLabel={t('logging:water.level', {

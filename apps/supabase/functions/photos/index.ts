@@ -9,8 +9,8 @@
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
-import { readBoundedBytes } from '../_shared/http.ts'
-
+import { signedIn } from '../_shared/auth.ts'
+import { json, readBoundedBytes } from '../_shared/http.ts'
 import {
   ALLOWED_TYPES,
   type AssetKind,
@@ -37,11 +37,22 @@ type ReadRequest = { action: 'read'; keys?: string[]; shareSlug?: string; scope?
 type DeleteRequest = { action: 'delete'; keys?: string[] }
 type PhotosRequest = UploadRequest | ReadRequest | DeleteRequest
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
+function serviceClient() {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  )
+}
+
+/**
+ * Work that finishes after the answer is sent. The edge runtime keeps the
+ * worker alive for it; anywhere without one it is best effort.
+ */
+function afterResponse(work: Promise<unknown>) {
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
+    .EdgeRuntime
+  if (runtime?.waitUntil) runtime.waitUntil(work)
+  else void work
 }
 
 function isKind(value: unknown): value is AssetKind {
@@ -49,19 +60,9 @@ function isKind(value: unknown): value is AssetKind {
 }
 
 Deno.serve(async (req: Request) => {
-  // Auth: the same self-inspection as every other function here, so a failure
-  // says which half broke rather than arriving as an opaque platform 401.
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return json({ ok: false, error: 'missing Authorization header' }, 401)
-
-  const anonClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    { global: { headers: { Authorization: authHeader } } },
-  )
-  const { data: auth, error: authError } = await anonClient.auth.getUser()
-  const userId = auth.user?.id
-  if (authError || !userId) return json({ ok: false, error: 'not signed in' }, 401)
+  const caller = await signedIn(req)
+  if (caller instanceof Response) return caller
+  const { client: anonClient, userId } = caller
 
   if (!r2Configured()) {
     return json({ ok: false, error: 'storage is not configured on this deployment' }, 503)
@@ -130,14 +131,35 @@ Deno.serve(async (req: Request) => {
           if ('error' in claim) return json({ ok: false, error: claim.error }, claim.status)
           const urls: Record<string, string> = {}
           const headers: Record<string, { 'If-Match': string }> = {}
+          const learned: Record<string, string> = {}
           await Promise.all(
             claim.keys.map(async (key) => {
-              const etag = claim.etags[key] ?? (await headObjectEtag(key))
+              let etag = claim.etags[key]
+              if (!etag) {
+                etag = await headObjectEtag(key)
+                if (etag) learned[key] = etag
+              }
               if (!etag) return
               urls[key] = await signGet(key, SOCIAL_READ_TTL_SECONDS, etag)
               headers[key] = { 'If-Match': etag }
             }),
           )
+          // Remembered once the bytes can no longer change, so the next
+          // signature skips the HEAD. The database decides when that is, and
+          // for a post under ten minutes old records nothing, so it runs after
+          // the answer rather than in front of it. A failure costs a HEAD next
+          // time and nothing else.
+          if (Object.keys(learned).length > 0) {
+            afterResponse(
+              Promise.resolve(
+                serviceClient().rpc('record_social_photo_etags', { p_etags: learned }),
+              )
+                .then(({ error }) => {
+                  if (error) console.warn('[photos] could not record ETags', error.message)
+                })
+                .catch((error) => console.warn('[photos] could not record ETags', error)),
+            )
+          }
           return json({ ok: true, urls, headers, expiresIn: SOCIAL_READ_TTL_SECONDS })
         }
         if (body.shareSlug !== undefined && !isRecipeShareSlug(body.shareSlug)) {

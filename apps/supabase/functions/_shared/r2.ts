@@ -53,7 +53,12 @@ export const ALLOWED_TYPES: Record<AssetKind, readonly string[]> = {
 
 /** How long a signed read lasts. Long enough to scroll a week of diary. */
 export const READ_TTL_SECONDS = 60 * 60
-/** How long a signed upload lasts. Long enough for a photo on a bad train. */
+/**
+ * How long a signed upload lasts. Long enough for a photo on a bad train.
+ *
+ * `record_social_photo_etags` in schemas/97_social.sql assumes ten minutes: an
+ * object older than this cannot change. Raise one and the other must follow.
+ */
 export const UPLOAD_TTL_SECONDS = 10 * 60
 
 type R2Config = {

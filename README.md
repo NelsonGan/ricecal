@@ -2632,17 +2632,24 @@ author, and uses a 60-second URL lifetime. A refused key is left out of the
 answer rather than refusing the batch: one batch is a whole screen, and edits,
 reports, blocks and retention revoke single posts routinely. The old diary and
 recipe requests keep their existing response contract and lifetime. Social images
-never use the diary's disk-first resolver. They are cached in memory under their
-key and ETag, so a fresh signature does not download them again, are
-never written to disk and do not reuse a photo key as permanent authorization. A previously delivered signed URL can work
-until its short expiry; downloaded bytes cannot be recalled. Blocking/deletion
+never use the diary's disk-first resolver. They are cached in memory and on disk
+under their key and ETag, so a fresh signature does not download them again. The
+disk copy is only drawn behind a signature this account was granted within the
+last half hour, which a refusal withdraws, so a photo key is never permanent
+authorization, and signing out clears it with the rest of the image cache. A previously delivered signed URL can work until its short expiry;
+downloaded bytes cannot be recalled. Blocking/deletion
 invalidates visible content immediately in the acting client and on the next
 authorized read elsewhere.
 
 An upload URL can be reused until it expires, so a unique object key alone does
 not prove that a photograph stayed unchanged. For an immediate post, the signer
 reads the current ETag from R2; previously reviewed images keep their recorded
-ETag. Social GET signatures require a signed `If-Match` header with that ETag;
+ETag. Once a post (or an avatar) is ten minutes old its upload URL has lapsed
+and the bytes cannot change, so the signer hands what it read to the
+service-only `record_social_photo_etags` and later signatures skip the HEAD. It
+only fills a missing tag and never overwrites one, and runs after the answer is
+sent. Deploy that migration before the `photos` function that calls it. Social
+GET signatures require a signed `If-Match` header with that ETag;
 an overwrite fails with 412 until the next authorized signature. The signer
 never accepts a client-supplied ETag.
 [R2 supports conditional GETs](https://developers.cloudflare.com/r2/api/s3/api/).
@@ -3485,13 +3492,23 @@ the server to name it. A launch into a familiar diary draws off the disk and
 invokes the function not at all. An upload seeds that cache with what it just
 sent, so the phone never downloads back a plate it photographed.
 
-Social lists authorize and decode photos for two nearby rows in each direction,
-counting all columns as one row on a profile grid. Only that small window loads
-social media; leaving the screen disables signing and rendering. Feed pagination
-starts two viewports from the end so the next page can fill the same window.
-The server still checks current access, and social bytes remain memory-only,
-keyed by the object and its ETag. Never prefetch a signed social URL with the
-default disk policy.
+Social lists authorize photos for two nearby rows in each direction, counting
+all columns as one row on a profile grid. Only that window asks for signatures,
+and leaving the screen stops signing, but a picture that has drawn stays drawn:
+unmounting it when its row left the window made every fling flash skeletons
+over pictures already in memory. The feed and the profile grid fetch their next
+page two viewports from the end so the rows after it can fill the same window.
+
+Social bytes are cached in memory and on disk under the object's key and ETag,
+so a profile seen yesterday costs one signing call and no downloads. The cache
+is only a copy: a picture is drawn only behind a signature granted within the
+last half hour, a refusal hides it, and nothing polls. Within that half hour a
+revisit draws at once while a fresh signature re-checks access behind it.
+
+A profile grid tile must not be `flex-1`. Inside a list cell of no fixed height
+its flex basis of zero made Yoga settle some cells at 3 points tall, the list
+averaged those into its spacer estimates, and a fling collapsed the content to
+a third of its height: the screen went blank or jumped back to the header.
 
 Diary and recipe images keep both disk bytes and decoded memory copies. Meal
 photos appear without a fade, including cache hits whose query still holds a

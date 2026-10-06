@@ -20,7 +20,9 @@ import { supabase } from '@/lib/supabase'
 import { daysAgo } from './activity'
 import { dateKey } from './client'
 import { keys } from './keys'
+import { fetchProfile } from './profile'
 import { useUserId } from './session'
+import { fetchWeighIns } from './weight'
 
 /**
  * Reading the phone's health store into the database. The only place that writes
@@ -78,6 +80,12 @@ const CHUNK_DAYS = 30
  * The shortest gap between two automatic syncs.
  */
 const MIN_INTERVAL_MS = 60_000
+
+/**
+ * How old a cached profile or weigh-in may be when a sync reads the person from
+ * it. Both are invalidated by every write that changes them.
+ */
+const PERSON_STALE_MS = 5 * 60_000
 
 export type SyncMode = 'backfill' | 'window'
 
@@ -242,24 +250,35 @@ async function persist(
  * the profile, because a fallback would be a number invented on the client and
  * written as if a watch had measured it.
  */
-async function personOf(userId: string): Promise<{ age: number | null; basalKcal: number | null }> {
+async function personOf(
+  queryClient: QueryClient,
+  userId: string,
+): Promise<{ age: number | null; basalKcal: number | null }> {
   // Two rows, because a body is spread over two tables: the parts that do not
   // change live on the profile, and the weight is the latest weigh-in, which is
-  // where `compute_targets()` reads it from too.
-  const [profile, weighIn] = await Promise.all([
-    supabase.from('profiles').select('birth_date, sex, height_cm').eq('id', userId).maybeSingle(),
-    supabase
-      .from('weight_logs')
-      .select('weight_kg')
-      .eq('user_id', userId)
-      .order('measured_on', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+  // where `compute_targets()` reads it from too. Through the cache, because a
+  // launch asks for both for Today and Me at the same moment this sync starts.
+  // A read that fails leaves the figure unknown rather than failing the sync:
+  // without them a provider still has everything but the split and the zones.
+  const [body, weighIns] = await Promise.all([
+    queryClient
+      .fetchQuery({
+        queryKey: keys.profile(userId),
+        queryFn: () => fetchProfile(userId),
+        staleTime: PERSON_STALE_MS,
+      })
+      .catch(() => null),
+    queryClient
+      .fetchQuery({
+        queryKey: keys.weighIns(userId),
+        queryFn: () => fetchWeighIns(userId),
+        staleTime: PERSON_STALE_MS,
+      })
+      .catch(() => []),
   ])
 
-  const body = profile.data
   const age = body?.birth_date ? ageFrom(body.birth_date) : null
-  const weightKg = weighIn.data?.weight_kg ?? null
+  const weightKg = weighIns.at(-1)?.kg ?? null
   const sex = body?.sex
 
   const known =
@@ -287,23 +306,52 @@ async function personOf(userId: string): Promise<{ age: number | null; basalKcal
 }
 
 /**
+ * A fingerprint of what the last pass on this device read, per account and
+ * provider.
+ *
+ * Every pass still writes, because the database is the record and a late edit
+ * has to land. But a pass that read exactly what the one before it read moved
+ * nothing, and refetching the day, the goals, the weigh-ins and the charts on
+ * every launch and foreground for it doubled the requests a launch made.
+ *
+ * A hash rather than the reading, so no health data is left on the device by it.
+ */
+const lastRead = createMMKV({ id: 'ricecal-health-read' })
+
+/** cyrb53: 53 bits, plenty to tell one week of readings from the next. */
+function fingerprintOf(text: string): string {
+  let h1 = 0xdeadbeef
+  let h2 = 0x41c6ce57
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i)
+    h1 = Math.imul(h1 ^ code, 2654435761)
+    h2 = Math.imul(h2 ^ code, 1597334677)
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36)
+}
+
+/**
  * Read a range from a provider and write it, a chunk at a time.
  *
  * Returns the number of days written, which is how a caller knows whether a
  * granted-looking permission produced anything: on iOS that is the only way,
  * since HealthKit will not say whether a read was denied. It also returns
- * whatever hardware named itself, so every sync keeps the device name current.
+ * whatever hardware named itself, so every sync keeps the device name current,
+ * and whether the reading differed from the last pass over the same range.
  */
 export async function syncRange(
+  queryClient: QueryClient,
   userId: string,
   provider: HealthProvider,
   from: string,
   to: string,
   onProgress?: (progress: SyncProgress) => void,
-): Promise<{ days: number; deviceName: string | null }> {
+): Promise<{ days: number; deviceName: string | null; changed: boolean }> {
   // Once for the whole range rather than once per chunk. Neither can change
   // between two chunks of the same sync, and it is a round trip either way.
-  const person = await personOf(userId)
+  const person = await personOf(queryClient, userId)
 
   const hourlyFrom = daysAgo(HOURLY_DAYS)
   const chunks = healthSyncChunks(from, to, hourlyFrom)
@@ -313,19 +361,29 @@ export async function syncRange(
   let deviceName: string | null = null
   const total = chunks.length
 
+  const readings: HealthReading[] = []
+
   for (const chunk of chunks) {
     const reading = await provider.read(chunk.from, chunk.to, {
       withHours: chunk.withHours,
       ...person,
     })
     await persist(userId, provider.id, reading, chunk)
+    readings.push(reading)
     written += reading.days.length
     if (reading.deviceName) deviceName = reading.deviceName
     done += 1
     onProgress?.({ done, total })
   }
 
-  return { days: written, deviceName }
+  // Stored only once every chunk is written, so a pass that failed halfway is
+  // never mistaken for one that landed.
+  const key = `${userId}.${provider.id}`
+  const seen = fingerprintOf(JSON.stringify([from, to, readings]))
+  const changed = lastRead.getString(key) !== seen
+  if (changed) lastRead.set(key, seen)
+
+  return { days: written, deviceName, changed }
 }
 
 /**
@@ -423,9 +481,11 @@ async function noteSync(
  * `weight_logs_sync_daily_goals`, so a sync can change the calorie target
  * without anything in the app asking it to.
  */
-function invalidateAfterSync(queryClient: QueryClient, userId: string): void {
-  queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+function invalidateAfterSync(queryClient: QueryClient, userId: string, changed = true): void {
+  // The connection row carries the last sync time, which moves on every pass.
   queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
+  if (!changed) return
+  queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
   // The budget on Today is goal plus burned, so a connect that did not move it
   // would look like it had not worked.
   queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
@@ -529,7 +589,14 @@ export function useConnectHealth() {
       // The device name comes out of the reading rather than the API, because neither
       // store has a "what watch is this" call. It is whatever named itself on a
       // sample, and the backfill has already seen every one of them.
-      const { days, deviceName } = await syncRange(userId, provider, from, to, onProgress)
+      const { days, deviceName } = await syncRange(
+        queryClient,
+        userId,
+        provider,
+        from,
+        to,
+        onProgress,
+      )
       await noteSync(userId, id, { deviceName, backfilledFrom: from })
 
       return { granted: true, days }
@@ -562,11 +629,11 @@ export function useSyncHealth() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (id: ProviderId): Promise<number> => {
+    mutationFn: async (id: ProviderId): Promise<{ days: number; changed: boolean }> => {
       const provider = providerFor(id)
 
       const availability = await provider.isAvailable()
-      if (!availability.ok) return 0
+      if (!availability.ok) return { days: 0, changed: false }
 
       // Before the read, because a type this device has never been asked about returns
       // nothing rather than failing. Almost always a no-op: it touches the platform
@@ -579,12 +646,12 @@ export function useSyncHealth() {
       // The device name is refreshed on every pass, not only on connect. An account
       // that connected before a watch was paired would otherwise never learn its name,
       // so the settings screen would say "Apple Health" and never "Apple Watch".
-      const { days, deviceName } = await syncRange(userId, provider, from, to)
+      const { days, deviceName, changed } = await syncRange(queryClient, userId, provider, from, to)
       await noteSync(userId, id, { deviceName })
-      return days
+      return { days, changed }
     },
 
-    onSuccess: () => invalidateAfterSync(queryClient, userId),
+    onSuccess: ({ changed }) => invalidateAfterSync(queryClient, userId, changed),
   })
 }
 

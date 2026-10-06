@@ -689,20 +689,28 @@ export function useSocialAction() {
   })
 }
 
-export function useSocialPhoto(path: string | null | undefined, visible: boolean) {
+/**
+ * A current authorization to draw a social photograph.
+ *
+ * Signing only runs while `active`, but an answer outlives it: a tile that
+ * scrolls back, or a profile visited again within the half hour, draws from the
+ * image cache at once while a fresh signature re-checks access behind it. A
+ * refusal sets `isError`, which hides the picture. Nothing polls: a URL is only
+ * needed when the bytes are not already cached, and the tile asks again then.
+ */
+export function useSocialPhoto(path: string | null | undefined, active: boolean) {
   const viewer = useUserId()
   return useQuery({
     queryKey: keys.socialRead(viewer, 'photo', { path }),
-    enabled: Boolean(path) && visible,
+    enabled: Boolean(path) && active,
     queryFn: async ({ signal }) => {
       if (!path) throw new Error('photo unavailable')
       return await signSocialPhoto(viewer, path, signal)
     },
-    gcTime: 5 * 60_000,
-    staleTime: 35_000,
+    gcTime: 30 * 60_000,
+    // The URL lives 60 seconds; leave room to start a download before it lapses.
+    staleTime: 40_000,
     retry: false,
-    refetchInterval: visible ? 40_000 : false,
-    refetchIntervalInBackground: false,
   })
 }
 

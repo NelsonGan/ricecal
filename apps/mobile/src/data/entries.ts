@@ -4,7 +4,7 @@ import { dateOffset, type LogMethod, track } from '@/lib/analytics'
 import { recordMealLogged } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { today, unwrap, unwrapOne } from './client'
-import { keys } from './keys'
+import { invalidateEatenTotals, keys } from './keys'
 import { removeMealPhoto } from './photos'
 import { useUserId } from './session'
 import { type LogSnapshot, snapshotColumns } from './snapshot'
@@ -104,17 +104,7 @@ export function useLogFood() {
       queryClient.invalidateQueries({ queryKey: keys.recentFoods(userId) })
       // A first entry can start a streak, and both feed the badges.
       queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
-      // A meal moves this day's column, the range average and "days under goal"
-      // on every one of the three ranges — hence the prefix rather than one key.
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-      // And the dot under this day on the week strip, which is that same
-      // question — was the day under its goal — asked one day at a time.
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-      // Movement is measured against what was eaten: the balance chart, the
-      // "eaten" average and the deficit sentence all read `daily_nutrition`
-      // through `activity_summary`. Without this a meal logged today left
-      // the Activity tab still saying "Not enough logged".
-      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+      invalidateEatenTotals(queryClient, userId)
     },
   })
 }
@@ -326,10 +316,7 @@ export function useUpdateEntry() {
         // entries on them, which is why this is not unconditional.
         queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
       }
-      // A corrected portion is a different day total, which is a different bar.
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+      invalidateEatenTotals(queryClient, userId)
       // The search panel's "My foods" tab, and only for the two fields it shows.
       // A portion tap is deliberately not on that list: the stepper is debounced
       // to one write and is still the most frequent patch there is, and
@@ -408,9 +395,7 @@ export function useRemoveEntry() {
       // just thrown away is the app arguing with them.
       queryClient.invalidateQueries({ queryKey: keys.recentFoods(userId) })
       queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+      invalidateEatenTotals(queryClient, userId)
     },
   })
 }

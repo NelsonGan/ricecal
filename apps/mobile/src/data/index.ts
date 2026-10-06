@@ -34,7 +34,6 @@ export {
   useDayLog,
   useDayMarks,
   useDayPlates,
-  useNutritionRange,
   usePrefetchDays,
   useStreak,
 } from './day'

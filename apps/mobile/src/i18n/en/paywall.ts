@@ -197,13 +197,6 @@ export const paywall = {
    * needs Pro.", which was an apology for the button above it.
    */
   intro: {
-    title: 'You are all set. Ready to log?',
-    /**
-     * The offer at the end of onboarding, to somebody who has not used the app.
-     * It used to say Pro was what turned a photo into a logged meal, which
-     * stopped being true the day the free tier got three a day.
-     */
-    body: 'Everything works without it. Pro takes the limits off.',
     later: 'Maybe later',
   },
 

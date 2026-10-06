@@ -19,11 +19,8 @@ export const bn = {
     profile: 'প্রোফাইল',
     myProfile: 'আমার প্রোফাইল',
     editProfile: 'প্রোফাইল সম্পাদনা',
-    join: 'প্রকাশ্য প্রোফাইল তৈরি করুন',
-    joinBody: 'অন্যরা কী দেখবেন তা বেছে নিন। খাবার শেয়ার না করা পর্যন্ত আপনার ডায়েরি ব্যক্তিগত থাকবে।',
     handle: 'ব্যবহারকারীর নাম',
     handleHint: '৩ থেকে ২৪টি ছোট ইংরেজি অক্ষর, সংখ্যা, বিন্দু বা আন্ডারস্কোর।',
-    displayName: 'নাম',
     bio: 'পরিচয়',
     privateProfile: 'ব্যক্তিগত প্রোফাইল',
     privateProfileHint: 'খোঁজ, পরামর্শ ও ডিসকভার থেকে লুকান। অনুসারীরা আপনার পোস্ট দেখতে পারবেন।',
@@ -31,9 +28,7 @@ export const bn = {
     autoPostFoodsHint:
       'নতুন যোগ করা খাবার ফিডে নিজে থেকে পোস্ট হবে। ব্যক্তিগত প্রোফাইল শুধু অনুসারীদের সঙ্গে শেয়ার করে।',
     avatar: 'ছবি বাছুন',
-    removeAvatar: 'ছবি সরান',
     handleInvalid: '৩ থেকে ২৪টি ছোট ইংরেজি অক্ষর, সংখ্যা, বিন্দু বা আন্ডারস্কোর ব্যবহার করুন।',
-    nameInvalid: 'নাম লিখুন।',
     save: 'সংরক্ষণ করুন',
     saved: 'সংরক্ষিত',
     cancel: 'বাতিল',
@@ -49,7 +44,6 @@ export const bn = {
     removeFollower: 'অনুসারী সরান',
     removeFollowerBody: 'তিনি আর শুধু অনুসারীদের জন্য রাখা আপনার পোস্ট দেখতে পারবেন না।',
     share: 'ফিডে শেয়ার করুন',
-    publish: 'শেয়ার করুন',
     newPost: 'খাবার শেয়ার করুন',
     editPost: 'পোস্ট সম্পাদনা',
     caption: 'ক্যাপশন',
@@ -130,14 +124,12 @@ export const bn = {
       add: 'যোগ করুন',
       undo: 'ফিরিয়ে নিন',
       keep: 'রাখুন',
-      skip: 'এড়িয়ে যান',
       retry: 'আবার চেষ্টা করুন',
       close: 'বন্ধ করুন',
     },
 
     nav: {
       today: 'আজ',
-      recipes: 'খাবার',
       trends: 'প্রবণতা',
       me: 'আমি',
       log: 'খাবার লিখুন',
@@ -252,7 +244,6 @@ export const bn = {
       emptyTitle: 'কিছুই ফিরে এল না',
       emptyBody:
         'আমরা কোনো কার্যকলাপ পড়তে পারিনি। Health এর গোপনীয়তা সেটিংসে RiceCal বন্ধ করে থাকলে সেটি চালু করে আবার চেষ্টা করুন।',
-      retry: 'আবার চেষ্টা করুন',
 
       unavailableTitle: 'এখানে কোনো স্বাস্থ্য তথ্য নেই',
       simulator: 'এই ডিভাইসে পড়ার মতো কোনো Health ভাণ্ডার নেই। সিমুলেটরে, তৈরি করা তথ্যই এই পর্দাগুলো ভরায়।',
@@ -315,7 +306,6 @@ export const bn = {
       clearDemoBody: 'এই অ্যাকাউন্ট থেকে তৈরি করা প্রতিটি দিন ও সেশন সরিয়ে দেয়।',
       granted: 'চালু',
       notGranted: 'অনুমতি নেই',
-      partial: 'কিছু তথ্য ভাগ করা হয়নি',
     },
 
     provider: {
@@ -710,8 +700,6 @@ export const bn = {
     barcode: {
       permissionTitle: 'RiceCal কে ক্যামেরা ব্যবহারের অনুমতি দিন',
       permissionBody: 'ক্যামেরা প্যাকেটের বারকোড পড়ে। কিছুই রেকর্ড বা আপলোড হয় না।',
-      aim: 'ক্যামেরাটি প্যাকেটের বারকোডের দিকে ধরুন।',
-      noCamera: 'এই ডিভাইসে ক্যামেরা নেই, তাই এখানে স্ক্যান করার কিছু নেই।',
       failedTitle: 'কোনো উত্তর নেই',
       failed: 'এই মুহূর্তে তালিকায় পৌঁছাতে পারিনি। প্যাকেটটি ঠিকই থাকতে পারে; সংযোগটাই ঠিক ছিল না।',
       tryAgain: 'আবার স্ক্যান করুন',
@@ -726,15 +714,12 @@ export const bn = {
     },
 
     camera: {
-      title: 'আপনার থালার ছবি তুলুন',
-      analysing: 'থালায় কী আছে তা বোঝা হচ্ছে',
       permissionTitle: 'ক্যামেরার অনুমতি দরকার',
       permissionBody: 'RiceCal আপনার থালা পড়তে ক্যামেরা ব্যবহার করে।',
       permissionSettings: 'সেটিংস খুলুন',
       shutter: 'ছবি তুলুন',
       library: 'ছবি থেকে বাছুন',
       flip: 'ক্যামেরা বদলান',
-      captured: 'আপনি এইমাত্র যে ছবি তুলেছেন',
       photoOf: '{{food}} এর ছবি',
     },
 
@@ -879,7 +864,6 @@ export const bn = {
     },
 
     water: {
-      title: 'পানি',
       count: '{{filled}} / {{goal}} ml',
       addTitle: 'পানি যোগ করুন',
       left: '{{amount}} ml বাকি',
@@ -1235,7 +1219,6 @@ export const bn = {
       switchMonthly: 'মাসিকে বদলান',
       switchYearly: 'বার্ষিকে বদলান',
       manage: 'স্টোরে পরিচালনা করুন',
-      switched: 'প্ল্যান হালনাগাদ হয়েছে',
     },
   },
 
@@ -1359,8 +1342,6 @@ export const bn = {
     },
 
     intro: {
-      title: 'সব তৈরি। লেখা শুরু করবেন?',
-      body: 'এটি ছাড়াও সবকিছু চলে। Pro শুধু সীমাগুলো সরিয়ে দেয়।',
       later: 'হয়তো পরে',
     },
 
@@ -1429,11 +1410,6 @@ export const bn = {
 
     servings_one: '{{count}} পরিবেশন',
     servings_other: '{{count}} পরিবেশন',
-    ingredients_one: '{{count}} উপকরণ',
-    ingredients_other: '{{count}} উপকরণ',
-    savedTimes_one: '{{count}} বার সংরক্ষিত',
-    savedTimes_other: '{{count}} বার সংরক্ষিত',
-    byAuthor: '{{name}} · {{saves}}',
     fromAuthor: '{{name}} থেকে',
     someCook: 'কেউ একজন',
 
@@ -1444,7 +1420,6 @@ export const bn = {
       scanLabel: 'ছবি',
       describeLabel: 'বর্ণনা',
       scanTitle: 'ছবি থেকে ভরুন',
-      or: 'অথবা নিজেই ভরুন',
       describeTitle: 'বর্ণনা করুন',
       describePlaceholder: 'কারি আয়াম। ৬০০g মুরগির রান, এক কৌটা নারকেল দুধ, ৩টি আলু। ৪ জনের জন্য।',
       describeHint: 'পরিমাণ আর কতজনের জন্য, এই দুটোই লেখার মতো।',
@@ -1472,7 +1447,6 @@ export const bn = {
       servings: 'কত পরিবেশন',
       ingredients: 'উপকরণ',
       ingredientsCount: 'উপকরণ · {{count}}',
-      ingredientsEmpty: 'এখনো কিছু নেই। প্রতিটি জিনিস খুঁজুন, গোটা হাঁড়ির যোগফল আমরা করে দেব।',
       addIngredient: 'একটি উপকরণ যোগ করুন',
       steps: 'আপনি কীভাবে রাঁধেন',
       stepsSheetTitle: 'আপনি কীভাবে রাঁধেন',
@@ -1501,11 +1475,9 @@ export const bn = {
       search: 'একটি উপকরণ খুঁজুন',
       ownTitle: 'নিজের উপকরণ যোগ করুন',
       ownBody: 'তালিকায় নেই? এর একটি নাম আর ক্যালরি দিন।',
-      customBody: 'যেসব জিনিস কেবল আপনার রান্নাঘরেই আছে। প্যাকেট থেকে পড়ুন বা একবার মেপে নিন।',
       name: 'নাম',
       namePlaceholder: 'এটি কী?',
       calories: 'ক্যালরি',
-      macros: 'ম্যাক্রো, জানা থাকলে',
       amount: 'পরিমাণ',
       add: 'হাঁড়িতে দিন',
       remove: 'সরান',
@@ -1574,9 +1546,6 @@ export const bn = {
       rejected: 'প্রকাশ করা হয়নি: {{reason}}',
       rejectedPlain: 'এটি আমরা প্রকাশ করতে পারিনি।',
       pending: 'আমরা এখনো এটি দেখছি। উতরে গেলেই দেখা যাবে।',
-      badgePending: 'যাচাইয়ে',
-      badgeRejected: 'প্রকাশ করা হয়নি',
-      badgePublic: 'প্রকাশ্য',
     },
   },
 

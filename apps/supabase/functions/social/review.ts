@@ -2,8 +2,6 @@ import { createMeter } from '../_shared/entitlement.ts'
 import { readBoundedBytes } from '../_shared/http.ts'
 import { chatJSON } from '../_shared/llm.ts'
 
-export { readBoundedBytes } from '../_shared/http.ts'
-
 import { ownsKey, signGet } from '../_shared/r2.ts'
 
 export type ContentKind = 'profile' | 'post' | 'comment'

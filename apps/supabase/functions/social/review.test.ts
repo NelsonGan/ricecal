@@ -1,11 +1,11 @@
 import { assertEquals, assertRejects, assertThrows } from 'jsr:@std/assert@^1'
+import { readBoundedBytes } from '../_shared/http.ts'
 
 import {
   containsSocialLink,
   localReviewAllowed,
   parseReviewRequest,
   parseVerdict,
-  readBoundedBytes,
   reviewPhotoBody,
   reviewSubmission,
 } from './review.ts'

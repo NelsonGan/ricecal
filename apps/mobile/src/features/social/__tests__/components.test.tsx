@@ -183,7 +183,8 @@ it('does not treat an unresolved public identity as permission to like', async (
     isError: false,
     refetch: mockRefetchProfile,
   })
-  await view.rerender(<PostCard post={post} />)
+  // A new object stands in for the query subscription that re-renders the card.
+  await view.rerender(<PostCard post={{ ...post }} />)
   await userEvent.setup().press(screen.getByRole('button', { name: 'Like, 0 likes' }))
   expect(mockMutate).toHaveBeenCalledWith({ action: 'like', id: 'post', liked: true })
   expect(mockPush).not.toHaveBeenCalledWith('/settings/account')
@@ -488,45 +489,100 @@ it('offers retry only for pending moderation and retains the revision identity',
   expect(screen.getByText('Under review')).toBeTruthy()
 })
 
-it('keeps the cached image visible while its signature refreshes', async () => {
-  jest.useFakeTimers()
-  mockPhoto.mockReturnValue({
-    data: {
-      url: 'https://images.example/photo',
-      headers: { 'If-Match': 'reviewed-etag' },
-      expiresAt: Date.now() + 50_000,
-    },
+it('keeps the source a picture drew with while its signature refreshes', async () => {
+  const signed = (url: string) => ({
+    data: { url, headers: { 'If-Match': 'reviewed-etag' }, expiresAt: Date.now() + 50_000 },
     isError: false,
   })
+  mockPhoto.mockReturnValue(signed('https://images.example/first'))
   const view = await render(<SocialPhoto path="meals/person/photo" label="Rice" />)
-  // A fresh signature for the same reviewed bytes reuses the image in memory.
-  expect(screen.getByTestId('social-photo')).toHaveProp('source', {
-    uri: 'https://images.example/photo',
+  const first = {
+    uri: 'https://images.example/first',
     headers: { 'If-Match': 'reviewed-etag' },
     cacheKey: 'meals/person/photo#reviewed-etag',
-  })
-  expect(screen.getByTestId('social-photo')).toHaveProp('cachePolicy', 'memory')
+  }
+  expect(screen.getByTestId('social-photo')).toHaveProp('source', first)
+  // Disk as well as memory: a signature still gates every draw.
+  expect(screen.getByTestId('social-photo')).toHaveProp('cachePolicy', 'memory-disk')
   await act(async () => {
-    jest.advanceTimersByTime(50_000)
+    fireEvent(screen.getByTestId('social-photo'), 'load')
   })
-  expect(screen.getByTestId('social-photo')).toBeOnTheScreen()
-  await view.unmount()
-  jest.useRealTimers()
+  mockPhoto.mockReturnValue(signed('https://images.example/second'))
+  await view.rerender(<SocialPhoto path="meals/person/photo" label="Rice" />)
+  expect(screen.getByTestId('social-photo')).toHaveProp('source', first)
 })
 
-it('never draws stale signed data after access is refused or the row leaves the viewport', async () => {
+it('signs again instead of failing when an uncached picture outlived its URL', async () => {
+  const refetch = jest.fn()
+  const onFailed = jest.fn()
+  mockPhoto.mockReturnValue({
+    data: { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 1_000 },
+    isError: false,
+    isFetching: false,
+    refetch,
+  })
+  await render(<SocialPhoto path="meals/person/photo" label="Rice" onFailed={onFailed} />)
+  await act(async () => {
+    fireEvent(screen.getByTestId('social-photo'), 'error')
+  })
+  expect(refetch).toHaveBeenCalledTimes(1)
+  expect(onFailed).not.toHaveBeenCalled()
+})
+
+it('waits for a signature already on its way rather than failing the picture', async () => {
+  const refetch = jest.fn()
+  const onFailed = jest.fn()
+  mockPhoto.mockReturnValue({
+    data: { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 1_000 },
+    isError: false,
+    isFetching: true,
+    refetch,
+  })
+  await render(<SocialPhoto path="meals/person/photo" label="Rice" onFailed={onFailed} />)
+  await act(async () => {
+    fireEvent(screen.getByTestId('social-photo'), 'error')
+  })
+  expect(refetch).not.toHaveBeenCalled()
+  expect(onFailed).not.toHaveBeenCalled()
+})
+
+it('fails a picture whose signature was still fresh', async () => {
+  const onFailed = jest.fn()
+  mockPhoto.mockReturnValue({
+    data: { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 50_000 },
+    isError: false,
+    isFetching: false,
+    refetch: jest.fn(),
+  })
+  await render(<SocialPhoto path="meals/person/photo" label="Rice" onFailed={onFailed} />)
+  await act(async () => {
+    fireEvent(screen.getByTestId('social-photo'), 'error')
+  })
+  expect(onFailed).toHaveBeenCalledTimes(1)
+})
+
+it('never draws a photo once access is refused', async () => {
   const data = { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 50_000 }
-  mockPhoto.mockReturnValue({ data, isError: true })
-  const view = await render(<SocialPhoto path="meals/person/photo" label="Rice" />)
-  expect(screen.queryByTestId('social-photo')).toBeNull()
   mockPhoto.mockReturnValue({ data, isError: false })
-  await view.rerender(<SocialPhoto path="meals/person/photo" label="Rice" visible={false} />)
+  const view = await render(<SocialPhoto path="meals/person/photo" label="Rice" />)
+  expect(screen.getByTestId('social-photo')).toBeOnTheScreen()
+  mockPhoto.mockReturnValue({ data, isError: true })
+  await view.rerender(<SocialPhoto path="meals/person/photo" label="Rice" />)
   expect(screen.queryByTestId('social-photo')).toBeNull()
+})
+
+it('keeps a drawn photo but stops signing when its row leaves the viewport', async () => {
+  const data = { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 50_000 }
+  mockPhoto.mockReturnValue({ data, isError: false })
+  const view = await render(<SocialPhoto path="meals/person/photo" label="Rice" />)
+  await view.rerender(<SocialPhoto path="meals/person/photo" label="Rice" visible={false} />)
+  // Unmounting it here made every fling flash skeletons over cached pictures.
+  expect(screen.getByTestId('social-photo')).toBeOnTheScreen()
   expect(mockPhoto).toHaveBeenLastCalledWith('meals/person/photo', false)
 })
 
 it.each([undefined, 'file:///private-photo.jpg'])(
-  'releases a photo when its screen loses focus (private source: %s)',
+  'stops signing but keeps the picture when its screen loses focus (private source: %s)',
   async (privateUri) => {
     mockPhoto.mockReturnValue({
       data: { url: 'https://images.example/photo', headers: {}, expiresAt: Date.now() + 50_000 },
@@ -539,7 +595,8 @@ it.each([undefined, 'file:///private-photo.jpg'])(
     await view.rerender(
       <SocialPhoto path="meals/person/photo" privateUri={privateUri} label="Rice" />,
     )
-    expect(screen.queryByTestId('social-photo')).toBeNull()
+    // Coming back to a screen redrew every picture from nothing.
+    expect(screen.getByTestId('social-photo')).toBeOnTheScreen()
     expect(mockPhoto).toHaveBeenLastCalledWith('meals/person/photo', false)
     await view.unmount()
   },
