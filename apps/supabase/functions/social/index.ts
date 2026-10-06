@@ -70,7 +70,8 @@ async function loadSubmission(
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'use POST' }, 405)
   const signed = await signedIn(req)
-  if (signed instanceof Response) return signed
+  // Re-sent through this function's own `json` so a refusal is `no-store` too.
+  if (signed instanceof Response) return json({ ok: false, error: 'not signed in' }, signed.status)
   const { client: caller, userId: owner } = signed
   const url = Deno.env.get('SUPABASE_URL') ?? ''
 

@@ -44,6 +44,17 @@ function serviceClient() {
   )
 }
 
+/**
+ * Work that finishes after the answer is sent. The edge runtime keeps the
+ * worker alive for it; anywhere without one it is best effort.
+ */
+function afterResponse(work: Promise<unknown>) {
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
+    .EdgeRuntime
+  if (runtime?.waitUntil) runtime.waitUntil(work)
+  else void work
+}
+
 function isKind(value: unknown): value is AssetKind {
   return value === 'meal' || value === 'avatar'
 }
@@ -134,13 +145,20 @@ Deno.serve(async (req: Request) => {
             }),
           )
           // Remembered once the bytes can no longer change, so the next
-          // signature skips the HEAD. The database decides when that is. A
-          // failure costs a HEAD next time and nothing else.
+          // signature skips the HEAD. The database decides when that is, and
+          // for a post under ten minutes old records nothing, so it runs after
+          // the answer rather than in front of it. A failure costs a HEAD next
+          // time and nothing else.
           if (Object.keys(learned).length > 0) {
-            const { error } = await serviceClient().rpc('record_social_photo_etags', {
-              p_etags: learned,
-            })
-            if (error) console.warn('[photos] could not record ETags', error.message)
+            afterResponse(
+              Promise.resolve(
+                serviceClient().rpc('record_social_photo_etags', { p_etags: learned }),
+              )
+                .then(({ error }) => {
+                  if (error) console.warn('[photos] could not record ETags', error.message)
+                })
+                .catch((error) => console.warn('[photos] could not record ETags', error)),
+            )
           }
           return json({ ok: true, urls, headers, expiresIn: SOCIAL_READ_TTL_SECONDS })
         }

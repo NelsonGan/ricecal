@@ -9,7 +9,7 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated'
 
-import { Shimmer, useWorkingStatus } from '@/features/shared'
+import { Shimmer, useWorkingStatus } from '@/features/shared/Working'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, Icon, Text } from '@/ui'
 

@@ -170,3 +170,21 @@ it('says whether a pass read anything the last one did not', async () => {
   read.mockResolvedValue(measured('2026-10-03'))
   expect((await pass()).changed).toBe(true)
 })
+
+it('syncs without the person when their profile cannot be read', async () => {
+  const query = supabase.from()
+  query.maybeSingle.mockResolvedValue({ data: null, error: new Error('profile unavailable') })
+  const read = jest.fn().mockResolvedValue(measured('2026-10-02'))
+  await syncRange(
+    new QueryClient(),
+    'account-c',
+    { ...demoHealth, read },
+    '2026-10-01',
+    '2026-10-03',
+  )
+  expect(read).toHaveBeenCalledWith(
+    '2026-10-01',
+    '2026-10-03',
+    expect.objectContaining({ age: null, basalKcal: null }),
+  )
+})
