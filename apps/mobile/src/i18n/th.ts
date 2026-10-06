@@ -25,20 +25,15 @@ export const th = {
     profile: 'โปรไฟล์',
     myProfile: 'โปรไฟล์ของฉัน',
     editProfile: 'แก้ไขโปรไฟล์',
-    join: 'สร้างโปรไฟล์สาธารณะ',
-    joinBody: 'เลือกสิ่งที่คนอื่นเห็น บันทึกยังเป็นส่วนตัวจนกว่าคุณจะแชร์มื้ออาหาร',
     handle: 'ชื่อผู้ใช้',
     handleHint: 'ใช้อักษรอังกฤษตัวเล็ก ตัวเลข จุด หรือขีดล่าง 3 ถึง 24 ตัว',
-    displayName: 'ชื่อ',
     bio: 'แนะนำตัว',
     privateProfile: 'โปรไฟล์ส่วนตัว',
     privateProfileHint: 'ซ่อนจากการค้นหา คำแนะนำ และสำรวจ ผู้ติดตามยังเห็นโพสต์ของคุณ',
     autoPostFoods: 'โพสต์อาหารอัตโนมัติ',
     autoPostFoodsHint: 'อาหารที่บันทึกใหม่จะโพสต์ในฟีดอัตโนมัติ โปรไฟล์ส่วนตัวแชร์เฉพาะกับผู้ติดตาม',
     avatar: 'เลือกรูป',
-    removeAvatar: 'ลบรูป',
     handleInvalid: 'ใช้อักษรอังกฤษตัวเล็ก ตัวเลข จุด หรือขีดล่าง 3 ถึง 24 ตัว',
-    nameInvalid: 'กรอกชื่อ',
     save: 'บันทึก',
     saved: 'บันทึกแล้ว',
     cancel: 'ยกเลิก',
@@ -54,7 +49,6 @@ export const th = {
     removeFollower: 'ลบผู้ติดตาม',
     removeFollowerBody: 'พวกเขาจะไม่เห็นโพสต์สำหรับผู้ติดตามของคุณอีก',
     share: 'แชร์ไปที่ฟีด',
-    publish: 'แชร์',
     newPost: 'แชร์มื้ออาหาร',
     editPost: 'แก้ไขโพสต์',
     caption: 'คำบรรยาย',
@@ -135,14 +129,12 @@ export const th = {
       add: 'เพิ่ม',
       undo: 'เลิกทำ',
       keep: 'เก็บไว้',
-      skip: 'ข้าม',
       retry: 'ลองอีกครั้ง',
       close: 'ปิด',
     },
 
     nav: {
       today: 'วันนี้',
-      recipes: 'อาหาร',
       trends: 'แนวโน้ม',
       me: 'ฉัน',
       log: 'บันทึกอาหาร',
@@ -256,7 +248,6 @@ export const th = {
       emptyTitle: 'ไม่มีข้อมูลกลับมาเลย',
       emptyBody:
         'เราอ่านกิจกรรมไม่ได้เลย ถ้าคุณปิด RiceCal ไว้ในการตั้งค่าความเป็นส่วนตัวของ Health ให้เปิดใหม่แล้วลองอีกครั้ง',
-      retry: 'ลองอีกครั้ง',
 
       unavailableTitle: 'ไม่มีข้อมูลสุขภาพที่นี่',
       simulator: 'เครื่องนี้ไม่มีที่เก็บข้อมูล Health ให้อ่าน บนซิมูเลเตอร์ ข้อมูลที่สร้างขึ้นจะเติมหน้าจอเหล่านี้แทน',
@@ -319,7 +310,6 @@ export const th = {
       clearDemoBody: 'ลบทุกวันและทุกครั้งที่สร้างขึ้นออกจากบัญชีนี้',
       granted: 'เปิด',
       notGranted: 'ไม่ได้อนุญาต',
-      partial: 'ข้อมูลบางส่วนไม่ได้แชร์',
     },
 
     provider: {
@@ -714,8 +704,6 @@ export const th = {
     barcode: {
       permissionTitle: 'อนุญาตให้ RiceCal ใช้กล้อง',
       permissionBody: 'กล้องใช้อ่านบาร์โค้ดบนซอง ไม่มีการบันทึกหรืออัปโหลดอะไร',
-      aim: 'เล็งกล้องไปที่บาร์โค้ดบนซอง',
-      noCamera: 'เครื่องนี้ไม่มีกล้อง จึงไม่มีอะไรให้สแกนที่นี่',
       failedTitle: 'ไม่มีการตอบกลับ',
       failed: 'ตอนนี้เราติดต่อคลังอาหารไม่ได้ ซองอาจไม่มีปัญหา ปัญหาอยู่ที่การเชื่อมต่อ',
       tryAgain: 'สแกนอีกครั้ง',
@@ -730,15 +718,12 @@ export const th = {
     },
 
     camera: {
-      title: 'ถ่ายจานของคุณ',
-      analysing: 'กำลังดูว่าในจานมีอะไร',
       permissionTitle: 'ต้องขอสิทธิ์เข้าถึงกล้อง',
       permissionBody: 'RiceCal ใช้กล้องอ่านจานของคุณ',
       permissionSettings: 'เปิดการตั้งค่า',
       shutter: 'ถ่ายรูป',
       library: 'เลือกจากคลังรูป',
       flip: 'สลับกล้อง',
-      captured: 'รูปที่คุณเพิ่งถ่าย',
       photoOf: 'รูปของ {{food}}',
     },
 
@@ -881,7 +866,6 @@ export const th = {
     },
 
     water: {
-      title: 'น้ำ',
       count: '{{filled}} / {{goal}} มล.',
       addTitle: 'เพิ่มน้ำ',
       left: 'เหลืออีก {{amount}} มล.',
@@ -1236,7 +1220,6 @@ export const th = {
       switchMonthly: 'เปลี่ยนเป็นรายเดือน',
       switchYearly: 'เปลี่ยนเป็นรายปี',
       manage: 'จัดการในสโตร์',
-      switched: 'อัปเดตแผนแล้ว',
     },
   },
 
@@ -1360,8 +1343,6 @@ export const th = {
     },
 
     intro: {
-      title: 'พร้อมหมดแล้ว เริ่มบันทึกเลยไหม',
-      body: 'ทุกอย่างใช้ได้โดยไม่ต้องมีมัน Pro แค่ปลดขีดจำกัดออก',
       later: 'ไว้ทีหลัง',
     },
 
@@ -1430,11 +1411,6 @@ export const th = {
 
     servings_one: '{{count}} ที่',
     servings_other: '{{count}} ที่',
-    ingredients_one: 'ส่วนประกอบ {{count}} อย่าง',
-    ingredients_other: 'ส่วนประกอบ {{count}} อย่าง',
-    savedTimes_one: 'ถูกบันทึก {{count}} ครั้ง',
-    savedTimes_other: 'ถูกบันทึก {{count}} ครั้ง',
-    byAuthor: '{{name}} · {{saves}}',
     fromAuthor: 'จาก {{name}}',
     someCook: 'ใครบางคน',
 
@@ -1445,7 +1421,6 @@ export const th = {
       scanLabel: 'รูปถ่าย',
       describeLabel: 'บรรยาย',
       scanTitle: 'กรอกจากรูปถ่าย',
-      or: 'หรือกรอกเอง',
       describeTitle: 'บรรยายมัน',
       describePlaceholder: 'แกงกะหรี่ไก่ สะโพกไก่ 600 ก. กะทิหนึ่งกระป๋อง มันฝรั่ง 3 หัว กินได้ 4 คน',
       describeHint: 'ปริมาณและกินได้กี่คน คือสองอย่างที่ควรพิมพ์',
@@ -1473,7 +1448,6 @@ export const th = {
       servings: 'กี่ที่',
       ingredients: 'ส่วนประกอบ',
       ingredientsCount: 'ส่วนประกอบ · {{count}}',
-      ingredientsEmpty: 'ยังไม่มีอะไร ค้นหาแต่ละอย่าง แล้วเราจะรวมทั้งหม้อให้',
       addIngredient: 'เพิ่มส่วนประกอบ',
       steps: 'วิธีทำของคุณ',
       stepsSheetTitle: 'วิธีทำของคุณ',
@@ -1502,11 +1476,9 @@ export const th = {
       search: 'ค้นหาส่วนประกอบ',
       ownTitle: 'เพิ่มส่วนประกอบของคุณเอง',
       ownBody: 'ไม่มีในรายการเหรอ ตั้งชื่อให้มันแล้วใส่แคลอรี',
-      customBody: 'สำหรับของที่มีแต่ในครัวคุณ อ่านจากซองหรือชั่งดูสักครั้ง',
       name: 'ชื่อ',
       namePlaceholder: 'นี่คืออะไร',
       calories: 'แคลอรี',
-      macros: 'สารอาหารหลัก ถ้าคุณรู้',
       amount: 'ปริมาณ',
       add: 'ใส่ลงหม้อ',
       remove: 'เอาออก',
@@ -1574,9 +1546,6 @@ export const th = {
       rejected: 'ไม่ได้เผยแพร่: {{reason}}',
       rejectedPlain: 'เราเผยแพร่อันนี้ไม่ได้',
       pending: 'เรายังดูอันนี้อยู่ มันจะปรากฏเมื่อผ่านการตรวจ',
-      badgePending: 'กำลังตรวจ',
-      badgeRejected: 'ไม่ได้เผยแพร่',
-      badgePublic: 'สาธารณะ',
     },
   },
 

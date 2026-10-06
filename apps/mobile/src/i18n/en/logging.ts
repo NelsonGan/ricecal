@@ -157,8 +157,6 @@ export const logging = {
   barcode: {
     permissionTitle: 'Let RiceCal use the camera',
     permissionBody: 'The camera reads the barcode on the packet. Nothing is recorded or uploaded.',
-    aim: 'Point the camera at the barcode on the packet.',
-    noCamera: 'This device has no camera, so there is nothing to scan with here.',
     failedTitle: 'No answer',
     failed:
       'We could not reach the catalogue just now. The packet may be fine; the connection was not.',
@@ -180,8 +178,6 @@ export const logging = {
   },
 
   camera: {
-    title: 'Snap your plate',
-    analysing: 'Working out what is on the plate',
     permissionTitle: 'Camera access needed',
     permissionBody: 'RiceCal uses the camera to read your plate.',
     /**
@@ -193,7 +189,6 @@ export const logging = {
     shutter: 'Take a photo',
     library: 'Choose from photos',
     flip: 'Flip camera',
-    captured: 'The photo you just took',
     /** Alt text on a logged entry's photo. */
     photoOf: 'Photo of {{food}}',
   },
@@ -521,7 +516,6 @@ export const logging = {
    * glasses went and which unit belongs where.
    */
   water: {
-    title: 'Water',
     /**
      * Drunk against the goal. A slash rather than "of", as the ring and the
      * macro bars write a fraction, and one unit printed once at the end, because

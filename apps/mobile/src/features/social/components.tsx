@@ -1,8 +1,9 @@
 import { formatDistanceToNowStrict } from 'date-fns'
 import * as Haptics from 'expo-haptics'
-import { Image } from 'expo-image'
+import { Image, type ImageSource } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'
 import {
+  memo,
   type ReactElement,
   type ReactNode,
   useCallback,
@@ -193,6 +194,7 @@ export function SocialPhoto({
 }: {
   path?: string | null
   privateUri?: string
+  /** Near the viewport, so worth authorizing. A drawn picture stays drawn either way. */
   visible?: boolean
   avatar?: boolean
   size?: 'sm' | 'md' | 'lg'
@@ -209,55 +211,68 @@ export function SocialPhoto({
     }, []),
   )
   const photo = useSocialPhoto(path, visible && focused && !privateUri)
+  const signed = privateUri || photo.isError ? undefined : photo.data
+  const cacheKey = signed && path ? `${path}#${signed.headers['If-Match'] ?? ''}` : undefined
+  // Keep the source a picture first drew with. A fresh signature names the same
+  // bytes, and handing expo-image a new URL made it load them all over again.
+  const [drawn, setDrawn] = useState<{ cacheKey: string; source: ImageSource } | null>(null)
+  const source =
+    signed && cacheKey
+      ? drawn?.cacheKey === cacheKey
+        ? drawn.source
+        : { uri: signed.url, headers: signed.headers, cacheKey }
+      : undefined
+  const shown = source !== undefined && drawn?.cacheKey === cacheKey
+  const callbacks = useRef({ onShown, onFailed })
+  callbacks.current = { onShown, onFailed }
+  useEffect(() => {
+    callbacks.current.onShown?.(shown)
+  }, [shown])
+  useEffect(() => {
+    if (photo.isError) callbacks.current.onFailed?.()
+  }, [photo.isError])
   const box = { sm: 40, md: 52, lg: 64 }[size]
-  const signed = visible && focused && !privateUri && !photo.isError && photo.data
-  useEffect(() => {
-    if (visible && !signed) onShown?.(false)
-  }, [visible, signed, onShown])
-  useEffect(() => {
-    if (photo.isError) onFailed?.()
-  }, [photo.isError, onFailed])
-  if (visible && focused && privateUri) {
+  const style = avatar
+    ? { width: box, height: box, borderRadius: box / 2.8 }
+    : { width: '100%' as const, height: '100%' as const }
+  if (privateUri) {
     return (
       <Image
         source={{ uri: privateUri }}
-        cachePolicy="none"
+        cachePolicy="memory"
         contentFit="cover"
-        style={
-          avatar
-            ? { width: box, height: box, borderRadius: box / 2.8 }
-            : { width: '100%', height: '100%' }
-        }
+        style={style}
         accessibilityLabel={label}
       />
     )
   }
-  if (!signed || !photo.data) {
+  if (!source || !signed) {
     return avatar ? <Avatar name={label} size={size} fallback="initial" /> : null
   }
   return (
     <Image
       // Keyed on the object's ETag, since the URL changes with every signature.
-      // Memory cache avoids downloading the same bytes after a tab switch.
-      source={{
-        uri: photo.data.url,
-        headers: photo.data.headers,
-        cacheKey: `${path}#${photo.data.headers['If-Match'] ?? ''}`,
-      }}
-      cachePolicy="memory"
+      // Bytes are cached on disk too, but only ever drawn behind a current
+      // signature: the key alone never authorizes a picture.
+      source={source}
+      cachePolicy="memory-disk"
       recyclingKey={path ?? undefined}
       // Early resizing fits inside the box, leaving too few pixels for a crop.
       contentFit="cover"
-      style={
-        avatar
-          ? { width: box, height: box, borderRadius: box / 2.8 }
-          : { width: '100%', height: '100%' }
-      }
+      transition={0}
+      style={style}
       accessibilityLabel={label}
-      onLoad={() => onShown?.(true)}
+      onLoad={() => {
+        if (drawn?.cacheKey !== cacheKey && cacheKey) setDrawn({ cacheKey, source })
+      }}
       onError={() => {
-        onShown?.(false)
-        onFailed?.()
+        // An uncached picture behind a lapsed signature. Sign again, or wait
+        // for the signature already on its way, before calling it a failure.
+        if (signed.expiresAt - Date.now() < 5_000) {
+          if (!photo.isFetching) void photo.refetch()
+          return
+        }
+        callbacks.current.onFailed?.()
       }}
     />
   )
@@ -510,7 +525,7 @@ export function FoodPreview({
         {privateUri ? (
           <Image
             source={{ uri: privateUri }}
-            cachePolicy="none"
+            cachePolicy="memory"
             contentFit="cover"
             style={{ width: '100%', height: '100%' }}
             accessibilityLabel={name}
@@ -905,7 +920,7 @@ export function ContentSafety(props: ContentSafetyProps) {
   return <ContentSafetyControl {...props} action={action} online={online} />
 }
 
-export function PostCard({
+export const PostCard = memo(function PostCard({
   post,
   visible = true,
   detail = false,
@@ -1230,9 +1245,15 @@ export function PostCard({
       </Sheet>
     </View>
   )
-}
+})
 
-export function PostTile({ post, visible = true }: { post: SocialPost; visible?: boolean }) {
+export const PostTile = memo(function PostTile({
+  post,
+  visible = true,
+}: {
+  post: SocialPost
+  visible?: boolean
+}) {
   const { t } = useTranslation('social')
   const viewer = useUserId()
   const router = useRouter()
@@ -1243,7 +1264,7 @@ export function PostTile({ post, visible = true }: { post: SocialPost; visible?:
   const foodLabel = useFoodLabel()
   return (
     <Tappable
-      className="flex-1 overflow-hidden rounded-md bg-surface p-1"
+      className="overflow-hidden rounded-md bg-surface p-1"
       accessibilityRole="button"
       accessibilityLabel={[
         foodLabel(post.food_name, post),
@@ -1273,7 +1294,7 @@ export function PostTile({ post, visible = true }: { post: SocialPost; visible?:
       ) : null}
     </Tappable>
   )
-}
+})
 
 type PageQuery<T> = {
   data?: { pages: SocialPage<T>[] }
@@ -1383,8 +1404,9 @@ export function SocialList<T>({
         variant === 'rows' ? () => <View className="h-[2px] bg-track" /> : undefined
       }
       keyboardShouldPersistTaps="handled"
-      initialNumToRender={4}
-      maxToRenderPerBatch={4}
+      // Counted in items, so a grid needs a row's worth per step to keep up.
+      initialNumToRender={4 * columns}
+      maxToRenderPerBatch={4 * columns}
       windowSize={5}
       // Background invalidation, such as a completed Like, must not open the
       // native pull-to-refresh control and move the viewport.
@@ -1393,9 +1415,9 @@ export function SocialList<T>({
         void refresh()
       }}
       onEndReached={next}
-      // A feed card takes almost a viewport. Fetch its next page early enough
-      // for the two upcoming cards to authorize and decode their photos too.
-      onEndReachedThreshold={variant === 'feed' ? 2 : 0.6}
+      // Photo lists fetch the next page two viewports ahead, so the rows after
+      // it can authorize and decode before a fling reaches them.
+      onEndReachedThreshold={variant === 'feed' || variant === 'grid' ? 2 : 0.6}
       ListEmptyComponent={
         query.isPending && query.fetchStatus !== 'paused' ? (
           <SocialSkeleton variant={variant} />

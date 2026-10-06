@@ -19,11 +19,8 @@ export const hi = {
     profile: 'प्रोफ़ाइल',
     myProfile: 'मेरी प्रोफ़ाइल',
     editProfile: 'प्रोफ़ाइल बदलें',
-    join: 'सार्वजनिक प्रोफ़ाइल बनाएं',
-    joinBody: 'चुनें कि लोग क्या देखें। भोजन साझा करने तक आपकी डायरी निजी रहती है।',
     handle: 'यूज़रनेम',
     handleHint: '3 से 24 छोटे अंग्रेज़ी अक्षर, अंक, बिंदु या अंडरस्कोर।',
-    displayName: 'नाम',
     bio: 'परिचय',
     privateProfile: 'निजी प्रोफ़ाइल',
     privateProfileHint: 'खोज, सुझाव और डिस्कवर से छिपाएँ। फ़ॉलोअर आपकी पोस्ट अब भी देख सकते हैं।',
@@ -31,9 +28,7 @@ export const hi = {
     autoPostFoodsHint:
       'नया दर्ज किया गया खाना फ़ीड में अपने आप पोस्ट होगा। निजी प्रोफ़ाइल केवल फ़ॉलोअर से साझा करती है।',
     avatar: 'फ़ोटो चुनें',
-    removeAvatar: 'फ़ोटो हटाएं',
     handleInvalid: '3 से 24 छोटे अंग्रेज़ी अक्षर, अंक, बिंदु या अंडरस्कोर इस्तेमाल करें।',
-    nameInvalid: 'नाम दर्ज करें।',
     save: 'सहेजें',
     saved: 'सहेजा गया',
     cancel: 'रद्द करें',
@@ -49,7 +44,6 @@ export const hi = {
     removeFollower: 'फ़ॉलोअर हटाएं',
     removeFollowerBody: 'वे अब सिर्फ़ फ़ॉलोअर के लिए रखी गई आपकी पोस्ट नहीं देख सकेंगे।',
     share: 'फ़ीड में साझा करें',
-    publish: 'साझा करें',
     newPost: 'भोजन साझा करें',
     editPost: 'पोस्ट बदलें',
     caption: 'कैप्शन',
@@ -131,14 +125,12 @@ export const hi = {
       add: 'जोड़ें',
       undo: 'वापस लें',
       keep: 'रहने दें',
-      skip: 'छोड़ें',
       retry: 'फिर कोशिश करें',
       close: 'बंद करें',
     },
 
     nav: {
       today: 'आज',
-      recipes: 'खाना',
       trends: 'रुझान',
       me: 'मैं',
       log: 'खाना दर्ज करें',
@@ -252,7 +244,6 @@ export const hi = {
       emptyTitle: 'कुछ भी वापस नहीं आया',
       emptyBody:
         'हमें कोई गतिविधि नहीं मिली। अगर आपने Health की प्राइवेसी सेटिंग में RiceCal बंद किया है, तो उसे चालू करके फिर कोशिश करें।',
-      retry: 'फिर कोशिश करें',
 
       unavailableTitle: 'यहां कोई स्वास्थ्य डेटा नहीं है',
       simulator:
@@ -316,7 +307,6 @@ export const hi = {
       clearDemoBody: 'इस खाते से हर बनाया हुआ दिन और सत्र हटा देता है।',
       granted: 'चालू',
       notGranted: 'अनुमति नहीं',
-      partial: 'कुछ डेटा साझा नहीं है',
     },
 
     provider: {
@@ -711,8 +701,6 @@ export const hi = {
     barcode: {
       permissionTitle: 'RiceCal को कैमरा इस्तेमाल करने दें',
       permissionBody: 'कैमरा पैकेट का बारकोड पढ़ता है। कुछ भी रिकॉर्ड या अपलोड नहीं होता।',
-      aim: 'कैमरे को पैकेट के बारकोड पर रखें।',
-      noCamera: 'इस डिवाइस में कैमरा नहीं है, इसलिए यहां स्कैन करने को कुछ नहीं।',
       failedTitle: 'कोई जवाब नहीं',
       failed: 'अभी हम सूची तक नहीं पहुंच सके। पैकेट शायद ठीक हो; कनेक्शन ठीक नहीं था।',
       tryAgain: 'फिर स्कैन करें',
@@ -727,15 +715,12 @@ export const hi = {
     },
 
     camera: {
-      title: 'अपनी थाली की फ़ोटो लें',
-      analysing: 'पता लगाया जा रहा है कि थाली में क्या है',
       permissionTitle: 'कैमरे की अनुमति चाहिए',
       permissionBody: 'RiceCal आपकी थाली पढ़ने के लिए कैमरा इस्तेमाल करता है।',
       permissionSettings: 'सेटिंग्स खोलें',
       shutter: 'फ़ोटो लें',
       library: 'फ़ोटो में से चुनें',
       flip: 'कैमरा बदलें',
-      captured: 'अभी ली गई फ़ोटो',
       photoOf: '{{food}} की फ़ोटो',
     },
 
@@ -880,7 +865,6 @@ export const hi = {
     },
 
     water: {
-      title: 'पानी',
       count: '{{filled}} / {{goal}} ml',
       addTitle: 'पानी जोड़ें',
       left: '{{amount}} ml बचा',
@@ -1238,7 +1222,6 @@ export const hi = {
       switchMonthly: 'मासिक पर जाएं',
       switchYearly: 'सालाना पर जाएं',
       manage: 'स्टोर में प्रबंधित करें',
-      switched: 'प्लान बदल गया',
     },
   },
 
@@ -1362,8 +1345,6 @@ export const hi = {
     },
 
     intro: {
-      title: 'सब तैयार है। दर्ज करना शुरू करें?',
-      body: 'इसके बिना भी सब चलता है। Pro सिर्फ़ सीमाएं हटाता है।',
       later: 'शायद बाद में',
     },
 
@@ -1432,11 +1413,6 @@ export const hi = {
 
     servings_one: '{{count}} हिस्सा',
     servings_other: '{{count}} हिस्से',
-    ingredients_one: '{{count}} सामग्री',
-    ingredients_other: '{{count}} सामग्रियां',
-    savedTimes_one: '{{count}} बार सहेजा गया',
-    savedTimes_other: '{{count}} बार सहेजा गया',
-    byAuthor: '{{name}} · {{saves}}',
     fromAuthor: '{{name}} से',
     someCook: 'कोई',
 
@@ -1447,7 +1423,6 @@ export const hi = {
       scanLabel: 'फ़ोटो',
       describeLabel: 'बताएं',
       scanTitle: 'फ़ोटो से भरें',
-      or: 'या ख़ुद भरें',
       describeTitle: 'लिखकर बताएं',
       describePlaceholder: 'करी अयम। 600g चिकन थाई, एक डिब्बा नारियल दूध, 3 आलू। 4 लोगों के लिए।',
       describeHint: 'मात्रा और कितने लोगों के लिए है, ये दो बातें लिखने लायक़ हैं।',
@@ -1475,7 +1450,6 @@ export const hi = {
       servings: 'कितने हिस्से',
       ingredients: 'सामग्री',
       ingredientsCount: 'सामग्री · {{count}}',
-      ingredientsEmpty: 'अभी कुछ नहीं। हर चीज़ खोजिए और हम पूरे बर्तन का जोड़ लगा देंगे।',
       addIngredient: 'एक सामग्री जोड़ें',
       steps: 'आप इसे कैसे पकाते हैं',
       stepsSheetTitle: 'आप इसे कैसे पकाते हैं',
@@ -1504,11 +1478,9 @@ export const hi = {
       search: 'एक सामग्री खोजें',
       ownTitle: 'अपनी सामग्री जोड़ें',
       ownBody: 'सूची में नहीं है? इसका नाम और कैलोरी दीजिए।',
-      customBody: 'उन चीज़ों के लिए जो सिर्फ़ आपकी रसोई में हैं। पैकेट से पढ़िए या एक बार तौल लीजिए।',
       name: 'नाम',
       namePlaceholder: 'यह क्या है?',
       calories: 'कैलोरी',
-      macros: 'मैक्रो, अगर पता हों',
       amount: 'मात्रा',
       add: 'बर्तन में डालें',
       remove: 'हटाएं',
@@ -1577,9 +1549,6 @@ export const hi = {
       rejected: 'प्रकाशित नहीं: {{reason}}',
       rejectedPlain: 'हम इसे प्रकाशित नहीं कर सके।',
       pending: 'हम अभी इसे देख रहे हैं। पास होते ही यह दिखने लगेगी।',
-      badgePending: 'जांच में',
-      badgeRejected: 'प्रकाशित नहीं',
-      badgePublic: 'सार्वजनिक',
     },
   },
 

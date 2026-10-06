@@ -341,6 +341,5 @@ export const profile = {
     switchYearly: 'Switch to yearly',
     /** There is nothing to switch a one-off purchase to. */
     manage: 'Manage in the store',
-    switched: 'Plan updated',
   },
 } as const

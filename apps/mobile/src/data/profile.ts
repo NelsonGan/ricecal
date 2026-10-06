@@ -18,20 +18,17 @@ import { fromDbActivity, toDbActivity } from './types'
  * yet". `maybeSingle` rather than `single` all the same: a profile deleted out
  * from under the app is a null to route on, not an exception to crash on.
  */
+export async function fetchProfile(userId: string) {
+  return unwrapMaybe(await supabase.from('profiles').select('*').eq('id', userId).maybeSingle())
+}
+
 export function useProfile() {
   const { userId } = useSession()
 
   return useQuery({
     queryKey: keys.profile(userId ?? 'anonymous'),
     enabled: Boolean(userId),
-    queryFn: async () =>
-      unwrapMaybe(
-        await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId as string)
-          .maybeSingle(),
-      ),
+    queryFn: () => fetchProfile(userId as string),
   })
 }
 

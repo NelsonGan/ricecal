@@ -37,6 +37,8 @@ export type WaterCardProps = {
   loading?: boolean
   /** Layout, for a caller that has to clear something below it. */
   className?: string
+  /** The screen is out of sight, so the tank holds still. */
+  paused?: boolean
 }
 
 /**
@@ -64,6 +66,7 @@ export function WaterCard({
   ml,
   goalMl = DEFAULT_WATER_ML,
   loading = false,
+  paused = false,
   className,
 }: WaterCardProps) {
   const { t } = useTranslation(['logging', 'common'])
@@ -108,6 +111,7 @@ export function WaterCard({
           value={ml}
           goal={goalMl}
           loading={loading}
+          paused={paused}
           height={TODAY_TANK_HEIGHT}
           radius={radius.card}
           accessibilityLabel={t('logging:water.level', {

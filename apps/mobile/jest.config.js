@@ -23,7 +23,6 @@ const PACKAGES_NEEDING_TRANSFORM = [
   'nativewind',
   'react-native-css-interop',
   '@shopify',
-  'victory-native',
   'react-native-nitro-modules',
   'react-native-mmkv',
   'react-native-keyboard-controller',

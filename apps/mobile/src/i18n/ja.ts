@@ -19,11 +19,8 @@ export const ja = {
     profile: 'プロフィール',
     myProfile: 'マイプロフィール',
     editProfile: 'プロフィールを編集',
-    join: '公開プロフィールを作成',
-    joinBody: '公開する内容を選べます。食事をシェアするまで日記は非公開です。',
     handle: 'ユーザー名',
     handleHint: '半角英小文字、数字、ピリオド、アンダースコアで3〜24文字。',
-    displayName: '名前',
     bio: '自己紹介',
     privateProfile: '非公開プロフィール',
     privateProfileHint:
@@ -32,9 +29,7 @@ export const ja = {
     autoPostFoodsHint:
       '新しく記録した食事を自動で投稿します。非公開プロフィールではフォロワーだけに共有します。',
     avatar: '写真を選ぶ',
-    removeAvatar: '写真を削除',
     handleInvalid: '半角英小文字、数字、ピリオド、アンダースコアで3〜24文字にしてください。',
-    nameInvalid: '名前を入力してください。',
     save: '保存',
     saved: '保存しました',
     cancel: 'キャンセル',
@@ -50,7 +45,6 @@ export const ja = {
     removeFollower: 'フォロワーを削除',
     removeFollowerBody: 'フォロワー限定の投稿を見られなくなります。',
     share: 'フィードにシェア',
-    publish: 'シェア',
     newPost: '食事をシェア',
     editPost: '投稿を編集',
     caption: 'キャプション',
@@ -132,14 +126,12 @@ export const ja = {
       add: '追加',
       undo: '元に戻す',
       keep: '残す',
-      skip: 'スキップ',
       retry: 'もう一度試す',
       close: '閉じる',
     },
 
     nav: {
       today: '今日',
-      recipes: 'フード',
       trends: 'トレンド',
       me: '自分',
       log: '食事を記録',
@@ -254,7 +246,6 @@ export const ja = {
       emptyTitle: '何も返ってきませんでした',
       emptyBody:
         '活動を何も読み取れませんでした。ヘルスケアのプライバシー設定で RiceCal をオフにしている場合は、オンに戻してからもう一度お試しください。',
-      retry: 'もう一度試す',
 
       unavailableTitle: 'ここには健康データがありません',
       simulator:
@@ -321,7 +312,6 @@ export const ja = {
       clearDemoBody: 'このアカウントから、生成された日とセッションをすべて削除します。',
       granted: 'オン',
       notGranted: '未許可',
-      partial: '一部のデータが共有されていません',
     },
 
     provider: {
@@ -721,8 +711,6 @@ export const ja = {
     barcode: {
       permissionTitle: 'RiceCal にカメラの使用を許可',
       permissionBody: 'カメラは商品のバーコードを読み取ります。録画もアップロードもしません。',
-      aim: 'カメラを商品のバーコードに向けてください。',
-      noCamera: 'この端末にはカメラがないため、ここでは読み取れません。',
       failedTitle: '応答がありません',
       failed:
         '今はカタログに接続できませんでした。商品は問題ないかもしれません。問題は接続のほうです。',
@@ -738,15 +726,12 @@ export const ja = {
     },
 
     camera: {
-      title: 'お皿を撮る',
-      analysing: 'お皿の中身を判定しています',
       permissionTitle: 'カメラへのアクセスが必要です',
       permissionBody: 'RiceCal はカメラでお皿を読み取ります。',
       permissionSettings: '設定を開く',
       shutter: '撮影',
       library: '写真から選ぶ',
       flip: 'カメラを切り替え',
-      captured: '今撮った写真',
       photoOf: '{{food}} の写真',
     },
 
@@ -891,7 +876,6 @@ export const ja = {
     },
 
     water: {
-      title: '水分',
       count: '{{filled}} / {{goal}} ml',
       addTitle: '水分を追加',
       left: '残り {{amount}} ml',
@@ -1248,7 +1232,6 @@ export const ja = {
       switchMonthly: '月額に切り替え',
       switchYearly: '年額に切り替え',
       manage: 'ストアで管理',
-      switched: 'プランを更新しました',
     },
   },
 
@@ -1372,8 +1355,6 @@ export const ja = {
     },
 
     intro: {
-      title: '準備完了です。記録を始めますか',
-      body: 'なくてもすべて使えます。Pro は上限を外すだけです。',
       later: 'あとで',
     },
 
@@ -1442,11 +1423,6 @@ export const ja = {
 
     servings_one: '{{count}} 人前',
     servings_other: '{{count}} 人前',
-    ingredients_one: '材料 {{count}} 点',
-    ingredients_other: '材料 {{count}} 点',
-    savedTimes_one: '{{count}} 回保存',
-    savedTimes_other: '{{count}} 回保存',
-    byAuthor: '{{name}} · {{saves}}',
     fromAuthor: '{{name}} より',
     someCook: 'どなたか',
 
@@ -1457,7 +1433,6 @@ export const ja = {
       scanLabel: '写真',
       describeLabel: '書く',
       scanTitle: '写真から埋める',
-      or: 'または自分で入力',
       describeTitle: '言葉で書く',
       describePlaceholder:
         'カリアヤム。鶏もも 600g、ココナッツミルク 1 缶、じゃがいも 3 個。4 人分。',
@@ -1486,7 +1461,6 @@ export const ja = {
       servings: '何人分',
       ingredients: '材料',
       ingredientsCount: '材料 · {{count}}',
-      ingredientsEmpty: 'まだ何もありません。ひとつずつ検索すれば、鍋ごと合計します。',
       addIngredient: '材料を追加',
       steps: '作り方',
       stepsSheetTitle: '作り方',
@@ -1515,11 +1489,9 @@ export const ja = {
       search: '材料を検索',
       ownTitle: '自分の材料を追加',
       ownBody: '一覧にありませんか。名前とカロリーを入れてください。',
-      customBody: 'あなたの台所にしかないもの向けです。パッケージを読むか、一度量ってください。',
       name: '名前',
       namePlaceholder: 'これは何ですか',
       calories: 'カロリー',
-      macros: 'マクロ（わかれば）',
       amount: '分量',
       add: '鍋に入れる',
       remove: '外す',
@@ -1588,9 +1560,6 @@ export const ja = {
       rejected: '未公開：{{reason}}',
       rejectedPlain: 'これは公開できませんでした。',
       pending: 'まだ確認中です。通れば表示されます。',
-      badgePending: '確認中',
-      badgeRejected: '未公開',
-      badgePublic: '公開',
     },
   },
 

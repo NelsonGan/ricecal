@@ -1,10 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
 import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
-import { keys } from './keys'
+import { invalidateEatenTotals, keys } from './keys'
+import { scalePart } from './part-scale'
 import { useRefiningEntries } from './refining'
 import { announceRefusal, refusalFrom, ScanLimitError } from './refusals'
 import { useUserId } from './session'
@@ -70,6 +71,41 @@ export function useEntryIngredients(entryId: string | undefined) {
   })
 }
 
+type PlateTarget = { entryId: string; logDate: string }
+type PlateSnapshot = { previous?: EntryIngredient[] }
+
+/**
+ * Redraw a plate's parts before the write lands, keeping what was there for
+ * `restoreParts`. A stepper tap moves the row under the finger; the totals wait
+ * for `afterPlateWrite` so the screen does not ripple a refetch mid-gesture.
+ */
+async function patchParts(
+  queryClient: QueryClient,
+  entryId: string,
+  patch: (parts: EntryIngredient[]) => EntryIngredient[],
+): Promise<PlateSnapshot> {
+  const key = keys.entryIngredients(entryId)
+  await queryClient.cancelQueries({ queryKey: key })
+  const previous = queryClient.getQueryData<EntryIngredient[]>(key)
+  if (previous) queryClient.setQueryData(key, patch(previous))
+  return { previous }
+}
+
+function restoreParts(queryClient: QueryClient, entryId: string, context?: PlateSnapshot) {
+  if (context?.previous) queryClient.setQueryData(keys.entryIngredients(entryId), context.previous)
+}
+
+/**
+ * Everything a change to one part moves: the parts, the entry on its day, the
+ * feed card showing its totals, and what was eaten.
+ */
+function afterPlateWrite(queryClient: QueryClient, userId: string, input: PlateTarget) {
+  queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
+  queryClient.invalidateQueries({ queryKey: keys.social(userId) })
+  queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
+  invalidateEatenTotals(queryClient, userId)
+}
+
 /**
  * Set one ingredient's portion. An RPC rather than a table update, because the
  * database function recomputes the parent entry's quantity in the same
@@ -96,54 +132,16 @@ export function useUpdateIngredient() {
       })
       if (error) throw error
     },
-    onMutate: async (input) => {
-      const key = keys.entryIngredients(input.entryId)
-      await queryClient.cancelQueries({ queryKey: key })
-      const previous = queryClient.getQueryData<EntryIngredient[]>(key)
-      if (previous) {
-        queryClient.setQueryData(
-          key,
-          previous.map((ingredient) =>
-            ingredient.id === input.ingredientId
-              ? (() => {
-                  // Everything on the row scales with the portion, not just
-                  // the calories: the totals above are a sum of these, so a
-                  // patch that moved only kcal would show a plate whose macros
-                  // disagreed with it until the refetch landed.
-                  const factor = input.quantity / Math.max(0.01, ingredient.quantity)
-                  const scale = (value: number) => Math.round(value * factor * 10) / 10
-                  return {
-                    ...ingredient,
-                    quantity: input.quantity,
-                    kcal: Math.round(ingredient.kcal * factor),
-                    carbs: scale(ingredient.carbs),
-                    protein: scale(ingredient.protein),
-                    fat: scale(ingredient.fat),
-                  }
-                })()
-              : ingredient,
-          ),
-        )
-      }
-      return { previous }
-    },
-    onError: (_error, input, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(keys.entryIngredients(input.entryId), context.previous)
-      }
-    },
-    onSettled: (_data, _error, input) => {
-      queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
-      queryClient.invalidateQueries({ queryKey: keys.social(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-      // Movement is measured against what was eaten: the balance chart, the
-      // "eaten" average and the deficit sentence all read `daily_nutrition`
-      // through `activity_summary`. Without this a meal logged today left
-      // the Activity tab still saying "Not enough logged".
-      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
-    },
+    onMutate: (input) =>
+      patchParts(queryClient, input.entryId, (parts) =>
+        // Exactly what the editor's overlay drew, weight included, so the row
+        // does not move when the overlay hands over to this patch.
+        parts.map((ingredient) =>
+          ingredient.id === input.ingredientId ? scalePart(ingredient, input.quantity) : ingredient,
+        ),
+      ),
+    onError: (_error, input, context) => restoreParts(queryClient, input.entryId, context),
+    onSettled: (_data, _error, input) => afterPlateWrite(queryClient, userId, input),
   })
 }
 
@@ -208,14 +206,7 @@ export function useAddIngredient() {
       // that".
       if (error) throw new Error(error.message)
     },
-    onSettled: (_data, _error, input) => {
-      queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
-      queryClient.invalidateQueries({ queryKey: keys.social(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
-    },
+    onSettled: (_data, _error, input) => afterPlateWrite(queryClient, userId, input),
   })
 }
 
@@ -235,31 +226,12 @@ export function useRemoveIngredient() {
       })
       if (error) throw error
     },
-    onMutate: async (input) => {
-      const key = keys.entryIngredients(input.entryId)
-      await queryClient.cancelQueries({ queryKey: key })
-      const previous = queryClient.getQueryData<EntryIngredient[]>(key)
-      if (previous) {
-        queryClient.setQueryData(
-          key,
-          previous.filter((ingredient) => ingredient.id !== input.ingredientId),
-        )
-      }
-      return { previous }
-    },
-    onError: (_error, input, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(keys.entryIngredients(input.entryId), context.previous)
-      }
-    },
-    onSettled: (_data, _error, input) => {
-      queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
-      queryClient.invalidateQueries({ queryKey: keys.social(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
-    },
+    onMutate: (input) =>
+      patchParts(queryClient, input.entryId, (parts) =>
+        parts.filter((ingredient) => ingredient.id !== input.ingredientId),
+      ),
+    onError: (_error, input, context) => restoreParts(queryClient, input.entryId, context),
+    onSettled: (_data, _error, input) => afterPlateWrite(queryClient, userId, input),
   })
 }
 
@@ -362,9 +334,7 @@ export function useRefineEntry() {
           queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) }),
           queryClient.invalidateQueries({ queryKey: keys.social(userId) }),
         ])
-        queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-        queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-        queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+        invalidateEatenTotals(queryClient, userId)
         // A correction spends a scan like a plate does. Invisible today — the
         // count is only drawn for a free account and only Pro can refine — and
         // an off-by-one waiting to happen the moment either of those changes.

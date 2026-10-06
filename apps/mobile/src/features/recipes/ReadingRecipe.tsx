@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Animated, Easing, View } from 'react-native'
+import { Animated, View } from 'react-native'
 import Reanimated, {
   Easing as ReanimatedEasing,
   useAnimatedStyle,
@@ -9,6 +9,7 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated'
 
+import { Shimmer, useWorkingStatus } from '@/features/shared/Working'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, Icon, Text } from '@/ui'
 
@@ -50,28 +51,11 @@ export function ReadingRecipe({ source }: ReadingRecipeProps) {
     t('new.readingPortions'),
     t('new.readingSteps'),
   ]
-  const [phrase, setPhrase] = useState(0)
-  useEffect(() => {
-    const id = setInterval(() => setPhrase((current) => current + 1), PHRASE_MS)
-    return () => clearInterval(id)
-  }, [])
-
-  const progress = useRef(new Animated.Value(0)).current
-  useEffect(() => {
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: FILL_MS,
-      // Quadratic out: fast at first, asymptotic at the end, which is the shape
-      // every real download bar has and what makes it read as progress.
-      easing: Easing.out(Easing.quad),
-      // Width in percent is a layout property, so the native driver cannot
-      // animate it.
-      useNativeDriver: false,
-    }).start()
-  }, [progress])
-  const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['8%', '92%'] })
-
-  const label = phrases[phrase % phrases.length]
+  const { label, width } = useWorkingStatus(phrases, {
+    phraseMs: PHRASE_MS,
+    fillMs: FILL_MS,
+    from: '8%',
+  })
 
   return (
     <Card
@@ -118,26 +102,5 @@ function Breathe({ children }: { children: React.ReactNode }) {
     )
   }, [scale])
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
-  return <Reanimated.View style={style}>{children}</Reanimated.View>
-}
-
-/**
- * The status line, shimmering rather than merely swapping.
- *
- * The same treatment the scanning row on Today gives its own line, for the
- * same reason: a hard cut between two sentences every few seconds reads as a
- * glitch, and a slow breath through the change says "still working" in the one
- * place the eye already is.
- */
-function Shimmer({ children }: { children: React.ReactNode }) {
-  const pulse = useSharedValue(1)
-  useEffect(() => {
-    pulse.value = withRepeat(
-      withTiming(0.45, { duration: 1100, easing: ReanimatedEasing.inOut(ReanimatedEasing.quad) }),
-      -1,
-      true,
-    )
-  }, [pulse])
-  const style = useAnimatedStyle(() => ({ opacity: pulse.value }))
   return <Reanimated.View style={style}>{children}</Reanimated.View>
 }

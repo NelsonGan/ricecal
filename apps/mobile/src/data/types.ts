@@ -613,5 +613,4 @@ export type FoodDetailsRow = {
   servings: unknown
 }
 export type FoodLogRow = Database['public']['Views']['food_log_details']['Row']
-export type DailyNutritionRow = Database['public']['Views']['daily_nutrition']['Row']
 export type CurrentGoalsRow = Database['public']['Views']['current_daily_goals']['Row']

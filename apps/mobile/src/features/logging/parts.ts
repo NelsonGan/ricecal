@@ -1,3 +1,4 @@
+import { scalePart } from '@/data/part-scale'
 import type { EntryIngredient } from '@/data/scan'
 import { formatPortion } from '@/lib/portions'
 
@@ -26,9 +27,6 @@ import { formatPortion } from '@/lib/portions'
  */
 export type PartEdits = Record<string, number>
 
-/** One decimal, which is the resolution the database stores grams at. */
-const tenth = (value: number) => Math.round(value * 10) / 10
-
 /**
  * The plate as a screen shows it: what the scan found, with the staged changes
  * laid over it.
@@ -45,19 +43,7 @@ export function stagedParts(
   return ingredients.map((ingredient) => {
     const staged = edits[ingredient.id]
     if (staged === undefined || staged === ingredient.quantity) return ingredient
-
-    const factor = staged / Math.max(0.01, ingredient.quantity)
-    return {
-      ...ingredient,
-      quantity: staged,
-      kcal: Math.round(ingredient.kcal * factor),
-      carbs: tenth(ingredient.carbs * factor),
-      protein: tenth(ingredient.protein * factor),
-      fat: tenth(ingredient.fat * factor),
-      // Null survives the scaling: a part nobody weighed still weighs nothing
-      // anybody knows, and "0 g" would be a claim about the food.
-      grams: ingredient.grams === null ? null : Math.round(ingredient.grams * factor),
-    }
+    return scalePart(ingredient, staged)
   })
 }
 

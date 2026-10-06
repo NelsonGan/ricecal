@@ -37,11 +37,6 @@ export const recipes = {
   /** The count under a food's name in a list. */
   servings_one: '{{count}} serving',
   servings_other: '{{count}} servings',
-  ingredients_one: '{{count}} ingredient',
-  ingredients_other: '{{count}} ingredients',
-  savedTimes_one: 'saved {{count}} time',
-  savedTimes_other: 'saved {{count}} times',
-  byAuthor: '{{name}} · {{saves}}',
   fromAuthor: 'From {{name}}',
   /**
    * Whoever cooked it, when the credit is missing — a profile with no display
@@ -62,8 +57,6 @@ export const recipes = {
     scanLabel: 'Photo',
     describeLabel: 'Describe',
     scanTitle: 'Fill it in from a photo',
-    /** The rule above the hand-filled fields, under the two offers. */
-    or: 'OR FILL IT IN YOURSELF',
     describeTitle: 'Describe it',
     // A worked example, and short enough to read at a glance: the long version
     // wrapped to three lines and turned the field into a wall of grey.
@@ -102,7 +95,6 @@ export const recipes = {
     servings: 'HOW MANY SERVINGS',
     ingredients: 'INGREDIENTS',
     ingredientsCount: 'INGREDIENTS · {{count}}',
-    ingredientsEmpty: 'Nothing yet. Search each item and we add up the pot for you.',
     addIngredient: 'Add an ingredient',
     steps: 'HOW YOU COOK IT',
     stepsSheetTitle: 'How you cook it',
@@ -141,11 +133,9 @@ export const recipes = {
     search: 'Search for an ingredient',
     ownTitle: 'Add your own ingredient',
     ownBody: 'Not in the list? Give it a name and its calories.',
-    customBody: 'For the things only your kitchen has. Read it off the packet or weigh it once.',
     name: 'NAME',
     namePlaceholder: 'What is it?',
     calories: 'CALORIES',
-    macros: 'MACROS, IF YOU KNOW THEM',
     amount: 'PORTION',
     add: 'Add to the pot',
     remove: 'Remove',
@@ -251,9 +241,5 @@ export const recipes = {
     rejected: 'Not published: {{reason}}',
     rejectedPlain: 'We could not publish this one.',
     pending: 'We are still looking at this one. It will show up once it passes.',
-    /** The badge on the owner's own list. */
-    badgePending: 'In review',
-    badgeRejected: 'Not published',
-    badgePublic: 'Public',
   },
 } as const

@@ -21,6 +21,7 @@
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
+import { json } from '../_shared/http.ts'
 import {
   accountNoLongerExists,
   at,
@@ -38,13 +39,6 @@ import {
  * which is the retry signal: RevenueCat redelivered it on a backoff for days.
  */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
 
 /**
  * Constant-time comparison of the presented token against the secret. A plain

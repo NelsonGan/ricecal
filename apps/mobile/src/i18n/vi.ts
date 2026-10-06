@@ -19,11 +19,8 @@ export const vi = {
     profile: 'Trang cá nhân',
     myProfile: 'Trang của tôi',
     editProfile: 'Sửa hồ sơ',
-    join: 'Tạo hồ sơ công khai',
-    joinBody: 'Chọn nội dung người khác thấy. Nhật ký vẫn riêng tư cho đến khi bạn chia sẻ bữa ăn.',
     handle: 'Tên người dùng',
     handleHint: '3 đến 24 chữ thường, số, dấu chấm hoặc dấu gạch dưới.',
-    displayName: 'Tên',
     bio: 'Giới thiệu',
     privateProfile: 'Hồ sơ riêng tư',
     privateProfileHint:
@@ -32,9 +29,7 @@ export const vi = {
     autoPostFoodsHint:
       'Món ăn mới ghi lại sẽ tự động xuất hiện trên bảng tin. Hồ sơ riêng tư chỉ chia sẻ với người theo dõi.',
     avatar: 'Chọn ảnh',
-    removeAvatar: 'Xóa ảnh',
     handleInvalid: 'Dùng 3 đến 24 chữ thường, số, dấu chấm hoặc dấu gạch dưới.',
-    nameInvalid: 'Nhập tên.',
     save: 'Lưu',
     saved: 'Đã lưu',
     cancel: 'Hủy',
@@ -50,7 +45,6 @@ export const vi = {
     removeFollower: 'Xóa người theo dõi',
     removeFollowerBody: 'Họ sẽ không còn thấy bài chỉ dành cho người theo dõi.',
     share: 'Chia sẻ lên bảng tin',
-    publish: 'Chia sẻ',
     newPost: 'Chia sẻ bữa ăn',
     editPost: 'Sửa bài đăng',
     caption: 'Chú thích',
@@ -132,14 +126,12 @@ export const vi = {
       add: 'Thêm',
       undo: 'Hoàn tác',
       keep: 'Giữ lại',
-      skip: 'Bỏ qua',
       retry: 'Thử lại',
       close: 'Đóng',
     },
 
     nav: {
       today: 'Hôm nay',
-      recipes: 'Món ăn',
       trends: 'Xu hướng',
       me: 'Tôi',
       log: 'Ghi món ăn',
@@ -254,7 +246,6 @@ export const vi = {
       emptyTitle: 'Không có gì trả về',
       emptyBody:
         'Chúng tôi không đọc được hoạt động nào. Nếu bạn đã tắt RiceCal trong cài đặt quyền riêng tư của Health, hãy bật lại rồi thử lần nữa.',
-      retry: 'Thử lại',
 
       unavailableTitle: 'Không có dữ liệu sức khoẻ ở đây',
       simulator:
@@ -320,7 +311,6 @@ export const vi = {
       clearDemoBody: 'Xoá mọi ngày và buổi tập được tạo sẵn khỏi tài khoản này.',
       granted: 'Bật',
       notGranted: 'Chưa cấp quyền',
-      partial: 'Một phần dữ liệu không được chia sẻ',
     },
 
     provider: {
@@ -720,8 +710,6 @@ export const vi = {
     barcode: {
       permissionTitle: 'Cho phép RiceCal dùng máy ảnh',
       permissionBody: 'Máy ảnh đọc mã vạch trên gói hàng. Không ghi lại và không tải lên gì cả.',
-      aim: 'Hướng máy ảnh vào mã vạch trên gói hàng.',
-      noCamera: 'Thiết bị này không có máy ảnh, nên ở đây không quét được gì.',
       failedTitle: 'Không có phản hồi',
       failed:
         'Lúc này chúng tôi không kết nối được tới danh mục. Gói hàng có thể vẫn ổn; kết nối thì không.',
@@ -737,15 +725,12 @@ export const vi = {
     },
 
     camera: {
-      title: 'Chụp đĩa của bạn',
-      analysing: 'Đang xem trên đĩa có gì',
       permissionTitle: 'Cần quyền truy cập máy ảnh',
       permissionBody: 'RiceCal dùng máy ảnh để đọc đĩa của bạn.',
       permissionSettings: 'Mở Cài đặt',
       shutter: 'Chụp ảnh',
       library: 'Chọn từ thư viện ảnh',
       flip: 'Đổi máy ảnh',
-      captured: 'Tấm ảnh bạn vừa chụp',
       photoOf: 'Ảnh của {{food}}',
     },
 
@@ -890,7 +875,6 @@ export const vi = {
     },
 
     water: {
-      title: 'Nước',
       count: '{{filled}} / {{goal}} ml',
       addTitle: 'Thêm nước',
       left: 'còn {{amount}} ml',
@@ -1251,7 +1235,6 @@ export const vi = {
       switchMonthly: 'Đổi sang hằng tháng',
       switchYearly: 'Đổi sang hằng năm',
       manage: 'Quản lý trong cửa hàng',
-      switched: 'Đã cập nhật gói',
     },
   },
 
@@ -1375,8 +1358,6 @@ export const vi = {
     },
 
     intro: {
-      title: 'Xong hết rồi. Bắt đầu ghi nhé?',
-      body: 'Mọi thứ đều chạy mà không cần nó. Pro chỉ gỡ bỏ giới hạn.',
       later: 'Có thể để sau',
     },
 
@@ -1445,11 +1426,6 @@ export const vi = {
 
     servings_one: '{{count}} khẩu phần',
     servings_other: '{{count}} khẩu phần',
-    ingredients_one: '{{count}} nguyên liệu',
-    ingredients_other: '{{count}} nguyên liệu',
-    savedTimes_one: 'được lưu {{count}} lần',
-    savedTimes_other: 'được lưu {{count}} lần',
-    byAuthor: '{{name}} · {{saves}}',
     fromAuthor: 'Từ {{name}}',
     someCook: 'Một người',
 
@@ -1460,7 +1436,6 @@ export const vi = {
       scanLabel: 'Ảnh',
       describeLabel: 'Mô tả',
       scanTitle: 'Điền từ một tấm ảnh',
-      or: 'HOẶC TỰ ĐIỀN',
       describeTitle: 'Mô tả nó',
       describePlaceholder:
         'Cà ri gà. 600g đùi gà, một hộp nước cốt dừa, 3 củ khoai tây. Đủ cho 4 người.',
@@ -1489,7 +1464,6 @@ export const vi = {
       servings: 'BAO NHIÊU KHẨU PHẦN',
       ingredients: 'NGUYÊN LIỆU',
       ingredientsCount: 'NGUYÊN LIỆU · {{count}}',
-      ingredientsEmpty: 'Chưa có gì. Tìm từng thứ và chúng tôi cộng cả nồi hộ bạn.',
       addIngredient: 'Thêm một nguyên liệu',
       steps: 'BẠN NẤU THẾ NÀO',
       stepsSheetTitle: 'Bạn nấu thế nào',
@@ -1518,11 +1492,9 @@ export const vi = {
       search: 'Tìm một nguyên liệu',
       ownTitle: 'Thêm nguyên liệu của riêng bạn',
       ownBody: 'Không có trong danh sách? Đặt tên và nhập calo cho nó.',
-      customBody: 'Cho những thứ chỉ bếp nhà bạn có. Đọc trên bao bì hoặc cân một lần.',
       name: 'TÊN',
       namePlaceholder: 'Đây là gì?',
       calories: 'CALO',
-      macros: 'DƯỠNG CHẤT, NẾU BẠN BIẾT',
       amount: 'KHẨU PHẦN',
       add: 'Cho vào nồi',
       remove: 'Bỏ ra',
@@ -1591,9 +1563,6 @@ export const vi = {
       rejected: 'Không được đăng: {{reason}}',
       rejectedPlain: 'Chúng tôi không đăng được cái này.',
       pending: 'Chúng tôi vẫn đang xem cái này. Nó sẽ hiện ra khi được duyệt.',
-      badgePending: 'Đang duyệt',
-      badgeRejected: 'Không được đăng',
-      badgePublic: 'Công khai',
     },
   },
 

@@ -1,13 +1,6 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Animated, Easing, useWindowDimensions, View } from 'react-native'
-import Reanimated, {
-  Easing as ReanimatedEasing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated'
+import { Animated, useWindowDimensions, View } from 'react-native'
 
 import type { DayLog, Entry } from '@/data'
 import { storedImageSource, useMealPhotoUrl, useRefiningEntries } from '@/data'
@@ -17,6 +10,7 @@ import { Card, cn, Icon, IconButton, Text } from '@/ui'
 import { ItemRow, ROW_TILE_COMPACT, ROW_TILE_COMPACT_ICON } from './ItemRow'
 import { MealPhoto } from './MealPhoto'
 import { SwipeRow } from './SwipeRow'
+import { Shimmer, useWorkingStatus } from './Working'
 
 export type EntryListProps = {
   day: DayLog
@@ -325,30 +319,11 @@ function AnalysingRow({
               t('logging:today.scanningPortion'),
               t('logging:today.scanningCount'),
             ]
-  const [phrase, setPhrase] = useState(0)
-  useEffect(() => {
-    const id = setInterval(() => setPhrase((current) => current + 1), PHRASE_MS)
-    return () => clearInterval(id)
-  }, [])
-
-  const progress = useRef(new Animated.Value(0)).current
-  useEffect(() => {
-    // Fast at first, asymptotic at the end — the shape every real download
-    // bar has, which is what makes it read as progress.
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: FILL_MS,
-      // Quadratic rather than cubic: cubic spent its first second covering a
-      // third of the bar and then crawled, which reads as a stall.
-      easing: Easing.out(Easing.quad),
-      // Width in percent is a layout property, so the native driver cannot
-      // animate it.
-      useNativeDriver: false,
-    }).start()
-  }, [progress])
-  const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['6%', '92%'] })
-
-  const label = phrases[phrase % phrases.length]
+  const { label, width } = useWorkingStatus(phrases, {
+    phraseMs: PHRASE_MS,
+    fillMs: FILL_MS,
+    from: '6%',
+  })
 
   return (
     <View
@@ -411,25 +386,6 @@ function AnalysingRow({
       </View>
     </View>
   )
-}
-
-/**
- * A slow pulse over whatever is inside it. Reanimated rather than `Animated`,
- * because this repeats forever and belongs on the UI thread where the bar beside
- * it is a one-shot. Opacity rather than a gradient sweep, which would need a mask
- * per element for one line of text.
- */
-function Shimmer({ children }: { children: ReactNode }) {
-  const pulse = useSharedValue(1)
-  useEffect(() => {
-    pulse.value = withRepeat(
-      withTiming(0.45, { duration: 1100, easing: ReanimatedEasing.inOut(ReanimatedEasing.quad) }),
-      -1,
-      true,
-    )
-  }, [pulse])
-  const style = useAnimatedStyle(() => ({ opacity: pulse.value }))
-  return <Reanimated.View style={style}>{children}</Reanimated.View>
 }
 
 /** "8:20 am". Locale-independent on purpose: the interface is English. */
