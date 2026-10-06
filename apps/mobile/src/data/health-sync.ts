@@ -258,17 +258,23 @@ async function personOf(
   // change live on the profile, and the weight is the latest weigh-in, which is
   // where `compute_targets()` reads it from too. Through the cache, because a
   // launch asks for both for Today and Me at the same moment this sync starts.
+  // A read that fails leaves the figure unknown rather than failing the sync:
+  // without them a provider still has everything but the split and the zones.
   const [body, weighIns] = await Promise.all([
-    queryClient.fetchQuery({
-      queryKey: keys.profile(userId),
-      queryFn: () => fetchProfile(userId),
-      staleTime: PERSON_STALE_MS,
-    }),
-    queryClient.fetchQuery({
-      queryKey: keys.weighIns(userId),
-      queryFn: () => fetchWeighIns(userId),
-      staleTime: PERSON_STALE_MS,
-    }),
+    queryClient
+      .fetchQuery({
+        queryKey: keys.profile(userId),
+        queryFn: () => fetchProfile(userId),
+        staleTime: PERSON_STALE_MS,
+      })
+      .catch(() => null),
+    queryClient
+      .fetchQuery({
+        queryKey: keys.weighIns(userId),
+        queryFn: () => fetchWeighIns(userId),
+        staleTime: PERSON_STALE_MS,
+      })
+      .catch(() => []),
   ])
 
   const age = body?.birth_date ? ageFrom(body.birth_date) : null
@@ -300,14 +306,31 @@ async function personOf(
 }
 
 /**
- * What the last pass on this device read, per account and provider.
+ * A fingerprint of what the last pass on this device read, per account and
+ * provider.
  *
  * Every pass still writes, because the database is the record and a late edit
  * has to land. But a pass that read exactly what the one before it read moved
  * nothing, and refetching the day, the goals, the weigh-ins and the charts on
  * every launch and foreground for it doubled the requests a launch made.
+ *
+ * A hash rather than the reading, so no health data is left on the device by it.
  */
 const lastRead = createMMKV({ id: 'ricecal-health-read' })
+
+/** cyrb53: 53 bits, plenty to tell one week of readings from the next. */
+function fingerprintOf(text: string): string {
+  let h1 = 0xdeadbeef
+  let h2 = 0x41c6ce57
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i)
+    h1 = Math.imul(h1 ^ code, 2654435761)
+    h2 = Math.imul(h2 ^ code, 1597334677)
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36)
+}
 
 /**
  * Read a range from a provider and write it, a chunk at a time.
@@ -356,7 +379,7 @@ export async function syncRange(
   // Stored only once every chunk is written, so a pass that failed halfway is
   // never mistaken for one that landed.
   const key = `${userId}.${provider.id}`
-  const seen = JSON.stringify([from, to, readings])
+  const seen = fingerprintOf(JSON.stringify([from, to, readings]))
   const changed = lastRead.getString(key) !== seen
   if (changed) lastRead.set(key, seen)
 

@@ -2634,9 +2634,9 @@ reports, blocks and retention revoke single posts routinely. The old diary and
 recipe requests keep their existing response contract and lifetime. Social images
 never use the diary's disk-first resolver. They are cached in memory and on disk
 under their key and ETag, so a fresh signature does not download them again. The
-disk copy is never drawn without a current signature, so a photo key is never
-permanent authorization, and signing out clears it with the rest of the image
-cache. A previously delivered signed URL can work until its short expiry;
+disk copy is only drawn behind a signature this account was granted within the
+last half hour, which a refusal withdraws, so a photo key is never permanent
+authorization, and signing out clears it with the rest of the image cache. A previously delivered signed URL can work until its short expiry;
 downloaded bytes cannot be recalled. Blocking/deletion
 invalidates visible content immediately in the acting client and on the next
 authorized read elsewhere.
@@ -2647,8 +2647,9 @@ reads the current ETag from R2; previously reviewed images keep their recorded
 ETag. Once a post (or an avatar) is ten minutes old its upload URL has lapsed
 and the bytes cannot change, so the signer hands what it read to the
 service-only `record_social_photo_etags` and later signatures skip the HEAD. It
-only fills a missing tag and never overwrites one. Deploy that migration before
-the `photos` function that calls it. Social GET signatures require a signed `If-Match` header with that ETag;
+only fills a missing tag and never overwrites one, and runs after the answer is
+sent. Deploy that migration before the `photos` function that calls it. Social
+GET signatures require a signed `If-Match` header with that ETag;
 an overwrite fails with 412 until the next authorized signature. The signer
 never accepts a client-supplied ETag.
 [R2 supports conditional GETs](https://developers.cloudflare.com/r2/api/s3/api/).
@@ -3500,9 +3501,9 @@ page two viewports from the end so the rows after it can fill the same window.
 
 Social bytes are cached in memory and on disk under the object's key and ETag,
 so a profile seen yesterday costs one signing call and no downloads. The cache
-is only a copy: every draw still waits for a current signature, a refusal hides
-the picture, and nothing polls. A signature answer is kept for half an hour, so
-a revisit draws at once while a fresh one re-checks access behind it.
+is only a copy: a picture is drawn only behind a signature granted within the
+last half hour, a refusal hides it, and nothing polls. Within that half hour a
+revisit draws at once while a fresh signature re-checks access behind it.
 
 A profile grid tile must not be `flex-1`. Inside a list cell of no fixed height
 its flex basis of zero made Yoga settle some cells at 3 points tall, the list
