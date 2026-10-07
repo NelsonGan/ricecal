@@ -39,6 +39,7 @@ import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
 import { eatenQuantity } from '@/lib/portions'
 import { SessionGate } from '@/lib/SessionGate'
+import { screenshotMode } from '@/lib/screenshot-mode'
 import { SheetSurface, Tabs, Text, useToast } from '@/ui'
 
 /**
@@ -170,7 +171,8 @@ function LogSheet() {
   useEffect(() => {
     // Focusing during the rise measures the field below the screen and scrolls
     // a long food list past its search box before the sheet has settled.
-    if (entered && (panel === 'search' || panel === 'describe')) field.current?.focus()
+    if (!screenshotMode && entered && (panel === 'search' || panel === 'describe'))
+      field.current?.focus()
   }, [entered, panel])
   /**
    * Meal or barcode, within the camera. Seeded from the route so "Scan again"
