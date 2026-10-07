@@ -1,0 +1,1022 @@
+[
+  {
+    "filename": "my-1.jpg",
+    "dish": "Nasi lemak",
+    "market": "MY",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/my.png",
+    "referenceBatch": null,
+    "prompt": "Use case: photorealistic-natural. Create a food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 format at high resolution, ideally 3072 x 2048. Exactly six equally sized square cells in a precise 3 columns by 2 rows grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph, all photographed in the same studio with exactly matching lighting and camera angle. Camera is 45 degrees above the dish, tight close-up food headshot, the food and its ceramic plate or bowl fill 85-95 percent of the square, with some outer plate rim naturally cropped. Warm off-white matte background, plain off-white ceramic serving ware, soft daylight from the upper left, delicate natural shadows, crisp believable food textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or artificial-looking plastic food. Every dish must be recognizably authentic Malaysian cuisine. Cell order left-to-right, top row then bottom row: 1 nasi lemak, a mound of coconut rice with half a boiled egg, cucumber, sambal, peanuts, fried anchovies and a small piece of fried chicken; 2 roti canai, golden flaky folded flatbread with a small ceramic bowl of dhal curry on the same plate; 3 laksa nyonya, coconut curry rice noodles with prawns, tofu puffs, bean sprouts and herbs in a deep bowl; 4 char kuey teow, glossy wok-fried flat rice noodles with prawns, egg and chives on a plate; 5 satay ayam, six grilled chicken skewers with a small bowl of peanut sauce and cucumber on the same plate; 6 nasi kerabu, naturally blue butterfly-pea rice with finely sliced herbs, grilled chicken and a little sambal. Make each dish dominant and close, with minimal visible background. These six cells will be cropped into six separate square photographs.",
+    "crop": {
+      "x": 2,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "fe062959362ca4773532b6cd698458ebd47da8ba37a450b8def7c42955034693"
+  },
+  {
+    "filename": "my-2.jpg",
+    "dish": "Roti canai",
+    "market": "MY",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/my.png",
+    "referenceBatch": null,
+    "prompt": "Use case: photorealistic-natural. Create a food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 format at high resolution, ideally 3072 x 2048. Exactly six equally sized square cells in a precise 3 columns by 2 rows grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph, all photographed in the same studio with exactly matching lighting and camera angle. Camera is 45 degrees above the dish, tight close-up food headshot, the food and its ceramic plate or bowl fill 85-95 percent of the square, with some outer plate rim naturally cropped. Warm off-white matte background, plain off-white ceramic serving ware, soft daylight from the upper left, delicate natural shadows, crisp believable food textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or artificial-looking plastic food. Every dish must be recognizably authentic Malaysian cuisine. Cell order left-to-right, top row then bottom row: 1 nasi lemak, a mound of coconut rice with half a boiled egg, cucumber, sambal, peanuts, fried anchovies and a small piece of fried chicken; 2 roti canai, golden flaky folded flatbread with a small ceramic bowl of dhal curry on the same plate; 3 laksa nyonya, coconut curry rice noodles with prawns, tofu puffs, bean sprouts and herbs in a deep bowl; 4 char kuey teow, glossy wok-fried flat rice noodles with prawns, egg and chives on a plate; 5 satay ayam, six grilled chicken skewers with a small bowl of peanut sauce and cucumber on the same plate; 6 nasi kerabu, naturally blue butterfly-pea rice with finely sliced herbs, grilled chicken and a little sambal. Make each dish dominant and close, with minimal visible background. These six cells will be cropped into six separate square photographs.",
+    "crop": {
+      "x": 514,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "89d896e1c37af3554c43b12797ef89f4db6b1c6b6716abf9eef2da3a6ff8d4d9"
+  },
+  {
+    "filename": "my-3.jpg",
+    "dish": "Laksa nyonya",
+    "market": "MY",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/my.png",
+    "referenceBatch": null,
+    "prompt": "Use case: photorealistic-natural. Create a food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 format at high resolution, ideally 3072 x 2048. Exactly six equally sized square cells in a precise 3 columns by 2 rows grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph, all photographed in the same studio with exactly matching lighting and camera angle. Camera is 45 degrees above the dish, tight close-up food headshot, the food and its ceramic plate or bowl fill 85-95 percent of the square, with some outer plate rim naturally cropped. Warm off-white matte background, plain off-white ceramic serving ware, soft daylight from the upper left, delicate natural shadows, crisp believable food textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or artificial-looking plastic food. Every dish must be recognizably authentic Malaysian cuisine. Cell order left-to-right, top row then bottom row: 1 nasi lemak, a mound of coconut rice with half a boiled egg, cucumber, sambal, peanuts, fried anchovies and a small piece of fried chicken; 2 roti canai, golden flaky folded flatbread with a small ceramic bowl of dhal curry on the same plate; 3 laksa nyonya, coconut curry rice noodles with prawns, tofu puffs, bean sprouts and herbs in a deep bowl; 4 char kuey teow, glossy wok-fried flat rice noodles with prawns, egg and chives on a plate; 5 satay ayam, six grilled chicken skewers with a small bowl of peanut sauce and cucumber on the same plate; 6 nasi kerabu, naturally blue butterfly-pea rice with finely sliced herbs, grilled chicken and a little sambal. Make each dish dominant and close, with minimal visible background. These six cells will be cropped into six separate square photographs.",
+    "crop": {
+      "x": 1026,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "7b6ebadf9af280ac1aa08806923093c8b775c7c230cc3c9a4ebd7e8a49cc6d8f"
+  },
+  {
+    "filename": "my-4.jpg",
+    "dish": "Char kuey teow",
+    "market": "MY",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/my.png",
+    "referenceBatch": null,
+    "prompt": "Use case: photorealistic-natural. Create a food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 format at high resolution, ideally 3072 x 2048. Exactly six equally sized square cells in a precise 3 columns by 2 rows grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph, all photographed in the same studio with exactly matching lighting and camera angle. Camera is 45 degrees above the dish, tight close-up food headshot, the food and its ceramic plate or bowl fill 85-95 percent of the square, with some outer plate rim naturally cropped. Warm off-white matte background, plain off-white ceramic serving ware, soft daylight from the upper left, delicate natural shadows, crisp believable food textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or artificial-looking plastic food. Every dish must be recognizably authentic Malaysian cuisine. Cell order left-to-right, top row then bottom row: 1 nasi lemak, a mound of coconut rice with half a boiled egg, cucumber, sambal, peanuts, fried anchovies and a small piece of fried chicken; 2 roti canai, golden flaky folded flatbread with a small ceramic bowl of dhal curry on the same plate; 3 laksa nyonya, coconut curry rice noodles with prawns, tofu puffs, bean sprouts and herbs in a deep bowl; 4 char kuey teow, glossy wok-fried flat rice noodles with prawns, egg and chives on a plate; 5 satay ayam, six grilled chicken skewers with a small bowl of peanut sauce and cucumber on the same plate; 6 nasi kerabu, naturally blue butterfly-pea rice with finely sliced herbs, grilled chicken and a little sambal. Make each dish dominant and close, with minimal visible background. These six cells will be cropped into six separate square photographs.",
+    "crop": {
+      "x": 2,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "9f83d66968da6b22cf7711579a6890d4f65c8e2dfb23e55c80d9774c4bd92664"
+  },
+  {
+    "filename": "my-5.jpg",
+    "dish": "Satay ayam",
+    "market": "MY",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/my.png",
+    "referenceBatch": null,
+    "prompt": "Use case: photorealistic-natural. Create a food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 format at high resolution, ideally 3072 x 2048. Exactly six equally sized square cells in a precise 3 columns by 2 rows grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph, all photographed in the same studio with exactly matching lighting and camera angle. Camera is 45 degrees above the dish, tight close-up food headshot, the food and its ceramic plate or bowl fill 85-95 percent of the square, with some outer plate rim naturally cropped. Warm off-white matte background, plain off-white ceramic serving ware, soft daylight from the upper left, delicate natural shadows, crisp believable food textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or artificial-looking plastic food. Every dish must be recognizably authentic Malaysian cuisine. Cell order left-to-right, top row then bottom row: 1 nasi lemak, a mound of coconut rice with half a boiled egg, cucumber, sambal, peanuts, fried anchovies and a small piece of fried chicken; 2 roti canai, golden flaky folded flatbread with a small ceramic bowl of dhal curry on the same plate; 3 laksa nyonya, coconut curry rice noodles with prawns, tofu puffs, bean sprouts and herbs in a deep bowl; 4 char kuey teow, glossy wok-fried flat rice noodles with prawns, egg and chives on a plate; 5 satay ayam, six grilled chicken skewers with a small bowl of peanut sauce and cucumber on the same plate; 6 nasi kerabu, naturally blue butterfly-pea rice with finely sliced herbs, grilled chicken and a little sambal. Make each dish dominant and close, with minimal visible background. These six cells will be cropped into six separate square photographs.",
+    "crop": {
+      "x": 514,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "1c01565a99c2e87c0636e5817650e1826b58cd60f261e40abc1a967642e346df"
+  },
+  {
+    "filename": "my-6.jpg",
+    "dish": "Nasi kerabu",
+    "market": "MY",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/my.png",
+    "referenceBatch": null,
+    "prompt": "Use case: photorealistic-natural. Create a food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 format at high resolution, ideally 3072 x 2048. Exactly six equally sized square cells in a precise 3 columns by 2 rows grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph, all photographed in the same studio with exactly matching lighting and camera angle. Camera is 45 degrees above the dish, tight close-up food headshot, the food and its ceramic plate or bowl fill 85-95 percent of the square, with some outer plate rim naturally cropped. Warm off-white matte background, plain off-white ceramic serving ware, soft daylight from the upper left, delicate natural shadows, crisp believable food textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or artificial-looking plastic food. Every dish must be recognizably authentic Malaysian cuisine. Cell order left-to-right, top row then bottom row: 1 nasi lemak, a mound of coconut rice with half a boiled egg, cucumber, sambal, peanuts, fried anchovies and a small piece of fried chicken; 2 roti canai, golden flaky folded flatbread with a small ceramic bowl of dhal curry on the same plate; 3 laksa nyonya, coconut curry rice noodles with prawns, tofu puffs, bean sprouts and herbs in a deep bowl; 4 char kuey teow, glossy wok-fried flat rice noodles with prawns, egg and chives on a plate; 5 satay ayam, six grilled chicken skewers with a small bowl of peanut sauce and cucumber on the same plate; 6 nasi kerabu, naturally blue butterfly-pea rice with finely sliced herbs, grilled chicken and a little sambal. Make each dish dominant and close, with minimal visible background. These six cells will be cropped into six separate square photographs.",
+    "crop": {
+      "x": 1026,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "f235d327a1823787dc9bc77d4d6ba221e57ec1734fcd6979990ca8c08aa9c86a"
+  },
+  {
+    "filename": "id-1.jpg",
+    "dish": "Nasi goreng",
+    "market": "ID",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/id.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indonesian dishes. Cells: 1. Nasi goreng: Indonesian fried rice with a fried egg, chicken, cucumber and prawn crackers; 2. Gado-gado: blanched vegetables, tofu, boiled egg and rich peanut sauce; 3. Soto ayam: golden turmeric chicken soup with rice noodles, shredded chicken, egg and herbs; 4. Rendang: dark richly braised beef in thick coconut spice paste, not a watery curry; 5. Sate ayam: grilled chicken skewers with Indonesian sweet peanut sauce; 6. Bakso: beef meatballs with thin noodles, bok choy and clear savory broth.",
+    "crop": {
+      "x": 2,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "4ef55ca72d260d1029c9e7c0226d2d188c355f51bbb1153b6425308f78cece91"
+  },
+  {
+    "filename": "id-2.jpg",
+    "dish": "Gado-gado",
+    "market": "ID",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/id.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indonesian dishes. Cells: 1. Nasi goreng: Indonesian fried rice with a fried egg, chicken, cucumber and prawn crackers; 2. Gado-gado: blanched vegetables, tofu, boiled egg and rich peanut sauce; 3. Soto ayam: golden turmeric chicken soup with rice noodles, shredded chicken, egg and herbs; 4. Rendang: dark richly braised beef in thick coconut spice paste, not a watery curry; 5. Sate ayam: grilled chicken skewers with Indonesian sweet peanut sauce; 6. Bakso: beef meatballs with thin noodles, bok choy and clear savory broth.",
+    "crop": {
+      "x": 514,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "697ccb2a9e503a5d126e5af71d25d35c27126bc416457554593b0f9f659fe7a2"
+  },
+  {
+    "filename": "id-3.jpg",
+    "dish": "Soto ayam",
+    "market": "ID",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/id.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indonesian dishes. Cells: 1. Nasi goreng: Indonesian fried rice with a fried egg, chicken, cucumber and prawn crackers; 2. Gado-gado: blanched vegetables, tofu, boiled egg and rich peanut sauce; 3. Soto ayam: golden turmeric chicken soup with rice noodles, shredded chicken, egg and herbs; 4. Rendang: dark richly braised beef in thick coconut spice paste, not a watery curry; 5. Sate ayam: grilled chicken skewers with Indonesian sweet peanut sauce; 6. Bakso: beef meatballs with thin noodles, bok choy and clear savory broth.",
+    "crop": {
+      "x": 1026,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "e3911082ff01b4d09a40ea8ac896ac8beef36214adb84d49e1000611cf45203e"
+  },
+  {
+    "filename": "id-4.jpg",
+    "dish": "Rendang",
+    "market": "ID",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/id.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indonesian dishes. Cells: 1. Nasi goreng: Indonesian fried rice with a fried egg, chicken, cucumber and prawn crackers; 2. Gado-gado: blanched vegetables, tofu, boiled egg and rich peanut sauce; 3. Soto ayam: golden turmeric chicken soup with rice noodles, shredded chicken, egg and herbs; 4. Rendang: dark richly braised beef in thick coconut spice paste, not a watery curry; 5. Sate ayam: grilled chicken skewers with Indonesian sweet peanut sauce; 6. Bakso: beef meatballs with thin noodles, bok choy and clear savory broth.",
+    "crop": {
+      "x": 2,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "5eb23b5d0f3c26086de5f30844d5ab2846e89e7dbc0d71765c0f5a19c5d29706"
+  },
+  {
+    "filename": "id-5.jpg",
+    "dish": "Sate ayam",
+    "market": "ID",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/id.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indonesian dishes. Cells: 1. Nasi goreng: Indonesian fried rice with a fried egg, chicken, cucumber and prawn crackers; 2. Gado-gado: blanched vegetables, tofu, boiled egg and rich peanut sauce; 3. Soto ayam: golden turmeric chicken soup with rice noodles, shredded chicken, egg and herbs; 4. Rendang: dark richly braised beef in thick coconut spice paste, not a watery curry; 5. Sate ayam: grilled chicken skewers with Indonesian sweet peanut sauce; 6. Bakso: beef meatballs with thin noodles, bok choy and clear savory broth.",
+    "crop": {
+      "x": 514,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "6b6af664a19452d10cb7eb19cd0fb52a0a0305ec70c2bf7660b2b806de91a33b"
+  },
+  {
+    "filename": "id-6.jpg",
+    "dish": "Bakso",
+    "market": "ID",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/id.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indonesian dishes. Cells: 1. Nasi goreng: Indonesian fried rice with a fried egg, chicken, cucumber and prawn crackers; 2. Gado-gado: blanched vegetables, tofu, boiled egg and rich peanut sauce; 3. Soto ayam: golden turmeric chicken soup with rice noodles, shredded chicken, egg and herbs; 4. Rendang: dark richly braised beef in thick coconut spice paste, not a watery curry; 5. Sate ayam: grilled chicken skewers with Indonesian sweet peanut sauce; 6. Bakso: beef meatballs with thin noodles, bok choy and clear savory broth.",
+    "crop": {
+      "x": 1026,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "de0ba6ba922c87d844dfd85db0a5050c6ddafc08ab969c8d25cc8fa1a516f405"
+  },
+  {
+    "filename": "th-1.jpg",
+    "dish": "ผัดไทย",
+    "market": "TH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/th.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Thai dishes. Cells: 1. Pad thai: stir-fried rice noodles with prawns, egg, bean sprouts, peanuts and chives; 2. Thai fried rice: jasmine fried rice with egg, chicken, cucumber and lime; 3. Tom yum goong: clear hot sour broth with prawns, mushrooms, lime and herbs; 4. Thai green curry: green coconut curry with chicken, Thai eggplants and basil; 5. Som tam: shredded green papaya salad with tomato, green beans, peanuts and lime; 6. Mango sticky rice: ripe golden mango beside coconut sticky rice, coconut cream and toasted mung beans.",
+    "crop": {
+      "x": 2,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "5124ff4c5d9cbf0d81cd07d0853aca3d6cbc6e4edd0895ff2c206c7ef67d18f7"
+  },
+  {
+    "filename": "th-2.jpg",
+    "dish": "ข้าวผัด",
+    "market": "TH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/th.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Thai dishes. Cells: 1. Pad thai: stir-fried rice noodles with prawns, egg, bean sprouts, peanuts and chives; 2. Thai fried rice: jasmine fried rice with egg, chicken, cucumber and lime; 3. Tom yum goong: clear hot sour broth with prawns, mushrooms, lime and herbs; 4. Thai green curry: green coconut curry with chicken, Thai eggplants and basil; 5. Som tam: shredded green papaya salad with tomato, green beans, peanuts and lime; 6. Mango sticky rice: ripe golden mango beside coconut sticky rice, coconut cream and toasted mung beans.",
+    "crop": {
+      "x": 514,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "a4dc1e8d03496d9e37a2beacf260de402dd384caf3349b5db26fece3977aabba"
+  },
+  {
+    "filename": "th-3.jpg",
+    "dish": "ต้มยำกุ้ง",
+    "market": "TH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/th.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Thai dishes. Cells: 1. Pad thai: stir-fried rice noodles with prawns, egg, bean sprouts, peanuts and chives; 2. Thai fried rice: jasmine fried rice with egg, chicken, cucumber and lime; 3. Tom yum goong: clear hot sour broth with prawns, mushrooms, lime and herbs; 4. Thai green curry: green coconut curry with chicken, Thai eggplants and basil; 5. Som tam: shredded green papaya salad with tomato, green beans, peanuts and lime; 6. Mango sticky rice: ripe golden mango beside coconut sticky rice, coconut cream and toasted mung beans.",
+    "crop": {
+      "x": 1026,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "d24d587bf98cf775e79c8674dbdfaf9d78299f70cf47796467b6338678d3284a"
+  },
+  {
+    "filename": "th-4.jpg",
+    "dish": "แกงเขียวหวาน",
+    "market": "TH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/th.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Thai dishes. Cells: 1. Pad thai: stir-fried rice noodles with prawns, egg, bean sprouts, peanuts and chives; 2. Thai fried rice: jasmine fried rice with egg, chicken, cucumber and lime; 3. Tom yum goong: clear hot sour broth with prawns, mushrooms, lime and herbs; 4. Thai green curry: green coconut curry with chicken, Thai eggplants and basil; 5. Som tam: shredded green papaya salad with tomato, green beans, peanuts and lime; 6. Mango sticky rice: ripe golden mango beside coconut sticky rice, coconut cream and toasted mung beans.",
+    "crop": {
+      "x": 2,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "eb4959890d91fb38661477061af3d78b2a2e7b636c9b5dcd50faf21084278faa"
+  },
+  {
+    "filename": "th-5.jpg",
+    "dish": "ส้มตำ",
+    "market": "TH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/th.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Thai dishes. Cells: 1. Pad thai: stir-fried rice noodles with prawns, egg, bean sprouts, peanuts and chives; 2. Thai fried rice: jasmine fried rice with egg, chicken, cucumber and lime; 3. Tom yum goong: clear hot sour broth with prawns, mushrooms, lime and herbs; 4. Thai green curry: green coconut curry with chicken, Thai eggplants and basil; 5. Som tam: shredded green papaya salad with tomato, green beans, peanuts and lime; 6. Mango sticky rice: ripe golden mango beside coconut sticky rice, coconut cream and toasted mung beans.",
+    "crop": {
+      "x": 514,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "3ad07309c909bff20d23a611d7c58acf093d54ff613956b15243e1355a01440b"
+  },
+  {
+    "filename": "th-6.jpg",
+    "dish": "ข้าวเหนียวมะม่วง",
+    "market": "TH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/th.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Thai dishes. Cells: 1. Pad thai: stir-fried rice noodles with prawns, egg, bean sprouts, peanuts and chives; 2. Thai fried rice: jasmine fried rice with egg, chicken, cucumber and lime; 3. Tom yum goong: clear hot sour broth with prawns, mushrooms, lime and herbs; 4. Thai green curry: green coconut curry with chicken, Thai eggplants and basil; 5. Som tam: shredded green papaya salad with tomato, green beans, peanuts and lime; 6. Mango sticky rice: ripe golden mango beside coconut sticky rice, coconut cream and toasted mung beans.",
+    "crop": {
+      "x": 1026,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "70d93692e467fa035652365a97416e393cb09b06ab5fe98d031a2c8a48ba02ab"
+  },
+  {
+    "filename": "vn-1.jpg",
+    "dish": "Phở bò",
+    "market": "VN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/vn.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Vietnamese dishes. Cells: 1. Pho bo: rice noodle soup with thin sliced beef, scallions and fragrant herbs in clear broth; 2. Banh mi: crisp baguette with grilled pork, pickled carrot, cucumber and coriander; 3. Goi cuon: fresh translucent rice-paper rolls with prawns, rice noodles and herbs; 4. Bun cha: grilled pork and meatballs, rice vermicelli, herbs and a small bowl of dipping sauce on the plate; 5. Banh xeo: crispy golden Vietnamese crepe with prawns, bean sprouts and fresh greens; 6. Com tam: broken rice, grilled pork chop, fried egg, cucumber and pickled vegetables.",
+    "crop": {
+      "x": 2,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "3dff7a98457f5867acc605c53e8bc3e55a98b26d285a7858aee751b3182f00af"
+  },
+  {
+    "filename": "vn-2.jpg",
+    "dish": "Bánh mì",
+    "market": "VN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/vn.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Vietnamese dishes. Cells: 1. Pho bo: rice noodle soup with thin sliced beef, scallions and fragrant herbs in clear broth; 2. Banh mi: crisp baguette with grilled pork, pickled carrot, cucumber and coriander; 3. Goi cuon: fresh translucent rice-paper rolls with prawns, rice noodles and herbs; 4. Bun cha: grilled pork and meatballs, rice vermicelli, herbs and a small bowl of dipping sauce on the plate; 5. Banh xeo: crispy golden Vietnamese crepe with prawns, bean sprouts and fresh greens; 6. Com tam: broken rice, grilled pork chop, fried egg, cucumber and pickled vegetables.",
+    "crop": {
+      "x": 514,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "b34e023b61cc833531cc61cecc721efed83522c59d1111b1b146791db1c2b550"
+  },
+  {
+    "filename": "vn-3.jpg",
+    "dish": "Gỏi cuốn",
+    "market": "VN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/vn.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Vietnamese dishes. Cells: 1. Pho bo: rice noodle soup with thin sliced beef, scallions and fragrant herbs in clear broth; 2. Banh mi: crisp baguette with grilled pork, pickled carrot, cucumber and coriander; 3. Goi cuon: fresh translucent rice-paper rolls with prawns, rice noodles and herbs; 4. Bun cha: grilled pork and meatballs, rice vermicelli, herbs and a small bowl of dipping sauce on the plate; 5. Banh xeo: crispy golden Vietnamese crepe with prawns, bean sprouts and fresh greens; 6. Com tam: broken rice, grilled pork chop, fried egg, cucumber and pickled vegetables.",
+    "crop": {
+      "x": 1026,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "6c6451b7014e07928722325b0c42a43c58c0900e01a109c802f5dfe3b533ec00"
+  },
+  {
+    "filename": "vn-4.jpg",
+    "dish": "Bún chả",
+    "market": "VN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/vn.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Vietnamese dishes. Cells: 1. Pho bo: rice noodle soup with thin sliced beef, scallions and fragrant herbs in clear broth; 2. Banh mi: crisp baguette with grilled pork, pickled carrot, cucumber and coriander; 3. Goi cuon: fresh translucent rice-paper rolls with prawns, rice noodles and herbs; 4. Bun cha: grilled pork and meatballs, rice vermicelli, herbs and a small bowl of dipping sauce on the plate; 5. Banh xeo: crispy golden Vietnamese crepe with prawns, bean sprouts and fresh greens; 6. Com tam: broken rice, grilled pork chop, fried egg, cucumber and pickled vegetables.",
+    "crop": {
+      "x": 2,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "ab22cb44d87a08fcb933b21ea34e665a21f9358b77ef71cca289092ea5f72d83"
+  },
+  {
+    "filename": "vn-5.jpg",
+    "dish": "Bánh xèo",
+    "market": "VN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/vn.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Vietnamese dishes. Cells: 1. Pho bo: rice noodle soup with thin sliced beef, scallions and fragrant herbs in clear broth; 2. Banh mi: crisp baguette with grilled pork, pickled carrot, cucumber and coriander; 3. Goi cuon: fresh translucent rice-paper rolls with prawns, rice noodles and herbs; 4. Bun cha: grilled pork and meatballs, rice vermicelli, herbs and a small bowl of dipping sauce on the plate; 5. Banh xeo: crispy golden Vietnamese crepe with prawns, bean sprouts and fresh greens; 6. Com tam: broken rice, grilled pork chop, fried egg, cucumber and pickled vegetables.",
+    "crop": {
+      "x": 514,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "b00218ac185d1007859215244c8a3d4221587bf569e39e99b860fb4fd53091d3"
+  },
+  {
+    "filename": "vn-6.jpg",
+    "dish": "Cơm tấm",
+    "market": "VN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/vn.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Vietnamese dishes. Cells: 1. Pho bo: rice noodle soup with thin sliced beef, scallions and fragrant herbs in clear broth; 2. Banh mi: crisp baguette with grilled pork, pickled carrot, cucumber and coriander; 3. Goi cuon: fresh translucent rice-paper rolls with prawns, rice noodles and herbs; 4. Bun cha: grilled pork and meatballs, rice vermicelli, herbs and a small bowl of dipping sauce on the plate; 5. Banh xeo: crispy golden Vietnamese crepe with prawns, bean sprouts and fresh greens; 6. Com tam: broken rice, grilled pork chop, fried egg, cucumber and pickled vegetables.",
+    "crop": {
+      "x": 1026,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "4b193a9d9cadb7b365e9773dbb6ed3d91fef97b3fece70265f1a1a937ac6e0b2"
+  },
+  {
+    "filename": "ph-1.jpg",
+    "dish": "Chicken adobo",
+    "market": "PH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/ph.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Filipino dishes. Cells: 1. Chicken adobo: tender chicken in glossy brown soy-vinegar sauce with bay leaves and garlic; 2. Sinigang: sour tamarind pork broth with tomato, radish, long beans and leafy greens; 3. Pancit bihon: fine rice noodles stir-fried with chicken, carrot and cabbage; 4. Lumpia: crisp golden Filipino spring rolls with a small bowl of sweet dipping sauce; 5. Arroz caldo: creamy chicken rice porridge with ginger, scallions, fried garlic and half a boiled egg; 6. Kare-kare: oxtail and vegetables in rich orange peanut sauce with eggplant and bok choy.",
+    "crop": {
+      "x": 2,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "6e9a6b5ee89ae13c6314d7231d28014cd12a11eebebf9f989e47d0635cdf911b"
+  },
+  {
+    "filename": "ph-2.jpg",
+    "dish": "Sinigang",
+    "market": "PH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/ph.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Filipino dishes. Cells: 1. Chicken adobo: tender chicken in glossy brown soy-vinegar sauce with bay leaves and garlic; 2. Sinigang: sour tamarind pork broth with tomato, radish, long beans and leafy greens; 3. Pancit bihon: fine rice noodles stir-fried with chicken, carrot and cabbage; 4. Lumpia: crisp golden Filipino spring rolls with a small bowl of sweet dipping sauce; 5. Arroz caldo: creamy chicken rice porridge with ginger, scallions, fried garlic and half a boiled egg; 6. Kare-kare: oxtail and vegetables in rich orange peanut sauce with eggplant and bok choy.",
+    "crop": {
+      "x": 514,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "4ab53cdb54708061c4a27622a4b5d68e9eda0bb520b3c33768e41fe2b4587281"
+  },
+  {
+    "filename": "ph-3.jpg",
+    "dish": "Pancit bihon",
+    "market": "PH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/ph.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Filipino dishes. Cells: 1. Chicken adobo: tender chicken in glossy brown soy-vinegar sauce with bay leaves and garlic; 2. Sinigang: sour tamarind pork broth with tomato, radish, long beans and leafy greens; 3. Pancit bihon: fine rice noodles stir-fried with chicken, carrot and cabbage; 4. Lumpia: crisp golden Filipino spring rolls with a small bowl of sweet dipping sauce; 5. Arroz caldo: creamy chicken rice porridge with ginger, scallions, fried garlic and half a boiled egg; 6. Kare-kare: oxtail and vegetables in rich orange peanut sauce with eggplant and bok choy.",
+    "crop": {
+      "x": 1026,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "d8ff97e3c2f804c4bde5ca1c661e6eb438af61d871fc2a00c58a92072ec3b05f"
+  },
+  {
+    "filename": "ph-4.jpg",
+    "dish": "Lumpia",
+    "market": "PH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/ph.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Filipino dishes. Cells: 1. Chicken adobo: tender chicken in glossy brown soy-vinegar sauce with bay leaves and garlic; 2. Sinigang: sour tamarind pork broth with tomato, radish, long beans and leafy greens; 3. Pancit bihon: fine rice noodles stir-fried with chicken, carrot and cabbage; 4. Lumpia: crisp golden Filipino spring rolls with a small bowl of sweet dipping sauce; 5. Arroz caldo: creamy chicken rice porridge with ginger, scallions, fried garlic and half a boiled egg; 6. Kare-kare: oxtail and vegetables in rich orange peanut sauce with eggplant and bok choy.",
+    "crop": {
+      "x": 2,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "23f25c5840b44ad7bc147e18b77aca1a1a0873768280e4a6e0c9df58298f0bdf"
+  },
+  {
+    "filename": "ph-5.jpg",
+    "dish": "Arroz caldo",
+    "market": "PH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/ph.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Filipino dishes. Cells: 1. Chicken adobo: tender chicken in glossy brown soy-vinegar sauce with bay leaves and garlic; 2. Sinigang: sour tamarind pork broth with tomato, radish, long beans and leafy greens; 3. Pancit bihon: fine rice noodles stir-fried with chicken, carrot and cabbage; 4. Lumpia: crisp golden Filipino spring rolls with a small bowl of sweet dipping sauce; 5. Arroz caldo: creamy chicken rice porridge with ginger, scallions, fried garlic and half a boiled egg; 6. Kare-kare: oxtail and vegetables in rich orange peanut sauce with eggplant and bok choy.",
+    "crop": {
+      "x": 514,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "bb228063eef324023f449b6971521e000ba5dc5a4c1448ef874dd07d53953c49"
+  },
+  {
+    "filename": "ph-6.jpg",
+    "dish": "Kare-kare",
+    "market": "PH",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/ph.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Filipino dishes. Cells: 1. Chicken adobo: tender chicken in glossy brown soy-vinegar sauce with bay leaves and garlic; 2. Sinigang: sour tamarind pork broth with tomato, radish, long beans and leafy greens; 3. Pancit bihon: fine rice noodles stir-fried with chicken, carrot and cabbage; 4. Lumpia: crisp golden Filipino spring rolls with a small bowl of sweet dipping sauce; 5. Arroz caldo: creamy chicken rice porridge with ginger, scallions, fried garlic and half a boiled egg; 6. Kare-kare: oxtail and vegetables in rich orange peanut sauce with eggplant and bok choy.",
+    "crop": {
+      "x": 1026,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "e0e263cd1a961db0cac76c8f9f7529fd82f6ec5dec8467683f75f35a9ee8ba89"
+  },
+  {
+    "filename": "jp-1.jpg",
+    "dish": "鮭おにぎり",
+    "market": "JP",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/jp.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Japanese dishes. Cells: 1. Salmon onigiri: two triangular white rice balls with nori wraps and visible flaked salmon filling; 2. Oyakodon: tender chicken and softly set egg with onion over Japanese rice; 3. Zaru soba: chilled buckwheat noodles, finely shredded nori and a small bowl of dipping sauce; 4. Yaki gyoza: six Japanese dumplings with crisp browned bases and a little dipping sauce; 5. Chirashi sushi: sushi rice topped with fresh salmon, tuna, shrimp, egg and cucumber; 6. Okonomiyaki: Japanese cabbage pancake with glossy sauce, mayonnaise, bonito flakes and scallions.",
+    "crop": {
+      "x": 14,
+      "y": 2,
+      "width": 484,
+      "height": 484
+    },
+    "sha256": "83abee9f380a3e08548dc82c7d2712960ba5610e71991efce9ab694f83109f51"
+  },
+  {
+    "filename": "jp-2.jpg",
+    "dish": "親子丼",
+    "market": "JP",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/jp.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Japanese dishes. Cells: 1. Salmon onigiri: two triangular white rice balls with nori wraps and visible flaked salmon filling; 2. Oyakodon: tender chicken and softly set egg with onion over Japanese rice; 3. Zaru soba: chilled buckwheat noodles, finely shredded nori and a small bowl of dipping sauce; 4. Yaki gyoza: six Japanese dumplings with crisp browned bases and a little dipping sauce; 5. Chirashi sushi: sushi rice topped with fresh salmon, tuna, shrimp, egg and cucumber; 6. Okonomiyaki: Japanese cabbage pancake with glossy sauce, mayonnaise, bonito flakes and scallions.",
+    "crop": {
+      "x": 526,
+      "y": 2,
+      "width": 484,
+      "height": 484
+    },
+    "sha256": "19349c3f5541f742727ed9615bc8d1451a24d53365b43ef2f239a904df15e411"
+  },
+  {
+    "filename": "jp-3.jpg",
+    "dish": "ざるそば",
+    "market": "JP",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/jp.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Japanese dishes. Cells: 1. Salmon onigiri: two triangular white rice balls with nori wraps and visible flaked salmon filling; 2. Oyakodon: tender chicken and softly set egg with onion over Japanese rice; 3. Zaru soba: chilled buckwheat noodles, finely shredded nori and a small bowl of dipping sauce; 4. Yaki gyoza: six Japanese dumplings with crisp browned bases and a little dipping sauce; 5. Chirashi sushi: sushi rice topped with fresh salmon, tuna, shrimp, egg and cucumber; 6. Okonomiyaki: Japanese cabbage pancake with glossy sauce, mayonnaise, bonito flakes and scallions.",
+    "crop": {
+      "x": 1038,
+      "y": 2,
+      "width": 484,
+      "height": 484
+    },
+    "sha256": "984475325d70d2f9d29d189209d91414012ec4d675ed27a56ddc0bfe63b0abc7"
+  },
+  {
+    "filename": "jp-4.jpg",
+    "dish": "焼き餃子",
+    "market": "JP",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/jp.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Japanese dishes. Cells: 1. Salmon onigiri: two triangular white rice balls with nori wraps and visible flaked salmon filling; 2. Oyakodon: tender chicken and softly set egg with onion over Japanese rice; 3. Zaru soba: chilled buckwheat noodles, finely shredded nori and a small bowl of dipping sauce; 4. Yaki gyoza: six Japanese dumplings with crisp browned bases and a little dipping sauce; 5. Chirashi sushi: sushi rice topped with fresh salmon, tuna, shrimp, egg and cucumber; 6. Okonomiyaki: Japanese cabbage pancake with glossy sauce, mayonnaise, bonito flakes and scallions.",
+    "crop": {
+      "x": 2,
+      "y": 502,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "08cf5c4d81603f6dbf4ed0ad868bab4f8f3ecad2859ead25402b974436f01110"
+  },
+  {
+    "filename": "jp-5.jpg",
+    "dish": "ちらし寿司",
+    "market": "JP",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/jp.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Japanese dishes. Cells: 1. Salmon onigiri: two triangular white rice balls with nori wraps and visible flaked salmon filling; 2. Oyakodon: tender chicken and softly set egg with onion over Japanese rice; 3. Zaru soba: chilled buckwheat noodles, finely shredded nori and a small bowl of dipping sauce; 4. Yaki gyoza: six Japanese dumplings with crisp browned bases and a little dipping sauce; 5. Chirashi sushi: sushi rice topped with fresh salmon, tuna, shrimp, egg and cucumber; 6. Okonomiyaki: Japanese cabbage pancake with glossy sauce, mayonnaise, bonito flakes and scallions.",
+    "crop": {
+      "x": 514,
+      "y": 502,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "ee019d427e4b7668e5f17ad758b9dc500ed0e3c2f9e4a8f61281aab59fe74685"
+  },
+  {
+    "filename": "jp-6.jpg",
+    "dish": "お好み焼き",
+    "market": "JP",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/jp.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Japanese dishes. Cells: 1. Salmon onigiri: two triangular white rice balls with nori wraps and visible flaked salmon filling; 2. Oyakodon: tender chicken and softly set egg with onion over Japanese rice; 3. Zaru soba: chilled buckwheat noodles, finely shredded nori and a small bowl of dipping sauce; 4. Yaki gyoza: six Japanese dumplings with crisp browned bases and a little dipping sauce; 5. Chirashi sushi: sushi rice topped with fresh salmon, tuna, shrimp, egg and cucumber; 6. Okonomiyaki: Japanese cabbage pancake with glossy sauce, mayonnaise, bonito flakes and scallions.",
+    "crop": {
+      "x": 1026,
+      "y": 502,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "c0feb03e68e1379fe88dfc89e983ee807be1d8b0d76d8444582739bb7d39440e"
+  },
+  {
+    "filename": "kr-1.jpg",
+    "dish": "비빔밥",
+    "market": "KR",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/kr.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Korean dishes. Cells: 1. Bibimbap: rice topped with colorful neatly arranged vegetables, beef, sunny-side-up egg and red gochujang; 2. Gimbap: neatly sliced seaweed rice rolls showing carrot, spinach, egg and pickled radish; 3. Bulgogi: glossy thinly sliced grilled marinated beef with scallions and sesame; 4. Japchae: translucent sweet potato glass noodles with beef, carrot, mushrooms and spinach; 5. Kimchi jjigae: red kimchi stew with pork, tofu, scallions and cabbage; 6. Tteokbokki: plump cylindrical rice cakes and fish cake strips in glossy red spicy sauce.",
+    "crop": {
+      "x": 2,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "bfad3189d3de689517acf40339e69e0eeced53f69f59dd380f5c93c6cbd49904"
+  },
+  {
+    "filename": "kr-2.jpg",
+    "dish": "김밥",
+    "market": "KR",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/kr.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Korean dishes. Cells: 1. Bibimbap: rice topped with colorful neatly arranged vegetables, beef, sunny-side-up egg and red gochujang; 2. Gimbap: neatly sliced seaweed rice rolls showing carrot, spinach, egg and pickled radish; 3. Bulgogi: glossy thinly sliced grilled marinated beef with scallions and sesame; 4. Japchae: translucent sweet potato glass noodles with beef, carrot, mushrooms and spinach; 5. Kimchi jjigae: red kimchi stew with pork, tofu, scallions and cabbage; 6. Tteokbokki: plump cylindrical rice cakes and fish cake strips in glossy red spicy sauce.",
+    "crop": {
+      "x": 514,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "50b994466aab2d7bc7792807a2be70c10400064bd7c48ab48bc5280f663872ad"
+  },
+  {
+    "filename": "kr-3.jpg",
+    "dish": "불고기",
+    "market": "KR",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/kr.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Korean dishes. Cells: 1. Bibimbap: rice topped with colorful neatly arranged vegetables, beef, sunny-side-up egg and red gochujang; 2. Gimbap: neatly sliced seaweed rice rolls showing carrot, spinach, egg and pickled radish; 3. Bulgogi: glossy thinly sliced grilled marinated beef with scallions and sesame; 4. Japchae: translucent sweet potato glass noodles with beef, carrot, mushrooms and spinach; 5. Kimchi jjigae: red kimchi stew with pork, tofu, scallions and cabbage; 6. Tteokbokki: plump cylindrical rice cakes and fish cake strips in glossy red spicy sauce.",
+    "crop": {
+      "x": 1026,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "3907a6e9fd5fd1754a3df5529f96631af09c93b7d3112854e4d1d58946dad0f1"
+  },
+  {
+    "filename": "kr-4.jpg",
+    "dish": "잡채",
+    "market": "KR",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/kr.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Korean dishes. Cells: 1. Bibimbap: rice topped with colorful neatly arranged vegetables, beef, sunny-side-up egg and red gochujang; 2. Gimbap: neatly sliced seaweed rice rolls showing carrot, spinach, egg and pickled radish; 3. Bulgogi: glossy thinly sliced grilled marinated beef with scallions and sesame; 4. Japchae: translucent sweet potato glass noodles with beef, carrot, mushrooms and spinach; 5. Kimchi jjigae: red kimchi stew with pork, tofu, scallions and cabbage; 6. Tteokbokki: plump cylindrical rice cakes and fish cake strips in glossy red spicy sauce.",
+    "crop": {
+      "x": 2,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "b02b03b99ba9168a08fb819bc449a0884ddfca7370560466bbe91f375c12b170"
+  },
+  {
+    "filename": "kr-5.jpg",
+    "dish": "김치찌개",
+    "market": "KR",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/kr.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Korean dishes. Cells: 1. Bibimbap: rice topped with colorful neatly arranged vegetables, beef, sunny-side-up egg and red gochujang; 2. Gimbap: neatly sliced seaweed rice rolls showing carrot, spinach, egg and pickled radish; 3. Bulgogi: glossy thinly sliced grilled marinated beef with scallions and sesame; 4. Japchae: translucent sweet potato glass noodles with beef, carrot, mushrooms and spinach; 5. Kimchi jjigae: red kimchi stew with pork, tofu, scallions and cabbage; 6. Tteokbokki: plump cylindrical rice cakes and fish cake strips in glossy red spicy sauce.",
+    "crop": {
+      "x": 514,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "7028c77774b696498f8cd2fd47e80b70537516c7a34e379890ad83abeeca1b9e"
+  },
+  {
+    "filename": "kr-6.jpg",
+    "dish": "떡볶이",
+    "market": "KR",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/kr.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Korean dishes. Cells: 1. Bibimbap: rice topped with colorful neatly arranged vegetables, beef, sunny-side-up egg and red gochujang; 2. Gimbap: neatly sliced seaweed rice rolls showing carrot, spinach, egg and pickled radish; 3. Bulgogi: glossy thinly sliced grilled marinated beef with scallions and sesame; 4. Japchae: translucent sweet potato glass noodles with beef, carrot, mushrooms and spinach; 5. Kimchi jjigae: red kimchi stew with pork, tofu, scallions and cabbage; 6. Tteokbokki: plump cylindrical rice cakes and fish cake strips in glossy red spicy sauce.",
+    "crop": {
+      "x": 1026,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "2cd5e2026a66a6a177a0342d8d29f8b823142d200986e2784c128b4f7a1c59f9"
+  },
+  {
+    "filename": "in-1.jpg",
+    "dish": "पोहा",
+    "market": "IN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indian dishes. Cells: 1. Poha: fluffy yellow flattened rice with peanuts, mustard seeds, green herbs and lemon; 2. Dal chawal: yellow lentil dal beside steamed basmati rice with a small salad; 3. Palak paneer: white paneer cubes in rich deep green spinach curry; 4. Chana masala: chickpeas in thick tomato-onion masala with fresh coriander; 5. Chicken biryani: fragrant basmati rice with golden spices, tender chicken and fried onions; 6. Aloo paratha: golden browned stuffed potato flatbread with a small bowl of yogurt.",
+    "crop": {
+      "x": 2,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "d403591eb7a740e22b22d26f14c6c99919b2cd66b093653c13e0940c1a7b8c27"
+  },
+  {
+    "filename": "in-2.jpg",
+    "dish": "दाल चावल",
+    "market": "IN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indian dishes. Cells: 1. Poha: fluffy yellow flattened rice with peanuts, mustard seeds, green herbs and lemon; 2. Dal chawal: yellow lentil dal beside steamed basmati rice with a small salad; 3. Palak paneer: white paneer cubes in rich deep green spinach curry; 4. Chana masala: chickpeas in thick tomato-onion masala with fresh coriander; 5. Chicken biryani: fragrant basmati rice with golden spices, tender chicken and fried onions; 6. Aloo paratha: golden browned stuffed potato flatbread with a small bowl of yogurt.",
+    "crop": {
+      "x": 514,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "d40b36378d1f9971971a6ec8ea3dd8283a76d9746a9738a0f769d5a1ad3ddc5b"
+  },
+  {
+    "filename": "in-3.jpg",
+    "dish": "पालक पनीर",
+    "market": "IN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indian dishes. Cells: 1. Poha: fluffy yellow flattened rice with peanuts, mustard seeds, green herbs and lemon; 2. Dal chawal: yellow lentil dal beside steamed basmati rice with a small salad; 3. Palak paneer: white paneer cubes in rich deep green spinach curry; 4. Chana masala: chickpeas in thick tomato-onion masala with fresh coriander; 5. Chicken biryani: fragrant basmati rice with golden spices, tender chicken and fried onions; 6. Aloo paratha: golden browned stuffed potato flatbread with a small bowl of yogurt.",
+    "crop": {
+      "x": 1026,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "e2ed7744628f97f247d3e3468fd6dc7436a3935c3c1f44477e083b496c940eb3"
+  },
+  {
+    "filename": "in-4.jpg",
+    "dish": "चना मसाला",
+    "market": "IN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indian dishes. Cells: 1. Poha: fluffy yellow flattened rice with peanuts, mustard seeds, green herbs and lemon; 2. Dal chawal: yellow lentil dal beside steamed basmati rice with a small salad; 3. Palak paneer: white paneer cubes in rich deep green spinach curry; 4. Chana masala: chickpeas in thick tomato-onion masala with fresh coriander; 5. Chicken biryani: fragrant basmati rice with golden spices, tender chicken and fried onions; 6. Aloo paratha: golden browned stuffed potato flatbread with a small bowl of yogurt.",
+    "crop": {
+      "x": 2,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "892394e55aea5b89b6b32d42528f8d03a243234d9db25d46f90f8251d67c9551"
+  },
+  {
+    "filename": "in-5.jpg",
+    "dish": "चिकन बिरयानी",
+    "market": "IN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indian dishes. Cells: 1. Poha: fluffy yellow flattened rice with peanuts, mustard seeds, green herbs and lemon; 2. Dal chawal: yellow lentil dal beside steamed basmati rice with a small salad; 3. Palak paneer: white paneer cubes in rich deep green spinach curry; 4. Chana masala: chickpeas in thick tomato-onion masala with fresh coriander; 5. Chicken biryani: fragrant basmati rice with golden spices, tender chicken and fried onions; 6. Aloo paratha: golden browned stuffed potato flatbread with a small bowl of yogurt.",
+    "crop": {
+      "x": 514,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "ef362536f2d8014d943848cfe7d0dae04adce414d3818fa7c2f7d4f5f358a356"
+  },
+  {
+    "filename": "in-6.jpg",
+    "dish": "आलू पराठा",
+    "market": "IN",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Indian dishes. Cells: 1. Poha: fluffy yellow flattened rice with peanuts, mustard seeds, green herbs and lemon; 2. Dal chawal: yellow lentil dal beside steamed basmati rice with a small salad; 3. Palak paneer: white paneer cubes in rich deep green spinach curry; 4. Chana masala: chickpeas in thick tomato-onion masala with fresh coriander; 5. Chicken biryani: fragrant basmati rice with golden spices, tender chicken and fried onions; 6. Aloo paratha: golden browned stuffed potato flatbread with a small bowl of yogurt.",
+    "crop": {
+      "x": 1026,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "0435adcfa28645725d31368b8c1021c23e7e2139a0ef4bf46f475bfd83d22ae9"
+  },
+  {
+    "filename": "in_ta-1.jpg",
+    "dish": "இட்லி",
+    "market": "IN_TA",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in_ta.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Tamil South Indian dishes. Cells: 1. Idli: three soft white steamed rice cakes with small bowls of sambar and coconut chutney on the plate; 2. Dosa: thin crisp golden folded rice crepe with small bowls of sambar and coconut chutney; 3. Sambar sadam: rice mixed with lentils, vegetables and tamarind sambar, curry leaves and mustard seeds; 4. Ven pongal: creamy savory rice and lentils with cashews, black pepper, cumin and curry leaves; 5. Curd rice: white creamy yogurt rice with mustard seeds, curry leaves and a little pomegranate; 6. Chicken biryani: Tamil-style spiced basmati rice with tender chicken and fried onions.",
+    "crop": {
+      "x": 2,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "f1947481269cdb51b6ed7e7795da7cb0c208692082fb2473c0201b23d7142bb0"
+  },
+  {
+    "filename": "in_ta-2.jpg",
+    "dish": "தோசை",
+    "market": "IN_TA",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in_ta.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Tamil South Indian dishes. Cells: 1. Idli: three soft white steamed rice cakes with small bowls of sambar and coconut chutney on the plate; 2. Dosa: thin crisp golden folded rice crepe with small bowls of sambar and coconut chutney; 3. Sambar sadam: rice mixed with lentils, vegetables and tamarind sambar, curry leaves and mustard seeds; 4. Ven pongal: creamy savory rice and lentils with cashews, black pepper, cumin and curry leaves; 5. Curd rice: white creamy yogurt rice with mustard seeds, curry leaves and a little pomegranate; 6. Chicken biryani: Tamil-style spiced basmati rice with tender chicken and fried onions.",
+    "crop": {
+      "x": 514,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "b49d478dd6d636ec756d7b7574b0b6545061cd49553e2339535b5683f4a1c86e"
+  },
+  {
+    "filename": "in_ta-3.jpg",
+    "dish": "சாம்பார் சாதம்",
+    "market": "IN_TA",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in_ta.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Tamil South Indian dishes. Cells: 1. Idli: three soft white steamed rice cakes with small bowls of sambar and coconut chutney on the plate; 2. Dosa: thin crisp golden folded rice crepe with small bowls of sambar and coconut chutney; 3. Sambar sadam: rice mixed with lentils, vegetables and tamarind sambar, curry leaves and mustard seeds; 4. Ven pongal: creamy savory rice and lentils with cashews, black pepper, cumin and curry leaves; 5. Curd rice: white creamy yogurt rice with mustard seeds, curry leaves and a little pomegranate; 6. Chicken biryani: Tamil-style spiced basmati rice with tender chicken and fried onions.",
+    "crop": {
+      "x": 1026,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "b973ad3d71d9ec0054bfbe7e1e393119ff1c00814242c8c8ac6e4d90e2055975"
+  },
+  {
+    "filename": "in_ta-4.jpg",
+    "dish": "பொங்கல்",
+    "market": "IN_TA",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in_ta.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Tamil South Indian dishes. Cells: 1. Idli: three soft white steamed rice cakes with small bowls of sambar and coconut chutney on the plate; 2. Dosa: thin crisp golden folded rice crepe with small bowls of sambar and coconut chutney; 3. Sambar sadam: rice mixed with lentils, vegetables and tamarind sambar, curry leaves and mustard seeds; 4. Ven pongal: creamy savory rice and lentils with cashews, black pepper, cumin and curry leaves; 5. Curd rice: white creamy yogurt rice with mustard seeds, curry leaves and a little pomegranate; 6. Chicken biryani: Tamil-style spiced basmati rice with tender chicken and fried onions.",
+    "crop": {
+      "x": 2,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "c78c33fd6d724881086d80e4c07cb18e8770faf5ffdb8b0509896e110ad0af48"
+  },
+  {
+    "filename": "in_ta-5.jpg",
+    "dish": "தயிர் சாதம்",
+    "market": "IN_TA",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in_ta.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Tamil South Indian dishes. Cells: 1. Idli: three soft white steamed rice cakes with small bowls of sambar and coconut chutney on the plate; 2. Dosa: thin crisp golden folded rice crepe with small bowls of sambar and coconut chutney; 3. Sambar sadam: rice mixed with lentils, vegetables and tamarind sambar, curry leaves and mustard seeds; 4. Ven pongal: creamy savory rice and lentils with cashews, black pepper, cumin and curry leaves; 5. Curd rice: white creamy yogurt rice with mustard seeds, curry leaves and a little pomegranate; 6. Chicken biryani: Tamil-style spiced basmati rice with tender chicken and fried onions.",
+    "crop": {
+      "x": 514,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "816d012ce591afdffadc3360a2f32329877b283ae41fe25bde221a7fa68abd0a"
+  },
+  {
+    "filename": "in_ta-6.jpg",
+    "dish": "சிக்கன் பிரியாணி",
+    "market": "IN_TA",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/in_ta.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Tamil South Indian dishes. Cells: 1. Idli: three soft white steamed rice cakes with small bowls of sambar and coconut chutney on the plate; 2. Dosa: thin crisp golden folded rice crepe with small bowls of sambar and coconut chutney; 3. Sambar sadam: rice mixed with lentils, vegetables and tamarind sambar, curry leaves and mustard seeds; 4. Ven pongal: creamy savory rice and lentils with cashews, black pepper, cumin and curry leaves; 5. Curd rice: white creamy yogurt rice with mustard seeds, curry leaves and a little pomegranate; 6. Chicken biryani: Tamil-style spiced basmati rice with tender chicken and fried onions.",
+    "crop": {
+      "x": 1026,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "99d349a15c46ecb143c8ff1fc12955ab56399ce9dd34c77b35bdb0e8d8f74ec2"
+  },
+  {
+    "filename": "bd-1.jpg",
+    "dish": "খিচুড়ি",
+    "market": "BD",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/bd.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Bangladeshi dishes. Cells: 1. Khichuri: Bangladeshi golden rice and lentils with vegetables and a small spoonful of pickle; 2. Boal macher jhol: authentic Bangladeshi catfish pieces in golden spiced broth with potato; 3. Dal and roti: yellow lentil dal with folded soft wheat roti on the plate; 4. Vegetable tehari: aromatic golden spiced rice with potato, peas, carrot and fried onions; 5. Aloo paratha: golden potato-filled flatbread with a small bowl of yogurt; 6. Pabda macher jhal: small whole pabda catfish in golden mustard-chili gravy with coriander.",
+    "crop": {
+      "x": 2,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "051b8a6559b4afbd56a0127b5af28884718441116a4707437bf0a8580d0e994e"
+  },
+  {
+    "filename": "bd-2.jpg",
+    "dish": "বোয়াল মাছের ঝোল",
+    "market": "BD",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/bd.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Bangladeshi dishes. Cells: 1. Khichuri: Bangladeshi golden rice and lentils with vegetables and a small spoonful of pickle; 2. Boal macher jhol: authentic Bangladeshi catfish pieces in golden spiced broth with potato; 3. Dal and roti: yellow lentil dal with folded soft wheat roti on the plate; 4. Vegetable tehari: aromatic golden spiced rice with potato, peas, carrot and fried onions; 5. Aloo paratha: golden potato-filled flatbread with a small bowl of yogurt; 6. Pabda macher jhal: small whole pabda catfish in golden mustard-chili gravy with coriander.",
+    "crop": {
+      "x": 514,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "9dd3afd43397f71d59bafae5a2313e4156e01f38de056f997117685bdc75af6d"
+  },
+  {
+    "filename": "bd-3.jpg",
+    "dish": "ডাল ও রুটি",
+    "market": "BD",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/bd.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Bangladeshi dishes. Cells: 1. Khichuri: Bangladeshi golden rice and lentils with vegetables and a small spoonful of pickle; 2. Boal macher jhol: authentic Bangladeshi catfish pieces in golden spiced broth with potato; 3. Dal and roti: yellow lentil dal with folded soft wheat roti on the plate; 4. Vegetable tehari: aromatic golden spiced rice with potato, peas, carrot and fried onions; 5. Aloo paratha: golden potato-filled flatbread with a small bowl of yogurt; 6. Pabda macher jhal: small whole pabda catfish in golden mustard-chili gravy with coriander.",
+    "crop": {
+      "x": 1026,
+      "y": 2,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "8e25e0157fe4d0add64f8ed5d6b021f72b145dd093f77ed3f5470feb7e054fab"
+  },
+  {
+    "filename": "bd-4.jpg",
+    "dish": "সবজি তেহারি",
+    "market": "BD",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/bd.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Bangladeshi dishes. Cells: 1. Khichuri: Bangladeshi golden rice and lentils with vegetables and a small spoonful of pickle; 2. Boal macher jhol: authentic Bangladeshi catfish pieces in golden spiced broth with potato; 3. Dal and roti: yellow lentil dal with folded soft wheat roti on the plate; 4. Vegetable tehari: aromatic golden spiced rice with potato, peas, carrot and fried onions; 5. Aloo paratha: golden potato-filled flatbread with a small bowl of yogurt; 6. Pabda macher jhal: small whole pabda catfish in golden mustard-chili gravy with coriander.",
+    "crop": {
+      "x": 2,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "7c7bfae6b2f0bc68888fea67d53b185952883e0da4fa2a421350170060956e0b"
+  },
+  {
+    "filename": "bd-5.jpg",
+    "dish": "আলু পরোটা",
+    "market": "BD",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/bd.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Bangladeshi dishes. Cells: 1. Khichuri: Bangladeshi golden rice and lentils with vegetables and a small spoonful of pickle; 2. Boal macher jhol: authentic Bangladeshi catfish pieces in golden spiced broth with potato; 3. Dal and roti: yellow lentil dal with folded soft wheat roti on the plate; 4. Vegetable tehari: aromatic golden spiced rice with potato, peas, carrot and fried onions; 5. Aloo paratha: golden potato-filled flatbread with a small bowl of yogurt; 6. Pabda macher jhal: small whole pabda catfish in golden mustard-chili gravy with coriander.",
+    "crop": {
+      "x": 514,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "c2ff54fa3221bdf4eed871b2bc5e728740ef6a170eb27d90abfac267ed83853f"
+  },
+  {
+    "filename": "bd-6.jpg",
+    "dish": "পাবদার ঝাল",
+    "market": "BD",
+    "origin": "AI-generated",
+    "generator": "OpenAI image_gen",
+    "batch": "batches/bd.png",
+    "referenceBatch": "batches/my.png",
+    "prompt": "Use case: photorealistic-natural. Food photography contact sheet for RiceCal app screenshot fixtures. Landscape 3:2 at high resolution. Exactly six equally sized square cells in a precise 3-column by 2-row grid. Cells touch edge-to-edge, no margins, gutters, dividers, text or labels. Each cell is an independent realistic photograph. Match the reference sheet's camera angle, lighting, background, serving ware and close framing exactly. Camera 45 degrees above the dish, tight food headshot, food and ceramic plate or bowl fill 85-95 percent of its square with some outer rim naturally cropped. Warm off-white matte background and plain off-white ceramic serving ware. Soft daylight from upper left, delicate natural shadows, crisp believable textures, appetizing fresh food, professional editorial food photography. No people, hands, cutlery, table decorations, logos, writing, watermark or plastic-looking food. Order is left-to-right across the top row, then left-to-right across the bottom row. Each cell will become a separate square photo.\nAuthentic Bangladeshi dishes. Cells: 1. Khichuri: Bangladeshi golden rice and lentils with vegetables and a small spoonful of pickle; 2. Boal macher jhol: authentic Bangladeshi catfish pieces in golden spiced broth with potato; 3. Dal and roti: yellow lentil dal with folded soft wheat roti on the plate; 4. Vegetable tehari: aromatic golden spiced rice with potato, peas, carrot and fried onions; 5. Aloo paratha: golden potato-filled flatbread with a small bowl of yogurt; 6. Pabda macher jhal: small whole pabda catfish in golden mustard-chili gravy with coriander.",
+    "crop": {
+      "x": 1026,
+      "y": 514,
+      "width": 508,
+      "height": 508
+    },
+    "sha256": "2f3c1394d6e7f147907a3e8d74003a9a5e964c5a0c1f3685333bc9d140dff67a"
+  }
+]

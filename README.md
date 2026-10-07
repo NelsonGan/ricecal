@@ -5080,6 +5080,84 @@ server, bypasses migrations entirely, and this job is the only thing that
 notices. A migration applied that way needs its file committed at the *same*
 version, or the job goes red on a change that is genuinely in the repo.
 
+### Localized screenshot fixtures
+
+The reusable `codex/localized-screenshot-seeder` branch is capture tooling only.
+Keep it separate from a release branch. The `codex/refresh-screenshot-fixtures`
+branch layers this tooling onto app 1.0.13 and replaces the retired activity
+capture with Feed. It contains six representative dishes
+per market, 60 generated food photographs, and fixtures for all 13 app languages.
+English, Malay and both Chinese scripts use Malaysian dishes. Indonesian, Thai,
+Vietnamese, Filipino, Japanese and Korean use their own cuisines; Hindi and
+Tamil use Indian dishes, and Bengali uses Bangladeshi dishes.
+
+From this branch, with dependencies installed and the local Supabase stack
+running on port 54421:
+
+```sh
+pnpm screenshots:setup
+pnpm screenshots:seed
+APP_VARIANT=simulator pnpm --filter @ricecal/mobile exec expo start --port 8082 --clear
+```
+
+Setup prepares the gitignored mobile env from the local stack. It saves an
+existing non-capture env under `.secrets/` before replacing it. External service
+keys remain placeholders, analytics is disabled, and the development-only
+`EXPO_PUBLIC_SCREENSHOT_MODE=true` flag stops the empty simulator's Health store
+from replacing the activity fixtures. It also keeps the describe input from
+automatically opening the keyboard and its first-use system tutorial. The logging
+sheet also skips its delayed focus in capture mode. Local photo storage must be configured
+for the `photos` function as described under photo storage and media verification.
+
+The seeder refuses hosted Supabase. It creates confirmed fictional accounts,
+stores their random credentials only in `.secrets/screenshots.json`, and replaces
+only accounts carrying its `screenshot_fixture` marker. A failed seed remains
+unready until a successful rerun, and cached photos are checked in object storage.
+Each gets six public food posts by two followed fictional cooks, in addition to 90 days of
+diary, water and activity history, weigh-ins, six saved recipes and a local Pro
+subscription. Nutrition figures are illustrative display data. Rerun before
+capture so Today and the last seven days match the simulator's date. Pass app
+language codes to seed just a subset, for example `pnpm screenshots:seed ja ko`.
+After a local database reset, remove the stale gitignored credentials file
+before seeding again.
+
+Create a separate iPhone 18 Pro Max simulator named `RiceCal Screenshots`, set
+its time zone to Malaysia, and install the RiceCal development client. Keep its
+window visible in Device Hub (Xcode 27). Use a separate Metro port when another
+app is being tested.
+Open the installed client's `ricecal://expo-development-client/` URL with its
+`url` parameter pointing at `http://127.0.0.1:8082`, then run:
+
+```sh
+pnpm screenshots:capture --device <dedicated-simulator-uuid> --port 8082 \
+  --output /absolute/path/to/ricecal-screenshots-creator/public/assets/screenshots-iphone
+```
+
+Capture requires the Argent CLI, a booted dedicated simulator, this checkout's
+Metro instance and the local backend. It signs into each fixture account with
+the app's client, changes the app language, marks the installation's tour as
+already offered, dismisses transient notices, waits for data, and saves six
+1320 x 2868 PNGs per language. `--locale ja,ko` recaptures a subset while keeping
+other capture records. A describe screen contains a local draft; it never calls
+the model. The output records screen, market, date and device without account
+identifiers, and records checksums for each PNG and its food provenance. Capture
+requires a fully verified seed and stages the requested screenshots before
+replacing the existing set. Tab navigation is checked against the actual route,
+and duplicate screen pixels abort publication. Failed data queries abort capture. After changing
+food images, recapture all locales together so provenance stays accurate.
+Run `pnpm screenshots:test` for the tooling's failure-path checks.
+Review the final PNGs, then run the creator's `npm run check:screenshots`.
+
+The food images were generated with OpenAI image generation in ten batches,
+using the Malaysian sheet as the reference for the other nine. All use the same
+close framing, camera angle, plain ceramics and soft lighting. Original sheets
+live in `scripts/screenshots/batches/`; exact prompts live in `image-prompts.mjs`.
+Run `pnpm screenshots:crop` on macOS to reproduce the 60 square JPEGs using
+`sips`. The Japanese sheet has a manually reviewed row boundary. The manifest
+`scripts/screenshots/photos.json` records each image's prompt, batch, crop and
+checksum. Copy it to the creator's
+`public/assets/screenshots-iphone/photo-provenance.json` with a fresh capture set.
+
 ### pgTAP
 
 `apps/supabase/tests/*.test.sql`, run with `pnpm db:test`. Each file is one
