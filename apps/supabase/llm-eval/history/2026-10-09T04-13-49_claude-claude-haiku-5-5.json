@@ -1,0 +1,128 @@
+{
+  "label": "claude:claude-haiku-5-5 {\"effort\":\"low\"}",
+  "run": "2026-10-09T04-13-49_claude-claude-haiku-5-5",
+  "code": {
+    "commit": "c7ed073",
+    "branch": "llm-eval-pipeline",
+    "dirty": false
+  },
+  "model": "claude:claude-haiku-5-5",
+  "modelInfo": {
+    "slug": "claude:claude-haiku-5-5",
+    "found": true,
+    "vision": true,
+    "jsonMode": true,
+    "transport": "claude-code",
+    "pricing": {
+      "prompt": 1.0000000000000001e-7,
+      "completion": 5e-7,
+      "cacheRead": 1.0000000000000002e-8,
+      "cacheWrite": 1.25e-7
+    }
+  },
+  "judge": {
+    "model": "opus",
+    "effort": null
+  },
+  "options": {
+    "repeat": 1,
+    "grep": null,
+    "limit": null,
+    "timeoutMs": null,
+    "body": {
+      "effort": "low"
+    }
+  },
+  "finishedAt": "2026-10-09T04:29:13.430Z",
+  "overall": 92.17309472049688,
+  "reliability": 1,
+  "p50Ms": 5992,
+  "p95Ms": 12127,
+  "modelCostUsd": 0.0998298,
+  "modelCostUncachedUsd": 0.13711920000000002,
+  "modelCostPerAnswerUsd": 0.0005172528497409326,
+  "tokens": {
+    "input": 795327,
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "output": 115173,
+    "reasoning": 87438,
+    "cacheKnown": false
+  },
+  "cacheHitRate": null,
+  "judgeCostUsd": 9.617859799999989,
+  "judgeCostReusedUsd": 0.051500000000000004,
+  "judgeVerdictsReused": 2,
+  "tasks": [
+    {
+      "task": "describe-meal",
+      "title": "Typed meal",
+      "weight": 20,
+      "cases": 64,
+      "graded": 64,
+      "score": 95.48593749999995,
+      "failures": 0,
+      "skipped": 0,
+      "harnessErrors": 0,
+      "checkPassRate": 0.9967320261437909,
+      "p50Ms": 6788,
+      "costUsd": 0.03735194
+    },
+    {
+      "task": "scan-photo",
+      "title": "Photo scan",
+      "weight": 20,
+      "cases": 46,
+      "graded": 35,
+      "score": 80.99142857142859,
+      "failures": 0,
+      "skipped": 11,
+      "harnessErrors": 0,
+      "checkPassRate": 0.9178082191780822,
+      "p50Ms": 10462,
+      "costUsd": 0.03676610000000001
+    },
+    {
+      "task": "pick-candidate",
+      "title": "Catalogue match",
+      "weight": 10,
+      "cases": 24,
+      "graded": 24,
+      "score": 100,
+      "failures": 0,
+      "skipped": 0,
+      "harnessErrors": 0,
+      "checkPassRate": 1,
+      "p50Ms": 3589,
+      "costUsd": 0.0048727000000000015
+    },
+    {
+      "task": "estimate-nutrition",
+      "title": "Nutrition estimate",
+      "weight": 10,
+      "cases": 23,
+      "graded": 23,
+      "score": 90.34347826086957,
+      "failures": 0,
+      "skipped": 0,
+      "harnessErrors": 0,
+      "checkPassRate": 0.9042553191489362,
+      "p50Ms": 4995,
+      "costUsd": 0.0077754
+    },
+    {
+      "task": "refine",
+      "title": "Fix by typing",
+      "weight": 15,
+      "cases": 47,
+      "graded": 45,
+      "score": 98.66666666666667,
+      "failures": 0,
+      "skipped": 0,
+      "harnessErrors": 2,
+      "checkPassRate": 1,
+      "p50Ms": 4544,
+      "costUsd": 0.01306366
+    }
+  ]
+}
