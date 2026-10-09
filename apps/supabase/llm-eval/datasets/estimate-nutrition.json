@@ -1,0 +1,152 @@
+{
+  "about": "Tier 4: estimateNutrition prices a dish the catalogue could not match. Bands come from composition tables (Singapore HPB, Malaysian MyFCD, USDA) and are about plus or minus 20 percent around the reference.",
+  "cases": [
+    {
+      "id": "nasi-lemak-plain",
+      "input": { "dish": "Nasi lemak", "serving": "1 plate" },
+      "expect": { "kcal": [380, 600], "carbs_g": [45, 80], "protein_g": [9, 22], "fat_g": [15, 32] }
+    },
+    {
+      "id": "steamed-chicken-rice",
+      "input": { "dish": "Steamed chicken rice", "serving": "1 plate" },
+      "expect": {
+        "kcal": [500, 720],
+        "carbs_g": [65, 95],
+        "protein_g": [22, 40],
+        "fat_g": [14, 30]
+      }
+    },
+    {
+      "id": "roti-canai-dhal",
+      "input": { "dish": "Roti canai with dhal", "serving": "1 piece" },
+      "expect": { "kcal": [300, 460], "carbs_g": [38, 60], "fat_g": [12, 26] }
+    },
+    {
+      "id": "char-kuey-teow",
+      "input": { "dish": "Char kuey teow", "serving": "1 plate" },
+      "expect": {
+        "kcal": [600, 850],
+        "carbs_g": [70, 105],
+        "protein_g": [15, 32],
+        "fat_g": [28, 46]
+      }
+    },
+    {
+      "id": "grilled-chicken-breast-200g",
+      "note": "A stated weight is the portion and is priced exactly: about 1.65 kcal/g.",
+      "input": { "dish": "Grilled chicken breast", "serving": "200 g", "grams": 200 },
+      "expect": { "kcal": [290, 370], "protein_g": [55, 68], "fat_g": [4, 13], "carbs_g": [0, 3] }
+    },
+    {
+      "id": "teh-tarik",
+      "input": { "dish": "Teh tarik", "serving": "1 glass" },
+      "expect": { "kcal": [110, 210], "carbs_g": [18, 34], "protein_g": [2, 6] }
+    },
+    {
+      "id": "durian-three-seeds",
+      "input": { "dish": "Durian", "serving": "1 seed", "count": 3, "grams": 40 },
+      "expect": { "kcal": [150, 230], "carbs_g": [28, 45] }
+    },
+    {
+      "id": "curry-laksa",
+      "input": { "dish": "Curry laksa", "serving": "1 bowl" },
+      "expect": { "kcal": [550, 820], "fat_g": [28, 52], "carbs_g": [50, 85] }
+    },
+    {
+      "id": "pisang-goreng-three",
+      "input": { "dish": "Pisang goreng", "serving": "1 piece", "count": 3 },
+      "expect": { "kcal": [270, 450], "carbs_g": [45, 75] }
+    },
+    {
+      "id": "mee-goreng-mamak",
+      "input": { "dish": "Mee goreng mamak", "serving": "1 plate" },
+      "expect": { "kcal": [550, 820], "carbs_g": [70, 110], "fat_g": [20, 38] }
+    },
+    {
+      "id": "bak-kut-teh-bowl",
+      "input": { "dish": "Bak kut teh", "serving": "1 bowl, no rice" },
+      "expect": { "kcal": [330, 560], "protein_g": [28, 48], "carbs_g": [2, 15] }
+    },
+    {
+      "id": "fried-drumsticks-two",
+      "input": {
+        "dish": "Fried chicken drumstick",
+        "serving": "1 drumstick",
+        "count": 2,
+        "grams": 90
+      },
+      "expect": { "kcal": [400, 580], "protein_g": [36, 55], "fat_g": [22, 38] }
+    },
+    {
+      "id": "white-rice-250g",
+      "note": "Cooked rice is about 1.3 kcal/g.",
+      "input": { "dish": "White rice, cooked", "serving": "250 g", "grams": 250 },
+      "expect": { "kcal": [300, 350], "carbs_g": [66, 78], "protein_g": [5, 8], "fat_g": [0, 2] }
+    },
+    {
+      "id": "ten-satay-sticks",
+      "input": { "dish": "Chicken satay", "serving": "1 stick", "count": 10, "grams": 25 },
+      "expect": { "kcal": [380, 620], "protein_g": [40, 65] }
+    },
+    {
+      "id": "nasi-kandar-components",
+      "note": "The visible parts pin the estimate to the actual plate.",
+      "input": {
+        "dish": "Nasi kandar",
+        "serving": "1 plate",
+        "components": [
+          { "name": "white rice", "grams": 250 },
+          { "name": "fried chicken", "grams": 120 },
+          { "name": "mixed curry gravy", "grams": 80 },
+          { "name": "okra", "grams": 50 }
+        ]
+      },
+      "expect": { "kcal": [750, 1150], "carbs_g": [75, 120], "protein_g": [28, 50] }
+    },
+    {
+      "id": "kaya-toast-set",
+      "input": { "dish": "Kaya toast with butter", "serving": "2 slices" },
+      "expect": { "kcal": [260, 420], "carbs_g": [35, 60], "fat_g": [8, 20] }
+    },
+    {
+      "id": "wantan-mee-dry",
+      "input": { "dish": "Wantan mee, dry, with char siu", "serving": "1 plate" },
+      "expect": { "kcal": [380, 560], "carbs_g": [50, 80], "protein_g": [16, 30] }
+    },
+    {
+      "id": "apple-180g",
+      "input": { "dish": "Apple", "serving": "1 medium", "grams": 180 },
+      "expect": { "kcal": [80, 110], "carbs_g": [20, 28], "protein_g": [0, 1], "fat_g": [0, 1] }
+    },
+    {
+      "id": "ais-kacang",
+      "input": { "dish": "Ais kacang", "serving": "1 bowl" },
+      "expect": { "kcal": [230, 420], "carbs_g": [50, 90] }
+    },
+    {
+      "id": "bubble-milk-tea",
+      "input": { "dish": "Brown sugar bubble milk tea", "serving": "500 ml, regular sugar" },
+      "expect": { "kcal": [300, 520], "carbs_g": [55, 95] }
+    },
+    {
+      "id": "pan-fried-salmon-150g",
+      "input": { "dish": "Pan-fried salmon fillet", "serving": "150 g", "grams": 150 },
+      "expect": { "kcal": [280, 400], "protein_g": [30, 40], "fat_g": [16, 28], "carbs_g": [0, 3] }
+    },
+    {
+      "id": "stir-fried-greens-150g",
+      "input": { "dish": "Stir-fried kangkung with garlic", "serving": "150 g", "grams": 150 },
+      "expect": { "kcal": [60, 180], "carbs_g": [3, 12] }
+    },
+    {
+      "id": "mcd-cheeseburger",
+      "input": { "dish": "McDonald's cheeseburger", "serving": "1 burger" },
+      "expect": {
+        "kcal": [280, 340],
+        "protein_g": [13, 18],
+        "carbs_g": [30, 36],
+        "fat_g": [11, 16]
+      }
+    }
+  ]
+}
