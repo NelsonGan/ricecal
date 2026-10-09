@@ -272,7 +272,7 @@ const WHY_RULES =
   'Do not use em dashes or en dashes anywhere. Use British spelling. '
 
 /**
- * The prompt. Exported like the others in `llm.ts`, so `pnpm eval:prompts` grades
+ * The prompt. Exported like the others in `llm.ts`, so `pnpm eval:llm` grades
  * the string that is actually sent.
  *
  * What it is told not to do is most of it. It must not invent the person's

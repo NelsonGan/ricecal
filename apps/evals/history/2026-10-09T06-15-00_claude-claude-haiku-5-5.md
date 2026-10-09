@@ -1,0 +1,59 @@
+# claude:claude-haiku-5-5
+
+Overall **86.8** / 100 · reliability 100.0% · p50 8.1 s · p95 22.9 s
+
+model $0.0956 ($0.1007 with nothing cached), $0.00096 an answer · judge $3.68 (+ $0.07 of 2 cached verdicts reused)
+
+Judged by `opus`.
+
+| task | weight | score | cases | failed | checks passed | p50 | cost |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| What to eat | 8 | 74.5 | 18/18 | 0 | 100% | 18.6 s | $0.0358 |
+| Typed recipe | 6 | 90.4 | 25/25 | 0 | 99% | 14.1 s | $0.0378 |
+| Recipe from photo | 3 | 77.8 | 9/9 | 0 | 90% | 8.8 s | $0.0119 |
+| Recipe publishing gate | 4 | 99.2 | 22/22 | 0 | 100% | 4.0 s | $0.0037 |
+| Social moderation | 4 | 100.0 | 26/26 | 0 | 100% | 4.2 s | $0.0065 |
+
+## Lowest scoring answers
+
+- **40** `recipe-photo/vietnamese-chicken-curry-pot`: The model misread a soupy Vietnamese chicken curry as beef rendang. It seems to have copied the prompt's example, so the dish name, the protein and the cooking method are all wrong, even though the servings and per-serving calories look plausible.
+  - identification 1/4: The photo shows a soupy red coconut chicken curry with onion wedges (Vietnamese cà ri gà), but the answer calls it "Rendang daging". That is a dry beef dish, so both the protein and the dish are wrong. The answer only gets right that it is a coconut curry.
+  - ingredients 1/4: It lists beef shin instead of the chicken in the photo, and the lines match the prompt's own rendang example. The onion and coconut milk fit, but it misses the curry powder this dish needs and gives a rendang rempah instead.
+  - quantities 2/4: 6 servings at about 501 kcal each fits the visible pot. However, the total is priced on 1 kg of beef rather than chicken, and 600 ml of liquid is too little for a gravy this thin.
+- **45** `recipe-photo/big-plate-hokkien-mee`: The model misidentified KL Hokkien mee as Char kuey teow, so the noodles, protein and greens are wrong, although the servings, calories and step format are reasonable.
+  - identification 1/4: Named 'Char kuey teow', but the plate shows thick round yellow noodles in dark soy, which is KL Hokkien mee. The model confused it with a related dish.
+  - ingredients 1/4: The list has flat rice noodles, chicken thigh, bean sprouts and chives, all from Char kuey teow. It misses the thick yellow noodles, pork, lard or crispy lard, stock and the visible choy sum; only the prawns and soy sauces match.
+- **54** `suggest-meal/lunch-anything-little-left`: The picks are clean, real and light, but they were sized to the 250 kcal left in the day instead of the 600 kcal ceiling, so the set is mostly ~200 kcal side plates rather than lunch-sized meals.
+  - constraints 1/4: Every pick is 190 to 230 kcal, sized to the 250 kcal left rather than the 600 kcal ceiling, so none comes within a quarter of it. The reference says the ceiling still governs. Several picks are also side plates or snack-sized portions (four satay sticks without ketupat, four siew mai, kerabu, tauhu bakar) rather than a lunch, though the light leaning is reflected.
+  - dishes 2/4: The dishes are real, distinct and ordered by name, with varied main ingredients and cooking methods. But most are sides or accompaniments rather than a lunch someone sits down to, and satay 'no ketupat' is trimmed to fit the numbers.
+- **60** `suggest-meal/snack-balanced-malay`: This is a plausible list of Malay snacks that passes every automatic check, but three picks sit far below the ceiling, several calorie figures look shrunk, two picks are both grilled chicken, and most reasons describe the dish instead of the person's day.
+  - constraints 2/4: All seven are at or under 300 and are Malay snack foods, but only three (230, 250, 240) fall within a quarter of the ceiling, and 120, 150 and 180 sit far below it. Two pieces of ayam percik is closer to a meal's lauk than a snack, though the grilled picks do reflect the lighter lean.
+  - numbers 2/4: Several figures look shrunk: two pisang goreng at 220 and four cucur udang at 180 are low, and two pieces of ayam percik with sauce at 240 is well under the usual 400+. Satay is priced without the peanut sauce it normally comes with.
+  - reasons 2/4: No dashes, no talk of other sittings and nothing preachy. Only the satay reason refers to the nasi lemak, though. Most reasons just describe the dish ('Prawn in the batter', 'Grilled chicken in a coconut spice rub'), and 'round off the afternoon with tea' assumes a time of day the message never gave.
+- **63** `suggest-meal/breakfast-indian`: This list of Malaysian Indian breakfast picks keeps to the 450 kcal ceiling, but it repeats roti dishes, shrinks the calories for the briyani and murtabak, and gives several reasons that describe the dish rather than this person's day.
+  - dishes 2/4: Roti canai and roti telur are the same bread with and without egg, which the prompt rules out as one dish in two styles. Murtabak, from the same griddle, makes three roti-family picks out of seven.
+  - numbers 2/4: A plate of chicken briyani at 440 kcal is far too low, since a normal plate is roughly 700 to 900 kcal. A chicken murtabak at 420 kcal for "one piece" also reads as shrunk. Two chapati with a bowl of mutton curry at 430 kcal is low too; the roti, thosai and samosa figures are plausible.
+  - reasons 2/4: There are no dashes, and the protein and fat reasons do use the fact that nothing has been eaten yet. But "for a late start" is made up, and "the lightest way to get them" leans towards diet talk. Most taste reasons are generic descriptions of the dish rather than about this person's day.
+- **65** `suggest-meal/dinner-vegetarian`: The picks are plausible vegetarian dinners with honest numbers, but they lean on carbs rather than protein, some likely contain fish-based sambal, and several carbs reasons make no sense.
+  - constraints 2/4: All seven are at or under 650 kcal, but only four are within a quarter of it (420 and two at 480 fall short). The protein focus is weak: 18 to 26 g on plates of around 500 kcal that are mostly carbs. Nasi lemak sambal and tempeh with sambal are normally made with ikan bilis or belacan, so the vegetarian brief is doubtful.
+  - reasons 2/4: Several carbs reasons make no sense: 'Rice is the main carb here, so the earlier roti canai is already covered' and 'already covered carbs earlier today' on a rice plate, when 100 g of carbs are still left. Some reasons are generic to the dish ('rich, savoury dinner'), but there are no dashes and nothing about another sitting.
+- **65** `recipe-describe/bak-kut-teh-soup`: The name and servings are right, but this reads as a generic soy-braised pork rib dish without the herbal ingredients that define bak kut teh. The rib calories are inflated, and the last step suggests rice that isn't in the ingredient list.
+  - completeness 2/4: It has the cooking oil, garlic, soy sauces and whole spices, but leaves out the herbs that define Malaysian bak kut teh: dang gui, dang shen and goji. There are also no usual add-ins like mushroom or tofu puff. With only 3 g of white pepper, it doesn't work as the peppery Teochew style either, so it reads as a generic soy braise.
+  - quantities 2/4: 1 kg of ribs for 4 is right, but 2900 kcal (250 g fat) treats bone-in ribs as if they were all edible meat. That inflates the result to 806 kcal a serving, when a realistic bowl is about 550 to 650.
+  - steps 2/4: The 9 steps are ordered and imperative, with cues on the cooking steps and no dashes. However, the last step says to serve with rice, which is not in the ingredient list.
+- **69** `suggest-meal/dinner-indian-after-heavy-day`: These are seven real Malaysian Indian dinner picks that pass every automatic check, but the briyani looks shrunk to fit the ceiling, three picks sit well below it, and several reasons are generic or slightly inaccurate.
+  - numbers 2/4: Idli, thosai and dhal rice are plausible. Chicken briyani at 640 kcal and 20 g fat looks shrunk for a normal plate, which is usually 700 to 900 kcal, and tandoori with two chapati at 430 kcal is on the low side.
+  - reasons 2/4: There are no dashes and no talk of another sitting, and the tandoori protein reason is specific to the day. However, thosai is said to help with protein at 9 g and to be a 'lighter carb dinner' at 52 g of carbs, and most taste reasons just describe the dish rather than this person's day.
+- **70** `recipe-describe/kuih-batch`: The name, servings and steps are right, but the steamed kuih lapis picks up butter and eggs from lapis legit and the sugar's calories are badly underpriced, so the 117 kcal a piece is right only by accident.
+  - completeness 2/4: It has the expected rice flour, tapioca, coconut milk, sugar, salt and colouring. But 100 g butter and 4 eggs belong to the baked lapis legit, not this steamed kuih, and they add about 1000 kcal to the tray.
+  - quantities 2/4: Sugar is priced at 400 kcal for 200 g when it should be about 775, so about 375 kcal is missing. Butter and eggs inflate the total instead. The 117 kcal a piece looks plausible, but only because these errors happen to offset each other, and tapioca is too low a share of the flour.
+- **71** `suggest-meal/dinner-western-indulgent`: The answer gives seven real Western dinners near the ceiling, but the burger and the fish and chips look shrunk to fit, many reasons describe the dish rather than the person's day, and the cleaned portions are cut off with a grams figure and a mismatched salmon icon.
+  - numbers 2/4: The burger with a regular portion of fries at 730 kcal and the large battered cod with chips and mushy peas at 740 kcal are well below their usual 1000 kcal or more, so they appear shrunk to fit the ceiling. The 250 g sirloin with chips also looks light on fat at 28 g.
+  - reasons 2/4: There are no dashes and no talk of other sittings. However, many reasons describe the dish rather than the day, such as 'comfort food at its best', 'a proper dinner' and the salmon 'crisp golden skin'. 'Different protein from the Milo and chicken' treats Milo as a protein, and 'Plenty of carbs left' is repeated.
+  - format 2/4: There are seven picks with proper names. However, the cleaned portions are cut off mid-word ('fri', 'plat', 'buttere'), one portion uses grams ('250 g steak'), and the salmon pick shows a green-beans icon that does not depict the dish.
+- **73** `recipe-photo/plated-nasi-lemak-is-one-serving`: The dish and its parts are correct, but calling a single plate 2 servings halves the logged calories to 672 when the plate is about 1344 kcal.
+  - quantities 1/4: The amounts describe one plate (120 g rice, one egg, one 150 g thigh), about 1344 kcal in total, but servings is 2. That splits it to 672 kcal, so the diary would log about half of what was eaten.
+- **73** `suggest-meal/lunch-protein-mamak-indulgent`: This is a solid, fully mamak lunch list that stays under the ceiling, but it leans on roti variants and chicken, a few calorie figures run low, and most reasons describe the dish instead of the person's day.
+  - reasons 2/4: There are no dashes and no breakfast talk, but most reasons describe the dish rather than the day. Every taste line is generic, and "carb base for the rest of the afternoon" fits any pick. Only the Kopi O mention and "the rest of today lacks" tie to what they actually ate.
+- **73** `suggest-meal/snack-protein-others`: A solid, sensible set of light snacks under the ceiling, let down by a near-duplicate pair of chicken skewer picks, a few low protein counts for a protein-heavy request, and generic reasons, one of which misstates the carbs left.
+  - reasons 2/4: No dashes appear, but 'Carbs are mostly used up' misstates the 50 g of carbs left. 'The rest of the evening' assumes a time of day nobody gave. Most reasons are a generic 'gives protein' and never mention the chicken rice and wantan mee already eaten.

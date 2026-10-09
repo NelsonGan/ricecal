@@ -1,0 +1,313 @@
+{
+  "about": "A typed recipe filled in by describeRecipe. per_serving is the pot's kcal divided by servings. kept lists stated amounts that must survive exactly. Most cases come from the old eval-prompts and eval:recipe suites; the non-Malaysian dishes are the ones a Malaysian framing once renamed or refused.",
+  "cases": [
+    {
+      "id": "kari-ayam-stated",
+      "input": { "text": "Kari ayam. 600g chicken thigh, a tin of santan, 3 potatoes. Feeds 4." },
+      "expect": {
+        "no_food": false,
+        "name_has": ["kari ayam|ayam|chicken curry"],
+        "servings": 4,
+        "per_serving": [300, 800],
+        "kept": [{ "match": "chicken|ayam", "amount": 600, "unit": "g" }],
+        "must_mention": ["santan|coconut", "potato|kentang"]
+      }
+    },
+    {
+      "id": "rendang-kilo-beef",
+      "note": "Nobody said how many it feeds: a kilo of beef feeds 4 to 8.",
+      "input": { "text": "Rendang daging. 1kg beef, 400ml thick santan, kerisik, rempah." },
+      "expect": {
+        "no_food": false,
+        "name_has": ["rendang"],
+        "servings": [4, 8],
+        "per_serving": [400, 1000],
+        "kept": [
+          { "match": "beef|daging", "amount": 1000, "unit": "g" },
+          { "match": "santan|coconut", "amount": 400, "unit": "ml" }
+        ]
+      }
+    },
+    {
+      "id": "beef-rendang-feeds-6",
+      "input": { "text": "beef rendang, about 1kg of beef, feeds 6" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["rendang"],
+        "servings": 6,
+        "per_serving": [350, 800],
+        "must_mention": ["coconut|santan", "beef|daging"]
+      }
+    },
+    {
+      "id": "mums-chicken-curry",
+      "input": { "text": "chicken curry the way my mum makes it, with potatoes, feeds 5" },
+      "expect": {
+        "no_food": false,
+        "servings": 5,
+        "per_serving": [300, 700],
+        "must_mention": ["chicken|ayam", "potato|kentang"]
+      }
+    },
+    {
+      "id": "nasi-lemak-spread",
+      "input": {
+        "text": "nasi lemak with sambal, fried anchovies, peanuts, cucumber and a boiled egg, feeds 4"
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["nasi lemak"],
+        "servings": 4,
+        "per_serving": [450, 1000],
+        "ingredients": [6, 20],
+        "must_mention": ["coconut|santan", "rice|beras", "anchov|ikan bilis"]
+      }
+    },
+    {
+      "id": "beef-tacos-stated",
+      "input": {
+        "text": "Beef tacos for 4. 500g minced beef, 12 corn tortillas, cheddar, salsa, sour cream."
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["taco"],
+        "name_lacks": ["nasi", "goreng"],
+        "servings": 4,
+        "per_serving": [450, 1100],
+        "kept": [
+          { "match": "tortilla", "amount": 12, "unit": "piece" },
+          { "match": "beef", "amount": 500, "unit": "g" }
+        ]
+      }
+    },
+    {
+      "id": "beef-tacos-eight",
+      "input": { "text": "beef tacos with salsa and coriander, makes 8 tacos" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["taco"],
+        "name_lacks": ["nasi", "goreng", "kampung"],
+        "per_serving": [120, 500]
+      }
+    },
+    {
+      "id": "coq-au-vin-no-amounts",
+      "note": "A dish named with no amounts is still a dish. This came back empty while the no-food escape was written loosely.",
+      "input": { "text": "Coq au vin, feeds 6." },
+      "expect": {
+        "no_food": false,
+        "name_has": ["coq au vin"],
+        "servings": 6,
+        "per_serving": [350, 850],
+        "must_mention": ["wine", "chicken"]
+      }
+    },
+    {
+      "id": "carbonara-stated",
+      "input": {
+        "text": "Spaghetti carbonara for 2. 200g spaghetti, 100g guanciale, 2 eggs, 50g pecorino."
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["carbonara"],
+        "servings": 2,
+        "per_serving": [550, 1100],
+        "kept": [
+          { "match": "spaghetti|pasta", "amount": 200, "unit": "g" },
+          { "match": "guanciale", "amount": 100, "unit": "g" },
+          { "match": "egg", "amount": 2, "unit": "piece" }
+        ],
+        "must_not": ["cream", "krim"]
+      }
+    },
+    {
+      "id": "carbonara-no-cream",
+      "input": { "text": "spaghetti carbonara for 2" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["carbonara"],
+        "name_lacks": ["nasi", "goreng", "mee"],
+        "servings": 2,
+        "per_serving": [450, 950],
+        "must_mention": ["egg"],
+        "must_not": ["cream", "krim"]
+      }
+    },
+    {
+      "id": "thai-green-curry",
+      "note": "Answered 'Kari hijau ayam' while the prompt described the app rather than the dish.",
+      "input": {
+        "text": "Thai green curry with chicken, feeds 4. 500g chicken, 400ml coconut milk, green curry paste, aubergine."
+      },
+      "expect": {
+        "no_food": false,
+        "name_lacks": ["kari"],
+        "servings": 4,
+        "per_serving": [300, 800],
+        "kept": [{ "match": "coconut", "amount": 400, "unit": "ml" }]
+      }
+    },
+    {
+      "id": "chicken-shawarma",
+      "input": { "text": "Chicken shawarma wraps for 4, with garlic sauce and pickles." },
+      "expect": {
+        "no_food": false,
+        "name_has": ["shawarma"],
+        "servings": 4,
+        "per_serving": [350, 1000]
+      }
+    },
+    {
+      "id": "kimchi-jjigae",
+      "input": { "text": "Kimchi jjigae with pork belly and tofu, feeds 3." },
+      "expect": {
+        "no_food": false,
+        "name_has": ["kimchi"],
+        "servings": 3,
+        "per_serving": [250, 800],
+        "must_mention": ["kimchi", "tofu", "pork"]
+      }
+    },
+    {
+      "id": "nasi-goreng-needs-oil",
+      "note": "A pot whose steps say fry and whose list has no oil understates the meal.",
+      "input": {
+        "text": "Nasi goreng for 2, leftover rice, 2 eggs, a bit of chicken, kecap manis."
+      },
+      "expect": {
+        "no_food": false,
+        "servings": 2,
+        "per_serving": [350, 900],
+        "must_mention": ["oil|butter|ghee|minyak|lard"]
+      }
+    },
+    {
+      "id": "fried-rice-stated-amounts",
+      "note": "Their amounts are fixed; the soy sauce, garlic and salt they did not mention are still added.",
+      "input": { "text": "fried rice with 500g cooked rice, 3 eggs, 2 tablespoons oil, feeds 3" },
+      "expect": {
+        "no_food": false,
+        "servings": 3,
+        "per_serving": [300, 750],
+        "kept": [
+          { "match": "rice", "amount": 500, "unit": "g" },
+          { "match": "egg", "amount": 3, "unit": "piece" }
+        ],
+        "must_mention": ["oil", "soy|garlic|salt|kicap"]
+      }
+    },
+    {
+      "id": "imperial-chili",
+      "note": "Pounds become grams (2 lb is about 907 g).",
+      "input": {
+        "text": "2 lbs ground beef chili with 2 cans of kidney beans and a can of tomatoes, feeds 8."
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["chili|chilli"],
+        "servings": 8,
+        "per_serving": [250, 700],
+        "kept": [{ "match": "beef", "amount": 907, "unit": "g", "slack": 60 }]
+      }
+    },
+    {
+      "id": "banana-bread-oven",
+      "note": "Baking needs an oven temperature in the steps.",
+      "input": { "text": "banana bread with 3 ripe bananas, makes 10 slices" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["banana"],
+        "servings": 10,
+        "per_serving": [150, 400],
+        "must_mention": ["flour", "banana", "bake|oven|°C|C for"]
+      }
+    },
+    {
+      "id": "moussaka-feeds-8",
+      "note": "Once came back without the bechamel or the frying oil and priced a 600 kcal serving at 258.",
+      "input": { "text": "Moussaka, feeds 8" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["moussaka"],
+        "servings": 8,
+        "per_serving": [380, 800],
+        "must_mention": ["aubergine|eggplant|terung", "bechamel|béchamel|white sauce|milk"]
+      }
+    },
+    {
+      "id": "bak-kut-teh-soup",
+      "input": { "text": "bak kut teh with pork ribs, feeds 4" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["bak kut teh"],
+        "servings": 4,
+        "per_serving": [250, 900],
+        "must_mention": ["pork"]
+      }
+    },
+    {
+      "id": "malay-written-sayur-lodeh",
+      "note": "Written in Malay; the answer keeps the dish's own name.",
+      "input": { "text": "Sayur lodeh untuk 6 orang, guna kobis, lobak merah, tauhu dan santan" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["lodeh"],
+        "servings": 6,
+        "per_serving": [150, 500],
+        "must_mention": ["santan|coconut", "tauhu|tofu"]
+      }
+    },
+    {
+      "id": "chinese-written-tomato-egg",
+      "note": "Chinese: stir-fried tomato and egg for two.",
+      "input": { "text": "番茄炒蛋，两人份，4个鸡蛋，3个番茄" },
+      "expect": {
+        "no_food": false,
+        "servings": 2,
+        "per_serving": [180, 450],
+        "kept": [
+          { "match": "egg|蛋", "amount": 4, "unit": "piece" },
+          { "match": "tomato|番茄", "amount": 3, "unit": "piece" }
+        ],
+        "must_mention": ["oil|油"]
+      }
+    },
+    {
+      "id": "kuih-batch",
+      "note": "A tray of kuih counted as pieces.",
+      "input": { "text": "Kuih lapis, one 20cm tray, cut into 25 pieces" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["lapis"],
+        "servings": 25,
+        "per_serving": [50, 200],
+        "must_mention": [
+          "rice flour|tepung beras|tapioca|sago|starch",
+          "coconut|santan",
+          "sugar|gula"
+        ]
+      }
+    },
+    {
+      "id": "two-ingredient-terse",
+      "input": { "text": "milo dinosaur, 1 glass" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["milo"],
+        "servings": 1,
+        "per_serving": [200, 500],
+        "must_mention": ["milo"]
+      }
+    },
+    {
+      "id": "not-a-recipe-reminder",
+      "input": { "text": "remind me to buy milk on the way home" },
+      "expect": { "no_food": true }
+    },
+    {
+      "id": "not-a-recipe-question",
+      "input": { "text": "what's a good recipe for dinner?" },
+      "expect": { "no_food": true }
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "label": "claude:claude-haiku-5-5 {\"effort\":\"low\"}",
+  "run": "2026-10-09T06-15-00_claude-claude-haiku-5-5",
+  "code": {
+    "commit": "5b4d0f9",
+    "branch": "llm-eval-pipeline",
+    "dirty": false
+  },
+  "model": "claude:claude-haiku-5-5",
+  "modelInfo": {
+    "slug": "claude:claude-haiku-5-5",
+    "found": true,
+    "vision": true,
+    "jsonMode": true,
+    "transport": "claude-code",
+    "pricing": {
+      "prompt": 1.0000000000000001e-7,
+      "completion": 5e-7,
+      "cacheRead": 1.0000000000000002e-8,
+      "cacheWrite": 1.25e-7
+    }
+  },
+  "judge": {
+    "model": "opus",
+    "effort": null
+  },
+  "options": {
+    "repeat": 1,
+    "grep": null,
+    "limit": null,
+    "timeoutMs": null,
+    "body": {
+      "effort": "low"
+    }
+  },
+  "finishedAt": "2026-10-09T06:24:58.282Z",
+  "overall": 86.75959595959597,
+  "reliability": 1,
+  "p50Ms": 8067,
+  "p95Ms": 22883,
+  "modelCostUsd": 0.09564484000000001,
+  "modelCostUncachedUsd": 0.10072569999999995,
+  "modelCostPerAnswerUsd": 0.0009564484000000001,
+  "tokens": {
+    "input": 295902,
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "output": 142271,
+    "reasoning": 89007,
+    "cacheKnown": false
+  },
+  "cacheHitRate": null,
+  "judgeCostUsd": 3.6786588,
+  "judgeCostReusedUsd": 0.067688,
+  "judgeVerdictsReused": 2,
+  "tasks": [
+    {
+      "task": "suggest-meal",
+      "title": "What to eat",
+      "weight": 8,
+      "cases": 18,
+      "graded": 18,
+      "score": 74.53888888888888,
+      "failures": 0,
+      "skipped": 0,
+      "harnessErrors": 0,
+      "checkPassRate": 1,
+      "p50Ms": 18568,
+      "costUsd": 0.03577524000000001
+    },
+    {
+      "task": "recipe-describe",
+      "title": "Typed recipe",
+      "weight": 6,
+      "cases": 25,
+      "graded": 25,
+      "score": 90.4,
+      "failures": 0,
+      "skipped": 0,
+      "harnessErrors": 0,
+      "checkPassRate": 0.9948186528497409,
+      "p50Ms": 14137,
+      "costUsd": 0.037769
+    },
+    {
+      "task": "recipe-photo",
+      "title": "Recipe from photo",
+      "weight": 3,
+      "cases": 9,
+      "graded": 9,
+      "score": 77.77777777777777,
+      "failures": 0,
+      "skipped": 0,
+      "harnessErrors": 0,
+      "checkPassRate": 0.9032258064516129,
+      "p50Ms": 8806,
+      "costUsd": 0.0118836
+    },
+    {
+      "task": "recipe-review",
+      "title": "Recipe publishing gate",
+      "weight": 4,
+      "cases": 22,
+      "graded": 22,
+      "score": 99.23636363636365,
+      "failures": 0,
+      "skipped": 0,
+      "harnessErrors": 0,
+      "checkPassRate": 1,
+      "p50Ms": 3977,
+      "costUsd": 0.0037281999999999997
+    },
+    {
+      "task": "social-moderation",
+      "title": "Social moderation",
+      "weight": 4,
+      "cases": 26,
+      "graded": 26,
+      "score": 100,
+      "failures": 0,
+      "skipped": 0,
+      "harnessErrors": 0,
+      "checkPassRate": 1,
+      "p50Ms": 4165,
+      "costUsd": 0.0064888
+    }
+  ]
+}

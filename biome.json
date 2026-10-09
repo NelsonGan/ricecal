@@ -13,7 +13,8 @@
       "!**/dist",
       "!**/*.d.ts",
       "!**/expo-env.d.ts",
-      "!apps/supabase/templates"
+      "!apps/supabase/templates",
+      "!apps/evals/history"
     ]
   },
   "formatter": {
@@ -62,7 +63,7 @@
       }
     },
     {
-      "includes": ["apps/supabase/functions/**", "apps/supabase/scripts/eval-prompts.ts"],
+      "includes": ["apps/supabase/functions/**", "apps/evals/**"],
       "linter": {
         "rules": {
           "suspicious": {

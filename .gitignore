@@ -74,13 +74,18 @@ deno.lock
 .dev.vars
 .dev.vars.*
 
-# Photographs the scan eval fetches from their source URLs. The cases carry
-# the URL; this is only the copy.
-apps/supabase/data/scan-eval/.cache/
+# The model eval's working state: photos fetched from the URLs the cases cite,
+# cached judge verdicts, every run's answers, and the OpenRouter key. The key is
+# also caught by the bare `.env` rule above; this repo is public, so it is named
+# twice.
+apps/evals/.cache/
+apps/evals/runs/
+apps/evals/.env
 
 # The photo benchmark's plates. Somebody's actual lunch, photographed on their
 # own phone, so the images stay out of the repo and only the reference figures
-# and what was seen in each are committed. See `photo-bench.mjs`.
+# and what was seen in each are committed, as the `bench-*` cases in
+# `apps/evals/datasets/scan-photo.json`.
 apps/supabase/data/photo-bench/
 
 # The researched dish payloads and the reports a load writes.

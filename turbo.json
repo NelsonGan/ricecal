@@ -13,9 +13,9 @@
     // hardcoded so a rehearsal can point at a copy, since D1 has no equivalent
     // of the local Supabase stack to practise a load against.
     "CATALOGUE_D1",
-    // The two ways `eval:scan` and `eval:recipe` get a session now that captcha
-    // is on and password sign-in is refused: a token handed straight in, or the
-    // service-role key they can mint one with. See `otpToken` in
+    // The two ways a script driving the deployed functions gets a session now
+    // that captcha is on and password sign-in is refused: a token handed straight
+    // in, or the service-role key it can mint one with. See `otpToken` in
     // `apps/supabase/scripts/lib/live.mjs`.
     "EVAL_ACCESS_TOKEN",
     "SUPABASE_SERVICE_ROLE_KEY"
