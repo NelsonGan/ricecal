@@ -32,7 +32,7 @@
     "foods:dupes": "node --no-warnings apps/supabase/scripts/foods-dupes.mjs",
     "foods:alias": "node --no-warnings apps/supabase/scripts/foods-alias.mjs",
     "foods:icons": "node --no-warnings apps/supabase/scripts/foods-icons.mjs",
-    "eval:llm": "node --no-warnings apps/supabase/llm-eval/run.mjs",
+    "eval:llm": "node --no-warnings apps/evals/run.mjs",
     "workouts:seed": "node --no-warnings apps/supabase/scripts/seed-workout-previews.mjs",
     "eas": "pnpm --filter @ricecal/mobile exec eas",
     "eas:credentials": "pnpm --filter @ricecal/mobile exec eas credentials",

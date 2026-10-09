@@ -33,7 +33,7 @@ const NOT_THE_MODEL = new Set([401, 402, 403])
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
- * The key, from the environment or from `apps/supabase/llm-eval/.env`
+ * The key, from the environment or from `apps/evals/.env`
  * (gitignored; this repo is public).
  *
  * Supabase's secrets endpoint returns a digest rather than the key, so the

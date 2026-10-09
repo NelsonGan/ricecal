@@ -48,6 +48,7 @@ project works is here.
 apps/mobile      Expo / React Native app (expo-router, NativeWind, react-query)
 apps/supabase    Postgres schema, RLS, pgTAP tests, Deno edge functions
 apps/cloudflare  workers/ and d1/, one directory per Worker and per database
+apps/evals       the model eval (pnpm eval:llm); local only, nothing in it ships
 packages/shared  the few constants both sides need
 ```
 
@@ -5121,7 +5122,7 @@ pnpm eval:llm --report                                     rebuild history/leade
 pnpm eval:llm --list | --dry-run                           tasks; validate data, fetch photos
 ```
 
-It lives in `apps/supabase/llm-eval/`, outside the app and outside every
+It lives in `apps/evals/`, outside the app and outside every
 function's import graph, so nothing in it ships.
 
 **It runs the app's own code, not a copy of it.** Node imports `llm.ts`,
@@ -5206,7 +5207,7 @@ had uncommitted edits) and its report are written to
 `history/<time>_<model>.json` and `.md`, `history/leaderboard.md` is rebuilt
 from every entry, and those three files alone are committed (`git commit
 --only`, so nothing else that happens to be staged goes with them).
-`git log apps/supabase/llm-eval/history` is the record of every run.
+`git log apps/evals/history` is the record of every run.
 `--no-commit` writes without committing and `--no-record` leaves the history
 alone. `--record <run dir>` records a run from `runs/` after the fact, and with
 `--tasks` only the tasks that ran cleanly, which is how a run cut short by
@@ -5218,7 +5219,7 @@ smoke test with `--limit` or `--grep` stays in the history without standing in
 for a measurement.
 
 **The OpenRouter key** is read from `OPENROUTER_API_KEY` or
-`apps/supabase/llm-eval/.env` (gitignored; the repo is public). It has to be put
+`apps/evals/.env` (gitignored; the repo is public). It has to be put
 there by somebody who holds it: Supabase's secrets endpoint returns a digest, not
 the key.
 
@@ -5747,7 +5748,7 @@ returns hashes, not recoverable values. Local auth and database keys must stay
 local; only the AI provider credential is shared. Stop and start the local stack
 after changing the env file, and leave `MOCK_AI` unset. `pnpm eval:llm` does not
 need the local stack at all: it imports the model code and reads its own key from
-`apps/supabase/llm-eval/.env`. See "The model paths".
+`apps/evals/.env`. See "The model paths".
 
 **Mock AI** is on whenever `OPENROUTER_API_KEY` is unset (or `MOCK_AI=true`), so
 a local stack scans with no config and production can never mock silently.
