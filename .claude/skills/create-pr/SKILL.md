@@ -28,6 +28,7 @@ Start with one sentence explaining what the PR achieves. No Summary heading is n
 
 - State what was actually tested, where, and the result. For mobile apps, name the platform/device or simulator and whether the backend was local, staging, or production when relevant.
 - Include useful evidence: screenshots or recordings for visible changes when available, test results, or a short description of the flows checked. Include before/after images only if both were captured.
+- Commit PR images to `.github/pr-assets/` on the PR branch; do not create another folder for them. Embed each one with a `raw.githubusercontent.com` URL pinned to the commit SHA, so it still renders after the branch is deleted.
 - Link or embed only evidence that a PR reviewer can access. Local filesystem paths do not work on GitHub. Do not invent attachments, expose private account data, or claim unrun checks passed. If an image cannot be attached, report the observed UI checks instead.
 - Call out relevant untested platforms or paths. Distinguish automated checks from manual verification and pending CI.
 
