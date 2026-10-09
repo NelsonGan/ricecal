@@ -13,7 +13,8 @@
       "!**/dist",
       "!**/*.d.ts",
       "!**/expo-env.d.ts",
-      "!apps/supabase/templates"
+      "!apps/supabase/templates",
+      "!apps/supabase/llm-eval/history"
     ]
   },
   "formatter": {

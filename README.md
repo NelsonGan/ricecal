@@ -5117,7 +5117,7 @@ pnpm eval:llm --models qwen/qwen3.7-flash                  one OpenRouter model
 pnpm eval:llm --models a/one,b/two --repeat 3              compare two
 pnpm eval:llm --models claude:claude-haiku-5-5 --body '{"effort":"low"}'
 pnpm eval:llm --models a/one --tasks refine --grep satay   a slice
-pnpm eval:llm --report                                     leaderboard over saved runs
+pnpm eval:llm --report                                     rebuild history/leaderboard.md
 pnpm eval:llm --list | --dry-run                           tasks; validate data, fetch photos
 ```
 
@@ -5182,14 +5182,38 @@ computed from them are shown to the judge and reported as a pass rate beside its
 score. They are blunt: a synonym fails `name_has`, and the judge is told to say so
 rather than punish it.
 
-**What a run costs.** The judge is most of it: about six cents an answer on
-Opus, so roughly $15 to $20 for the full suite, less for anything cached. The
-model under test is whatever OpenRouter charges, which `usage.cost` reports per
-call. Every run writes `runs/<time>_<model>/` (gitignored): `results.jsonl` with
-each request, reply, usage, latency and verdict, `summary.json`, and
-`report.md` with the per-task table, the lowest scoring answers and the reasons
-any answer failed. `--report` keeps `runs/leaderboard.md`, the latest run per
-model and request overrides.
+**What a run costs, cache included.** Every call's usage is split into fresh
+input, cache reads, cache writes and output. OpenRouter's `usage.cost` already
+bills cached prompt tokens at the cache rate, and it is the figure used; a record
+without one is priced from the model's catalogue rates, cache reads and writes at
+their own. The summary carries the cost, the same tokens priced with nothing
+cached, the share of prompt tokens read from cache, and the cost an answer.
+Production sends the same system prompts all day, so the cached figure is the
+realistic one. Through `claude -p` it is not: each process writes the cache at
+twice the input rate and concurrent ones rarely read it back, so there the cached
+cost can exceed the uncached one. The judge is most of a run's cost, about four
+cents an answer on Opus with the per-task context in its cached system prompt,
+so roughly $11 for the full suite. Verdicts reused from `.cache/judge/` cost
+nothing again and are reported beside the fresh spend.
+
+**Every run is committed to `history/`.** `runs/<time>_<model>/` (gitignored)
+holds everything a run saw: `results.jsonl` with each request, reply, usage,
+latency and verdict, `summary.json` and `report.md`. When a run finishes, its
+summary (with the commit and branch it ran on, and whether the prompts or cases
+had uncommitted edits) and its report are written to
+`history/<time>_<model>.json` and `.md`, `history/leaderboard.md` is rebuilt
+from every entry, and those three files alone are committed (`git commit
+--only`, so nothing else that happens to be staged goes with them).
+`git log apps/supabase/llm-eval/history` is the record of every run.
+`--no-commit` writes without committing and `--no-record` leaves the history
+alone. `--record <run dir>` records a run from `runs/` after the fact, and with
+`--tasks` only the tasks that ran cleanly, which is how a run cut short by
+something that was not the model is kept.
+
+The leaderboard takes, per model and request overrides, each task's latest run
+that graded the whole task, so a re-run of one task updates that task and a
+smoke test with `--limit` or `--grep` stays in the history without standing in
+for a measurement.
 
 **The OpenRouter key** is read from `OPENROUTER_API_KEY` or
 `apps/supabase/llm-eval/.env` (gitignored; the repo is public). It has to be put
@@ -5219,7 +5243,7 @@ model id it does not recognise at a fallback rate about fifty times Haiku 5.5's.
 **Use `--repeat` when comparing.** One pass is not a measurement: the same
 sentence resolved to tier 1 at 657 kcal, tier 4 at 525 and tier 3 at 821 on
 three consecutive runs of identical code. Compare leaderboard rows only when
-they graded the same tasks with the same `--repeat` (the answers column).
+they cover every task, graded with the same `--repeat`.
 
 **What it does not grade** is everything after the model: the upload, the
 catalogue search, the ratio gate, portion sizing, the row that lands in the

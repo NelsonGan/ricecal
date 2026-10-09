@@ -94,6 +94,18 @@ const PRICES = {
   'claude-haiku-4-5': { input: 1, output: 5 },
 }
 
+/** Per-token prices for a model, in the shape OpenRouter's catalogue gives. */
+export function pricingOf(model) {
+  const price = PRICES[model]
+  if (!price) return null
+  return {
+    prompt: price.input / 1e6,
+    completion: price.output / 1e6,
+    cacheRead: (price.input * 0.1) / 1e6,
+    cacheWrite: (price.input * 1.25) / 1e6,
+  }
+}
+
 /**
  * What one call cost at list price: cache writes at 1.25x (5 minutes) or 2x
  * (1 hour) the input rate, cache reads at 0.1x, thinking billed as output.
@@ -161,20 +173,28 @@ export async function completeWithClaude({ model, request, timeoutMs, effort }) 
     extraArgs: effort ? ['--effort', effort] : [],
   })
   const usage = result.usage ?? {}
+  const cacheRead = usage.cache_read_input_tokens ?? 0
+  const cacheWrite = usage.cache_creation_input_tokens ?? 0
+  const prompt = (usage.input_tokens ?? 0) + cacheRead + cacheWrite
+  const price = PRICES[model]
   return {
     model,
     provider: 'claude-code',
     choices: [
       { message: { role: 'assistant', content: result.result ?? '' }, finish_reason: 'stop' },
     ],
+    // OpenRouter's usage shape, so one function totals both transports.
     usage: {
-      prompt_tokens:
-        (usage.input_tokens ?? 0) +
-        (usage.cache_creation_input_tokens ?? 0) +
-        (usage.cache_read_input_tokens ?? 0),
+      prompt_tokens: prompt,
+      prompt_tokens_details: { cached_tokens: cacheRead, cache_write_tokens: cacheWrite },
       completion_tokens: usage.output_tokens ?? 0,
-      reasoning_tokens: usage.output_tokens_details?.thinking_tokens ?? 0,
+      completion_tokens_details: {
+        reasoning_tokens: usage.output_tokens_details?.thinking_tokens ?? 0,
+      },
       cost: listPrice(model, usage) ?? result.total_cost_usd ?? 0,
+      cost_uncached: price
+        ? (prompt * price.input + (usage.output_tokens ?? 0) * price.output) / 1e6
+        : null,
     },
   }
 }
