@@ -23,7 +23,9 @@ packages/shared  the few constants both sides need
 final UI and embed the screenshots in the PR description using URLs reviewers
 can access. Local file paths and a text-only report are not enough. Keep private
 account details out of the images. Include before/after screenshots only when
-both were actually captured.
+both were actually captured. Commit the images to `.github/pr-assets/` and embed
+them with a `raw.githubusercontent.com` URL pinned to the commit SHA, so they
+still render after the branch is deleted.
 
 **Expo has changed.** Read the versioned docs at
 <https://docs.expo.dev/versions/v57.0.0/> before writing any Expo code. Do not
