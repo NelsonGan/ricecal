@@ -540,9 +540,16 @@ OpenRouter model and has Claude Opus judge each answer; `run-model-evals` is the
 skill that drives it. The README's "The model paths" has the whole of it. What
 costs time here:
 
-- **A full run is about 300 judged answers**, roughly half an hour and $15 to $20
-  of Opus, almost all of it the judge. Smoke test with `--limit 1` first, and
-  run the full suite in the background.
+- **A full run is about 300 judged answers**, roughly an hour and $11 of Opus,
+  almost all of it the judge. Smoke test with `--limit 1` first, and run the full
+  suite in the background.
+- **Every run commits itself** to `apps/supabase/llm-eval/history/` on the
+  current branch (only those files). Pass `--no-commit` on a branch where that
+  would be wrong, and `--record <run dir> --tasks …` to keep the clean part of a
+  run that something other than the model cut short.
+- **The judge and `claude:` models share the Claude Code account's usage
+  limits.** A run that hits the weekly limit records the rest as not graded,
+  not as zeros; re-run those tasks after the reset.
 - **A wall of identical failures is a parameter, not a model.** A model that
   refuses `reasoning: {enabled: false}` or `response_format` fails every case at
   the first request. The report's "Model failures" section names it; `--body`

@@ -21,6 +21,9 @@
  *   --judge-effort e     low | medium | high | xhigh | max
  *   --no-judge           automatic checks only; scores are provisional
  *   --rejudge            ignore cached verdicts
+ *   --no-commit          write the run into history/ but do not commit it
+ *   --no-record          leave history/ alone (a throwaway run)
+ *   --record <run dir>   record a finished run from runs/ (with --tasks, only those)
  *   --timeout ms         per model request (default 25000, the app's own; 60000 for
  *                        claude:, whose process start-up is not the model's time)
  *   --body json          merged into every OpenRouter request, e.g.
@@ -28,13 +31,23 @@
  *
  * `claude:<model>` runs on Claude Code's own login and needs no OpenRouter key.
  * The OpenRouter key comes from OPENROUTER_API_KEY or `apps/supabase/llm-eval/.env` (gitignored).
- * Results land in `apps/supabase/llm-eval/runs/` (gitignored).
+ * Everything a run saw lands in `runs/` (gitignored). Its summary and report go to
+ * `history/` and are committed, so `git log apps/supabase/llm-eval/history` is the
+ * record of every run; `--report` rebuilds `history/leaderboard.md` from it.
  */
 
-import { appendFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { pricingOf } from './lib/claude.mjs'
+import { buildLeaderboard, recordRun } from './lib/history.mjs'
 import { judge } from './lib/judge.mjs'
-import { costOf, describeModel, installInterceptor, loadKey, withModel } from './lib/openrouter.mjs'
+import {
+  describeModel,
+  installInterceptor,
+  loadKey,
+  usageTotals,
+  withModel,
+} from './lib/openrouter.mjs'
 import { MissingPhoto } from './lib/photos.mjs'
 import { loadApp } from './lib/runtime.mjs'
 import { TASKS, taskById } from './lib/tasks.mjs'
@@ -72,6 +85,8 @@ const options = {
   judgeEffort: opt('judge-effort'),
   noJudge: flag('no-judge'),
   rejudge: flag('rejudge'),
+  noRecord: flag('no-record'),
+  noCommit: flag('no-commit'),
   timeoutMs: opt('timeout') ? Number(opt('timeout')) : null,
   body: opt('body') ? JSON.parse(opt('body')) : {},
 }
@@ -200,14 +215,18 @@ async function runCase({ app, task, kase, model, info, round, judgeSlot }) {
   }
   const calls = ctx.calls
   const ms = Date.now() - started - calls.reduce((n, c) => n + c.waitedMs, 0)
-  const cost = costOf(calls, info.pricing)
+  const usage = usageTotals(
+    calls.map((c) => c.usage),
+    info.pricing,
+  )
   const raw = calls.at(-1)?.content ?? null
   const record = {
     ...base,
     ms,
     modelCalls: calls.length,
     throttled: calls.reduce((n, c) => n + c.throttled, 0),
-    costUsd: cost,
+    costUsd: usage.cost,
+    tokens: usage,
     usage: calls.map((c) => c.usage),
     providers: [...new Set(calls.map((c) => c.provider).filter(Boolean))],
     finish: calls.map((c) => c.finish),
@@ -263,7 +282,7 @@ async function runCase({ app, task, kase, model, info, round, judgeSlot }) {
 // Summaries
 // ---------------------------------------------------------------------------
 
-function summarise(model, info, tasks, results) {
+function summarise(model, info, tasks, results, meta = currentMeta()) {
   const byTask = tasks.map((task) => {
     const rows = results.filter((r) => r.task === task.id)
     const graded = rows.filter((r) => typeof r.score === 'number')
@@ -284,9 +303,18 @@ function summarise(model, info, tasks, results) {
         rows.filter((r) => r.ms).map((r) => r.ms),
         50,
       ),
-      costUsd: rows.reduce((s, r) => s + (r.costUsd ?? 0), 0),
+      costUsd: usageTotals(
+        rows.flatMap((r) => r.usage ?? []),
+        info.pricing,
+      ).cost,
     }
   })
+  const tokens = usageTotals(
+    results.flatMap((r) => r.usage ?? []),
+    info.pricing,
+  )
+  const prompt = tokens.input + tokens.cacheRead + tokens.cacheWrite
+  const judged = results.filter((r) => typeof r.judgeCostUsd === 'number')
   const scored = byTask.filter((t) => t.score !== null)
   const weight = scored.reduce((s, t) => s + t.weight, 0)
   const ran = results.filter(
@@ -296,6 +324,34 @@ function summarise(model, info, tasks, results) {
   return {
     model,
     modelInfo: info,
+    judge: meta.judge,
+    options: meta.options,
+    finishedAt: meta.finishedAt,
+    overall: weight ? scored.reduce((s, t) => s + t.weight * t.score, 0) / weight : null,
+    reliability: ran.length
+      ? 1 - ran.filter((r) => r.status === 'model_failed').length / ran.length
+      : null,
+    p50Ms: pct(latencies, 50),
+    p95Ms: pct(latencies, 95),
+    // What the model cost, prompt-cache reads and writes priced at their own
+    // rates, and what the same tokens would cost with nothing cached.
+    modelCostUsd: tokens.cost,
+    modelCostUncachedUsd: tokens.uncachedCost,
+    modelCostPerAnswerUsd: ran.length ? tokens.cost / ran.length : null,
+    tokens: { ...tokens, cost: undefined, uncachedCost: undefined },
+    cacheHitRate: prompt && tokens.cacheKnown ? tokens.cacheRead / prompt : null,
+    // The judge: what this run spent, and what the verdicts it reused from
+    // the cache cost when they were first made.
+    judgeCostUsd: judged.reduce((s, r) => s + (r.cached ? 0 : r.judgeCostUsd), 0),
+    judgeCostReusedUsd: judged.reduce((s, r) => s + (r.cached ? r.judgeCostUsd : 0), 0),
+    judgeVerdictsReused: judged.filter((r) => r.cached).length,
+    tasks: byTask,
+  }
+}
+
+/** What a run was asked to do, as the summary records it. */
+function currentMeta() {
+  return {
     judge: options.noJudge
       ? null
       : { model: options.judgeModel, effort: options.judgeEffort ?? null },
@@ -307,16 +363,27 @@ function summarise(model, info, tasks, results) {
       body: options.body,
     },
     finishedAt: new Date().toISOString(),
-    overall: weight ? scored.reduce((s, t) => s + t.weight * t.score, 0) / weight : null,
-    reliability: ran.length
-      ? 1 - ran.filter((r) => r.status === 'model_failed').length / ran.length
-      : null,
-    p50Ms: pct(latencies, 50),
-    p95Ms: pct(latencies, 95),
-    modelCostUsd: results.reduce((s, r) => s + (r.costUsd ?? 0), 0),
-    judgeCostUsd: results.reduce((s, r) => s + (r.cached ? 0 : (r.judgeCostUsd ?? 0)), 0),
-    tasks: byTask,
   }
+}
+
+/** One line on the money: model cost with the cache's effect, and the judge's. */
+function costLine(summary) {
+  const uncached =
+    summary.modelCostUncachedUsd === null || summary.modelCostUncachedUsd === undefined
+      ? ''
+      : ` ($${summary.modelCostUncachedUsd.toFixed(4)} with nothing cached)`
+  const hit =
+    summary.cacheHitRate === null
+      ? ''
+      : `, ${fmt(summary.cacheHitRate * 100, 0)}% of prompt tokens from cache`
+  const perAnswer =
+    summary.modelCostPerAnswerUsd === null
+      ? ''
+      : `, $${summary.modelCostPerAnswerUsd.toFixed(5)} an answer`
+  const reused = summary.judgeVerdictsReused
+    ? ` (+ $${summary.judgeCostReusedUsd.toFixed(2)} of ${summary.judgeVerdictsReused} cached verdicts reused)`
+    : ''
+  return `model $${summary.modelCostUsd.toFixed(4)}${uncached}${perAnswer}${hit} · judge $${summary.judgeCostUsd.toFixed(2)}${reused}`
 }
 
 function reportMarkdown(summary, results) {
@@ -324,8 +391,9 @@ function reportMarkdown(summary, results) {
     `# ${summary.model}`,
     '',
     `Overall **${fmt(summary.overall)}** / 100 · reliability ${fmt((summary.reliability ?? 0) * 100)}% · ` +
-      `p50 ${fmt((summary.p50Ms ?? 0) / 1000)} s · p95 ${fmt((summary.p95Ms ?? 0) / 1000)} s · ` +
-      `model $${summary.modelCostUsd.toFixed(4)} · judge $${summary.judgeCostUsd.toFixed(2)}`,
+      `p50 ${fmt((summary.p50Ms ?? 0) / 1000)} s · p95 ${fmt((summary.p95Ms ?? 0) / 1000)} s`,
+    '',
+    costLine(summary),
     '',
     summary.judge
       ? `Judged by \`${summary.judge.model}\`.`
@@ -405,9 +473,7 @@ function printSummary(summary, results) {
       ]),
     ),
   )
-  console.log(
-    `model $${summary.modelCostUsd.toFixed(4)} · judge $${summary.judgeCostUsd.toFixed(2)}`,
-  )
+  console.log(costLine(summary))
   const notGraded = results.filter((r) => ['harness_error', 'judge_failed'].includes(r.status))
   if (notGraded.length) {
     console.log(
@@ -456,42 +522,50 @@ async function commandDryRun() {
 }
 
 async function commandReport() {
-  const dirs = await readdir(RUNS).catch(() => [])
-  const latest = new Map()
-  for (const dir of dirs.sort()) {
-    try {
-      const summary = JSON.parse(await readFile(`${RUNS}${dir}/summary.json`, 'utf8'))
-      // A run that graded nothing (a bad key, an interrupted start) says
-      // nothing about the model and must not replace one that did.
-      if (summary.overall === null) continue
-      // The same model with request overrides is a different configuration.
-      const body = summary.options?.body ?? {}
-      const label = Object.keys(body).length
-        ? `${summary.model} ${JSON.stringify(body)}`
-        : summary.model
-      latest.set(label, { ...summary, label, dir })
-    } catch {}
+  console.log(await buildLeaderboard(TASKS))
+  console.log(`Written to ${fileURLToPath(new URL('history/leaderboard.md', ROOT))}`)
+}
+
+/** Commit a finished run to `history/`, unless --no-record. */
+async function record(summary, report, run) {
+  if (options.noRecord) return
+  const result = await recordRun({ summary, report, run, tasks: TASKS, commit: !options.noCommit })
+  if (result.committed)
+    console.log(`Recorded in history/${run}.json and committed (${result.committed})`)
+  else if (result.error)
+    console.warn(`Recorded in history/${run}.json but not committed: ${result.error}`)
+  else console.log(`Recorded in history/${run}.json (not committed)`)
+}
+
+/**
+ * Record a run that finished before it could be, from its `runs/` directory:
+ * one recorded before history existed, or one whose tail was lost to something
+ * that was not the model (--tasks keeps only the tasks that ran cleanly).
+ */
+async function commandRecord() {
+  const run = opt('record').replace(/\/$/, '').split('/').at(-1)
+  const dir = `${RUNS}${run}/`
+  const original = JSON.parse(await readFile(`${dir}summary.json`, 'utf8'))
+  const tasks = options.tasks.length
+    ? selectedTasks()
+    : TASKS.filter((t) => original.tasks.some((x) => x.task === t.id))
+  const results = (await readFile(`${dir}results.jsonl`, 'utf8'))
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line))
+    .filter((r) => tasks.some((t) => t.id === r.task))
+  // A claude: run recorded before cache pricing existed carries no rates.
+  const info = {
+    ...original.modelInfo,
+    pricing: original.modelInfo?.pricing ?? pricingOf(original.model.replace(/^claude:/, '')),
   }
-  if (!latest.size) return console.log('No runs yet. Start one with --models <slug>.')
-  const rows = [...latest.values()].sort((a, b) => (b.overall ?? 0) - (a.overall ?? 0))
-  const taskIds = TASKS.map((t) => t.id)
-  const head = ['model', 'overall', 'answers', 'reliability', 'p50 s', 'model $', ...taskIds, 'run']
-  const lines = [`| ${head.join(' | ')} |`, `|${head.map(() => '---').join('|')}|`]
-  for (const r of rows) {
-    const score = (id) => fmt(r.tasks.find((t) => t.task === id)?.score ?? null, 0)
-    lines.push(
-      `| ${r.label} | ${fmt(r.overall)} | ${r.tasks.reduce((n, t) => n + t.graded, 0)} | ` +
-        `${fmt((r.reliability ?? 0) * 100, 0)}% | ${fmt((r.p50Ms ?? 0) / 1000)} | ` +
-        `${r.modelCostUsd.toFixed(3)} | ${taskIds.map(score).join(' | ')} | ${r.dir} |`,
-    )
-  }
-  const table = `${lines.join('\n')}\n`
-  await writeFile(
-    `${RUNS}leaderboard.md`,
-    `# Model leaderboard\n\nLatest run per model and request overrides. Compare rows only when they graded the same tasks with the same --repeat (the answers column).\n\n${table}`,
-  )
-  console.log(table)
-  console.log(`Written to ${RUNS}leaderboard.md`)
+  const summary = summarise(original.model, info, tasks, results, {
+    judge: original.judge,
+    options: original.options,
+    finishedAt: original.finishedAt,
+  })
+  printSummary(summary, results)
+  await record(summary, reportMarkdown(summary, results), run)
 }
 
 async function commandRun() {
@@ -523,7 +597,7 @@ async function commandRun() {
           vision: true,
           jsonMode: true,
           transport: 'claude-code',
-          pricing: null,
+          pricing: pricingOf(model.slice('claude:'.length)),
         }
       : await describeModel(model)
     if (!info.found) {
@@ -591,13 +665,14 @@ async function commandRun() {
     await writeFile(`${dir}report.md`, reportMarkdown(summary, results))
     printSummary(summary, results)
     console.log(`Report: ${dir}report.md`)
+    await record(summary, reportMarkdown(summary, results), `${stamp}_${slugOf(model)}`)
   }
-  if (options.models.length > 1) await commandReport()
 }
 
 try {
   if (flag('list')) await commandList()
   else if (flag('report')) await commandReport()
+  else if (opt('record')) await commandRecord()
   else if (flag('dry-run')) await commandDryRun()
   else await commandRun()
 } catch (error) {

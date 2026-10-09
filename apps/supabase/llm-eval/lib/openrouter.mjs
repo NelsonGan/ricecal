@@ -78,9 +78,13 @@ export async function describeModel(slug) {
     jsonMode: params.includes('response_format') || params.includes('structured_outputs'),
     reasoningToggle: params.includes('reasoning') || params.includes('include_reasoning'),
     contextLength: model.context_length,
+    // Dollars per token. The cache rates are what a prompt read from or
+    // written to the provider's cache is billed at instead of `prompt`.
     pricing: {
       prompt: Number(model.pricing?.prompt ?? 0),
       completion: Number(model.pricing?.completion ?? 0),
+      cacheRead: model.pricing?.input_cache_read ? Number(model.pricing.input_cache_read) : null,
+      cacheWrite: model.pricing?.input_cache_write ? Number(model.pricing.input_cache_write) : null,
     },
   }
 }
@@ -233,16 +237,61 @@ function readReply(call, text) {
   }
 }
 
-/** Dollars for a list of calls: OpenRouter's own figure, else the list price. */
-export function costOf(calls, pricing) {
-  let total = 0
-  for (const call of calls) {
-    const usage = call.usage ?? {}
-    if (typeof usage.cost === 'number') total += usage.cost
-    else if (pricing)
-      total +=
-        (usage.prompt_tokens ?? 0) * pricing.prompt +
-        (usage.completion_tokens ?? 0) * pricing.completion
+/**
+ * Tokens and dollars for a list of usage records, cache included.
+ *
+ * `cost` is what was actually billed: OpenRouter's own `usage.cost`, which
+ * already prices cached prompt tokens at the cache rate, or the `claude -p`
+ * transport's list-price figure, which does the same. Only when a record has no
+ * cost is it priced here, and then cache reads and writes are priced at their
+ * own rates rather than as fresh input.
+ *
+ * `uncachedCost` is the same tokens priced as if nothing had been cached, so a
+ * report can say how much of the bill the cache took off. Production sends the
+ * same system prompts all day, so the cached figure is the realistic one.
+ *
+ * Takes the raw usage records, so a summary can be rebuilt from an old run's
+ * `results.jsonl`.
+ */
+export function usageTotals(usages, pricing) {
+  const totals = {
+    input: 0,
+    cacheRead: 0,
+    cacheWrite: 0,
+    output: 0,
+    reasoning: 0,
+    cost: 0,
+    uncachedCost: 0,
   }
-  return total
+  let uncachedKnown = true
+  // Records written before the cache split was kept say how many prompt tokens
+  // there were but not how many came from the cache.
+  totals.cacheKnown = true
+  for (const u of usages) {
+    if (!u) continue
+    if (!u.prompt_tokens_details) totals.cacheKnown = false
+    const prompt = u.prompt_tokens ?? 0
+    const cacheRead = u.prompt_tokens_details?.cached_tokens ?? 0
+    const cacheWrite = u.prompt_tokens_details?.cache_write_tokens ?? 0
+    const input = Math.max(0, prompt - cacheRead - cacheWrite)
+    const output = u.completion_tokens ?? 0
+    totals.input += input
+    totals.cacheRead += cacheRead
+    totals.cacheWrite += cacheWrite
+    totals.output += output
+    totals.reasoning += u.completion_tokens_details?.reasoning_tokens ?? u.reasoning_tokens ?? 0
+    if (typeof u.cost === 'number') totals.cost += u.cost
+    else if (pricing) {
+      totals.cost +=
+        input * pricing.prompt +
+        cacheRead * (pricing.cacheRead ?? pricing.prompt) +
+        cacheWrite * (pricing.cacheWrite ?? pricing.prompt) +
+        output * pricing.completion
+    }
+    if (typeof u.cost_uncached === 'number') totals.uncachedCost += u.cost_uncached
+    else if (pricing) totals.uncachedCost += prompt * pricing.prompt + output * pricing.completion
+    else uncachedKnown = false
+  }
+  if (!uncachedKnown) totals.uncachedCost = null
+  return totals
 }

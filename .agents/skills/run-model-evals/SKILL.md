@@ -41,19 +41,35 @@ it with the parameter changed through `--body` (`'{"reasoning":{"effort":"low"}}
 
 ## 3. Full run
 
-Tell the user the cost first: about $15 to $20 of judge (Opus, roughly six cents
-an answer) for the full ~300 answers, plus the model's own cost. Get a yes before
-spending it unless they already asked for the full run.
+Tell the user the cost first: about $11 of judge (Opus, roughly four cents an
+answer) for the full ~300 answers, plus the model's own cost. Get a yes before
+spending it unless they already asked for the full run. The judge and any
+`claude:` model draw on the Claude Code account's usage limits; a run that hits
+one records the rest as not graded, and those tasks can be re-run after the
+reset.
 
 ```bash
 pnpm eval:llm --models <model> [--body '<json>'] [--repeat 3]
 ```
 
-Run it in the background; it takes roughly half an hour at the default
-concurrency. Use `--repeat 3` when the point is to compare models, since one pass
+Run it in the background; it takes roughly an hour at the default concurrency.
+Several models can run as separate processes at once (pass
+`--judge-concurrency 2` to each). Use `--repeat 3` when the point is to compare models, since one pass
 is not a measurement. `--tasks a,b`, `--grep text` and `--limit N` cut it down.
 
-## 4. Report
+## 4. History
+
+Every run records itself: its summary and report go to
+`apps/supabase/llm-eval/history/<time>_<model>.json` and `.md`,
+`history/leaderboard.md` is rebuilt, and those files alone are committed on the
+current branch. Confirm the commit landed (`git log -1 -- apps/supabase/llm-eval/history`).
+If the run was cut short by something other than the model (a usage limit, a
+spent key), keep the clean part with
+`pnpm eval:llm --record <run dir> --tasks <the tasks that finished>` and re-run
+the rest. Use `--no-commit` only when committing on the current branch would be
+wrong, and say so.
+
+## 5. Report
 
 The run prints a per-task table and writes
 `apps/supabase/llm-eval/runs/<time>_<model>/`:
@@ -70,13 +86,16 @@ Report to the user:
 1. Overall score, reliability, and how many answers were graded (skipped
    `bench-*` photos are private plates that are not on every machine).
 2. The per-task table.
-3. Average model cost per answer (`modelCostUsd` divided by graded answers) and
-   the cost of the full run, plus judge cost.
+3. Model cost per answer (`modelCostPerAnswerUsd`) and for the full run
+   (`modelCostUsd`), both with prompt caching priced in, beside the cost with
+   nothing cached (`modelCostUncachedUsd`) and the cache hit rate
+   (`cacheHitRate`). Then the judge's fresh spend (`judgeCostUsd`) and what reused
+   verdicts saved (`judgeCostReusedUsd`).
 4. p50 and p95 latency, and whether any task runs near the app's 25 second
    per-call timeout.
 5. The two or three weakest areas, with a concrete example from `report.md`.
-6. For a comparison, `pnpm eval:llm --report` and the leaderboard it writes.
-   Compare rows only when they graded the same tasks with the same `--repeat`.
+6. For a comparison, `history/leaderboard.md` (or `pnpm eval:llm --report`).
+   Compare rows only when they cover every task with the same `--repeat`.
 
 Say plainly what the run could not show: it grades the model calls, not the
 catalogue search, portion sizing or diary write that follow them.
