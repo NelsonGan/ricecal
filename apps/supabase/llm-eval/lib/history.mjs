@@ -116,7 +116,7 @@ export async function buildLeaderboard(tasks) {
     ...rows.map(
       (r) =>
         `| ${r.label} | **${fmt(r.overall)}** | ${r.covered}/${tasks.length} | ${r.graded} | ` +
-        `${fmt((r.reliability ?? 0) * 100, 0)}% | ${r.costPerAnswer === null ? '–' : `$${r.costPerAnswer.toFixed(5)}`} | ` +
+        `${fmt((r.reliability ?? 0) * 100)}% | ${r.costPerAnswer === null ? '–' : `$${r.costPerAnswer.toFixed(5)}`} | ` +
         `${tasks.map((t) => fmt(r.tasks.get(t.id)?.score ?? null, 0)).join(' | ')} | ${r.runs.join(', ')} |`,
     ),
     '',

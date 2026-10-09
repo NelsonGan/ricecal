@@ -6,7 +6,7 @@
  *   pnpm eval:llm --models claude:claude-haiku-5-5        through `claude -p`, not OpenRouter
  *   pnpm eval:llm --models a/one,b/two --repeat 2      two models, every case twice
  *   pnpm eval:llm --models a/one --tasks refine,describe-meal --grep satay
- *   pnpm eval:llm --report                              leaderboard over saved runs
+ *   pnpm eval:llm --report                              rebuild history/leaderboard.md
  *   pnpm eval:llm --list                                tasks and case counts
  *   pnpm eval:llm --dry-run                             validate datasets, fetch photos
  *
