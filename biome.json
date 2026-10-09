@@ -14,7 +14,7 @@
       "!**/*.d.ts",
       "!**/expo-env.d.ts",
       "!apps/supabase/templates",
-      "!apps/supabase/llm-eval/history"
+      "!apps/evals/history"
     ]
   },
   "formatter": {
@@ -63,7 +63,7 @@
       }
     },
     {
-      "includes": ["apps/supabase/functions/**", "apps/supabase/llm-eval/**"],
+      "includes": ["apps/supabase/functions/**", "apps/evals/**"],
       "linter": {
         "rules": {
           "suspicious": {

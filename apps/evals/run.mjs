@@ -30,9 +30,9 @@
  *                        '{"provider":{"order":["groq"]}}' or '{"reasoning":{"effort":"low"}}'
  *
  * `claude:<model>` runs on Claude Code's own login and needs no OpenRouter key.
- * The OpenRouter key comes from OPENROUTER_API_KEY or `apps/supabase/llm-eval/.env` (gitignored).
+ * The OpenRouter key comes from OPENROUTER_API_KEY or `apps/evals/.env` (gitignored).
  * Everything a run saw lands in `runs/` (gitignored). Its summary and report go to
- * `history/` and are committed, so `git log apps/supabase/llm-eval/history` is the
+ * `history/` and are committed, so `git log apps/evals/history` is the
  * record of every run; `--report` rebuilds `history/leaderboard.md` from it.
  */
 
@@ -573,7 +573,7 @@ async function commandRun() {
   const viaOpenRouter = options.models.some((m) => !m.startsWith('claude:'))
   if (viaOpenRouter && !loadKey()) {
     throw new Error(
-      'No OpenRouter key. Export OPENROUTER_API_KEY, or put OPENROUTER_API_KEY=... in apps/supabase/llm-eval/.env. ' +
+      'No OpenRouter key. Export OPENROUTER_API_KEY, or put OPENROUTER_API_KEY=... in apps/evals/.env. ' +
         "Supabase's secrets API returns a digest, so the production key has to come from whoever holds it.",
     )
   }

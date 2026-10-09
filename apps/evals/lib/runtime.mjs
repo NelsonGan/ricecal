@@ -17,7 +17,7 @@
 
 import { registerHooks } from 'node:module'
 
-const FUNCTIONS = new URL('../../functions/', import.meta.url)
+const FUNCTIONS = new URL('../../supabase/functions/', import.meta.url)
 
 const STUBS = {
   aws4fetch:

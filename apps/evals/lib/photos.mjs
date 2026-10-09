@@ -17,7 +17,7 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const CACHE = fileURLToPath(new URL('../.cache/photos/', import.meta.url))
-const DATA = fileURLToPath(new URL('../../data/', import.meta.url))
+const DATA = fileURLToPath(new URL('../../supabase/data/', import.meta.url))
 
 export class MissingPhoto extends Error {}
 

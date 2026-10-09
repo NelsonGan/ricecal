@@ -14,7 +14,7 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const HISTORY = fileURLToPath(new URL('../history/', import.meta.url))
-const REPO = fileURLToPath(new URL('../../../../', import.meta.url))
+const REPO = fileURLToPath(new URL('../../../', import.meta.url))
 
 const git = (...args) =>
   execFileSync('git', args, {
@@ -38,8 +38,8 @@ function codeVersion() {
   try {
     const watched = [
       'apps/supabase/functions',
-      'apps/supabase/llm-eval/lib',
-      'apps/supabase/llm-eval/datasets',
+      'apps/evals/lib',
+      'apps/evals/datasets',
     ]
     return {
       commit: git('rev-parse', '--short', 'HEAD'),

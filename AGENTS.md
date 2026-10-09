@@ -14,6 +14,7 @@ anything reading `AGENTS.md` by convention gets the same thing.
 apps/mobile      Expo / React Native app (expo-router, NativeWind, react-query)
 apps/supabase    Postgres schema, RLS, pgTAP tests, Deno edge functions
 apps/cloudflare  workers/ and d1/, one directory per Worker and per database
+apps/evals       the model eval (pnpm eval:llm); local only, nothing in it ships
 packages/shared  the few constants both sides need
 ```
 
@@ -141,14 +142,14 @@ every agent working in this checkout can read and no commit can carry.
 | project ref, anon key, catalogue URL | `apps/mobile/.env.local` |
 | test account addresses, passwords and uids | `.secrets/agent-notes.md` |
 | project and org refs, store and RevenueCat identifiers | `.secrets/agent-notes.md` |
-| `OPENROUTER_API_KEY` | the function secrets, where it cannot be read back; the model eval's copy is `apps/supabase/llm-eval/.env` |
+| `OPENROUTER_API_KEY` | the function secrets, where it cannot be read back; the model eval's copy is `apps/evals/.env` |
 
 **The secrets endpoint returns digests, not secrets.**
 `GET /v1/projects/<ref>/secrets` puts a 64-character hex hash in `value`. A
 script that reads that field and sends it as a bearer token gets a 401 from
 OpenRouter rather than an obvious "that is a hash", which is an expensive
 twenty minutes. It is why `pnpm eval:llm` reads its own copy of the key from
-`apps/supabase/llm-eval/.env`, put there by whoever holds it.
+`apps/evals/.env`, put there by whoever holds it.
 
 ## Which stack the app is pointing at
 
@@ -543,7 +544,7 @@ costs time here:
 - **A full run is about 300 judged answers**, roughly an hour and $11 of Opus,
   almost all of it the judge. Smoke test with `--limit 1` first, and run the full
   suite in the background.
-- **Every run commits itself** to `apps/supabase/llm-eval/history/` on the
+- **Every run commits itself** to `apps/evals/history/` on the
   current branch (only those files). Pass `--no-commit` on a branch where that
   would be wrong, and `--record <run dir> --tasks …` to keep the clean part of a
   run that something other than the model cut short.

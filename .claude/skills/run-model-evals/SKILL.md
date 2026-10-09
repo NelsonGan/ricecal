@@ -8,7 +8,7 @@ description: Run RiceCal's model eval (pnpm eval:llm) against a named model and 
 `pnpm eval:llm` runs the app's own model code (the real prompts, parameters and
 answer shaping, imported from `apps/supabase/functions/`) with the model swapped,
 and Claude Opus grades every answer through `claude -p`. Read "The model paths"
-in `README.md` before changing anything in `apps/supabase/llm-eval/`.
+in `README.md` before changing anything in `apps/evals/`.
 
 ## 1. Pin down the model
 
@@ -25,8 +25,8 @@ in `README.md` before changing anything in `apps/supabase/llm-eval/`.
 - Several models: comma separated in one `--models`.
 
 The OpenRouter key is read from `OPENROUTER_API_KEY` or
-`apps/supabase/llm-eval/.env` (gitignored). Check the file exists with
-`test -s apps/supabase/llm-eval/.env`; never print it. A `claude:` model needs no key.
+`apps/evals/.env` (gitignored). Check the file exists with
+`test -s apps/evals/.env`; never print it. A `claude:` model needs no key.
 
 ## 2. Smoke test
 
@@ -60,9 +60,9 @@ is not a measurement. `--tasks a,b`, `--grep text` and `--limit N` cut it down.
 ## 4. History
 
 Every run records itself: its summary and report go to
-`apps/supabase/llm-eval/history/<time>_<model>.json` and `.md`,
+`apps/evals/history/<time>_<model>.json` and `.md`,
 `history/leaderboard.md` is rebuilt, and those files alone are committed on the
-current branch. Confirm the commit landed (`git log -1 -- apps/supabase/llm-eval/history`).
+current branch. Confirm the commit landed (`git log -1 -- apps/evals/history`).
 If the run was cut short by something other than the model (a usage limit, a
 spent key), keep the clean part with
 `pnpm eval:llm --record <run dir> --tasks <the tasks that finished>` and re-run
@@ -72,7 +72,7 @@ wrong, and say so.
 ## 5. Report
 
 The run prints a per-task table and writes
-`apps/supabase/llm-eval/runs/<time>_<model>/`:
+`apps/evals/runs/<time>_<model>/`:
 
 - `summary.json`: overall score (0 to 100, task scores weighted by importance),
   reliability (share of answers the app could use), p50/p95 latency, model and
@@ -102,7 +102,7 @@ catalogue search, portion sizing or diary write that follow them.
 
 ## Changing the eval
 
-- Cases live in `apps/supabase/llm-eval/datasets/<task>.json`; rubrics and checks
+- Cases live in `apps/evals/datasets/<task>.json`; rubrics and checks
   in `lib/tasks.mjs`. `pnpm eval:llm --dry-run` validates every dataset and caches
   the photos.
 - Photo cases cite a URL (Wikimedia Commons is the usual source); look at the
