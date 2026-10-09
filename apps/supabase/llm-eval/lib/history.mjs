@@ -142,18 +142,24 @@ export async function recordRun({ summary, report, run, tasks, commit = true }) 
   if (!commit) return { files, committed: false }
 
   const score = summary.overall === null ? 'nothing graded' : `${fmt(summary.overall)} out of 100`
-  try {
-    git('add', '--', ...files)
-    git(
-      'commit',
-      '--only',
-      '-m',
-      `Record a model eval run of ${entry.label}: ${score}`,
-      '--',
-      ...files,
-    )
-    return { files, committed: git('rev-parse', '--short', 'HEAD') }
-  } catch (error) {
-    return { files, committed: false, error: String(error.stderr || error.message).trim() }
+  const message = `Record a model eval run of ${entry.label}: ${score}`
+  // Two models run as separate processes finish together and commit together:
+  // one meets the other's index.lock, and a leaderboard built before the other
+  // entry landed would leave it out. So the leaderboard is rebuilt just before
+  // each attempt, and a lock is waited out.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await buildLeaderboard(tasks)
+      git('add', '--', ...files)
+      git('commit', '--only', '-m', message, '--', ...files)
+      return { files, committed: git('rev-parse', '--short', 'HEAD') }
+    } catch (error) {
+      const text = String(error.stderr || error.message).trim()
+      if (text.includes('index.lock') && attempt < 10) {
+        await new Promise((resolve) => setTimeout(resolve, 500 + Math.random() * 1500))
+        continue
+      }
+      return { files, committed: false, error: text }
+    }
   }
 }
