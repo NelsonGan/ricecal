@@ -380,7 +380,8 @@ export const proteinShare = (proteinG: number, kcal: number): number =>
  * the share test alone rejects a row that is right; the dip disputes 1.6 g and
  * the omelette disputes 25.
  *
- * Two and a half is measured. `pnpm bench:photos --repeat=3` over eleven plates:
+ * Two and a half is measured. The photo bench (`--repeat=3` over eleven plates,
+ * now the `bench-*` cases in `pnpm eval:llm`'s scan-photo set):
  * at 2.5x the protein bias is +22% and the mean error 31%, and at 2.0x protein
  * is no better while everything else is worse.
  */

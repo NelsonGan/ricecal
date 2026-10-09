@@ -1,0 +1,549 @@
+{
+  "about": "One photographed meal, answered by analysePhoto and folded by foldMealItems. URLs are Wikimedia Commons (CC-licensed or public domain) and are the citation; the bytes are cached in .cache/photos. Cases with a `file` are private plates under apps/supabase/data/photo-bench/ and are skipped when the photo is not on this machine. kcal bands are for the midpoint of the model's band and are deliberately generous; the judge sees the photo and decides how close is close.",
+  "cases": [
+    {
+      "id": "nasi-lemak-banana-leaf",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Nasi_lemak_on_banana_leaf.jpg/1280px-Nasi_lemak_on_banana_leaf.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["nasi lemak"], "kcal": [350, 900] }
+    },
+    {
+      "id": "nasi-lemak-fried-chicken-egg",
+      "note": "Coconut rice with a fried chicken piece, a fried egg, sambal, ikan bilis and peanuts. A full mamak plate, roughly 850 to 1,000 kcal.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Nasi_Lemak_from_Mamak.jpg/1280px-Nasi_Lemak_from_Mamak.jpg"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["nasi lemak"],
+        "kcal": [700, 1150],
+        "part_has": ["chicken", "egg"]
+      }
+    },
+    {
+      "id": "char-kuey-teow",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Malaysian_Char_Kuey_Teow.jpg/1280px-Malaysian_Char_Kuey_Teow.jpg"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["kuey teow|kway teow|koay teow"],
+        "kcal": [450, 950]
+      }
+    },
+    {
+      "id": "chicken-satay-counted",
+      "note": "Sticks should be counted, not priced as a generic plate.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Chicken_satay_on_banana_leaf_in_Java.jpg/1280px-Chicken_satay_on_banana_leaf_in_Java.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["satay|sate"], "kcal": [150, 800] }
+    },
+    {
+      "id": "roti-canai-teh-tarik",
+      "note": "Roti canai with curry and a teh tarik. The roti's weight cannot be read from the photo, so the honest band is wide; a calorie answer anywhere from about 450 to 1,100 for the meal is defensible.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Roti_canai_and_Teh_Tarik%2C_a_typical_Malaysian_breakfast.jpg/1280px-Roti_canai_and_Teh_Tarik%2C_a_typical_Malaysian_breakfast.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["roti"], "kcal": [350, 1300] }
+    },
+    {
+      "id": "roti-telur-teh-tarik",
+      "note": "One roti telur on a tray with dhal and curry, plus a mug of teh tarik. One meal, the drink included.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Roti_Telur_and_Teh_Tarik.jpg/1280px-Roti_Telur_and_Teh_Tarik.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["roti"], "kcal": [400, 850] }
+    },
+    {
+      "id": "pad-thai",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Thai-Pad-Thai_2023-06-04.jpg/1280px-Thai-Pad-Thai_2023-06-04.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["pad thai"], "kcal": [400, 950] }
+    },
+    {
+      "id": "fda-nutrition-label",
+      "note": "The 2016 FDA sample panel: 8 servings, serving 2/3 cup (55g), 230 calories, total fat 8g, total carbohydrate 37g, protein 3g, sodium 160mg. The per-serving figures must be copied exactly.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/e/e9/FDA_Nutrition_Facts_Label_2016.png"
+        }
+      },
+      "expect": {
+        "label": true,
+        "kcal": [228, 232],
+        "reference": {
+          "kcal": 230,
+          "fat_g": 8,
+          "carbs_g": 37,
+          "protein_g": 3,
+          "sodium_mg": 160,
+          "serving": "2/3 cup (55g)"
+        }
+      }
+    },
+    {
+      "id": "chinese-label-kilojoules",
+      "note": "A Chinese panel per 100 ml that gives energy only in kJ: 284 kJ (about 68 kcal), protein 3.1 g, fat 3.7 g, carbohydrate 4.8 g, sodium 62 mg. It is milk. No product name is visible, so name should be null rather than invented. Copying 284 as kcal is the failure to catch.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/0/08/China_nutrition_facts_label.png"
+        }
+      },
+      "expect": {
+        "label": true,
+        "kcal": [64, 72],
+        "reference": {
+          "kcal": 68,
+          "protein_g": 3.1,
+          "fat_g": 3.7,
+          "carbs_g": 4.8,
+          "sodium_mg": 62,
+          "serving": "per 100 ml"
+        }
+      }
+    },
+    {
+      "id": "cat-is-not-food",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Domestic_Cat_Black_Sitting.jpg/1280px-Domestic_Cat_Black_Sitting.jpg"
+        }
+      },
+      "expect": { "no_food": true }
+    },
+    {
+      "id": "empty-plate",
+      "note": "A clean empty plate with cutlery. Nothing edible.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Empty_table_setting_plate_fork_knife_%2842585288225%29.jpg/1280px-Empty_table_setting_plate_fork_knife_%2842585288225%29.jpg"
+        }
+      },
+      "expect": { "no_food": true }
+    },
+    {
+      "id": "black-coffee",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/f/fd/Cup_of_black_coffee.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["coffee|kopi"], "kcal": [0, 60], "parts": 0 }
+    },
+    {
+      "id": "chicken-rice-protein",
+      "note": "Hainanese chicken rice with radish soup. About 600 to 750 kcal and roughly 30 to 40 g protein. The known failure is naming a part 'chicken rice' so the whole plate is counted inside one component and the chicken again beside it; components must not each be the whole plate.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Hainanese_Chicken_Rice_with_Radish_Soup.jpg/1280px-Hainanese_Chicken_Rice_with_Radish_Soup.jpg"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["chicken rice"],
+        "kcal": [450, 950],
+        "protein_g": [20, 50]
+      }
+    },
+    {
+      "id": "hot-latte",
+      "note": "A cafe latte with latte art, about 150 to 220 kcal and about 10 g protein. It is hot, not iced, and not a bottled drink.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Cup_of_coffee_with_latte_art_2016.jpg/1280px-Cup_of_coffee_with_latte_art_2016.jpg"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["latte"],
+        "name_lacks": ["iced"],
+        "kcal": [90, 280],
+        "parts": 0
+      }
+    },
+    {
+      "id": "latte-macchiato",
+      "note": "A latte macchiato in a tall glass. No syrup is visible, so it is not a caramel macchiato.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Latte_macchiato_with_coffee_beans_new.jpg/1280px-Latte_macchiato_with_coffee_beans_new.jpg"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["latte|macchiato"],
+        "name_lacks": ["caramel"],
+        "kcal": [100, 300],
+        "parts": 0
+      }
+    },
+    {
+      "id": "katong-laksa",
+      "note": "A bowl of curry laksa (Katong style, cut noodles) with prawns and cockles in coconut broth. About 550 to 750 kcal.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Bowl_of_Katong_Laksa.jpg/1280px-Bowl_of_Katong_Laksa.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["laksa"], "kcal": [400, 850], "parts": 0 }
+    },
+    {
+      "id": "nasi-goreng-with-sides",
+      "note": "Nasi goreng with prawn crackers, a small fried fish, omelette strips, cucumber and lime. One plate.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Nasi_Goreng_Kampung_%2811967588375%29.jpg/1280px-Nasi_Goreng_Kampung_%2811967588375%29.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["nasi goreng|fried rice"], "kcal": [500, 1000] }
+    },
+    {
+      "id": "kl-hokkien-mee",
+      "note": "KL-style Hokkien mee: thick yellow noodles braised dark in soy with pork and prawn. A large plate.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/KL_hokkien_mee.jpg/1280px-KL_hokkien_mee.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["hokkien"], "kcal": [550, 1200], "parts": 0 }
+    },
+    {
+      "id": "bak-kut-teh-shared-table",
+      "note": "A shared table for several people: several bowls of bak kut teh, a bowl of rice, youtiao, vegetables and tea. One logged meal is one person's share; logging the whole table for one person is the failure. A good answer names bak kut teh and sizes it for one diner (roughly 500 to 1,000 kcal with rice), or says so plainly with low confidence.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bak_kut_teh_zz.jpg/1280px-Bak_kut_teh_zz.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["bak kut teh"] }
+    },
+    {
+      "id": "mee-rebus",
+      "note": "Mee rebus in thick sweet potato gravy with egg, chicken, fried shallots, green chilli and croutons.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Mee_Rebus_by_Banej%2C_Singapore_October_2017_%28cropped%29.jpg/1280px-Mee_Rebus_by_Banej%2C_Singapore_October_2017_%28cropped%29.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["mee rebus|mi rebus|mee"], "kcal": [400, 850] }
+    },
+    {
+      "id": "nasi-kerabu",
+      "note": "Blue nasi kerabu with fried fish or chicken, keropok and serunding. The blue rice is the giveaway.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Nasi_kerabu.jpg/1280px-Nasi_kerabu.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["kerabu"], "kcal": [450, 900] }
+    },
+    {
+      "id": "es-cendol-glass",
+      "note": "A tall glass of es cendol with coconut milk, green cendol and a durian topping. A drink-dessert, about 250 to 400 kcal.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Cendol_Durian.JPG/1280px-Cendol_Durian.JPG"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["cendol"], "kcal": [180, 480], "parts": 0 }
+    },
+    {
+      "id": "kuih-puteri-ayu-one-piece",
+      "note": "One kuih puteri ayu (pandan steamed cake with grated coconut). About 80 to 130 kcal.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Kuih_Puteri_Ayu.jpg/1280px-Kuih_Puteri_Ayu.jpg"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["puteri ayu|kuih|kue"],
+        "kcal": [50, 180],
+        "count": 1
+      }
+    },
+    {
+      "id": "char-siu-egg-rice",
+      "note": "Char siu with a fried egg and choy sum on rice, a Hong Kong cha chaan teng bowl.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Char_Siu_%26_Fried_Egg_with_Rice.jpg/1280px-Char_Siu_%26_Fried_Egg_with_Rice.jpg"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["char siu|barbecue pork|bbq pork|roast pork"],
+        "kcal": [550, 950]
+      }
+    },
+    {
+      "id": "har-gow-three",
+      "note": "Three har gow in a steamer basket. About 40 to 60 kcal each.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Three_dim_sum_in_steamer_basket.jpg/1280px-Three_dim_sum_in_steamer_basket.jpg"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["har gow|ha kau|prawn dumpling|shrimp dumpling|dim sum"],
+        "kcal": [100, 230],
+        "count": 3
+      }
+    },
+    {
+      "id": "tonkotsu-ramen",
+      "note": "Tonkotsu ramen with chashu, nori, wood ear and spring onion. About 500 to 850 kcal.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Tonkotsu_ramen_in_Tokyo.jpg/1280px-Tonkotsu_ramen_in_Tokyo.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["ramen"], "kcal": [450, 950], "parts": 0 }
+    },
+    {
+      "id": "pho-bo",
+      "note": "Vietnamese beef pho with sliced beef, onion and herbs. Not to be read as a Malaysian noodle soup.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Pho_Bo_by_Banh_%26_Mee_in_Kirkgate_Market.jpg/1280px-Pho_Bo_by_Banh_%26_Mee_in_Kirkgate_Market.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["pho|phở"], "kcal": [350, 700], "parts": 0 }
+    },
+    {
+      "id": "bibimbap",
+      "note": "Bibimbap: rice topped with carrot, cucumber, mushrooms, radish, beef and gochujang. Mixed in one bowl.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Bibimbap_7.jpg/1280px-Bibimbap_7.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["bibimbap"], "kcal": [400, 800] }
+    },
+    {
+      "id": "burger-and-fries",
+      "note": "A burger with greens and fried shallots on a brioche bun, beside a large heap of fries. Two separate foods; together roughly 1,000 to 1,300 kcal.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Cheeseburger_and_fries_5.jpg/1280px-Cheeseburger_and_fries_5.jpg"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["burger"],
+        "kcal": [750, 1450],
+        "parts": [2, 3],
+        "part_has": ["fries|chips"]
+      }
+    },
+    {
+      "id": "chicken-caesar-salad",
+      "note": "A Caesar-style salad with grilled chicken and dressing, croutons and olives. About 450 to 650 kcal.",
+      "input": {
+        "photo": { "url": "https://upload.wikimedia.org/wikipedia/commons/8/85/Caesar-salad.jpg" }
+      },
+      "expect": { "no_food": false, "name_has": ["salad"], "kcal": [300, 750] }
+    },
+    {
+      "id": "yong-tau-foo-dry-noodles",
+      "note": "Hakka yong tau foo: a bowl of dry egg noodles with minced pork and a bowl of soup with fish ball and stuffed tofu pieces. One meal across two bowls.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Hakka_yong_tau_foo_with_noodles.jpg/1280px-Hakka_yong_tau_foo_with_noodles.jpg"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["yong tau foo|yong tau fu|yong tow foo"],
+        "kcal": [400, 800]
+      }
+    },
+    {
+      "id": "pisang-goreng-plate",
+      "note": "A plate of about nine or ten pieces of pisang goreng (banana fritters). Count matters: about 100 to 130 kcal a piece.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Pisang_goreng_fried_banana.JPG/1280px-Pisang_goreng_fried_banana.JPG"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["pisang goreng|goreng pisang|banana fritter|fried banana"],
+        "kcal": [600, 1400],
+        "count": [7, 12]
+      }
+    },
+    {
+      "id": "ayam-penyet",
+      "note": "Ayam penyet: a smashed fried chicken leg with sambal, lettuce, tomato and cucumber. No rice in the photo.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Ayam_penyet.JPG/1280px-Ayam_penyet.JPG"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["penyet|fried chicken|ayam goreng"],
+        "kcal": [350, 750]
+      }
+    },
+    {
+      "id": "fruit-salad-two-bowls",
+      "note": "Two bowls of cut fruit: grapes, pineapple, guava, pomegranate, banana. About 250 to 450 kcal together.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Fruit_Salad_Or_Fruit_Bowl.jpg/1280px-Fruit_Salad_Or_Fruit_Bowl.jpg"
+        }
+      },
+      "expect": { "no_food": false, "name_has": ["fruit"], "kcal": [150, 500] }
+    },
+    {
+      "id": "chicken-fried-rice-with-sides",
+      "note": "A plate of fried rice with shredded chicken and dried shrimp, a dipping sauce, a side of greens and a glass of water.",
+      "input": {
+        "photo": {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Wok_fried_rice_with_chicken_%26_dried_shrimp_-_Pho_2025-07-25.jpg/1280px-Wok_fried_rice_with_chicken_%26_dried_shrimp_-_Pho_2025-07-25.jpg"
+        }
+      },
+      "expect": {
+        "no_food": false,
+        "name_has": ["fried rice|nasi goreng|com chien|cơm chiên"],
+        "kcal": [450, 950]
+      }
+    },
+    {
+      "id": "bench-chicken-rice-late",
+      "note": "Private plate. Hainanese chicken rice, soup, chilli and dark soy. About 8 slices of poached chicken (125 g meat), 160 g chicken rice, a bowl of clear soup. Reference 660 kcal, 36 g protein, 78 g carbs, 22 g fat.",
+      "input": { "photo": { "file": "photo-bench/01-chickenrice-late.jpg" } },
+      "expect": {
+        "no_food": false,
+        "name_has": ["chicken rice"],
+        "kcal": [500, 850],
+        "reference": { "kcal": 660, "protein_g": 36, "carbs_g": 78, "fat_g": 22 }
+      }
+    },
+    {
+      "id": "bench-nasi-lemak-pork-chop",
+      "note": "Private plate. Nasi lemak with a fried chicken quarter, pork chop, fried egg, fritters, kerabu and sambal. Reference 1,120 kcal, 61 g protein, 90 g carbs, 55 g fat.",
+      "input": { "photo": { "file": "photo-bench/02-nasilemak-porkchop.jpg" } },
+      "expect": {
+        "no_food": false,
+        "name_has": ["nasi lemak"],
+        "kcal": [850, 1400],
+        "reference": { "kcal": 1120, "protein_g": 61, "carbs_g": 90, "fat_g": 55 }
+      }
+    },
+    {
+      "id": "bench-pork-belly-omelette",
+      "note": "Private plate. Shared dishes: an omelette of two or three eggs, stir-fried pork belly with green peppers and a small bowl of plain white rice. Reference 720 kcal, 42 g protein, 55 g carbs, 38 g fat. Pork belly is mostly fat.",
+      "input": { "photo": { "file": "photo-bench/03-porkbelly.jpg" } },
+      "expect": {
+        "no_food": false,
+        "kcal": [550, 950],
+        "reference": { "kcal": 720, "protein_g": 42, "carbs_g": 55, "fat_g": 38 }
+      }
+    },
+    {
+      "id": "bench-chicken-rice-early",
+      "note": "Private plate. The same lunch as bench-chicken-rice-late, cropped differently. Reference 660 kcal, 36 g protein.",
+      "input": { "photo": { "file": "photo-bench/04-chickenrice-early.jpg" } },
+      "expect": {
+        "no_food": false,
+        "name_has": ["chicken rice"],
+        "kcal": [500, 850],
+        "reference": { "kcal": 660, "protein_g": 36, "carbs_g": 78, "fat_g": 22 }
+      }
+    },
+    {
+      "id": "bench-boxed-nasi-lemak",
+      "note": "Private plate. A takeaway box: rice about 160 g, a fried chicken thigh, ikan bilis and shallots, cabbage, cucumber and gravy. Reference 675 kcal, 31 g protein.",
+      "input": { "photo": { "file": "photo-bench/05-nasilemak-friedchicken.jpg" } },
+      "expect": {
+        "no_food": false,
+        "name_has": ["nasi lemak"],
+        "kcal": [520, 880],
+        "reference": { "kcal": 675, "protein_g": 31, "carbs_g": 70, "fat_g": 30 }
+      }
+    },
+    {
+      "id": "bench-karaage-set",
+      "note": "Private plate. About 180 g of fried chicken, potato salad, a generous blob of mayonnaise, pickled radish, rice and soup. Reference 1,065 kcal. The mayonnaise is a quarter of the calories and the easiest thing to miss.",
+      "input": { "photo": { "file": "photo-bench/06-korean-friedchicken.jpg" } },
+      "expect": {
+        "no_food": false,
+        "kcal": [800, 1350],
+        "reference": { "kcal": 1065, "protein_g": 39, "carbs_g": 80, "fat_g": 57 }
+      }
+    },
+    {
+      "id": "bench-prawn-pasta",
+      "note": "Private plate. Tagliatelle about 180 g cooked with four or five shell-on prawns (about 100 g meat), oil and arugula. Shells are not food. Reference 560 kcal.",
+      "input": { "photo": { "file": "photo-bench/07-prawn-pasta.jpg" } },
+      "expect": {
+        "no_food": false,
+        "name_has": ["pasta|tagliatelle|linguine|spaghetti"],
+        "kcal": [420, 750],
+        "reference": { "kcal": 560, "protein_g": 30, "carbs_g": 60, "fat_g": 22 }
+      }
+    },
+    {
+      "id": "bench-omelette-rice-curry",
+      "note": "Private plate. Four slices of rolled omelette with filling, about 140 g of plain rice, a tub of prawn sambal. Reference 600 kcal.",
+      "input": { "photo": { "file": "photo-bench/08-omelette-rice-curry.jpg" } },
+      "expect": {
+        "no_food": false,
+        "kcal": [450, 800],
+        "reference": { "kcal": 600, "protein_g": 30, "carbs_g": 50, "fat_g": 28 }
+      }
+    },
+    {
+      "id": "bench-fried-beehoon-plate",
+      "note": "Private plate. Fried beehoon about 150 g, a fried chicken thigh, two spring rolls, three fritter discs and battered vegetable fritters. Almost everything is fried. Reference 950 kcal.",
+      "input": { "photo": { "file": "photo-bench/09-nasikandar.jpg" } },
+      "expect": {
+        "no_food": false,
+        "kcal": [720, 1250],
+        "reference": { "kcal": 950, "protein_g": 35, "carbs_g": 95, "fat_g": 51 }
+      }
+    },
+    {
+      "id": "bench-karaage-cream-sauce",
+      "note": "Private plate. About 180 g of fried chicken under a heavy cream sauce, potato wedges, rice and soup. A fat-heavy plate. Reference 1,185 kcal, 66 g fat.",
+      "input": { "photo": { "file": "photo-bench/10-friedchicken-cream-set.jpg" } },
+      "expect": {
+        "no_food": false,
+        "kcal": [900, 1500],
+        "reference": { "kcal": 1185, "protein_g": 39, "carbs_g": 75, "fat_g": 66 }
+      }
+    },
+    {
+      "id": "bench-claypot-beef",
+      "note": "Private plate. Claypot rice about 250 g with about 80 g sliced beef, 60 g minced meat and an egg yolk, edamame and a dipping sauce. Reference 865 kcal. The known failure prices the rice as the whole pot and then adds the meat again.",
+      "input": { "photo": { "file": "photo-bench/12-claypot-beef.jpg" } },
+      "expect": {
+        "no_food": false,
+        "name_has": ["claypot"],
+        "kcal": [650, 1100],
+        "reference": { "kcal": 865, "protein_g": 43, "carbs_g": 105, "fat_g": 30 }
+      }
+    }
+  ]
+}

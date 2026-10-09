@@ -86,6 +86,7 @@ Agent skills live in `.agents/skills/`, with Claude's copies in `.claude/skills/
 Keep both copies in sync when changing a workflow. In Codex, use
 `$update-whats-new` to prepare the store release note and open its PR in
 `ricecal-screenshots-creator`. The skill does not upload to either store.
+`run-model-evals` takes a model name and runs `pnpm eval:llm` on it.
 
 Useful commands:
 
@@ -97,9 +98,7 @@ Useful commands:
 | `pnpm db:types` | regenerate the TypeScript `Database` type |
 | `pnpm foods:gate` | grade catalogue search against 30 fixed queries |
 | `pnpm foods:servings` | repoint a row whose default portion is a unit of measure |
-| `pnpm eval:prompts` | grade the model prompts |
-| `pnpm eval:scan` | drive the deployed scan pipeline end to end |
-| `pnpm eval:refine --repeat=3` | test real AI ingredient corrections against local Supabase |
+| `pnpm eval:llm --models <slug>` | grade a model on every model call the app makes, judged by Claude Opus |
 
 Run one simulator at a time. This machine does not have room for the iOS
 simulator and the Android emulator together, and the result is not just
@@ -5109,28 +5108,124 @@ hopeful: D1 scored 28/30 top-1 against Postgres's 26/30 on identical work.
 
 ### The model paths
 
-Three harnesses, and they answer different questions.
+`pnpm eval:llm` grades a language model on every call the app makes to one, and
+scores it out of 100. It is how a model is chosen: run the candidate, read the
+score next to the one production uses, and look at the answers it got wrong.
 
-| | what it drives | what it grades |
-|---|---|---|
-| `pnpm eval:prompts` | the prompt alone, imported | the shape of one answer: which action, how many components, whether the band brackets something sane |
-| `pnpm eval:scan` | the deployed functions, photographs and all | the row that lands in the diary. 27 cases, with the cascade's `debug: true` trace on every call |
-| `pnpm eval:recipe` | the deployed recipe reader | the arithmetic, and the writing (one action a step, imperative, a doneness cue) |
+```
+pnpm eval:llm --models qwen/qwen3.7-flash                  one OpenRouter model
+pnpm eval:llm --models a/one,b/two --repeat 3              compare two
+pnpm eval:llm --models claude:claude-haiku-5-5 --body '{"effort":"low"}'
+pnpm eval:llm --models a/one --tasks refine --grep satay   a slice
+pnpm eval:llm --report                                     leaderboard over saved runs
+pnpm eval:llm --list | --dry-run                           tasks; validate data, fetch photos
+```
 
-`eval:prompts` says nothing about the upload, the catalogue search, the verifier,
-the ratio gate or the portion sizing, and most of what goes wrong with a scan
-goes wrong in exactly those. It imports the prompts rather than copying them: a
-harness with its own copy grades a prompt nobody ships.
+It lives in `apps/supabase/llm-eval/`, outside the app and outside every
+function's import graph, so nothing in it ships.
 
-The two that drive deployed functions need a session, which is why
-`.secrets/eval.json` holds a password for a throwaway account rather than a
-token. Setting that password revokes every refresh token the account holds, so a
-simulator signed in as it lands back on the welcome screen.
+**It runs the app's own code, not a copy of it.** Node imports `llm.ts`,
+`recipe.ts`, `suggest.ts` and `social/review.ts` straight from the functions
+directory (Node 24 strips the types; `lib/runtime.mjs` shims `Deno.env` and stubs
+the one npm import the moderation module pulls in). Each case calls the function
+the edge function calls (`describeMeal`, `analysePhoto` then `foldMealItems`,
+`pickCandidate`, `estimateNutrition`, `interpretInstruction`, `suggestMeals`,
+`describeRecipe`, `readRecipePhoto`, `reviewRecipe`, `reviewSubmission`), and
+`lib/openrouter.mjs` swaps the model at `fetch`. The prompt, `max_tokens`,
+`temperature`, `response_format`, `reasoning: {enabled: false}`, the 25 second
+timeout, the single retry and the shaping of the answer are all production's,
+so what gets graded is what a user would get. A harness with its own copy of a
+prompt grades a prompt nobody ships.
 
-**Use `--repeat` whenever you change something.** One pass over these cases is not
-a measurement. The same sentence resolved to tier 1 at 657 kcal, tier 4 at 525
-and tier 3 at 821 on three consecutive runs of identical code, which is wide
-enough to credit a prompt change with an improvement it did not make.
+**Ten tasks, one per model call**, each with a dataset in `datasets/` and a
+weighted rubric in `lib/tasks.mjs`. The weight is how much the task counts
+towards the overall score, roughly by how often the call runs and how much
+damage a bad answer does:
+
+| task | weight | cases | what it grades |
+|---|---:|---:|---|
+| `describe-meal` | 20 | 64 | a typed meal: food or not, identity, parts, calorie band |
+| `scan-photo` | 20 | 46 | a photographed meal, a nutrition label, or no food |
+| `refine` | 15 | 47 | a typed correction: none, quantity, adjust or redescribe |
+| `pick-candidate` | 10 | 24 | which catalogue row is the dish, or none |
+| `estimate-nutrition` | 10 | 23 | tier 4 calories and macros |
+| `suggest-meal` | 8 | 18 | seven dishes for the day, the sitting, the cuisine, the ceiling |
+| `recipe-describe` | 6 | 25 | a typed recipe: amounts kept, pot complete, steps followable |
+| `recipe-review` | 4 | 22 | the community publishing gate |
+| `social-moderation` | 4 | 26 | profiles, posts and comments |
+| `recipe-photo` | 3 | 9 | a photographed pot read into the recipe form |
+
+Most of the typed cases are the old prompt, scan, recipe and refine suites'
+cases carried over, and each of those was a bug that shipped. Photo cases cite a
+Wikimedia Commons URL and cache the bytes in `.cache/photos/` (gitignored), sent
+as a JPEG no wider than 1280 px because that is what the app uploads. The eleven
+`bench-*` cases are private plates under `apps/supabase/data/photo-bench/`, with
+reference macros, and are skipped on a machine that does not have them.
+
+**Claude Opus is the judge**, through Claude Code's programmatic mode
+(`claude -p`, one process per answer, no tools, `--safe-mode`, a JSON schema
+with one required property per rubric criterion). It sees the feature, the exact
+prompt the model was given (with the icon id list cut out), the case's reference,
+the automatic checks, the answer after the app's own clean-up and, for a photo
+case, the photo. It scores each criterion 0 to 4; the case score is the weighted
+mean out of 100. An answer the app could not use (a throw, an unparseable reply,
+a timeout) scores 0 without a judge. A failure that belongs to the machine rather
+than the model (a rejected or spent key, a lapsed `claude` login, a rate limit
+that outlasted five waits) is reported as not graded instead, so a key that hits
+its spending limit mid-run does not read as a model scoring zero. Verdicts are cached in `.cache/judge/` on
+everything that could change them, so a re-run pays only for new answers. Bump
+`JUDGE_VERSION` in `lib/judge.mjs` when the judge's instructions change.
+
+**The automatic checks are evidence, not the score.** Each case states bands and
+words loosely (`kcal`, `parts`, `name_has`, `action`, `approved`) and the checks
+computed from them are shown to the judge and reported as a pass rate beside its
+score. They are blunt: a synonym fails `name_has`, and the judge is told to say so
+rather than punish it.
+
+**What a run costs.** The judge is most of it: about six cents an answer on
+Opus, so roughly $15 to $20 for the full suite, less for anything cached. The
+model under test is whatever OpenRouter charges, which `usage.cost` reports per
+call. Every run writes `runs/<time>_<model>/` (gitignored): `results.jsonl` with
+each request, reply, usage, latency and verdict, `summary.json`, and
+`report.md` with the per-task table, the lowest scoring answers and the reasons
+any answer failed. `--report` keeps `runs/leaderboard.md`, the latest run per
+model and request overrides.
+
+**The OpenRouter key** is read from `OPENROUTER_API_KEY` or
+`apps/supabase/llm-eval/.env` (gitignored; the repo is public). It has to be put
+there by somebody who holds it: Supabase's secrets endpoint returns a digest, not
+the key.
+
+**A model that rejects a production parameter fails every case the same way**,
+and the report's "Model failures" section says which: `google/gemini-3.8-flash`
+answers 400 to `reasoning: {enabled: false}` because its reasoning cannot be
+disabled. That is a finding about shipping it as configured. `--body` merges a
+JSON object into every request (`{"reasoning":{"effort":"low"}}`,
+`{"provider":{"order":["..."]}}`) to grade it as it could be configured instead,
+and the leaderboard keeps that as a separate row.
+
+**`claude:<model>` runs through `claude -p` instead of OpenRouter**, on Claude
+Code's own login. It is for grading a Claude model, and for checking the
+pipeline without spending on OpenRouter. Use the full model id: in Claude Code
+2.1.x the `haiku` alias is Haiku 4.5. Four things differ from production, and
+`completeWithClaude` in `lib/claude.mjs` says so too: `temperature`, `max_tokens`
+and `response_format` have no flag, so JSON comes from the prompt alone; thinking
+cannot be switched off, and `--body '{"effort":"low"}'` is the nearest thing;
+Claude Code adds about 600 tokens of its own to every request; and process start
+up is part of the latency, so the default timeout is 60 seconds rather than 25.
+Cost is priced from the token counts at list price, because the CLI prices a
+model id it does not recognise at a fallback rate about fifty times Haiku 5.5's.
+
+**Use `--repeat` when comparing.** One pass is not a measurement: the same
+sentence resolved to tier 1 at 657 kcal, tier 4 at 525 and tier 3 at 821 on
+three consecutive runs of identical code. Compare leaderboard rows only when
+they graded the same tasks with the same `--repeat` (the answers column).
+
+**What it does not grade** is everything after the model: the upload, the
+catalogue search, the ratio gate, portion sizing, the row that lands in the
+diary. `pick-candidate` grades the verifier on realistic hits, not on what D1
+actually returns. A change to the cascade still needs driving through the
+deployed functions, with a session from `apps/supabase/scripts/lib/live.mjs`.
 
 ---
 
@@ -5624,11 +5719,9 @@ For real local AI testing, keep `OPENROUTER_API_KEY` in the gitignored
 `apps/supabase/functions/.env` (owner read/write only). Supabase's secrets API
 returns hashes, not recoverable values. Local auth and database keys must stay
 local; only the AI provider credential is shared. Stop and start the local stack
-after changing the env file, and leave `MOCK_AI` unset. The prompt suite can read
-the same file with `deno run --env-file=apps/supabase/functions/.env -A
-apps/supabase/scripts/eval-prompts.ts refine 3`. `pnpm eval:refine --repeat=3`
-seeds its own local Pro account, checks persisted ingredients and totals, then
-deletes the account. It refuses a hosted API URL.
+after changing the env file, and leave `MOCK_AI` unset. `pnpm eval:llm` does not
+need the local stack at all: it imports the model code and reads its own key from
+`apps/supabase/llm-eval/.env`. See "The model paths".
 
 **Mock AI** is on whenever `OPENROUTER_API_KEY` is unset (or `MOCK_AI=true`), so
 a local stack scans with no config and production can never mock silently.
@@ -5652,12 +5745,11 @@ Testing the other direction is the same row with `status = 'none'`, or no row at
 all. `scan_usage` is where the day's count lives, and deleting the row is how you
 get your three back without waiting for midnight.
 
-The same applies to the account behind `.secrets/eval.json`: `pnpm eval:scan` and
-`pnpm eval:recipe` drive the deployed functions, so that account needs a real
-entitlement or every case fails identically at the first request. And it has a
-ceiling too: Pro is fifty scans a day and `eval:scan` is 27 cases, so a second
-`--repeat` in one day runs into it and the cases past 50 fail as 429s rather than
-as bad answers.
+The same applies to the account behind `.secrets/eval.json`: a script that drives
+the deployed functions with it (through `apps/supabase/scripts/lib/live.mjs`)
+needs a real entitlement or every request fails identically at the first one. And
+it has a ceiling too: Pro is fifty scans a day, so a long scripted run fails past
+the fiftieth as 429s rather than as bad answers.
 
 ### React Native
 

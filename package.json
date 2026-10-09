@@ -32,10 +32,7 @@
     "foods:dupes": "node --no-warnings apps/supabase/scripts/foods-dupes.mjs",
     "foods:alias": "node --no-warnings apps/supabase/scripts/foods-alias.mjs",
     "foods:icons": "node --no-warnings apps/supabase/scripts/foods-icons.mjs",
-    "eval:prompts": "deno run -A apps/supabase/scripts/eval-prompts.ts",
-    "eval:scan": "node --no-warnings apps/supabase/scripts/scan-eval.mjs",
-    "eval:recipe": "node --no-warnings apps/supabase/scripts/recipe-eval.mjs",
-    "bench:photos": "node --no-warnings apps/supabase/scripts/photo-bench.mjs",
+    "eval:llm": "node --no-warnings apps/supabase/llm-eval/run.mjs",
     "workouts:seed": "node --no-warnings apps/supabase/scripts/seed-workout-previews.mjs",
     "eas": "pnpm --filter @ricecal/mobile exec eas",
     "eas:credentials": "pnpm --filter @ricecal/mobile exec eas credentials",
@@ -45,8 +42,7 @@
     "android": "pnpm --filter @ricecal/mobile exec expo run:android",
     "prebuild": "LANG=${LANG:-en_US.UTF-8} pnpm --filter @ricecal/mobile exec expo prebuild --clean",
     "build:android": "pnpm --filter @ricecal/mobile exec eas build --profile development --platform android",
-    "build:ios": "pnpm --filter @ricecal/mobile exec eas build --profile development --platform ios",
-    "eval:refine": "node --no-warnings apps/supabase/scripts/refine-eval.mjs"
+    "build:ios": "pnpm --filter @ricecal/mobile exec eas build --profile development --platform ios"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

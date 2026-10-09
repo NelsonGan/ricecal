@@ -141,15 +141,14 @@ every agent working in this checkout can read and no commit can carry.
 | project ref, anon key, catalogue URL | `apps/mobile/.env.local` |
 | test account addresses, passwords and uids | `.secrets/agent-notes.md` |
 | project and org refs, store and RevenueCat identifiers | `.secrets/agent-notes.md` |
-| `OPENROUTER_API_KEY` | the function secrets, and it cannot be read back |
+| `OPENROUTER_API_KEY` | the function secrets, where it cannot be read back; the model eval's copy is `apps/supabase/llm-eval/.env` |
 
 **The secrets endpoint returns digests, not secrets.**
 `GET /v1/projects/<ref>/secrets` puts a 64-character hex hash in `value`. A
 script that reads that field and sends it as a bearer token gets a 401 from
 OpenRouter rather than an obvious "that is a hash", which is an expensive
-twenty minutes. It is why `pnpm eval:prompts` cannot run on a machine that has
-never held the key, and why a prompt change is graded by deploying and driving
-the function that does hold it.
+twenty minutes. It is why `pnpm eval:llm` reads its own copy of the key from
+`apps/supabase/llm-eval/.env`, put there by whoever holds it.
 
 ## Which stack the app is pointing at
 
@@ -534,25 +533,26 @@ holds both; the ids themselves are in those consoles.
   back: `reconcileEntitlement` refills them from RevenueCat on the next launch,
   which is the point of it.
 
-## Grading the scan pipeline
+## Grading a model
 
-`pnpm eval:scan` drives the deployed functions the way the app does, with the
-cascade's `debug: true` trace on every call. **Always `--repeat` when you change
-something** — one pass is not a measurement.
+`pnpm eval:llm --models <slug>` runs every model call the app makes against an
+OpenRouter model and has Claude Opus judge each answer; `run-model-evals` is the
+skill that drives it. The README's "The model paths" has the whole of it. What
+costs time here:
 
-- **The account is capped at 50 scans a day.** The full suite at `--repeat=3` is
-  90, so a long run dies partway and every remaining case reports "Daily scan
-  limit reached", which reads as a catastrophic regression rather than a quota
-  because the cases that already ran passed. Check for that string before
-  believing a wall of failures; clear `public.scan_usage` for the eval user to
-  reset.
-- Two cases are about 50% flaky on identical code and always have been (the
-  roti canai photo's portion weight, and the part count on halving a nasi
-  lemak). Do not read either as a regression without a control run.
-- Cases state a calorie band, not a figure, and may band a macro too: a
-  double-counted plate was defensible on calories and twice the dish on protein.
-- Photo cases carry a source URL and cache into a gitignored directory rather
-  than committing someone else's photographs.
+- **A full run is about 300 judged answers**, roughly half an hour and $15 to $20
+  of Opus, almost all of it the judge. Smoke test with `--limit 1` first, and
+  run the full suite in the background.
+- **A wall of identical failures is a parameter, not a model.** A model that
+  refuses `reasoning: {enabled: false}` or `response_format` fails every case at
+  the first request. The report's "Model failures" section names it; `--body`
+  grades the model with the parameter changed.
+- **`claude:<id>` goes through `claude -p`**, not OpenRouter. Give the full id:
+  the `haiku` alias in Claude Code 2.1.x is Haiku 4.5.
+- **Always `--repeat` when comparing** — one pass is not a measurement.
+- The judge's verdicts are cached in `.cache/judge/`; `--rejudge` ignores them.
+  Photos cache in `.cache/photos/`, and Wikimedia answers a burst with 429s,
+  which the fetcher waits out.
 
 ## Copy
 

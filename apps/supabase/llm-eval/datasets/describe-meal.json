@@ -1,0 +1,484 @@
+{
+  "about": "A typed meal, answered by describeMeal (including keepDishesWhole) and folded by foldMealItems. kcal is a band for the midpoint of the model's own band. parts is the exact component count, or a [min, max] range. Most cases come from the old eval-prompts and eval:scan suites, where each one was a bug that shipped.",
+  "cases": [
+    {
+      "id": "nasi-lemak",
+      "input": { "text": "nasi lemak" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["nasi lemak"],
+        "parts": 0,
+        "count": 1,
+        "kcal": [350, 700]
+      }
+    },
+    {
+      "id": "nasi-lemak-typo",
+      "note": "A typo still finds the dish.",
+      "input": { "text": "nasi lemk" },
+      "expect": { "no_food": false, "name_has": ["lemak"], "parts": 0 }
+    },
+    {
+      "id": "nasi-lemak-chicken-teh-tarik",
+      "input": { "text": "nasi lemak with fried chicken and teh tarik" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["nasi lemak"],
+        "parts": 3,
+        "part_has": ["teh"],
+        "kcal": [700, 1250]
+      }
+    },
+    {
+      "id": "two-roti-canai-dhal",
+      "note": "Two roti, either as count 2 or as a part with count 2, plus the dhal.",
+      "input": { "text": "2 roti canai with dhal" },
+      "expect": { "no_food": false, "name_has": ["roti"], "kcal": [450, 950] }
+    },
+    {
+      "id": "roti-canai-plain",
+      "input": { "text": "roti canai" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["roti canai"],
+        "parts": 0,
+        "count": 1,
+        "kcal": [250, 420]
+      }
+    },
+    {
+      "id": "half-plate-char-kuey-teow",
+      "note": "The half lives in count (0.5), the serving hint and the band, never in the name.",
+      "input": { "text": "half a plate of char kuey teow" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["kuey teow"],
+        "name_lacks": ["half"],
+        "parts": 0,
+        "hint_has": "half|1/2|0.5",
+        "kcal": [220, 470]
+      }
+    },
+    {
+      "id": "chicken-rice-one-dish",
+      "note": "Chicken rice is one dish, not rice plus chicken.",
+      "input": { "text": "chicken rice" },
+      "expect": { "no_food": false, "name_has": ["chicken rice"], "parts": 0, "kcal": [450, 800] }
+    },
+    {
+      "id": "chicken-rice-egg-teh-tarik",
+      "input": { "text": "chicken rice with extra egg and a teh tarik" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["chicken rice"],
+        "parts": 3,
+        "part_has": ["teh", "egg"],
+        "kcal": [650, 1100]
+      }
+    },
+    {
+      "id": "chicken-porridge",
+      "note": "A bowl of chicken porridge has no components.",
+      "input": { "text": "a bowl of chicken porridge" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["porridge|congee|bubur"],
+        "parts": 0,
+        "kcal": [180, 480]
+      }
+    },
+    {
+      "id": "three-satay-sticks",
+      "note": "The old 720 kcal bug: three sticks are about 120 kcal without sauce.",
+      "input": { "text": "3 sticks of chicken satay" },
+      "expect": { "no_food": false, "name_has": ["satay|sate"], "parts": 0, "kcal": [90, 300] }
+    },
+    {
+      "id": "three-durian-seeds",
+      "note": "Three seeds of durian flesh, about 40 g each.",
+      "input": { "text": "3 durian seeds" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["durian"],
+        "count": 3,
+        "parts": 0,
+        "kcal": [100, 360]
+      }
+    },
+    {
+      "id": "stated-weight-chicken-breast",
+      "note": "A stated weight is exact: 200 g grilled breast is about 330 kcal.",
+      "input": { "text": "200g grilled chicken breast" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["chicken"],
+        "parts": 0,
+        "hint_has": "200",
+        "kcal": [270, 400]
+      }
+    },
+    {
+      "id": "stated-kcal-protein-bar",
+      "note": "A stated figure is the answer, with a band a few percent either side.",
+      "input": { "text": "a 250 kcal protein bar" },
+      "expect": { "no_food": false, "kcal": [240, 260], "band_width_max": 60 }
+    },
+    {
+      "id": "stated-kcal-mixed-rice",
+      "input": { "text": "i had roughly 700 calories of mixed rice for lunch" },
+      "expect": { "no_food": false, "kcal": [680, 720], "band_width_max": 150 }
+    },
+    {
+      "id": "stated-kcal-fried-rice",
+      "input": { "text": "fried rice, roughly 700 calories" },
+      "expect": { "no_food": false, "parts": 0, "kcal": [660, 740], "band_width_max": 150 }
+    },
+    {
+      "id": "question-not-a-meal",
+      "note": "A question about nutrition is not a logged meal.",
+      "input": { "text": "how many calories in nasi lemak?" },
+      "expect": { "no_food": true }
+    },
+    {
+      "id": "greeting-not-a-meal",
+      "input": { "text": "hello, how are you doing today" },
+      "expect": { "no_food": true }
+    },
+    { "id": "thanks-not-a-meal", "input": { "text": "thanks!" }, "expect": { "no_food": true } },
+    {
+      "id": "reminder-not-a-meal",
+      "input": { "text": "remind me to buy milk" },
+      "expect": { "no_food": true }
+    },
+    {
+      "id": "what-should-i-eat",
+      "input": { "text": "what should I eat for dinner?" },
+      "expect": { "no_food": true }
+    },
+    { "id": "keyboard-mash", "input": { "text": "asdfgh" }, "expect": { "no_food": true } },
+    {
+      "id": "ate-nothing",
+      "input": { "text": "ate nothing today lol" },
+      "expect": { "no_food": true }
+    },
+    {
+      "id": "big-mac-meal",
+      "input": { "text": "big mac meal with large fries and a coke" },
+      "expect": {
+        "no_food": false,
+        "parts": 3,
+        "part_has": ["fries", "coke|cola"],
+        "kcal": [1000, 1600]
+      }
+    },
+    {
+      "id": "nasi-kandar-three-sides",
+      "input": { "text": "nasi kandar with fried chicken, egg and vegetables" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["nasi kandar"],
+        "parts": [3, 4],
+        "kcal": [650, 1300]
+      }
+    },
+    {
+      "id": "oats-milk-banana",
+      "input": { "text": "small bowl of oats with milk and a banana" },
+      "expect": { "no_food": false, "parts": [2, 3], "part_has": ["banana"], "kcal": [220, 500] }
+    },
+    {
+      "id": "teh-o-ais-limau",
+      "note": "A sweet iced lemon tea, a drink not a meal.",
+      "input": { "text": "teh o ais limau" },
+      "expect": { "no_food": false, "parts": 0, "kcal": [40, 170] }
+    },
+    {
+      "id": "two-slices-pepperoni",
+      "input": { "text": "two slices of pepperoni pizza" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["pizza"],
+        "count": 2,
+        "parts": 0,
+        "kcal": [450, 800]
+      }
+    },
+    {
+      "id": "vague-rice-and-chicken",
+      "note": "Vague text: confidence must be honestly low.",
+      "input": { "text": "just some rice and chicken, not sure how much" },
+      "expect": { "no_food": false, "confidence_max": 0.6, "kcal": [350, 850] }
+    },
+    {
+      "id": "maggi-goreng-egg",
+      "input": { "text": "maggi goreng with an egg" },
+      "expect": { "no_food": false, "name_has": ["maggi"], "parts": 2, "kcal": [450, 900] }
+    },
+    {
+      "id": "spice-is-not-a-part",
+      "note": "Extra pedas changes nothing calorific and splits nothing.",
+      "input": { "text": "nasi goreng kampung, extra pedas" },
+      "expect": { "no_food": false, "name_has": ["nasi goreng"], "parts": 0, "kcal": [450, 900] }
+    },
+    {
+      "id": "kopitiam-breakfast",
+      "input": { "text": "2 telur separuh masak with kaya toast and kopi o" },
+      "expect": {
+        "no_food": false,
+        "parts": 3,
+        "part_has": ["telur|egg", "kaya|toast", "kopi"],
+        "kcal": [300, 700]
+      }
+    },
+    {
+      "id": "five-fried-wanton",
+      "input": { "text": "5 pieces of fried wanton" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["wanton|wonton"],
+        "count": 5,
+        "parts": 0,
+        "kcal": [180, 450]
+      }
+    },
+    {
+      "id": "cup-of-white-rice",
+      "input": { "text": "a bowl of white rice, about 1 cup" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["rice"],
+        "parts": 0,
+        "hint_has": "cup|bowl",
+        "kcal": [170, 300]
+      }
+    },
+    {
+      "id": "malay-past-tense",
+      "note": "Malay: 'ate chicken rice earlier'.",
+      "input": { "text": "makan nasi ayam tadi" },
+      "expect": { "no_food": false, "name_has": ["ayam|chicken"], "kcal": [450, 850] }
+    },
+    {
+      "id": "malay-two-items",
+      "note": "Malay: a plate of chicken fried rice and a glass of iced Milo.",
+      "input": { "text": "sepinggan nasi goreng ayam dan segelas milo ais" },
+      "expect": { "no_food": false, "parts": 2, "part_has": ["milo"], "kcal": [700, 1100] }
+    },
+    {
+      "id": "chinese-wonton-noodles",
+      "note": "Chinese: a bowl of wonton noodles.",
+      "input": { "text": "一碗云吞面" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["wonton|wanton|云吞"],
+        "parts": 0,
+        "kcal": [350, 650]
+      }
+    },
+    {
+      "id": "manglish-economy-rice",
+      "note": "Takeaway mixed rice with the three dishes listed.",
+      "input": { "text": "tapau 1 pack nasi campur, rice + ayam masak merah + kangkung" },
+      "expect": {
+        "no_food": false,
+        "parts": [3, 3],
+        "part_has": ["ayam|chicken", "kangkung"],
+        "kcal": [550, 1000]
+      }
+    },
+    {
+      "id": "chicken-chop",
+      "input": { "text": "chicken chop with black pepper sauce and fries" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["chicken chop"],
+        "parts": [2, 3],
+        "part_has": ["fries"],
+        "kcal": [650, 1200]
+      }
+    },
+    {
+      "id": "bottle-100-plus",
+      "note": "A 500 ml isotonic drink, about 120 to 150 kcal.",
+      "input": { "text": "i drank a bottle of 100 plus" },
+      "expect": { "no_food": false, "parts": 0, "kcal": [80, 220] }
+    },
+    {
+      "id": "eight-pieces-sushi",
+      "input": { "text": "sushi, 8 pieces" },
+      "expect": { "no_food": false, "name_has": ["sushi"], "count": 8, "kcal": [250, 550] }
+    },
+    {
+      "id": "can-of-coke",
+      "input": { "text": "a can of coke" },
+      "expect": { "no_food": false, "parts": 0, "kcal": [125, 165] }
+    },
+    {
+      "id": "large-mcd-fries",
+      "input": { "text": "large mcdonalds fries" },
+      "expect": { "no_food": false, "name_has": ["fries"], "parts": 0, "kcal": [380, 560] }
+    },
+    {
+      "id": "banana-leaf-mutton",
+      "input": { "text": "banana leaf rice with mutton curry" },
+      "expect": {
+        "no_food": false,
+        "parts": [2, 3],
+        "part_has": ["mutton|kambing"],
+        "kcal": [600, 1150]
+      }
+    },
+    {
+      "id": "mee-goreng-mamak",
+      "input": { "text": "mee goreng mamak" },
+      "expect": { "no_food": false, "name_has": ["mee goreng"], "parts": 0, "kcal": [450, 850] }
+    },
+    {
+      "id": "bread-kaya-butter",
+      "input": { "text": "two slices of white bread with kaya and butter" },
+      "expect": { "no_food": false, "parts": [2, 3], "kcal": [230, 480] }
+    },
+    {
+      "id": "curry-laksa",
+      "input": { "text": "a bowl of curry laksa" },
+      "expect": { "no_food": false, "name_has": ["laksa"], "parts": 0, "kcal": [450, 850] }
+    },
+    {
+      "id": "kopi-c-kosong",
+      "note": "Coffee with evaporated milk and no sugar: small.",
+      "input": { "text": "kopi c kosong" },
+      "expect": { "no_food": false, "name_has": ["kopi"], "parts": 0, "kcal": [15, 80] }
+    },
+    {
+      "id": "teh-tarik-less-sweet",
+      "note": "A sweetness note is about the drink, not the name of a different dish.",
+      "input": { "text": "teh tarik kurang manis" },
+      "expect": { "no_food": false, "name_has": ["teh tarik"], "parts": 0, "kcal": [70, 170] }
+    },
+    {
+      "id": "tiger-beer-can",
+      "input": { "text": "1 can tiger beer" },
+      "expect": { "no_food": false, "name_has": ["tiger|beer"], "parts": 0, "kcal": [100, 175] }
+    },
+    {
+      "id": "an-apple",
+      "input": { "text": "an apple" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["apple"],
+        "count": 1,
+        "parts": 0,
+        "kcal": [55, 120]
+      }
+    },
+    {
+      "id": "dim-sum-three-kinds",
+      "note": "Two har gow, two siu mai and two char siu bao: three foods, each counted.",
+      "input": { "text": "6 pieces of dim sum: 2 har gow, 2 siu mai, 2 char siu bao" },
+      "expect": { "no_food": false, "parts": 3, "kcal": [380, 700] }
+    },
+    {
+      "id": "branded-frappuccino",
+      "input": { "text": "Starbucks grande caramel frappuccino" },
+      "expect": { "no_food": false, "name_has": ["frappuccino"], "parts": 0, "kcal": [300, 450] }
+    },
+    {
+      "id": "kfc-two-piece-meal",
+      "input": { "text": "KFC 2 piece chicken meal with coleslaw and mashed potato and pepsi" },
+      "expect": {
+        "no_food": false,
+        "parts": 4,
+        "part_has": ["coleslaw", "mash|potato", "pepsi"],
+        "kcal": [800, 1300]
+      }
+    },
+    {
+      "id": "small-bihun-sup",
+      "input": { "text": "bihun sup, small" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["bihun|bee hoon|meehoon"],
+        "name_lacks": ["small"],
+        "parts": 0,
+        "kcal": [180, 400]
+      }
+    },
+    {
+      "id": "eggs-and-toast",
+      "input": { "text": "2 eggs and toast" },
+      "expect": { "no_food": false, "parts": 2, "kcal": [220, 450] }
+    },
+    {
+      "id": "salmon-sashimi-100g",
+      "input": { "text": "salmon sashimi 100g" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["salmon"],
+        "parts": 0,
+        "hint_has": "100",
+        "kcal": [170, 240]
+      }
+    },
+    {
+      "id": "handful-almonds",
+      "input": { "text": "a handful of almonds" },
+      "expect": { "no_food": false, "name_has": ["almond"], "parts": 0, "kcal": [120, 230] }
+    },
+    {
+      "id": "cendol",
+      "input": { "text": "cendol" },
+      "expect": { "no_food": false, "name_has": ["cendol"], "parts": 0, "kcal": [220, 450] }
+    },
+    {
+      "id": "three-pisang-goreng",
+      "input": { "text": "pisang goreng 3 pieces" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["pisang goreng|banana fritter|goreng pisang"],
+        "count": 3,
+        "parts": 0,
+        "kcal": [240, 480]
+      }
+    },
+    {
+      "id": "nasi-lemak-ayam-rendang",
+      "note": "One order named as one thing, so no breakdown.",
+      "input": { "text": "nasi lemak ayam rendang" },
+      "expect": { "no_food": false, "name_has": ["nasi lemak"], "parts": 0, "kcal": [600, 950] }
+    },
+    {
+      "id": "three-tacos-al-pastor",
+      "note": "A Mexican dish answered on its own terms.",
+      "input": { "text": "Tacos al pastor x3" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["taco"],
+        "name_lacks": ["nasi", "roti"],
+        "count": 3,
+        "parts": 0,
+        "kcal": [400, 750]
+      }
+    },
+    {
+      "id": "tonkotsu-ramen",
+      "input": { "text": "a bowl of tonkotsu ramen" },
+      "expect": { "no_food": false, "name_has": ["ramen"], "parts": 0, "kcal": [550, 1000] }
+    },
+    {
+      "id": "skipped-lunch-had-kopi",
+      "note": "Only the kopi was eaten.",
+      "input": { "text": "skipped lunch, just had a kopi" },
+      "expect": { "no_food": false, "name_has": ["kopi|coffee"], "parts": 0, "kcal": [50, 160] }
+    },
+    {
+      "id": "slice-chocolate-cake",
+      "input": { "text": "a slice of chocolate cake" },
+      "expect": {
+        "no_food": false,
+        "name_has": ["chocolate cake|cake"],
+        "parts": 0,
+        "kcal": [300, 550]
+      }
+    }
+  ]
+}

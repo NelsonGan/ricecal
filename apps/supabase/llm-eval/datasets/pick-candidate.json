@@ -1,0 +1,762 @@
+{
+  "about": "The tier-1 verifier: a described dish and the catalogue's top hits; pickCandidate answers an index or null. `accept` lists every right answer. The catalogue rows are realistic stand-ins for what D1 returns, written so that the near misses are the hard part.",
+  "cases": [
+    {
+      "id": "nasi-lemak-ayam",
+      "input": {
+        "dish": "Nasi lemak with fried chicken",
+        "generic": "nasi lemak",
+        "kcal": [650, 900],
+        "serving": "1 plate",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Nasi lemak, plain",
+            "brand": null,
+            "kcal": 400,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "b",
+            "name": "Nasi lemak ayam goreng",
+            "brand": null,
+            "kcal": 760,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "c",
+            "name": "Nasi goreng",
+            "brand": null,
+            "kcal": 640,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "d",
+            "name": "Coconut rice",
+            "brand": null,
+            "kcal": 300,
+            "serving_label": "1 cup"
+          }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "hot-latte-not-bottled",
+      "note": "Form matters: a bottled ready-to-drink latte is not a cafe latte.",
+      "input": {
+        "dish": "Caffe latte",
+        "generic": "latte",
+        "kcal": [120, 230],
+        "serving": "1 cup",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Latte",
+            "brand": "Nescafe",
+            "kcal": 100,
+            "serving_label": "1 bottle (250 g)"
+          },
+          {
+            "id": "b",
+            "name": "Caffe latte",
+            "brand": null,
+            "kcal": 190,
+            "serving_label": "Regular (350 ml)"
+          },
+          {
+            "id": "c",
+            "name": "Caramel macchiato",
+            "brand": "Starbucks",
+            "kcal": 250,
+            "serving_label": "Tall (354 ml)"
+          }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "milo-ais-not-canned",
+      "input": {
+        "dish": "Milo ais",
+        "generic": "milo",
+        "kcal": [150, 260],
+        "serving": "1 glass",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Milo",
+            "brand": "Nestle",
+            "kcal": 160,
+            "serving_label": "1 can (240 ml)"
+          },
+          {
+            "id": "b",
+            "name": "Milo ais",
+            "brand": null,
+            "kcal": 210,
+            "serving_label": "1 glass (350 ml)"
+          },
+          {
+            "id": "c",
+            "name": "Milo powder",
+            "brand": "Nestle",
+            "kcal": 130,
+            "serving_label": "1 sachet (33 g)"
+          }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "char-kuey-teow-near-misses",
+      "note": "Every candidate is a different noodle dish. Null beats a near miss.",
+      "input": {
+        "dish": "Char kuey teow",
+        "generic": "fried kuey teow",
+        "kcal": [600, 850],
+        "serving": "1 plate",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Kuey teow soup",
+            "brand": null,
+            "kcal": 330,
+            "serving_label": "1 bowl"
+          },
+          {
+            "id": "b",
+            "name": "Hokkien mee",
+            "brand": null,
+            "kcal": 620,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "c",
+            "name": "Fried mee hoon",
+            "brand": null,
+            "kcal": 560,
+            "serving_label": "1 plate"
+          }
+        ]
+      },
+      "expect": { "accept": [null] }
+    },
+    {
+      "id": "big-mac-branded",
+      "note": "A branded version of the same dish is a match.",
+      "input": {
+        "dish": "Big Mac",
+        "generic": "burger",
+        "kcal": [500, 620],
+        "serving": "1 burger",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Big Mac",
+            "brand": "McDonald's",
+            "kcal": 563,
+            "serving_label": "1 burger"
+          },
+          {
+            "id": "b",
+            "name": "Double cheeseburger",
+            "brand": "McDonald's",
+            "kcal": 445,
+            "serving_label": "1 burger"
+          },
+          {
+            "id": "c",
+            "name": "Whopper",
+            "brand": "Burger King",
+            "kcal": 660,
+            "serving_label": "1 burger"
+          }
+        ]
+      },
+      "expect": { "accept": [0] }
+    },
+    {
+      "id": "nasi-kandar-near-misses",
+      "input": {
+        "dish": "Nasi kandar with fried chicken",
+        "generic": "nasi kandar",
+        "kcal": [750, 1100],
+        "serving": "1 plate",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Nasi lemak ayam goreng",
+            "brand": null,
+            "kcal": 760,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "b",
+            "name": "Nasi briyani ayam",
+            "brand": null,
+            "kcal": 820,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "c",
+            "name": "Nasi goreng ayam",
+            "brand": null,
+            "kcal": 700,
+            "serving_label": "1 plate"
+          }
+        ]
+      },
+      "expect": { "accept": [null] }
+    },
+    {
+      "id": "roti-canai-among-roti",
+      "input": {
+        "dish": "Roti canai",
+        "generic": "roti canai",
+        "kcal": [250, 380],
+        "serving": "1 piece",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Roti telur",
+            "brand": null,
+            "kcal": 330,
+            "serving_label": "1 piece"
+          },
+          {
+            "id": "b",
+            "name": "Roti canai",
+            "brand": null,
+            "kcal": 300,
+            "serving_label": "1 piece"
+          },
+          { "id": "c", "name": "Roti tisu", "brand": null, "kcal": 450, "serving_label": "1 piece" }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "teh-tarik-not-instant",
+      "input": {
+        "dish": "Teh tarik",
+        "generic": "milk tea",
+        "kcal": [120, 210],
+        "serving": "1 glass",
+        "candidates": [
+          { "id": "a", "name": "Teh O", "brand": null, "kcal": 75, "serving_label": "1 glass" },
+          {
+            "id": "b",
+            "name": "Teh tarik",
+            "brand": null,
+            "kcal": 160,
+            "serving_label": "1 glass (250 ml)"
+          },
+          {
+            "id": "c",
+            "name": "Teh tarik 3-in-1",
+            "brand": "Aik Cheong",
+            "kcal": 120,
+            "serving_label": "1 sachet (40 g)"
+          }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "roasted-chicken-rice",
+      "input": {
+        "dish": "Roasted chicken rice",
+        "generic": "chicken rice",
+        "kcal": [550, 800],
+        "serving": "1 plate",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Steamed chicken rice",
+            "brand": null,
+            "kcal": 600,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "b",
+            "name": "Roasted chicken rice",
+            "brand": null,
+            "kcal": 650,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "c",
+            "name": "Chicken rice ball",
+            "brand": null,
+            "kcal": 400,
+            "serving_label": "1 set"
+          }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "satay-per-stick",
+      "note": "The row is per stick; the band is for six. The dish is what matters, and the app scales the serving.",
+      "input": {
+        "dish": "Chicken satay",
+        "generic": "satay",
+        "kcal": [220, 360],
+        "serving": "6 sticks",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Chicken satay",
+            "brand": null,
+            "kcal": 40,
+            "serving_label": "1 stick"
+          },
+          {
+            "id": "b",
+            "name": "Beef satay",
+            "brand": null,
+            "kcal": 45,
+            "serving_label": "1 stick"
+          },
+          {
+            "id": "c",
+            "name": "Satay celup",
+            "brand": null,
+            "kcal": 500,
+            "serving_label": "1 portion"
+          }
+        ]
+      },
+      "expect": { "accept": [0] }
+    },
+    {
+      "id": "curry-laksa-not-assam",
+      "input": {
+        "dish": "Curry laksa",
+        "generic": "laksa",
+        "kcal": [500, 800],
+        "serving": "1 bowl",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Penang assam laksa",
+            "brand": null,
+            "kcal": 430,
+            "serving_label": "1 bowl"
+          },
+          {
+            "id": "b",
+            "name": "Curry laksa",
+            "brand": null,
+            "kcal": 590,
+            "serving_label": "1 bowl"
+          },
+          { "id": "c", "name": "Laksam", "brand": null, "kcal": 450, "serving_label": "1 bowl" }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "assam-laksa-absent",
+      "input": {
+        "dish": "Assam laksa",
+        "generic": "laksa",
+        "kcal": [350, 500],
+        "serving": "1 bowl",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Curry laksa",
+            "brand": null,
+            "kcal": 590,
+            "serving_label": "1 bowl"
+          },
+          {
+            "id": "b",
+            "name": "Laksa Johor",
+            "brand": null,
+            "kcal": 520,
+            "serving_label": "1 plate"
+          },
+          { "id": "c", "name": "Mee kari", "brand": null, "kcal": 610, "serving_label": "1 bowl" }
+        ]
+      },
+      "expect": { "accept": [null] }
+    },
+    {
+      "id": "ayam-penyet-set",
+      "input": {
+        "dish": "Ayam penyet with rice",
+        "generic": "ayam penyet",
+        "kcal": [650, 900],
+        "serving": "1 set",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Ayam penyet with rice",
+            "brand": null,
+            "kcal": 780,
+            "serving_label": "1 set"
+          },
+          {
+            "id": "b",
+            "name": "Ayam goreng berempah",
+            "brand": null,
+            "kcal": 290,
+            "serving_label": "1 piece"
+          },
+          {
+            "id": "c",
+            "name": "Ayam bakar",
+            "brand": null,
+            "kcal": 280,
+            "serving_label": "1 piece"
+          }
+        ]
+      },
+      "expect": { "accept": [0] }
+    },
+    {
+      "id": "maggi-goreng-not-packet",
+      "note": "A packet of instant noodles is not a plate of mamak Maggi goreng.",
+      "input": {
+        "dish": "Maggi goreng",
+        "generic": "maggi goreng",
+        "kcal": [500, 750],
+        "serving": "1 plate",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Maggi kari instant noodles",
+            "brand": "Maggi",
+            "kcal": 360,
+            "serving_label": "1 packet (79 g)"
+          },
+          {
+            "id": "b",
+            "name": "Maggi goreng",
+            "brand": null,
+            "kcal": 620,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "c",
+            "name": "Mee goreng mamak",
+            "brand": null,
+            "kcal": 660,
+            "serving_label": "1 plate"
+          }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "fresh-orange-juice",
+      "input": {
+        "dish": "Fresh orange juice",
+        "generic": "orange juice",
+        "kcal": [90, 150],
+        "serving": "1 glass",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Orange cordial",
+            "brand": "Sunquick",
+            "kcal": 80,
+            "serving_label": "30 ml concentrate"
+          },
+          {
+            "id": "b",
+            "name": "Orange juice, freshly squeezed",
+            "brand": null,
+            "kcal": 112,
+            "serving_label": "1 glass (250 ml)"
+          },
+          { "id": "c", "name": "Orange", "brand": null, "kcal": 62, "serving_label": "1 medium" }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "iced-latte-starbucks",
+      "input": {
+        "dish": "Iced latte",
+        "generic": "latte",
+        "kcal": [110, 200],
+        "serving": "Grande",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Iced caffe latte",
+            "brand": "Starbucks",
+            "kcal": 130,
+            "serving_label": "Grande (473 ml)"
+          },
+          {
+            "id": "b",
+            "name": "Iced caramel macchiato",
+            "brand": "Starbucks",
+            "kcal": 250,
+            "serving_label": "Grande (473 ml)"
+          },
+          {
+            "id": "c",
+            "name": "Latte",
+            "brand": "Nescafe",
+            "kcal": 100,
+            "serving_label": "1 bottle (250 g)"
+          }
+        ]
+      },
+      "expect": { "accept": [0] }
+    },
+    {
+      "id": "dry-wantan-mee",
+      "input": {
+        "dish": "Wantan mee, dry",
+        "generic": "wantan mee",
+        "kcal": [380, 550],
+        "serving": "1 plate",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Wantan mee soup",
+            "brand": null,
+            "kcal": 380,
+            "serving_label": "1 bowl"
+          },
+          {
+            "id": "b",
+            "name": "Wantan mee, dry, with char siu",
+            "brand": null,
+            "kcal": 410,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "c",
+            "name": "Fried wantan",
+            "brand": null,
+            "kcal": 260,
+            "serving_label": "5 pieces"
+          }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "durian-seeds",
+      "input": {
+        "dish": "Durian",
+        "generic": "durian",
+        "kcal": [140, 300],
+        "serving": "3 seeds",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Durian flesh",
+            "brand": null,
+            "kcal": 60,
+            "serving_label": "1 seed (40 g)"
+          },
+          {
+            "id": "b",
+            "name": "Durian cake",
+            "brand": null,
+            "kcal": 280,
+            "serving_label": "1 slice"
+          },
+          { "id": "c", "name": "Tempoyak", "brand": null, "kcal": 30, "serving_label": "1 tbsp" }
+        ]
+      },
+      "expect": { "accept": [0] }
+    },
+    {
+      "id": "nasi-goreng-kampung",
+      "input": {
+        "dish": "Nasi goreng kampung",
+        "generic": "nasi goreng",
+        "kcal": [550, 800],
+        "serving": "1 plate",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Nasi goreng pattaya",
+            "brand": null,
+            "kcal": 780,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "b",
+            "name": "Nasi goreng kampung",
+            "brand": null,
+            "kcal": 640,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "c",
+            "name": "Nasi goreng cina",
+            "brand": null,
+            "kcal": 600,
+            "serving_label": "1 plate"
+          }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "white-rice-not-flour",
+      "note": "Search ranks by name, so rice flour can top-rank a bowl of rice.",
+      "input": {
+        "dish": "White rice",
+        "generic": "rice",
+        "kcal": [180, 270],
+        "serving": "1 cup",
+        "candidates": [
+          { "id": "a", "name": "Rice flour", "brand": null, "kcal": 366, "serving_label": "100 g" },
+          {
+            "id": "b",
+            "name": "White rice, cooked",
+            "brand": null,
+            "kcal": 205,
+            "serving_label": "1 cup (158 g)"
+          },
+          {
+            "id": "c",
+            "name": "Brown rice, cooked",
+            "brand": null,
+            "kcal": 218,
+            "serving_label": "1 cup (195 g)"
+          }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "pho-absent",
+      "input": {
+        "dish": "Pho bo",
+        "generic": "beef noodle soup",
+        "kcal": [350, 600],
+        "serving": "1 bowl",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Kuey teow soup",
+            "brand": null,
+            "kcal": 330,
+            "serving_label": "1 bowl"
+          },
+          {
+            "id": "b",
+            "name": "Bun bo Hue",
+            "brand": null,
+            "kcal": 520,
+            "serving_label": "1 bowl"
+          },
+          { "id": "c", "name": "Mee rebus", "brand": null, "kcal": 560, "serving_label": "1 bowl" }
+        ]
+      },
+      "expect": { "accept": [null] }
+    },
+    {
+      "id": "coca-cola-regular",
+      "input": {
+        "dish": "Coca-Cola",
+        "generic": "cola",
+        "kcal": [120, 160],
+        "serving": "1 can",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Coca-Cola",
+            "brand": "Coca-Cola",
+            "kcal": 140,
+            "serving_label": "1 can (320 ml)"
+          },
+          {
+            "id": "b",
+            "name": "Coca-Cola Zero Sugar",
+            "brand": "Coca-Cola",
+            "kcal": 1,
+            "serving_label": "1 can (320 ml)"
+          },
+          {
+            "id": "c",
+            "name": "Pepsi",
+            "brand": "Pepsi",
+            "kcal": 150,
+            "serving_label": "1 can (325 ml)"
+          }
+        ]
+      },
+      "expect": { "accept": [0] }
+    },
+    {
+      "id": "coke-zero",
+      "input": {
+        "dish": "Coke Zero",
+        "generic": "cola",
+        "kcal": [0, 10],
+        "serving": "1 can",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Coca-Cola",
+            "brand": "Coca-Cola",
+            "kcal": 140,
+            "serving_label": "1 can (320 ml)"
+          },
+          {
+            "id": "b",
+            "name": "Coca-Cola Zero Sugar",
+            "brand": "Coca-Cola",
+            "kcal": 1,
+            "serving_label": "1 can (320 ml)"
+          },
+          {
+            "id": "c",
+            "name": "Pepsi Black",
+            "brand": "Pepsi",
+            "kcal": 2,
+            "serving_label": "1 can (325 ml)"
+          }
+        ]
+      },
+      "expect": { "accept": [1] }
+    },
+    {
+      "id": "bak-kut-teh-herbal",
+      "input": {
+        "dish": "Bak kut teh",
+        "generic": "bak kut teh",
+        "kcal": [350, 600],
+        "serving": "1 bowl",
+        "candidates": [
+          {
+            "id": "a",
+            "name": "Bak kut teh",
+            "brand": null,
+            "kcal": 450,
+            "serving_label": "1 bowl"
+          },
+          {
+            "id": "b",
+            "name": "Dry bak kut teh",
+            "brand": null,
+            "kcal": 600,
+            "serving_label": "1 plate"
+          },
+          {
+            "id": "c",
+            "name": "Pork rib soup",
+            "brand": null,
+            "kcal": 300,
+            "serving_label": "1 bowl"
+          }
+        ]
+      },
+      "expect": { "accept": [0] }
+    }
+  ]
+}

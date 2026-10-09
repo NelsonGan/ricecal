@@ -1,11 +1,10 @@
 /**
  * Drives the deployed edge functions the way the app drives them, from a script.
  *
- * `eval-prompts.ts` grades a prompt by importing it and calling the model
- * directly, which never uploads a photo, searches the catalogue, runs the
- * verifier or writes a row. Most of what goes wrong with a scan goes wrong in
- * those parts, so this file is the shipped path end to end, with the cascade's
- * own `debug: true` trace on every call.
+ * `pnpm eval:llm` grades the model calls by importing them and swapping the
+ * model, which never uploads a photo, searches the catalogue, runs the verifier
+ * or writes a row. A script that needs the shipped path end to end, with the
+ * cascade's own `debug: true` trace on every call, gets its session here.
  *
  * `.secrets/eval.json` holds an email and a password for a throwaway account.
  * The first design read a refresh token out of the running app and lasted one
