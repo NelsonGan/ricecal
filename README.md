@@ -5194,7 +5194,9 @@ twice the input rate and concurrent ones rarely read it back, so there the cache
 cost can exceed the uncached one. The judge is most of a run's cost, about four
 cents an answer on Opus with the per-task context in its cached system prompt,
 so roughly $11 for the full suite. Verdicts reused from `.cache/judge/` cost
-nothing again and are reported beside the fresh spend.
+nothing again and are reported beside the fresh spend. The cache key is the case
+and the answer, not the model, so two models that give the same answer (an
+`{"approved": true}`, a catalogue index) share one verdict.
 
 **Every run is committed to `history/`.** `runs/<time>_<model>/` (gitignored)
 holds everything a run saw: `results.jsonl` with each request, reply, usage,
