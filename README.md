@@ -4616,6 +4616,7 @@ scan's vision call, catalogue pick and nutrition estimate read as one trace.
 | `$ai_total_cost_usd`, `$ai_cost_passthrough` | OpenRouter's reported charge (`usage: { include: true }` on every call), not re-priced |
 | `$ai_latency`, `$ai_http_status`, `$ai_is_error`, `$ai_error`, `finish_reason` | Seconds, status and a short error; a JSON parse failure is recorded as `model answer was not valid JSON` so the answer is never quoted |
 | `feature`, `attempt`, `$ai_max_tokens`, `$ai_temperature` | The edge function, first request or retry, and the call's settings |
+| `$geoip_disable` | Always `true`: the request comes from Supabase's servers, whose location would otherwise overwrite the person's |
 | `distinct_id`, `$session_id`, `$ai_session_id` | The Supabase uuid the app identifies PostHog with, and the app's session from the `X-POSTHOG-SESSION-ID` header the SDK adds to Supabase requests (`addTracingHeaders`). Moderation runs as `ricecal-moderation` and creates no person |
 
 `$ai_input` and `$ai_output_choices` carry fixed placeholders. A prompt holds the
