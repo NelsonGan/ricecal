@@ -22,6 +22,11 @@ export type EngagementState = {
   lastDay: string | null
   /** How many distinct local days have sent one, since tracking began. */
   activeDays: number
+  /**
+   * The local day `First App Open` was sent, or null for an install that
+   * predates it. Lets later launches that same day count as the first day.
+   */
+  installDay: string | null
 }
 
 export type EngagementStorage = {
@@ -29,7 +34,7 @@ export type EngagementStorage = {
   write(value: string): void
 }
 
-const EMPTY: EngagementState = { lastDay: null, activeDays: 0 }
+const EMPTY: EngagementState = { lastDay: null, activeDays: 0, installDay: null }
 
 /** `YYYY-MM-DD` in the phone's own time zone, which is the day the user lives in. */
 export function localDay(now: Date): string {
@@ -60,7 +65,11 @@ export function parseEngagement(raw: string | undefined): EngagementState {
       typeof value.activeDays === 'number' && Number.isFinite(value.activeDays)
         ? Math.max(0, Math.floor(value.activeDays))
         : 0
-    return { lastDay, activeDays }
+    const installDay =
+      typeof value.installDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.installDay)
+        ? value.installDay
+        : null
+    return { lastDay, activeDays, installDay }
   } catch {
     return EMPTY
   }
@@ -80,7 +89,7 @@ export function claimDailyOpen(
   if (state.lastDay === today) return null
   const activeDays = state.activeDays + 1
   return {
-    next: { lastDay: today, activeDays },
+    next: { ...state, lastDay: today, activeDays },
     properties: {
       active_days: activeDays,
       days_since_last_open: state.lastDay ? daysBetween(state.lastDay, today) : null,
@@ -100,14 +109,19 @@ export function claimDailyOpen(
 export function recordAppOpen(
   storage: EngagementStorage,
   { freshInstall, now = new Date() }: { freshInstall: boolean; now?: Date },
-): { firstOpen: boolean; daily: boolean } {
-  const state = parseEngagement(storage.read())
+): { firstOpen: boolean; daily: boolean; firstDay: boolean } {
+  const today = localDay(now)
+  let state = parseEngagement(storage.read())
   const firstOpen = freshInstall && state.lastDay === null
-  if (firstOpen) track('First App Open', {})
+  if (firstOpen) {
+    state = { ...state, installDay: today }
+    track('First App Open', {})
+  }
+  const firstDay = state.installDay === today
 
-  const claim = claimDailyOpen(state, localDay(now))
-  if (!claim) return { firstOpen, daily: false }
+  const claim = claimDailyOpen(state, today)
+  if (!claim) return { firstOpen, daily: false, firstDay }
   storage.write(JSON.stringify(claim.next))
   track('Daily App Open', claim.properties)
-  return { firstOpen, daily: true }
+  return { firstOpen, daily: true, firstDay }
 }

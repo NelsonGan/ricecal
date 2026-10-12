@@ -40,5 +40,5 @@ export function reportError(error: unknown, context: ErrorContext = {}): void {
  * groups into an issue like any other.
  */
 export function reportMessage(message: string, context: ErrorContext = {}): void {
-  reportError(new Error(message), { ...context, level: 'warning' })
+  reportError(new Error(message), { ...context, $exception_level: 'warning' })
 }

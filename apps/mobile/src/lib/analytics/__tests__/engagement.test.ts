@@ -69,10 +69,11 @@ describe('engagement events', () => {
   })
 
   it('reads damaged state as empty rather than throwing', () => {
-    expect(parseEngagement('{not json')).toEqual({ lastDay: null, activeDays: 0 })
+    expect(parseEngagement('{not json')).toEqual({ lastDay: null, activeDays: 0, installDay: null })
     expect(parseEngagement('{"lastDay":"yesterday","activeDays":-4}')).toEqual({
       lastDay: null,
       activeDays: 0,
+      installDay: null,
     })
   })
 
@@ -91,6 +92,23 @@ describe('engagement events', () => {
       { event: 'Daily App Open', props: { active_days: 1, days_since_last_open: null } },
       { event: 'Daily App Open', props: { active_days: 2, days_since_last_open: 1 } },
     ])
+  })
+
+  it('treats every launch on the install day as the first day, and none after', () => {
+    registerAnalytics(fakeClient().client)
+    const storage = memoryStorage()
+    expect(
+      recordAppOpen(storage, { freshInstall: true, now: new Date(2026, 9, 12, 9) }).firstDay,
+    ).toBe(true)
+    expect(
+      recordAppOpen(storage, { freshInstall: false, now: new Date(2026, 9, 12, 22) }).firstDay,
+    ).toBe(true)
+    expect(
+      recordAppOpen(storage, { freshInstall: false, now: new Date(2026, 9, 13, 8) }).firstDay,
+    ).toBe(false)
+    expect(
+      recordAppOpen(memoryStorage(), { freshInstall: false, now: new Date(2026, 9, 12) }).firstDay,
+    ).toBe(false)
   })
 
   it('never calls an updating install a new one', () => {
