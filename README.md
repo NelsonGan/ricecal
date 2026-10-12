@@ -4708,7 +4708,7 @@ Verified 2026-10-12; credentials remain in the dashboards and local ignored file
 | RevenueCat GA4 reporting | Gross USD; sandbox off; hashed email off; web fields empty; Firebase Extension unused (Supabase owns accounts/entitlements) |
 | iOS native revenue rules | `in_app_purchase` and prefix `app_store_`, each AND `revenuecat_revenue_enabled = 1`; preserve original name in `legacy_event_name`, rename to `ricecal_store_revenue_observed` |
 | Android native revenue rule | `in_app_purchase` AND `revenuecat_revenue_enabled = 1`; same preserve/rename action; separate Google Play import removed |
-| EAS environment | `production`: `POSTHOG_CLI_API_KEY` (sensitive) and `POSTHOG_CLI_PROJECT_ID`. The Mixpanel token, Sentry DSN and Sentry token were deleted from every environment |
+| EAS environment | `production`: `POSTHOG_CLI_API_KEY` (sensitive) and `POSTHOG_CLI_PROJECT_ID`. `EXPO_PUBLIC_MIXPANEL_TOKEN`, `EXPO_PUBLIC_SENTRY_DSN` and `SENTRY_AUTH_TOKEN` are deleted from every environment once this migration is on `main` (code before it requires them) |
 | Dev / preview / PR updates | Both providers disabled by `EXPO_PUBLIC_ANALYTICS_ENABLED=false`; GA4 additionally disabled by its existing flag |
 | Backend entitlement webhook | Existing Supabase `revenuecat` function preserved; sandbox entitlements follow `REVENUECAT_SANDBOX_SUBSCRIBERS` policy independently of analytics sandbox exclusion |
 
