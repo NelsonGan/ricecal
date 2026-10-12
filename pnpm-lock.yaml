@@ -71,7 +71,7 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2(react-native-nitro-modules@0.36.3(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       '@posthog/react-native-plugin':
-        specifier: 2.12.5
+        specifier: ^2.12.5
         version: 2.12.5(react-native@0.86.3(@babel/core@7.29.7)(@react-native/jest-preset@0.86.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       '@react-native-community/netinfo':
         specifier: 12.0.1
@@ -188,7 +188,7 @@ importers:
         specifier: ^4.2.6
         version: 4.2.6(de766acb4584a416b6b5bbcaae07660d)
       posthog-react-native:
-        specifier: 4.81.0
+        specifier: ^4.81.0
         version: 4.81.0(41274fbc83111d9da274400daec6d4a9)
       react:
         specifier: 19.2.3
