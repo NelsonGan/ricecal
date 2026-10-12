@@ -4,10 +4,10 @@ import type { EventName, Events, PersonProps, SuperProps } from './events'
 /**
  * The seam between the app and product analytics.
  *
- * Nothing native is imported here. `mixpanel-react-native` cannot be
- * transformed by jest (the same problem that put the RevenueCat lifecycle in
- * its own file), and tracking is fired from the data layer and a dozen screens,
- * so a native import here would reach most of the test suite.
+ * Nothing native is imported here. The PostHog and Firebase SDKs reach for
+ * native modules at import (the same problem that put the RevenueCat lifecycle
+ * in its own file), and tracking is fired from the data layer and a dozen
+ * screens, so a native import here would reach most of the test suite.
  *
  * So the dependency runs the other way: `startup.ts` builds the instance and
  * hands it over through `registerAnalytics`. Every call is safe before
@@ -45,16 +45,20 @@ const QUEUE_LIMIT = 50
 let queue: Array<(target: AnalyticsClient) => void> = []
 
 /**
- * Whether anything is actually sent. Off in development, matching `initSentry`:
- * local taps are not product behaviour. Dev gets the events on the console
- * instead, which is what makes a new call site verifiable without a dashboard.
+ * Whether anything is actually sent. Off in development, where local taps are
+ * not product behaviour, unless `EXPO_PUBLIC_POSTHOG_DEV=1` asks for a real
+ * send to verify a change end to end (those events carry
+ * `app_variant: development` and the project's test filter hides them). Dev
+ * also gets every event on the console, which is what makes a new call site
+ * verifiable without a dashboard.
  *
  * A function rather than a constant, so the answer is not frozen at import.
  * `__DEV__` is a bundler literal so this still folds away in release; what it
  * buys is a test that can exercise the shipping branch.
  */
-function sending(): boolean {
-  return !__DEV__ && env.EXPO_PUBLIC_ANALYTICS_ENABLED !== 'false'
+export function sending(): boolean {
+  if (env.EXPO_PUBLIC_ANALYTICS_ENABLED === 'false') return false
+  return !__DEV__ || env.EXPO_PUBLIC_POSTHOG_DEV === '1'
 }
 
 /**
@@ -118,9 +122,9 @@ export function track<E extends EventName>(event: E, properties: Events[E]): voi
  * calls it once per process, including on a cold start with a restored session.
  *
  * Returns the distinct id because RevenueCat files the purchase events it
- * forwards to Mixpanel under `$mixpanelDistinctId`, and the two have to agree or
- * a subscription lands on a profile with no behaviour on it. `null` in
- * development and on a placeholder token, where Mixpanel knows nobody.
+ * forwards to PostHog under `$posthogUserId`, and the two have to agree or a
+ * subscription lands on a person with no behaviour on it. `null` in a build
+ * that does not send, where PostHog knows nobody.
  *
  * The email is set here and nowhere else, since this is the moment the app
  * knows which account it is looking at. It goes on the profile after the
@@ -136,7 +140,7 @@ export function identifyUser(userId: string, email: string | null): string | nul
   // A provider that supplied no address leaves the property unset rather than
   // blank. An address that later appears arrives as an ordinary re-identify,
   // because the session provider keys on the pair rather than the id alone.
-  if (email) enqueue((target) => target.getPeople().set({ $email: email }))
+  if (email) enqueue((target) => target.getPeople().set({ email }))
   return userId
 }
 
@@ -157,9 +161,9 @@ export function resetIdentity(): void {
 }
 
 /**
- * Delete the profile Mixpanel holds for whoever is currently identified. Called
- * only from the account-deletion path. `$email` is the one thing in the plan
- * that names a person and it lives on the people profile, so an account deleted
+ * Clear the person PostHog holds for whoever is currently identified. Called
+ * only from the account-deletion path. `email` is the one thing in the plan
+ * that names a person and it lives on the person, so an account deleted
  * everywhere else would leave the address in the one place a search by address
  * finds it.
  *
@@ -167,7 +171,7 @@ export function resetIdentity(): void {
  * distinct id the SDK holds, and a reset first would aim it at the fresh
  * anonymous profile.
  *
- * The events themselves stay. They carry no diary and no address, and Mixpanel
+ * The events themselves stay. They carry no diary and no address, and PostHog
  * offers no client-side way to withdraw them. `ricecal.app/data-deletion` says
  * so.
  */

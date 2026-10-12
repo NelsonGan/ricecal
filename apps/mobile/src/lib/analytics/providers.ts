@@ -14,11 +14,11 @@ export type FirebaseAnalyticsBridge = {
   setDefaultEventParameters?(parameters: Record<string, string | number>): Promise<void> | void
 }
 
-type ReportFailure = (provider: 'Mixpanel' | 'Firebase', operation: string, error: unknown) => void
+type ReportFailure = (provider: 'PostHog' | 'Firebase', operation: string, error: unknown) => void
 
 // Firebase properties belong to the handset, so changing user_id alone keeps
 // the preceding account's answers. Clear every app-owned field at that boundary.
-const clearedUserProperties: Record<Exclude<keyof PersonProps, '$email'> | keyof SuperProps, null> =
+const clearedUserProperties: Record<Exclude<keyof PersonProps, 'email'> | keyof SuperProps, null> =
   {
     onboarded: null,
     onboarded_at: null,
@@ -39,23 +39,23 @@ const clearedUserProperties: Record<Exclude<keyof PersonProps, '$email'> | keyof
  * against the anonymous installation.
  */
 export function createAnalyticsProviders(
-  mixpanel: AnalyticsClient | null,
+  posthog: AnalyticsClient | null,
   firebase: FirebaseAnalyticsBridge | null,
   reportFailure: ReportFailure,
 ): {
   client: AnalyticsClient
   revenueAnalytics: RevenueAnalytics
   whenFirebaseIdle(): Promise<void>
-  whenMixpanelIdle(): Promise<void>
+  whenPostHogIdle(): Promise<void>
 } {
   let firebaseTail = Promise.resolve()
-  let mixpanelTail = Promise.resolve()
+  let posthogTail = Promise.resolve()
   let firebaseUserId: string | null = null
   let identityGeneration = 0
   let desiredUserId: string | null = null
   let firebaseGeneration = 0
-  let mixpanelGeneration = 0
-  let mixpanelUserId: string | null = null
+  let posthogGeneration = 0
+  let posthogUserId: string | null = null
   let firebasePropertyOwner: string | null = null
 
   function scheduleFirebase(
@@ -88,37 +88,37 @@ export function createAnalyticsProviders(
       })
   }
 
-  function runMixpanel(operation: string, work: (target: AnalyticsClient) => unknown) {
-    const target = mixpanel
+  function runPostHog(operation: string, work: (target: AnalyticsClient) => unknown) {
+    const target = posthog
     if (!target) return
     const generation = identityGeneration
     const userId = desiredUserId
-    mixpanelTail = mixpanelTail
+    posthogTail = posthogTail
       .then(async () => {
-        if (mixpanelGeneration !== generation) {
-          if (userId === null || (mixpanelUserId !== null && mixpanelUserId !== userId)) {
+        if (posthogGeneration !== generation) {
+          if (userId === null || (posthogUserId !== null && posthogUserId !== userId)) {
             await target.reset()
-            mixpanelUserId = null
+            posthogUserId = null
           }
           if (userId !== null) {
-            mixpanelUserId = userId
+            posthogUserId = userId
             await target.identify(userId)
           }
-          mixpanelGeneration = generation
+          posthogGeneration = generation
         }
         await work(target)
       })
       .then(
         () => {},
         (error) => {
-          reportFailure('Mixpanel', operation, error)
+          reportFailure('PostHog', operation, error)
         },
       )
   }
 
   const client: AnalyticsClient = {
     track(event, properties) {
-      runMixpanel('event tracking', (target) => target.track(event, properties))
+      runPostHog('event tracking', (target) => target.track(event, properties))
       scheduleFirebase('event tracking', (target) =>
         target.logEvent(ga4EventName(event), ga4EventParameters(properties)),
       )
@@ -126,17 +126,17 @@ export function createAnalyticsProviders(
     identify(distinctId) {
       identityGeneration += 1
       desiredUserId = distinctId
-      runMixpanel('identification', () => {})
+      runPostHog('identification', () => {})
       scheduleFirebase('identification', () => {})
     },
     reset() {
       identityGeneration += 1
       desiredUserId = null
-      runMixpanel('reset', () => {})
+      runPostHog('reset', () => {})
       scheduleFirebase('reset', () => {})
     },
     registerSuperProperties(properties) {
-      runMixpanel('super properties', (target) => target.registerSuperProperties(properties))
+      runPostHog('super properties', (target) => target.registerSuperProperties(properties))
       scheduleFirebase('user properties', (target) =>
         target.setUserProperties(ga4UserProperties(properties)),
       )
@@ -144,7 +144,7 @@ export function createAnalyticsProviders(
     getPeople() {
       return {
         set(properties) {
-          runMixpanel('user properties', (target) => target.getPeople().set(properties))
+          runPostHog('user properties', (target) => target.getPeople().set(properties))
           const safeProperties = ga4UserProperties(properties)
           if (Object.keys(safeProperties).length > 0) {
             scheduleFirebase('user properties', (target) =>
@@ -155,7 +155,7 @@ export function createAnalyticsProviders(
         // GA4 has no client API that removes one server-side user profile.
         // `reset` still clears its local identifiers after account deletion.
         deleteUser() {
-          runMixpanel('profile deletion', (target) => target.getPeople().deleteUser())
+          runPostHog('profile deletion', (target) => target.getPeople().deleteUser())
         },
       }
     },
@@ -191,6 +191,6 @@ export function createAnalyticsProviders(
     client,
     revenueAnalytics,
     whenFirebaseIdle: () => firebaseTail,
-    whenMixpanelIdle: () => mixpanelTail,
+    whenPostHogIdle: () => posthogTail,
   }
 }

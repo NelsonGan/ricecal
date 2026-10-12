@@ -298,7 +298,7 @@ export async function restorePurchases(): Promise<boolean> {
  * Why the store's own subscription page is being opened, and from where.
  *
  * Read off the event rather than written out again: cancelling and switching
- * are one call apart here and a breakdown apart in Mixpanel, and two lists that
+ * are one call apart here and a breakdown apart in PostHog, and two lists that
  * can disagree is how one of them ends up carrying a value nothing reports.
  */
 type Manage = Events['Manage Subscription Opened']

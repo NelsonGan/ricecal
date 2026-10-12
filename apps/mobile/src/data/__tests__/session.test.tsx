@@ -354,25 +354,25 @@ it('tells RevenueCat who is signed in on an ordinary launch', async () => {
   await waitFor(() =>
     expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-1', {
       email: 'user-1@example.com',
-      mixpanelDistinctId: 'user-1',
+      posthogDistinctId: 'user-1',
     }),
   )
 })
 
 /**
  * One person across both platforms. RevenueCat forwards its purchase events into
- * Mixpanel under the distinct id it was given, so the two identifiers have to be
+ * PostHog under the distinct id it was given, so the two identifiers have to be
  * the same string or a subscription lands on a profile with no behaviour on it.
  * Neither dashboard shows that failure; both look plausible alone.
  */
-it('names the same person to Mixpanel and to RevenueCat', async () => {
+it('names the same person to PostHog and to RevenueCat', async () => {
   await mount(primed())
 
   await emit('SIGNED_IN', sessionFor('user-1'))
 
   await waitFor(() => expect(mockIdentifyUser).toHaveBeenCalledWith('user-1', 'user-1@example.com'))
   const [id, traits] = mockIdentifyPurchaser.mock.calls[0]
-  expect(traits.mixpanelDistinctId).toBe(mockIdentifyUser.mock.results[0].value)
+  expect(traits.posthogDistinctId).toBe(mockIdentifyUser.mock.results[0].value)
   expect(id).toBe('user-1')
   // The ADDRESS is the other half of that agreement, and it comes from one read
   // of the session rather than from each platform's own idea of who this is —
@@ -382,10 +382,10 @@ it('names the same person to Mixpanel and to RevenueCat', async () => {
 })
 
 /**
- * A build that sends nothing to Mixpanel claims no distinct id either, rather
- * than asserting one for a person Mixpanel has never heard of.
+ * A build that sends nothing to PostHog claims no distinct id either, rather
+ * than asserting one for a person PostHog has never heard of.
  */
-it('leaves the distinct id unset when nothing was sent to Mixpanel', async () => {
+it('leaves the distinct id unset when nothing was sent to PostHog', async () => {
   mockIdentifyUser.mockReturnValueOnce(null)
   await mount(primed())
 
@@ -394,7 +394,7 @@ it('leaves the distinct id unset when nothing was sent to Mixpanel', async () =>
   await waitFor(() =>
     expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-1', {
       email: 'user-1@example.com',
-      mixpanelDistinctId: null,
+      posthogDistinctId: null,
     }),
   )
 })
@@ -408,10 +408,10 @@ it('says so rather than inventing one when the account has no address', async ()
   await waitFor(() =>
     expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-1', {
       email: null,
-      mixpanelDistinctId: 'user-1',
+      posthogDistinctId: 'user-1',
     }),
   )
-  // Mixpanel is told the same nothing, and leaves `$email` unset rather than
+  // PostHog is told the same nothing, and leaves `$email` unset rather than
   // filing a blank one — see `identifyUser`.
   expect(mockIdentifyUser).toHaveBeenCalledWith('user-1', null)
 })
@@ -441,7 +441,7 @@ it('follows an address changed while signed in', async () => {
   await waitFor(() =>
     expect(mockIdentifyPurchaser).toHaveBeenLastCalledWith('user-1', {
       email: 'moved@example.com',
-      mixpanelDistinctId: 'user-1',
+      posthogDistinctId: 'user-1',
     }),
   )
   // Both platforms follow it, or the two dashboards answer different searches.
@@ -456,13 +456,13 @@ it('follows a change of account, and forgets on the way out', async () => {
   await waitFor(() =>
     expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-2', {
       email: 'user-2@example.com',
-      mixpanelDistinctId: 'user-2',
+      posthogDistinctId: 'user-2',
     }),
   )
 
   await emit('SIGNED_OUT', null)
   // Or the next account on this handset inherits the last one's entitlement.
   await waitFor(() => expect(mockForgetPurchaser).toHaveBeenCalled())
-  // And Mixpanel stops filing this handset's events under the account that left.
+  // And PostHog stops filing this handset's events under the account that left.
   expect(mockResetIdentity).toHaveBeenCalled()
 })

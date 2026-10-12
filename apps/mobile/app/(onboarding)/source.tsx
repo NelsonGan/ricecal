@@ -12,7 +12,7 @@ import {
 import type { IconProps } from '@/ui'
 
 /**
- * Stored on the profile and sent to Mixpanel. NEVER RENAMED — a chart built on
+ * Stored on the profile and sent to PostHog. NEVER RENAMED — a chart built on
  * "tiktok" stops counting the day it becomes "tik_tok".
  *
  * A union rather than `string`, so the copy lookup below is checked: every id
@@ -81,7 +81,7 @@ const ELSEWHERE: Option[] = [
  * options nobody expects — XiaoHongShu, Threads — the ones below the fold.
  *
  * The answer is the only thing on this screen that leaves the phone. It lands on
- * `profiles.referral_source`, on the Mixpanel person, and on
+ * `profiles.referral_source`, on the PostHog person, and on
  * `Onboarding Completed` so a funnel can be broken down by channel.
  */
 export default function SourceStep() {

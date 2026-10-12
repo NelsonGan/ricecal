@@ -1,7 +1,7 @@
 import type { AnalyticsClient } from '../client'
 import { createAnalyticsProviders, type FirebaseAnalyticsBridge } from '../providers'
 
-function fakeMixpanel() {
+function fakePostHog() {
   const calls: Array<[string, ...unknown[]]> = []
   const client: AnalyticsClient = {
     track: (event, properties) => void calls.push(['track', event, properties]),
@@ -29,18 +29,18 @@ function fakeFirebase() {
 }
 
 it('sends the same event to both providers without copying email to GA4', async () => {
-  const mixpanel = fakeMixpanel()
+  const posthog = fakePostHog()
   const firebase = fakeFirebase()
-  const providers = createAnalyticsProviders(mixpanel.client, firebase.bridge, jest.fn())
+  const providers = createAnalyticsProviders(posthog.client, firebase.bridge, jest.fn())
 
   providers.client.identify('user-1')
-  providers.client.getPeople().set({ $email: 'one@example.com', onboarded: true })
+  providers.client.getPeople().set({ email: 'one@example.com', onboarded: true })
   providers.client.track('Signed In', { method: 'google', is_new_account: false })
   await providers.whenFirebaseIdle()
 
-  expect(mixpanel.calls).toEqual([
+  expect(posthog.calls).toEqual([
     ['identify', 'user-1'],
-    ['people', { $email: 'one@example.com', onboarded: true }],
+    ['people', { email: 'one@example.com', onboarded: true }],
     ['track', 'Signed In', { method: 'google', is_new_account: false }],
   ])
   expect(firebase.calls).toEqual([
@@ -77,25 +77,25 @@ it('continues queued Firebase work after a provider failure', async () => {
   expect(firebase.calls).toContainEqual(['event', 'ricecal_signed_out', {}])
 })
 
-it('waits for Mixpanel identification before profiles and events while Firebase proceeds', async () => {
-  const mixpanel = fakeMixpanel()
+it('waits for PostHog identification before profiles and events while Firebase proceeds', async () => {
+  const posthog = fakePostHog()
   const firebase = fakeFirebase()
   let release!: () => void
-  mixpanel.client.identify = () =>
+  posthog.client.identify = () =>
     new Promise<void>((resolve) => {
       release = resolve
     })
-  const providers = createAnalyticsProviders(mixpanel.client, firebase.bridge, jest.fn())
+  const providers = createAnalyticsProviders(posthog.client, firebase.bridge, jest.fn())
   providers.client.identify('user-1')
-  providers.client.getPeople().set({ $email: 'one@example.com' })
+  providers.client.getPeople().set({ email: 'one@example.com' })
   providers.client.track('Signed In', {})
   await providers.whenFirebaseIdle()
-  expect(mixpanel.calls).toEqual([])
+  expect(posthog.calls).toEqual([])
   expect(firebase.calls).toContainEqual(['event', 'ricecal_signed_in', {}])
   release()
-  await providers.whenMixpanelIdle()
-  expect(mixpanel.calls).toEqual([
-    ['people', { $email: 'one@example.com' }],
+  await providers.whenPostHogIdle()
+  expect(posthog.calls).toEqual([
+    ['people', { email: 'one@example.com' }],
     ['track', 'Signed In', {}],
   ])
 })
@@ -117,62 +117,62 @@ it('does not suppress native revenue until delivery is confirmed for the current
 })
 
 it('retries failed identities before sending later events or profiles', async () => {
-  const mixpanel = fakeMixpanel()
+  const posthog = fakePostHog()
   const firebase = fakeFirebase()
-  const nativeMixpanelIdentify = mixpanel.client.identify
+  const nativePostHogIdentify = posthog.client.identify
   const nativeFirebaseIdentify = firebase.bridge.setUserId
-  mixpanel.client.identify = jest
+  posthog.client.identify = jest
     .fn()
     .mockRejectedValueOnce(new Error('offline'))
-    .mockImplementation(nativeMixpanelIdentify)
+    .mockImplementation(nativePostHogIdentify)
   firebase.bridge.setUserId = jest
     .fn()
     .mockRejectedValueOnce(new Error('offline'))
     .mockImplementation(nativeFirebaseIdentify)
-  const providers = createAnalyticsProviders(mixpanel.client, firebase.bridge, jest.fn())
+  const providers = createAnalyticsProviders(posthog.client, firebase.bridge, jest.fn())
   providers.client.identify('new-user')
-  providers.client.getPeople().set({ $email: 'new@example.com' })
+  providers.client.getPeople().set({ email: 'new@example.com' })
   providers.client.track('Signed In', {})
-  await Promise.all([providers.whenMixpanelIdle(), providers.whenFirebaseIdle()])
-  expect(mixpanel.calls[0]).toEqual(['identify', 'new-user'])
-  expect(mixpanel.calls[1]).toEqual(['people', { $email: 'new@example.com' }])
+  await Promise.all([providers.whenPostHogIdle(), providers.whenFirebaseIdle()])
+  expect(posthog.calls[0]).toEqual(['identify', 'new-user'])
+  expect(posthog.calls[1]).toEqual(['people', { email: 'new@example.com' }])
   expect(firebase.calls[0]).toEqual(['identify', 'new-user'])
   expect(firebase.calls).toContainEqual(['event', 'ricecal_signed_in', {}])
 })
 
 it('drops work when identity still cannot be confirmed', async () => {
-  const mixpanel = fakeMixpanel()
+  const posthog = fakePostHog()
   const firebase = fakeFirebase()
-  mixpanel.client.identify = async () => {
+  posthog.client.identify = async () => {
     throw new Error('offline')
   }
   firebase.bridge.setUserId = async () => {
     throw new Error('offline')
   }
-  const providers = createAnalyticsProviders(mixpanel.client, firebase.bridge, jest.fn())
+  const providers = createAnalyticsProviders(posthog.client, firebase.bridge, jest.fn())
   providers.client.identify('new-user')
-  providers.client.getPeople().set({ $email: 'new@example.com' })
+  providers.client.getPeople().set({ email: 'new@example.com' })
   providers.client.track('Signed In', {})
-  await Promise.all([providers.whenMixpanelIdle(), providers.whenFirebaseIdle()])
-  expect(mixpanel.calls).toEqual([])
+  await Promise.all([providers.whenPostHogIdle(), providers.whenFirebaseIdle()])
+  expect(posthog.calls).toEqual([])
   expect(firebase.calls).toEqual([])
 })
 
 it('clears the previous account state before a direct account switch', async () => {
-  const mixpanel = fakeMixpanel()
+  const posthog = fakePostHog()
   const firebase = fakeFirebase()
-  const providers = createAnalyticsProviders(mixpanel.client, firebase.bridge, jest.fn())
+  const providers = createAnalyticsProviders(posthog.client, firebase.bridge, jest.fn())
   providers.client.identify('first')
   providers.client.registerSuperProperties({ entitled: true })
   providers.client.getPeople().set({ health_provider: 'apple_health' })
-  await Promise.all([providers.whenMixpanelIdle(), providers.whenFirebaseIdle()])
-  mixpanel.calls.length = 0
+  await Promise.all([providers.whenPostHogIdle(), providers.whenFirebaseIdle()])
+  posthog.calls.length = 0
   firebase.calls.length = 0
   providers.client.identify('second')
   providers.client.track('Meal Logged', { method: 'search', date_offset: 0 })
-  await Promise.all([providers.whenMixpanelIdle(), providers.whenFirebaseIdle()])
-  expect(mixpanel.calls[0]).toEqual(['reset'])
-  expect(mixpanel.calls[1]).toEqual(['identify', 'second'])
+  await Promise.all([providers.whenPostHogIdle(), providers.whenFirebaseIdle()])
+  expect(posthog.calls[0]).toEqual(['reset'])
+  expect(posthog.calls[1]).toEqual(['identify', 'second'])
   expect(firebase.calls).toContainEqual([
     'user properties',
     expect.objectContaining({ entitled: null, health_provider: null, plan_direction: null }),
@@ -183,16 +183,16 @@ it('clears the previous account state before a direct account switch', async () 
 })
 
 it('keeps current account properties when reidentifying the same user', async () => {
-  const mixpanel = fakeMixpanel()
+  const posthog = fakePostHog()
   const firebase = fakeFirebase()
-  const providers = createAnalyticsProviders(mixpanel.client, firebase.bridge, jest.fn())
+  const providers = createAnalyticsProviders(posthog.client, firebase.bridge, jest.fn())
   providers.client.identify('same')
   providers.client.registerSuperProperties({ entitled: true })
-  await Promise.all([providers.whenMixpanelIdle(), providers.whenFirebaseIdle()])
-  mixpanel.calls.length = 0
+  await Promise.all([providers.whenPostHogIdle(), providers.whenFirebaseIdle()])
+  posthog.calls.length = 0
   firebase.calls.length = 0
   providers.client.identify('same')
-  await Promise.all([providers.whenMixpanelIdle(), providers.whenFirebaseIdle()])
-  expect(mixpanel.calls).not.toContainEqual(['reset'])
+  await Promise.all([providers.whenPostHogIdle(), providers.whenFirebaseIdle()])
+  expect(posthog.calls).not.toContainEqual(['reset'])
   expect(firebase.calls.some(([op]) => op === 'user properties')).toBe(false)
 })

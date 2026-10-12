@@ -25,6 +25,7 @@ import {
 } from '../_shared/entitlement.ts'
 import { json } from '../_shared/http.ts'
 import { mockActive } from '../_shared/llm.ts'
+import { readSessionId } from '../_shared/posthog.ts'
 import {
   type Cuisine,
   type DayContext,
@@ -132,7 +133,11 @@ Deno.serve(async (req: Request) => {
     }
     throw error
   }
-  const meter = createMeter()
+  const meter = createMeter({
+    distinctId: userId,
+    feature: 'suggest-meal',
+    sessionId: readSessionId(req),
+  })
 
   /**
    * The day, read as the user.

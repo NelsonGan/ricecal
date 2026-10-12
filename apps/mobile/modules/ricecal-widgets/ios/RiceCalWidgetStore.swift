@@ -157,7 +157,7 @@ public enum RiceCalWidgetStore {
  The six widgets, and the two names each of them has.
 
  `kind` is what WidgetKit keys a timeline on and what appears in the widget
- gallery's plist; `reported` is the word the app and Mixpanel use. They are kept
+ gallery's plist; `reported` is the word the app and PostHog use. They are kept
  apart on purpose — see `WidgetKind` in the module's `types.ts` — and this is the
  only place the translation happens.
  */

@@ -56,7 +56,7 @@ export function passwordResetRedirect(): string {
  * What went wrong, in terms a screen can write a sentence about. Supabase's own
  * messages are written for a server log and were being shown verbatim. Every
  * call in this file throws one of these instead, keeping the original on
- * `cause` for Sentry.
+ * `cause` for error tracking.
  */
 export type AuthProblemReason =
   /** The address cannot receive internet mail, caught before a request. */
@@ -778,7 +778,7 @@ export async function signOut(): Promise<void> {
  * answers an error onto a screen whose work succeeded.
  *
  * `SIGNED_OUT` does the rest in `SessionProvider`: the query cache, the pictures
- * on disk, the pending snaps, RevenueCat's identity and Mixpanel's.
+ * on disk, the pending snaps, RevenueCat's identity and PostHog's.
  *
  * Order matters twice. The event and the profile delete go before the sign-out,
  * because both are filed against whoever the SDK thinks it is holding. All of it

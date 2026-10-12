@@ -1272,10 +1272,10 @@ The phone then signs out with `scope: 'local'`, for the reason
 [the section above](#signing-out-when-the-server-already-has) gives: there is no
 session left on the server, and the user the token names no longer exists.
 `SIGNED_OUT` does the rest through `SessionProvider`: cache, pictures on disk,
-pending snaps, RevenueCat and product analytics. The Mixpanel *profile* is deleted
-explicitly first (`forgetPerson`), because `$email` lives on it and is the one
-identifier in the whole analytics plan that names a person; it has to happen
-before the reset, or it lands on the fresh anonymous profile instead.
+pending snaps, RevenueCat and product analytics. The PostHog *person* is cleared
+explicitly first (`forgetPerson` unsets its properties), because `email` lives on
+it and is the one identifier in the whole analytics plan that names a person; it
+has to happen before the reset, or it lands on the fresh anonymous person instead.
 GA4 never receives the address. Its local user and installation identifiers are
 cleared on reset, while its historical events remain pseudonymous.
 
@@ -1441,9 +1441,10 @@ is correct. The fix is `'about:*'` in one array.
 
 Five things fail identically and four of them are not in this repo, so every
 failure is reported: a `[captcha]` line to the console, and the same text to
-Sentry as a warning. The code is what separates them.
+PostHog error tracking as a warning-level exception (`reportMessage`). The code
+is what separates them.
 
-| what Sentry says | what it is | where the fix is |
+| what error tracking says | what it is | where the fix is |
 |---|---|---|
 | `absent: no site key in this build` | never reached the bundle | the EAS environment for that build profile |
 | `absent: no WebView in this binary` | binary predates `react-native-webview` | a native rebuild; OTA cannot add it |
@@ -1452,7 +1453,7 @@ Sentry as a warning. The code is what separates them.
 | `gave up after N retryable errors` | scored a bot, twice | the widget's mode |
 | `timed out with no answer` | executed, then twenty seconds of silence | usually the network |
 
-**Nothing at all in Sentry, with sign-in still failing, is the sixth case: the
+**Nothing at all in error tracking, with sign-in still failing, is the sixth case: the
 secret.** It has to belong to the same widget as the site key. A mismatched pair
 produces a token the app is happy with that `siteverify` then rejects. Silence
 is the evidence: the widget did its job.
@@ -3683,9 +3684,9 @@ address travels as an **attribute** instead, set right after the log in, never
 before, or it is filed against the anonymous customer.
 
 **Two platforms are told who this is, and they have to agree.** RevenueCat
-forwards its purchase events into Mixpanel under `$mixpanelDistinctId`, falling
-back to `app_user_id` when nothing set it, and Mixpanel knows the person by
-whatever `identifyUser` registered. Both are the user's uuid, so the fallback
+forwards its purchase events into PostHog under `$posthogUserId`, falling back
+to `app_user_id` when nothing set it, and PostHog knows the person by whatever
+`identifyUser` registered. Both are the user's uuid, so the fallback
 lands correctly by coincidence rather than by design. That is why `identifyUser`
 **returns** its distinct id and `SessionProvider` hands that same string to
 `identifyPurchaser`.
@@ -4132,50 +4133,73 @@ The one secret is set by hand, once per environment:
 
 ## Analytics
 
-Mixpanel and GA4. The canonical tables below are the source of truth for RiceCal's
-tracking, including dashboard settings and revenue ownership. The typed plan in
+PostHog and GA4. The canonical tables below are the source of truth for RiceCal's
+tracking, including provider settings and revenue ownership. The typed plan in
 `src/lib/analytics/events.ts` enforces app event names and their properties, and
-`track` accepts nothing else. Both providers receive that same plan.
-GA4 also records the Firebase SDK's own lifecycle events, such as first open,
-session start and app update. Those are kept separate from RiceCal's namespaced
-custom events.
+`track` accepts nothing else. Both providers receive that same plan. PostHog
+replaced Mixpanel (product analytics) and Sentry (error tracking) on 2026-10-12;
+see [Retired: Mixpanel and Sentry](#retired-mixpanel-and-sentry).
+
+PostHog is one project, **RiceCal** (id `659954`, US Cloud) in the RiceCal
+organization, shared by the app, the website and the edge functions' AI
+observability. It does five jobs: product analytics, error tracking, session
+replay, feature flags and AI observability. GA4 also records the Firebase SDK's
+own lifecycle events, such as first open, session start and app update. Those
+are kept separate from RiceCal's namespaced custom events.
 
 ```
 client.ts      the seam. No native imports, so anything may track.
 events.ts      the plan, as a type. A typo does not compile.
+engagement.ts  First App Open and Daily App Open, the two handset facts.
 ga4.ts         GA4 names, value conversion, limits and PII exclusions.
-providers.ts   the ordered fan-out to Mixpanel and Firebase Analytics.
+providers.ts   the ordered fan-out to PostHog and Firebase Analytics.
 props.ts       the two derived properties more than one call site needs.
+../posthog.ts         the PostHog client, its adapter, replay sampling. Native.
+../posthog-config.ts  the public project token and the replay rates.
+../errors.ts          the error-reporting seam (`reportError`, `reportMessage`).
+../feature-flags.ts   the feature-flag seam (`useFeatureFlag`).
 ```
 
-`startup.ts` builds the Mixpanel instance and the Firebase bridge, then hands one
+`startup.ts` builds the PostHog client and the Firebase bridge, then hands one
 combined client to `registerAnalytics`. Nothing else touches either SDK, for the
 same reason the RevenueCat lifecycle is in its own file: a native import in a
 module that tracking is fired from would drag an untransformable dependency into
-most of the test suite. Firebase Analytics is loaded lazily as well, so an OTA
-bundle stays safe on a native binary built before the module existed.
+most of the test suite. Errors and flags have their own seams for the same
+reason. PostHog itself is created at the root layout's module scope
+(`initErrorTracking`), before anything renders, so error autocapture covers
+startup. Firebase Analytics is loaded lazily, so an OTA bundle stays safe on a
+native binary built before the module existed.
 
 Events fired before the SDKs finish starting are queued and drained on
 registration. Each provider has its own serial queue. Identification finishes before profiles
 and events; failed identity writes retry before later work. Work is dropped if
 identity still cannot be confirmed, so it cannot use the preceding account.
-Switching directly between accounts resets Mixpanel's device/super-property state
-before identifying the new account and clears every app-owned Firebase user
-property before its next event. Re-identifying the same account, including an
-email update, preserves its state. Profile and reminder deduplication includes
-the account UUID, so identical answers on two accounts still reach both profiles.
-[Mixpanel account boundaries](https://docs.mixpanel.com/docs/tracking-methods/id-management/identifying-users-simplified),
+Switching directly between accounts resets PostHog's identity and super
+properties before identifying the new account and clears every app-owned
+Firebase user property before its next event. Re-identifying the same account,
+including an email update, preserves its state. Profile and reminder
+deduplication includes the account UUID, so identical answers on two accounts
+still reach both profiles.
+[PostHog identify](https://posthog.com/docs/product-analytics/identify),
 [Firebase persisted user properties](https://firebase.google.com/docs/reference/android/com/google/firebase/analytics/FirebaseAnalytics#setUserProperty(java.lang.String,%20java.lang.String)).
 
-Nothing is sent to Mixpanel or GA4 in development or from an internal `preview` build. The
-preview profile keeps the release identifiers so store prices work, then sets
-`EXPO_PUBLIC_ANALYTICS_ENABLED=false` and `EXPO_PUBLIC_GA4_ENABLED=false`. Firebase remembers runtime collection settings
-across launches, so JavaScript writes both the disabled and enabled states at
-startup. Collection is disabled before clearing the user ID and native revenue
-marker, then enabled for production. If cleanup fails, collection stays disabled
-and initialization is reported to Sentry. Production omits the flag and enables
-collection. The pull-request
-workflow also writes false into the environment file used by EAS Update because
+No product analytics is sent to PostHog or GA4 in development or from an
+internal `preview` build. The preview profile keeps the release identifiers so
+store prices work, then sets `EXPO_PUBLIC_ANALYTICS_ENABLED=false` and
+`EXPO_PUBLIC_GA4_ENABLED=false`. A preview build, and a per-PR EAS update,
+still reports its crashes to PostHog error tracking, as it did to Sentry,
+tagged `app_variant: preview` (any release build with analytics switched off)
+so the test-account filter keeps them out of production reports; it sends no
+events and records no replays.
+A development build sends to PostHog only with `EXPO_PUBLIC_POSTHOG_DEV=1`, for
+verifying a change end to end; those events carry `app_variant: development`,
+which the project's test-account filter hides. Firebase remembers runtime
+collection settings across launches, so JavaScript writes both the disabled and
+enabled states at startup. Collection is disabled before clearing the user ID
+and native revenue marker, then enabled for production. If cleanup fails,
+collection stays disabled and the failure is reported to error tracking.
+Production omits the flag and enables collection. The pull-request workflow
+also writes false into the environment file used by EAS Update because
 build-profile variables are not available to an update export.
 
 The Firebase project is the existing `ricecal` Google Cloud project. It is linked
@@ -4191,45 +4215,88 @@ React Native route is not a native activity or view controller, and this plan do
 not count renders as decisions. The app instance id and Supabase user id are
 enough for these reports. IDFA, IDFV, Android Advertising ID, SSAID, SKAdNetwork
 registration, ad storage, ad user data and ad personalisation signals are
-disabled. iOS builds the Analytics pod without AdSupport.
+disabled. iOS builds the Analytics pod without AdSupport. PostHog collects no
+advertising identifier.
 
-The live property keeps event and user data for 14 months, reports in MYR, has
-Google Signals off, and disallows ads personalisation in every region. Its 45
+The live GA4 property keeps event and user data for 14 months, reports in MYR,
+has Google Signals off, and disallows ads personalisation in every region. Its 45
 custom dimensions and 11 custom metrics include app and website parameters.
 `Onboarding Completed` and `Meal Logged` are key events, and saved funnel
-explorations cover onboarding, meal logging and purchase conversion. The independent Google Play revenue import was removed on 2026-10-02 so it cannot
-count a second copy of RevenueCat purchases or renewals. The unused internal-traffic filter is
-inactive because preview builds never send to this property.
+explorations cover onboarding, meal logging and purchase conversion. The
+independent Google Play revenue import was removed on 2026-10-02 so it cannot
+count a second copy of RevenueCat purchases or renewals. The unused
+internal-traffic filter is inactive because preview builds never send to this
+property.
 
-The public privacy policy names Google Firebase Analytics beside Mixpanel and
-states the 14-month retention period. The App Store privacy label already covers
-the same linked identifiers, product interactions and diagnostics. Google Play's
-Data safety form declares the retained product interactions, user and device IDs,
-photos, health and fitness data, and diagnostics; these categories do not widen
-because of GA4, but their retention answers still have to match the implementation.
+The public privacy policy (ricecal-web) names PostHog and Google Analytics,
+session replay and the AI request records, and states the 14-month retention
+period (30 days for recordings). The App Store privacy label and Google Play's
+Data safety form must cover the same linked identifiers, product interactions,
+diagnostics and crash data; session replay adds screen content to diagnostics.
 
-GA4 custom events are the Mixpanel display name converted to lowercase snake case
+GA4 custom events are the PostHog display name converted to lowercase snake case
 under the `ricecal_` namespace. Booleans become 1 or 0, unsupported values are
 dropped, `Entry Updated`'s field-name array becomes one comma-separated value,
 and names, values and counts are capped at GA4's documented limits. Person and
 super properties become GA4 user properties. A null clears the old value instead
 of leaving stale state behind.
 
+### PostHog project and event budget
+
+| Setting | Value |
+| --- | --- |
+| Organization / plan | RiceCal, free plan with no payment method: every product's billing limit is its free allowance, so spend is fixed at $0 and ingestion stops for the rest of the month if an allowance runs out. Adding a card removes those limits; set every product's limit to $0 first if that ever happens |
+| Project | RiceCal `659954`, US Cloud, timezone `Asia/Kuala_Lumpur`, week starts Monday |
+| Ingestion | Public project token `phc_oTQVxP…` checked into `src/lib/posthog-config.ts`, ricecal-web and `functions/_shared/posthog.ts`; host `https://us.i.posthog.com` |
+| Privacy | IPs discarded after GeoIP (`anonymize_ips`); web autocapture, heatmaps, console-log and performance capture off; exception autocapture on |
+| Replay | Recording on; web sample 100%, minimum 5 s, inputs masked, no network headers or bodies. The app samples itself (below) |
+| Authorized URLs | `https://ricecal.app`, `https://www.ricecal.app` |
+| Test-account filter (default on) | Internal / Test users cohort (person `$internal_or_test_user`, or an `@ricecal.app` email), `app_variant` not `development`/`preview`, `$host` not localhost |
+
+The free tier is **1,000,000 product-analytics events a month**, with separate
+allowances for exceptions, recordings, AI events and flag requests. Estimates
+use the last Mixpanel week before the switch (2026-10-05 to 2026-10-11: 61,347
+events, 815 weekly users, 338 installs) ×4.3.
+
+| Source | Estimated events / month | Basis |
+| --- | --- | --- |
+| The 48 decision events | 230,000 | Mixpanel's week minus its SDK events, ×4.3. `Log Sheet Opened`, `Food Searched`, `Meal Logged` and `Food Picked` are three quarters of it |
+| `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
+| `First App Open` | 1,500 | ~340 installs a week |
+| `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
+| RevenueCat server events | 300 | ~60 lifecycle events a week |
+| Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
+| **Total** | **~250,000 (25%)** | Room for four times today's audience |
+
+| Other PostHog product | Free allowance / month | Expected use |
+| --- | --- | --- |
+| Error tracking (`$exception`) | 100,000 exceptions | Autocaptured crashes and errors, plus the app's caught `reportError` calls |
+| Session replay | 2,500 mobile + 5,000 web recordings | App ~2,200 (20% of first-day launches, 4% of later ones); website all sessions while it gets a few hundred visits a week |
+| AI observability (`$ai_generation`) | 100,000 events | One per OpenRouter request: a scan makes 1 to 4, a correction 1, a recipe 1 to 2. Roughly 15,000 to 25,000 |
+| Feature flags | 1,000,000 requests | Zero while no flag is active; then about one request per launch |
+
+Rules that keep it there: no `$screen` events, lifecycle events, autocapture or
+rage taps; a `before_send` backstop drops any `$` event other than `$identify`,
+`$set`, `$exception` and `$feature_flag_called`; person properties are written
+only when they change. A new PostHog event needs an estimate here before it
+ships. Never sample custom events; a frequent per-use event that answers nothing
+belongs in GA4 only, and RiceCal has none yet.
+
 ### Product analytics coverage
 
-Audited 2026-10-03 against the mobile tracking plan and call sites. This is the
+Audited 2026-10-12 against the mobile tracking plan and call sites. This is the
 full mobile product tracking reference. The website section records the separate
 acquisition surface and links its own repository contract. A defined event is
 eligible for delivery; its presence here is not proof of ingestion or billing.
 
 | Surface / operation | Definitions | Destinations / counting rule |
 | --- | --- | --- |
-| Native app custom decisions | 48 | All 48 go to Mixpanel and GA4 in production; no GA4-only app group and no sampling |
-| Website decisions | 6 | Separate Mixpanel website project; five namespaced GA4 events plus manually managed `page_view` in the shared property |
-| Native screen views | 0 | No app `screen_view` emitter; Firebase automatic screen reporting is disabled |
-| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 48 custom app definitions |
+| Native app custom events | 50 | All 50 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
+| Website decisions | 6 | Same PostHog project (page views as `$pageview`); five namespaced GA4 events plus manually managed `page_view` in the shared property |
+| Native screen views | 0 | No `$screen` or `screen_view` emitter; Firebase automatic screen reporting is disabled. Session replay shows navigation |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 50 custom app definitions |
 | Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
-| Per-install first-use/milestone event budget | None | RiceCal has no Money2Time-style adoption cap; repeatable product use contributes Mixpanel volume |
+| Per-install engagement events | 2 | `First App Open` once per install and `Daily App Open` once per local day; every other event is repeatable product use |
 
 ### Canonical app event table
 
@@ -4237,8 +4304,10 @@ This table is the source of truth for the tracking contract. Update it in the sa
 
 <!-- analytics-app-events:start -->
 
-| Mixpanel event | GA4 event | Allowed app properties | Source (relative to apps/mobile) | Trigger and frequency |
+| PostHog event | GA4 event | Allowed app properties | Source (relative to apps/mobile) | Trigger and frequency |
 | --- | --- | --- | --- | --- |
+| First App Open | ricecal_first_app_open | none | `src/lib/analytics/engagement.ts`<br>`src/lib/startup.ts` | First launch of a fresh install, decided at process start from empty local stores; once per install, never for an existing install updating. |
+| Daily App Open | ricecal_daily_app_open | active_days: number; days_since_last_open: number &#124; null | `src/lib/analytics/engagement.ts`<br>`src/lib/startup.ts` | Launch or return to the foreground on a local calendar day with no earlier one; at most once per install per day. |
 | Onboarding Started | ricecal_onboarding_started | none | `app/(onboarding)/welcome.tsx` | Get started on welcome; each tap that starts the flow, not a welcome-screen render. |
 | Onboarding Step Completed | ricecal_onboarding_step_completed | step: string; step_number: number | `src/features/onboarding/OnboardingStep.tsx`<br>`app/(onboarding)/target.tsx` | Primary advance on a named step, plus target submission; each advance. Secondary skips and the timed calculating step are not counted. |
 | Onboarding Completed | ricecal_onboarding_completed | plan_direction: PlanDirection; referral_source: string | `app/(onboarding)/finish.tsx` | Onboarding profile save succeeds; each successful completion, before health/notification permission steps. |
@@ -4247,7 +4316,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Signed In | ricecal_signed_in | method: SignInMethod; is_new_account: boolean | `src/data/auth.ts` | An explicit Apple, Google, email-link/code or password sign-in succeeds; each success. Restored sessions/token refreshes are not acquisitions. |
 | Sign In Failed | ricecal_sign_in_failed | method: SignInMethod; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/data/auth.ts` | Instrumented Apple/Google sign-in rejection or cancellation; each reported result. Email/password failures are not covered by this event. |
 | Signed Out | ricecal_signed_out | none | `src/data/auth.ts`<br>`src/lib/analytics/client.ts` | Explicit sign-out completes; each completion, before resetting analytics identity. |
-| Account Deleted | ricecal_account_deleted | none | `src/data/auth.ts` | Server confirms account deletion; each success, before deleting the Mixpanel profile and signing out. |
+| Account Deleted | ricecal_account_deleted | none | `src/data/auth.ts` | Server confirms account deletion; each success, before clearing the PostHog person and signing out. |
 | Log Sheet Opened | ricecal_log_sheet_opened | panel: string; date_offset: number | `app/log/index.tsx` | Log sheet opens; once per presentation using its actual initial panel (explicit link, remembered choice, then camera) and selected date, not on panel changes. |
 | Meal Logged | ricecal_meal_logged | method: LogMethod; date_offset: number | `src/data/entries.ts`<br>`src/data/snap.ts` | Local insert succeeds, or camera/describe starts its optimistic row; once per logging action, not per decomposed food component. |
 | Meal Scan Completed | ricecal_meal_scan_completed | method: 'camera' &#124; 'describe'; outcome: ScanOutcome; duration_ms: number; tier: number &#124; null; components: number | `src/data/snap.ts` | Camera/describe request reaches a reported outcome; once per attempt, including refusals, empty food, failure and detached requests. |
@@ -4291,26 +4360,29 @@ This table is the source of truth for the tracking contract. Update it in the sa
 
 ### Common context and provider conversion
 
-The app event table lists custom payload keys. Mixpanel also adds its SDK-managed
-platform/device/app metadata and anonymous or account identity. Those SDK fields
-are not extra permitted diary fields. Firebase adds its own app/device/session
-context. `entitled` is a Mixpanel super property and a GA4 user property after a
-known entitlement answer; early events can lack it. It is the last reported
-state, not proof that the customer had a settled charge at that instant.
+The app event table lists custom payload keys. PostHog also adds its SDK-managed
+platform, device, app version, `$session_id` and identity, and the app registers
+`app_variant` (`production`, `preview`, `simulator` or `development`) on every
+event, re-registered after every identity reset. Those
+SDK fields are not extra permitted diary fields. Firebase adds its own
+app/device/session context. `entitled` is a PostHog super property and a GA4
+user property after a known entitlement answer; early events can lack it. It is
+the last reported state, not proof that the customer had a settled charge at
+that instant.
 
-| Contract | Mixpanel | GA4 |
+| Contract | PostHog | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 48 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 50 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
 | `changed` array | Array of changed field names | Comma-separated string, maximum 100 characters |
 | Null, undefined or unsupported event values | SDK behavior applies to typed payload | Omitted; non-finite numbers are also dropped. A null scan `tier` is absent in GA4 |
 | Custom event parameter limit | No extra app-side sampling or parameter cap | First 25 accepted parameters per call, before Firebase's own context |
-| User property keys/values | People properties preserve typed values | Keys maximum 24 characters; values stringified and limited to 36 characters; first 25 per call |
-| Clearing user properties | Explicit null where supplied | Null clears; undefined is omitted. Both `email` and `$email` are excluded |
+| User property keys/values | Person properties preserve typed values, written only when changed | Keys maximum 24 characters; values stringified and limited to 36 characters; first 25 per call |
+| Clearing user properties | Explicit null where supplied; account deletion unsets every app property | Null clears; undefined is omitted. Both `email` and `$email` are excluded |
 | `date_offset` | Calendar-day offset computed on the phone | Same numeric value: 0 today, positive for past dates, negative for future dates; invalid date inputs fall back to 0 |
-| Event timing | Client/SDK timing, possibly delayed by SDK transport | Client/SDK timing. Widget water events are recorded when queued actions sync, not at the original home-screen tap |
+| Event timing | Client time at capture; PostHog batches every 30 s or 20 events and keeps its queue on disk | Client/SDK timing. Widget water events are recorded when queued actions sync, not at the original home-screen tap |
 
 The converter is `apps/mobile/src/lib/analytics/ga4.ts`; shared derivations are
 in `props.ts`. GA4 dimensions and metrics are report configuration, not additional
@@ -4352,6 +4424,7 @@ user text. Extend the source type and these tables together when its domain chan
 
 | Surface / source | Instrumented decision | Gate / implication |
 | --- | --- | --- |
+| Installs and active days | `First App Open` once per install, `Daily App Open` once per local day | Handset facts, not account facts: an install shared by two accounts sends one a day. An existing install updating never sends `First App Open` |
 | Welcome and onboarding | Start, primary step advance, successful profile completion | Repeated starts/advances count. Completion precedes permission steps, so requiring every step as a conversion prerequisite excludes valid users |
 | Account and sign-in | Explicit login requests/results, sign-out and deletion | Restored sessions are not Signed In. No complete email/password failure funnel exists |
 | Log sheet, food route and data mutations | Sheet entry, catalogue answer/selection, logging, scan/refinement outcome, entry edits/deletes | Search debounces; mutations distinguish intent/optimistic inserts from confirmed success as listed above |
@@ -4371,43 +4444,44 @@ user text. Extend the source type and these tables together when its domain chan
 
 | Product question | Events / segmentation | Interpretation |
 | --- | --- | --- |
-| Do new users finish setup? | Onboarding Started → Onboarding Completed; inspect step/step_number and referral_source | Count unique users as well as total starts. Permission steps happen after completion; skips/calculating make a nine-event mandatory funnel invalid |
+| How many people use the app, and do they come back? | `Daily App Open` unique users (DAU/WAU/MAU, stickiness); retention from `First App Open` or `Onboarding Completed` to `Daily App Open`; `days_since_last_open` for resurrection | One event per install per local day, so counts are users, not sessions. Starts at 1.0.14; older versions send nothing until updated |
+| Do new users finish setup? | First App Open → Onboarding Started → Onboarding Completed; inspect step/step_number and referral_source | Count unique users as well as total starts. Permission steps happen after completion; skips/calculating make a nine-event mandatory funnel invalid |
+| Do they keep logging? | Retention from `Onboarding Completed` to `Meal Logged`; `Meal Logged` by method | The logging habit is the core retention metric for a diary |
 | Which logging method is used? | Meal Logged by method, date_offset and last known entitled | One logging action can yield several component rows. Camera/describe includes optimistic work; use scan outcomes and database completion to measure successful persisted meals |
 | Is catalogue search useful? | Food Searched → Food Picked, then Meal Logged with matching method | Catalogue only; counts describe settled answers. Picked is not saved. Keep mobile/web streams separate before comparing result positions or query behavior |
-| Are scans/refinements reliable? | Meal Scan Completed or Entry Refined by outcome, duration_ms and entitled | Refusals are product limits, not service failures; detached scans can complete later. No attempt ID exists to promise an exact event-to-row join |
-| Which feature creates purchase intent? | Paywall Shown → Purchase Started; break down trigger, screen and plan | Plan Selected is optional. The existing Pro Conversion board's Plan Selected step measures the plan-changing cohort, not all checkout conversion |
+| Are scans/refinements reliable? | Meal Scan Completed or Entry Refined by outcome, duration_ms and entitled; `$ai_generation` latency, errors and cost by span | Refusals are product limits, not service failures; detached scans can complete later. The AI trace and the app event share the session when the app sent its header |
+| Which feature creates purchase intent? | Paywall Shown → Purchase Started; break down trigger, screen and plan | Plan Selected is optional, so a funnel through it measures the plan-changing cohort, not all checkout conversion |
 | Which attempts become paid charges? | App intent alongside positive RevenueCat initial/trial-converted/renewal/non-subscription events | Use RevenueCat for settled charges. Trial starts, restore, ordinary cancellation and Purchase Abandoned are not definitive paid/unpaid evidence |
-| Do people retain and adopt widgets? | SDK sessions, repeated logging, observed Widget Added/Removed and Widget Opened | Distinguish anonymous/account users and app versions. Widget baseline is not lifetime first-use; kinds are not instances. RiceCal has no bounded first-use/milestone stream |
+| Do people adopt widgets? | Widget Added/Removed and Widget Opened; `widgets_installed` person property | Widget baseline is not lifetime first-use; kinds are not instances |
 | Are reports/reminders useful? | Notification Opened, Review Opened and Review Card Shared by kind | Notification taps exclude meal reminders; locked review opens count. Open/share does not prove the full report was read |
-| Does the public site drive demand? | Website page_view → App Download Clicked, by placement/target/live and site_region | Clicks are acquisition intent; no browser-to-account installation or purchase join is implemented |
+| Why did they drop off or crash? | Session replays linked from a funnel step or an exception; `$exception` by issue | Replays are sampled; absence of a replay is not absence of the problem |
+| Does the public site drive demand? | Website `$pageview` → App Download Clicked, by placement/target/live and region | Clicks are acquisition intent; no browser-to-account installation or purchase join is implemented |
 | Are rating prompts timely? | Rating Prompt Skipped/Shown/Answered, by trigger/reason | Skips are checkpoint results. Liked/disliked/dismissed is the app question; no star rating or store review completion is collected |
 
 Use unique users for adoption/conversion and event totals for operation volume.
-Order funnels with the product's actual optional steps. Use SDK sessions for
+Order funnels with the product's actual optional steps. Use `Daily App Open` for
 retention and RevenueCat for finance; neither is the count of custom app events.
 
 ### Website product analytics
 
 The public acquisition site is maintained in
-[NelsonGan/ricecal-web](https://github.com/NelsonGan/ricecal-web).
-This cross-product reference was checked against website revision
-[`46bd531`](https://github.com/NelsonGan/ricecal-web/tree/46bd531) on 2026-10-02.
-The site's [README Analytics contract](https://github.com/NelsonGan/ricecal-web/blob/46bd531/README.md#analytics)
-and [typed emitter/mapping](https://github.com/NelsonGan/ricecal-web/blob/46bd531/src/lib/analytics.ts)
-remain the authority for its implementation. Recheck that repository when its
-tracking changes and update this section; the mobile inventory test cannot inspect
+[NelsonGan/ricecal-web](https://github.com/NelsonGan/ricecal-web). Its
+README Analytics contract and typed emitter (`src/lib/analytics.ts`) remain the
+authority for its implementation. Recheck that repository when its tracking
+changes and update this section; the mobile inventory test cannot inspect
 another repository in CI.
 
-The website uses **Mixpanel project `4054271`**, separate from mobile `4054270`.
-GA4 shares RiceCal property `553863111` through web stream `15786444693`, public
+The website reports to the same PostHog project (`659954`) as the app. GA4
+shares RiceCal property `553863111` through web stream `15786444693`, public
 measurement ID `G-5Q45RV0KMX`, and Firebase web app
-`1:829952813471:web:3af4db99307026f954b5aa`. Website code does not identify a Supabase
-account or send RevenueCat attributes/charges. Shared GA4 names below require
-stream/platform filters in mobile reports.
+`1:829952813471:web:3af4db99307026f954b5aa`. Website code does not identify a
+Supabase account or send RevenueCat attributes/charges, so its events are
+anonymous and create no PostHog person. Shared names (`Food Searched`) and GA4
+names require a platform or `$lib` filter in mobile reports.
 
-| Website decision / frequency | Mixpanel name and custom properties | GA4 name and custom mapping | Source in ricecal-web |
+| Website decision / frequency | PostHog name and custom properties | GA4 name and custom mapping | Source in ricecal-web |
 | --- | --- | --- | --- |
-| Public page entry/client path change; explicitly managed page view | `Page Viewed`: `path`, `pageType` | `page_view`: `content_group`, query-free `page_location`, `page_title`, safe `page_referrer` | `src/components/analytics.tsx` |
+| Public page entry/client path change; explicitly managed page view | `$pageview`: query-free `$current_url`, `path`, `page_type` | `page_view`: `content_group`, query-free `page_location`, `page_title`, safe `page_referrer` | `src/components/analytics.tsx` |
 | Region selection changes | `Region Changed`: `from`, `to`, `fromLocalisedPage` | `ricecal_region_changed`: `region_from`, `region_to`, `from_localised_page` (`yes`/`no`) | `src/components/region-picker.tsx` |
 | Search answer/error settles, not each keystroke or aborted request | `Food Searched`: `query`, `results`, `failed`, `source` | `ricecal_food_searched`: `query_length` (Unicode code points), `results`, `search_failed` (`yes`/`no`), `source`; no query text | `src/components/home/food-search.tsx` |
 | Search/seeded result is chosen | `Search Result Clicked`: `query`, `rank`, `results`, `seeded`, `slug`, `source` | `ricecal_food_picked`: public `content_id`, `content_type: food`, `position`, `results`, `source`; no query text or separate seeded boolean | `src/components/home/food-search.tsx` |
@@ -4421,15 +4495,15 @@ stream/platform filters in mobile reports.
 | Download `target`, `plan` | `app_store`, `play_store`, `none`; optional `free` / `pro`. `live: false` means no live store handoff, including unresolved desktop/iPad detection; clicks are not installs |
 | Contact `topic` | `Something is broken`, `Trouble logging a meal`, `A calorie figure looks wrong`, `Billing or subscription`, `Delete my account`, `Something else`; selected form category only |
 | Search `source` | `chip` / `typed`; result clicks additionally use `seeded` |
-| Search text | Mixpanel-only, normalized/capped at 80 characters; separate from mobile's no-search-text policy. GA4 receives length and counts only |
-| Region / RegionSlug | `asia`, `china`, `hong-kong`, `india`, `indonesia`, `japan`, `malaysia`, `myanmar`, `pakistan`, `philippines`, `singapore`, `south-korea`, `sri-lanka`, `taiwan`, `thailand`, `vietnam`; Mixpanel `region` super property and GA4 `site_region` event parameter, not account identity |
-| Campaign attribution | Six explicitly allowed `utm_campaign`, `utm_content`, `utm_id`, `utm_medium`, `utm_source`, `utm_term` values mapped to GA4 campaign fields, capped at 100 characters; Mixpanel uses its campaign/referrer context |
+| Search text | PostHog-only, normalized/capped at 80 characters; separate from mobile's no-search-text policy. GA4 receives length and counts only |
+| Region / RegionSlug | `asia`, `china`, `hong-kong`, `india`, `indonesia`, `japan`, `malaysia`, `myanmar`, `pakistan`, `philippines`, `singapore`, `south-korea`, `sri-lanka`, `taiwan`, `thailand`, `vietnam`; PostHog `region` super property and GA4 `site_region` event parameter, not account identity |
+| Campaign attribution | Six explicitly allowed `utm_campaign`, `utm_content`, `utm_id`, `utm_medium`, `utm_source`, `utm_term` values mapped to GA4 campaign fields, capped at 100 characters; PostHog records its own campaign/referrer context, with URLs cut to origin + path |
 | URLs/referrers | GA4 location/referrer omit query strings; external referrer reduced to origin, internal referrer retains public path. Arbitrary URL parameters are not forwarded as page dimensions |
 | Private recipe links | `/r/<token>` excluded before provider loading and checked again when tracking; never send the bearer token as a page URL |
-| Production/preview gates | GA4 only on `ricecal.app` / `www.ricecal.app`. Mixpanel requires its build token; its gate is not a hostname restriction |
+| Production/preview gates | Both providers only on `ricecal.app` / `www.ricecal.app`; previews and localhost never report |
 | Browser opt-out | Do Not Track `1` or `yes` prevents starting either provider |
-| Automatic capture | Mixpanel autocapture/pageview/replay off, IP collection off, localStorage persistence. GA4 automatic pageview and configured Enhanced Measurement off; SDK session lifecycle remains separate |
-| Delivery | Dynamic Mixpanel load queues at most 20 calls while starting. Leaving-page calls use immediate sendBeacon; GA4 manages its own transport. Neither guarantees delivery or delays navigation |
+| Automatic capture | PostHog autocapture, automatic page views, heatmaps and flags off; uncaught errors captured; replay at the project's sample rate with inputs masked, stopped on private recipe links. GA4 automatic pageview and Enhanced Measurement off; SDK session lifecycle remains separate |
+| Delivery | Dynamic PostHog load queues at most 20 calls while starting. Leaving-page calls use immediate sendBeacon; GA4 manages its own transport. Neither guarantees delivery or delays navigation |
 | Handoff success | Contact submission proves validation and a requested mail handoff, not delivered email; store click proves intent, not an installation |
 
 ### Delivery limits and uninstrumented behavior
@@ -4437,35 +4511,134 @@ stream/platform filters in mobile reports.
 The mobile startup queue holds **50 operations**, not 50 guaranteed events: an
 identify plus email profile write consumes two slots. It exists in memory and
 is not a durable offline ledger. Disabled development/preview builds do not queue
-production tracking. Once registered, each provider serializes its own work;
-Mixpanel's native promise-return patch preserves identify/reset/profile ordering.
+production tracking. Once registered, each provider serializes its own work.
 An identity failure retries before later work, which is dropped if the account
 cannot be confirmed. SDK completion is not a destination ingestion receipt.
-SDK transport/retry behavior applies after handoff; this app does not add a
-universal durable event replay layer.
+PostHog keeps its own queue on disk and retries on the next flush or launch.
 
 | Not in the custom product inventory | Current owner / limit |
 | --- | --- |
-| Generic app screen views, tab/render/scroll/keystroke events | No active emitter; important surfaces have explicit decisions. Automatic Firebase screen reporting is off |
-| Errors and stack traces | Sentry; only controlled product outcomes are sent to analytics |
-| Raw mobile food names, search/describe text, calorie totals, weight values, photos or private recipe/report text | Database/domain flows, never custom product analytics; email support identity and widget preset are explicit exceptions above |
-| Scan pipeline quality and catalogue misses | Database scan-item/miss records; distinct from user behavior tracking |
+| Generic app screen views, tab/render/scroll/keystroke events | No active emitter; important surfaces have explicit decisions and session replay shows navigation. Automatic Firebase screen reporting is off |
+| Errors and stack traces | PostHog error tracking; only controlled product outcomes are sent as analytics events |
+| Raw mobile food names, search/describe text, calorie totals, weight values, photos or private recipe/report text | Database/domain flows, never custom product analytics or AI events. Session replay can show them on screen; that is its purpose, and the privacy policy says so. Email is the explicit exception above |
+| Scan pipeline quality and catalogue misses | Database scan-item/miss records and the model eval; distinct from user behavior tracking |
 | Session restoration and background health imports | Session/health state, not acquisitions or manual logging |
 | Proof of an external share, email, claim, installation or published rating | No completion confirmation in the listed handoff events |
 | Settled app-side purchase/refund revenue | RevenueCat server feed below; no manual price/revenue logger |
+
+### Error tracking
+
+PostHog error tracking replaced Sentry on 2026-10-12. Every exception is a
+`$exception` event (its own 100,000-a-month allowance, not the product budget),
+attributed to the identified account and linked to the session replay when one
+is recording.
+
+| Source | Captured by | Notes |
+| --- | --- | --- |
+| Uncaught JavaScript errors and unhandled rejections | `errorTracking.autocapture` in `posthog.ts` | Fatal errors are handed to the native SDK, which persists them before the process dies |
+| Native crashes | `nativeCrashes` (iOS signals and Mach exceptions; Android Java/Kotlin), `androidNdkCrashes` | Through `@posthog/react-native-plugin`, reported on the next launch. These reports carry no `app_variant` (the native layer sends them before JavaScript registers it), so tell an internal build's native crash apart by `$app_version` and `$app_build` |
+| Caught errors | `reportError(error, context)` from `src/lib/errors.ts` | Analytics provider failures (`analytics_provider`, `analytics_operation`); context is short scalars only |
+| Warnings | `reportMessage(text)` | The captcha diagnostics in `features/auth/turnstile.tsx`, sent with `$exception_level: warning` |
+| Edge functions | Their own logs | The functions are not instrumented for errors; their model calls are, as AI events |
+
+A `before_send` hook sends an identical exception once per five minutes and no
+more than 25 distinct ones in that window, so a render loop cannot spend the
+month's allowance. Preview builds report exceptions too (tagged
+`app_variant: preview`). Console output and request URLs are never captured: the catalogue query string
+carries the typed search and the photos URLs carry R2 signatures, which is why
+Sentry's breadcrumb filter existed. PostHog captures no network breadcrumbs at all.
+
+**Readable stacks need uploaded symbols.** `metro.config.js` uses
+`getPostHogExpoConfig`, which injects debug IDs into every bundle. The
+`posthog-react-native/expo` config plugin (Hermes source maps, iOS dSYMs, Android
+R8 mappings and NDK symbols) is applied by `app.config.ts` **only when
+`POSTHOG_CLI_API_KEY` is set** at build time, and `eas-build-post-install`
+installs `@posthog/cli` under the same condition. The key is in the EAS
+`production` environment with **sensitive** visibility (a PostHog personal API
+key, "RiceCal EAS symbol upload", scoped to error tracking: write and
+organization: read), beside `POSTHOG_CLI_PROJECT_ID=659954`. Sensitive rather
+than secret because production builds run `eas build --local` on GitHub
+Actions, where secret variables are not readable during config resolution.
+Development, simulator and preview builds have no key and skip the upload; a
+local `pnpm ios` is unchanged. Check a release build's log for `Upload summary`
+and `dSYM upload complete`. Store builds have OTA updates on the `production`
+channel; an `eas update` there would need `posthog-cli hermes upload` run on its
+export for readable stacks.
+
+### Session replay
+
+Recordings come from `@posthog/react-native-plugin` (native screenshots, not a
+DOM), so they need a native build. The app decides once per launch, after the
+engagement check, whether to record: **20%** of launches on an install's first
+day (the local day `First App Open` was sent, kept in the engagement store) (onboarding and the first scans, where replays teach the most) and **4%** of
+later launches, about 2,200 recordings a month against the free tier's 2,500
+mobile recordings (`posthog-config.ts`). Recordings under 5 seconds are dropped.
+
+Replays are not masked: the diary and food photos are what a replay is for.
+`maskAllTextInputs` is off because on iOS it masks every label as well as every
+field, which blacked out the whole app in the first test recording. Password
+fields are secure text entries, which both native SDKs always mask; an email
+typed at sign-in is visible, and is already the account's PostHog `email`.
+System pickers are masked, network telemetry and logcat are off, and taps are
+recorded. Replays answer "what did the
+user see and do" next to an exception or a funnel drop-off; they link through
+`$session_id`. The website records at the project's rate with inputs masked.
+
+### Feature flags
+
+`src/lib/feature-flags.ts` wraps PostHog flags for future rollouts and
+experiments: create the flag in PostHog, register its key in `FEATURE_FLAGS`
+with a comment saying what it gates and when it can go, read it with
+`useFeatureFlag(key)` in components or `getFeatureFlag(key)` elsewhere, and
+treat `undefined` (not loaded, development, a build that does not send) as off.
+Flags load at launch and on identify; person-property writes never trigger a
+reload. Each read sends `$feature_flag_called` once per flag per session for
+experiment exposure; add those to the budget when a flag ships, and archive a
+flag once its rollout is complete. Flag requests are billed only while a flag is
+active. The website never evaluates flags.
+
+### AI observability
+
+Every OpenRouter request the edge functions make becomes one `$ai_generation`
+event in the same PostHog project (100,000 free a month). `chatJSON` in
+`functions/_shared/llm.ts` is the one place a model is called, and it takes the
+invocation's `Meter`, which now also reports: `createMeter(aiContext)` names the
+account, the function and the app's session, and every request (retries
+included) is sent in the background through `EdgeRuntime.waitUntil`
+(`_shared/posthog.ts`). Requests from one invocation share `$ai_trace_id`, so a
+scan's vision call, catalogue pick and nutrition estimate read as one trace.
+
+| Property | Value |
+| --- | --- |
+| `$ai_span_name` | What the call is for: `analyse_photo`, `describe_meal`, `pick_candidate`, `estimate_nutrition`, `interpret_instruction`, `read_recipe_photo`, `describe_recipe`, `review_recipe`, `suggest_meals`, `moderate_submission` |
+| `$ai_model`, `$ai_provider`, `$ai_base_url` | The OpenRouter model (`OPENROUTER_MODEL`), `openrouter` |
+| `$ai_input_tokens`, `$ai_output_tokens`, `$ai_cache_read_input_tokens` | From OpenRouter's `usage` |
+| `$ai_total_cost_usd`, `$ai_cost_passthrough` | OpenRouter's reported charge (`usage: { include: true }` on every call), not re-priced |
+| `$ai_latency`, `$ai_http_status`, `$ai_is_error`, `$ai_error`, `finish_reason` | Seconds, status and a short error; a JSON parse failure is recorded as `model answer was not valid JSON` so the answer is never quoted |
+| `feature`, `attempt`, `$ai_max_tokens`, `$ai_temperature` | The edge function, first request or retry, and the call's settings |
+| `distinct_id`, `$session_id`, `$ai_session_id` | The Supabase uuid the app identifies PostHog with, and the app's session from the `X-POSTHOG-SESSION-ID` header the SDK adds to Supabase requests (`addTracingHeaders`). Moderation runs as `ricecal-moderation` and creates no person |
+
+`$ai_input` and `$ai_output_choices` carry fixed placeholders. A prompt holds the
+person's meal description, photo or recipe and the answer is their diary entry;
+the privacy policy promises that analytics holds no diary content and that
+deleting an account deletes its diary, which a copy in PostHog would break. Scan
+quality is judged from `food_scan_items` and the model eval, as before. Capture
+is off on a local stack (`SUPABASE_URL` is not an https production URL). The
+functions bundle `_shared`, so a change there needs every function that imports
+it redeployed.
 
 ### Canonical revenue and automatic event table
 
 RevenueCat owns settled purchase revenue. App events describe purchase intent only
 and never contain a price, currency or revenue value. Both integrations use gross
-revenue; Mixpanel receives USD, and GA4 receives USD before conversion to the
-property's MYR reporting currency. Compare matching dates, time zones, currency,
-store, production environment and gross/net definitions. GA4 is not a financial
-ledger: RevenueCat's GA4 integration does not send negative refund revenue.
+USD revenue; GA4 converts to the property's MYR reporting currency. Compare
+matching dates, time zones, currency, store, production environment and
+gross/net definitions. GA4 is not a financial ledger: RevenueCat's GA4
+integration does not send negative refund revenue.
 [RevenueCat GA4 setup](https://www.revenuecat.com/docs/integrations/third-party-integrations/firebase-integration),
-[Mixpanel setup](https://www.revenuecat.com/docs/integrations/third-party-integrations/mixpanel).
+[RevenueCat PostHog setup](https://www.revenuecat.com/docs/integrations/third-party-integrations/posthog).
 
-| Producer / trigger | Mixpanel event | GA4 event | Revenue treatment |
+| Producer / trigger | PostHog event | GA4 event | Revenue treatment |
 | --- | --- | --- | --- |
 | RevenueCat initial paid subscription | `rc_initial_purchase_event` | `purchase` | Settled gross charge |
 | RevenueCat trial start | `rc_trial_started_event` | `rc_trial_start` | No sale yet |
@@ -4473,178 +4646,135 @@ ledger: RevenueCat's GA4 integration does not send negative refund revenue.
 | RevenueCat renewal | `rc_renewal_event` | `purchase` | Settled recurring charge |
 | RevenueCat lifetime / non-renewing purchase | `rc_non_subscription_purchase_event` | `purchase` | Settled one-time charge |
 | RevenueCat trial cancellation | `rc_trial_cancelled_event` | `rc_cancellation` | No new sale |
-| RevenueCat paid cancellation | `rc_cancellation_event` | `rc_cancellation` | No new sale; refunds adjust Mixpanel revenue when applicable |
+| RevenueCat paid cancellation | `rc_cancellation_event` | `rc_cancellation` | No new sale |
 | RevenueCat auto-renew enabled again | `rc_uncancellation_event` | `rc_uncancellation` | No new sale |
 | RevenueCat pause | `rc_subscription_paused_event` | `rc_subscription_paused` | No new sale |
 | RevenueCat expiration | `rc_expiration_event` | `rc_expiration` | No new sale |
 | RevenueCat billing issue | `rc_billing_issue_event` | `rc_billing_issue` | No new sale |
 | RevenueCat product change | `rc_product_change_event` | `rc_product_change` | Intent; charge belongs to purchase/renewal |
-| RevenueCat web purchase redeemed | `rc_purchase_redeemed` | No documented mapping | Identity link; never add a second charge |
-| RevenueCat entitlement transfer | No configured event | `rc_transfer_event` | Two identity events; no sale |
-| Mixpanel native lifecycle | `$ae_first_open`, `$ae_session`, `$ae_updated` | Not forwarded | Automatic production-only usage events |
-| Mixpanel iOS legacy StoreKit observer | `$ae_iap` with `$ae_iap_price`, `$ae_iap_quantity`, `$ae_iap_name` | Not forwarded | SDK diagnostic, hidden in Lexicon on 2026-10-02; exclude from settled revenue and conversion totals, which use RevenueCat only. Hiding does not stop SDK ingestion |
+| RevenueCat entitlement transfer | Not sent | `rc_transfer_event` | Two identity events; no sale |
 | Firebase native lifecycle | Not forwarded | `first_open`, `session_start`, `app_update`, `user_engagement` and SDK lifecycle | Automatic production-only usage; screen reporting disabled |
 | Firebase native purchase / App Store lifecycle | Not forwarded | `in_app_purchase`, `app_store_*` | Legacy fallback only; conditional rules rename linked native revenue to `ricecal_store_revenue_observed` |
 | Separate GA4 Google Play import | Not forwarded | Disabled | Removed 2026-10-02 to avoid a second purchase/renewal feed |
 | RevenueCat paywall UI and web funnel events | Disabled | No separate app custom producer | Custom RiceCal paywalls already own intent; additional funnel purchase events would overlap |
 
-RevenueCat supplies transaction/event IDs, product, period, store, environment,
-currency and charge values on its server events. Mixpanel's `$insert_id` provides
-its event deduplication key. Its paired delivery rows are an event and a profile
-update (`$transactions` / `rc_total_spend`), not two events to add together. Do not
-sum charge events and profile lifetime spend together. GA4 app streams do not
-promise transaction-ID deduplication across producers; use one revenue owner.
+Each RevenueCat event also updates the `rc_subscription_status` person property
+(`active`, `trial`, `cancelled`, `grace_period`, `expired`, `paused`); events
+with revenue carry `revenue` (USD) and `currency`. PostHog revenue analytics
+reads the four charge events above (`revenue`, USD, `product_id`). GA4 app
+streams do not promise transaction-ID deduplication across producers; use one
+revenue owner.
 [GA4 transaction IDs](https://support.google.com/analytics/answer/12313109?hl=en).
 
 ### Canonical identity and profile table
 
-| Property / identifier | Mixpanel | GA4 / RevenueCat | Source and send condition |
+| Property / identifier | PostHog | GA4 / RevenueCat | Source and send condition |
 | --- | --- | --- | --- |
-| Supabase account UUID | `distinct_id` | GA4 `user_id`; RevenueCat App User ID | `data/session.tsx`; identify before profiles/events and before checkout or restore. Direct account switches reset Mixpanel and clear app-owned Firebase user properties before identifying the successor |
-| Account email | People `$email` | RevenueCat `$email`; excluded from GA4 | `identifyUser` / `identifyPurchaser`; support lookup only |
+| Supabase account UUID | `distinct_id` | GA4 `user_id`; RevenueCat App User ID | `data/session.tsx`; identify before profiles/events and before checkout or restore. Direct account switches reset PostHog and clear app-owned Firebase user properties before identifying the successor |
+| Account email | Person `email` | RevenueCat `$email`; excluded from GA4 | `identifyUser` / `identifyPurchaser`; support lookup only. Unset on account deletion |
 | Firebase installation ID | Not used | RevenueCat `$firebaseAppInstanceId` | Native Firebase `getAppInstanceId`; never a UUID, email, fabricated value or Firebase app ID |
-| Mixpanel account ID | Same Supabase UUID | RevenueCat `$mixpanelDistinctId` | Identified production account, confirmed attribute delivery |
-| `onboarded` | People boolean | GA4 user-property string | Onboarding success, then profile sync; whether an onboarding timestamp exists. Profile deduplication includes account UUID |
-| `onboarded_at` | People timestamp string | GA4 user-property string | Onboarding success/profile sync; undefined values are omitted, not cleared within the same account. Firebase clears the previous account's value at a switch |
-| `plan_direction` | People `lose`, `gain`, `maintain` | GA4 user-property string | Onboarding success only; inferred locally from weights with a 0.5 kg neutral band. Not refreshed when goals/weight change later |
-| `activity_level` | People `sedentary`, `light`, `onFeet`, `veryActive` | GA4 user-property string | Onboarding success/profile sync; database spellings normalized to the client vocabulary |
-| `referral_source` | People controlled source | GA4 user-property string | Onboarding success/profile sync; also present on Onboarding Completed |
-| `health_provider` | People provider or null | GA4 string or null | Successful granted connection; null clears it on disconnect. Background imports are not connection decisions |
-| `meal_reminders` | People count | GA4 user-property string | Number of enabled meal reminders; hook writes on mount, account change or changed count, not every refetch |
-| `widgets_installed` | People count | GA4 user-property string | Current handset widget-kind count; first valid poll for each signed-in account and detected changes, including zero. An unchanged widget set on account change updates the profile without emitting Widget Added/Removed |
-| `entitled` | Super property on every custom event | GA4 user property | After a real entitlement answer for the current account; account switches clear the preceding answer, and each account publishes its known answer even if identical. No false value while offline with unknown status |
+| PostHog account ID | Same Supabase UUID | RevenueCat `$posthogUserId` | Identified production account, uploaded with the other analytics attributes through RevenueCat's attributes endpoint (the SDK has no setter) |
+| `onboarded` | Person boolean | GA4 user-property string | Onboarding success, then profile sync; whether an onboarding timestamp exists. Profile deduplication includes account UUID |
+| `onboarded_at` | Person timestamp string | GA4 user-property string | Onboarding success/profile sync; undefined values are omitted, not cleared within the same account. Firebase clears the previous account's value at a switch |
+| `plan_direction` | Person `lose`, `gain`, `maintain` | GA4 user-property string | Onboarding success only; inferred locally from weights with a 0.5 kg neutral band. Not refreshed when goals/weight change later |
+| `activity_level` | Person `sedentary`, `light`, `onFeet`, `veryActive` | GA4 user-property string | Onboarding success/profile sync; database spellings normalized to the client vocabulary |
+| `referral_source` | Person controlled source | GA4 user-property string | Onboarding success/profile sync; also present on Onboarding Completed |
+| `health_provider` | Person provider or null | GA4 string or null | Successful granted connection; null clears it on disconnect. Background imports are not connection decisions |
+| `meal_reminders` | Person count | GA4 user-property string | Number of enabled meal reminders; hook writes on mount, account change or changed count, not every refetch |
+| `widgets_installed` | Person count | GA4 user-property string | Current handset widget-kind count; first valid poll for each signed-in account and detected changes, including zero |
+| `entitled` | Super property on every custom event | GA4 user property | After a real entitlement answer for the current account; account switches clear the preceding answer. No false value while offline with unknown status |
+| `app_variant` | Super property | Not sent | Registered at client start and after every reset, from the build (`production`, `preview`, `simulator`, `development`) |
 | `revenuecat_revenue_enabled` | Not sent | Firebase default event parameter, 0 or 1 | Starts at 0; set to 1 only after HTTP 200 acknowledges this account's current installation attribute |
-| RevenueCat spend/subscription profile | Server-managed `rc_total_spend`, subscription properties, `$transactions` | Integration-owned parameters | Never manually increment from checkout or restore |
+| `rc_subscription_status` | RevenueCat-managed person property | Integration-owned parameters | Updated by every RevenueCat server event; never written by the app |
 
-Identity changes invalidate pending revenue acknowledgement. Attribute delivery
-retries on startup, app foreground and checkout. A five-second budget keeps
-analytics from holding checkout indefinitely; RevenueCat login must still finish
-successfully before a purchase. Failed uploads leave native fallback enabled.
-A new account or logout clears the native revenue marker. Firebase starts with a
-cleared user ID before collection is enabled. No raw foods, search terms, calorie
-totals, weights, photos or error messages are allowed in mobile product analytics.
-The website has a separate, explicitly documented Mixpanel-only search-text policy.
+Person properties are written only when their value changes, compared against
+the last write stored on the handset per account (`ricecal-posthog-person`);
+each write is a billable `$set`. Identity changes invalidate pending revenue
+acknowledgement. Attribute delivery retries on startup, app foreground and
+checkout. A five-second budget keeps analytics from holding checkout
+indefinitely; RevenueCat login must still finish successfully before a purchase.
+Failed uploads leave native fallback enabled. A new account or logout clears the
+native revenue marker. Firebase starts with a cleared user ID before collection
+is enabled. No raw foods, search terms, calorie totals, weights, photos or error
+messages are allowed in mobile product analytics. The website has a separate,
+explicitly documented PostHog-only search-text policy.
 
 ### Canonical live integration settings
 
-Verified 2026-10-02; credentials remain in the dashboards and local ignored files.
+Verified 2026-10-12; credentials remain in the dashboards and local ignored files.
 
 | Setting | Live value |
 | --- | --- |
 | RevenueCat project | RiceCal `projeb2883d3`, dashboard `eb2883d3` |
 | Store apps | iOS `app14d94549cb`; Android `app8b52836439`; Test Store `app36022b58af` |
-| Mixpanel destination | RiceCal Mobile App project `4054270`, workspace `4550575`, US; reports use `Asia/Singapore` (UTC+8); website project `4054271` is separate |
-| Mixpanel integration | Existing production token verified; existing delayed-event secret configured; sandbox token empty; gross USD; total spend `rc_total_spend` |
-| Extra RevenueCat Mixpanel events | Paywall UI and web funnel switches off; 13 purchase/lifecycle event names above preserved |
-| Mixpanel catalog cleanup | Verified 2026-10-02: all current app and RevenueCat names preserved; only SDK `$ae_iap` hidden. No ordinary event blocked. Native lifecycle and virtual session definitions retained; website project untouched |
+| PostHog destination | RiceCal project `659954`, US Cloud, timezone `Asia/Kuala_Lumpur`; app and website share it |
+| RevenueCat → PostHog | RevenueCat's PostHog integration: US region, gross USD, default `rc_*` event names, subscriber attributes not sent as person properties (each would be a billable `$set`), paywall and web-funnel events off, no sandbox key. Its API key is the public project token. The Mixpanel integration was deleted |
 | GA4 destination | RiceCal property `553863111`, account `350740029`, Firebase project `ricecal`; property reports MYR |
 | GA4 reporting controls | 14-month event and user retention; Google Signals off; ads personalization allowed in 0 of 307 regions; 45 custom dimensions and 11 custom metrics, including website definitions |
 | iOS production stream | `15763208820`; Firebase app ID `1:829952813471:ios:c27979f69fbc022a54b5aa` |
 | Android production stream | `15763216343`; Firebase app ID `1:829952813471:android:f6d8a81a4b134ff254b5aa` |
-| GA4 credentials | Separate `RevenueCat iOS production` and `RevenueCat Android production` Measurement Protocol secrets; disclosure acknowledgement accepted by owner authorization |
+| GA4 credentials | Separate `RevenueCat iOS production` and `RevenueCat Android production` Measurement Protocol secrets |
 | RevenueCat GA4 reporting | Gross USD; sandbox off; hashed email off; web fields empty; Firebase Extension unused (Supabase owns accounts/entitlements) |
 | iOS native revenue rules | `in_app_purchase` and prefix `app_store_`, each AND `revenuecat_revenue_enabled = 1`; preserve original name in `legacy_event_name`, rename to `ricecal_store_revenue_observed` |
 | Android native revenue rule | `in_app_purchase` AND `revenuecat_revenue_enabled = 1`; same preserve/rename action; separate Google Play import removed |
-| Dev / preview / PR updates | Both providers disabled by `EXPO_PUBLIC_ANALYTICS_ENABLED=false`; GA4 additionally disabled by its existing flag; native automatic Mixpanel SDK is not initialized |
+| EAS environment | `production`: `POSTHOG_CLI_API_KEY` (sensitive) and `POSTHOG_CLI_PROJECT_ID`. `EXPO_PUBLIC_MIXPANEL_TOKEN`, `EXPO_PUBLIC_SENTRY_DSN` and `SENTRY_AUTH_TOKEN` are deleted from every environment once this migration is on `main` (code before it requires them) |
+| Dev / preview / PR updates | Product analytics disabled by `EXPO_PUBLIC_ANALYTICS_ENABLED=false`; GA4 additionally disabled by its existing flag. Preview builds keep PostHog error tracking, tagged `app_variant: preview` |
 | Backend entitlement webhook | Existing Supabase `revenuecat` function preserved; sandbox entitlements follow `REVENUECAT_SANDBOX_SUBSCRIBERS` policy independently of analytics sandbox exclusion |
 
 The native rename rules affect incoming client events, not RevenueCat's Measurement
-Protocol `purchase` events. Older releases lack the installation attribute and
-marker: their native initial purchases remain legacy fallback, but complete GA4
-subscription coverage starts when accounts run the updated app. The removed
-Google Play import also means old releases cannot supply the former independent
-Play renewal feed. Historical revenue is not backfilled by enabling an integration.
-Keep RevenueCat as the financial source while adoption grows, and reconcile GA4
+Protocol `purchase` events. Historical revenue is not backfilled by enabling an
+integration. Keep RevenueCat as the financial source, and reconcile GA4
 `purchase` events by store and transaction against RevenueCat. Changes to event
 rules may need an hour to propagate.
 [Google's event modification behavior](https://support.google.com/analytics/answer/10085872?hl=en),
 [Play import behavior](https://support.google.com/analytics/answer/11548051?hl=en).
 
-Before Mixpanel retires project secrets on 2027-03-03, migrate RevenueCat's delayed
-event authentication to its supported replacement and repeat delayed refund/import
-verification. Do not delete the existing working secret without a replacement.
-[Mixpanel project secret lifecycle](https://docs.mixpanel.com/reference/project-secret).
+### Live PostHog dashboards
 
-### Mixpanel catalog cleanup
-
-Reviewed **2026-10-02** against the canonical app and RevenueCat tables. All 61
-existing mobile-project definitions were checked. None of the ordinary product
-or subscription names was obsolete. Only the duplicate SDK purchase diagnostic
-was hidden; a full catalog readback confirmed 60 visible definitions, one hidden
-definition and zero blocked events. All other visibility and ingestion settings
-were unchanged.
-
-| Scope | Existing names | Live action and contract |
-| --- | --- | --- |
-| Approved app events | 46 observed of 49 defined | Preserved. `Password Reset Requested`, `Recipe Reported` and `Author Blocked` had not appeared; keep their approved routing |
-| RevenueCat server events | 9 observed of 13 configured | Preserved, including future delivery of configured names absent from the catalog |
-| Native usage events | 3 | `$ae_first_open`, `$ae_session` and `$ae_updated` preserved; these intentionally support usage reporting |
-| Legacy StoreKit diagnostic | 1 | `$ae_iap` hidden only; RevenueCat remains the sole settled-revenue producer |
-| Mixpanel virtual session events | 2 | `$session_start` and `$session_end` preserved |
-
-Hiding removes the diagnostic from normal report selectors and can change All
-Events/Flows views. It retains historical data and does not stop ingestion or
-billing. Mixpanel does not permit blocking this SDK `$` event; automatic native
-usage tracking remains enabled as documented. Revenue reports must continue to
-exclude SDK purchases even when explicitly selecting hidden events. An approved
-event with no recent activity is not obsolete. Before reintroducing any retired
-name, review its blocked/hidden status and update this contract in the same change.
-The separate website project was not changed.
-[Mixpanel cleanup guidance](https://docs.mixpanel.com/docs/data-governance/data-clean-up),
-[Lexicon behavior](https://docs.mixpanel.com/docs/data-governance/lexicon).
+DASHBOARDS_PLACEHOLDER
 
 ### Monitoring usage and verification
 
-Use the app event table to review Mixpanel volume. Events fire on user decisions,
-not renders or every keystroke. `Food Searched` fires after typing settles;
-`Rating Prompt Skipped` is bounded by meal checkpoint crossings. Widget changes
-and offline sync may arrive when the app next opens. `Meal Logged` includes the
-optimistic camera/describe insert. It is not a persisted-meal total; review scan
-outcomes and database completion rather than subtracting unrelated event counts.
-Detached requests can complete after the client stops observing them. Session/install events are automatic SDK events.
-Track counts by event and app version, and investigate a new name, a sharp volume
-change, unexpected free-text properties, missing identity, or purchase events from
-a second producer. RevenueCat retries and profile writes are not extra product
-usage events to count.
+Check the Quality dashboard's event-volume insight against the budget table in
+the first week after a release, and whenever a new event ships. Events fire on
+user decisions, not renders or every keystroke. `Food Searched` fires after
+typing settles; `Rating Prompt Skipped` is bounded by meal checkpoint crossings.
+Widget changes and offline sync may arrive when the app next opens. `Meal Logged`
+includes the optimistic camera/describe insert; it is not a persisted-meal total.
+Investigate a new name, a sharp volume change, unexpected free-text properties,
+missing identity, or purchase events from a second producer.
 
-| Check | Evidence / result |
-| --- | --- |
-| RevenueCat store credentials | App Store Connect key, subscription key and Play service account all validated successfully through RevenueCat |
-| Existing Mixpanel feed | Rechecked 2026-10-02: production dispatch rows read back as Sent; event/profile pair distinguished; production token matches the mobile project; Mixpanel issues endpoint returned no reported issues |
-| Mixpanel catalog cleanup | 2026-10-02: compared all 61 definitions with the canonical app/server inventories; zero obsolete ordinary names, `$ae_iap` hidden only. Readback confirmed 60 visible, one hidden, zero blocked; every other definition unchanged |
-| Mixpanel charge baseline | 2026-09-26 through 2026-10-02 in Asia/Singapore, queried 2026-10-02: initial purchases USD 29.25, trial conversions USD 250.12, renewals USD 0, non-subscription purchases USD 0; positive charges USD 279.37; refund adjustment USD -39.55; adjusted total USD 239.82 |
-| Closed-period revenue reconciliation | September 26 through October 1 UTC: RevenueCat gross USD 200.71; Mixpanel hourly charges plus refunds, converted from Asia/Singapore timestamps and restricted to the same UTC window, USD 200.70. Aggregate difference USD 0.01; individual receipts were not reconciled |
-| GA4 live configuration | Both production app IDs and separate secrets saved and read back; sandbox/email/web/extension options checked; native ownership rule conditions and rename actions reviewed. RevenueCat Firebase integration still has no dispatch events to inspect |
-| Mixpanel Pro Conversion board | 2026-10-02: introduction and checkout-outcome notes corrected and read back. Purchase Started precedes offering lookup/store call; Plan Selected is optional; an entitlement-wait error can follow a real charge. Existing chart queries preserved |
-| Regression checks | `pnpm check` passed after the account-isolation review: mobile typecheck, 109 suites / 1,050 tests, seven workspace tasks and Biome. Coverage includes identity ordering/retry, direct account switches, identical per-account profile/reminder answers, failed startup cleanup, stale widget polls/drinks, delayed nudge eligibility, checkout ownership, failed/stale attribute delivery, disabled previews, bounded transport and the actual installed Mixpanel wrapper patch. The unchanged backend previously passed 24 pure Deno tests and email checks |
-| iOS native Test Store | Cancellation and simulated purchase failure return safely; annual purchase unlocks Pro; native restore recovers the active sandbox entitlement; local Supabase account, production analytics disabled |
-| Android native Test Store | Local debug build installed on visible Pixel emulator (Android 16 / API 36); cancellation and simulated failure return safely; annual purchase unlocks Pro; native restore returns the active sandbox entitlement. RevenueCat readback contains one initial purchase and no additional charge from restore; local backend and production analytics disabled |
-| Subscriber attribute transport | Real Test Store customer accepted the new attribute writer with HTTP 200; Mixpanel identity attribute read back through RevenueCat; no sandbox revenue sent to production analytics |
-| End-to-end ingestion limit | HTTP success alone does not prove GA4 reporting. On the 2026-10-02 review, RevenueCat's Firebase integration showed no dispatch events and GA4 purchase showed no stream data. Verify a genuine new linked receipt in RevenueCat dispatch history and GA4 after the app reaches production |
+Automated checks: the inventory test (`inventory.test.ts`) checks all 50 names,
+exact GA4 mappings, typed payloads, source-file existence and a nonempty
+trigger column, and forbids app-side settled revenue fields; `engagement.test.ts`
+covers install detection and the once-a-day claim; `posthog.test.ts` covers the
+person-property diff, the event backstop and replay sampling; `providers.test.ts`
+and `analytics.test.ts` cover identity ordering, account switches and the queue;
+`functions/_shared/posthog.test.ts` covers the AI event shape and that no content
+leaves. `pnpm check` runs them; the edge functions run under `deno test`.
 
+On a device, set `EXPO_PUBLIC_POSTHOG_DEV=1`, restart Metro with `--clear`, and
+check PostHog's Activity view (filter `app_variant = development`) for
+`$identify`, `Daily App Open` and the events exercised. Force a replay from the
+debugger with the client's `startSessionRecording()`; the launch's sampling
+decision is made once.
 
-The 2026-10-02 reconciliation first found USD 234.95 in RevenueCat's UTC revenue
-chart for September 26 through October 2, versus USD 239.82 in Mixpanel after
-refunds for those calendar dates in Singapore time. These are different time
-windows, and October 2 was still in progress. Daily results place the USD 39.55
-refund on October 1 in RevenueCat and October 2 in Mixpanel. A second comparison
-used the closed September 26–October 1 UTC interval: converting Mixpanel's hourly
-buckets from Singapore time and including negative refunds gives USD 200.70,
-versus RevenueCat's USD 200.71. That one-cent aggregate difference is consistent
-with conversion/rounding, but does not prove every individual receipt matches.
-Use completed UTC periods when reconciling. Exclude trial starts, ordinary
-cancellations, profile spend and SDK purchase diagnostics; include charge events
-and negative refund adjustments. The Pro Conversion board was reviewed: it
-counts checkout requests before offering lookup and the store call, and explicitly
-leaves settled charges to RevenueCat. Its notes were corrected and read back
-during the account-isolation review. Its Plan Selected step covers users who
-changed a plan;
-the default plan emits no selection event, so that funnel is not the conversion
-rate for every paywall visitor.
-[RevenueCat chart time zones](https://www.revenuecat.com/docs/dashboard-and-metrics/charts),
-[RevenueCat refunds](https://www.revenuecat.com/docs/dashboard-and-metrics/charts/revenue-chart),
-[Mixpanel time zones](https://docs.mixpanel.com/docs/orgs-and-projects/managing-projects#manage-timezones-for-projects).
+### Retired: Mixpanel and Sentry
 
+Retired 2026-10-12. The app, the website and RevenueCat moved from Mixpanel to
+PostHog, and crash reporting from Sentry to PostHog error tracking. Nothing was
+migrated: history stays in Mixpanel projects `4054270` (app) and `4054271`
+(website) and Sentry project `nelsons-project/ricecal-mobile` until it ages out.
+Releases up to 1.0.13 keep sending to Mixpanel and Sentry until users update;
+deleting the EAS variables does not change a shipped binary. Mixpanel's automatic
+`$ae_first_open` / `$ae_session` / `$ae_updated` are replaced by `First App Open`
+and `Daily App Open`; `$ae_iap` (an SDK purchase diagnostic) has no successor.
+The last Mixpanel revenue reconciliation (closed 2026-09-26 to 2026-10-01 UTC:
+RevenueCat gross USD 200.71 against Mixpanel's USD 200.70) is the baseline for
+comparing PostHog's revenue analytics. RevenueCat's Mixpanel delayed-event
+secret is no longer needed. Earlier report names: `Suggestions Shown` and the
+`suggest` trigger come from versions before "what to eat next" was removed;
+paywall screens `reminder` and `ended` never shipped a navigation.
 
 ### The rules this plan was written against
 
@@ -4661,9 +4791,10 @@ Where a number is genuinely wanted, its *shape* is sent instead: which way a
 calorie plan runs rather than the two weights, how many days back an entry was
 logged rather than which day.
 
-**Errors belong to Sentry.** A failure that is also a product fact (a scan that
-found no food, a barcode nothing knows, a request refused for want of budget)
-travels as an `outcome` property on the event it belongs to.
+**Errors belong to error tracking.** A failure that is also a product fact (a
+scan that found no food, a barcode nothing knows, a request refused for want of
+budget) travels as an `outcome` property on the event it belongs to; an
+exception goes to PostHog error tracking (`lib/errors.ts`).
 
 **Scan quality belongs to Postgres.** `food_scan_items` records what the model
 claimed and where it landed, and `food_scan_misses` is the catalogue-widening
@@ -4671,20 +4802,21 @@ backlog. Product analytics measures behaviour; those two measure the pipeline.
 
 ### The one identifier that names a person
 
-`$email`, in Mixpanel only, and it is an exception made on purpose rather than a
-hole in the rule. The address is what a support conversation starts from, and a
-profile that cannot be found by it is a profile nobody can act on. It is set from
-`identifyUser` alone, from the address on the session, and it is the same address
-RevenueCat is given, so both support dashboards answer the same search. GA4 gets
-the Supabase uuid as its pseudonymous user id and its property mapper rejects both
-`$email` and `email`.
+`email`, on the PostHog person only, and it is an exception made on purpose
+rather than a hole in the rule. The address is what a support conversation starts
+from, and a profile that cannot be found by it is a profile nobody can act on. It
+is set from `identifyUser` alone, from the address on the session, and it is the
+same address RevenueCat is given, so both support dashboards answer the same
+search. GA4 gets the Supabase uuid as its pseudonymous user id and its property
+mapper rejects both `$email` and `email`. Account deletion unsets it
+(`forgetPerson`) before the identity reset.
 
 Nothing else about the person follows it: no name, no body figures, and the diary
 half of the rule is unchanged.
 
-It is sent **after** the identify. A people property is filed against whichever
+It is sent **after** the identify. A person property is filed against whichever
 distinct id the SDK is holding at the time, so an email sent first lands on the
-anonymous device profile and the real account stays blank.
+anonymous device and the real account stays blank.
 
 `Signed In` is deliberately **not** fired from `SessionProvider`. Supabase
 announces `SIGNED_IN` on every launch that finds a usable token in the keychain,
@@ -4692,10 +4824,11 @@ so counting it as a sign-in would report a returning user's every cold start as
 an acquisition. The three call sites in `data/auth.ts` are the moments a person
 signed in.
 
-**One super property**, `entitled`, stamped on every Mixpanel event and mirrored
-as a GA4 user property. It is the cut every other report wants. It waits for a
-real answer: offline with nothing cached, registering `false` would mark a paying
-user's whole session as free.
+**One super property**, `entitled`, stamped on every PostHog event and mirrored
+as a GA4 user property (beside `app_variant`, which describes the build). It is
+the cut every other report wants. It waits for a real answer: offline with
+nothing cached, registering `false` would mark a paying user's whole session as
+free.
 
 ### Adding an event
 
@@ -4706,17 +4839,14 @@ user's whole session as free.
 3. Prefer a property on an existing event to a new event. `Meal Logged` with a
    `method` is one thing to reason about; separate method events multiply the inventory.
 4. If the property is a number off somebody's diary, send its shape instead.
-5. Update every affected canonical table in the same change, including properties,
-   vocabulary, sources, triggers/frequency, funnel interpretation, provider settings
-   and verification evidence. Apply the `maintain-analytics-tracking` skill and run
-   the inventory consistency test. Update the website reference when that separate
-   repository changes; audit its current revision rather than assuming mobile CI
-   validates it. A change without analytics impact needs no artificial table edit.
+5. Add its expected monthly volume to the PostHog event budget.
+6. Update every affected canonical table in the same change, including properties,
+   vocabulary, sources, triggers/frequency, funnel interpretation, provider settings,
+   dashboards and verification evidence. Apply the `maintain-analytics-tracking`
+   skill and run the inventory consistency test. Update the website reference when
+   that separate repository changes. A change without analytics impact needs no
+   artificial table edit.
 
-The mobile inventory test checks all 48 names, exact GA4 mappings, typed payloads,
-source-file existence and a nonempty trigger/frequency column, and forbids
-app-side settled revenue fields. Trigger prose, property domains, report meaning,
-SDK/server settings and the separate website still require call-site review.
 Keep both copies of the analytics maintenance skill synchronized. Documentation
 and live verification dates must describe observed evidence, never a planned
 release or HTTP response as proven report ingestion.
@@ -5547,10 +5677,12 @@ path *is* the cache entry, so `storedImageSource` hands it over with no
 `cacheKey`.
 
 **Nothing off the diary reaches RiceCal's product-event plan.**
-`src/lib/analytics/events.ts` is the whole list of app decisions sent to Mixpanel
+`src/lib/analytics/events.ts` is the whole list of app decisions sent to PostHog
 and GA4, and a call site cannot add to it without editing that file. GA4's
 SDK-managed lifecycle events carry app and device context, not diary content.
-`$email` is the one Mixpanel-only exception, explained above.
+`email` is the one PostHog-only exception, explained above. AI observability
+(model-call text and answers, never photos) is a separate PostHog product; see
+[AI observability](#ai-observability).
 
 **No embeddings.**
 
@@ -5941,5 +6073,5 @@ purchase does not land: `REVENUECAT_WEBHOOK_TOKEN` set on the edge functions and
 matched in the dashboard's webhook, and an App Store Connect API key uploaded to
 RevenueCat before an iOS receipt can be validated.
 
-**RevenueCat → Mixpanel and GA4 are configured.** The canonical Analytics tables
+**RevenueCat → PostHog and GA4 are configured.** The canonical Analytics tables
 record their settings, revenue ownership, verification and rollout limits.

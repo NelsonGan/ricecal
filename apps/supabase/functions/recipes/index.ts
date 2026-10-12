@@ -31,6 +31,7 @@ import {
 } from '../_shared/entitlement.ts'
 import { json } from '../_shared/http.ts'
 import { mockActive } from '../_shared/llm.ts'
+import { readSessionId } from '../_shared/posthog.ts'
 import { ownsKey, readObject } from '../_shared/r2.ts'
 import {
   describeRecipe,
@@ -131,7 +132,11 @@ Deno.serve(async (req: Request) => {
   // daily allowance for a check they did not ask for would be the app billing
   // them for its own moderation. It has a ceiling of its own instead; see the
   // claim in that branch.
-  const meter = createMeter()
+  const meter = createMeter({
+    distinctId: userId,
+    feature: 'recipes',
+    sessionId: readSessionId(req),
+  })
 
   // -- READ: a photograph of the pot, or a description of it, becomes a
   // filled-in form. One action rather than two, because everything after the

@@ -76,7 +76,6 @@ function fakeSdk() {
     },
     logOut: async () => void calls.push('logOut'),
     setEmail: async (email: string | null) => void calls.push(`setEmail:${email}`),
-    setMixpanelDistinctID: async (id: string | null) => void calls.push(`mixpanel:${id}`),
     setFirebaseAppInstanceID: async (id: string) => void calls.push(`firebase:${id}`),
     getCustomerInfo: async () => {
       calls.push('getCustomerInfo')
@@ -112,9 +111,9 @@ afterEach(() => {
   registerRevenueAnalytics(null)
 })
 
-const traits = (email: string | null, mixpanelDistinctId: string | null = 'user-1') => ({
+const traits = (email: string | null, posthogDistinctId: string | null = 'user-1') => ({
   email,
-  mixpanelDistinctId,
+  posthogDistinctId,
 })
 
 it('waits for account identification before allowing checkout', async () => {
@@ -207,11 +206,11 @@ describe('production revenue linking', () => {
     expect(confirm).toHaveBeenCalledTimes(1)
     expect(JSON.parse(request.mock.calls[1][1].body).attributes).toMatchObject({
       $firebaseAppInstanceId: { value: 'real-installation' },
-      $mixpanelDistinctId: { value: 'user-1' },
+      $posthogUserId: { value: 'user-1' },
     })
   })
 
-  it('retries a failed Firebase delivery after a Mixpanel-only upload succeeds', async () => {
+  it('retries a failed Firebase delivery after a PostHog-only upload succeeds', async () => {
     const confirm = jest.fn()
     const link = jest
       .fn()
@@ -283,7 +282,7 @@ it('names the account before it says anything about them', async () => {
   // An attribute is filed against whichever app user id the SDK is holding, so
   // an email set first lands on the anonymous customer the process started as,
   // and the real account stays blank.
-  expect(calls).toEqual(['logIn:user-1', 'setEmail:one@example.com', 'mixpanel:user-1'])
+  expect(calls).toEqual(['logIn:user-1', 'setEmail:one@example.com'])
 })
 
 it('deletes the address for an account that has none, rather than skipping it', async () => {
@@ -292,8 +291,8 @@ it('deletes the address for an account that has none, rather than skipping it', 
   expect(calls).toContain('setEmail:null')
 })
 
-/** A build that sends nothing to Mixpanel claims no distinct id there either. */
-it('leaves the distinct id alone when Mixpanel was told nothing', async () => {
+/** A build that sends nothing to PostHog claims no distinct id there either. */
+it('leaves the distinct id alone when PostHog was told nothing', async () => {
   await identifyPurchaser('user-1', traits('one@example.com', null))
 
   expect(calls).toEqual(['logIn:user-1', 'setEmail:one@example.com'])
@@ -322,7 +321,7 @@ it('keeps a sign-out behind the sign-in it followed', async () => {
   releaseLogIn?.()
   await Promise.all([identifying, forgetting])
 
-  expect(calls).toEqual(['logIn:user-1', 'setEmail:one@example.com', 'mixpanel:user-1', 'logOut'])
+  expect(calls).toEqual(['logIn:user-1', 'setEmail:one@example.com', 'logOut'])
 })
 
 /**
@@ -346,10 +345,8 @@ it('finishes with one account before it starts on the next', async () => {
   expect(calls).toEqual([
     'logIn:user-1',
     'setEmail:one@example.com',
-    'mixpanel:user-1',
     'logIn:user-2',
     'setEmail:two@example.com',
-    'mixpanel:user-2',
   ])
 })
 

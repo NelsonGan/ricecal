@@ -4,13 +4,13 @@ import { fromDbActivity, useEntitlement, useMealTimes, useProfile, useSession } 
 import { setPersonProps, setSuperProps } from '@/lib/analytics'
 
 /**
- * Keeps Mixpanel's picture of who this account is in step with the profile,
+ * Keeps PostHog's picture of who this account is in step with the profile,
  * though `finish.tsx` writes all of these when onboarding lands.
  *
  * 1. A profile is edited afterwards, and a segment built on an answer from a
  *    year ago is a segment about somebody who no longer exists.
  * 2. An account that onboarded on another handset has never run that code:
- *    signing in on a new phone gives Mixpanel a fresh device with no profile
+ *    signing in on a new phone gives PostHog a fresh device with no profile
  *    properties, and there is no second onboarding. This runs on every launch.
  *
  * Mounted next to `useReminderSync` and `useHealthAutoSync` in the tabs layout,
@@ -30,7 +30,7 @@ export function useAnalyticsIdentity(): void {
    *
    * A signature rather than a dependency list, because `profile` is a new
    * object on every refetch — a reference comparison would fire this on every
-   * window focus for the life of the session, and Mixpanel's people API is a
+   * window focus for the life of the session, and PostHog's people API is a
    * network call apiece.
    */
   const lastPerson = useRef<string | undefined>(undefined)
@@ -85,7 +85,7 @@ export function useAnalyticsIdentity(): void {
    * subscription query has no answer, and registering `entitled: false` there
    * would mark a paying user's whole offline session as free. So it waits, and
    * events fired before the answer arrives simply carry no `entitled` at all —
-   * which reads honestly in Mixpanel as "not set" rather than as a lie.
+   * which reads honestly in PostHog as "not set" rather than as a lie.
    */
   useEffect(() => {
     if (!userId || loading || unknown) return

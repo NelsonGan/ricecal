@@ -125,9 +125,13 @@ export async function reviewSubmission(
   ]
   if (image) content.push({ type: 'image_url', image_url: { url: image } })
   return parseVerdict(
-    await chatJSON(createMeter(), [
-      { role: 'system', content: REVIEW_PROMPT },
-      { role: 'user', content },
-    ]),
+    await chatJSON(
+      createMeter({ distinctId: 'ricecal-moderation', feature: 'social', system: true }),
+      'moderate_submission',
+      [
+        { role: 'system', content: REVIEW_PROMPT },
+        { role: 'user', content },
+      ],
+    ),
   )
 }
