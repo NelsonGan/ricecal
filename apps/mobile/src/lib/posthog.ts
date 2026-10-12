@@ -86,10 +86,11 @@ export function initPostHog(): PostHog | null {
       // The app starts recordings itself, sampled per launch.
       enableSessionReplay: false,
       sessionReplayConfig: {
-        // Food photos and the diary are what a replay is for, so images and
-        // text stay visible. Text fields are masked anyway: the sign-in screen
-        // types an email address and a password into them.
-        maskAllTextInputs: true,
+        // Food photos and the diary are what a replay is for, so text and
+        // images stay visible. On iOS this flag masks every label as well as
+        // every field, which would black out the whole app. Password fields
+        // are secure text entries, which both native SDKs always mask.
+        maskAllTextInputs: false,
         maskAllImages: false,
         maskAllSandboxedViews: true,
         captureTouches: true,
