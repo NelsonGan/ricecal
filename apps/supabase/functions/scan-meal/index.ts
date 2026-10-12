@@ -60,6 +60,7 @@ import {
   type Vision,
   type VisionItem,
 } from '../_shared/llm.ts'
+import { readSessionId } from '../_shared/posthog.ts'
 import { ownsKey, readObject } from '../_shared/r2.ts'
 
 type ScanRequest = {
@@ -180,7 +181,11 @@ Deno.serve(async (req: Request) => {
     }
     throw error
   }
-  const meter = createMeter()
+  const meter = createMeter({
+    distinctId: userId,
+    feature: 'scan-meal',
+    sessionId: readSessionId(req),
+  })
 
   const scanId = crypto.randomUUID()
   const source = description ? 'text' : 'camera'

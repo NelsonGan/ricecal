@@ -201,14 +201,14 @@ function useWidgetForeground() {
         try {
           await addWater({ ml: action.ml, date: action.date })
           // Tracked on the SYNC rather than on the tap, because the tap happens
-          // where there is no Mixpanel. So this is late by however long it took
+          // where there is no PostHog. So this is late by however long it took
           // somebody to open the app, and a drink that failed above is never
           // counted — which is the honest direction to be wrong in.
           if (isCurrent()) track('Widget Water Added', { preset: action.ml })
         } catch {
           // Nothing to say to the user: they pressed this on a home screen
           // possibly hours ago and are not looking at a water tank now. The
-          // failure is the request's, and Sentry has the ones worth seeing.
+          // failure is the request's, and error tracking has the ones worth seeing.
         }
       }
 

@@ -1,6 +1,6 @@
 {
   "name": "@ricecal/mobile",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "main": "expo-router/entry",
   "private": true,
   "scripts": {
@@ -11,26 +11,20 @@
     "theme:gen": "node scripts/gen-theme-css.mjs",
     "theme:check": "node scripts/gen-theme-css.mjs --check",
     "typecheck": "tsc --noEmit",
-    "test": "jest --passWithNoTests"
-  },
-  "expo": {
-    "install": {
-      "exclude": [
-        "@sentry/react-native"
-      ]
-    }
+    "test": "jest --passWithNoTests",
+    "eas-build-post-install": "[ -z \"$POSTHOG_CLI_API_KEY\" ] || npm install --global @posthog/cli@0.18.10"
   },
   "dependencies": {
     "@expo-google-fonts/baloo-2": "^0.4.2",
     "@expo-google-fonts/nunito": "^0.4.2",
     "@expo/metro-runtime": "~57.0.15",
     "@kingstinct/react-native-healthkit": "^14.0.2",
+    "@posthog/react-native-plugin": "^2.12.5",
     "@react-native-community/netinfo": "12.0.1",
     "@react-native-firebase/analytics": "^26.4.0",
     "@react-native-firebase/app": "^26.4.0",
     "@react-native-google-signin/google-signin": "^16.1.4",
     "@ricecal/shared": "workspace:*",
-    "@sentry/react-native": "~8.20.0",
     "@shopify/react-native-skia": "2.6.2",
     "@supabase/supabase-js": "^2.110.9",
     "@tanstack/query-sync-storage-persister": "^5.101.4",
@@ -40,6 +34,7 @@
     "date-fns": "^4.4.0",
     "expo": "~57.0.23",
     "expo-apple-authentication": "~57.0.2",
+    "expo-application": "~57.0.3",
     "expo-build-properties": "~57.0.19",
     "expo-camera": "~57.0.5",
     "expo-clipboard": "~57.0.2",
@@ -62,8 +57,8 @@
     "expo-store-review": "57.0.3",
     "expo-updates": "~57.0.22",
     "i18next": "^26.3.6",
-    "mixpanel-react-native": "^3.6.0",
     "nativewind": "^4.2.6",
+    "posthog-react-native": "^4.81.0",
     "react": "19.2.3",
     "react-i18next": "^17.0.11",
     "react-native": "0.86.3",
@@ -84,7 +79,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@sentry/cli": "^3.6.1",
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "^29.5.14",
     "@types/node": "^26.1.2",

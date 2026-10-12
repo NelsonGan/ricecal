@@ -9,8 +9,8 @@ import { deliverRevenueAttributes } from './revenuecat-attributes'
  * forget them on the way out.
  *
  * Its own file rather than a corner of `startup.ts`, because `session.tsx` needs
- * the identify half and `startup.ts` imports Mixpanel at module scope, which jest
- * cannot transform. This module keeps native analytics behind a bridge.
+ * the identify half and `startup.ts` imports native analytics at module scope,
+ * which jest cannot load. This module keeps native analytics behind a bridge.
  *
  * The import is the fragile part rather than the key: `react-native-purchases`
  * reaches for its native module at module scope, so pulling it in threw on any
@@ -29,7 +29,6 @@ type PurchasesSdk = {
   logIn(appUserId: string): Promise<unknown>
   logOut(): Promise<unknown>
   setEmail(email: string | null): Promise<void>
-  setMixpanelDistinctID(distinctId: string | null): Promise<void>
   setFirebaseAppInstanceID?(id: string): Promise<void>
   getCustomerInfo(): Promise<StoreCustomerInfo>
   addCustomerInfoUpdateListener(listener: (info: StoreCustomerInfo) => void): void
@@ -171,14 +170,14 @@ function inOrder(work: () => Promise<void>): Promise<void> {
 /**
  * What RevenueCat is told about the person, beside which account they are. Both
  * are nullable and null is ordinary: a provider that gave no address has no
- * email, and Mixpanel knows nobody in a build that does not send. A type rather
+ * email, and PostHog knows nobody in a build that does not send. A type rather
  * than two optional arguments, so a new call site decides about each.
  */
 export type PurchaserTraits = {
   /** The address on the Supabase account, for support to search the dashboard by. */
   email: string | null
-  /** What Mixpanel knows this person by, or null if nothing was sent. */
-  mixpanelDistinctId: string | null
+  /** What PostHog knows this person by, or null if nothing was sent. */
+  posthogDistinctId: string | null
 }
 
 /**
@@ -214,17 +213,8 @@ export function identifyPurchaser(userId: string, traits: PurchaserTraits): Prom
       // address.
       await Purchases.setEmail(traits.email)
 
-      // The tie between the two platforms, passed in rather than assumed.
-      // RevenueCat files the purchase events it forwards to Mixpanel under this
-      // attribute, falling back to the app user id. Both are the Supabase uuid
-      // today, which is what stops being true when one side changes.
-      //
-      // Null means Mixpanel was told nothing, and the attribute is left alone
-      // rather than cleared: a distinct id for a person Mixpanel has never heard
-      // of would file real purchases against a profile with no behaviour on it.
-      if (traits.mixpanelDistinctId) {
-        await Purchases.setMixpanelDistinctID(traits.mixpanelDistinctId)
-      }
+      // The tie to PostHog (`$posthogUserId`) is uploaded with the other
+      // analytics attributes below; the SDK has no setter for it.
       await syncAnalyticsAttributes(userId, traits, Purchases)
     } catch (error) {
       if (__DEV__) console.log('[revenuecat] identify failed:', error)
@@ -266,7 +256,13 @@ async function syncAnalyticsAttributes(userId: string, traits: PurchaserTraits, 
       : null
     if (!current()) return
     const values: Record<string, string> = {}
-    if (traits.mixpanelDistinctId) values.$mixpanelDistinctId = traits.mixpanelDistinctId
+    // The tie between the two platforms, passed in rather than assumed.
+    // RevenueCat files the purchase events it forwards to PostHog under this
+    // attribute, falling back to the app user id. Both are the Supabase uuid
+    // today, which is what stops being true when one side changes. Null means
+    // PostHog was told nothing, and the attribute is left alone rather than
+    // pointed at a person PostHog has never heard of.
+    if (traits.posthogDistinctId) values.$posthogUserId = traits.posthogDistinctId
     if (link) {
       values.$firebaseAppInstanceId = link.appInstanceId
       // This setter caches locally. HTTP delivery below is the acknowledgement;
@@ -308,8 +304,6 @@ export function syncPurchaserAnalytics(): Promise<void> {
         identifiedUserId = target.userId
         if (purchaser !== target) return
         await sdk.setEmail(target.traits.email)
-        if (target.traits.mixpanelDistinctId)
-          await sdk.setMixpanelDistinctID(target.traits.mixpanelDistinctId)
       }
       await syncAnalyticsAttributes(target.userId, target.traits, sdk)
     } catch (error) {

@@ -336,7 +336,7 @@ describe('reading what Supabase said', () => {
     expect(asAuthProblem(new TypeError('Network request failed')).reason).toBe('offline')
   })
 
-  it('keeps the original underneath, so Sentry has something to read', () => {
+  it('keeps the original underneath, so error tracking has something to read', () => {
     const original = new Error('something nobody has seen before')
     expect(asAuthProblem(original).cause).toBe(original)
   })

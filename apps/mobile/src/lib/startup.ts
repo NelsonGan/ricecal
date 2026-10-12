@@ -1,12 +1,22 @@
-import * as Sentry from '@sentry/react-native'
-import { Mixpanel } from 'mixpanel-react-native'
 import { AppState } from 'react-native'
+import { createMMKV } from 'react-native-mmkv'
 
-import { type AnalyticsClient, registerAnalytics } from './analytics'
+import { registerAnalytics } from './analytics'
+import { sending } from './analytics/client'
+import { recordAppOpen } from './analytics/engagement'
 import { configureGa4Collection, ga4CollectionEnabled } from './analytics/ga4'
 import { createAnalyticsProviders, type FirebaseAnalyticsBridge } from './analytics/providers'
 import { registerRevenueAnalytics } from './analytics/revenue'
-import { env, isConfigured } from './env'
+import { env } from './env'
+import { registerErrorReporter, reportError } from './errors'
+import { registerFeatureFlags } from './feature-flags'
+import {
+  initPostHog,
+  postHogAnalytics,
+  postHogErrorReporter,
+  postHogFeatureFlags,
+  startReplayForLaunch,
+} from './posthog'
 import { configurePurchases, syncPurchaserAnalytics } from './revenuecat'
 
 /**
@@ -29,56 +39,66 @@ const skipped: string[] = []
  */
 const disabled: string[] = []
 
-export function initSentry() {
-  if (!isConfigured(env.EXPO_PUBLIC_SENTRY_DSN)) {
-    skipped.push('Sentry')
-    return
+/**
+ * Stores an install writes as soon as it is used: the query cache, the rating
+ * clock, the onboarding draft, the stated preferences. An install updating to
+ * the build that added `First App Open` has at least one of them, so it is not
+ * counted as an install.
+ */
+const EXISTING_INSTALL_STORES = [
+  'ricecal-query-cache',
+  'ricecal-rating',
+  'ricecal-onboarding',
+  'ricecal-language',
+  'ricecal-theme',
+  'ricecal-logging',
+  'ricecal-tutorial',
+  'ricecal-paywall',
+  'ricecal-widgets',
+  'ricecal-pending-snaps',
+]
+
+/**
+ * Whether this process is the first launch of a fresh install, decided at module
+ * load, before anything has rendered or persisted: only then does "every store
+ * is empty" mean "never launched".
+ */
+const freshInstall = (() => {
+  try {
+    return EXISTING_INSTALL_STORES.every((id) => createMMKV({ id }).getAllKeys().length === 0)
+  } catch {
+    return false
   }
-  Sentry.init({
-    dsn: env.EXPO_PUBLIC_SENTRY_DSN,
-    // Leave off in dev so local crashes stay local.
-    enabled: !__DEV__,
-    tracesSampleRate: __DEV__ ? 1.0 : 0.2,
-    // The one place the diary could leak into a third-party log. Sentry records
-    // a breadcrumb for every fetch/XHR with the FULL url, and ours carry the
-    // typed search query in the query string (`catalogue.ts`) and the R2
-    // signature in it too (`photos.ts`) — the exact data the analytics plan
-    // promises never leaves. Drop the query string from every breadcrumb url so
-    // the Sentry side keeps the same promise the Mixpanel side does.
-    beforeBreadcrumb(breadcrumb) {
-      const url = breadcrumb.data?.url
-      if (typeof url === 'string') {
-        const q = url.indexOf('?')
-        if (q !== -1) {
-          breadcrumb.data = { ...breadcrumb.data, url: url.slice(0, q) }
-        }
-      }
-      return breadcrumb
-    },
-  })
+})()
+
+const engagementStore = createMMKV({ id: 'ricecal-engagement' })
+const engagementStorage = {
+  read: () => engagementStore.getString('state'),
+  write: (value: string) => engagementStore.set('state', value),
 }
 
 /**
- * `true` is `trackAutomaticEvents`, and it is why nothing in `lib/analytics`
- * sends an "app opened". The SDK records `$ae_session`, `$ae_first_open` and
- * `$ae_updated` itself, so sessions, installs and upgrades arrive without an
- * event of ours — and an event of ours would be a second, slightly different
- * answer to the same question.
+ * PostHog, as early as the root layout's module scope so error autocapture
+ * covers startup. Registers error reporting and feature flags at once; product
+ * analytics waits for `initAnalytics`, which orders it behind Firebase.
  */
-async function initMixpanel(): Promise<AnalyticsClient | null> {
-  if (__DEV__ || env.EXPO_PUBLIC_ANALYTICS_ENABLED === 'false') return null
-  if (!isConfigured(env.EXPO_PUBLIC_MIXPANEL_TOKEN)) {
-    skipped.push('Mixpanel')
-    return null
+let errorTrackingStarted = false
+
+export function initErrorTracking(): void {
+  if (errorTrackingStarted) return
+  errorTrackingStarted = true
+  const posthog = initPostHog()
+  if (!posthog) {
+    skipped.push('PostHog')
+    return
   }
-  const instance = new Mixpanel(env.EXPO_PUBLIC_MIXPANEL_TOKEN, true)
-  await instance.init()
-  return instance
+  registerErrorReporter(postHogErrorReporter(posthog))
+  registerFeatureFlags(postHogFeatureFlags(posthog))
 }
 
 /**
  * Loaded lazily so a same-runtime OTA bundle remains safe on a binary made
- * before Firebase was linked. The old binary keeps Mixpanel and skips GA4.
+ * before Firebase was linked. The old binary keeps PostHog and skips GA4.
  */
 function firebaseAnalytics(): FirebaseAnalyticsBridge | null {
   try {
@@ -103,7 +123,7 @@ function firebaseAnalytics(): FirebaseAnalyticsBridge | null {
 }
 
 function reportAnalyticsFailure(
-  provider: 'Mixpanel' | 'Firebase',
+  provider: 'PostHog' | 'Firebase',
   operation: string,
   error: unknown,
 ) {
@@ -111,12 +131,10 @@ function reportAnalyticsFailure(
     console.warn(`[analytics] ${provider} ${operation} failed`, error)
     return
   }
-  Sentry.captureException(error, {
-    tags: { analytics_provider: provider, analytics_operation: operation },
-  })
+  reportError(error, { analytics_provider: provider, analytics_operation: operation })
 }
 
-let revenueForegroundListener: ReturnType<typeof AppState.addEventListener> | null = null
+let foregroundListener: ReturnType<typeof AppState.addEventListener> | null = null
 
 async function initAnalytics() {
   // A preview build uses the release bundle id so the real store can price its
@@ -133,22 +151,30 @@ async function initAnalytics() {
   } catch (error) {
     reportAnalyticsFailure('Firebase', 'initialization', error)
   }
-  const mixpanel = await initMixpanel().catch((error) => {
-    reportAnalyticsFailure('Mixpanel', 'initialization', error)
-    return null
-  })
+  // Product analytics only where it is sent; a preview build has PostHog for
+  // its crashes but sends no events and records no replays.
+  const posthog = sending() ? initPostHog() : null
 
   /**
    * Registering last drains startup calls into providers that are ready. The
    * adapter serializes Firebase identity and events in that same order.
    */
-  const providers = createAnalyticsProviders(mixpanel, firebase, reportAnalyticsFailure)
+  const providers = createAnalyticsProviders(
+    posthog ? postHogAnalytics(posthog) : null,
+    firebase,
+    reportAnalyticsFailure,
+  )
   registerRevenueAnalytics(providers.revenueAnalytics)
   registerAnalytics(providers.client)
   void syncPurchaserAnalytics()
-  revenueForegroundListener?.remove()
-  revenueForegroundListener = AppState.addEventListener('change', (state) => {
-    if (state === 'active') void syncPurchaserAnalytics()
+
+  const opened = recordAppOpen(engagementStorage, { freshInstall })
+  if (posthog) startReplayForLaunch(posthog, opened.firstDay)
+  foregroundListener?.remove()
+  foregroundListener = AppState.addEventListener('change', (state) => {
+    if (state !== 'active') return
+    void syncPurchaserAnalytics()
+    recordAppOpen(engagementStorage, { freshInstall: false })
   })
 }
 
@@ -162,7 +188,7 @@ export async function initPurchases() {
 
 /** Call once, as early as possible in the root layout. */
 export async function initServices() {
-  initSentry()
+  initErrorTracking()
   await initPurchases()
   await initAnalytics()
 

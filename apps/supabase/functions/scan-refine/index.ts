@@ -67,6 +67,7 @@ import {
   type MockSteer,
   mockActive,
 } from '../_shared/llm.ts'
+import { readSessionId } from '../_shared/posthog.ts'
 import { findRefinePart, matchingRefineParts } from '../_shared/refine.ts'
 
 type RefineRequest = {
@@ -270,7 +271,11 @@ Deno.serve(async (req: Request) => {
     }
     throw error
   }
-  const meter = createMeter()
+  const meter = createMeter({
+    distinctId: userId,
+    feature: 'scan-refine',
+    sessionId: readSessionId(req),
+  })
 
   // The entry, with enough context for the interpreter. service_role reads it,
   // so ownership is checked explicitly: this must not be a way to edit somebody

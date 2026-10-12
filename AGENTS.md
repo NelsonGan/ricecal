@@ -62,7 +62,7 @@ docs are what this layout replaced.
 
 **Analytics changes require table synchronization.** Apply
 `.agents/skills/maintain-analytics-tracking/SKILL.md` whenever changing or reviewing
-Mixpanel, GA4, RevenueCat revenue, identity, provider gates or dashboard settings.
+PostHog, GA4, RevenueCat revenue, identity, provider gates or dashboard settings.
 Update the canonical Analytics tables in README.md in the same change. Keep the
 `.agents` and `.claude` skill copies synchronized and run the inventory test.
 

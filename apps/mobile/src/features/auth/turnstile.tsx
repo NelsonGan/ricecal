@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/react-native'
 import {
   createContext,
   type ReactNode,
@@ -15,6 +14,7 @@ import type WebView from 'react-native-webview'
 import type { WebViewMessageEvent } from 'react-native-webview'
 
 import { env, isConfigured } from '@/lib/env'
+import { reportMessage } from '@/lib/errors'
 import { Button, Text } from '@/ui'
 
 /**
@@ -181,11 +181,11 @@ function page(siteKey: string): string {
  * here looks the same from outside, and four of the five causes live in a
  * dashboard rather than in this repo.
  *
- * Sentry as a message rather than an exception: nothing has thrown, and what is
- * wanted is the code attached to a build and a date.
+ * A message rather than an exception: nothing has thrown, and what is wanted
+ * is the code attached to a build and a date.
  */
 function report(what: string) {
-  Sentry.captureMessage(`[captcha] ${what}`, 'warning')
+  reportMessage(`[captcha] ${what}`)
 }
 
 /**

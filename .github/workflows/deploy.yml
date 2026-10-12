@@ -429,15 +429,15 @@ jobs:
       contents: read
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      # No SENTRY_AUTH_TOKEN here on purpose.
+      # No POSTHOG_CLI_API_KEY here on purpose.
       #
-      # The Sentry Expo plugin adds an "Upload Debug Symbols to Sentry" phase and
-      # a sourcemap upload inside "Bundle React Native code and images"; org and
-      # project come from app.json, the token cannot. It lives in the EAS
-      # `production` environment instead of a GitHub secret — the same place
-      # money2time keeps it, and the reason its workflow never mentions it. EAS
-      # injects that environment into `--local` builds too, so one store serves
-      # both cloud and runner builds and there is no second copy to rotate.
+      # When that key is set, app.config.ts adds PostHog's Expo plugin, which
+      # uploads the Hermes source map and native debug symbols during the build
+      # so crash stacks are readable. The key lives in the EAS `production`
+      # environment (sensitive visibility) instead of a GitHub secret, the same
+      # place money2time keeps it. EAS injects that environment into `--local`
+      # builds too, so one store serves both cloud and runner builds and there
+      # is no second copy to rotate.
       #
       # CocoaPods 1.17 dies in `Pod::Config#installation_root` with
       # "Unicode Normalization not appropriate for ASCII-8BIT" when the locale is
