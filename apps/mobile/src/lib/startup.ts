@@ -2,6 +2,7 @@ import { AppState } from 'react-native'
 import { createMMKV } from 'react-native-mmkv'
 
 import { registerAnalytics } from './analytics'
+import { sending } from './analytics/client'
 import { recordAppOpen } from './analytics/engagement'
 import { configureGa4Collection, ga4CollectionEnabled } from './analytics/ga4'
 import { createAnalyticsProviders, type FirebaseAnalyticsBridge } from './analytics/providers'
@@ -39,18 +40,32 @@ const skipped: string[] = []
 const disabled: string[] = []
 
 /**
+ * Stores an install writes as soon as it is used: the query cache, the rating
+ * clock, the onboarding draft, the stated preferences. An install updating to
+ * the build that added `First App Open` has at least one of them, so it is not
+ * counted as an install.
+ */
+const EXISTING_INSTALL_STORES = [
+  'ricecal-query-cache',
+  'ricecal-rating',
+  'ricecal-onboarding',
+  'ricecal-language',
+  'ricecal-theme',
+  'ricecal-logging',
+  'ricecal-tutorial',
+  'ricecal-paywall',
+  'ricecal-widgets',
+  'ricecal-pending-snaps',
+]
+
+/**
  * Whether this process is the first launch of a fresh install, decided at module
- * load, before anything has rendered or persisted: only then does "the query
- * cache and the rating store are both empty" mean "never launched". An existing
- * install updating to the build that added `First App Open` has both, so it is
- * not counted as an install.
+ * load, before anything has rendered or persisted: only then does "every store
+ * is empty" mean "never launched".
  */
 const freshInstall = (() => {
   try {
-    return (
-      createMMKV({ id: 'ricecal-query-cache' }).getAllKeys().length === 0 &&
-      createMMKV({ id: 'ricecal-rating' }).getAllKeys().length === 0
-    )
+    return EXISTING_INSTALL_STORES.every((id) => createMMKV({ id }).getAllKeys().length === 0)
   } catch {
     return false
   }
@@ -136,7 +151,9 @@ async function initAnalytics() {
   } catch (error) {
     reportAnalyticsFailure('Firebase', 'initialization', error)
   }
-  const posthog = initPostHog()
+  // Product analytics only where it is sent; a preview build has PostHog for
+  // its crashes but sends no events and records no replays.
+  const posthog = sending() ? initPostHog() : null
 
   /**
    * Registering last drains startup calls into providers that are ready. The
@@ -152,7 +169,7 @@ async function initAnalytics() {
   void syncPurchaserAnalytics()
 
   const opened = recordAppOpen(engagementStorage, { freshInstall })
-  if (posthog) startReplayForLaunch(posthog, opened.firstOpen)
+  if (posthog) startReplayForLaunch(posthog, opened.firstDay)
   foregroundListener?.remove()
   foregroundListener = AppState.addEventListener('change', (state) => {
     if (state !== 'active') return

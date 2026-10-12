@@ -277,7 +277,7 @@ export async function chatJSON(
       return await request(generation)
     } catch (error) {
       // A parse error quotes the model's answer back, which is diary content.
-      generation.error =
+      generation.error ??=
         error instanceof SyntaxError
           ? 'model answer was not valid JSON'
           : error instanceof Error
@@ -326,6 +326,8 @@ export async function chatJSON(
     })
     generation.httpStatus = res.status
     if (!res.ok) {
+      // The status only: a provider's error body can quote the request back.
+      generation.error = `OpenRouter ${res.status}`
       const retryable = res.status === 429 || res.status >= 500
       throw Object.assign(new Error(`OpenRouter ${res.status}: ${await res.text()}`), {
         retryable,

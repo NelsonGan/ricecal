@@ -1,5 +1,5 @@
 import { createMMKV } from 'react-native-mmkv'
-import { allowedEvent, postHogAnalytics, startReplayForLaunch } from '../posthog'
+import { allowedEvent, exceptionAllowed, postHogAnalytics, startReplayForLaunch } from '../posthog'
 
 jest.mock('posthog-react-native', () => ({ PostHog: jest.fn() }))
 
@@ -93,4 +93,23 @@ it('decides a replay once per launch, at the first-day rate on a new install', (
   // biome-ignore lint/suspicious/noExplicitAny: a partial SDK double
   expect(startReplayForLaunch(fake.sdk as any, true, () => 0)).toBe(false)
   expect(fake.calls).toEqual([['replay']])
+})
+
+it('sends an identical exception once per window, and at most 25 distinct ones', () => {
+  const exception = (value: string) =>
+    // biome-ignore lint/suspicious/noExplicitAny: a minimal capture event
+    ({ event: '$exception', properties: { $exception_list: [{ type: 'Error', value }] } }) as any
+  const start = 1_000_000_000
+  expect(exceptionAllowed(exception('loop'), start)).toBe(true)
+  expect(exceptionAllowed(exception('loop'), start + 1000)).toBe(false)
+  for (let i = 0; i < 24; i++) expect(exceptionAllowed(exception(`e${i}`), start + 2000)).toBe(true)
+  expect(exceptionAllowed(exception('one more'), start + 3000)).toBe(false)
+  expect(exceptionAllowed(exception('loop'), start + 5 * 60 * 1000 + 1)).toBe(true)
+})
+
+it('keeps the build variant on events after a sign-out reset', () => {
+  const fake = fakePostHog()
+  // biome-ignore lint/suspicious/noExplicitAny: a partial SDK double
+  postHogAnalytics(fake.sdk as any).reset()
+  expect(fake.calls).toEqual([['reset'], ['register', { app_variant: 'development' }]])
 })

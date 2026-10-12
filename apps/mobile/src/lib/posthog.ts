@@ -3,7 +3,6 @@ import { PostHog, type PostHogOptions } from 'posthog-react-native'
 import { createMMKV } from 'react-native-mmkv'
 
 import type { AnalyticsClient } from './analytics'
-import { sending } from './analytics/client'
 import { env } from './env'
 import type { ErrorReporter } from './errors'
 import type { FeatureFlagSource } from './feature-flags'
@@ -28,9 +27,15 @@ import {
  * events listed in `ALLOWED_SDK_EVENTS`, exceptions and the RevenueCat feed.
  */
 
-/** `development`, `simulator` or `production`, from the build (see app.config.ts). */
+/**
+ * `development`, `preview`, `simulator` or `production`. Any release build with
+ * product analytics switched off is internal (the `preview` profile, and every
+ * per-PR EAS update, which is exported without `APP_VARIANT`), so it reports as
+ * `preview` and the test-account filter keeps its crashes out of production.
+ */
 export function appVariant(): string {
   if (__DEV__) return 'development'
+  if (env.EXPO_PUBLIC_ANALYTICS_ENABLED === 'false') return 'preview'
   const variant = Constants.expoConfig?.extra?.appVariant
   return typeof variant === 'string' && variant ? variant : 'production'
 }
@@ -47,9 +52,54 @@ export function allowedEvent(event: string): boolean {
   return !event.startsWith('$') || ALLOWED_SDK_EVENTS.has(event)
 }
 
-type CaptureEvent = Parameters<
-  Extract<PostHogOptions['before_send'], (...args: never[]) => unknown>
->[0]
+type CaptureEvent = NonNullable<
+  Parameters<Extract<PostHogOptions['before_send'], (...args: never[]) => unknown>>[0]
+>
+
+/**
+ * A render loop or a failing request in a retry can throw the same exception
+ * hundreds of times a minute, and the free tier is 100,000 exceptions a month
+ * for every install together. So an identical exception is sent once per
+ * window, and no more than `EXCEPTION_LIMIT` distinct ones per window.
+ */
+const EXCEPTION_WINDOW_MS = 5 * 60 * 1000
+const EXCEPTION_LIMIT = 25
+const recentExceptions = new Map<string, number>()
+
+function exceptionKey(event: CaptureEvent): string {
+  const list = (event.properties as { $exception_list?: { type?: string; value?: string }[] })
+    ?.$exception_list
+  const first = Array.isArray(list) ? list[0] : undefined
+  return `${first?.type ?? ''}:${first?.value ?? ''}`.slice(0, 300)
+}
+
+/** Exported for its test; `now` is injectable. */
+export function exceptionAllowed(event: CaptureEvent, now: number = Date.now()): boolean {
+  for (const [key, at] of recentExceptions) {
+    if (now - at >= EXCEPTION_WINDOW_MS) recentExceptions.delete(key)
+  }
+  const key = exceptionKey(event)
+  if (recentExceptions.has(key) || recentExceptions.size >= EXCEPTION_LIMIT) return false
+  recentExceptions.set(key, now)
+  return true
+}
+
+function beforeSend(event: CaptureEvent | null): CaptureEvent | null {
+  if (!event || !allowedEvent(event.event)) return null
+  if (event.event === '$exception' && !exceptionAllowed(event)) return null
+  return event
+}
+
+/**
+ * Whether PostHog runs at all. Every release build, including the internal
+ * `preview` builds that send no product analytics (`EXPO_PUBLIC_ANALYTICS_ENABLED`
+ * gates those in `client.ts`): their crashes are still worth seeing, as they
+ * were in Sentry, and `app_variant: preview` keeps them out of production
+ * reports. Development only with `EXPO_PUBLIC_POSTHOG_DEV=1`.
+ */
+export function posthogEnabled(): boolean {
+  return !__DEV__ || env.EXPO_PUBLIC_POSTHOG_DEV === '1'
+}
 
 /**
  * PostHog's tracing headers go to the edge functions only, which copy the
@@ -68,11 +118,11 @@ let client: PostHog | null | undefined
 
 /**
  * Created once, as early as the root layout's module scope, so error autocapture
- * covers startup. Null in a build that does not send.
+ * covers startup. Null in development unless asked for.
  */
 export function initPostHog(): PostHog | null {
   if (client !== undefined) return client
-  if (!sending()) {
+  if (!posthogEnabled()) {
     client = null
     return client
   }
@@ -111,8 +161,7 @@ export function initPostHog(): PostHog | null {
           androidNdkCrashes: true,
         },
       },
-      before_send: (event: CaptureEvent | null) =>
-        event && allowedEvent(event.event) ? event : null,
+      before_send: beforeSend,
       addTracingHeaders: tracingHosts(),
       disableSurveys: true,
       capturePushNotificationSubscriptions: false,
@@ -175,6 +224,9 @@ export function postHogAnalytics(posthog: PostHog): AnalyticsClient {
     },
     reset() {
       posthog.reset()
+      // Reset clears super properties too, and without this a development
+      // build's events after a sign-out would pass the test-account filter.
+      void posthog.register({ app_variant: appVariant() })
     },
     registerSuperProperties(properties) {
       return posthog.register(properties as Parameters<PostHog['register']>[0])

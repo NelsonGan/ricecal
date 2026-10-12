@@ -4183,9 +4183,14 @@ still reach both profiles.
 [PostHog identify](https://posthog.com/docs/product-analytics/identify),
 [Firebase persisted user properties](https://firebase.google.com/docs/reference/android/com/google/firebase/analytics/FirebaseAnalytics#setUserProperty(java.lang.String,%20java.lang.String)).
 
-Nothing is sent to PostHog or GA4 in development or from an internal `preview`
-build. The preview profile keeps the release identifiers so store prices work,
-then sets `EXPO_PUBLIC_ANALYTICS_ENABLED=false` and `EXPO_PUBLIC_GA4_ENABLED=false`.
+No product analytics is sent to PostHog or GA4 in development or from an
+internal `preview` build. The preview profile keeps the release identifiers so
+store prices work, then sets `EXPO_PUBLIC_ANALYTICS_ENABLED=false` and
+`EXPO_PUBLIC_GA4_ENABLED=false`. A preview build, and a per-PR EAS update,
+still reports its crashes to PostHog error tracking, as it did to Sentry,
+tagged `app_variant: preview` (any release build with analytics switched off)
+so the test-account filter keeps them out of production reports; it sends no
+events and records no replays.
 A development build sends to PostHog only with `EXPO_PUBLIC_POSTHOG_DEV=1`, for
 verifying a change end to end; those events carry `app_variant: development`,
 which the project's test-account filter hides. Firebase remembers runtime
@@ -4357,7 +4362,8 @@ This table is the source of truth for the tracking contract. Update it in the sa
 
 The app event table lists custom payload keys. PostHog also adds its SDK-managed
 platform, device, app version, `$session_id` and identity, and the app registers
-`app_variant` (`production`, `simulator` or `development`) on every event. Those
+`app_variant` (`production`, `preview`, `simulator` or `development`) on every
+event, re-registered after every identity reset. Those
 SDK fields are not extra permitted diary fields. Firebase adds its own
 app/device/session context. `entitled` is a PostHog super property and a GA4
 user property after a known entitlement answer; early events can lack it. It is
@@ -4532,10 +4538,13 @@ is recording.
 | Uncaught JavaScript errors and unhandled rejections | `errorTracking.autocapture` in `posthog.ts` | Fatal errors are handed to the native SDK, which persists them before the process dies |
 | Native crashes | `nativeCrashes` (iOS signals and Mach exceptions; Android Java/Kotlin), `androidNdkCrashes` | Through `@posthog/react-native-plugin`; an NDK crash is reported on the next launch |
 | Caught errors | `reportError(error, context)` from `src/lib/errors.ts` | Analytics provider failures (`analytics_provider`, `analytics_operation`); context is short scalars only |
-| Warnings | `reportMessage(text)` | The captcha diagnostics in `features/auth/turnstile.tsx`, sent as a warning-level exception |
+| Warnings | `reportMessage(text)` | The captcha diagnostics in `features/auth/turnstile.tsx`, sent with `$exception_level: warning` |
 | Edge functions | Their own logs | The functions are not instrumented for errors; their model calls are, as AI events |
 
-Console output and request URLs are never captured: the catalogue query string
+A `before_send` hook sends an identical exception once per five minutes and no
+more than 25 distinct ones in that window, so a render loop cannot spend the
+month's allowance. Preview builds report exceptions too (tagged
+`app_variant: preview`). Console output and request URLs are never captured: the catalogue query string
 carries the typed search and the photos URLs carry R2 signatures, which is why
 Sentry's breadcrumb filter existed. PostHog captures no network breadcrumbs at all.
 
@@ -4561,7 +4570,7 @@ export for readable stacks.
 Recordings come from `@posthog/react-native-plugin` (native screenshots, not a
 DOM), so they need a native build. The app decides once per launch, after the
 engagement check, whether to record: **20%** of launches on an install's first
-day (onboarding and the first scans, where replays teach the most) and **4%** of
+day (the local day `First App Open` was sent, kept in the engagement store) (onboarding and the first scans, where replays teach the most) and **4%** of
 later launches, about 2,200 recordings a month against the free tier's 2,500
 mobile recordings (`posthog-config.ts`). Recordings under 5 seconds are dropped.
 
@@ -4674,7 +4683,7 @@ revenue owner.
 | `meal_reminders` | Person count | GA4 user-property string | Number of enabled meal reminders; hook writes on mount, account change or changed count, not every refetch |
 | `widgets_installed` | Person count | GA4 user-property string | Current handset widget-kind count; first valid poll for each signed-in account and detected changes, including zero |
 | `entitled` | Super property on every custom event | GA4 user property | After a real entitlement answer for the current account; account switches clear the preceding answer. No false value while offline with unknown status |
-| `app_variant` | Super property | Not sent | Registered at client start from the build (`production`, `simulator`, `development`) |
+| `app_variant` | Super property | Not sent | Registered at client start and after every reset, from the build (`production`, `preview`, `simulator`, `development`) |
 | `revenuecat_revenue_enabled` | Not sent | Firebase default event parameter, 0 or 1 | Starts at 0; set to 1 only after HTTP 200 acknowledges this account's current installation attribute |
 | `rc_subscription_status` | RevenueCat-managed person property | Integration-owned parameters | Updated by every RevenueCat server event; never written by the app |
 
@@ -4709,7 +4718,7 @@ Verified 2026-10-12; credentials remain in the dashboards and local ignored file
 | iOS native revenue rules | `in_app_purchase` and prefix `app_store_`, each AND `revenuecat_revenue_enabled = 1`; preserve original name in `legacy_event_name`, rename to `ricecal_store_revenue_observed` |
 | Android native revenue rule | `in_app_purchase` AND `revenuecat_revenue_enabled = 1`; same preserve/rename action; separate Google Play import removed |
 | EAS environment | `production`: `POSTHOG_CLI_API_KEY` (sensitive) and `POSTHOG_CLI_PROJECT_ID`. `EXPO_PUBLIC_MIXPANEL_TOKEN`, `EXPO_PUBLIC_SENTRY_DSN` and `SENTRY_AUTH_TOKEN` are deleted from every environment once this migration is on `main` (code before it requires them) |
-| Dev / preview / PR updates | Both providers disabled by `EXPO_PUBLIC_ANALYTICS_ENABLED=false`; GA4 additionally disabled by its existing flag |
+| Dev / preview / PR updates | Product analytics disabled by `EXPO_PUBLIC_ANALYTICS_ENABLED=false`; GA4 additionally disabled by its existing flag. Preview builds keep PostHog error tracking, tagged `app_variant: preview` |
 | Backend entitlement webhook | Existing Supabase `revenuecat` function preserved; sandbox entitlements follow `REVENUECAT_SANDBOX_SUBSCRIBERS` policy independently of analytics sandbox exclusion |
 
 The native rename rules affect incoming client events, not RevenueCat's Measurement
