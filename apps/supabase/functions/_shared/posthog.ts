@@ -114,6 +114,10 @@ export function generationEvent(context: AiContext, traceId: string, generation:
     $ai_is_error: Boolean(generation.error),
     feature: context.feature,
     attempt: generation.attempt,
+    // Sent from Supabase's servers, so the request IP is a data centre's.
+    // GeoIP would stamp that location on the event and on the person,
+    // overwriting where the person actually is.
+    $geoip_disable: true,
   }
   if (context.system) properties.$process_person_profile = false
   if (context.sessionId) {
