@@ -41,7 +41,7 @@
     "eas:credentials": "pnpm --filter @ricecal/mobile exec eas credentials",
     "expo": "pnpm --filter @ricecal/mobile exec expo",
     "start": "pnpm --filter @ricecal/mobile exec expo start --dev-client",
-    "ios": "LANG=${LANG:-en_US.UTF-8} APP_VARIANT=simulator SENTRY_DISABLE_AUTO_UPLOAD=true pnpm --filter @ricecal/mobile exec sh -c 'expo prebuild -p ios && expo run:ios'",
+    "ios": "LANG=${LANG:-en_US.UTF-8} APP_VARIANT=simulator pnpm --filter @ricecal/mobile exec sh -c 'expo prebuild -p ios && expo run:ios'",
     "android": "pnpm --filter @ricecal/mobile exec expo run:android",
     "prebuild": "LANG=${LANG:-en_US.UTF-8} pnpm --filter @ricecal/mobile exec expo prebuild --clean",
     "build:android": "pnpm --filter @ricecal/mobile exec eas build --profile development --platform android",
@@ -50,7 +50,6 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "@sentry/cli",
       "@shopify/react-native-skia",
       "dtrace-provider",
       "esbuild",
@@ -58,8 +57,7 @@
       "workerd"
     ],
     "patchedDependencies": {
-      "@shopify/react-native-skia@2.6.2": "patches/@shopify__react-native-skia@2.6.2.patch",
-      "mixpanel-react-native@3.6.0": "patches/mixpanel-react-native@3.6.0.patch"
+      "@shopify/react-native-skia@2.6.2": "patches/@shopify__react-native-skia@2.6.2.patch"
     }
   },
   "devDependencies": {

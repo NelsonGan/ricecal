@@ -26,7 +26,7 @@ it('documents every app event exactly once with its real GA4 name', () => {
   const rows =
     table
       ?.split('\n')
-      .filter((line) => /^\| [A-Z]/.test(line) && !line.startsWith('| Mixpanel event')) ?? []
+      .filter((line) => /^\| [A-Z]/.test(line) && !line.startsWith('| PostHog event')) ?? []
   expect(rows.map((line) => line.split('|')[1].trim()).sort()).toEqual([...names].sort())
   for (const name of names) {
     const row = rows.find((line) => line.split('|')[1].trim() === name)

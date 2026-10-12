@@ -487,6 +487,7 @@ export async function suggestMeals(
 
   const raw = await chatJSON(
     meter,
+    'suggest_meals',
     [
       { role: 'system', content: SUGGEST_MEAL_PROMPT },
       { role: 'user', content: suggestUserMessage(day) },

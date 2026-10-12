@@ -187,7 +187,7 @@ const daysSince = (then: number, now: number): number => (now - then) / DAY_MS
 
 /**
  * Should the question be put? The order is deliberate: the cheapest and most
- * common refusals first, so the reason that reaches Mixpanel is the first thing
+ * common refusals first, so the reason that reaches PostHog is the first thing
  * wrong rather than an arbitrary one of several.
  */
 export function checkRating(state: RatingState, now: number, appVersion: string): RatingVerdict {

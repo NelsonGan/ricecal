@@ -6,8 +6,8 @@
 // the sentinel: `createClient` validates it at module scope, so `REPLACE_ME` made
 // importing ANY data module throw "Invalid supabaseUrl" — from whatever test
 // happened to pull it in, which is a long way from the cause. Nothing branches on
-// this value (`isConfigured` is only ever asked about Sentry, Mixpanel,
-// RevenueCat and Google), and the client makes no request unless a query runs.
+// this value (`isConfigured` is only ever asked about RevenueCat, Google and
+// Turnstile), and the client makes no request unless a query runs.
 process.env.EXPO_PUBLIC_SUPABASE_URL ??= 'https://replace-me.supabase.co'
 process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??= 'REPLACE_ME'
 // A real URL for the same reason, one step removed: `catalogueGet` builds a
@@ -16,8 +16,6 @@ process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??= 'REPLACE_ME'
 process.env.EXPO_PUBLIC_CATALOGUE_URL ??= 'https://replace-me.workers.dev'
 process.env.EXPO_PUBLIC_RC_IOS_KEY ??= 'REPLACE_ME'
 process.env.EXPO_PUBLIC_RC_ANDROID_KEY ??= 'REPLACE_ME'
-process.env.EXPO_PUBLIC_MIXPANEL_TOKEN ??= 'REPLACE_ME'
-process.env.EXPO_PUBLIC_SENTRY_DSN ??= 'REPLACE_ME'
 process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ??= 'REPLACE_ME'
 process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ??= 'REPLACE_ME'
 // The sentinel deliberately, so `captchaConfigured()` is false under test and

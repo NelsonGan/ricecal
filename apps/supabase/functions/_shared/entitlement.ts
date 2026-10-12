@@ -13,6 +13,7 @@
 // enforced by anyone who has not modified the app.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { type AiContext, captureGeneration, type Generation } from './posthog.ts'
 import { planOf, sandboxAllowed } from './revenuecat.ts'
 import { fetchSubscriber } from './revenuecat-api.ts'
 
@@ -275,14 +276,26 @@ export type Meter = {
   record(): void
   /** How many requests this invocation has made. For logs and the debug trace. */
   spent(): number
+  /**
+   * Reports one finished request to PostHog AI observability (`posthog.ts`).
+   * A meter created without an `AiContext` reports nothing, which is what a
+   * test or a local script wants.
+   */
+  observe(generation: Generation): void
 }
 
-export function createMeter(): Meter {
+export function createMeter(ai?: AiContext): Meter {
   let spent = 0
+  // One trace per invocation, so every request this scan makes reads as one
+  // story in PostHog.
+  const traceId = crypto.randomUUID()
   return {
     spent: () => spent,
     record: () => {
       spent += 1
+    },
+    observe: (generation) => {
+      if (ai) captureGeneration(ai, traceId, generation)
     },
   }
 }

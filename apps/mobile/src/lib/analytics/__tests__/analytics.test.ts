@@ -33,7 +33,7 @@ function fakeClient() {
   /**
    * Which call arrived when, across the two lists above.
    *
-   * Mixpanel files a people property against whoever the SDK is identified as
+   * PostHog files a people property against whoever the SDK is identified as
    * at the time, so "the email was sent" and "the email was sent to the right
    * profile" are different assertions and only this one can tell them apart.
    */
@@ -86,7 +86,7 @@ describe('the analytics seam', () => {
 
   it('delivers what was fired before startup finished', () => {
     // The real window: `initServices` is awaited inside an effect, so the
-    // router has already decided where a launch belongs by the time Mixpanel
+    // router has already decided where a launch belongs by the time PostHog
     // exists. Dropping these would lose the top of the onboarding funnel.
     track('Onboarding Started', {})
     const fake = fakeClient()
@@ -143,19 +143,19 @@ describe('the analytics seam', () => {
     identifyUser('user-1', 'one@example.com')
 
     expect(fake.calls).toEqual(['identify', 'people'])
-    expect(fake.people).toEqual([{ $email: 'one@example.com' }])
+    expect(fake.people).toEqual([{ email: 'one@example.com' }])
   })
 
   it('holds that order across the queue, for a launch that beats the SDK', () => {
     // The real window: `initServices` is awaited inside an effect, so a cold
-    // start into a restored session identifies before Mixpanel exists.
+    // start into a restored session identifies before PostHog exists.
     identifyUser('user-1', 'one@example.com')
 
     const fake = fakeClient()
     registerAnalytics(fake.client)
 
     expect(fake.calls).toEqual(['identify', 'people'])
-    expect(fake.people).toEqual([{ $email: 'one@example.com' }])
+    expect(fake.people).toEqual([{ email: 'one@example.com' }])
   })
 
   it('leaves the property unset when the account has no address', () => {
@@ -185,8 +185,8 @@ describe('the analytics seam', () => {
 
   it('answers with nothing in a build that sends nothing', () => {
     // @ts-expect-error — as above: the branch that does not ship is the one
-    // every local run takes, and RevenueCat must not claim a Mixpanel identity
-    // for somebody Mixpanel has never been told about.
+    // every local run takes, and RevenueCat must not claim a PostHog identity
+    // for somebody PostHog has never been told about.
     global.__DEV__ = true
 
     expect(identifyUser('user-1', null)).toBeNull()

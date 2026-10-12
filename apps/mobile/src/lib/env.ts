@@ -13,10 +13,9 @@ const raw = {
   EXPO_PUBLIC_RC_IOS_KEY: process.env.EXPO_PUBLIC_RC_IOS_KEY,
   EXPO_PUBLIC_RC_ANDROID_KEY: process.env.EXPO_PUBLIC_RC_ANDROID_KEY,
   EXPO_PUBLIC_RC_TEST_STORE_KEY: process.env.EXPO_PUBLIC_RC_TEST_STORE_KEY,
-  EXPO_PUBLIC_MIXPANEL_TOKEN: process.env.EXPO_PUBLIC_MIXPANEL_TOKEN,
   EXPO_PUBLIC_GA4_ENABLED: process.env.EXPO_PUBLIC_GA4_ENABLED,
   EXPO_PUBLIC_ANALYTICS_ENABLED: process.env.EXPO_PUBLIC_ANALYTICS_ENABLED,
-  EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  EXPO_PUBLIC_POSTHOG_DEV: process.env.EXPO_PUBLIC_POSTHOG_DEV,
   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
   EXPO_PUBLIC_TURNSTILE_SITE_KEY: process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY,
@@ -56,7 +55,6 @@ const schema = z.object({
    * `__DEV__` at the one place it is used, so a release bundle cannot reach it.
    */
   EXPO_PUBLIC_RC_TEST_STORE_KEY: z.string().min(1).optional(),
-  EXPO_PUBLIC_MIXPANEL_TOKEN: z.string().min(1),
   /**
    * Production sends to the live Firebase property by default. Preview builds
    * keep the release identifiers so store products work, but set this to false
@@ -65,7 +63,12 @@ const schema = z.object({
   EXPO_PUBLIC_GA4_ENABLED: z.enum(['true', 'false']).optional(),
   /** Internal releases must not send either product analytics provider. */
   EXPO_PUBLIC_ANALYTICS_ENABLED: z.enum(['true', 'false']).optional(),
-  EXPO_PUBLIC_SENTRY_DSN: z.string().min(1),
+  /**
+   * `1` makes a development build send to PostHog (events, errors, replays), to
+   * verify a change end to end. Unset, development sends nothing. Those events
+   * carry `app_variant: development`, which the project's test filter hides.
+   */
+  EXPO_PUBLIC_POSTHOG_DEV: z.enum(['1']).optional(),
   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: z.string().min(1),
   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: z.string().min(1),
   /**

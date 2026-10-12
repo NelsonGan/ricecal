@@ -104,7 +104,7 @@ describe('checkRating', () => {
   })
 
   it('reports the first thing wrong, not an arbitrary one', () => {
-    // A brand new account fails four gates. The reason that reaches Mixpanel
+    // A brand new account fails four gates. The reason that reaches PostHog
     // should be the one that is actually true of it.
     const fresh = initialState(NOW, VERSION)
     expect(checkRating(fresh, NOW, VERSION)).toEqual({
