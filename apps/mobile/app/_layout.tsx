@@ -4,7 +4,6 @@ import '../global.css'
 // renders a raw key on the first frame.
 import '@/i18n'
 
-import * as Sentry from '@sentry/react-native'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
@@ -31,7 +30,7 @@ import { WidgetSync } from '@/features/widgets'
 import { currentLanguage, scriptFor } from '@/i18n'
 import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
-import { initServices } from '@/lib/startup'
+import { initErrorTracking, initServices } from '@/lib/startup'
 import { fontMap } from '@/theme/fonts'
 import { storedThemePreference, storeThemePreference } from '@/theme/preference'
 import { ThemeProvider } from '@/theme/ThemeProvider'
@@ -41,12 +40,16 @@ import { NAV_BAR_HEIGHT, NumpadProvider, TextScriptProvider, ToastProvider } fro
 // has a correct view of connectivity, rather than one render late.
 initOnlineManager()
 
+// PostHog before anything renders, so an exception thrown while the first
+// screen mounts is captured rather than lost before `initServices` runs.
+initErrorTracking()
+
 // Hold the splash until the typefaces are in memory. Without it the first frame
 // paints in the system font and visibly reflows when Baloo 2 arrives, which is
 // impossible to miss on the large display numerals.
 SplashScreen.preventAutoHideAsync()
 
-export default Sentry.wrap(function RootLayout() {
+export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fontMap)
 
   useEffect(() => {
@@ -165,7 +168,7 @@ export default Sentry.wrap(function RootLayout() {
       </KeyboardProvider>
     </GestureHandlerRootView>
   )
-})
+}
 
 /**
  * Tells the design system which writing system it is setting type in.

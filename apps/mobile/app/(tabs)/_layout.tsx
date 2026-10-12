@@ -62,7 +62,7 @@ function SignedInTabs() {
   // behind the same guard because the route it pushes reads the account.
   useReminderSync()
   useReportLinks()
-  // The third of the same kind: it keeps Mixpanel's picture of the account in
+  // The third of the same kind: it keeps PostHog's picture of the account in
   // step with the profile, which matters most on a handset that never ran
   // onboarding — a reinstall, or signing in on a second phone.
   useAnalyticsIdentity()

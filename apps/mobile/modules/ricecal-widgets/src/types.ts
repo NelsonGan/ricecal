@@ -149,7 +149,7 @@ export type WidgetAction = {
 /**
  * The widgets this app publishes, in the app's own words. The native side has its
  * own identifiers and `installedWidgets()` translates to these first, because
- * these strings end up in Mixpanel and a breakdown should not read
+ * these strings end up in PostHog and a breakdown should not read
  * `RiceCalQuickLogWidgetProvider`.
  */
 export type WidgetKind = 'kcal' | 'water' | 'weight' | 'day' | 'quick_log' | 'today'

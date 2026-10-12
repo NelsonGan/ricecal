@@ -8,7 +8,7 @@ it('uploads the real identifiers with the public SDK key and encoded account pat
       'account/id',
       {
         $firebaseAppInstanceId: 'firebase-installation',
-        $mixpanelDistinctId: 'account/id',
+        $posthogUserId: 'account/id',
       },
       request,
     ),

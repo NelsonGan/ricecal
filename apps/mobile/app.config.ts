@@ -133,9 +133,43 @@ function withEasExtension(cfg: ExpoConfig): ExpoConfig {
   }
 }
 
-export default ({ config }: ConfigContext): ExpoConfig => {
-  const merged: ExpoConfig = { ...baseConfig, ...config }
+/**
+ * PostHog reads minified Hermes frames and unsymbolicated native crashes unless
+ * the build uploads its source map and debug symbols. The upload needs a
+ * personal API key, which exists only in the EAS `production` environment, so
+ * the plugin that adds the upload steps is applied only when that key is there:
+ * local, simulator, preview and development builds keep building exactly as
+ * before. `eas-build-post-install` in package.json installs the CLI it calls
+ * under the same condition.
+ */
+function withPostHogSymbolUpload(cfg: ExpoConfig): ExpoConfig {
+  if (!process.env.POSTHOG_CLI_API_KEY?.trim()) return cfg
+  return {
+    ...cfg,
+    plugins: [
+      ...(cfg.plugins ?? []),
+      ['posthog-react-native/expo', { uploadNativeSymbols: true, skipOnConflict: true }],
+    ],
+  }
+}
 
-  if (IS_SIMULATOR_VARIANT) return withEasExtension(applySimulatorVariant(merged))
-  return withEasExtension(IS_DEV_VARIANT ? applyDevVariant(merged) : merged)
+export default ({ config }: ConfigContext): ExpoConfig => {
+  const merged: ExpoConfig = {
+    ...baseConfig,
+    ...config,
+    extra: {
+      ...baseConfig.extra,
+      ...config.extra,
+      // Stamped on every PostHog event as `app_variant`, so a development or
+      // simulator build that is told to send (`EXPO_PUBLIC_POSTHOG_DEV=1`) is
+      // filtered out of production reports by the project's test-account filter.
+      appVariant: process.env.APP_VARIANT || 'production',
+    },
+  }
+
+  if (IS_SIMULATOR_VARIANT)
+    return withPostHogSymbolUpload(withEasExtension(applySimulatorVariant(merged)))
+  return withPostHogSymbolUpload(
+    withEasExtension(IS_DEV_VARIANT ? applyDevVariant(merged) : merged),
+  )
 }

@@ -19,17 +19,19 @@ import type { RatingSkipReason, RatingTrigger } from '@/lib/rating/state'
  *
  * What is not here, and why:
  *
- * - Purchases. RevenueCat funnels its own events into Mixpanel and is the only
+ * - Purchases. RevenueCat sends its own events to PostHog and is the only
  *   party that knows whether a transaction settled. What we send is the intent
  *   either side of the store sheet, which RevenueCat cannot see.
  * - Screen views. The largest event stream in the app, answering almost
- *   nothing: the interesting screens have an event of their own.
- * - Errors. Sentry has them. A failure that is also a product fact travels as
- *   an `outcome` property on the event it belongs to.
+ *   nothing: the interesting screens have an event of their own, and session
+ *   replay shows the navigation itself.
+ * - Errors. PostHog error tracking has them. A failure that is also a product
+ *   fact travels as an `outcome` property on the event it belongs to.
  * - Numbers off the diary. No calorie totals, weights, dish names or search
  *   text: health data, not needed for any question below, and already in
  *   Postgres next to the arithmetic that produced it.
- * - Sessions and installs. `trackAutomaticEvents` is on.
+ * - Sessions. PostHog derives them from the events themselves; installs and
+ *   active days are the two engagement events below (`engagement.ts`).
  */
 
 /** How an entry reached the diary. The one property most reports break down by. */
@@ -123,9 +125,23 @@ type NoProps = Record<string, never>
 
 /**
  * Every event, and its properties. Names are Title Case and past tense and
- * properties are snake_case, which is what Mixpanel's UI sorts and groups by.
+ * properties are snake_case, which is what PostHog's UI sorts and groups by.
  */
 export type Events = {
+  // ── Installs and active days (engagement.ts) ─────────────────────────────
+  /**
+   * The first launch of a fresh install. The top of every acquisition funnel,
+   * one step before `Onboarding Started`, so the drop between "installed" and
+   * "tapped Get started" is visible.
+   */
+  'First App Open': NoProps
+  /**
+   * The first launch or return to the foreground on a local calendar day. One a
+   * day per install, so a count of these is daily active users and a retention
+   * chart on it answers "do they come back" even on days nothing is logged.
+   */
+  'Daily App Open': { active_days: number; days_since_last_open: number | null }
+
   // ── Onboarding and the account ───────────────────────────────────────────
   /** "Get started" on the welcome screen. The top of the whole funnel. */
   'Onboarding Started': NoProps
@@ -155,7 +171,7 @@ export type Events = {
   'Signed In': { method: SignInMethod; is_new_account: boolean }
   /**
    * Includes the user closing Apple's own sheet, which is not an error and is
-   * the number worth knowing. Real exceptions go to Sentry as well.
+   * the number worth knowing. Real exceptions go to error tracking as well.
    */
   'Sign In Failed': { method: SignInMethod; reason: 'cancelled' | 'unavailable' | 'error' }
   'Signed Out': NoProps
@@ -374,7 +390,7 @@ export type Events = {
    * A drink logged on the widget, without the app being opened.
    *
    * Fired when the app drains the queue rather than when the button was
-   * pressed, because the button runs in a process with no Mixpanel in it. So it
+   * pressed, because the button runs in a process with no analytics SDK in it. So it
    * arrives late, and a drink whose sync failed is never counted.
    *
    * `preset` is which of the two buttons, which is what would decide a third.
@@ -428,18 +444,17 @@ export type EventName = keyof Events
 export type PersonProps = {
   /**
    * The address on the Supabase account, and the one identifier here that names
-   * a real person. Mixpanel's reserved spelling on purpose: a plain `email` is
-   * an ordinary property, while `$email` is the field the profile list shows
-   * and the search box looks in.
+   * a real person. `email` is the person property PostHog's people list shows
+   * and its search box looks in.
    *
    * Set from `identifyUser` alone, off the session, so it moves with the
    * account. It is the same value RevenueCat is given, which is what lets
    * somebody writing in about a purchase be found on both dashboards.
    *
    * `undefined` rather than an empty string when a provider supplied no
-   * address, which Mixpanel would otherwise offer in a breakdown.
+   * address, which PostHog would otherwise offer in a breakdown.
    */
-  $email?: string
+  email?: string
   onboarded?: boolean
   onboarded_at?: string
   plan_direction?: PlanDirection
@@ -476,7 +491,7 @@ export type PersonProps = {
 
 /**
  * There are deliberately no people counters here, no `meals_logged` and no
- * `recipes_created`. Mixpanel builds a cohort from an event count directly, so
+ * `recipes_created`. PostHog builds a cohort from an event count directly, so
  * a counter would be a second, hand-maintained answer that has to decide for
  * itself whether a scan that failed halfway counts.
  */

@@ -1,5 +1,5 @@
 /**
- * GA4 accepts a much narrower shape than Mixpanel. Keep the translation here,
+ * GA4 accepts a much narrower shape than PostHog. Keep the translation here,
  * away from the native SDK, so every limit and privacy exclusion is testable.
  */
 
@@ -101,7 +101,7 @@ export type Ga4UserProperties = Record<string, string | null>
 /**
  * GA4 user properties are strings. Null deliberately clears a property so a
  * disconnected health provider does not remain on the profile. Email is the
- * one identifying trait Mixpanel receives and must never be copied to GA4.
+ * one identifying trait PostHog receives and must never be copied to GA4.
  */
 export function ga4UserProperties(properties: Record<string, unknown>): Ga4UserProperties {
   const result: Ga4UserProperties = {}

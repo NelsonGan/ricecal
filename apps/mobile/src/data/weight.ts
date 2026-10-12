@@ -74,7 +74,7 @@ export function useLogWeight() {
       ),
     onSuccess: () => {
       // The number itself stays on the phone and in Postgres. What reaches
-      // Mixpanel is that a weigh-in happened, which is the habit; the kilos are
+      // PostHog is that a weigh-in happened, which is the habit; the kilos are
       // health data and answer nothing a cohort would ask.
       //
       // This hook is the TYPED path only — `sync_weight_readings` writes the

@@ -13,6 +13,7 @@
 import type { Meter } from './entitlement.ts'
 import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon, unslug } from './icons.ts'
 import { reconcile, unfoldCounts } from './portion.ts'
+import type { AiSpan, Generation } from './posthog.ts'
 
 export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
 
@@ -248,19 +249,49 @@ const DEFAULT_MAX_TOKENS = 2000
  */
 export async function chatJSON(
   meter: Meter,
+  span: AiSpan,
   messages: unknown[],
   maxTokens = DEFAULT_MAX_TOKENS,
 ): Promise<unknown> {
   const key = Deno.env.get('OPENROUTER_API_KEY')
   if (!key) throw new Error('OPENROUTER_API_KEY not set')
 
+  let attempts = 0
   const attempt = async (): Promise<unknown> => {
     // Counted before the request, so a call that times out still shows in the
     // trace as something we paid for. The retry counts again, since OpenRouter
     // bills it as a second request. Counting only: the ceiling is claimed once
     // per scan at the top of the endpoint.
     meter.record()
+    const startedAt = Date.now()
+    const generation: Generation = {
+      span,
+      model: DEFAULT_MODEL,
+      startedAt,
+      endedAt: startedAt,
+      maxTokens,
+      temperature: 0.2,
+      attempt: attempts++,
+    }
+    try {
+      return await request(generation)
+    } catch (error) {
+      // A parse error quotes the model's answer back, which is diary content.
+      generation.error =
+        error instanceof SyntaxError
+          ? 'model answer was not valid JSON'
+          : error instanceof Error
+            ? error.message
+            : String(error)
+      throw error
+    } finally {
+      // One `$ai_generation` per request, retries included, whatever happened.
+      generation.endedAt = Date.now()
+      meter.observe(generation)
+    }
+  }
 
+  const request = async (generation: Generation): Promise<unknown> => {
     const res = await fetch(OPENROUTER_URL, {
       method: 'POST',
       signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
@@ -288,8 +319,12 @@ export async function chatJSON(
         //
         // Models with no reasoning mode ignore the field.
         reasoning: { enabled: false },
+        // Adds what OpenRouter charged to `usage`, which the PostHog
+        // generation records rather than re-pricing from token counts.
+        usage: { include: true },
       }),
     })
+    generation.httpStatus = res.status
     if (!res.ok) {
       const retryable = res.status === 429 || res.status >= 500
       throw Object.assign(new Error(`OpenRouter ${res.status}: ${await res.text()}`), {
@@ -297,8 +332,10 @@ export async function chatJSON(
       })
     }
     const body = await res.json()
+    generation.usage = body?.usage
     const choice = body?.choices?.[0]
     const text: string = choice?.message?.content ?? ''
+    generation.finishReason = choice?.finish_reason ?? undefined
     // An empty body is a provider hiccup rather than an answer, and
     // JSON.parse('') throws a message that reads like a bad model.
     //
@@ -801,6 +838,7 @@ export async function analysePhoto(
 
   const raw = await chatJSON(
     meter,
+    'analyse_photo',
     [
       { role: 'system', content: ANALYSE_PHOTO_PROMPT },
       {
@@ -952,6 +990,7 @@ export async function describeMeal(
 
   const raw = await chatJSON(
     meter,
+    'describe_meal',
     [
       { role: 'system', content: DESCRIBE_MEAL_PROMPT },
       { role: 'user', content: describeUserMessage(text) },
@@ -1070,6 +1109,7 @@ export async function pickCandidate(
 
   const raw = await chatJSON(
     meter,
+    'pick_candidate',
     [
       {
         role: 'system',
@@ -1168,6 +1208,7 @@ export async function estimateNutrition(
 
   const raw = await chatJSON(
     meter,
+    'estimate_nutrition',
     [
       {
         role: 'system',
@@ -1519,6 +1560,7 @@ export async function interpretInstruction(
     shapeInterpretation(
       await chatJSON(
         meter,
+        'interpret_instruction',
         [
           { role: 'system', content: INTERPRET_INSTRUCTION_PROMPT },
           { role: 'user', content: refineUserMessage(context, instruction) },

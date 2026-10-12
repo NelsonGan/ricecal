@@ -259,7 +259,7 @@ object WidgetStore {
  * The six widgets, and the two names each of them has.
  *
  * `provider` is the receiver the system keys a widget on; `reported` is the word
- * the app and Mixpanel use. Kept apart for the reason `WidgetKind` in the
+ * the app and PostHog use. Kept apart for the reason `WidgetKind` in the
  * module's `types.ts` gives, and this is the only place the translation happens.
  */
 enum class WidgetKind(val provider: Class<*>, val reported: String) {

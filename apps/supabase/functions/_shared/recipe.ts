@@ -491,6 +491,7 @@ export async function readRecipePhoto(
 
   const raw = await chatJSON(
     meter,
+    'read_recipe_photo',
     [
       { role: 'system', content: READ_RECIPE_PROMPT },
       {
@@ -570,6 +571,7 @@ export async function describeRecipe(
 
   const raw = await chatJSON(
     meter,
+    'describe_recipe',
     [
       { role: 'system', content: DESCRIBE_RECIPE_PROMPT },
       { role: 'user', content: describeRecipeUserMessage(text_) },
@@ -717,6 +719,7 @@ export async function reviewRecipe(
 
   const raw = (await chatJSON(
     meter,
+    'review_recipe',
     [
       { role: 'system', content: REVIEW_RECIPE_PROMPT },
       { role: 'user', content: reviewUserMessage(recipe) },

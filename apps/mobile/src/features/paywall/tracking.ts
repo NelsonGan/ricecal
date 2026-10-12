@@ -9,7 +9,7 @@ import { markPaywallSeen } from './nudge'
  * The paywall half of the tracking plan, shared by the screens that have one.
  *
  * The purchase itself is not tracked here. RevenueCat funnels its own events into
- * Mixpanel and is the only party that knows whether the store settled a
+ * PostHog and is the only party that knows whether the store settled a
  * transaction; an app-side "purchased" would be a worse second answer, and would
  * count a receipt that later failed validation.
  *
