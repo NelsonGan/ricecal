@@ -33,6 +33,7 @@ Deno.test('a generation carries model, tokens, real cost and the trace, never co
   assertEquals(p.$ai_is_error, false)
   assertEquals(p.$ai_input, [{ role: 'user', content: '[meal input withheld]' }])
   assertFalse('$process_person_profile' in p)
+  assertEquals(p.$geoip_disable, true)
 })
 
 Deno.test('system work creates no person, and a failure is marked as one', () => {
