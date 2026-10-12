@@ -4565,10 +4565,13 @@ day (onboarding and the first scans, where replays teach the most) and **4%** of
 later launches, about 2,200 recordings a month against the free tier's 2,500
 mobile recordings (`posthog-config.ts`). Recordings under 5 seconds are dropped.
 
-Replays are not masked beyond text fields: the diary and food photos are what a
-replay is for. Text inputs are masked (`maskAllTextInputs`) because the sign-in
-screen types an email and a password, system pickers are masked, network
-telemetry and logcat are off, and taps are recorded. Replays answer "what did the
+Replays are not masked: the diary and food photos are what a replay is for.
+`maskAllTextInputs` is off because on iOS it masks every label as well as every
+field, which blacked out the whole app in the first test recording. Password
+fields are secure text entries, which both native SDKs always mask; an email
+typed at sign-in is visible, and is already the account's PostHog `email`.
+System pickers are masked, network telemetry and logcat are off, and taps are
+recorded. Replays answer "what did the
 user see and do" next to an exception or a funnel drop-off; they link through
 `$session_id`. The website records at the project's rate with inputs masked.
 
