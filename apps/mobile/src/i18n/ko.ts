@@ -203,6 +203,9 @@ export const ko = {
       body: '이 항목은 아직 휴대폰에 저장되지 않았습니다. 온라인이 되면 바로 불러옵니다.',
       dayTitle: '이 날짜는 휴대폰에 없습니다',
       dayBody: '전에 열어본 날짜를 고르거나, 온라인일 때 다시 오세요.',
+      unreachableTitle: 'RiceCal에 연결할 수 없어요',
+      unreachableBody: '온라인 상태지만 요청이 전달되지 않았어요.',
+      dayFailedTitle: '이 날짜를 불러올 수 없어요',
     },
 
     a11y: {
@@ -1002,6 +1005,8 @@ export const ko = {
       same: '{{day}}과 같음',
       save: '측정 저장',
       saved: '측정을 저장했습니다',
+      saveFailed: '측정을 저장하지 못했어요. 다시 시도하세요.',
+      saveOffline: '오프라인 상태예요. 측정이 저장되지 않았어요.',
       remove: '이 측정값 삭제',
       removeTitle: '이 측정값을 삭제할까요?',
       removeBody:
