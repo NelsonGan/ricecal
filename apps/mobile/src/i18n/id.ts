@@ -1032,7 +1032,7 @@ export const id = {
 
     history: {
       title: 'Riwayat',
-      seeAll: 'Lihat semua',
+      viewFull: 'Lihat lengkap',
       dayTotal: '{{value}} kkal',
       waterAverage: 'rata-rata {{amount}}',
       goalMet: 'Target tercapai',

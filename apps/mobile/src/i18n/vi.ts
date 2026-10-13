@@ -1020,7 +1020,7 @@ export const vi = {
 
     history: {
       title: 'Lịch sử',
-      seeAll: 'Xem tất cả',
+      viewFull: 'Xem đầy đủ',
       dayTotal: '{{value}} kcal',
       waterAverage: 'trung bình {{amount}}',
       goalMet: 'Đạt mục tiêu',

@@ -1010,7 +1010,7 @@ export const th = {
 
     history: {
       title: 'ประวัติ',
-      seeAll: 'ดูทั้งหมด',
+      viewFull: 'ดูแบบเต็ม',
       dayTotal: '{{value}} แคล',
       waterAverage: 'เฉลี่ย {{amount}}',
       goalMet: 'ถึงเป้าหมาย',

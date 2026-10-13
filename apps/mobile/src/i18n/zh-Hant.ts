@@ -1011,7 +1011,7 @@ export const zhHant = {
 
     history: {
       title: '歷史',
-      seeAll: '查看全部',
+      viewFull: '查看完整',
       dayTotal: '{{value}} 大卡',
       waterAverage: '平均 {{amount}}',
       goalMet: '達成目標',

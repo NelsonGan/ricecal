@@ -1010,7 +1010,7 @@ export const hi = {
 
     history: {
       title: 'इतिहास',
-      seeAll: 'सभी देखें',
+      viewFull: 'पूरा देखें',
       dayTotal: '{{value}} kcal',
       waterAverage: 'औसत {{amount}}',
       goalMet: 'लक्ष्य पूरा',

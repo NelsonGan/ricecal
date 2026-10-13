@@ -1042,7 +1042,7 @@ export const fil = {
 
     history: {
       title: 'Kasaysayan',
-      seeAll: 'Tingnan lahat',
+      viewFull: 'Tingnan nang buo',
       dayTotal: '{{value}} kcal',
       waterAverage: '{{amount}} avg',
       goalMet: 'Naabot ang target',

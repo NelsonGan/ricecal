@@ -1,6 +1,6 @@
 import { format, parseISO } from 'date-fns'
 import { useLocalSearchParams } from 'expo-router'
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -91,6 +91,26 @@ function HistoryScreen() {
   const history = useHistory(metric)
   const groups = useGroups(metric, history.items, unit, setWeighingIn)
 
+  /**
+   * The end of the list was reached while a refetch was out. Asking for the next
+   * page then would cancel the refetch, and not asking left the list stopped
+   * until somebody scrolled again, so the request waits for the refetch.
+   */
+  const wantsMore = useRef(false)
+  const loadMore = () => {
+    if (!history.hasNextPage || history.isFetchNextPageError) return
+    if (history.isFetching) {
+      wantsMore.current = true
+      return
+    }
+    wantsMore.current = false
+    void history.fetchNextPage()
+  }
+  const { isFetching } = history
+  useEffect(() => {
+    if (!isFetching && wantsMore.current) loadMore()
+  })
+
   return (
     <Screen
       header={
@@ -124,7 +144,7 @@ function HistoryScreen() {
             {item.rows}
           </Card>
         )}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.stack }} />}
+        ItemSeparatorComponent={Gap}
         ListHeaderComponent={
           <SegmentedControl
             options={TREND_METRICS.map((value) => ({
@@ -138,7 +158,14 @@ function HistoryScreen() {
         }
         ListHeaderComponentStyle={{ marginBottom: spacing.stack }}
         ListEmptyComponent={
-          history.unavailable ? (
+          history.offline ? (
+            <Card>
+              <EmptyState
+                title={t('common:offline.title')}
+                description={t('common:offline.body')}
+              />
+            </Card>
+          ) : history.failed ? (
             <Card>
               <EmptyState
                 title={t('progress:history.failed')}
@@ -176,13 +203,9 @@ function HistoryScreen() {
             </Button>
           ) : null
         }
-        onEndReached={() => {
-          // Not after a failure: the end is reached again on every bounce, and
-          // the retry button is the way to ask again.
-          if (history.hasNextPage && !history.isFetching && !history.isFetchNextPageError) {
-            history.fetchNextPage()
-          }
-        }}
+        // Not after a failure: the end is reached again on every bounce, and the
+        // retry button under the list is the way to ask again.
+        onEndReached={loadMore}
         onEndReachedThreshold={1.5}
         contentContainerStyle={{
           paddingHorizontal: spacing.gutter,
@@ -201,6 +224,11 @@ function HistoryScreen() {
       />
     </Screen>
   )
+}
+
+/** Between cards. A component of its own so the list does not remount it. */
+function Gap() {
+  return <View style={{ height: spacing.stack }} />
 }
 
 const EMPTY_ICON = {

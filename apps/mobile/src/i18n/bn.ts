@@ -1008,7 +1008,7 @@ export const bn = {
 
     history: {
       title: 'ইতিহাস',
-      seeAll: 'সব দেখুন',
+      viewFull: 'পুরো দেখুন',
       dayTotal: '{{value}} kcal',
       waterAverage: 'গড় {{amount}}',
       goalMet: 'লক্ষ্যে পৌঁছেছে',

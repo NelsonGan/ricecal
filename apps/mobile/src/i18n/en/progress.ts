@@ -170,7 +170,7 @@ export const progress = {
    */
   history: {
     title: 'History',
-    seeAll: 'See all',
+    viewFull: 'View full',
     /** Beside a day's heading: everything eaten that day. */
     dayTotal: '{{value}} kcal',
     /** A water month's heading, beside the month: the average of days logged. */

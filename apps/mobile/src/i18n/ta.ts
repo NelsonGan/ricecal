@@ -1023,7 +1023,7 @@ export const ta = {
 
     history: {
       title: 'வரலாறு',
-      seeAll: 'அனைத்தையும் பார்',
+      viewFull: 'முழுமையாகப் பார்',
       dayTotal: '{{value}} kcal',
       waterAverage: 'சராசரி {{amount}}',
       goalMet: 'இலக்கு எட்டப்பட்டது',
