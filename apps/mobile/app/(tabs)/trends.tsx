@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import {
   TREND_RANGES,
   type TrendRange,
+  today,
   useSettings,
   useTrendSeries,
   useTrendSummary,
@@ -13,9 +14,11 @@ import {
 import { useRequirePro } from '@/features/paywall'
 import {
   CaloriesPanel,
+  HistoryCard,
   MetricTabs,
   type TrendMetric,
   WaterPanel,
+  WeighInPill,
   WeighInSheet,
   WeightPanel,
 } from '@/features/progress'
@@ -25,7 +28,7 @@ import { Card, Icon, ListRow, Screen, SegmentedControl, Skeleton } from '@/ui'
 
 /**
  * The Trends tab: calories, water and weight, over seven days, thirty days or a
- * year.
+ * year, and under them the entries those figures were made from.
  *
  * Two controls, and they are deliberately different objects. The RANGE is a
  * segmented control beside the title, because it governs the whole screen —
@@ -147,6 +150,18 @@ export default function TrendsScreen() {
           onEdit={setWeighingIn}
         />
       )}
+
+      {/* Under every tab, and outside the loading gate: it is its own query,
+          and it does not move with the range, so a range switch has no reason
+          to blank it. */}
+      <HistoryCard
+        metric={metric}
+        unit={unit}
+        onEditWeight={setWeighingIn}
+        action={
+          metric === 'weight' ? <WeighInPill onPress={() => setWeighingIn(today())} /> : undefined
+        }
+      />
 
       <WeighInSheet
         date={weighingIn}

@@ -129,6 +129,12 @@ export const keys = {
    * every range, and no mutation knows which one is on screen.
    */
   trendsAll: (userId: string) => ['trends', userId] as const,
+  /**
+   * The entries behind one tab, newest first, a page at a time. Under the
+   * `trends` prefix so every write that invalidates the charts reaches the list
+   * too. The literal segment cannot collide with a range name.
+   */
+  history: (userId: string, metric: string) => ['trends', userId, 'history', metric] as const,
 
   /**
    * Reviews: the finished weeks or months, and the three reads one story makes

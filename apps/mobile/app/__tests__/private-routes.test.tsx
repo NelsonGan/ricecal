@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react-native'
 import { Text } from 'react-native'
 import { SessionGate } from '@/lib/SessionGate'
+import HistoryRoute from '../history'
 import FoodDetailRoute from '../log/food/[id]'
 import LogRoute from '../log/index'
 import IngredientsRoute from '../log/ingredients'
@@ -20,6 +21,7 @@ jest.mock('expo-router', () => ({
 }))
 
 const ROUTES = [
+  ['/history', HistoryRoute],
   ['/log', LogRoute],
   ['/log/search', SearchRoute],
   ['/log/food/[id]', FoodDetailRoute],

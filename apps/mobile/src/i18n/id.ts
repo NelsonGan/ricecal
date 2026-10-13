@@ -1003,14 +1003,12 @@ export const id = {
       atGoal: 'Sudah di berat targetmu',
       weeksAway: '~{{count}} minggu',
 
-      recentTitle: 'PENIMBANGAN TERBARU',
       add: 'Tambah',
       weekByWeek: 'MINGGU DEMI MINGGU',
       byQuarter: 'PER KUARTAL',
       quarter: '{{from}} sampai {{to}}',
 
       reading: '{{value}} {{unit}}',
-      readingToday: 'Hari ini',
       firstReading: 'Pertama',
 
       sheetTitle: 'Tambah berat',
@@ -1030,6 +1028,17 @@ export const id = {
 
       emptyTitle: 'Tidak ada penimbangan di rentang ini',
       emptyBody: 'Satu pembacaan menggambar satu titik. Dua menggambar satu garis.',
+    },
+
+    history: {
+      title: 'Riwayat',
+      seeAll: 'Lihat semua',
+      dayTotal: '{{value}} kkal',
+      waterAverage: 'rata-rata {{amount}}',
+      goalMet: 'Target tercapai',
+      emptyTitle: 'Belum ada catatan',
+      emptyBody: 'Semua yang Anda catat muncul di sini.',
+      failed: 'Riwayat gagal dimuat',
     },
   },
 

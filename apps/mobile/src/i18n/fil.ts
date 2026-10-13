@@ -1013,14 +1013,12 @@ export const fil = {
       atGoal: 'Nasa target mong timbang',
       weeksAway: '~{{count}} linggo',
 
-      recentTitle: 'MGA HULING TIMBANG',
       add: 'Idagdag',
       weekByWeek: 'LINGGO KADA LINGGO',
       byQuarter: 'KADA QUARTER',
       quarter: '{{from}} hanggang {{to}}',
 
       reading: '{{value}} {{unit}}',
-      readingToday: 'Ngayon',
       firstReading: 'Una',
 
       sheetTitle: 'Magdagdag ng timbang',
@@ -1040,6 +1038,17 @@ export const fil = {
 
       emptyTitle: 'Walang pagtimbang sa saklaw na ito',
       emptyBody: 'Isang basa ay isang tuldok. Dalawa ang gumuguhit ng linya.',
+    },
+
+    history: {
+      title: 'Kasaysayan',
+      seeAll: 'Tingnan lahat',
+      dayTotal: '{{value}} kcal',
+      waterAverage: '{{amount}} avg',
+      goalMet: 'Naabot ang target',
+      emptyTitle: 'Wala pang naka-log',
+      emptyBody: 'Lahat ng ila-log mo ay lalabas dito.',
+      failed: 'Hindi na-load ang kasaysayan',
     },
   },
 
