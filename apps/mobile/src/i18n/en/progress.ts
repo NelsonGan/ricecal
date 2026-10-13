@@ -154,6 +154,8 @@ export const progress = {
     same: 'The same as {{day}}',
     save: 'Save weigh in',
     saved: 'Weigh in saved',
+    saveFailed: 'Weigh in not saved. Try again.',
+    saveOffline: 'You are offline. Weigh in not saved.',
     remove: 'Remove this reading',
     removeTitle: 'Remove this reading?',
     removeBody:

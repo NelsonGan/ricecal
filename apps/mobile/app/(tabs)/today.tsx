@@ -32,6 +32,7 @@ import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
+import { useOnline } from '@/lib/online'
 import { DEFAULT_WATER_ML } from '@/lib/water'
 import {
   Badge,
@@ -93,7 +94,13 @@ export default function TodayScreen() {
 
   const { selectedDate, setSelectedDate, todayKey } = useSelectedDate()
   const day = useDayLog(selectedDate)
-  const { data: targets, isPending: targetsPending, isPaused: targetsPaused } = useTargets()
+  const {
+    data: targets,
+    isPending: targetsPending,
+    isPaused: targetsPaused,
+    isError: targetsError,
+    refetch: refetchTargets,
+  } = useTargets()
   const streak = useStreak()
   const removeEntry = useRemoveEntry()
   const [sharedDelete, setSharedDelete] = useState<Entry | null>(null)
@@ -154,8 +161,16 @@ export default function TodayScreen() {
     data: activity,
     isPending: activityPending,
     isPaused: activityPaused,
+    isError: activityError,
+    refetch: refetchActivity,
   } = useActivityDay(selectedDate)
-  const { data: settings, isPending: settingsPending, isPaused: settingsPaused } = useSettings()
+  const {
+    data: settings,
+    isPending: settingsPending,
+    isPaused: settingsPaused,
+    isError: settingsError,
+    refetch: refetchSettings,
+  } = useSettings()
   // The day's workouts, drawn among its meals. Not part of the wait below: a day
   // whose meals are ready should not hold for the list of sessions, which on
   // most accounts is empty.
@@ -193,11 +208,40 @@ export default function TodayScreen() {
    * those plus one genuinely in flight reads as stalled.
    */
   const blocked = (isPending: boolean, isPaused: boolean) => isPending && isPaused
+
+  /**
+   * The other way a wait ends with nothing to draw: the request went and did not
+   * come back. `isPending` is false by then, so this day drew as one with nothing
+   * logged on it, a blank Today for somebody whose requests could not reach us.
+   */
+  const failed = (isError: boolean, data: unknown) => isError && data === undefined
+  const failedAny =
+    day.failed ||
+    failed(targetsError, targets) ||
+    failed(activityError, activity) ||
+    failed(settingsError, settings)
+  const online = useOnline()
+  const [retrying, setRetrying] = useState(false)
+  const retry = async () => {
+    setRetrying(true)
+    await Promise.allSettled([
+      day.refetch(),
+      refetchTargets(),
+      refetchActivity(),
+      refetchSettings(),
+    ])
+    setRetrying(false)
+  }
+
+  // A request that failed and then lost its connection is offline like any
+  // other: the wait resumes on its own and the offline card says so.
   const stalled =
     blocked(day.isPending, day.isPaused) ||
     blocked(targetsPending, targetsPaused) ||
     blocked(activityPending, activityPaused) ||
-    blocked(settingsPending, settingsPaused)
+    blocked(settingsPending, settingsPaused) ||
+    (failedAny && !online)
+  const unreachable = failedAny && !stalled
   const loading = waiting && !stalled
   /**
    * Whether the summary is showing the allowance rather than what is left. Not
@@ -346,6 +390,31 @@ export default function TodayScreen() {
             title={t('common:offline.dayTitle')}
             description={t('common:offline.dayBody')}
             icon={{ set: 'ui', name: 'offline' }}
+          />
+        </Card>
+      </Screen>
+    )
+  }
+
+  /**
+   * Online, and the day still did not load. Unlike the offline card above,
+   * nothing will retry this by itself while the app stays open, so it offers to.
+   */
+  if (unreachable) {
+    return (
+      <Screen floatingLeading={backToToday}>
+        <ScreenTitle title={title} />
+        <WeekPicker />
+        <Card>
+          <EmptyState
+            title={t('common:offline.dayFailedTitle')}
+            description={t('common:offline.unreachableBody')}
+            icon={{ set: 'ui', name: 'offline' }}
+            action={
+              <Button loading={retrying} onPress={() => void retry()}>
+                {t('common:action.retry')}
+              </Button>
+            }
           />
         </Card>
       </Screen>

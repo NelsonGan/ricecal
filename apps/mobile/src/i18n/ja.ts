@@ -204,6 +204,9 @@ export const ja = {
       body: 'これはまだ端末に保存されていません。オンラインになり次第、読み込まれます。',
       dayTitle: 'この日は端末にありません',
       dayBody: '一度開いたことのある日を選ぶか、オンラインのときにまた見てください。',
+      unreachableTitle: 'RiceCalに接続できませんでした',
+      unreachableBody: 'オンラインですが、リクエストが届きませんでした。',
+      dayFailedTitle: 'この日を読み込めませんでした',
     },
 
     a11y: {
@@ -1007,6 +1010,8 @@ export const ja = {
       same: '{{day}}と同じ',
       save: '計測を保存',
       saved: '計測を保存しました',
+      saveFailed: '計測を保存できませんでした。もう一度お試しください。',
+      saveOffline: 'オフラインです。計測は保存されていません。',
       remove: 'この記録を削除',
       removeTitle: 'この記録を削除しますか',
       removeBody: 'グラフからこの日が消えます。これが最新なら、枠はその前の値に戻ります。',

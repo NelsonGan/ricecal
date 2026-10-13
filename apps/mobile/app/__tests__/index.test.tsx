@@ -1,7 +1,9 @@
 import '@/i18n'
 
+import { onlineManager } from '@tanstack/react-query'
+
 import { ONBOARDING_STEPS } from '@/features/onboarding'
-import { render, screen, waitFor } from '@/test-utils'
+import { fireEvent, render, screen, waitFor } from '@/test-utils'
 import Index from '../index'
 
 /**
@@ -60,7 +62,15 @@ const loaded = (profile: unknown) => ({
   isSuccess: true,
 })
 const pending = { data: undefined, isPending: true, isPaused: false, isSuccess: false }
-const failed = { data: undefined, isPending: false, isPaused: false, isSuccess: false }
+const mockRefetch = jest.fn()
+const failed = {
+  data: undefined,
+  isPending: false,
+  isPaused: false,
+  isSuccess: false,
+  isFetching: false,
+  refetch: () => mockRefetch(),
+}
 /**
  * Held for want of a connection, with nothing saved from a
  * previous launch to answer from. Pending, like the row above, and unlike it
@@ -70,6 +80,7 @@ const paused = { data: undefined, isPending: true, isPaused: true, isSuccess: fa
 
 beforeEach(() => {
   jest.clearAllMocks()
+  onlineManager.setOnline(true)
   mockSession.mockReturnValue({ session, loading: false })
   mockProfile.mockReturnValue(loaded({ onboarded_at: '2026-01-01T00:00:00Z' }))
   mockDraft.mockReturnValue(null)
@@ -190,5 +201,32 @@ it('does not read a failed profile request as an account that never onboarded', 
   await render(<Index />)
 
   expect(screen.queryByText(/^redirect:/)).toBeNull()
+  expect(screen.getByText('Could not reach RiceCal')).toBeTruthy()
+})
+
+/**
+ * Online, and the read failed anyway. This said "Waiting for a connection" to
+ * somebody on working mobile data whose requests could not reach us, and they
+ * went to check their settings, relaunched and reinstalled. Nothing refetches a
+ * failed query while the app stays open, so the screen has to offer it.
+ */
+it('says the request failed, not that the phone is offline, and offers a retry', async () => {
+  mockProfile.mockReturnValue(failed)
+
+  await render(<Index />)
+
+  expect(screen.queryByText('Waiting for a connection')).toBeNull()
+  expect(screen.getByText('You are online, but the request did not go through.')).toBeTruthy()
+  fireEvent.press(screen.getByText('Try again'))
+  expect(mockRefetch).toHaveBeenCalledTimes(1)
+})
+
+it('keeps the offline wait for a read that failed and then lost its connection', async () => {
+  mockProfile.mockReturnValue(failed)
+  onlineManager.setOnline(false)
+
+  await render(<Index />)
+
   expect(screen.getByText('Waiting for a connection')).toBeTruthy()
+  expect(screen.queryByText('Try again')).toBeNull()
 })
