@@ -217,6 +217,17 @@ rehydrates into new code.
 `networkMode: 'online'`, the same signal that already gates every write.
 Reading the cache is untouched; only the request is.
 
+**Offline and unreachable are different screens.** A paused query resumes by
+itself when the connection returns, so its screen ("Waiting for a connection")
+offers nothing to press. A query that was sent and failed while the phone is
+online will not be retried by anything while the app stays open, so the launch
+screen and Today say the request did not go through and offer **Try again**
+(`useOnline` in `lib/online.ts` tells the two apart). Both used to say
+"Waiting for a connection", which sent a user on working mobile data to check
+their settings, relaunch and reinstall, and Today drew the failed day as a day with
+nothing logged. The weigh-in sheet likewise closes and says "saved" only once the
+server has the reading.
+
 The one exception is the photo query, because `resolveStoredImage` asks the disk
 before it asks the server, so it is the only query worth running with no
 connection. Paused, a diary of plates this phone had already downloaded drew as
@@ -4539,6 +4550,7 @@ is recording.
 | Native crashes | `nativeCrashes` (iOS signals and Mach exceptions; Android Java/Kotlin), `androidNdkCrashes` | Through `@posthog/react-native-plugin`, reported on the next launch. These reports carry no `app_variant` (the native layer sends them before JavaScript registers it), so tell an internal build's native crash apart by `$app_version` and `$app_build` |
 | Caught errors | `reportError(error, context)` from `src/lib/errors.ts` | Analytics provider failures (`analytics_provider`, `analytics_operation`); context is short scalars only |
 | Warnings | `reportMessage(text)` | The captcha diagnostics in `features/auth/turnstile.tsx`, sent with `$exception_level: warning` |
+| Requests that never got a response while the phone said it was online | `reportNetworkFailure` in `src/lib/network.ts`, called from the Supabase client's `guardedFetch` | Warning `[network] could not reach <host>`, once per host per launch, never while offline. Context: `network_path` (first three segments, no query string), `network_reason` (the platform's own text from the error Expo's `fetch` threw, native frame removed), `network_type`, `network_reachable` |
 | Edge functions | Their own logs | The functions are not instrumented for errors; their model calls are, as AI events |
 
 A `before_send` hook sends an identical exception once per five minutes and no
@@ -4547,6 +4559,16 @@ month's allowance. Preview builds report exceptions too (tagged
 `app_variant: preview`). Console output and request URLs are never captured: the catalogue query string
 carries the typed search and the photos URLs carry R2 signatures, which is why
 Sentry's breadcrumb filter existed. PostHog captures no network breadcrumbs at all.
+The network warning above sends a host and a path cut to three segments
+(`/rest/v1/<table>`), never a full URL.
+
+**Why the network warning exists.** On 2026-10-13 a user on mobile data could
+reach PostHog but not Supabase for a whole morning. Nothing arrived in the
+Supabase logs, not even the token refresh supabase-js sends on every launch, and
+nothing on the phone recorded why. Expo's `fetch` puts the platform's reason in
+the error it throws (`fetch failed: UnexpectedException: Could not connect to the
+server.` on iOS for a refused connection), so the phone knew whether it was DNS,
+TLS, a refused connection or a timeout; the warning keeps that answer.
 
 **Readable stacks need uploaded symbols.** `metro.config.js` uses
 `getPostHogExpoConfig`, which injects debug IDs into every bundle. The

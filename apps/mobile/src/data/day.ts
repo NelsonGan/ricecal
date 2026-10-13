@@ -67,8 +67,17 @@ export function useDay(date: string) {
  * `isPaused` is the half that matters offline: a query with no cached day is held
  * rather than sent, so `isPending` stays true and a screen reading it as "an
  * answer is coming" draws a skeleton nothing will replace.
+ *
+ * `failed` is the third: the request went and did not come back, and there is no
+ * day to show. `isPending` is false by then, so without it the fallback above
+ * drew as a day nobody had logged anything on.
  */
-export type DayView = DayLog & { isPending: boolean; isPaused: boolean }
+export type DayView = DayLog & {
+  isPending: boolean
+  isPaused: boolean
+  failed: boolean
+  refetch: () => unknown
+}
 
 /**
  * The pending rows whose meal has not turned up yet.
@@ -122,7 +131,7 @@ export function unclaimedSnaps<S extends { loggedAt: string; text?: string; stat
  * time puts each where it belongs rather than at the end.
  */
 export function useDayLog(date: string): DayView {
-  const { data, isPending, isPaused } = useDay(date)
+  const { data, isPending, isPaused, isError, refetch } = useDay(date)
   const { snaps, remove } = usePendingSnaps()
 
   const view = useMemo((): DayView & { settled: string[] } => {
@@ -130,6 +139,8 @@ export function useDayLog(date: string): DayView {
       ...(data ?? { date, entries: [], waterMl: 0 }),
       isPending,
       isPaused,
+      failed: isError && data === undefined,
+      refetch,
       settled: [],
     }
     const mine = snaps.filter((snap) => snap.logDate === date)
@@ -160,11 +171,12 @@ export function useDayLog(date: string): DayView {
        */
       isPending: false,
       isPaused: false,
+      failed: false,
       entries: [...base.entries, ...unresolved.map(pendingAsEntry)].sort((a, b) =>
         a.loggedAt.localeCompare(b.loggedAt),
       ),
     }
-  }, [data, snaps, date, isPending, isPaused])
+  }, [data, snaps, date, isPending, isPaused, isError, refetch])
 
   // Swept after render rather than during it: `remove` sets state on another
   // provider, and the list this hook returns is already correct without it.

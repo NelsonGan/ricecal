@@ -204,6 +204,9 @@ export const vi = {
       body: 'Mục này chưa được lưu vào máy. Nó sẽ tải ngay khi bạn có mạng.',
       dayTitle: 'Ngày này không có trên máy bạn',
       dayBody: 'Chọn một ngày bạn từng mở, hoặc quay lại khi có mạng.',
+      unreachableTitle: 'Không kết nối được với RiceCal',
+      unreachableBody: 'Bạn đang có mạng, nhưng yêu cầu không gửi được.',
+      dayFailedTitle: 'Không tải được ngày này',
     },
 
     a11y: {
@@ -1006,6 +1009,8 @@ export const vi = {
       same: 'Bằng với {{day}}',
       save: 'Lưu lần cân',
       saved: 'Đã lưu lần cân',
+      saveFailed: 'Chưa lưu lần cân. Hãy thử lại.',
+      saveOffline: 'Bạn đang mất mạng. Chưa lưu lần cân.',
       remove: 'Xoá số đo này',
       removeTitle: 'Xoá số đo này?',
       removeBody:

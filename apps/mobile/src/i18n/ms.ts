@@ -210,6 +210,9 @@ export const ms = {
       body: 'Yang ini belum disimpan dalam telefon anda. Ia akan dimuatkan sebaik sahaja anda dalam talian.',
       dayTitle: 'Hari ini tiada dalam telefon anda',
       dayBody: 'Pilih hari yang pernah anda buka, atau datang semula bila anda dalam talian.',
+      unreachableTitle: 'Tidak dapat menghubungi RiceCal',
+      unreachableBody: 'Anda dalam talian, tetapi permintaan tidak berjaya dihantar.',
+      dayFailedTitle: 'Tidak dapat memuatkan hari tersebut',
     },
 
     a11y: {
@@ -1032,6 +1035,8 @@ export const ms = {
       same: 'Sama seperti {{day}}',
       save: 'Simpan timbangan',
       saved: 'Timbangan disimpan',
+      saveFailed: 'Timbangan tidak disimpan. Cuba lagi.',
+      saveOffline: 'Anda di luar talian. Timbangan tidak disimpan.',
       remove: 'Buang bacaan ini',
       removeTitle: 'Buang bacaan ini?',
       removeBody:

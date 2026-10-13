@@ -138,6 +138,13 @@ export const common = {
     body: 'We have not saved this one to your phone yet. It will load as soon as you are online.',
     dayTitle: 'This day is not on your phone',
     dayBody: 'Pick a day you have opened before, or come back when you are online.',
+    /**
+     * Online, and the request failed anyway. Not "offline": that sent somebody
+     * on a working connection to check their mobile data settings.
+     */
+    unreachableTitle: 'Could not reach RiceCal',
+    unreachableBody: 'You are online, but the request did not go through.',
+    dayFailedTitle: 'Could not load this day',
   },
 
   a11y: {

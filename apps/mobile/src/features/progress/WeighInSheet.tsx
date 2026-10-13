@@ -1,3 +1,4 @@
+import { onlineManager } from '@tanstack/react-query'
 import { format, isToday, parseISO } from 'date-fns'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -96,11 +97,29 @@ export function WeighInSheet({ date, onClose, unit, onUnitChange }: WeighInSheet
   const draftKg = toKg(draft, unit)
   const delta = previous ? draftKg - previous.kg : null
 
+  /**
+   * Closes and says "saved" once the server has the reading, not before.
+   *
+   * It used to do both on the tap. A write that then failed left somebody told
+   * their weigh-in was saved, looking at a chart without it. Offline the write
+   * would only pause, so that is said at once and the sheet stays open.
+   */
   const save = () => {
     if (!date) return
-    logWeight.mutate({ kg: Number(draftKg.toFixed(1)), date })
-    onClose()
-    toast.show({ title: t('progress:weight.saved'), tone: 'success' })
+    if (!onlineManager.isOnline()) {
+      toast.show({ title: t('progress:weight.saveOffline'), tone: 'error' })
+      return
+    }
+    logWeight.mutate(
+      { kg: Number(draftKg.toFixed(1)), date },
+      {
+        onSuccess: () => {
+          onClose()
+          toast.show({ title: t('progress:weight.saved'), tone: 'success' })
+        },
+        onError: () => toast.show({ title: t('progress:weight.saveFailed'), tone: 'error' }),
+      },
+    )
   }
 
   const remove = () => {
@@ -133,7 +152,7 @@ export function WeighInSheet({ date, onClose, unit, onUnitChange }: WeighInSheet
         }
         footer={
           <View className="gap-2">
-            <Button fullWidth onPress={save}>
+            <Button fullWidth loading={logWeight.isPending} onPress={save}>
               {t('progress:weight.save')}
             </Button>
             {/* Only for a day that already has a reading. There is nothing to
