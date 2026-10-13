@@ -89,7 +89,23 @@ describe('waterPage', () => {
     expect(page.items[0]?.goal).toBe(2000)
   })
 
-  it('pages from the day before the last one shown', () => {
+  it('drops a month a full page only reached partway into', () => {
+    // September's average would otherwise be taken over the two days that
+    // happened to fit, and printed beside the month as if it were all of it.
+    const page = waterPage(
+      [
+        { log_date: '2026-10-02', water_ml: 1000 },
+        { log_date: '2026-10-01', water_ml: 1000 },
+        { log_date: '2026-09-30', water_ml: 3000 },
+      ],
+      goals,
+      3,
+    )
+    expect(page.items.map((day) => day.date)).toEqual(['2026-10-02', '2026-10-01'])
+    expect(page.next).toBe('2026-09-30')
+  })
+
+  it('pages from the day before a page that is all one month', () => {
     const page = waterPage(
       [
         { log_date: '2026-10-12', water_ml: 1000 },
@@ -114,6 +130,16 @@ describe('weightPage', () => {
     expect(page.items[1]?.change).toBeCloseTo(-0.2)
     // The extra row is shown on the next page rather than skipped.
     expect(page.next).toBe('2026-10-09')
+  })
+
+  it('drops a month a full page only reached partway into, keeping every change', () => {
+    const page = weightPage(
+      [reading('2026-10-03', 74.0), reading('2026-10-01', 74.4), reading('2026-09-29', 74.6)],
+      2,
+    )
+    expect(page.items.map((item) => item.date)).toEqual(['2026-10-03', '2026-10-01'])
+    expect(page.items[1]?.change).toBeCloseTo(-0.2)
+    expect(page.next).toBe('2026-09-29')
   })
 
   it('calls only the oldest reading on the account the first', () => {

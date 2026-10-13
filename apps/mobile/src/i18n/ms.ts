@@ -1046,7 +1046,7 @@ export const ms = {
 
     history: {
       title: 'Sejarah',
-      seeAll: 'Lihat semua',
+      viewFull: 'Lihat penuh',
       dayTotal: '{{value}} kcal',
       waterAverage: 'purata {{amount}}',
       goalMet: 'Sasaran dicapai',

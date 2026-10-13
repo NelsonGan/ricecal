@@ -23,7 +23,7 @@ import { volume, waterProgress } from '@/lib/water'
 import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Card, cn, Icon, ProgressBar, Skeleton, Tappable, Text } from '@/ui'
 
-/** Rows the Trends card shows before "See all". Enough to recognise a day. */
+/** Rows the Trends card shows before "View full". Enough to recognise a day. */
 const PREVIEW_ROWS = 5
 
 /**
@@ -54,36 +54,36 @@ export function useDayName() {
 }
 
 /**
- * Opens a logged meal, on its own day.
+ * Opens a logged meal.
  *
- * The detail screen finds the entry in the diary's selected day, which is the
- * only day it loads, so the diary moves to the meal's day first. That is the
- * same thing the month calendar does with a tapped day: the history is a way
- * back into the diary rather than a second copy of it.
+ * The meal's day travels with it. The detail screen otherwise looks for the
+ * entry on the diary's selected day, and moving that day to reach an old meal
+ * left the diary on it afterwards, so the next meal logged from the nav bar's
+ * "+" was filed twelve days ago.
  */
 export function useOpenEntry() {
-  const { selectedDate, setSelectedDate } = useSelectedDate()
-
-  return useCallback(
-    (entry: Entry) => {
-      if (entry.logDate !== selectedDate) setSelectedDate(entry.logDate)
-      router.push({
-        pathname: '/log/food/[id]',
-        params: { id: entry.foodId ?? ENTRY_FOOD_ID, entryId: entry.id },
-      })
-    },
-    [selectedDate, setSelectedDate],
-  )
+  return useCallback((entry: Entry) => {
+    router.push({
+      pathname: '/log/food/[id]',
+      params: { id: entry.foodId ?? ENTRY_FOOD_ID, entryId: entry.id, date: entry.logDate },
+    })
+  }, [])
 }
 
-/** Opens a day on Today, for a row that is a whole day rather than an entry. */
+/**
+ * Opens a day on Today, for a row that is a whole day rather than an entry.
+ *
+ * `dismissTo` rather than `navigate`: from the History screen a navigate pushed
+ * a second copy of the tabs on top of it, with no way back. From the Trends
+ * card it is a tab switch either way.
+ */
 export function useOpenDay() {
   const { setSelectedDate } = useSelectedDate()
 
   return useCallback(
     (date: string) => {
       setSelectedDate(date)
-      router.navigate('/(tabs)/today')
+      router.dismissTo('/(tabs)/today')
     },
     [setSelectedDate],
   )
@@ -285,7 +285,7 @@ export type HistoryCardProps = {
  * checks, whichever range is drawn, and the whole list is one tap away.
  */
 export function HistoryCard({ metric, unit, onEditWeight, action }: HistoryCardProps) {
-  const { t } = useTranslation(['progress'])
+  const { t } = useTranslation(['progress', 'common'])
   const history = useHistory(metric)
   const dayName = useDayName()
   const openEntry = useOpenEntry()
@@ -346,12 +346,24 @@ export function HistoryCard({ metric, unit, onEditWeight, action }: HistoryCardP
         {action}
       </View>
 
-      {history.unavailable ? (
+      {history.offline ? (
+        // A wait rather than a failure: a paused request resumes by itself.
+        <Text variant="meta" className="py-3">
+          {t('common:offline.title')}
+        </Text>
+      ) : history.failed ? (
         // A line rather than a vanished card: a card that silently goes on a
         // failed request reads as "you have never logged anything".
-        <Text variant="meta" className="py-3">
-          {t('progress:history.failed')}
-        </Text>
+        <View className="flex-row items-center justify-between gap-3 py-3">
+          <Text variant="meta" className="min-w-0 shrink">
+            {t('progress:history.failed')}
+          </Text>
+          <Tappable onPress={() => history.refetch()} accessibilityRole="button" hitSlop={8}>
+            <Text variant="label" className="text-pandan-ink">
+              {t('common:action.retry')}
+            </Text>
+          </Tappable>
+        </View>
       ) : history.items.length === 0 ? (
         <View className="gap-3 py-3">
           <Skeleton className="h-12 w-full" />
@@ -368,7 +380,7 @@ export function HistoryCard({ metric, unit, onEditWeight, action }: HistoryCardP
         accessibilityRole="button"
       >
         <Text variant="label" className="text-pandan-ink">
-          {t('progress:history.seeAll')}
+          {t('progress:history.viewFull')}
         </Text>
         <Icon set="ui" name="chevron-right" size={16} tintColor={colors.pandanInk} />
       </Tappable>

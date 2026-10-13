@@ -1020,7 +1020,7 @@ export const ja = {
 
     history: {
       title: '履歴',
-      seeAll: 'すべて表示',
+      viewFull: '全件表示',
       dayTotal: '{{value}} kcal',
       waterAverage: '平均 {{amount}}',
       goalMet: '目標達成',

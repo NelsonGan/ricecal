@@ -59,32 +59,64 @@ export type WeightReading = {
  * fortnight of an ordinary diary.
  */
 const MEAL_ROWS = 60
-/** Days of water or readings of weight per page. A month either way. */
-const DAY_ROWS = 31
+/**
+ * Days of water or readings of weight per page. Both are at most one a day, so
+ * this is about two months, and a page always ends on a whole month (see
+ * `wholeGroups`).
+ */
+const DAY_ROWS = 62
 
 /** `yyyy-MM-dd`, the day before. */
 const dayBefore = (date: string) => dateKey(subDays(parseISO(date), 1))
+/** `yyyy-MM`, which is what the History screen puts a water or weight card on. */
+const monthOf = (date: string) => date.slice(0, 7)
 
 type Page<T> = { items: T[]; next: string | null }
 
 /**
- * A page of meals, newest first, as whole days.
+ * A page's rows cut back to whole groups, and where the next page starts.
  *
- * Paged by day rather than by row, because every day header carries the day's
- * total and a page that stopped halfway through a Tuesday would print the wrong
- * one until the next page landed. So a full page drops its oldest day and the
- * next page starts on it. The one exception is a single day with more rows than
- * a page, which is kept as far as it goes rather than asked for forever.
+ * Every group on screen carries a figure for the whole of it: a day's calories,
+ * a month's average water, a month's weight change. A page that stopped partway
+ * through one would print that figure short until the next page landed, and
+ * for good if it never did. So a full page drops its oldest group and the next
+ * page starts on it, which is safe because the rows are newest first and each
+ * request reads `on or before` its cursor.
+ *
+ * A page that is all one group keeps it and moves past it, rather than asking
+ * for the same rows forever. `pastOnlyGroup` says where past it is.
+ */
+function wholeGroups<T>(
+  rows: readonly T[],
+  full: boolean,
+  group: (row: T) => string,
+  dateOf: (row: T) => string,
+  pastOnlyGroup: () => string,
+): { kept: readonly T[]; next: string | null } {
+  if (!full || rows.length === 0) return { kept: rows, next: null }
+  const oldest = group(rows[rows.length - 1])
+  if (group(rows[0]) === oldest) return { kept: rows, next: pastOnlyGroup() }
+  const kept = rows.filter((row) => group(row) !== oldest)
+  // The dropped rows are the tail, so the first of them is the newest of the
+  // group the next page has to read whole.
+  return { kept, next: dateOf(rows[kept.length]) }
+}
+
+/**
+ * A page of meals, newest first, as whole days. A single day with more rows
+ * than a page is kept as far as it goes.
  *
  * Exported for its test, with the limit as an argument so the test does not
  * have to build sixty meals to reach it.
  */
 export function mealPage(rows: readonly Entry[], limit = MEAL_ROWS): Page<MealDay> {
-  const full = rows.length >= limit
-  const oldest = rows.at(-1)?.logDate ?? null
-  const oneDay = full && rows[0]?.logDate === oldest
-
-  const kept = full && !oneDay ? rows.filter((entry) => entry.logDate !== oldest) : rows
+  const { kept, next } = wholeGroups(
+    rows,
+    rows.length >= limit,
+    (entry) => entry.logDate,
+    (entry) => entry.logDate,
+    () => dayBefore(rows[rows.length - 1].logDate),
+  )
   const days: MealDay[] = []
   for (const entry of kept) {
     const day = days.at(-1)
@@ -96,10 +128,7 @@ export function mealPage(rows: readonly Entry[], limit = MEAL_ROWS): Page<MealDa
     }
   }
 
-  return {
-    items: days,
-    next: !full || !oldest ? null : oneDay ? dayBefore(oldest) : oldest,
-  }
+  return { items: days, next }
 }
 
 async function fetchMealPage(userId: string, through: string | null): Promise<Page<MealDay>> {
@@ -116,7 +145,7 @@ async function fetchMealPage(userId: string, through: string | null): Promise<Pa
 }
 
 /**
- * A page of water days, each against its own goal.
+ * A page of water days, each against its own goal, as whole months.
  *
  * The goal is looked up per day because `daily_goals` is effective-dated: a goal
  * raised last week must not turn last month's good days into short ones. The
@@ -128,13 +157,20 @@ export function waterPage(
   goals: readonly { effective_from: string; water_ml: number }[],
   limit = DAY_ROWS,
 ): Page<WaterDay> {
+  const { kept, next } = wholeGroups(
+    rows,
+    rows.length >= limit,
+    (row) => monthOf(row.log_date),
+    (row) => row.log_date,
+    () => dayBefore(rows[rows.length - 1].log_date),
+  )
   return {
-    items: rows.map((row) => ({
+    items: kept.map((row) => ({
       date: row.log_date,
       ml: row.water_ml,
       goal: goals.find((goal) => goal.effective_from <= row.log_date)?.water_ml ?? DEFAULT_WATER_ML,
     })),
-    next: rows.length >= limit ? dayBefore(rows[rows.length - 1].log_date) : null,
+    next,
   }
 }
 
@@ -163,6 +199,9 @@ async function fetchWaterPage(
     queryClient.fetchQuery({
       queryKey: [...keys.history(userId, 'water'), 'goals'],
       staleTime: GOALS_FRESH_MS,
+      // The page around it already retries; retrying in here as well turned
+      // one failed read into nine requests and ten seconds of waiting.
+      retry: false,
       queryFn: async () =>
         unwrap(
           await supabase
@@ -178,7 +217,7 @@ async function fetchWaterPage(
 }
 
 /**
- * A page of weigh-ins, each against the one before it.
+ * A page of weigh-ins, each against the one before it, as whole months.
  *
  * Asked for with one row more than the page shows, so the last reading on it
  * can say how far it moved. Without it every page would end on a reading with
@@ -188,12 +227,21 @@ export function weightPage(
   rows: readonly Omit<WeightReading, 'change'>[],
   limit = DAY_ROWS,
 ): Page<WeightReading> {
+  const { kept, next } = wholeGroups(
+    rows.slice(0, limit),
+    rows.length > limit,
+    (row) => monthOf(row.date),
+    (row) => row.date,
+    () => rows[limit].date,
+  )
   return {
-    items: rows.slice(0, limit).map((row, index) => {
+    // `kept` is a prefix of `rows`, so the reading before each is the next row,
+    // including the extra one past the end of the page.
+    items: kept.map((row, index) => {
       const before = rows[index + 1]
       return { ...row, change: before ? row.kg - before.kg : null }
     }),
-    next: rows.length > limit ? rows[limit].date : null,
+    next,
   }
 }
 
@@ -234,7 +282,7 @@ type ItemOf = { calories: MealDay; water: WaterDay; weight: WeightReading }
  * One metric's history, a page at a time.
  *
  * The Trends card reads the first page and the History screen reads them all,
- * through the same key, so "See all" opens on rows that are already there.
+ * through the same key, so "View full" opens on rows that are already there.
  */
 export function useHistory<M extends HistoryMetric>(metric: M) {
   const userId = useUserId()
@@ -258,15 +306,43 @@ export function useHistory<M extends HistoryMetric>(metric: M) {
   // a page actually arrives.
   const items = useMemo(() => query.data?.pages.flatMap((page) => page.items) ?? [], [query.data])
 
+  // Getters rather than a spread: react-query re-renders a component for the
+  // fields it reads, and a spread reads every one of them, so the Trends card
+  // would redraw on each background refetch it never shows.
   return {
-    ...query,
     items,
+    get isPending() {
+      return query.isPending
+    },
+    get isSuccess() {
+      return query.isSuccess
+    },
+    get isFetching() {
+      return query.isFetching
+    },
+    get hasNextPage() {
+      return query.hasNextPage
+    },
+    get isFetchingNextPage() {
+      return query.isFetchingNextPage
+    },
+    get isFetchNextPageError() {
+      return query.isFetchNextPageError
+    },
+    fetchNextPage: query.fetchNextPage,
+    refetch: query.refetch,
     /**
-     * Nothing to show and nothing coming: the first page failed, or it is
-     * paused offline with nothing cached. A paused query stays `isPending`
-     * forever, so a skeleton drawn off `isPending` alone would never go.
+     * Nothing to show because there is no connection, and nothing to do about
+     * it: a paused query resumes by itself. It also stays `isPending` for as
+     * long as it waits, so a skeleton drawn off `isPending` would never go.
      */
-    unavailable: items.length === 0 && (query.isError || query.isPaused),
+    get offline() {
+      return items.length === 0 && query.isPaused
+    },
+    /** Nothing to show because the first page failed. Worth a retry. */
+    get failed() {
+      return items.length === 0 && query.isError && !query.isPaused
+    },
   }
 }
 
@@ -287,18 +363,26 @@ export function useTrimHistoryOnLeave() {
     () => () => {
       for (const metric of Object.keys(FETCHERS) as HistoryMetric[]) {
         const queryKey = keys.history(userId, metric)
-        // Cancelled first and trimmed after. A next page still in flight
-        // resolves onto every page it started from, so trimming under it was
-        // undone the moment it landed.
-        void queryClient
-          .cancelQueries({ queryKey, exact: true })
-          .then(() =>
-            queryClient.setQueryData<InfiniteData<unknown, string | null>>(queryKey, (data) =>
-              data && data.pages.length > 1
-                ? { pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) }
-                : data,
-            ),
+        const data = queryClient.getQueryData<InfiniteData<unknown, string | null>>(queryKey)
+        // One page or none is already the shape the Trends card wants, and
+        // cancelling it would take a first load away from that card.
+        if (!data || data.pages.length <= 1) continue
+
+        const fetching = queryClient.getQueryState(queryKey)?.fetchStatus === 'fetching'
+        // Cancelled first and trimmed after: a fetch still in flight resolves
+        // onto every page it started from, so trimming under it was undone the
+        // moment it landed. A cancel puts back the answer from before the fetch,
+        // so whatever it was fetching for, a write or an invalidation, is asked
+        // for again, which is now one page.
+        void queryClient.cancelQueries({ queryKey, exact: true }).then(() => {
+          const stale = fetching || queryClient.getQueryState(queryKey)?.isInvalidated
+          queryClient.setQueryData<InfiniteData<unknown, string | null>>(queryKey, (current) =>
+            current && current.pages.length > 1
+              ? { pages: current.pages.slice(0, 1), pageParams: current.pageParams.slice(0, 1) }
+              : current,
           )
+          if (stale) void queryClient.invalidateQueries({ queryKey, exact: true })
+        })
       }
     },
     [queryClient, userId],

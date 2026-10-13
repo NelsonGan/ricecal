@@ -1016,7 +1016,7 @@ export const ko = {
 
     history: {
       title: '기록',
-      seeAll: '모두 보기',
+      viewFull: '전체 보기',
       dayTotal: '{{value}} kcal',
       waterAverage: '평균 {{amount}}',
       goalMet: '목표 달성',
