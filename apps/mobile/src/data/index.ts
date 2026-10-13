@@ -53,6 +53,14 @@ export {
   useHealthAutoSync,
   useSyncHealth,
 } from './health-sync'
+export {
+  type HistoryMetric,
+  type MealDay,
+  useHistory,
+  useTrimHistoryOnLeave,
+  type WaterDay,
+  type WeightReading,
+} from './history'
 export { keys } from './keys'
 export { toEntry, toFood, toIcon, toRecipe, toRecipeIngredient } from './mappers'
 export { useBlockAuthor, useReportRecipe } from './moderation'

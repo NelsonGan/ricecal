@@ -16,9 +16,21 @@
  * copy of either would disagree with Trends the first time one was corrected.
  */
 export { CaloriesPanel, type CaloriesPanelProps } from './CaloriesPanel'
+export {
+  DayBand,
+  HistoryCard,
+  type HistoryCardProps,
+  MealRow,
+  RowGap,
+  useDayName,
+  useOpenDay,
+  useOpenEntry,
+  WaterRow,
+  WeightRow,
+} from './History'
 export { MetricTabs, type MetricTabsProps, TREND_METRICS, type TrendMetric } from './MetricTabs'
 export { type StackedBar, StackedBars, type StackedBarsProps } from './StackedBars'
 export { TrendLine, type TrendLineProps, type TrendPoint } from './TrendLine'
 export { WaterPanel, type WaterPanelProps } from './WaterPanel'
 export { WeighInSheet, type WeighInSheetProps } from './WeighInSheet'
-export { WeightPanel, type WeightPanelProps } from './WeightPanel'
+export { WeighInPill, WeightPanel, type WeightPanelProps } from './WeightPanel'

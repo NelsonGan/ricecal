@@ -994,14 +994,12 @@ export const ta = {
       atGoal: 'உங்கள் இலக்கு எடையில் உள்ளீர்கள்',
       weeksAway: 'சுமார் {{count}} வாரங்கள்',
 
-      recentTitle: 'சமீபத்திய அளவீடுகள்',
       add: 'சேர்',
       weekByWeek: 'வாரம் வாரமாக',
       byQuarter: 'காலாண்டு வாரியாக',
       quarter: '{{from}} முதல் {{to}} வரை',
 
       reading: '{{value}} {{unit}}',
-      readingToday: 'இன்று',
       firstReading: 'முதல்',
 
       sheetTitle: 'எடையைச் சேர்',
@@ -1021,6 +1019,17 @@ export const ta = {
 
       emptyTitle: 'இந்த வரம்பில் எடை அளவீடு இல்லை',
       emptyBody: 'ஒரு அளவீடு ஒரு புள்ளியை வரையும். இரண்டு ஒரு கோட்டை வரையும்.',
+    },
+
+    history: {
+      title: 'வரலாறு',
+      seeAll: 'அனைத்தையும் பார்',
+      dayTotal: '{{value}} kcal',
+      waterAverage: 'சராசரி {{amount}}',
+      goalMet: 'இலக்கு எட்டப்பட்டது',
+      emptyTitle: 'இன்னும் எதுவும் பதிவு செய்யவில்லை',
+      emptyBody: 'நீங்கள் பதிவு செய்யும் அனைத்தும் இங்கே தோன்றும்.',
+      failed: 'வரலாற்றை ஏற்ற முடியவில்லை',
     },
   },
 

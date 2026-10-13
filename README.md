@@ -26,6 +26,7 @@ project works is here.
 - [The diary screen](#the-diary-screen)
 - [Water](#water)
 - [Home screen widgets](#home-screen-widgets)
+- [History behind the charts](#history-behind-the-charts)
 - [Weekly and monthly reviews](#weekly-and-monthly-reviews)
 - [Activity and health](#activity-and-health)
 - [Photos](#photos)
@@ -3187,6 +3188,47 @@ pressed, because the button runs in a process with no analytics client in it. A 
 whose sync failed is never counted, which is the honest direction to be wrong in.
 An action completing after its account leaves is also excluded from tracking so
 it cannot be filed against the account that follows.
+
+---
+
+## History behind the charts
+
+Trends says what a range came to; History says what it was made of. A card under
+every Trends tab lists the newest few entries for that metric, and "See all"
+opens `/history`, every entry newest first, read like a statement. Both read
+`useHistory` in `data/history.ts` through one key, so the screen opens on rows
+the card already fetched.
+
+**Each metric keeps the grain it is stored at.** A meal is a row, from
+`food_log_details`. Water is one row per day, from `daily_logs`, because
+`add_water` adds to a day's total and there are no separate drinks to list. A
+weigh-in is one row per day, from `weight_logs`, with its change from the reading
+before and the health store's name when a store wrote it. No new server function
+was needed and none should be: these are tables the app already reads under RLS.
+
+**Meals page by whole days.** Each day's card carries the day's total, and a page
+that ended halfway through a Tuesday would print a short total until the next one
+landed. `mealPage` drops the oldest day of a full page and starts the next on it.
+A weight page asks for one reading more than it shows, so its last row still has
+a change beside it rather than looking like the first reading ever. Water days
+are judged against the goal in force that day, since `daily_goals` is
+effective-dated.
+
+**The key sits under `trends`**, so every write that invalidates the charts
+(`trendsAll`) refreshes the list too, with no extra line in any mutation.
+Closing `/history` trims the query back to its first page: an infinite query
+refetches every page it holds, and a year scrolled once would otherwise be
+re-read behind the Trends card after every meal.
+
+**A row opens the thing it lists.** A meal opens its detail page, which finds the
+entry in the diary's selected day, so the diary moves to the meal's day first, as
+a tapped day on the month calendar does. A water row opens that day on Today. A
+weigh-in opens the weigh-in sheet on its day, which is why the weight tab's old
+"Recent weigh ins" card is gone: the History card is the same list, editable the
+same way, with the Add pill on its heading.
+
+**It is not behind the paywall.** The free tier's seven days limit the charts, but
+every row here is a diary entry the free diary already shows on its own day.
 
 ---
 
