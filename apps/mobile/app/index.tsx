@@ -7,7 +7,8 @@ import { useProfile, useSession } from '@/data'
 import { signOut } from '@/data/auth'
 import { isComplete, ONBOARDING_STEPS, useOnboardingDraft } from '@/features/onboarding'
 import { useEnterApp } from '@/lib/navigation'
-import { EmptyState, Spinner } from '@/ui'
+import { useOnline } from '@/lib/online'
+import { Button, EmptyState, Spinner } from '@/ui'
 
 /**
  * The entry point decides between onboarding, the account step and the app. The
@@ -31,7 +32,8 @@ import { EmptyState, Spinner } from '@/ui'
  */
 export default function Index() {
   const { session, loading } = useSession()
-  const { data: profile, isPending, isPaused, isSuccess } = useProfile()
+  const { data: profile, isPending, isPaused, isSuccess, isFetching, refetch } = useProfile()
+  const online = useOnline()
   const { draft } = useOnboardingDraft()
   const answered = isComplete(draft)
 
@@ -81,10 +83,19 @@ export default function Index() {
    * as though the answer had arrived, so a request that dropped took the same
    * branch as a genuine `onboarded_at: null`.
    *
-   * The same wait as the paused case: react-query refetches on reconnect and on
-   * the next foreground, and the redirect happens then.
+   * Offline, it is the same wait as the paused case: react-query refetches on
+   * reconnect. Online, nothing will refetch it, and this said "Waiting for a
+   * connection" to somebody on a working connection whose requests could not
+   * reach us. They checked their mobile data settings, relaunched, reinstalled,
+   * and saw the same screen each time. So it says what happened, and offers the
+   * retry that nothing else will make.
    */
-  if (!isSuccess) return <Offline />
+  if (!isSuccess)
+    return online ? (
+      <Unreachable retrying={isFetching} onRetry={() => void refetch()} />
+    ) : (
+      <Offline />
+    )
 
   /**
    * `setup` rather than `about`, and the difference is a loop.
@@ -147,6 +158,29 @@ function Offline() {
         title={t('offline.title')}
         description={t('offline.body')}
         icon={{ set: 'ui', name: 'offline' }}
+      />
+    </View>
+  )
+}
+
+/**
+ * Online, and the request failed anyway. Not "offline": the phone is right that
+ * it has a connection, and saying otherwise sends people to the wrong setting.
+ */
+function Unreachable({ retrying, onRetry }: { retrying: boolean; onRetry: () => void }) {
+  const { t } = useTranslation('common')
+
+  return (
+    <View className="flex-1 items-center justify-center bg-canvas">
+      <EmptyState
+        title={t('offline.unreachableTitle')}
+        description={t('offline.unreachableBody')}
+        icon={{ set: 'ui', name: 'offline' }}
+        action={
+          <Button loading={retrying} onPress={onRetry}>
+            {t('action.retry')}
+          </Button>
+        }
       />
     </View>
   )

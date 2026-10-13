@@ -208,6 +208,9 @@ export const zhHans = {
       body: '这一条还没有存到手机上，联网后会自动加载。',
       dayTitle: '这一天不在手机上',
       dayBody: '换一个你打开过的日子，或者联网后再来看。',
+      unreachableTitle: '无法连接 RiceCal',
+      unreachableBody: '你已联网，但请求没有成功送达。',
+      dayFailedTitle: '无法加载这一天',
     },
 
     a11y: {
@@ -998,6 +1001,8 @@ export const zhHans = {
       same: '和{{day}}一样',
       save: '保存称重',
       saved: '称重已保存',
+      saveFailed: '称重未保存，请重试。',
+      saveOffline: '你目前离线，称重未保存。',
       remove: '删除这次读数',
       removeTitle: '删除这次读数？',
       removeBody: '图表会少掉这一天。如果这是最近一次，你的额度会回到上一次的。',

@@ -208,6 +208,9 @@ export const zhHant = {
       body: '這一筆還沒存到手機上，連上網路後就會載入。',
       dayTitle: '這一天不在手機上',
       dayBody: '換一個你開過的日子，或者連上網路後再來看。',
+      unreachableTitle: '無法連線到 RiceCal',
+      unreachableBody: '你已連上網路，但請求沒有成功送出。',
+      dayFailedTitle: '無法載入這一天',
     },
 
     a11y: {
@@ -998,6 +1001,8 @@ export const zhHant = {
       same: '和{{day}}一樣',
       save: '儲存量測',
       saved: '量測已儲存',
+      saveFailed: '量測未儲存，請再試一次。',
+      saveOffline: '你目前離線，量測未儲存。',
       remove: '刪除這次讀數',
       removeTitle: '刪除這次讀數？',
       removeBody: '圖表會少掉這一天。如果這是最近一次，你的額度會回到上一次的。',

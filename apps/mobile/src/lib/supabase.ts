@@ -5,6 +5,7 @@ import * as SecureStore from 'expo-secure-store'
 
 import type { Database } from './database.types'
 import { env } from './env'
+import { reportNetworkFailure } from './network'
 import { sessionIsGone, tokenWasRefused } from './revocation'
 
 /**
@@ -320,9 +321,21 @@ async function endSessionIfGone(): Promise<void> {
  * The client's fetch, with a 401 watched for on the way past. The response is
  * handed back untouched and the probe is not awaited: the request that noticed
  * has already failed, and what this buys is the next one, and the sign-out.
+ *
+ * A request that never got a response is reported too, for the same reason it
+ * is caught here rather than in each query: this is the one place every request
+ * passes, the token refresh included. An abort is a caller changing its mind.
  */
 async function guardedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const response = await fetch(input, init)
+  let response: Response
+  try {
+    response = await fetch(input, init)
+  } catch (error) {
+    if ((error as { name?: unknown } | null)?.name !== 'AbortError') {
+      void reportNetworkFailure(requestUrl(input), error)
+    }
+    throw error
+  }
   if (tokenWasRefused(requestUrl(input), response.status)) void endSessionIfGone()
   return response
 }

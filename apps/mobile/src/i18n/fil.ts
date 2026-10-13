@@ -211,6 +211,9 @@ export const fil = {
       body: 'Hindi pa namin ito na-save sa telepono mo. Mag-lo-load ito pagkakonekta mo.',
       dayTitle: 'Wala sa telepono mo ang araw na ito',
       dayBody: 'Pumili ng araw na binuksan mo na, o bumalik kapag may koneksyon ka.',
+      unreachableTitle: 'Hindi maabot ang RiceCal',
+      unreachableBody: 'Online ka, pero hindi natuloy ang request.',
+      dayFailedTitle: 'Hindi ma-load ang araw na ito',
     },
 
     a11y: {
@@ -1028,6 +1031,8 @@ export const fil = {
       same: 'Pareho ng {{day}}',
       save: 'I-save ang pagtimbang',
       saved: 'Na-save ang pagtimbang',
+      saveFailed: 'Hindi na-save ang pagtimbang. Subukan ulit.',
+      saveOffline: 'Offline ka. Hindi na-save ang pagtimbang.',
       remove: 'Alisin ang basang ito',
       removeTitle: 'Alisin ang basang ito?',
       removeBody:

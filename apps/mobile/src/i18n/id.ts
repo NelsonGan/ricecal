@@ -209,6 +209,9 @@ export const id = {
       body: 'Yang ini belum tersimpan di ponselmu. Akan dimuat begitu kamu online.',
       dayTitle: 'Hari ini tidak ada di ponselmu',
       dayBody: 'Pilih hari yang pernah kamu buka, atau kembali saat sudah online.',
+      unreachableTitle: 'Tidak dapat menghubungi RiceCal',
+      unreachableBody: 'Kamu sedang online, tetapi permintaannya tidak terkirim.',
+      dayFailedTitle: 'Tidak dapat memuat hari tersebut',
     },
 
     a11y: {
@@ -1018,6 +1021,8 @@ export const id = {
       same: 'Sama seperti {{day}}',
       save: 'Simpan penimbangan',
       saved: 'Penimbangan tersimpan',
+      saveFailed: 'Penimbangan tidak tersimpan. Coba lagi.',
+      saveOffline: 'Kamu sedang offline. Penimbangan tidak tersimpan.',
       remove: 'Hapus pembacaan ini',
       removeTitle: 'Hapus pembacaan ini?',
       removeBody:
