@@ -1137,16 +1137,31 @@ and the new password are on one screen, nothing is sent until Save, and the
 layout leaves `new-password` alone while it is on top.
 
 Somebody arriving through the link already has a session, so that screen drops
-the code field. It tests for a session from the link, not for any session:
-`isFreshRecovery` (`data/recovery.ts`) reads the token's `amr` claim, which
-Supabase stamps `recovery` for a session exchanged from a reset link (`password`
-for a password, `otp` for a typed code), and wants it under fifteen minutes old
-because the claim survives refreshes. `auth/[action]` applies the same test
-before sending a link to `new-password`. Testing only for a session was a hole:
-a phone already signed in could open `ricecal://auth/reset` with no code, land
-here, and set a new password with no proof, which made the current password the
-change form asks for a check anybody holding the phone could walk around. That
-visitor now gets the code field, with nothing mailed yet and the resend open.
+the code field. It tests for a session from the link, not for any session.
+Testing only for a session was a hole: a phone already signed in could open
+`ricecal://auth/reset` with no code, land here, and set a new password with no
+proof, which made the current password the change form asks for a check anybody
+holding the phone could walk around. That visitor now gets the code field, with
+nothing mailed yet and the resend open.
+
+**The proof is a mark in memory** (`data/recovery.ts`): `completeLoginFromUrl`
+sets it for the account when a reset link's code is actually exchanged, which a
+URL with no code never does, and `updatePassword` clears it the moment the new
+password is saved. It lapses after fifteen minutes, and a relaunch forgets it,
+which costs a code in a rare case. Two token-based versions came first and both
+were wrong in a way worth knowing. Reading the `amr` claim against the phone's
+clock sent every real link to Today on a phone set fast. Reading it against the
+token's own issue time left the form open after a finished reset for the rest of
+the token's hour, because a refresh moments later still looked recent.
+
+`auth/[action]` applies the same test, and on a reset link waits for the mark
+rather than acting on whatever session the phone already had: a signed-in phone
+has its old one before the exchange lands, and redirecting on it sent the real
+link to Today. Once `new-password` has seen the mark it remembers it for that
+account, so the mark lapsing mid-screen does not spring a code field on somebody
+the link already proved. A code typed on the screen is remembered the same way
+once accepted: if the save after it fails (most often the old password chosen
+again) the retry does not ask for the code it already spent.
 
 ### Signing out when the server already has
 
@@ -1267,8 +1282,10 @@ The mail also carries a button, and on this phone it works: the app's client
 stored the reset's PKCE verifier, so tapping it signs the app in for the reset,
 spends the code and opens `new-password`. The sheet listens for that
 (`onPasswordRecovery`) and closes, rather than staying on top, as a native modal
-would, holding a dead code. A save that fails after the code was checked clears
-the field, since checking it spent it.
+would, holding a dead code. A save that fails for any reason but a wrong code
+clears the field, because most failures come after the code was checked and
+checking it spent it. The sheet cannot be dismissed while a code is being sent,
+since its captcha challenge lives inside it.
 
 Closing the sheet clears all password fields. The server's minimum length and
 matching confirmation are checked before submitting. Password and deletion forms

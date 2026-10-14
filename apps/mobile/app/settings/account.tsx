@@ -491,19 +491,29 @@ const RESEND_COOLDOWN_S = 60
 function ChangePassword({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['profile', 'common'])
   const [pending, setPending] = useState(false)
+  // Held here rather than in the form so the sheet stays put while a code is
+  // being sent: closed mid-send, the captcha's provider unmounts under the
+  // challenge, and a mail can go out for a form that is no longer there.
+  const [sending, setSending] = useState(false)
   return (
     <Sheet
       fullHeight
       visible
       onClose={onClose}
-      dismissible={!pending}
+      dismissible={!pending && !sending}
       closeLabel={t('common:action.close')}
       title={t('profile:account.changePassword')}
     >
       {/* The challenge must live in this native modal, above the account page. */}
       <View className="gap-md">
         <CaptchaProvider>
-          <ChangePasswordForm onClose={onClose} pending={pending} setPending={setPending} />
+          <ChangePasswordForm
+            onClose={onClose}
+            pending={pending}
+            setPending={setPending}
+            sending={sending}
+            setSending={setSending}
+          />
         </CaptchaProvider>
       </View>
     </Sheet>
@@ -514,10 +524,14 @@ function ChangePasswordForm({
   onClose,
   pending,
   setPending,
+  sending,
+  setSending,
 }: {
   onClose: () => void
   pending: boolean
   setPending: (pending: boolean) => void
+  sending: boolean
+  setSending: (sending: boolean) => void
 }) {
   const { t } = useTranslation(['auth', 'profile', 'common'])
   const toast = useToast()
@@ -540,7 +554,6 @@ function ChangePasswordForm({
   const [proof, setProof] = useState<'current' | 'code'>('current')
   const [code, setCode] = useState('')
   const [codeWrong, setCodeWrong] = useState(false)
-  const [sending, setSending] = useState(false)
   const [cooldown, setCooldown] = useState(0)
   const { session } = useSession()
   /** Where the code went: the address the send used, once there has been one. */

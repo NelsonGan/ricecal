@@ -1,43 +1,72 @@
-/** How long after following a reset link its session may set a password unasked. */
-const RECOVERY_WINDOW_S = 15 * 60
+import { useSyncExternalStore } from 'react'
+
+/** How long after a reset link's exchange its session may set a password unasked. */
+const RECOVERY_WINDOW_MS = 15 * 60 * 1000
 
 /**
- * Whether this session came from a password-reset link, recently.
+ * Which account a reset link signed this app in as, and when. In memory only.
  *
- * Being signed in is not that. `new-password` drops its code field when there is
- * a session, on the reasoning that a session there came from the reset link, and
- * `auth/[action]` sent any session that arrived on `ricecal://auth/reset` to it.
- * A signed-in phone could open that URL with no code at all and set a new
- * password with no proof, which made the current password the change form asks
- * for a check anybody could walk around.
+ * Being signed in is not that. `new-password` drops its code field for a session
+ * from the link, and `auth/[action]` sends a reset link there once it has one.
+ * Both used to take any session as proof, so a signed-in phone could open
+ * `ricecal://auth/reset` with no code at all and set a new password unasked,
+ * which made the current password the change form asks for a check anybody
+ * holding the phone could walk around.
  *
- * Supabase stamps how a session was obtained into the token's `amr` claim, and a
- * session exchanged from a reset link says `recovery` (checked against the local
- * stack: a password sign-in says `password`, a typed code says `otp`). The claim
- * survives refreshes, so it has to be recent as well.
- *
- * Read off the token without verifying it, which is fine for what this is: a
- * gate in the app's own flow, with the server's signature behind every request.
+ * Recorded by `completeLoginFromUrl` when a reset link's code is actually
+ * exchanged, which a URL without one can never do, and cleared the moment the
+ * new password is saved. Two earlier versions read the token's `amr` claim
+ * instead: aged by the phone's clock, a phone set fast sent every real link to
+ * Today; aged by the token's issue time, the form stayed open after a finished
+ * reset until the token's hour ran out, since a refresh moments later still
+ * looked recent. Memory has neither problem. A relaunch forgets it, and the
+ * screen then asks for a code, which costs one more mail in a rare case.
  */
-export function isFreshRecovery(
-  session: { access_token?: string } | null | undefined,
+let recovered: { userId: string; at: number } | null = null
+const listeners = new Set<() => void>()
+
+function changed() {
+  for (const listener of listeners) listener()
+}
+
+/** A reset link's code was exchanged for this account's session, just now. */
+export function markRecovered(userId: string): void {
+  recovered = { userId, at: Date.now() }
+  changed()
+}
+
+/** The reset is finished, or abandoned. Nothing opens the form unasked now. */
+export function clearRecovered(): void {
+  if (!recovered) return
+  recovered = null
+  changed()
+}
+
+/** Whether this session is the one a reset link produced, recently. */
+export function isRecovered(
+  session: { user: { id: string } } | null | undefined,
   now = Date.now(),
 ): boolean {
-  const payload = session?.access_token?.split('.')[1]
-  if (!payload) return false
-  try {
-    const padded = payload
-      .replace(/-/g, '+')
-      .replace(/_/g, '/')
-      .padEnd(Math.ceil(payload.length / 4) * 4, '=')
-    const { amr } = JSON.parse(atob(padded)) as { amr?: { method?: string; timestamp?: number }[] }
-    return (amr ?? []).some(
-      (entry) =>
-        entry.method === 'recovery' &&
-        typeof entry.timestamp === 'number' &&
-        now / 1000 - entry.timestamp < RECOVERY_WINDOW_S,
-    )
-  } catch {
-    return false
-  }
+  return (
+    !!session &&
+    !!recovered &&
+    recovered.userId === session.user.id &&
+    now - recovered.at < RECOVERY_WINDOW_MS
+  )
+}
+
+/**
+ * The same, for a screen, which re-renders when the mark changes. The mark lands
+ * a moment after the session does (the session is saved inside the exchange,
+ * the mark after it resolves), so a screen reading it once would miss it.
+ */
+export function useRecovered(session: { user: { id: string } } | null | undefined): boolean {
+  useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    () => recovered,
+  )
+  return isRecovered(session)
 }

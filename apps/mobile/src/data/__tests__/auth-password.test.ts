@@ -4,8 +4,10 @@ import {
   emailSendRetryAfter,
   signInWithPassword,
   signUpWithPassword,
+  updatePassword,
   verifyEmailCode,
 } from '../auth'
+import { clearRecovered, isRecovered, markRecovered } from '../recovery'
 
 /**
  * The password half of `data/auth.ts`.
@@ -31,6 +33,7 @@ jest.mock('@/lib/supabase', () => ({
       signInWithPassword: jest.fn(),
       verifyOtp: jest.fn(),
       getSession: jest.fn(),
+      updateUser: jest.fn(),
     },
   },
 }))
@@ -47,6 +50,7 @@ const { supabase } = require('@/lib/supabase') as {
       signInWithPassword: jest.Mock
       verifyOtp: jest.Mock
       getSession: jest.Mock
+      updateUser: jest.Mock
     }
   }
 }
@@ -339,5 +343,28 @@ describe('reading what Supabase said', () => {
   it('keeps the original underneath, so error tracking has something to read', () => {
     const original = new Error('something nobody has seen before')
     expect(asAuthProblem(original).cause).toBe(original)
+  })
+})
+
+describe('finishing a reset', () => {
+  // The reset link's session opens the reset screen without a code; once the
+  // password is saved that has to stop, or the form stays open to whoever holds
+  // the phone.
+  it('ends the reset once the password is saved', async () => {
+    markRecovered('user-1')
+    supabase.auth.updateUser.mockResolvedValue({ data: { user: freshUser }, error: null })
+    await updatePassword('a-new-password')
+    expect(isRecovered({ user: { id: 'user-1' } })).toBe(false)
+  })
+
+  it('keeps the reset open when the password was refused', async () => {
+    markRecovered('user-1')
+    supabase.auth.updateUser.mockResolvedValue({
+      data: { user: null },
+      error: Object.assign(new Error('same'), { code: 'same_password', status: 422 }),
+    })
+    await expect(updatePassword('the-old-password')).rejects.toBeTruthy()
+    expect(isRecovered({ user: { id: 'user-1' } })).toBe(true)
+    clearRecovered()
   })
 })

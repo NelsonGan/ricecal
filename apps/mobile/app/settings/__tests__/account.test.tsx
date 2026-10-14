@@ -493,7 +493,7 @@ it('steps aside when the reset link in the mail signs the app in', async () => {
   await waitFor(() => expect(screen.queryByLabelText('CODE')).toBeNull())
 })
 
-it('asks for all six digits before sending a code anywhere', async () => {
+it('asks for all six digits before checking the code', async () => {
   mockHasPassword.mockResolvedValue(true)
   await mount()
   await user.press(screen.getByRole('button', { name: 'Change password' }))

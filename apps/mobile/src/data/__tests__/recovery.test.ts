@@ -1,36 +1,35 @@
-import { isFreshRecovery } from '../recovery'
+import { clearRecovered, isRecovered, markRecovered } from '../recovery'
 
 /**
  * Whether a session came from a password-reset link, which is the only kind
- * allowed to set a new password without proving anything else. Read off the
- * token's `amr` claim, which Supabase stamps with how the session was obtained.
+ * allowed to set a new password without proving anything else. Recorded when a
+ * link's code is exchanged, never inferred from the session itself.
  */
 
-const NOW = Date.UTC(2026, 9, 14, 12, 0, 0)
-const token = (claims: object) =>
-  `header.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.signature`
-const session = (method: string, secondsAgo: number) => ({
-  access_token: token({ amr: [{ method, timestamp: NOW / 1000 - secondsAgo }] }),
+const owner = { user: { id: 'owner' } }
+
+afterEach(() => clearRecovered())
+
+it('knows nothing until a reset link is exchanged', () => {
+  // A signed-in phone opening the reset URL with no code is exactly this.
+  expect(isRecovered(owner)).toBe(false)
 })
 
-it('accepts a session the reset link produced a moment ago', () => {
-  expect(isFreshRecovery(session('recovery', 10), NOW)).toBe(true)
+it('accepts the account a reset link signed in, for a while', () => {
+  markRecovered('owner')
+  expect(isRecovered(owner)).toBe(true)
+  expect(isRecovered(owner, Date.now() + 14 * 60 * 1000)).toBe(true)
+  expect(isRecovered(owner, Date.now() + 16 * 60 * 1000)).toBe(false)
 })
 
-it('refuses a session from a password, a code or a social sign-in', () => {
-  expect(isFreshRecovery(session('password', 10), NOW)).toBe(false)
-  expect(isFreshRecovery(session('otp', 10), NOW)).toBe(false)
-  expect(isFreshRecovery(session('oauth', 10), NOW)).toBe(false)
+it('does not carry over to another account', () => {
+  markRecovered('owner')
+  expect(isRecovered({ user: { id: 'someone-else' } })).toBe(false)
+  expect(isRecovered(null)).toBe(false)
 })
 
-it('refuses a reset link long enough ago that the session has simply been kept', () => {
-  // The claim survives every refresh, so on its own it would last for weeks.
-  expect(isFreshRecovery(session('recovery', 16 * 60), NOW)).toBe(false)
-})
-
-it('refuses no session, and a token it cannot read', () => {
-  expect(isFreshRecovery(null, NOW)).toBe(false)
-  expect(isFreshRecovery({ access_token: 'not-a-token' }, NOW)).toBe(false)
-  expect(isFreshRecovery({ access_token: 'a.%%%.b' }, NOW)).toBe(false)
-  expect(isFreshRecovery({ access_token: token({ sub: 'u1' }) }, NOW)).toBe(false)
+it('ends the moment the reset is finished', () => {
+  markRecovered('owner')
+  clearRecovered()
+  expect(isRecovered(owner)).toBe(false)
 })
