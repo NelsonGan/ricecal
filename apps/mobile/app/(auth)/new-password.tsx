@@ -11,6 +11,7 @@ import {
   updatePassword,
   verifyEmailCode,
 } from '@/data/auth'
+import { isFreshRecovery } from '@/data/recovery'
 import { PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Button, Screen, Text, TextField, useToast } from '@/ui'
@@ -41,7 +42,10 @@ export default function NewPasswordScreen() {
   const captcha = useCaptchaToken()
 
   const params = useLocalSearchParams<{ email?: string }>()
-  const email = (params.email ?? '').trim()
+  const { session } = useSession()
+  /** The address the code went to, or the signed-in account's for a visitor
+   *  who came without one: see `needsCode`. */
+  const email = (params.email ?? session?.user.email ?? '').trim()
 
   /**
    * THERE ARE TWO WAYS TO ARRIVE HERE, and they differ by exactly one field.
@@ -54,12 +58,14 @@ export default function NewPasswordScreen() {
    * be asking them to go back to a mail whose code was spent by the link they
    * just used.
    *
-   * Session-or-not is the honest test, rather than a parameter saying which
-   * route was taken: it is the thing the next call actually depends on, and it
-   * stays right if somebody opens the link while this screen is already up.
+   * The test is whether the session came from that link, not merely whether
+   * there is one. A signed-in phone can reach this screen other ways (a typed
+   * `ricecal://auth/reset`, a link to the route itself) holding an ordinary
+   * session, and this form used to set a new password for whoever was holding
+   * it, no code asked. That visitor now gets the code field, with nothing
+   * mailed yet, so its resend is open straight away. See `isFreshRecovery`.
    */
-  const { session } = useSession()
-  const needsCode = !session
+  const needsCode = !isFreshRecovery(session)
 
   const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
@@ -70,7 +76,9 @@ export default function NewPasswordScreen() {
   const [running, setRunning] = useState<'save' | 'resend' | null>(null)
   const busy = running !== null
   /** Full on arrival, because the mail that brought them here just went out. */
-  const [cooldown, setCooldown] = useState(() => emailSendRetryAfter(email) || RESEND_COOLDOWN_S)
+  const [cooldown, setCooldown] = useState(() =>
+    params.email ? emailSendRetryAfter(email) || RESEND_COOLDOWN_S : emailSendRetryAfter(email),
+  )
   useEffect(() => {
     const ticker = setInterval(() => setCooldown((left) => (left > 0 ? left - 1 : 0)), 1000)
     return () => clearInterval(ticker)

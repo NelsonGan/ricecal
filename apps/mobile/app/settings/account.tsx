@@ -15,8 +15,13 @@ import {
   useUpdateProfile,
   useUserId,
 } from '@/data'
-import { changeAccountPassword, hasAccountPassword } from '@/data/account-password'
-import { asAuthProblem, deleteAccount } from '@/data/auth'
+import {
+  changeAccountPassword,
+  hasAccountPassword,
+  resetAccountPassword,
+  sendAccountPasswordCode,
+} from '@/data/account-password'
+import { asAuthProblem, deleteAccount, emailSendRetryAfter, onPasswordRecovery } from '@/data/auth'
 import { keys } from '@/data/keys'
 import { useSocialAction, useSocialOnline, useSocialProfile } from '@/data/social'
 import { CaptchaProvider, PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
@@ -477,6 +482,11 @@ export default function AccountScreen() {
   )
 }
 
+/** A reset code's length, and how long before another can be mailed. As on
+ * `(auth)/new-password.tsx`, which asks for the same code. */
+const CODE_LENGTH = 6
+const RESEND_COOLDOWN_S = 60
+
 // Mounted only while open so a dismissed password never survives in the form.
 function ChangePassword({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['profile', 'common'])
@@ -518,6 +528,25 @@ function ChangePasswordForm({
   const [loadFailed, setLoadFailed] = useState(false)
   const [current, setCurrent] = useState('')
   const [currentWrong, setCurrentWrong] = useState(false)
+  /**
+   * The current password, or a reset code mailed to the account instead.
+   *
+   * Plenty of owners have no current password to give. An account made from an
+   * email code gets a random password from Supabase, which `has_account_password`
+   * cannot tell from a chosen one, so the form asked them for a password they
+   * were never shown. The code proves the same thing the password would: that
+   * the person holding this phone also holds the inbox.
+   */
+  const [proof, setProof] = useState<'current' | 'code'>('current')
+  const [code, setCode] = useState('')
+  const [codeWrong, setCodeWrong] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+  const { session } = useSession()
+  /** Where the code went: the address the send used, once there has been one. */
+  const [sentTo, setSentTo] = useState<string>()
+  const email = sentTo ?? session?.user.email ?? ''
+  const codeRef = useRef<TextInput>(null)
   const newPasswordRef = useRef<TextInput>(null)
   useEffect(() => {
     if (loadFailed) return
@@ -541,26 +570,103 @@ function ChangePasswordForm({
   const confirmRef = useRef<TextInput>(null)
   const tooShort = password.length < 8
   const mismatched = password !== confirm
+  const byCode = hasPassword === true && proof === 'code'
+  const badCode = byCode && code.length !== CODE_LENGTH
+
+  // Once the field exists, which is a render after the send that asked for it.
+  // The code is the next thing to type, and iOS offers it from the mail there.
+  useEffect(() => {
+    if (proof === 'code') codeRef.current?.focus()
+  }, [proof])
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const ticker = setTimeout(() => setCooldown((left) => Math.max(0, left - 1)), 1000)
+    return () => clearTimeout(ticker)
+  }, [cooldown])
+
+  /**
+   * The mail's own button signs this app in for the reset, replacing the session
+   * and spending the code this form was waiting for, and `auth/[action]` then
+   * opens `new-password` to finish it. This sheet is a native modal and would
+   * sit on top of that screen holding a dead code, so it steps aside.
+   */
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => onPasswordRecovery(() => close.current()), [])
+
+  /**
+   * Mails the code, and on the first send swaps the current-password field for
+   * the code field. A rate limit whose mail may already be in the inbox moves on
+   * too, as `forgot.tsx` does: the code in that mail works, and the countdown
+   * stops a second send into the same minute.
+   */
+  const sendCode = async () => {
+    if (running.current || cooldown > 0) return
+    running.current = true
+    setSending(true)
+    // The captcha's challenge, when it has one, appears in this sheet; under an
+    // open keyboard it could not be seen.
+    Keyboard.dismiss()
+    try {
+      const resending = proof === 'code'
+      setSentTo(await sendAccountPasswordCode(await captcha()))
+      setProof('code')
+      setCode('')
+      setCodeWrong(false)
+      // A fresh field, so "the code is 6 digits" from an earlier Save does not
+      // greet a code that has not arrived yet.
+      setSubmitted(false)
+      setCooldown(RESEND_COOLDOWN_S)
+      if (resending) toast.show({ title: t('auth:verify.resent') })
+    } catch (error) {
+      const problem = asAuthProblem(error)
+      if (problem.reason === 'rate_limited') setCooldown(emailSendRetryAfter(email))
+      if (problem.reason === 'rate_limited' && problem.emailMayHaveBeenSent) {
+        setProof('code')
+      } else {
+        toast.show({ title: message(error), tone: 'error' })
+      }
+    } finally {
+      running.current = false
+      setSending(false)
+    }
+  }
 
   const save = async () => {
     if (running.current) return
     setSubmitted(true)
-    if (hasPassword === undefined || tooShort || mismatched || (hasPassword && !current)) return
+    if (hasPassword === undefined || tooShort || mismatched || badCode) return
+    if (hasPassword && !byCode && !current) return
     running.current = true
     setPending(true)
     try {
       setCurrentWrong(false)
+      setCodeWrong(false)
       Keyboard.dismiss()
-      await changeAccountPassword(
-        password,
-        current || undefined,
-        hasPassword ? await captcha() : undefined,
-      )
+      if (byCode) {
+        await resetAccountPassword(password, code)
+      } else {
+        await changeAccountPassword(
+          password,
+          current || undefined,
+          hasPassword ? await captcha() : undefined,
+        )
+      }
       Keyboard.dismiss()
       onClose()
       toast.show({ title: t('auth:reset.done') })
     } catch (error) {
-      if (asAuthProblem(error).reason === 'invalid_credentials') {
+      const reason = asAuthProblem(error).reason
+      if (byCode && reason === 'code_invalid') {
+        setCodeWrong(true)
+      } else if (byCode) {
+        // Most failures here come after the code was checked, and checking it
+        // spent it, so the next Save would only say it is wrong. Clear it, and
+        // the resend is the obvious way on.
+        setCode('')
+        toast.show({ title: message(error), tone: 'error' })
+      } else if (reason === 'invalid_credentials') {
         setHasPassword(true)
         setCurrentWrong(true)
       } else {
@@ -582,9 +688,64 @@ function ChangePasswordForm({
         )
       ) : (
         <>
-          {hasPassword ? (
+          {byCode ? (
+            <>
+              <Text variant="meta">{t('auth:verify.sentTo', { email })}</Text>
+              <TextField
+                ref={codeRef}
+                label={t('auth:verify.field')}
+                value={code}
+                onChangeText={(next) => {
+                  setCode(next.replace(/\D/g, '').slice(0, CODE_LENGTH))
+                  setCodeWrong(false)
+                }}
+                placeholder={t('auth:verify.placeholder')}
+                keyboardType="number-pad"
+                systemKeyboard
+                maxLength={CODE_LENGTH}
+                autoComplete="one-time-code"
+                textContentType="oneTimeCode"
+                inputClassName="text-[24px] tracking-[8px]"
+                editable={!pending}
+                returnKeyType="next"
+                onSubmitEditing={() => newPasswordRef.current?.focus()}
+                error={
+                  codeWrong
+                    ? t('auth:errors.code_invalid')
+                    : submitted && badCode
+                      ? t('auth:errors.codeLength')
+                      : undefined
+                }
+              />
+            </>
+          ) : hasPassword ? (
             <PasswordField
               label={t('profile:account.currentPassword')}
+              /* The sign-in screen's own link, in the same place. Most people
+                 who cannot answer this never chose a password: see `proof`. */
+              labelAction={
+                <Tappable
+                  onPress={sendCode}
+                  disabled={pending || sending || cooldown > 0}
+                  accessibilityRole="button"
+                  accessibilityState={{
+                    disabled: pending || sending || cooldown > 0,
+                    busy: sending,
+                  }}
+                  // Slop rather than padding, so the label row stays the
+                  // label's height. Same as `(auth)/password.tsx`.
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Text
+                    variant="caption"
+                    className={
+                      pending || sending || cooldown > 0 ? 'text-faint' : 'text-pandan-ink'
+                    }
+                  >
+                    {t('auth:password.forgot')}
+                  </Text>
+                </Tappable>
+              }
               value={current}
               onChangeText={(value) => {
                 setCurrent(value)
@@ -632,9 +793,23 @@ function ChangePasswordForm({
               submitted && !tooShort && mismatched ? t('auth:errors.passwordMismatch') : undefined
             }
           />
-          <Button fullWidth onPress={save} loading={pending} disabled={pending}>
+          <Button fullWidth onPress={save} loading={pending} disabled={pending || sending}>
             {t('common:action.save')}
           </Button>
+          {byCode ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="self-center"
+              onPress={sendCode}
+              disabled={pending || sending || cooldown > 0}
+              loading={sending}
+            >
+              {cooldown > 0
+                ? t('auth:verify.resendIn', { seconds: cooldown })
+                : t('auth:verify.resend')}
+            </Button>
+          ) : null}
         </>
       )}
     </>

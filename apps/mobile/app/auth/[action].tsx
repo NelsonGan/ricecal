@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 
 import { useSession } from '@/data'
+import { isFreshRecovery } from '@/data/recovery'
 import { Spinner } from '@/ui'
 
 /**
@@ -47,14 +48,24 @@ export default function AuthLanding() {
   // person has finished onboarding, and a dead link belongs back at welcome.
   if (waited) return <Redirect href="/" />
 
-  if (!loading && session) {
+  /*
+   * A reset waits for the session the link produces, not merely for a session.
+   * A phone already signed in has one before the exchange finishes, and acting
+   * on it sent a real reset link to Today. Without a recovery session it never
+   * goes to `new-password` at all: a signed-in phone could open
+   * `ricecal://auth/reset` with no code and be handed a form that sets a
+   * password unasked (see `isFreshRecovery`). Nothing arriving means the timer
+   * above sends it to `/`.
+   */
+  if (action === 'reset') {
+    if (!loading && isFreshRecovery(session)) return <Redirect href="/(auth)/new-password" />
+  } else if (!loading && session) {
     /**
-     * A RESET IS NOT A SIGN-IN, even though it produced a session. It is the
-     * middle of choosing a new password, and sent to `/` the person lands on
-     * Today with everything working and the password they came to change still
-     * in force.
+     * A RESET IS NOT A SIGN-IN, even though it produced a session, which is why
+     * it has its own branch above. Sent to `/`, the person lands on Today with
+     * everything working and the password they came to change still in force.
      */
-    return <Redirect href={action === 'reset' ? '/(auth)/new-password' : '/'} />
+    return <Redirect href="/" />
   }
 
   return (
