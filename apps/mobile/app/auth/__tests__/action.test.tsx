@@ -1,4 +1,5 @@
 import { act, render, screen } from '@testing-library/react-native'
+import { clearRecovered, markRecovered } from '@/data/recovery'
 import AuthLanding from '../[action]'
 
 /**
@@ -36,11 +37,13 @@ jest.mock('@/ui', () => ({
   },
 }))
 
-/** A session whose token says how it was obtained, as Supabase's `amr` claim does. */
-const signedIn = (method: string, secondsAgo = 5) => {
-  const claims = { amr: [{ method, timestamp: Math.floor(Date.now() / 1000) - secondsAgo }] }
-  const payload = Buffer.from(JSON.stringify(claims)).toString('base64url')
-  return { user: { id: 'u1' }, access_token: `header.${payload}.signature` }
+/** A signed-in session, and whether a reset link's exchange produced it. */
+const signedIn = (how: 'recovery' | 'password', minutesAgo = 0) => {
+  if (how === 'recovery') markRecovered('u1')
+  if (how === 'recovery' && minutesAgo) {
+    jest.setSystemTime(Date.now() + minutesAgo * 60 * 1000)
+  }
+  return { user: { id: 'u1' } }
 }
 
 const wentTo = () => screen.queryByText(/^redirect:/)?.props.children.replace('redirect:', '')
@@ -53,6 +56,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  clearRecovered()
   jest.useRealTimers()
 })
 
@@ -99,10 +103,12 @@ it('never hands an ordinary session the reset screen', async () => {
 
 it('does not count a reset link from long ago', async () => {
   mockParams.action = 'reset'
-  session.session = signedIn('recovery', 60 * 60)
+  session.session = signedIn('recovery', 60)
   await render(<AuthLanding />)
 
   expect(wentTo()).toBeUndefined()
+  await act(async () => jest.advanceTimersByTime(8000))
+  expect(wentTo()).toBe('/')
 })
 
 /**

@@ -11,7 +11,7 @@ import {
   updatePassword,
   verifyEmailCode,
 } from '@/data/auth'
-import { isFreshRecovery } from '@/data/recovery'
+import { useRecovered } from '@/data/recovery'
 import { PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Button, Screen, Text, TextField, useToast } from '@/ui'
@@ -63,9 +63,23 @@ export default function NewPasswordScreen() {
    * `ricecal://auth/reset`, a link to the route itself) holding an ordinary
    * session, and this form used to set a new password for whoever was holding
    * it, no code asked. That visitor now gets the code field, with nothing
-   * mailed yet, so its resend is open straight away. See `isFreshRecovery`.
+   * mailed yet, so its resend is open straight away. See `recovery.ts`.
+   *
+   * Remembered once seen, for this account. The mark expires, and a code field
+   * appearing under somebody halfway through a password would ask for a code
+   * the link spent.
    */
-  const needsCode = !isFreshRecovery(session)
+  const recoveredFor = useRef<string | undefined>(undefined)
+  const recovered = useRecovered(session)
+  if (session && recovered) recoveredFor.current = session.user.id
+  /**
+   * The code was accepted on this screen and spent doing it. A save that then
+   * fails (most often the old password chosen again) must not ask for it back:
+   * the session that check made is an ordinary one, and the next Save would
+   * send a spent code and be told it is wrong.
+   */
+  const [verified, setVerified] = useState(false)
+  const needsCode = !verified && (!session || recoveredFor.current !== session.user.id)
 
   const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
@@ -114,7 +128,10 @@ export default function NewPasswordScreen() {
       // code is spent by `verifyEmailCode`, so a password rejected AFTER it
       // would leave the user signed in with the old one and no code left to try
       // again with. Length and match are settled before anything is sent.
-      if (needsCode) await verifyEmailCode(email, code, 'recovery')
+      if (needsCode) {
+        await verifyEmailCode(email, code, 'recovery')
+        setVerified(true)
+      }
       await updatePassword(password)
 
       toast.show({ title: t('auth:reset.done') })

@@ -6,6 +6,7 @@ import { isValidEmailAddress, normalizeEmailAddress } from '@/lib/email'
 import { env, isConfigured } from '@/lib/env'
 import { appScheme } from '@/lib/scheme'
 import { supabase } from '@/lib/supabase'
+import { clearRecovered, markRecovered } from './recovery'
 
 /**
  * Signing in.
@@ -491,6 +492,9 @@ export async function verifyEmailCode(
  */
 export async function updatePassword(password: string): Promise<void> {
   await attempt(() => supabase.auth.updateUser({ password }))
+  // The reset is over, so the link's session stops opening `new-password`
+  // without a code. Left set, the form stayed open to whoever held the phone.
+  clearRecovered()
 }
 
 /**
@@ -587,7 +591,9 @@ export async function completeLoginFromUrl(url: string): Promise<LinkOutcome> {
   const code = params.get('code')
   if (!code) return 'none'
 
-  await attempt(() => supabase.auth.exchangeCodeForSession(code))
+  const { data } = await attempt(() => supabase.auth.exchangeCodeForSession(code))
+  // The one place a reset link is known to have been real. See `recovery.ts`.
+  if (recovery && data.session) markRecovered(data.session.user.id)
   if (!recovery) await announceSignIn('email')
   return outcome
 }

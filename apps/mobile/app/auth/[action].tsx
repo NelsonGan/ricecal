@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 
 import { useSession } from '@/data'
-import { isFreshRecovery } from '@/data/recovery'
+import { useRecovered } from '@/data/recovery'
 import { Spinner } from '@/ui'
 
 /**
@@ -29,6 +29,7 @@ import { Spinner } from '@/ui'
 export default function AuthLanding() {
   const { action } = useLocalSearchParams<{ action?: string }>()
   const { session, loading } = useSession()
+  const recovered = useRecovered(session)
 
   /**
    * The dead-link case, which has no signal of its own.
@@ -54,11 +55,11 @@ export default function AuthLanding() {
    * on it sent a real reset link to Today. Without a recovery session it never
    * goes to `new-password` at all: a signed-in phone could open
    * `ricecal://auth/reset` with no code and be handed a form that sets a
-   * password unasked (see `isFreshRecovery`). Nothing arriving means the timer
+   * password unasked (see `recovery.ts`). Nothing arriving means the timer
    * above sends it to `/`.
    */
   if (action === 'reset') {
-    if (!loading && isFreshRecovery(session)) return <Redirect href="/(auth)/new-password" />
+    if (!loading && recovered) return <Redirect href="/(auth)/new-password" />
   } else if (!loading && session) {
     /**
      * A RESET IS NOT A SIGN-IN, even though it produced a session, which is why
