@@ -1137,7 +1137,31 @@ and the new password are on one screen, nothing is sent until Save, and the
 layout leaves `new-password` alone while it is on top.
 
 Somebody arriving through the link already has a session, so that screen drops
-the code field. It tests for the session rather than for a parameter.
+the code field. It tests for a session from the link, not for any session.
+Testing only for a session was a hole: a phone already signed in could open
+`ricecal://auth/reset` with no code, land here, and set a new password with no
+proof, which made the current password the change form asks for a check anybody
+holding the phone could walk around. That visitor now gets the code field, with
+nothing mailed yet and the resend open.
+
+**The proof is a mark in memory** (`data/recovery.ts`): `completeLoginFromUrl`
+sets it for the account when a reset link's code is actually exchanged, which a
+URL with no code never does, and `updatePassword` clears it the moment the new
+password is saved. It lapses after fifteen minutes, and a relaunch forgets it,
+which costs a code in a rare case. Two token-based versions came first and both
+were wrong in a way worth knowing. Reading the `amr` claim against the phone's
+clock sent every real link to Today on a phone set fast. Reading it against the
+token's own issue time left the form open after a finished reset for the rest of
+the token's hour, because a refresh moments later still looked recent.
+
+`auth/[action]` applies the same test, and on a reset link waits for the mark
+rather than acting on whatever session the phone already had: a signed-in phone
+has its old one before the exchange lands, and redirecting on it sent the real
+link to Today. Once `new-password` has seen the mark it remembers it for that
+account, so the mark lapsing mid-screen does not spring a code field on somebody
+the link already proved. A code typed on the screen is remembered the same way
+once accepted: if the save after it fails (most often the old password chosen
+again) the retry does not ask for the code it already spent.
 
 ### Signing out when the server already has
 
@@ -1219,11 +1243,14 @@ is committed. A private profile shares those posts with followers only.
 Clipboard support requires a native 1.0.5 build; the app-version runtime keeps this bundle off older binaries.
 
 **Password setup and changes are different forms.** `has_account_password()`
-returns only whether the calling account has a stored password. An email identity
-alone proves nothing, since email-code accounts have one too. Deploy this additive
-migration before the app; old binaries do not call it and keep their existing flow.
-The lookup is restricted to authenticated callers and takes no user id. A failed
-lookup offers retry instead of guessing which form to show.
+returns only whether the calling account has a stored password, which is not
+whether its owner knows one. Supabase gives an account made from an email code a
+random password of its own, and the stored row cannot be told apart from a chosen
+one, so the lookup answers yes for every email account. A Google or Apple
+account answers no until its owner sets a password. Deploy this additive
+migration before the app; old binaries do not call it and keep their existing
+flow. The lookup is restricted to authenticated callers and takes no user id. A
+failed lookup offers retry instead of guessing which form to show.
 
 An account without a password gets New password and Confirm new password. An
 account with one also gets Current password. `changeAccountPassword` rechecks
@@ -1237,6 +1264,28 @@ before updating. The app's own session is never replaced by verification.
 Supabase's global current-password requirement stays off: enabling it would break
 released binaries that do not send that field. Recovery continues through
 `updatePassword`, because a recovery code is the proof in that flow.
+
+**"Forgot your password?" sits on the Current password label**, the same link and
+words as sign-in, because most people who cannot answer that field never chose a
+password: they signed up with a code and were asked for the random one. It mails a
+reset code to the account's own address (`sendAccountPasswordCode`, through the
+sheet's captcha) and swaps the field for a code field with a resend countdown.
+`resetAccountPassword` spends the code on an isolated client, checks that it
+signed in this account, signs that session out, and then sets the password on
+the app's own session. The order matters: a password change signs out every
+session except the one making it, so the app's is the one that has to make it.
+Nothing about the account is typed in, so the code can only go to the inbox that
+already owns it. Until this existed the only way through was signing out and
+using sign-in's reset.
+
+The mail also carries a button, and on this phone it works: the app's client
+stored the reset's PKCE verifier, so tapping it signs the app in for the reset,
+spends the code and opens `new-password`. The sheet listens for that
+(`onPasswordRecovery`) and closes, rather than staying on top, as a native modal
+would, holding a dead code. A save that fails for any reason but a wrong code
+clears the field, because most failures come after the code was checked and
+checking it spent it. The sheet cannot be dismissed while a code is being sent,
+since its captcha challenge lives inside it.
 
 Closing the sheet clears all password fields. The server's minimum length and
 matching confirmation are checked before submitting. Password and deletion forms
@@ -4372,7 +4421,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Onboarding Step Completed | ricecal_onboarding_step_completed | step: string; step_number: number | `src/features/onboarding/OnboardingStep.tsx`<br>`app/(onboarding)/target.tsx` | Primary advance on a named step, plus target submission; each advance. Secondary skips and the timed calculating step are not counted. |
 | Onboarding Completed | ricecal_onboarding_completed | plan_direction: PlanDirection; referral_source: string | `app/(onboarding)/finish.tsx` | Onboarding profile save succeeds; each successful completion, before health/notification permission steps. |
 | Login Link Requested | ricecal_login_link_requested | none | `src/data/auth.ts` | Email login-code/link request is accepted; each successful request, before the user returns to sign in. |
-| Password Reset Requested | ricecal_password_reset_requested | none | `src/data/auth.ts` | Password-reset request returns; each request, without revealing whether an account exists. |
+| Password Reset Requested | ricecal_password_reset_requested | none | `src/data/auth.ts` | Password-reset request returns, from sign-in's "Forgot your password?" or the same link in Settings' change-password sheet; each request, without revealing whether an account exists. |
 | Signed In | ricecal_signed_in | method: SignInMethod; is_new_account: boolean | `src/data/auth.ts` | An explicit Apple, Google, email-link/code or password sign-in succeeds; each success. Restored sessions/token refreshes are not acquisitions. |
 | Sign In Failed | ricecal_sign_in_failed | method: SignInMethod; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/data/auth.ts` | Instrumented Apple/Google sign-in rejection or cancellation; each reported result. Email/password failures are not covered by this event. |
 | Signed Out | ricecal_signed_out | none | `src/data/auth.ts`<br>`src/lib/analytics/client.ts` | Explicit sign-out completes; each completion, before resetting analytics identity. |

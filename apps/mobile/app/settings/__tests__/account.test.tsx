@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -12,6 +12,9 @@ const mockUpdateProfile = jest.fn().mockResolvedValue({})
 const mockHasPassword = jest.fn().mockResolvedValue(false)
 const mockCaptcha = jest.fn().mockResolvedValue('captcha-token')
 const mockUpdatePassword = jest.fn().mockResolvedValue(undefined)
+const mockSendCode = jest.fn().mockResolvedValue(undefined)
+const mockResetPassword = jest.fn().mockResolvedValue(undefined)
+let mockRecoveryListener: (() => void) | undefined
 const mockPick = jest.fn().mockResolvedValue({ canceled: true })
 const mockUpload = jest.fn().mockResolvedValue('avatars/user/new.jpg')
 const mockCopy = jest.fn().mockResolvedValue(true)
@@ -47,10 +50,19 @@ jest.mock('@/data/social', () => ({
 jest.mock('@/data/auth', () => ({
   asAuthProblem: (error: unknown) => error,
   deleteAccount: () => mockDelete(),
+  emailSendRetryAfter: () => 42,
+  onPasswordRecovery: (listener: () => void) => {
+    mockRecoveryListener = listener
+    return () => {
+      mockRecoveryListener = undefined
+    }
+  },
 }))
 jest.mock('@/data/account-password', () => ({
   hasAccountPassword: () => mockHasPassword(),
   changeAccountPassword: (...args: unknown[]) => mockUpdatePassword(...args),
+  sendAccountPasswordCode: (...args: unknown[]) => mockSendCode(...args),
+  resetAccountPassword: (...args: unknown[]) => mockResetPassword(...args),
 }))
 jest.mock('@/features/auth', () => {
   const React = jest.requireActual<typeof import('react')>('react')
@@ -411,6 +423,108 @@ it('allows a first password without a current-password field and clears it on cl
   expect(mockCaptcha).not.toHaveBeenCalled()
   await user.press(screen.getByRole('button', { name: 'Change password' }))
   expect(await screen.findByLabelText('NEW PASSWORD')).toHaveDisplayValue('')
+})
+
+it('lets an owner who never chose a password change it with a mailed code', async () => {
+  // An email-code account has a password Supabase set and nobody was shown, so
+  // it is asked for a current password its owner cannot know.
+  mockHasPassword.mockResolvedValue(true)
+  await mount()
+  await user.press(screen.getByRole('button', { name: 'Change password' }))
+  await screen.findByLabelText('Current password')
+  await user.press(screen.getByRole('button', { name: 'Forgot your password?' }))
+  expect(mockSendCode).toHaveBeenCalledWith('captcha-token')
+
+  const code = await screen.findByLabelText('CODE')
+  expect(screen.queryByLabelText('Current password')).toBeNull()
+  expect(screen.getByText(/code to account@example\.test/)).toBeTruthy()
+  await fireEvent.changeText(code, '12 34-56')
+  await fireEvent.changeText(screen.getByLabelText('NEW PASSWORD'), 'new-password-123')
+  await fireEvent.changeText(screen.getByLabelText('CONFIRM NEW PASSWORD'), 'new-password-123')
+
+  mockResetPassword.mockRejectedValueOnce({ reason: 'code_invalid' })
+  await user.press(screen.getByRole('button', { name: 'Save changes' }))
+  expect(
+    await screen.findByText('That code is wrong or has expired. Ask for a new one.'),
+  ).toBeTruthy()
+
+  await user.press(screen.getByRole('button', { name: 'Save changes' }))
+  expect(mockResetPassword).toHaveBeenLastCalledWith('new-password-123', '123456')
+  expect(mockUpdatePassword).not.toHaveBeenCalled()
+})
+
+it('closes after a code reset and says the password changed', async () => {
+  mockHasPassword.mockResolvedValue(true)
+  await mount()
+  await user.press(screen.getByRole('button', { name: 'Change password' }))
+  await user.press(await screen.findByRole('button', { name: 'Forgot your password?' }))
+  await fireEvent.changeText(await screen.findByLabelText('CODE'), '123456')
+  await fireEvent.changeText(screen.getByLabelText('NEW PASSWORD'), 'new-password-123')
+  await fireEvent.changeText(screen.getByLabelText('CONFIRM NEW PASSWORD'), 'new-password-123')
+  await user.press(screen.getByRole('button', { name: 'Save changes' }))
+  expect(await screen.findByText('Password changed. You are signed in.')).toBeTruthy()
+  expect(screen.queryByLabelText('CODE')).toBeNull()
+})
+
+it('clears a code the failed save already spent', async () => {
+  mockHasPassword.mockResolvedValue(true)
+  mockResetPassword.mockRejectedValueOnce({ reason: 'same_password' })
+  await mount()
+  await user.press(screen.getByRole('button', { name: 'Change password' }))
+  await user.press(await screen.findByRole('button', { name: 'Forgot your password?' }))
+  const code = await screen.findByLabelText('CODE')
+  await fireEvent.changeText(code, '123456')
+  await fireEvent.changeText(screen.getByLabelText('NEW PASSWORD'), 'new-password-123')
+  await fireEvent.changeText(screen.getByLabelText('CONFIRM NEW PASSWORD'), 'new-password-123')
+  await user.press(screen.getByRole('button', { name: 'Save changes' }))
+  expect(await screen.findByText('Password could not be changed')).toBeTruthy()
+  expect(screen.getByLabelText('CODE')).toHaveDisplayValue('')
+})
+
+it('steps aside when the reset link in the mail signs the app in', async () => {
+  // The link spends the code and opens the reset screen itself. This sheet is
+  // a native modal and would otherwise sit on top of it with a dead code.
+  mockHasPassword.mockResolvedValue(true)
+  await mount()
+  await user.press(screen.getByRole('button', { name: 'Change password' }))
+  await user.press(await screen.findByRole('button', { name: 'Forgot your password?' }))
+  await screen.findByLabelText('CODE')
+  await act(async () => mockRecoveryListener?.())
+  await waitFor(() => expect(screen.queryByLabelText('CODE')).toBeNull())
+})
+
+it('asks for all six digits before checking the code', async () => {
+  mockHasPassword.mockResolvedValue(true)
+  await mount()
+  await user.press(screen.getByRole('button', { name: 'Change password' }))
+  await user.press(await screen.findByRole('button', { name: 'Forgot your password?' }))
+  await fireEvent.changeText(await screen.findByLabelText('CODE'), '123')
+  await fireEvent.changeText(screen.getByLabelText('NEW PASSWORD'), 'new-password-123')
+  await fireEvent.changeText(screen.getByLabelText('CONFIRM NEW PASSWORD'), 'new-password-123')
+  await user.press(screen.getByRole('button', { name: 'Save changes' }))
+  expect(await screen.findByText('The code is 6 digits.')).toBeTruthy()
+  expect(mockResetPassword).not.toHaveBeenCalled()
+})
+
+it('moves on to the code when a recent mail may already have it', async () => {
+  mockHasPassword.mockResolvedValue(true)
+  mockSendCode.mockRejectedValueOnce({ reason: 'rate_limited', emailMayHaveBeenSent: true })
+  await mount()
+  await user.press(screen.getByRole('button', { name: 'Change password' }))
+  await user.press(await screen.findByRole('button', { name: 'Forgot your password?' }))
+  expect(await screen.findByLabelText('CODE')).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Send it again in 42s' })).toBeDisabled()
+})
+
+it('stays on the current password when the code could not be sent', async () => {
+  mockHasPassword.mockResolvedValue(true)
+  mockSendCode.mockRejectedValueOnce({ reason: 'unknown' })
+  await mount()
+  await user.press(screen.getByRole('button', { name: 'Change password' }))
+  await user.press(await screen.findByRole('button', { name: 'Forgot your password?' }))
+  expect(await screen.findByText('Password could not be changed')).toBeTruthy()
+  expect(screen.getByLabelText('Current password')).toBeTruthy()
+  expect(screen.queryByLabelText('CODE')).toBeNull()
 })
 
 it('does not show a password form until password status is known and can retry', async () => {
