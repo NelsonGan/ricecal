@@ -1,4 +1,5 @@
 import { act, render, screen } from '@testing-library/react-native'
+import { clearRecovered, markRecovered } from '@/data/recovery'
 import AuthLanding from '../[action]'
 
 /**
@@ -36,6 +37,15 @@ jest.mock('@/ui', () => ({
   },
 }))
 
+/** A signed-in session, and whether a reset link's exchange produced it. */
+const signedIn = (how: 'recovery' | 'password', minutesAgo = 0) => {
+  if (how === 'recovery') markRecovered('u1')
+  if (how === 'recovery' && minutesAgo) {
+    jest.setSystemTime(Date.now() + minutesAgo * 60 * 1000)
+  }
+  return { user: { id: 'u1' } }
+}
+
 const wentTo = () => screen.queryByText(/^redirect:/)?.props.children.replace('redirect:', '')
 
 beforeEach(() => {
@@ -46,6 +56,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  clearRecovered()
   jest.useRealTimers()
 })
 
@@ -69,9 +80,50 @@ it('sends a signed-in visitor to the router, which decides where they belong', a
  */
 it('sends a password reset to the screen that finishes it', async () => {
   mockParams.action = 'reset'
-  session.session = { user: { id: 'u1' } }
+  session.session = signedIn('recovery')
   await render(<AuthLanding />)
 
+  expect(wentTo()).toBe('/(auth)/new-password')
+})
+
+/**
+ * The hole this closes: a phone already signed in could open the reset URL with
+ * no code, and the reset screen set a new password with no proof at all. It
+ * waits instead, and the timer sends it home.
+ */
+it('never hands an ordinary session the reset screen', async () => {
+  mockParams.action = 'reset'
+  session.session = signedIn('password')
+  await render(<AuthLanding />)
+
+  expect(wentTo()).toBeUndefined()
+  await act(async () => jest.advanceTimersByTime(8000))
+  expect(wentTo()).toBe('/')
+})
+
+it('does not count a reset link from long ago', async () => {
+  mockParams.action = 'reset'
+  session.session = signedIn('recovery', 60)
+  await render(<AuthLanding />)
+
+  expect(wentTo()).toBeUndefined()
+  await act(async () => jest.advanceTimersByTime(8000))
+  expect(wentTo()).toBe('/')
+})
+
+/**
+ * The race the check above created, caught on a device: a phone already signed
+ * in has its old session before the link's exchange lands, and redirecting on
+ * that one sent a real reset to Today.
+ */
+it('waits past the old session for the one the reset link produces', async () => {
+  mockParams.action = 'reset'
+  session.session = signedIn('password')
+  const view = await render(<AuthLanding />)
+  expect(wentTo()).toBeUndefined()
+
+  session.session = signedIn('recovery')
+  await view.rerender(<AuthLanding />)
   expect(wentTo()).toBe('/(auth)/new-password')
 })
 

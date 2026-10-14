@@ -1,4 +1,5 @@
 import { completeLoginFromUrl, loginLinkRedirect, passwordResetRedirect } from '../auth'
+import { clearRecovered, isRecovered } from '../recovery'
 
 /**
  * Reading a session back out of a login link.
@@ -92,6 +93,27 @@ it('ignores a token pair in the query string too', async () => {
 
   expect(done).toBe('none')
   expect(supabase.auth.setSession).not.toHaveBeenCalled()
+})
+
+/**
+ * The reset screen skips its code only for an account a reset link actually
+ * signed in. The mark is set here, by the exchange, and nowhere else.
+ */
+it('marks the account a reset link signs in, and only a reset link', async () => {
+  clearRecovered()
+  supabase.auth.exchangeCodeForSession.mockResolvedValue({
+    data: { session: { user: { id: 'u1' } } },
+    error: null,
+  })
+  await completeLoginFromUrl('ricecal://auth/callback?code=login-code')
+  expect(isRecovered({ user: { id: 'u1' } })).toBe(false)
+
+  await completeLoginFromUrl('ricecal://auth/reset')
+  expect(isRecovered({ user: { id: 'u1' } })).toBe(false)
+
+  await completeLoginFromUrl('ricecal://auth/reset?code=reset-code')
+  expect(isRecovered({ user: { id: 'u1' } })).toBe(true)
+  clearRecovered()
 })
 
 it('exchanges a PKCE code when that is what arrives', async () => {

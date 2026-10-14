@@ -6,6 +6,7 @@ import { isValidEmailAddress, normalizeEmailAddress } from '@/lib/email'
 import { env, isConfigured } from '@/lib/env'
 import { appScheme } from '@/lib/scheme'
 import { supabase } from '@/lib/supabase'
+import { clearRecovered, markRecovered } from './recovery'
 
 /**
  * Signing in.
@@ -491,6 +492,9 @@ export async function verifyEmailCode(
  */
 export async function updatePassword(password: string): Promise<void> {
   await attempt(() => supabase.auth.updateUser({ password }))
+  // The reset is over, so the link's session stops opening `new-password`
+  // without a code. Left set, the form stayed open to whoever held the phone.
+  clearRecovered()
 }
 
 /**
@@ -540,6 +544,18 @@ async function announceSignIn(method: SignInMethod): Promise<void> {
 export type LinkOutcome = 'none' | 'signed-in' | 'recovery'
 
 /**
+ * Calls `listener` when a reset link signs this app in, which replaces whatever
+ * session it had. A form that was mid-way through its own password change has
+ * just had its code spent by that link, and should get out of the way.
+ */
+export function onPasswordRecovery(listener: () => void): () => void {
+  const { data } = supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') listener()
+  })
+  return () => data.subscription.unsubscribe()
+}
+
+/**
  * Turns a login link back into a session.
  *
  * The link goes to Supabase, which verifies it and redirects to the app's
@@ -575,7 +591,9 @@ export async function completeLoginFromUrl(url: string): Promise<LinkOutcome> {
   const code = params.get('code')
   if (!code) return 'none'
 
-  await attempt(() => supabase.auth.exchangeCodeForSession(code))
+  const { data } = await attempt(() => supabase.auth.exchangeCodeForSession(code))
+  // The one place a reset link is known to have been real. See `recovery.ts`.
+  if (recovery && data.session) markRecovered(data.session.user.id)
   if (!recovery) await announceSignIn('email')
   return outcome
 }
