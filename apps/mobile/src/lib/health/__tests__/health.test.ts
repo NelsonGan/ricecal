@@ -1,6 +1,6 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config'
 import { energyFor, informativeHours } from '../androidHealth'
-import { readHeartRate, summariseHeartRate } from '../apple'
+import { readHeartRate, readHours, summariseHeartRate } from '../apple'
 import { preferredOrigin, sourceLabel } from '../connectOrigins'
 import { ANDROID_HEALTH_PERMISSIONS } from '../connectPermissions'
 import { demoHealth } from '../demo'
@@ -320,6 +320,33 @@ describe("asking HealthKit for a session's heart rate", () => {
     const hk = store({ attached: [], inWindow: [] })
 
     expect(await readHeartRate(hk, workout(null), window, 40)).toBeNull()
+  })
+})
+
+describe('reading hourly steps from HealthKit', () => {
+  /**
+   * The date filter overlaps rather than contains, so a step sample that began
+   * at 23:50 the night before the window still matches, and the collection puts
+   * it in that night's 23:00 bucket. The server rejects any hour outside the
+   * window, which failed the whole sync and every weigh-in after it.
+   */
+  it('keeps only the hours inside the window', async () => {
+    const buckets = [
+      { startDate: new Date(2026, 9, 6, 23), sumQuantity: { quantity: 40 } },
+      { startDate: new Date(2026, 9, 7, 0), sumQuantity: { quantity: 120 } },
+      { startDate: new Date(2026, 9, 13, 9), sumQuantity: { quantity: 800 } },
+    ]
+    const hk = {
+      queryStatisticsCollectionForQuantity: jest.fn(async () => buckets),
+      // biome-ignore lint/suspicious/noExplicitAny: a stand-in for the Nitro module
+    } as any
+
+    const hours = await readHours(hk, '2026-10-07', '2026-10-13')
+
+    expect(hours.map((hour) => `${hour.date}T${hour.hour}`)).toEqual([
+      '2026-10-07T0',
+      '2026-10-13T9',
+    ])
   })
 })
 
