@@ -135,14 +135,12 @@ export const progress = {
     atGoal: 'At your goal weight',
     weeksAway: '~{{count}} weeks',
 
-    recentTitle: 'RECENT WEIGH INS',
     add: 'Add',
     weekByWeek: 'WEEK BY WEEK',
     byQuarter: 'BY QUARTER',
     quarter: '{{from}} to {{to}}',
 
     reading: '{{value}} {{unit}}',
-    readingToday: 'Today',
     firstReading: 'First',
 
     /** The sheet. Adding a weigh-in is a sheet, not a page. */
@@ -163,5 +161,23 @@ export const progress = {
 
     emptyTitle: 'No weigh-ins in this range',
     emptyBody: 'One reading draws a point. Two draw a line.',
+  },
+
+  /**
+   * The entries behind the charts, newest first: a card under each tab and a
+   * screen with all of them. A meal is a row, water is a day's total, and a
+   * weigh-in is a day's reading, because that is how each is stored.
+   */
+  history: {
+    title: 'History',
+    viewFull: 'View full',
+    /** Beside a day's heading: everything eaten that day. */
+    dayTotal: '{{value}} kcal',
+    /** A water month's heading, beside the month: the average of days logged. */
+    waterAverage: '{{amount}} avg',
+    goalMet: 'Goal met',
+    emptyTitle: 'Nothing logged yet',
+    emptyBody: 'Everything you log shows up here.',
+    failed: 'History did not load',
   },
 } as const

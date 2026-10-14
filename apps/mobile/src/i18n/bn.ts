@@ -980,14 +980,12 @@ export const bn = {
       atGoal: 'আপনি আপনার লক্ষ্য ওজনে আছেন',
       weeksAway: 'প্রায় {{count}} সপ্তাহ',
 
-      recentTitle: 'সাম্প্রতিক ওজন মাপা',
       add: 'যোগ করুন',
       weekByWeek: 'সপ্তাহে সপ্তাহে',
       byQuarter: 'ত্রৈমাসিক অনুযায়ী',
       quarter: '{{from}} থেকে {{to}}',
 
       reading: '{{value}} {{unit}}',
-      readingToday: 'আজ',
       firstReading: 'প্রথম',
 
       sheetTitle: 'ওজন যোগ করুন',
@@ -1006,6 +1004,17 @@ export const bn = {
 
       emptyTitle: 'এই সীমায় কোনো ওজন মাপা নেই',
       emptyBody: 'একটি পাঠ একটি বিন্দু আঁকে। দুটি একটি রেখা আঁকে।',
+    },
+
+    history: {
+      title: 'ইতিহাস',
+      viewFull: 'পুরো দেখুন',
+      dayTotal: '{{value}} kcal',
+      waterAverage: 'গড় {{amount}}',
+      goalMet: 'লক্ষ্যে পৌঁছেছে',
+      emptyTitle: 'এখনো কিছু লেখা হয়নি',
+      emptyBody: 'আপনি যা লিখবেন সব এখানে দেখা যাবে।',
+      failed: 'ইতিহাস লোড হয়নি',
     },
   },
 

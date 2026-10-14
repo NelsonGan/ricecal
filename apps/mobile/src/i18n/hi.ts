@@ -981,14 +981,12 @@ export const hi = {
       atGoal: 'आप अपने लक्ष्य वज़न पर हैं',
       weeksAway: 'क़रीब {{count}} हफ़्ते',
 
-      recentTitle: 'हाल की तौल',
       add: 'जोड़ें',
       weekByWeek: 'हफ़्ते दर हफ़्ते',
       byQuarter: 'तिमाही से',
       quarter: '{{from}} से {{to}}',
 
       reading: '{{value}} {{unit}}',
-      readingToday: 'आज',
       firstReading: 'पहली',
 
       sheetTitle: 'वज़न जोड़ें',
@@ -1008,6 +1006,17 @@ export const hi = {
 
       emptyTitle: 'इस अवधि में कोई तौल नहीं',
       emptyBody: 'एक रीडिंग एक बिंदु बनाती है। दो एक रेखा बनाती हैं।',
+    },
+
+    history: {
+      title: 'इतिहास',
+      viewFull: 'पूरा देखें',
+      dayTotal: '{{value}} kcal',
+      waterAverage: 'औसत {{amount}}',
+      goalMet: 'लक्ष्य पूरा',
+      emptyTitle: 'अभी कुछ दर्ज नहीं हुआ',
+      emptyBody: 'आप जो भी दर्ज करेंगे, वह यहाँ दिखेगा।',
+      failed: 'इतिहास लोड नहीं हुआ',
     },
   },
 

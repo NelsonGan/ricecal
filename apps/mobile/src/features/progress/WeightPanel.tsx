@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, format, isToday, parseISO } from 'date-fns'
+import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import {
@@ -8,7 +8,6 @@ import {
   type TrendSummary,
   today,
   useProfile,
-  useWeighIns,
 } from '@/data'
 import { datePattern } from '@/lib/dates'
 import { goalDate } from '@/lib/nutrition'
@@ -28,18 +27,18 @@ export type WeightPanelProps = {
   onEdit: (date: string) => void
 }
 
-/** Rows in the list card. Six covers six weeks of weekly weigh-ins. */
-const HISTORY_ROWS = 6
 /** Months to a quarter, for the year view's summary list. */
 const QUARTER = 3
 
 /**
- * The weight tab: the line, then the three figures, then the readings behind them.
+ * The weight tab: the line, then the three figures, then a summary at the grain
+ * the range wants.
  *
  * Only the last card changes with the range, because the useful grain does. At
- * seven days the readings are worth listing and each is editable, at thirty they
- * are too many and the weeks say it better, and over a year only the quarters are
- * legible.
+ * thirty days the weeks say it best and over a year only the quarters are
+ * legible. Seven days has no summary card: the readings themselves are the
+ * summary, and the History card under every tab already lists them, each
+ * editable.
  *
  * The chart is a line rather than bars (see `TrendLine`), and the card under it
  * is the one place on this screen that reads the profile, because "3.4 kg to your
@@ -48,7 +47,6 @@ const QUARTER = 3
 export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPanelProps) {
   const { t } = useTranslation(['progress', 'common'])
   const { data: profile } = useProfile()
-  const { data: weighIns = [] } = useWeighIns()
 
   const labels = bucketLabels(buckets, range, (index) => t('progress:range.week', { index }))
   const unitLabel = t(UNIT_KEY[unit])
@@ -206,75 +204,7 @@ export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPan
         </View>
       </Card>
 
-      {range === '7d' ? (
-        <Card
-          title={t('progress:weight.recentTitle')}
-          contentClassName="gap-0"
-          action={
-            // A pill rather than a full-width button under the card. The list is
-            // where somebody notices a reading is missing, so the way to add one
-            // belongs at the top of it.
-            <Squish
-              depth={0}
-              radius={radius.full}
-              slabClassName="bg-transparent"
-              className="min-h-sm flex-row items-center gap-1.5 bg-track px-3"
-              onPress={() => onEdit(today())}
-              accessibilityRole="button"
-              accessibilityLabel={t('progress:weight.sheetTitle')}
-            >
-              <Icon set="body" name="weighing-scale" size={17} />
-              {/* `label` rather than the display face at 15px. Baloo carries
-                  ascender space this string does not use, so centring the two
-                  boxes left the word sitting visibly below the icon beside it;
-                  the body face is metrically what every other pill here uses. */}
-              <Text variant="label" className="text-pandan-ink">
-                {t('progress:weight.add')}
-              </Text>
-            </Squish>
-          }
-        >
-          {history(weighIns).map((entry, index, all) => (
-            <ListRow
-              key={entry.date}
-              leading={
-                <View className="h-10 w-10 items-center justify-center rounded-sm bg-track">
-                  <Icon set="body" name="weighing-scale" size={26} />
-                </View>
-              }
-              title={t('progress:weight.reading', {
-                value: showWeight(entry.kg, unit),
-                unit: unitLabel,
-              })}
-              subtitle={
-                isToday(parseISO(entry.date))
-                  ? t('progress:weight.readingToday')
-                  : format(parseISO(entry.date), datePattern('weekdayDayMonth'))
-              }
-              // Every row leads to the same sheet, on its own day — which is the
-              // only way to correct a reading typed at the wrong scale.
-              onPress={() => onEdit(entry.date)}
-              divider={index < all.length - 1}
-              trailing={
-                <Text
-                  variant="label"
-                  className={
-                    entry.change === undefined
-                      ? 'text-faint'
-                      : entry.change > 0
-                        ? 'text-kaya-ink'
-                        : 'text-pandan-ink'
-                  }
-                >
-                  {entry.change === undefined
-                    ? t('progress:weight.firstReading')
-                    : showChange(entry.change, unit)}
-                </Text>
-              }
-            />
-          ))}
-        </Card>
-      ) : range === '30d' ? (
+      {range === '7d' ? null : range === '30d' ? (
         <Card title={t('progress:weight.weekByWeek')} contentClassName="gap-0">
           {buckets.map((bucket, index) => (
             <ListRow
@@ -375,18 +305,30 @@ function groupChange(group: readonly TrendBucket[]) {
 }
 
 /**
- * The readings as a list, newest first, each against the one before it.
- *
- * The chart shows the shape and the list shows the numbers — including the days
- * with no reading, by simply not being there, which a chart of evenly spaced
- * columns cannot say.
+ * The way to add a reading, at the top of the list where somebody notices one
+ * is missing. A pill rather than a full-width button under the card.
  */
-function history(weighIns: readonly { date: string; kg: number }[]) {
-  return weighIns
-    .map((entry, index) => ({
-      ...entry,
-      change: index > 0 ? entry.kg - weighIns[index - 1].kg : undefined,
-    }))
-    .slice(-HISTORY_ROWS)
-    .reverse()
+export function WeighInPill({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation('progress')
+
+  return (
+    <Squish
+      depth={0}
+      radius={radius.full}
+      slabClassName="bg-transparent"
+      className="min-h-sm flex-row items-center gap-1.5 bg-track px-3"
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={t('weight.sheetTitle')}
+    >
+      <Icon set="body" name="weighing-scale" size={17} />
+      {/* `label` rather than the display face at 15px. Baloo carries ascender
+          space this string does not use, so centring the two boxes left the
+          word sitting visibly below the icon beside it; the body face is
+          metrically what every other pill here uses. */}
+      <Text variant="label" className="text-pandan-ink">
+        {t('weight.add')}
+      </Text>
+    </Squish>
+  )
 }

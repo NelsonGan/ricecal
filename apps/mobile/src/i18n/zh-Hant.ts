@@ -983,14 +983,12 @@ export const zhHant = {
       atGoal: '已經到了目標體重',
       weeksAway: '約 {{count}} 週',
 
-      recentTitle: '最近的量測',
       add: '新增',
       weekByWeek: '逐週',
       byQuarter: '按季',
       quarter: '{{from}} 到 {{to}}',
 
       reading: '{{value}} {{unit}}',
-      readingToday: '今天',
       firstReading: '第一次',
 
       sheetTitle: '新增體重',
@@ -1009,6 +1007,17 @@ export const zhHant = {
 
       emptyTitle: '這個範圍裡沒有量測紀錄',
       emptyBody: '一次讀數畫一個點，兩次才畫得出線。',
+    },
+
+    history: {
+      title: '歷史',
+      viewFull: '查看完整',
+      dayTotal: '{{value}} 大卡',
+      waterAverage: '平均 {{amount}}',
+      goalMet: '達成目標',
+      emptyTitle: '還沒有紀錄',
+      emptyBody: '你記錄的一切都會顯示在這裡。',
+      failed: '歷史紀錄載入失敗',
     },
   },
 

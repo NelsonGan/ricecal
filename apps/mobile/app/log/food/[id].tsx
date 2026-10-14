@@ -203,7 +203,13 @@ function FoodDetail() {
   // at the foot of the content, and the button on the photograph.
   const shareMeal = useMealShare()
 
-  const params = useLocalSearchParams<{ id: string; entryId?: string }>()
+  /**
+   * `date` is the day the entry is filed on, when the link came from somewhere
+   * other than the diary (History lists every day). Without it the entry is
+   * looked for on the diary's selected day, which is the day every diary row
+   * was tapped from.
+   */
+  const params = useLocalSearchParams<{ id: string; entryId?: string; date?: string }>()
   // `ENTRY_FOOD_ID` is the placeholder a row with no catalogue food behind it
   // travels under, so there is nothing to ask the catalogue for.
   const catalogueId = params.id === ENTRY_FOOD_ID ? undefined : params.id
@@ -233,14 +239,20 @@ function FoodDetail() {
     })
   }, [packet, isPending, isError, catalogueFood])
 
-  // The entry being edited, if this screen was opened from a row. It is on the
-  // day in view — the only day whose entries are loaded — which is also the
-  // only day a row can be tapped from.
-  const day = useDayLog(selectedDate)
+  // The entry being edited, if this screen was opened from a row: on the day the
+  // link names, or else the diary's selected day.
+  const entryDay = params.date ?? selectedDate
+  const day = useDayLog(entryDay)
   const existing = params.entryId
     ? day.entries.find((entry) => entry.id === params.entryId)
     : undefined
-
+  /**
+   * An entry asked for whose day has not arrived yet. History opens days the
+   * diary has never loaded, and in that gap a catalogue meal with no `existing`
+   * drew as the compose-a-new-entry page, with an Add button under the
+   * catalogue's numbers.
+   */
+  const awaitingEntry = Boolean(params.entryId) && !existing && day.isPending
   /**
    * The plate's parts, asked for on every entry rather than only a scanned one.
    * Gating on `scanId` stopped being right the moment a user could put an
@@ -268,7 +280,9 @@ function FoodDetail() {
    */
   const food = existing
     ? withCataloguePortions(foodFromEntry(existing), catalogueFood)
-    : (catalogueFood ?? null)
+    : awaitingEntry
+      ? null
+      : (catalogueFood ?? null)
   const refineEntry = useRefineEntry()
 
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
@@ -554,7 +568,7 @@ function FoodDetail() {
       <Screen
         header={
           <AppBar
-            title={isPending ? '' : t('logging:search.emptyTitle')}
+            title={isPending || awaitingEntry ? '' : t('logging:search.emptyTitle')}
             onBack={() => goBack()}
             backLabel={t('common:a11y.back')}
           />
@@ -817,7 +831,7 @@ function FoodDetail() {
     /**
      * And off the screen, when the entry has left the day this screen reads.
      *
-     * `existing` is found in the day query for `selectedDate`, so a row filed on
+     * `existing` is found in the day query for `entryDay`, so a row filed on
      * another day is gone from under the screen: `food` falls back to the
      * catalogue row and the page becomes the compose-a-new-entry version of
      * itself, or nothing at all for a scanned plate.
@@ -826,7 +840,7 @@ function FoodDetail() {
      * is indistinguishable from a meal deleted. The selected day is left alone:
      * the strip on Today is where the user says which day they are working on.
      */
-    if (moved && next.date !== selectedDate) {
+    if (moved && next.date !== entryDay) {
       toast.show({
         title: t('logging:detail.movedTo', {
           day: dayLabel(next.date, todayKey, {
@@ -984,7 +998,7 @@ function FoodDetail() {
     refineEntry({
       entryId: existing.id,
       instruction: text,
-      logDate: selectedDate,
+      logDate: entryDay,
       // Derived rather than plumbed through the sheet: a chip sets the field to
       // exactly its own words, so an instruction that is one of the offered
       // sentences came from a chip.

@@ -987,14 +987,12 @@ export const ko = {
       atGoal: '목표 몸무게에 도달했습니다',
       weeksAway: '약 {{count}}주',
 
-      recentTitle: '최근 측정',
       add: '추가',
       weekByWeek: '주별',
       byQuarter: '분기별',
       quarter: '{{from}}부터 {{to}}까지',
 
       reading: '{{value}} {{unit}}',
-      readingToday: '오늘',
       firstReading: '처음',
 
       sheetTitle: '몸무게 추가',
@@ -1014,6 +1012,17 @@ export const ko = {
 
       emptyTitle: '이 기간에 측정이 없습니다',
       emptyBody: '한 번은 점 하나, 두 번이면 선이 됩니다.',
+    },
+
+    history: {
+      title: '기록',
+      viewFull: '전체 보기',
+      dayTotal: '{{value}} kcal',
+      waterAverage: '평균 {{amount}}',
+      goalMet: '목표 달성',
+      emptyTitle: '아직 기록이 없습니다',
+      emptyBody: '기록한 모든 항목이 여기에 표시됩니다.',
+      failed: '기록을 불러오지 못했습니다',
     },
   },
 

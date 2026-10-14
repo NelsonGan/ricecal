@@ -982,14 +982,12 @@ export const th = {
       atGoal: 'ถึงน้ำหนักเป้าหมายแล้ว',
       weeksAway: 'ราว {{count}} สัปดาห์',
 
-      recentTitle: 'การชั่งล่าสุด',
       add: 'เพิ่ม',
       weekByWeek: 'รายสัปดาห์',
       byQuarter: 'รายไตรมาส',
       quarter: '{{from}} ถึง {{to}}',
 
       reading: '{{value}} {{unit}}',
-      readingToday: 'วันนี้',
       firstReading: 'ครั้งแรก',
 
       sheetTitle: 'เพิ่มน้ำหนัก',
@@ -1008,6 +1006,17 @@ export const th = {
 
       emptyTitle: 'ไม่มีการชั่งในช่วงนี้',
       emptyBody: 'ค่าหนึ่งค่าวาดได้หนึ่งจุด สองค่าจึงจะวาดเป็นเส้น',
+    },
+
+    history: {
+      title: 'ประวัติ',
+      viewFull: 'ดูแบบเต็ม',
+      dayTotal: '{{value}} แคล',
+      waterAverage: 'เฉลี่ย {{amount}}',
+      goalMet: 'ถึงเป้าหมาย',
+      emptyTitle: 'ยังไม่มีบันทึก',
+      emptyBody: 'ทุกอย่างที่คุณบันทึกจะแสดงที่นี่',
+      failed: 'โหลดประวัติไม่สำเร็จ',
     },
   },
 

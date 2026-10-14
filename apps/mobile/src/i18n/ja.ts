@@ -992,14 +992,12 @@ export const ja = {
       atGoal: '目標体重に到達しています',
       weeksAway: '約 {{count}} 週間',
 
-      recentTitle: '最近の計測',
       add: '追加',
       weekByWeek: '週ごと',
       byQuarter: '四半期ごと',
       quarter: '{{from}} から {{to}}',
 
       reading: '{{value}} {{unit}}',
-      readingToday: '今日',
       firstReading: '最初',
 
       sheetTitle: '体重を追加',
@@ -1018,6 +1016,17 @@ export const ja = {
 
       emptyTitle: 'この期間に計測はありません',
       emptyBody: '1 回で点が 1 つ。2 回で線になります。',
+    },
+
+    history: {
+      title: '履歴',
+      viewFull: '全件表示',
+      dayTotal: '{{value}} kcal',
+      waterAverage: '平均 {{amount}}',
+      goalMet: '目標達成',
+      emptyTitle: 'まだ記録がありません',
+      emptyBody: '記録したものはすべてここに表示されます。',
+      failed: '履歴を読み込めませんでした',
     },
   },
 
