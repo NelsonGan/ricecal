@@ -983,14 +983,12 @@ export const zhHans = {
       atGoal: '已经到了目标体重',
       weeksAway: '约 {{count}} 周',
 
-      recentTitle: '最近的称重',
       add: '添加',
       weekByWeek: '逐周',
       byQuarter: '按季度',
       quarter: '{{from}} 到 {{to}}',
 
       reading: '{{value}} {{unit}}',
-      readingToday: '今天',
       firstReading: '第一次',
 
       sheetTitle: '添加体重',
@@ -1009,6 +1007,17 @@ export const zhHans = {
 
       emptyTitle: '这个范围里没有称重记录',
       emptyBody: '一次读数画一个点，两次才画得出线。',
+    },
+
+    history: {
+      title: '历史',
+      viewFull: '查看完整',
+      dayTotal: '{{value}} 千卡',
+      waterAverage: '平均 {{amount}}',
+      goalMet: '达成目标',
+      emptyTitle: '还没有记录',
+      emptyBody: '你记录的一切都会显示在这里。',
+      failed: '历史记录加载失败',
     },
   },
 

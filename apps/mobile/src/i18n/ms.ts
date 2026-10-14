@@ -1017,14 +1017,12 @@ export const ms = {
       atGoal: 'Pada berat sasaran anda',
       weeksAway: '~{{count}} minggu',
 
-      recentTitle: 'TIMBANGAN TERKINI',
       add: 'Tambah',
       weekByWeek: 'MINGGU DEMI MINGGU',
       byQuarter: 'MENGIKUT SUKU',
       quarter: '{{from}} hingga {{to}}',
 
       reading: '{{value}} {{unit}}',
-      readingToday: 'Hari ini',
       firstReading: 'Pertama',
 
       sheetTitle: 'Tambah berat',
@@ -1044,6 +1042,17 @@ export const ms = {
 
       emptyTitle: 'Tiada timbangan dalam julat ini',
       emptyBody: 'Satu bacaan melukis satu titik. Dua melukis satu garis.',
+    },
+
+    history: {
+      title: 'Sejarah',
+      viewFull: 'Lihat penuh',
+      dayTotal: '{{value}} kcal',
+      waterAverage: 'purata {{amount}}',
+      goalMet: 'Sasaran dicapai',
+      emptyTitle: 'Belum ada rekod',
+      emptyBody: 'Semua yang anda rekod muncul di sini.',
+      failed: 'Sejarah tidak dapat dimuatkan',
     },
   },
 

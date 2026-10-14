@@ -991,14 +991,12 @@ export const vi = {
       atGoal: 'Đã đạt cân nặng mục tiêu',
       weeksAway: 'khoảng {{count}} tuần',
 
-      recentTitle: 'LẦN CÂN GẦN ĐÂY',
       add: 'Thêm',
       weekByWeek: 'THEO TỪNG TUẦN',
       byQuarter: 'THEO QUÝ',
       quarter: '{{from}} tới {{to}}',
 
       reading: '{{value}} {{unit}}',
-      readingToday: 'Hôm nay',
       firstReading: 'Lần đầu',
 
       sheetTitle: 'Thêm cân nặng',
@@ -1018,6 +1016,17 @@ export const vi = {
 
       emptyTitle: 'Không có lần cân nào trong khoảng này',
       emptyBody: 'Một số đo vẽ được một điểm. Hai số đo mới vẽ được một đường.',
+    },
+
+    history: {
+      title: 'Lịch sử',
+      viewFull: 'Xem đầy đủ',
+      dayTotal: '{{value}} kcal',
+      waterAverage: 'trung bình {{amount}}',
+      goalMet: 'Đạt mục tiêu',
+      emptyTitle: 'Chưa có ghi chép nào',
+      emptyBody: 'Mọi thứ bạn ghi lại sẽ hiện ở đây.',
+      failed: 'Không tải được lịch sử',
     },
   },
 
