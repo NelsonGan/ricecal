@@ -563,7 +563,7 @@ async function storedHeartRate(workout: any): Promise<HeartRate | null> {
   }
 }
 
-async function readHours(
+export async function readHours(
   hk: HealthKitModule,
   from: LocalDate,
   to: LocalDate,
@@ -580,6 +580,10 @@ async function readHours(
     // non-zero is a table three times the size of the answer.
     if (value <= 0) continue
     const [date, hour] = key.split('T')
+    // The date filter overlaps rather than contains, so a sample that began
+    // before midnight on `from` lands in the previous night's last bucket. The
+    // server refuses an hour outside the window, and the whole sync with it.
+    if (date < from || date > to) continue
     out.push({
       date,
       hour: Number(hour),
