@@ -40,16 +40,40 @@ export function failureReason(error: unknown): string {
 }
 
 /**
+ * Whether the request was called off by whoever sent it, rather than lost.
+ *
+ * Expo's fetch never throws an `AbortError`. It throws its own `FetchError`:
+ * "fetch failed: The operation was aborted." for a signal that had already
+ * fired, and "fetch failed: FetchRequestCanceledException: Fetch request has
+ * been canceled" for one that fired in flight. So a check on the name alone let
+ * every cancelled query through as "could not reach", and the report it filed
+ * used up the host's one report for the launch. The signal is the witness that
+ * works on a phone. A timeout is not a change of mind: a host that does not
+ * answer in time is what the report is for.
+ */
+export function callerCancelled(error: unknown, signal?: AbortSignal | null): boolean {
+  if ((error as { name?: unknown } | null)?.name === 'AbortError') return true
+  if (!signal?.aborted) return false
+  return (signal.reason as { name?: unknown } | undefined)?.name !== 'TimeoutError'
+}
+
+/**
  * Reports that a request to `url` did not go through, once per host per launch.
  *
  * Skipped while the phone is offline: supabase-js sends its token refresh with
  * no connection too, and a phone in a tunnel is not news. What is worth hearing
- * about is a phone that says it is online and still cannot reach us.
+ * about is a phone that says it is online and still cannot reach us. Skipped
+ * too for a request its caller cancelled; see `callerCancelled`.
  *
  * Never throws and is never awaited by the request that failed.
  */
-export async function reportNetworkFailure(url: string, error: unknown): Promise<void> {
+export async function reportNetworkFailure(
+  url: string,
+  error: unknown,
+  signal?: AbortSignal | null,
+): Promise<void> {
   try {
+    if (callerCancelled(error, signal)) return
     if (!onlineManager.isOnline()) return
     const target = requestTarget(url)
     if (!target || reported.has(target.host)) return

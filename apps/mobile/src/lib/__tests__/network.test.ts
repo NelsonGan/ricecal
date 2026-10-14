@@ -21,6 +21,21 @@ const refused = new Error(
   'fetch failed: UnexpectedException: Could not connect to the server. (at ExpoFetchModule.swift:41)',
 )
 
+/**
+ * What Expo's fetch threw when a caller cancelled, as filed from 1.0.14 phones:
+ * a signal that fired in flight on iOS, and one that had already fired.
+ */
+const cancelledInFlight = new Error(
+  'fetch failed: FetchRequestCanceledException: Fetch request has been canceled',
+)
+const cancelledBeforeSending = new Error('fetch failed: The operation was aborted.')
+
+function abortedSignal(reason?: unknown): AbortSignal {
+  const controller = new AbortController()
+  controller.abort(reason)
+  return controller.signal
+}
+
 beforeEach(() => {
   resetNetworkReports()
   onlineManager.setOnline(true)
@@ -108,5 +123,57 @@ describe('reportNetworkFailure', () => {
     await expect(
       reportNetworkFailure('https://ref.supabase.co/rest/v1/profiles', refused),
     ).resolves.toBe(undefined)
+  })
+
+  // Expo's fetch throws a plain FetchError rather than an AbortError, so a
+  // query react-query cancelled was filed as an unreachable host and used up
+  // that host's one report for the launch.
+  it('stays quiet for a request its caller cancelled, whatever Expo calls it', async () => {
+    await reportNetworkFailure(
+      'https://ref.supabase.co/functions/v1/photos',
+      cancelledInFlight,
+      abortedSignal(),
+    )
+    await reportNetworkFailure(
+      'https://ref.supabase.co/rest/v1/rpc/day_marks',
+      cancelledBeforeSending,
+      abortedSignal(),
+    )
+
+    expect(reportMessage).not.toHaveBeenCalled()
+  })
+
+  it('still reports a real failure on a host after a cancellation there', async () => {
+    await reportNetworkFailure(
+      'https://ref.supabase.co/rest/v1/profiles',
+      cancelledInFlight,
+      abortedSignal(),
+    )
+    await reportNetworkFailure('https://ref.supabase.co/rest/v1/profiles', refused)
+
+    expect(reportMessage).toHaveBeenCalledTimes(1)
+    expect(jest.mocked(reportMessage).mock.calls[0][1]).toMatchObject({
+      network_reason: 'fetch failed: UnexpectedException: Could not connect to the server.',
+    })
+  })
+
+  it('stays quiet for an AbortError with no signal to check', async () => {
+    const abort = Object.assign(new Error('Aborted'), { name: 'AbortError' })
+    await reportNetworkFailure('https://ref.supabase.co/rest/v1/profiles', abort)
+
+    expect(reportMessage).not.toHaveBeenCalled()
+  })
+
+  // A timeout aborts the signal too, and a host that does not answer in time is
+  // exactly what this report is for.
+  it('reports a request that timed out', async () => {
+    const timeout = Object.assign(new Error('The operation timed out.'), { name: 'TimeoutError' })
+    await reportNetworkFailure(
+      'https://ref.supabase.co/rest/v1/profiles',
+      cancelledInFlight,
+      abortedSignal(timeout),
+    )
+
+    expect(reportMessage).toHaveBeenCalledTimes(1)
   })
 })
