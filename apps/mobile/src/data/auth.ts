@@ -540,6 +540,18 @@ async function announceSignIn(method: SignInMethod): Promise<void> {
 export type LinkOutcome = 'none' | 'signed-in' | 'recovery'
 
 /**
+ * Calls `listener` when a reset link signs this app in, which replaces whatever
+ * session it had. A form that was mid-way through its own password change has
+ * just had its code spent by that link, and should get out of the way.
+ */
+export function onPasswordRecovery(listener: () => void): () => void {
+  const { data } = supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') listener()
+  })
+  return () => data.subscription.unsubscribe()
+}
+
+/**
  * Turns a login link back into a session.
  *
  * The link goes to Supabase, which verifies it and redirects to the app's
