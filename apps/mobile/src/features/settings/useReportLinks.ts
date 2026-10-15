@@ -3,6 +3,7 @@ import { router } from 'expo-router'
 import { useEffect } from 'react'
 
 import { useSession } from '@/data/session'
+import { loggerIsOpen } from '@/features/workouts/loggerOpen'
 import { getActiveWorkout } from '@/features/workouts/store'
 import { track } from '@/lib/analytics'
 
@@ -50,11 +51,14 @@ export function useReportLinks(): void {
       // workout in Notification Center, so with none running it lands on the
       // tab rather than on an empty logger.
       //
-      // `navigate`, not `push`: a rest notice is usually tapped with the
-      // logger already open, and a push stacked a second logger on it.
-      // Navigating to the route on top reuses it.
+      // Back to a logger that is already open, wherever it is in the stack:
+      // with the library or an exercise's page on top of it, `navigate` pushed
+      // a second logger. `dismissTo` replaces the screen when the route is not
+      // there, so it is only for when it is.
       if (kind === 'rest' || kind === 'workout') {
-        router.navigate(userId && getActiveWorkout(userId) ? '/workout/active' : '/workouts')
+        if (!userId || !getActiveWorkout(userId)) router.navigate('/workouts')
+        else if (loggerIsOpen()) router.dismissTo('/workout/active')
+        else router.navigate('/workout/active')
         return
       }
       if (kind === 'workout-reminder') {

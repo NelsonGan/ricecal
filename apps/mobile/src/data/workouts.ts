@@ -587,6 +587,19 @@ function wasRefused(error: unknown): boolean {
  */
 const refusedThisLaunch = new Set<string>()
 
+/** The mounted outbox's send, for a retry the user asks for. */
+let flushOutbox: (() => void) | null = null
+
+/**
+ * Send a queued workout again now, including one the server refused this
+ * launch. Asked for from its row, which otherwise said "Waiting to sync" until
+ * the next launch with nothing to do about it.
+ */
+export function retryQueuedWorkout(id: string): void {
+  refusedThisLaunch.delete(id)
+  flushOutbox?.()
+}
+
 function invalidateWorkouts(queryClient: ReturnType<typeof useQueryClient>, userId: string): void {
   queryClient.invalidateQueries({ queryKey: keys.workoutsAll(userId) })
   queryClient.invalidateQueries({ queryKey: keys.routines(userId) })
@@ -708,6 +721,7 @@ export function useWorkoutOutbox(): void {
     }
 
     flush()
+    flushOutbox = flush
     const online = onlineManager.subscribe((isOnline) => {
       if (isOnline) flush()
     })
@@ -716,6 +730,7 @@ export function useWorkoutOutbox(): void {
     })
     return () => {
       alive = false
+      if (flushOutbox === flush) flushOutbox = null
       online()
       foreground.remove()
     }

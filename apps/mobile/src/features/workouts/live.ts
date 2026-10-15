@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useSession } from '@/data'
+import { whenWorkoutPromptShown } from '@/lib/notifications'
+import { loggerIsOpen } from './loggerOpen'
 import type { Action, LiveWorkout } from './model'
 import { clearActiveWorkout, dispatchWorkout, startActiveWorkout, useActiveWorkout } from './store'
 
@@ -51,3 +53,6 @@ export function useNow(ms = 1000, active = true): number {
 
 /** After this long a running workout is probably a forgotten one. */
 export const STALE_AFTER_MS = 3 * 60 * 60 * 1000
+
+// Banners for "still training?" step aside only while a logger can ask it.
+whenWorkoutPromptShown(loggerIsOpen)

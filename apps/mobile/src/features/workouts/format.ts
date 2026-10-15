@@ -83,7 +83,10 @@ export function distanceField(metres: number | null, unit: DistanceUnit): string
 export function parseDistance(text: string, unit: DistanceUnit): number | null {
   const value = parseDecimal(text)
   if (value === null) return null
-  return unit === 'mi' ? value * M_PER_MI : value * 1000
+  // To the tenth of a metre the database keeps, as a typed weight is rounded
+  // to its two places: 3.1 mi unrounded is 4988.97… m, which never equals the
+  // 4989.0 saved last week, so the same run read as a change and a record.
+  return Math.round((unit === 'mi' ? value * M_PER_MI : value * 1000) * 10) / 10
 }
 
 /** "1:05:09" or "05:09", the clock a running workout shows. */

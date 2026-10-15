@@ -178,6 +178,7 @@ export {
   type RoutineExercise,
   type RoutineInput,
   type RoutineSet,
+  retryQueuedWorkout,
   summaryFromDocument,
   useCustomExercises,
   useDeleteCustomExercise,

@@ -1,6 +1,6 @@
 import { format } from 'date-fns'
 import type { TFunction } from 'i18next'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { type IconRef, useCurrentWeight, useSaveWorkout } from '@/data'
@@ -60,6 +60,8 @@ export function WorkoutFields({
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const [picking, setPicking] = useState<'start' | 'end' | null>(openOn ?? null)
+  const lastPicked = useRef<'start' | 'end'>(openOn ?? 'start')
+  if (picking) lastPicked.current = picking
   const when = (at: number) =>
     format(at, `${datePattern('weekdayDayMonth')}, ${datePattern('time')}`)
 
@@ -104,8 +106,14 @@ export function WorkoutFields({
 
       <WhenSheet
         visible={picking !== null}
-        title={picking === 'start' ? t('workouts:finish.started') : t('workouts:finish.ended')}
-        value={picking === 'start' ? startedAt : endedAt}
+        // Which time it is about, kept while it closes: `picking` clears first,
+        // and the title turned from "Started" to "Finished" on the way down.
+        title={
+          (picking ?? lastPicked.current) === 'start'
+            ? t('workouts:finish.started')
+            : t('workouts:finish.ended')
+        }
+        value={(picking ?? lastPicked.current) === 'start' ? startedAt : endedAt}
         onClose={() => setPicking(null)}
         onPick={(at) => (picking === 'start' ? onStarted(at) : onEnded(at))}
       />

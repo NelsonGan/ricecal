@@ -42,6 +42,7 @@ export {
   useExerciseLibrary,
 } from './library'
 export { STALE_AFTER_MS, useLiveWorkout, useNow } from './live'
+export { loggerIsOpen, useLoggerOpen } from './loggerOpen'
 export { MuscleSplitBars } from './MuscleSplit'
 export * from './model'
 export { awaitPick, cancelPick, deliverPick, hasPick } from './pick'

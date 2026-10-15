@@ -51,6 +51,15 @@ const REMINDER_KINDS: ReadonlySet<unknown> = new Set([
   'workout-reminder',
 ])
 
+/**
+ * Whether the screen that asks "still training?" is open. The workouts feature
+ * says how to tell; until it does, the prompt is taken to be on screen.
+ */
+let workoutPromptShown: () => boolean = () => true
+export function whenWorkoutPromptShown(check: () => boolean): void {
+  workoutPromptShown = check
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     /**
@@ -64,9 +73,11 @@ Notifications.setNotificationHandler({
      * answer, so the banner steps aside.
      */
     const kind = notification.request.content.data?.kind
-    // The same goes for a workout's rest timer and its "still training?": with
-    // the app open the countdown and the prompt are already on screen.
-    const transient = kind === 'scan' || kind === 'rest' || kind === 'workout'
+    // The same goes for a workout's rest timer, whose countdown is on every
+    // screen, and its "still training?", but only where the logger can ask it:
+    // on Today at the three-hour mark nothing else would.
+    const transient =
+      kind === 'scan' || kind === 'rest' || (kind === 'workout' && workoutPromptShown())
     const watching = transient && AppState.currentState === 'active'
 
     return {

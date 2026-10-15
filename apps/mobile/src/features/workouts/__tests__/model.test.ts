@@ -1,6 +1,7 @@
 import type { ExerciseBests } from '@/data'
 import { EXERCISES, MUSCLES } from '../catalogue'
 import { estimateKcal, healthActivityType, totalDistanceM } from '../energy'
+import { walkOrder } from '../fieldOrder'
 import {
   digitsToSeconds,
   distanceField,
@@ -693,5 +694,27 @@ describe('what ships with the catalogue', () => {
         !registry.includes(`'${exercise.id}':`) && !registry.includes(`  ${exercise.id}:`),
     )
     expect(missing.map((exercise) => exercise.id)).toEqual([])
+  })
+})
+
+describe('small rules', () => {
+  it('walks a superset a round at a time on the pad', () => {
+    let workout = workoutWith([{ ...bench, sets: [{}, {}] }], [{ ...bench, sets: [{}, {}] }])
+    const [a, b] = workout.exercises
+    workout = apply(workout, { type: 'superset', key: a.key, withKey: b.key })
+    const sets = walkOrder(workout.exercises)
+      .filter((key) => key.endsWith('|weight'))
+      .map((key) => key.split('|')[0])
+    expect(sets).toEqual([a.key, b.key, a.key, b.key])
+  })
+
+  it('rounds a distance typed in miles to what the database keeps', () => {
+    expect(parseDistance('3.1', 'mi')).toBe(4989)
+  })
+
+  it('gives a stretch no rest timer', () => {
+    const yoga = EXERCISES.find((exercise) => exercise.category === 'mobility')
+    if (!yoga) throw new Error('no mobility entry')
+    expect(planFor({ ...yoga, custom: false }).restS).toBe(0)
   })
 })

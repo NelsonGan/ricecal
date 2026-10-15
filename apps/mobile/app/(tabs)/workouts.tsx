@@ -1,10 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
+  dequeueWorkout,
   type IconRef,
+  retryQueuedWorkout,
   summaryFromDocument,
   useOutbox,
   useRoutines,
@@ -15,16 +17,29 @@ import {
 } from '@/data'
 import { ScreenTitle } from '@/features/shared'
 import {
+  ActionSheet,
   awaitPick,
   defaultWorkoutName,
   OverviewCard,
   RoutineCard,
+  removeWorkoutFromHealth,
   routinePlans,
   useWorkoutStarter,
   WorkoutCard,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
-import { Button, Card, Icon, IconButton, ListRow, Screen, Skeleton, Tappable, Text } from '@/ui'
+import {
+  Button,
+  Card,
+  ConfirmSheet,
+  Icon,
+  IconButton,
+  ListRow,
+  Screen,
+  Skeleton,
+  Tappable,
+  Text,
+} from '@/ui'
 
 /**
  * The Workouts tab: start one, start from a routine, and look back.
@@ -48,6 +63,10 @@ export default function WorkoutsScreen() {
   const workouts = useWorkouts()
   const outbox = useOutbox(userId)
   const starter = useWorkoutStarter()
+  // A workout still on the phone, tapped: it has no page yet, so a sheet
+  // offers to send it again or to drop it.
+  const [queued, setQueued] = useState<{ id: string; name: string } | null>(null)
+  const [discarding, setDiscarding] = useState<{ id: string; name: string } | null>(null)
 
   // `?resume=1` is a cold launch from the Live Activity (see
   // `app/+native-intent.tsx`): the logger is pushed from here, once this tab
@@ -208,7 +227,7 @@ export default function WorkoutsScreen() {
               unit={unit}
               onPress={
                 workout.pending
-                  ? undefined
+                  ? () => setQueued({ id: workout.id, name: workout.name })
                   : () => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })
               }
             />
@@ -234,6 +253,48 @@ export default function WorkoutsScreen() {
       )}
 
       {starter.sheet}
+
+      <ActionSheet
+        visible={queued !== null}
+        onClose={() => setQueued(null)}
+        title={queued?.name}
+        description={t('workouts:history.pending')}
+        actions={
+          queued
+            ? [
+                {
+                  key: 'retry',
+                  label: t('common:action.retry'),
+                  icon: { set: 'ui', name: 'refresh' },
+                  onPress: () => retryQueuedWorkout(queued.id),
+                },
+                {
+                  key: 'discard',
+                  label: t('workouts:logger.discard'),
+                  icon: { set: 'ui', name: 'delete' },
+                  tone: 'danger',
+                  onPress: () => setDiscarding(queued),
+                },
+              ]
+            : []
+        }
+      />
+
+      <ConfirmSheet
+        visible={discarding !== null}
+        onClose={() => setDiscarding(null)}
+        title={t('workouts:logger.discardTitle')}
+        description={t('workouts:logger.discardBody')}
+        confirmLabel={t('workouts:logger.discardConfirm')}
+        cancelLabel={t('common:action.keep')}
+        onConfirm={() => {
+          if (!userId || !discarding) return
+          const document = outbox.find((entry) => entry.id === discarding.id)
+          dequeueWorkout(userId, discarding.id)
+          // Its Health copy too, if the save had got that far.
+          if (document) void removeWorkoutFromHealth(document.health_workout_id, document.id)
+        }}
+      />
     </Screen>
   )
 }

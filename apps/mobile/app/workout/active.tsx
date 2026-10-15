@@ -19,6 +19,7 @@ import {
   showsVolume,
   unfinishedSets,
   useLiveWorkout,
+  useLoggerOpen,
   useNow,
   useWorkoutPrefs,
   volumeText,
@@ -41,6 +42,7 @@ export default function ActiveWorkoutScreen() {
   const { t } = useTranslation(['workouts', 'common'])
   const router = useRouter()
   const { userId, workout: current, dispatch, replace } = useLiveWorkout()
+  useLoggerOpen()
   const { data: settings } = useSettings()
   const prefs = useWorkoutPrefs()
   const unit = unitFor(settings?.units)
