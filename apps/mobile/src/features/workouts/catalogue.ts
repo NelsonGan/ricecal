@@ -104,7 +104,7 @@ export type Muscle = (typeof MUSCLES)[number]
  * groups, because a bar per muscle is seventeen bars and nobody reads past the
  * eighth.
  */
-export const MUSCLE_GROUPS = ['chest', 'back', 'shoulders', 'arms', 'legs', 'core'] as const
+const MUSCLE_GROUPS = ['chest', 'back', 'shoulders', 'arms', 'legs', 'core'] as const
 export type MuscleGroup = (typeof MUSCLE_GROUPS)[number]
 
 export const MUSCLE_GROUP: Record<Muscle, MuscleGroup> = {

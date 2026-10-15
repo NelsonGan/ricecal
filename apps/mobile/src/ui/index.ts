@@ -85,6 +85,7 @@ export {
   type NumpadLabels,
   NumpadProvider,
   type NumpadProviderProps,
+  type NumpadTools,
   useNumpadField,
   useNumpadZone,
 } from './Numpad'

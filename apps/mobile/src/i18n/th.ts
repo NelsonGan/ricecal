@@ -1825,6 +1825,9 @@ export const th = {
       removeSet: 'ลบเซ็ต',
       restOff: 'ปิดเวลาพัก',
       rest: 'พัก {{time}}',
+      next: 'ถัดไป',
+      plates: 'แผ่น',
+      timeStep: '15 วิ',
       exerciseNotes: 'เพิ่มโน้ต',
       kind: {
         normal: 'เซ็ตหลัก',

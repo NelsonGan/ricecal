@@ -1877,6 +1877,9 @@ export const fil = {
       removeSet: 'Alisin ang set',
       restOff: 'Walang pahinga',
       rest: 'Pahinga {{time}}',
+      next: 'Susunod',
+      plates: 'Plates',
+      timeStep: '15 s',
       exerciseNotes: 'Magdagdag ng tala',
       kind: {
         normal: 'Working set',

@@ -30,10 +30,6 @@ const FALLBACK: Record<Category, IconRef> = {
   mobility: { set: 'body', name: 'stretching' },
 }
 
-export function exerciseFallbackIcon(category: Category): IconRef {
-  return FALLBACK[category]
-}
-
 /**
  * The icon-set drawing closest to an exercise, for the places that draw from
  * the icon set rather than the exercise art: a workout's row on Today sits

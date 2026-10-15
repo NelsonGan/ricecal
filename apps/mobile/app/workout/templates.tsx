@@ -7,6 +7,7 @@ import {
   ExerciseArt,
   exerciseById,
   LEVEL_KEY,
+  RowChevron,
   TEMPLATE_GROUP_KEY,
   TEMPLATE_GROUPS,
   TEMPLATES,
@@ -14,7 +15,7 @@ import {
   templateNameKey,
 } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
-import { AppBar, Badge, Card, Icon, Screen, Tappable, Text } from '@/ui'
+import { AppBar, Badge, Card, Screen, Tappable, Text } from '@/ui'
 
 /** The built-in programs, grouped the way they are run. */
 export default function TemplatesScreen() {
@@ -73,7 +74,7 @@ export default function TemplatesScreen() {
                       ) : null}
                     </View>
                   </View>
-                  <Icon set="ui" name="chevron-right" size={18} />
+                  <RowChevron />
                 </Tappable>
               </Card>
             )

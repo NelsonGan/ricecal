@@ -1846,6 +1846,9 @@ export const vi = {
       removeSet: 'Xoá set',
       restOff: 'Tắt nghỉ',
       rest: 'Nghỉ {{time}}',
+      next: 'Tiếp',
+      plates: 'Bánh tạ',
+      timeStep: '15 giây',
       exerciseNotes: 'Thêm ghi chú',
       kind: {
         normal: 'Set chính',

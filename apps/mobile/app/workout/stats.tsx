@@ -1,13 +1,4 @@
-import {
-  addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  format,
-  getDay,
-  parseISO,
-  startOfMonth,
-  subDays,
-} from 'date-fns'
+import { addMonths, format, parseISO, subDays } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -23,6 +14,7 @@ import {
   useWorkoutWeeks,
   type WorkoutWeek,
 } from '@/data'
+import { monthEnd, monthStart, monthWeeks, weekdayColumns } from '@/features/logging/month'
 import {
   durationText,
   ExerciseArt,
@@ -36,15 +28,16 @@ import {
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
 import { UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
+import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
   Card,
-  Chip,
   cn,
   Divider,
   Icon,
   IconButton,
   Screen,
+  SegmentedControl,
   Skeleton,
   Tappable,
   Text,
@@ -82,13 +75,14 @@ export default function WorkoutStatsScreen() {
       }
     >
       <Card title={t('workouts:stats.weeks')} contentClassName="gap-4">
-        <View className="flex-row flex-wrap gap-2">
-          {WEEK_METRICS.map((value) => (
-            <Chip key={value} selected={metric === value} onPress={() => setMetric(value)}>
-              {t(WEEK_KEY[value])}
-            </Chip>
-          ))}
-        </View>
+        {/* One row whatever the language: four chips wrapped "Sets" onto a
+            line of its own. */}
+        <SegmentedControl
+          options={WEEK_METRICS.map((value) => ({ value, label: t(WEEK_KEY[value]) }))}
+          value={metric}
+          onChange={setMetric}
+          accessibilityLabel={t('workouts:stats.weeks')}
+        />
         {weeks.isPending || !weeks.data ? (
           <Skeleton className="h-[160px] w-full" />
         ) : (
@@ -176,73 +170,92 @@ function WeekBars({
   )
 }
 
-/** The month, with a dot on every day that had a workout. */
+/**
+ * The month, with every day that had a workout filled in. Laid out like the
+ * diary's month (`features/logging/MonthCalendar.tsx`): the same weekday row,
+ * the same muted chevrons either side of the month, and a row per week. Only
+ * the paging differs: workouts go back further than the diary's twelve months.
+ */
 function Calendar() {
   const { t } = useTranslation(['workouts', 'logging'])
-  const [month, setMonth] = useState(() => startOfMonth(new Date()))
-  const from = dateKey(month)
-  const to = dateKey(endOfMonth(month))
-  const dates = useWorkoutDates(from, to).data ?? {}
-  const days = eachDayOfInterval({ start: month, end: endOfMonth(month) })
-  // Monday first, as the weekly streak counts.
-  const lead = (getDay(month) + 6) % 7
+  const colors = useThemeColors()
   const now = today()
-  const isCurrent = dateKey(startOfMonth(new Date())) === from
+  const [month, setMonth] = useState(() => monthStart(now))
+  const to = monthEnd(month)
+  const dates = useWorkoutDates(month, to).data ?? {}
+  const weeks = useMemo(() => monthWeeks(month), [month])
+  const columns = weekdayColumns((date) => format(date, 'EEEEE'))
+  const isCurrent = month >= monthStart(now)
+  const step = (by: -1 | 1) => setMonth(dateKey(addMonths(parseISO(month), by)))
 
   return (
-    <Card
-      title={t('workouts:stats.calendar')}
-      action={
-        <View className="flex-row items-center gap-1">
-          <IconButton
-            size="sm"
-            variant="ghost"
-            accessibilityLabel={t('logging:calendar.previousMonth')}
-            onPress={() => setMonth(addMonths(month, -1))}
+    <Card title={t('workouts:stats.calendar')} contentClassName="gap-3">
+      <View className="flex-row items-center justify-between">
+        <IconButton
+          size="sm"
+          onPress={() => step(-1)}
+          accessibilityLabel={t('logging:calendar.previousMonth')}
+        >
+          <Icon set="ui" name="chevron-left" size={18} tintColor={colors.muted} />
+        </IconButton>
+        <Text variant="subtitle" className="min-w-0 flex-1 text-center">
+          {format(parseISO(month), datePattern('monthYear'))}
+        </Text>
+        <IconButton
+          size="sm"
+          onPress={isCurrent ? undefined : () => step(1)}
+          disabled={isCurrent}
+          accessibilityLabel={t('logging:calendar.nextMonth')}
+        >
+          <Icon set="ui" name="chevron-right" size={18} tintColor={colors.muted} />
+        </IconButton>
+      </View>
+
+      <View className="flex-row">
+        {columns.map((column) => (
+          <Text
+            key={column.key}
+            variant="micro"
+            className="flex-1 text-center"
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.3}
           >
-            <Icon set="ui" name="chevron-left" size={18} />
-          </IconButton>
-          <Text variant="label">{format(month, datePattern('monthYear'))}</Text>
-          <IconButton
-            size="sm"
-            variant="ghost"
-            accessibilityLabel={t('logging:calendar.nextMonth')}
-            disabled={isCurrent}
-            onPress={() => setMonth(addMonths(month, 1))}
-          >
-            <Icon set="ui" name="chevron-right" size={18} />
-          </IconButton>
-        </View>
-      }
-    >
-      <View className="flex-row flex-wrap">
-        {Array.from({ length: lead }, (_, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: blank cells before the first
-          <View key={`blank-${index}`} className="w-[14.28%] p-1" />
+            {column.label}
+          </Text>
         ))}
-        {days.map((day) => {
-          const key = dateKey(day)
-          const trained = (dates[key] ?? 0) > 0
-          return (
-            <View key={key} className="w-[14.28%] items-center p-1">
-              <View
-                className={cn(
-                  'h-[34px] w-[34px] items-center justify-center rounded-full',
-                  trained ? 'bg-pandan' : key === now ? 'border-2 border-pandan' : undefined,
-                )}
-              >
-                <Text
-                  className={cn(
-                    'font-body-black text-[14px]',
-                    trained ? 'text-on-pandan' : 'text-ink',
-                  )}
-                >
-                  {format(day, 'd')}
-                </Text>
-              </View>
-            </View>
-          )
-        })}
+      </View>
+
+      <View className="gap-1">
+        {weeks.map((week) => (
+          <View key={week.find(Boolean) ?? week.join()} className="flex-row">
+            {week.map((key, index) => {
+              if (!key) {
+                // biome-ignore lint/suspicious/noArrayIndexKey: blank cells hold a place, not a day
+                return <View key={`blank-${index}`} className="flex-1" />
+              }
+              const trained = (dates[key] ?? 0) > 0
+              return (
+                <View key={key} className="flex-1 items-center">
+                  <View
+                    className={cn(
+                      'h-[34px] w-[34px] items-center justify-center rounded-full',
+                      trained ? 'bg-pandan' : key === now ? 'border-2 border-pandan' : undefined,
+                    )}
+                  >
+                    <Text
+                      className={cn(
+                        'font-body-black text-[14px]',
+                        trained ? 'text-on-pandan' : key > now ? 'text-faint' : 'text-ink',
+                      )}
+                    >
+                      {format(parseISO(key), 'd')}
+                    </Text>
+                  </View>
+                </View>
+              )
+            })}
+          </View>
+        ))}
       </View>
     </Card>
   )

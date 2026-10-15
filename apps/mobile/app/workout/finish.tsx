@@ -12,6 +12,8 @@ import {
   hoursMinutes,
   liveTotals,
   removeWorkoutFromHealth,
+  Stat,
+  StatStrip,
   showsVolume,
   syncWorkoutToHealth,
   timedSeconds,
@@ -164,8 +166,8 @@ export default function FinishWorkoutScreen() {
         </Button>
       }
     >
-      <View className="flex-row rounded-card bg-surface px-4 py-3">
-        <Summary
+      <StatStrip>
+        <Stat
           label={t('workouts:finish.duration')}
           value={
             span.hours > 0
@@ -174,13 +176,13 @@ export default function FinishWorkoutScreen() {
           }
         />
         {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
-          <Summary
+          <Stat
             label={t('workouts:logger.volume')}
             value={`${volume(totals?.volumeKg ?? 0, unit)} ${t(UNIT_KEY[unit])}`}
           />
         ) : null}
-        <Summary label={t('workouts:logger.sets')} value={String(totals?.done ?? 0)} />
-      </View>
+        <Stat label={t('workouts:logger.sets')} value={String(totals?.done ?? 0)} />
+      </StatStrip>
 
       <Card contentClassName="gap-4">
         <TextField
@@ -245,17 +247,6 @@ export default function FinishWorkoutScreen() {
         onPick={(at) => (picking === 'start' ? setStartedAt(at) : setEndedAt(at))}
       />
     </Screen>
-  )
-}
-
-function Summary({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-1 gap-0.5">
-      <Text variant="overlineSm">{label}</Text>
-      <Text variant="numeric" numberOfLines={1} adjustsFontSizeToFit>
-        {value}
-      </Text>
-    </View>
   )
 }
 

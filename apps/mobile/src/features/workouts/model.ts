@@ -68,7 +68,7 @@ export type LiveWorkout = {
 
 let counter = 0
 /** Local keys for list rows. Not ids anything outside this document sees. */
-export function localKey(): string {
+function localKey(): string {
   counter += 1
   return `${Date.now().toString(36)}-${counter.toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 }
@@ -84,7 +84,7 @@ export function uuid(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
-export function emptySet(kind: SetKind = 'normal'): LiveSet {
+function emptySet(kind: SetKind = 'normal'): LiveSet {
   return {
     id: localKey(),
     kind,

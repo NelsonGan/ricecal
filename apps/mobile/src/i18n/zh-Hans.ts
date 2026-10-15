@@ -1826,6 +1826,9 @@ export const zhHans = {
       removeSet: '删除这组',
       restOff: '休息：关',
       rest: '休息 {{time}}',
+      next: '下一个',
+      plates: '杠铃片',
+      timeStep: '15 秒',
       exerciseNotes: '添加备注',
       kind: {
         normal: '正式组',

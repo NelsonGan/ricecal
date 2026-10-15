@@ -1844,6 +1844,9 @@ export const ja = {
       removeSet: 'セットを削除',
       restOff: '休憩オフ',
       rest: '休憩 {{time}}',
+      next: '次へ',
+      plates: 'プレート',
+      timeStep: '15 秒',
       exerciseNotes: 'メモを追加',
       kind: {
         normal: 'メインセット',

@@ -1,11 +1,13 @@
 import { format, parseISO } from 'date-fns'
 import type { TFunction } from 'i18next'
+import { Children, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { Routine, WorkoutOverview, WorkoutSummary } from '@/data'
 import { datePattern } from '@/lib/dates'
 import { UNIT_KEY, type WeightUnit } from '@/lib/units'
+import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Button, Card, cn, Icon, Skeleton, Tappable, Text } from '@/ui'
 import { exerciseById } from './catalogue'
 import { ExerciseArt } from './ExerciseArt'
@@ -99,66 +101,58 @@ function Tile({ icon, label, value }: { icon: React.ReactNode; label: string; va
 }
 
 /**
- * One routine: its name, the first few exercises, when it was last done, and
- * a Start button, which is the whole reason the card exists.
+ * One routine as a row: its first exercise's drawing, its name, how many
+ * exercises and when it was last done, and Start, which is the whole reason
+ * the row exists. A row rather than a tile, so a long name or a dozen routines
+ * read the same way two short ones do.
  */
 export function RoutineCard({
   routine,
   onStart,
   onOpen,
-  className,
 }: {
   routine: Routine
   onStart: () => void
   onOpen: () => void
-  className?: string
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const first = routine.exercises[0]
   const firstExercise = first ? exerciseById(first.exercise_id) : undefined
+  const when = routine.lastUsedAt
+    ? t('workouts:routines.lastDone', {
+        date: format(parseISO(routine.lastUsedAt), datePattern('dayMonth')),
+      })
+    : t('workouts:routines.never')
 
   return (
-    <Card className={className} contentClassName="gap-3 p-4" onPress={onOpen}>
-      <View className="flex-row items-start gap-2">
-        <Text variant="bodyStrong" className="flex-1" numberOfLines={2}>
+    <Card contentClassName="flex-row items-center gap-3 p-3" onPress={onOpen}>
+      <ExerciseArt
+        exerciseId={first?.exercise_id ?? ''}
+        category={firstExercise?.category ?? 'fullBody'}
+        size={52}
+      />
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text variant="bodyStrong" numberOfLines={1}>
           {routine.name}
         </Text>
-        {first ? (
-          <ExerciseArt
-            exerciseId={first.exercise_id}
-            category={firstExercise?.category ?? 'fullBody'}
-            size={44}
-          />
-        ) : null}
+        <Text variant="meta" numberOfLines={1}>
+          {`${t('workouts:routines.exercises', { count: routine.exercises.length })} · ${when}`}
+        </Text>
       </View>
-      <View className="gap-1">
-        {routine.exercises.slice(0, 3).map((exercise, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: a routine may list an exercise twice
-          <View key={index} className="flex-row items-center gap-1.5">
-            <View className="h-1.5 w-1.5 rounded-full bg-pandan" />
-            <Text variant="meta" numberOfLines={1} className="flex-1">
-              {exercise.exercise_name}
-            </Text>
-          </View>
-        ))}
-        {routine.exercises.length > 3 ? (
-          <Text variant="caption">
-            {t('workouts:history.moreExercises', { count: routine.exercises.length - 3 })}
-          </Text>
-        ) : null}
-      </View>
-      <Text variant="caption">
-        {routine.lastUsedAt
-          ? t('workouts:routines.lastDone', {
-              date: format(parseISO(routine.lastUsedAt), datePattern('dayMonth')),
-            })
-          : t('workouts:routines.never')}
-      </Text>
-      <Button size="sm" fullWidth onPress={onStart}>
+      <Button size="sm" onPress={onStart}>
         {t('workouts:start.routine')}
       </Button>
     </Card>
   )
+}
+
+/**
+ * The chevron on a card that opens something, tinted as `ListRow` tints its
+ * own: it is chrome, and the icon's own blue read as an accent.
+ */
+export function RowChevron() {
+  const colors = useThemeColors()
+  return <Icon set="ui" name="chevron-right" size={20} tintColor={colors.faint} />
 }
 
 /** A past workout in the history list. */
@@ -194,7 +188,7 @@ export function WorkoutCard({
             {format(started, `${datePattern('weekdayDayMonth')}, ${datePattern('time')}`)}
           </Text>
         </View>
-        {onPress ? <Icon set="ui" name="chevron-right" size={18} /> : null}
+        {onPress ? <RowChevron /> : null}
       </View>
 
       <View className="flex-row flex-wrap gap-2">
@@ -248,6 +242,40 @@ function Metric({ icon, text, tone }: { icon: React.ReactNode; text: string; ton
       {icon}
       <Text variant="caption" className={tone === 'kaya' ? 'text-kaya-ink' : 'text-ink'}>
         {text}
+      </Text>
+    </View>
+  )
+}
+
+/**
+ * A row of figures with thin rules between them: the logger's duration, volume
+ * and sets, and the finish screen's. Each child is one `Stat`, or a component
+ * that renders one, so a figure that ticks can re-render on its own.
+ */
+export function StatStrip({ children }: { children: ReactNode }) {
+  return (
+    <View className="flex-row rounded-card bg-surface py-3">
+      {Children.toArray(children).map((child, index) => (
+        <View
+          // biome-ignore lint/suspicious/noArrayIndexKey: the strip's order is its layout
+          key={index}
+          className={cn('flex-1 px-4', index > 0 && 'border-line border-l')}
+        >
+          {child}
+        </View>
+      ))}
+    </View>
+  )
+}
+
+export function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="gap-0.5">
+      <Text variant="overlineSm" numberOfLines={1}>
+        {label}
+      </Text>
+      <Text variant="numeric" numberOfLines={1} adjustsFontSizeToFit>
+        {value}
       </Text>
     </View>
   )

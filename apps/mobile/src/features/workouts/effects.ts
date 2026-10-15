@@ -122,7 +122,7 @@ export function WorkoutEffects(): null {
  * counts that itself, from the start), the exercise and set to do next, and the
  * rest countdown if one is running.
  */
-export function activityState(workout: LiveWorkout): WorkoutActivityState {
+function activityState(workout: LiveWorkout): WorkoutActivityState {
   let exerciseName = ''
   let setLabel = ''
   let done = 0

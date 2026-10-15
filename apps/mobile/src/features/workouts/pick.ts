@@ -20,11 +20,6 @@ export function awaitPick(handler: Handler): void {
   current = handler
 }
 
-/** The opener's preference, for the library to draw single or multiple choice. */
-export function pickIsSingle(): boolean {
-  return current?.single ?? false
-}
-
 export function hasPick(): boolean {
   return current !== null
 }

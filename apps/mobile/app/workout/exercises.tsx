@@ -333,7 +333,11 @@ function ExerciseRow({
         <Text variant="meta" numberOfLines={1}>
           {[
             primary ? t(MUSCLE_KEY[primary]) : t(CATEGORY_KEY[exercise.category]),
-            t(EQUIPMENT_KEY[exercise.equipment]),
+            // "Other" equipment says nothing (every sport has it), so the row
+            // names the kind of exercise instead: "Quads · Sports".
+            exercise.equipment === 'other'
+              ? t(CATEGORY_KEY[exercise.category])
+              : t(EQUIPMENT_KEY[exercise.equipment]),
           ].join(' · ')}
         </Text>
       </View>

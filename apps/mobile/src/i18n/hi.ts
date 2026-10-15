@@ -1830,6 +1830,9 @@ export const hi = {
       removeSet: 'सेट हटाएं',
       restOff: 'आराम बंद',
       rest: 'आराम {{time}}',
+      next: 'अगला',
+      plates: 'प्लेट्स',
+      timeStep: '15 s',
       exerciseNotes: 'नोट जोड़ें',
       kind: {
         normal: 'वर्किंग सेट',

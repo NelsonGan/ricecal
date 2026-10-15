@@ -81,6 +81,34 @@ export type NumpadFieldSpec = {
   maxLength: number
   /** The first key replaces the value rather than appending to it. */
   replaceFirst: boolean
+  /** A column of extra keys, for a field that is one of many. See `NumpadTools`. */
+  tools?: NumpadTools
+}
+
+/**
+ * The keys a run of fields needs and a lone field does not: the set logger's.
+ *
+ * Asked for, they take a fourth column on the right, the way Strong lays its
+ * pad out: put the pad away, step the value up, step it down, and move on.
+ * Stepping is how a set is usually changed, one plate at a time, and moving on
+ * is how a set is filled in, weight then reps then the next set, without
+ * reaching up the screen for each field. Everything is the field's to say, and
+ * read fresh on every press like the rest of the spec.
+ */
+export type NumpadTools = {
+  /** "2.5" for a plate, "1" for a rep, "15s" for time. The keys read "+2.5", "−2.5". */
+  step?: {
+    label: string
+    up: () => void
+    down: () => void
+    /** Screen-reader names, since "+2.5" alone does not say of what. */
+    upLabel: string
+    downLabel: string
+  }
+  /** "Next", or "Done" on the last field there is. */
+  next?: { label: string; onPress: () => void }
+  /** A shortcut in the header, beside the label: the plate calculator for a barbell. */
+  accessory?: { label: string; onPress: () => void }
 }
 
 type Session = {
@@ -240,6 +268,8 @@ export type NumpadFieldOptions = {
   maxLength?: number
   /** The first key replaces the value. What `selectTextOnFocus` used to buy. */
   replaceFirst?: boolean
+  /** Extra keys for a field that is one of a run of them. See `NumpadTools`. */
+  tools?: NumpadTools
   /** Pass a field's own handlers through; this hook composes rather than replaces. */
   onFocus?: () => void
   onBlur?: () => void
@@ -270,6 +300,7 @@ export function useNumpadField({
   maxLength = MAX_LENGTH,
   label,
   replaceFirst = false,
+  tools,
   onFocus,
   onBlur,
   enabled = true,
@@ -287,8 +318,9 @@ export function useNumpadField({
     label,
     maxLength,
     replaceFirst,
+    tools,
   })
-  field.current = { value, onChangeText, decimal, label, maxLength, replaceFirst }
+  field.current = { value, onChangeText, decimal, label, maxLength, replaceFirst, tools }
 
   // One session object for the life of the field, so `close` can tell whether
   // the pad it is being asked to shut is still this field's.
@@ -462,6 +494,7 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
   const insets = useSafeAreaInsets()
   const colors = useThemeColors()
   const spec = session.field.current
+  const tools = spec.tools
 
   /**
    * True until the first key of an edit, and only interesting for a field that
@@ -494,6 +527,18 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
       if (base.length >= live.maxLength) return
       // "0" is a value, "07" is a typo. Anything else appends.
       live.onChangeText(base === '0' ? key : base + key)
+    },
+    [session],
+  )
+
+  // A stepped value is a finished one: the next digit starts a new number
+  // rather than growing "75" into "758".
+  const step = useCallback(
+    (direction: 1 | -1) => {
+      const tools = session.field.current.tools
+      if (direction === 1) tools?.step?.up()
+      else tools?.step?.down()
+      pristine.current = true
     },
     [session],
   )
@@ -535,64 +580,149 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
         <Text variant="label" numberOfLines={1} className="flex-1">
           {spec.label ?? ''}
         </Text>
-        <Tappable
-          className="px-2 py-1.5"
-          onPress={context.dismiss}
-          accessibilityRole="button"
-          accessibilityLabel={context.labels.done}
-        >
-          <Text variant="label" className="text-pandan-ink">
-            {context.labels.done}
-          </Text>
-        </Tappable>
+        {tools?.accessory ? (
+          <Tappable
+            className="rounded-full bg-surface px-3 py-1.5"
+            onPress={() => session.field.current.tools?.accessory?.onPress()}
+            accessibilityRole="button"
+            accessibilityLabel={tools.accessory.label}
+          >
+            <Text variant="label" className="text-pandan-ink">
+              {tools.accessory.label}
+            </Text>
+          </Tappable>
+        ) : tools ? null : (
+          // With tools the way out is the column's top key, where Strong puts
+          // it, and saying it twice would be one control too many.
+          <Tappable
+            className="px-2 py-1.5"
+            onPress={context.dismiss}
+            accessibilityRole="button"
+            accessibilityLabel={context.labels.done}
+          >
+            <Text variant="label" className="text-pandan-ink">
+              {context.labels.done}
+            </Text>
+          </Tappable>
+        )}
       </View>
 
-      <View style={{ gap: KEY_GAP }}>
-        {ROWS.map((row) => (
-          <View key={row[0]} className="flex-row" style={{ gap: KEY_GAP }}>
-            {row.map((key) => {
-              // The decimal key is blanked rather than dropped on a whole-number
-              // field. Dropped, the row rebalances and 0 slides off centre —
-              // and 0 is the key on that row anybody is aiming for.
-              if (key === '.' && !spec.decimal) {
-                return <View key={key} className={cn('flex-1', KEY_BOX)} />
-              }
-              return (
-                <Squish
-                  key={key}
-                  containerClassName={cn('flex-1', KEY_BOX)}
-                  className="flex-1 items-center justify-center bg-surface"
-                  slabClassName="bg-line"
-                  depth={slab.sm}
-                  radius={radius.sm}
-                  onPress={() => press(key)}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    key === 'back'
-                      ? context.labels.backspace
-                      : key === '.'
-                        ? context.labels.decimal
-                        : key
-                  }
-                >
-                  {key === 'back' ? (
-                    // No rub-out in the icon set, and a trash can is a
-                    // different promise. The arrow is what the a11y label
-                    // above explains.
-                    <Icon set="ui" name="arrow-left" size={22} tintColor={colors.muted} />
-                  ) : (
-                    // Keep Baloo 2's full glyph box inside the key. A tighter
-                    // implicit leading clipped the digits on newer iOS.
-                    <Text className="font-display text-[24px] leading-[29px] text-heading">
-                      {key}
-                    </Text>
-                  )}
-                </Squish>
-              )
-            })}
+      <View className="flex-row" style={{ gap: KEY_GAP }}>
+        <View className="flex-[3]" style={{ gap: KEY_GAP }}>
+          {ROWS.map((row) => (
+            <View key={row[0]} className="flex-row" style={{ gap: KEY_GAP }}>
+              {row.map((key) => {
+                // The decimal key is blanked rather than dropped on a whole-number
+                // field. Dropped, the row rebalances and 0 slides off centre —
+                // and 0 is the key on that row anybody is aiming for.
+                if (key === '.' && !spec.decimal) {
+                  return <View key={key} className={cn('flex-1', KEY_BOX)} />
+                }
+                return (
+                  <Squish
+                    key={key}
+                    containerClassName={cn('flex-1', KEY_BOX)}
+                    className="flex-1 items-center justify-center bg-surface"
+                    slabClassName="bg-line"
+                    depth={slab.sm}
+                    radius={radius.sm}
+                    onPress={() => press(key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      key === 'back'
+                        ? context.labels.backspace
+                        : key === '.'
+                          ? context.labels.decimal
+                          : key
+                    }
+                  >
+                    {key === 'back' ? (
+                      // No rub-out in the icon set, and a trash can is a
+                      // different promise. The arrow is what the a11y label
+                      // above explains.
+                      <Icon set="ui" name="arrow-left" size={22} tintColor={colors.muted} />
+                    ) : (
+                      // Keep Baloo 2's full glyph box inside the key. A tighter
+                      // implicit leading clipped the digits on newer iOS.
+                      <Text className="font-display text-[24px] leading-[29px] text-heading">
+                        {key}
+                      </Text>
+                    )}
+                  </Squish>
+                )
+              })}
+            </View>
+          ))}
+        </View>
+        {tools ? (
+          <View className="flex-1" style={{ gap: KEY_GAP }}>
+            <ToolKey onPress={context.dismiss} accessibilityLabel={context.labels.done}>
+              <Icon set="ui" name="chevron-down" size={20} tintColor={colors.muted} />
+            </ToolKey>
+            {tools.step ? (
+              <>
+                <ToolKey onPress={() => step(1)} accessibilityLabel={tools.step.upLabel}>
+                  <Text className={TOOL_TEXT}>{`+${tools.step.label}`}</Text>
+                </ToolKey>
+                <ToolKey onPress={() => step(-1)} accessibilityLabel={tools.step.downLabel}>
+                  <Text className={TOOL_TEXT}>{`−${tools.step.label}`}</Text>
+                </ToolKey>
+              </>
+            ) : (
+              <>
+                <View className={KEY_BOX} />
+                <View className={KEY_BOX} />
+              </>
+            )}
+            {tools.next ? (
+              <Squish
+                containerClassName={KEY_BOX}
+                className="flex-1 items-center justify-center bg-pandan"
+                slabClassName="bg-pandan-slab"
+                depth={slab.sm}
+                radius={radius.sm}
+                onPress={() => session.field.current.tools?.next?.onPress()}
+                accessibilityRole="button"
+                accessibilityLabel={tools.next.label}
+              >
+                <Text className="font-display text-[17px] leading-[22px] text-on-pandan">
+                  {tools.next.label}
+                </Text>
+              </Squish>
+            ) : (
+              <View className={KEY_BOX} />
+            )}
           </View>
-        ))}
+        ) : null}
       </View>
     </Animated.View>
+  )
+}
+
+const TOOL_TEXT = 'font-display text-[18px] leading-[24px] text-pandan-ink'
+
+/** A key in the tools column: the same slab as a digit, tinted to read as a tool. */
+function ToolKey({
+  onPress,
+  accessibilityLabel,
+  children,
+}: {
+  onPress: () => void
+  accessibilityLabel: string
+  children: ReactNode
+}) {
+  return (
+    <Squish
+      containerClassName={KEY_BOX}
+      className="flex-1 items-center justify-center bg-pandan-soft"
+      slabClassName="bg-pandan-soft-line"
+      depth={slab.sm}
+      radius={radius.sm}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+    >
+      {children}
+    </Squish>
   )
 }

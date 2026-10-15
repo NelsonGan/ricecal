@@ -1874,6 +1874,9 @@ export const ms = {
       removeSet: 'Buang set',
       restOff: 'Rehat dimatikan',
       rest: 'Rehat {{time}}',
+      next: 'Seterusnya',
+      plates: 'Plat',
+      timeStep: '15 s',
       exerciseNotes: 'Tambah nota',
       kind: {
         normal: 'Set utama',
