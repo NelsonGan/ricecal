@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMemo, useReducer, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { type Routine, useDeleteRoutine, useRoutines, useSaveRoutine } from '@/data'
+import { type IconRef, type Routine, useDeleteRoutine, useRoutines, useSaveRoutine } from '@/data'
 import {
   apply,
   newWorkout,
@@ -19,6 +19,7 @@ import {
   Button,
   Card,
   ConfirmSheet,
+  EmptyState,
   Icon,
   IconButton,
   Screen,
@@ -35,12 +36,28 @@ import {
  * what to do, and the PREVIOUS column shows what was done last time.
  */
 export default function RoutineScreen() {
+  const { t } = useTranslation(['common'])
   const { id } = useLocalSearchParams<{ id: string }>()
   const isNew = id === 'new'
   const routines = useRoutines()
-  const routine = routines.data?.find((entry) => entry.id === id)
+  // Held while this page deletes the routine. The delete takes it out of the
+  // list at once, and the editor, with the confirm sheet still spinning in it,
+  // gave way to "gone" before the page went back.
+  const [deleting, setDeleting] = useState<Routine | null>(null)
+  const routine = routines.data?.find((entry) => entry.id === id) ?? deleting ?? undefined
 
-  if (!isNew && routines.isPending) {
+  if (!isNew && !routine && routines.isPending) {
+    // Offline with nothing cached the request is held, and a skeleton would
+    // wait for it forever.
+    if (routines.isPaused) {
+      return (
+        <Empty
+          title={t('common:offline.title')}
+          description={t('common:offline.body')}
+          icon={{ set: 'ui', name: 'offline' }}
+        />
+      )
+    }
     return (
       <Screen>
         <Card>
@@ -50,10 +67,38 @@ export default function RoutineScreen() {
     )
   }
   if (!isNew && !routine) return <WorkoutMissing icon={{ set: 'system', name: 'guide-book' }} />
-  return <RoutineEditor key={routine?.id ?? 'new'} routine={routine ?? null} />
+  return (
+    <RoutineEditor key={routine?.id ?? 'new'} routine={routine ?? null} onDeleting={setDeleting} />
+  )
 }
 
-function RoutineEditor({ routine }: { routine: Routine | null }) {
+/** The page with nothing in it but a way back. */
+function Empty({
+  title,
+  description,
+  icon,
+}: {
+  title: string
+  description?: string
+  icon: IconRef
+}) {
+  const { t } = useTranslation(['common'])
+  const goBack = useBack('/workouts')
+  return (
+    <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
+      <EmptyState title={title} description={description} icon={icon} />
+    </Screen>
+  )
+}
+
+function RoutineEditor({
+  routine,
+  onDeleting,
+}: {
+  routine: Routine | null
+  /** Told the routine being deleted, and null if the delete fails. */
+  onDeleting: (routine: Routine | null) => void
+}) {
   const { t } = useTranslation(['workouts', 'common'])
   const router = useRouter()
   const toast = useToast()
@@ -171,9 +216,11 @@ function RoutineEditor({ routine }: { routine: Routine | null }) {
         cancelLabel={t('common:action.keep')}
         onConfirm={async () => {
           if (!routine) return
+          onDeleting(routine)
           try {
             await remove.mutateAsync(routine.id)
           } catch (error) {
+            onDeleting(null)
             toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
             throw error
           }

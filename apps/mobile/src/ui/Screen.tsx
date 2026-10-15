@@ -117,6 +117,10 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    *
    * Pass whether the screen is focused. A tab screen stays mounted behind the
    * others, and a host it held would draw their toasts where nobody can see them.
+   *
+   * The host and the room under the last row stay while the button is hidden
+   * (Today hides it behind a swiped-open row): tied to the button, "Removed"
+   * appeared, then jumped up as the deleted row closed and the host came back.
    */
   toastsAboveFloating?: boolean
   /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
@@ -311,7 +315,7 @@ export function Screen({
         paddingBottom:
           (flush ? 0 : spacing.gutter) +
           (footer ? 0 : navInset || insets.bottom) +
-          (floatingTrailing ? FLOATING_CLEARANCE : 0) +
+          (floatingTrailing || toastsAboveFloating ? FLOATING_CLEARANCE : 0) +
           numpad.height,
         gap: spacing.stack,
       }}
@@ -421,7 +425,7 @@ export function Screen({
           </Reanimated.View>
         ) : null}
 
-        {floatingTrailing && toastsAboveFloating ? (
+        {toastsAboveFloating ? (
           // The provider already clears the safe area, so it comes off here.
           <ToastHost offset={FLOATING_CLEARANCE + navInset - insets.bottom} />
         ) : null}

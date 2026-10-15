@@ -8,7 +8,7 @@ import {
 } from '@modules/ricecal-widgets'
 import * as Haptics from 'expo-haptics'
 import type { TFunction } from 'i18next'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppState } from 'react-native'
 import { type LastSet, useLastSets, useSettings } from '@/data'
@@ -61,12 +61,18 @@ export function useWorkoutEffects(): void {
   const settled = (query: { data?: unknown; fetchStatus: string; isError: boolean }) =>
     query.data !== undefined || query.isError || query.fetchStatus === 'paused'
   const ready = settled(settingsQuery) && (ids.length === 0 || settled(lastSets))
+  // Whether presses queued on the lock screen while the app was not running
+  // have been applied. Until then the notice and the activity are left alone:
+  // written from the document as it was before the presses, they rebooked a
+  // skipped rest's notice and drew the old state over the button's own.
+  const [drained, setDrained] = useState(false)
 
   // The rest-over notice, rebooked whenever the rest changes. Its identifier
   // is fixed, so booking it replaces the last one rather than adding another.
   const restKey = workout?.rest ? `${workout.id}:${workout.rest.endsAt}` : null
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the rest itself, not on every edit to the workout around it
   useEffect(() => {
+    if (!drained) return
     if (!workout?.rest) {
       cancelNotice('rest')
       return
@@ -88,7 +94,7 @@ export function useWorkoutEffects(): void {
       Math.max(0, rest.endsAt - Date.now()),
     )
     return () => clearTimeout(timer)
-  }, [restKey])
+  }, [restKey, drained])
 
   // "Still training?", once per workout, three hours in.
   const workoutId = workout?.id ?? null
@@ -119,13 +125,14 @@ export function useWorkoutEffects(): void {
       live.current = null
       return
     }
+    if (!drained) return
     if (live.current !== state.id) {
       startWorkoutActivity(state)
       live.current = state.id
     } else {
       updateWorkoutActivity(state)
     }
-  }, [stateKey])
+  }, [stateKey, drained])
 
   // The activity's buttons. Pressed with the app running, the intent says so
   // and they are applied at once; pressed with it closed, they wait in the
@@ -172,8 +179,10 @@ export function useWorkoutEffects(): void {
             ).exercises[0].sets.find((entry) => entry.id === set.id)
             if (!ticked || !isLoggable(ticked, exercise.tracking)) break
             dispatch(tick)
-            const rest = restAfter(workout, exercise, defaultRestS)
-            if (rest > 0) {
+            const rest = restAfter(workout, exercise, defaultRestS, set.id)
+            // A press taken long after it was made starts no rest that would
+            // already be over: it only buzzed "rest over" as the app opened.
+            if (rest > 0 && action.at + rest * 1000 > Date.now()) {
               dispatch({
                 type: 'startRest',
                 exerciseKey: exercise.key,
@@ -187,6 +196,7 @@ export function useWorkoutEffects(): void {
       }
     }
     drain()
+    setDrained(true)
     const remove = addWorkoutActionListener(drain)
     const foreground = AppState.addEventListener('change', (next) => {
       if (next === 'active') drain()
@@ -309,9 +319,10 @@ function activityState(
     exerciseKey: next?.exercise.key ?? null,
     setId: next?.set.id ?? null,
     canComplete: Boolean(filled && next && isLoggable(filled, next.exercise.tracking)),
-    restAfterS: next ? restAfter(workout, next.exercise, defaultRestS) || null : null,
+    restAfterS: next ? restAfter(workout, next.exercise, defaultRestS, next.set.id) || null : null,
     restTitle: t('workouts:rest.over'),
     restBody: t('workouts:rest.overBody', { name: resting?.name ?? workout.name }),
+    tickRestBody: t('workouts:rest.overBody', { name: next?.exercise.name ?? workout.name }),
     labels: {
       complete: t('workouts:logger.completeSet'),
       less: t('workouts:rest.minus'),

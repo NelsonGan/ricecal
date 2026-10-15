@@ -235,7 +235,7 @@ export const hi = {
       workoutsBody: 'प्रकार, समय, रफ़्तार, हृदय गति',
 
       privacy:
-        'सिर्फ़ पढ़ते हैं। जब तक आप अपने वर्कआउट वहाँ सहेजना न चुनें, हम कुछ वापस नहीं लिखते, और आपका स्वास्थ्य डेटा सिर्फ़ आपके अपने खाते में रहता है।',
+        'कनेक्ट करने पर हम सिर्फ़ पढ़ते हैं। आप चालू करें तभी हम वहाँ वर्कआउट सहेजते हैं, और आपका स्वास्थ्य डेटा सिर्फ़ आपके अपने खाते में रहता है।',
 
       appleBody: 'Apple Health, iPhone और Apple Watch पर',
       connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
@@ -1863,6 +1863,9 @@ export const hi = {
       },
       superset: 'सुपरसेट',
       restTitle: 'आराम टाइमर',
+      menuFor: '{{name}} के विकल्प',
+      removeTitle: '{{name}} हटाएँ?',
+      removeBody: 'इसके सेट भी हट जाएँगे।',
       restDefault: 'डिफ़ॉल्ट इस्तेमाल करें ({{time}})',
       pr: 'नया रिकॉर्ड',
       noNumbers: 'पहले सेट भरें',
@@ -1984,6 +1987,7 @@ export const hi = {
       records: 'रिकॉर्ड',
       split: 'मसल्स का बंटवारा',
       noHistoryTitle: 'अभी तक नहीं की',
+      missing: 'यह एक्सरसाइज़ अब नहीं है।',
       chart: {
         heaviest: 'सबसे भारी',
         e1rm: 'अनुमानित 1RM',
@@ -2024,6 +2028,7 @@ export const hi = {
       splitRange: 'पिछले 30 दिन',
       records: 'पर्सनल रिकॉर्ड',
       calendar: 'कैलेंडर',
+      dayTrained: '{{day}}, वर्कआउट किया',
     },
 
     settings: {
@@ -2050,6 +2055,8 @@ export const hi = {
       perSide: 'हर तरफ़',
       none: 'सिर्फ़ बार',
       unreachable: 'सामान्य प्लेटों से यह वज़न नहीं बनता।',
+      closest: 'सबसे पास: {{weight}}',
+      closestOr: 'सबसे पास: {{weight}} या {{other}}',
     },
 
     warmup: {

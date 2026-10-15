@@ -1,6 +1,6 @@
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Platform, TextInput, View } from 'react-native'
+import { Platform, Pressable, TextInput, View } from 'react-native'
 
 import type { LastSet } from '@/data'
 import { SwipeRow } from '@/features/shared/SwipeRow'
@@ -8,7 +8,7 @@ import { UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn, Icon, type NumpadTools, Tappable, Text, useNumpadField } from '@/ui'
 import type { Tracking } from './catalogue'
-import { setBadges } from './copy'
+import { SET_KIND_KEY, setBadges } from './copy'
 import { fieldKey, useFieldOrder } from './fieldOrder'
 import {
   type DistanceUnit,
@@ -23,7 +23,7 @@ import {
   trim,
   weightField,
 } from './format'
-import { fieldsFor, type LiveSet, type SetPatch, setHints } from './model'
+import { fieldsFor, type LiveSet, matchPrevious, type SetPatch, setHints } from './model'
 
 /**
  * The sets of one exercise: the table the logger is mostly made of.
@@ -127,6 +127,7 @@ export function SetTable({
 
   const badges = setBadges(sets, t)
   const hints = setHints(sets, previous)
+  const lastTime = matchPrevious(sets, previous)
 
   return (
     <View className="gap-1">
@@ -163,7 +164,7 @@ export function SetTable({
             badgeTone={badge.tone}
             badgeNumber={badge.number}
             tracking={tracking}
-            last={previous?.[index]}
+            last={lastTime[index]}
             hintWeight={hint.weightKg}
             hintReps={hint.reps}
             hintDuration={hint.durationS}
@@ -223,7 +224,11 @@ export function describeSet(
       return parts.join(' · ')
     }
     case 'weight_distance':
-      return weight !== null && set.distanceM ? `${weight} · ${trim(set.distanceM, 0)} m` : ''
+      // A sled pushed empty is still a carry: the distance alone, not nothing.
+      if (!set.distanceM) return ''
+      return weight !== null
+        ? `${weight} · ${trim(set.distanceM, 0)} m`
+        : `${trim(set.distanceM, 0)} m`
   }
 }
 
@@ -292,6 +297,14 @@ const SetRow = memo(function SetRow({
   // Drawn as done only where a tick means something; see `checkable`.
   const ticked = checkable && set.done
   const previousText = last ? describeSet(last, tracking, unit, distanceUnit) : ''
+  // Spoken: "Set 2", or the kind where the badge is a letter ("W" read aloud
+  // says nothing). The tick also names the exercise, since it is reached alone.
+  const setName =
+    set.kind === 'normal'
+      ? `${t('workouts:logger.set')} ${badge}`
+      : set.kind === 'warmup'
+        ? t(SET_KIND_KEY.warmup)
+        : `${t('workouts:logger.set')} ${badgeNumber}, ${t(SET_KIND_KEY[set.kind])}`
 
   return (
     // Swiped left, a set shows Delete, as every gym logger's sets do.
@@ -325,8 +338,8 @@ const SetRow = memo(function SetRow({
           // The label replaces the text inside, so the RPE has to be in it.
           accessibilityLabel={
             set.rpe === null
-              ? `${t('workouts:logger.set')} ${badge}`
-              : `${t('workouts:logger.set')} ${badge}, ${t('workouts:logger.rpeValue', { value: set.rpe })}`
+              ? setName
+              : `${setName}, ${t('workouts:logger.rpeValue', { value: set.rpe })}`
           }
         >
           <Text className={cn('font-display text-[17px] leading-[20px]', badgeTone)}>{badge}</Text>
@@ -436,7 +449,7 @@ const SetRow = memo(function SetRow({
             onPress={onToggle}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: set.done }}
-            accessibilityLabel={`${t('workouts:logger.set')} ${badge}`}
+            accessibilityLabel={`${exerciseName}, ${setName}`}
           >
             {set.done ? (
               <View className="h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-pandan">
@@ -537,6 +550,24 @@ const CELL_TEXT = {
 const hintKey = (placeholder: string) => (Platform.OS === 'android' ? placeholder : undefined)
 
 /**
+ * On Android a text field keeps a drag that starts on it whenever its own
+ * content can scroll (`ReactEditText.onTouchEvent`), and a field the pad has
+ * typed into can. A drag that began on a set scrolled that field's text out of
+ * its box, which left the cell blank until the workout was reopened, and the
+ * page under the thumb did not move. The pad places the caret itself, so the
+ * field needs no touches of its own: a press focuses it and a drag is the
+ * page's. Screen readers still reach the field, which keeps its label.
+ */
+function CellTouch({ focus, children }: { focus: () => void; children: ReactNode }) {
+  if (Platform.OS !== 'android') return children
+  return (
+    <Pressable onPress={focus} accessible={false}>
+      <View pointerEvents="none">{children}</View>
+    </Pressable>
+  )
+}
+
+/**
  * A number typed on the app's own pad. Holds its text while focused, so "62."
  * is not rounded to "62" between two key presses, and writes the parsed value
  * through on every change so nothing typed is lost if the app is killed.
@@ -598,25 +629,27 @@ function NumberCell({
   input.current = () => numpad.ref.current
 
   return (
-    <TextInput
-      key={hintKey(placeholder)}
-      value={typed ?? value}
-      onChangeText={change}
-      placeholder={placeholder}
-      placeholderTextColor={colors.faint}
-      keyboardType={decimal ? 'decimal-pad' : 'number-pad'}
-      underlineColorAndroid="transparent"
-      accessibilityLabel={label}
-      style={CELL_TEXT}
-      className={cn(
-        'h-[38px] rounded-sm border-2 px-1 text-center font-body-black text-[16px] text-ink',
-        done ? 'bg-transparent' : 'bg-surface-alt',
-        // The field the pad is typing into, since the pad covers the page
-        // below it and the header alone is easy to miss.
-        numpad.selection ? 'border-pandan bg-surface' : 'border-transparent',
-      )}
-      {...numpad}
-    />
+    <CellTouch focus={() => numpad.ref.current?.focus()}>
+      <TextInput
+        key={hintKey(placeholder)}
+        value={typed ?? value}
+        onChangeText={change}
+        placeholder={placeholder}
+        placeholderTextColor={colors.faint}
+        keyboardType={decimal ? 'decimal-pad' : 'number-pad'}
+        underlineColorAndroid="transparent"
+        accessibilityLabel={label}
+        style={CELL_TEXT}
+        className={cn(
+          'h-[38px] rounded-sm border-2 px-1 text-center font-body-black text-[16px] text-ink',
+          done ? 'bg-transparent' : 'bg-surface-alt',
+          // The field the pad is typing into, since the pad covers the page
+          // below it and the header alone is easy to miss.
+          numpad.selection ? 'border-pandan bg-surface' : 'border-transparent',
+        )}
+        {...numpad}
+      />
+    </CellTouch>
   )
 }
 
@@ -671,35 +704,37 @@ function DurationCell({
   const shown = digits !== null ? digitsClock(digits) : seconds === null ? '' : shortClock(seconds)
 
   return (
-    <TextInput
-      key={hintKey(placeholder)}
-      value={shown}
-      onChangeText={change}
-      placeholder={placeholder}
-      placeholderTextColor={colors.faint}
-      keyboardType="number-pad"
-      underlineColorAndroid="transparent"
-      accessibilityLabel={label}
-      style={CELL_TEXT}
-      className={cn(
-        'h-[38px] rounded-sm border-2 px-1 text-center font-body-black text-[16px] text-ink',
-        done ? 'bg-transparent' : 'bg-surface-alt',
-        // The field the pad is typing into, since the pad covers the page
-        // below it and the header alone is easy to miss.
-        numpad.selection ? 'border-pandan bg-surface' : 'border-transparent',
-      )}
-      {...numpad}
-      // The pad writes digits and the field shows a clock, so the selection is
-      // measured on what is shown rather than on what was typed: all of it while
-      // the next key replaces it, otherwise the caret at the end.
-      selection={
-        numpad.selection
-          ? {
-              start: numpad.selection.start === 0 && numpad.selection.end > 0 ? 0 : shown.length,
-              end: shown.length,
-            }
-          : undefined
-      }
-    />
+    <CellTouch focus={() => numpad.ref.current?.focus()}>
+      <TextInput
+        key={hintKey(placeholder)}
+        value={shown}
+        onChangeText={change}
+        placeholder={placeholder}
+        placeholderTextColor={colors.faint}
+        keyboardType="number-pad"
+        underlineColorAndroid="transparent"
+        accessibilityLabel={label}
+        style={CELL_TEXT}
+        className={cn(
+          'h-[38px] rounded-sm border-2 px-1 text-center font-body-black text-[16px] text-ink',
+          done ? 'bg-transparent' : 'bg-surface-alt',
+          // The field the pad is typing into, since the pad covers the page
+          // below it and the header alone is easy to miss.
+          numpad.selection ? 'border-pandan bg-surface' : 'border-transparent',
+        )}
+        {...numpad}
+        // The pad writes digits and the field shows a clock, so the selection is
+        // measured on what is shown rather than on what was typed: all of it while
+        // the next key replaces it, otherwise the caret at the end.
+        selection={
+          numpad.selection
+            ? {
+                start: numpad.selection.start === 0 && numpad.selection.end > 0 ? 0 : shown.length,
+                end: shown.length,
+              }
+            : undefined
+        }
+      />
+    </CellTouch>
   )
 }

@@ -98,6 +98,7 @@ export const RECORD_KEY = {
   volume: 'workouts:exercise.bestSetVolume',
   reps: 'workouts:exercise.bestReps',
   duration: 'workouts:exercise.bestDuration',
+  distance: 'workouts:exercise.bestDistance',
 } as const satisfies Record<RecordKind, string>
 
 /** A set kind's letter colour, everywhere a set is listed. */

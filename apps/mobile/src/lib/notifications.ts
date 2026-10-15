@@ -165,12 +165,29 @@ const dailyTrigger = (hour: number, minute: number): Notifications.DailyTriggerI
  * change. Cancelling everything also cleans up after a reminder whose meal was
  * deleted, or one scheduled by a previous version of this function.
  */
-export async function rescheduleReminders(
+export function rescheduleReminders(
   settings: Settings,
   mealTimes: readonly MealTime[],
   copy: ReminderCopy,
 ): Promise<void> {
-  await ensureChannel()
+  // One at a time. Two runs that overlapped each read the booked list before
+  // the other had booked, and both full sets stayed: tapping Mon then Wed on
+  // the workout reminders quickly left Monday booked twice.
+  const run = reminderRun.catch(() => {}).then(() => writeReminders(settings, mealTimes, copy))
+  reminderRun = run
+  return run
+}
+
+let reminderRun: Promise<void> = Promise.resolve()
+
+/** Every scheduled reminder, unbooked. For signing out: they are that account's. */
+export function cancelReminders(): Promise<void> {
+  const run = reminderRun.catch(() => {}).then(unbookReminders)
+  reminderRun = run
+  return run
+}
+
+async function unbookReminders(): Promise<void> {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync()
   await Promise.all(
     scheduled
@@ -181,6 +198,15 @@ export async function rescheduleReminders(
       })
       .map((entry) => Notifications.cancelScheduledNotificationAsync(entry.identifier)),
   )
+}
+
+async function writeReminders(
+  settings: Settings,
+  mealTimes: readonly MealTime[],
+  copy: ReminderCopy,
+): Promise<void> {
+  await ensureChannel()
+  await unbookReminders()
 
   if (!(await notificationsAllowed())) return
 
@@ -353,17 +379,30 @@ const WORKOUT_NOTICE = { rest: 'workout-rest', workout: 'workout-stale' } as con
  * Book a workout notice for a moment. Best effort, like the scan notice: it
  * does nothing when notifications are not allowed or the moment has passed.
  */
+/**
+ * Bumped by every booking and every cancel of a kind, so a booking that is
+ * still waiting on the permission check gives up if anything came after it. A
+ * rest skipped in that moment was cancelled first and then booked anyway.
+ */
+const noticeGeneration: Record<string, number> = {}
+const nextGeneration = (kind: string) => {
+  noticeGeneration[kind] = (noticeGeneration[kind] ?? 0) + 1
+  return noticeGeneration[kind]
+}
+
 export async function scheduleNoticeAt(
   at: number,
   kind: keyof typeof WORKOUT_NOTICE,
   content: { title: string; body: string },
 ): Promise<void> {
+  const generation = nextGeneration(kind)
   const seconds = Math.round((at - Date.now()) / 1000)
   if (seconds < 1) return
   const rest = kind === 'rest'
   try {
     if (!(await notificationsAllowed())) return
     await (rest ? ensureRestChannel() : ensureChannel())
+    if (noticeGeneration[kind] !== generation) return
     await Notifications.scheduleNotificationAsync({
       identifier: WORKOUT_NOTICE[kind],
       content: { ...content, data: { kind }, sound: rest ? 'default' : undefined },
@@ -384,6 +423,7 @@ export async function scheduleNoticeAt(
  * has since finished is not left there to tap.
  */
 export async function cancelNotice(kind: keyof typeof WORKOUT_NOTICE): Promise<void> {
+  nextGeneration(kind)
   const id = WORKOUT_NOTICE[kind]
   await Promise.allSettled([
     Notifications.cancelScheduledNotificationAsync(id),

@@ -236,7 +236,7 @@ export const vi = {
       workoutsBody: 'Loại hình, thời gian, tốc độ, nhịp tim',
 
       privacy:
-        'Chỉ đọc. Chúng tôi không ghi lại gì trừ khi bạn chọn lưu buổi tập vào đó, và dữ liệu sức khỏe của bạn chỉ được lưu trong tài khoản của chính bạn.',
+        'Kết nối chỉ để đọc. Chúng tôi chỉ lưu buổi tập vào đó khi bạn bật tính năng này, và dữ liệu sức khỏe của bạn chỉ nằm trong tài khoản của chính bạn.',
 
       appleBody: 'Apple Health, trên iPhone và Apple Watch',
       connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
@@ -1879,6 +1879,9 @@ export const vi = {
       },
       superset: 'Superset',
       restTitle: 'Hẹn giờ nghỉ',
+      menuFor: 'Tuỳ chọn cho {{name}}',
+      removeTitle: 'Xóa {{name}}?',
+      removeBody: 'Các hiệp của nó cũng bị xóa.',
       restDefault: 'Dùng mặc định ({{time}})',
       pr: 'Kỷ lục mới',
       noNumbers: 'Điền set trước đã',
@@ -2000,6 +2003,7 @@ export const vi = {
       records: 'Kỷ lục',
       split: 'Phân bổ nhóm cơ',
       noHistoryTitle: 'Chưa tập lần nào',
+      missing: 'Bài tập này không còn nữa.',
       chart: {
         heaviest: 'Nặng nhất',
         e1rm: '1RM ước tính',
@@ -2040,6 +2044,7 @@ export const vi = {
       splitRange: '30 ngày gần nhất',
       records: 'Kỷ lục cá nhân',
       calendar: 'Lịch',
+      dayTrained: '{{day}}, có buổi tập',
     },
 
     settings: {
@@ -2067,6 +2072,8 @@ export const vi = {
       perSide: 'Mỗi bên',
       none: 'Chỉ có đòn',
       unreachable: 'Không ghép được bằng bánh tạ tiêu chuẩn.',
+      closest: 'Gần nhất: {{weight}}',
+      closestOr: 'Gần nhất: {{weight}} hoặc {{other}}',
     },
 
     warmup: {

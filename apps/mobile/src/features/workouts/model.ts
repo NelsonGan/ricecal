@@ -227,12 +227,34 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
     case 'replaceExercise':
       // Swapping the machine for the dumbbell version keeps the sets the user
       // already typed, because the numbers are usually what they meant to keep.
-      return mapExercise(workout, action.key, (exercise) => ({
-        ...exercise,
-        exerciseId: action.plan.exerciseId,
-        name: action.plan.name,
-        tracking: action.plan.tracking,
-      }))
+      // A different kind of exercise keeps only what it records: a bench set
+      // replaced by a plank had saved as a plank holding 60 kg for 8.
+      return mapExercise(workout, action.key, (exercise) => {
+        const tracking = action.plan.tracking
+        const replaced = {
+          ...exercise,
+          exerciseId: action.plan.exerciseId,
+          name: action.plan.name,
+          tracking,
+        }
+        if (tracking === exercise.tracking) return replaced
+        const fields = new Set(fieldsFor(tracking))
+        return {
+          ...replaced,
+          sets: exercise.sets.map((set) => {
+            const kept: LiveSet = {
+              ...set,
+              weightKg: fields.has('weight') ? set.weightKg : null,
+              reps: fields.has('reps') ? set.reps : null,
+              durationS: fields.has('duration') ? set.durationS : null,
+              distanceM: fields.has('distance') ? set.distanceM : null,
+            }
+            return kept.done && !isLoggable(kept, tracking)
+              ? { ...kept, done: false, doneAt: null }
+              : kept
+          }),
+        }
+      })
     case 'removeExercise': {
       const rest = workout.rest?.exerciseKey === action.key ? null : workout.rest
       return {
@@ -252,7 +274,7 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
         .map((exercise, index) => ({ exercise, index }))
         .sort((a, b) => rank(a.exercise.key) - rank(b.exercise.key) || a.index - b.index)
         .map((entry) => entry.exercise)
-      return { ...workout, exercises }
+      return { ...workout, exercises: tidySupersets(exercises) }
     }
     case 'exerciseNotes':
       return mapExercise(workout, action.key, (exercise) => ({ ...exercise, notes: action.notes }))
@@ -263,19 +285,13 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
       return { ...linked, exercises: tidySupersets(linked.exercises) }
     }
     case 'addSet':
-      return mapExercise(workout, action.key, (exercise) => {
-        // A new set copies the one above it, which is what the next set nearly
-        // always is: the same weight for the same reps.
-        const last = exercise.sets[exercise.sets.length - 1]
-        const next = emptySet(action.kind ?? 'normal')
-        if (last && action.kind !== 'warmup') {
-          next.weightKg = last.weightKg
-          next.reps = last.reps
-          next.durationS = last.durationS
-          next.distanceM = last.distanceM
-        }
-        return { ...exercise, sets: [...exercise.sets, next] }
-      })
+      // Empty, and offered a figure by `setHints` like any other set: the row
+      // above, unless last time had a set here. Copying the row above as typed
+      // values hid last time's 100 x 5 under a third set of 100 x 10.
+      return mapExercise(workout, action.key, (exercise) => ({
+        ...exercise,
+        sets: [...exercise.sets, emptySet(action.kind ?? 'normal')],
+      }))
     case 'addSets':
       return mapExercise(workout, action.key, (exercise) => {
         const added = action.sets.map(setFromPlan)
@@ -334,18 +350,41 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
 
 /**
  * The rest ticking a set of `exercise` starts. In a superset the rest comes
- * after the last exercise of the round, not between its members.
+ * after the last exercise of the round, not between its members, and a round
+ * ends early where the partners after this one have no set that far down: with
+ * A at three sets and B at two, A's third set is the end of its round.
  */
 export function restAfter(
   workout: LiveWorkout,
   exercise: LiveExercise,
   defaultRestS: number,
+  setId?: string,
 ): number {
   if (exercise.superset !== null) {
     const group = workout.exercises.filter((entry) => entry.superset === exercise.superset)
-    if (group[group.length - 1]?.key !== exercise.key) return 0
+    const after = group.slice(group.findIndex((entry) => entry.key === exercise.key) + 1)
+    const index = setId ? exercise.sets.findIndex((set) => set.id === setId) : 0
+    if (after.some((entry) => entry.sets.length > Math.max(0, index))) return 0
   }
   return exercise.restS ?? defaultRestS
+}
+
+/**
+ * Last time's set for each of today's: warm-ups with warm-ups, working sets with
+ * working sets, each in order. Lined up by position, last week's two warm-ups
+ * fed this week's first two working sets (40 x 10 offered on a 100 kg day), and
+ * adding warm-ups today pushed every working set off its own last time.
+ */
+export function matchPrevious<T extends { kind?: SetKind }>(
+  sets: readonly { kind: SetKind }[],
+  previous: readonly (T | undefined)[] | null | undefined,
+): (T | undefined)[] {
+  if (!previous) return sets.map(() => undefined)
+  const warm = previous.filter((set) => set?.kind === 'warmup')
+  const work = previous.filter((set) => set !== undefined && set.kind !== 'warmup')
+  let w = 0
+  let k = 0
+  return sets.map((set) => (set.kind === 'warmup' ? warm[w++] : work[k++]))
 }
 
 /** What an empty field shows and a tick takes. See `setHints`. */
@@ -384,14 +423,17 @@ export function setHints(
     const hint = carry.typed[field] ?? last?.[field] ?? carry.shown[field] ?? null
     // A figure that is last time's again (typed, or taken by a tick) is not a
     // change, and the sets under it go on following their own last time.
+    // A set put back to last time's figure ends the change above it, or a 105
+    // typed into set 1 went on being offered under a set 2 typed back to 100.
     const own = set[field]
-    if (own !== null && own !== (last?.[field] ?? null)) carry.typed[field] = own
+    if (own !== null) carry.typed[field] = own !== (last?.[field] ?? null) ? own : null
     carry.shown[field] = set[field] ?? hint
     return hint
   }
+  const matched = matchPrevious(sets, previous)
   return sets.map((set, index) => {
     const carry = set.kind === 'warmup' ? above.warmup : above.working
-    const last = previous?.[index]
+    const last = matched[index]
     return {
       weightKg: column('weightKg', set, carry, last),
       reps: column('reps', set, carry, last),
@@ -413,22 +455,41 @@ function fillBlanks(set: LiveSet, fill: SetPatch | undefined): SetPatch {
 }
 
 /**
- * A superset of one is not a superset. Removing a partner, or moving one into
- * another group, used to leave the other alone under the bracket, and saved
- * that way.
+ * A superset is a run of neighbouring cards sharing a number, and nothing else
+ * is. Removing a partner left one card alone under the bracket; reordering, or
+ * unlinking the middle of three, left a group split around another card, which
+ * the rest timer and the lock screen then each read differently. Every change
+ * that can do that ends here: a run of one is unlinked, and a group that comes
+ * back after a gap is given a number of its own.
  */
-function tidySupersets(exercises: LiveExercise[]): LiveExercise[] {
-  const members = new Map<number, number>()
-  for (const exercise of exercises) {
-    if (exercise.superset !== null) {
-      members.set(exercise.superset, (members.get(exercise.superset) ?? 0) + 1)
-    }
+export function tidySupersets<T extends { superset: number | null }>(exercises: readonly T[]): T[] {
+  const seen = new Set<number>()
+  for (const exercise of exercises) if (exercise.superset !== null) seen.add(exercise.superset)
+  let spare = 0
+  const fresh = () => {
+    while (seen.has(spare)) spare += 1
+    seen.add(spare)
+    return spare
   }
-  return exercises.map((exercise) =>
-    exercise.superset !== null && (members.get(exercise.superset) ?? 0) < 2
-      ? { ...exercise, superset: null }
-      : exercise,
-  )
+  const used = new Set<number>()
+  const out: T[] = []
+  for (let start = 0; start < exercises.length; ) {
+    const group = exercises[start].superset
+    let end = start + 1
+    if (group !== null) while (end < exercises.length && exercises[end].superset === group) end += 1
+    const run = exercises.slice(start, end)
+    if (group === null) out.push(...run)
+    else if (run.length < 2) out.push({ ...run[0], superset: null })
+    else {
+      const number = used.has(group) ? fresh() : group
+      used.add(number)
+      out.push(
+        ...run.map((exercise) => (number === group ? exercise : { ...exercise, superset: number })),
+      )
+    }
+    start = end
+  }
+  return out
 }
 
 /**
@@ -549,14 +610,19 @@ export function setVolume(
 ): number | null {
   if (tracking !== 'weight_reps' && tracking !== 'weighted_reps') return null
   if (!set.weightKg || !set.reps) return null
-  return set.weightKg * set.reps
+  // In cents, as Postgres's numeric does it: 95 lb is 43.09 kg, and 43.09 x 5
+  // in floating point is 215.45000000000002, a record over a stored 215.45.
+  return Math.round(Math.round(set.weightKg * 100) * set.reps) / 100
 }
 
 /** Epley, over 1 to 15 reps. Matches `workout_set_details`. */
 export function estimatedOneRepMax(weightKg: number | null, reps: number | null): number | null {
   if (!weightKg || weightKg <= 0 || !reps || reps < 1 || reps > 15) return null
   if (reps === 1) return weightKg
-  return Math.round(weightKg * (1 + reps / 30) * 10) / 10
+  // weight x (30 + reps) / 30, in cents, rounded as `workout_set_values` rounds
+  // it. Floating point put 56.25 x 4 at 63.75000000000001, a 63.8 the
+  // database called 63.7, and a trophy the saved workout did not have.
+  return Math.round((Math.round(weightKg * 100) * (30 + reps)) / 300) / 10
 }
 
 /** The time of the last ticked set, for "finish when I actually stopped". */
@@ -654,7 +720,9 @@ const round = (value: number | null, places: number) =>
 const within = (value: number | null, min: number, max: number) =>
   value === null || !Number.isFinite(value) ? null : Math.min(max, Math.max(min, value))
 
-const clip = (text: string, length: number) => text.slice(0, length)
+// By character, as Postgres counts: slicing UTF-16 units could cut an emoji in
+// half, and the broken surrogate failed the whole request.
+const clip = (text: string, length: number) => Array.from(text).slice(0, length).join('')
 
 /**
  * The document `save_workout` takes. Only ticked sets are saved, and an
@@ -679,27 +747,45 @@ export function toPayload(
     routine_id: workout.routineId,
     kcal: within(extra.kcal === null ? null : Math.round(extra.kcal), 0, 10000),
     health_workout_id: extra.healthWorkoutId,
-    exercises: workout.exercises
-      .map((exercise) => ({
-        exercise_id: clip(exercise.exerciseId, 80),
-        exercise_name: clip(exercise.name.trim(), 120) || exercise.exerciseId,
-        tracking: exercise.tracking,
-        superset: within(exercise.superset, 0, 99),
-        rest_s: within(exercise.restS, 0, 3600),
-        notes: clip(exercise.notes.trim(), 1000) || null,
-        sets: exercise.sets
-          .filter((set) => set.done)
-          .slice(0, 99)
-          .map((set) => ({
-            kind: set.kind,
-            weight_kg: within(round(set.weightKg, 2), 0, 1000),
-            reps: within(set.reps === null ? null : Math.round(set.reps), 0, 1000),
-            duration_s: within(set.durationS === null ? null : Math.round(set.durationS), 0, 86400),
-            distance_m: within(round(set.distanceM, 1), 0, 1_000_000),
-            rpe: set.rpe === null || set.rpe < 1 || set.rpe > 10 ? null : set.rpe,
-          })),
-      }))
-      .filter((exercise) => exercise.sets.length > 0)
-      .slice(0, 60),
+    // Tidied after the empty ones go: a superset whose partner was never done
+    // is a single exercise, not a bracket of one that a repeat brings back.
+    exercises: tidySupersets(
+      workout.exercises
+        .map((exercise) => ({
+          exercise_id: clip(exercise.exerciseId, 80),
+          exercise_name: clip(exercise.name.trim(), 120) || exercise.exerciseId,
+          tracking: exercise.tracking,
+          superset: within(exercise.superset, 0, 99),
+          rest_s: within(exercise.restS, 0, 3600),
+          notes: clip(exercise.notes.trim(), 1000) || null,
+          // Ticked and with a number in it: a ticked set's fields stay editable,
+          // and one cleared afterwards is refused by `save_workout`, which would
+          // turn the whole save into a final refusal.
+          sets: exercise.sets
+            .filter(
+              (set) =>
+                set.done &&
+                (set.weightKg !== null ||
+                  set.reps !== null ||
+                  set.durationS !== null ||
+                  set.distanceM !== null),
+            )
+            .slice(0, 99)
+            .map((set) => ({
+              kind: set.kind,
+              weight_kg: within(round(set.weightKg, 2), 0, 1000),
+              reps: within(set.reps === null ? null : Math.round(set.reps), 0, 1000),
+              duration_s: within(
+                set.durationS === null ? null : Math.round(set.durationS),
+                0,
+                86400,
+              ),
+              distance_m: within(round(set.distanceM, 1), 0, 1_000_000),
+              rpe: set.rpe === null || set.rpe < 1 || set.rpe > 10 ? null : set.rpe,
+            })),
+        }))
+        .filter((exercise) => exercise.sets.length > 0)
+        .slice(0, 60),
+    ),
   }
 }

@@ -13,8 +13,8 @@ import { EXERCISE_ART } from './exerciseArt.generated'
  * catalogue has since retired) draws the body-part icon instead, which is the
  * most a name typed by the user can honestly be pictured as.
  *
- * The tile is `surface-alt` in both modes: the drawings carry grey equipment
- * that reads on a pale tile and disappears on a dark card.
+ * The tile is `exercise-tile`, which stays pale in dark mode too: the drawings
+ * carry grey equipment that reads on a pale tile and disappears on a dark card.
  */
 
 const FALLBACK: Record<Category, IconRef> = {

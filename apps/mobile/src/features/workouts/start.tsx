@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useSession } from '@/data/session'
 import { track, type WorkoutSource } from '@/lib/analytics'
 import { ConfirmSheet } from '@/ui'
+import { removeWorkoutFromHealth } from './health'
 import { doneSets, type ExercisePlan, type LiveWorkout, newWorkout } from './model'
 import {
   clearActiveWorkout,
@@ -49,6 +50,10 @@ export function discardWorkout(
     minutes: Math.round((Date.now() - workout.startedAt) / 60000),
   })
   clearActiveWorkout(userId)
+  // A copy can already be in Health: the app was killed after writing it and
+  // before the server answered, and the workout came back as the running one.
+  // Found by the workout's own id, so it is nothing when there is none.
+  void removeWorkoutFromHealth(workout.healthWorkoutId, workout.id)
 }
 
 function begin(userId: string, input: StartInput): void {

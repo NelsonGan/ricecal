@@ -236,7 +236,7 @@ export const ja = {
       workoutsBody: '種目、時間、ペース、心拍数',
 
       privacy:
-        '読み取り専用です。ワークアウトを保存する設定をオンにしない限り書き戻すことはなく、健康データはあなた自身のアカウントにのみ保存されます。',
+        '連携は読み取りのみです。ワークアウトはオンにした場合だけそこへ保存し、健康データはあなた自身のアカウントにのみ保存されます。',
 
       appleBody: 'Apple Health（iPhone と Apple Watch）',
       connectHealthBody: 'Health Connect：Samsung Health、Fitbit、Garmin',
@@ -1877,6 +1877,9 @@ export const ja = {
       },
       superset: 'スーパーセット',
       restTitle: '休憩タイマー',
+      menuFor: '{{name}}の操作',
+      removeTitle: '{{name}} を削除しますか？',
+      removeBody: 'そのセットも削除されます。',
       restDefault: 'デフォルトを使う（{{time}}）',
       pr: '自己ベスト更新',
       noNumbers: '先にセットを入力してください',
@@ -1998,6 +2001,7 @@ export const ja = {
       records: '自己ベスト',
       split: '部位の割合',
       noHistoryTitle: 'まだ実施していません',
+      missing: 'この種目はもうありません。',
       chart: {
         heaviest: '最大重量',
         e1rm: '推定 1RM',
@@ -2038,6 +2042,7 @@ export const ja = {
       splitRange: '直近 30 日',
       records: '自己ベスト',
       calendar: 'カレンダー',
+      dayTrained: '{{day}}、ワークアウトあり',
     },
 
     settings: {
@@ -2065,6 +2070,8 @@ export const ja = {
       perSide: '片側',
       none: 'バーのみ',
       unreachable: '標準のプレートでは組めません。',
+      closest: '最も近い重量：{{weight}}',
+      closestOr: '最も近い重量：{{weight}} または {{other}}',
     },
 
     warmup: {

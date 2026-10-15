@@ -40,10 +40,9 @@ export function RestBar({
           <Text variant="overlineSm" className="text-kaya-ink">
             {t('rest.title')}
           </Text>
-          <Text
-            className="font-display text-[26px] leading-[34px] text-kaya-ink"
-            accessibilityLiveRegion="polite"
-          >
+          {/* No live region: the figure changes every second, and TalkBack read
+              every one of them out. */}
+          <Text className="font-display text-[26px] leading-[34px] text-kaya-ink">
             {shortClock(left)}
           </Text>
         </View>

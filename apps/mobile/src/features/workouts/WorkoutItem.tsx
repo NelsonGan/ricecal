@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
-import type { WorkoutSummary } from '@/data'
+import { useHealthConnection, type WorkoutSummary } from '@/data'
 import { formatTime, ItemRow } from '@/features/shared'
 import { exerciseIcon } from './ExerciseArt'
 import { durationText } from './format'
@@ -12,9 +12,11 @@ import { useExerciseLibrary } from './library'
  * figure on the right.
  *
  * The calories burned, in hibiscus, only when the workout was saved to Apple
- * Health, because that is the only way its energy reaches the budget (see
- * "Workouts and the budget" in the README). Otherwise its length: a burn
- * figure beside a ring that did not move reads as a bug.
+ * Health and Health is read back, because that is the only way its energy
+ * reaches the budget (see "Workouts and the budget" in the README). Saving to
+ * Health works with reading switched off, and then the energy never comes
+ * back. Otherwise its length: a burn figure beside a ring that did not move
+ * reads as a bug.
  */
 export function WorkoutItem({
   workout,
@@ -27,7 +29,8 @@ export function WorkoutItem({
   const first = workout.exercises[0]
   const library = useExerciseLibrary()
   const exercise = first ? library.byId(first.exerciseId) : undefined
-  const counted = workout.healthWorkoutId ? workout.kcal : null
+  const reading = useHealthConnection().data?.connected === true
+  const counted = workout.healthWorkoutId && reading ? workout.kcal : null
 
   return (
     <ItemRow

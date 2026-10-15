@@ -722,23 +722,27 @@ export async function saveWorkoutToHealth(workout: WorkoutForHealth): Promise<st
     unit: string
     metadata: Record<string, string>
   }[] = []
-  if (workout.kcal && workout.kcal > 0 && mayWrite(hk, QUANTITY.activeEnergy)) {
+  const kcal = workout.kcal ?? 0
+  const energy = kcal > 0 && mayWrite(hk, QUANTITY.activeEnergy)
+  if (energy) {
     quantities.push({
       startDate: workout.start,
       endDate: workout.end,
       quantityType: QUANTITY.activeEnergy,
-      quantity: workout.kcal,
+      quantity: kcal,
       unit: 'kcal',
       metadata,
     })
   }
   const distanceType = DISTANCE_FOR[workout.activityType]
-  if (distanceType && workout.distanceM && workout.distanceM > 0 && mayWrite(hk, distanceType)) {
+  const metres = workout.distanceM ?? 0
+  const distance = Boolean(distanceType) && metres > 0 && mayWrite(hk, distanceType as string)
+  if (distance) {
     quantities.push({
       startDate: workout.start,
       endDate: workout.end,
       quantityType: distanceType,
-      quantity: workout.distanceM,
+      quantity: metres,
       unit: 'm',
       metadata,
     })
@@ -749,9 +753,11 @@ export async function saveWorkoutToHealth(workout: WorkoutForHealth): Promise<st
     quantities as never,
     workout.start,
     workout.end,
+    // Totals only for what the user let us write: refused Active Energy still
+    // showed the estimate on the workout in Health.
     {
-      energyBurned: workout.kcal ?? undefined,
-      distance: workout.distanceM ?? undefined,
+      energyBurned: energy ? kcal : undefined,
+      distance: distance ? metres : undefined,
     },
     metadata as never,
   )

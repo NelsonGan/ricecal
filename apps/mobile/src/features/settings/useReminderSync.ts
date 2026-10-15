@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useMealTimes, useSession, useSettings } from '@/data'
-import { rescheduleReminders } from '@/lib/notifications'
+import { cancelReminders, rescheduleReminders } from '@/lib/notifications'
 
 /**
  * Keeps the phone's scheduled reminders equal to the user's settings.
@@ -27,6 +27,11 @@ export function useReminderSync(): void {
   // doing it on every render would cancel a queue and rebuild it several times
   // a second while a screen is mounted.
   const lastKey = useRef<string | undefined>(undefined)
+
+  // Signing out unmounts the tabs, and this with them. The reminders were
+  // booked from that account's settings, and left booked they went on asking
+  // the next person on this phone to log meals and train on its days.
+  useEffect(() => () => void cancelReminders(), [])
 
   useEffect(() => {
     if (!userId || !settings || !mealTimes) return

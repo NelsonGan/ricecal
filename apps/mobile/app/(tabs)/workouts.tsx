@@ -139,7 +139,9 @@ export default function WorkoutsScreen() {
         </Button>
       </View>
 
-      {routines.isPending ? (
+      {/* Paused is offline with nothing cached: the request is held rather than
+          failed, and a skeleton would wait for it forever. */}
+      {routines.isPending && !routines.isPaused ? (
         <Skeleton className="h-[78px] w-full rounded-card" />
       ) : routines.data?.length ? (
         <View className="gap-stack">
@@ -161,6 +163,8 @@ export default function WorkoutsScreen() {
             />
           ))}
         </View>
+      ) : !routines.data && (routines.isPaused || routines.isError) ? (
+        <Unavailable offline={routines.isPaused} />
       ) : (
         <EmptyRow
           icon={{ set: 'system', name: 'guide-book' }}
@@ -191,7 +195,7 @@ export default function WorkoutsScreen() {
         {t('workouts:history.title')}
       </Text>
 
-      {workouts.isPending && !history.length ? (
+      {workouts.isPending && !workouts.isPaused && !history.length ? (
         <Card>
           <Skeleton className="h-[120px] w-full" />
         </Card>
@@ -220,6 +224,8 @@ export default function WorkoutsScreen() {
             </Button>
           ) : null}
         </View>
+      ) : !workouts.data && (workouts.isPaused || workouts.isError) ? (
+        <Unavailable offline={workouts.isPaused} />
       ) : (
         <EmptyRow
           icon={{ set: 'body', name: 'stopwatch' }}
@@ -253,6 +259,20 @@ function QuickAction({
         {label}
       </Text>
     </Tappable>
+  )
+}
+
+/**
+ * A list that could not be fetched, which is not an empty one: "No workouts
+ * yet" over a history that simply did not load reads as a lost history.
+ */
+function Unavailable({ offline }: { offline: boolean }) {
+  const { t } = useTranslation(['common'])
+  return (
+    <EmptyRow
+      icon={offline ? { set: 'ui', name: 'offline' } : { set: 'ui', name: 'warning' }}
+      title={offline ? t('common:offline.title') : t('common:offline.unreachableTitle')}
+    />
   )
 }
 

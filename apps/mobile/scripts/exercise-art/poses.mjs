@@ -278,13 +278,13 @@ export const POSES = {
   snatch:
     'in the overhead squat catch of a snatch: a loaded barbell locked out overhead with a very wide grip, squatting deep with an upright torso. Front-3/4 view.',
   thruster:
-    'at the top of a thruster: standing tall after a front squat, pressing a loaded barbell overhead with arms extended. Side view.',
+    'in the MIDDLE of a thruster, strict side view: rising out of a half squat (knees bent about 45 degrees, hips below standing height) while a loaded olympic barbell travels up IN FRONT OF THE FACE at forehead height, elbows bent about 90 degrees and pointing forward, palms under the bar. The arms are NOT straight and the bar is NOT above the head: that would be an overhead squat or an overhead press. The legs and the press are moving at once.',
   'kettlebell-swing':
-    'swinging one kettlebell held in both hands up to chest height with straight arms, hips snapped forward, standing tall. Side view.',
+    'in the backswing of a two-handed kettlebell swing, side view: hips pushed far back in a hinge with a flat back and soft knees, chest leaning forward, both straight arms swinging one kettlebell back BETWEEN the thighs, the bell behind the line of the knees. Not standing upright and not holding the bell out in front.',
   'turkish-get-up':
     'mid Turkish get-up: half-seated on the floor propped on one hand, the other arm extended straight up holding a kettlebell overhead, one knee bent. Side view.',
   burpee:
-    'jumping up at the top of a burpee, arms reaching overhead, feet just leaving the floor. Front-3/4 view.',
+    'at the bottom of a burpee, strict side view: crouched in a deep squat with BOTH palms flat on the floor just in front of the shoes, knees bent and drawn up to the chest, hips low and back, head forward, about to jump the feet back into a plank. Not a plank, not a push-up and not standing.',
   'wall-ball':
     'standing in front of a tall wall target, having squatted, throwing a soft medicine ball up toward the target with both hands overhead. Side view with the wall target.',
   'medicine-ball-slam':

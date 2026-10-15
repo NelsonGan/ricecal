@@ -172,8 +172,9 @@ export type NavActionProps = {
 }
 
 /**
- * The add action: a pandan tile at the right end of the bar, beside the pill.
- * See `NavBar` for why it sits there.
+ * The add action: a pandan tile. Today floats it in the bottom right corner,
+ * above the bar, as `Screen`'s `floatingTrailing`; the bar's own `action` slot
+ * is unused, for the reason `NavBar` gives.
  */
 export function NavAction({ onPress, label, className }: NavActionProps) {
   const colors = useThemeColors()

@@ -59,6 +59,8 @@ const softFills = {
   kaya: 'bg-kaya-soft-line',
 } as const
 
+const COLUMN = 'h-full min-w-0 flex-1 items-center gap-1.5'
+
 /**
  * A plain column chart.
  *
@@ -95,41 +97,53 @@ export function BarChart({
       accessibilityRole={accessibilityLabel && !onSelect ? 'image' : undefined}
       accessibilityLabel={accessibilityLabel}
     >
-      {bars.map((bar, index) => (
-        <Tappable
-          key={bar.key}
-          disabled={!onSelect}
-          onPress={() => onSelect?.(selected === index ? null : index)}
-          className="h-full min-w-0 flex-1 items-center gap-1.5"
-          accessibilityRole={onSelect ? 'button' : undefined}
-          accessibilityState={onSelect ? { selected: selected === index } : undefined}
-          accessibilityLabel={onSelect ? (bar.a11yLabel ?? bar.label ?? bar.key) : undefined}
-        >
-          {/* The bar's percentage is of this box, not of the column: measuring
-              it against the column would make a full bar plus its label taller
-              than the chart, and it would ride up over whatever sits above. */}
-          <View className="w-full flex-1 justify-end">
-            <View
-              className={cn(
-                'w-full rounded-lg',
-                (selected === null ? bar.highlight : selected === index)
-                  ? fills[tone]
-                  : others === 'soft' && bar.value > 0
-                    ? softFills[tone]
-                    : 'bg-track',
-              )}
-              // A floor of 4% keeps a zero-value day visible as a stub rather
-              // than vanishing, which reads as missing data.
-              style={{ height: `${Math.max(4, ((bar.value - floor) / span) * 100)}%` }}
-            />
+      {bars.map((bar, index) => {
+        const column = (
+          <>
+            {/* The bar's percentage is of this box, not of the column: measuring
+                it against the column would make a full bar plus its label taller
+                than the chart, and it would ride up over whatever sits above. */}
+            <View className="w-full flex-1 justify-end">
+              <View
+                className={cn(
+                  'w-full rounded-lg',
+                  (selected === null ? bar.highlight : selected === index)
+                    ? fills[tone]
+                    : others === 'soft' && bar.value > 0
+                      ? softFills[tone]
+                      : 'bg-track',
+                )}
+                // A floor of 4% keeps a zero-value day visible as a stub rather
+                // than vanishing, which reads as missing data.
+                style={{ height: `${Math.max(4, ((bar.value - floor) / span) * 100)}%` }}
+              />
+            </View>
+            {bar.label !== undefined ? (
+              <Text numberOfLines={1} variant="micro">
+                {bar.label}
+              </Text>
+            ) : null}
+          </>
+        )
+        // A plain View unless the bars can be picked: a Pressable that does
+        // nothing is still a stop TalkBack lands on, with nothing to say.
+        return onSelect ? (
+          <Tappable
+            key={bar.key}
+            onPress={() => onSelect(selected === index ? null : index)}
+            className={COLUMN}
+            accessibilityRole="button"
+            accessibilityState={{ selected: selected === index }}
+            accessibilityLabel={bar.a11yLabel ?? bar.label ?? bar.key}
+          >
+            {column}
+          </Tappable>
+        ) : (
+          <View key={bar.key} className={COLUMN}>
+            {column}
           </View>
-          {bar.label !== undefined ? (
-            <Text numberOfLines={1} variant="micro">
-              {bar.label}
-            </Text>
-          ) : null}
-        </Tappable>
-      ))}
+        )
+      })}
     </View>
   )
 }
