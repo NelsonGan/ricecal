@@ -19,13 +19,13 @@ import {
   useLiveWorkout,
   useNow,
   useWorkoutPrefs,
-  volume,
+  volumeText,
   WorkoutEditor,
+  WorkoutMissing,
   clock as workoutClock,
 } from '@/features/workouts'
-import { useBack } from '@/lib/navigation'
-import { UNIT_KEY, unitFor } from '@/lib/units'
-import { AppBar, Button, ConfirmSheet, EmptyState, Screen } from '@/ui'
+import { unitFor } from '@/lib/units'
+import { AppBar, Button, ConfirmSheet, Screen } from '@/ui'
 
 /**
  * The logger: a workout being trained.
@@ -57,7 +57,8 @@ export default function ActiveWorkoutScreen() {
   if (current) lastSeen.current = current
   const workout = current ?? lastSeen.current
 
-  if (!workout) return <NothingRunning />
+  // A notice tapped after its workout was finished: say so, rather than redirect.
+  if (!workout) return <WorkoutMissing />
 
   const totals = liveTotals(workout)
 
@@ -132,10 +133,7 @@ export default function ActiveWorkoutScreen() {
       <StatStrip>
         <Elapsed label={t('workouts:logger.duration')} startedAt={workout.startedAt} />
         {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
-          <Stat
-            label={t('workouts:logger.volume')}
-            value={`${volume(totals.volumeKg, unit)} ${t(UNIT_KEY[unit])}`}
-          />
+          <Stat label={t('workouts:logger.volume')} value={volumeText(t, totals.volumeKg, unit)} />
         ) : null}
         <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
       </StatStrip>
@@ -204,15 +202,6 @@ export default function ActiveWorkoutScreen() {
  * Opened with no workout at all: a notice tapped after the workout it was
  * about had been finished. A screen that says so, not a redirect.
  */
-function NothingRunning() {
-  const { t } = useTranslation(['workouts', 'common'])
-  const goBack = useBack('/workouts')
-  return (
-    <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
-      <EmptyState title={t('workouts:detail.missing')} icon={{ set: 'body', name: 'stopwatch' }} />
-    </Screen>
-  )
-}
 
 /**
  * The pieces that change every second, each with its own clock, so a tick

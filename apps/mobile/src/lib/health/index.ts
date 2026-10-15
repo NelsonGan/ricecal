@@ -8,10 +8,8 @@ export { healthConnect, sourceLabel } from './androidHealth'
 export {
   APPLE_READ_TYPES,
   appleHealth,
-  canWriteWorkouts,
   deleteWorkoutFromHealth,
   eachDay,
-  RICECAL_WORKOUT_KEY,
   requestWorkoutWrite,
   saveWorkoutToHealth,
   type WorkoutForHealth,

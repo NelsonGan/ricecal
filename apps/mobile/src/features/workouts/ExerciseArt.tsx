@@ -67,7 +67,7 @@ const SPORT_ICON: Record<string, IconRef> = {
   'stair-climber': { set: 'body', name: 'stairs' },
 }
 
-export function exerciseIcon(exerciseId: string, category: Category): IconRef {
+export function exerciseIcon(exerciseId: string, category: Category = 'fullBody'): IconRef {
   return (
     SPORT_ICON[exerciseId] ??
     (category === 'sports' ? FALLBACK.sports : { set: 'body', name: 'dumbbell' })
@@ -76,14 +76,21 @@ export function exerciseIcon(exerciseId: string, category: Category): IconRef {
 
 export type ExerciseArtProps = {
   exerciseId: string
-  category: Category
+  /** The body part, whose icon stands in where the exercise has no drawing. */
+  category?: Category
   size: number
   /** Tile corner radius; defaults to a third of the size, which reads as a soft square. */
   radius?: number
   className?: string
 }
 
-export function ExerciseArt({ exerciseId, category, size, radius, className }: ExerciseArtProps) {
+export function ExerciseArt({
+  exerciseId,
+  category = 'fullBody',
+  size,
+  radius,
+  className,
+}: ExerciseArtProps) {
   const source = EXERCISE_ART[exerciseId]
   const icon = FALLBACK[category]
 

@@ -1861,10 +1861,6 @@ export const bn = {
       restTitle: 'বিশ্রামের টাইমার',
       restDefault: 'ডিফল্ট ({{time}})',
       pr: 'নতুন রেকর্ড',
-      prWeight: 'সবচেয়ে ভারী ওজন',
-      prE1rm: 'সেরা আনুমানিক 1RM',
-      prVolume: 'সেরা সেট ভলিউম',
-      prReps: 'সবচেয়ে বেশি রেপ',
       noNumbers: 'আগে সেটটি পূরণ করুন',
       /** A plain row in PREVIOUS where there is nothing to compare against. */
       noPrevious: '—',

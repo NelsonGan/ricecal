@@ -1882,10 +1882,6 @@ export const ta = {
       restTitle: 'ஓய்வு டைமர்',
       restDefault: 'இயல்புநிலை ({{time}})',
       pr: 'புதிய சாதனை',
-      prWeight: 'அதிக எடை',
-      prE1rm: 'சிறந்த கணித்த 1RM',
-      prVolume: 'சிறந்த செட் வால்யூம்',
-      prReps: 'அதிக ரெப்ஸ்',
       noNumbers: 'முதலில் செட்டை நிரப்புங்கள்',
       /** A plain row in PREVIOUS where there is nothing to compare against. */
       noPrevious: '—',

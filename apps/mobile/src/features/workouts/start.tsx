@@ -2,11 +2,16 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useSession } from '@/data/session'
 import { track, type WorkoutSource } from '@/lib/analytics'
 import { ConfirmSheet } from '@/ui'
-import { useLiveWorkout } from './live'
 import { doneSets, type ExercisePlan, type LiveWorkout, newWorkout } from './model'
-import { clearActiveWorkout, getActiveWorkout, startActiveWorkout } from './store'
+import {
+  clearActiveWorkout,
+  getActiveWorkout,
+  startActiveWorkout,
+  useHasActiveWorkout,
+} from './store'
 
 /**
  * Starting and throwing away a workout, in one place so both are counted the
@@ -64,14 +69,18 @@ function begin(userId: string, input: StartInput): void {
 export function useWorkoutStarter() {
   const { t } = useTranslation(['workouts', 'common'])
   const router = useRouter()
-  const { userId, workout } = useLiveWorkout()
+  const { userId } = useSession()
+  // Whether one runs, not the workout itself: the screens that start one stay
+  // mounted under the logger, and reading the document re-rendered each of
+  // them on every keystroke in it.
+  const running = useHasActiveWorkout(userId)
   const [pending, setPending] = useState<StartInput | null>(null)
 
   const open = () => router.push('/workout/active')
 
   const start = (input: StartInput) => {
     if (!userId) return
-    if (workout) {
+    if (getActiveWorkout(userId)) {
       setPending(input)
       return
     }
@@ -97,5 +106,5 @@ export function useWorkoutStarter() {
     />
   )
 
-  return { start, sheet, running: workout }
+  return { start, sheet, running }
 }

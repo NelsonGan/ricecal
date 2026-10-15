@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -25,6 +25,7 @@ import {
   MUSCLES,
   type Muscle,
   planFor,
+  primaryMuscle,
   searchExercises,
   useExerciseLibrary,
 } from '@/features/workouts'
@@ -99,44 +100,73 @@ export default function ExercisesScreen() {
       .filter((exercise): exercise is LibraryExercise => Boolean(exercise))
   }, [bests, debounced, category, filters, library])
 
-  const rows: Row[] = [
-    ...(recent.length
-      ? [{ kind: 'heading' as const, key: 'h-recent', label: t('workouts:library.recent') }]
-      : []),
-    ...recent.map((exercise) => ({ kind: 'exercise' as const, key: `r-${exercise.id}`, exercise })),
-    ...(recent.length
-      ? [{ kind: 'heading' as const, key: 'h-all', label: t('workouts:library.all') }]
-      : []),
-    ...results.map((exercise) => ({ kind: 'exercise' as const, key: exercise.id, exercise })),
-  ]
+  const rows = useMemo<Row[]>(
+    () => [
+      ...(recent.length
+        ? [{ kind: 'heading' as const, key: 'h-recent', label: t('workouts:library.recent') }]
+        : []),
+      ...recent.map((exercise) => ({
+        kind: 'exercise' as const,
+        key: `r-${exercise.id}`,
+        exercise,
+      })),
+      ...(recent.length
+        ? [{ kind: 'heading' as const, key: 'h-all', label: t('workouts:library.all') }]
+        : []),
+      ...results.map((exercise) => ({ kind: 'exercise' as const, key: exercise.id, exercise })),
+    ],
+    [recent, results, t],
+  )
 
   const activeFilters = Object.values(filters).filter(Boolean).length
 
-  const choose = (exercise: LibraryExercise) => {
-    if (!picking) {
-      router.push({ pathname: '/workout/exercise/[id]', params: { id: exercise.id } })
-      return
-    }
-    if (single) {
-      finish([exercise])
-      return
-    }
-    setChosen((current) =>
-      current.includes(exercise.id)
-        ? current.filter((id) => id !== exercise.id)
-        : [...current, exercise.id],
-    )
-  }
+  const finish = useCallback(
+    (exercises: LibraryExercise[]) => {
+      // Back first, then hand over. An opener that navigates with the result
+      // ("Log a sport" opens the logger) pushed its screen and then had this
+      // back pop it straight off again.
+      router.back()
+      if (hasPick()) deliverPick(exercises.map(planFor))
+    },
+    [router],
+  )
 
-  const finish = (exercises: LibraryExercise[]) => {
-    // Back first, then hand over. An opener that navigates with the result
-    // ("Log a sport" opens the logger) pushed its screen and then had this
-    // back pop it straight off again.
-    router.back()
-    if (hasPick()) {
-      deliverPick(exercises.map(planFor))
-    }
-  }
+  // Stable, so the memoised rows only re-render when their own tick changes.
+  const choose = useCallback(
+    (exercise: LibraryExercise) => {
+      if (!picking) {
+        router.push({ pathname: '/workout/exercise/[id]', params: { id: exercise.id } })
+        return
+      }
+      if (single) {
+        finish([exercise])
+        return
+      }
+      setChosen((current) =>
+        current.includes(exercise.id)
+          ? current.filter((id) => id !== exercise.id)
+          : [...current, exercise.id],
+      )
+    },
+    [picking, single, router, finish],
+  )
+
+  const renderItem = useCallback(
+    ({ item }: { item: Row }) =>
+      item.kind === 'heading' ? (
+        <Text variant="overline" className="pb-1 pt-3">
+          {item.label}
+        </Text>
+      ) : (
+        <ExerciseRow
+          exercise={item.exercise}
+          picking={picking && !single}
+          checked={chosen.includes(item.exercise.id)}
+          onChoose={choose}
+        />
+      ),
+    [picking, single, chosen, choose],
+  )
 
   return (
     <Screen
@@ -245,20 +275,9 @@ export default function ExercisesScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         initialNumToRender={14}
-        renderItem={({ item }) =>
-          item.kind === 'heading' ? (
-            <Text variant="overline" className="pb-1 pt-3">
-              {item.label}
-            </Text>
-          ) : (
-            <ExerciseRow
-              exercise={item.exercise}
-              picking={picking && !single}
-              checked={chosen.includes(item.exercise.id)}
-              onPress={() => choose(item.exercise)}
-            />
-          )
-        }
+        renderItem={renderItem}
+        // A few screens either way: the default rendered all 181 rows.
+        windowSize={5}
         ListEmptyComponent={
           <EmptyState
             title={t('workouts:library.noneTitle')}
@@ -297,22 +316,21 @@ type Row =
   | { kind: 'heading'; key: string; label: string }
   | { kind: 'exercise'; key: string; exercise: LibraryExercise }
 
-function ExerciseRow({
+const ExerciseRow = memo(function ExerciseRow({
   exercise,
   picking,
   checked,
-  onPress,
+  onChoose,
 }: {
   exercise: LibraryExercise
   picking: boolean
   checked: boolean
-  onPress: () => void
+  onChoose: (exercise: LibraryExercise) => void
 }) {
+  const onPress = () => onChoose(exercise)
   const { t } = useTranslation(['workouts'])
   const colors = useThemeColors()
-  const primary = Object.entries(exercise.muscles).sort((a, b) => b[1] - a[1])[0]?.[0] as
-    | Muscle
-    | undefined
+  const primary = primaryMuscle(exercise.muscles)
 
   return (
     <Tappable
@@ -357,7 +375,7 @@ function ExerciseRow({
       ) : null}
     </Tappable>
   )
-}
+})
 
 function FilterSheet({
   visible,

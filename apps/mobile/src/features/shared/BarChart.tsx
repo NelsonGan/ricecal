@@ -4,8 +4,8 @@ import { cn, Text } from '@/ui'
 
 export type Bar = {
   key: string
-  /** The axis label under the bar. One or two characters. */
-  label: string
+  /** The axis label under the bar. One or two characters. Left out, no label row. */
+  label?: string
   value: number
   /** Draws this bar in the accent colour. Usually the newest or the current one. */
   highlight?: boolean
@@ -15,6 +15,12 @@ export type BarChartProps = {
   bars: readonly Bar[]
   /** Accent for highlighted bars. */
   tone?: 'pandan' | 'hibiscus' | 'water' | 'kaya'
+  /**
+   * How the bars that are not highlighted are drawn. `track` greys them all;
+   * `soft` gives any with a value a pale wash of the tone, so a week with
+   * something in it stands apart from an empty one.
+   */
+  others?: 'track' | 'soft'
   /**
    * Where the bars start from.
    *
@@ -37,6 +43,13 @@ const fills = {
   kaya: 'bg-kaya',
 } as const
 
+const softFills = {
+  pandan: 'bg-pandan-soft-line',
+  hibiscus: 'bg-hibiscus-soft-line',
+  water: 'bg-water-soft-line',
+  kaya: 'bg-kaya-soft-line',
+} as const
+
 /**
  * A plain column chart.
  *
@@ -47,6 +60,7 @@ const fills = {
 export function BarChart({
   bars,
   tone = 'pandan',
+  others = 'track',
   scale = 'zero',
   height = 110,
   accessibilityLabel,
@@ -76,15 +90,24 @@ export function BarChart({
               than the chart, and it would ride up over whatever sits above. */}
           <View className="w-full flex-1 justify-end">
             <View
-              className={cn('w-full rounded-lg', bar.highlight ? fills[tone] : 'bg-track')}
+              className={cn(
+                'w-full rounded-lg',
+                bar.highlight
+                  ? fills[tone]
+                  : others === 'soft' && bar.value > 0
+                    ? softFills[tone]
+                    : 'bg-track',
+              )}
               // A floor of 4% keeps a zero-value day visible as a stub rather
               // than vanishing, which reads as missing data.
               style={{ height: `${Math.max(4, ((bar.value - floor) / span) * 100)}%` }}
             />
           </View>
-          <Text numberOfLines={1} variant="micro">
-            {bar.label}
-          </Text>
+          {bar.label !== undefined ? (
+            <Text numberOfLines={1} variant="micro">
+              {bar.label}
+            </Text>
+          ) : null}
         </View>
       ))}
     </View>

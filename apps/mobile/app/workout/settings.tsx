@@ -4,7 +4,14 @@ import { useTranslation } from 'react-i18next'
 import { Platform, View } from 'react-native'
 
 import { useSettings, useUpdateSettings } from '@/data'
-import { ActionSheet, setWorkoutPrefs, shortClock, useWorkoutPrefs } from '@/features/workouts'
+import { ToggleRow } from '@/features/shared'
+import {
+  ActionSheet,
+  REST_CHOICES,
+  setWorkoutPrefs,
+  shortClock,
+  useWorkoutPrefs,
+} from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { requestWorkoutWrite } from '@/lib/health'
 import { parseTime } from '@/lib/meal-times'
@@ -21,15 +28,12 @@ import {
   Screen,
   SegmentedControl,
   Sheet,
-  Switch,
   Tappable,
   Text,
   useToast,
   Wheel,
   type WheelOption,
 } from '@/ui'
-
-const REST_CHOICES = [0, 30, 45, 60, 90, 120, 150, 180, 240, 300] as const
 
 /** Monday first, as the streak counts weeks; values are `getDay()` numbers. */
 const WEEK = [1, 2, 3, 4, 5, 6, 0] as const
@@ -105,16 +109,18 @@ export default function WorkoutSettingsScreen() {
         <ToggleRow
           title={t('workouts:settings.keepAwake')}
           value={prefs.keepAwake}
-          onChange={(keepAwake) => setWorkoutPrefs({ keepAwake })}
+          divider={false}
+          onValueChange={(keepAwake) => setWorkoutPrefs({ keepAwake })}
         />
         {Platform.OS === 'ios' ? (
           <>
             <Divider />
             <ToggleRow
               title={t('workouts:settings.health')}
-              hint={t('workouts:settings.healthHint')}
+              description={t('workouts:settings.healthHint')}
               value={prefs.healthWrite}
-              onChange={async (on) => {
+              divider={false}
+              onValueChange={async (on) => {
                 if (!on) {
                   setWorkoutPrefs({ healthWrite: false })
                   return
@@ -175,28 +181,6 @@ export default function WorkoutSettingsScreen() {
         }
       />
     </Screen>
-  )
-}
-
-function ToggleRow({
-  title,
-  hint,
-  value,
-  onChange,
-}: {
-  title: string
-  hint?: string
-  value: boolean
-  onChange: (value: boolean) => void
-}) {
-  return (
-    <View className="flex-row items-center gap-3 py-3">
-      <View className="flex-1 gap-0.5">
-        <Text variant="bodyStrong">{title}</Text>
-        {hint ? <Text variant="meta">{hint}</Text> : null}
-      </View>
-      <Switch value={value} onValueChange={onChange} accessibilityLabel={title} />
-    </View>
   )
 }
 

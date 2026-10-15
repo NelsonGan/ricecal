@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -8,13 +8,14 @@ import { useExerciseBests, useLastSets, useSettings } from '@/data'
 import { unitFor } from '@/lib/units'
 import { Button, EmptyState, useToast } from '@/ui'
 import { ActionSheet, type SheetAction } from './ActionSheet'
-import { SET_KIND_KEY } from './copy'
+import { RECORD_KEY, SET_KIND_KEY } from './copy'
 import { ExerciseCard } from './ExerciseCard'
 import { FieldOrderProvider } from './fieldOrder'
-import { distanceUnitFor, shortClock } from './format'
+import { distanceUnitFor, REST_CHOICES, shortClock } from './format'
 import { useExerciseLibrary } from './library'
 import {
   type Action,
+  apply,
   isLoggable,
   type LiveExercise,
   type LiveSet,
@@ -25,6 +26,7 @@ import {
 import { PlateSheet } from './PlateSheet'
 import { awaitPick } from './pick'
 import { recordSets } from './records'
+import type { CardHandlers } from './SetTable'
 import { warmupSets } from './warmup'
 
 /**
@@ -33,8 +35,6 @@ import { warmupSets } from './warmup'
  * which differ in their chrome (a running clock, a rest timer, "Finish" against
  * "Save") and not in how a set is typed.
  */
-
-const REST_CHOICES = [0, 30, 45, 60, 90, 120, 150, 180, 240, 300] as const
 
 export type WorkoutEditorProps = {
   workout: LiveWorkout
@@ -64,7 +64,8 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
   // it is the one being edited, so "last time" would be itself.
   const ids = mode === 'edit' ? [] : workout.exercises.map((exercise) => exercise.exerciseId)
   const lastSets = useLastSets(ids).data
-  const bests = useExerciseBests(null).data
+  // All-time bests, which only the live logger measures ticks against.
+  const bests = useExerciseBests(null, { enabled: live }).data
   const bestsById = useMemo(
     () => new Map((bests ?? []).map((entry) => [entry.exerciseId, entry])),
     [bests],
@@ -114,46 +115,28 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
       dispatch({ type: 'uncompleteSet', key: exercise.key, setId: set.id })
       return
     }
-    const filled = {
-      weightKg: set.weightKg ?? fill?.weightKg ?? null,
-      reps: set.reps ?? fill?.reps ?? null,
-      durationS: set.durationS ?? fill?.durationS ?? null,
-      distanceM: set.distanceM ?? fill?.distanceM ?? null,
-    }
-    if (!isLoggable(filled, exercise.tracking)) {
+    // The tick as `apply` will make it, on this exercise alone: what it fills
+    // in decides whether the set can be ticked and whether it is a record.
+    const at = Date.now()
+    const action = { type: 'completeSet', key: exercise.key, setId: set.id, at, fill } as const
+    const ticked = apply({ ...workout, exercises: [exercise] }, action).exercises[0]
+    const tickedSet = ticked.sets.find((entry) => entry.id === set.id)
+    if (!tickedSet || !isLoggable(tickedSet, exercise.tracking)) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {})
       toast.show({ title: t('workouts:logger.noNumbers'), tone: 'error' })
       return
     }
 
-    const before = recordSets(exercise, bestsById.get(exercise.exerciseId))
-    const at = Date.now()
-    dispatch({ type: 'completeSet', key: exercise.key, setId: set.id, at, fill })
-
-    // Read back what the tick produced to see whether it set a record.
-    const after = recordSets(
-      {
-        ...exercise,
-        sets: exercise.sets.map((entry) =>
-          entry.id === set.id ? { ...entry, ...filled, done: true, doneAt: at } : entry,
-        ),
-      },
-      bestsById.get(exercise.exerciseId),
-    )
+    const bests = bestsById.get(exercise.exerciseId)
+    const before = recordSets(exercise, bests)
+    dispatch(action)
+    const after = recordSets(ticked, bests)
     const fresh = after.get(set.id)?.filter((kind) => !before.get(set.id)?.includes(kind))
     if (fresh?.length) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-      const label =
-        fresh[0] === 'weight'
-          ? t('workouts:logger.prWeight')
-          : fresh[0] === 'e1rm'
-            ? t('workouts:logger.prE1rm')
-            : fresh[0] === 'volume'
-              ? t('workouts:logger.prVolume')
-              : t('workouts:logger.prReps')
       toast.show({
         title: t('workouts:logger.pr'),
-        description: `${exercise.name}: ${label}`,
+        description: `${exercise.name}: ${t(RECORD_KEY[fresh[0]])}`,
         tone: 'success',
       })
     } else {
@@ -165,6 +148,38 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
       if (rest > 0) dispatch({ type: 'startRest', exerciseKey: exercise.key, totalS: rest, at })
     }
   }
+
+  // One handlers object for every card and row, keyed rather than closed over
+  // each exercise, so it never changes and memoised cards skip the render
+  // when their own exercise did not change. The latest document and `toggle`
+  // are read through a ref at call time.
+  const latest = useRef({ workout, toggle })
+  latest.current = { workout, toggle }
+  const handlers = useMemo<CardHandlers>(() => {
+    const find = (key: string) =>
+      latest.current.workout.exercises.find((exercise) => exercise.key === key)
+    return {
+      changeSet: (key, setId, patch) => dispatch({ type: 'updateSet', key, setId, patch }),
+      toggleSet: (key, set, fill) => {
+        const exercise = find(key)
+        if (exercise) latest.current.toggle(exercise, set, fill)
+      },
+      setMenu: (key, set, number) => {
+        const exercise = find(key)
+        if (exercise) setSetMenu({ exercise, set, number })
+      },
+      plates: (key, kg) => {
+        const exercise = find(key)
+        if (exercise) setPlatesFor({ exercise, kg })
+      },
+      addSet: (key) => dispatch({ type: 'addSet', key }),
+      notes: (key, notes) => dispatch({ type: 'exerciseNotes', key, notes }),
+      menu: (key) => setMenuFor(find(key) ?? null),
+      rest: (key) => setRestFor(find(key) ?? null),
+      open: (exerciseId) =>
+        router.push({ pathname: '/workout/exercise/[id]', params: { id: exerciseId } }),
+    }
+  }, [dispatch, router])
 
   const exerciseActions = (exercise: LiveExercise): SheetAction[] => {
     const index = workout.exercises.findIndex((entry) => entry.key === exercise.key)
@@ -270,15 +285,11 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
 
         {workout.exercises.map((exercise) => {
           const info = library.byId(exercise.exerciseId)
-          // Records only while training. Editing compares a saved workout with
-          // bests that already include it, and every later one, so its trophies
-          // are the saved page's to show.
-          const records = live ? recordSets(exercise, bestsById.get(exercise.exerciseId)) : null
           return (
             <ExerciseCard
               key={exercise.key}
               exercise={exercise}
-              category={info?.category ?? 'fullBody'}
+              category={info?.category}
               previous={mode === 'edit' ? null : lastSets?.[exercise.exerciseId]}
               unit={unit}
               distanceUnit={distanceUnit}
@@ -286,29 +297,13 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
               supersetLabel={
                 exercise.superset !== null ? (supersetLetters.get(exercise.superset) ?? null) : null
               }
-              recordIds={new Set(records?.keys())}
+              bests={live ? bestsById.get(exercise.exerciseId) : undefined}
               // Ticking is training. Editing and logging after the fact save every
               // set with numbers in it, so a tick there would be a switch that
               // switched nothing.
               checkable={live}
-              onChangeSet={(setId, patch) =>
-                dispatch({ type: 'updateSet', key: exercise.key, setId, patch })
-              }
-              onToggleSet={(set, fill) => toggle(exercise, set, fill)}
-              onSetMenu={(set, number) => setSetMenu({ exercise, set, number })}
-              onPlates={
-                info?.equipment === 'barbell' ? (kg) => setPlatesFor({ exercise, kg }) : undefined
-              }
-              onAddSet={() => dispatch({ type: 'addSet', key: exercise.key })}
-              onNotes={(notes) => dispatch({ type: 'exerciseNotes', key: exercise.key, notes })}
-              onMenu={() => setMenuFor(exercise)}
-              onRest={() => setRestFor(exercise)}
-              onOpen={() =>
-                router.push({
-                  pathname: '/workout/exercise/[id]',
-                  params: { id: exercise.exerciseId },
-                })
-              }
+              plates={info?.equipment === 'barbell'}
+              handlers={handlers}
             />
           )
         })}

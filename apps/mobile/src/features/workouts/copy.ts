@@ -1,5 +1,6 @@
 import type { Category, Equipment, Level, Muscle, MuscleGroup, Tracking } from './catalogue'
 import type { SetKind } from './model'
+import type { RecordKind } from './records'
 import type { TemplateGroup } from './templates'
 
 /**
@@ -89,6 +90,43 @@ export const SET_BADGE_KEY = {
   drop: 'workouts:logger.kindBadge.drop',
   failure: 'workouts:logger.kindBadge.failure',
 } as const satisfies Record<Exclude<SetKind, 'normal'>, string>
+
+/** What a record is called, in the toast and on the exercise page alike. */
+export const RECORD_KEY = {
+  weight: 'workouts:exercise.bestWeight',
+  e1rm: 'workouts:exercise.bestE1rm',
+  volume: 'workouts:exercise.bestSetVolume',
+  reps: 'workouts:exercise.bestReps',
+  duration: 'workouts:exercise.bestDuration',
+} as const satisfies Record<RecordKind, string>
+
+/** A set kind's letter colour, everywhere a set is listed. */
+export const SET_BADGE_TONE = {
+  normal: 'text-ink',
+  warmup: 'text-kaya-ink',
+  drop: 'text-water-ink',
+  failure: 'text-hibiscus-ink',
+} as const satisfies Record<SetKind, string>
+
+/**
+ * Each set's badge, in order. Working sets are numbered 1, 2, 3 and warm-ups,
+ * drops and failures wear a letter, which is how every gym log writes them.
+ * A drop or failure still counts towards the numbering; a warm-up does not.
+ */
+export function setBadges(
+  sets: readonly { kind: SetKind }[],
+  t: (key: (typeof SET_BADGE_KEY)[keyof typeof SET_BADGE_KEY]) => string,
+): { label: string; number: number; tone: string }[] {
+  let working = 0
+  return sets.map((set) => {
+    if (set.kind !== 'warmup') working += 1
+    return {
+      label: set.kind === 'normal' ? String(working) : t(SET_BADGE_KEY[set.kind]),
+      number: working,
+      tone: SET_BADGE_TONE[set.kind],
+    }
+  })
+}
 
 export const TEMPLATE_GROUP_KEY = {
   start: 'workouts:explore.group.start',

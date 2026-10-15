@@ -1,5 +1,4 @@
-import { useSyncExternalStore } from 'react'
-import { createMMKV } from 'react-native-mmkv'
+import { createJsonStore } from '@/lib/jsonStore'
 
 /**
  * Workout preferences that belong to the PHONE rather than the account.
@@ -17,35 +16,20 @@ export type WorkoutPrefs = {
 
 const DEFAULTS: WorkoutPrefs = { keepAwake: true, healthWrite: false }
 
-const storage = createMMKV({ id: 'ricecal-workout-prefs' })
-const listeners = new Set<() => void>()
-let cached: { raw: string | undefined; value: WorkoutPrefs } | null = null
+const store = createJsonStore<WorkoutPrefs>('ricecal-workout-prefs', (stored) =>
+  stored && typeof stored === 'object'
+    ? { ...DEFAULTS, ...(stored as Partial<WorkoutPrefs>) }
+    : DEFAULTS,
+)
 
 export function getWorkoutPrefs(): WorkoutPrefs {
-  const raw = storage.getString('prefs')
-  if (cached && cached.raw === raw) return cached.value
-  let value = DEFAULTS
-  if (raw) {
-    try {
-      value = { ...DEFAULTS, ...(JSON.parse(raw) as Partial<WorkoutPrefs>) }
-    } catch {
-      value = DEFAULTS
-    }
-  }
-  cached = { raw, value }
-  return value
+  return store.get('prefs')
 }
 
 export function setWorkoutPrefs(patch: Partial<WorkoutPrefs>): void {
-  storage.set('prefs', JSON.stringify({ ...getWorkoutPrefs(), ...patch }))
-  for (const listener of listeners) listener()
+  store.set('prefs', { ...getWorkoutPrefs(), ...patch })
 }
 
 export function useWorkoutPrefs(): WorkoutPrefs {
-  return useSyncExternalStore((listener) => {
-    listeners.add(listener)
-    return () => {
-      listeners.delete(listener)
-    }
-  }, getWorkoutPrefs)
+  return store.useValue('prefs', (prefs) => prefs)
 }

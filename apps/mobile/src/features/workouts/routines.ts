@@ -1,5 +1,5 @@
-import type { Routine, RoutineExercise, WorkoutDetail } from '@/data'
-import type { ExercisePlan, LiveExercise } from './model'
+import type { Routine, RoutineExercise } from '@/data'
+import type { ExercisePlan, SetPlan } from './model'
 import { type Template, templatePlans } from './templates'
 
 /**
@@ -44,8 +44,14 @@ export function plansToRoutine(plans: readonly ExercisePlan[]): RoutineExercise[
   }))
 }
 
-/** The logger's exercises as a plan again, for saving an edited routine. */
-export function liveToPlans(exercises: readonly LiveExercise[]): ExercisePlan[] {
+/**
+ * Exercises as a plan again: the logger's, for saving an edited routine, or a
+ * saved workout's entries, for "repeat this workout" and "save as routine".
+ * Both carry the plan's fields under the plan's names.
+ */
+export function toPlans(
+  exercises: readonly (Required<Omit<ExercisePlan, 'sets'>> & { sets: readonly SetPlan[] })[],
+): ExercisePlan[] {
   return exercises.map((exercise) => ({
     exerciseId: exercise.exerciseId,
     name: exercise.name,
@@ -54,25 +60,6 @@ export function liveToPlans(exercises: readonly LiveExercise[]): ExercisePlan[] 
     superset: exercise.superset,
     notes: exercise.notes,
     sets: exercise.sets.map((set) => ({
-      kind: set.kind,
-      weightKg: set.weightKg,
-      reps: set.reps,
-      durationS: set.durationS,
-      distanceM: set.distanceM,
-    })),
-  }))
-}
-
-/** A saved workout as a plan: "repeat this workout" and "save as routine". */
-export function workoutPlans(workout: Pick<WorkoutDetail, 'entries'>): ExercisePlan[] {
-  return workout.entries.map((entry) => ({
-    exerciseId: entry.exerciseId,
-    name: entry.name,
-    tracking: entry.tracking,
-    restS: entry.restS,
-    superset: entry.superset,
-    notes: entry.notes,
-    sets: entry.sets.map((set) => ({
       kind: set.kind,
       weightKg: set.weightKg,
       reps: set.reps,

@@ -1,7 +1,5 @@
-import { useSyncExternalStore } from 'react'
-import { createMMKV } from 'react-native-mmkv'
-
 import type { Enums } from '@/lib/database.types'
+import { createJsonStore } from '@/lib/jsonStore'
 
 /**
  * Finished workouts that have not reached the server yet.
@@ -46,34 +44,18 @@ export type WorkoutDocument = {
   }[]
 }
 
-const storage = createMMKV({ id: 'ricecal-workout-outbox' })
+const EMPTY: WorkoutDocument[] = []
+const store = createJsonStore<WorkoutDocument[]>('ricecal-workout-outbox', (stored) =>
+  Array.isArray(stored) ? (stored as WorkoutDocument[]) : EMPTY,
+)
 const keyFor = (userId: string) => `outbox:${userId}`
 
-const listeners = new Set<() => void>()
-const cache = new Map<string, { raw: string | undefined; value: WorkoutDocument[] }>()
-const EMPTY: WorkoutDocument[] = []
-
 export function getOutbox(userId: string): WorkoutDocument[] {
-  const raw = storage.getString(keyFor(userId))
-  const hit = cache.get(userId)
-  if (hit && hit.raw === raw) return hit.value
-  let value = EMPTY
-  if (raw) {
-    try {
-      const parsed: unknown = JSON.parse(raw)
-      if (Array.isArray(parsed)) value = parsed as WorkoutDocument[]
-    } catch {
-      value = EMPTY
-    }
-  }
-  cache.set(userId, { raw, value })
-  return value
+  return store.get(keyFor(userId))
 }
 
 function write(userId: string, documents: WorkoutDocument[]): void {
-  if (documents.length) storage.set(keyFor(userId), JSON.stringify(documents))
-  else storage.remove(keyFor(userId))
-  for (const listener of listeners) listener()
+  store.set(keyFor(userId), documents.length ? documents : null)
 }
 
 /** Queue a document, replacing an earlier queued copy of the same workout. */
@@ -100,13 +82,5 @@ export function forgetOutbox(userId: string): void {
 }
 
 export function useOutbox(userId: string | null | undefined): WorkoutDocument[] {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener)
-      return () => {
-        listeners.delete(listener)
-      }
-    },
-    () => (userId ? getOutbox(userId) : EMPTY),
-  )
+  return store.useValue(keyFor(userId ?? ''), (outbox) => (userId ? outbox : EMPTY))
 }

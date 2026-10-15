@@ -1,25 +1,16 @@
 import { format, parseISO } from 'date-fns'
-import type { TFunction } from 'i18next'
 import { Children, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import type { Routine, WorkoutOverview, WorkoutSummary } from '@/data'
+import type { IconRef, Routine, WorkoutOverview, WorkoutSummary } from '@/data'
 import { datePattern } from '@/lib/dates'
-import { UNIT_KEY, type WeightUnit } from '@/lib/units'
+import type { WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Button, Card, cn, Icon, Skeleton, Tappable, Text } from '@/ui'
-import { exerciseById } from './catalogue'
 import { ExerciseArt } from './ExerciseArt'
-import { hoursMinutes, volume } from './format'
-
-/** "1 h 12 min", "45 min": a duration read as words rather than a clock. */
-export function durationText(t: TFunction<['workouts']>, seconds: number): string {
-  const span = hoursMinutes(seconds)
-  if (span.hours > 0 && span.minutes > 0) return t('workouts:duration.hoursMinutes', span)
-  if (span.hours > 0) return t('workouts:duration.hours', span)
-  return t('workouts:duration.minutes', { minutes: span.minutes })
-}
+import { durationText, volumeText } from './format'
+import { useExerciseLibrary } from './library'
 
 /**
  * The week so far: how many workouts, how long, how much lifted, and the
@@ -69,7 +60,7 @@ export function OverviewCard({
         <Tile
           icon={<Icon set="body" name="dumbbell" size={22} />}
           label={t('workouts:overview.volume')}
-          value={`${volume(overview.thisWeekVolumeKg, unit)} ${t(UNIT_KEY[unit])}`}
+          value={volumeText(t, overview.thisWeekVolumeKg, unit)}
         />
       </View>
       <View className="flex-row items-center justify-center gap-2 rounded-md bg-kaya-soft px-3 py-2.5">
@@ -117,7 +108,7 @@ export function RoutineCard({
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const first = routine.exercises[0]
-  const firstExercise = first ? exerciseById(first.exercise_id) : undefined
+  const library = useExerciseLibrary()
   const when = routine.lastUsedAt
     ? t('workouts:routines.lastDone', {
         date: format(parseISO(routine.lastUsedAt), datePattern('dayMonth')),
@@ -128,7 +119,7 @@ export function RoutineCard({
     <Card contentClassName="flex-row items-center gap-3 p-3" onPress={onOpen}>
       <ExerciseArt
         exerciseId={first?.exercise_id ?? ''}
-        category={firstExercise?.category ?? 'fullBody'}
+        category={first ? library.byId(first.exercise_id)?.category : undefined}
         size={52}
       />
       <View className="min-w-0 flex-1 gap-0.5">
@@ -167,7 +158,7 @@ export function WorkoutCard({
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const first = workout.exercises[0]
-  const firstExercise = first ? exerciseById(first.exerciseId) : undefined
+  const library = useExerciseLibrary()
   const started = parseISO(workout.startedAt)
 
   return (
@@ -176,7 +167,7 @@ export function WorkoutCard({
         {first ? (
           <ExerciseArt
             exerciseId={first.exerciseId}
-            category={firstExercise?.category ?? 'fullBody'}
+            category={library.byId(first.exerciseId)?.category}
             size={52}
           />
         ) : null}
@@ -199,7 +190,7 @@ export function WorkoutCard({
         {workout.volumeKg > 0 ? (
           <Metric
             icon={<Icon set="body" name="dumbbell" size={16} />}
-            text={`${volume(workout.volumeKg, unit)} ${t(UNIT_KEY[unit])}`}
+            text={volumeText(t, workout.volumeKg, unit)}
           />
         ) : null}
         {workout.prCount > 0 ? (
@@ -231,19 +222,14 @@ export function WorkoutCard({
   )
 }
 
-function Metric({ icon, text, tone }: { icon: React.ReactNode; text: string; tone?: 'kaya' }) {
+function Metric({ icon, text, tone }: { icon: ReactNode; text: string; tone?: 'kaya' }) {
   return (
-    <View
-      className={cn(
-        'flex-row items-center gap-1.5 rounded-full px-2.5 py-1',
-        tone === 'kaya' ? 'bg-kaya-soft' : 'bg-surface-alt',
-      )}
-    >
+    <Badge tone={tone ?? 'neutral'} size="sm">
       {icon}
       <Text variant="caption" className={tone === 'kaya' ? 'text-kaya-ink' : 'text-ink'}>
         {text}
       </Text>
-    </View>
+    </Badge>
   )
 }
 
@@ -268,15 +254,32 @@ export function StatStrip({ children }: { children: ReactNode }) {
   )
 }
 
-export function Stat({ label, value }: { label: string; value: string }) {
+/** The same figures three to a row, for a summary with more than fit on one line. */
+export function StatGrid({ children }: { children: ReactNode }) {
+  return (
+    <View className="flex-row flex-wrap gap-y-3">
+      {Children.toArray(children).map((child, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: the grid's order is its layout
+        <View key={index} className="w-1/3 pr-2">
+          {child}
+        </View>
+      ))}
+    </View>
+  )
+}
+
+export function Stat({ label, value, icon }: { label: string; value: string; icon?: IconRef }) {
   return (
     <View className="gap-0.5">
       <Text variant="overlineSm" numberOfLines={1}>
         {label}
       </Text>
-      <Text variant="numeric" numberOfLines={1} adjustsFontSizeToFit>
-        {value}
-      </Text>
+      <View className="flex-row items-center gap-1">
+        {icon ? <Icon {...icon} size={18} /> : null}
+        <Text variant="numeric" numberOfLines={1} adjustsFontSizeToFit className="shrink">
+          {value}
+        </Text>
+      </View>
     </View>
   )
 }

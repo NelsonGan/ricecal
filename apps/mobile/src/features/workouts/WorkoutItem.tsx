@@ -2,9 +2,9 @@ import { useTranslation } from 'react-i18next'
 
 import type { WorkoutSummary } from '@/data'
 import { formatTime, ItemRow } from '@/features/shared'
-import { durationText } from './cards'
-import { exerciseById } from './catalogue'
 import { exerciseIcon } from './ExerciseArt'
+import { durationText } from './format'
+import { useExerciseLibrary } from './library'
 
 /**
  * A logged workout as a row of Today's day list, between the meals, in the
@@ -25,13 +25,14 @@ export function WorkoutItem({
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const first = workout.exercises[0]
-  const exercise = first ? exerciseById(first.exerciseId) : undefined
+  const library = useExerciseLibrary()
+  const exercise = first ? library.byId(first.exerciseId) : undefined
   const counted = workout.healthWorkoutId ? workout.kcal : null
 
   return (
     <ItemRow
       title={workout.name}
-      icon={exerciseIcon(first?.exerciseId ?? '', exercise?.category ?? 'fullBody')}
+      icon={exerciseIcon(first?.exerciseId ?? '', exercise?.category)}
       // The length moves to the right when there is no burn to show there,
       // rather than being said twice.
       detail={[

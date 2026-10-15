@@ -1,5 +1,6 @@
 import { format, parseISO } from 'date-fns'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import type { TFunction } from 'i18next'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
@@ -9,6 +10,7 @@ import {
   type ExerciseSession,
   useExerciseBests,
   useExerciseHistory,
+  useSession,
   useSettings,
 } from '@/data'
 import { TrendLine } from '@/features/progress'
@@ -16,6 +18,7 @@ import {
   CATEGORY_KEY,
   type DistanceUnit,
   describeSet,
+  dispatchWorkout,
   distanceText,
   distanceUnitFor,
   EQUIPMENT_KEY,
@@ -25,15 +28,16 @@ import {
   MUSCLE_KEY,
   planFor,
   rankedMuscles,
-  SET_BADGE_KEY,
+  setBadges,
   shortClock,
   TRACKING_KEY,
   type Tracking,
   useExerciseLibrary,
-  useLiveWorkout,
+  useHasActiveWorkout,
   useWorkoutStarter,
-  volume,
+  volumeText,
   weightField,
+  weightText,
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
@@ -43,6 +47,7 @@ import {
   Badge,
   Button,
   Card,
+  cn,
   Divider,
   EmptyState,
   Icon,
@@ -100,7 +105,10 @@ export default function ExerciseScreen() {
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
   const starter = useWorkoutStarter()
-  const { workout: running, dispatch } = useLiveWorkout()
+  // Whether one runs, not the workout: this page stays mounted under the
+  // logger, and reading the document re-rendered it on every keystroke.
+  const { userId } = useSession()
+  const running = useHasActiveWorkout(userId)
 
   // A custom exercise that has been deleted, or a retired id, still has a
   // history, under the name and tracking it was saved with. It is drawn from
@@ -155,7 +163,7 @@ export default function ExerciseScreen() {
             <Button
               fullWidth
               onPress={() => {
-                dispatch({ type: 'addExercises', plans: [plan] })
+                if (userId) dispatchWorkout(userId, { type: 'addExercises', plans: [plan] })
                 router.dismissTo('/workout/active')
               }}
             >
@@ -270,19 +278,19 @@ function metricValue(session: ExerciseSession, metric: Metric): number | null {
 }
 
 function formatMetric(
+  t: TFunction<['workouts', 'common']>,
   value: number,
   metric: Metric,
   unit: WeightUnit,
   distanceUnit: DistanceUnit,
-  unitLabel: string,
   tracking: Tracking,
 ): string {
   switch (metric) {
     case 'e1rm':
     case 'heaviest':
-      return `${weightField(value, unit)} ${unitLabel}`
+      return weightText(t, value, unit)
     case 'volume':
-      return `${volume(value, unit)} ${unitLabel}`
+      return volumeText(t, value, unit)
     case 'reps':
       return String(Math.round(value))
     case 'duration':
@@ -341,7 +349,7 @@ function Progress({
       ) : null}
       {latest !== null ? (
         <Text variant="displayMd">
-          {formatMetric(latest, metric, unit, distanceUnit, t(UNIT_KEY[unit]), exercise.tracking)}
+          {formatMetric(t, latest, metric, unit, distanceUnit, exercise.tracking)}
         </Text>
       ) : null}
       {points.filter((point) => point.value !== null).length > 1 ? (
@@ -361,7 +369,7 @@ function Records({
   unit: WeightUnit
 }) {
   const { t } = useTranslation(['workouts', 'common'])
-  const unitLabel = t(UNIT_KEY[unit])
+  const _unitLabel = t(UNIT_KEY[unit])
   const distanceUnit = distanceUnitFor(unit)
   const rows: { label: string; value: string }[] = []
   const tracking = exercise.tracking
@@ -372,28 +380,28 @@ function Records({
       value:
         bests.bestWeightReps !== null && tracking !== 'weight_distance'
           ? t('workouts:exercise.weightReps', {
-              weight: `${weightField(bests.bestWeightKg, unit)} ${unitLabel}`,
+              weight: weightText(t, bests.bestWeightKg, unit),
               reps: bests.bestWeightReps,
             })
-          : `${weightField(bests.bestWeightKg, unit)} ${unitLabel}`,
+          : weightText(t, bests.bestWeightKg, unit),
     })
   }
   if (bests.bestE1rmKg !== null) {
     rows.push({
       label: t('workouts:exercise.bestE1rm'),
-      value: `${weightField(bests.bestE1rmKg, unit)} ${unitLabel}`,
+      value: weightText(t, bests.bestE1rmKg, unit),
     })
   }
   if (bests.bestSetVolumeKg !== null) {
     rows.push({
       label: t('workouts:exercise.bestSetVolume'),
-      value: `${volume(bests.bestSetVolumeKg, unit)} ${unitLabel}`,
+      value: volumeText(t, bests.bestSetVolumeKg, unit),
     })
   }
   if (bests.bestSessionVolumeKg) {
     rows.push({
       label: t('workouts:exercise.bestSessionVolume'),
-      value: `${volume(bests.bestSessionVolumeKg, unit)} ${unitLabel}`,
+      value: volumeText(t, bests.bestSessionVolumeKg, unit),
     })
   }
   if (bests.bestReps !== null)
@@ -412,7 +420,7 @@ function Records({
   if (bests.totalVolumeKg > 0) {
     rows.push({
       label: t('workouts:exercise.totalVolume'),
-      value: `${volume(bests.totalVolumeKg, unit)} ${unitLabel}`,
+      value: volumeText(t, bests.totalVolumeKg, unit),
     })
   }
 
@@ -456,7 +464,7 @@ function History({
   return (
     <Card title={t('workouts:exercise.history')} contentClassName="gap-0">
       {sessions.slice(0, shown).map((session, index) => {
-        let working = 0
+        const badges = setBadges(session.sets, t)
         return (
           <View key={session.workoutId}>
             {index > 0 ? <Divider /> : null}
@@ -477,12 +485,12 @@ function History({
                 </Text>
               </View>
               {session.sets.map((set, setIndex) => {
-                if (set.kind !== 'warmup') working += 1
+                const badge = badges[setIndex]
                 return (
                   // biome-ignore lint/suspicious/noArrayIndexKey: a set is its position
                   <View key={setIndex} className="flex-row items-center gap-2">
-                    <Text variant="meta" className="w-[22px] text-center">
-                      {set.kind === 'normal' ? working : t(SET_BADGE_KEY[set.kind])}
+                    <Text variant="meta" className={cn('w-[22px] text-center', badge.tone)}>
+                      {badge.label}
                     </Text>
                     <Text variant="meta" className="flex-1 text-ink">
                       {describeSet(set, exercise.tracking, unit, distanceUnit, t(UNIT_KEY[unit]))}

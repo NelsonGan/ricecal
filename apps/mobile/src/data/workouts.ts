@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   onlineManager,
   useInfiniteQuery,
   useMutation,
@@ -386,10 +387,19 @@ export type ExerciseBests = {
  * The logger reads the whole list to say "new record" the moment a set beats
  * one, so it is fetched once per workout and kept.
  */
-export function useExerciseBests(exerciseId: string | null) {
+/**
+ * Only a save on this phone changes these, and saving invalidates them, so
+ * they are never stale on their own. The default thirty seconds refetched
+ * every bests and last-sets query each time the logger was reopened.
+ */
+const UNTIL_SAVED = Number.POSITIVE_INFINITY
+
+export function useExerciseBests(exerciseId: string | null, options?: { enabled?: boolean }) {
   const userId = useUserId()
 
   return useQuery({
+    enabled: options?.enabled ?? true,
+    staleTime: UNTIL_SAVED,
     queryKey: keys.exerciseBests(userId, exerciseId),
     queryFn: async (): Promise<ExerciseBests[]> =>
       unwrap(
@@ -437,6 +447,13 @@ export type ExerciseSession = {
   distanceM: number | null
 }
 
+/**
+ * Sessions of one exercise fetched at once: the chart draws twenty and the list
+ * shows ten more at a time. Two hundred was most of a persisted cache entry
+ * nobody scrolled to.
+ */
+const HISTORY_LIMIT = 50
+
 export function useExerciseHistory(exerciseId: string | undefined) {
   const userId = useUserId()
 
@@ -445,7 +462,10 @@ export function useExerciseHistory(exerciseId: string | undefined) {
     queryKey: keys.exerciseHistory(userId, exerciseId ?? ''),
     queryFn: async (): Promise<ExerciseSession[]> =>
       unwrap(
-        await supabase.rpc('exercise_history', { p_exercise_id: exerciseId ?? '', p_limit: 200 }),
+        await supabase.rpc('exercise_history', {
+          p_exercise_id: exerciseId ?? '',
+          p_limit: HISTORY_LIMIT,
+        }),
       ).map((row) => ({
         workoutId: row.workout_id,
         workoutName: row.workout_name,
@@ -491,6 +511,10 @@ export function useLastSets(exerciseIds: readonly string[]) {
 
   return useQuery({
     enabled: sorted.length > 0,
+    staleTime: UNTIL_SAVED,
+    // Adding an exercise changes the key. Without this every PREVIOUS column
+    // emptied until the new answer landed.
+    placeholderData: keepPreviousData,
     queryKey: keys.lastSets(userId, sorted.join(',')),
     queryFn: async (): Promise<Record<string, LastSet[]>> => {
       const rows = unwrap(await supabase.rpc('exercise_last_sets', { p_exercise_ids: sorted }))

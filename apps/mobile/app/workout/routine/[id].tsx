@@ -4,15 +4,14 @@ import { useTranslation } from 'react-i18next'
 
 import { type Routine, useDeleteRoutine, useRoutines, useSaveRoutine } from '@/data'
 import {
-  type Action,
   apply,
-  type LiveWorkout,
-  liveToPlans,
   newWorkout,
   plansToRoutine,
   routinePlans,
+  toPlans,
   useWorkoutStarter,
   WorkoutEditor,
+  WorkoutMissing,
 } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
 import {
@@ -20,7 +19,6 @@ import {
   Button,
   Card,
   ConfirmSheet,
-  EmptyState,
   Icon,
   IconButton,
   Screen,
@@ -51,21 +49,8 @@ export default function RoutineScreen() {
       </Screen>
     )
   }
-  if (!isNew && !routine) return <Missing />
+  if (!isNew && !routine) return <WorkoutMissing icon={{ set: 'system', name: 'guide-book' }} />
   return <RoutineEditor key={routine?.id ?? 'new'} routine={routine ?? null} />
-}
-
-function Missing() {
-  const { t } = useTranslation(['workouts', 'common'])
-  const goBack = useBack('/workouts')
-  return (
-    <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
-      <EmptyState
-        title={t('workouts:detail.missing')}
-        icon={{ set: 'system', name: 'guide-book' }}
-      />
-    </Screen>
-  )
 }
 
 function RoutineEditor({ routine }: { routine: Routine | null }) {
@@ -81,12 +66,10 @@ function RoutineEditor({ routine }: { routine: Routine | null }) {
 
   // The editor's document, borrowed from the logger. Its clock and id mean
   // nothing here; only the name and exercises are read back.
-  const [draft, dispatch] = useReducer(
-    (state: LiveWorkout, action: Action) => apply(state, action),
-    routine,
-    (from) => newWorkout({ name: from?.name ?? '', exercises: from ? routinePlans(from) : [] }),
+  const [draft, dispatch] = useReducer(apply, routine, (from) =>
+    newWorkout({ name: from?.name ?? '', exercises: from ? routinePlans(from) : [] }),
   )
-  const plans = useMemo(() => liveToPlans(draft.exercises), [draft.exercises])
+  const plans = useMemo(() => toPlans(draft.exercises), [draft.exercises])
   const nameError = !draft.name.trim()
 
   const onSave = async () => {

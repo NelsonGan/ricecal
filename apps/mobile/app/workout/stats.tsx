@@ -15,6 +15,7 @@ import {
   type WorkoutWeek,
 } from '@/data'
 import { monthEnd, monthStart, monthWeeks, weekdayColumns } from '@/features/logging/month'
+import { BarChart } from '@/features/shared'
 import {
   durationText,
   ExerciseArt,
@@ -22,12 +23,12 @@ import {
   MuscleSplitBars,
   trim,
   useExerciseLibrary,
-  volume,
-  weightField,
+  volumeText,
+  weightText,
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
-import { UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
+import { unitFor, type WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -120,14 +121,12 @@ function WeekBars({
   unit: WeightUnit
 }) {
   const { t } = useTranslation(['workouts', 'common', 'progress'])
-  const values = weeks.map((week) => weekValue(week, metric))
-  const max = Math.max(...values, 1)
   const last = weeks[weeks.length - 1]
   const show = (value: number) =>
     metric === 'duration'
       ? durationText(t, value)
       : metric === 'volume'
-        ? `${volume(value, unit)} ${t(UNIT_KEY[unit])}`
+        ? volumeText(t, value, unit)
         : String(value)
 
   return (
@@ -137,27 +136,15 @@ function WeekBars({
         <Text variant="overlineSm">{t('progress:weight.thisWeek')}</Text>
         <Text variant="displayMd">{last ? show(weekValue(last, metric)) : '0'}</Text>
       </View>
-      <View className="h-[140px] flex-row items-end gap-1.5">
-        {weeks.map((week, index) => {
-          const value = values[index]
-          const current = index === weeks.length - 1
-          return (
-            <View
-              key={week.week}
-              className="flex-1 items-center justify-end"
-              style={{ height: '100%' }}
-            >
-              <View
-                className={cn(
-                  'w-full rounded-t-md',
-                  current ? 'bg-pandan' : value > 0 ? 'bg-pandan-soft-line' : 'bg-track',
-                )}
-                style={{ height: `${Math.max(3, (value / max) * 100)}%` }}
-              />
-            </View>
-          )
-        })}
-      </View>
+      <BarChart
+        height={140}
+        others="soft"
+        bars={weeks.map((week, index) => ({
+          key: week.week,
+          value: weekValue(week, metric),
+          highlight: index === weeks.length - 1,
+        }))}
+      />
       <View className="flex-row justify-between">
         <Text variant="micro">
           {weeks[0] ? format(parseISO(weeks[0].week), datePattern('dayMonth')) : ''}
@@ -308,9 +295,7 @@ function Records({ unit }: { unit: WeightUnit }) {
           // The heaviest set as lifted, "72.5 kg × 8". The estimated 1RM was
           // here first and read as a weight somebody had put on the bar.
           const heaviest =
-            entry.bestWeightKg !== null
-              ? `${weightField(entry.bestWeightKg, unit)} ${t(UNIT_KEY[unit])}`
-              : null
+            entry.bestWeightKg !== null ? weightText(t, entry.bestWeightKg, unit) : null
           const best =
             heaviest !== null
               ? entry.bestWeightReps
@@ -340,7 +325,7 @@ function Records({ unit }: { unit: WeightUnit }) {
               >
                 <ExerciseArt
                   exerciseId={entry.exerciseId}
-                  category={exercise?.category ?? 'fullBody'}
+                  category={exercise?.category}
                   size={44}
                 />
                 <View className="min-w-0 flex-1">
