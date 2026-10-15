@@ -375,8 +375,8 @@ select is(
 select is(
   (select count(*)::integer
    from (values ('barcode_misses'), ('food_scan_items'), ('food_scan_misses'),
-                ('job_runs'), ('recipe_saves'), ('social_counters'),
-                ('social_rate_limits')) expected(table_name)
+                ('job_runs'), ('packet_panels'), ('recipe_saves'),
+                ('social_counters'), ('social_rate_limits')) expected(table_name)
    join pg_catalog.pg_class c on c.relname = expected.table_name
    join pg_catalog.pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
    where c.relrowsecurity
@@ -389,8 +389,8 @@ select is(
                           ('MAINTAIN')) privileges(privilege_name)
        where pg_catalog.has_table_privilege(roles.role_name, c.oid, privileges.privilege_name)
      )),
-  7,
-  'all seven service-only tables deny every client table privilege and have default-deny RLS'
+  8,
+  'all eight service-only tables deny every client table privilege and have default-deny RLS'
 );
 
 select is(

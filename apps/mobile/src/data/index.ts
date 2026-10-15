@@ -25,6 +25,7 @@ export {
   useHealthConnection,
   usePrefetchActivityDays,
 } from './activity'
+export { offerPacketName } from './barcodes'
 export { dateKey, today } from './client'
 export {
   type DayView,

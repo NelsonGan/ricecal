@@ -12,6 +12,7 @@ import {
   foodFromEntry,
   type IconRef,
   keys,
+  offerPacketName,
   packetCode,
   type RefineDeclined,
   removeMealPhoto,
@@ -825,6 +826,9 @@ function FoodDetail() {
         ? { when: { logDate: next.date, loggedAt: instantOn(next.date, next.clock) } }
         : {}),
     })
+    // A packet photographed after a barcode miss may be waiting for exactly
+    // this name. Only a scan can have left one, so other entries never ask.
+    if (named !== existing.foodName && existing.scanId) offerPacketName(existing.id)
     setName(named)
     setWhenDate(next.date)
     setClock(next.clock)

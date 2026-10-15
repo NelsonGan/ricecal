@@ -743,9 +743,10 @@ export default {
         }
 
         // A product the catalogue did not have, written so the second person to
-        // scan that packet gets the index probe. Two ways in now: Open Food
-        // Facts answered the live lookup, or somebody photographed the panel
-        // after a miss and the model read it.
+        // scan that packet gets the index probe. Three ways in now: Open Food
+        // Facts answered the live lookup, somebody photographed the panel after
+        // a miss and the model read it, or the panel had no name on it and its
+        // owner named the entry afterwards.
         //
         // `insert or ignore`: two people scanning one new packet at once is a
         // race with one right answer. The catalogue is rebuilt from source data
@@ -771,7 +772,9 @@ export default {
           // would quietly make a row unreachable by the one thing that can take
           // it back.
           const source =
-            body.source === 'user_label' || body.source === 'open_food_facts'
+            body.source === 'user_label' ||
+            body.source === 'user_named' ||
+            body.source === 'open_food_facts'
               ? body.source
               : 'open_food_facts'
 

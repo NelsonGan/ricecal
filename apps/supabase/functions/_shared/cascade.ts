@@ -31,6 +31,7 @@ import {
   pickCandidate,
   type VisionItem,
 } from './llm.ts'
+import { catalogueName, namedProduct, type PanelFigures, UNNAMED_PANEL } from './packet.ts'
 import {
   boundGramsToServing,
   defaultMacros,
@@ -921,25 +922,6 @@ async function resolveByDish(
 }
 
 /**
- * A panel whose PRODUCT name did not come through.
- *
- * A close-up of the panel has no product name in it, so what the model sends
- * back is the table's own heading ("Nutrition Facts") or the model shrugging
- * ("Unidentified Food Product", from a real scan). The prompt asks for null;
- * this is the belt to its braces.
- *
- * Shared by the two readers of a label, and that sharing is the point.
- * `resolveByLabel` swaps the name for "Packaged food" so the diary entry has
- * something to call itself, and `productFromLabel` refuses the panel outright.
- * They were separate tests for a while, against different strings: the second
- * one checked for "Packaged food" and never saw it, because it reads the RAW
- * label rather than the renamed one. A panel headed "Nutrition Facts" went
- * into the catalogue under that name.
- */
-const UNNAMED_PANEL =
-  /^(nutrition|nutritional)\s*(facts|information|panel)?$|\b(unidentified|unknown|unnamed|generic)\b/i
-
-/**
  * A photographed nutrition panel, taken at its word. No search, no verifier, no
  * estimate: the cascade exists to work out numbers nobody wrote down, and here
  * the manufacturer did. Nothing reaches the catalogue, because a panel read once
@@ -978,23 +960,17 @@ export async function resolveByLabel(label: NutritionLabel): Promise<Resolved | 
  * exactly where it already was. Refusing costs nothing; accepting a misread
  * puts a wrong number in front of strangers.
  *
+ * The figures are judged before the name, so a refusal for the name alone can
+ * carry figures that passed. `scan-meal` keeps those against the entry until
+ * its owner names it.
+ *
  * Returns the row to write, or a reason not to, which the caller traces.
  */
 export function productFromLabel(
   barcode: string,
   label: NutritionLabel,
-): { product: CatalogueProduct } | { reason: string } {
-  const { name, kcal, carbs_g: carbs, protein_g: protein, fat_g: fat } = label
-
-  // `resolveByLabel` renames an unreadable panel to "Packaged food" so the
-  // entry has something to call itself. Fine for one row in one diary, useless
-  // as a catalogue name: the next person scans a box with a name printed on it
-  // and is told it is "Packaged food". A panel whose product name did not come
-  // through is a photo of the back of the box and nothing more.
-  const named = name.trim()
-  if (named.length < 2 || UNNAMED_PANEL.test(named) || /^packaged food$/i.test(named)) {
-    return { reason: 'no product name on the panel' }
-  }
+): { product: CatalogueProduct } | { reason: string; unnamed?: PanelFigures } {
+  const { kcal, carbs_g: carbs, protein_g: protein, fat_g: fat } = label
 
   if (![kcal, carbs, protein, fat].every((n) => Number.isFinite(n) && n >= 0)) {
     return { reason: 'panel is missing a macro' }
@@ -1015,23 +991,23 @@ export function productFromLabel(
     return { reason: `panel disagrees with itself: ${Math.round(atwater)} vs ${kcal} kcal` }
   }
 
-  return {
-    product: {
-      barcode: Number(barcode),
-      name: named.slice(0, 120),
-      // The panel is the back of the box and the brand is on the front. Left
-      // null rather than guessed out of the product name.
-      brand: null,
-      kcal: Math.round(kcal),
-      carbs_g: Math.round(carbs * 10) / 10,
-      protein_g: Math.round(protein * 10) / 10,
-      fat_g: Math.round(fat * 10) / 10,
-      // The panel's own words for one serving, in grams where it said so. Null
-      // is fine and common ("1 sachet"): the row is still one serving of it.
-      serving_g: servingGrams(label.serving),
-      source: 'user_label',
-    },
+  const figures: PanelFigures = {
+    barcode: Number(barcode),
+    kcal: Math.round(kcal),
+    carbs_g: Math.round(carbs * 10) / 10,
+    protein_g: Math.round(protein * 10) / 10,
+    fat_g: Math.round(fat * 10) / 10,
+    // The panel's own words for one serving, in grams where it said so. Null
+    // is fine and common ("1 sachet"): the row is still one serving of it.
+    serving_g: servingGrams(label.serving),
   }
+
+  // A panel whose product name did not come through is a photo of the back of
+  // the box. Its figures are still good, so they go back with the refusal.
+  const name = catalogueName(label.name)
+  if (!name) return { reason: 'no product name on the panel', unnamed: figures }
+
+  return { product: namedProduct(figures, name, 'user_label') }
 }
 
 /** Tier 4: validated model nutrition, kept as the entry's own numbers. */

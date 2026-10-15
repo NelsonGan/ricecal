@@ -281,6 +281,26 @@ Deno.serve(async (req: Request) => {
           const judged = productFromLabel(barcode, vision.label)
           if ('reason' in judged) {
             trace.push(`[contribute] ${judged.reason}`)
+            // Good figures off the back of the box, with the name on the
+            // front. They wait against this entry, and renaming it writes the
+            // row: see `packet_panels`. A failed insert only means the packet
+            // stays a miss, which is where it was.
+            if (judged.unnamed) {
+              const { error } = await db.from('packet_panels').insert({
+                food_log_id: entry.id,
+                barcode,
+                kcal: judged.unnamed.kcal,
+                carbs_g: judged.unnamed.carbs_g,
+                protein_g: judged.unnamed.protein_g,
+                fat_g: judged.unnamed.fat_g,
+                serving_g: judged.unnamed.serving_g,
+              })
+              trace.push(
+                error
+                  ? `[contribute] could not keep the panel for ${barcode}: ${error.message}`
+                  : `[contribute] ${barcode} waits for a name`,
+              )
+            }
           } else {
             // The answer from the catalogue, not the absence of a throw.
             // `cacheProduct` swallows a refused connection by design, so
