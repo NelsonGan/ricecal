@@ -1702,8 +1702,7 @@ export const bn = {
       /** The minimised bar over the tabs while a workout runs. */
       running: 'ওয়ার্কআউট চলছে',
       routine: 'শুরু করুন',
-      sport: 'খেলা লিখুন',
-      past: 'আগের ওয়ার্কআউট',
+      past: 'আগের ওয়ার্কআউট লগ করুন',
       /** Starting another while one runs. */
       replaceTitle: 'একটি ওয়ার্কআউট আগে থেকেই চলছে',
       replaceBody: 'সেটি বাদ দিয়ে এটি শুরু করবেন?',
@@ -2078,7 +2077,6 @@ export const bn = {
       core: 'কোর',
       fullBody: 'পুরো শরীর',
       cardio: 'কার্ডিও',
-      sports: 'খেলা',
       mobility: 'নমনীয়তা',
     },
     equipment: {

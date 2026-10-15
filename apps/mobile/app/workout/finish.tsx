@@ -71,9 +71,9 @@ export default function FinishWorkoutScreen() {
     const given = Number(params.endedAt)
     return Number.isFinite(given) && given > 0 ? given : Date.now()
   })
-  // A sport is logged as one timed set, usually after the game: "Badminton,
-  // 60:00", then Finish a minute later. The workout opens as the hour the set
-  // says rather than that minute, so its times, its energy and its Apple
+  // A run or a class is often logged as one timed set afterwards: "Running,
+  // 30:00", then Finish a minute later. The workout opens as the half hour the
+  // set says rather than that minute, so its times, its energy and its Apple
   // Health copy agree with what was typed.
   const [startedAt, setStartedAt] = useState(() => {
     const started = workout?.startedAt ?? Date.now()

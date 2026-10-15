@@ -1703,8 +1703,7 @@ export const zhHans = {
       resume: '继续训练',
       running: '训练进行中',
       routine: '开始',
-      sport: '记录运动',
-      past: '补记训练',
+      past: '补记一次训练',
       replaceTitle: '已有训练在进行',
       replaceBody: '丢弃它，开始这个？',
       replaceConfirm: '丢弃并开始',
@@ -2070,7 +2069,6 @@ export const zhHans = {
       core: '核心',
       fullBody: '全身',
       cardio: '有氧',
-      sports: '运动',
       mobility: '灵活性',
     },
     equipment: {

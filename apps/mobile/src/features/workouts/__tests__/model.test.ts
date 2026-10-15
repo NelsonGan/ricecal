@@ -486,29 +486,29 @@ describe('records while training', () => {
 })
 
 describe('energy and Apple Health', () => {
-  it('prices a sport by its own time and MET, minus resting', () => {
+  it('prices a timed activity by its own time and MET, minus resting', () => {
     const workout = completeAll(
       workoutWith([
         {
-          exerciseId: 'badminton',
-          name: 'Badminton',
+          exerciseId: 'dance',
+          name: 'Dance',
           tracking: 'duration',
           sets: [{ durationS: 3600 }],
         },
       ]),
       1,
     )
-    // (5.5 - 1) x 70 kg x 1 h
-    expect(estimateKcal(workout, 3600, 70)).toBe(315)
-    expect(healthActivityType(workout)).toBe(4)
+    // (5 - 1) x 70 kg x 1 h
+    expect(estimateKcal(workout, 3600, 70)).toBe(280)
+    expect(healthActivityType(workout)).toBe(78)
   })
 
-  it('prices a sport by no more time than the workout lasted', () => {
+  it('prices a timed activity by no more time than the workout lasted', () => {
     const workout = completeAll(
       workoutWith([
         {
-          exerciseId: 'badminton',
-          name: 'Badminton',
+          exerciseId: 'dance',
+          name: 'Dance',
           tracking: 'duration',
           sets: [{ durationS: 3600 }],
         },
@@ -587,15 +587,15 @@ describe('what adding an exercise starts with', () => {
     expect(planFor(byId('barbell-bench-press'))).toMatchObject({ restS: null, sets: [{}, {}, {}] })
   })
 
-  it('gives a sport one timed set and no rest timer', () => {
-    expect(planFor(byId('badminton'))).toMatchObject({ restS: 0, sets: [{}] })
+  it('gives a timed cardio entry one timed set and no rest timer', () => {
+    expect(planFor(byId('dance'))).toMatchObject({ restS: 0, sets: [{}] })
   })
 
-  it('counts the time a sport set logs, ticked sets only', () => {
+  it('counts the time a timed set logs, ticked sets only', () => {
     const workout = workoutWith([
       {
-        exerciseId: 'badminton',
-        name: 'Badminton',
+        exerciseId: 'dance',
+        name: 'Dance',
         tracking: 'duration',
         sets: [{ durationS: 3600 }, { durationS: 600 }],
       },
@@ -716,5 +716,13 @@ describe('small rules', () => {
     const yoga = EXERCISES.find((exercise) => exercise.category === 'mobility')
     if (!yoga) throw new Error('no mobility entry')
     expect(planFor({ ...yoga, custom: false }).restS).toBe(0)
+  })
+})
+
+describe('the catalogue without sports', () => {
+  it('holds gym exercises, cardio and mobility, and no sports', () => {
+    expect(EXERCISES).toHaveLength(159)
+    expect(EXERCISES.some((exercise) => (exercise.category as string) === 'sports')).toBe(false)
+    expect(EXERCISES.some((exercise) => exercise.id === 'badminton')).toBe(false)
   })
 })

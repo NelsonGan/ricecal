@@ -26,24 +26,16 @@ const FALLBACK: Record<Category, IconRef> = {
   core: { set: 'body', name: 'sit-up' },
   fullBody: { set: 'body', name: 'kettlebell' },
   cardio: { set: 'body', name: 'running' },
-  sports: { set: 'body', name: 'target' },
   mobility: { set: 'body', name: 'stretching' },
 }
 
 /**
  * The icon-set drawing closest to an exercise, for the places that draw from
  * the icon set rather than the exercise art: a workout's row on Today sits
- * among food rows and takes their tile. Sports with a drawing of their own get
- * it; everything else gets its body part.
+ * among food rows and takes their tile. Cardio and mobility with a drawing of
+ * their own get it; lifting gets the dumbbell.
  */
-const SPORT_ICON: Record<string, IconRef> = {
-  badminton: { set: 'body', name: 'badminton' },
-  basketball: { set: 'body', name: 'basketball' },
-  football: { set: 'body', name: 'football' },
-  futsal: { set: 'body', name: 'football' },
-  volleyball: { set: 'body', name: 'volleyball' },
-  tennis: { set: 'body', name: 'tennis' },
-  'table-tennis': { set: 'body', name: 'table-tennis' },
+const OWN_ICON: Record<string, IconRef> = {
   swimming: { set: 'body', name: 'swimming' },
   running: { set: 'body', name: 'running' },
   treadmill: { set: 'body', name: 'treadmill' },
@@ -56,22 +48,13 @@ const SPORT_ICON: Record<string, IconRef> = {
   yoga: { set: 'body', name: 'yoga-mat' },
   pilates: { set: 'body', name: 'yoga-mat' },
   stretching: { set: 'body', name: 'stretching' },
-  boxing: { set: 'body', name: 'boxing-glove' },
-  'muay-thai': { set: 'body', name: 'boxing-glove' },
-  'martial-arts': { set: 'body', name: 'martial-arts' },
   dance: { set: 'body', name: 'dancing' },
   zumba: { set: 'body', name: 'dancing' },
-  climbing: { set: 'body', name: 'climbing-wall' },
-  skateboarding: { set: 'body', name: 'skateboard' },
-  surfing: { set: 'body', name: 'surfboard' },
   'stair-climber': { set: 'body', name: 'stairs' },
 }
 
-export function exerciseIcon(exerciseId: string, category: Category = 'fullBody'): IconRef {
-  return (
-    SPORT_ICON[exerciseId] ??
-    (category === 'sports' ? FALLBACK.sports : { set: 'body', name: 'dumbbell' })
-  )
+export function exerciseIcon(exerciseId: string): IconRef {
+  return OWN_ICON[exerciseId] ?? { set: 'body', name: 'dumbbell' }
 }
 
 export type ExerciseArtProps = {

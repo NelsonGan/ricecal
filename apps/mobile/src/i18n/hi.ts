@@ -1707,8 +1707,7 @@ export const hi = {
       resume: 'वर्कआउट जारी रखें',
       running: 'वर्कआउट चल रहा है',
       routine: 'शुरू करें',
-      sport: 'खेल दर्ज करें',
-      past: 'पिछला वर्कआउट',
+      past: 'पिछला वर्कआउट लॉग करें',
       replaceTitle: 'एक वर्कआउट पहले से चल रहा है',
       replaceBody: 'उसे छोड़कर यह शुरू करें?',
       replaceConfirm: 'छोड़ें और शुरू करें',
@@ -2074,7 +2073,6 @@ export const hi = {
       core: 'कोर',
       fullBody: 'पूरा शरीर',
       cardio: 'कार्डियो',
-      sports: 'खेल',
       mobility: 'मोबिलिटी',
     },
     equipment: {

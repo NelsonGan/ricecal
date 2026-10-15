@@ -18,7 +18,6 @@ import {
 import { ScreenTitle } from '@/features/shared'
 import {
   ActionSheet,
-  awaitPick,
   defaultWorkoutName,
   OverviewCard,
   RoutineCard,
@@ -87,17 +86,6 @@ export default function WorkoutsScreen() {
     return [...pending, ...saved]
   }, [workouts.data, outbox])
 
-  const startSport = () => {
-    awaitPick({
-      single: true,
-      deliver: ([plan]) => {
-        if (plan)
-          starter.start({ name: plan.name, source: 'empty', plans: [{ ...plan, sets: [{}] }] })
-      },
-    })
-    router.push({ pathname: '/workout/exercises', params: { pick: 'one', category: 'sports' } })
-  }
-
   return (
     <Screen>
       <ScreenTitle
@@ -134,12 +122,7 @@ export default function WorkoutsScreen() {
         </Button>
       )}
 
-      <View className="flex-row gap-2.5">
-        <QuickAction
-          icon={<Icon set="body" name="badminton" size={30} />}
-          label={t('workouts:start.sport')}
-          onPress={startSport}
-        />
+      <View className="flex-row">
         <QuickAction
           icon={<Icon set="system" name="calendar" size={30} />}
           label={t('workouts:start.past')}
