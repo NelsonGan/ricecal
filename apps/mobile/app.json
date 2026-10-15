@@ -44,7 +44,8 @@
         "android.permission.health.READ_EXERCISE",
         "android.permission.health.READ_HEART_RATE",
         "android.permission.health.READ_WEIGHT",
-        "android.permission.health.READ_BODY_FAT"
+        "android.permission.health.READ_BODY_FAT",
+        "android.permission.SCHEDULE_EXACT_ALARM"
       ],
       "blockedPermissions": [
         "com.google.android.gms.permission.AD_ID",

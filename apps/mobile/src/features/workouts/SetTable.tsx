@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TextInput, View } from 'react-native'
+import { Platform, TextInput, View } from 'react-native'
 
 import type { LastSet } from '@/data'
 import { fromKg, UNIT_KEY, type WeightUnit } from '@/lib/units'
@@ -266,6 +266,10 @@ const SetRow = memo(function SetRow({
 
   return (
     <View
+      // Kept as a view of its own. An untouched row draws nothing, so it is
+      // flattened away, and on Android the view brought back when a tick gave
+      // it a background came back without its rounded corners.
+      collapsable={false}
       className={cn(
         'min-h-[46px] flex-row items-center rounded-md px-1',
         ticked ? 'bg-pandan-soft' : undefined,
@@ -490,6 +494,15 @@ function useCellTools(
 }
 
 /**
+ * Android draws a field's placeholder only as it was when the field mounted.
+ * A new exercise's rows mount before last time's numbers arrive, and changing
+ * the prop afterwards left those rows blank while PREVIOUS beside them filled
+ * in. Keyed on it there, the field is remounted with its hint. iOS updates the
+ * hint in place.
+ */
+const hintKey = (placeholder: string) => (Platform.OS === 'android' ? placeholder : undefined)
+
+/**
  * A number typed on the app's own pad. Holds its text while focused, so "62."
  * is not rounded to "62" between two key presses, and writes the parsed value
  * through on every change so nothing typed is lost if the app is killed.
@@ -552,6 +565,7 @@ function NumberCell({
 
   return (
     <TextInput
+      key={hintKey(placeholder)}
       value={typed ?? value}
       onChangeText={change}
       placeholder={placeholder}
@@ -623,6 +637,7 @@ function DurationCell({
 
   return (
     <TextInput
+      key={hintKey(placeholder)}
       value={shown}
       onChangeText={change}
       placeholder={placeholder}

@@ -166,7 +166,12 @@ export const ExerciseCard = memo(function ExerciseCard({
         accessibilityLabel={t('workouts:logger.addSet')}
       >
         <Icon set="ui" name="plus" size={18} />
-        <Text variant="label">{t('workouts:logger.addSet')}</Text>
+        {/* One line, said out loud: on Android a label exactly as wide as its
+            text can lose its last word to rounding ("Add" on every card but
+            the first), and a single line cannot wrap it away. */}
+        <Text variant="label" numberOfLines={1}>
+          {t('workouts:logger.addSet')}
+        </Text>
       </Tappable>
     </Card>
   )
