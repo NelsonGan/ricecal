@@ -300,7 +300,7 @@ const SetRow = memo(function SetRow({
       actions={[
         {
           label: t('common:action.delete'),
-          a11yLabel: t('workouts:logger.removeSet'),
+          a11yLabel: `${t('workouts:logger.removeSet')} ${badge}`,
           icon: 'delete',
           tone: 'hibiscus',
           exits: true,

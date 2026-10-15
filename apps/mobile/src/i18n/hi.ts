@@ -1947,8 +1947,6 @@ export const hi = {
       level: 'स्तर',
       muscle: 'मसल',
       clear: 'साफ़ करें',
-      results_one: '{{count}} एक्सरसाइज़',
-      results_other: '{{count}} एक्सरसाइज़',
       noneTitle: 'इस नाम की कोई एक्सरसाइज़ नहीं',
       create: 'एक्सरसाइज़ बनाएं',
       recent: 'हाल की',

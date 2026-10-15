@@ -258,11 +258,16 @@ function ToastSurface({
   const { toast, dismiss } = stage
   const palette = tones[toast?.tone ?? 'neutral']
   // With the number pad up the bottom is its keys, and a toast there takes the
-  // next tap, so it comes from the top instead.
+  // next tap, so it comes from the top instead. Decided once per toast, as it
+  // appears: re-read on every render, "Workout saved" jumped to the bottom
+  // when leaving the logger closed the pad under it.
   const padOpen = useNumpadOpen()
-  const placement =
-    forced ?? (padOpen ? 'top' : (toast?.placement ?? (toast?.tone === 'error' ? 'top' : 'bottom')))
-  const fromTop = placement === 'top'
+  const placed = useRef<{ id: number; top: boolean } | null>(null)
+  if (toast && placed.current?.id !== toast.id) {
+    const wanted = toast.placement ?? (toast.tone === 'error' ? 'top' : 'bottom')
+    placed.current = { id: toast.id, top: padOpen || wanted === 'top' }
+  }
+  const fromTop = forced ? forced === 'top' : placed.current?.top === true
 
   if (!toast) return null
 

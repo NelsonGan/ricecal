@@ -56,7 +56,8 @@ struct WorkoutLiveActivity: Widget {
             if let ends = context.state.restEndsAt, ends > Date() {
               RestLine(
                 ends: ends, total: context.state.restTotalS,
-                workoutId: context.attributes.workoutId, palette: .dark)
+                workoutId: context.attributes.workoutId, labels: context.state.labels,
+                palette: .dark)
             }
           }
           .padding(.horizontal, 4)
@@ -119,7 +120,7 @@ private struct WorkoutLockScreen: View {
       if let ends = context.state.restEndsAt, ends > Date() {
         RestLine(
           ends: ends, total: context.state.restTotalS, workoutId: context.attributes.workoutId,
-          palette: palette)
+          labels: context.state.labels, palette: palette)
       }
     }
     .padding(16)
@@ -164,6 +165,7 @@ private struct NextSetLine: View {
             .background(Capsule().fill(palette.pandan))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(ifPresent: state.labels?.complete)
       }
     }
   }
@@ -173,6 +175,7 @@ private struct RestLine: View {
   let ends: Date
   let total: Double?
   let workoutId: String
+  let labels: WorkoutActivityAttributes.ActionLabels?
   let palette: Palette
 
   var body: some View {
@@ -191,13 +194,19 @@ private struct RestLine: View {
       .tint(palette.kaya)
       // The rest's own controls, the three the logger's rest bar has.
       if #available(iOS 17.0, *) {
-        RestButton(action: "restMinus", workoutId: workoutId, palette: palette) {
+        RestButton(
+          action: "restMinus", workoutId: workoutId, label: labels?.less, palette: palette
+        ) {
           Text("−15").font(WidgetFont.label(13))
         }
-        RestButton(action: "restPlus", workoutId: workoutId, palette: palette) {
+        RestButton(
+          action: "restPlus", workoutId: workoutId, label: labels?.more, palette: palette
+        ) {
           Text("+15").font(WidgetFont.label(13))
         }
-        RestButton(action: "skipRest", workoutId: workoutId, palette: palette) {
+        RestButton(
+          action: "skipRest", workoutId: workoutId, label: labels?.skip, palette: palette
+        ) {
           Image(systemName: "forward.end.fill").font(.system(size: 12, weight: .bold))
         }
       }
@@ -212,17 +221,20 @@ private struct RestLine: View {
 private struct RestButton<Label: View>: View {
   let action: String
   let workoutId: String
+  /// What VoiceOver says. Nil on content from a build that sent none.
+  let label: String?
   let palette: Palette
-  @ViewBuilder let label: () -> Label
+  @ViewBuilder let face: () -> Label
 
   var body: some View {
     Button(intent: WorkoutActionIntent(action: action, workoutId: workoutId)) {
-      label()
+      face()
         .foregroundStyle(palette.kayaInk)
         .frame(width: 40, height: 28)
         .background(Capsule().fill(palette.surface.opacity(0.7)))
     }
     .buttonStyle(.plain)
+    .accessibilityLabel(ifPresent: label)
   }
 }
 
@@ -272,5 +284,13 @@ private struct WorkoutIcon: View {
 
   var body: some View {
     WidgetIcon(name: "wg-dumbbell", fallback: "dumbbell.fill", size: size)
+  }
+}
+
+extension View {
+  /// A VoiceOver name when the app sent one, and the system's own otherwise.
+  @ViewBuilder
+  fileprivate func accessibilityLabel(ifPresent label: String?) -> some View {
+    if let label { accessibilityLabel(Text(label)) } else { self }
   }
 }

@@ -20,7 +20,6 @@ const LABELS = {
   done: 'Done',
   backspace: 'Delete the last digit',
   decimal: 'Decimal point',
-  clear: 'Clear',
 }
 
 /** The pad's height ends at the home indicator, so it needs real insets. */

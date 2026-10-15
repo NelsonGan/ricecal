@@ -25,6 +25,7 @@ import {
   ExerciseArt,
   LEVEL_KEY,
   type LibraryExercise,
+  M_PER_MI,
   MUSCLE_KEY,
   planFor,
   rankedMuscles,
@@ -41,7 +42,7 @@ import {
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
-import { UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
+import { fromKg, UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
 import {
   AppBar,
   Badge,
@@ -302,6 +303,32 @@ function formatMetric(
   }
 }
 
+/**
+ * What a metric's stored value is multiplied by to read it, so the chart's
+ * rules land on round figures in the unit shown: pounds rather than kilograms,
+ * kilometres or miles rather than metres, minutes rather than seconds.
+ */
+function readFactor(
+  metric: Metric,
+  unit: WeightUnit,
+  distanceUnit: DistanceUnit,
+  tracking: Tracking,
+): number {
+  switch (metric) {
+    case 'e1rm':
+    case 'heaviest':
+    case 'volume':
+      return fromKg(1, unit)
+    case 'duration':
+      return 1 / 60
+    case 'distance':
+      if (tracking === 'weight_distance') return 1
+      return distanceUnit === 'mi' ? 1 / M_PER_MI : 1 / 1000
+    case 'reps':
+      return 1
+  }
+}
+
 function Progress({
   exercise,
   sessions,
@@ -355,6 +382,7 @@ function Progress({
           formatValue={(value) =>
             formatMetric(t, value, metric, unit, distanceUnit, exercise.tracking)
           }
+          unitFactor={readFactor(metric, unit, distanceUnit, exercise.tracking)}
           accessibilityLabel={t(METRIC_KEY[metric])}
         />
       ) : null}

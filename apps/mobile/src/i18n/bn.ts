@@ -1950,8 +1950,6 @@ export const bn = {
       level: 'স্তর',
       muscle: 'পেশি',
       clear: 'মুছুন',
-      results_one: '{{count}}টি ব্যায়াম',
-      results_other: '{{count}}টি ব্যায়াম',
       noneTitle: 'এই নামে কোনো ব্যায়াম নেই',
       create: 'ব্যায়াম তৈরি করুন',
       recent: 'সাম্প্রতিক',

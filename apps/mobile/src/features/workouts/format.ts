@@ -15,7 +15,7 @@ import type { Tracking } from './catalogue'
 export type DistanceUnit = 'km' | 'mi'
 export const distanceUnitFor = (unit: WeightUnit): DistanceUnit => (unit === 'lb' ? 'mi' : 'km')
 
-const M_PER_MI = 1609.344
+export const M_PER_MI = 1609.344
 
 /** A figure with at most `places` decimals and no trailing zeros: 62.5, 60, 2.25. */
 export function trim(value: number, places = 2): string {

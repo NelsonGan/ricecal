@@ -34,6 +34,8 @@ public struct WorkoutActivityAttributes: ActivityAttributes {
     public var canComplete: Bool?
     /// The rest the next set starts when it is ticked, for the button to show at once.
     public var restAfterS: Double?
+    /// The buttons' names for VoiceOver, in the user's language.
+    public var labels: ActionLabels?
 
     public init(
       name: String,
@@ -46,7 +48,8 @@ public struct WorkoutActivityAttributes: ActivityAttributes {
       exerciseKey: String? = nil,
       setId: String? = nil,
       canComplete: Bool? = nil,
-      restAfterS: Double? = nil
+      restAfterS: Double? = nil,
+      labels: ActionLabels? = nil
     ) {
       self.name = name
       self.exercise = exercise
@@ -59,7 +62,16 @@ public struct WorkoutActivityAttributes: ActivityAttributes {
       self.setId = setId
       self.canComplete = canComplete
       self.restAfterS = restAfterS
+      self.labels = labels
     }
+  }
+
+  /// What VoiceOver calls the activity's buttons. The extension has no strings of its own.
+  public struct ActionLabels: Codable, Hashable {
+    public var complete: String
+    public var less: String
+    public var more: String
+    public var skip: String
   }
 
   /// The workout's own id, so a stale activity from an earlier run can be told apart.

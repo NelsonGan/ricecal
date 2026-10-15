@@ -125,9 +125,15 @@ type Session = {
   /** Where the field is on screen, so a host can scroll it clear of the pad. */
   measure: (report: (top: number, height: number) => void) => void
   /**
-   * Whether the next key replaces the value, which the field draws as the
-   * whole value selected. The pad says so after each key and each step.
+   * True from a focus until the first key: the next key replaces the value
+   * rather than appending, for a field that asked for `replaceFirst`. Kept on
+   * the session, set by the field's own focus, so it cannot disagree with the
+   * selection the field draws: kept on the pad, a field put away and tapped
+   * again within the close animation showed its value selected while the next
+   * key appended to it.
    */
+  pristine: boolean
+  /** Whether the field draws its whole value selected. Follows `pristine`. */
   setFresh: (fresh: boolean) => void
 }
 
@@ -141,9 +147,6 @@ type NumpadValue = {
   /** The same, animated, for anything that moves on the UI thread. */
   offset: SharedValue<number>
   labels: NumpadLabels
-  open: (session: Session) => void
-  /** Closes only if that session still owns the pad. */
-  close: (session: Session) => void
   /** Closes whatever is open. What a scroll does, the way a keyboard dismisses. */
   dismiss: () => void
 }
@@ -157,7 +160,10 @@ const NumpadContext = createContext<NumpadValue | null>(null)
  * close and Next: through the value, every set row in a workout re-rendered
  * each time the pad moved between two of them.
  */
-type NumpadActions = Pick<NumpadValue, 'open' | 'close' | 'dismiss'> & {
+type NumpadActions = Pick<NumpadValue, 'dismiss'> & {
+  open: (session: Session) => void
+  /** Closes only if that session still owns the pad. */
+  close: (session: Session) => void
   current: () => Session | null
   subscribe: (listener: () => void) => () => void
 }
@@ -295,8 +301,6 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
       height,
       offset,
       labels,
-      open: actions.open,
-      close: actions.close,
       dismiss: actions.dismiss,
     }),
     [session, shown, height, offset, labels, actions],
@@ -400,6 +404,7 @@ export function useNumpadField({
       field,
       blur: () => input.current?.blur(),
       measure: (report) => input.current?.measureInWindow((_x, y, _w, h) => report(y, h)),
+      pristine: true,
       setFresh,
     }
   }
@@ -439,6 +444,7 @@ export function useNumpadField({
   }, [closePad])
 
   const handleFocus = useCallback(() => {
+    if (session.current) session.current.pristine = true
     if (live && session.current) openPad?.(session.current)
     setFresh(replaceFirst)
     onFocus?.()
@@ -571,22 +577,11 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
   const [title, detail] = (spec.label ?? '').split('\n')
   const heading = { title, detail }
 
-  /**
-   * True until the first key of an edit, and only interesting for a field that
-   * asked for `replaceFirst`. A ref rather than state, since nothing on screen
-   * depends on it.
-   */
-  const pristine = useRef(true)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a new session is a new edit
-  useEffect(() => {
-    pristine.current = true
-  }, [session])
-
   const press = useCallback(
     (key: string) => {
       const live = session.field.current
-      const base = pristine.current && live.replaceFirst ? '' : live.value
-      pristine.current = false
+      const base = session.pristine && live.replaceFirst ? '' : live.value
+      session.pristine = false
       session.setFresh(false)
 
       if (key === 'back') {

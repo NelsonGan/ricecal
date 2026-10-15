@@ -1972,8 +1972,6 @@ export const id = {
       level: 'Tingkat',
       muscle: 'Otot',
       clear: 'Bersihkan',
-      results_one: '{{count}} gerakan',
-      results_other: '{{count}} gerakan',
       noneTitle: 'Tidak ada gerakan dengan nama itu',
       create: 'Buat gerakan',
       recent: 'Baru dipakai',

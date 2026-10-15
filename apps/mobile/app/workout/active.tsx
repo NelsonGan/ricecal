@@ -216,11 +216,6 @@ export default function ActiveWorkoutScreen() {
 }
 
 /**
- * Opened with no workout at all: a notice tapped after the workout it was
- * about had been finished. A screen that says so, not a redirect.
- */
-
-/**
  * The pieces that change every second, each with its own clock, so a tick
  * re-renders a figure rather than every card and cell in the logger.
  */

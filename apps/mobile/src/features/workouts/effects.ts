@@ -7,6 +7,7 @@ import {
   type WorkoutActivityState,
 } from '@modules/ricecal-widgets'
 import * as Haptics from 'expo-haptics'
+import type { TFunction } from 'i18next'
 import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppState } from 'react-native'
@@ -14,6 +15,7 @@ import { type LastSet, useLastSets, useSettings } from '@/data'
 import { cancelNotice, scheduleNoticeAt } from '@/lib/notifications'
 import { STALE_AFTER_MS, useLiveWorkout } from './live'
 import {
+  apply,
   isLoggable,
   type LiveExercise,
   type LiveSet,
@@ -22,6 +24,7 @@ import {
   type SetHint,
   setHints,
 } from './model'
+import { getActiveWorkout } from './store'
 
 /**
  * What a running workout does outside its own screen. Mounted once, in the
@@ -40,16 +43,24 @@ import {
  */
 export function useWorkoutEffects(): void {
   const { t } = useTranslation(['workouts'])
-  const { workout, dispatch } = useLiveWorkout()
-  const { data: settings } = useSettings()
-  const defaultRestS = settings?.workout_rest_s ?? 90
+  const { userId, workout, dispatch } = useLiveWorkout()
+  const settingsQuery = useSettings()
+  const defaultRestS = settingsQuery.data?.workout_rest_s ?? 90
   // Last time's sets, for what an empty set offers to the activity's tick.
   // The logger asks for the same key, so this is its cache rather than a fetch.
   const ids = useMemo(
     () => workout?.exercises.map((exercise) => exercise.exerciseId) ?? [],
     [workout?.exercises],
   )
-  const previous = useLastSets(ids).data
+  const lastSets = useLastSets(ids)
+  const previous = lastSets.data
+  // Whether what a lock-screen tick needs has arrived: last time's sets, for
+  // what an empty set offers, and the settings, for the rest it starts. Or
+  // will not arrive, offline. Drained before then, a tick on an empty set
+  // found nothing to fill it with.
+  const settled = (query: { data?: unknown; fetchStatus: string; isError: boolean }) =>
+    query.data !== undefined || query.isError || query.fetchStatus === 'paused'
+  const ready = settled(settingsQuery) && (ids.length === 0 || settled(lastSets))
 
   // The rest-over notice, rebooked whenever the rest changes. Its identifier
   // is fixed, so booking it replaces the last one rather than adding another.
@@ -97,7 +108,7 @@ export function useWorkoutEffects(): void {
   // with it. The native side ignores all three where Live Activities do not
   // exist (Android, iOS before 16.2, a user who switched them off).
   const live = useRef<string | null>(null)
-  const state = workout ? activityState(workout, previous, defaultRestS) : null
+  const state = workout ? activityState(workout, previous, defaultRestS, t) : null
   const stateKey = state ? JSON.stringify(state) : null
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the serialised state
   useEffect(() => {
@@ -119,12 +130,16 @@ export function useWorkoutEffects(): void {
   // The activity's buttons. Pressed with the app running, the intent says so
   // and they are applied at once; pressed with it closed, they wait in the
   // queue for the launch, or the return to the foreground, that follows.
-  const latest = useRef({ workout, previous, defaultRestS, dispatch })
-  latest.current = { workout, previous, defaultRestS, dispatch }
+  const latest = useRef({ userId, previous, defaultRestS, dispatch })
+  latest.current = { userId, previous, defaultRestS, dispatch }
   useEffect(() => {
+    if (!ready) return
     const drain = () => {
-      const { workout, previous, defaultRestS, dispatch } = latest.current
+      const { userId, previous, defaultRestS, dispatch } = latest.current
+      if (!userId) return
       for (const action of takeWorkoutActions()) {
+        // Read fresh for each: the one before it may have changed it.
+        const workout = getActiveWorkout(userId)
         if (!workout || action.workoutId !== workout.id) continue
         switch (action.type) {
           case 'skipRest':
@@ -142,8 +157,21 @@ export function useWorkoutEffects(): void {
             const exercise = workout.exercises.find((entry) => entry.key === action.exerciseKey)
             const set = exercise?.sets.find((entry) => entry.id === action.setId)
             if (!exercise || !set || set.done) break
-            const fill = hintFor(exercise, set, previous)
-            dispatch({ type: 'completeSet', key: exercise.key, setId: set.id, at: action.at, fill })
+            // The same test the logger's own tick makes: a set with nothing
+            // in it and nothing to offer is not a set.
+            const tick = {
+              type: 'completeSet',
+              key: exercise.key,
+              setId: set.id,
+              at: action.at,
+              fill: hintFor(exercise, set, previous),
+            } as const
+            const ticked = apply(
+              { ...workout, exercises: [exercise] },
+              tick,
+            ).exercises[0].sets.find((entry) => entry.id === set.id)
+            if (!ticked || !isLoggable(ticked, exercise.tracking)) break
+            dispatch(tick)
             const rest = restAfter(workout, exercise, defaultRestS)
             if (rest > 0) {
               dispatch({
@@ -167,7 +195,7 @@ export function useWorkoutEffects(): void {
       remove()
       foreground.remove()
     }
-  }, [])
+  }, [ready])
 
   // Signing out unmounts this. Nothing of the workout may outlive the account
   // on the phone: the next person to sign in must not see it on the lock
@@ -203,59 +231,92 @@ function hintFor(
 }
 
 /**
+ * The set to do next: the first not ticked, in the order a workout is done.
+ * A superset is the run of exercises sharing its number, done a round at a
+ * time, so after A1 comes B1 rather than A2.
+ */
+function nextSet(workout: LiveWorkout): { exercise: LiveExercise; set: LiveSet } | null {
+  const exercises = workout.exercises
+  for (let start = 0; start < exercises.length; ) {
+    let end = start + 1
+    const group = exercises[start].superset
+    if (group !== null) {
+      while (end < exercises.length && exercises[end].superset === group) end += 1
+    }
+    const round = exercises.slice(start, end)
+    const rounds = Math.max(...round.map((exercise) => exercise.sets.length))
+    for (let index = 0; index < rounds; index++) {
+      for (const exercise of round) {
+        const set = exercise.sets[index]
+        if (set && !set.done) return { exercise, set }
+      }
+    }
+    start = end
+  }
+  return null
+}
+
+/**
  * What the lock screen shows: the workout, how long it has run (the widget
  * counts that itself, from the start), the exercise and set to do next, and the
  * rest countdown if one is running. The next set is named by its keys, and
  * whether it has numbers to tick decides whether the tick button is drawn.
+ *
+ * It also carries the words the buttons need and cannot translate themselves:
+ * their VoiceOver names, and the "rest is over" notice they rebook.
  */
 function activityState(
   workout: LiveWorkout,
   previous: Record<string, LastSet[]> | undefined,
   defaultRestS: number,
+  t: TFunction<['workouts']>,
 ): WorkoutActivityState {
-  let exerciseName = ''
-  let setLabel = ''
   let done = 0
   let total = 0
   for (const exercise of workout.exercises) {
     total += exercise.sets.length
     done += exercise.sets.filter((set) => set.done).length
   }
-  const next = workout.exercises.find((exercise) => exercise.sets.some((set) => !set.done))
-  const nextSet = next?.sets.find((set) => !set.done) ?? null
-  if (next && nextSet) {
-    exerciseName = next.name
-    setLabel = `${next.sets.indexOf(nextSet) + 1}/${next.sets.length}`
-  } else if (workout.exercises.length) {
-    exerciseName = workout.exercises[workout.exercises.length - 1].name
-    setLabel = ''
-  }
-  const fill = next && nextSet ? hintFor(next, nextSet, previous) : null
-  const canComplete =
-    next && nextSet && fill
-      ? isLoggable(
-          {
-            weightKg: nextSet.weightKg ?? fill.weightKg,
-            reps: nextSet.reps ?? fill.reps,
-            durationS: nextSet.durationS ?? fill.durationS,
-            distanceM: nextSet.distanceM ?? fill.distanceM,
-          },
-          next.tracking,
-        )
-      : false
+  const next = nextSet(workout)
+  const last = workout.exercises[workout.exercises.length - 1]
+  const filled = next
+    ? apply(
+        { ...workout, exercises: [next.exercise] },
+        {
+          type: 'completeSet',
+          key: next.exercise.key,
+          setId: next.set.id,
+          at: 0,
+          fill: hintFor(next.exercise, next.set, previous),
+        },
+      ).exercises[0].sets.find((set) => set.id === next.set.id)
+    : undefined
+  // The notice names the exercise of the rest it ends: the running one, or
+  // the one a tick would start.
+  const resting = workout.rest
+    ? workout.exercises.find((exercise) => exercise.key === workout.rest?.exerciseKey)
+    : next?.exercise
   return {
     id: workout.id,
     name: workout.name,
     startedAt: workout.startedAt,
-    exercise: exerciseName,
-    set: setLabel,
+    exercise: next?.exercise.name ?? last?.name ?? '',
+    set: next ? `${next.exercise.sets.indexOf(next.set) + 1}/${next.exercise.sets.length}` : '',
     done,
     total,
     restEndsAt: workout.rest?.endsAt ?? null,
     restTotalS: workout.rest?.totalS ?? null,
-    exerciseKey: next?.key ?? null,
-    setId: nextSet?.id ?? null,
-    canComplete,
-    restAfterS: next ? restAfter(workout, next, defaultRestS) || null : null,
+    exerciseKey: next?.exercise.key ?? null,
+    setId: next?.set.id ?? null,
+    canComplete: Boolean(filled && next && isLoggable(filled, next.exercise.tracking)),
+    restAfterS: next ? restAfter(workout, next.exercise, defaultRestS) || null : null,
+    restTitle: t('workouts:rest.over'),
+    restBody: t('workouts:rest.overBody', { name: resting?.name ?? workout.name }),
+    labels: {
+      complete: t('workouts:logger.completeSet'),
+      less: t('workouts:rest.minus'),
+      more: t('workouts:rest.plus'),
+      skip: t('workouts:rest.skip'),
+    },
   }
 }

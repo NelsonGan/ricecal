@@ -858,12 +858,14 @@ that `Screen` does not scroll, the feed, reads `useNavInset` and pads itself.
 `floatingTrailing`. It has been raised in the middle of the bar, which capped
 it at four tabs, and beside the pill on every tab, which took the width a fifth
 tab needed. The first time it floated over Today it sat over the last row of
-the day and over the Delete of any row swiped open beneath it; `Screen` now
+the day and over the Delete of any row swiped open beneath it. `Screen` now
 pads its content by the button's height whenever a trailing control floats, so
-the last row scrolls clear of it.
+the last row scrolls clear of it, and Today drops the button while any row is
+swiped open (`EntryList`'s `onRowOpenChange`), so it never covers a Delete.
 
 If an earlier day remains selected, the log sheet shows its date. This matters
-when opening it from Feed, Trends or Me, where the diary's date is not visible.
+when it is opened from somewhere the diary's date is not visible, such as a
+notification or a widget.
 
 The log sheet remembers its last nonempty option, Snap, Describe or Search, in
 MMKV per account on this phone. A fresh account starts with Snap; reopening the
@@ -3827,7 +3829,9 @@ set. `exercise_bests` is grouped the same way for the same reason.
   exactly the rest days a program prescribes.
 - **The muscle split** spreads working sets over muscles by each exercise's
   split. The counting is in the database (`workout_exercise_totals`); the split
-  is in the app, with the catalogue it belongs to.
+  is in the app, with the catalogue it belongs to. It is shown as each body
+  part's share of the whole: a set of a compound lift counts towards several
+  groups, so counted in sets it came out in tenths ("1.8 sets").
 
 ### Finishing late
 
@@ -3960,8 +3964,20 @@ background if it has to.
   counted and its rest started (`restAfterS`, sent ahead in the content state).
   The workout itself is the app's JS's to change: it drains the queue on
   launch, on returning to the foreground, and when the intent's notification
-  reaches the module while JS is running, and applies each action with the
-  time it was pressed. Its next write to the activity replaces the guess.
+  reaches the module while JS is running, and applies a tick and the rest it
+  starts at the time it was pressed. It waits until last time's sets and the
+  settings have loaded (or cannot, offline), and makes the same test as the
+  logger's own tick: drained on a cold launch before them, a tick on an empty
+  set found nothing to fill it with and saved a set of no numbers. Its next
+  write to the activity replaces the guess.
+- **The "rest is over" notification moves with the rest.** The intent rebooks
+  it (same identifier as the app's) with words the app left in the App Group,
+  because with the app not running a skipped rest still fired its notice and a
+  tick started a rest with none. The queue is locked: the press wakes JS to
+  drain it on another thread, and a quick double tap could otherwise apply one
+  press twice.
+- **"Next set" follows superset rounds**: after A1 comes B1, not A2, and the
+  tick between two members of a round starts no rest.
 - The tick names its set by key (`exerciseKey`, `setId`) as the activity drew
   it, so a press that arrives after the workout moved on ticks the set it was
   for, or nothing if that set is gone or already done.
@@ -4013,34 +4029,36 @@ native sheet is still leaving is how iOS ends up presenting nothing.
 
 ### The set pad
 
-A set's fields use the app's own number pad laid out the way Strong's and
-Hevy's are. Fields pass the extras as `tools` to `useNumpadField`, and every
-other numeric field in the app keeps the plain pad.
+A set's fields use the app's own number pad with two big keys beside the
+digits, each two rows tall: **✓ Set**, which ticks the set the field belongs to
+with what its empty fields offer and moves to the next set, and **Next**, which
+walks the workout as a set is written on paper: weight, then reps, then the next
+set's weight, then the next exercise (`fieldOrder.tsx`). The order comes from
+the document rather than from what is mounted, so a set added mid-edit slots in.
+On the last field Next reads Done. The header names the exercise over the set
+and unit, because the field is often under the pad, with Plates for a barbell's
+weight and ⌄ to put the pad away. Every other numeric field keeps the plain pad.
 
-- **Quick-add keys** over the digits: −2.5, +2.5, +5, +10, +20 kg (−5 to +45
-  lb), reps by 1 to 10, time by 0:15 to 5:00, a carry by 5 to 50 m and a
-  distance by 0.1 to 5. On an empty field they count from the figure the field
-  offers, and a quick-added value is a finished one: the next digit starts a
-  new number rather than appending.
-- **The whole value is selected while the next key would replace it**: when a
-  field opens and after a quick-add. The pad already replaced on the first key;
-  showing the selection is what makes that expected rather than surprising.
-- **↑ and ↓** in the header walk the fields, and **Next** (two keys tall) moves
-  on, both in the order a set is written on paper: weight, then reps, then the
-  next set's weight, then the next exercise (`fieldOrder.tsx`). The order comes
-  from the document rather than from what is mounted, so a set added mid-edit
-  slots in. On the last field Next reads Done. **⌄** puts the pad away.
-- **✓ Set** ticks the set the field belongs to, with what its empty fields
-  offer, and moves to the first field of the next set. **Clear** empties the
-  field.
-- **The header** names the exercise, the set and the unit, because the field
-  being typed into is often under the pad. A barbell's weight adds a Plates
-  shortcut there.
+**It had more keys, and they were cut.** A row of quick-add keys (−2.5 to +20 kg,
++0:15 to +5:00), Clear, and up and down arrows made a pad of twenty keys that
+was slower to read than typing the number. A field opens with its whole value
+selected instead, so the first digit replaces it and backspace clears it.
 
-**An empty field offers the figure above it in its column**, or last time's
-for that set when nothing above has one (`setHints`), and ticking the empty set
-takes what it offers. Typing 105 into the first set offers 105 to every set
-under it. Warm-ups only hand down to warm-ups.
+**An empty field offers a figure, and ticking it takes that figure**
+(`setHints`). Per column, the figure is the first of these that exists:
+- one changed today in a set above it (typing 105 into the first set offers 105
+  to every set under it);
+- last time's figure for this set;
+- whatever the row above shows, so a third set is not blank under two that read
+  60 × 10.
+
+A figure that only repeats last time's, typed or taken by a tick, is not a
+change: otherwise ticking a 100 × 10 first set offered 10 reps to a second set
+that last time was 100 × 5. Warm-ups only hand down to warm-ups. Finishing
+counts these too: a set that shows numbers and was never ticked is asked about
+("Tick them and save" ticks it with what it shows) rather than left out, which
+is what happened while only typed numbers counted. A past workout is saved the
+same way, with last time's sets.
 
 **Exercises reorder by dragging** in a sheet of short rows, opened from an
 exercise's menu or by long-pressing its name. Cards are too tall to drag past
@@ -4070,13 +4088,19 @@ anything a screen needed a sentence to explain has been made to explain
 itself or cut.
 
 **The charts can be read off, not only looked at.** `TrendLine` takes a
-`formatValue`, which adds three rules at the lowest, middle and highest readings
-with their values, and a tap or a sideways drag that names the reading under
-the finger; a vertical drag stays the scroll's. Its dates are thinned to as
-many as fit and centred on their own points, because twenty sessions side by
-side were twenty clipped stubs. The shareable review card passes no
-`formatValue` and stays a picture. `BarChart` takes `selected` and `onSelect`,
-and the workout progress page puts the tapped week's figure in its headline.
+`formatValue`, which adds a few rules at round values with their figures in a
+gutter of their own, and a tap or a sideways drag that names the reading under
+the finger (a tap on it again puts it away; new data resets it). The rules are
+rounded in the unit the chart is read in (`unitFactor`: 80 and 85 kg are not
+round pounds), never closer than a label is tall, and never two that read the
+same once formatted, which a flat week of 80.0 and 80.1 kg otherwise drew as
+three "80 kg" stacked on each other. A point can carry a `title` for the
+readout where its axis label is short or blank, as every other month is on the
+year's weight chart. Dates are thinned to as many as fit, because twenty
+sessions side by side were twenty clipped stubs. The shareable review card
+passes no `formatValue` and stays a picture. `BarChart` takes `selected` and
+`onSelect`, and the workout progress page puts the tapped week's figure in its
+headline; each selectable bar carries its own VoiceOver name.
 
 ### Releasing it
 

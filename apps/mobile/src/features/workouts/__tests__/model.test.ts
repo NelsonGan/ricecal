@@ -263,18 +263,41 @@ describe('what an empty set offers', () => {
     ])
   })
 
+  it("prefers a set's own last time to what the row above only shows", () => {
+    const hints = setHints(
+      [set('normal', null, null), set('normal', null, null), set('normal', null, null)],
+      [
+        { weightKg: 100, reps: 10 },
+        { weightKg: 100, reps: 5 },
+      ],
+    )
+    expect(hints.map((hint) => hint.reps)).toEqual([10, 5, 5])
+  })
+
+  it('does not hand down a figure that only repeats last time', () => {
+    const hints = setHints(
+      [set('normal', 100, 10), set('normal', null, null)],
+      [
+        { weightKg: 100, reps: 10 },
+        { weightKg: 100, reps: 5 },
+      ],
+    )
+    expect(hints[1].reps).toBe(5)
+  })
+
   it('keeps warm-ups to themselves', () => {
     const hints = setHints([set('warmup', 40, 10), set('normal', null, null)], [])
     expect(hints[1]).toEqual({ weightKg: null, reps: null, durationS: null, distanceM: null })
   })
 
-  it('falls back to last time, then to nothing', () => {
+  it('falls back to last time, and hands down what a row shows', () => {
     const hints = setHints(
       [set('normal', null, null), set('normal', null, null)],
       [{ weightKg: 60, reps: 8 }],
     )
     expect(hints[0].weightKg).toBe(60)
-    expect(hints[1].weightKg).toBeNull()
+    expect(hints[1].weightKg).toBe(60)
+    expect(setHints([set('normal', null, null)], [])[0].weightKg).toBeNull()
   })
 })
 

@@ -1,6 +1,7 @@
 import ActivityKit
 import AppIntents
 import Foundation
+import UserNotifications
 
 // In the app this file sits beside the pod that owns the store and the
 // attributes; in the extension both are compiled in alongside it. `internal`
@@ -109,6 +110,42 @@ enum WorkoutActivityNudge {
       }
       let stale = state.restEndsAt.flatMap { $0 > at ? $0 : nil }
       await activity.update(ActivityContent(state: state, staleDate: stale))
+      await RestNotice.reschedule(endsAt: stale, at: at)
+    #endif
+  }
+}
+
+/**
+ The "rest is over" notification, moved with the rest. The app books it for
+ every rest, but a button pressed while the app is not running would otherwise
+ leave it where it was: firing after a skipped rest, fifteen seconds early
+ after +15, or not at all for the rest a tick starts. Same identifier as the
+ app's (`WORKOUT_NOTICE.rest`), so either side booking it replaces the other.
+ */
+@available(iOS 17.0, *)
+enum RestNotice {
+  static let identifier = "workout-rest"
+
+  static func reschedule(endsAt: Date?, at: Date) async {
+    #if canImport(RiceCalWidgetBridge)
+      let center = UNUserNotificationCenter.current()
+      center.removePendingNotificationRequests(withIdentifiers: [identifier])
+      guard let endsAt, let words = RiceCalWidgetStore.restNotice() else { return }
+      let seconds = endsAt.timeIntervalSince(at)
+      guard seconds >= 1 else { return }
+      let content = UNMutableNotificationContent()
+      content.title = words.title
+      content.body = words.body
+      content.sound = .default
+      // Where expo-notifications keeps a notification's `data`, so a tap on
+      // this one is handled like the app's own.
+      content.userInfo = ["body": ["kind": "rest"]]
+      let request = UNNotificationRequest(
+        identifier: identifier,
+        content: content,
+        trigger: UNTimeIntervalNotificationTrigger(timeInterval: seconds, repeats: false)
+      )
+      try? await center.add(request)
     #endif
   }
 }

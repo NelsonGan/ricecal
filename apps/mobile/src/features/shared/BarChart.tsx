@@ -9,6 +9,8 @@ export type Bar = {
   value: number
   /** Draws this bar in the accent colour. Usually the newest or the current one. */
   highlight?: boolean
+  /** What VoiceOver calls a selectable bar: its date and its value. */
+  a11yLabel?: string
 }
 
 export type BarChartProps = {
@@ -61,8 +63,8 @@ const softFills = {
  * A plain column chart.
  *
  * Deliberately not victory-native: every use here is a fixed handful of bars
- * with no axes, no tooltips and no gestures, and a flex row of rounded Views
- * renders that far more cheaply than a Skia canvas would.
+ * with no axes and at most a tap, and a flex row of rounded Views renders that
+ * far more cheaply than a Skia canvas would.
  */
 export function BarChart({
   bars,
@@ -88,8 +90,9 @@ export function BarChart({
     <View
       className={cn('flex-row items-end gap-1.5', className)}
       style={{ height }}
-      accessible={Boolean(accessibilityLabel)}
-      accessibilityRole={accessibilityLabel ? 'image' : undefined}
+      // One image to VoiceOver, unless its bars are buttons of their own.
+      accessible={Boolean(accessibilityLabel) && !onSelect}
+      accessibilityRole={accessibilityLabel && !onSelect ? 'image' : undefined}
       accessibilityLabel={accessibilityLabel}
     >
       {bars.map((bar, index) => (
@@ -100,7 +103,7 @@ export function BarChart({
           className="h-full min-w-0 flex-1 items-center gap-1.5"
           accessibilityRole={onSelect ? 'button' : undefined}
           accessibilityState={onSelect ? { selected: selected === index } : undefined}
-          accessibilityLabel={onSelect ? (bar.label ?? bar.key) : undefined}
+          accessibilityLabel={onSelect ? (bar.a11yLabel ?? bar.label ?? bar.key) : undefined}
         >
           {/* The bar's percentage is of this box, not of the column: measuring
               it against the column would make a full bar plus its label taller

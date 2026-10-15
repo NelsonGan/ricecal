@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { useWindowDimensions, View } from 'react-native'
+import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler'
 import Animated, {
   runOnJS,
   type SharedValue,
@@ -46,14 +46,19 @@ export function ReorderSheet({
   onDone: (keys: string[]) => void
 }) {
   const { t } = useTranslation(['workouts', 'common'])
-  // Each key's slot. Reset from the document whenever the sheet opens.
+  const { height: windowHeight } = useWindowDimensions()
+  // Each key's slot, and the rows as they were when the sheet opened. Taken
+  // once per opening: the editor builds `items` afresh on every render, and a
+  // rest ending mid-drag re-rendered it and put every row back.
   const slots = useSharedValue<Record<string, number>>({})
   const [shown, setShown] = useState(items)
+  const latest = useRef(items)
+  latest.current = items
   useEffect(() => {
     if (!visible) return
-    setShown(items)
-    slots.value = Object.fromEntries(items.map((item, index) => [item.key, index]))
-  }, [visible, items, slots])
+    setShown(latest.current)
+    slots.value = Object.fromEntries(latest.current.map((item, index) => [item.key, index]))
+  }, [visible, slots])
 
   const done = () => {
     const order = { ...slots.value }
@@ -61,8 +66,13 @@ export function ReorderSheet({
     onClose()
   }
 
+  // The list scrolls once it is taller than about half the screen, and a drag
+  // on a handle holds the scroll still until it lets go.
+  const scroll = Gesture.Native()
+  const maxHeight = Math.round(windowHeight * 0.55)
+
   return (
-    // Not scrollable: a sheet that scrolls fights every drag for the finger.
+    // Not scrollable itself: the list inside is, under its own gesture.
     <Sheet
       visible={visible}
       onClose={onClose}
@@ -71,11 +81,22 @@ export function ReorderSheet({
       scrollable={false}
     >
       <View className="gap-5">
-        <View style={{ height: shown.length * ROW }}>
-          {shown.map((item) => (
-            <SortableRow key={item.key} item={item} slots={slots} count={shown.length} />
-          ))}
-        </View>
+        <GestureDetector gesture={scroll}>
+          <ScrollView style={{ maxHeight }} showsVerticalScrollIndicator={false} bounces={false}>
+            <View style={{ height: shown.length * ROW }}>
+              {shown.map((item, index) => (
+                <SortableRow
+                  key={item.key}
+                  item={item}
+                  initialSlot={index}
+                  slots={slots}
+                  count={shown.length}
+                  scroll={scroll}
+                />
+              ))}
+            </View>
+          </ScrollView>
+        </GestureDetector>
         <Button fullWidth onPress={done}>
           {t('common:action.done')}
         </Button>
@@ -84,18 +105,44 @@ export function ReorderSheet({
   )
 }
 
+/**
+ * The slots with `key` moved to `to`, and everything between its old slot and
+ * the new one shifted a place towards where it came from. On either thread:
+ * the drag runs it on the UI thread, VoiceOver's adjust on the JS one.
+ */
+function reslot(slots: Record<string, number>, key: string, to: number) {
+  'worklet'
+  const at = slots[key]
+  if (at === undefined || to === at) return slots
+  const next: Record<string, number> = {}
+  for (const other in slots) {
+    const slot = slots[other]
+    if (other === key) next[other] = to
+    else if (at < to && slot > at && slot <= to) next[other] = slot - 1
+    else if (at > to && slot < at && slot >= to) next[other] = slot + 1
+    else next[other] = slot
+  }
+  return next
+}
+
 function SortableRow({
   item,
+  initialSlot,
   slots,
   count,
+  scroll,
 }: {
   item: ReorderItem
+  /** Where the row starts, passed in so the render never reads `slots`. */
+  initialSlot: number
   slots: SharedValue<Record<string, number>>
   count: number
+  scroll: ReturnType<typeof Gesture.Native>
 }) {
+  const { t } = useTranslation(['workouts'])
   const colors = useThemeColors()
   const key = item.key
-  const top = useSharedValue((slots.value[key] ?? 0) * ROW)
+  const top = useSharedValue(initialSlot * ROW)
   const dragging = useSharedValue(false)
   const from = useSharedValue(0)
 
@@ -114,6 +161,7 @@ function SortableRow({
   }
 
   const pan = Gesture.Pan()
+    .blocksExternalGesture(scroll)
     .onStart(() => {
       dragging.value = true
       from.value = top.value
@@ -121,18 +169,8 @@ function SortableRow({
     })
     .onUpdate((event) => {
       top.value = Math.max(0, Math.min((count - 1) * ROW, from.value + event.translationY))
-      const to = Math.round(top.value / ROW)
-      const at = slots.value[key]
-      if (at === undefined || to === at) return
-      // Everything between the old slot and the new one shifts one place
-      // towards where this row came from.
-      const next: Record<string, number> = {}
-      for (const [other, slot] of Object.entries(slots.value)) {
-        if (other === key) next[other] = to
-        else if (at < to && slot > at && slot <= to) next[other] = slot - 1
-        else if (at > to && slot < at && slot >= to) next[other] = slot + 1
-        else next[other] = slot
-      }
+      const next = reslot(slots.value, key, Math.round(top.value / ROW))
+      if (next === slots.value) return
       slots.value = next
       runOnJS(tick)()
     })
@@ -140,6 +178,14 @@ function SortableRow({
       dragging.value = false
       top.value = withTiming((slots.value[key] ?? 0) * ROW, { duration: 160 })
     })
+
+  // VoiceOver's way to move a row: swipe up on the handle for earlier, down
+  // for later. The drag is not something a screen reader can do.
+  const nudge = (by: -1 | 1) => {
+    const at = slots.value[key]
+    if (at === undefined) return
+    slots.value = reslot(slots.value, key, Math.max(0, Math.min(count - 1, at + by)))
+  }
 
   const style = useAnimatedStyle(() => ({
     top: top.value,
@@ -171,8 +217,13 @@ function SortableRow({
         <GestureDetector gesture={pan}>
           <View
             className="h-full w-[52px] items-center justify-center"
+            accessible
             accessibilityRole="adjustable"
-            accessibilityLabel={item.name}
+            accessibilityLabel={`${t('workouts:logger.menu.reorder')}: ${item.name}`}
+            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+            onAccessibilityAction={(event) =>
+              nudge(event.nativeEvent.actionName === 'increment' ? -1 : 1)
+            }
           >
             <Icon set="ui" name="reorder" size={22} tintColor={colors.muted} />
           </View>

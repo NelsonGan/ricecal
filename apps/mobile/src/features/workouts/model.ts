@@ -354,10 +354,17 @@ export type SetHint = Required<Pick<SetPatch, 'weightKg' | 'reps' | 'durationS' 
 const NO_HINT: SetHint = { weightKg: null, reps: null, durationS: null, distanceM: null }
 
 /**
- * Each set's hints: the nearest figure above it in the same column, or, with
- * nothing above, last time's figure for that set. Typing 105 into the first
- * set offers 105 to every set under it, the way a column filled in on paper
- * reads, and ticking an empty set takes what it offers.
+ * Each set's hints, per column: a figure typed above it, then last time's
+ * figure for this set, then whatever the row above shows. Typing 105 into the
+ * first set offers 105 to every set under it, the way a column filled in on
+ * paper reads, and ticking an empty set takes what it offers.
+ *
+ * In that order because each answers a different question. A figure changed
+ * today is the plan for today, so it beats last time; one that only repeats
+ * last time's (a tick takes it) changes nothing. Last time's own set
+ * beats a figure merely shown above it, or a 100 x 5 set under a 100 x 10 one
+ * was offered 10 reps. And a set last time did not have takes what the row
+ * above shows, so a third set is not blank under two that read 60 x 10.
  *
  * Warm-ups only hand down to warm-ups: a 40 kg warm-up is not a working set's
  * weight.
@@ -366,21 +373,31 @@ export function setHints(
   sets: readonly Pick<LiveSet, 'kind' | 'weightKg' | 'reps' | 'durationS' | 'distanceM'>[],
   previous: readonly (SetPatch | undefined)[] | null | undefined,
 ): SetHint[] {
-  const above = { warmup: { ...NO_HINT }, working: { ...NO_HINT } }
+  const fresh = () => ({ typed: { ...NO_HINT }, shown: { ...NO_HINT } })
+  const above = { warmup: fresh(), working: fresh() }
+  const column = (
+    field: keyof SetHint,
+    set: (typeof sets)[number],
+    carry: ReturnType<typeof fresh>,
+    last: SetPatch | undefined,
+  ) => {
+    const hint = carry.typed[field] ?? last?.[field] ?? carry.shown[field] ?? null
+    // A figure that is last time's again (typed, or taken by a tick) is not a
+    // change, and the sets under it go on following their own last time.
+    const own = set[field]
+    if (own !== null && own !== (last?.[field] ?? null)) carry.typed[field] = own
+    carry.shown[field] = set[field] ?? hint
+    return hint
+  }
   return sets.map((set, index) => {
     const carry = set.kind === 'warmup' ? above.warmup : above.working
     const last = previous?.[index]
-    const hint: SetHint = {
-      weightKg: carry.weightKg ?? last?.weightKg ?? null,
-      reps: carry.reps ?? last?.reps ?? null,
-      durationS: carry.durationS ?? last?.durationS ?? null,
-      distanceM: carry.distanceM ?? last?.distanceM ?? null,
+    return {
+      weightKg: column('weightKg', set, carry, last),
+      reps: column('reps', set, carry, last),
+      durationS: column('durationS', set, carry, last),
+      distanceM: column('distanceM', set, carry, last),
     }
-    if (set.weightKg !== null) carry.weightKg = set.weightKg
-    if (set.reps !== null) carry.reps = set.reps
-    if (set.durationS !== null) carry.durationS = set.durationS
-    if (set.distanceM !== null) carry.distanceM = set.distanceM
-    return hint
   })
 }
 
@@ -553,7 +570,6 @@ export function lastActivityAt(workout: LiveWorkout): number | null {
   return latest
 }
 
-/** Sets with numbers in them that were never ticked, which finishing has to ask about. */
 /** Last time's sets for each exercise in a workout, by exercise id and position. */
 export type PreviousSets = Readonly<Record<string, readonly SetPatch[] | undefined>>
 

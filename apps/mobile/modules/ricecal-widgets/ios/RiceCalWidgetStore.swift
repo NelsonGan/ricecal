@@ -99,6 +99,16 @@ public enum RiceCalWidgetStore {
   // MARK: - Buttons pressed on the workout's Live Activity
 
   private static let workoutKey = "workoutActions"
+  private static let restNoticeKey = "workoutRestNotice"
+
+  /**
+   Held around the read-append-write and the read-and-remove. Unlike the water
+   queue, this one is drained in the moment it is filled: the press itself
+   wakes the app's JS to take it, on another thread of the same process, and a
+   quick double tap on +15 could otherwise apply the first press twice or lose
+   the second.
+   */
+  private static let workoutLock = NSLock()
 
   /// Posted in the app's process once a Live Activity button has queued an action.
   public static let workoutActionQueued = Notification.Name("RiceCalWorkoutActionQueued")
@@ -108,11 +118,11 @@ public enum RiceCalWidgetStore {
 
    The workout lives in the app's own storage, which the intent cannot write,
    so it leaves the action here and the app's JS applies it: at once when it
-   is running, and on its next launch when it is not. Same trade as the water
-   queue, and the same reason it need not be atomic.
+   is running, and on its next launch when it is not.
    */
   public static func queueWorkoutAction(_ action: [String: Any]) {
     guard let defaults else { return }
+    workoutLock.lock()
     var queue = decodeQueue(defaults.string(forKey: workoutKey))
     queue.append(action)
     if let encoded = try? JSONSerialization.data(withJSONObject: queue),
@@ -120,15 +130,35 @@ public enum RiceCalWidgetStore {
     {
       defaults.set(json, forKey: workoutKey)
     }
+    workoutLock.unlock()
     NotificationCenter.default.post(name: workoutActionQueued, object: nil)
   }
 
   /// Read the workout queue and empty it. The app's half of `queueWorkoutAction`.
   public static func takeWorkoutActions() -> String {
     guard let defaults else { return "[]" }
+    workoutLock.lock()
+    defer { workoutLock.unlock() }
     let json = defaults.string(forKey: workoutKey) ?? "[]"
     defaults.removeObject(forKey: workoutKey)
     return json
+  }
+
+  /**
+   The "rest is over" notice's words, in the user's language, written by the
+   app whenever it updates the activity. A button that moves the rest has to
+   move the notice with it, possibly before the app's JS has run at all, and
+   the words are the app's to choose.
+   */
+  public static func setRestNotice(title: String, body: String) {
+    defaults?.set(["title": title, "body": body], forKey: restNoticeKey)
+  }
+
+  public static func restNotice() -> (title: String, body: String)? {
+    guard let stored = defaults?.dictionary(forKey: restNoticeKey) as? [String: String],
+      let title = stored["title"], let body = stored["body"]
+    else { return nil }
+    return (title, body)
   }
 
   private static func decodeQueue(_ json: String?) -> [[String: Any]] {

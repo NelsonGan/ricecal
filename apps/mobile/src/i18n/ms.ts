@@ -1991,8 +1991,6 @@ export const ms = {
       level: 'Tahap',
       muscle: 'Otot',
       clear: 'Kosongkan',
-      results_one: '{{count}} latihan',
-      results_other: '{{count}} latihan',
       noneTitle: 'Tiada latihan dengan nama itu',
       create: 'Buat latihan',
       recent: 'Baru digunakan',

@@ -1949,8 +1949,6 @@ export const ko = {
       level: '난이도',
       muscle: '근육',
       clear: '초기화',
-      results_one: '{{count}}종목',
-      results_other: '{{count}}종목',
       noneTitle: '그 이름의 종목이 없습니다',
       create: '종목 만들기',
       recent: '최근',

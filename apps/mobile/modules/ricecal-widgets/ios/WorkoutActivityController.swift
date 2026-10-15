@@ -27,6 +27,11 @@ enum WorkoutActivityController {
     let setId: String?
     let canComplete: Bool?
     let restAfterS: Double?
+    /// The "rest is over" notice for the next set, kept for the buttons. See `RiceCalWidgetStore.setRestNotice`.
+    let restTitle: String?
+    let restBody: String?
+    /// Screen-reader names for the buttons, which the extension cannot translate itself.
+    let labels: WorkoutActivityAttributes.ActionLabels?
 
     var state: WorkoutActivityAttributes.ContentState {
       WorkoutActivityAttributes.ContentState(
@@ -40,7 +45,8 @@ enum WorkoutActivityController {
         exerciseKey: exerciseKey,
         setId: setId,
         canComplete: canComplete,
-        restAfterS: restAfterS
+        restAfterS: restAfterS,
+        labels: labels
       )
     }
 
@@ -61,8 +67,13 @@ enum WorkoutActivityController {
   }
 
   private static func decode(_ json: String) -> Payload? {
-    guard let data = json.data(using: .utf8) else { return nil }
-    return try? JSONDecoder().decode(Payload.self, from: data)
+    guard let data = json.data(using: .utf8),
+      let payload = try? JSONDecoder().decode(Payload.self, from: data)
+    else { return nil }
+    if let title = payload.restTitle, let body = payload.restBody {
+      RiceCalWidgetStore.setRestNotice(title: title, body: body)
+    }
+    return payload
   }
 
   static var enabled: Bool {

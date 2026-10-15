@@ -1,6 +1,14 @@
-import { Canvas, Circle, LinearGradient, Path, Skia, vec } from '@shopify/react-native-skia'
+import {
+  Canvas,
+  Circle,
+  LinearGradient,
+  Path,
+  Skia,
+  type SkPath,
+  vec,
+} from '@shopify/react-native-skia'
 import * as Haptics from 'expo-haptics'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
@@ -10,7 +18,10 @@ import { cn, Text } from '@/ui'
 
 export type TrendPoint = {
   key: string
+  /** The axis label under the point. May be blank where the axis has no room. */
   label: string
+  /** What the readout calls the point, when the axis label is short or blank. */
+  title?: string
   /** Null where the range has a column but nobody weighed in. Held, not spanned. */
   value: number | null
 }
@@ -28,12 +39,19 @@ export type TrendLineProps = {
   carryFrom?: number | null
   height?: number
   /**
-   * How a value reads, which turns on the chart's scale and its readout: three
-   * light rules with their values, and a tap or a sideways drag that names the
-   * point under the finger. Left out on a chart that is a picture rather than
-   * something to read off, such as the shareable review card.
+   * How a value reads, which turns on the chart's scale and its readout: a few
+   * light rules at round values, and a tap or a sideways drag that names the
+   * point under the finger (tap it again to put it away). Left out on a chart
+   * that is a picture rather than something to read off, such as the
+   * shareable review card.
    */
   formatValue?: (value: number) => string
+  /**
+   * What the values are multiplied by to read them, so the rules land on
+   * round figures in that unit: 2.20462 for a chart drawn in kilograms and
+   * read in pounds, where rules at 80 and 85 kg read "176.4 lb" and "187.4 lb".
+   */
+  unitFactor?: number
   accessibilityLabel?: string
   className?: string
 }
@@ -50,9 +68,12 @@ const TIP_W = 92
 /** The gutter the scale's values sit in. */
 const SCALE_W = 56
 
+/** The least room between two rules, so their values never sit on each other. */
+const RULE_GAP = 20
+
 /**
- * Two or three round values between `low` and `high`: steps of 1, 2, 2.5 or 5
- * times a power of ten, the way a hand-drawn axis is labelled.
+ * Round values between `low` and `high`, about three of them: steps of 1, 2,
+ * 2.5 or 5 times a power of ten, the way a hand-drawn axis is labelled.
  */
 function roundTicks(low: number, high: number): number[] {
   const rough = (high - low) / 3
@@ -87,13 +108,19 @@ export function TrendLine({
   carryFrom,
   height = 128,
   formatValue,
+  unitFactor = 1,
   accessibilityLabel,
   className,
 }: TrendLineProps) {
   // Measured rather than assumed: the card's padding is a token and this sits
   // inside a `Screen` gutter, so the only honest width is the one laid out.
   const [width, setWidth] = useState(0)
-  const [selected, setSelected] = useState<number | null>(null)
+  // The point being read, by key, so new data (another range, another metric)
+  // does not leave a readout over whichever point now sits at the old spot.
+  const [selected, setSelected] = useState<string | null>(null)
+  const pointsKey = points.map((point) => `${point.key}:${point.value}`).join(',')
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the data changes
+  useEffect(() => setSelected(null), [pointsKey])
   const colors = useThemeColors()
   // With a scale, its values get a gutter of their own on the right, so they
   // never sit on the newest point, which is always at the right edge.
@@ -136,10 +163,9 @@ export function TrendLine({
   const plotted = held
     .map((entry, index) => ({
       ...entry,
-      // The CENTRE of this point's column, which is where its label sits: the
-      // axis below is a flex row of equal columns, so anything else puts the
-      // first and last dots off their own labels — by about a third of a column
-      // on a seven-day chart, which is exactly the reading the chart is for.
+      // The CENTRE of this point's column, which is where its label is
+      // centred too: anything else puts the first and last dots off their own
+      // labels, by about a third of a column on a seven-day chart.
       //
       // Every column gets a slot whether or not it has a reading. The x axis is
       // the range, not the readings, so two weigh-ins a fortnight apart must not
@@ -176,20 +202,31 @@ export function TrendLine({
         )
       : null
 
-  // Rules at round values inside the range, two or three of them: "80 kg" and
-  // "85 kg" read at a glance where the midpoint of 76 and 88.7 does not.
-  const rules =
-    width > 0 && values.length > 1 && high > low
-      ? roundTicks(low, high).flatMap((value) => {
-          const y = top + (1 - (value - floor) / span) * usable
-          const path = Skia.Path.MakeFromSVGString(`M 0 ${y} L ${plotWidth} ${y}`)
-          return path ? [{ value, y, path }] : []
-        })
-      : []
+  // Rules at round values in the unit the chart is read in: "80 kg" and
+  // "85 kg" read at a glance where the midpoint of 76 and 88.7 does not. Over
+  // the drawn range, padding included, and never closer than a label is tall
+  // or reading the same once formatted ("80 kg" twice on a flat week).
+  const rules: { value: number; y: number; path: SkPath }[] = []
+  if (formatValue && width > 0 && values.length > 1) {
+    for (const scaled of roundTicks(floor * unitFactor, (floor + span) * unitFactor)) {
+      const value = scaled / unitFactor
+      const y = top + (1 - (value - floor) / span) * usable
+      const previous = rules[rules.length - 1]
+      if (y < top + 4 || y > top + usable - 4) continue
+      if (
+        previous &&
+        (previous.y - y < RULE_GAP || formatValue(previous.value) === formatValue(value))
+      ) {
+        continue
+      }
+      const path = Skia.Path.MakeFromSVGString(`M 0 ${y} L ${plotWidth} ${y}`)
+      if (path) rules.push({ value, y, path })
+    }
+  }
 
   // Every other label when they do not all fit, always keeping the newest.
   const labelled = points.flatMap((point, index) => (point.label ? [index] : []))
-  const room = Math.max(2, Math.floor(width / LABEL_W))
+  const room = Math.max(2, Math.floor(plotWidth / LABEL_W))
   const every = Math.ceil(labelled.length / room)
   const shownLabels = labelled.filter((_, at) => {
     const last = at === labelled.length - 1
@@ -198,25 +235,32 @@ export function TrendLine({
     return at % every === 0 && labelled.length - 1 - at >= every
   })
 
-  // The reading under the finger: the nearest real one, never a held stretch.
-  const picked =
-    selected === null
-      ? null
-      : measured.reduce<(typeof measured)[number] | null>(
-          (best, entry) =>
-            !best || Math.abs(entry.x - selected) < Math.abs(best.x - selected) ? entry : best,
-          null,
-        )
-  const guide =
-    picked && formatValue
-      ? Skia.Path.MakeFromSVGString(`M ${picked.x} ${top} L ${picked.x} ${height}`)
-      : null
+  // The reading being read: always a real one, never a held stretch.
+  const picked = measured.find((entry) => entry.point.key === selected) ?? null
+  const guide = picked
+    ? Skia.Path.MakeFromSVGString(`M ${picked.x} ${top} L ${picked.x} ${height}`)
+    : null
 
-  const pick = (x: number | null) => {
-    setSelected((current) => {
-      if (x !== null && current === null) void Haptics.selectionAsync().catch(() => {})
-      return x
-    })
+  // The reading nearest a finger at `x`.
+  const nearest = (x: number) =>
+    measured.reduce<(typeof measured)[number] | null>(
+      (best, entry) => (!best || Math.abs(entry.x - x) < Math.abs(best.x - x) ? entry : best),
+      null,
+    )
+  const scrubTo = (x: number) => {
+    const key = nearest(x)?.point.key ?? null
+    if (key !== null && key !== selected) void Haptics.selectionAsync().catch(() => {})
+    setSelected(key)
+  }
+  // A tap on the point being read puts the readout away.
+  const tapAt = (x: number) => {
+    const key = nearest(x)?.point.key ?? null
+    if (key === selected) {
+      setSelected(null)
+      return
+    }
+    if (key !== null) void Haptics.selectionAsync().catch(() => {})
+    setSelected(key)
   }
   // A sideways drag scrubs and a tap picks; both leave a vertical drag to the
   // scroll view the chart sits in. Off without `formatValue`, which has nothing
@@ -225,11 +269,11 @@ export function TrendLine({
     .enabled(Boolean(formatValue))
     .activeOffsetX([-6, 6])
     .failOffsetY([-12, 12])
-    .onStart((event) => runOnJS(pick)(event.x))
-    .onUpdate((event) => runOnJS(pick)(event.x))
+    .onStart((event) => runOnJS(scrubTo)(event.x))
+    .onUpdate((event) => runOnJS(scrubTo)(event.x))
   const tap = Gesture.Tap()
     .enabled(Boolean(formatValue))
-    .onEnd((event) => runOnJS(pick)(event.x))
+    .onEnd((event) => runOnJS(tapAt)(event.x))
   const gesture = Gesture.Race(scrub, tap)
 
   return (
@@ -249,17 +293,15 @@ export function TrendLine({
           <Canvas style={{ width: '100%', height }}>
             {width === 0 ? null : (
               <>
-                {formatValue
-                  ? rules.map((rule) => (
-                      <Path
-                        key={rule.y}
-                        path={rule.path}
-                        style="stroke"
-                        strokeWidth={1}
-                        color={colors.line}
-                      />
-                    ))
-                  : null}
+                {rules.map((rule) => (
+                  <Path
+                    key={rule.y}
+                    path={rule.path}
+                    style="stroke"
+                    strokeWidth={1}
+                    color={colors.line}
+                  />
+                ))}
                 {area ? (
                   // Fading to nothing at the foot, so the fill says "under the line"
                   // without a hard edge competing with the line itself.
@@ -305,7 +347,7 @@ export function TrendLine({
               </>
             )}
           </Canvas>
-          {formatValue && width > 0
+          {formatValue
             ? rules.map((rule) => (
                 <Text
                   key={rule.y}
@@ -329,7 +371,7 @@ export function TrendLine({
               }}
             >
               <Text variant="micro" className="text-canvas" numberOfLines={1}>
-                {picked.point.label}
+                {picked.point.title ?? picked.point.label}
               </Text>
               <Text variant="label" className="text-canvas" numberOfLines={1}>
                 {formatValue(picked.value)}

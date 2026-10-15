@@ -1994,8 +1994,6 @@ export const fil = {
       level: 'Antas',
       muscle: 'Muscle',
       clear: 'I-clear',
-      results_one: '{{count}} ehersisyo',
-      results_other: '{{count}} ehersisyo',
       noneTitle: 'Walang ehersisyong ganyan ang pangalan',
       create: 'Gumawa ng ehersisyo',
       recent: 'Kamakailan',

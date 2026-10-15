@@ -338,7 +338,11 @@ can follow along and inspect the result.
 copies those files into `ios/RiceCalWidgets/` at prebuild time, so
 `expo run:ios` without one compiles the stale copy and the widget or Live
 Activity keeps the old code with no warning. `cp widgets/ios/*.swift
-ios/RiceCalWidgets/` before an incremental build is enough.
+ios/RiceCalWidgets/` before an incremental build is enough, plus `cp
+widgets/ios/WorkoutActionIntent.swift ios/RiceCal/`: the Live Activity's
+buttons run in the app, so that file is in the app target too, and a stale copy
+there runs old code behind a new-looking button. A *new* Swift file needs
+`expo prebuild --clean`, because the targets' source lists are written once.
 
 **`pod install` from an agent's shell needs `LANG=en_US.UTF-8`.** Without a
 UTF-8 locale CocoaPods dies while *reporting* whatever went wrong

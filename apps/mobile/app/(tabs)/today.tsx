@@ -359,7 +359,17 @@ export default function TodayScreen() {
    * Declared here because the offline screen below wants it most: a day this
    * phone has never seen is where the answer is "go back to one it has".
    */
-  const addButton = <NavAction onPress={() => router.push('/log')} label={t('common:nav.log')} />
+  // Stood aside while a row is swiped open: SwipeRow reports each row's open
+  // and shut exactly once, so a count is enough to know whether any is open.
+  const [openRows, setOpenRows] = useState(0)
+  const onRowOpenChange = useCallback(
+    (open: boolean) => setOpenRows((count) => Math.max(0, count + (open ? 1 : -1))),
+    [],
+  )
+  const addButton =
+    openRows > 0 ? null : (
+      <NavAction onPress={() => router.push('/log')} label={t('common:nav.log')} />
+    )
 
   const backToToday = isToday ? null : (
     <Button
@@ -606,6 +616,7 @@ export default function TodayScreen() {
            an add button, so two entries filled a screen with furniture. */
             <EntryList
               day={day}
+              onRowOpenChange={onRowOpenChange}
               title={t('logging:today.dayHeading')}
               action={
                 // Only when a health store reported the day. Zero steps on an
