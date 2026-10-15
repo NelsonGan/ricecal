@@ -97,6 +97,15 @@ it('starts one scan however many times it is pressed', async () => {
   expect(onSkip).not.toHaveBeenCalled()
 })
 
+it('leaves a suggestion out rather than cutting it to fit', async () => {
+  await renderPanel()
+  const field = screen.getByPlaceholderText(PLACEHOLDER)
+  const long = 'a'.repeat(295)
+  fireEvent.changeText(field, long)
+  await user.press(screen.getByText('Less rice'))
+  expect(field.props.value).toBe(long)
+})
+
 it('goes back to the camera on Retake', async () => {
   await renderPanel()
   await user.press(screen.getByRole('button', { name: 'Retake' }))

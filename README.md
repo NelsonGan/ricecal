@@ -1878,7 +1878,10 @@ part plate through only when the whole plate lands in the band, so either readin
 passes and celery and dip still do not. The base prompt's "an item with parts
 has count 1" is overridden for a share, and an extra the person had alone ("we
 shared it, I had a teh tarik") comes back as a second item so `foldMealItems`
-prices it at its own band instead of halving it.
+prices it at its own band instead of halving it. The fold multiplies each
+item's weight by its count, or the parts tier priced the shared plate by weight as
+a whole one. A share snaps to quarters or thirds: a plate shared between three
+was rounded to a quarter.
 
 The share reaches the other two tiers as well. A single dish with no weights to
 compare (`sizeDish`) judges the calorie ratio for the whole plate and puts the

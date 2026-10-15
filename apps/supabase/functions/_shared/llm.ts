@@ -386,15 +386,24 @@ const unitGrams = (v: unknown): number | null => {
 }
 
 /**
+ * The shares of one serving a count below one may be: quarters, and thirds,
+ * since a plate shared between three is a third and rounding it to a quarter
+ * logged a quarter less than was eaten. Two decimals, which is what
+ * `food_logs.quantity` stores.
+ */
+const SHARES = [0.25, 0.33, 0.5, 0.67, 0.75, 1]
+
+/**
  * How many of the item there were, allowing for less than one. Whole numbers at
  * one and above, because "1.5 plates" is a calorie figure pretending to be a
- * count. Quarters below one, because `grams` is defined as the weight of one
+ * count. A share below one, because `grams` is defined as the weight of one
  * whole unit and cannot also carry the half: "half a plate of char kuey teow"
  * put the half in the bounds and logged a whole plate every time.
  */
 const unitCount = (v: unknown): number => {
   const n = clampNumber(v, 0.25, 20, 1)
-  return n >= 1 ? Math.round(n) : Math.round(n * 4) / 4
+  if (n >= 1) return Math.round(n)
+  return SHARES.reduce((best, share) => (Math.abs(share - n) < Math.abs(best - n) ? share : best))
 }
 
 function shapeVision(raw: unknown): Vision {
@@ -805,7 +814,7 @@ export const PHOTO_NOTE_RULES =
   'When the note says they ate a share of what is pictured ("half", "shared with ' +
   'my wife"), the photo still decides the portion on the ' +
   'plate and the fraction goes in the item\'s own "count": half or shared between ' +
-  'two is count 0.5, shared between four is 0.25, and every component keeps the ' +
+  'two is count 0.5, between three 0.33, between four 0.25, and every component keeps the ' +
   'size of the WHOLE plate. THIS OVERRIDES the rule that an item with components ' +
   'has a count of 1: a share is the one count that sits on the item. Say the ' +
   'fraction in "serving_hint" too ("half a plate"). ' +
@@ -1120,8 +1129,13 @@ export function foldMealItems(vision: Vision): Vision {
       .map((item) => ({
         name: item.name,
         count: 1,
-        // The fold changes what a thing is called, not how heavy it was.
-        grams: item.grams,
+        // The fold changes what a thing is called, not how much of it there
+        // was. `grams` is ONE unit and the band is all of them, so the weight
+        // is multiplied out to match: three durian are three seeds' weight,
+        // and half of a shared plate is half the plate's. Left as one unit,
+        // the parts tier priced the whole plate by weight and the share was
+        // lost.
+        grams: item.grams === null ? null : Math.round(item.grams * item.count),
         kcal: Math.round((item.kcal_low + item.kcal_high) / 2),
         carbs_g: null,
         protein_g: null,
@@ -1300,7 +1314,7 @@ export async function estimateNutrition(
           // the whole plate, weights and parts both, so without saying so the
           // estimate priced all of it.
           (item.count < 1
-            ? ` They ate ${Math.round(item.count * 100)}% of it: price only their share.`
+            ? ` The weight and the parts are for the whole plate, and the portion above is ${Math.round(item.count * 100)}% of it: price that share once.`
             : '') +
           // The visible parts pin the estimate to the actual plate: "nasi
           // campur" alone could be anything.
