@@ -13,6 +13,7 @@ import {
   ANALYSE_PHOTO_PROMPT,
   analysePhoto,
   estimateNutrition,
+  foldMealItems,
   PHOTO_NOTE_RULES,
   photoUserMessage,
   type VisionItem,
@@ -227,12 +228,34 @@ Deno.test('the estimate is told when only a share was eaten', async () => {
   )
   const text = String(sent.messages[1].content)
   if (!text.includes('600 g for the whole plate')) throw new Error(`weight: ${text}`)
-  if (!text.includes('They ate 50% of it')) throw new Error(`share: ${text}`)
+  if (!text.includes('the portion above is 50% of it: price that share once')) {
+    throw new Error(`share: ${text}`)
+  }
 
   const whole = await withModel(nutrition, () =>
     estimateNutrition(curry(1, 600), undefined, createMeter()),
   )
-  if (String(whole.sent.messages[1].content).includes('They ate')) {
+  if (String(whole.sent.messages[1].content).includes('% of it')) {
     throw new Error('a whole dish was told about a share')
   }
+})
+
+Deno.test('a plate shared between three is a third, not a quarter', async () => {
+  const { result } = await withModel(plate(0.33, 300, 370), () =>
+    analysePhoto('aGVsbG8=', undefined, createMeter(), 'shared between the three of us'),
+  )
+  eq(result.items[0].count, 0.33, 'a third')
+})
+
+Deno.test('folding keeps a shared plate a share and a counted item all of them', () => {
+  // "We shared it, I had a teh tarik": the rules ask for two items, and the
+  // fold makes each a part. Its weight has to be what was eaten, or the parts
+  // tier prices the part by weight as the whole plate.
+  const shared = { ...curry(0.5, 600), kcal_low: 250, kcal_high: 300 }
+  const drink = { ...curry(1, 250), name: 'Teh tarik', kcal_low: 130, kcal_high: 170 }
+  const durian = { ...curry(3, 40), name: 'Durian', kcal_low: 150, kcal_high: 210 }
+  const folded = foldMealItems({ scene: 'composite', items: [shared, drink, durian] }).items[0]
+  eq(folded.components.find((c) => c.name === 'Laksa')?.grams, 300, 'half the bowl')
+  eq(folded.components.find((c) => c.name === 'Teh tarik')?.grams, 250, 'the whole drink')
+  eq(folded.components.find((c) => c.name === 'Durian')?.grams, 120, 'all three seeds')
 })

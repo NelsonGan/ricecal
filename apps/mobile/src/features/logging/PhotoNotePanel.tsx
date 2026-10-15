@@ -57,7 +57,9 @@ export function PhotoNotePanel({ photoUri, onLog, onSkip, onRetake }: PhotoNoteP
       const trimmed = current.trim()
       if (!trimmed) return words
       if (trimmed.toLowerCase().includes(words.toLowerCase())) return current
-      return `${trimmed.replace(/[,;]\s*$/, '')}, ${words}`.slice(0, PHOTO_NOTE_MAX)
+      const next = `${trimmed.replace(/[,;]\s*$/, '')}, ${words}`
+      // Whole or not at all: cut to fit, a chip reached the model as half a word.
+      return next.length > PHOTO_NOTE_MAX ? current : next
     })
 
   /**
