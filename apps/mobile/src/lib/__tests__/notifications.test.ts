@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 
 import type { MealTime, Settings } from '@/data/types'
-import { type ReminderCopy, rescheduleReminders } from '@/lib/notifications'
+import { type ReminderCopy, rescheduleReminders, scheduleNoticeAt } from '@/lib/notifications'
 
 jest.mock('expo-notifications', () => ({
   SchedulableTriggerInputTypes: {
@@ -10,8 +10,9 @@ jest.mock('expo-notifications', () => ({
     DAILY: 'daily',
     WEEKLY: 'weekly',
     MONTHLY: 'monthly',
+    TIME_INTERVAL: 'timeInterval',
   },
-  AndroidImportance: { DEFAULT: 3 },
+  AndroidImportance: { DEFAULT: 3, HIGH: 4 },
   setNotificationHandler: jest.fn(),
   setNotificationChannelAsync: jest.fn(),
   cancelAllScheduledNotificationsAsync: jest.fn(),
@@ -131,4 +132,21 @@ it('rewrites only the reminders, never a running workout or scan notice', async 
     .mock.calls.map(([id]) => id)
   expect(cancelled.sort()).toEqual(['meal', 'old'])
   expect(Notifications.cancelAllScheduledNotificationsAsync).not.toHaveBeenCalled()
+})
+
+it('books "rest is over" on a channel that can be heard, and "still training?" on the quiet one', async () => {
+  Platform.OS = 'android'
+  const at = Date.now() + 90_000
+  await scheduleNoticeAt(at, 'rest', { title: 'Rest', body: 'Rest' })
+  await scheduleNoticeAt(at, 'workout', { title: 'Still', body: 'Still' })
+
+  const requests = jest.mocked(Notifications.scheduleNotificationAsync).mock.calls.map(([r]) => r)
+  expect(requests.map((r) => [r.identifier, r.content.sound, r.trigger])).toEqual([
+    ['workout-rest', 'default', { type: 'timeInterval', seconds: 90, channelId: 'workout-rest' }],
+    ['workout-stale', undefined, { type: 'timeInterval', seconds: 90, channelId: 'reminders' }],
+  ])
+  expect(jest.mocked(Notifications.setNotificationChannelAsync).mock.calls).toContainEqual([
+    'workout-rest',
+    { name: 'Rest timer', importance: 4 },
+  ])
 })

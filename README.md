@@ -3938,6 +3938,17 @@ notification for that moment, because a suspended app cannot post one when the
 time comes, and with the app open fires a haptic and clears the rest instead.
 Adjusting or skipping rebooks or cancels it.
 
+**On Android the rest notice needs two things iOS does by itself.** The sound
+belongs to the channel rather than to the notification, so "Rest is over" has a
+channel of its own (`workout-rest`, high importance, the default sound); on the
+reminders channel, silent by design, it came with no sound and no banner. And
+an alarm is inexact unless the app may set exact ones, which lets Android
+deliver it up to three quarters of the wait late: 68 seconds after a 90 second
+rest, measured. `SCHEDULE_EXACT_ALARM` is declared so expo-notifications books
+it exactly wherever that is allowed. Android 12 and 13 allow it by default;
+from 14 a new install is refused until the user turns on "Alarms & reminders"
+for the app, and nothing in the app asks for that yet.
+
 **Both workout notices have fixed identifiers** (`WORKOUT_NOTICE`), so booking
 one replaces it. With random ids held in a ref, every relaunch mid-workout
 booked another "still training?" that finishing never cancelled, and it fired

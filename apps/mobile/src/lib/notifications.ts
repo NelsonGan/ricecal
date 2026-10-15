@@ -132,6 +132,22 @@ async function ensureChannel(): Promise<void> {
   })
 }
 
+/**
+ * "Rest is over" has a channel of its own on Android, where the sound belongs
+ * to the channel rather than to the notification. On the reminders channel,
+ * silent by design, it arrived with no sound and no banner while iOS played
+ * one. High importance is what lets it pop up over whatever else is on screen.
+ */
+const REST_CHANNEL = 'workout-rest'
+
+async function ensureRestChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return
+  await Notifications.setNotificationChannelAsync(REST_CHANNEL, {
+    name: 'Rest timer',
+    importance: Notifications.AndroidImportance.HIGH,
+  })
+}
+
 // CALENDAR is iOS-only; DAILY repeats at the chosen local time on both platforms.
 const dailyTrigger = (hour: number, minute: number): Notifications.DailyTriggerInput => ({
   type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -344,16 +360,17 @@ export async function scheduleNoticeAt(
 ): Promise<void> {
   const seconds = Math.round((at - Date.now()) / 1000)
   if (seconds < 1) return
+  const rest = kind === 'rest'
   try {
     if (!(await notificationsAllowed())) return
-    await ensureChannel()
+    await (rest ? ensureRestChannel() : ensureChannel())
     await Notifications.scheduleNotificationAsync({
       identifier: WORKOUT_NOTICE[kind],
-      content: { ...content, data: { kind }, sound: kind === 'rest' ? 'default' : undefined },
+      content: { ...content, data: { kind }, sound: rest ? 'default' : undefined },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         seconds,
-        channelId: CHANNEL,
+        channelId: rest ? REST_CHANNEL : CHANNEL,
       },
     })
   } catch (error) {
