@@ -482,6 +482,38 @@ async function recordMisses(db: SupabaseClient, scanId: string, queries: string[
 }
 
 /**
+ * Whether a priced breakdown is a breakdown of the meal the model bounded, and
+ * if not, which way it is wrong.
+ *
+ * The parts and the band are two answers from the same model, and the
+ * breakdown is the one that is wrong when they disagree: a basket of wings came
+ * back as celery and a pot of dip, priced at 160 kcal against the model's own
+ * 780-900 band. Tolerances are loose, because a band is not a measurement
+ * either. Failing this drops to the dish tier, which prices the whole plate at
+ * once.
+ *
+ * Part of a plate is read both ways on the low side. `sum` already carries
+ * `meals`, and the band should too, but a model told a plate was shared often
+ * bounds the plate it can see rather than the half that was eaten: half of a
+ * 1,078 kcal plate against a 1,000-1,150 band read as a missing main food. So
+ * a breakdown that is short as eaten still passes when the whole plate lands
+ * IN the band. Only then: measuring every part plate as a whole one let celery
+ * and dip through as half a basket of wings.
+ */
+export function breakdownDisagrees(
+  sum: number,
+  meals: number,
+  low: number,
+  high: number,
+): 'short' | 'over' | null {
+  const plate = meals > 0 && meals < 1 ? sum / meals : sum
+  const wholePlateFits = plate !== sum && plate >= low * 0.9 && (high <= 0 || plate <= high * 1.1)
+  if (low > 0 && sum < low * 0.6 && !wholePlateFits) return 'short'
+  if (high > 0 && sum > high * 1.8) return 'over'
+  return null
+}
+
+/**
  * Tier 2: the plate as its parts, folded into one entry.
  *
  * The model's per-part weight is what makes a catalogue row comparable, since
@@ -678,21 +710,9 @@ async function resolveByComponents(
     sum.kcal += part.kcal
   }
 
-  // A breakdown has to be a breakdown of this meal. The parts and the band are
-  // two answers from the same model, and the breakdown is the one that is wrong
-  // when they disagree: a basket of wings came back as celery and a pot of dip,
-  // priced at 160 kcal against the model's own 780-900 band.
-  //
-  // Tolerances are loose, because a band is not a measurement either. Failing
-  // this drops to the dish tier, which prices the whole plate at once.
-  if (item.kcal_low > 0 && sum.kcal < item.kcal_low * 0.6) {
-    const message = `[cascade] components: parts total ${Math.round(sum.kcal)} kcal against a meal the model put at ${item.kcal_low}-${item.kcal_high} — the main food is missing from the breakdown`
-    console.error(message)
-    trace?.push(message)
-    return null
-  }
-  if (item.kcal_high > 0 && sum.kcal > item.kcal_high * 1.8) {
-    const message = `[cascade] components: parts total ${Math.round(sum.kcal)} kcal against a meal the model put at ${item.kcal_low}-${item.kcal_high} — a part is priced as a portion`
+  const disagreement = breakdownDisagrees(sum.kcal, meals, item.kcal_low, item.kcal_high)
+  if (disagreement) {
+    const message = `[cascade] components: parts total ${Math.round(sum.kcal)} kcal against a meal the model put at ${item.kcal_low}-${item.kcal_high} — ${disagreement === 'short' ? 'the main food is missing from the breakdown' : 'a part is priced as a portion'}`
     console.error(message)
     trace?.push(message)
     return null
@@ -885,36 +905,70 @@ async function resolveByDish(
       `${servingWeight ?? '?'}g — byWeight ${byWeight === null ? 'n/a' : byWeight.toFixed(2)}, ` +
       `ratio ${ratio.toFixed(2)} (${llmMid} vs ${chosen.kcal})`,
   )
+  const sized = sizeDish({
+    byWeight,
+    ratio,
+    count: item.count,
+    confidence: item.confidence,
+    servingLabel: chosen.serving_label,
+  })
+  return sized ? { ...sized, food: asFood(chosen), displayLabel: label } : null
+}
+
+/**
+ * How many of a matched dish row the plate was, or null when the row cannot be
+ * this plate at any size. The second half of `resolveByDish`, apart so it can
+ * be tested without a catalogue.
+ */
+export function sizeDish({
+  byWeight,
+  ratio,
+  count,
+  confidence,
+  servingLabel,
+}: {
+  /** Eaten weight over the row's serving weight, count included; null without both. */
+  byWeight: number | null
+  /** The model's calorie midpoint over the row's, a guess over a guess. */
+  ratio: number
+  count: number
+  confidence: number
+  servingLabel: string | null
+}): { tier: 1 | 3; quantity: number } | null {
   // A weight settles it before the calorie ratio gets a say: "100 g" of a dish
   // against a 450 g plate is 4.5 servings whatever either party thinks it
   // costs.
   if (byWeight !== null && (byWeight < SAME_PORTION_LOW || byWeight > SAME_PORTION_HIGH)) {
     return {
       tier: 3,
-      food: asFood(chosen),
       // A helping is capped at three and a measurement is not: see
       // `measuredQuantity`. Only this branch, because only this one divides two
       // weights. The calorie ratio below is a guess over a guess and keeps the
       // tighter bound.
-      quantity: namesAPortion(chosen.serving_label)
-        ? clampQuantity(byWeight)
-        : measuredQuantity(byWeight),
-      displayLabel: label,
+      quantity: namesAPortion(servingLabel) ? clampQuantity(byWeight) : measuredQuantity(byWeight),
     }
   }
-  if (ratio >= 0.5 && ratio <= 2.5) {
-    return { tier: 1, food: asFood(chosen), quantity: 1, displayLabel: label }
-  }
+
+  // A share of the plate ("we shared it", count 0.5), when there are no weights
+  // to carry it. `byWeight` already multiplies the count in; without it, half a
+  // laksa's band against a whole bowl's row is a ratio of about 0.5, which the
+  // branch below read as one bowl. The ratio is judged for the whole plate and
+  // the share goes on the quantity. 1 for everything else, which leaves the two
+  // branches below exactly as they were.
+  const share = byWeight === null && count < 1 ? count : 1
+  const plateRatio = ratio / share
+
+  if (plateRatio >= 0.5 && plateRatio <= 2.5) return { tier: 1, quantity: share }
 
   // Further out, the row is a different size of the right thing, which is what
   // quantity is for. Still bounded: `clampQuantity` will not claim more than
   // three of anything.
-  if (item.confidence >= 0.5) {
+  if (confidence >= 0.5) {
     return {
       tier: 3,
-      food: asFood(chosen),
-      quantity: clampQuantity(ratio),
-      displayLabel: label,
+      // In quarters, and never below one: `clampQuantity` floors a helping at
+      // a half, and a quarter share of a helping is a real answer.
+      quantity: Math.max(0.25, Math.round(clampQuantity(plateRatio) * share * 4) / 4),
     }
   }
   return null

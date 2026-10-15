@@ -203,8 +203,13 @@ export type Events = {
    * nothing edible or failed outright. The correction is one subtraction, and
    * the alternative would silently drop every meal whose request broke while
    * the edge function went on writing it.
+   *
+   * `with_note` is on the camera path only: whether the person added words after
+   * the shutter. False is Skip or an empty note, and both are the photo alone.
+   * Absent everywhere else, and on a camera log while the step is switched off
+   * it is always false.
    */
-  'Meal Logged': { method: LogMethod; date_offset: number }
+  'Meal Logged': { method: LogMethod; date_offset: number; with_note?: boolean }
   /**
    * What the cascade did with a photographed or typed meal.
    *

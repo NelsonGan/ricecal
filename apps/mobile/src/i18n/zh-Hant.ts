@@ -721,6 +721,21 @@ export const zhHant = {
       send: '記下這一餐',
     },
 
+    photoNote: {
+      title: '有照片看不出來的嗎？',
+      placeholder: '是牛肉不是雞肉，無糖茶，和人分著吃',
+      skip: '跳過',
+      log: '記錄這餐',
+      retake: '重拍',
+      photo: '你的照片',
+      suggestion: {
+        shared: '分著吃',
+        half: '吃了一半',
+        lessRice: '少飯',
+        noSugar: '無糖',
+      },
+    },
+
     camera: {
       permissionTitle: '需要相機權限',
       permissionBody: 'RiceCal 用相機來讀你這盤。',
@@ -1172,6 +1187,9 @@ export const zhHant = {
       hour: '時',
       minute: '分',
       preview: '{{time}} 提醒',
+      cameraTitle: '相機',
+      photoNote: '拍照後詢問細節',
+      photoNoteBody: '補充幾句照片看不出來的內容。',
     },
 
     reminders: {

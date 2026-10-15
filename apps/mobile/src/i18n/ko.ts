@@ -723,6 +723,21 @@ export const ko = {
       send: '이 식사 기록하기',
     },
 
+    photoNote: {
+      title: '사진으로 알 수 없는 게 있나요?',
+      placeholder: '닭고기 말고 소고기, 무가당 차, 나눠 먹음',
+      skip: '건너뛰기',
+      log: '식사 기록',
+      retake: '다시 찍기',
+      photo: '내 사진',
+      suggestion: {
+        shared: '나눠 먹음',
+        half: '절반 먹음',
+        lessRice: '밥 적게',
+        noSugar: '무가당',
+      },
+    },
+
     camera: {
       permissionTitle: '카메라 접근이 필요합니다',
       permissionBody: 'RiceCal은 카메라로 접시를 읽습니다.',
@@ -1179,6 +1194,9 @@ export const ko = {
       hour: '시',
       minute: '분',
       preview: '{{time}}에 알림',
+      cameraTitle: '카메라',
+      photoNote: '사진 찍은 후 자세히 묻기',
+      photoNoteBody: '사진으로 알 수 없는 내용을 몇 마디로.',
     },
 
     reminders: {

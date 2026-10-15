@@ -728,6 +728,21 @@ export const ja = {
       send: 'この食事を記録',
     },
 
+    photoNote: {
+      title: '写真でわからないことは？',
+      placeholder: '鶏じゃなく牛肉、無糖の紅茶、シェアした',
+      skip: 'スキップ',
+      log: '記録する',
+      retake: '撮り直す',
+      photo: 'あなたの写真',
+      suggestion: {
+        shared: 'シェアした',
+        half: '半分食べた',
+        lessRice: 'ご飯少なめ',
+        noSugar: '砂糖なし',
+      },
+    },
+
     camera: {
       permissionTitle: 'カメラへのアクセスが必要です',
       permissionBody: 'RiceCal はカメラでお皿を読み取ります。',
@@ -1183,6 +1198,9 @@ export const ja = {
       hour: '時',
       minute: '分',
       preview: '{{time}} に通知',
+      cameraTitle: 'カメラ',
+      photoNote: '撮影後に詳細を尋ねる',
+      photoNoteBody: '写真でわからないことを一言で。',
     },
 
     reminders: {

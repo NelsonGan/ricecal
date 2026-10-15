@@ -727,6 +727,21 @@ export const vi = {
       send: 'Ghi bữa này',
     },
 
+    photoNote: {
+      title: 'Có gì ảnh không thể hiện được?',
+      placeholder: 'Thịt bò chứ không phải gà, trà không đường, ăn chung',
+      skip: 'Bỏ qua',
+      log: 'Ghi bữa ăn',
+      retake: 'Chụp lại',
+      photo: 'Ảnh của bạn',
+      suggestion: {
+        shared: 'Ăn chung',
+        half: 'Ăn một nửa',
+        lessRice: 'Ít cơm',
+        noSugar: 'Không đường',
+      },
+    },
+
     camera: {
       permissionTitle: 'Cần quyền truy cập máy ảnh',
       permissionBody: 'RiceCal dùng máy ảnh để đọc đĩa của bạn.',
@@ -1185,6 +1200,9 @@ export const vi = {
       hour: 'Giờ',
       minute: 'Phút',
       preview: 'Nhắc lúc {{time}}',
+      cameraTitle: 'MÁY ẢNH',
+      photoNote: 'Hỏi thêm chi tiết sau khi chụp',
+      photoNoteBody: 'Vài chữ về điều ảnh không thể hiện.',
     },
 
     reminders: {

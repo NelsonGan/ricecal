@@ -264,6 +264,13 @@ export const profile = {
     hour: 'Hour',
     minute: 'Minute',
     preview: 'Reminds at {{time}}',
+    /**
+     * The camera's follow-up question. Named for what it does to the shutter,
+     * since that is where somebody turning it off has met it.
+     */
+    cameraTitle: 'CAMERA',
+    photoNote: 'Ask for details after a photo',
+    photoNoteBody: 'A few words on what the photo cannot show.',
   },
 
   reminders: {
