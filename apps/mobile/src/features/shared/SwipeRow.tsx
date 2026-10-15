@@ -223,7 +223,11 @@ export function SwipeRow({
 
   // A tap on an open row closes it rather than opening the dish behind it,
   // which is what every list with a parked action does.
+  //
+  // Off while there is neither: a row of fields and buttons (a workout's set)
+  // keeps its own taps, which a tap recogniser racing over it would take.
   const tap = Gesture.Tap()
+    .enabled(Boolean(onPress) || open)
     .maxDuration(500)
     .onEnd(() => {
       if (parked.value) {

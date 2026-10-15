@@ -1,6 +1,6 @@
 import { View } from 'react-native'
 
-import { cn, Text } from '@/ui'
+import { cn, Tappable, Text } from '@/ui'
 
 export type Bar = {
   key: string
@@ -31,6 +31,13 @@ export type BarChartProps = {
    */
   scale?: 'zero' | 'range'
   height?: number
+  /**
+   * Makes the bars tappable: the tapped one is drawn in the accent and handed
+   * back, and tapping it again hands back null. The caller says what it was,
+   * usually in the headline the chart sits under.
+   */
+  selected?: number | null
+  onSelect?: (index: number | null) => void
   /** Screen-reader summary. The bars themselves are decorative. */
   accessibilityLabel?: string
   className?: string
@@ -63,6 +70,8 @@ export function BarChart({
   others = 'track',
   scale = 'zero',
   height = 110,
+  selected = null,
+  onSelect,
   accessibilityLabel,
   className,
 }: BarChartProps) {
@@ -83,8 +92,16 @@ export function BarChart({
       accessibilityRole={accessibilityLabel ? 'image' : undefined}
       accessibilityLabel={accessibilityLabel}
     >
-      {bars.map((bar) => (
-        <View key={bar.key} className="h-full min-w-0 flex-1 items-center gap-1.5">
+      {bars.map((bar, index) => (
+        <Tappable
+          key={bar.key}
+          disabled={!onSelect}
+          onPress={() => onSelect?.(selected === index ? null : index)}
+          className="h-full min-w-0 flex-1 items-center gap-1.5"
+          accessibilityRole={onSelect ? 'button' : undefined}
+          accessibilityState={onSelect ? { selected: selected === index } : undefined}
+          accessibilityLabel={onSelect ? (bar.label ?? bar.key) : undefined}
+        >
           {/* The bar's percentage is of this box, not of the column: measuring
               it against the column would make a full bar plus its label taller
               than the chart, and it would ride up over whatever sits above. */}
@@ -92,7 +109,7 @@ export function BarChart({
             <View
               className={cn(
                 'w-full rounded-lg',
-                bar.highlight
+                (selected === null ? bar.highlight : selected === index)
                   ? fills[tone]
                   : others === 'soft' && bar.value > 0
                     ? softFills[tone]
@@ -108,7 +125,7 @@ export function BarChart({
               {bar.label}
             </Text>
           ) : null}
-        </View>
+        </Tappable>
       ))}
     </View>
   )

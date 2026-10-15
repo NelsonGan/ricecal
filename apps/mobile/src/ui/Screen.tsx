@@ -69,6 +69,9 @@ const GestureScrollView = Reanimated.createAnimatedComponent(
  */
 const FIELD_CLEARANCE = spacing.lg + spacing.md + spacing.lg
 
+/** A floating trailing control's height and the gap above it: the add button's. */
+const FLOATING_CLEARANCE = 62 + spacing.gutter
+
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
   /**
@@ -99,6 +102,13 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * enough bottom padding that the last row can be read.
    */
   floatingLeading?: ReactNode
+  /**
+   * The same in the bottom-right corner: Today's add button. The content is
+   * padded by the button's height, so the last row of the day can be scrolled
+   * clear of it rather than sitting under it, which is what moved the button
+   * into the tab bar the first time it floated here.
+   */
+  floatingTrailing?: ReactNode
   /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
   flush?: boolean
   /**
@@ -116,7 +126,7 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * platform ScrollView the pan never activates, because the two arbitrate
    * through different systems.
    *
-   * Off by default; only Today renders a swipeable row.
+   * Off by default: Today and the workout editors, whose rows swipe.
    */
   gestureScroll?: boolean
   className?: string
@@ -167,6 +177,7 @@ export function Screen({
   scrollOffset,
   footer,
   floatingLeading,
+  floatingTrailing,
   flush = false,
   safeAreaTop = true,
   scroll = true,
@@ -287,11 +298,14 @@ export function Screen({
         // somewhere to be scrolled TO. Without it the reveal asks for an offset
         // past the end of the content and the scroll view declines.
         paddingBottom:
-          (flush ? 0 : spacing.gutter) + (footer ? 0 : navInset || insets.bottom) + numpad.height,
+          (flush ? 0 : spacing.gutter) +
+          (footer ? 0 : navInset || insets.bottom) +
+          (floatingTrailing ? FLOATING_CLEARANCE : 0) +
+          numpad.height,
         gap: spacing.stack,
       }}
       bottomOffset={bottomOffset}
-      // Only Today, and only because its rows are swipeable. See `gestureScroll`.
+      // Only where rows swipe. See `gestureScroll`.
       ScrollViewComponent={gestureScroll ? GestureScrollView : undefined}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -379,6 +393,23 @@ export function Screen({
           Styled rather than classed: the position is what makes this an overlay
           at all, and NativeWind's support for a third-party animated view is
           not worth depending on for that. */}
+        {floatingTrailing ? (
+          <Reanimated.View
+            style={[
+              {
+                position: 'absolute',
+                right: spacing.gutter,
+                bottom: spacing.gutter + navInset,
+                alignItems: 'flex-end',
+              },
+              lift,
+            ]}
+            pointerEvents="box-none"
+          >
+            {floatingTrailing}
+          </Reanimated.View>
+        ) : null}
+
         {floatingLeading ? (
           <Reanimated.View
             style={[

@@ -84,7 +84,6 @@ export default function WorkoutSettingsScreen() {
       <Card contentClassName="gap-0 px-5 py-1">
         <ListRow
           title={t('workouts:settings.rest')}
-          subtitle={t('workouts:settings.restHint')}
           trailing={
             <Text variant="label">
               {rest > 0 ? shortClock(rest) : t('workouts:logger.restOff')}
@@ -117,7 +116,6 @@ export default function WorkoutSettingsScreen() {
             <Divider />
             <ToggleRow
               title={t('workouts:settings.health')}
-              description={t('workouts:settings.healthHint')}
               value={prefs.healthWrite}
               divider={false}
               onValueChange={async (on) => {
@@ -134,7 +132,6 @@ export default function WorkoutSettingsScreen() {
       </Card>
 
       <Card title={t('workouts:settings.reminders')} contentClassName="gap-4">
-        <Text variant="meta">{t('workouts:settings.remindersHint')}</Text>
         <View className="flex-row flex-wrap gap-2">
           {WEEK.map((day) => (
             <Chip key={day} selected={days.includes(day)} onPress={() => toggleDay(day)}>

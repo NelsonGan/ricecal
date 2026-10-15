@@ -28,6 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
 import { Icon, type IconProps } from './Icon'
+import { useNumpadOpen } from './Numpad'
 import { Tappable } from './Tappable'
 import { Text } from './Text'
 
@@ -256,7 +257,11 @@ function ToastSurface({
   const insets = useSafeAreaInsets()
   const { toast, dismiss } = stage
   const palette = tones[toast?.tone ?? 'neutral']
-  const placement = forced ?? toast?.placement ?? (toast?.tone === 'error' ? 'top' : 'bottom')
+  // With the number pad up the bottom is its keys, and a toast there takes the
+  // next tap, so it comes from the top instead.
+  const padOpen = useNumpadOpen()
+  const placement =
+    forced ?? (padOpen ? 'top' : (toast?.placement ?? (toast?.tone === 'error' ? 'top' : 'bottom')))
   const fromTop = placement === 'top'
 
   if (!toast) return null

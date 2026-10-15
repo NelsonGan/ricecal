@@ -29,6 +29,8 @@ type Native = {
   updateWorkoutActivity?(json: string): void
   endWorkoutActivity?(): void
   workoutActivitiesEnabled?(): boolean
+  takeWorkoutActions?(): string
+  addListener?(event: 'onWorkoutAction', listener: () => void): { remove(): void }
 }
 
 const native = requireOptionalNativeModule<Native>('RiceCalWidgets')
@@ -152,6 +154,23 @@ export type WorkoutActivityState = {
   total: number
   restEndsAt: number | null
   restTotalS: number | null
+  /** The next set, which the activity's tick button names back to the app. */
+  exerciseKey: string | null
+  setId: string | null
+  /** Whether that set has numbers to tick, so whether the tick is drawn. */
+  canComplete: boolean
+  /** The rest ticking it starts, which the activity shows the moment it is pressed. */
+  restAfterS: number | null
+}
+
+/** A button pressed on the workout's Live Activity, queued for the app. */
+export type WorkoutAction = {
+  type: 'skipRest' | 'restMinus' | 'restPlus' | 'completeSet'
+  workoutId: string
+  exerciseKey: string
+  setId: string
+  /** When it was pressed, in epoch milliseconds. */
+  at: number
 }
 
 /**
@@ -170,4 +189,35 @@ export function updateWorkoutActivity(state: WorkoutActivityState): void {
 
 export function endWorkoutActivity(): void {
   native?.endWorkoutActivity?.()
+}
+
+/**
+ * The Live Activity buttons pressed since the last call, oldest first, and
+ * the queue emptied. Anything unreadable is dropped rather than thrown on: a
+ * lost tap is a nuisance, a crash on launch is not.
+ */
+export function takeWorkoutActions(): WorkoutAction[] {
+  const raw = native?.takeWorkoutActions?.()
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed)
+      ? parsed.filter(
+          (entry): entry is WorkoutAction =>
+            typeof entry === 'object' &&
+            entry !== null &&
+            typeof entry.type === 'string' &&
+            typeof entry.workoutId === 'string' &&
+            typeof entry.at === 'number',
+        )
+      : []
+  } catch {
+    return []
+  }
+}
+
+/** Called when a button has queued an action while the app is running. */
+export function addWorkoutActionListener(listener: () => void): () => void {
+  const subscription = native?.addListener?.('onWorkoutAction', listener)
+  return () => subscription?.remove()
 }

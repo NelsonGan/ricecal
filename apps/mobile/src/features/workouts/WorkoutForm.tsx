@@ -83,7 +83,7 @@ export function WorkoutFields({
         />
       </Card>
 
-      <Card title={t('workouts:finish.when')} contentClassName="gap-0 px-5 py-1">
+      <Card title={t('workouts:finish.when')} contentClassName="gap-0">
         <ListRow
           title={t('workouts:finish.started')}
           subtitle={when(startedAt)}

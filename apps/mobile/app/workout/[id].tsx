@@ -249,7 +249,6 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
             />
           ) : null}
         </StatGrid>
-        {workout.kcal ? <Text variant="caption">{t('workouts:detail.estimate')}</Text> : null}
         {workout.healthWorkoutId ? (
           <View className="flex-row items-center gap-2">
             <Icon set="body" name="heart-rate" size={18} />

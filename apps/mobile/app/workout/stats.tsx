@@ -122,6 +122,10 @@ function WeekBars({
 }) {
   const { t } = useTranslation(['workouts', 'common', 'progress'])
   const last = weeks[weeks.length - 1]
+  // A tapped week takes over the headline, named by its Monday; nothing
+  // tapped is this week.
+  const [selected, setSelected] = useState<number | null>(null)
+  const shown = selected === null ? last : weeks[selected]
   const show = (value: number) =>
     metric === 'duration'
       ? durationText(t, value)
@@ -131,14 +135,20 @@ function WeekBars({
 
   return (
     <View className="gap-2">
-      {/* The figure is the current week's, the bar drawn in full colour. */}
+      {/* The figure is the week drawn in full colour: this one, or the one tapped. */}
       <View className="gap-0.5">
-        <Text variant="overlineSm">{t('progress:weight.thisWeek')}</Text>
-        <Text variant="displayMd">{last ? show(weekValue(last, metric)) : '0'}</Text>
+        <Text variant="overlineSm">
+          {selected === null || !shown
+            ? t('progress:weight.thisWeek')
+            : format(parseISO(shown.week), datePattern('dayMonth'))}
+        </Text>
+        <Text variant="displayMd">{shown ? show(weekValue(shown, metric)) : '0'}</Text>
       </View>
       <BarChart
         height={140}
         others="soft"
+        selected={selected}
+        onSelect={setSelected}
         bars={weeks.map((week, index) => ({
           key: week.week,
           value: weekValue(week, metric),
@@ -276,7 +286,7 @@ function Split() {
           format={(value) => t('workouts:stats.splitSets', { value: trim(value, 1) })}
         />
       ) : (
-        <Text variant="meta">{t('workouts:stats.splitEmpty')}</Text>
+        <Text variant="meta">{t('workouts:history.emptyTitle')}</Text>
       )}
     </Card>
   )
@@ -346,7 +356,7 @@ function Records({ unit }: { unit: WeightUnit }) {
           )
         })
       ) : (
-        <Text variant="meta">{t('workouts:stats.recordsEmpty')}</Text>
+        <Text variant="meta">{t('workouts:history.emptyTitle')}</Text>
       )}
     </Card>
   )

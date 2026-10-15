@@ -19,12 +19,20 @@ type Order = {
   next: (key: string) => boolean
   /** Whether a field comes after `key`, which decides the key's label. */
   hasNext: (key: string) => boolean
+  /** Focuses the field before `key`. False when there is none. */
+  previous: (key: string) => boolean
+  hasPrevious: (key: string) => boolean
+  /** Focuses the first field of the set after `key`'s. False when there is none. */
+  nextSet: (key: string) => boolean
 }
 
 const OrderContext = createContext<Order | null>(null)
 
 export const fieldKey = (exerciseKey: string, setId: string, field: string) =>
   `${exerciseKey}|${setId}|${field}`
+
+/** The exercise and set half of a field's key. */
+const setOf = (key: string) => key.slice(0, key.lastIndexOf('|'))
 
 export function FieldOrderProvider({
   exercises,
@@ -47,33 +55,46 @@ export function FieldOrderProvider({
   const order = useRef(keys)
   order.current = keys
 
-  const value = useMemo<Order>(
-    () => ({
+  const value = useMemo<Order>(() => {
+    /** Focuses the first registered field from `index` in `direction`, not counting `index`. */
+    const focusFrom = (index: number, direction: 1 | -1): boolean => {
+      const list = order.current
+      if (index < 0) return false
+      for (let at = index + direction; at >= 0 && at < list.length; at += direction) {
+        const focus = focusers.current.get(list[at])
+        if (focus) {
+          focus()
+          return true
+        }
+      }
+      return false
+    }
+
+    return {
       register: (key, focus) => {
         focusers.current.set(key, focus)
         return () => {
           if (focusers.current.get(key) === focus) focusers.current.delete(key)
         }
       },
-      next: (key) => {
-        const list = order.current
-        for (let index = list.indexOf(key) + 1; index > 0 && index < list.length; index++) {
-          const focus = focusers.current.get(list[index])
-          if (focus) {
-            focus()
-            return true
-          }
-        }
-        return false
-      },
+      next: (key) => focusFrom(order.current.indexOf(key), 1),
       hasNext: (key) => {
         const list = order.current
         const index = list.indexOf(key)
         return index >= 0 && index < list.length - 1
       },
-    }),
-    [],
-  )
+      previous: (key) => focusFrom(order.current.indexOf(key), -1),
+      hasPrevious: (key) => order.current.indexOf(key) > 0,
+      nextSet: (key) => {
+        const list = order.current
+        const set = setOf(key)
+        let index = list.indexOf(key)
+        if (index < 0) return false
+        while (index + 1 < list.length && setOf(list[index + 1]) === set) index += 1
+        return focusFrom(index, 1)
+      },
+    }
+  }, [])
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>
 }

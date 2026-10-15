@@ -126,6 +126,7 @@ export const id = {
       cancel: 'Batal',
       save: 'Simpan perubahan',
       done: 'Selesai',
+      clear: 'Hapus',
       edit: 'Ubah',
       delete: 'Hapus',
       add: 'Tambah',
@@ -1733,7 +1734,7 @@ export const id = {
       running: 'Latihan sedang berlangsung',
       routine: 'Mulai',
       sport: 'Catat olahraga',
-      past: 'Catat latihan sebelumnya',
+      past: 'Latihan lalu',
       replaceTitle: 'Ada latihan yang sedang berjalan',
       replaceBody: 'Buang yang itu dan mulai yang ini?',
       replaceConfirm: 'Buang dan mulai',
@@ -1746,7 +1747,6 @@ export const id = {
       title: 'Rutinitas saya',
       new: 'Baru',
       emptyTitle: 'Belum ada rutinitas',
-      emptyBody: 'Simpan latihan yang kamu ulang, atau mulai dari template.',
       lastDone: 'Terakhir dilakukan {{date}}',
       never: 'Belum pernah dilakukan',
       exercises_one: '{{count}} gerakan',
@@ -1760,7 +1760,6 @@ export const id = {
 
     explore: {
       title: 'Jelajahi template',
-      subtitle: 'Program standar, siap dimulai',
       add: 'Tambahkan ke rutinitas saya',
       added: 'Ditambahkan ke rutinitasmu',
       inRoutines: 'Ada di rutinitasmu',
@@ -1813,7 +1812,6 @@ export const id = {
     history: {
       title: 'Riwayat',
       emptyTitle: 'Belum ada latihan',
-      emptyBody: 'Mulai satu di atas dan akan tersimpan di sini.',
       more: 'Tampilkan lagi',
       pending: 'Menunggu sinkronisasi',
       prs_one: '{{count}} PR',
@@ -1841,7 +1839,6 @@ export const id = {
       namePlaceholder: 'Nama latihan',
       addExercise: 'Tambah gerakan',
       emptyTitle: 'Tambahkan gerakan pertamamu',
-      emptyBody: 'Pilih dari daftar, atau ketik nama untuk mencarinya.',
       discard: 'Buang latihan',
       discardConfirm: 'Buang',
       discardTitle: 'Buang latihan ini?',
@@ -1856,8 +1853,9 @@ export const id = {
       restOff: 'Istirahat nonaktif',
       rest: 'Istirahat {{time}}',
       next: 'Lanjut',
+      completeSet: 'Selesaikan set',
+      previousField: 'Kolom sebelumnya',
       plates: 'Pelat',
-      timeStep: '15 dtk',
       exerciseNotes: 'Tambah catatan',
       kind: {
         normal: 'Set utama',
@@ -1873,9 +1871,8 @@ export const id = {
       menu: {
         replace: 'Ganti gerakan',
         superset: 'Superset dengan berikutnya',
+        reorder: 'Urutkan latihan',
         unsuperset: 'Keluarkan dari superset',
-        moveUp: 'Pindah ke atas',
-        moveDown: 'Pindah ke bawah',
         rest: 'Timer istirahat',
         plates: 'Kalkulator plat',
         remove: 'Hapus gerakan',
@@ -1900,6 +1897,10 @@ export const id = {
 
     finish: {
       title: 'Simpan latihan',
+      complete: 'Latihan selesai',
+      best: 'Terbaik',
+      total_one: 'Total {{count}} latihan',
+      total_other: 'Total {{count}} latihan',
       name: 'Nama',
       notes: 'Catatan',
       notesPlaceholder: 'Bagaimana latihannya?',
@@ -1909,7 +1910,7 @@ export const id = {
       duration: 'Durasi',
       save: 'Simpan latihan',
       saved: 'Latihan disimpan',
-      queued: 'Tersimpan di ponsel ini. Akan disinkronkan saat kamu online.',
+      queued: 'Disinkronkan saat online',
       failed: 'Tidak bisa menyimpan. Coba lagi.',
       unfinishedTitle: 'Ada set yang belum dicentang',
       unfinishedBody_one: '{{count}} set sudah diisi tetapi belum dicentang.',
@@ -1951,7 +1952,6 @@ export const id = {
       records: 'Rekor',
       kcal: '{{value}} kkal',
       kcalLabel: 'Terbakar',
-      estimate: 'Diperkirakan dari gerakan dan berat badanmu.',
       e1rm: '1RM {{value}}',
     },
 
@@ -1975,7 +1975,6 @@ export const id = {
       results_one: '{{count}} gerakan',
       results_other: '{{count}} gerakan',
       noneTitle: 'Tidak ada gerakan dengan nama itu',
-      noneBody: 'Buat sebagai gerakanmu sendiri.',
       create: 'Buat gerakan',
       recent: 'Baru dipakai',
       add_one: 'Tambah {{count}} gerakan',
@@ -1991,7 +1990,6 @@ export const id = {
       category: 'Bagian tubuh',
       equipment: 'Alat',
       muscles: 'Otot',
-      musclesHint: 'Pilihan pertama paling berpengaruh.',
       save: 'Simpan gerakan',
       taken: 'Kamu sudah punya gerakan dengan nama ini.',
       delete: 'Hapus gerakan',
@@ -2005,7 +2003,6 @@ export const id = {
       records: 'Rekor',
       split: 'Pembagian otot',
       noHistoryTitle: 'Belum pernah dilakukan',
-      noHistoryBody: 'Set dan rekormu akan muncul di sini.',
       chart: {
         heaviest: 'Terberat',
         e1rm: 'Est. 1RM',
@@ -2032,7 +2029,6 @@ export const id = {
     stats: {
       title: 'Progres',
       entry: 'Progres dan rekor',
-      entryBody: 'Total mingguan, otot dan rekor pribadi',
       weeks: '12 minggu terakhir',
       metric: {
         workouts: 'Latihan',
@@ -2042,25 +2038,19 @@ export const id = {
       },
       split: 'Pembagian otot',
       splitRange: '30 hari terakhir',
-      splitEmpty: 'Catat latihan untuk melihat otot yang dilatih.',
       splitSets: '{{value}} set',
       records: 'Rekor pribadi',
-      recordsEmpty: 'Rekor terbaikmu muncul di sini setelah kamu mencatat gerakan.',
       calendar: 'Kalender',
     },
 
     settings: {
       title: 'Pengaturan latihan',
       rest: 'Timer istirahat default',
-      restHint: 'Tiap gerakan bisa diatur sendiri.',
       units: 'Satuan berat',
       health: 'Simpan latihan ke Apple Health',
-      healthHint:
-        'Tiap latihan yang selesai ditambahkan ke Health dengan waktu dan perkiraan energinya.',
       healthDenied:
         'Apple Health tidak mengizinkannya. Nyalakan di Pengaturan, Health, Akses Data.',
       reminders: 'Pengingat latihan',
-      remindersHint: 'Dorongan kecil di hari kamu berlatih.',
       reminderTime: 'Waktu',
       keepAwake: 'Layar tetap menyala saat berlatih',
       pushTitle: 'Waktunya latihan',

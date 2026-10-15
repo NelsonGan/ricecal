@@ -172,7 +172,8 @@ export type Action =
   | { type: 'addExercises'; plans: ExercisePlan[] }
   | { type: 'replaceExercise'; key: string; plan: ExercisePlan }
   | { type: 'removeExercise'; key: string }
-  | { type: 'moveExercise'; key: string; by: -1 | 1 }
+  /** The exercises in this order of keys, as the reorder sheet leaves them. */
+  | { type: 'reorderExercises'; keys: readonly string[] }
   | { type: 'exerciseNotes'; key: string; notes: string }
   | { type: 'exerciseRest'; key: string; restS: number | null }
   | { type: 'superset'; key: string; withKey: string | null }
@@ -242,13 +243,15 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
         ),
       }
     }
-    case 'moveExercise': {
-      const at = workout.exercises.findIndex((exercise) => exercise.key === action.key)
-      const to = at + action.by
-      if (at < 0 || to < 0 || to >= workout.exercises.length) return workout
-      const exercises = [...workout.exercises]
-      const [moved] = exercises.splice(at, 1)
-      exercises.splice(to, 0, moved)
+    case 'reorderExercises': {
+      const at = new Map(action.keys.map((key, index) => [key, index]))
+      // Anything the order does not name keeps its place at the end, so a
+      // drag that raced an added exercise cannot lose it.
+      const rank = (key: string) => at.get(key) ?? action.keys.length
+      const exercises = workout.exercises
+        .map((exercise, index) => ({ exercise, index }))
+        .sort((a, b) => rank(a.exercise.key) - rank(b.exercise.key) || a.index - b.index)
+        .map((entry) => entry.exercise)
       return { ...workout, exercises }
     }
     case 'exerciseNotes':
@@ -327,6 +330,58 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
     case 'stopRest':
       return { ...workout, rest: null }
   }
+}
+
+/**
+ * The rest ticking a set of `exercise` starts. In a superset the rest comes
+ * after the last exercise of the round, not between its members.
+ */
+export function restAfter(
+  workout: LiveWorkout,
+  exercise: LiveExercise,
+  defaultRestS: number,
+): number {
+  if (exercise.superset !== null) {
+    const group = workout.exercises.filter((entry) => entry.superset === exercise.superset)
+    if (group[group.length - 1]?.key !== exercise.key) return 0
+  }
+  return exercise.restS ?? defaultRestS
+}
+
+/** What an empty field shows and a tick takes. See `setHints`. */
+export type SetHint = Required<Pick<SetPatch, 'weightKg' | 'reps' | 'durationS' | 'distanceM'>>
+
+const NO_HINT: SetHint = { weightKg: null, reps: null, durationS: null, distanceM: null }
+
+/**
+ * Each set's hints: the nearest figure above it in the same column, or, with
+ * nothing above, last time's figure for that set. Typing 105 into the first
+ * set offers 105 to every set under it, the way a column filled in on paper
+ * reads, and ticking an empty set takes what it offers.
+ *
+ * Warm-ups only hand down to warm-ups: a 40 kg warm-up is not a working set's
+ * weight.
+ */
+export function setHints(
+  sets: readonly Pick<LiveSet, 'kind' | 'weightKg' | 'reps' | 'durationS' | 'distanceM'>[],
+  previous: readonly (SetPatch | undefined)[] | null | undefined,
+): SetHint[] {
+  const above = { warmup: { ...NO_HINT }, working: { ...NO_HINT } }
+  return sets.map((set, index) => {
+    const carry = set.kind === 'warmup' ? above.warmup : above.working
+    const last = previous?.[index]
+    const hint: SetHint = {
+      weightKg: carry.weightKg ?? last?.weightKg ?? null,
+      reps: carry.reps ?? last?.reps ?? null,
+      durationS: carry.durationS ?? last?.durationS ?? null,
+      distanceM: carry.distanceM ?? last?.distanceM ?? null,
+    }
+    if (set.weightKg !== null) carry.weightKg = set.weightKg
+    if (set.reps !== null) carry.reps = set.reps
+    if (set.durationS !== null) carry.durationS = set.durationS
+    if (set.distanceM !== null) carry.distanceM = set.distanceM
+    return hint
+  })
 }
 
 /** Only the blanks: a value the user typed is never overwritten by a hint. */

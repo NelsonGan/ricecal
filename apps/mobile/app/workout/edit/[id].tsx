@@ -128,6 +128,8 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
 
   return (
     <Screen
+      // Set rows swipe to delete, so the scroll has to share the finger. See `gestureScroll`.
+      gestureScroll
       header={
         <AppBar
           title={initial ? t('workouts:edit.title') : t('workouts:edit.newTitle')}

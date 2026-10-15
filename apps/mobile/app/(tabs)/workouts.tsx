@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
+  type IconRef,
   summaryFromDocument,
   useOutbox,
   useRoutines,
@@ -16,7 +17,6 @@ import { ScreenTitle } from '@/features/shared'
 import {
   awaitPick,
   defaultWorkoutName,
-  EXERCISES,
   OverviewCard,
   RoutineCard,
   routinePlans,
@@ -24,18 +24,7 @@ import {
   WorkoutCard,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
-import {
-  Button,
-  Card,
-  EmptyState,
-  Icon,
-  IconButton,
-  ListRow,
-  Screen,
-  Skeleton,
-  Tappable,
-  Text,
-} from '@/ui'
+import { Button, Card, Icon, IconButton, ListRow, Screen, Skeleton, Tappable, Text } from '@/ui'
 
 /**
  * The Workouts tab: start one, start from a routine, and look back.
@@ -173,32 +162,25 @@ export default function WorkoutsScreen() {
           ))}
         </View>
       ) : (
-        <Card>
-          <EmptyState
-            title={t('workouts:routines.emptyTitle')}
-            description={t('workouts:routines.emptyBody')}
-            icon={{ set: 'system', name: 'guide-book' }}
-            className="py-md"
-          />
-        </Card>
+        <EmptyRow
+          icon={{ set: 'system', name: 'guide-book' }}
+          title={t('workouts:routines.emptyTitle')}
+        />
       )}
 
       <Card contentClassName="gap-0 px-5 py-1">
         <ListRow
           title={t('workouts:explore.title')}
-          subtitle={t('workouts:explore.subtitle')}
           leading={<Icon set="system" name="rocket" size={28} />}
           onPress={() => router.push('/workout/templates')}
         />
         <ListRow
           title={t('workouts:stats.entry')}
-          subtitle={t('workouts:stats.entryBody')}
           leading={<Icon set="system" name="trophy" size={28} />}
           onPress={() => router.push('/workout/stats')}
         />
         <ListRow
           title={t('workouts:library.title')}
-          subtitle={t('workouts:library.results', { count: EXERCISES.length })}
           leading={<Icon set="body" name="gym-bench" size={28} />}
           onPress={() => router.push('/workout/exercises')}
           divider={false}
@@ -239,14 +221,10 @@ export default function WorkoutsScreen() {
           ) : null}
         </View>
       ) : (
-        <Card>
-          <EmptyState
-            title={t('workouts:history.emptyTitle')}
-            description={t('workouts:history.emptyBody')}
-            icon={{ set: 'body', name: 'stopwatch' }}
-            className="py-md"
-          />
-        </Card>
+        <EmptyRow
+          icon={{ set: 'body', name: 'stopwatch' }}
+          title={t('workouts:history.emptyTitle')}
+        />
       )}
 
       {starter.sheet}
@@ -275,5 +253,17 @@ function QuickAction({
         {label}
       </Text>
     </Tappable>
+  )
+}
+
+/** An empty list as one quiet row rather than a card-sized illustration. */
+function EmptyRow({ icon, title }: { icon: IconRef; title: string }) {
+  return (
+    <Card contentClassName="flex-row items-center gap-3 px-5 py-4">
+      <Icon {...icon} size={36} />
+      <Text variant="meta" className="flex-1">
+        {title}
+      </Text>
+    </Card>
   )
 }

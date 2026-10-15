@@ -27,6 +27,13 @@ public struct WorkoutActivityAttributes: ActivityAttributes {
     /// When the rest in progress ends, and how long it was. Nil between rests.
     public var restEndsAt: Date?
     public var restTotalS: Double?
+    /// The next set, so the tick button can name it to the app.
+    public var exerciseKey: String?
+    public var setId: String?
+    /// Whether the next set has numbers to tick: its own, or the ones it offers.
+    public var canComplete: Bool?
+    /// The rest the next set starts when it is ticked, for the button to show at once.
+    public var restAfterS: Double?
 
     public init(
       name: String,
@@ -35,7 +42,11 @@ public struct WorkoutActivityAttributes: ActivityAttributes {
       done: Int,
       total: Int,
       restEndsAt: Date?,
-      restTotalS: Double?
+      restTotalS: Double?,
+      exerciseKey: String? = nil,
+      setId: String? = nil,
+      canComplete: Bool? = nil,
+      restAfterS: Double? = nil
     ) {
       self.name = name
       self.exercise = exercise
@@ -44,6 +55,10 @@ public struct WorkoutActivityAttributes: ActivityAttributes {
       self.total = total
       self.restEndsAt = restEndsAt
       self.restTotalS = restTotalS
+      self.exerciseKey = exerciseKey
+      self.setId = setId
+      self.canComplete = canComplete
+      self.restAfterS = restAfterS
     }
   }
 

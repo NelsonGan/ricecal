@@ -127,6 +127,7 @@ export const ms = {
       cancel: 'Batal',
       save: 'Simpan perubahan',
       done: 'Selesai',
+      clear: 'Kosongkan',
       edit: 'Sunting',
       delete: 'Padam',
       add: 'Tambah',
@@ -1749,7 +1750,7 @@ export const ms = {
       running: 'Senaman sedang berjalan',
       routine: 'Mula',
       sport: 'Rekod sukan',
-      past: 'Rekod senaman lepas',
+      past: 'Senaman lepas',
       replaceTitle: 'Ada senaman sedang berjalan',
       replaceBody: 'Buang yang itu dan mula yang ini?',
       replaceConfirm: 'Buang dan mula',
@@ -1762,7 +1763,6 @@ export const ms = {
       title: 'Rutin saya',
       new: 'Baharu',
       emptyTitle: 'Belum ada rutin',
-      emptyBody: 'Simpan senaman yang anda ulang, atau mula daripada templat.',
       lastDone: 'Terakhir dibuat {{date}}',
       never: 'Belum pernah dibuat',
       exercises_one: '{{count}} latihan',
@@ -1776,7 +1776,6 @@ export const ms = {
 
     explore: {
       title: 'Teroka templat',
-      subtitle: 'Program standard, sedia dimulakan',
       add: 'Tambah ke rutin saya',
       added: 'Ditambah ke rutin anda',
       inRoutines: 'Dalam rutin anda',
@@ -1832,7 +1831,6 @@ export const ms = {
     history: {
       title: 'Sejarah',
       emptyTitle: 'Belum ada senaman',
-      emptyBody: 'Mulakan satu di atas dan ia akan disimpan di sini.',
       more: 'Tunjuk lagi',
       pending: 'Menunggu penyegerakan',
       prs_one: '{{count}} PR',
@@ -1860,7 +1858,6 @@ export const ms = {
       namePlaceholder: 'Nama senaman',
       addExercise: 'Tambah latihan',
       emptyTitle: 'Tambah latihan pertama anda',
-      emptyBody: 'Pilih daripada senarai, atau taip nama untuk mencarinya.',
       discard: 'Buang senaman',
       discardConfirm: 'Buang',
       discardTitle: 'Buang senaman ini?',
@@ -1875,8 +1872,9 @@ export const ms = {
       restOff: 'Rehat dimatikan',
       rest: 'Rehat {{time}}',
       next: 'Seterusnya',
+      completeSet: 'Selesaikan set',
+      previousField: 'Medan sebelumnya',
       plates: 'Plat',
-      timeStep: '15 s',
       exerciseNotes: 'Tambah nota',
       kind: {
         normal: 'Set utama',
@@ -1892,9 +1890,8 @@ export const ms = {
       menu: {
         replace: 'Ganti latihan',
         superset: 'Superset dengan seterusnya',
+        reorder: 'Susun semula senaman',
         unsuperset: 'Keluarkan daripada superset',
-        moveUp: 'Alih ke atas',
-        moveDown: 'Alih ke bawah',
         rest: 'Pemasa rehat',
         plates: 'Kalkulator plat',
         remove: 'Buang latihan',
@@ -1919,6 +1916,10 @@ export const ms = {
 
     finish: {
       title: 'Simpan senaman',
+      complete: 'Senaman selesai',
+      best: 'Terbaik',
+      total_one: '{{count}} senaman kesemuanya',
+      total_other: '{{count}} senaman kesemuanya',
       name: 'Nama',
       notes: 'Nota',
       notesPlaceholder: 'Bagaimana sesi tadi?',
@@ -1928,7 +1929,7 @@ export const ms = {
       duration: 'Tempoh',
       save: 'Simpan senaman',
       saved: 'Senaman disimpan',
-      queued: 'Disimpan dalam telefon ini. Ia akan disegerakkan bila anda dalam talian.',
+      queued: 'Disegerakkan apabila dalam talian',
       failed: 'Tidak dapat menyimpan. Cuba lagi.',
       unfinishedTitle: 'Ada set yang belum ditanda',
       unfinishedBody_one: '{{count}} set sudah diisi tetapi belum ditanda.',
@@ -1970,7 +1971,6 @@ export const ms = {
       records: 'Rekod',
       kcal: '{{value}} kcal',
       kcalLabel: 'Dibakar',
-      estimate: 'Dianggarkan daripada latihan dan berat badan anda.',
       e1rm: '1RM {{value}}',
     },
 
@@ -1994,7 +1994,6 @@ export const ms = {
       results_one: '{{count}} latihan',
       results_other: '{{count}} latihan',
       noneTitle: 'Tiada latihan dengan nama itu',
-      noneBody: 'Buat sebagai latihan anda sendiri.',
       create: 'Buat latihan',
       recent: 'Baru digunakan',
       add_one: 'Tambah {{count}} latihan',
@@ -2010,7 +2009,6 @@ export const ms = {
       category: 'Bahagian badan',
       equipment: 'Peralatan',
       muscles: 'Otot',
-      musclesHint: 'Pilihan pertama paling diambil kira.',
       save: 'Simpan latihan',
       taken: 'Anda sudah ada latihan dengan nama ini.',
       delete: 'Padam latihan',
@@ -2024,7 +2022,6 @@ export const ms = {
       records: 'Rekod',
       split: 'Pembahagian otot',
       noHistoryTitle: 'Belum pernah dibuat',
-      noHistoryBody: 'Set dan rekod anda akan muncul di sini.',
       chart: {
         heaviest: 'Terberat',
         e1rm: 'Angg. 1RM',
@@ -2051,7 +2048,6 @@ export const ms = {
     stats: {
       title: 'Kemajuan',
       entry: 'Kemajuan dan rekod',
-      entryBody: 'Jumlah mingguan, otot dan rekod peribadi',
       weeks: '12 minggu lepas',
       metric: {
         workouts: 'Senaman',
@@ -2061,25 +2057,19 @@ export const ms = {
       },
       split: 'Pembahagian otot',
       splitRange: '30 hari lepas',
-      splitEmpty: 'Rekod senaman untuk melihat otot yang dilatih.',
       splitSets: '{{value}} set',
       records: 'Rekod peribadi',
-      recordsEmpty: 'Pencapaian terbaik anda muncul di sini sebaik anda merekod latihan.',
       calendar: 'Kalendar',
     },
 
     settings: {
       title: 'Tetapan senaman',
       rest: 'Pemasa rehat lalai',
-      restHint: 'Setiap latihan boleh ditetapkan sendiri.',
       units: 'Unit berat',
       health: 'Simpan senaman ke Apple Health',
-      healthHint:
-        'Setiap senaman yang selesai ditambah ke Health bersama masa dan anggaran tenaganya.',
       healthDenied:
         'Apple Health tidak membenarkannya. Hidupkan dalam Tetapan, Health, Akses Data.',
       reminders: 'Peringatan senaman',
-      remindersHint: 'Dorongan kecil pada hari anda bersenam.',
       reminderTime: 'Masa',
       keepAwake: 'Kekalkan skrin menyala semasa bersenam',
       pushTitle: 'Masa untuk bersenam',

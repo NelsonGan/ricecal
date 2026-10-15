@@ -30,7 +30,7 @@ export const workouts = {
     running: 'Workout in progress',
     routine: 'Start',
     sport: 'Log a sport',
-    past: 'Log a past workout',
+    past: 'Past workout',
     /** Starting another while one runs. */
     replaceTitle: 'A workout is already running',
     replaceBody: 'Discard it and start this one?',
@@ -45,7 +45,6 @@ export const workouts = {
     title: 'My routines',
     new: 'New',
     emptyTitle: 'No routines yet',
-    emptyBody: 'Save the workouts you repeat, or start from a template.',
     lastDone: 'Last done {{date}}',
     never: 'Not done yet',
     exercises_one: '{{count}} exercise',
@@ -59,7 +58,6 @@ export const workouts = {
 
   explore: {
     title: 'Explore templates',
-    subtitle: 'Standard programs, ready to start',
     add: 'Add to my routines',
     added: 'Added to your routines',
     inRoutines: 'In your routines',
@@ -112,7 +110,6 @@ export const workouts = {
   history: {
     title: 'History',
     emptyTitle: 'No workouts yet',
-    emptyBody: 'Start one above and it will be kept here.',
     more: 'Show more',
     pending: 'Waiting to sync',
     prs_one: '{{count}} PR',
@@ -142,7 +139,6 @@ export const workouts = {
     namePlaceholder: 'Workout name',
     addExercise: 'Add exercise',
     emptyTitle: 'Add your first exercise',
-    emptyBody: 'Pick from the library, or type a name to find one.',
     discard: 'Discard workout',
     /** The confirming button beside "Keep", where the whole phrase wraps. */
     discardConfirm: 'Discard',
@@ -159,10 +155,10 @@ export const workouts = {
     rest: 'Rest {{time}}',
     /** The pad's key that moves to the next field: weight, reps, then the next set. */
     next: 'Next',
+    completeSet: 'Complete set',
+    previousField: 'Previous field',
     /** The plate calculator, from the pad on a barbell's weight. Short: it is a chip. */
     plates: 'Plates',
-    /** What the pad's time keys step by, read as "+15 s" and "−15 s". */
-    timeStep: '15 s',
     exerciseNotes: 'Add a note',
     /** A set's type, as the menu offers it. */
     kind: {
@@ -180,9 +176,8 @@ export const workouts = {
     menu: {
       replace: 'Replace exercise',
       superset: 'Superset with next',
+      reorder: 'Reorder exercises',
       unsuperset: 'Remove from superset',
-      moveUp: 'Move up',
-      moveDown: 'Move down',
       rest: 'Rest timer',
       plates: 'Plate calculator',
       remove: 'Remove exercise',
@@ -208,6 +203,10 @@ export const workouts = {
 
   finish: {
     title: 'Save workout',
+    complete: 'Workout complete',
+    best: 'Best',
+    total_one: '{{count}} workout in total',
+    total_other: '{{count}} workouts in total',
     name: 'Name',
     notes: 'Notes',
     notesPlaceholder: 'How did it go?',
@@ -217,7 +216,7 @@ export const workouts = {
     duration: 'Duration',
     save: 'Save workout',
     saved: 'Workout saved',
-    queued: 'Saved on this phone. It will sync when you are online.',
+    queued: 'Syncs when you are online',
     failed: 'Could not save. Try again.',
     unfinishedTitle: 'Some sets are not ticked',
     unfinishedBody_one: '{{count}} set has numbers but was not ticked.',
@@ -260,7 +259,6 @@ export const workouts = {
     records: 'Records',
     kcal: '{{value}} kcal',
     kcalLabel: 'Burned',
-    estimate: 'Estimated from the exercises and your weight.',
     /** A set's estimated one-rep max, beside it. */
     e1rm: '1RM {{value}}',
   },
@@ -285,7 +283,6 @@ export const workouts = {
     results_one: '{{count}} exercise',
     results_other: '{{count}} exercises',
     noneTitle: 'No exercise by that name',
-    noneBody: 'Create it as your own exercise.',
     create: 'Create exercise',
     recent: 'Recent',
     add_one: 'Add {{count}} exercise',
@@ -301,7 +298,6 @@ export const workouts = {
     category: 'Body part',
     equipment: 'Equipment',
     muscles: 'Muscles',
-    musclesHint: 'The first one you pick counts most.',
     save: 'Save exercise',
     taken: 'You already have an exercise with this name.',
     delete: 'Delete exercise',
@@ -315,7 +311,6 @@ export const workouts = {
     records: 'Records',
     split: 'Muscle split',
     noHistoryTitle: 'Not done yet',
-    noHistoryBody: 'Your sets and records will show here.',
     chart: {
       heaviest: 'Heaviest',
       e1rm: 'Est. 1RM',
@@ -343,7 +338,6 @@ export const workouts = {
   stats: {
     title: 'Progress',
     entry: 'Progress and records',
-    entryBody: 'Weekly totals, muscles and personal bests',
     weeks: 'Last 12 weeks',
     metric: {
       workouts: 'Workouts',
@@ -353,23 +347,18 @@ export const workouts = {
     },
     split: 'Muscle split',
     splitRange: 'Last 30 days',
-    splitEmpty: 'Log a workout to see which muscles it worked.',
     splitSets: '{{value}} sets',
     records: 'Personal records',
-    recordsEmpty: 'Your bests appear here once you log an exercise.',
     calendar: 'Calendar',
   },
 
   settings: {
     title: 'Workout settings',
     rest: 'Default rest timer',
-    restHint: 'Each exercise can have its own.',
     units: 'Weight unit',
     health: 'Save workouts to Apple Health',
-    healthHint: 'Each finished workout is added to Health with its time and estimated energy.',
     healthDenied: 'Apple Health did not allow it. Turn it on in Settings, Health, Data Access.',
     reminders: 'Workout reminders',
-    remindersHint: 'A nudge on the days you train.',
     reminderTime: 'Time',
     keepAwake: 'Keep the screen on while training',
     pushTitle: 'Time to train',

@@ -119,6 +119,7 @@ export const bn = {
       cancel: 'বাতিল',
       save: 'পরিবর্তন সংরক্ষণ করুন',
       done: 'হয়ে গেছে',
+      clear: 'মুছুন',
       edit: 'সম্পাদনা',
       delete: 'মুছুন',
       add: 'যোগ করুন',
@@ -1703,7 +1704,7 @@ export const bn = {
       running: 'ওয়ার্কআউট চলছে',
       routine: 'শুরু করুন',
       sport: 'খেলা লিখুন',
-      past: 'আগের ওয়ার্কআউট লিখুন',
+      past: 'আগের ওয়ার্কআউট',
       /** Starting another while one runs. */
       replaceTitle: 'একটি ওয়ার্কআউট আগে থেকেই চলছে',
       replaceBody: 'সেটি বাদ দিয়ে এটি শুরু করবেন?',
@@ -1718,7 +1719,6 @@ export const bn = {
       title: 'আমার রুটিন',
       new: 'নতুন',
       emptyTitle: 'এখনো কোনো রুটিন নেই',
-      emptyBody: 'যে ওয়ার্কআউট বারবার করেন তা সেভ করুন, বা একটি টেমপ্লেট থেকে শুরু করুন।',
       lastDone: 'শেষবার {{date}}',
       never: 'এখনো করা হয়নি',
       exercises_one: '{{count}}টি ব্যায়াম',
@@ -1732,7 +1732,6 @@ export const bn = {
 
     explore: {
       title: 'টেমপ্লেট দেখুন',
-      subtitle: 'প্রচলিত প্রোগ্রাম, শুরু করার জন্য তৈরি',
       add: 'আমার রুটিনে যোগ করুন',
       added: 'আপনার রুটিনে যোগ হয়েছে',
       inRoutines: 'আপনার রুটিনে আছে',
@@ -1785,7 +1784,6 @@ export const bn = {
     history: {
       title: 'ইতিহাস',
       emptyTitle: 'এখনো কোনো ওয়ার্কআউট নেই',
-      emptyBody: 'উপরে একটি শুরু করুন, সেটি এখানে থাকবে।',
       more: 'আরও দেখুন',
       pending: 'সিঙ্কের অপেক্ষায়',
       prs_one: '{{count}}টি PR',
@@ -1815,7 +1813,6 @@ export const bn = {
       namePlaceholder: 'ওয়ার্কআউটের নাম',
       addExercise: 'ব্যায়াম যোগ করুন',
       emptyTitle: 'প্রথম ব্যায়ামটি যোগ করুন',
-      emptyBody: 'লাইব্রেরি থেকে বাছুন, বা নাম লিখে খুঁজুন।',
       discard: 'ওয়ার্কআউট বাদ দিন',
       discardConfirm: 'বাদ দিন',
       discardTitle: 'এই ওয়ার্কআউটটি বাদ দেবেন?',
@@ -1830,8 +1827,9 @@ export const bn = {
       restOff: 'বিশ্রাম বন্ধ',
       rest: 'বিশ্রাম {{time}}',
       next: 'পরের',
+      completeSet: 'সেট সম্পন্ন',
+      previousField: 'আগের ঘর',
       plates: 'প্লেট',
-      timeStep: '15 সে',
       exerciseNotes: 'নোট যোগ করুন',
       /** A set's type, as the menu offers it. */
       kind: {
@@ -1849,9 +1847,8 @@ export const bn = {
       menu: {
         replace: 'ব্যায়াম বদলান',
         superset: 'পরেরটির সঙ্গে সুপারসেট',
+        reorder: 'ব্যায়ামের ক্রম বদলান',
         unsuperset: 'সুপারসেট থেকে সরান',
-        moveUp: 'উপরে সরান',
-        moveDown: 'নিচে সরান',
         rest: 'বিশ্রামের টাইমার',
         plates: 'প্লেট ক্যালকুলেটর',
         remove: 'ব্যায়াম সরান',
@@ -1877,6 +1874,10 @@ export const bn = {
 
     finish: {
       title: 'ওয়ার্কআউট সেভ করুন',
+      complete: 'ওয়ার্কআউট সম্পন্ন',
+      best: 'সেরা',
+      total_one: 'মোট {{count}}টি ওয়ার্কআউট',
+      total_other: 'মোট {{count}}টি ওয়ার্কআউট',
       name: 'নাম',
       notes: 'নোট',
       notesPlaceholder: 'কেমন হলো?',
@@ -1886,7 +1887,7 @@ export const bn = {
       duration: 'সময়',
       save: 'ওয়ার্কআউট সেভ করুন',
       saved: 'ওয়ার্কআউট সেভ হয়েছে',
-      queued: 'এই ফোনে সেভ হয়েছে। অনলাইনে এলে সিঙ্ক হবে।',
+      queued: 'অনলাইনে এলে সিঙ্ক হবে',
       failed: 'সেভ করা যায়নি। আবার চেষ্টা করুন।',
       unfinishedTitle: 'কিছু সেটে টিক দেওয়া হয়নি',
       unfinishedBody_one: '{{count}}টি সেটে সংখ্যা আছে, কিন্তু টিক দেওয়া হয়নি।',
@@ -1929,7 +1930,6 @@ export const bn = {
       records: 'রেকর্ড',
       kcal: '{{value}} kcal',
       kcalLabel: 'পোড়ানো',
-      estimate: 'ব্যায়াম আর আপনার ওজন থেকে আনুমানিক।',
       /** A set's estimated one-rep max, beside it. */
       e1rm: '1RM {{value}}',
     },
@@ -1954,7 +1954,6 @@ export const bn = {
       results_one: '{{count}}টি ব্যায়াম',
       results_other: '{{count}}টি ব্যায়াম',
       noneTitle: 'এই নামে কোনো ব্যায়াম নেই',
-      noneBody: 'নিজের ব্যায়াম হিসেবে তৈরি করুন।',
       create: 'ব্যায়াম তৈরি করুন',
       recent: 'সাম্প্রতিক',
       add_one: '{{count}}টি ব্যায়াম যোগ করুন',
@@ -1970,7 +1969,6 @@ export const bn = {
       category: 'শরীরের অংশ',
       equipment: 'সরঞ্জাম',
       muscles: 'পেশি',
-      musclesHint: 'প্রথমে যেটি বাছবেন সেটিই সবচেয়ে বেশি গোনা হয়।',
       save: 'ব্যায়াম সেভ করুন',
       taken: 'এই নামে আপনার একটি ব্যায়াম আগেই আছে।',
       delete: 'ব্যায়াম মুছুন',
@@ -1984,7 +1982,6 @@ export const bn = {
       records: 'রেকর্ড',
       split: 'পেশির ভাগ',
       noHistoryTitle: 'এখনো করা হয়নি',
-      noHistoryBody: 'আপনার সেট আর রেকর্ড এখানে দেখাবে।',
       chart: {
         heaviest: 'সবচেয়ে ভারী',
         e1rm: 'আনু. 1RM',
@@ -2011,7 +2008,6 @@ export const bn = {
     stats: {
       title: 'অগ্রগতি',
       entry: 'অগ্রগতি ও রেকর্ড',
-      entryBody: 'সাপ্তাহিক মোট, পেশি আর ব্যক্তিগত সেরা',
       weeks: 'গত ১২ সপ্তাহ',
       metric: {
         workouts: 'ওয়ার্কআউট',
@@ -2021,23 +2017,18 @@ export const bn = {
       },
       split: 'পেশির ভাগ',
       splitRange: 'গত ৩০ দিন',
-      splitEmpty: 'কোন পেশি কাজ করেছে দেখতে একটি ওয়ার্কআউট লিখুন।',
       splitSets: '{{value}} সেট',
       records: 'ব্যক্তিগত রেকর্ড',
-      recordsEmpty: 'কোনো ব্যায়াম লিখলেই আপনার সেরাগুলো এখানে দেখাবে।',
       calendar: 'ক্যালেন্ডার',
     },
 
     settings: {
       title: 'ওয়ার্কআউট সেটিংস',
       rest: 'ডিফল্ট বিশ্রামের টাইমার',
-      restHint: 'প্রতিটি ব্যায়ামের আলাদা টাইমারও থাকতে পারে।',
       units: 'ওজনের একক',
       health: 'ওয়ার্কআউট Apple Health-এ সেভ করুন',
-      healthHint: 'প্রতিটি শেষ করা ওয়ার্কআউট সময় আর আনুমানিক শক্তিসহ Health-এ যোগ হয়।',
       healthDenied: 'Apple Health অনুমতি দেয়নি। সেটিংস, Health, ডেটা অ্যাক্সেসে গিয়ে চালু করুন।',
       reminders: 'ওয়ার্কআউট মনে করানো',
-      remindersHint: 'ব্যায়ামের দিনগুলোতে একটু মনে করানো।',
       reminderTime: 'সময়',
       keepAwake: 'ব্যায়ামের সময় পর্দা চালু রাখুন',
       pushTitle: 'ব্যায়ামের সময় হয়েছে',

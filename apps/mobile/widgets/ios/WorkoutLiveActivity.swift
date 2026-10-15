@@ -51,9 +51,12 @@ struct WorkoutLiveActivity: Widget {
         }
         DynamicIslandExpandedRegion(.bottom) {
           VStack(alignment: .leading, spacing: 6) {
-            NextSetLine(state: context.state, palette: .dark)
+            NextSetLine(
+              state: context.state, workoutId: context.attributes.workoutId, palette: .dark)
             if let ends = context.state.restEndsAt, ends > Date() {
-              RestLine(ends: ends, total: context.state.restTotalS, palette: .dark)
+              RestLine(
+                ends: ends, total: context.state.restTotalS,
+                workoutId: context.attributes.workoutId, palette: .dark)
             }
           }
           .padding(.horizontal, 4)
@@ -112,9 +115,11 @@ private struct WorkoutLockScreen: View {
           .foregroundStyle(palette.pandanInk)
           .frame(maxWidth: 110, alignment: .trailing)
       }
-      NextSetLine(state: context.state, palette: palette)
+      NextSetLine(state: context.state, workoutId: context.attributes.workoutId, palette: palette)
       if let ends = context.state.restEndsAt, ends > Date() {
-        RestLine(ends: ends, total: context.state.restTotalS, palette: palette)
+        RestLine(
+          ends: ends, total: context.state.restTotalS, workoutId: context.attributes.workoutId,
+          palette: palette)
       }
     }
     .padding(16)
@@ -125,6 +130,7 @@ private struct WorkoutLockScreen: View {
 
 private struct NextSetLine: View {
   let state: WorkoutActivityAttributes.ContentState
+  let workoutId: String
   let palette: Palette
 
   var body: some View {
@@ -141,6 +147,24 @@ private struct NextSetLine: View {
           .padding(.vertical, 2)
           .background(Capsule().fill(palette.pandanSoft))
       }
+      Spacer(minLength: 6)
+      // Ticks the set named beside it, with the numbers it offers, and starts
+      // its rest: a set done between two locks of the phone without opening it.
+      if #available(iOS 17.0, *), state.canComplete == true,
+        let exerciseKey = state.exerciseKey, let setId = state.setId
+      {
+        Button(
+          intent: WorkoutActionIntent(
+            action: "completeSet", workoutId: workoutId, exerciseKey: exerciseKey, setId: setId)
+        ) {
+          Image(systemName: "checkmark")
+            .font(.system(size: 15, weight: .heavy))
+            .foregroundStyle(palette.canvas)
+            .frame(width: 44, height: 30)
+            .background(Capsule().fill(palette.pandan))
+        }
+        .buttonStyle(.plain)
+      }
     }
   }
 }
@@ -148,29 +172,57 @@ private struct NextSetLine: View {
 private struct RestLine: View {
   let ends: Date
   let total: Double?
+  let workoutId: String
   let palette: Palette
 
   var body: some View {
     let start = ends.addingTimeInterval(-(total ?? 60))
-    HStack(spacing: 10) {
-      Image(systemName: "timer")
-        .font(.system(size: 15, weight: .bold))
+    HStack(spacing: 8) {
+      Text(timerInterval: start...ends, countsDown: true)
+        .font(WidgetFont.display(18))
+        .monospacedDigit()
         .foregroundStyle(palette.kayaInk)
+        .frame(width: 52, alignment: .leading)
       ProgressView(timerInterval: start...ends, countsDown: true) {
         EmptyView()
       } currentValueLabel: {
         EmptyView()
       }
       .tint(palette.kaya)
-      Text(timerInterval: start...ends, countsDown: true)
-        .font(WidgetFont.display(18))
-        .monospacedDigit()
-        .foregroundStyle(palette.kayaInk)
-        .frame(width: 58, alignment: .trailing)
+      // The rest's own controls, the three the logger's rest bar has.
+      if #available(iOS 17.0, *) {
+        RestButton(action: "restMinus", workoutId: workoutId, palette: palette) {
+          Text("−15").font(WidgetFont.label(13))
+        }
+        RestButton(action: "restPlus", workoutId: workoutId, palette: palette) {
+          Text("+15").font(WidgetFont.label(13))
+        }
+        RestButton(action: "skipRest", workoutId: workoutId, palette: palette) {
+          Image(systemName: "forward.end.fill").font(.system(size: 12, weight: .bold))
+        }
+      }
     }
     .padding(.horizontal, 12)
     .padding(.vertical, 8)
     .background(RoundedRectangle(cornerRadius: 14).fill(palette.kayaSoft))
+  }
+}
+
+@available(iOS 17.0, *)
+private struct RestButton<Label: View>: View {
+  let action: String
+  let workoutId: String
+  let palette: Palette
+  @ViewBuilder let label: () -> Label
+
+  var body: some View {
+    Button(intent: WorkoutActionIntent(action: action, workoutId: workoutId)) {
+      label()
+        .foregroundStyle(palette.kayaInk)
+        .frame(width: 40, height: 28)
+        .background(Capsule().fill(palette.surface.opacity(0.7)))
+    }
+    .buttonStyle(.plain)
   }
 }
 

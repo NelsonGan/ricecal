@@ -45,6 +45,7 @@ import {
   EmptyState,
   Icon,
   IconButton,
+  NavAction,
   Screen,
   Skeleton,
   SkeletonRow,
@@ -358,6 +359,8 @@ export default function TodayScreen() {
    * Declared here because the offline screen below wants it most: a day this
    * phone has never seen is where the answer is "go back to one it has".
    */
+  const addButton = <NavAction onPress={() => router.push('/log')} label={t('common:nav.log')} />
+
   const backToToday = isToday ? null : (
     <Button
       size="sm"
@@ -387,7 +390,7 @@ export default function TodayScreen() {
     return (
       // Plain `Screen`: nothing here swipes, so this one does not need
       // gesture-handler's scroll view the way the day below does.
-      <Screen floatingLeading={backToToday}>
+      <Screen floatingLeading={backToToday} floatingTrailing={addButton}>
         <ScreenTitle title={title} />
         <WeekPicker />
         <Card>
@@ -407,7 +410,7 @@ export default function TodayScreen() {
    */
   if (unreachable) {
     return (
-      <Screen floatingLeading={backToToday}>
+      <Screen floatingLeading={backToToday} floatingTrailing={addButton}>
         <ScreenTitle title={title} />
         <WeekPicker />
         <Card>
@@ -430,7 +433,7 @@ export default function TodayScreen() {
     // The one screen with swipeable rows on it, and the one that needs
     // gesture-handler's scroll view for them to work. Nothing here takes
     // typing, which is what makes that trade free — see `gestureScroll`.
-    <Screen gestureScroll floatingLeading={backToToday}>
+    <Screen gestureScroll floatingLeading={backToToday} floatingTrailing={addButton}>
       <ScreenTitle
         title={title}
         leading={
