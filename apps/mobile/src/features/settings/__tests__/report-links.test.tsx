@@ -21,7 +21,19 @@ const mockPush = jest.fn()
 const mockListeners: ((response: unknown) => void)[] = []
 const mockLaunch: { response: unknown } = { response: null }
 
-jest.mock('expo-router', () => ({ router: { push: (href: string) => mockPush(href) } }))
+jest.mock('expo-router', () => ({
+  router: {
+    push: (href: string) => mockPush(href),
+    navigate: (href: string) => mockPush(`navigate ${href}`),
+    dismissTo: (href: string) => mockPush(`dismissTo ${href}`),
+  },
+}))
+
+// A workout is running, for the notices that open the logger.
+jest.mock('@/data/session', () => ({ useSession: () => ({ userId: 'u' }) }))
+jest.mock('@/features/workouts/store', () => ({ getActiveWorkout: () => ({ id: 'w' }) }))
+const mockLogger = { open: false }
+jest.mock('@/features/workouts/loggerOpen', () => ({ loggerIsOpen: () => mockLogger.open }))
 
 jest.mock('expo-notifications', () => ({
   getLastNotificationResponseAsync: () => Promise.resolve(mockLaunch.response),
@@ -33,8 +45,11 @@ jest.mock('expo-notifications', () => ({
   addNotificationResponseReceivedListener: (fn: (response: unknown) => void) => {
     mockListeners.push(fn)
     return {
+      // Only if it is still there: an unmount's cleanup can run after the next
+      // test has reset the list, and splice(-1) then removed that test's listener.
       remove: () => {
-        mockListeners.splice(mockListeners.indexOf(fn), 1)
+        const at = mockListeners.indexOf(fn)
+        if (at >= 0) mockListeners.splice(at, 1)
       },
     }
   },
@@ -76,6 +91,20 @@ it('leaves every other notification alone', async () => {
   mockListeners[0]?.({ notification: { request: { content: {} } } })
 
   expect(mockPush).not.toHaveBeenCalled()
+  unmount()
+})
+
+it('takes a rest notice back to the logger already open, wherever it is in the stack', async () => {
+  const { unmount } = await mount()
+  mockListeners[0]?.(response('rest'))
+  // No logger mounted: open one.
+  expect(mockPush).toHaveBeenLastCalledWith('navigate /workout/active')
+
+  // One mounted, under the library say: go back to it rather than push another.
+  mockLogger.open = true
+  mockListeners[0]?.(response('rest'))
+  expect(mockPush).toHaveBeenLastCalledWith('dismissTo /workout/active')
+  mockLogger.open = false
   unmount()
 })
 

@@ -6,7 +6,9 @@ import { fieldsFor, type LiveExercise } from './model'
  * The order the pad's Next key walks a workout's fields in: each exercise top
  * to bottom, each set in turn, and within a set the columns left to right, so
  * weight, then reps, then the next set's weight. How a set is written down on
- * paper, and what Strong's Next does.
+ * paper, and what Strong's Next does. A superset is walked a round at a time,
+ * A1 then B1 then A2, because that is the order it is lifted in, and the order
+ * the lock screen's tick already follows.
  *
  * Fields register a way to focus themselves; the order comes from the document
  * rather than from what happens to be mounted, so a set added mid-edit slots
@@ -31,6 +33,30 @@ export const fieldKey = (exerciseKey: string, setId: string, field: string) =>
 /** The exercise and set half of a field's key. */
 const setOf = (key: string) => key.slice(0, key.lastIndexOf('|'))
 
+/** Every field's key, in the order Next walks them. */
+export function walkOrder(exercises: readonly LiveExercise[]): string[] {
+  const out: string[] = []
+  const fields = (exercise: LiveExercise, index: number) => {
+    const set = exercise.sets[index]
+    if (!set) return
+    for (const field of fieldsFor(exercise.tracking))
+      out.push(fieldKey(exercise.key, set.id, field))
+  }
+  // A superset is a run of neighbouring cards sharing a number (`tidySupersets`).
+  for (let start = 0; start < exercises.length; ) {
+    let end = start + 1
+    const group = exercises[start].superset
+    if (group !== null) {
+      while (end < exercises.length && exercises[end].superset === group) end += 1
+    }
+    const run = exercises.slice(start, end)
+    const rounds = Math.max(...run.map((exercise) => exercise.sets.length))
+    for (let index = 0; index < rounds; index++) for (const exercise of run) fields(exercise, index)
+    start = end
+  }
+  return out
+}
+
 export function FieldOrderProvider({
   exercises,
   children,
@@ -39,15 +65,7 @@ export function FieldOrderProvider({
   children: ReactNode
 }) {
   const focusers = useRef(new Map<string, () => void>())
-  const keys = useMemo(
-    () =>
-      exercises.flatMap((exercise) =>
-        exercise.sets.flatMap((set) =>
-          fieldsFor(exercise.tracking).map((field) => fieldKey(exercise.key, set.id, field)),
-        ),
-      ),
-    [exercises],
-  )
+  const keys = useMemo(() => walkOrder(exercises), [exercises])
   // Read at press time, so the order is the document's latest.
   const order = useRef(keys)
   order.current = keys

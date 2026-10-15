@@ -3782,7 +3782,13 @@ used to delete the workout. Even a refused workout stays in the outbox, tried
 again on the next launch, and `toPayload` holds every value to the column's
 limits so a typo (2250 lb for 225) is a wrong set rather than a lost session. A
 reply only clears the copy that was sent: an edit queued while it was in
-flight stays.
+flight stays. A queued workout's row in the history opens a sheet to send it
+again now (`retryQueuedWorkout`, which also lifts a refusal from this launch)
+or to discard it, with its Health copy; it used to read "Waiting to sync" with
+nothing to do about it. A save waits up to 15 seconds before going to the
+outbox, and a save or a delete of a workout first waits for any send of it the
+outbox has in flight, so a late copy cannot bring back a deleted workout or
+overwrite a newer one.
 
 Children are owned by `(workout_id, user_id)` composite foreign keys rather than
 the id alone: a foreign key check bypasses row security, so with the id alone a
@@ -3871,7 +3877,13 @@ The commonest bad workout is one somebody forgot to finish. Three hours after a
 start, a notification asks "Still training?", and the logger asks the same
 thing in a sheet. Its first answer is the useful one: **finish at the last
 ticked set**, because the hours since then are the drive home. It can also open
-the finish screen on the end-time picker, carry on, or discard.
+the finish screen on the end-time picker, carry on, or discard (after a
+confirm: it is hours of sets). Finishing from it goes through the logger's own
+checks, so sets typed but never ticked are asked about rather than dropped.
+
+With the app open the notice's banner steps aside only while a logger is
+mounted to ask the question (`loggerOpen.ts`); on Today at the three-hour mark
+it shows, and tapping it opens the logger, which asks.
 
 Both times on the finish screen can be moved, because the other common mistake
 is starting in the car park. A workout can be at most 24 hours, which the table
@@ -4055,7 +4067,18 @@ one replaces it. With random ids held in a ref, every relaunch mid-workout
 booked another "still training?" that finishing never cancelled, and it fired
 hours later for a workout already saved. Cancelling also clears a delivered
 one from Notification Center, and a tapped notice opens the logger only if a
-workout is still running.
+workout is still running. It goes back to a logger that is already open
+anywhere in the stack (`dismissTo`) rather than pushing a second one over the
+library or an exercise's page, and pushes one only when none is mounted:
+`dismissTo` replaces the current screen when its route is not in the stack.
+
+A booking waits on the permission check before it is made, so each kind keeps
+a generation number: a cancel that lands in that wait (a rest skipped the
+moment it started) wins, where it used to be overtaken by the booking. Reminder
+rewrites run one at a time, because two that overlapped each read the booked
+list before the other had booked and left Monday booked twice; and the tabs'
+unmount, which is signing out, cancels them, since they came from that
+account's settings.
 
 Workout reminders are days of the week and a time, in `user_settings`
 (`workout_reminder_days`, `workout_reminder_at`), because they follow the
@@ -4085,6 +4108,9 @@ with what its empty fields offer and moves to the next set, and **Next**, which
 walks the workout as a set is written on paper: weight, then reps, then the next
 set's weight, then the next exercise (`fieldOrder.tsx`). The order comes from
 the document rather than from what is mounted, so a set added mid-edit slots in.
+A superset is walked a round at a time, A1, B1, A2, B2, as it is lifted and as
+the lock screen's tick already went; walked card by card, ✓ Set after A1 went
+to A2.
 On the last field Next reads Done. The header names the exercise over the set
 and unit, because the field is often under the pad, with Plates for a barbell's
 weight and ⌄ to put the pad away. Every other numeric field keeps the plain pad.

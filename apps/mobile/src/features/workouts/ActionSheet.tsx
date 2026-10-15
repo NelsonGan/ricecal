@@ -38,15 +38,21 @@ export function ActionSheet({
 }) {
   const { t } = useTranslation('common')
   const pending = useRef<(() => void) | null>(null)
+  // What it showed while open, kept while it slides away. Callers clear the
+  // thing a sheet is about as it closes, and the list emptied and the title
+  // went blank in the middle of the slide.
+  const held = useRef({ title, description, actions })
+  if (visible) held.current = { title, description, actions }
+  const shown = visible ? { title, description, actions } : held.current
 
   return (
     <Sheet
       visible={visible}
       onClose={onClose}
       closeLabel={t('action.close')}
-      title={title}
+      title={shown.title}
       titleLines={2}
-      description={description}
+      description={shown.description}
       onDismiss={() => {
         const run = pending.current
         pending.current = null
@@ -54,7 +60,7 @@ export function ActionSheet({
       }}
     >
       <View>
-        {actions.map((action, index) => (
+        {shown.actions.map((action, index) => (
           <View key={action.key}>
             {index > 0 ? <Divider /> : null}
             <Tappable

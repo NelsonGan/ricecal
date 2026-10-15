@@ -189,7 +189,14 @@ export function planFor(exercise: LibraryExercise): ExercisePlan {
     exerciseId: exercise.id,
     name: exercise.name,
     tracking: exercise.tracking,
-    restS: exercise.category === 'sports' || exercise.category === 'cardio' ? 0 : null,
+    // No timer between holds of a stretch or rounds of a game: the default
+    // ninety seconds is for lifting.
+    restS:
+      exercise.category === 'sports' ||
+      exercise.category === 'cardio' ||
+      exercise.category === 'mobility'
+        ? 0
+        : null,
     sets: timed ? [{}] : [{}, {}, {}],
   }
 }

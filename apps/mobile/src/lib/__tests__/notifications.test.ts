@@ -1,8 +1,13 @@
 import * as Notifications from 'expo-notifications'
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 
 import type { MealTime, Settings } from '@/data/types'
-import { type ReminderCopy, rescheduleReminders, scheduleNoticeAt } from '@/lib/notifications'
+import {
+  type ReminderCopy,
+  rescheduleReminders,
+  scheduleNoticeAt,
+  whenWorkoutPromptShown,
+} from '@/lib/notifications'
 
 jest.mock('expo-notifications', () => ({
   SchedulableTriggerInputTypes: {
@@ -21,6 +26,11 @@ jest.mock('expo-notifications', () => ({
   getPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn(),
 }))
+
+// Taken at import, before any test clears the mocks.
+const handler = (Notifications.setNotificationHandler as jest.Mock).mock.calls[0]?.[0] as {
+  handleNotification: (n: unknown) => Promise<{ shouldShowBanner: boolean }>
+}
 
 const copy: ReminderCopy = {
   mealTitle: (meal) => meal,
@@ -149,4 +159,35 @@ it('books "rest is over" on a channel that can be heard, and "still training?" o
     'workout-rest',
     { name: 'Rest timer', importance: 4 },
   ])
+})
+
+describe('with the app open', () => {
+  // The jest preset makes it a mock function rather than a state, so it is
+  // set to one for these and put back after.
+  const original = Object.getOwnPropertyDescriptor(AppState, 'currentState')
+  beforeEach(() => {
+    Object.defineProperty(AppState, 'currentState', { value: 'active', configurable: true })
+  })
+  afterEach(() => {
+    if (original) Object.defineProperty(AppState, 'currentState', original)
+  })
+
+  const shown = async (kind: string) =>
+    (await handler.handleNotification({ request: { content: { data: { kind } } } }))
+      .shouldShowBanner
+
+  it('keeps the rest banner away, its countdown being on every screen', async () => {
+    expect(await shown('rest')).toBe(false)
+  })
+
+  it('shows "still training?" unless a logger is open to ask it', async () => {
+    whenWorkoutPromptShown(() => false)
+    expect(await shown('workout')).toBe(true)
+    whenWorkoutPromptShown(() => true)
+    expect(await shown('workout')).toBe(false)
+  })
+
+  it('shows reminders', async () => {
+    expect(await shown('meal')).toBe(true)
+  })
 })
