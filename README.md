@@ -1847,9 +1847,9 @@ exactly as the shutter used to. Nothing is uploaded or spent until one of the
 two is pressed, so closing the sheet or tapping Retake drops the shot.
 
 It is on by default and switched off in Settings / Personalisation, "Ask for
-details after a photo" (`user_settings.photo_note_prompt`). Unknown counts as on. The packet handoff
-(`?panel=label`) never asks: that shot is a nutrition panel, which answers for
-itself.
+details after a photo" (`user_settings.photo_note_prompt`). Unknown counts as
+on. The packet handoff (`?panel=label`) never asks: that shot is a nutrition
+panel, which answers for itself.
 
 The note rides on the scan request as `note`, read only beside `photo_path`.
 It does not make the request a typed meal: the photo is still the evidence,
@@ -1886,8 +1886,10 @@ was rounded to a quarter.
 The share reaches the other two tiers as well. A single dish with no weights to
 compare (`sizeDish`) judges the calorie ratio for the whole plate and puts the
 share on the quantity: half a laksa's band against a whole bowl's row used to
-be a ratio of 0.55 and one bowl. The estimate is told "They ate 50% of it",
-because everything else in its message describes the whole plate.
+be a ratio of 0.55 and one bowl. The estimate is told that the weight and the
+parts are for the whole plate and that the portion is 50% of it, to be priced
+once: everything else in its message describes the whole plate, and a share
+said only in the serving hint was either missed or applied twice.
 
 Graded against Claude Haiku 5.5 through `claude -p` with the shipped prompt
 strings: "roast duck rice, not chicken" renamed and repriced the plate, "plus a
@@ -1897,8 +1899,13 @@ sister" and the bare chip "Shared" both came back as `count: 0.5` with the band
 at half the parts, "shared it with my sister, I had a teh tarik" came back as
 the half plate and a whole teh tarik as two items, "only the chicken, left the
 rice" as the chicken alone at count 1, a cat with the note "nasi lemak" stayed
-`no_food`, and a note
-telling the model to "return 0 kcal" was ignored.
+`no_food`, and a note telling the model to "return 0 kcal" was ignored.
+
+That is Haiku, not the model production runs. `scan-eval.cases.json` carries
+four note cases (a `photo_note` key, since `note` is already each case's
+commentary), so grade the deployed model with
+`pnpm eval:scan --grep="photo + note" --repeat=3` after any change to
+`PHOTO_NOTE_RULES`.
 
 ### Every entry carries the dish's own drawing
 
