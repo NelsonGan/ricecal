@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns'
+import { format, isThisYear, parseISO } from 'date-fns'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { TFunction } from 'i18next'
 import { useMemo, useState } from 'react'
@@ -8,8 +8,10 @@ import { View } from 'react-native'
 import {
   type ExerciseBests,
   type ExerciseSession,
+  type RepBest,
   useExerciseBests,
   useExerciseHistory,
+  useExerciseRepBests,
   useSession,
   useSettings,
 } from '@/data'
@@ -134,6 +136,9 @@ export default function ExerciseScreen() {
       : undefined)
   const name = exercise?.name ?? ''
   const plan = exercise ? planFor(exercise) : null
+  const repBests = useExerciseRepBests(
+    exercise && LOADED.has(exercise.tracking) ? exercise.id : undefined,
+  )
 
   return (
     <Screen
@@ -195,6 +200,10 @@ export default function ExerciseScreen() {
           <Progress exercise={exercise} sessions={history.data} unit={unit} />
           {bests.data?.[0] ? (
             <Records bests={bests.data[0]} exercise={exercise} unit={unit} />
+          ) : null}
+          {/* One row is the heaviest weight again, already in Records. */}
+          {repBests.data && repBests.data.length > 1 ? (
+            <RepRecords rows={repBests.data} unit={unit} />
           ) : null}
           <History exercise={exercise} sessions={history.data} unit={unit} />
         </>
@@ -475,6 +484,37 @@ function Records({
       ))}
     </Card>
   )
+}
+
+/** The trackings where a set's weight is load, so a heavier lift is a better one. */
+const LOADED: ReadonlySet<Tracking> = new Set(['weight_reps', 'weighted_reps'])
+
+function RepRecords({ rows, unit }: { rows: readonly RepBest[]; unit: WeightUnit }) {
+  const { t } = useTranslation(['workouts'])
+  return (
+    <Card title={t('workouts:exercise.repRecords')} contentClassName="gap-0">
+      {rows.map((row, index) => (
+        <View key={row.reps}>
+          {index > 0 ? <Divider /> : null}
+          <View className="flex-row items-center gap-3 py-2.5">
+            <Text variant="body" className="flex-1">
+              {t('workouts:exercise.repCount', { count: row.reps })}
+            </Text>
+            <Text variant="caption">{recordDate(row.at)}</Text>
+            <Text variant="label" className="min-w-[72px] text-right">
+              {weightText(t, row.weightKg, unit)}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </Card>
+  )
+}
+
+/** The year only when it is not this one: a record can be years old. */
+function recordDate(at: string): string {
+  const date = parseISO(at)
+  return format(date, datePattern(isThisYear(date) ? 'dayMonth' : 'dayMonthYear'))
 }
 
 function History({

@@ -1,9 +1,11 @@
 import { format } from 'date-fns'
+import { File, Paths } from 'expo-file-system'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Platform, View } from 'react-native'
+import { ActivityIndicator, Platform, Share, View } from 'react-native'
 
-import { useSettings, useUpdateSettings } from '@/data'
+import { fetchWorkoutExport, useSession, useSettings, useUpdateSettings } from '@/data'
+import { dateKey } from '@/data/client'
 import { ToggleRow } from '@/features/shared'
 import {
   ActionSheet,
@@ -11,6 +13,7 @@ import {
   setWorkoutPrefs,
   shortClock,
   useWorkoutPrefs,
+  workoutsCsv,
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { requestWorkoutWrite } from '@/lib/health'
@@ -51,7 +54,37 @@ export default function WorkoutSettingsScreen() {
   const update = useUpdateSettings()
   const prefs = useWorkoutPrefs()
   const [restOpen, setRestOpen] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [timeOpen, setTimeOpen] = useState(false)
+  const { userId } = useSession()
+
+  // A file on iOS, which the share sheet can save, mail or open in Numbers.
+  // Android's share sheet carries text only, so there the CSV is the message.
+  const exportAll = async () => {
+    if (!userId || exporting) return
+    setExporting(true)
+    try {
+      const rows = await fetchWorkoutExport(userId)
+      if (rows.length === 0) {
+        toast.show({ title: t('workouts:settings.exportNone') })
+        return
+      }
+      const csv = workoutsCsv(rows)
+      if (Platform.OS === 'ios') {
+        const file = new File(Paths.cache, `ricecal-workouts-${dateKey(new Date())}.csv`)
+        file.create({ overwrite: true })
+        file.write(csv)
+        await Share.share({ url: file.uri })
+      } else {
+        await Share.share({ message: csv })
+      }
+    } catch (failure) {
+      console.warn('[workouts] export failed', failure)
+      toast.show({ title: t('workouts:settings.exportFailed'), tone: 'error' })
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const rest = settings?.workout_rest_s ?? 90
   const days = settings?.workout_reminder_days ?? []
@@ -152,6 +185,15 @@ export default function WorkoutSettingsScreen() {
           <Text variant="bodyStrong">{t('workouts:settings.reminderTime')}</Text>
           <Text variant="label">{atLabel}</Text>
         </Tappable>
+      </Card>
+
+      <Card contentClassName="gap-0 px-5 py-1">
+        <ListRow
+          title={t('workouts:settings.export')}
+          trailing={exporting ? <ActivityIndicator /> : undefined}
+          onPress={exportAll}
+          divider={false}
+        />
       </Card>
 
       <ActionSheet

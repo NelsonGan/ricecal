@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(29);
+select plan(31);
 
 \set user_a '44444444-4444-4444-4444-444444444444'
 \set user_b '55555555-5555-5555-5555-555555555555'
@@ -134,6 +134,12 @@ select is(
   (select best_e1rm_kg from public.exercise_bests('barbell-bench-press')),
   72.9::numeric,
   'and the best estimated 1RM'
+);
+select is(
+  (select array_agg(reps || ' x ' || weight_kg order by reps)
+     from public.exercise_rep_bests('barbell-bench-press')),
+  array['3 x 65.00', '5 x 62.50'],
+  'rep records take each rep count''s heaviest working set, never a warm-up'
 );
 select is(
   (select count(*)::integer from public.exercise_history('barbell-bench-press', 50)),
@@ -289,6 +295,30 @@ select is(
      select id from public.workout_exercises where workout_id in (:'first', :'second'))),
   3,
   'deleting a workout takes its sets with it'
+);
+
+-- Rep records keep only the counts nothing heavier at more reps has beaten:
+-- 95 x 3 goes, because 100 x 5 was lifted. The missed 120 and the warm-up
+-- are not lifts.
+select public.save_workout(jsonb_build_object(
+  'id', gen_random_uuid()::text, 'name', 'Legs', 'started_at', '2026-10-14T10:00:00Z',
+  'ended_at', '2026-10-14T11:00:00Z', 'log_date', '2026-10-14',
+  'exercises', jsonb_build_array(
+    jsonb_build_object('exercise_id', 'barbell-squat', 'exercise_name', 'Squat (Barbell)',
+      'tracking', 'weight_reps',
+      'sets', jsonb_build_array(
+        jsonb_build_object('kind', 'warmup', 'weight_kg', 130, 'reps', 1),
+        jsonb_build_object('weight_kg', 110, 'reps', 1),
+        jsonb_build_object('weight_kg', 95, 'reps', 3),
+        jsonb_build_object('weight_kg', 100, 'reps', 5),
+        jsonb_build_object('weight_kg', 90, 'reps', 8),
+        jsonb_build_object('weight_kg', 120, 'reps', 0))))
+));
+select is(
+  (select array_agg(reps || ' x ' || weight_kg order by reps)
+     from public.exercise_rep_bests('barbell-squat')),
+  array['1 x 110.00', '5 x 100.00', '8 x 90.00'],
+  'a rep count beaten by a heavier set at more reps is not a rep record'
 );
 
 select * from finish();

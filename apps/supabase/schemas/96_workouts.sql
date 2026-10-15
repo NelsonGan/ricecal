@@ -387,6 +387,56 @@ grant execute on function public.exercise_bests(text) to authenticated;
 
 
 -- ---------------------------------------------------------------------------
+-- Rep records: the heaviest weight lifted for each number of reps, the table
+-- Strong and Hevy put under an exercise's records.
+--
+-- Only the reps that still mean something are kept. A count whose best was
+-- matched or beaten at more reps is dropped: with 100 kg x 5 on the books, a
+-- 3-rep best of 95 kg is not a 3-rep max, and listing it would say it was. So
+-- the weights fall as the reps rise and every row is a lift worth beating.
+-- The date is when that weight was first lifted for those reps.
+-- ---------------------------------------------------------------------------
+create or replace function public.exercise_rep_bests(p_exercise_id text)
+returns table (
+  reps       smallint,
+  weight_kg  numeric,
+  started_at timestamptz
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with best as (
+    select distinct on (v.reps) v.reps, v.weight_kg, v.started_at
+    from public.workout_set_values v
+    where v.user_id = (select auth.uid())
+      and v.exercise_id = p_exercise_id
+      and v.tracking in ('weight_reps', 'weighted_reps')
+      and v.weight_counts
+    order by v.reps, v.weight_kg desc, v.started_at
+  ),
+  beaten as (
+    select
+      b.*,
+      max(b.weight_kg) over (order by b.reps desc rows between unbounded preceding and 1 preceding) as above
+    from best b
+  )
+  select x.reps, x.weight_kg, x.started_at
+  from beaten x
+  where x.above is null or x.weight_kg > x.above
+  order by x.reps;
+$$;
+
+comment on function public.exercise_rep_bests(text) is
+  'The heaviest weight lifted for each rep count of a weighted exercise, keeping '
+  'only counts no heavier set at more reps has beaten. Warm-ups excluded.';
+
+revoke all on function public.exercise_rep_bests(text) from public, anon;
+grant execute on function public.exercise_rep_bests(text) to authenticated;
+
+
+-- ---------------------------------------------------------------------------
 -- An exercise across workouts, newest first: the history tab of an exercise
 -- and every chart on it. One row per workout that contained the exercise, with
 -- its sets as a list so the history can draw them without a second request.

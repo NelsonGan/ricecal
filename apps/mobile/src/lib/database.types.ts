@@ -2780,6 +2780,14 @@ export type Database = {
           workout_id: string
         }[]
       }
+      exercise_rep_bests: {
+        Args: { p_exercise_id: string }
+        Returns: {
+          reps: number
+          started_at: string
+          weight_kg: number
+        }[]
+      }
       expired_meal_photos: {
         Args: { p_limit?: number }
         Returns: {

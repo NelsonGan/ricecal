@@ -194,6 +194,8 @@ export const keys = {
     ['workouts', userId, 'bests', exerciseId ?? 'all'] as const,
   exerciseHistory: (userId: string, exerciseId: string) =>
     ['workouts', userId, 'history', exerciseId] as const,
+  exerciseRepBests: (userId: string, exerciseId: string) =>
+    ['workouts', userId, 'rep-bests', exerciseId] as const,
   lastSets: (userId: string, exerciseIds: string) =>
     ['workouts', userId, 'last-sets', exerciseIds] as const,
   /** Not under `workouts`: a saved workout does not change a routine's plan. */

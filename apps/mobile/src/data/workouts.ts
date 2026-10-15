@@ -383,17 +383,17 @@ export type ExerciseBests = {
 }
 
 /**
- * Personal bests: one exercise's, or every exercise's when the id is null.
- * The logger reads the whole list to say "new record" the moment a set beats
- * one, so it is fetched once per workout and kept.
- */
-/**
  * Only a save on this phone changes these, and saving invalidates them, so
  * they are never stale on their own. The default thirty seconds refetched
  * every bests and last-sets query each time the logger was reopened.
  */
 const UNTIL_SAVED = Number.POSITIVE_INFINITY
 
+/**
+ * Personal bests: one exercise's, or every exercise's when the id is null.
+ * The logger reads the whole list to say "new record" the moment a set beats
+ * one, so it is fetched once per workout and kept.
+ */
 export function useExerciseBests(exerciseId: string | null, options?: { enabled?: boolean }) {
   const userId = useUserId()
 
@@ -423,6 +423,26 @@ export function useExerciseBests(exerciseId: string | null, options?: { enabled?
         bestDistanceM: num(row.best_distance_m),
         totalVolumeKg: num(row.total_volume_kg) ?? 0,
       })),
+  })
+}
+
+export type RepBest = { reps: number; weightKg: number; at: string }
+
+/**
+ * The heaviest weight for each number of reps, keeping only the counts a
+ * heavier set at more reps has not beaten (`exercise_rep_bests`).
+ */
+export function useExerciseRepBests(exerciseId: string | undefined) {
+  const userId = useUserId()
+
+  return useQuery({
+    enabled: Boolean(exerciseId),
+    staleTime: UNTIL_SAVED,
+    queryKey: keys.exerciseRepBests(userId, exerciseId ?? ''),
+    queryFn: async (): Promise<RepBest[]> =>
+      unwrap(await supabase.rpc('exercise_rep_bests', { p_exercise_id: exerciseId ?? '' })).map(
+        (row) => ({ reps: row.reps, weightKg: Number(row.weight_kg), at: row.started_at }),
+      ),
   })
 }
 
@@ -909,4 +929,87 @@ export function useDeleteCustomExercise() {
 /** Whether a custom exercise name is taken (the unique index's own error). */
 export function isDuplicateName(error: unknown): boolean {
   return (error as { code?: string })?.code === '23505'
+}
+
+/** One saved set with its workout, for the CSV export. */
+export type ExportRow = {
+  workoutId: string
+  workoutName: string
+  workoutNotes: string | null
+  startedAt: string
+  durationS: number
+  exerciseName: string
+  exercisePosition: number
+  setPosition: number
+  kind: SetKind
+  weightKg: number | null
+  reps: number | null
+  setDurationS: number | null
+  distanceM: number | null
+  rpe: number | null
+}
+
+/** PostgREST answers at most this many rows a request, so the export pages. */
+const EXPORT_PAGE = 1000
+
+/**
+ * Every set the user has saved, oldest workout first, for "Export workouts".
+ * A one-off read rather than a query: it is asked for once, on a tap, and
+ * caching a whole history would only fill the persisted cache.
+ */
+export async function fetchWorkoutExport(userId: string): Promise<ExportRow[]> {
+  const workouts = new Map<string, { name: string; notes: string | null; durationS: number }>()
+  for (let from = 0; ; from += EXPORT_PAGE) {
+    const page = unwrap(
+      await supabase
+        .from('workouts')
+        .select('id, name, notes, duration_s')
+        .eq('user_id', userId)
+        .order('started_at')
+        .range(from, from + EXPORT_PAGE - 1),
+    )
+    for (const row of page) {
+      workouts.set(row.id, { name: row.name, notes: row.notes, durationS: row.duration_s ?? 0 })
+    }
+    if (page.length < EXPORT_PAGE) break
+  }
+
+  const rows: ExportRow[] = []
+  for (let from = 0; ; from += EXPORT_PAGE) {
+    const page = unwrap(
+      await supabase
+        .from('workout_set_values')
+        .select(
+          'workout_id, started_at, exercise_name, exercise_position, position, kind, weight_kg, reps, duration_s, distance_m, rpe',
+        )
+        .eq('user_id', userId)
+        .order('started_at')
+        .order('workout_id')
+        .order('exercise_position')
+        .order('position')
+        .range(from, from + EXPORT_PAGE - 1),
+    )
+    for (const set of page) {
+      const workout = workouts.get(set.workout_id ?? '')
+      if (!workout) continue
+      rows.push({
+        workoutId: set.workout_id ?? '',
+        workoutName: workout.name,
+        workoutNotes: workout.notes,
+        startedAt: set.started_at ?? '',
+        durationS: workout.durationS,
+        exerciseName: set.exercise_name ?? '',
+        exercisePosition: set.exercise_position ?? 0,
+        setPosition: set.position ?? 0,
+        kind: set.kind ?? 'normal',
+        weightKg: num(set.weight_kg),
+        reps: set.reps,
+        setDurationS: set.duration_s,
+        distanceM: num(set.distance_m),
+        rpe: num(set.rpe),
+      })
+    }
+    if (page.length < EXPORT_PAGE) break
+  }
+  return rows
 }
