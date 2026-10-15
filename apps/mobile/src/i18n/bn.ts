@@ -1829,6 +1829,9 @@ export const bn = {
       removeSet: 'সেট সরান',
       restOff: 'বিশ্রাম বন্ধ',
       rest: 'বিশ্রাম {{time}}',
+      next: 'পরের',
+      plates: 'প্লেট',
+      timeStep: '15 সে',
       exerciseNotes: 'নোট যোগ করুন',
       /** A set's type, as the menu offers it. */
       kind: {

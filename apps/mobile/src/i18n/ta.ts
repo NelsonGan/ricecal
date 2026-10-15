@@ -1850,6 +1850,9 @@ export const ta = {
       removeSet: 'செட்டை நீக்கு',
       restOff: 'ஓய்வு இல்லை',
       rest: 'ஓய்வு {{time}}',
+      next: 'அடுத்து',
+      plates: 'பிளேட்கள்',
+      timeStep: '15 வி',
       exerciseNotes: 'குறிப்பு சேர்',
       /** A set's type, as the menu offers it. */
       kind: {

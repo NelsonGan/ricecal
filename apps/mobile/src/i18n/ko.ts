@@ -1832,6 +1832,9 @@ export const ko = {
       removeSet: '세트 삭제',
       restOff: '휴식 끔',
       rest: '휴식 {{time}}',
+      next: '다음',
+      plates: '원판',
+      timeStep: '15초',
       exerciseNotes: '메모 추가',
       kind: {
         normal: '본 세트',

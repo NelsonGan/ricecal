@@ -2,7 +2,6 @@ import { useKeepAwake } from 'expo-keep-awake'
 import { useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
 
 import { useSettings } from '@/data'
 import {
@@ -13,6 +12,8 @@ import {
   RestBar,
   STALE_AFTER_MS,
   StaleWorkoutSheet,
+  Stat,
+  StatStrip,
   showsVolume,
   unfinishedSets,
   useLiveWorkout,
@@ -24,7 +25,7 @@ import {
 } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
 import { UNIT_KEY, unitFor } from '@/lib/units'
-import { AppBar, Button, ConfirmSheet, EmptyState, Screen, Text } from '@/ui'
+import { AppBar, Button, ConfirmSheet, EmptyState, Screen } from '@/ui'
 
 /**
  * The logger: a workout being trained.
@@ -128,7 +129,7 @@ export default function ActiveWorkoutScreen() {
     >
       {prefs.keepAwake ? <KeepAwake /> : null}
 
-      <View className="flex-row rounded-card bg-surface px-4 py-3">
+      <StatStrip>
         <Elapsed label={t('workouts:logger.duration')} startedAt={workout.startedAt} />
         {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
           <Stat
@@ -137,7 +138,7 @@ export default function ActiveWorkoutScreen() {
           />
         ) : null}
         <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
-      </View>
+      </StatStrip>
 
       <WorkoutEditor workout={workout} dispatch={dispatch} mode="live" />
 
@@ -252,15 +253,4 @@ function StaleCheck({
 function KeepAwake() {
   useKeepAwake('workout')
   return null
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-1 gap-0.5">
-      <Text variant="overlineSm">{label}</Text>
-      <Text variant="numeric" numberOfLines={1} adjustsFontSizeToFit>
-        {value}
-      </Text>
-    </View>
-  )
 }

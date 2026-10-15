@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
 import type { LastSet } from '@/data'
-import { UNIT_KEY, type WeightUnit } from '@/lib/units'
+import { fromKg, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
-import { cn, Icon, Tappable, Text, useNumpadField } from '@/ui'
+import { cn, Icon, type NumpadTools, Tappable, Text, useNumpadField } from '@/ui'
 import type { Tracking } from './catalogue'
 import { SET_BADGE_KEY } from './copy'
+import { fieldKey, useFieldOrder } from './fieldOrder'
 import {
   type DistanceUnit,
   digitsClock,
@@ -36,6 +37,10 @@ import { fieldsFor, type LiveSet, type SetPatch } from './model'
  */
 
 export type SetTableProps = {
+  /** The exercise's key in the document, which places its fields in the Next order. */
+  exerciseKey: string
+  /** Named in the pad's header, since the card may be scrolled under the pad. */
+  exerciseName: string
   tracking: Tracking
   sets: readonly LiveSet[]
   /**
@@ -52,6 +57,8 @@ export type SetTableProps = {
   onChange: (setId: string, patch: SetPatch) => void
   onToggle: (set: LiveSet, fill: SetPatch | undefined) => void
   onSetMenu: (set: LiveSet, number: number) => void
+  /** Opens the plate calculator on a weight. A barbell's weight fields offer it. */
+  onPlates?: (kg: number | null) => void
 }
 
 const COL_SET = 'w-[34px]'
@@ -65,6 +72,8 @@ const fieldWidth = (count: number) => (count === 1 ? COL_FIELD_WIDE : COL_FIELD)
 const COL_CHECK = 'w-[44px]'
 
 export function SetTable({
+  exerciseKey,
+  exerciseName,
   tracking,
   sets,
   previous,
@@ -75,6 +84,7 @@ export function SetTable({
   onChange,
   onToggle,
   onSetMenu,
+  onPlates,
 }: SetTableProps) {
   const { t } = useTranslation(['workouts', 'common'])
   const fields = fieldsFor(tracking)
@@ -129,6 +139,8 @@ export function SetTable({
         return (
           <SetRow
             key={set.id}
+            exerciseKey={exerciseKey}
+            exerciseName={exerciseName}
             set={set}
             number={number}
             tracking={tracking}
@@ -141,6 +153,7 @@ export function SetTable({
             onChange={(patch) => onChange(set.id, patch)}
             onToggle={() => onToggle(set, last ? fillFrom(last) : undefined)}
             onMenu={() => onSetMenu(set, number)}
+            onPlates={onPlates}
           />
         )
       })}
@@ -194,6 +207,8 @@ export function describeSet(
 }
 
 function SetRow({
+  exerciseKey,
+  exerciseName,
   set,
   number,
   tracking,
@@ -206,7 +221,10 @@ function SetRow({
   onChange,
   onToggle,
   onMenu,
+  onPlates,
 }: {
+  exerciseKey: string
+  exerciseName: string
   set: LiveSet
   number: number
   tracking: Tracking
@@ -219,6 +237,7 @@ function SetRow({
   onChange: (patch: SetPatch) => void
   onToggle: () => void
   onMenu: () => void
+  onPlates?: (kg: number | null) => void
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const colors = useThemeColors()
@@ -276,57 +295,116 @@ function SetRow({
         ) : null}
       </Tappable>
 
-      {fields.map((field) => (
-        <View key={field} className={cn(fieldWidth(fields.length), 'px-1')}>
-          {field === 'weight' ? (
-            <NumberCell
-              value={weightField(set.weightKg, unit)}
-              placeholder={last ? weightField(last.weightKg, unit) : ''}
-              decimal
-              done={ticked}
-              label={t(UNIT_KEY[unit])}
-              onCommit={(text) => onChange({ weightKg: parseWeight(text, unit) })}
-            />
-          ) : field === 'reps' ? (
-            <NumberCell
-              value={set.reps === null ? '' : String(set.reps)}
-              placeholder={last?.reps != null ? String(last.reps) : ''}
-              decimal={false}
-              done={ticked}
-              label={t('workouts:logger.reps')}
-              onCommit={(text) => onChange({ reps: parseWhole(text) })}
-            />
-          ) : field === 'duration' ? (
-            <DurationCell
-              seconds={set.durationS}
-              placeholder={last?.durationS != null ? shortClock(last.durationS) : '0:00'}
-              done={ticked}
-              label={t('workouts:logger.time')}
-              onCommit={(seconds) => onChange({ durationS: seconds })}
-            />
-          ) : tracking === 'weight_distance' ? (
-            // A carry is tens of metres, and in kilometres the smallest step
-            // the field can hold (0.01) is already ten of them.
-            <NumberCell
-              value={set.distanceM === null ? '' : trim(set.distanceM, 0)}
-              placeholder={last?.distanceM ? trim(last.distanceM, 0) : ''}
-              decimal={false}
-              done={ticked}
-              label="m"
-              onCommit={(text) => onChange({ distanceM: parseWhole(text) })}
-            />
-          ) : (
-            <NumberCell
-              value={distanceField(set.distanceM, distanceUnit)}
-              placeholder={last ? distanceField(last.distanceM, distanceUnit) : ''}
-              decimal
-              done={ticked}
-              label={distanceUnit}
-              onCommit={(text) => onChange({ distanceM: parseDistance(text, distanceUnit) })}
-            />
-          )}
-        </View>
-      ))}
+      {fields.map((field) => {
+        const key = fieldKey(exerciseKey, set.id, field)
+        // "Bench Press · Set 2 · kg": the field is often under the pad.
+        const header = (unitLabel: string) =>
+          `${exerciseName} · ${t('workouts:logger.set')} ${badge} · ${unitLabel}`
+        return (
+          <View key={field} className={cn(fieldWidth(fields.length), 'px-1')}>
+            {field === 'weight' ? (
+              <NumberCell
+                fieldKey={key}
+                value={weightField(set.weightKg, unit)}
+                placeholder={last ? weightField(last.weightKg, unit) : ''}
+                decimal
+                done={ticked}
+                label={header(t(UNIT_KEY[unit]))}
+                step={{
+                  label: unit === 'lb' ? '5' : '2.5',
+                  by: (direction) => {
+                    const base = fromKg(set.weightKg ?? last?.weightKg ?? 0, unit)
+                    const next = Math.max(0, base + direction * (unit === 'lb' ? 5 : 2.5))
+                    onChange({ weightKg: parseWeight(trim(next, 2), unit) })
+                  },
+                }}
+                plates={
+                  onPlates
+                    ? { label: t('workouts:logger.plates'), open: () => onPlates(set.weightKg) }
+                    : undefined
+                }
+                onCommit={(text) => onChange({ weightKg: parseWeight(text, unit) })}
+              />
+            ) : field === 'reps' ? (
+              <NumberCell
+                fieldKey={key}
+                value={set.reps === null ? '' : String(set.reps)}
+                placeholder={last?.reps != null ? String(last.reps) : ''}
+                decimal={false}
+                done={ticked}
+                label={header(t('workouts:logger.reps'))}
+                step={{
+                  label: '1',
+                  by: (direction) =>
+                    onChange({ reps: Math.max(0, (set.reps ?? last?.reps ?? 0) + direction) }),
+                }}
+                onCommit={(text) => onChange({ reps: parseWhole(text) })}
+              />
+            ) : field === 'duration' ? (
+              <DurationCell
+                fieldKey={key}
+                seconds={set.durationS}
+                placeholder={last?.durationS != null ? shortClock(last.durationS) : '0:00'}
+                done={ticked}
+                label={header(t('workouts:logger.time'))}
+                step={{
+                  label: t('workouts:logger.timeStep'),
+                  by: (direction) =>
+                    onChange({
+                      durationS: Math.max(
+                        0,
+                        (set.durationS ?? last?.durationS ?? 0) + direction * 15,
+                      ),
+                    }),
+                }}
+                onCommit={(seconds) => onChange({ durationS: seconds })}
+              />
+            ) : tracking === 'weight_distance' ? (
+              // A carry is tens of metres, and in kilometres the smallest step
+              // the field can hold (0.01) is already ten of them.
+              <NumberCell
+                fieldKey={key}
+                value={set.distanceM === null ? '' : trim(set.distanceM, 0)}
+                placeholder={last?.distanceM ? trim(last.distanceM, 0) : ''}
+                decimal={false}
+                done={ticked}
+                label={header('m')}
+                step={{
+                  label: '5',
+                  by: (direction) =>
+                    onChange({
+                      distanceM: Math.max(
+                        0,
+                        (set.distanceM ?? last?.distanceM ?? 0) + direction * 5,
+                      ),
+                    }),
+                }}
+                onCommit={(text) => onChange({ distanceM: parseWhole(text) })}
+              />
+            ) : (
+              <NumberCell
+                fieldKey={key}
+                value={distanceField(set.distanceM, distanceUnit)}
+                placeholder={last ? distanceField(last.distanceM, distanceUnit) : ''}
+                decimal
+                done={ticked}
+                label={header(distanceUnit)}
+                step={{
+                  label: '0.1',
+                  by: (direction) => {
+                    const base = Number(
+                      distanceField(set.distanceM ?? last?.distanceM ?? 0, distanceUnit),
+                    )
+                    const next = Math.max(0, base + direction * 0.1)
+                    onChange({ distanceM: parseDistance(trim(next, 2), distanceUnit) })
+                  },
+                }}
+                onCommit={(text) => onChange({ distanceM: parseDistance(text, distanceUnit) })}
+              />
+            )}
+          </View>
+        )
+      })}
 
       {checkable ? (
         <Tappable
@@ -355,27 +433,83 @@ function SetRow({
   )
 }
 
+/** How a field steps: the keys read `+label` and `−label`. */
+type CellStep = { label: string; by: (direction: 1 | -1) => void }
+type CellPlates = { label: string; open: () => void }
+
+/**
+ * The pad's tools column for a set field: step the value, open the plate
+ * calculator on a barbell's weight, and Next through the workout in the order
+ * `fieldOrder.tsx` keeps. `input` is read when a key is pressed, because the
+ * field's ref belongs to `useNumpadField`, which is called after this.
+ */
+function useCellTools(
+  fieldKey: string,
+  step: CellStep,
+  plates: CellPlates | undefined,
+  input: () => TextInput | null,
+): NumpadTools {
+  const { t } = useTranslation(['workouts', 'common'])
+  const order = useFieldOrder(fieldKey, () => input()?.focus())
+  return {
+    step: {
+      label: step.label,
+      up: () => step.by(1),
+      down: () => step.by(-1),
+      upLabel: `${t('common:a11y.increase')} ${step.label}`,
+      downLabel: `${t('common:a11y.decrease')} ${step.label}`,
+    },
+    next: order
+      ? {
+          label: order.hasNext(fieldKey) ? t('workouts:logger.next') : t('common:action.done'),
+          onPress: () => {
+            if (!order.next(fieldKey)) input()?.blur()
+          },
+        }
+      : undefined,
+    accessory: plates
+      ? {
+          label: plates.label,
+          // The pad goes first: the calculator is a sheet, and the pad is
+          // drawn by the screen under it.
+          onPress: () => {
+            input()?.blur()
+            plates.open()
+          },
+        }
+      : undefined,
+  }
+}
+
 /**
  * A number typed on the app's own pad. Holds its text while focused, so "62."
  * is not rounded to "62" between two key presses, and writes the parsed value
  * through on every change so nothing typed is lost if the app is killed.
  */
 function NumberCell({
+  fieldKey,
   value,
   placeholder,
   decimal,
   done,
   label,
+  step,
+  plates,
   onCommit,
 }: {
+  fieldKey: string
   value: string
   placeholder: string
   decimal: boolean
   done: boolean
   label: string
+  step: CellStep
+  plates?: CellPlates
   onCommit: (text: string) => void
 }) {
   const colors = useThemeColors()
+  const input = useRef<() => TextInput | null>(() => null)
+  const tools = useCellTools(fieldKey, step, plates, () => input.current())
   const [typed, setTyped] = useState<string | null>(null)
   const change = (next: string) => {
     setTyped(next)
@@ -402,9 +536,11 @@ function NumberCell({
     maxLength: 6,
     label,
     replaceFirst: true,
+    tools,
     onFocus: () => setTyped(value),
     onBlur: () => setTyped(null),
   })
+  input.current = () => numpad.ref.current
 
   return (
     <TextInput
@@ -416,8 +552,11 @@ function NumberCell({
       underlineColorAndroid="transparent"
       accessibilityLabel={label}
       className={cn(
-        'h-[38px] rounded-sm px-1 text-center font-body-black text-[16px] text-ink',
+        'h-[38px] rounded-sm border-2 px-1 text-center font-body-black text-[16px] text-ink',
         done ? 'bg-transparent' : 'bg-surface-alt',
+        // The field the pad is typing into, since the pad covers the page
+        // below it and the header alone is easy to miss.
+        numpad.selection ? 'border-pandan bg-surface' : 'border-transparent',
       )}
       {...numpad}
     />
@@ -429,19 +568,25 @@ function NumberCell({
  * `digitsToSeconds`.
  */
 function DurationCell({
+  fieldKey,
   seconds,
   placeholder,
   done,
   label,
+  step,
   onCommit,
 }: {
+  fieldKey: string
   seconds: number | null
   placeholder: string
   done: boolean
   label: string
+  step: CellStep
   onCommit: (seconds: number | null) => void
 }) {
   const colors = useThemeColors()
+  const input = useRef<() => TextInput | null>(() => null)
+  const tools = useCellTools(fieldKey, step, undefined, () => input.current())
   const [digits, setDigits] = useState<string | null>(null)
   const change = (next: string) => {
     const clean = next.replace(/\D/g, '').slice(0, 6)
@@ -461,9 +606,11 @@ function DurationCell({
     maxLength: 6,
     label,
     replaceFirst: true,
+    tools,
     onFocus: () => setDigits(secondsToDigits(seconds)),
     onBlur: () => setDigits(null),
   })
+  input.current = () => numpad.ref.current
   const shown = digits !== null ? digitsClock(digits) : seconds === null ? '' : shortClock(seconds)
 
   return (
@@ -476,8 +623,11 @@ function DurationCell({
       underlineColorAndroid="transparent"
       accessibilityLabel={label}
       className={cn(
-        'h-[38px] rounded-sm px-1 text-center font-body-black text-[16px] text-ink',
+        'h-[38px] rounded-sm border-2 px-1 text-center font-body-black text-[16px] text-ink',
         done ? 'bg-transparent' : 'bg-surface-alt',
+        // The field the pad is typing into, since the pad covers the page
+        // below it and the header alone is easy to miss.
+        numpad.selection ? 'border-pandan bg-surface' : 'border-transparent',
       )}
       {...numpad}
       // The pad writes digits and the field shows a clock, so the caret is put

@@ -10,6 +10,7 @@ import { Button, EmptyState, useToast } from '@/ui'
 import { ActionSheet, type SheetAction } from './ActionSheet'
 import { SET_KIND_KEY } from './copy'
 import { ExerciseCard } from './ExerciseCard'
+import { FieldOrderProvider } from './fieldOrder'
 import { distanceUnitFor, shortClock } from './format'
 import { useExerciseLibrary } from './library'
 import {
@@ -76,7 +77,11 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     number: number
   } | null>(null)
   const [restFor, setRestFor] = useState<LiveExercise | null>(null)
-  const [platesFor, setPlatesFor] = useState<LiveExercise | null>(null)
+  // The exercise the calculator was opened for, and the weight to open it on
+  // when it came from a set's own field rather than the exercise's menu.
+  const [platesFor, setPlatesFor] = useState<{ exercise: LiveExercise; kg?: number | null } | null>(
+    null,
+  )
 
   // Superset groups are lettered in the order they first appear.
   const supersetLetters = useMemo(() => {
@@ -202,7 +207,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
         key: 'plates',
         label: t('workouts:logger.menu.plates'),
         icon: { set: 'body', name: 'weight-plate' },
-        onPress: () => setPlatesFor(exercise),
+        onPress: () => setPlatesFor({ exercise }),
       })
     }
     actions.push({
@@ -253,147 +258,155 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
   }
 
   return (
-    <View className="gap-stack">
-      {workout.exercises.length === 0 ? (
-        <EmptyState
-          title={t('workouts:logger.emptyTitle')}
-          description={t('workouts:logger.emptyBody')}
-          icon={{ set: 'body', name: 'dumbbell' }}
-        />
-      ) : null}
-
-      {workout.exercises.map((exercise) => {
-        const info = library.byId(exercise.exerciseId)
-        // Records only while training. Editing compares a saved workout with
-        // bests that already include it, and every later one, so its trophies
-        // are the saved page's to show.
-        const records = live ? recordSets(exercise, bestsById.get(exercise.exerciseId)) : null
-        return (
-          <ExerciseCard
-            key={exercise.key}
-            exercise={exercise}
-            category={info?.category ?? 'fullBody'}
-            previous={mode === 'edit' ? null : lastSets?.[exercise.exerciseId]}
-            unit={unit}
-            distanceUnit={distanceUnit}
-            defaultRestS={defaultRestS}
-            supersetLabel={
-              exercise.superset !== null ? (supersetLetters.get(exercise.superset) ?? null) : null
-            }
-            recordIds={new Set(records?.keys())}
-            // Ticking is training. Editing and logging after the fact save every
-            // set with numbers in it, so a tick there would be a switch that
-            // switched nothing.
-            checkable={live}
-            onChangeSet={(setId, patch) =>
-              dispatch({ type: 'updateSet', key: exercise.key, setId, patch })
-            }
-            onToggleSet={(set, fill) => toggle(exercise, set, fill)}
-            onSetMenu={(set, number) => setSetMenu({ exercise, set, number })}
-            onAddSet={() => dispatch({ type: 'addSet', key: exercise.key })}
-            onNotes={(notes) => dispatch({ type: 'exerciseNotes', key: exercise.key, notes })}
-            onMenu={() => setMenuFor(exercise)}
-            onRest={() => setRestFor(exercise)}
-            onOpen={() =>
-              router.push({
-                pathname: '/workout/exercise/[id]',
-                params: { id: exercise.exerciseId },
-              })
-            }
+    <FieldOrderProvider exercises={workout.exercises}>
+      <View className="gap-stack">
+        {workout.exercises.length === 0 ? (
+          <EmptyState
+            title={t('workouts:logger.emptyTitle')}
+            description={t('workouts:logger.emptyBody')}
+            icon={{ set: 'body', name: 'dumbbell' }}
           />
-        )
-      })}
+        ) : null}
 
-      <Button
-        variant="secondary"
-        fullWidth
-        onPress={() => openLibrary(false, (plans) => dispatch({ type: 'addExercises', plans }))}
-      >
-        {t('workouts:logger.addExercise')}
-      </Button>
+        {workout.exercises.map((exercise) => {
+          const info = library.byId(exercise.exerciseId)
+          // Records only while training. Editing compares a saved workout with
+          // bests that already include it, and every later one, so its trophies
+          // are the saved page's to show.
+          const records = live ? recordSets(exercise, bestsById.get(exercise.exerciseId)) : null
+          return (
+            <ExerciseCard
+              key={exercise.key}
+              exercise={exercise}
+              category={info?.category ?? 'fullBody'}
+              previous={mode === 'edit' ? null : lastSets?.[exercise.exerciseId]}
+              unit={unit}
+              distanceUnit={distanceUnit}
+              defaultRestS={defaultRestS}
+              supersetLabel={
+                exercise.superset !== null ? (supersetLetters.get(exercise.superset) ?? null) : null
+              }
+              recordIds={new Set(records?.keys())}
+              // Ticking is training. Editing and logging after the fact save every
+              // set with numbers in it, so a tick there would be a switch that
+              // switched nothing.
+              checkable={live}
+              onChangeSet={(setId, patch) =>
+                dispatch({ type: 'updateSet', key: exercise.key, setId, patch })
+              }
+              onToggleSet={(set, fill) => toggle(exercise, set, fill)}
+              onSetMenu={(set, number) => setSetMenu({ exercise, set, number })}
+              onPlates={
+                info?.equipment === 'barbell' ? (kg) => setPlatesFor({ exercise, kg }) : undefined
+              }
+              onAddSet={() => dispatch({ type: 'addSet', key: exercise.key })}
+              onNotes={(notes) => dispatch({ type: 'exerciseNotes', key: exercise.key, notes })}
+              onMenu={() => setMenuFor(exercise)}
+              onRest={() => setRestFor(exercise)}
+              onOpen={() =>
+                router.push({
+                  pathname: '/workout/exercise/[id]',
+                  params: { id: exercise.exerciseId },
+                })
+              }
+            />
+          )
+        })}
 
-      <ActionSheet
-        visible={menuFor !== null}
-        onClose={() => setMenuFor(null)}
-        title={menuFor?.name}
-        actions={menuFor ? exerciseActions(menuFor) : []}
-      />
+        <Button
+          variant="secondary"
+          fullWidth
+          onPress={() => openLibrary(false, (plans) => dispatch({ type: 'addExercises', plans }))}
+        >
+          {t('workouts:logger.addExercise')}
+        </Button>
 
-      <ActionSheet
-        visible={setMenu !== null}
-        onClose={() => setSetMenu(null)}
-        title={setMenu ? `${t('workouts:logger.set')} ${setMenu.number}` : undefined}
-        actions={
-          setMenu
-            ? [
-                ...SET_KINDS.map((kind) => ({
-                  key: kind,
-                  label: t(SET_KIND_KEY[kind]),
-                  selected: setMenu.set.kind === kind,
-                  onPress: () =>
-                    dispatch({
-                      type: 'updateSet',
-                      key: setMenu.exercise.key,
-                      setId: setMenu.set.id,
-                      patch: { kind },
-                    }),
-                })),
-                {
-                  key: 'remove',
-                  label: t('workouts:logger.removeSet'),
-                  icon: { set: 'ui', name: 'delete' } as const,
-                  tone: 'danger' as const,
-                  onPress: () =>
-                    dispatch({
-                      type: 'removeSet',
-                      key: setMenu.exercise.key,
-                      setId: setMenu.set.id,
-                    }),
-                },
-              ]
-            : []
-        }
-      />
+        <ActionSheet
+          visible={menuFor !== null}
+          onClose={() => setMenuFor(null)}
+          title={menuFor?.name}
+          actions={menuFor ? exerciseActions(menuFor) : []}
+        />
 
-      <ActionSheet
-        visible={restFor !== null}
-        onClose={() => setRestFor(null)}
-        title={t('workouts:logger.restTitle')}
-        actions={
-          restFor
-            ? [
-                {
-                  key: 'default',
-                  label: t('workouts:logger.restDefault', { time: shortClock(defaultRestS) }),
-                  selected: restFor.restS === null,
-                  onPress: () => dispatch({ type: 'exerciseRest', key: restFor.key, restS: null }),
-                },
-                ...REST_CHOICES.map((seconds) => ({
-                  key: String(seconds),
-                  label: seconds === 0 ? t('workouts:logger.restOff') : shortClock(seconds),
-                  selected: restFor.restS === seconds,
-                  onPress: () =>
-                    dispatch({ type: 'exerciseRest', key: restFor.key, restS: seconds }),
-                })),
-              ]
-            : []
-        }
-      />
+        <ActionSheet
+          visible={setMenu !== null}
+          onClose={() => setSetMenu(null)}
+          title={setMenu ? `${t('workouts:logger.set')} ${setMenu.number}` : undefined}
+          actions={
+            setMenu
+              ? [
+                  ...SET_KINDS.map((kind) => ({
+                    key: kind,
+                    label: t(SET_KIND_KEY[kind]),
+                    selected: setMenu.set.kind === kind,
+                    onPress: () =>
+                      dispatch({
+                        type: 'updateSet',
+                        key: setMenu.exercise.key,
+                        setId: setMenu.set.id,
+                        patch: { kind },
+                      }),
+                  })),
+                  {
+                    key: 'remove',
+                    label: t('workouts:logger.removeSet'),
+                    icon: { set: 'ui', name: 'delete' } as const,
+                    tone: 'danger' as const,
+                    onPress: () =>
+                      dispatch({
+                        type: 'removeSet',
+                        key: setMenu.exercise.key,
+                        setId: setMenu.set.id,
+                      }),
+                  },
+                ]
+              : []
+          }
+        />
 
-      <PlateSheet
-        visible={platesFor !== null}
-        onClose={() => setPlatesFor(null)}
-        unit={unit}
-        // The next set still to lift, or failing that the last working set:
-        // the first weight on the card is usually the warm-up, which nobody
-        // needs a calculator for.
-        initialKg={
-          platesFor?.sets.find((set) => !set.done && set.weightKg)?.weightKg ??
-          platesFor?.sets.findLast((set) => set.kind !== 'warmup' && set.weightKg)?.weightKg ??
-          platesFor?.sets.find((set) => set.weightKg)?.weightKg ??
-          null
-        }
-      />
-    </View>
+        <ActionSheet
+          visible={restFor !== null}
+          onClose={() => setRestFor(null)}
+          title={t('workouts:logger.restTitle')}
+          actions={
+            restFor
+              ? [
+                  {
+                    key: 'default',
+                    label: t('workouts:logger.restDefault', { time: shortClock(defaultRestS) }),
+                    selected: restFor.restS === null,
+                    onPress: () =>
+                      dispatch({ type: 'exerciseRest', key: restFor.key, restS: null }),
+                  },
+                  ...REST_CHOICES.map((seconds) => ({
+                    key: String(seconds),
+                    label: seconds === 0 ? t('workouts:logger.restOff') : shortClock(seconds),
+                    selected: restFor.restS === seconds,
+                    onPress: () =>
+                      dispatch({ type: 'exerciseRest', key: restFor.key, restS: seconds }),
+                  })),
+                ]
+              : []
+          }
+        />
+
+        <PlateSheet
+          visible={platesFor !== null}
+          onClose={() => setPlatesFor(null)}
+          unit={unit}
+          // The next set still to lift, or failing that the last working set:
+          // the first weight on the card is usually the warm-up, which nobody
+          // needs a calculator for.
+          initialKg={
+            platesFor?.kg ??
+            platesFor?.exercise.sets.find((set) => !set.done && set.weightKg)?.weightKg ??
+            platesFor?.exercise.sets.findLast((set) => set.kind !== 'warmup' && set.weightKg)
+              ?.weightKg ??
+            platesFor?.exercise.sets.find((set) => set.weightKg)?.weightKg ??
+            null
+          }
+        />
+      </View>
+    </FieldOrderProvider>
   )
 }

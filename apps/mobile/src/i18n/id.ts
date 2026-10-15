@@ -1855,6 +1855,9 @@ export const id = {
       removeSet: 'Hapus set',
       restOff: 'Istirahat nonaktif',
       rest: 'Istirahat {{time}}',
+      next: 'Lanjut',
+      plates: 'Pelat',
+      timeStep: '15 dtk',
       exerciseNotes: 'Tambah catatan',
       kind: {
         normal: 'Set utama',

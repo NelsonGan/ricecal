@@ -43,12 +43,12 @@ import {
   Badge,
   Button,
   Card,
-  Chip,
   Divider,
   EmptyState,
   Icon,
   IconButton,
   Screen,
+  SegmentedControl,
   Skeleton,
   Tappable,
   Text,
@@ -331,13 +331,14 @@ function Progress({
 
   return (
     <Card contentClassName="gap-3">
-      <View className="flex-row flex-wrap gap-2">
-        {metrics.map((value) => (
-          <Chip key={value} selected={metric === value} onPress={() => setMetric(value)}>
-            {t(METRIC_KEY[value])}
-          </Chip>
-        ))}
-      </View>
+      {metrics.length > 1 ? (
+        <SegmentedControl
+          options={metrics.map((value) => ({ value, label: t(METRIC_KEY[value]) }))}
+          value={metric}
+          onChange={setMetric}
+          accessibilityLabel={t('workouts:exercise.history')}
+        />
+      ) : null}
       {latest !== null ? (
         <Text variant="displayMd">
           {formatMetric(latest, metric, unit, distanceUnit, t(UNIT_KEY[unit]), exercise.tracking)}

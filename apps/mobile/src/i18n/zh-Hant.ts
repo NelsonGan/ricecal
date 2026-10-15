@@ -1826,6 +1826,9 @@ export const zhHant = {
       removeSet: '刪除這組',
       restOff: '休息：關',
       rest: '休息 {{time}}',
+      next: '下一個',
+      plates: '槓片',
+      timeStep: '15 秒',
       exerciseNotes: '新增備註',
       kind: {
         normal: '正式組',

@@ -28,6 +28,8 @@ export type ExerciseCardProps = {
   onChangeSet: (setId: string, patch: SetPatch) => void
   onToggleSet: (set: LiveSet, fill: SetPatch | undefined) => void
   onSetMenu: (set: LiveSet, number: number) => void
+  /** The plate calculator from a weight field's pad. A barbell exercise offers it. */
+  onPlates?: (kg: number | null) => void
   onAddSet: () => void
   onNotes: (notes: string) => void
   onMenu: () => void
@@ -52,6 +54,7 @@ export function ExerciseCard({
   onChangeSet,
   onToggleSet,
   onSetMenu,
+  onPlates,
   onAddSet,
   onNotes,
   onMenu,
@@ -141,6 +144,8 @@ export function ExerciseCard({
       ) : null}
 
       <SetTable
+        exerciseKey={exercise.key}
+        exerciseName={exercise.name}
         tracking={exercise.tracking}
         sets={exercise.sets}
         previous={previous}
@@ -151,6 +156,7 @@ export function ExerciseCard({
         onChange={onChangeSet}
         onToggle={onToggleSet}
         onSetMenu={onSetMenu}
+        onPlates={onPlates}
       />
 
       <Tappable

@@ -157,6 +157,12 @@ export const workouts = {
     removeSet: 'Remove set',
     restOff: 'Rest off',
     rest: 'Rest {{time}}',
+    /** The pad's key that moves to the next field: weight, reps, then the next set. */
+    next: 'Next',
+    /** The plate calculator, from the pad on a barbell's weight. Short: it is a chip. */
+    plates: 'Plates',
+    /** What the pad's time keys step by, read as "+15 s" and "−15 s". */
+    timeStep: '15 s',
     exerciseNotes: 'Add a note',
     /** A set's type, as the menu offers it. */
     kind: {

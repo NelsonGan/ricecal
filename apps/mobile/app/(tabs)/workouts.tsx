@@ -151,17 +151,13 @@ export default function WorkoutsScreen() {
       </View>
 
       {routines.isPending ? (
-        <View className="flex-row gap-2.5">
-          <Skeleton className="h-[200px] flex-1 rounded-card" />
-          <Skeleton className="h-[200px] flex-1 rounded-card" />
-        </View>
+        <Skeleton className="h-[78px] w-full rounded-card" />
       ) : routines.data?.length ? (
-        <View className="flex-row flex-wrap gap-2.5">
+        <View className="gap-stack">
           {routines.data.map((routine) => (
             <RoutineCard
               key={routine.id}
               routine={routine}
-              className="w-[48.4%]"
               onOpen={() =>
                 router.push({ pathname: '/workout/routine/[id]', params: { id: routine.id } })
               }

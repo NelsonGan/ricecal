@@ -21,6 +21,7 @@ import {
   groupSplit,
   MuscleSplitBars,
   plansToRoutine,
+  RowChevron,
   removeWorkoutFromHealth,
   SET_BADGE_KEY,
   showsVolume,
@@ -328,7 +329,7 @@ function EntryCard({
             </Text>
           ) : null}
         </View>
-        <Icon set="ui" name="chevron-right" size={18} />
+        <RowChevron />
       </Tappable>
       <View>
         {entry.sets.map((set, index) => {
