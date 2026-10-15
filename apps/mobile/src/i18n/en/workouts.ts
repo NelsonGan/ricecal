@@ -192,10 +192,6 @@ export const workouts = {
     restTitle: 'Rest timer',
     restDefault: 'Use default ({{time}})',
     pr: 'New record',
-    prWeight: 'Heaviest weight',
-    prE1rm: 'Best estimated 1RM',
-    prVolume: 'Best set volume',
-    prReps: 'Most reps',
     noNumbers: 'Fill in the set first',
     /** A plain row in PREVIOUS where there is nothing to compare against. */
     noPrevious: '—',

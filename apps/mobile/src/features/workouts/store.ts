@@ -1,7 +1,5 @@
-import { useSyncExternalStore } from 'react'
-import { createMMKV } from 'react-native-mmkv'
-
 import { forgetOutbox } from '@/data/workout-outbox'
+import { createJsonStore } from '@/lib/jsonStore'
 import { type Action, apply, type LiveWorkout } from './model'
 
 /**
@@ -23,71 +21,21 @@ import { type Action, apply, type LiveWorkout } from './model'
  * session waiting for them.
  */
 
-const storage = createMMKV({ id: 'ricecal-workout' })
+const store = createJsonStore<LiveWorkout | null>('ricecal-workout', (stored) =>
+  stored && typeof stored === 'object' ? (stored as LiveWorkout) : null,
+)
 const activeKey = (userId: string) => `active:${userId}`
-
-type Listener = () => void
-const listeners = new Map<string, Set<Listener>>()
-
-function subscribe(key: string, listener: Listener): () => void {
-  let set = listeners.get(key)
-  if (!set) {
-    set = new Set()
-    listeners.set(key, set)
-  }
-  set.add(listener)
-  return () => {
-    set?.delete(listener)
-  }
-}
-
-function emit(key: string): void {
-  for (const listener of listeners.get(key) ?? []) listener()
-}
-
-/**
- * Parsed values cached by key, so `useSyncExternalStore` gets the same object
- * back until something is written. Parsing on every read would hand React a
- * new object each render and loop it forever.
- */
-const cache = new Map<string, { raw: string | undefined; value: unknown }>()
-
-function read<T>(key: string, fallback: T): T {
-  const raw = storage.getString(key)
-  const hit = cache.get(key)
-  if (hit && hit.raw === raw) return hit.value as T
-  let value: T = fallback
-  if (raw) {
-    try {
-      value = JSON.parse(raw) as T
-    } catch {
-      value = fallback
-    }
-  }
-  cache.set(key, { raw, value })
-  return value
-}
-
-function write(key: string, value: unknown): void {
-  if (value === null || value === undefined) storage.remove(key)
-  else storage.set(key, JSON.stringify(value))
-  emit(key)
-}
 
 // ---------------------------------------------------------------------------
 // The workout in progress.
 // ---------------------------------------------------------------------------
 
 export function getActiveWorkout(userId: string): LiveWorkout | null {
-  return read<LiveWorkout | null>(activeKey(userId), null)
+  return store.get(activeKey(userId))
 }
 
 export function useActiveWorkout(userId: string | null | undefined): LiveWorkout | null {
-  const key = activeKey(userId ?? '')
-  return useSyncExternalStore(
-    (listener) => subscribe(key, listener),
-    () => (userId ? getActiveWorkout(userId) : null),
-  )
+  return store.useValue(activeKey(userId ?? ''), (workout) => (userId ? workout : null))
 }
 
 /**
@@ -96,32 +44,24 @@ export function useActiveWorkout(userId: string | null | undefined): LiveWorkout
  * read the document itself.
  */
 export function useHasActiveWorkout(userId: string | null | undefined): boolean {
-  const key = activeKey(userId ?? '')
-  return useSyncExternalStore(
-    (listener) => subscribe(key, listener),
-    () => (userId ? getActiveWorkout(userId) !== null : false),
-  )
+  return store.useValue(activeKey(userId ?? ''), (workout) => Boolean(userId) && workout !== null)
 }
 
+/** Starts a workout, or replaces the whole document for the moves that are not one action. */
 export function startActiveWorkout(userId: string, workout: LiveWorkout): void {
-  write(activeKey(userId), workout)
+  store.set(activeKey(userId), workout)
 }
 
 export function dispatchWorkout(userId: string, action: Action): LiveWorkout | null {
   const current = getActiveWorkout(userId)
   if (!current) return null
   const next = apply(current, action)
-  write(activeKey(userId), next)
+  store.set(activeKey(userId), next)
   return next
 }
 
-/** Replace the whole document, for the moves that are not one action. */
-export function replaceActiveWorkout(userId: string, workout: LiveWorkout): void {
-  write(activeKey(userId), workout)
-}
-
 export function clearActiveWorkout(userId: string): void {
-  write(activeKey(userId), null)
+  store.set(activeKey(userId), null)
 }
 
 /** Everything of one account's training kept on this phone, for deleting the account. */

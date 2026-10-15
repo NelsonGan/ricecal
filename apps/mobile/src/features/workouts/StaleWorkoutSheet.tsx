@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { datePattern } from '@/lib/dates'
 import { ActionSheet, type SheetAction } from './ActionSheet'
-import { hoursMinutes } from './format'
+import { durationText } from './format'
 import { useLiveWorkout } from './live'
 import { lastActivityAt } from './model'
 import { discardWorkout } from './start'
@@ -34,11 +34,7 @@ export function StaleWorkoutSheet({
   if (!workout) return null
 
   const last = lastActivityAt(workout)
-  const running = hoursMinutes((Date.now() - workout.startedAt) / 1000)
-  const runningText =
-    running.hours > 0
-      ? t('workouts:duration.hoursMinutes', running)
-      : t('workouts:duration.minutes', { minutes: running.minutes })
+  const runningText = durationText(t, (Date.now() - workout.startedAt) / 1000)
 
   const actions: SheetAction[] = []
   if (last) {

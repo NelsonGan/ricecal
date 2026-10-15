@@ -636,7 +636,7 @@ export function eachDay(from: LocalDate, to: LocalDate): LocalDate[] {
 // ---------------------------------------------------------------------------
 
 /** Marks a workout (and its energy) as RiceCal's own, so the sync can skip it. */
-export const RICECAL_WORKOUT_KEY = 'RiceCalWorkoutId'
+const RICECAL_WORKOUT_KEY = 'RiceCalWorkoutId'
 
 const DISTANCE = {
   onFoot: 'HKQuantityTypeIdentifierDistanceWalkingRunning',
@@ -686,7 +686,7 @@ export async function requestWorkoutWrite(): Promise<boolean> {
   }
 }
 
-export function canWriteWorkouts(): boolean {
+function canWriteWorkouts(): boolean {
   const hk = load()
   return hk ? mayWrite(hk, WORKOUT_TYPE) : false
 }

@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react'
 import { type TextInput, type TextInputProps, View } from 'react-native'
 import Animated, {
@@ -141,6 +142,22 @@ type NumpadValue = {
 const NumpadContext = createContext<NumpadValue | null>(null)
 
 /**
+ * The half of the pad a field needs, which never changes identity. A field
+ * only has to know whether it is the one being edited, so it subscribes to
+ * that one boolean rather than to `NumpadValue`, which changes on every open,
+ * close and Next: through the value, every set row in a workout re-rendered
+ * each time the pad moved between two of them.
+ */
+type NumpadActions = Pick<NumpadValue, 'open' | 'close' | 'dismiss'> & {
+  current: () => Session | null
+  subscribe: (listener: () => void) => () => void
+}
+
+const ActionsContext = createContext<NumpadActions | null>(null)
+
+const noSubscription = () => () => {}
+
+/**
  * Which host is nearest above a field.
  *
  * A `Sheet` is a native modal window and nothing in the app's tree draws over
@@ -218,39 +235,69 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
   }, [session, height, offset])
 
   /**
-   * The open session, readable outside a render. `dismiss` blurs the field with
-   * it, which from inside a state updater would be a side effect in a function
-   * React is free to call twice.
+   * The open session, the source of truth: `session` is its copy for rendering.
+   * Readable outside a render, which `dismiss` needs to blur the field (from a
+   * state updater that would be a side effect React is free to run twice), and
+   * which lets a field ask "is it me?" without rendering on every change.
    */
   const current = useRef<Session | null>(null)
-  current.current = session
+  const listeners = useRef(new Set<() => void>())
 
-  const open = useCallback((next: Session) => setSession(next), [])
-  // Identity-checked, because blur arrives AFTER the next field's focus when a
-  // tap moves from one field to another. Closing unconditionally would take the
-  // pad down on the field that had just opened it.
-  const close = useCallback(
-    (which: Session) => setSession((open) => (open === which ? null : open)),
-    [],
-  )
-  const dismiss = useCallback(() => {
-    // Nothing open is the common case: `Screen` calls this on every scroll that
-    // starts, and almost none have a pad up. Without the guard, every drag in
-    // the app pushes a state update through the provider above the whole tree.
-    if (!current.current) return
-    // Blur first: the field's own `onBlur` is what commits the number, and
-    // every caller hangs its commit there rather than on a key. Closing without
-    // it would take the pad away and leave the value uncommitted.
-    current.current.blur()
-    setSession(null)
+  const actions = useMemo<NumpadActions>(() => {
+    const set = (next: Session | null) => {
+      current.current = next
+      setSession(next)
+      for (const listener of listeners.current) listener()
+    }
+    return {
+      current: () => current.current,
+      subscribe: (listener) => {
+        listeners.current.add(listener)
+        return () => {
+          listeners.current.delete(listener)
+        }
+      },
+      open: set,
+      // Identity-checked, because blur arrives AFTER the next field's focus when
+      // a tap moves from one field to another. Closing unconditionally would
+      // take the pad down on the field that had just opened it.
+      close: (which) => {
+        if (current.current === which) set(null)
+      },
+      dismiss: () => {
+        // Nothing open is the common case: `Screen` calls this on every scroll
+        // that starts, and almost none have a pad up. Without the guard, every
+        // drag in the app pushes a state update through the provider above the
+        // whole tree.
+        if (!current.current) return
+        // Blur first: the field's own `onBlur` is what commits the number, and
+        // every caller hangs its commit there rather than on a key. Closing
+        // without it would take the pad away and leave the value uncommitted.
+        current.current.blur()
+        set(null)
+      },
+    }
   }, [])
 
   const value = useMemo<NumpadValue>(
-    () => ({ session, shown, height, offset, labels, open, close, dismiss }),
-    [session, shown, height, offset, labels, open, close, dismiss],
+    () => ({
+      session,
+      shown,
+      height,
+      offset,
+      labels,
+      open: actions.open,
+      close: actions.close,
+      dismiss: actions.dismiss,
+    }),
+    [session, shown, height, offset, labels, actions],
   )
 
-  return <NumpadContext.Provider value={value}>{children}</NumpadContext.Provider>
+  return (
+    <ActionsContext.Provider value={actions}>
+      <NumpadContext.Provider value={value}>{children}</NumpadContext.Provider>
+    </ActionsContext.Provider>
+  )
 }
 
 export type NumpadFieldOptions = {
@@ -306,7 +353,7 @@ export function useNumpadField({
   enabled = true,
   returnKeyType,
 }: NumpadFieldOptions) {
-  const context = useNumpad()
+  const actions = useContext(ActionsContext)
   const hostId = useContext(HostContext)
   const input = useRef<TextInput>(null)
 
@@ -335,7 +382,7 @@ export function useNumpadField({
   }
   session.current.hostId = hostId
 
-  const live = enabled && Boolean(context) && hostId !== ''
+  const live = enabled && Boolean(actions) && hostId !== ''
 
   /**
    * A field that wanted the pad and could not find a host to draw it.
@@ -349,21 +396,15 @@ export function useNumpadField({
    * keyboard, and crashing a screen over a layout mistake is worse.
    */
   useEffect(() => {
-    if (!__DEV__ || !enabled || !context || hostId !== '') return
+    if (!__DEV__ || !enabled || !actions || hostId !== '') return
     console.warn(
       'useNumpadField: no <NumpadHost> above this field, so it is on the system keyboard. ' +
         'Render it inside a Screen or a Sheet rather than in the component that returns one.',
     )
-  }, [enabled, context, hostId])
+  }, [enabled, actions, hostId])
 
-  /**
-   * The two handlers, pulled out of the context value. They are stable where the
-   * object is not, since its identity changes on every open, close and keystroke.
-   * Depending on the object made the unmount guard re-run on the render that
-   * opened the pad, and its cleanup closes: the pad vanished inside one frame.
-   */
-  const openPad = context?.open
-  const closePad = context?.close
+  const openPad = actions?.open
+  const closePad = actions?.close
 
   // A field can be unmounted mid-edit — the totals card swaps its input back
   // for a heading the moment `editing` clears — and an unmount fires no blur.
@@ -384,7 +425,10 @@ export function useNumpadField({
     onBlur?.()
   }, [closePad, onBlur])
 
-  const active = live && context?.session === session.current
+  const active = useSyncExternalStore(
+    actions?.subscribe ?? noSubscription,
+    () => live && actions?.current() === session.current,
+  )
 
   return {
     ref: input,

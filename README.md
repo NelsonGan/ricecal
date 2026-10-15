@@ -3795,6 +3795,16 @@ workout's totals, Postgres scored every set the user owned once per row, which
 at a couple of years of training reaches the statement timeout. Totals read
 the values view; records are scored once and grouped.
 
+**The running best runs over workouts, not sets.** `workout_set_details` takes
+each workout's best per exercise first, then a running max over the earlier
+ones. The first version ran it over the sets with `exclude group` to leave out
+the set's own workout, and a frame with an exclusion cannot carry its result
+from one row to the next, so Postgres recomputed every prior best from scratch
+for every set. That made the work quadratic: three years at four sessions a week
+(15,000 sets) took 3 s to open one workout and 3 s for the first page of
+history. Grouped first, they take 15 ms and 80 ms, with the same flags on every
+set. `exercise_bests` is grouped the same way for the same reason.
+
 - **Estimated 1RM** is Epley, `weight × (1 + reps / 30)`, over 1 to 15 reps of
   a weight-and-reps set. Past fifteen the formula means nothing.
 - **A set is a record** when it beats the best of every earlier workout *and* is

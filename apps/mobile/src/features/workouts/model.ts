@@ -1,3 +1,4 @@
+import { dateKey } from '@/data/client'
 import type { WorkoutDocument } from '@/data/workout-outbox'
 import type { Tracking } from './catalogue'
 
@@ -107,6 +108,16 @@ export type SetPlan = {
   distanceM?: number | null
 }
 
+function setFromPlan(set: SetPlan): LiveSet {
+  return {
+    ...emptySet(set.kind ?? 'normal'),
+    weightKg: set.weightKg ?? null,
+    reps: set.reps ?? null,
+    durationS: set.durationS ?? null,
+    distanceM: set.distanceM ?? null,
+  }
+}
+
 export type ExercisePlan = {
   exerciseId: string
   name: string
@@ -127,13 +138,7 @@ export function exerciseFromPlan(plan: ExercisePlan): LiveExercise {
     restS: plan.restS ?? null,
     superset: plan.superset ?? null,
     notes: plan.notes ?? '',
-    sets: sets.map((set) => ({
-      ...emptySet(set.kind ?? 'normal'),
-      weightKg: set.weightKg ?? null,
-      reps: set.reps ?? null,
-      durationS: set.durationS ?? null,
-      distanceM: set.distanceM ?? null,
-    })),
+    sets: sets.map(setFromPlan),
   }
 }
 
@@ -270,13 +275,7 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
       })
     case 'addSets':
       return mapExercise(workout, action.key, (exercise) => {
-        const added = action.sets.map((set) => ({
-          ...emptySet(set.kind ?? 'normal'),
-          weightKg: set.weightKg ?? null,
-          reps: set.reps ?? null,
-          durationS: set.durationS ?? null,
-          distanceM: set.distanceM ?? null,
-        }))
+        const added = action.sets.map(setFromPlan)
         return {
           ...exercise,
           sets: action.atStart ? [...added, ...exercise.sets] : [...exercise.sets, ...added],
@@ -342,10 +341,6 @@ function fillBlanks(set: LiveSet, fill: SetPatch | undefined): SetPatch {
 }
 
 /**
- * Links two exercises into one superset, or unlinks one when `withKey` is null.
- * Joining an exercise to one already in a group joins the group.
- */
-/**
  * A superset of one is not a superset. Removing a partner, or moving one into
  * another group, used to leave the other alone under the bracket, and saved
  * that way.
@@ -364,6 +359,10 @@ function tidySupersets(exercises: LiveExercise[]): LiveExercise[] {
   )
 }
 
+/**
+ * Links two exercises into one superset, or unlinks one when `withKey` is null.
+ * Joining an exercise to one already in a group joins the group.
+ */
 function linkSuperset(workout: LiveWorkout, key: string, withKey: string | null): LiveWorkout {
   if (withKey === null) {
     return mapExercise(workout, key, (exercise) => ({ ...exercise, superset: null }))
@@ -544,17 +543,6 @@ export function doneSets(workout: LiveWorkout): number {
 // Saving.
 // ---------------------------------------------------------------------------
 
-/** The document `save_workout` takes. Defined beside the outbox that holds it. */
-export type WorkoutPayload = WorkoutDocument
-
-/** `yyyy-MM-dd` in the phone's own zone, for the day the workout started on. */
-function localDate(ms: number): string {
-  const date = new Date(ms)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${date.getFullYear()}-${month}-${day}`
-}
-
 const round = (value: number | null, places: number) =>
   value === null ? null : Math.round(value * 10 ** places) / 10 ** places
 
@@ -579,14 +567,15 @@ export function toPayload(
   workout: LiveWorkout,
   endedAt: number,
   extra: { kcal: number | null; healthWorkoutId: string | null },
-): WorkoutPayload {
+): WorkoutDocument {
   return {
     id: workout.id,
     name: clip(workout.name.trim(), 80) || 'Workout',
     notes: clip(workout.notes.trim(), 2000) || null,
     started_at: new Date(workout.startedAt).toISOString(),
     ended_at: new Date(Math.max(endedAt, workout.startedAt)).toISOString(),
-    log_date: localDate(workout.startedAt),
+    // The day it started on, in the phone's own zone.
+    log_date: dateKey(new Date(workout.startedAt)),
     routine_id: workout.routineId,
     kcal: within(extra.kcal === null ? null : Math.round(extra.kcal), 0, 10000),
     health_workout_id: extra.healthWorkoutId,

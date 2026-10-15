@@ -32,14 +32,14 @@ export type LibraryExercise = {
   equipment: Equipment
   level: Level
   muscles: MuscleSplit
-  met?: number
   aliases?: string[]
   custom: boolean
 }
 
-const asCategory = (value: string): Category =>
+/** A stored category or equipment, or the fallback for one this version does not know. */
+export const asCategory = (value: string): Category =>
   (CATEGORIES as readonly string[]).includes(value) ? (value as Category) : 'fullBody'
-const asEquipment = (value: string): Equipment =>
+export const asEquipment = (value: string): Equipment =>
   (EQUIPMENT as readonly string[]).includes(value) ? (value as Equipment) : 'other'
 
 /** Only the muscles the app knows, with shares that add up to one. */

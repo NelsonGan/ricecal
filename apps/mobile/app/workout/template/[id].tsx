@@ -14,9 +14,10 @@ import {
   templatePlans,
   templateRoutine,
   useWorkoutStarter,
+  WorkoutMissing,
 } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
-import { AppBar, Badge, Button, Card, Divider, EmptyState, Screen, Text, useToast } from '@/ui'
+import { AppBar, Badge, Button, Card, Divider, Screen, Text, useToast } from '@/ui'
 
 /**
  * One built-in template: its exercises and sets, and the two things to do with
@@ -33,16 +34,7 @@ export default function TemplateScreen() {
   const save = useSaveRoutine()
   const starter = useWorkoutStarter()
 
-  if (!template) {
-    return (
-      <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
-        <EmptyState
-          title={t('workouts:detail.missing')}
-          icon={{ set: 'system', name: 'guide-book' }}
-        />
-      </Screen>
-    )
-  }
+  if (!template) return <WorkoutMissing icon={{ set: 'system', name: 'guide-book' }} />
 
   const name = t(templateNameKey(template.id))
   const existing = routines.find((routine) => routine.templateId === template.id)

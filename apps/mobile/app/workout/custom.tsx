@@ -11,6 +11,8 @@ import {
   useSaveCustomExercise,
 } from '@/data'
 import {
+  asCategory,
+  asEquipment,
   CATEGORIES,
   CATEGORY_KEY,
   type Category,
@@ -83,9 +85,11 @@ function Form({
 
   const [name, setName] = useState(existing?.name ?? initialName)
   const [tracking, setTracking] = useState<Tracking>(existing?.tracking ?? 'weight_reps')
-  const [category, setCategory] = useState<Category>((existing?.category as Category) ?? 'fullBody')
+  const [category, setCategory] = useState<Category>(
+    existing ? asCategory(existing.category) : 'fullBody',
+  )
   const [equipment, setEquipment] = useState<Equipment>(
-    (existing?.equipment as Equipment) ?? 'other',
+    existing ? asEquipment(existing.equipment) : 'other',
   )
   const [muscles, setMuscles] = useState<Muscle[]>(
     existing ? rankedMuscles(existing.muscles).map((entry) => entry.muscle) : [],

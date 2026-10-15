@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
@@ -7,7 +7,7 @@ import { fromKg, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn, Icon, type NumpadTools, Tappable, Text, useNumpadField } from '@/ui'
 import type { Tracking } from './catalogue'
-import { SET_BADGE_KEY } from './copy'
+import { setBadges } from './copy'
 import { fieldKey, useFieldOrder } from './fieldOrder'
 import {
   type DistanceUnit,
@@ -36,6 +36,23 @@ import { fieldsFor, type LiveSet, type SetPatch } from './model'
  * set in a gym is "the same as last time", and it should cost one tap.
  */
 
+/**
+ * What a card and its rows call back with. One object for the whole editor,
+ * keyed by exercise and set rather than closed over them, so it never changes
+ * and a memoised row skips the render when nothing of its own did.
+ */
+export type CardHandlers = {
+  changeSet: (key: string, setId: string, patch: SetPatch) => void
+  toggleSet: (key: string, set: LiveSet, fill: SetPatch | undefined) => void
+  setMenu: (key: string, set: LiveSet, number: number) => void
+  plates: (key: string, kg: number | null) => void
+  addSet: (key: string) => void
+  notes: (key: string, notes: string) => void
+  menu: (key: string) => void
+  rest: (key: string) => void
+  open: (exerciseId: string) => void
+}
+
 export type SetTableProps = {
   /** The exercise's key in the document, which places its fields in the Next order. */
   exerciseKey: string
@@ -52,13 +69,11 @@ export type SetTableProps = {
   distanceUnit: DistanceUnit
   /** Sets that are a personal record as things stand. */
   recordIds: ReadonlySet<string>
-  /** Off in a routine: the column of ticks is replaced by nothing. */
+  /** Off outside the live logger: the column of ticks is replaced by nothing. */
   checkable: boolean
-  onChange: (setId: string, patch: SetPatch) => void
-  onToggle: (set: LiveSet, fill: SetPatch | undefined) => void
-  onSetMenu: (set: LiveSet, number: number) => void
-  /** Opens the plate calculator on a weight. A barbell's weight fields offer it. */
-  onPlates?: (kg: number | null) => void
+  /** Whether weight fields offer the plate calculator: a barbell's do. */
+  plates: boolean
+  handlers: CardHandlers
 }
 
 const COL_SET = 'w-[34px]'
@@ -81,10 +96,8 @@ export function SetTable({
   distanceUnit,
   recordIds,
   checkable,
-  onChange,
-  onToggle,
-  onSetMenu,
-  onPlates,
+  plates,
+  handlers,
 }: SetTableProps) {
   const { t } = useTranslation(['workouts', 'common'])
   const fields = fieldsFor(tracking)
@@ -106,9 +119,7 @@ export function SetTable({
             ? 'm'
             : distanceUnit
 
-  // Working sets are numbered 1, 2, 3 and the warm-ups, drops and failures
-  // wear a letter instead, which is how every gym log writes them.
-  let working = 0
+  const badges = setBadges(sets, t)
 
   return (
     <View className="gap-1">
@@ -133,27 +144,25 @@ export function SetTable({
       </View>
 
       {sets.map((set, index) => {
-        if (set.kind !== 'warmup') working += 1
-        const number = working
-        const last = previous?.[index]
+        const badge = badges[index]
         return (
           <SetRow
             key={set.id}
             exerciseKey={exerciseKey}
             exerciseName={exerciseName}
             set={set}
-            number={number}
+            badgeLabel={badge.label}
+            badgeTone={badge.tone}
+            badgeNumber={badge.number}
             tracking={tracking}
-            last={last}
+            last={previous?.[index]}
             showPrevious={previous !== null}
             unit={unit}
             distanceUnit={distanceUnit}
             record={recordIds.has(set.id)}
             checkable={checkable}
-            onChange={(patch) => onChange(set.id, patch)}
-            onToggle={() => onToggle(set, last ? fillFrom(last) : undefined)}
-            onMenu={() => onSetMenu(set, number)}
-            onPlates={onPlates}
+            plates={plates}
+            handlers={handlers}
           />
         )
       })}
@@ -206,11 +215,18 @@ export function describeSet(
   }
 }
 
-function SetRow({
+/**
+ * One set. Memoised, with nothing but plain values and the editor's one
+ * handlers object for props, so typing into one set re-renders that row and
+ * not every row and field in the workout.
+ */
+const SetRow = memo(function SetRow({
   exerciseKey,
   exerciseName,
   set,
-  number,
+  badgeLabel: badge,
+  badgeTone,
+  badgeNumber,
   tracking,
   last,
   showPrevious,
@@ -218,15 +234,15 @@ function SetRow({
   distanceUnit,
   record,
   checkable,
-  onChange,
-  onToggle,
-  onMenu,
-  onPlates,
+  plates,
+  handlers,
 }: {
   exerciseKey: string
   exerciseName: string
   set: LiveSet
-  number: number
+  badgeLabel: string
+  badgeTone: string
+  badgeNumber: number
   tracking: Tracking
   last: LastSet | undefined
   showPrevious: boolean
@@ -234,26 +250,19 @@ function SetRow({
   distanceUnit: DistanceUnit
   record: boolean
   checkable: boolean
-  onChange: (patch: SetPatch) => void
-  onToggle: () => void
-  onMenu: () => void
-  onPlates?: (kg: number | null) => void
+  plates: boolean
+  handlers: CardHandlers
 }) {
+  const onChange = (patch: SetPatch) => handlers.changeSet(exerciseKey, set.id, patch)
+  const onToggle = () => handlers.toggleSet(exerciseKey, set, last ? fillFrom(last) : undefined)
+  const onMenu = () => handlers.setMenu(exerciseKey, set, badgeNumber)
+  const onPlates = plates ? (kg: number | null) => handlers.plates(exerciseKey, kg) : undefined
   const { t } = useTranslation(['workouts', 'common'])
   const colors = useThemeColors()
   const fields = fieldsFor(tracking)
   // Drawn as done only where a tick means something; see `checkable`.
   const ticked = checkable && set.done
   const previousText = last ? describeSet(last, tracking, unit, distanceUnit) : ''
-  const badge = set.kind === 'normal' ? String(number) : t(SET_BADGE_KEY[set.kind])
-  const badgeTone =
-    set.kind === 'warmup'
-      ? 'text-kaya-ink'
-      : set.kind === 'drop'
-        ? 'text-water-ink'
-        : set.kind === 'failure'
-          ? 'text-hibiscus-ink'
-          : 'text-ink'
 
   return (
     <View
@@ -278,12 +287,7 @@ function SetRow({
         disabled={!last || ticked}
         onPress={() => {
           if (!last) return
-          onChange({
-            weightKg: last.weightKg,
-            reps: last.reps,
-            durationS: last.durationS,
-            distanceM: last.distanceM,
-          })
+          onChange(fillFrom(last))
         }}
         accessibilityRole="button"
         accessibilityLabel={previousText || t('workouts:logger.previous')}
@@ -431,7 +435,7 @@ function SetRow({
       ) : null}
     </View>
   )
-}
+})
 
 /** How a field steps: the keys read `+label` and `−label`. */
 type CellStep = { label: string; by: (direction: 1 | -1) => void }
@@ -461,7 +465,11 @@ function useCellTools(
     },
     next: order
       ? {
-          label: order.hasNext(fieldKey) ? t('workouts:logger.next') : t('common:action.done'),
+          // Read when the pad draws, not when this row last rendered: a set
+          // added below a memoised row would otherwise leave it saying Done.
+          get label() {
+            return order.hasNext(fieldKey) ? t('workouts:logger.next') : t('common:action.done')
+          },
           onPress: () => {
             if (!order.next(fieldKey)) input()?.blur()
           },

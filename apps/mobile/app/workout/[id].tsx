@@ -23,14 +23,16 @@ import {
   plansToRoutine,
   RowChevron,
   removeWorkoutFromHealth,
-  SET_BADGE_KEY,
+  Stat,
+  StatGrid,
+  setBadges,
   showsVolume,
+  toPlans,
   trim,
   useExerciseLibrary,
   useWorkoutStarter,
-  volume,
-  weightField,
-  workoutPlans,
+  volumeText,
+  weightText,
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
@@ -38,6 +40,7 @@ import { useOnline } from '@/lib/online'
 import { UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
 import {
   AppBar,
+  Badge,
   Card,
   ConfirmSheet,
   cn,
@@ -128,7 +131,7 @@ export default function WorkoutScreen() {
                     name: workout.name,
                     source: 'repeat',
                     routineId: workout.routineId,
-                    plans: workoutPlans(workout).map((plan) => ({
+                    plans: toPlans(workout.entries).map((plan) => ({
                       ...plan,
                       // Repeated as a plan: the same exercises and set counts,
                       // with last time's numbers in the PREVIOUS column rather
@@ -146,7 +149,7 @@ export default function WorkoutScreen() {
                     await saveRoutine.mutateAsync({
                       name: workout.name,
                       notes: null,
-                      exercises: plansToRoutine(workoutPlans(workout)),
+                      exercises: plansToRoutine(toPlans(workout.entries)),
                     })
                     toast.show({ title: t('workouts:detail.savedRoutine'), tone: 'success' })
                   } catch {
@@ -223,28 +226,29 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
         <Text variant="meta">
           {format(started, `${datePattern('weekdayDayMonth')}, ${datePattern('time')}`)}
         </Text>
-        <View className="flex-row flex-wrap gap-y-3">
-          <Figure
-            label={t('workouts:logger.duration')}
-            value={durationText(t, workout.durationS)}
-          />
+        <StatGrid>
+          <Stat label={t('workouts:logger.duration')} value={durationText(t, workout.durationS)} />
           {showsVolume(workout.entries.map((entry) => entry.tracking)) ? (
-            <Figure
+            <Stat
               label={t('workouts:logger.volume')}
-              value={`${volume(workout.volumeKg, unit)} ${t(UNIT_KEY[unit])}`}
+              value={volumeText(t, workout.volumeKg, unit)}
             />
           ) : null}
-          <Figure label={t('workouts:logger.sets')} value={String(workout.setCount)} />
+          <Stat label={t('workouts:logger.sets')} value={String(workout.setCount)} />
           {workout.prCount > 0 ? (
-            <Figure label={t('workouts:detail.records')} value={String(workout.prCount)} trophy />
+            <Stat
+              label={t('workouts:detail.records')}
+              value={String(workout.prCount)}
+              icon={{ set: 'system', name: 'trophy' }}
+            />
           ) : null}
           {workout.kcal ? (
-            <Figure
+            <Stat
               label={t('workouts:detail.kcalLabel')}
               value={t('workouts:detail.kcal', { value: workout.kcal })}
             />
           ) : null}
-        </View>
+        </StatGrid>
         {workout.kcal ? <Text variant="caption">{t('workouts:detail.estimate')}</Text> : null}
         {workout.healthWorkoutId ? (
           <View className="flex-row items-center gap-2">
@@ -268,7 +272,7 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
         <EntryCard
           key={entry.id}
           entry={entry}
-          category={library.byId(entry.exerciseId)?.category ?? 'fullBody'}
+          category={library.byId(entry.exerciseId)?.category}
           unit={unit}
           distanceUnit={distanceUnit}
           onOpen={() =>
@@ -277,20 +281,6 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
         />
       ))}
     </>
-  )
-}
-
-function Figure({ label, value, trophy }: { label: string; value: string; trophy?: boolean }) {
-  return (
-    <View className="w-1/3 gap-0.5 pr-2">
-      <Text variant="overlineSm">{label}</Text>
-      <View className="flex-row items-center gap-1">
-        {trophy ? <Icon set="system" name="trophy" size={18} /> : null}
-        <Text variant="numeric" numberOfLines={1} adjustsFontSizeToFit>
-          {value}
-        </Text>
-      </View>
-    </View>
   )
 }
 
@@ -308,7 +298,7 @@ function EntryCard({
   onOpen: () => void
 }) {
   const { t } = useTranslation(['workouts', 'common'])
-  let working = 0
+  const badges = setBadges(entry.sets, t)
 
   return (
     <Card contentClassName="gap-3 px-4 py-4">
@@ -333,23 +323,13 @@ function EntryCard({
       </Tappable>
       <View>
         {entry.sets.map((set, index) => {
-          if (set.kind !== 'warmup') working += 1
-          const badge = set.kind === 'normal' ? String(working) : t(SET_BADGE_KEY[set.kind])
+          const badge = badges[index]
           return (
             <View key={set.id}>
               {index > 0 ? <Divider /> : null}
               <View className="min-h-[40px] flex-row items-center gap-3 py-1.5">
-                <Text
-                  className={cn(
-                    'w-[24px] text-center font-display text-[16px]',
-                    set.kind === 'warmup'
-                      ? 'text-kaya-ink'
-                      : set.kind === 'normal'
-                        ? 'text-ink'
-                        : 'text-hibiscus-ink',
-                  )}
-                >
-                  {badge}
+                <Text className={cn('w-[24px] text-center font-display text-[16px]', badge.tone)}>
+                  {badge.label}
                 </Text>
                 <Text variant="bodyStrong" className="flex-1">
                   {describeSet(set, entry.tracking, unit, distanceUnit, t(UNIT_KEY[unit]))}
@@ -357,17 +337,17 @@ function EntryCard({
                 {set.e1rmKg && set.kind !== 'warmup' ? (
                   <Text variant="caption">
                     {t('workouts:detail.e1rm', {
-                      value: `${weightField(set.e1rmKg, unit)} ${t(UNIT_KEY[unit])}`,
+                      value: weightText(t, set.e1rmKg, unit),
                     })}
                   </Text>
                 ) : null}
                 {set.records.length ? (
-                  <View className="flex-row items-center gap-1 rounded-full bg-kaya-soft px-2 py-0.5">
+                  <Badge tone="kaya" size="sm" className="gap-1 self-center">
                     <Icon set="system" name="trophy" size={14} />
                     <Text variant="caption" className="text-kaya-ink">
                       {set.records.length}
                     </Text>
-                  </View>
+                  </Badge>
                 ) : null}
               </View>
             </View>

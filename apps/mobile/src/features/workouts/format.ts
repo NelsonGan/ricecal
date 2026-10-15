@@ -1,4 +1,6 @@
-import { fromKg, toKg, type WeightUnit } from '@/lib/units'
+import type { TFunction } from 'i18next'
+
+import { fromKg, toKg, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import type { Tracking } from './catalogue'
 
 /**
@@ -95,6 +97,9 @@ export function clock(seconds: number): string {
   return `${String(minutes).padStart(2, '0')}:${ss}`
 }
 
+/** The rest timer's choices, in seconds, wherever one is picked. 0 is no timer. */
+export const REST_CHOICES = [0, 30, 45, 60, 90, 120, 150, 180, 240, 300] as const
+
 /** "1:30" for a rest or a set's time: minutes and seconds, no padding on the minutes. */
 export function shortClock(seconds: number): string {
   const total = Math.max(0, Math.round(seconds))
@@ -136,4 +141,24 @@ export function digitsClock(digits: string): string {
 export function hoursMinutes(seconds: number): { hours: number; minutes: number } {
   const minutes = Math.round(Math.max(0, seconds) / 60)
   return { hours: Math.floor(minutes / 60), minutes: minutes % 60 }
+}
+
+type Words = TFunction<['workouts', 'common']>
+
+/** "1 h 12 min", "1 h", "45 min": a duration read as words rather than a clock. */
+export function durationText(t: Words, seconds: number): string {
+  const span = hoursMinutes(seconds)
+  if (span.hours > 0 && span.minutes > 0) return t('workouts:duration.hoursMinutes', span)
+  if (span.hours > 0) return t('workouts:duration.hours', span)
+  return t('workouts:duration.minutes', { minutes: span.minutes })
+}
+
+/** "8,420 kg": a volume with its unit. */
+export function volumeText(t: Words, kg: number, unit: WeightUnit): string {
+  return `${volume(kg, unit)} ${t(UNIT_KEY[unit])}`
+}
+
+/** "62.5 kg": a weight with its unit. */
+export function weightText(t: Words, kg: number | null, unit: WeightUnit): string {
+  return `${weightField(kg, unit)} ${t(UNIT_KEY[unit])}`
 }

@@ -65,7 +65,7 @@ export default function WorkoutsScreen() {
   // has mounted, so the tabs are under it. Once per launch, because the param
   // stays on the route and coming back to the tab must not push it again.
   const { resume } = useLocalSearchParams<{ resume?: string }>()
-  const running = Boolean(starter.running)
+  const running = starter.running
   useEffect(() => {
     if (!resume || resumedThisLaunch) return
     resumedThisLaunch = true

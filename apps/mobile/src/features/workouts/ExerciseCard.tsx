@@ -1,20 +1,22 @@
-import { useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
-import type { LastSet } from '@/data'
+import type { ExerciseBests, LastSet } from '@/data'
 import type { WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
-import { Card, cn, Icon, IconButton, Tappable, Text } from '@/ui'
+import { Badge, Card, cn, Icon, IconButton, Tappable, Text } from '@/ui'
 import type { Category } from './catalogue'
 import { ExerciseArt } from './ExerciseArt'
 import { type DistanceUnit, shortClock } from './format'
-import type { LiveExercise, LiveSet, SetPatch } from './model'
-import { SetTable } from './SetTable'
+import type { LiveExercise } from './model'
+import { recordSets } from './records'
+import { type CardHandlers, SetTable } from './SetTable'
 
 export type ExerciseCardProps = {
   exercise: LiveExercise
-  category: Category
+  /** The body part, for the drawing's fallback. A custom or retired exercise may have none. */
+  category: Category | undefined
   previous: readonly LastSet[] | undefined | null
   unit: WeightUnit
   distanceUnit: DistanceUnit
@@ -22,26 +24,22 @@ export type ExerciseCardProps = {
   defaultRestS: number
   /** "A", "B": the superset this exercise belongs to, if any. */
   supersetLabel: string | null
-  recordIds: ReadonlySet<string>
-  /** Off in a routine, which plans sets rather than doing them. */
+  /** The bests a tick is measured against, live; undefined anywhere else. */
+  bests: ExerciseBests | undefined
+  /** On in the live logger only: elsewhere every set with numbers in it counts. */
   checkable: boolean
-  onChangeSet: (setId: string, patch: SetPatch) => void
-  onToggleSet: (set: LiveSet, fill: SetPatch | undefined) => void
-  onSetMenu: (set: LiveSet, number: number) => void
-  /** The plate calculator from a weight field's pad. A barbell exercise offers it. */
-  onPlates?: (kg: number | null) => void
-  onAddSet: () => void
-  onNotes: (notes: string) => void
-  onMenu: () => void
-  onRest: () => void
-  onOpen: () => void
+  /** Whether weight fields offer the plate calculator: a barbell's do. */
+  plates: boolean
+  handlers: CardHandlers
 }
+
+const NO_RECORDS: ReadonlySet<string> = new Set()
 
 /**
  * One exercise in the logger: its drawing and name, a line for a note, the rest
  * timer it runs, and its sets.
  */
-export function ExerciseCard({
+export const ExerciseCard = memo(function ExerciseCard({
   exercise,
   category,
   previous,
@@ -49,41 +47,43 @@ export function ExerciseCard({
   distanceUnit,
   defaultRestS,
   supersetLabel,
-  recordIds,
+  bests,
   checkable,
-  onChangeSet,
-  onToggleSet,
-  onSetMenu,
-  onPlates,
-  onAddSet,
-  onNotes,
-  onMenu,
-  onRest,
-  onOpen,
+  plates,
+  handlers,
 }: ExerciseCardProps) {
   const { t } = useTranslation(['workouts', 'common'])
   const colors = useThemeColors()
   const [noting, setNoting] = useState(Boolean(exercise.notes))
   const restS = exercise.restS ?? defaultRestS
+  const key = exercise.key
+  const open = () => handlers.open(exercise.exerciseId)
+  // Records only while training. Editing compares a saved workout with bests
+  // that already include it, and every later one, so its trophies are the
+  // saved page's to show.
+  const recordIds = useMemo(
+    () => (checkable && bests ? new Set(recordSets(exercise, bests).keys()) : NO_RECORDS),
+    [checkable, exercise, bests],
+  )
 
   return (
     <Card contentClassName="gap-3 px-4 py-4">
       {supersetLabel ? (
-        <View className="flex-row items-center gap-1.5 self-start rounded-full bg-water-soft px-2.5 py-1">
+        <Badge tone="water" size="sm">
           <Icon set="ui" name="link" size={14} />
           <Text variant="caption" className="text-water-ink">
             {t('workouts:logger.superset')} {supersetLabel}
           </Text>
-        </View>
+        </Badge>
       ) : null}
 
       <View className="flex-row items-center gap-3">
-        <Tappable onPress={onOpen} accessibilityRole="button" accessibilityLabel={exercise.name}>
+        <Tappable onPress={open} accessibilityRole="button" accessibilityLabel={exercise.name}>
           <ExerciseArt exerciseId={exercise.exerciseId} category={category} size={56} />
         </Tappable>
         <Tappable
           className="min-w-0 flex-1 gap-1.5"
-          onPress={onOpen}
+          onPress={open}
           accessibilityRole="button"
           accessibilityLabel={exercise.name}
         >
@@ -93,7 +93,7 @@ export function ExerciseCard({
           <View className="flex-row flex-wrap items-center gap-2">
             <Tappable
               className="flex-row items-center gap-1 rounded-full bg-kaya-soft px-2.5 py-1"
-              onPress={onRest}
+              onPress={() => handlers.rest(key)}
               accessibilityRole="button"
               accessibilityLabel={t('workouts:logger.restTitle')}
             >
@@ -118,7 +118,7 @@ export function ExerciseCard({
           </View>
         </Tappable>
         <IconButton
-          onPress={onMenu}
+          onPress={() => handlers.menu(key)}
           accessibilityLabel={t('common:action.edit')}
           variant="ghost"
           size="sm"
@@ -130,7 +130,7 @@ export function ExerciseCard({
       {noting ? (
         <TextInput
           value={exercise.notes}
-          onChangeText={onNotes}
+          onChangeText={(notes) => handlers.notes(key, notes)}
           placeholder={t('workouts:logger.exerciseNotes')}
           placeholderTextColor={colors.faint}
           multiline
@@ -153,17 +153,15 @@ export function ExerciseCard({
         distanceUnit={distanceUnit}
         recordIds={recordIds}
         checkable={checkable}
-        onChange={onChangeSet}
-        onToggle={onToggleSet}
-        onSetMenu={onSetMenu}
-        onPlates={onPlates}
+        plates={plates}
+        handlers={handlers}
       />
 
       <Tappable
         className={cn(
           'h-[44px] flex-row items-center justify-center gap-2 rounded-md bg-surface-alt',
         )}
-        onPress={onAddSet}
+        onPress={() => handlers.addSet(key)}
         accessibilityRole="button"
         accessibilityLabel={t('workouts:logger.addSet')}
       >
@@ -172,4 +170,4 @@ export function ExerciseCard({
       </Tappable>
     </Card>
   )
-}
+})

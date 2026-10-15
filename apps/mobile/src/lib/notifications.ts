@@ -331,7 +331,7 @@ export async function announceScan(title: string, body: string): Promise<void> {
  * training?" that finishing never cancelled, and it fired hours later for a
  * workout already saved.
  */
-export const WORKOUT_NOTICE = { rest: 'workout-rest', workout: 'workout-stale' } as const
+const WORKOUT_NOTICE = { rest: 'workout-rest', workout: 'workout-stale' } as const
 
 /**
  * Book a workout notice for a moment. Best effort, like the scan notice: it

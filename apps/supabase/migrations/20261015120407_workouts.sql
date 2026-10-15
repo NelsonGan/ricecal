@@ -53,10 +53,36 @@ CREATE FUNCTION public.exercise_bests (
     where v.user_id = (select auth.uid())
       and (p_exercise_id is null or v.exercise_id = p_exercise_id)
   ),
+  sessions as (
+    select s.exercise_id, s.workout_id, s.started_at, sum(s.volume_kg) as volume_kg
+    from sets s
+    group by s.exercise_id, s.workout_id, s.started_at
+  ),
   latest as (
     select distinct on (s.exercise_id) s.exercise_id, s.exercise_name, s.tracking
     from sets s
     order by s.exercise_id, s.started_at desc
+  ),
+  totals as (
+    select
+      x.exercise_id,
+      count(*)::integer as workouts,
+      max(x.started_at) as last_at,
+      max(x.volume_kg) as best_session_volume_kg
+    from sessions x
+    group by x.exercise_id
+  ),
+  figures as (
+    select
+      s.exercise_id,
+      count(*)::integer as sets,
+      max(s.volume_kg) filter (where s.kind <> 'warmup') as best_set_volume_kg,
+      max(s.reps) filter (where s.kind <> 'warmup' and s.tracking in ('reps', 'weighted_reps', 'assisted_reps')) as best_reps,
+      max(s.duration_s) filter (where s.kind <> 'warmup') as best_duration_s,
+      max(s.distance_m) filter (where s.kind <> 'warmup') as best_distance_m,
+      coalesce(sum(s.volume_kg), 0) as total_volume_kg
+    from sets s
+    group by s.exercise_id
   ),
   heaviest as (
     select distinct on (s.exercise_id) s.exercise_id, s.weight_kg, s.reps, s.started_at
@@ -69,36 +95,31 @@ CREATE FUNCTION public.exercise_bests (
     from sets s
     where s.kind <> 'warmup' and s.e1rm_kg is not null
     order by s.exercise_id, s.e1rm_kg desc, s.started_at
-  ),
-  sessions as (
-    select s.exercise_id, s.workout_id, sum(s.volume_kg) as volume_kg
-    from sets s
-    group by s.exercise_id, s.workout_id
   )
   select
     l.exercise_id,
     l.exercise_name,
     l.tracking,
-    count(distinct s.workout_id)::integer,
-    count(*)::integer,
-    max(s.started_at),
+    t.workouts,
+    f.sets,
+    t.last_at,
     h.weight_kg,
     h.reps,
     h.started_at,
     st.e1rm_kg,
     st.started_at,
-    max(s.volume_kg) filter (where s.kind <> 'warmup'),
-    (select max(x.volume_kg) from sessions x where x.exercise_id = l.exercise_id),
-    max(s.reps) filter (where s.kind <> 'warmup' and s.tracking in ('reps', 'weighted_reps', 'assisted_reps')),
-    max(s.duration_s) filter (where s.kind <> 'warmup'),
-    max(s.distance_m) filter (where s.kind <> 'warmup'),
-    coalesce(sum(s.volume_kg), 0)
+    f.best_set_volume_kg,
+    t.best_session_volume_kg,
+    f.best_reps,
+    f.best_duration_s,
+    f.best_distance_m,
+    f.total_volume_kg
   from latest l
-  join sets s on s.exercise_id = l.exercise_id
+  join totals t on t.exercise_id = l.exercise_id
+  join figures f on f.exercise_id = l.exercise_id
   left join heaviest h on h.exercise_id = l.exercise_id
   left join strongest st on st.exercise_id = l.exercise_id
-  group by l.exercise_id, l.exercise_name, l.tracking, h.weight_kg, h.reps, h.started_at, st.e1rm_kg, st.started_at
-  order by max(s.started_at) desc;
+  order by t.last_at desc;
 $function$;
 
 COMMENT ON FUNCTION public.exercise_bests(text) IS 'Personal bests per exercise (all exercises when the id is null): heaviest set, best estimated 1RM, best set and session volume, most reps, longest duration and distance. Warm-ups excluded.';
@@ -876,92 +897,86 @@ CREATE VIEW public.workout_set_values WITH (security_invoker=true) AS SELECT s.i
      JOIN public.workout_exercises e ON ((e.id = s.workout_exercise_id)))
      JOIN public.workouts w ON ((w.id = e.workout_id)));
 
-CREATE VIEW public.workout_set_details WITH (security_invoker=true) AS WITH scored AS (
-         SELECT b.id,
-            b.user_id,
-            b.workout_id,
-            b.workout_exercise_id,
+CREATE VIEW public.workout_set_details WITH (security_invoker=true) AS WITH bests AS (
+         SELECT v.user_id,
+            v.exercise_id,
+            v.workout_id,
+            v.started_at,
+            max(v.weight_kg) FILTER (WHERE v.weight_counts) AS weight_kg,
+            max(v.e1rm_kg) FILTER (WHERE v.counts) AS e1rm_kg,
+            max(v.volume_kg) FILTER (WHERE v.counts) AS volume_kg,
+            max(v.reps) FILTER (WHERE (v.counts AND (v.tracking = ANY (ARRAY['reps'::public.exercise_tracking, 'weighted_reps'::public.exercise_tracking, 'assisted_reps'::public.exercise_tracking])))) AS reps,
+            max(v.duration_s) FILTER (WHERE (v.counts AND (v.tracking = ANY (ARRAY['duration'::public.exercise_tracking, 'distance_duration'::public.exercise_tracking])))) AS duration_s,
+            max(v.distance_m) FILTER (WHERE (v.counts AND (v.tracking = ANY (ARRAY['distance_duration'::public.exercise_tracking, 'weight_distance'::public.exercise_tracking])))) AS distance_m
+           FROM public.workout_set_values v
+          GROUP BY v.user_id, v.exercise_id, v.workout_id, v.started_at
+        ), prior AS (
+         SELECT b.workout_id,
             b.exercise_id,
-            b.exercise_name,
-            b.tracking,
-            b.exercise_position,
-            b."position",
-            b.kind,
-            b.weight_kg,
-            b.reps,
-            b.duration_s,
-            b.distance_m,
-            b.rpe,
-            b.started_at,
-            b.log_date,
-            b.volume_kg,
-            b.e1rm_kg,
-            b.counts,
-            b.weight_counts,
-            max(
-                CASE
-                    WHEN b.weight_counts THEN b.weight_kg
-                    ELSE NULL::numeric
-                END) OVER earlier AS prior_weight,
-            max(
-                CASE
-                    WHEN b.counts THEN b.e1rm_kg
-                    ELSE NULL::numeric
-                END) OVER earlier AS prior_e1rm,
-            max(
-                CASE
-                    WHEN b.counts THEN b.volume_kg
-                    ELSE NULL::numeric
-                END) OVER earlier AS prior_volume,
-            max(
-                CASE
-                    WHEN (b.counts AND (b.tracking = ANY (ARRAY['reps'::public.exercise_tracking, 'weighted_reps'::public.exercise_tracking, 'assisted_reps'::public.exercise_tracking]))) THEN b.reps
-                    ELSE NULL::smallint
-                END) OVER earlier AS prior_reps,
-            max(
-                CASE
-                    WHEN (b.counts AND (b.tracking = ANY (ARRAY['duration'::public.exercise_tracking, 'distance_duration'::public.exercise_tracking]))) THEN b.duration_s
-                    ELSE NULL::integer
-                END) OVER earlier AS prior_duration,
-            max(
-                CASE
-                    WHEN (b.counts AND (b.tracking = ANY (ARRAY['distance_duration'::public.exercise_tracking, 'weight_distance'::public.exercise_tracking]))) THEN b.distance_m
-                    ELSE NULL::numeric
-                END) OVER earlier AS prior_distance,
-            row_number() OVER (PARTITION BY b.workout_id, b.exercise_id ORDER BY b.weight_counts DESC, b.weight_kg DESC NULLS LAST, b.reps DESC NULLS LAST, b.exercise_position, b."position") AS weight_rank,
-            row_number() OVER (PARTITION BY b.workout_id, b.exercise_id ORDER BY b.counts DESC, b.e1rm_kg DESC NULLS LAST, b.exercise_position, b."position") AS e1rm_rank,
-            row_number() OVER (PARTITION BY b.workout_id, b.exercise_id ORDER BY b.counts DESC, b.volume_kg DESC NULLS LAST, b.exercise_position, b."position") AS volume_rank,
-            row_number() OVER (PARTITION BY b.workout_id, b.exercise_id ORDER BY b.counts DESC, b.reps DESC NULLS LAST, b.exercise_position, b."position") AS reps_rank,
-            row_number() OVER (PARTITION BY b.workout_id, b.exercise_id ORDER BY b.counts DESC, b.duration_s DESC NULLS LAST, b.exercise_position, b."position") AS duration_rank,
-            row_number() OVER (PARTITION BY b.workout_id, b.exercise_id ORDER BY b.counts DESC, b.distance_m DESC NULLS LAST, b.exercise_position, b."position") AS distance_rank
-           FROM public.workout_set_values b
-          WINDOW earlier AS (PARTITION BY b.user_id, b.exercise_id ORDER BY b.started_at, b.workout_id RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE GROUP)
+            max(b.weight_kg) OVER earlier AS prior_weight,
+            max(b.e1rm_kg) OVER earlier AS prior_e1rm,
+            max(b.volume_kg) OVER earlier AS prior_volume,
+            max(b.reps) OVER earlier AS prior_reps,
+            max(b.duration_s) OVER earlier AS prior_duration,
+            max(b.distance_m) OVER earlier AS prior_distance
+           FROM bests b
+          WINDOW earlier AS (PARTITION BY b.user_id, b.exercise_id ORDER BY b.started_at, b.workout_id ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
+        ), ranked AS (
+         SELECT v.id,
+            v.user_id,
+            v.workout_id,
+            v.workout_exercise_id,
+            v.exercise_id,
+            v.exercise_name,
+            v.tracking,
+            v.exercise_position,
+            v."position",
+            v.kind,
+            v.weight_kg,
+            v.reps,
+            v.duration_s,
+            v.distance_m,
+            v.rpe,
+            v.started_at,
+            v.log_date,
+            v.volume_kg,
+            v.e1rm_kg,
+            v.counts,
+            v.weight_counts,
+            row_number() OVER (PARTITION BY v.workout_id, v.exercise_id ORDER BY v.weight_counts DESC, v.weight_kg DESC NULLS LAST, v.reps DESC NULLS LAST, v.exercise_position, v."position") AS weight_rank,
+            row_number() OVER (PARTITION BY v.workout_id, v.exercise_id ORDER BY v.counts DESC, v.e1rm_kg DESC NULLS LAST, v.exercise_position, v."position") AS e1rm_rank,
+            row_number() OVER (PARTITION BY v.workout_id, v.exercise_id ORDER BY v.counts DESC, v.volume_kg DESC NULLS LAST, v.exercise_position, v."position") AS volume_rank,
+            row_number() OVER (PARTITION BY v.workout_id, v.exercise_id ORDER BY v.counts DESC, v.reps DESC NULLS LAST, v.exercise_position, v."position") AS reps_rank,
+            row_number() OVER (PARTITION BY v.workout_id, v.exercise_id ORDER BY v.counts DESC, v.duration_s DESC NULLS LAST, v.exercise_position, v."position") AS duration_rank,
+            row_number() OVER (PARTITION BY v.workout_id, v.exercise_id ORDER BY v.counts DESC, v.distance_m DESC NULLS LAST, v.exercise_position, v."position") AS distance_rank
+           FROM public.workout_set_values v
         )
- SELECT id,
-    user_id,
-    workout_id,
-    workout_exercise_id,
-    exercise_id,
-    exercise_name,
-    tracking,
-    exercise_position,
-    "position",
-    kind,
-    weight_kg,
-    reps,
-    duration_s,
-    distance_m,
-    rpe,
-    started_at,
-    volume_kg,
-    e1rm_kg,
-    COALESCE((weight_counts AND (weight_rank = 1) AND (weight_kg > prior_weight)), false) AS is_weight_pr,
-    COALESCE((counts AND (e1rm_rank = 1) AND (e1rm_kg > prior_e1rm)), false) AS is_e1rm_pr,
-    COALESCE((counts AND (volume_rank = 1) AND (volume_kg > prior_volume)), false) AS is_volume_pr,
-    COALESCE((counts AND (reps_rank = 1) AND (tracking = ANY (ARRAY['reps'::public.exercise_tracking, 'weighted_reps'::public.exercise_tracking, 'assisted_reps'::public.exercise_tracking])) AND (reps > prior_reps)), false) AS is_reps_pr,
-    COALESCE((counts AND (duration_rank = 1) AND (tracking = ANY (ARRAY['duration'::public.exercise_tracking, 'distance_duration'::public.exercise_tracking])) AND (duration_s > prior_duration)), false) AS is_duration_pr,
-    COALESCE((counts AND (distance_rank = 1) AND (tracking = ANY (ARRAY['distance_duration'::public.exercise_tracking, 'weight_distance'::public.exercise_tracking])) AND (distance_m > prior_distance)), false) AS is_distance_pr
-   FROM scored;
+ SELECT r.id,
+    r.user_id,
+    r.workout_id,
+    r.workout_exercise_id,
+    r.exercise_id,
+    r.exercise_name,
+    r.tracking,
+    r.exercise_position,
+    r."position",
+    r.kind,
+    r.weight_kg,
+    r.reps,
+    r.duration_s,
+    r.distance_m,
+    r.rpe,
+    r.started_at,
+    r.volume_kg,
+    r.e1rm_kg,
+    COALESCE((r.weight_counts AND (r.weight_rank = 1) AND (r.weight_kg > p.prior_weight)), false) AS is_weight_pr,
+    COALESCE((r.counts AND (r.e1rm_rank = 1) AND (r.e1rm_kg > p.prior_e1rm)), false) AS is_e1rm_pr,
+    COALESCE((r.counts AND (r.volume_rank = 1) AND (r.volume_kg > p.prior_volume)), false) AS is_volume_pr,
+    COALESCE((r.counts AND (r.reps_rank = 1) AND (r.tracking = ANY (ARRAY['reps'::public.exercise_tracking, 'weighted_reps'::public.exercise_tracking, 'assisted_reps'::public.exercise_tracking])) AND (r.reps > p.prior_reps)), false) AS is_reps_pr,
+    COALESCE((r.counts AND (r.duration_rank = 1) AND (r.tracking = ANY (ARRAY['duration'::public.exercise_tracking, 'distance_duration'::public.exercise_tracking])) AND (r.duration_s > p.prior_duration)), false) AS is_duration_pr,
+    COALESCE((r.counts AND (r.distance_rank = 1) AND (r.tracking = ANY (ARRAY['distance_duration'::public.exercise_tracking, 'weight_distance'::public.exercise_tracking])) AND (r.distance_m > p.prior_distance)), false) AS is_distance_pr
+   FROM (ranked r
+     JOIN prior p ON (((p.workout_id = r.workout_id) AND (p.exercise_id = r.exercise_id))));
 
 COMMENT ON VIEW public.workout_set_details IS 'Every saved set with its volume, Epley estimated 1RM and personal-record flags. A record beats every earlier workout and is the best of its kind in its own workout; warm-ups never set one.';
 
