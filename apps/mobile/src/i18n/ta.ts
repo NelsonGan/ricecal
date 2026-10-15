@@ -730,6 +730,21 @@ export const ta = {
       send: 'இந்த உணவைப் பதிவு செய்',
     },
 
+    photoNote: {
+      title: 'கூடுதல் தகவல்',
+      placeholder: 'கோழி அல்ல, ஆட்டிறைச்சி, சர்க்கரை இல்லா டீ, பகிர்ந்தது',
+      skip: 'தவிர்',
+      log: 'உணவைப் பதிவு செய்',
+      retake: 'மீண்டும் எடு',
+      photo: 'உங்கள் புகைப்படம்',
+      suggestion: {
+        shared: 'பகிர்ந்தது',
+        half: 'பாதி சாப்பிட்டேன்',
+        lessRice: 'குறைந்த சோறு',
+        noSugar: 'சர்க்கரை இல்லை',
+      },
+    },
+
     camera: {
       permissionTitle: 'கேமரா அனுமதி தேவை',
       permissionBody: 'உங்கள் தட்டைப் படிக்க RiceCal கேமராவைப் பயன்படுத்துகிறது.',
@@ -1181,11 +1196,11 @@ export const ta = {
     personalisation: {
       title: 'தனிப்பயன்',
       mealsTitle: 'உணவு நேரங்கள்',
-      mealsNote: 'உங்கள் நினைவூட்டல்கள் ஒலிக்கும் நேரங்கள் இவை.',
       editMeal: '{{meal}} எப்போது என்பதை மாற்று',
       hour: 'மணி',
       minute: 'நிமிடம்',
       preview: '{{time}} மணிக்கு நினைவூட்டும்',
+      photoNote: 'புகைப்படத்திற்குப் பின் விவரம் கேள்',
     },
 
     reminders: {

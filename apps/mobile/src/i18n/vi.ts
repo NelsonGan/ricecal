@@ -727,6 +727,21 @@ export const vi = {
       send: 'Ghi bữa này',
     },
 
+    photoNote: {
+      title: 'Thông tin bổ sung',
+      placeholder: 'Thịt bò chứ không phải gà, trà không đường, ăn chung',
+      skip: 'Bỏ qua',
+      log: 'Ghi bữa ăn',
+      retake: 'Chụp lại',
+      photo: 'Ảnh của bạn',
+      suggestion: {
+        shared: 'Ăn chung',
+        half: 'Ăn một nửa',
+        lessRice: 'Ít cơm',
+        noSugar: 'Không đường',
+      },
+    },
+
     camera: {
       permissionTitle: 'Cần quyền truy cập máy ảnh',
       permissionBody: 'RiceCal dùng máy ảnh để đọc đĩa của bạn.',
@@ -1180,11 +1195,11 @@ export const vi = {
     personalisation: {
       title: 'Cá nhân hoá',
       mealsTitle: 'GIỜ ĂN',
-      mealsNote: 'Đây là giờ các lời nhắc của bạn reo lên.',
       editMeal: 'Đổi giờ của {{meal}}',
       hour: 'Giờ',
       minute: 'Phút',
       preview: 'Nhắc lúc {{time}}',
+      photoNote: 'Hỏi thêm chi tiết sau khi chụp',
     },
 
     reminders: {

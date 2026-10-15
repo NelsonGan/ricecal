@@ -717,6 +717,21 @@ export const hi = {
       send: 'यह भोजन दर्ज करें',
     },
 
+    photoNote: {
+      title: 'अतिरिक्त जानकारी',
+      placeholder: 'चिकन नहीं, मटन, बिना चीनी की चाय, शेयर किया',
+      skip: 'छोड़ें',
+      log: 'भोजन दर्ज करें',
+      retake: 'फिर से लें',
+      photo: 'आपकी फ़ोटो',
+      suggestion: {
+        shared: 'शेयर किया',
+        half: 'आधा खाया',
+        lessRice: 'कम चावल',
+        noSugar: 'बिना चीनी',
+      },
+    },
+
     camera: {
       permissionTitle: 'कैमरे की अनुमति चाहिए',
       permissionBody: 'RiceCal आपकी थाली पढ़ने के लिए कैमरा इस्तेमाल करता है।',
@@ -1168,11 +1183,11 @@ export const hi = {
     personalisation: {
       title: 'अपने मुताबिक़',
       mealsTitle: 'भोजन का समय',
-      mealsNote: 'ये वे समय हैं जब आपकी याद बजती है।',
       editMeal: '{{meal}} का समय बदलें',
       hour: 'घंटा',
       minute: 'मिनट',
       preview: '{{time}} पर याद दिलाएगा',
+      photoNote: 'फ़ोटो के बाद विवरण पूछें',
     },
 
     reminders: {

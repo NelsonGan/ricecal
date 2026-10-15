@@ -721,6 +721,21 @@ export const zhHans = {
       send: '记下这一餐',
     },
 
+    photoNote: {
+      title: '补充信息',
+      placeholder: '是牛肉不是鸡肉，无糖茶，和人分着吃',
+      skip: '跳过',
+      log: '记录这餐',
+      retake: '重拍',
+      photo: '你的照片',
+      suggestion: {
+        shared: '分着吃',
+        half: '吃了一半',
+        lessRice: '少饭',
+        noSugar: '无糖',
+      },
+    },
+
     camera: {
       permissionTitle: '需要相机权限',
       permissionBody: 'RiceCal 用相机来读你的这盘。',
@@ -1167,11 +1182,11 @@ export const zhHans = {
     personalisation: {
       title: '个性化',
       mealsTitle: '用餐时间',
-      mealsNote: '这些是提醒响起的时间。',
       editMeal: '更改{{meal}}的时间',
       hour: '时',
       minute: '分',
       preview: '{{time}} 提醒',
+      photoNote: '拍照后询问细节',
     },
 
     reminders: {

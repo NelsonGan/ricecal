@@ -71,6 +71,17 @@ type ScanRequest = {
    * food, and a picture is the better evidence of what is on the plate.
    */
   text?: string
+  /**
+   * What the person added about a PHOTOGRAPHED meal, typed after the shutter:
+   * "beef not chicken", "shared with my sister", "teh o kosong". Read only
+   * beside `photo_path`, and it does not make the request a typed meal: the
+   * photo is still the evidence, still spends a scan rather than needing Pro,
+   * and this fills in what a picture cannot show.
+   *
+   * Absent from every app older than this field, and absent whenever the
+   * person skipped it: both are the photo read on its own, exactly as before.
+   */
+  note?: string
   log_date: string
   /**
    * The packet this photo is meant to fill in, when the camera was opened by a
@@ -119,6 +130,10 @@ Deno.serve(async (req: Request) => {
   // Same ceiling as a refine instruction. A meal takes a sentence to describe;
   // anything past this is prose, and the model charges by the token for it.
   const description = photoPath ? '' : (body.text ?? '').trim().slice(0, 500)
+  // Shorter than a description: it qualifies a photo rather than standing in
+  // for one. A string check because this is a client-supplied field, and a
+  // number or an object in it should read as no note rather than throw.
+  const note = photoPath && typeof body.note === 'string' ? body.note.trim().slice(0, 300) : ''
   // Steering is a test affordance; outside mock mode it is ignored entirely.
   const mock = mockActive() ? body.mock : undefined
 
@@ -194,6 +209,7 @@ Deno.serve(async (req: Request) => {
   // here, and "which tier failed and why" is exactly what a bug report needs.
   const trace: string[] = []
   const wantDebug = (body as { debug?: boolean }).debug === true
+  if (note) trace.push(`[vision] photo with a note: "${note}"`)
 
   /** Read the photo out of the bucket, as base64 for the vision call. */
   const fetchPhoto = async (path: string): Promise<string> => {
@@ -217,7 +233,7 @@ Deno.serve(async (req: Request) => {
       vision = foldMealItems(
         description
           ? await describeMeal(description, mock, meter)
-          : await analysePhoto(photoBase64, mock, meter),
+          : await analysePhoto(photoBase64, mock, meter, note),
       )
     } catch (error) {
       // Anything that goes wrong here is a model failure, and a model failure
@@ -361,7 +377,7 @@ Deno.serve(async (req: Request) => {
         user_id: userId,
         scan_id: scanId,
         item_index: index,
-        described_text: description || null,
+        described_text: description || note || null,
         scene,
         specific_query: item.specific_query,
         generic_query: item.generic_query,
@@ -412,7 +428,7 @@ Deno.serve(async (req: Request) => {
         // What the user typed, when they typed it. The model's queries below
         // are its reading of this sentence, and "which phrasings does it read
         // badly" is only answerable with both halves on the row.
-        described_text: description || null,
+        described_text: description || note || null,
         scene,
         specific_query: item.specific_query,
         generic_query: item.generic_query,

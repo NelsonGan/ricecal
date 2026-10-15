@@ -2,7 +2,8 @@ import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type Meal, useMealTimes, useUpdateMealTime } from '@/data'
+import { type Meal, useMealTimes, useSettings, useUpdateMealTime, useUpdateSettings } from '@/data'
+import { ToggleRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import {
   AppBar,
@@ -35,11 +36,14 @@ const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner']
 const MINUTE_STEP = 5
 
 /**
- * Settings / personalisation: when the user's meals are.
+ * Settings / personalisation: when the user's meals are, and how the camera
+ * logs them.
  *
  * One screen, because the times belong to the person rather than to the reminders
  * that read them: the same three rows decide when a reminder fires and, on a
- * phone whose owner eats dinner at ten, what "dinner" means at all.
+ * phone whose owner eats dinner at ten, what "dinner" means at all. The camera
+ * card is here for the same reason: it is about how this person logs, not about
+ * a device or a notification.
  *
  * Editing is two steppers in a sheet rather than the platform time picker, which
  * is a drum reporting a Date that then has to be turned back into the `time` this
@@ -51,6 +55,8 @@ export default function PersonalisationScreen() {
 
   const { data: mealTimes = [], isPending } = useMealTimes()
   const updateMealTime = useUpdateMealTime()
+  const { data: settings, isPending: settingsPending } = useSettings()
+  const updateSettings = useUpdateSettings()
 
   /** The meal being retimed, if any. */
   const [editing, setEditing] = useState<Meal | null>(null)
@@ -121,9 +127,20 @@ export default function PersonalisationScreen() {
         )}
       </Card>
 
-      <Text variant="meta" className="px-1">
-        {t('profile:personalisation.mealsNote')}
-      </Text>
+      <Card contentClassName="gap-0">
+        {/* A switch shows a position whatever it is given, so it waits for the
+            row rather than claiming "on" for a beat and then flipping. */}
+        {settingsPending ? (
+          <Skeleton className="h-[56px] w-full" />
+        ) : (
+          <ToggleRow
+            title={t('profile:personalisation.photoNote')}
+            value={settings?.photo_note_prompt ?? true}
+            onValueChange={(value) => updateSettings.mutate({ photo_note_prompt: value })}
+            divider={false}
+          />
+        )}
+      </Card>
 
       <Sheet
         closeLabel={t('common:action.close')}

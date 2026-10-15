@@ -34,6 +34,12 @@ export type SnapInput = {
    * answer rather than the same dead end.
    */
   barcode?: string
+  /**
+   * What the person added after the shutter about what the photo cannot show:
+   * "beef not chicken", "shared". Empty or absent is the photo on its own, which
+   * is also what Skip sends.
+   */
+  note?: string
 }
 
 export type DescribeInput = {
@@ -78,6 +84,7 @@ async function scanMeal(input: {
   text?: string
   logDate: string
   barcode?: string
+  note?: string
 }): Promise<ScanResponse> {
   const { data, error } = await supabase.functions.invoke<ScanResponse>('scan-meal', {
     body: {
@@ -85,6 +92,9 @@ async function scanMeal(input: {
       text: input.text,
       log_date: input.logDate,
       barcode: input.barcode,
+      // Only with a photo: the server ignores it otherwise, and a typed meal
+      // already is the words.
+      note: input.photoPath && input.note ? input.note : undefined,
     },
   })
   if (error) {
@@ -139,11 +149,13 @@ function useRecogniseMeal() {
       photoUri,
       text,
       barcode,
+      note,
     }: {
       logDate: string
       photoUri?: string
       text?: string
       barcode?: string
+      note?: string
     }): string => {
       // Not a database id: this row does not exist yet. Prefixed so nothing
       // mistakes it for one and tries to update it.
@@ -161,7 +173,14 @@ function useRecogniseMeal() {
       const method = text ? 'describe' : 'camera'
       const startedAt = Date.now()
       const offset = dateOffset(logDate, today())
-      track('Meal Logged', { method, date_offset: offset })
+      track('Meal Logged', {
+        method,
+        date_offset: offset,
+        // Whether the shot carried words, never the words themselves: a note
+        // is diary content, and analytics carries none.
+        // A device with no camera has no photo, so its note is never sent.
+        ...(method === 'camera' ? { with_note: Boolean(note && photoUri) } : {}),
+      })
 
       const completed = (outcome: ScanOutcome, result?: ScanResponse) =>
         track('Meal Scan Completed', {
@@ -214,7 +233,7 @@ function useRecogniseMeal() {
             throw settled(error instanceof Error ? error : new Error('upload failed'))
           }
         }
-        return scanMeal({ photoPath: path, text, logDate, barcode })
+        return scanMeal({ photoPath: path, text, logDate, barcode, note })
       }
 
       work()

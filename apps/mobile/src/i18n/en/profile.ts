@@ -254,16 +254,16 @@ export const profile = {
   personalisation: {
     title: 'Personalisation',
     mealsTitle: 'MEAL TIMES',
-    /**
-     * What these times are for, now that they are only for one thing. They
-     * used to decide what the app assumed you were logging as well — that
-     * went with the `meal` column on an entry.
-     */
-    mealsNote: 'These are the times your reminders go off.',
     editMeal: 'Change when {{meal}} is',
     hour: 'Hour',
     minute: 'Minute',
     preview: 'Reminds at {{time}}',
+    /**
+     * The camera's follow-up question. Named for what it does to the shutter,
+     * since that is where somebody turning it off has met it, and on its own:
+     * the row needs no heading or hint to say what it switches.
+     */
+    photoNote: 'Ask for details after a photo',
   },
 
   reminders: {

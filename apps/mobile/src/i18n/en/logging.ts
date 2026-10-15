@@ -177,6 +177,29 @@ export const logging = {
     send: 'Log this meal',
   },
 
+  /**
+   * The step after the shutter: a few words about what the photo cannot show.
+   * The title only names the field; the placeholder is the instruction, like the
+   * describe box's, and it names the three things a picture is worst at: which
+   * meat, what is in the cup, and whose plate it was. The chips are added to the
+   * note, not sent on their own, so they are short phrases a person would type.
+   */
+  photoNote: {
+    title: 'Additional information',
+    placeholder: 'Beef not chicken, teh o kosong, shared',
+    skip: 'Skip',
+    log: 'Log meal',
+    retake: 'Retake',
+    /** Alt text on the photo just taken. */
+    photo: 'Your photo',
+    suggestion: {
+      shared: 'Shared',
+      half: 'Ate half',
+      lessRice: 'Less rice',
+      noSugar: 'No sugar',
+    },
+  },
+
   camera: {
     permissionTitle: 'Camera access needed',
     permissionBody: 'RiceCal uses the camera to read your plate.',

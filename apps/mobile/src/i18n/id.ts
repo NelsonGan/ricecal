@@ -738,6 +738,21 @@ export const id = {
       send: 'Catat makanan ini',
     },
 
+    photoNote: {
+      title: 'Informasi tambahan',
+      placeholder: 'Daging sapi bukan ayam, teh tawar, berbagi',
+      skip: 'Lewati',
+      log: 'Catat makanan',
+      retake: 'Foto ulang',
+      photo: 'Foto Anda',
+      suggestion: {
+        shared: 'Berbagi',
+        half: 'Makan setengah',
+        lessRice: 'Sedikit nasi',
+        noSugar: 'Tanpa gula',
+      },
+    },
+
     camera: {
       permissionTitle: 'Butuh akses kamera',
       permissionBody: 'RiceCal memakai kamera untuk membaca piringmu.',
@@ -1191,11 +1206,11 @@ export const id = {
     personalisation: {
       title: 'Personalisasi',
       mealsTitle: 'WAKTU MAKAN',
-      mealsNote: 'Ini jam pengingatmu berbunyi.',
       editMeal: 'Ubah kapan {{meal}}',
       hour: 'Jam',
       minute: 'Menit',
       preview: 'Mengingatkan pukul {{time}}',
+      photoNote: 'Tanyakan detail setelah foto',
     },
 
     reminders: {

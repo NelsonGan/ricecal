@@ -748,6 +748,21 @@ export const fil = {
       send: 'I-log ang pagkaing ito',
     },
 
+    photoNote: {
+      title: 'Karagdagang impormasyon',
+      placeholder: 'Karne ng baka, hindi manok, teh o kosong, hati kami',
+      skip: 'Laktawan',
+      log: 'I-log ang pagkain',
+      retake: 'Kumuha ulit',
+      photo: 'Ang litrato mo',
+      suggestion: {
+        shared: 'Hati kami',
+        half: 'Kalahati lang',
+        lessRice: 'Konting kanin',
+        noSugar: 'Walang asukal',
+      },
+    },
+
     camera: {
       permissionTitle: 'Kailangan ng access sa camera',
       permissionBody: 'Ginagamit ng RiceCal ang camera para basahin ang plato mo.',
@@ -1203,11 +1218,11 @@ export const fil = {
     personalisation: {
       title: 'Personalisasyon',
       mealsTitle: 'ORAS NG PAGKAIN',
-      mealsNote: 'Ito ang oras na tumutunog ang mga paalala mo.',
       editMeal: 'Baguhin kung kailan ang {{meal}}',
       hour: 'Oras',
       minute: 'Minuto',
       preview: 'Magpapaalala nang {{time}}',
+      photoNote: 'Magtanong ng detalye pagkatapos ng litrato',
     },
 
     reminders: {

@@ -723,6 +723,21 @@ export const ko = {
       send: '이 식사 기록하기',
     },
 
+    photoNote: {
+      title: '추가 정보',
+      placeholder: '닭고기 말고 소고기, 무가당 차, 나눠 먹음',
+      skip: '건너뛰기',
+      log: '식사 기록',
+      retake: '다시 찍기',
+      photo: '내 사진',
+      suggestion: {
+        shared: '나눠 먹음',
+        half: '절반 먹음',
+        lessRice: '밥 적게',
+        noSugar: '무가당',
+      },
+    },
+
     camera: {
       permissionTitle: '카메라 접근이 필요합니다',
       permissionBody: 'RiceCal은 카메라로 접시를 읽습니다.',
@@ -1174,11 +1189,11 @@ export const ko = {
     personalisation: {
       title: '개인화',
       mealsTitle: '식사 시간',
-      mealsNote: '알림이 울리는 시간입니다.',
       editMeal: '{{meal}} 시간 바꾸기',
       hour: '시',
       minute: '분',
       preview: '{{time}}에 알림',
+      photoNote: '사진 찍은 후 자세히 묻기',
     },
 
     reminders: {

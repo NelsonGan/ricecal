@@ -748,6 +748,21 @@ export const ms = {
       send: 'Rekod hidangan ini',
     },
 
+    photoNote: {
+      title: 'Maklumat tambahan',
+      placeholder: 'Daging lembu bukan ayam, teh o kosong, kongsi',
+      skip: 'Langkau',
+      log: 'Catat hidangan',
+      retake: 'Ambil semula',
+      photo: 'Foto anda',
+      suggestion: {
+        shared: 'Dikongsi',
+        half: 'Makan separuh',
+        lessRice: 'Kurang nasi',
+        noSugar: 'Tanpa gula',
+      },
+    },
+
     camera: {
       permissionTitle: 'Akses kamera diperlukan',
       permissionBody: 'RiceCal guna kamera untuk membaca pinggan anda.',
@@ -1207,11 +1222,11 @@ export const ms = {
     personalisation: {
       title: 'Pemperibadian',
       mealsTitle: 'WAKTU MAKAN',
-      mealsNote: 'Ini masa peringatan anda berbunyi.',
       editMeal: 'Tukar bila {{meal}}',
       hour: 'Jam',
       minute: 'Minit',
       preview: 'Mengingatkan pada {{time}}',
+      photoNote: 'Tanya butiran selepas foto',
     },
 
     reminders: {
