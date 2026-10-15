@@ -215,6 +215,12 @@ analyze)`, smallest table first, took the database from 420 MB to 82 MB.
 
 ## Deploying edge functions
 
+**A merge to `main` already deploys them.** The Supabase GitHub integration
+tracks `main`: it applies new migrations, then redeploys every function, within
+about a minute of the merge. Nothing in `.github/workflows` shows it. Check the
+result through the Management API (`schema_migrations`, and the versions at
+`/v1/projects/<ref>/functions`). The CLI below is for a hotfix between merges.
+
 ```sh
 export SUPABASE_ACCESS_TOKEN=$(security find-generic-password -s "Supabase CLI" -w)
 supabase functions deploy <fn> --workdir apps --project-ref <ref> --no-verify-jwt
