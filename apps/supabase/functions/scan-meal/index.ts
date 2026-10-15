@@ -57,6 +57,7 @@ import {
   foldMealItems,
   type MockSteer,
   mockActive,
+  photoNote,
   type Vision,
   type VisionItem,
 } from '../_shared/llm.ts'
@@ -80,6 +81,7 @@ type ScanRequest = {
    *
    * Absent from every app older than this field, and absent whenever the
    * person skipped it: both are the photo read on its own, exactly as before.
+   * Ignored with a `barcode`; see `photoNote`.
    */
   note?: string
   log_date: string
@@ -130,10 +132,7 @@ Deno.serve(async (req: Request) => {
   // Same ceiling as a refine instruction. A meal takes a sentence to describe;
   // anything past this is prose, and the model charges by the token for it.
   const description = photoPath ? '' : (body.text ?? '').trim().slice(0, 500)
-  // Shorter than a description: it qualifies a photo rather than standing in
-  // for one. A string check because this is a client-supplied field, and a
-  // number or an object in it should read as no note rather than throw.
-  const note = photoPath && typeof body.note === 'string' ? body.note.trim().slice(0, 300) : ''
+  const note = photoNote(body.note, photoPath, barcode)
   // Steering is a test affordance; outside mock mode it is ignored entirely.
   const mock = mockActive() ? body.mock : undefined
 
