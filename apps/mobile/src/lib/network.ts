@@ -48,13 +48,14 @@ export function failureReason(error: unknown): string {
  * been canceled" for one that fired in flight. So a check on the name alone let
  * every cancelled query through as "could not reach", and the report it filed
  * used up the host's one report for the launch. The signal is the witness that
- * works on a phone. A timeout is not a change of mind: a host that does not
- * answer in time is what the report is for.
+ * works on a phone.
+ *
+ * A caller's own time limit counts as calling it off too. `socialEntryPost`
+ * gives up after two seconds by design, and on React Native's `AbortController`
+ * that abort carries no reason to tell it apart from any other.
  */
 export function callerCancelled(error: unknown, signal?: AbortSignal | null): boolean {
-  if ((error as { name?: unknown } | null)?.name === 'AbortError') return true
-  if (!signal?.aborted) return false
-  return (signal.reason as { name?: unknown } | undefined)?.name !== 'TimeoutError'
+  return (error as { name?: unknown } | null)?.name === 'AbortError' || signal?.aborted === true
 }
 
 /**

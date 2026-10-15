@@ -164,14 +164,31 @@ describe('reportNetworkFailure', () => {
     expect(reportMessage).not.toHaveBeenCalled()
   })
 
-  // A timeout aborts the signal too, and a host that does not answer in time is
-  // exactly what this report is for.
-  it('reports a request that timed out', async () => {
-    const timeout = Object.assign(new Error('The operation timed out.'), { name: 'TimeoutError' })
+  // A caller that gives up on its own clock has made a decision, not lost the
+  // server. React Native's AbortController drops the reason, so both shapes.
+  it('stays quiet when the caller gave up on its own time limit', async () => {
+    const timeout = Object.assign(new Error('The signal timed out.'), { name: 'TimeoutError' })
     await reportNetworkFailure(
-      'https://ref.supabase.co/rest/v1/profiles',
+      'https://ref.supabase.co/rest/v1/rpc/social_entry_post',
       cancelledInFlight,
       abortedSignal(timeout),
+    )
+    await reportNetworkFailure(
+      'https://ref.supabase.co/rest/v1/rpc/social_entry_post',
+      cancelledInFlight,
+      abortedSignal(),
+    )
+
+    expect(reportMessage).not.toHaveBeenCalled()
+  })
+
+  // The signal is only evidence once it has fired. A request that failed with
+  // its signal still live is a real failure.
+  it('reports a failure whose signal never fired', async () => {
+    await reportNetworkFailure(
+      'https://ref.supabase.co/rest/v1/profiles',
+      refused,
+      new AbortController().signal,
     )
 
     expect(reportMessage).toHaveBeenCalledTimes(1)

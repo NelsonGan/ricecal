@@ -37,6 +37,11 @@ jest.mock('@supabase/supabase-js', () => ({
   },
 }))
 
+const mockReportNetworkFailure = jest.fn(async () => {})
+jest.mock('../network', () => ({
+  reportNetworkFailure: (...args: unknown[]) => mockReportNetworkFailure(...(args as [])),
+}))
+
 const { onSessionEnded } = require('../supabase') as {
   onSessionEnded: (listener: () => void) => () => void
 }
@@ -188,4 +193,23 @@ it('stays quiet once there is no session left to lose', async () => {
   expect(mockRefresh).not.toHaveBeenCalled()
   expect(ended).not.toHaveBeenCalled()
   stop()
+})
+
+// The reporter can only tell a cancellation from a lost connection by the
+// request's own signal, so the guard has to hand it over. Expo's fetch throws
+// a plain error either way.
+it('hands a failed request and its signal to the network reporter, then rethrows', async () => {
+  const thrown = new Error(
+    'fetch failed: FetchRequestCanceledException: Fetch request has been canceled',
+  )
+  global.fetch = jest.fn(async () => {
+    throw thrown
+  }) as unknown as typeof fetch
+  const controller = new AbortController()
+
+  await expect(mockOptions.global.fetch(FUNCTION_URL, { signal: controller.signal })).rejects.toBe(
+    thrown,
+  )
+
+  expect(mockReportNetworkFailure).toHaveBeenCalledWith(FUNCTION_URL, thrown, controller.signal)
 })
