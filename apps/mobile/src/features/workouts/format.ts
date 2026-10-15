@@ -1,4 +1,5 @@
 import { fromKg, toKg, type WeightUnit } from '@/lib/units'
+import type { Tracking } from './catalogue'
 
 /**
  * How the Workouts tab writes its numbers.
@@ -59,6 +60,16 @@ export function parseDecimal(text: string): number | null {
 export function parseWhole(text: string): number | null {
   const value = parseDecimal(text)
   return value === null ? null : Math.round(value)
+}
+
+/**
+ * A distance with its unit, for reading rather than typing. A carry (a
+ * weight-and-distance exercise) is tens of metres and reads in metres, as the
+ * logger takes it; everything else in kilometres or miles.
+ */
+export function distanceText(metres: number, unit: DistanceUnit, tracking: Tracking): string {
+  if (tracking === 'weight_distance') return `${trim(metres, 0)} m`
+  return `${distanceField(metres, unit)} ${unit}`
 }
 
 /** A distance for a field, in km or mi: "5.2". */

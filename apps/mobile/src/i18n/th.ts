@@ -1722,6 +1722,7 @@ export const th = {
       exercises_one: '{{count}} ท่า',
       exercises_other: '{{count}} ท่า',
       edit: 'แก้ไขรูทีน',
+      saved: 'บันทึกรูทีนแล้ว',
       delete: 'ลบรูทีน',
       deleteTitle: 'ลบรูทีนนี้ไหม',
       deleteBody: 'การออกกำลังกายที่ทำไปแล้วจะยังอยู่',

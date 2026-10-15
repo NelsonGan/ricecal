@@ -1740,6 +1740,7 @@ export const vi = {
       exercises_one: '{{count}} bài tập',
       exercises_other: '{{count}} bài tập',
       edit: 'Sửa giáo án',
+      saved: 'Đã lưu giáo án',
       delete: 'Xoá giáo án',
       deleteTitle: 'Xoá giáo án này?',
       deleteBody: 'Các buổi đã tập theo giáo án này vẫn được giữ.',

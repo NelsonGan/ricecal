@@ -1723,6 +1723,7 @@ export const zhHant = {
       exercises_one: '{{count}} 個動作',
       exercises_other: '{{count}} 個動作',
       edit: '編輯課表',
+      saved: '課表已儲存',
       delete: '刪除課表',
       deleteTitle: '刪除這個課表？',
       deleteBody: '用它練過的訓練會保留。',

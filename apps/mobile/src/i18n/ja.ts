@@ -1735,6 +1735,7 @@ export const ja = {
       exercises_one: '{{count}} 種目',
       exercises_other: '{{count}} 種目',
       edit: 'ルーティンを編集',
+      saved: 'ルーティンを保存しました',
       delete: 'ルーティンを削除',
       deleteTitle: 'このルーティンを削除しますか',
       deleteBody: 'このルーティンで行ったワークアウトは残ります。',

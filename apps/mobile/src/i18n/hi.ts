@@ -1727,6 +1727,7 @@ export const hi = {
       exercises_one: '{{count}} एक्सरसाइज़',
       exercises_other: '{{count}} एक्सरसाइज़',
       edit: 'रूटीन बदलें',
+      saved: 'रूटीन सेव हो गया',
       delete: 'रूटीन हटाएं',
       deleteTitle: 'यह रूटीन हटाएं?',
       deleteBody: 'इससे किए गए वर्कआउट बने रहेंगे।',

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
+  type CustomExercise,
   isDuplicateName,
   useCustomExercises,
   useDeleteCustomExercise,
@@ -35,6 +36,7 @@ import {
   IconButton,
   Radio,
   Screen,
+  Skeleton,
   Text,
   TextField,
   useToast,
@@ -48,15 +50,38 @@ import {
  * for it to take part in the muscle chart beside the built-in exercises.
  */
 export default function CustomExerciseScreen() {
+  const params = useLocalSearchParams<{ id?: string; name?: string }>()
+  const custom = useCustomExercises()
+  const existing = custom.data?.find((exercise) => exercise.id === params.id)
+
+  // Editing waits for the exercise: the form reads it once, as its starting
+  // values, and opened before the list had loaded it stayed empty for good.
+  if (params.id && !existing && custom.isPending) {
+    return (
+      <Screen>
+        <Card>
+          <Skeleton className="h-[240px] w-full" />
+        </Card>
+      </Screen>
+    )
+  }
+  return <Form key={existing?.id ?? 'new'} existing={existing} initialName={params.name ?? ''} />
+}
+
+function Form({
+  existing,
+  initialName,
+}: {
+  existing: CustomExercise | undefined
+  initialName: string
+}) {
   const { t } = useTranslation(['workouts', 'common'])
   const goBack = useBack('/workout/exercises')
   const toast = useToast()
-  const params = useLocalSearchParams<{ id?: string; name?: string }>()
-  const existing = useCustomExercises().data?.find((exercise) => exercise.id === params.id)
   const save = useSaveCustomExercise()
   const remove = useDeleteCustomExercise()
 
-  const [name, setName] = useState(existing?.name ?? params.name ?? '')
+  const [name, setName] = useState(existing?.name ?? initialName)
   const [tracking, setTracking] = useState<Tracking>(existing?.tracking ?? 'weight_reps')
   const [category, setCategory] = useState<Category>((existing?.category as Category) ?? 'fullBody')
   const [equipment, setEquipment] = useState<Equipment>(
@@ -198,7 +223,12 @@ export default function CustomExerciseScreen() {
         cancelLabel={t('common:action.keep')}
         onConfirm={async () => {
           if (!existing) return
-          await remove.mutateAsync(existing.id)
+          try {
+            await remove.mutateAsync(existing.id)
+          } catch (error) {
+            toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+            throw error
+          }
           goBack()
         }}
       />

@@ -1723,6 +1723,7 @@ export const zhHans = {
       exercises_one: '{{count}} 个动作',
       exercises_other: '{{count}} 个动作',
       edit: '编辑计划',
+      saved: '计划已保存',
       delete: '删除计划',
       deleteTitle: '删除这个计划？',
       deleteBody: '用它练过的训练会保留。',

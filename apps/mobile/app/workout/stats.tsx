@@ -125,7 +125,7 @@ function WeekBars({
   metric: WeekMetric
   unit: WeightUnit
 }) {
-  const { t } = useTranslation(['workouts', 'common'])
+  const { t } = useTranslation(['workouts', 'common', 'progress'])
   const values = weeks.map((week) => weekValue(week, metric))
   const max = Math.max(...values, 1)
   const last = weeks[weeks.length - 1]
@@ -138,7 +138,11 @@ function WeekBars({
 
   return (
     <View className="gap-2">
-      <Text variant="displayMd">{last ? show(weekValue(last, metric)) : '0'}</Text>
+      {/* The figure is the current week's, the bar drawn in full colour. */}
+      <View className="gap-0.5">
+        <Text variant="overlineSm">{t('progress:weight.thisWeek')}</Text>
+        <Text variant="displayMd">{last ? show(weekValue(last, metric)) : '0'}</Text>
+      </View>
       <View className="h-[140px] flex-row items-end gap-1.5">
         {weeks.map((week, index) => {
           const value = values[index]
@@ -288,16 +292,25 @@ function Records({ unit }: { unit: WeightUnit }) {
       ) : rows.length ? (
         rows.map((entry, index) => {
           const exercise = library.byId(entry.exerciseId)
+          // The heaviest set as lifted, "72.5 kg × 8". The estimated 1RM was
+          // here first and read as a weight somebody had put on the bar.
+          const heaviest =
+            entry.bestWeightKg !== null
+              ? `${weightField(entry.bestWeightKg, unit)} ${t(UNIT_KEY[unit])}`
+              : null
           const best =
-            entry.bestE1rmKg !== null
-              ? `${weightField(entry.bestE1rmKg, unit)} ${t(UNIT_KEY[unit])}`
-              : entry.bestWeightKg !== null
-                ? `${weightField(entry.bestWeightKg, unit)} ${t(UNIT_KEY[unit])}`
-                : entry.bestReps !== null
-                  ? `× ${entry.bestReps}`
-                  : entry.bestDurationS
-                    ? durationText(t, entry.bestDurationS)
-                    : ''
+            heaviest !== null
+              ? entry.bestWeightReps
+                ? t('workouts:exercise.weightReps', {
+                    weight: heaviest,
+                    reps: entry.bestWeightReps,
+                  })
+                : heaviest
+              : entry.bestReps !== null
+                ? `× ${entry.bestReps}`
+                : entry.bestDurationS
+                  ? durationText(t, entry.bestDurationS)
+                  : ''
           return (
             <View key={entry.exerciseId}>
               {index > 0 ? <Divider /> : null}

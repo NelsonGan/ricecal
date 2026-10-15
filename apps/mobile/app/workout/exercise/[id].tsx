@@ -16,7 +16,7 @@ import {
   CATEGORY_KEY,
   type DistanceUnit,
   describeSet,
-  distanceField,
+  distanceText,
   distanceUnitFor,
   EQUIPMENT_KEY,
   ExerciseArt,
@@ -28,6 +28,7 @@ import {
   SET_BADGE_KEY,
   shortClock,
   TRACKING_KEY,
+  type Tracking,
   useExerciseLibrary,
   useLiveWorkout,
   useWorkoutStarter,
@@ -274,6 +275,7 @@ function formatMetric(
   unit: WeightUnit,
   distanceUnit: DistanceUnit,
   unitLabel: string,
+  tracking: Tracking,
 ): string {
   switch (metric) {
     case 'e1rm':
@@ -286,7 +288,7 @@ function formatMetric(
     case 'duration':
       return shortClock(value)
     case 'distance':
-      return `${distanceField(value, distanceUnit)} ${distanceUnit}`
+      return distanceText(value, distanceUnit, tracking)
   }
 }
 
@@ -338,7 +340,7 @@ function Progress({
       </View>
       {latest !== null ? (
         <Text variant="displayMd">
-          {formatMetric(latest, metric, unit, distanceUnit, t(UNIT_KEY[unit]))}
+          {formatMetric(latest, metric, unit, distanceUnit, t(UNIT_KEY[unit]), exercise.tracking)}
         </Text>
       ) : null}
       {points.filter((point) => point.value !== null).length > 1 ? (
@@ -403,7 +405,7 @@ function Records({
   if (bests.bestDistanceM) {
     rows.push({
       label: t('workouts:exercise.bestDistance'),
-      value: `${distanceField(bests.bestDistanceM, distanceUnit)} ${distanceUnit}`,
+      value: distanceText(bests.bestDistanceM, distanceUnit, tracking),
     })
   }
   if (bests.totalVolumeKg > 0) {
