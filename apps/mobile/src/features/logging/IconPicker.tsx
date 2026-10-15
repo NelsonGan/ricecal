@@ -128,8 +128,10 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
       // No description. It read "Just for this entry. A photo of the real plate
       // beats any of these" — a caveat about scope nobody asked about, and advice
       // against the thing the sheet is for. The camera is right there instead.
-      scrollable
-      // Full height while the grid is showing, which is how the add menu handles
+      // The camera does not scroll: it fills what the tiles leave, the way the
+      // add menu's does, and a scroll view would clip it at the sheet's padding.
+      scrollable={tab !== 'camera'}
+      // Full height on both tabs. For the grid, it is how the add menu handles
       // its own search and is the only arrangement that survives the keyboard.
       //
       // A capped sheet sits on the bottom edge and gets out of the keyboard's way
@@ -140,10 +142,12 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
       // Full height instead: the panel reaches the bottom of the screen and stays
       // there, and the grid insets its own scroll content so the search field
       // stays above the keys. Nothing moves, so there is no gap to show through.
-      // The camera tab keeps the capped panel — it raises no keyboard and has one
-      // viewfinder in it, which a full-height sheet would strand in a field of
-      // empty surface.
-      fullHeight={tab === 'search'}
+      //
+      // For the camera, because the viewfinder takes all of it. The camera tab
+      // used to cap the panel around a 310pt box, which made switching tabs
+      // resize the sheet as well as change what was in it.
+      fullHeight
+      fillBody={tab === 'camera'}
       // No "use no picture" row. Nothing arrives here with a picture it did not
       // ask for — a dish out of the catalogue has none, and a photo is guarded by
       // its own confirmation — so the only thing that button could undo is a
@@ -152,13 +156,17 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
     >
       {onPickPhoto ? (
         <View className="flex-row gap-2.5">
+          {/* Compact, as the add menu's are once a panel is open: here one
+              always is, and the height is the camera's. */}
           <QuickAction
+            compact
             label={t('logging:icon.searchTab')}
             icon={{ set: 'ui', name: 'search' }}
             selected={tab === 'search'}
             onPress={() => setTab('search')}
           />
           <QuickAction
+            compact
             label={t('logging:icon.cameraTab')}
             icon={{ set: 'system', name: 'camera' }}
             tone="pandan"
@@ -173,6 +181,7 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
         // handing the shot back rather than starting an entry from it. A shot with no
         // uri — which is every simulator — leaves the sheet where it is.
         <InlineCamera
+          fill
           onCapture={(photoUri) => {
             if (photoUri) onPickPhoto(photoUri)
           }}

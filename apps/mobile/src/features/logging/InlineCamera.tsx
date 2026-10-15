@@ -1,24 +1,24 @@
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Device from 'expo-device'
 import * as ImagePicker from 'expo-image-picker'
-import { useCallback, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Linking, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { photoCropFill } from '@/lib/photo'
+import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Icon, IconButton, Squish, Text } from '@/ui'
+import { Button, Icon, IconButton, Squish, sheetBottomPadding, Text } from '@/ui'
 
 /**
- * How tall the viewfinder is.
+ * How tall the viewfinder is when it is NOT filling a sheet.
  *
- * Sized against the sheet that has the least room — the quick selector, whose
- * body is capped at 440pt with a title and four squares already in it — and it
- * is the CONTROLS moving onto the preview that pays for the extra height. A row
- * of buttons under the frame cost 80pt of a panel that had none to spare, so the
- * box grew by exactly that and the shutter now floats over the bottom of it,
- * which is where a camera puts it anyway. The sheet is the same size it was; the
- * picture in it is a third bigger.
+ * Every camera in the app passes `fill` now, so this is the fallback for a host
+ * that has nowhere to stretch it. It was the size of all of them, and with the
+ * controls floating over its bottom edge it still left a third of the log
+ * sheet empty below it, which is why `fill` exists. See README.md, "Every
+ * camera fills its sheet".
  */
 export const VIEWFINDER_HEIGHT = 310
 
@@ -41,6 +41,12 @@ const CONTROL_BAND = 84
  * marketing URL or a batch code, and scanning one would confidently look up a
  * product code that is not a product code.
  */
+/** The framing brackets' side, in points: never smaller than they always were. */
+const FRAMING_MIN = 190
+const FRAMING_MAX = 300
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
 const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e'] as const
 
 /** Which of the two things this camera is pointed at. */
@@ -77,6 +83,18 @@ export type InlineCameraProps = {
    * out. Required in `barcode` mode and ignored otherwise.
    */
   onScanned?: (code: string) => void
+  /**
+   * Take all the height the sheet has left, and run out past the sheet's own
+   * padding to its edges and down under the home indicator. For a camera that
+   * is the last thing in a full-height, non-scrolling sheet with `fillBody`,
+   * which is every camera in the app. Without it the box is `VIEWFINDER_HEIGHT`
+   * tall and inset like a card.
+   */
+  fill?: boolean
+  /** Floats at the top of the feed: the meal / barcode switch, and any prompt. */
+  header?: ReactNode
+  /** Floats just above the shutter row: the free account's scans left. */
+  footnote?: ReactNode
 }
 
 /**
@@ -92,7 +110,14 @@ export type InlineCameraProps = {
  * native picker cannot be presented while a modal is being dismissed: iOS cancels
  * it and the promise never settles.
  */
-export function InlineCamera({ mode = 'meal', onCapture, onScanned }: InlineCameraProps) {
+export function InlineCamera({
+  mode = 'meal',
+  onCapture,
+  onScanned,
+  fill,
+  header,
+  footnote,
+}: InlineCameraProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
   const [permission, requestPermission] = useCameraPermissions()
@@ -102,6 +127,22 @@ export function InlineCamera({ mode = 'meal', onCapture, onScanned }: InlineCame
   const [facing, setFacing] = useState<'back' | 'front'>('back')
   const camera = useRef<CameraView>(null)
   const scanning = mode === 'barcode'
+  // Measured, because in fill mode the box is whatever the sheet has left and
+  // the framing has to be sized against it. So is the header, which is a pill
+  // or a pill and a two-line prompt.
+  const [box, setBox] = useState({ width: 0, height: 0 })
+  const [headerHeight, setHeaderHeight] = useState(0)
+  // How far the sheet pads its bottom, which is how far the feed has to reach to
+  // touch the edge of the screen, and what the shutter then has to clear from
+  // inside it. The sides are the panel's `px-gutter`.
+  const insets = useSafeAreaInsets()
+  const bottomInset = fill ? sheetBottomPadding(insets.bottom) : 0
+  const controlsTop = CONTROL_BAND + bottomInset
+  const framing = clamp(
+    Math.min(box.width * 0.72, (box.height - headerHeight - controlsTop) * 0.82),
+    FRAMING_MIN,
+    FRAMING_MAX,
+  )
 
   /**
    * `CameraView` fires a scan many times a second while a code is in frame, and
@@ -158,7 +199,7 @@ export function InlineCamera({ mode = 'meal', onCapture, onScanned }: InlineCame
   const canAskForCamera = permission?.canAskAgain !== false
 
   if (permission && !permission.granted) {
-    return (
+    const card = (
       <View className="gap-3 rounded-tile bg-track p-4">
         <View className="flex-row items-center gap-2.5">
           <Icon set="system" name={scanning ? 'barcode' : 'camera'} size={28} />
@@ -203,12 +244,29 @@ export function InlineCamera({ mode = 'meal', onCapture, onScanned }: InlineCame
         )}
       </View>
     )
+    // The switch and the scans left stay, on the sheet rather than on a feed:
+    // the barcode side has a refusal card of its own, and "Choose from photos"
+    // still spends a scan.
+    return header || footnote ? (
+      <View className="gap-3">
+        {header ? <View className="items-center gap-2">{header}</View> : null}
+        {card}
+        {footnote && !scanning ? <View className="items-center">{footnote}</View> : null}
+      </View>
+    ) : (
+      card
+    )
   }
 
   return (
     <View
-      className="items-center justify-center overflow-hidden rounded-tile bg-inverse"
-      style={{ height: VIEWFINDER_HEIGHT }}
+      className={`items-center justify-center overflow-hidden bg-inverse ${fill ? 'flex-1' : 'rounded-tile'}`}
+      style={
+        fill
+          ? { marginHorizontal: -spacing.gutter, marginBottom: -bottomInset }
+          : { height: VIEWFINDER_HEIGHT }
+      }
+      onLayout={(event) => setBox(event.nativeEvent.layout)}
     >
       {hasCamera ? (
         /* In MEAL mode, laid out bigger than the box that shows it, so the
@@ -261,9 +319,31 @@ export function InlineCamera({ mode = 'meal', onCapture, onScanned }: InlineCame
           pointerEvents="none"
           className="absolute inset-x-8 h-[86px] rounded-2xl border-2 border-surface/80"
         />
-      ) : (
-        <Framing />
-      )}
+      ) : box.height ? (
+        // Not until the box has been measured, or the brackets draw at their
+        // floor for a frame and then jump.
+        <Framing top={headerHeight} bottom={controlsTop} size={Math.round(framing)} />
+      ) : null}
+
+      {header ? (
+        <View
+          className="absolute inset-x-0 top-0 items-center gap-2 px-4 pt-3"
+          pointerEvents="box-none"
+          onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}
+        >
+          {header}
+        </View>
+      ) : null}
+
+      {footnote && !scanning ? (
+        <View
+          className="absolute inset-x-0 items-center"
+          style={{ bottom: controlsTop + 10 }}
+          pointerEvents="none"
+        >
+          {footnote}
+        </View>
+      ) : null}
 
       {/* Over the preview rather than under the box. See `VIEWFINDER_HEIGHT`:
           the height this row used to take below the frame is the height the
@@ -273,7 +353,10 @@ export function InlineCamera({ mode = 'meal', onCapture, onScanned }: InlineCame
           press — and a flip button would point the camera at the user's face,
           which cannot read a packet. */}
       {scanning ? null : (
-        <View className="absolute inset-x-0 bottom-0 flex-row items-center justify-between gap-3 px-4 pb-4">
+        <View
+          className="absolute inset-x-0 bottom-0 flex-row items-center justify-between gap-3 px-5"
+          style={{ paddingBottom: 16 + bottomInset }}
+        >
           {/* `self-center` on both, because `IconButton` sets `self-start` on its
             own box and that quietly beat the row's `items-center`: the two side
             buttons are 61pt to the shutter's 68, so they hung 7pt high. Under
@@ -324,17 +407,17 @@ export function InlineCamera({ mode = 'meal', onCapture, onScanned }: InlineCame
  * understatement: the shot is wider than they are by `PHOTO_CROP`, which is
  * what makes them safe to fill.
  */
-function Framing() {
+function Framing({ top, bottom, size }: { top: number; bottom: number; size: number }) {
   const corner = 'absolute h-[30px] w-[30px] border-on-inverse/70'
   return (
     <View
       className="absolute inset-0 items-center justify-center"
       // Centred in the part of the box the controls leave, not in the box, or
       // the bottom brackets sit behind the shutter.
-      style={{ paddingBottom: CONTROL_BAND }}
+      style={{ paddingTop: top, paddingBottom: bottom }}
       pointerEvents="none"
     >
-      <View className="h-[190px] w-[190px]">
+      <View style={{ width: size, height: size }}>
         <View
           className={`${corner} top-0 left-0 rounded-tl-[10px] border-t-[3px] border-l-[3px]`}
         />
