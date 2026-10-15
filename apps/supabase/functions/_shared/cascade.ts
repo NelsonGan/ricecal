@@ -976,8 +976,9 @@ export function productFromLabel(
     return { reason: 'panel is missing a macro' }
   }
   // One serving, not one packet. Nothing edible is 2,000 kcal a serving, and a
-  // zero means the model found the table but not the numbers in it.
-  if (kcal <= 0 || kcal > 2000) {
+  // zero means the model found the table but not the numbers in it. Rounded,
+  // because the row stores whole kilocalories and 0.4 is a zero there.
+  if (Math.round(kcal) <= 0 || kcal > 2000) {
     return { reason: `implausible energy: ${kcal} kcal per serving` }
   }
 

@@ -118,7 +118,7 @@ grant select, insert, delete on public.barcode_misses to service_role;
 -- A barcode miss hands the camera to the nutrition panel, and `scan-meal`
 -- writes a panel that passes back to the catalogue under that code. A third of
 -- them failed on the name alone: the panel is the back of the box, the name is
--- on the front, so the model read the figures and called it "Packaged food".
+-- on the front, so the scan read the figures and called it "Packaged food".
 -- Nothing was saved and the next scan of the packet missed again. Meanwhile the
 -- people holding it typed the name into their own entry a minute later.
 --
@@ -129,7 +129,7 @@ grant select, insert, delete on public.barcode_misses to service_role;
 --
 -- Keyed by the entry, so deleting it takes the panel with it. Only figures
 -- that already passed every catalogue check except the name are written here,
--- which is what the column checks restate.
+-- and the column checks hold the simplest of those lines again.
 -- ---------------------------------------------------------------------------
 create table public.packet_panels (
   food_log_id uuid primary key references public.food_logs (id) on delete cascade,

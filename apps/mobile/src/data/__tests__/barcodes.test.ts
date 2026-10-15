@@ -24,11 +24,25 @@ describe('offerPacketName', () => {
     })
   })
 
-  // The rename is already saved by the time this runs, so a failure here must
-  // not surface as an unhandled rejection or a failed edit.
-  it('swallows a failure', async () => {
-    mockInvoke.mockRejectedValue(new Error('offline'))
-    expect(() => offerPacketName('e0000000-0000-4000-8000-000000000029')).not.toThrow()
-    await new Promise((resolve) => setImmediate(resolve))
+  // The rename is already saved by the time this runs, so neither kind of
+  // failure may surface: `invoke` answers an HTTP error as `{ error }` and
+  // rejects only when the request never left.
+  it.each([
+    [
+      'answers with an error',
+      () => mockInvoke.mockResolvedValue({ data: null, error: new Error('500') }),
+    ],
+    ['rejects', () => mockInvoke.mockRejectedValue(new Error('offline'))],
+  ])('stays quiet when the call %s', async (_label, fail) => {
+    fail()
+    const unhandled = jest.fn()
+    process.on('unhandledRejection', unhandled)
+    try {
+      expect(() => offerPacketName('e0000000-0000-4000-8000-000000000029')).not.toThrow()
+      await new Promise((resolve) => setImmediate(resolve))
+      expect(unhandled).not.toHaveBeenCalled()
+    } finally {
+      process.off('unhandledRejection', unhandled)
+    }
   })
 })

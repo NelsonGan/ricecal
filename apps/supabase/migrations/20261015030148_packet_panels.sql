@@ -41,9 +41,10 @@ ALTER TABLE public.packet_panels
   ADD CONSTRAINT packet_panels_serving_g_check CHECK (serving_g > 0::numeric);
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.packet_panels TO service_role;
--- Not emitted by `db diff`, which misses grant deltas (README, Traps). The new
--- table inherits Supabase's default client grants, and `packet_panels` is
--- service-only, as `schemas/32_food_scans.sql` declares.
+
+-- Not emitted by `db diff`, which misses grant deltas (README, "Things a diff
+-- cannot see"). The new table inherits Supabase's default client grants, and
+-- `packet_panels` is service-only, as `schemas/32_food_scans.sql` declares.
 REVOKE ALL ON public.packet_panels FROM anon;
 
 REVOKE ALL ON public.packet_panels FROM authenticated;
