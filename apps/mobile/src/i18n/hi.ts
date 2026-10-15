@@ -718,7 +718,7 @@ export const hi = {
     },
 
     photoNote: {
-      title: 'कुछ ऐसा जो फ़ोटो में नहीं दिखता?',
+      title: 'अतिरिक्त जानकारी',
       placeholder: 'चिकन नहीं, मटन, बिना चीनी की चाय, शेयर किया',
       skip: 'छोड़ें',
       log: 'भोजन दर्ज करें',
@@ -1183,14 +1183,11 @@ export const hi = {
     personalisation: {
       title: 'अपने मुताबिक़',
       mealsTitle: 'भोजन का समय',
-      mealsNote: 'ये वे समय हैं जब आपकी याद बजती है।',
       editMeal: '{{meal}} का समय बदलें',
       hour: 'घंटा',
       minute: 'मिनट',
       preview: '{{time}} पर याद दिलाएगा',
-      cameraTitle: 'कैमरा',
       photoNote: 'फ़ोटो के बाद विवरण पूछें',
-      photoNoteBody: 'जो फ़ोटो में नहीं दिखता, उसके बारे में कुछ शब्द।',
     },
 
     reminders: {

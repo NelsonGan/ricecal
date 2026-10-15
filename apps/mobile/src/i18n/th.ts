@@ -721,7 +721,7 @@ export const th = {
     },
 
     photoNote: {
-      title: 'มีอะไรที่รูปบอกไม่ได้ไหม',
+      title: 'ข้อมูลเพิ่มเติม',
       placeholder: 'เนื้อวัว ไม่ใช่ไก่, ชาไม่ใส่น้ำตาล, แบ่งกันกิน',
       skip: 'ข้าม',
       log: 'บันทึกมื้อนี้',
@@ -1181,14 +1181,11 @@ export const th = {
     personalisation: {
       title: 'ปรับให้เข้ากับคุณ',
       mealsTitle: 'เวลามื้ออาหาร',
-      mealsNote: 'นี่คือเวลาที่การเตือนจะดัง',
       editMeal: 'เปลี่ยนเวลาของ{{meal}}',
       hour: 'ชั่วโมง',
       minute: 'นาที',
       preview: 'เตือนเวลา {{time}}',
-      cameraTitle: 'กล้อง',
       photoNote: 'ถามรายละเอียดหลังถ่ายรูป',
-      photoNoteBody: 'เพิ่มคำสั้นๆ ในสิ่งที่รูปบอกไม่ได้',
     },
 
     reminders: {

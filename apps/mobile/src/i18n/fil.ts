@@ -749,7 +749,7 @@ export const fil = {
     },
 
     photoNote: {
-      title: 'May hindi ba makikita sa litrato?',
+      title: 'Karagdagang impormasyon',
       placeholder: 'Karne ng baka, hindi manok, teh o kosong, hati kami',
       skip: 'Laktawan',
       log: 'I-log ang pagkain',
@@ -1218,14 +1218,11 @@ export const fil = {
     personalisation: {
       title: 'Personalisasyon',
       mealsTitle: 'ORAS NG PAGKAIN',
-      mealsNote: 'Ito ang oras na tumutunog ang mga paalala mo.',
       editMeal: 'Baguhin kung kailan ang {{meal}}',
       hour: 'Oras',
       minute: 'Minuto',
       preview: 'Magpapaalala nang {{time}}',
-      cameraTitle: 'CAMERA',
       photoNote: 'Magtanong ng detalye pagkatapos ng litrato',
-      photoNoteBody: 'Ilang salita tungkol sa hindi makikita sa litrato.',
     },
 
     reminders: {

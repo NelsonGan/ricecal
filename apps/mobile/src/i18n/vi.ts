@@ -728,7 +728,7 @@ export const vi = {
     },
 
     photoNote: {
-      title: 'Có gì ảnh không thể hiện được?',
+      title: 'Thông tin bổ sung',
       placeholder: 'Thịt bò chứ không phải gà, trà không đường, ăn chung',
       skip: 'Bỏ qua',
       log: 'Ghi bữa ăn',
@@ -1195,14 +1195,11 @@ export const vi = {
     personalisation: {
       title: 'Cá nhân hoá',
       mealsTitle: 'GIỜ ĂN',
-      mealsNote: 'Đây là giờ các lời nhắc của bạn reo lên.',
       editMeal: 'Đổi giờ của {{meal}}',
       hour: 'Giờ',
       minute: 'Phút',
       preview: 'Nhắc lúc {{time}}',
-      cameraTitle: 'MÁY ẢNH',
       photoNote: 'Hỏi thêm chi tiết sau khi chụp',
-      photoNoteBody: 'Vài chữ về điều ảnh không thể hiện.',
     },
 
     reminders: {

@@ -717,7 +717,7 @@ export const bn = {
     },
 
     photoNote: {
-      title: 'ছবিতে দেখা যায় না এমন কিছু?',
+      title: 'অতিরিক্ত তথ্য',
       placeholder: 'মুরগি নয়, গরুর মাংস, চিনি ছাড়া চা, ভাগ করে খেয়েছি',
       skip: 'বাদ দিন',
       log: 'খাবার লগ করুন',
@@ -1180,14 +1180,11 @@ export const bn = {
     personalisation: {
       title: 'নিজের মতো',
       mealsTitle: 'খাবারের সময়',
-      mealsNote: 'এই সময়েই আপনার মনে করানো বাজে।',
       editMeal: '{{meal}} কখন তা বদলান',
       hour: 'ঘণ্টা',
       minute: 'মিনিট',
       preview: '{{time}} এ মনে করাবে',
-      cameraTitle: 'ক্যামেরা',
       photoNote: 'ছবির পরে বিস্তারিত জিজ্ঞাসা করুন',
-      photoNoteBody: 'ছবিতে যা দেখা যায় না, সে সম্পর্কে কয়েকটি কথা।',
     },
 
     reminders: {

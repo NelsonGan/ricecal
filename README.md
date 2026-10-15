@@ -1837,8 +1837,8 @@ matched rather than chosen.
 
 ### A photo can carry a note
 
-After the shutter (or a library pick) the camera asks one question in the same
-sheet, "Anything the photo can't show?", with the keyboard already up. A photo
+After the shutter (or a library pick) the camera asks for "Additional
+information" in the same sheet, with the keyboard already up. A photo
 is good at what is on the plate and bad at the rest: which meat is in the curry,
 what is in the cup, whether the drink had sugar, and how much of the plate was
 this person's. `PhotoNotePanel` takes a few words, four chips add the common ones
@@ -1846,8 +1846,8 @@ this person's. `PhotoNotePanel` takes a few words, four chips add the common one
 exactly as the shutter used to. Nothing is uploaded or spent until one of the
 two is pressed, so closing the sheet or tapping Retake drops the shot.
 
-It is on by default and switched off in Settings / Personalisation
-(`user_settings.photo_note_prompt`). Unknown counts as on. The packet handoff
+It is on by default and switched off in Settings / Personalisation, "Ask for
+details after a photo" (`user_settings.photo_note_prompt`). Unknown counts as on. The packet handoff
 (`?panel=label`) never asks: that shot is a nutrition panel, which answers for
 itself.
 
