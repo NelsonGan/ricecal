@@ -332,51 +332,6 @@ export const POSES = {
   dance:
     'dancing freely in a graceful pose, one arm raised overhead and one leg stepping to the side. Front-3/4 view.',
 
-  // Sports
-  badminton:
-    'playing badminton, lunging forward reaching up to hit a shuttlecock with a badminton racket overhead in a smash, the shuttlecock in the air. Side view.',
-  basketball:
-    'jumping to shoot a basketball with both hands overhead, the ball just leaving the fingertips. Side view.',
-  football:
-    'kicking a football (soccer ball) with the instep, the ball just in front of the foot, arms out for balance. Side view.',
-  futsal:
-    'dribbling a smaller futsal ball with the sole of the foot, body low and agile, wearing indoor court shoes. Side view.',
-  tennis:
-    'hitting a forehand with a tennis racket, mid swing, a yellow tennis ball near the racket strings. Side view.',
-  'table-tennis':
-    'standing at the edge of a table tennis table holding a ping pong paddle, hitting a small white ball over the net. 3/4 view showing part of the table and net.',
-  squash:
-    'lunging deep to hit a small black squash ball with a long thin squash racket, low to the floor. Side view.',
-  pickleball:
-    'hitting a perforated plastic pickleball with a solid flat pickleball paddle, ready position near a low net. Side view.',
-  volleyball:
-    'jumping to spike a volleyball with one arm high over the head, the ball above the hand. Side view.',
-  'sepak-takraw':
-    'performing a sepak takraw bicycle kick: flipping in mid-air sideways with one leg kicking high above the head to strike a woven rattan ball. Side view.',
-  golf: 'at the end of a golf swing follow-through, the golf club wrapped over the shoulder, body rotated toward the target. Side view.',
-  boxing:
-    'in a boxing stance wearing red boxing gloves, throwing a straight jab with the lead hand, the rear glove guarding the chin. Side view.',
-  'muay-thai':
-    'throwing a muay thai roundhouse kick with the shin at waist height, wearing boxing gloves and shorts, arms guarding. Front-3/4 view.',
-  'martial-arts':
-    'in a martial arts stance wearing a white uniform (gi) with a black belt, executing a straight front punch from a low horse stance. Front-3/4 view.',
-  climbing:
-    'bouldering on a short section of indoor climbing wall with colourful holds, reaching up for a hold with one hand, feet on lower holds. 3/4 rear view.',
-  rugby:
-    'running forward carrying an oval rugby ball tucked under one arm, the other arm out to fend. Side view.',
-  cricket:
-    'batting in cricket, swinging a flat cricket bat in a drive, wearing batting pads on the legs. Side view.',
-  hockey:
-    'playing field hockey, bent forward dribbling a small ball with a curved hockey stick. Side view.',
-  frisbee:
-    'throwing a flying disc (frisbee) with a backhand throw, the disc just released. Side view.',
-  skateboarding:
-    'riding a skateboard, one foot on the board and the other pushing off the ground. Side view.',
-  surfing:
-    'standing on a surfboard riding a small wave, knees bent, arms out for balance, a curl of blue water under the board. Side view.',
-  kayaking:
-    'seated in a kayak on a small patch of water, paddling with a double-bladed paddle, one blade in the water. Side view.',
-
   // Mobility
   yoga: 'holding the yoga warrior II pose on a yoga mat: legs wide apart, front knee bent, arms extended straight out to both sides parallel to the floor. Front view.',
   pilates:

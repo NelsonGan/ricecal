@@ -1703,8 +1703,7 @@ export const zhHant = {
       resume: '繼續訓練',
       running: '訓練進行中',
       routine: '開始',
-      sport: '記錄運動',
-      past: '補記訓練',
+      past: '補記一次訓練',
       replaceTitle: '已有訓練在進行',
       replaceBody: '丟棄它，開始這個？',
       replaceConfirm: '丟棄並開始',
@@ -2070,7 +2069,6 @@ export const zhHant = {
       core: '核心',
       fullBody: '全身',
       cardio: '有氧',
-      sports: '運動',
       mobility: '活動度',
     },
     equipment: {

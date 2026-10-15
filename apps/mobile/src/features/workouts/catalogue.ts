@@ -65,7 +65,6 @@ export const CATEGORIES = [
   'core',
   'fullBody',
   'cardio',
-  'sports',
   'mobility',
 ] as const
 export type Category = (typeof CATEGORIES)[number]
@@ -180,8 +179,8 @@ const rows = (category: Category, list: Row[]): Exercise[] =>
   }))
 
 // MET values: compound barbell lifting 5-6, isolation and machines 3.5,
-// calisthenics 3.8 (moderate) to 8 (vigorous). Sports and cardio use the
-// Compendium's general entry for the activity, not its competitive one.
+// calisthenics 3.8 (moderate) to 8 (vigorous). Cardio uses the Compendium's
+// general entry for the activity, not its competitive one.
 
 // biome-ignore format: one exercise per line reads as a table
 const CHEST = rows('chest', [
@@ -370,32 +369,6 @@ const CARDIO = rows('cardio', [
 ])
 
 // biome-ignore format: one exercise per line reads as a table
-const SPORTS = rows('sports', [
-  ['badminton', 'Badminton', 'duration', 'other', 'beginner', { quads: 0.25, calves: 0.2, shoulders: 0.2, glutes: 0.15, forearms: 0.1, abs: 0.1 }, 5.5, { health: 4 }],
-  ['basketball', 'Basketball', 'duration', 'other', 'beginner', { quads: 0.3, calves: 0.25, glutes: 0.2, shoulders: 0.15, abs: 0.1 }, 6.5, { health: 6, aliases: ['bola keranjang'] }],
-  ['football', 'Football', 'duration', 'other', 'beginner', { quads: 0.3, hamstrings: 0.25, calves: 0.2, glutes: 0.15, abs: 0.1 }, 7, { health: 41, aliases: ['soccer', 'bola sepak'] }],
-  ['futsal', 'Futsal', 'duration', 'other', 'beginner', { quads: 0.3, hamstrings: 0.25, calves: 0.2, glutes: 0.15, abs: 0.1 }, 7, { health: 41 }],
-  ['tennis', 'Tennis', 'duration', 'other', 'beginner', { shoulders: 0.25, quads: 0.25, forearms: 0.15, calves: 0.15, obliques: 0.2 }, 7.3, { health: 48 }],
-  ['table-tennis', 'Table Tennis', 'duration', 'other', 'beginner', { shoulders: 0.3, forearms: 0.25, quads: 0.25, obliques: 0.2 }, 4, { health: 47, aliases: ['ping pong'] }],
-  ['squash', 'Squash', 'duration', 'other', 'intermediate', { quads: 0.3, shoulders: 0.2, calves: 0.2, forearms: 0.1, obliques: 0.2 }, 7.3, { health: 43 }],
-  ['pickleball', 'Pickleball', 'duration', 'other', 'beginner', { shoulders: 0.3, quads: 0.3, forearms: 0.2, calves: 0.2 }, 5, { health: 79 }],
-  ['volleyball', 'Volleyball', 'duration', 'other', 'beginner', { shoulders: 0.3, quads: 0.3, calves: 0.25, abs: 0.15 }, 4, { health: 51, aliases: ['bola tampar'] }],
-  ['sepak-takraw', 'Sepak Takraw', 'duration', 'other', 'intermediate', { quads: 0.3, hamstrings: 0.2, abs: 0.2, calves: 0.15, adductors: 0.15 }, 6, { health: 3000, aliases: ['takraw'] }],
-  ['golf', 'Golf', 'duration', 'other', 'beginner', { obliques: 0.35, shoulders: 0.25, forearms: 0.2, glutes: 0.2 }, 4.8, { health: 21 }],
-  ['boxing', 'Boxing', 'duration', 'other', 'beginner', { shoulders: 0.35, abs: 0.2, triceps: 0.15, calves: 0.15, chest: 0.15 }, 7, { health: 8, aliases: ['tinju'] }],
-  ['muay-thai', 'Muay Thai', 'duration', 'other', 'intermediate', { shoulders: 0.25, abs: 0.2, quads: 0.2, glutes: 0.2, calves: 0.15 }, 7.8, { health: 65, aliases: ['kickboxing'] }],
-  ['martial-arts', 'Martial Arts', 'duration', 'none', 'beginner', { quads: 0.25, abs: 0.25, shoulders: 0.2, glutes: 0.15, hamstrings: 0.15 }, 5.3, { health: 28, aliases: ['silat', 'karate', 'taekwondo', 'judo', 'bjj'] }],
-  ['climbing', 'Climbing', 'duration', 'other', 'intermediate', { forearms: 0.3, lats: 0.3, biceps: 0.15, abs: 0.1, quads: 0.15 }, 5.8, { health: 9, aliases: ['bouldering', 'rock climbing'] }],
-  ['rugby', 'Rugby', 'duration', 'other', 'intermediate', { quads: 0.3, glutes: 0.2, shoulders: 0.2, hamstrings: 0.15, abs: 0.15 }, 8.3, { health: 36 }],
-  ['cricket', 'Cricket', 'duration', 'other', 'beginner', { shoulders: 0.3, obliques: 0.25, quads: 0.25, forearms: 0.2 }, 4.8, { health: 10 }],
-  ['hockey', 'Hockey', 'duration', 'other', 'intermediate', { quads: 0.35, glutes: 0.2, obliques: 0.2, hamstrings: 0.15, forearms: 0.1 }, 7.8, { health: 25 }],
-  ['frisbee', 'Ultimate Frisbee', 'duration', 'other', 'beginner', { quads: 0.35, calves: 0.25, shoulders: 0.2, hamstrings: 0.2 }, 8, { health: 75 }],
-  ['skateboarding', 'Skateboarding', 'duration', 'other', 'intermediate', { quads: 0.35, calves: 0.25, glutes: 0.2, abs: 0.2 }, 5, { health: 39 }],
-  ['surfing', 'Surfing', 'duration', 'other', 'intermediate', { shoulders: 0.3, lats: 0.25, abs: 0.25, quads: 0.2 }, 3, { health: 45 }],
-  ['kayaking', 'Kayaking', 'distance_duration', 'other', 'beginner', { lats: 0.3, shoulders: 0.3, obliques: 0.25, biceps: 0.15 }, 5, { health: 31, aliases: ['canoe', 'paddling'] }],
-])
-
-// biome-ignore format: one exercise per line reads as a table
 const MOBILITY = rows('mobility', [
   ['yoga', 'Yoga', 'duration', 'none', 'beginner', { abs: 0.25, hamstrings: 0.25, shoulders: 0.2, glutes: 0.15, lowerBack: 0.15 }, 2.5, { health: 57 }],
   ['pilates', 'Pilates', 'duration', 'none', 'beginner', { abs: 0.45, obliques: 0.2, glutes: 0.2, lowerBack: 0.15 }, 3, { health: 66 }],
@@ -413,7 +386,6 @@ export const EXERCISES: readonly Exercise[] = [
   ...CORE,
   ...FULL_BODY,
   ...CARDIO,
-  ...SPORTS,
   ...MOBILITY,
 ]
 

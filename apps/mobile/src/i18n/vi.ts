@@ -1720,8 +1720,7 @@ export const vi = {
       resume: 'Tiếp tục buổi tập',
       running: 'Đang tập',
       routine: 'Bắt đầu',
-      sport: 'Ghi môn thể thao',
-      past: 'Buổi tập trước',
+      past: 'Ghi lại buổi tập trước',
       replaceTitle: 'Bạn đang có buổi tập chưa xong',
       replaceBody: 'Bỏ buổi đó và bắt đầu buổi này?',
       replaceConfirm: 'Bỏ và bắt đầu',
@@ -2091,7 +2090,6 @@ export const vi = {
       core: 'Core',
       fullBody: 'Toàn thân',
       cardio: 'Cardio',
-      sports: 'Thể thao',
       mobility: 'Linh hoạt',
     },
     equipment: {

@@ -18,7 +18,6 @@ export const CATEGORY_KEY = {
   core: 'workouts:category.core',
   fullBody: 'workouts:category.fullBody',
   cardio: 'workouts:category.cardio',
-  sports: 'workouts:category.sports',
   mobility: 'workouts:category.mobility',
 } as const satisfies Record<Category, string>
 

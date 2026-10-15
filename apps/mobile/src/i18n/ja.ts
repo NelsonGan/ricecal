@@ -1715,8 +1715,7 @@ export const ja = {
       resume: 'ワークアウトを再開',
       running: 'ワークアウト中',
       routine: '開始',
-      sport: 'スポーツを記録',
-      past: '過去の記録',
+      past: '過去のワークアウトを記録',
       replaceTitle: 'すでにワークアウト中です',
       replaceBody: '破棄して、こちらを開始しますか。',
       replaceConfirm: '破棄して開始',
@@ -2089,7 +2088,6 @@ export const ja = {
       core: '体幹',
       fullBody: '全身',
       cardio: '有酸素',
-      sports: 'スポーツ',
       mobility: 'モビリティ',
     },
     equipment: {

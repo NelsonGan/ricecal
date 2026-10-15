@@ -1748,8 +1748,7 @@ export const fil = {
       resume: 'Ituloy ang workout',
       running: 'Kasalukuyang workout',
       routine: 'Simulan',
-      sport: 'Mag-log ng sport',
-      past: 'Nakaraang workout',
+      past: 'Mag-log ng nakaraang workout',
       replaceTitle: 'May workout pang tumatakbo',
       replaceBody: 'Itapon iyon at simulan ito?',
       replaceConfirm: 'Itapon at simulan',
@@ -2121,7 +2120,6 @@ export const fil = {
       core: 'Core',
       fullBody: 'Buong katawan',
       cardio: 'Cardio',
-      sports: 'Sports',
       mobility: 'Mobility',
     },
     equipment: {

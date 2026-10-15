@@ -3671,8 +3671,8 @@ separate maintenance decision because it locks and rewrites the table.
 
 ## Workouts
 
-The second tab, between Today and the feed: gym sessions and sport games logged
-set by set, the way Hevy and Strong do it, plus the routines they start from and
+The second tab, between Today and the feed: gym sessions logged set by set,
+the way Hevy and Strong do it, plus the routines they start from and
 the records they set. Today is what went in; Workouts is what was done, which is
 why the two sit side by side.
 
@@ -3696,7 +3696,7 @@ apps/supabase/schemas/96_workouts.sql  every number: volume, 1RM, records, strea
 ```
 
 What a user can do: start an empty workout, a routine, a template or a repeat of
-an old one; log a sport as one timed set; log a past workout after the fact. The
+an old one; log a past workout after the fact. The
 logger shows each exercise's last numbers in a PREVIOUS column, takes warm-up,
 drop and failure sets, an RPE per set, supersets, notes, replacing and
 reordering, a rest timer per exercise, a plate calculator and generated warm-up
@@ -3708,8 +3708,13 @@ list are on the progress screen, and settings exports every set as CSV.
 
 ### The catalogue is code, and every entry has a drawing
 
-`features/workouts/catalogue.ts` holds 181 exercises and sports, each with an
-equipment, a body part, a level, a MET value and a muscle split that sums to 1.
+`features/workouts/catalogue.ts` holds 159 exercises (gym lifts, bodyweight,
+cardio and mobility), each with an equipment, a body part, a level, a MET value
+and a muscle split that sums to 1. **There are no sports.** The tab is a
+training log, and a badminton game or a football match is not one: it has no
+sets to log, and on iPhone the health store already records it from a watch.
+The 22 sports it once carried, and the "Log a sport" button, were taken out
+before release, so no saved workout names one.
 It is code rather than a table for the reason the food icons are: every entry
 has an illustration made for it, and a row the server could add would arrive
 with no picture. Anything missing is a **custom exercise** (`custom_exercises`),
@@ -3747,9 +3752,9 @@ or draw the wrong machine, and an exercise library with a wrong picture is worse
 than one with none.
 
 The brief pins the outfit as well as the style. With only the reference to go
-on, Zumba, basketball and volleyball came back in team colours, which read as a
-different person in a library that is otherwise one figure; those three were
-redrawn once the brief said brown tank top and charcoal shorts in words.
+on, Zumba came back in team colours, which read as a different person in a
+library that is otherwise one figure; it was redrawn once the brief said brown
+tank top and charcoal shorts in words.
 
 **Templates** (`templates.ts`) are 19 standard programs in seven groups: two
 beginner full-body days, push/pull/legs, upper/lower, 5×5, one muscle a day,
@@ -3928,7 +3933,7 @@ for its own permissions: workouts, active energy, and the three distance types.
 Connecting health for the budget still asks to write nothing.
 
 - Each finished workout is saved as an `HKWorkout` of the activity type its
-  exercises add up to (a sport is its sport, lifting is strength training), with
+  exercises add up to (a run is a run, lifting is strength training), with
   active energy and, for a run, ride or swim, distance as samples over the same
   window. Everything carries `RiceCalWorkoutId` in its metadata.
 - **The sync skips workouts carrying that key** (`isOwnWorkout` in
@@ -4216,6 +4221,9 @@ Left out on purpose:
   belong there, not in a training log.
 - **A watch app and CSV import.** Each is a project of its own, not a gap in
   this one.
+- **Sports.** A game has no sets, reps or weights, so logging one here was a
+  timer with a picture; the health store already has it from a watch, and it
+  reaches the budget from there.
 
 **Sharing is text, exporting is a file.** A workout shares as plain lines
 (`shareText.ts`), name, then date, duration and volume, then each set with its

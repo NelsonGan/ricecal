@@ -1709,8 +1709,7 @@ export const ko = {
       resume: '운동 이어서 하기',
       running: '운동 중',
       routine: '시작',
-      sport: '스포츠 기록',
-      past: '지난 운동',
+      past: '지난 운동 기록하기',
       replaceTitle: '이미 진행 중인 운동이 있습니다',
       replaceBody: '그 운동을 버리고 이 운동을 시작할까요?',
       replaceConfirm: '버리고 시작',
@@ -2077,7 +2076,6 @@ export const ko = {
       core: '코어',
       fullBody: '전신',
       cardio: '유산소',
-      sports: '스포츠',
       mobility: '모빌리티',
     },
     equipment: {

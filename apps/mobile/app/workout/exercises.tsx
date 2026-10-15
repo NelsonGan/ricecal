@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -60,7 +60,7 @@ export default function ExercisesScreen() {
   const { t } = useTranslation(['workouts', 'common'])
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const params = useLocalSearchParams<{ pick?: 'one' | 'many'; category?: string }>()
+  const params = useLocalSearchParams<{ pick?: 'one' | 'many' }>()
   const picking = params.pick === 'one' || params.pick === 'many'
   const single = params.pick === 'one'
   const library = useExerciseLibrary()
@@ -68,14 +68,8 @@ export default function ExercisesScreen() {
 
   const [query, setQuery] = useState('')
   const debounced = useDebouncedValue(query, 120)
-  const [category, setCategory] = useState<Category | null>(
-    (CATEGORIES as readonly string[]).includes(params.category ?? '')
-      ? (params.category as Category)
-      : null,
-  )
+  const [category, setCategory] = useState<Category | null>(null)
   const [filters, setFilters] = useState<Omit<LibraryFilters, 'category'>>({})
-  const chips = useRef<ScrollView>(null)
-  const scrolledToChip = useRef(false)
   const [filtering, setFiltering] = useState(false)
   const [chosen, setChosen] = useState<string[]>([])
 
@@ -123,8 +117,7 @@ export default function ExercisesScreen() {
   const finish = useCallback(
     (exercises: LibraryExercise[]) => {
       // Back first, then hand over. An opener that navigates with the result
-      // ("Log a sport" opens the logger) pushed its screen and then had this
-      // back pop it straight off again.
+      // pushed its screen and then had this back pop it straight off again.
       router.back()
       if (hasPick()) deliverPick(exercises.map(planFor))
     },
@@ -175,11 +168,9 @@ export default function ExercisesScreen() {
           title={
             !picking
               ? t('workouts:library.title')
-              : params.category === 'sports'
-                ? t('workouts:start.sport')
-                : single
-                  ? t('workouts:library.replaceTitle')
-                  : t('workouts:library.pickTitle')
+              : single
+                ? t('workouts:library.replaceTitle')
+                : t('workouts:library.pickTitle')
           }
           onBack={() => router.back()}
           backLabel={t('common:action.back')}
@@ -238,7 +229,6 @@ export default function ExercisesScreen() {
           </Tappable>
         </View>
         <ScrollView
-          ref={chips}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerClassName="gap-2"
@@ -247,24 +237,13 @@ export default function ExercisesScreen() {
             {t('workouts:library.all')}
           </Chip>
           {CATEGORIES.map((value) => (
-            <View
+            <Chip
               key={value}
-              // Opened on a category ("Log a sport" opens on Sports, the
-              // second to last), the row scrolls to show it chosen; otherwise
-              // the list looked filtered by nothing anybody could see.
-              onLayout={(event) => {
-                if (value !== params.category || scrolledToChip.current) return
-                scrolledToChip.current = true
-                chips.current?.scrollTo({ x: event.nativeEvent.layout.x, animated: false })
-              }}
+              selected={category === value}
+              onPress={() => setCategory(category === value ? null : value)}
             >
-              <Chip
-                selected={category === value}
-                onPress={() => setCategory(category === value ? null : value)}
-              >
-                {t(CATEGORY_KEY[value])}
-              </Chip>
-            </View>
+              {t(CATEGORY_KEY[value])}
+            </Chip>
           ))}
         </ScrollView>
       </View>
@@ -350,8 +329,8 @@ const ExerciseRow = memo(function ExerciseRow({
         <Text variant="meta" numberOfLines={1}>
           {[
             primary ? t(MUSCLE_KEY[primary]) : t(CATEGORY_KEY[exercise.category]),
-            // "Other" equipment says nothing (every sport has it), so the row
-            // names the kind of exercise instead: "Quads · Sports".
+            // "Other" equipment says nothing (a dance class, a rope), so the row
+            // names the kind of exercise instead: "Quads · Cardio".
             exercise.equipment === 'other'
               ? t(CATEGORY_KEY[exercise.category])
               : t(EQUIPMENT_KEY[exercise.equipment]),

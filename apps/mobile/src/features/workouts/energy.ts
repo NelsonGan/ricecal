@@ -92,8 +92,8 @@ const UPPER_BODY: ReadonlySet<string> = new Set(['chest', 'back', 'shoulders', '
 /**
  * The `HKWorkoutActivityType` a workout is saved as.
  *
- * A session that is one sport (a badminton game, a run) is that sport, so it
- * lands in the Fitness app under its own icon. Anything with lifting in it is
+ * A session that is all one activity (a run, a yoga class) is that activity,
+ * so it lands in the Fitness app under its own icon. Anything with lifting in it is
  * strength training, because that is what Apple's own list calls a gym
  * session; a workout of nothing but core work is core training.
  */

@@ -1720,8 +1720,7 @@ export const ta = {
       /** The minimised bar over the tabs while a workout runs. */
       running: 'வொர்க்அவுட் நடக்கிறது',
       routine: 'தொடங்கு',
-      sport: 'விளையாட்டைப் பதிவு செய்',
-      past: 'முந்தைய பயிற்சி',
+      past: 'முந்தைய பயிற்சியைப் பதிவுசெய்',
       /** Starting another while one runs. */
       replaceTitle: 'ஒரு வொர்க்அவுட் ஏற்கனவே நடக்கிறது',
       replaceBody: 'அதைக் கைவிட்டு இதைத் தொடங்கவா?',
@@ -2099,7 +2098,6 @@ export const ta = {
       core: 'கோர்',
       fullBody: 'முழு உடல்',
       cardio: 'கார்டியோ',
-      sports: 'விளையாட்டு',
       mobility: 'நெகிழ்வு',
     },
     equipment: {

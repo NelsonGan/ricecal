@@ -1732,8 +1732,7 @@ export const id = {
       resume: 'Lanjutkan latihan',
       running: 'Latihan sedang berlangsung',
       routine: 'Mulai',
-      sport: 'Catat olahraga',
-      past: 'Latihan lalu',
+      past: 'Catat latihan lalu',
       replaceTitle: 'Ada latihan yang sedang berjalan',
       replaceBody: 'Buang yang itu dan mulai yang ini?',
       replaceConfirm: 'Buang dan mulai',
@@ -2100,7 +2099,6 @@ export const id = {
       core: 'Core',
       fullBody: 'Seluruh tubuh',
       cardio: 'Kardio',
-      sports: 'Olahraga',
       mobility: 'Mobilitas',
     },
     equipment: {

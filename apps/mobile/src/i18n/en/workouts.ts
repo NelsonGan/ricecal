@@ -1,5 +1,5 @@
 /**
- * Workouts: logging gym sessions and sport games set by set, the routines they
+ * Workouts: logging gym sessions set by set, the routines they
  * start from, and the records they set.
  *
  * Exercise NAMES are not here. "Lat Pulldown" is what the machine is called in
@@ -29,8 +29,7 @@ export const workouts = {
     /** The minimised bar over the tabs while a workout runs. */
     running: 'Workout in progress',
     routine: 'Start',
-    sport: 'Log a sport',
-    past: 'Past workout',
+    past: 'Log a past workout',
     /** Starting another while one runs. */
     replaceTitle: 'A workout is already running',
     replaceBody: 'Discard it and start this one?',
@@ -413,7 +412,6 @@ export const workouts = {
     core: 'Core',
     fullBody: 'Full body',
     cardio: 'Cardio',
-    sports: 'Sports',
     mobility: 'Mobility',
   },
   equipment: {

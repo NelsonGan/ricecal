@@ -4,7 +4,6 @@ import { useHealthConnection, type WorkoutSummary } from '@/data'
 import { formatTime, ItemRow } from '@/features/shared'
 import { exerciseIcon } from './ExerciseArt'
 import { durationText } from './format'
-import { useExerciseLibrary } from './library'
 
 /**
  * A logged workout as a row of Today's day list, between the meals, in the
@@ -27,15 +26,13 @@ export function WorkoutItem({
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const first = workout.exercises[0]
-  const library = useExerciseLibrary()
-  const exercise = first ? library.byId(first.exerciseId) : undefined
   const reading = useHealthConnection().data?.connected === true
   const counted = workout.healthWorkoutId && reading ? workout.kcal : null
 
   return (
     <ItemRow
       title={workout.name}
-      icon={exerciseIcon(first?.exerciseId ?? '', exercise?.category)}
+      icon={exerciseIcon(first?.exerciseId ?? '')}
       // The length moves to the right when there is no burn to show there,
       // rather than being said twice.
       detail={[

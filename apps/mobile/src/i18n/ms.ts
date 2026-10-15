@@ -1748,8 +1748,7 @@ export const ms = {
       resume: 'Sambung senaman',
       running: 'Senaman sedang berjalan',
       routine: 'Mula',
-      sport: 'Rekod sukan',
-      past: 'Senaman lepas',
+      past: 'Log senaman lepas',
       replaceTitle: 'Ada senaman sedang berjalan',
       replaceBody: 'Buang yang itu dan mula yang ini?',
       replaceConfirm: 'Buang dan mula',
@@ -2119,7 +2118,6 @@ export const ms = {
       core: 'Core',
       fullBody: 'Seluruh badan',
       cardio: 'Kardio',
-      sports: 'Sukan',
       mobility: 'Mobiliti',
     },
     equipment: {

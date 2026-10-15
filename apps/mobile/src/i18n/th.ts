@@ -1702,8 +1702,7 @@ export const th = {
       resume: 'ออกกำลังกายต่อ',
       running: 'กำลังออกกำลังกาย',
       routine: 'เริ่ม',
-      sport: 'บันทึกกีฬา',
-      past: 'ย้อนหลัง',
+      past: 'บันทึกการออกกำลังกายย้อนหลัง',
       replaceTitle: 'กำลังออกกำลังกายอยู่แล้ว',
       replaceBody: 'ทิ้งอันนั้นแล้วเริ่มอันนี้ไหม',
       replaceConfirm: 'ทิ้งแล้วเริ่ม',
@@ -2069,7 +2068,6 @@ export const th = {
       core: 'คอร์',
       fullBody: 'ทั้งตัว',
       cardio: 'คาร์ดิโอ',
-      sports: 'กีฬา',
       mobility: 'โมบิลิตี้',
     },
     equipment: {
