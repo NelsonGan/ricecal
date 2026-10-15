@@ -27,6 +27,7 @@ import { spacing } from '@/theme/tokens'
 import { useNavInset } from './BottomNav'
 import { cn } from './cn'
 import { NumpadHost, useNumpadZone } from './Numpad'
+import { ToastHost } from './Toast'
 
 /**
  * The scroll view, taught `className`. NativeWind converts it to a style only for
@@ -109,6 +110,15 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * into the tab bar the first time it floated here.
    */
   floatingTrailing?: ReactNode
+  /**
+   * Draw toasts above `floatingTrailing` instead of across it. A toast sat on
+   * Today's add button, and the first one a new account sees, the tour offer,
+   * stays up for twelve seconds.
+   *
+   * Pass whether the screen is focused. A tab screen stays mounted behind the
+   * others, and a host it held would draw their toasts where nobody can see them.
+   */
+  toastsAboveFloating?: boolean
   /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
   flush?: boolean
   /**
@@ -178,6 +188,7 @@ export function Screen({
   footer,
   floatingLeading,
   floatingTrailing,
+  toastsAboveFloating = false,
   flush = false,
   safeAreaTop = true,
   scroll = true,
@@ -408,6 +419,11 @@ export function Screen({
           >
             {floatingTrailing}
           </Reanimated.View>
+        ) : null}
+
+        {floatingTrailing && toastsAboveFloating ? (
+          // The provider already clears the safe area, so it comes off here.
+          <ToastHost offset={FLOATING_CLEARANCE + navInset - insets.bottom} />
         ) : null}
 
         {floatingLeading ? (

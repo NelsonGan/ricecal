@@ -8,6 +8,7 @@ import { useExerciseBests, useLastSets, useSettings } from '@/data'
 import { unitFor } from '@/lib/units'
 import { Button, EmptyState, useToast } from '@/ui'
 import { ActionSheet, type SheetAction } from './ActionSheet'
+import type { Tracking } from './catalogue'
 import { RECORD_KEY, SET_KIND_KEY } from './copy'
 import { ExerciseCard } from './ExerciseCard'
 import { FieldOrderProvider } from './fieldOrder'
@@ -33,6 +34,14 @@ import { warmupSets } from './warmup'
 
 /** Hardest first, as the sheet lists them. */
 const RPE_SCALE = [10, 9, 8, 7, 6] as const
+
+/** Counted in reps, so "2 reps left" means something; a run or a plank is not. */
+const RATED: ReadonlySet<Tracking> = new Set([
+  'weight_reps',
+  'reps',
+  'weighted_reps',
+  'assisted_reps',
+])
 
 /**
  * The body of the logger: every exercise card, their menus, and the moves
@@ -374,15 +383,22 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
                         patch: { kind },
                       }),
                   })),
-                  {
-                    key: 'rpe',
-                    label:
-                      setMenu.set.rpe === null
-                        ? t('workouts:logger.rpe')
-                        : t('workouts:logger.rpeValue', { value: setMenu.set.rpe }),
-                    icon: { set: 'body', name: 'heart-rate' } as const,
-                    onPress: () => setRpeFor({ exercise: setMenu.exercise, set: setMenu.set }),
-                  },
+                  // Rated once lifted: a routine is a plan, and saving one
+                  // keeps no RPE.
+                  ...(mode !== 'plan' && RATED.has(setMenu.exercise.tracking)
+                    ? [
+                        {
+                          key: 'rpe',
+                          label:
+                            setMenu.set.rpe === null
+                              ? t('workouts:logger.rpe')
+                              : t('workouts:logger.rpeValue', { value: setMenu.set.rpe }),
+                          icon: { set: 'body', name: 'heart-rate' } as const,
+                          onPress: () =>
+                            setRpeFor({ exercise: setMenu.exercise, set: setMenu.set }),
+                        },
+                      ]
+                    : []),
                   {
                     key: 'remove',
                     label: t('workouts:logger.removeSet'),

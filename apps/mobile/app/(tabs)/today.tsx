@@ -400,7 +400,11 @@ export default function TodayScreen() {
     return (
       // Plain `Screen`: nothing here swipes, so this one does not need
       // gesture-handler's scroll view the way the day below does.
-      <Screen floatingLeading={backToToday} floatingTrailing={addButton}>
+      <Screen
+        floatingLeading={backToToday}
+        floatingTrailing={addButton}
+        toastsAboveFloating={focused}
+      >
         <ScreenTitle title={title} />
         <WeekPicker />
         <Card>
@@ -420,7 +424,11 @@ export default function TodayScreen() {
    */
   if (unreachable) {
     return (
-      <Screen floatingLeading={backToToday} floatingTrailing={addButton}>
+      <Screen
+        floatingLeading={backToToday}
+        floatingTrailing={addButton}
+        toastsAboveFloating={focused}
+      >
         <ScreenTitle title={title} />
         <WeekPicker />
         <Card>
@@ -443,7 +451,12 @@ export default function TodayScreen() {
     // The one screen with swipeable rows on it, and the one that needs
     // gesture-handler's scroll view for them to work. Nothing here takes
     // typing, which is what makes that trade free — see `gestureScroll`.
-    <Screen gestureScroll floatingLeading={backToToday} floatingTrailing={addButton}>
+    <Screen
+      gestureScroll
+      floatingLeading={backToToday}
+      floatingTrailing={addButton}
+      toastsAboveFloating={focused}
+    >
       <ScreenTitle
         title={title}
         leading={

@@ -2055,6 +2055,7 @@ export const vi = {
       export: 'Xuất buổi tập (CSV)',
       exportNone: 'Chưa có buổi tập để xuất',
       exportFailed: 'Không xuất được. Thử lại.',
+      exportSaved: 'Đã lưu {{name}}',
       pushTitle: 'Đến giờ tập rồi',
       pushBody: 'Buổi tập đang chờ bạn. Tập ngắn thôi cũng tính.',
     },

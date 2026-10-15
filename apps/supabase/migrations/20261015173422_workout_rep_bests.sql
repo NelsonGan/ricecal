@@ -23,6 +23,7 @@ CREATE FUNCTION public.exercise_rep_bests (
       and v.exercise_id = p_exercise_id
       and v.tracking in ('weight_reps', 'weighted_reps')
       and v.weight_counts
+      and v.reps <= 30
     order by v.reps, v.weight_kg desc, v.started_at
   ),
   beaten as (
@@ -37,7 +38,7 @@ CREATE FUNCTION public.exercise_rep_bests (
   order by x.reps;
 $function$;
 
-COMMENT ON FUNCTION public.exercise_rep_bests(text) IS 'The heaviest weight lifted for each rep count of a weighted exercise, keeping only counts no heavier set at more reps has beaten. Warm-ups excluded.';
+COMMENT ON FUNCTION public.exercise_rep_bests(text) IS 'The heaviest weight lifted for each rep count up to 30 of a weighted exercise, keeping only counts that nothing as heavy at more reps has matched. Warm-ups excluded.';
 
 GRANT ALL ON FUNCTION public.exercise_rep_bests(text) TO authenticated;
 

@@ -2,15 +2,15 @@ import { format } from 'date-fns'
 import type { ExportRow } from '@/data'
 
 /**
- * Every saved set as CSV, one row a set, in the columns Strong and Hevy export
- * so a spreadsheet or another app reads it without a mapping step. Headers and
- * set types stay English: this is data for a program, not words for a person.
+ * Every saved set as CSV, one row a set, in columns modelled on Strong's export
+ * (one row a set, the workout repeated on each) with each unit in its header.
+ * Headers and set types stay English: this is data for a program, not words
+ * for a person.
  *
  * Weight is kilograms whatever the app shows, and says so in its header: a
  * column that changed unit with a setting would be a column nobody could add up.
- * The date is the phone's wall time, as Strong writes it: an ISO stamp in UTC
- * is not a date Sheets or Numbers recognises, and a late workout lands on the
- * next day.
+ * The date is the phone's wall time: an ISO stamp in UTC is not a date Sheets
+ * or Numbers recognises, and it files a workout near midnight on the wrong day.
  */
 const HEADER = [
   'Date',
@@ -24,6 +24,7 @@ const HEADER = [
   'Seconds',
   'Distance (m)',
   'RPE',
+  'Notes',
   'Workout Notes',
 ]
 
@@ -43,6 +44,7 @@ export function workoutsCsv(rows: readonly ExportRow[]): string {
         row.setDurationS,
         row.distanceM,
         row.rpe,
+        row.exerciseNotes,
         row.workoutNotes,
       ]
         .map(cell)

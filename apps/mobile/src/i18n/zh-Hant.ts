@@ -2034,6 +2034,7 @@ export const zhHant = {
       export: '匯出訓練（CSV）',
       exportNone: '還沒有可匯出的訓練',
       exportFailed: '匯出失敗，請重試。',
+      exportSaved: '已儲存 {{name}}',
       pushTitle: '該訓練了',
       pushBody: '你的訓練在等你。練一下也算數。',
     },

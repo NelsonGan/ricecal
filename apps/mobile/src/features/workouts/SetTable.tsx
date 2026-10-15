@@ -322,7 +322,12 @@ const SetRow = memo(function SetRow({
           className={cn(COL_SET, 'h-[40px] items-center justify-center rounded-sm')}
           onPress={onMenu}
           accessibilityRole="button"
-          accessibilityLabel={`${t('workouts:logger.set')} ${badge}`}
+          // The label replaces the text inside, so the RPE has to be in it.
+          accessibilityLabel={
+            set.rpe === null
+              ? `${t('workouts:logger.set')} ${badge}`
+              : `${t('workouts:logger.set')} ${badge}, ${t('workouts:logger.rpeValue', { value: set.rpe })}`
+          }
         >
           <Text className={cn('font-display text-[17px] leading-[20px]', badgeTone)}>{badge}</Text>
           {set.rpe !== null ? (

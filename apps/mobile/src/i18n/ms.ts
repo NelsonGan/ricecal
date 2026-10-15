@@ -2083,6 +2083,7 @@ export const ms = {
       export: 'Eksport senaman (CSV)',
       exportNone: 'Belum ada senaman untuk dieksport',
       exportFailed: 'Tidak dapat dieksport. Cuba lagi.',
+      exportSaved: '{{name}} disimpan',
       pushTitle: 'Masa untuk bersenam',
       pushBody: 'Senaman anda sedang menunggu. Sekejap pun dikira.',
     },

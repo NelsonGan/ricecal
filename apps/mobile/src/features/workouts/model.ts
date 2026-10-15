@@ -106,8 +106,6 @@ export type SetPlan = {
   reps?: number | null
   durationS?: number | null
   distanceM?: number | null
-  /** Carried only from a saved workout being edited; routines and templates have none. */
-  rpe?: number | null
 }
 
 function setFromPlan(set: SetPlan): LiveSet {
@@ -117,7 +115,6 @@ function setFromPlan(set: SetPlan): LiveSet {
     reps: set.reps ?? null,
     durationS: set.durationS ?? null,
     distanceM: set.distanceM ?? null,
-    rpe: set.rpe ?? null,
   }
 }
 

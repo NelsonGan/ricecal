@@ -60,11 +60,19 @@ function fromSaved(workout: WorkoutDetail): LiveWorkout {
     routineId: workout.routineId,
     rest: null,
     healthWorkoutId: workout.healthWorkoutId,
-    exercises: toPlans(workout.entries).map((plan) => {
+    exercises: toPlans(workout.entries).map((plan, index) => {
       const exercise = exerciseFromPlan(plan)
+      // RPE is put back here rather than carried by the plan: a plan also
+      // starts routines and repeats, which must not arrive already rated.
+      const saved = workout.entries[index].sets
       return {
         ...exercise,
-        sets: exercise.sets.map((set) => ({ ...set, done: true, doneAt: started })),
+        sets: exercise.sets.map((set, at) => ({
+          ...set,
+          rpe: saved[at]?.rpe ?? null,
+          done: true,
+          doneAt: started,
+        })),
       }
     }),
   }

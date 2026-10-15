@@ -9,6 +9,7 @@ const row: ExportRow = {
   startedAt: '2026-10-15T10:00:00.000Z',
   durationS: 3720,
   exerciseName: 'Bench Press (Barbell)',
+  exerciseNotes: 'Pause at the chest',
   exercisePosition: 0,
   setPosition: 1,
   kind: 'normal',
@@ -25,7 +26,7 @@ it('writes a header and one row a set, quoting what needs it', () => {
   // Wall time in whatever zone the test runs in, as on the phone.
   const local = format(new Date(row.startedAt), 'yyyy-MM-dd HH:mm:ss')
   expect(line).toBe(
-    `${local},"Push, heavy",62,Bench Press (Barbell),2,normal,60,8,,,8,"Felt ""great""\nnew PR"`,
+    `${local},"Push, heavy",62,Bench Press (Barbell),2,normal,60,8,,,8,Pause at the chest,"Felt ""great""\nnew PR"`,
   )
   expect(end).toBe('')
 })

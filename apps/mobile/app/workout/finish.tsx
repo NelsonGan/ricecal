@@ -192,7 +192,8 @@ export default function FinishWorkoutScreen() {
               value={durationText(t, Math.max(0, durationS))}
             />
           </View>
-          {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
+          {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) &&
+          (totals?.volumeKg ?? 0) > 0 ? (
             <View className="flex-1">
               <Stat
                 label={t('workouts:logger.volume')}
