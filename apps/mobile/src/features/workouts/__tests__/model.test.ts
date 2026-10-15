@@ -4,6 +4,7 @@ import { estimateKcal, healthActivityType, totalDistanceM } from '../energy'
 import {
   digitsToSeconds,
   distanceField,
+  distanceText,
   parseDistance,
   parseWeight,
   secondsToDigits,
@@ -20,11 +21,13 @@ import {
   lastActivityAt,
   liveTotals,
   newWorkout,
+  showsVolume,
+  timedSeconds,
   toPayload,
   unfinishedSets,
 } from '../model'
 import { recordSets } from '../records'
-import { cleanSplit, groupSplit, searchExercises } from '../search'
+import { cleanSplit, groupSplit, planFor, searchExercises } from '../search'
 import { TEMPLATES, templatePlans } from '../templates'
 import { platesFor, warmupSets } from '../warmup'
 
@@ -317,6 +320,51 @@ describe('the library', () => {
 
   it('cleans a custom split to known muscles that add up to one', () => {
     expect(cleanSplit({ chest: 2, wings: 5, triceps: 2 })).toEqual({ chest: 0.5, triceps: 0.5 })
+  })
+})
+
+describe('what adding an exercise starts with', () => {
+  const byId = (id: string) => {
+    const found = EXERCISES.find((exercise) => exercise.id === id)
+    if (!found) throw new Error(id)
+    return { ...found, custom: false }
+  }
+
+  it('gives lifting three sets and the default rest', () => {
+    expect(planFor(byId('barbell-bench-press'))).toMatchObject({ restS: null, sets: [{}, {}, {}] })
+  })
+
+  it('gives a sport one timed set and no rest timer', () => {
+    expect(planFor(byId('badminton'))).toMatchObject({ restS: 0, sets: [{}] })
+  })
+
+  it('counts the time a sport set logs, ticked sets only', () => {
+    const workout = workoutWith([
+      {
+        exerciseId: 'badminton',
+        name: 'Badminton',
+        tracking: 'duration',
+        sets: [{ durationS: 3600 }, { durationS: 600 }],
+      },
+    ])
+    const ticked = apply(workout, {
+      type: 'completeSet',
+      key: workout.exercises[0].key,
+      setId: workout.exercises[0].sets[0].id,
+      at: 1,
+    })
+    expect(timedSeconds(ticked)).toBe(3600)
+  })
+
+  it('shows volume only where something is lifted', () => {
+    expect(showsVolume([])).toBe(true)
+    expect(showsVolume(['duration', 'distance_duration'])).toBe(false)
+    expect(showsVolume(['duration', 'weight_reps'])).toBe(true)
+  })
+
+  it("reads a carry in metres and a run in the user's unit", () => {
+    expect(distanceText(40, 'km', 'weight_distance')).toBe('40 m')
+    expect(distanceText(5200, 'km', 'distance_duration')).toBe('5.2 km')
   })
 })
 
