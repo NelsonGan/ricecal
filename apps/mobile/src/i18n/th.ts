@@ -720,6 +720,21 @@ export const th = {
       send: 'บันทึกมื้อนี้',
     },
 
+    photoNote: {
+      title: 'ข้อมูลเพิ่มเติม',
+      placeholder: 'เนื้อวัว ไม่ใช่ไก่, ชาไม่ใส่น้ำตาล, แบ่งกันกิน',
+      skip: 'ข้าม',
+      log: 'บันทึกมื้อนี้',
+      retake: 'ถ่ายใหม่',
+      photo: 'รูปของคุณ',
+      suggestion: {
+        shared: 'แบ่งกันกิน',
+        half: 'กินครึ่งเดียว',
+        lessRice: 'ข้าวน้อย',
+        noSugar: 'ไม่ใส่น้ำตาล',
+      },
+    },
+
     camera: {
       permissionTitle: 'ต้องขอสิทธิ์เข้าถึงกล้อง',
       permissionBody: 'RiceCal ใช้กล้องอ่านจานของคุณ',
@@ -1166,11 +1181,11 @@ export const th = {
     personalisation: {
       title: 'ปรับให้เข้ากับคุณ',
       mealsTitle: 'เวลามื้ออาหาร',
-      mealsNote: 'นี่คือเวลาที่การเตือนจะดัง',
       editMeal: 'เปลี่ยนเวลาของ{{meal}}',
       hour: 'ชั่วโมง',
       minute: 'นาที',
       preview: 'เตือนเวลา {{time}}',
+      photoNote: 'ถามรายละเอียดหลังถ่ายรูป',
     },
 
     reminders: {

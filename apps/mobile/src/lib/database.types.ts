@@ -1587,6 +1587,7 @@ export type Database = {
           notify_water: boolean
           notify_weekly_report: boolean
           notify_weigh_in: boolean
+          photo_note_prompt: boolean
           quiet_from: string
           quiet_to: string
           share_with_family: boolean
@@ -1605,6 +1606,7 @@ export type Database = {
           notify_water?: boolean
           notify_weekly_report?: boolean
           notify_weigh_in?: boolean
+          photo_note_prompt?: boolean
           quiet_from?: string
           quiet_to?: string
           share_with_family?: boolean
@@ -1623,6 +1625,7 @@ export type Database = {
           notify_water?: boolean
           notify_weekly_report?: boolean
           notify_weigh_in?: boolean
+          photo_note_prompt?: boolean
           quiet_from?: string
           quiet_to?: string
           share_with_family?: boolean

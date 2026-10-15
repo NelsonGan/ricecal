@@ -170,7 +170,9 @@ async function runOne(kase, written) {
   if (kase.kind === 'photo') {
     const bytes = await photoBytes(kase.image)
     written.photoKey = await live.upload(bytes, kase.contentType ?? 'image/jpeg')
-    scan = await live.scanPhoto(written.photoKey)
+    // `photo_note` rather than `note`, which the cases already use for why a
+    // band is the width it is.
+    scan = await live.scanPhoto(written.photoKey, undefined, kase.photo_note)
   } else {
     scan = await live.scanText(kase.text)
   }

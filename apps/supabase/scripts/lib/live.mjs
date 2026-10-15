@@ -264,8 +264,9 @@ export async function upload(bytes, contentType = 'image/jpeg') {
   return signed.body.key
 }
 
-export const scanPhoto = (key, logDate = today()) =>
-  invoke('scan-meal', { photo_path: key, log_date: logDate, debug: true })
+/** A photographed meal, with the words the app asks for after the shutter when given. */
+export const scanPhoto = (key, logDate = today(), note) =>
+  invoke('scan-meal', { photo_path: key, log_date: logDate, note, debug: true })
 
 export const scanText = (text, logDate = today()) =>
   invoke('scan-meal', { text, log_date: logDate, debug: true })
