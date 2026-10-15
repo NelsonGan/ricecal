@@ -285,7 +285,22 @@ Deno.serve(async (req: Request) => {
             // front. They wait against this entry, and renaming it writes the
             // row: see `packet_panels`. A failed insert only means the packet
             // stays a miss, which is where it was.
-            if (judged.unnamed) {
+            //
+            // Only for a code that really missed in the last hour. The name
+            // that follows is typed rather than read, so this is what stops a
+            // request naming any barcode it likes: a code nobody failed to find
+            // is a packet the catalogue or Open Food Facts already answers for.
+            const { count: missed } = judged.unnamed
+              ? await db
+                  .from('barcode_misses')
+                  .select('id', { count: 'exact', head: true })
+                  .eq('code', barcode)
+                  .eq('found', false)
+                  .gte('created_at', new Date(Date.now() - 3_600_000).toISOString())
+              : { count: 0 }
+            if (judged.unnamed && !missed) {
+              trace.push(`[contribute] no recent miss for ${barcode}, so nothing waits`)
+            } else if (judged.unnamed) {
               const { error } = await db.from('packet_panels').insert({
                 food_log_id: entry.id,
                 barcode,

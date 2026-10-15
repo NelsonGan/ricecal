@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(9);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set entry  'e0000000-0000-4000-8000-000000000029'
@@ -68,9 +68,18 @@ select throws_ok(
 reset role;
 select set_config('request.jwt.claims', null, true);
 
+-- The edge functions are the only writers: `scan-meal` keeps a panel and the
+-- `barcode` function reads it and lets it go.
+select ok(
+  has_table_privilege('service_role', 'public.packet_panels', 'SELECT')
+  and has_table_privilege('service_role', 'public.packet_panels', 'INSERT')
+  and has_table_privilege('service_role', 'public.packet_panels', 'DELETE'),
+  'service_role can keep, read and clear a panel'
+);
+
 -- -- THE CHECKS ------------------------------------------------------------------
--- The same lines `productFromLabel` draws, so a row that slipped past it still
--- cannot be stored.
+-- Some of the lines `productFromLabel` draws, so a row that slipped past it
+-- still cannot be stored with an impossible figure.
 
 select throws_ok(
   format(

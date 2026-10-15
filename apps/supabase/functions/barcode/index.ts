@@ -29,7 +29,7 @@ import { gtin14 } from '../_shared/barcode.ts'
 import { type CatalogueProduct, cacheProduct, lookupBarcode } from '../_shared/catalogue.ts'
 import { json } from '../_shared/http.ts'
 import { iconFor } from '../_shared/icon-match.ts'
-import { catalogueName, namedProduct } from '../_shared/packet.ts'
+import { type NamedEntry, nameForPanel, type WaitingPanel } from '../_shared/packet.ts'
 
 /** Open Food Facts asks that clients identify themselves. */
 const USER_AGENT = 'RiceCal/1.0 (https://ricecal.app; barcode lookup)'
@@ -282,15 +282,6 @@ Deno.serve(async (req: Request) => {
 
 const ENTRY_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-type PanelRow = {
-  barcode: string
-  kcal: number
-  carbs_g: number | string
-  protein_g: number | string
-  fat_g: number | string
-  serving_g: number | string | null
-}
-
 /**
  * Write a waiting panel to the catalogue under the name its owner gave the entry.
  *
@@ -315,41 +306,29 @@ async function namePanel(
   // else's id reads as no row, which is the same answer as no panel.
   const { data: entry, error: entryError } = await client
     .from('food_logs')
-    .select('display_label')
+    .select(
+      'display_label, base_kcal, base_carbs_g, base_protein_g, base_fat_g, ' +
+        'override_kcal, override_carbs_g, override_protein_g, override_fat_g',
+    )
     .eq('id', entryId)
-    .maybeSingle<{ display_label: string | null }>()
+    .maybeSingle<NamedEntry>()
   if (entryError) return json({ ok: false, error: 'could not read the entry' }, 500)
   if (!entry) return json({ ok: true, contributed: false })
 
   const { data: panel, error: panelError } = await admin
     .from('packet_panels')
-    .select('barcode, kcal, carbs_g, protein_g, fat_g, serving_g')
+    .select('barcode, kcal, carbs_g, protein_g, fat_g, serving_g, created_at')
     .eq('food_log_id', entryId)
-    .maybeSingle<PanelRow>()
+    .maybeSingle<WaitingPanel>()
   if (panelError) return json({ ok: false, error: 'could not read the panel' }, 500)
   if (!panel) return json({ ok: true, contributed: false })
 
-  // A name no stranger should be shown leaves the panel waiting, so a better
-  // rename later still counts.
-  const name = catalogueName(entry.display_label)
-  if (!name) return json({ ok: true, contributed: false })
+  // A refusal leaves the panel waiting, so a later edit that fixes the name or
+  // puts the figures back still counts. See `nameForPanel` for the three.
+  const named = nameForPanel(entry, panel)
+  if ('reason' in named) return json({ ok: true, contributed: false })
 
-  // `numeric` columns may come back as strings, so each figure is read as a
-  // number rather than trusted to be one.
-  const outcome = await cacheProduct(
-    namedProduct(
-      {
-        barcode: Number(panel.barcode),
-        kcal: panel.kcal,
-        carbs_g: Number(panel.carbs_g),
-        protein_g: Number(panel.protein_g),
-        fat_g: Number(panel.fat_g),
-        serving_g: panel.serving_g == null ? null : Number(panel.serving_g),
-      },
-      name,
-      'user_named',
-    ),
-  )
+  const outcome = await cacheProduct(named.product)
   // Unreachable catalogue: keep the panel, and the next rename tries again.
   if (outcome === 'failed') return json({ ok: true, contributed: false })
 

@@ -284,6 +284,7 @@ Three kinds of change have to be hand-written into a migration, because
 | what | why |
 |---|---|
 | a `REVOKE` on a new function | the diff emits the grants a function ENDS UP with, not the revoke that shaped them, so `create function`'s default EXECUTE-to-PUBLIC survives into the migration |
+| client `REVOKE`s on a new table | the same gap for tables: the default grants to `anon` and `authenticated` survive, which a service-only table cannot have (`packet_panels` was the latest) |
 | seed data of any kind | the rows are data, and a diff only emits structure |
 | `create extension` / `drop extension` | the diff engine does not track extensions at all |
 | `cron.schedule(…)` calls | a schedule is a row in `cron.job`, so it is data too |
@@ -300,7 +301,7 @@ The `auth` schema is **not** one of these. The diff tracks triggers on
 made the next diff emit `DROP TRIGGER` for it. It stays declarative, in
 `16_new_user.sql`.
 
-Seven service-only tables have RLS enabled with no policies. That denies all
+Eight service-only tables have RLS enabled with no policies. That denies all
 row reads and writes by default; their client table grants are revoked too.
 `98_client_table_privileges.sql` also removes `TRUNCATE`, `REFERENCES`, `TRIGGER`
 and `MAINTAIN` from client roles on every public table. These operations do not
@@ -1653,16 +1654,29 @@ stays a miss, which is where it already was. The Worker records each one in
 
 **The name is usually on the other side of the box.** In one week a third of the
 panels photographed after a miss had good figures and no product name, because
-the panel is on the back. The model calls those "Packaged food", which is no name
+the panel is on the back. The scan names those "Packaged food", which is no name
 for a catalogue row, so the packet stayed a miss, while the people holding it
 typed the name into their entry a minute later. Now the figures wait in
 `packet_panels` against the entry, and renaming it writes the row. The app sends
 only the entry's id (`functions/barcode` with `{named}`), and the function reads
 the name off the row and the figures off the panel, never off the request.
-`catalogueName` is the one rule for both names, the model's and the typed one,
-and a typed name is recorded as `user_named` so it can be taken back without the
-panels a model named. A build older than this one never reports a rename, so its
-panels wait until the entry is deleted.
+
+A typed name is weaker evidence than a printed one, so this path asks more:
+
+- the code has to have missed in the last hour (`barcode_misses`), or any
+  request could name any barcode it liked;
+- the entry still has to count the panel's figures, since fix-by-typing or an
+  override is its owner saying the photo was read wrong;
+- the panel has to be under a month old;
+- and the name has to pass `catalogueName`, the one rule for both names, which
+  also refuses meal words, links, handles, phone numbers and invisible
+  characters.
+
+A refusal leaves the panel waiting for a better edit. A typed name is recorded as
+`user_named` so it can be taken back without the panels a model named, and the
+Worker refuses a source it does not know rather than filing it as Open Food
+Facts. A build older than this one never reports a rename, so its panels wait
+until the entry is deleted.
 
 A lookup that could not be MADE is the other case and still stops: the packet may
 be fine and the connection was not, so "Scan again" is the primary there, with

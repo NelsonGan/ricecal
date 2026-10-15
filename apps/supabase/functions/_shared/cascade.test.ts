@@ -514,6 +514,13 @@ Deno.test('productFromLabel keeps a real name that reads like a heading', () => 
 Deno.test('productFromLabel refuses an energy figure that cannot be right', () => {
   eq(labelRefusal(labelPanel({ kcal: 0 })).startsWith('implausible energy'), true, 'zero')
   eq(
+    labelRefusal(labelPanel({ kcal: 0.4, carbs_g: 0.1, protein_g: 0, fat_g: 0 })).startsWith(
+      'implausible energy',
+    ),
+    true,
+    'a figure that rounds to zero',
+  )
+  eq(
     labelRefusal(labelPanel({ kcal: 2600 })).startsWith('implausible energy'),
     true,
     'a whole packet',

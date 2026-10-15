@@ -771,12 +771,17 @@ export default {
           // clean-up statement in the schema selects on, so a typo'd source
           // would quietly make a row unreachable by the one thing that can take
           // it back.
-          const source =
-            body.source === 'user_label' ||
-            body.source === 'user_named' ||
-            body.source === 'open_food_facts'
-              ? body.source
-              : 'open_food_facts'
+          //
+          // A source this Worker does not know is refused rather than filed as
+          // Open Food Facts. A caller newer than the Worker then gets an error
+          // it can retry once the Worker catches up, instead of a row labelled
+          // wrongly for good. Absent still means Open Food Facts, which is what
+          // a caller older than provenance sent.
+          const known = ['open_food_facts', 'user_label', 'user_named'] as const
+          if (body.source != null && !known.includes(body.source as (typeof known)[number])) {
+            return json({ ok: false, error: 'unknown source' }, 400)
+          }
+          const source = (body.source ?? 'open_food_facts') as (typeof known)[number]
 
           // ONE TRANSACTION, because a row and its provenance are one fact.
           // `batch` runs these in order inside a transaction, so both land or
