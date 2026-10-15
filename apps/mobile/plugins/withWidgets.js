@@ -46,6 +46,7 @@ const ICONS = [
   ['ui/search.png', 'wg-search.png'],
   ['food/cooking-pot.png', 'wg-recipe.png'],
   ['food/rice-bowl.png', 'wg-mark.png'],
+  ['body/dumbbell.png', 'wg-dumbbell.png'],
 ]
 
 /**
@@ -154,7 +155,13 @@ function swiftSources(projectRoot) {
     .filter((name) => name.endsWith('.swift'))
     .map((name) => path.join(own, name))
 
-  return [...files, path.join(projectRoot, 'modules/ricecal-widgets/ios/RiceCalWidgetStore.swift')]
+  return [
+    ...files,
+    path.join(projectRoot, 'modules/ricecal-widgets/ios/RiceCalWidgetStore.swift'),
+    // The Live Activity's attributes, which the app and the extension have to
+    // agree on exactly: ActivityKit pairs the two by this type.
+    path.join(projectRoot, 'modules/ricecal-widgets/ios/WorkoutActivityAttributes.swift'),
+  ]
 }
 
 /**
@@ -177,10 +184,16 @@ function withAppGroupEntitlement(config, appGroup) {
   })
 }
 
-/** So `RiceCalWidgetStore` finds the container from inside the app too. */
+/**
+ * So `RiceCalWidgetStore` finds the container from inside the app too, and so
+ * the app may start a Live Activity at all: without `NSSupportsLiveActivities`
+ * `Activity.request` throws and the workout simply never reaches the lock
+ * screen.
+ */
 function withAppInfoPlist(config, appGroup) {
   return withInfoPlist(config, (cfg) => {
     cfg.modResults.RiceCalAppGroup = appGroup
+    cfg.modResults.NSSupportsLiveActivities = true
     return cfg
   })
 }

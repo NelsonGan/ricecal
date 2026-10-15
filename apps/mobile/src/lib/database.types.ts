@@ -259,6 +259,42 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_exercises: {
+        Row: {
+          category: string
+          created_at: string
+          equipment: string
+          id: string
+          muscles: Json
+          name: string
+          tracking: Database['public']['Enums']['exercise_tracking']
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          equipment?: string
+          id?: string
+          muscles?: Json
+          name: string
+          tracking?: Database['public']['Enums']['exercise_tracking']
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          equipment?: string
+          id?: string
+          muscles?: Json
+          name?: string
+          tracking?: Database['public']['Enums']['exercise_tracking']
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_goals: {
         Row: {
           carbs_g: number
@@ -1595,6 +1631,9 @@ export type Database = {
           units: Database['public']['Enums']['unit_system']
           updated_at: string
           user_id: string
+          workout_reminder_at: string
+          workout_reminder_days: number[]
+          workout_rest_s: number
         }
         Insert: {
           activity_extends_budget?: boolean
@@ -1614,6 +1653,9 @@ export type Database = {
           units?: Database['public']['Enums']['unit_system']
           updated_at?: string
           user_id: string
+          workout_reminder_at?: string
+          workout_reminder_days?: number[]
+          workout_rest_s?: number
         }
         Update: {
           activity_extends_budget?: boolean
@@ -1633,6 +1675,9 @@ export type Database = {
           units?: Database['public']['Enums']['unit_system']
           updated_at?: string
           user_id?: string
+          workout_reminder_at?: string
+          workout_reminder_days?: number[]
+          workout_rest_s?: number
         }
         Relationships: []
       }
@@ -1665,6 +1710,202 @@ export type Database = {
           weight_kg?: number
         }
         Relationships: []
+      }
+      workout_exercises: {
+        Row: {
+          exercise_id: string
+          exercise_name: string
+          id: string
+          notes: string | null
+          position: number
+          rest_s: number | null
+          superset: number | null
+          tracking: Database['public']['Enums']['exercise_tracking']
+          user_id: string
+          workout_id: string
+        }
+        Insert: {
+          exercise_id: string
+          exercise_name: string
+          id?: string
+          notes?: string | null
+          position: number
+          rest_s?: number | null
+          superset?: number | null
+          tracking: Database['public']['Enums']['exercise_tracking']
+          user_id: string
+          workout_id: string
+        }
+        Update: {
+          exercise_id?: string
+          exercise_name?: string
+          id?: string
+          notes?: string | null
+          position?: number
+          rest_s?: number | null
+          superset?: number | null
+          tracking?: Database['public']['Enums']['exercise_tracking']
+          user_id?: string
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'workout_exercises_workout_fkey'
+            columns: ['workout_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'workout_summaries'
+            referencedColumns: ['id', 'user_id']
+          },
+          {
+            foreignKeyName: 'workout_exercises_workout_fkey'
+            columns: ['workout_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'workouts'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
+      workout_routines: {
+        Row: {
+          created_at: string
+          exercises: Json
+          id: string
+          last_used_at: string | null
+          name: string
+          notes: string | null
+          position: number
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercises?: Json
+          id?: string
+          last_used_at?: string | null
+          name: string
+          notes?: string | null
+          position?: number
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exercises?: Json
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          notes?: string | null
+          position?: number
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workout_sets: {
+        Row: {
+          distance_m: number | null
+          duration_s: number | null
+          id: string
+          kind: Database['public']['Enums']['workout_set_kind']
+          position: number
+          reps: number | null
+          rpe: number | null
+          user_id: string
+          weight_kg: number | null
+          workout_exercise_id: string
+        }
+        Insert: {
+          distance_m?: number | null
+          duration_s?: number | null
+          id?: string
+          kind?: Database['public']['Enums']['workout_set_kind']
+          position: number
+          reps?: number | null
+          rpe?: number | null
+          user_id: string
+          weight_kg?: number | null
+          workout_exercise_id: string
+        }
+        Update: {
+          distance_m?: number | null
+          duration_s?: number | null
+          id?: string
+          kind?: Database['public']['Enums']['workout_set_kind']
+          position?: number
+          reps?: number | null
+          rpe?: number | null
+          user_id?: string
+          weight_kg?: number | null
+          workout_exercise_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'workout_sets_exercise_fkey'
+            columns: ['workout_exercise_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'workout_exercises'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
+      workouts: {
+        Row: {
+          created_at: string
+          duration_s: number | null
+          ended_at: string
+          health_workout_id: string | null
+          id: string
+          kcal: number | null
+          log_date: string
+          name: string
+          notes: string | null
+          routine_id: string | null
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_s?: number | null
+          ended_at: string
+          health_workout_id?: string | null
+          id: string
+          kcal?: number | null
+          log_date: string
+          name: string
+          notes?: string | null
+          routine_id?: string | null
+          started_at: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_s?: number | null
+          ended_at?: string
+          health_workout_id?: string | null
+          id?: string
+          kcal?: number | null
+          log_date?: string
+          name?: string
+          notes?: string | null
+          routine_id?: string | null
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'workouts_routine_fkey'
+            columns: ['routine_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'workout_routines'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
       }
     }
     Views: {
@@ -2203,6 +2444,108 @@ export type Database = {
         }
         Relationships: []
       }
+      workout_set_details: {
+        Row: {
+          distance_m: number | null
+          duration_s: number | null
+          e1rm_kg: number | null
+          exercise_id: string | null
+          exercise_name: string | null
+          exercise_position: number | null
+          id: string | null
+          is_distance_pr: boolean | null
+          is_duration_pr: boolean | null
+          is_e1rm_pr: boolean | null
+          is_reps_pr: boolean | null
+          is_volume_pr: boolean | null
+          is_weight_pr: boolean | null
+          kind: Database['public']['Enums']['workout_set_kind'] | null
+          position: number | null
+          reps: number | null
+          rpe: number | null
+          started_at: string | null
+          tracking: Database['public']['Enums']['exercise_tracking'] | null
+          user_id: string | null
+          volume_kg: number | null
+          weight_kg: number | null
+          workout_exercise_id: string | null
+          workout_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'workout_sets_exercise_fkey'
+            columns: ['workout_exercise_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'workout_exercises'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
+      workout_set_values: {
+        Row: {
+          counts: boolean | null
+          distance_m: number | null
+          duration_s: number | null
+          e1rm_kg: number | null
+          exercise_id: string | null
+          exercise_name: string | null
+          exercise_position: number | null
+          id: string | null
+          kind: Database['public']['Enums']['workout_set_kind'] | null
+          log_date: string | null
+          position: number | null
+          reps: number | null
+          rpe: number | null
+          started_at: string | null
+          tracking: Database['public']['Enums']['exercise_tracking'] | null
+          user_id: string | null
+          volume_kg: number | null
+          weight_counts: boolean | null
+          weight_kg: number | null
+          workout_exercise_id: string | null
+          workout_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'workout_sets_exercise_fkey'
+            columns: ['workout_exercise_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'workout_exercises'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
+      workout_summaries: {
+        Row: {
+          created_at: string | null
+          duration_s: number | null
+          ended_at: string | null
+          exercise_count: number | null
+          exercises: Json | null
+          health_workout_id: string | null
+          id: string | null
+          kcal: number | null
+          log_date: string | null
+          name: string | null
+          notes: string | null
+          pr_count: number | null
+          routine_id: string | null
+          set_count: number | null
+          started_at: string | null
+          updated_at: string | null
+          user_id: string | null
+          volume_kg: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'workouts_routine_fkey'
+            columns: ['routine_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'workout_routines'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
     }
     Functions: {
       activity_days_range: {
@@ -2386,6 +2729,57 @@ export type Database = {
       }
       delete_social_comment: { Args: { p_id: string }; Returns: undefined }
       delete_social_post: { Args: { p_id: string }; Returns: undefined }
+      exercise_bests: {
+        Args: { p_exercise_id?: string }
+        Returns: {
+          best_distance_m: number
+          best_duration_s: number
+          best_e1rm_at: string
+          best_e1rm_kg: number
+          best_reps: number
+          best_session_volume_kg: number
+          best_set_volume_kg: number
+          best_weight_at: string
+          best_weight_kg: number
+          best_weight_reps: number
+          exercise_id: string
+          exercise_name: string
+          last_at: string
+          sets: number
+          total_volume_kg: number
+          tracking: Database['public']['Enums']['exercise_tracking']
+          workouts: number
+        }[]
+      }
+      exercise_history: {
+        Args: { p_exercise_id: string; p_limit?: number }
+        Returns: {
+          best_e1rm_kg: number
+          best_weight_kg: number
+          distance_m: number
+          duration_s: number
+          reps: number
+          sets: Json
+          started_at: string
+          volume_kg: number
+          workout_id: string
+          workout_name: string
+        }[]
+      }
+      exercise_last_sets: {
+        Args: { p_exercise_ids: string[] }
+        Returns: {
+          distance_m: number
+          duration_s: number
+          exercise_id: string
+          kind: Database['public']['Enums']['workout_set_kind']
+          reps: number
+          set_position: number
+          started_at: string
+          weight_kg: number
+          workout_id: string
+        }[]
+      }
       expired_meal_photos: {
         Args: { p_limit?: number }
         Returns: {
@@ -2517,6 +2911,7 @@ export type Database = {
         Returns: undefined
       }
       recipe_review_hourly_limit: { Args: never; Returns: number }
+      record_social_photo_etags: { Args: { p_etags: Json }; Returns: number }
       remove_ingredient: {
         Args: { p_ingredient_id: string }
         Returns: undefined
@@ -2674,6 +3069,7 @@ export type Database = {
         Args: { p_share_slug: string }
         Returns: string
       }
+      save_workout: { Args: { p_workout: Json }; Returns: string }
       scan_daily_limit: { Args: { p_user: string }; Returns: number }
       scan_usage_today: {
         Args: never
@@ -3104,11 +3500,47 @@ export type Database = {
         }
         Returns: string
       }
+      workout_exercise_totals: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          exercise_id: string
+          sets: number
+          volume_kg: number
+        }[]
+      }
+      workout_overview: {
+        Args: never
+        Returns: {
+          this_week_seconds: number
+          this_week_volume_kg: number
+          this_week_workouts: number
+          total_workouts: number
+          week_streak: number
+        }[]
+      }
+      workout_weeks: {
+        Args: { p_weeks?: number }
+        Returns: {
+          duration_s: number
+          sets: number
+          volume_kg: number
+          week: string
+          workouts: number
+        }[]
+      }
     }
     Enums: {
       activity_level: 'sedentary' | 'light' | 'on_feet' | 'very_active'
       energy_unit: 'kcal' | 'kj'
       entry_source: 'search' | 'quick_add' | 'camera' | 'voice' | 'import' | 'text'
+      exercise_tracking:
+        | 'weight_reps'
+        | 'reps'
+        | 'weighted_reps'
+        | 'assisted_reps'
+        | 'duration'
+        | 'distance_duration'
+        | 'weight_distance'
       food_place: 'mamak' | 'kopitiam' | 'hawker' | 'packaged' | 'home'
       health_provider: 'apple_health' | 'health_connect' | 'demo'
       icon_set: 'body' | 'dishes' | 'food' | 'system' | 'ui'
@@ -3124,6 +3556,7 @@ export type Database = {
       subscription_plan: 'monthly' | 'yearly' | 'lifetime'
       subscription_status: 'none' | 'trial' | 'active' | 'expired' | 'billing_retry'
       unit_system: 'metric' | 'imperial'
+      workout_set_kind: 'normal' | 'warmup' | 'drop' | 'failure'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3255,6 +3688,15 @@ export const Constants = {
       activity_level: ['sedentary', 'light', 'on_feet', 'very_active'],
       energy_unit: ['kcal', 'kj'],
       entry_source: ['search', 'quick_add', 'camera', 'voice', 'import', 'text'],
+      exercise_tracking: [
+        'weight_reps',
+        'reps',
+        'weighted_reps',
+        'assisted_reps',
+        'duration',
+        'distance_duration',
+        'weight_distance',
+      ],
       food_place: ['mamak', 'kopitiam', 'hawker', 'packaged', 'home'],
       health_provider: ['apple_health', 'health_connect', 'demo'],
       icon_set: ['body', 'dishes', 'food', 'system', 'ui'],
@@ -3270,6 +3712,7 @@ export const Constants = {
       subscription_plan: ['monthly', 'yearly', 'lifetime'],
       subscription_status: ['none', 'trial', 'active', 'expired', 'billing_retry'],
       unit_system: ['metric', 'imperial'],
+      workout_set_kind: ['normal', 'warmup', 'drop', 'failure'],
     },
   },
 } as const

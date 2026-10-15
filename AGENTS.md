@@ -334,6 +334,12 @@ run `open -a Simulator --args -CurrentDeviceUDID <udid>`, then
 device window is visible, and leave it open on the tested screen so the user
 can follow along and inspect the result.
 
+**An edit under `widgets/ios/` needs a prebuild, or a copy.** `withWidgets.js`
+copies those files into `ios/RiceCalWidgets/` at prebuild time, so
+`expo run:ios` without one compiles the stale copy and the widget or Live
+Activity keeps the old code with no warning. `cp widgets/ios/*.swift
+ios/RiceCalWidgets/` before an incremental build is enough.
+
 A simulator build is already on disk, so verifying a UI change does not need
 `pnpm ios` (a prebuild plus a full compile):
 
@@ -355,6 +361,11 @@ Metro reload picks up an edit without reinstalling.
   than tapping, and it reaches screens the UI only offers after a refusal. A
   deep link is restored as the route after a Metro reload, and some screens
   crash when they mount before the session has loaded; `restart-app` clears it.
+- **After a reinstall, the first `ricecal://` link raises an "Open in
+  RiceCal?" alert that screenshots do not show.** The screen just dims, ignores
+  every tap and even the Home button, and looks like a hung app. Each
+  `simctl openurl` queues another. Tap where Open sits, about (256, 476) in
+  points on an iPhone 18 Pro, once per queued link.
 - **A Metro answering on 8081 is not necessarily this project's.** Another
   project on the machine takes it first and answers `packager-status:running`
   identically. `curl -s localhost:8081/json/list` names the app. Start this one
@@ -367,6 +378,8 @@ Metro reload picks up an edit without reinstalling.
   `ricecal://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8082`, and
   warm the bundle with a `curl` of the entry bundle first (about 30 s cold) or
   the client red-boxes rather than waiting.
+- **The dev-menu "Tools button" switch ignores a simulated tap; a short
+  horizontal swipe on it flips it.** Off is what clean screenshots want.
 - **The dev-menu bubble eats taps in the top right** — roughly x 0.84-0.95,
   y 0.10-0.22, a region much larger than the visible circle, over every `AppBar`
   action and the plate sheet's first "+". Hiding the tools button leaves the

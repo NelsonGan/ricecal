@@ -1,0 +1,888 @@
+import {
+  onlineManager,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
+import { AppState } from 'react-native'
+
+import { track } from '@/lib/analytics'
+import type { Enums, Json, Tables } from '@/lib/database.types'
+import { supabase } from '@/lib/supabase'
+import { unwrap, unwrapMaybe } from './client'
+import { keys } from './keys'
+import { useUserId } from './session'
+import { dequeueWorkout, enqueueWorkout, getOutbox, type WorkoutDocument } from './workout-outbox'
+
+/**
+ * Workouts the user logged, routines and custom exercises: the read and write
+ * side of the Workouts tab.
+ *
+ * Every number here comes from Postgres (`96_workouts.sql`): a workout's
+ * volume, its records, an exercise's bests and history, the weekly bars and
+ * the streak. The phone sums nothing it has saved.
+ */
+
+export type Tracking = Enums<'exercise_tracking'>
+export type SetKind = Enums<'workout_set_kind'>
+
+export type WorkoutSummary = {
+  id: string
+  name: string
+  notes: string | null
+  startedAt: string
+  endedAt: string
+  durationS: number
+  date: string
+  routineId: string | null
+  kcal: number | null
+  healthWorkoutId: string | null
+  exerciseCount: number
+  setCount: number
+  volumeKg: number
+  prCount: number
+  exercises: { exerciseId: string; name: string; tracking: Tracking; sets: number }[]
+  /** Finished on the phone, still waiting in the outbox for the server. */
+  pending?: boolean
+}
+
+export type WorkoutSet = {
+  id: string
+  position: number
+  kind: SetKind
+  weightKg: number | null
+  reps: number | null
+  durationS: number | null
+  distanceM: number | null
+  rpe: number | null
+  volumeKg: number | null
+  e1rmKg: number | null
+  records: ('weight' | 'e1rm' | 'volume' | 'reps' | 'duration' | 'distance')[]
+}
+
+export type WorkoutEntry = {
+  id: string
+  position: number
+  exerciseId: string
+  name: string
+  tracking: Tracking
+  superset: number | null
+  restS: number | null
+  notes: string | null
+  sets: WorkoutSet[]
+}
+
+export type WorkoutDetail = WorkoutSummary & { entries: WorkoutEntry[] }
+
+const num = (value: number | string | null | undefined): number | null =>
+  value === null || value === undefined ? null : Number(value)
+
+type SummaryRow = Tables<'workout_summaries'>
+
+function toSummary(row: SummaryRow): WorkoutSummary {
+  const exercises = Array.isArray(row.exercises) ? row.exercises : []
+  return {
+    id: row.id ?? '',
+    name: row.name ?? '',
+    notes: row.notes,
+    startedAt: row.started_at ?? '',
+    endedAt: row.ended_at ?? '',
+    durationS: row.duration_s ?? 0,
+    date: row.log_date ?? '',
+    routineId: row.routine_id,
+    kcal: row.kcal,
+    healthWorkoutId: row.health_workout_id,
+    exerciseCount: row.exercise_count ?? 0,
+    setCount: row.set_count ?? 0,
+    volumeKg: num(row.volume_kg) ?? 0,
+    prCount: row.pr_count ?? 0,
+    exercises: exercises.map((value) => {
+      const entry = value as {
+        exercise_id: string
+        exercise_name: string
+        tracking: Tracking
+        sets: number
+      }
+      return {
+        exerciseId: entry.exercise_id,
+        name: entry.exercise_name,
+        tracking: entry.tracking,
+        sets: Number(entry.sets) || 0,
+      }
+    }),
+  }
+}
+
+/**
+ * An outbox document drawn as a history row. Its figures are the phone's own
+ * until the server has it, which is the one place this file sums anything,
+ * and it is said on the row: the card reads "Waiting to sync".
+ */
+export function summaryFromDocument(document: WorkoutDocument): WorkoutSummary {
+  let volumeKg = 0
+  let setCount = 0
+  for (const exercise of document.exercises) {
+    for (const set of exercise.sets) {
+      setCount += 1
+      if (
+        (exercise.tracking === 'weight_reps' || exercise.tracking === 'weighted_reps') &&
+        set.weight_kg &&
+        set.reps
+      ) {
+        volumeKg += set.weight_kg * set.reps
+      }
+    }
+  }
+  const started = Date.parse(document.started_at)
+  const ended = Date.parse(document.ended_at)
+  return {
+    id: document.id,
+    name: document.name,
+    notes: document.notes,
+    startedAt: document.started_at,
+    endedAt: document.ended_at,
+    durationS: Math.max(0, Math.round((ended - started) / 1000)),
+    date: document.log_date,
+    routineId: document.routine_id,
+    kcal: document.kcal,
+    healthWorkoutId: document.health_workout_id,
+    exerciseCount: document.exercises.length,
+    setCount,
+    volumeKg,
+    prCount: 0,
+    exercises: document.exercises.map((exercise) => ({
+      exerciseId: exercise.exercise_id,
+      name: exercise.exercise_name,
+      tracking: exercise.tracking,
+      sets: exercise.sets.length,
+    })),
+    pending: true,
+  }
+}
+
+const PAGE = 20
+
+/** Every workout, newest first, a page at a time. */
+export function useWorkouts() {
+  const userId = useUserId()
+
+  return useInfiniteQuery({
+    queryKey: keys.workouts(userId),
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }): Promise<WorkoutSummary[]> =>
+      unwrap(
+        await supabase
+          .from('workout_summaries')
+          .select('*')
+          .eq('user_id', userId)
+          .order('started_at', { ascending: false })
+          .range(pageParam, pageParam + PAGE - 1),
+      ).map(toSummary),
+    getNextPageParam: (last, pages) => (last.length < PAGE ? undefined : pages.length * PAGE),
+  })
+}
+
+/** One day's workouts, for Today. */
+export function useWorkoutsOn(date: string) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.workoutsOn(userId, date),
+    queryFn: async (): Promise<WorkoutSummary[]> =>
+      unwrap(
+        await supabase
+          .from('workout_summaries')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('log_date', date)
+          .order('started_at', { ascending: true }),
+      ).map(toSummary),
+  })
+}
+
+/** One workout, with every exercise and set and which sets set a record. */
+export function useWorkout(id: string | undefined) {
+  const userId = useUserId()
+
+  return useQuery({
+    enabled: Boolean(id),
+    queryKey: keys.workout(userId, id ?? ''),
+    queryFn: async (): Promise<WorkoutDetail | null> => {
+      const [summary, entries, sets] = await Promise.all([
+        supabase
+          .from('workout_summaries')
+          .select('*')
+          .eq('id', id ?? '')
+          .maybeSingle(),
+        supabase
+          .from('workout_exercises')
+          .select('*')
+          .eq('workout_id', id ?? '')
+          .order('position'),
+        supabase
+          .from('workout_set_details')
+          .select('*')
+          .eq('workout_id', id ?? '')
+          .order('exercise_position')
+          .order('position'),
+      ])
+      const row = unwrapMaybe(summary)
+      if (!row) return null
+      const setRows = unwrap(sets)
+      return {
+        ...toSummary(row),
+        entries: unwrap(entries).map((entry) => ({
+          id: entry.id,
+          position: entry.position,
+          exerciseId: entry.exercise_id,
+          name: entry.exercise_name,
+          tracking: entry.tracking,
+          superset: entry.superset,
+          restS: entry.rest_s,
+          notes: entry.notes,
+          sets: setRows
+            .filter((set) => set.workout_exercise_id === entry.id)
+            .map((set) => ({
+              id: set.id ?? '',
+              position: set.position ?? 0,
+              kind: set.kind ?? 'normal',
+              weightKg: num(set.weight_kg),
+              reps: set.reps,
+              durationS: set.duration_s,
+              distanceM: num(set.distance_m),
+              rpe: num(set.rpe),
+              volumeKg: num(set.volume_kg),
+              e1rmKg: num(set.e1rm_kg),
+              records: [
+                set.is_weight_pr && ('weight' as const),
+                set.is_e1rm_pr && ('e1rm' as const),
+                set.is_volume_pr && ('volume' as const),
+                set.is_reps_pr && ('reps' as const),
+                set.is_duration_pr && ('duration' as const),
+                set.is_distance_pr && ('distance' as const),
+              ].filter((record): record is WorkoutSet['records'][number] => Boolean(record)),
+            })),
+        })),
+      }
+    },
+  })
+}
+
+/** The days with a workout between two dates, for the calendar. */
+export function useWorkoutDates(from: string, to: string) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.workoutDates(userId, from, to),
+    queryFn: async (): Promise<Record<string, number>> => {
+      const rows = unwrap(
+        await supabase
+          .from('workouts')
+          .select('log_date')
+          .eq('user_id', userId)
+          .gte('log_date', from)
+          .lte('log_date', to),
+      )
+      const out: Record<string, number> = {}
+      for (const row of rows) out[row.log_date] = (out[row.log_date] ?? 0) + 1
+      return out
+    },
+  })
+}
+
+export type WorkoutOverview = {
+  totalWorkouts: number
+  weekStreak: number
+  thisWeekWorkouts: number
+  thisWeekSeconds: number
+  thisWeekVolumeKg: number
+}
+
+export function useWorkoutOverview() {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.workoutOverview(userId),
+    queryFn: async (): Promise<WorkoutOverview> => {
+      const [row] = unwrap(await supabase.rpc('workout_overview'))
+      return {
+        totalWorkouts: row?.total_workouts ?? 0,
+        weekStreak: row?.week_streak ?? 0,
+        thisWeekWorkouts: row?.this_week_workouts ?? 0,
+        thisWeekSeconds: row?.this_week_seconds ?? 0,
+        thisWeekVolumeKg: num(row?.this_week_volume_kg) ?? 0,
+      }
+    },
+  })
+}
+
+export type WorkoutWeek = {
+  week: string
+  workouts: number
+  durationS: number
+  volumeKg: number
+  sets: number
+}
+
+export function useWorkoutWeeks(weeks = 12) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.workoutWeeks(userId, weeks),
+    queryFn: async (): Promise<WorkoutWeek[]> =>
+      unwrap(await supabase.rpc('workout_weeks', { p_weeks: weeks })).map((row) => ({
+        week: row.week,
+        workouts: row.workouts,
+        durationS: row.duration_s,
+        volumeKg: num(row.volume_kg) ?? 0,
+        sets: row.sets,
+      })),
+  })
+}
+
+export type ExerciseTotal = { exerciseId: string; sets: number; volumeKg: number }
+
+/** Working sets per exercise between two dates: what the muscle split is drawn from. */
+export function useExerciseTotals(from: string, to: string) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.exerciseTotals(userId, from, to),
+    queryFn: async (): Promise<ExerciseTotal[]> =>
+      unwrap(await supabase.rpc('workout_exercise_totals', { p_from: from, p_to: to })).map(
+        (row) => ({
+          exerciseId: row.exercise_id,
+          sets: row.sets,
+          volumeKg: num(row.volume_kg) ?? 0,
+        }),
+      ),
+  })
+}
+
+export type ExerciseBests = {
+  exerciseId: string
+  name: string
+  tracking: Tracking
+  workouts: number
+  sets: number
+  lastAt: string | null
+  bestWeightKg: number | null
+  bestWeightReps: number | null
+  bestWeightAt: string | null
+  bestE1rmKg: number | null
+  bestE1rmAt: string | null
+  bestSetVolumeKg: number | null
+  bestSessionVolumeKg: number | null
+  bestReps: number | null
+  bestDurationS: number | null
+  bestDistanceM: number | null
+  totalVolumeKg: number
+}
+
+/**
+ * Personal bests: one exercise's, or every exercise's when the id is null.
+ * The logger reads the whole list to say "new record" the moment a set beats
+ * one, so it is fetched once per workout and kept.
+ */
+export function useExerciseBests(exerciseId: string | null) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.exerciseBests(userId, exerciseId),
+    queryFn: async (): Promise<ExerciseBests[]> =>
+      unwrap(
+        await supabase.rpc('exercise_bests', exerciseId ? { p_exercise_id: exerciseId } : {}),
+      ).map((row) => ({
+        exerciseId: row.exercise_id,
+        name: row.exercise_name,
+        tracking: row.tracking,
+        workouts: row.workouts,
+        sets: row.sets,
+        lastAt: row.last_at,
+        bestWeightKg: num(row.best_weight_kg),
+        bestWeightReps: row.best_weight_reps,
+        bestWeightAt: row.best_weight_at,
+        bestE1rmKg: num(row.best_e1rm_kg),
+        bestE1rmAt: row.best_e1rm_at,
+        bestSetVolumeKg: num(row.best_set_volume_kg),
+        bestSessionVolumeKg: num(row.best_session_volume_kg),
+        bestReps: row.best_reps,
+        bestDurationS: row.best_duration_s,
+        bestDistanceM: num(row.best_distance_m),
+        totalVolumeKg: num(row.total_volume_kg) ?? 0,
+      })),
+  })
+}
+
+export type ExerciseSession = {
+  workoutId: string
+  workoutName: string
+  startedAt: string
+  sets: {
+    kind: SetKind
+    weightKg: number | null
+    reps: number | null
+    durationS: number | null
+    distanceM: number | null
+    rpe: number | null
+    isPr: boolean
+  }[]
+  bestWeightKg: number | null
+  bestE1rmKg: number | null
+  volumeKg: number
+  reps: number
+  durationS: number
+  distanceM: number | null
+}
+
+export function useExerciseHistory(exerciseId: string | undefined) {
+  const userId = useUserId()
+
+  return useQuery({
+    enabled: Boolean(exerciseId),
+    queryKey: keys.exerciseHistory(userId, exerciseId ?? ''),
+    queryFn: async (): Promise<ExerciseSession[]> =>
+      unwrap(
+        await supabase.rpc('exercise_history', { p_exercise_id: exerciseId ?? '', p_limit: 200 }),
+      ).map((row) => ({
+        workoutId: row.workout_id,
+        workoutName: row.workout_name,
+        startedAt: row.started_at,
+        sets: (Array.isArray(row.sets) ? row.sets : []).map((value) => {
+          const set = value as Record<string, Json>
+          return {
+            kind: (set.kind as SetKind) ?? 'normal',
+            weightKg: num(set.weight_kg as number | null),
+            reps: num(set.reps as number | null),
+            durationS: num(set.duration_s as number | null),
+            distanceM: num(set.distance_m as number | null),
+            rpe: num(set.rpe as number | null),
+            isPr: Boolean(set.is_pr),
+          }
+        }),
+        bestWeightKg: num(row.best_weight_kg),
+        bestE1rmKg: num(row.best_e1rm_kg),
+        volumeKg: num(row.volume_kg) ?? 0,
+        reps: row.reps,
+        durationS: row.duration_s,
+        distanceM: num(row.distance_m),
+      })),
+  })
+}
+
+export type LastSet = {
+  kind: SetKind
+  weightKg: number | null
+  reps: number | null
+  durationS: number | null
+  distanceM: number | null
+}
+
+/**
+ * What each exercise was last time, set by set: the PREVIOUS column. The ids
+ * are sorted into the key, so adding an exercise to the workout asks again
+ * while reordering does not.
+ */
+export function useLastSets(exerciseIds: readonly string[]) {
+  const userId = useUserId()
+  const sorted = [...new Set(exerciseIds)].sort()
+
+  return useQuery({
+    enabled: sorted.length > 0,
+    queryKey: keys.lastSets(userId, sorted.join(',')),
+    queryFn: async (): Promise<Record<string, LastSet[]>> => {
+      const rows = unwrap(await supabase.rpc('exercise_last_sets', { p_exercise_ids: sorted }))
+      const out: Record<string, LastSet[]> = {}
+      for (const row of rows) {
+        out[row.exercise_id] ??= []
+        out[row.exercise_id].push({
+          kind: row.kind,
+          weightKg: num(row.weight_kg),
+          reps: row.reps,
+          durationS: row.duration_s,
+          distanceM: num(row.distance_m),
+        })
+      }
+      return out
+    },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Saving.
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether a failed save was refused for what it says, rather than for when or
+ * by whom it was sent. Only the SQLSTATE classes about the data itself count:
+ * 22 (a value out of range) and 23 (a constraint). Everything else with a code
+ * passes on a later try, and treating it as final lost workouts: an expired
+ * token (`PGRST301`), a refresh that failed on a weak signal so the request
+ * went out as anon (`42501`), a timeout (`57014`), the database flipped read
+ * only (`25006`).
+ */
+function wasRefused(error: unknown): boolean {
+  const code = (error as { code?: unknown })?.code
+  return typeof code === 'string' && /^2[23][0-9A-Z]{3}$/.test(code)
+}
+
+/**
+ * Queued workouts the server refused since the app started. They stay in the
+ * outbox, because a refused workout is still a workout somebody did, and are
+ * tried again on the next launch rather than on every foreground.
+ */
+const refusedThisLaunch = new Set<string>()
+
+function invalidateWorkouts(queryClient: ReturnType<typeof useQueryClient>, userId: string): void {
+  queryClient.invalidateQueries({ queryKey: keys.workoutsAll(userId) })
+  queryClient.invalidateQueries({ queryKey: keys.routines(userId) })
+}
+
+export type WorkoutSaveResult = { queued: boolean }
+
+/**
+ * Save a finished (or edited) workout.
+ *
+ * `networkMode: 'always'` because this must never pause: a paused mutation is
+ * one that vanishes when the app is killed. With no connection it goes
+ * straight to the outbox, and an answer that never comes back sends it there
+ * too, so the caller can always close the logger knowing the workout is kept.
+ */
+export function useSaveWorkout() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    networkMode: 'always',
+    mutationFn: async (document: WorkoutDocument): Promise<WorkoutSaveResult> => {
+      if (!onlineManager.isOnline()) {
+        enqueueWorkout(userId, document)
+        return { queued: true }
+      }
+      const { error } = await supabase.rpc('save_workout', {
+        p_workout: document as unknown as Json,
+      })
+      if (error) {
+        // Refused for what it says: stay on the finish screen, where the
+        // workout is still the running one and can be fixed.
+        if (wasRefused(error)) throw error
+        enqueueWorkout(userId, document)
+        return { queued: true }
+      }
+      dequeueWorkout(userId, document.id)
+      return { queued: false }
+    },
+    onSettled: () => invalidateWorkouts(queryClient, userId),
+  })
+}
+
+/**
+ * Sends whatever the outbox holds: on mount, whenever the phone comes back
+ * online, and whenever the app returns to the foreground. Mounted once, in the
+ * tabs layout.
+ */
+export function useWorkoutOutbox(): void {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+  const sending = useRef(false)
+
+  useEffect(() => {
+    let alive = true
+
+    const flush = async () => {
+      if (sending.current || !onlineManager.isOnline()) return
+      const queued = getOutbox(userId).filter((document) => !refusedThisLaunch.has(document.id))
+      if (!queued.length) return
+      sending.current = true
+      let sent = 0
+      try {
+        // Without a session the request goes out as anon and is refused for
+        // that, not for the workout. Wait for the session to come back.
+        const { data } = await supabase.auth.getSession()
+        if (!data.session) return
+        for (const document of queued) {
+          if (!alive) break
+          const { error } = await supabase.rpc('save_workout', {
+            p_workout: document as unknown as Json,
+          })
+          if (!error) {
+            // Only if it is still the copy that was sent: an edit queued while
+            // this one was in flight must not be cleared by its reply.
+            dequeueWorkout(userId, document.id, document)
+            sent += 1
+          } else if (wasRefused(error)) {
+            console.warn('[workouts] the server refused a queued workout', error)
+            refusedThisLaunch.add(document.id)
+          } else {
+            break
+          }
+        }
+      } finally {
+        sending.current = false
+        if (sent) invalidateWorkouts(queryClient, userId)
+      }
+    }
+
+    flush()
+    const online = onlineManager.subscribe((isOnline) => {
+      if (isOnline) flush()
+    })
+    const foreground = AppState.addEventListener('change', (state) => {
+      if (state === 'active') flush()
+    })
+    return () => {
+      alive = false
+      online()
+      foreground.remove()
+    }
+  }, [userId, queryClient])
+}
+
+export function useDeleteWorkout() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      dequeueWorkout(userId, id)
+      const { error } = await supabase.from('workouts').delete().eq('id', id).eq('user_id', userId)
+      if (error) throw error
+    },
+    onSettled: () => invalidateWorkouts(queryClient, userId),
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Routines.
+// ---------------------------------------------------------------------------
+
+export type RoutineSet = {
+  kind?: SetKind
+  weight_kg?: number | null
+  reps?: number | null
+  duration_s?: number | null
+  distance_m?: number | null
+}
+
+export type RoutineExercise = {
+  exercise_id: string
+  exercise_name: string
+  tracking: Tracking
+  rest_s?: number | null
+  superset?: number | null
+  notes?: string | null
+  sets: RoutineSet[]
+}
+
+export type Routine = {
+  id: string
+  name: string
+  notes: string | null
+  exercises: RoutineExercise[]
+  templateId: string | null
+  position: number
+  lastUsedAt: string | null
+  updatedAt: string
+}
+
+function toRoutine(row: Tables<'workout_routines'>): Routine {
+  return {
+    id: row.id,
+    name: row.name,
+    notes: row.notes,
+    exercises: (Array.isArray(row.exercises) ? row.exercises : []) as unknown as RoutineExercise[],
+    templateId: row.template_id,
+    position: row.position,
+    lastUsedAt: row.last_used_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export function useRoutines() {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.routines(userId),
+    queryFn: async (): Promise<Routine[]> =>
+      unwrap(
+        await supabase
+          .from('workout_routines')
+          .select('*')
+          .eq('user_id', userId)
+          .order('position')
+          .order('created_at'),
+      ).map(toRoutine),
+  })
+}
+
+export type RoutineInput = {
+  id?: string
+  name: string
+  notes: string | null
+  exercises: RoutineExercise[]
+  templateId?: string | null
+}
+
+export function useSaveRoutine() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: RoutineInput): Promise<Routine> => {
+      const values = {
+        name: input.name.trim(),
+        notes: input.notes?.trim() || null,
+        exercises: input.exercises as unknown as Json,
+        template_id: input.templateId ?? null,
+      }
+      if (input.id) {
+        const { data, error } = await supabase
+          .from('workout_routines')
+          .update(values)
+          .eq('id', input.id)
+          .eq('user_id', userId)
+          .select('*')
+          .single()
+        if (error) throw error
+        return toRoutine(data)
+      }
+      // New routines go to the end of the user's own order.
+      const existing = queryClient.getQueryData<Routine[]>(keys.routines(userId)) ?? []
+      const position = existing.reduce((max, routine) => Math.max(max, routine.position + 1), 0)
+      const { data, error } = await supabase
+        .from('workout_routines')
+        .insert({ ...values, user_id: userId, position })
+        .select('*')
+        .single()
+      if (error) throw error
+      return toRoutine(data)
+    },
+    onSuccess: (routine, input) =>
+      track('Routine Saved', {
+        is_new: !input.id,
+        exercises: routine.exercises.length,
+        from_template: Boolean(input.templateId),
+      }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: keys.routines(userId) }),
+  })
+}
+
+export function useDeleteRoutine() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('workout_routines')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId)
+      if (error) throw error
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: keys.routines(userId) })
+      const previous = queryClient.getQueryData<Routine[]>(keys.routines(userId))
+      if (previous) {
+        queryClient.setQueryData(
+          keys.routines(userId),
+          previous.filter((routine) => routine.id !== id),
+        )
+      }
+      return { previous }
+    },
+    onError: (_error, _id, context) => {
+      if (context?.previous) queryClient.setQueryData(keys.routines(userId), context.previous)
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: keys.routines(userId) }),
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Custom exercises.
+// ---------------------------------------------------------------------------
+
+export type CustomExercise = {
+  id: string
+  name: string
+  tracking: Tracking
+  equipment: string
+  category: string
+  muscles: Record<string, number>
+}
+
+export function useCustomExercises() {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.customExercises(userId),
+    queryFn: async (): Promise<CustomExercise[]> =>
+      unwrap(
+        await supabase.from('custom_exercises').select('*').eq('user_id', userId).order('name'),
+      ).map((row) => ({
+        id: row.id,
+        name: row.name,
+        tracking: row.tracking,
+        equipment: row.equipment,
+        category: row.category,
+        muscles: (row.muscles ?? {}) as Record<string, number>,
+      })),
+  })
+}
+
+export type CustomExerciseInput = Omit<CustomExercise, 'id'> & { id?: string }
+
+export function useSaveCustomExercise() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: CustomExerciseInput): Promise<CustomExercise> => {
+      const values = {
+        name: input.name.trim(),
+        tracking: input.tracking,
+        equipment: input.equipment,
+        category: input.category,
+        muscles: input.muscles as Json,
+      }
+      const query = input.id
+        ? supabase.from('custom_exercises').update(values).eq('id', input.id).eq('user_id', userId)
+        : supabase.from('custom_exercises').insert({ ...values, user_id: userId })
+      const { data, error } = await query.select('*').single()
+      if (error) throw error
+      return {
+        id: data.id,
+        name: data.name,
+        tracking: data.tracking,
+        equipment: data.equipment,
+        category: data.category,
+        muscles: (data.muscles ?? {}) as Record<string, number>,
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: keys.customExercises(userId) }),
+  })
+}
+
+export function useDeleteCustomExercise() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('custom_exercises')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId)
+      if (error) throw error
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: keys.customExercises(userId) }),
+  })
+}
+
+/** Whether a custom exercise name is taken (the unique index's own error). */
+export function isDuplicateName(error: unknown): boolean {
+  return (error as { code?: string })?.code === '23505'
+}

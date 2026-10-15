@@ -1,0 +1,58 @@
+import ActivityKit
+import Foundation
+
+/**
+ What a running workout's Live Activity carries.
+
+ Compiled into BOTH binaries, like `RiceCalWidgetStore.swift`: the app requests
+ and updates the activity, and the widget extension draws it, and ActivityKit
+ pairs the two by this type's name. `plugins/withWidgets.js` copies this file
+ into the extension; one source, so the two can never disagree about a field.
+
+ The clocks are dates rather than counters. The lock screen counts the elapsed
+ time and the rest itself from them (`Text(_:style: .timer)`), so the app does
+ not have to wake every second to push a number nobody is looking at.
+ */
+public struct WorkoutActivityAttributes: ActivityAttributes {
+  public struct ContentState: Codable, Hashable {
+    /// The workout's name, which the user can change mid-session.
+    public var name: String
+    /// The exercise with the next set still to do.
+    public var exercise: String
+    /// "2/4": the next set of that exercise, out of its sets.
+    public var set: String
+    /// Sets ticked so far, and sets in the workout.
+    public var done: Int
+    public var total: Int
+    /// When the rest in progress ends, and how long it was. Nil between rests.
+    public var restEndsAt: Date?
+    public var restTotalS: Double?
+
+    public init(
+      name: String,
+      exercise: String,
+      set: String,
+      done: Int,
+      total: Int,
+      restEndsAt: Date?,
+      restTotalS: Double?
+    ) {
+      self.name = name
+      self.exercise = exercise
+      self.set = set
+      self.done = done
+      self.total = total
+      self.restEndsAt = restEndsAt
+      self.restTotalS = restTotalS
+    }
+  }
+
+  /// The workout's own id, so a stale activity from an earlier run can be told apart.
+  public var workoutId: String
+  public var startedAt: Date
+
+  public init(workoutId: String, startedAt: Date) {
+    self.workoutId = workoutId
+    self.startedAt = startedAt
+  }
+}

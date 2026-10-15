@@ -31,7 +31,25 @@ export type ReminderCopy = {
   weeklyBody: string
   monthlyTitle: string
   monthlyBody: string
+  workoutTitle: string
+  workoutBody: string
 }
+
+/**
+ * The kinds `rescheduleReminders` owns. Everything else that is scheduled (a
+ * scan's notice, a workout's rest timer and its "still training?") belongs to
+ * whatever booked it, and rewriting the reminders must not cancel it: turning
+ * the water reminder on mid-workout used to take the rest timer's notice with
+ * it.
+ */
+const REMINDER_KINDS: ReadonlySet<unknown> = new Set([
+  'meal',
+  'water',
+  'weigh-in',
+  'weekly',
+  'monthly',
+  'workout-reminder',
+])
 
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
@@ -45,8 +63,11 @@ Notifications.setNotificationHandler({
      * a plate that is not counted yet. The row in front of them is the better
      * answer, so the banner steps aside.
      */
-    const scan = notification.request.content.data?.kind === 'scan'
-    const watching = scan && AppState.currentState === 'active'
+    const kind = notification.request.content.data?.kind
+    // The same goes for a workout's rest timer and its "still training?": with
+    // the app open the countdown and the prompt are already on screen.
+    const transient = kind === 'scan' || kind === 'rest' || kind === 'workout'
+    const watching = transient && AppState.currentState === 'active'
 
     return {
       shouldShowBanner: !watching,
@@ -134,7 +155,16 @@ export async function rescheduleReminders(
   copy: ReminderCopy,
 ): Promise<void> {
   await ensureChannel()
-  await Notifications.cancelAllScheduledNotificationsAsync()
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync()
+  await Promise.all(
+    scheduled
+      // A notification with no kind at all predates the kinds, and was a reminder.
+      .filter((entry) => {
+        const kind = entry.content.data?.kind
+        return kind === undefined || REMINDER_KINDS.has(kind)
+      })
+      .map((entry) => Notifications.cancelScheduledNotificationAsync(entry.identifier)),
+  )
 
   if (!(await notificationsAllowed())) return
 
@@ -209,6 +239,27 @@ export async function rescheduleReminders(
       },
     })
   }
+
+  // Workouts, on the days the user trains. Stored as JavaScript's `getDay()`
+  // (0 is Sunday) and booked as this API's weekday, where 1 is Sunday.
+  const at = parseTime(settings.workout_reminder_at ?? '18:00')
+  for (const day of settings.workout_reminder_days ?? []) {
+    if (day < 0 || day > 6) continue
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: copy.workoutTitle,
+        body: copy.workoutBody,
+        data: { kind: 'workout-reminder' },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+        weekday: day + 1,
+        hour: at.hour,
+        minute: at.minute,
+        channelId: CHANNEL,
+      },
+    })
+  }
 }
 
 /**
@@ -271,4 +322,54 @@ export async function announceScan(title: string, body: string): Promise<void> {
   } catch (error) {
     console.warn('[notifications] could not announce the finished scan', error)
   }
+}
+
+/**
+ * The one-off notices a running workout books: its rest timer and its "still
+ * training?". Each has one fixed identifier, so booking it again replaces it.
+ * With random ids, every relaunch mid-workout booked a second "still
+ * training?" that finishing never cancelled, and it fired hours later for a
+ * workout already saved.
+ */
+export const WORKOUT_NOTICE = { rest: 'workout-rest', workout: 'workout-stale' } as const
+
+/**
+ * Book a workout notice for a moment. Best effort, like the scan notice: it
+ * does nothing when notifications are not allowed or the moment has passed.
+ */
+export async function scheduleNoticeAt(
+  at: number,
+  kind: keyof typeof WORKOUT_NOTICE,
+  content: { title: string; body: string },
+): Promise<void> {
+  const seconds = Math.round((at - Date.now()) / 1000)
+  if (seconds < 1) return
+  try {
+    if (!(await notificationsAllowed())) return
+    await ensureChannel()
+    await Notifications.scheduleNotificationAsync({
+      identifier: WORKOUT_NOTICE[kind],
+      content: { ...content, data: { kind }, sound: kind === 'rest' ? 'default' : undefined },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+        channelId: CHANNEL,
+      },
+    })
+  } catch (error) {
+    console.warn('[notifications] could not book a workout notice', error)
+  }
+}
+
+/**
+ * Take a workout notice back: unbooked if it is still to come, and cleared from
+ * Notification Center if it already came, so "Rest is over" for a workout that
+ * has since finished is not left there to tap.
+ */
+export async function cancelNotice(kind: keyof typeof WORKOUT_NOTICE): Promise<void> {
+  const id = WORKOUT_NOTICE[kind]
+  await Promise.allSettled([
+    Notifications.cancelScheduledNotificationAsync(id),
+    Notifications.dismissNotificationAsync(id),
+  ])
 }

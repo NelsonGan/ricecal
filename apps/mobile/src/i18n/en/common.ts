@@ -26,6 +26,7 @@ export const common = {
 
   nav: {
     today: 'Today',
+    workouts: 'Workouts',
     trends: 'Trends',
     me: 'Me',
     /** The add button at the right end of the nav bar. Not a tab: it opens the log sheet. */

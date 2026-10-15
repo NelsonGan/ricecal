@@ -174,6 +174,32 @@ export const keys = {
   activitySession: (id: string) => ['activity-session', id] as const,
   healthConnection: (userId: string) => ['health-connection', userId] as const,
 
+  /**
+   * Workouts the user logged. Everything under one prefix, because saving a
+   * workout moves the history list, a day's list on Today, the weekly bars,
+   * the streak, every record and every exercise's history at once, and the
+   * save does not know which of them is on screen.
+   */
+  workoutsAll: (userId: string) => ['workouts', userId] as const,
+  workouts: (userId: string) => ['workouts', userId, 'list'] as const,
+  workoutsOn: (userId: string, date: string) => ['workouts', userId, 'day', date] as const,
+  workout: (userId: string, id: string) => ['workouts', userId, 'one', id] as const,
+  workoutOverview: (userId: string) => ['workouts', userId, 'overview'] as const,
+  workoutDates: (userId: string, from: string, to: string) =>
+    ['workouts', userId, 'dates', from, to] as const,
+  workoutWeeks: (userId: string, weeks: number) => ['workouts', userId, 'weeks', weeks] as const,
+  exerciseTotals: (userId: string, from: string, to: string) =>
+    ['workouts', userId, 'exercise-totals', from, to] as const,
+  exerciseBests: (userId: string, exerciseId: string | null) =>
+    ['workouts', userId, 'bests', exerciseId ?? 'all'] as const,
+  exerciseHistory: (userId: string, exerciseId: string) =>
+    ['workouts', userId, 'history', exerciseId] as const,
+  lastSets: (userId: string, exerciseIds: string) =>
+    ['workouts', userId, 'last-sets', exerciseIds] as const,
+  /** Not under `workouts`: a saved workout does not change a routine's plan. */
+  routines: (userId: string) => ['routines', userId] as const,
+  customExercises: (userId: string) => ['custom-exercises', userId] as const,
+
   photo: (path: string, shareSlug?: string) => ['photo', path, shareSlug ?? 'visible'] as const,
 } as const
 

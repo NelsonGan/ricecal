@@ -1,0 +1,280 @@
+import { format } from 'date-fns'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Platform, View } from 'react-native'
+
+import { useSettings, useUpdateSettings } from '@/data'
+import { ActionSheet, setWorkoutPrefs, shortClock, useWorkoutPrefs } from '@/features/workouts'
+import { datePattern } from '@/lib/dates'
+import { requestWorkoutWrite } from '@/lib/health'
+import { parseTime } from '@/lib/meal-times'
+import { useBack } from '@/lib/navigation'
+import { ensureNotificationPermission } from '@/lib/notifications'
+import {
+  AppBar,
+  Button,
+  Card,
+  Chip,
+  cn,
+  Divider,
+  ListRow,
+  Screen,
+  SegmentedControl,
+  Sheet,
+  Switch,
+  Tappable,
+  Text,
+  useToast,
+  Wheel,
+  type WheelOption,
+} from '@/ui'
+
+const REST_CHOICES = [0, 30, 45, 60, 90, 120, 150, 180, 240, 300] as const
+
+/** Monday first, as the streak counts weeks; values are `getDay()` numbers. */
+const WEEK = [1, 2, 3, 4, 5, 6, 0] as const
+
+/**
+ * Workout settings. The default rest and the reminders follow the account
+ * (`user_settings`); Apple Health and keeping the screen on follow the phone
+ * (`features/workouts/prefs.ts`).
+ */
+export default function WorkoutSettingsScreen() {
+  const { t } = useTranslation(['workouts', 'common', 'profile'])
+  const goBack = useBack('/workouts')
+  const toast = useToast()
+  const { data: settings } = useSettings()
+  const update = useUpdateSettings()
+  const prefs = useWorkoutPrefs()
+  const [restOpen, setRestOpen] = useState(false)
+  const [timeOpen, setTimeOpen] = useState(false)
+
+  const rest = settings?.workout_rest_s ?? 90
+  const days = settings?.workout_reminder_days ?? []
+  const at = parseTime(settings?.workout_reminder_at ?? '18:00')
+  const atLabel = format(new Date(2026, 0, 1, at.hour, at.minute), datePattern('time'))
+
+  const toggleDay = async (day: number) => {
+    const next = days.includes(day) ? days.filter((d) => d !== day) : [...days, day].sort()
+    if (next.length > days.length && !(await ensureNotificationPermission())) {
+      toast.show({ title: t('profile:reminders.denied'), tone: 'error' })
+      return
+    }
+    update.mutate({ workout_reminder_days: next })
+  }
+
+  const dayLabel = (day: number) =>
+    // A fixed Sunday, 4 January 2026, moved forward by the weekday number.
+    format(new Date(2026, 0, 4 + day), 'EEE')
+
+  return (
+    <Screen
+      header={
+        <AppBar
+          title={t('workouts:settings.title')}
+          onBack={goBack}
+          backLabel={t('common:action.back')}
+        />
+      }
+    >
+      <Card contentClassName="gap-0 px-5 py-1">
+        <ListRow
+          title={t('workouts:settings.rest')}
+          subtitle={t('workouts:settings.restHint')}
+          trailing={
+            <Text variant="label">
+              {rest > 0 ? shortClock(rest) : t('workouts:logger.restOff')}
+            </Text>
+          }
+          onPress={() => setRestOpen(true)}
+        />
+        <View className="flex-row items-center justify-between gap-3 py-3">
+          <Text variant="bodyStrong">{t('workouts:settings.units')}</Text>
+          <SegmentedControl
+            options={[
+              { value: 'metric', label: t('common:unit.kg') },
+              { value: 'imperial', label: t('common:unit.lb') },
+            ]}
+            value={settings?.units}
+            onChange={(units) => update.mutate({ units })}
+            accessibilityLabel={t('workouts:settings.units')}
+            className="w-[140px]"
+          />
+        </View>
+        <Divider />
+        <ToggleRow
+          title={t('workouts:settings.keepAwake')}
+          value={prefs.keepAwake}
+          onChange={(keepAwake) => setWorkoutPrefs({ keepAwake })}
+        />
+        {Platform.OS === 'ios' ? (
+          <>
+            <Divider />
+            <ToggleRow
+              title={t('workouts:settings.health')}
+              hint={t('workouts:settings.healthHint')}
+              value={prefs.healthWrite}
+              onChange={async (on) => {
+                if (!on) {
+                  setWorkoutPrefs({ healthWrite: false })
+                  return
+                }
+                if (await requestWorkoutWrite()) setWorkoutPrefs({ healthWrite: true })
+                else toast.show({ title: t('workouts:settings.healthDenied'), tone: 'error' })
+              }}
+            />
+          </>
+        ) : null}
+      </Card>
+
+      <Card title={t('workouts:settings.reminders')} contentClassName="gap-4">
+        <Text variant="meta">{t('workouts:settings.remindersHint')}</Text>
+        <View className="flex-row flex-wrap gap-2">
+          {WEEK.map((day) => (
+            <Chip key={day} selected={days.includes(day)} onPress={() => toggleDay(day)}>
+              {dayLabel(day)}
+            </Chip>
+          ))}
+        </View>
+        <Tappable
+          className={cn(
+            'flex-row items-center justify-between rounded-md bg-surface-alt px-4 py-3',
+            days.length ? undefined : 'opacity-50',
+          )}
+          onPress={() => setTimeOpen(true)}
+          disabled={!days.length}
+          accessibilityRole="button"
+          accessibilityLabel={t('workouts:settings.reminderTime')}
+        >
+          <Text variant="bodyStrong">{t('workouts:settings.reminderTime')}</Text>
+          <Text variant="label">{atLabel}</Text>
+        </Tappable>
+      </Card>
+
+      <ActionSheet
+        visible={restOpen}
+        onClose={() => setRestOpen(false)}
+        title={t('workouts:settings.rest')}
+        actions={REST_CHOICES.map((seconds) => ({
+          key: String(seconds),
+          label: seconds === 0 ? t('workouts:logger.restOff') : shortClock(seconds),
+          selected: rest === seconds,
+          onPress: () => update.mutate({ workout_rest_s: seconds }),
+        }))}
+      />
+
+      <TimeSheet
+        visible={timeOpen}
+        hour={at.hour}
+        minute={at.minute}
+        onClose={() => setTimeOpen(false)}
+        onPick={(hour, minute) =>
+          update.mutate({
+            workout_reminder_at: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`,
+          })
+        }
+      />
+    </Screen>
+  )
+}
+
+function ToggleRow({
+  title,
+  hint,
+  value,
+  onChange,
+}: {
+  title: string
+  hint?: string
+  value: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <View className="flex-row items-center gap-3 py-3">
+      <View className="flex-1 gap-0.5">
+        <Text variant="bodyStrong">{title}</Text>
+        {hint ? <Text variant="meta">{hint}</Text> : null}
+      </View>
+      <Switch value={value} onValueChange={onChange} accessibilityLabel={title} />
+    </View>
+  )
+}
+
+/** A time of day on wheels, for the reminder. Twenty-four rows of hours, every five minutes. */
+function TimeSheet({
+  visible,
+  hour,
+  minute,
+  onClose,
+  onPick,
+}: {
+  visible: boolean
+  hour: number
+  minute: number
+  onClose: () => void
+  onPick: (hour: number, minute: number) => void
+}) {
+  const { t } = useTranslation(['workouts', 'common', 'logging'])
+  const [h, setH] = useState(hour)
+  const [m, setM] = useState(minute - (minute % 5))
+  const hours = useMemo<WheelOption[]>(
+    () =>
+      Array.from({ length: 24 }, (_, i) => ({
+        value: String(i),
+        // The language's own time pattern without its minutes, so the
+        // meridiem sits where that language puts it ("6 PM", "PM 6").
+        label: format(new Date(2026, 0, 1, i), datePattern('time').replace(':mm', '')),
+      })),
+    [],
+  )
+  const minutes = useMemo<WheelOption[]>(
+    () =>
+      Array.from({ length: 12 }, (_, i) => ({
+        value: String(i * 5),
+        label: String(i * 5).padStart(2, '0'),
+      })),
+    [],
+  )
+
+  return (
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      onShow={() => {
+        setH(hour)
+        setM(minute - (minute % 5))
+      }}
+      closeLabel={t('common:action.close')}
+      title={t('workouts:settings.reminderTime')}
+      scrollable={false}
+    >
+      <View className="gap-5">
+        <View className="flex-row gap-2">
+          <Wheel
+            className="flex-[2]"
+            options={hours}
+            value={String(h)}
+            onChange={(next) => setH(Number(next))}
+            accessibilityLabel={t('logging:detail.hour')}
+          />
+          <Wheel
+            className="flex-1"
+            options={minutes}
+            value={String(m)}
+            onChange={(next) => setM(Number(next))}
+            accessibilityLabel={t('logging:detail.minute')}
+          />
+        </View>
+        <Button
+          fullWidth
+          onPress={() => {
+            onPick(h, m)
+            onClose()
+          }}
+        >
+          {t('common:action.done')}
+        </Button>
+      </View>
+    </Sheet>
+  )
+}
