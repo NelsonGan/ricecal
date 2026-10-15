@@ -127,7 +127,6 @@ export const ms = {
       cancel: 'Batal',
       save: 'Simpan perubahan',
       done: 'Selesai',
-      clear: 'Kosongkan',
       edit: 'Sunting',
       delete: 'Padam',
       add: 'Tambah',
@@ -1762,6 +1761,9 @@ export const ms = {
     routines: {
       title: 'Rutin saya',
       new: 'Baharu',
+      newTitle: 'Rutin baharu',
+      namePlaceholder: 'cth. Hari tolak',
+      save: 'Simpan rutin',
       emptyTitle: 'Belum ada rutin',
       lastDone: 'Terakhir dibuat {{date}}',
       never: 'Belum pernah dibuat',
@@ -1873,7 +1875,6 @@ export const ms = {
       rest: 'Rehat {{time}}',
       next: 'Seterusnya',
       completeSet: 'Selesaikan set',
-      previousField: 'Medan sebelumnya',
       plates: 'Plat',
       exerciseNotes: 'Tambah nota',
       kind: {
@@ -1971,7 +1972,6 @@ export const ms = {
       records: 'Rekod',
       kcal: '{{value}} kcal',
       kcalLabel: 'Dibakar',
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2057,7 +2057,6 @@ export const ms = {
       },
       split: 'Pembahagian otot',
       splitRange: '30 hari lepas',
-      splitSets: '{{value}} set',
       records: 'Rekod peribadi',
       calendar: 'Kalendar',
     },

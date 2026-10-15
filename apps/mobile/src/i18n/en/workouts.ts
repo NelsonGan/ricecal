@@ -44,6 +44,9 @@ export const workouts = {
   routines: {
     title: 'My routines',
     new: 'New',
+    newTitle: 'New routine',
+    namePlaceholder: 'e.g. Push day',
+    save: 'Save routine',
     emptyTitle: 'No routines yet',
     lastDone: 'Last done {{date}}',
     never: 'Not done yet',
@@ -156,7 +159,6 @@ export const workouts = {
     /** The pad's key that moves to the next field: weight, reps, then the next set. */
     next: 'Next',
     completeSet: 'Complete set',
-    previousField: 'Previous field',
     /** The plate calculator, from the pad on a barbell's weight. Short: it is a chip. */
     plates: 'Plates',
     exerciseNotes: 'Add a note',
@@ -259,8 +261,6 @@ export const workouts = {
     records: 'Records',
     kcal: '{{value}} kcal',
     kcalLabel: 'Burned',
-    /** A set's estimated one-rep max, beside it. */
-    e1rm: '1RM {{value}}',
   },
 
   edit: {
@@ -347,7 +347,6 @@ export const workouts = {
     },
     split: 'Muscle split',
     splitRange: 'Last 30 days',
-    splitSets: '{{value}} sets',
     records: 'Personal records',
     calendar: 'Calendar',
   },

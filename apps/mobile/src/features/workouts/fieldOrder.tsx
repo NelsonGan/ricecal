@@ -19,9 +19,6 @@ type Order = {
   next: (key: string) => boolean
   /** Whether a field comes after `key`, which decides the key's label. */
   hasNext: (key: string) => boolean
-  /** Focuses the field before `key`. False when there is none. */
-  previous: (key: string) => boolean
-  hasPrevious: (key: string) => boolean
   /** Focuses the first field of the set after `key`'s. False when there is none. */
   nextSet: (key: string) => boolean
 }
@@ -83,8 +80,6 @@ export function FieldOrderProvider({
         const index = list.indexOf(key)
         return index >= 0 && index < list.length - 1
       },
-      previous: (key) => focusFrom(order.current.indexOf(key), -1),
-      hasPrevious: (key) => order.current.indexOf(key) > 0,
       nextSet: (key) => {
         const list = order.current
         const set = setOf(key)

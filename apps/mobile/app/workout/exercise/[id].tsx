@@ -34,6 +34,7 @@ import {
   type Tracking,
   useExerciseLibrary,
   useHasActiveWorkout,
+  useWorkoutHasExercise,
   useWorkoutStarter,
   volumeText,
   weightText,
@@ -108,6 +109,9 @@ export default function ExerciseScreen() {
   // logger, and reading the document re-rendered it on every keystroke.
   const { userId } = useSession()
   const running = useHasActiveWorkout(userId)
+  // Opened from the logger, the exercise is usually already in it, and adding
+  // it again would put a second card of it in the workout.
+  const inWorkout = useWorkoutHasExercise(userId, id ?? '')
 
   // A custom exercise that has been deleted, or a retired id, still has a
   // history, under the name and tracking it was saved with. It is drawn from
@@ -155,7 +159,7 @@ export default function ExerciseScreen() {
         />
       }
       footer={
-        plan && known ? (
+        plan && known && !inWorkout ? (
           running ? (
             // A workout is running: this adds to it, rather than offering to
             // throw it away for a new one.

@@ -121,7 +121,6 @@ export const ta = {
       cancel: 'ரத்து',
       save: 'மாற்றங்களைச் சேமி',
       done: 'முடிந்தது',
-      clear: 'அழி',
       edit: 'திருத்து',
       delete: 'நீக்கு',
       add: 'சேர்',
@@ -1736,6 +1735,9 @@ export const ta = {
     routines: {
       title: 'என் ரொட்டீன்கள்',
       new: 'புதியது',
+      newTitle: 'புதிய வழக்கம்',
+      namePlaceholder: 'எ.கா. புஷ் நாள்',
+      save: 'வழக்கத்தைச் சேமி',
       emptyTitle: 'இன்னும் ரொட்டீன் இல்லை',
       lastDone: 'கடைசியாக {{date}}',
       never: 'இன்னும் செய்யவில்லை',
@@ -1849,7 +1851,6 @@ export const ta = {
       rest: 'ஓய்வு {{time}}',
       next: 'அடுத்து',
       completeSet: 'செட்டை முடி',
-      previousField: 'முந்தைய புலம்',
       plates: 'பிளேட்கள்',
       exerciseNotes: 'குறிப்பு சேர்',
       /** A set's type, as the menu offers it. */
@@ -1951,8 +1952,6 @@ export const ta = {
       records: 'சாதனைகள்',
       kcal: '{{value}} kcal',
       kcalLabel: 'எரித்தது',
-      /** A set's estimated one-rep max, beside it. */
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2038,7 +2037,6 @@ export const ta = {
       },
       split: 'தசைப் பங்கீடு',
       splitRange: 'கடந்த 30 நாட்கள்',
-      splitSets: '{{value}} செட்கள்',
       records: 'தனிப்பட்ட சாதனைகள்',
       calendar: 'நாட்காட்டி',
     },

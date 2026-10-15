@@ -125,7 +125,6 @@ export const zhHans = {
       cancel: '取消',
       save: '保存更改',
       done: '完成',
-      clear: '清除',
       edit: '编辑',
       delete: '删除',
       add: '添加',
@@ -1717,6 +1716,9 @@ export const zhHans = {
     routines: {
       title: '我的计划',
       new: '新建',
+      newTitle: '新建计划',
+      namePlaceholder: '例如：推日',
+      save: '保存计划',
       emptyTitle: '还没有计划',
       lastDone: '上次 {{date}}',
       never: '还没练过',
@@ -1825,7 +1827,6 @@ export const zhHans = {
       rest: '休息 {{time}}',
       next: '下一个',
       completeSet: '完成本组',
-      previousField: '上一项',
       plates: '杠铃片',
       exerciseNotes: '添加备注',
       kind: {
@@ -1923,7 +1924,6 @@ export const zhHans = {
       records: '纪录',
       kcal: '{{value}} 千卡',
       kcalLabel: '消耗',
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2009,7 +2009,6 @@ export const zhHans = {
       },
       split: '肌群分布',
       splitRange: '最近 30 天',
-      splitSets: '{{value}} 组',
       records: '个人纪录',
       calendar: '日历',
     },

@@ -1,4 +1,4 @@
-import { Redirect, useRouter } from 'expo-router'
+import { Redirect, usePathname, useRouter } from 'expo-router'
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
@@ -87,7 +87,9 @@ function SignedInTabs() {
   // most when its screen is not the one on top.
   useWorkoutOutbox()
   const { userId } = useSession()
-  const running = useHasActiveWorkout(userId)
+  // Minimised over every tab but its own, where "Resume workout" already is.
+  const pathname = usePathname()
+  const running = useHasActiveWorkout(userId) && pathname !== '/workouts'
 
   return (
     // The bar floats over the screens, so each one is told how much of its

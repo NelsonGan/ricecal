@@ -4,7 +4,7 @@ import { Platform, TextInput, View } from 'react-native'
 
 import type { LastSet } from '@/data'
 import { SwipeRow } from '@/features/shared/SwipeRow'
-import { fromKg, UNIT_KEY, type WeightUnit } from '@/lib/units'
+import { UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn, Icon, type NumpadTools, Tappable, Text, useNumpadField } from '@/ui'
 import type { Tracking } from './catalogue'
@@ -361,13 +361,6 @@ const SetRow = memo(function SetRow({
                   decimal
                   done={ticked}
                   label={header(t(UNIT_KEY[unit]))}
-                  quick={{
-                    keys: unit === 'lb' ? QUICK_LB : QUICK_KG,
-                    add: (by) => {
-                      const base = fromKg(set.weightKg ?? hintWeight ?? 0, unit)
-                      onChange({ weightKg: parseWeight(trim(Math.max(0, base + by), 2), unit) })
-                    },
-                  }}
                   complete={onComplete}
                   plates={
                     onPlates
@@ -384,10 +377,6 @@ const SetRow = memo(function SetRow({
                   decimal={false}
                   done={ticked}
                   label={header(t('workouts:logger.reps'))}
-                  quick={{
-                    keys: QUICK_REPS,
-                    add: (by) => onChange({ reps: Math.max(0, (set.reps ?? hintReps ?? 0) + by) }),
-                  }}
                   complete={onComplete}
                   onCommit={(text) => onChange({ reps: parseWhole(text) })}
                 />
@@ -398,13 +387,6 @@ const SetRow = memo(function SetRow({
                   placeholder={hintDuration === null ? '0:00' : shortClock(hintDuration)}
                   done={ticked}
                   label={header(t('workouts:logger.time'))}
-                  quick={{
-                    keys: QUICK_TIME,
-                    add: (by) =>
-                      onChange({
-                        durationS: Math.max(0, (set.durationS ?? hintDuration ?? 0) + by),
-                      }),
-                  }}
                   complete={onComplete}
                   onCommit={(seconds) => onChange({ durationS: seconds })}
                 />
@@ -418,13 +400,6 @@ const SetRow = memo(function SetRow({
                   decimal={false}
                   done={ticked}
                   label={header('m')}
-                  quick={{
-                    keys: QUICK_METRES,
-                    add: (by) =>
-                      onChange({
-                        distanceM: Math.max(0, (set.distanceM ?? hintDistance ?? 0) + by),
-                      }),
-                  }}
                   complete={onComplete}
                   onCommit={(text) => onChange({ distanceM: parseWhole(text) })}
                 />
@@ -436,17 +411,6 @@ const SetRow = memo(function SetRow({
                   decimal
                   done={ticked}
                   label={header(distanceUnit)}
-                  quick={{
-                    keys: QUICK_DISTANCE,
-                    add: (by) => {
-                      const base = Number(
-                        distanceField(set.distanceM ?? hintDistance ?? 0, distanceUnit),
-                      )
-                      onChange({
-                        distanceM: parseDistance(trim(Math.max(0, base + by), 2), distanceUnit),
-                      })
-                    },
-                  }}
                   complete={onComplete}
                   onCommit={(text) => onChange({ distanceM: parseDistance(text, distanceUnit) })}
                 />
@@ -488,34 +452,16 @@ const SetRow = memo(function SetRow({
   )
 })
 
-/**
- * What a field's quick-add keys add, in the field's own unit: a plate's worth,
- * a rep, a quarter-minute. The first takes one step back, so a set that went
- * one plate too far is a tap rather than a retype.
- */
-type QuickKey = { label: string; by: number }
-const quickKeys = (steps: readonly number[], label: (by: number) => string): QuickKey[] =>
-  steps.map((by) => ({ by, label: `${by < 0 ? '−' : '+'}${label(Math.abs(by))}` }))
-const QUICK_KG = quickKeys([-2.5, 2.5, 5, 10, 20], String)
-const QUICK_LB = quickKeys([-5, 5, 10, 25, 45], String)
-const QUICK_REPS = quickKeys([-1, 1, 2, 5, 10], String)
-const QUICK_TIME = quickKeys([-15, 15, 30, 60, 300], shortClock)
-const QUICK_METRES = quickKeys([-5, 5, 10, 25, 50], String)
-const QUICK_DISTANCE = quickKeys([-0.1, 0.1, 0.5, 1, 5], String)
-
-type CellQuick = { keys: readonly QuickKey[]; add: (by: number) => void }
 type CellPlates = { label: string; open: () => void }
 
 /**
- * The pad's tools for a set field: quick-add keys, the plate calculator on a
- * barbell's weight, the arrows and Next through the workout in the order
- * `fieldOrder.tsx` keeps, and a tick that completes the set and moves to the
- * next one. `input` is read when a key is pressed, because the field's ref
+ * The pad's tools for a set field: the plate calculator on a barbell's
+ * weight, Next through the workout in the order `fieldOrder.tsx` keeps, and a
+ * tick that completes the set and moves to the next one. `input` is read when a key is pressed, because the field's ref
  * belongs to `useNumpadField`, which is called after this.
  */
 function useCellTools(
   fieldKey: string,
-  quick: CellQuick,
   plates: CellPlates | undefined,
   complete: (() => boolean) | undefined,
   input: () => TextInput | null,
@@ -523,14 +469,6 @@ function useCellTools(
   const { t } = useTranslation(['workouts', 'common'])
   const order = useFieldOrder(fieldKey, () => input()?.focus())
   return {
-    quick: quick.keys.map((key) => ({
-      label: key.label,
-      onPress: () => quick.add(key.by),
-      accessibilityLabel: `${t(key.by < 0 ? 'common:a11y.decrease' : 'common:a11y.increase')} ${key.label.slice(1)}`,
-    })),
-    previous: order?.hasPrevious(fieldKey)
-      ? { label: t('workouts:logger.previousField'), onPress: () => order.previous(fieldKey) }
-      : undefined,
     next: order
       ? {
           // Read when the pad draws, not when this row last rendered: a set
@@ -588,7 +526,6 @@ function NumberCell({
   decimal,
   done,
   label,
-  quick,
   plates,
   complete,
   onCommit,
@@ -599,14 +536,13 @@ function NumberCell({
   decimal: boolean
   done: boolean
   label: string
-  quick: CellQuick
   plates?: CellPlates
   complete?: () => boolean
   onCommit: (text: string) => void
 }) {
   const colors = useThemeColors()
   const input = useRef<() => TextInput | null>(() => null)
-  const tools = useCellTools(fieldKey, quick, plates, complete, () => input.current())
+  const tools = useCellTools(fieldKey, plates, complete, () => input.current())
   const [typed, setTyped] = useState<string | null>(null)
   const change = (next: string) => {
     setTyped(next)
@@ -671,7 +607,6 @@ function DurationCell({
   placeholder,
   done,
   label,
-  quick,
   complete,
   onCommit,
 }: {
@@ -680,13 +615,12 @@ function DurationCell({
   placeholder: string
   done: boolean
   label: string
-  quick: CellQuick
   complete?: () => boolean
   onCommit: (seconds: number | null) => void
 }) {
   const colors = useThemeColors()
   const input = useRef<() => TextInput | null>(() => null)
-  const tools = useCellTools(fieldKey, quick, undefined, complete, () => input.current())
+  const tools = useCellTools(fieldKey, undefined, complete, () => input.current())
   const [digits, setDigits] = useState<string | null>(null)
   const change = (next: string) => {
     const clean = next.replace(/\D/g, '').slice(0, 6)

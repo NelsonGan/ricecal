@@ -96,7 +96,7 @@ function RoutineEditor({ routine }: { routine: Routine | null }) {
       gestureScroll
       header={
         <AppBar
-          title={routine ? t('workouts:routines.edit') : t('workouts:routines.new')}
+          title={routine ? t('workouts:routines.edit') : t('workouts:routines.newTitle')}
           onBack={goBack}
           backLabel={t('common:action.back')}
           action={
@@ -120,7 +120,7 @@ function RoutineEditor({ routine }: { routine: Routine | null }) {
           loading={save.isPending}
           disabled={nameError || !plans.length}
         >
-          {t('common:action.save')}
+          {routine ? t('common:action.save') : t('workouts:routines.save')}
         </Button>
       }
     >
@@ -129,7 +129,7 @@ function RoutineEditor({ routine }: { routine: Routine | null }) {
           label={t('workouts:finish.name')}
           value={draft.name}
           onChangeText={(name) => dispatch({ type: 'rename', name })}
-          placeholder={t('workouts:logger.namePlaceholder')}
+          placeholder={t('workouts:routines.namePlaceholder')}
           maxLength={80}
         />
         <TextField

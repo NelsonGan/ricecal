@@ -554,24 +554,53 @@ export function lastActivityAt(workout: LiveWorkout): number | null {
 }
 
 /** Sets with numbers in them that were never ticked, which finishing has to ask about. */
-export function unfinishedSets(workout: LiveWorkout): number {
+/** Last time's sets for each exercise in a workout, by exercise id and position. */
+export type PreviousSets = Readonly<Record<string, readonly SetPatch[] | undefined>>
+
+/**
+ * Each unticked set as it would be ticked: its own numbers, and in the blanks
+ * what the row offers (`setHints`). The rows show those, so a set that shows
+ * numbers counts as one with numbers.
+ */
+function offered(
+  exercise: LiveExercise,
+  previous: PreviousSets | undefined,
+): { set: LiveSet; filled: LiveSet }[] {
+  const hints = setHints(exercise.sets, previous?.[exercise.exerciseId])
+  return exercise.sets.map((set, index) => ({
+    set,
+    filled: { ...set, ...fillBlanks(set, hints[index]) },
+  }))
+}
+
+/** Sets not ticked that would be loggable if they were. */
+export function unfinishedSets(workout: LiveWorkout, previous?: PreviousSets): number {
   let count = 0
   for (const exercise of workout.exercises) {
-    for (const set of exercise.sets) {
-      if (!set.done && isLoggable(set, exercise.tracking)) count += 1
+    for (const { set, filled } of offered(exercise, previous)) {
+      if (!set.done && isLoggable(filled, exercise.tracking)) count += 1
     }
   }
   return count
 }
 
-/** Ticks every set that says enough to be one. "Finish anyway" on a forgotten checkmark. */
-export function completeAll(workout: LiveWorkout, at: number): LiveWorkout {
+/**
+ * Ticks every set that says enough to be one, with what it offers in its
+ * blanks. "Tick them and save" on a forgotten checkmark.
+ */
+export function completeAll(
+  workout: LiveWorkout,
+  at: number,
+  previous?: PreviousSets,
+): LiveWorkout {
   return {
     ...workout,
     exercises: workout.exercises.map((exercise) => ({
       ...exercise,
-      sets: exercise.sets.map((set) =>
-        !set.done && isLoggable(set, exercise.tracking) ? { ...set, done: true, doneAt: at } : set,
+      sets: offered(exercise, previous).map(({ set, filled }) =>
+        !set.done && isLoggable(filled, exercise.tracking)
+          ? { ...filled, done: true, doneAt: at }
+          : set,
       ),
     })),
   }
