@@ -226,6 +226,10 @@ function Calendar() {
           return (
             <View key={key} className="w-[14.28%] items-center p-1">
               <View
+                // Not flattened, for the reason a set row is not (`SetRow`):
+                // a day whose workouts arrive after it is drawn turned into a
+                // green square on Android.
+                collapsable={false}
                 className={cn(
                   'h-[34px] w-[34px] items-center justify-center rounded-full',
                   trained ? 'bg-pandan' : key === now ? 'border-2 border-pandan' : undefined,
