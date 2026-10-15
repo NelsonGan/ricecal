@@ -18,7 +18,7 @@ import { rescheduleReminders } from '@/lib/notifications'
  * the user had when they turned it on is the language it fires in.
  */
 export function useReminderSync(): void {
-  const { t } = useTranslation(['profile', 'common'])
+  const { t } = useTranslation(['profile', 'common', 'workouts'])
   const { userId } = useSession()
   const { data: settings } = useSettings()
   const { data: mealTimes } = useMealTimes()
@@ -38,6 +38,8 @@ export function useReminderSync(): void {
       settings.notify_monthly_report,
       settings.quiet_from,
       settings.quiet_to,
+      settings.workout_reminder_days,
+      settings.workout_reminder_at,
       mealTimes.map((meal) => [meal.meal, meal.at, meal.reminder_enabled]),
     ])
 
@@ -59,6 +61,8 @@ export function useReminderSync(): void {
       weeklyBody: t('profile:reminders.push.weeklyBody'),
       monthlyTitle: t('profile:reminders.push.monthlyTitle'),
       monthlyBody: t('profile:reminders.push.monthlyBody'),
+      workoutTitle: t('workouts:settings.pushTitle'),
+      workoutBody: t('workouts:settings.pushBody'),
     })
   }, [userId, settings, mealTimes, t])
 }

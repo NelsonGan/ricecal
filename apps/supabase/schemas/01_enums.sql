@@ -106,3 +106,22 @@ create type public.health_provider as enum ('apple_health', 'health_connect', 'd
 -- surface with its own abuse problem, and none of the four needs elaborating to
 -- be acted on.
 create type public.report_reason as enum ('inappropriate', 'spam', 'dangerous', 'stolen');
+
+-- What one set of an exercise records, which decides the columns the workout
+-- logger draws. The app's exercise catalogue names one of these per exercise,
+-- and a saved exercise carries its own copy so a workout still reads correctly
+-- after the catalogue changes. See `features/workouts/catalogue.ts`.
+create type public.exercise_tracking as enum (
+  'weight_reps',
+  'reps',
+  'weighted_reps',
+  'assisted_reps',
+  'duration',
+  'distance_duration',
+  'weight_distance'
+);
+
+-- How a set was meant. A warm-up set is real work and counts towards a
+-- session's volume, but it is never a personal record: nobody's best is the
+-- bar they loosened up with.
+create type public.workout_set_kind as enum ('normal', 'warmup', 'drop', 'failure');

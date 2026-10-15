@@ -1,0 +1,296 @@
+import { format, parseISO } from 'date-fns'
+import type { TFunction } from 'i18next'
+import { useTranslation } from 'react-i18next'
+import { View } from 'react-native'
+
+import type { Routine, WorkoutOverview, WorkoutSummary } from '@/data'
+import { datePattern } from '@/lib/dates'
+import { UNIT_KEY, type WeightUnit } from '@/lib/units'
+import { Badge, Button, Card, cn, Icon, Skeleton, Tappable, Text } from '@/ui'
+import { exerciseById } from './catalogue'
+import { ExerciseArt } from './ExerciseArt'
+import { hoursMinutes, volume } from './format'
+
+/** "1 h 12 min", "45 min": a duration read as words rather than a clock. */
+export function durationText(t: TFunction<['workouts']>, seconds: number): string {
+  const span = hoursMinutes(seconds)
+  if (span.hours > 0 && span.minutes > 0) return t('workouts:duration.hoursMinutes', span)
+  if (span.hours > 0) return t('workouts:duration.hours', span)
+  return t('workouts:duration.minutes', { minutes: span.minutes })
+}
+
+/**
+ * The week so far: how many workouts, how long, how much lifted, and the
+ * streak of weeks. A week rather than a day because nobody trains every day
+ * and a daily figure would read as a miss four days out of seven.
+ */
+export function OverviewCard({
+  overview,
+  unit,
+  loading,
+}: {
+  overview: WorkoutOverview | undefined
+  unit: WeightUnit
+  loading: boolean
+}) {
+  const { t } = useTranslation(['workouts', 'common'])
+
+  if (loading) {
+    return (
+      <Card>
+        <Skeleton className="h-[148px] w-full" />
+      </Card>
+    )
+  }
+  // Nothing to say (the request failed, or the phone is offline with nothing
+  // cached): no card, rather than a skeleton that never resolves above the
+  // buttons that still work.
+  if (!overview) return null
+
+  return (
+    <Card contentClassName="gap-4">
+      <View className="flex-row items-center gap-3">
+        <Text className="font-display text-[56px] leading-[76px] text-heading">
+          {overview.thisWeekWorkouts}
+        </Text>
+        <Text variant="subtitle" className="flex-1">
+          {t('workouts:overview.thisWeek', { count: overview.thisWeekWorkouts })}
+        </Text>
+        <Icon set="scenes" name="dumbbell" size={72} />
+      </View>
+      <View className="flex-row gap-2.5">
+        <Tile
+          icon={<Icon set="system" name="clock" size={22} />}
+          label={t('workouts:overview.time')}
+          value={durationText(t, overview.thisWeekSeconds)}
+        />
+        <Tile
+          icon={<Icon set="body" name="dumbbell" size={22} />}
+          label={t('workouts:overview.volume')}
+          value={`${volume(overview.thisWeekVolumeKg, unit)} ${t(UNIT_KEY[unit])}`}
+        />
+      </View>
+      <View className="flex-row items-center justify-center gap-2 rounded-md bg-kaya-soft px-3 py-2.5">
+        <Icon set="body" name="flame-burn" size={22} />
+        <Text variant="label" className="text-kaya-ink">
+          {overview.weekStreak > 0
+            ? t('workouts:overview.streak', { count: overview.weekStreak })
+            : t('workouts:overview.noStreak')}
+        </Text>
+      </View>
+    </Card>
+  )
+}
+
+function Tile({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <View className="flex-1 flex-row items-center gap-2 rounded-md bg-surface-alt px-3 py-2.5">
+      {icon}
+      <View className="min-w-0 flex-1">
+        <Text variant="label" numberOfLines={1} adjustsFontSizeToFit>
+          {value}
+        </Text>
+        <Text variant="caption" numberOfLines={1}>
+          {label}
+        </Text>
+      </View>
+    </View>
+  )
+}
+
+/**
+ * One routine: its name, the first few exercises, when it was last done, and
+ * a Start button, which is the whole reason the card exists.
+ */
+export function RoutineCard({
+  routine,
+  onStart,
+  onOpen,
+  className,
+}: {
+  routine: Routine
+  onStart: () => void
+  onOpen: () => void
+  className?: string
+}) {
+  const { t } = useTranslation(['workouts', 'common'])
+  const first = routine.exercises[0]
+  const firstExercise = first ? exerciseById(first.exercise_id) : undefined
+
+  return (
+    <Card className={className} contentClassName="gap-3 p-4" onPress={onOpen}>
+      <View className="flex-row items-start gap-2">
+        <Text variant="bodyStrong" className="flex-1" numberOfLines={2}>
+          {routine.name}
+        </Text>
+        {first ? (
+          <ExerciseArt
+            exerciseId={first.exercise_id}
+            category={firstExercise?.category ?? 'fullBody'}
+            size={44}
+          />
+        ) : null}
+      </View>
+      <View className="gap-1">
+        {routine.exercises.slice(0, 3).map((exercise, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: a routine may list an exercise twice
+          <View key={index} className="flex-row items-center gap-1.5">
+            <View className="h-1.5 w-1.5 rounded-full bg-pandan" />
+            <Text variant="meta" numberOfLines={1} className="flex-1">
+              {exercise.exercise_name}
+            </Text>
+          </View>
+        ))}
+        {routine.exercises.length > 3 ? (
+          <Text variant="caption">
+            {t('workouts:history.moreExercises', { count: routine.exercises.length - 3 })}
+          </Text>
+        ) : null}
+      </View>
+      <Text variant="caption">
+        {routine.lastUsedAt
+          ? t('workouts:routines.lastDone', {
+              date: format(parseISO(routine.lastUsedAt), datePattern('dayMonth')),
+            })
+          : t('workouts:routines.never')}
+      </Text>
+      <Button size="sm" fullWidth onPress={onStart}>
+        {t('workouts:start.routine')}
+      </Button>
+    </Card>
+  )
+}
+
+/** A past workout in the history list. */
+export function WorkoutCard({
+  workout,
+  unit,
+  onPress,
+}: {
+  workout: WorkoutSummary
+  unit: WeightUnit
+  onPress?: () => void
+}) {
+  const { t } = useTranslation(['workouts', 'common'])
+  const first = workout.exercises[0]
+  const firstExercise = first ? exerciseById(first.exerciseId) : undefined
+  const started = parseISO(workout.startedAt)
+
+  return (
+    <Card contentClassName="gap-3 p-4" onPress={onPress}>
+      <View className="flex-row items-center gap-3">
+        {first ? (
+          <ExerciseArt
+            exerciseId={first.exerciseId}
+            category={firstExercise?.category ?? 'fullBody'}
+            size={52}
+          />
+        ) : null}
+        <View className="min-w-0 flex-1 gap-0.5">
+          <Text variant="bodyStrong" numberOfLines={1}>
+            {workout.name}
+          </Text>
+          <Text variant="meta" numberOfLines={1}>
+            {format(started, `${datePattern('weekdayDayMonth')}, ${datePattern('time')}`)}
+          </Text>
+        </View>
+        {onPress ? <Icon set="ui" name="chevron-right" size={18} /> : null}
+      </View>
+
+      <View className="flex-row flex-wrap gap-2">
+        <Metric
+          icon={<Icon set="system" name="clock" size={16} />}
+          text={durationText(t, workout.durationS)}
+        />
+        {workout.volumeKg > 0 ? (
+          <Metric
+            icon={<Icon set="body" name="dumbbell" size={16} />}
+            text={`${volume(workout.volumeKg, unit)} ${t(UNIT_KEY[unit])}`}
+          />
+        ) : null}
+        {workout.prCount > 0 ? (
+          <Metric
+            icon={<Icon set="system" name="trophy" size={16} />}
+            text={t('workouts:history.prs', { count: workout.prCount })}
+            tone="kaya"
+          />
+        ) : null}
+        {workout.pending ? <Badge tone="water">{t('workouts:history.pending')}</Badge> : null}
+      </View>
+
+      {workout.exercises.length ? (
+        <View className="gap-0.5 border-t border-line pt-2.5">
+          {workout.exercises.slice(0, 3).map((exercise, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: a workout may repeat an exercise
+            <Text key={index} variant="meta" numberOfLines={1}>
+              {t('workouts:history.exerciseLine', { sets: exercise.sets, name: exercise.name })}
+            </Text>
+          ))}
+          {workout.exercises.length > 3 ? (
+            <Text variant="caption">
+              {t('workouts:history.moreExercises', { count: workout.exercises.length - 3 })}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+    </Card>
+  )
+}
+
+function Metric({ icon, text, tone }: { icon: React.ReactNode; text: string; tone?: 'kaya' }) {
+  return (
+    <View
+      className={cn(
+        'flex-row items-center gap-1.5 rounded-full px-2.5 py-1',
+        tone === 'kaya' ? 'bg-kaya-soft' : 'bg-surface-alt',
+      )}
+    >
+      {icon}
+      <Text variant="caption" className={tone === 'kaya' ? 'text-kaya-ink' : 'text-ink'}>
+        {text}
+      </Text>
+    </View>
+  )
+}
+
+/** The minimised workout, over the tab bar on every tab while one runs. */
+export function ActiveWorkoutBar({
+  name,
+  elapsed,
+  resting,
+  onPress,
+}: {
+  name: string
+  /** "12:04", already formatted. */
+  elapsed: string
+  /** "Rest 1:12", when a rest is counting down. */
+  resting: string | null
+  onPress: () => void
+}) {
+  const { t } = useTranslation(['workouts', 'common'])
+
+  return (
+    <Tappable
+      onPress={onPress}
+      className="flex-row items-center gap-3 rounded-tile border border-pandan-soft-line bg-pandan-soft px-4 py-2.5"
+      accessibilityRole="button"
+      accessibilityLabel={`${t('workouts:start.resume')}: ${name}`}
+    >
+      <Icon set="body" name="dumbbell" size={28} />
+      <View className="min-w-0 flex-1">
+        <Text variant="caption" className="text-pandan-ink">
+          {t('workouts:start.running')}
+        </Text>
+        <Text variant="label" numberOfLines={1}>
+          {name}
+        </Text>
+      </View>
+      {resting ? (
+        <Text variant="label" className="text-kaya-ink">
+          {resting}
+        </Text>
+      ) : null}
+      <Text className="font-display text-[20px] leading-[28px] text-pandan-ink">{elapsed}</Text>
+    </Tappable>
+  )
+}

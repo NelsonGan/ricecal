@@ -17,6 +17,7 @@ import {
   useSettings,
   useStreak,
   useTargets,
+  useWorkoutsOn,
 } from '@/data'
 import { socialEntryPost } from '@/data/social'
 import { count, SessionItem } from '@/features/activity'
@@ -30,6 +31,7 @@ import {
 import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
+import { WorkoutItem } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
 import { useOnline } from '@/lib/online'
@@ -175,6 +177,9 @@ export default function TodayScreen() {
   // whose meals are ready should not hold for the list of sessions, which on
   // most accounts is empty.
   const sessions = useActivitySessions(selectedDate).data ?? []
+  // And the workouts logged in the app, which the health sync deliberately
+  // does not read back as sessions (see `isOwnWorkout` in `lib/health/apple.ts`).
+  const workouts = useWorkoutsOn(selectedDate).data ?? []
 
   /**
    * Everything under the strip waits together.
@@ -586,6 +591,7 @@ export default function TodayScreen() {
             </Card>
           ) : day.entries.length === 0 &&
             sessions.length === 0 &&
+            workouts.length === 0 &&
             !activity ? /* No "Nothing logged yet" block. A day
           before its first meal is the state this screen is in every morning,
           and a card announcing it pushed the water tracker and the ring apart
@@ -614,21 +620,35 @@ export default function TodayScreen() {
                   </View>
                 ) : undefined
               }
-              extras={sessions.map((session) => ({
-                key: session.id,
-                at: session.startedAt,
-                node: (
-                  <SessionItem
-                    session={session}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/activity/workout/[id]',
-                        params: { id: session.id },
-                      })
-                    }
-                  />
-                ),
-              }))}
+              extras={[
+                ...workouts.map((workout) => ({
+                  key: `workout-${workout.id}`,
+                  at: workout.startedAt,
+                  node: (
+                    <WorkoutItem
+                      workout={workout}
+                      onPress={() =>
+                        router.push({ pathname: '/workout/[id]', params: { id: workout.id } })
+                      }
+                    />
+                  ),
+                })),
+                ...sessions.map((session) => ({
+                  key: session.id,
+                  at: session.startedAt,
+                  node: (
+                    <SessionItem
+                      session={session}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/activity/workout/[id]',
+                          params: { id: session.id },
+                        })
+                      }
+                    />
+                  ),
+                })),
+              ]}
               onPressEntry={(entry) =>
                 router.push({
                   pathname: '/log/food/[id]',

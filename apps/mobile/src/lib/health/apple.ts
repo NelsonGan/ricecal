@@ -32,7 +32,8 @@ import type {
  *
  * Nine read types and nothing else, because HealthKit's permission sheet lists
  * exactly what you request and a calorie diary asking for sleep is a diary
- * people decline. Nothing is requested for writing.
+ * people decline. Connecting asks for nothing to write; saving workouts asks
+ * separately, and only when the user turns it on (see the end of this file).
  *
  * Body mass and body fat are not about movement. A weigh-in is an input to the
  * calorie budget: `weight_logs` is what `compute_targets` reads, so a scale that
@@ -382,6 +383,11 @@ async function readWorkouts(
   const readings: Array<WorkoutReading & { deviceName: string | null }> = []
 
   for (const sample of samples) {
+    // A workout RiceCal itself saved is already on Today as the workout the
+    // user logged, sets and all. Reading it back would list it twice, once as
+    // a bare session with no idea what was lifted.
+    if (isOwnWorkout(sample)) continue
+
     const started = new Date(sample.startDate)
     const ended = new Date(sample.endDate)
     const durationS = Math.max(0, Math.round((ended.getTime() - started.getTime()) / 1000))
@@ -416,6 +422,15 @@ async function readWorkouts(
   }
 
   return readings
+}
+
+function isOwnWorkout(sample: { metadata?: unknown }): boolean {
+  try {
+    const metadata = sample.metadata as Record<string, unknown> | undefined
+    return typeof metadata?.[RICECAL_WORKOUT_KEY] === 'string'
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -609,4 +624,163 @@ export function eachDay(from: LocalDate, to: LocalDate): LocalDate[] {
     at.setDate(at.getDate() + 1)
   }
   return out
+}
+
+// ---------------------------------------------------------------------------
+// Writing: the workouts the user logs in RiceCal.
+//
+// The only thing this app ever writes to Apple Health, and only once the user
+// has turned "Save workouts to Apple Health" on, which is what asks for the
+// two write permissions below. Reading needs none of them, and connecting
+// health for the budget still asks for nothing to write.
+// ---------------------------------------------------------------------------
+
+/** Marks a workout (and its energy) as RiceCal's own, so the sync can skip it. */
+export const RICECAL_WORKOUT_KEY = 'RiceCalWorkoutId'
+
+const DISTANCE = {
+  onFoot: 'HKQuantityTypeIdentifierDistanceWalkingRunning',
+  cycling: 'HKQuantityTypeIdentifierDistanceCycling',
+  swimming: 'HKQuantityTypeIdentifierDistanceSwimming',
+} as const
+
+const WRITE_TYPES = [WORKOUT_TYPE, QUANTITY.activeEnergy, ...Object.values(DISTANCE)]
+
+const DISTANCE_FOR: Record<number, string> = {
+  37: DISTANCE.onFoot, // running
+  52: DISTANCE.onFoot, // walking
+  24: DISTANCE.onFoot, // hiking
+  13: DISTANCE.cycling,
+  46: DISTANCE.swimming,
+}
+
+/**
+ * Each type on Health's sheet is its own switch, so a user can allow workouts
+ * and refuse distance. A sample of a refused type fails the whole save, so
+ * anything the user turned off is left out rather than taking the workout
+ * down with it.
+ */
+function mayWrite(hk: HealthKitModule, type: string): boolean {
+  try {
+    // 2 is `sharingAuthorized`.
+    return hk.authorizationStatusFor(type as never) === 2
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Asks for permission to write workouts and their energy. Resolves true when
+ * Health says writing is allowed, which unlike reading it will say: an app may
+ * know whether it can write, only never whether it can read.
+ */
+export async function requestWorkoutWrite(): Promise<boolean> {
+  const hk = load()
+  if (!hk) return false
+  try {
+    if (!(await hk.isHealthDataAvailableAsync())) return false
+    await hk.requestAuthorization({ toRead: [] as never, toShare: WRITE_TYPES as never })
+    return canWriteWorkouts()
+  } catch {
+    return false
+  }
+}
+
+export function canWriteWorkouts(): boolean {
+  const hk = load()
+  return hk ? mayWrite(hk, WORKOUT_TYPE) : false
+}
+
+export type WorkoutForHealth = {
+  id: string
+  activityType: number
+  start: Date
+  end: Date
+  kcal: number | null
+  distanceM: number | null
+}
+
+/**
+ * Saves a workout, with its active energy as a sample over the workout's own
+ * window, and returns the HKWorkout's uuid.
+ *
+ * The energy is a SAMPLE as well as the workout's total because that is what
+ * the day's Move figure is summed from: a total alone shows on the workout in
+ * the Fitness app and never reaches the ring or the calorie budget. A watch
+ * recording the same minutes wins over it in Health's own deduplication, which
+ * prefers the watch to any app.
+ */
+export async function saveWorkoutToHealth(workout: WorkoutForHealth): Promise<string | null> {
+  const hk = load()
+  if (!hk) return null
+  const metadata = { [RICECAL_WORKOUT_KEY]: workout.id, HKExternalUUID: workout.id }
+  const quantities: {
+    startDate: Date
+    endDate: Date
+    quantityType: string
+    quantity: number
+    unit: string
+    metadata: Record<string, string>
+  }[] = []
+  if (workout.kcal && workout.kcal > 0 && mayWrite(hk, QUANTITY.activeEnergy)) {
+    quantities.push({
+      startDate: workout.start,
+      endDate: workout.end,
+      quantityType: QUANTITY.activeEnergy,
+      quantity: workout.kcal,
+      unit: 'kcal',
+      metadata,
+    })
+  }
+  const distanceType = DISTANCE_FOR[workout.activityType]
+  if (distanceType && workout.distanceM && workout.distanceM > 0 && mayWrite(hk, distanceType)) {
+    quantities.push({
+      startDate: workout.start,
+      endDate: workout.end,
+      quantityType: distanceType,
+      quantity: workout.distanceM,
+      unit: 'm',
+      metadata,
+    })
+  }
+
+  const saved = await hk.saveWorkoutSample(
+    workout.activityType as never,
+    quantities as never,
+    workout.start,
+    workout.end,
+    {
+      energyBurned: workout.kcal ?? undefined,
+      distance: workout.distanceM ?? undefined,
+    },
+    metadata as never,
+  )
+  return saved?.uuid ?? null
+}
+
+/**
+ * Removes every copy of a workout this app saved, and the energy and distance
+ * samples saved with it, so an edit replaces rather than doubles and a delete
+ * leaves nothing behind in the Move ring.
+ *
+ * By its id in the metadata as well as by the uuid on record: a save whose
+ * reply never came back (the app killed while it hung) left a copy no row
+ * points at, and saving again put a second workout, and a second hour of
+ * energy, beside it.
+ */
+export async function deleteWorkoutFromHealth(
+  healthId: string | null,
+  workoutId: string,
+): Promise<void> {
+  const hk = load()
+  if (!hk) return
+  const mine = { withMetadataKey: RICECAL_WORKOUT_KEY, operatorType: 4, value: workoutId }
+  await Promise.allSettled([
+    healthId ? hk.deleteObjects(WORKOUT_TYPE as never, { uuid: healthId } as never) : null,
+    hk.deleteObjects(WORKOUT_TYPE as never, { metadata: mine } as never),
+    hk.deleteObjects(QUANTITY.activeEnergy as never, { metadata: mine } as never),
+    ...Object.values(DISTANCE).map((type) =>
+      hk.deleteObjects(type as never, { metadata: mine } as never),
+    ),
+  ])
 }

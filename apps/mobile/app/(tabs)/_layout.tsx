@@ -1,10 +1,28 @@
 import { Redirect, useRouter } from 'expo-router'
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui'
 import { useTranslation } from 'react-i18next'
-import { useHealthAutoSync, useHealthConnection, useSession } from '@/data'
+import { View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useHealthAutoSync, useHealthConnection, useSession, useWorkoutOutbox } from '@/data'
 import { useAnalyticsIdentity } from '@/features/analytics'
 import { useReminderSync, useReportLinks } from '@/features/settings'
-import { NavAction, NavBar, NavInsetProvider, NavItem, useNavBarFootprint } from '@/ui'
+import {
+  ActiveWorkoutBar,
+  clock,
+  shortClock,
+  useHasActiveWorkout,
+  useLiveWorkout,
+  useNow,
+  WorkoutEffects,
+} from '@/features/workouts'
+import {
+  NAV_BAR_HEIGHT,
+  NavAction,
+  NavBar,
+  NavInsetProvider,
+  NavItem,
+  useNavBarFootprint,
+} from '@/ui'
 
 /**
  * Today is the first tab, and saying so is not decoration.
@@ -21,7 +39,9 @@ import { NavAction, NavBar, NavInsetProvider, NavItem, useNavBarFootprint } from
 export const unstable_settings = { anchor: 'today' }
 
 /**
- * Four tabs, and the add action at the right end of the bar. It used to float
+ * Five tabs, and the add action at the right end of the bar. Workouts sits
+ * beside Today because the two are the daily pair: what went in, and what was
+ * done. It used to float
  * over Today alone; in the bar it is one tap away on every tab. See `NavBar`.
  *
  * Still the headless `expo-router/ui` tabs rather than a styled navigator,
@@ -70,17 +90,28 @@ function SignedInTabs() {
   // covers a launch that lands on another tab, such as a report notification.
   const health = useHealthConnection()
   useHealthAutoSync(health.data?.connected ? health.data.provider : null)
+  // And the workouts' two background duties: sending finished workouts that
+  // are still on the phone, and the rest timer, "still training?" and Live
+  // Activity of one that is running (`<WorkoutEffects />` below), which matter
+  // most when its screen is not the one on top.
+  useWorkoutOutbox()
+  const { userId } = useSession()
+  const running = useHasActiveWorkout(userId)
 
   return (
     // The bar floats over the screens, so each one is told how much of its
     // bottom the bar covers. See `useNavInset`.
-    <NavInsetProvider value={navFootprint}>
+    <NavInsetProvider value={navFootprint + (running ? WORKOUT_BAR_SPACE : 0)}>
       <Tabs>
         <TabSlot />
         <TabList asChild>
           <NavBar action={<NavAction onPress={() => router.push('/log')} label={t('nav.log')} />}>
             <TabTrigger name="today" href="/today" asChild>
               <NavItem label={t('nav.today')} icon={{ set: 'ui', name: 'home' }} />
+            </TabTrigger>
+
+            <TabTrigger name="workouts" href="/workouts" asChild>
+              <NavItem label={t('nav.workouts')} icon={{ set: 'body', name: 'dumbbell' }} />
             </TabTrigger>
 
             <TabTrigger name="feed" href="/feed" asChild>
@@ -96,6 +127,40 @@ function SignedInTabs() {
           </NavBar>
         </TabList>
       </Tabs>
+      {running ? <RunningWorkout /> : null}
+      <WorkoutEffects />
     </NavInsetProvider>
+  )
+}
+
+/** The minimised bar's own height plus the gap above the tabs. */
+const WORKOUT_BAR_SPACE = 66
+
+/**
+ * The workout in progress, minimised to a bar over the tabs on every tab.
+ * Its own component so the clock re-renders the bar and not the navigator.
+ */
+function RunningWorkout() {
+  const { t } = useTranslation('workouts')
+  const router = useRouter()
+  const insets = useSafeAreaInsets()
+  const { workout } = useLiveWorkout()
+  const now = useNow(1000)
+  if (!workout) return null
+  const resting = workout.rest && workout.rest.endsAt > now ? workout.rest.endsAt - now : null
+
+  return (
+    <View
+      className="absolute inset-x-0 px-gutter"
+      style={{ bottom: (insets.bottom || 12) + NAV_BAR_HEIGHT + 8 }}
+      pointerEvents="box-none"
+    >
+      <ActiveWorkoutBar
+        name={workout.name}
+        elapsed={clock((now - workout.startedAt) / 1000)}
+        resting={resting === null ? null : t('logger.rest', { time: shortClock(resting / 1000) })}
+        onPress={() => router.push('/workout/active')}
+      />
+    </View>
   )
 }

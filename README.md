@@ -29,6 +29,7 @@ project works is here.
 - [History behind the charts](#history-behind-the-charts)
 - [Weekly and monthly reviews](#weekly-and-monthly-reviews)
 - [Activity and health](#activity-and-health)
+- [Workouts](#workouts)
 - [Photos](#photos)
 - [Money: free and Pro](#money-free-and-pro)
 - [Asking for a rating](#asking-for-a-rating)
@@ -323,6 +324,10 @@ auth.users
        ├── recipe_reports ─── a community recipe somebody reported
        ├── blocked_authors ── cooks this account never wants to see again
        ├── weight_logs ────── current weight, typed or synced
+       ├── custom_exercises ─ exercises the user named, beside the catalogue
+       ├── workout_routines ─ the plans a workout starts from
+       ├── workouts ───────── one logged session, saved whole by save_workout
+       │    └── workout_exercises → workout_sets
        └── health_connections  which health store, and how far back it has read
             ├── activity_days ───── one day of movement, keyed by local date
             ├── activity_sessions  one workout, keyed by the store's own id
@@ -344,7 +349,9 @@ shape.
 
 Read shapes are views, all `security_invoker`: `food_log_details`,
 `food_log_ingredient_details`, `daily_nutrition`, `user_food_stats`,
-`current_daily_goals`, `recipe_details`, `recipe_ingredient_details`.
+`current_daily_goals`, `recipe_details`, `recipe_ingredient_details`, and for
+workouts `workout_set_values`, `workout_set_details` and `workout_summaries`
+(see "Workouts").
 
 Plus `goals_on(date)`, `logging_streak()`, `day_marks(from, to)`,
 `day_plates(from, to)`, and three range families:
@@ -3659,6 +3666,315 @@ separate maintenance decision because it locks and rewrites the table.
 
 ---
 
+## Workouts
+
+The second tab, between Today and the feed: gym sessions and sport games logged
+set by set, the way Hevy and Strong do it, plus the routines they start from and
+the records they set. Today is what went in; Workouts is what was done, which is
+why the two sit side by side.
+
+```
+app/(tabs)/workouts.tsx       overview, start buttons, routines, history
+app/workout/active.tsx        the logger
+app/workout/finish.tsx        name, notes, start and end times, save
+app/workout/[id].tsx          a saved workout, with its records and muscles
+app/workout/edit/[id].tsx     edit a saved one, or log a past one (id = new)
+app/workout/exercises.tsx     the library, as a browser and as a picker
+app/workout/exercise/[id].tsx an exercise's history, charts, records and split
+app/workout/routine/[id].tsx  edit a routine
+app/workout/templates.tsx     the built-in templates; template/[id] is one
+app/workout/stats.tsx         12 weeks of totals, 30 days of muscles, records
+app/workout/settings.tsx      rest timer, units, Apple Health, reminders
+app/workout/custom.tsx        a custom exercise
+src/features/workouts         the document, catalogue, templates, logger parts
+src/data/workouts.ts          every read and write, and the outbox
+apps/supabase/schemas/42_workouts.sql  the tables and save_workout
+apps/supabase/schemas/96_workouts.sql  every number: volume, 1RM, records, streak
+```
+
+What a user can do: start an empty workout, a routine, a template or a repeat of
+an old one; log a sport as one timed set; log a past workout after the fact. The
+logger shows each exercise's last numbers in a PREVIOUS column, takes warm-up,
+drop and failure sets, supersets, notes, replacing and reordering, a rest timer
+per exercise, a plate calculator and generated warm-up sets, and marks a record
+the moment a set beats one. A saved workout can be opened, edited, deleted,
+repeated or saved as a routine. Every exercise has a page with its history,
+charts, bests and muscle split. Weekly bars, a 30-day muscle split, a calendar
+and the personal-records list are on the progress screen.
+
+### The catalogue is code, and every entry has a drawing
+
+`features/workouts/catalogue.ts` holds 181 exercises and sports, each with an
+equipment, a body part, a level, a MET value and a muscle split that sums to 1.
+It is code rather than a table for the reason the food icons are: every entry
+has an illustration made for it, and a row the server could add would arrive
+with no picture. Anything missing is a **custom exercise** (`custom_exercises`),
+which the user names, gives a tracking and muscles, and which then behaves like
+any other.
+
+- **Ids are permanent.** A saved workout stores the id. Renaming is changing
+  `name`; removing an entry strands its history (the saved name still reads,
+  the picture and the muscles go). Never reuse an id for another movement.
+- **Names stay English in every language**, the way a dish name does. "Lat
+  Pulldown" is what the machine is called in every gym the app is used in. The
+  words around the names (muscles, equipment, categories) are translated.
+- **The tracking decides the columns**: weight and reps, reps, added weight,
+  assistance, time, distance and time, weight and distance. Volume counts only
+  the two where the weight is load; an assisted pull-up's weight is the machine
+  helping, and multiplying it by reps would make the easiest set the biggest.
+
+**The drawings** are 320 px WebPs in `apps/mobile/assets/exercises/`, one per
+id, registered in the generated `exerciseArt.generated.ts`. A test fails when an
+exercise has none. To add or redraw one:
+
+```sh
+node scripts/exercise-art/generate.mjs --only <id>[,<id>] [--force]
+uv run scripts/exercise-art/process.py --only <id>
+```
+
+`generate.mjs` sends each pose brief in `poses.mjs` to Codex image generation
+with `style-reference.png` attached, because a set drawn without one shared
+reference drifts into five styles by the fortieth image. It writes 1254 px PNGs
+to `~/.cache/ricecal/exercise-art`, outside the app folder because Metro watches
+that folder and reloads on every file that lands in it. `process.py` trims each
+to its outline, re-centres it with the same margin, and writes the WebP and the
+registry. **Look at every image before committing it**: a model can swap a grip
+or draw the wrong machine, and an exercise library with a wrong picture is worse
+than one with none.
+
+**Templates** (`templates.ts`) are 19 standard programs in seven groups: two
+beginner full-body days, push/pull/legs, upper/lower, 5×5, one muscle a day,
+no-gym, and short focused sessions. They give reps and times, never weights: a
+weight in a template is somebody else's, and the PREVIOUS column already shows
+the user's own. Adding one to "My routines" copies it into `workout_routines`
+with `template_id` set, so the template page can say it is already there.
+
+### A workout lives on the phone until it is finished
+
+The running workout is a document in MMKV (`features/workouts/store.ts`), keyed
+by account, and every tick is a synchronous write to it. Nothing reaches the
+server until Finish. A gym is where the signal is worst, and a set that waited on
+a request would be a set lost to a basement; the timer is a start time rather
+than a counter, so killing the app mid-workout loses nothing.
+
+Finishing sends the whole document to `save_workout(jsonb)`, which writes the
+workout, its exercises and its sets in one transaction, replacing anything saved
+under the same id. **The id is minted on the phone when the workout starts**, so
+a save retried after a lost reply converges on one workout. A save that cannot
+reach the server goes to the outbox (`data/workout-outbox.ts`), which
+`useWorkoutOutbox` in the tabs layout sends on launch, on reconnect and on every
+return to the foreground, once there is a session to send it with.
+
+**Only a refusal about the data is final**: SQLSTATE classes 22 (a value out of
+range) and 23 (a constraint). An expired token, a refresh that failed on a weak
+signal so the request went out as anon (`42501`), a timeout or the database
+gone read only all pass on a later try, and treating any coded error as final
+used to delete the workout. Even a refused workout stays in the outbox, tried
+again on the next launch, and `toPayload` holds every value to the column's
+limits so a typo (2250 lb for 225) is a wrong set rather than a lost session. A
+reply only clears the copy that was sent: an edit queued while it was in
+flight stays.
+
+Children are owned by `(workout_id, user_id)` composite foreign keys rather than
+the id alone: a foreign key check bypasses row security, so with the id alone a
+user could attach sets to somebody else's workout by knowing its id.
+
+### Every number is Postgres's
+
+`96_workouts.sql` is the arithmetic: a set's volume and estimated one-rep max,
+whether it was a record, a workout's totals, an exercise's bests and history,
+the weekly bars, the streak, and sets per exercise for the muscle split. The
+phone adds nothing up except the live totals of the workout on screen.
+
+**Two views, and the split is for speed.** `workout_set_values` is every set
+with its volume and 1RM and nothing that needs the sets around it, so a filter
+on one workout reaches the indexes. `workout_set_details` adds the record flags
+with window functions over the user's whole history, and a window cannot be
+filtered before it is computed: when the history list asked it for each
+workout's totals, Postgres scored every set the user owned once per row, which
+at a couple of years of training reaches the statement timeout. Totals read
+the values view; records are scored once and grouped.
+
+- **Estimated 1RM** is Epley, `weight × (1 + reps / 30)`, over 1 to 15 reps of
+  a weight-and-reps set. Past fifteen the formula means nothing.
+- **A set is a record** when it beats the best of every earlier workout *and* is
+  the best of its kind in its own workout. The second half is what stops a
+  heavy day lighting up three trophies for three successively heavier sets.
+  The first workout of an exercise sets the baseline and wins nothing.
+  Warm-ups count toward volume and never toward a record. "Earlier" is by
+  start time and then id, so two workouts logged at the same minute cannot
+  both take the same record.
+- **The heaviest weight has to be lifted** (`weight_counts`): at least one rep,
+  or some distance for a carry. A missed 150 kg single is not a record.
+- The logger's live record badge (`records.ts`) applies the same rule against
+  `exercise_bests`, so the trophy during the set and the one on the saved
+  workout agree. Typed weights are rounded to the database's two places as
+  they are typed, or matching last week's 135 lb (saved as 61.23 kg) beat it
+  by the rounding. Badges show only while training: an edited workout would be
+  compared with bests that already include it.
+- **The streak is in weeks**, ending this week or last. A daily streak punishes
+  exactly the rest days a program prescribes.
+- **The muscle split** spreads working sets over muscles by each exercise's
+  split. The counting is in the database (`workout_exercise_totals`); the split
+  is in the app, with the catalogue it belongs to.
+
+### Finishing late
+
+The commonest bad workout is one somebody forgot to finish. Three hours after a
+start, a notification asks "Still training?", and the logger asks the same
+thing in a sheet. Its first answer is the useful one: **finish at the last
+ticked set**, because the hours since then are the drive home. It can also open
+the finish screen on the end-time picker, carry on, or discard.
+
+Both times on the finish screen can be moved, because the other common mistake
+is starting in the car park. A workout can be at most 24 hours, which the table
+checks and the screen explains before it lets the save go. Anything else is
+fixed afterwards on the edit screen, which rewrites the whole workout under its
+id, as every save does.
+
+### Workouts and the budget
+
+A saved workout carries a `kcal` estimate: each movement's MET from the
+Compendium of Physical Activities, **minus one**, times body weight, times time.
+Timed sets are priced at their own MET; the rest of the session at the average
+MET of the lifting. Minus one because Apple Health's active energy excludes what
+the body would have burned sitting still, and a figure that included it would
+be counted twice the moment it met the day's resting energy. No weight on file
+means no estimate rather than a guessed one.
+
+**Nothing in the budget reads that column.** The budget hears movement only
+from the health store (see "Activity and health"), so a workout reaches the day
+by being saved to Apple Health, where its energy is a sample over the workout's
+own window, and coming back through the sync like any other active energy. A
+watch that recorded the same minutes wins over it in Health's own
+deduplication, which prefers the watch to any app. That is the point: two
+estimates of one hour must not both reach the budget.
+
+So on Android, and on an iPhone where saving to Health is off, a workout is a
+record of training and changes no budget. That is deliberate rather than
+missing, and Today's row says so: it shows a workout's burn, in the colour of
+burned energy, only when the workout went to Health, and its length otherwise.
+A burn figure beside a ring that did not move reads as a bug.
+
+### Saving to Apple Health
+
+Off until the user turns it on in workout settings, **per phone** (MMKV, in
+`features/workouts/prefs.ts`), because it is a permission this handset granted
+and a second phone on the same account has granted nothing. Turning it on asks
+for its own permissions: workouts, active energy, and the three distance types.
+Connecting health for the budget still asks to write nothing.
+
+- Each finished workout is saved as an `HKWorkout` of the activity type its
+  exercises add up to (a sport is its sport, lifting is strength training), with
+  active energy and, for a run, ride or swim, distance as samples over the same
+  window. Everything carries `RiceCalWorkoutId` in its metadata.
+- **The sync skips workouts carrying that key** (`isOwnWorkout` in
+  `lib/health/apple.ts`). Reading them back would list each one twice on Today,
+  once as the workout and once as a bare session with no idea what was lifted.
+  Its energy is still read, which is the point of saving it.
+- An edit deletes the old copy and its samples (by uuid and by that metadata
+  key) and saves a new one; deleting a workout deletes its copy.
+- Each type on Health's sheet is its own switch, and a sample of a refused type
+  fails the whole save, so refused types are left out rather than taking the
+  workout down with them.
+- **Health is a copy and Postgres is the record.** A Health failure never stops
+  the save; the toast says so. If the server refuses a save after the copy went
+  in, the copy is taken back out, or pressing Save again would leave two.
+
+`NSHealthUpdateUsageDescription` in `app.json` says this. It used to promise
+that the app never writes, which became untrue with this feature; the connect
+screen's "Read only" line was reworded in all thirteen languages for the same
+reason.
+
+### The Live Activity
+
+While a workout runs, the lock screen and the Dynamic Island show its clock,
+its name, sets done, the next set, and the rest countdown with a bar. Tapping it
+opens the logger (by way of the Workouts tab, below), not through
+`ricecal://widget/...`, which is how a home-screen widget tap is counted.
+
+- **A tap opens `ricecal://workout/resume`**, which `app/+native-intent.tsx`
+  rewrites: with the app running, to the logger; on a cold launch, to
+  `/workouts?resume=1`, and the Workouts tab pushes the logger once it has
+  mounted (once per launch). iOS often kills the app while the phone is locked
+  between sets, and a cold launch straight at `/workout/active` built a stack
+  with the logger and nothing under it: minimise went nowhere, and the tabs
+  layout, which runs the rest timer, "still training?" and the activity
+  itself, never mounted. Two cheaper fixes failed on the device: a landing
+  route that navigated to the tab and pushed the logger in one go (the two
+  navigations did not compose on a cold launch), and clearing a `resume` param
+  after use (`setParams` writes to the focused route, and `undefined` does not
+  remove a param).
+- It lives in the existing widget extension
+  (`widgets/ios/WorkoutLiveActivity.swift`). `WorkoutActivityAttributes.swift`
+  is compiled into both the module pod and the extension, because ActivityKit
+  matches an activity to its view by the attributes type.
+  `NSSupportsLiveActivities` is set by `plugins/withWidgets.js`.
+- JS calls `startWorkoutActivity` / `updateWorkoutActivity` /
+  `endWorkoutActivity` from `useWorkoutEffects`, mounted in the tabs layout and
+  driven by the stored document, so it is right after the app is killed and
+  reopened. A start for another workout ends any activity left behind.
+- **The clocks are dates, not text the app updates.** The elapsed time and the
+  rest are `Text(timerInterval:)` and `ProgressView(timerInterval:)` over dates
+  in the content state, so the system counts them and the app never has to wake.
+- **On a dimmed lock screen iOS shows the seconds as dashes** ("19:--", and the
+  rest as "1:--") because it redraws there once a minute. It is the system, not
+  the view; the clocks read in full as soon as the screen wakes.
+- **A rest that ends while the phone is locked** would leave its bar at 0:00
+  until the next update, which a suspended app cannot send. The rest's end is
+  the content's `staleDate`, so the system redraws the activity at that moment
+  and the rest line drops.
+- iOS ends an activity after eight hours; `update` restarts a lost one rather
+  than going quiet. Whether to start or update is decided synchronously, on
+  the calling thread; decided inside a `Task`, an update that ran before its
+  start requested a second activity for the same workout.
+- Signing out ends it, and an activity with no workout behind it (a crash, the
+  last launch) is ended whenever the effects run with none.
+
+### The rest timer and reminders
+
+The rest is an end time in the document. `useWorkoutEffects` books a local
+notification for that moment, because a suspended app cannot post one when the
+time comes, and with the app open fires a haptic and clears the rest instead.
+Adjusting or skipping rebooks or cancels it.
+
+**Both workout notices have fixed identifiers** (`WORKOUT_NOTICE`), so booking
+one replaces it. With random ids held in a ref, every relaunch mid-workout
+booked another "still training?" that finishing never cancelled, and it fired
+hours later for a workout already saved. Cancelling also clears a delivered
+one from Notification Center, and a tapped notice opens the logger only if a
+workout is still running.
+
+Workout reminders are days of the week and a time, in `user_settings`
+(`workout_reminder_days`, `workout_reminder_at`), because they follow the
+account; `useReminderSync` books them with the meal reminders, as weekly
+repeats. Rebooking the reminders cancels only the reminder kinds, never a rest
+or "still training?" notice: it used to cancel everything, so turning on the
+water reminder mid-workout took the rest timer's notice with it. The default
+rest is `workout_rest_s`. Keeping the screen awake while training is per phone,
+with Health.
+
+### The logger is a card, not a modal
+
+`app/workout/active` is a stack card that slides up (`slide_from_bottom`), not a
+`fullScreenModal`. As a modal, every screen it pushed (the library, an
+exercise's page, the finish screen) opened *under* it, so the logger had to be
+dismissed to see what had been opened. Its chevron goes back like any card.
+
+`ActionSheet` runs the chosen action in the sheet's `onDismiss`, not on the tap:
+most actions open another sheet or push a screen, and starting either while the
+native sheet is still leaving is how iOS ends up presenting nothing.
+
+### Releasing it
+
+Additive end to end. The migration adds two enums, five tables, three views, seven
+functions and three `user_settings` columns with defaults, and touches nothing
+an older binary reads; no edge function or Worker changes. Deploy the migration
+before the app, as always. The four analytics events are in the canonical
+table under Analytics.
+
+---
+
 ## Photos
 
 **Images live in Cloudflare R2, behind the `photos` function.** Postgres used to
@@ -4451,12 +4767,13 @@ events, 815 weekly users, 338 installs) ×4.3.
 | Source | Estimated events / month | Basis |
 | --- | --- | --- |
 | The 48 decision events | 230,000 | Mixpanel's week minus its SDK events, ×4.3. `Log Sheet Opened`, `Food Searched`, `Meal Logged` and `Food Picked` are three quarters of it |
+| Workout events (`Workout Started`, `Finished`, `Discarded`, `Routine Saved`) | 4,000 | New with the Workouts tab, so no history: about 60 workouts a day at launch, each a start and an end, plus routine saves |
 | `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
 | `First App Open` | 1,500 | ~340 installs a week |
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
-| **Total** | **~250,000 (25%)** | Room for four times today's audience |
+| **Total** | **~254,000 (25%)** | Room for four times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -4474,17 +4791,17 @@ belongs in GA4 only, and RiceCal has none yet.
 
 ### Product analytics coverage
 
-Audited 2026-10-12 against the mobile tracking plan and call sites. This is the
+Audited 2026-10-15 against the mobile tracking plan and call sites. This is the
 full mobile product tracking reference. The website section records the separate
 acquisition surface and links its own repository contract. A defined event is
 eligible for delivery; its presence here is not proof of ingestion or billing.
 
 | Surface / operation | Definitions | Destinations / counting rule |
 | --- | --- | --- |
-| Native app custom events | 50 | All 50 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
+| Native app custom events | 54 | All 54 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
 | Website decisions | 6 | Same PostHog project (page views as `$pageview`); five namespaced GA4 events plus manually managed `page_view` in the shared property |
 | Native screen views | 0 | No `$screen` or `screen_view` emitter; Firebase automatic screen reporting is disabled. Session replay shows navigation |
-| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 50 custom app definitions |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 54 custom app definitions |
 | Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
 | Per-install engagement events | 2 | `First App Open` once per install and `Daily App Open` once per local day; every other event is repeatable product use |
 
@@ -4538,6 +4855,10 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Review Opened | ricecal_review_opened | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Review period resolves; once per resolved period in a mounted route. Locked reviews count before redirecting; this is not a read-completion event. |
 | Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Card share helper reports sent; each card send. Android share intent cannot confirm completion. |
 | Meal Shared | ricecal_meal_shared | picture: 'photo' &#124; 'drawing' | `app/log/food/[id].tsx` | Meal picture share helper reports sent; each send. Android share intent cannot confirm completion. |
+| Workout Started | ricecal_workout_started | source: WorkoutSource; exercises: number | `src/features/workouts/start.tsx`<br>`app/workout/edit/[id].tsx` | A workout is opened on the logger from empty, a routine, a template, a past workout repeated, or as a past workout being logged; once per start, including one that is later discarded. |
+| Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `app/workout/finish.tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
+| Workout Discarded | ricecal_workout_discarded | sets: number; minutes: number | `src/features/workouts/start.tsx` | A running workout is thrown away from the logger, the "still training?" prompt, or by starting another over it; once per discard, with its ticked sets and minutes. |
+| Routine Saved | ricecal_routine_saved | is_new: boolean; exercises: number; from_template: boolean | `src/data/workouts.ts` | A routine insert or update succeeds, including a template added to the user's routines or a workout saved as one; each success, with counts only. |
 | Widget Added | ricecal_widget_added | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a widget kind absent from the previous stored set; one per newly observed kind. The first poll is a silent baseline. |
 | Widget Removed | ricecal_widget_removed | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a previously stored widget kind absent now; one per removed kind. Intermediate add/remove changes between polls can be missed. |
 | Widget Opened | ricecal_widget_opened | widget: WidgetKind; target: WidgetTarget | `app/widget/[action].tsx` | Supported widget deep link is handled; once per handled widget route. Legacy recipes target remains a valid reported value. |
@@ -4562,7 +4883,7 @@ that instant.
 
 | Contract | PostHog | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 50 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 54 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
@@ -4621,6 +4942,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Log sheet, food route and data mutations | Sheet entry, catalogue answer/selection, logging, scan/refinement outcome, entry edits/deletes | Search debounces; mutations distinguish intent/optimistic inserts from confirmed success as listed above |
 | Recipes | Draft/save/publish/copy/report/block | Public moderation outcomes count separately; a draft is not a meal or a saved recipe. `Suggestions Shown` appears only in data from app versions released before "what to eat next" was removed |
 | Activity, reminders and reports | Health connection/disconnection, reminder writes, report notification taps and review opens/shares | No background health-import events. Locked review opens count before the paywall redirect |
+| Workouts | Workout started (by source), finished, discarded; routine saved | Started counts discarded workouts too, so finished over started is the completion rate. Finished fires on the save returning, queued saves included (`queued: true`); a queued save that lands later and edits to a saved workout send nothing. Rest timers, sets and records are not tracked |
 | Home-screen widgets | Observed kind additions/removals, supported deep links and queued water actions | First observation is a silent baseline; later foreground diffs can miss intermediate changes. Stored baseline belongs to the handset, not reset on account switches. Each account gets the current count without fabricated add/remove events; results from a cancelled account's poll are discarded even if it returns |
 | Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
 | Hard paywall `/paywall` | `Paywall Shown` with `screen: hard` and refused `ProFeature` | `data/refusals.ts` records before navigation; review redirects also record. Free camera allowance is three scans/day; a further refusal can reach camera trigger |

@@ -62,6 +62,17 @@ create table public.user_settings (
   -- only ever wants the shutter, and a photo is then read on its own.
   photo_note_prompt      boolean not null default true,
 
+  -- Workouts ----------------------------------------------------------------
+  -- Seconds the logger counts down after a set, for an exercise that has no
+  -- rest of its own. Ninety is the middle of what a hypertrophy program asks
+  -- for; zero turns the timer off.
+  workout_rest_s         integer not null default 90 check (workout_rest_s between 0 and 600),
+  -- The days a workout reminder fires, as JavaScript's `getDay()` numbers them
+  -- (0 is Sunday), and the local time it fires at. No days, no reminder.
+  workout_reminder_days  smallint[] not null default '{}'
+                           check (workout_reminder_days <@ '{0,1,2,3,4,5,6}'::smallint[]),
+  workout_reminder_at    time not null default '18:00',
+
   -- Privacy -----------------------------------------------------------------
   share_with_family      boolean not null default false,
   -- Consent to contribute logged dishes to the catalogue in aggregate. Off by

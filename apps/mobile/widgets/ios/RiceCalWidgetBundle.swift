@@ -17,5 +17,9 @@ struct RiceCalWidgetBundle: WidgetBundle {
     DayWidget()
     QuickLogWidget()
     TodayWidget()
+    // Not a widget anybody places: the lock screen and Dynamic Island while a
+    // workout runs. It lives in this bundle because ActivityKit draws a Live
+    // Activity from the app's widget extension and nowhere else.
+    WorkoutLiveActivity()
   }
 }

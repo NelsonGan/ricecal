@@ -25,6 +25,10 @@ type Native = {
   setScheme?(scheme: string): void
   takePendingActions?(): string
   installedWidgetsAsync?(): Promise<string[]>
+  startWorkoutActivity?(json: string): void
+  updateWorkoutActivity?(json: string): void
+  endWorkoutActivity?(): void
+  workoutActivitiesEnabled?(): boolean
 }
 
 const native = requireOptionalNativeModule<Native>('RiceCalWidgets')
@@ -131,3 +135,39 @@ export async function installedWidgets(): Promise<WidgetKind[]> {
 
 const isWidgetKind = (value: string): value is WidgetKind =>
   (WIDGET_KINDS as readonly string[]).includes(value)
+
+/**
+ * A running workout, as its Live Activity shows it. Times are epoch
+ * milliseconds; the lock screen counts the elapsed time and the rest itself
+ * from them.
+ */
+export type WorkoutActivityState = {
+  id: string
+  name: string
+  startedAt: number
+  exercise: string
+  /** "2/4": the next set of `exercise`, out of its sets. Empty when all are done. */
+  set: string
+  done: number
+  total: number
+  restEndsAt: number | null
+  restTotalS: number | null
+}
+
+/**
+ * The lock screen and Dynamic Island while a workout runs. iOS only, and a
+ * no-op everywhere else: on Android, on iOS before 16.2, and for a user who has
+ * switched Live Activities off, where the workout simply is not on the lock
+ * screen. Optional twice over for the reason every other call here is.
+ */
+export function startWorkoutActivity(state: WorkoutActivityState): void {
+  native?.startWorkoutActivity?.(JSON.stringify(state))
+}
+
+export function updateWorkoutActivity(state: WorkoutActivityState): void {
+  native?.updateWorkoutActivity?.(JSON.stringify(state))
+}
+
+export function endWorkoutActivity(): void {
+  native?.endWorkoutActivity?.()
+}

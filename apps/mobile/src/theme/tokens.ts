@@ -41,6 +41,12 @@ const light = {
   canvas: '#F6F8F7',
   surface: '#FFFFFF',
   surfaceAlt: '#F0F4F1',
+  /**
+   * The tile behind an exercise drawing. Pale in BOTH modes: the drawings are
+   * grey equipment on a transparent ground, which vanishes on a dark card, so
+   * dark mode keeps a light tile the way a printed exercise card would.
+   */
+  exerciseTile: '#EDF2EF',
   /** The single inverted surface: snackbars, tooltips, fasting mode. */
   inverse: '#1C2321',
   onInverse: '#FFFFFF',
@@ -120,6 +126,7 @@ const dark = {
   canvas: '#111716',
   surface: '#1A2220',
   surfaceAlt: '#202A27',
+  exerciseTile: '#D3DDD8',
   inverse: '#F2F5F3',
   onInverse: '#0C1310',
   inverseAccent: '#1C6E44',

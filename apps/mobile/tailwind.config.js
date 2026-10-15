@@ -51,6 +51,7 @@ module.exports = {
         canvas: role('canvas'),
         surface: role('surface'),
         'surface-alt': role('surface-alt'),
+        'exercise-tile': role('exercise-tile'),
         inverse: role('inverse'),
         'on-inverse': role('on-inverse'),
         'inverse-accent': role('inverse-accent'),

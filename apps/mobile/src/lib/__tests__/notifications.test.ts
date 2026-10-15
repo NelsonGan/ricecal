@@ -15,6 +15,8 @@ jest.mock('expo-notifications', () => ({
   setNotificationHandler: jest.fn(),
   setNotificationChannelAsync: jest.fn(),
   cancelAllScheduledNotificationsAsync: jest.fn(),
+  getAllScheduledNotificationsAsync: jest.fn(),
+  cancelScheduledNotificationAsync: jest.fn(),
   getPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn(),
 }))
@@ -30,6 +32,8 @@ const copy: ReminderCopy = {
   weeklyBody: 'Week',
   monthlyTitle: 'Month',
   monthlyBody: 'Month',
+  workoutTitle: 'Train',
+  workoutBody: 'Train',
 }
 const settings = {
   notify_water: true,
@@ -51,6 +55,7 @@ afterEach(() => {
 beforeEach(() => {
   jest.clearAllMocks()
   jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({ granted: true } as never)
+  jest.mocked(Notifications.getAllScheduledNotificationsAsync).mockResolvedValue([])
   jest.mocked(Notifications.scheduleNotificationAsync).mockImplementation(async ({ trigger }) => {
     // Model the native rejection that stopped every later reminder on Android.
     if (
@@ -93,4 +98,37 @@ it('schedules nothing without notification permission', async () => {
   jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({ granted: false } as never)
   await rescheduleReminders(settings, meals, copy)
   expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled()
+})
+
+it('books a workout reminder on each training day, as this API numbers weekdays', async () => {
+  await rescheduleReminders(
+    { ...settings, workout_reminder_days: [1, 3, 0], workout_reminder_at: '18:30:00' } as Settings,
+    [],
+    copy,
+  )
+  const workouts = jest
+    .mocked(Notifications.scheduleNotificationAsync)
+    .mock.calls.map(([request]) => request)
+    .filter((request) => request.content.data?.kind === 'workout-reminder')
+  expect(workouts.map((request) => request.trigger)).toEqual([
+    { type: 'weekly', weekday: 2, hour: 18, minute: 30, channelId: 'reminders' },
+    { type: 'weekly', weekday: 4, hour: 18, minute: 30, channelId: 'reminders' },
+    { type: 'weekly', weekday: 1, hour: 18, minute: 30, channelId: 'reminders' },
+  ])
+})
+
+it('rewrites only the reminders, never a running workout or scan notice', async () => {
+  jest.mocked(Notifications.getAllScheduledNotificationsAsync).mockResolvedValue([
+    { identifier: 'meal', content: { data: { kind: 'meal' } } },
+    { identifier: 'old', content: { data: {} } },
+    { identifier: 'rest', content: { data: { kind: 'rest' } } },
+    { identifier: 'stale', content: { data: { kind: 'workout' } } },
+    { identifier: 'scan', content: { data: { kind: 'scan' } } },
+  ] as never)
+  await rescheduleReminders(settings, meals, copy)
+  const cancelled = jest
+    .mocked(Notifications.cancelScheduledNotificationAsync)
+    .mock.calls.map(([id]) => id)
+  expect(cancelled.sort()).toEqual(['meal', 'old'])
+  expect(Notifications.cancelAllScheduledNotificationsAsync).not.toHaveBeenCalled()
 })

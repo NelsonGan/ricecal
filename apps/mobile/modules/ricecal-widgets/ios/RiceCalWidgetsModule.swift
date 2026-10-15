@@ -47,6 +47,27 @@ public class RiceCalWidgetsModule: Module {
       RiceCalWidgetStore.takePendingActions()
     }
 
+    /**
+     The running workout's Live Activity. JSON in, for the reason the snapshot
+     is: the native side only forwards it, so a dictionary parsed into Swift
+     here would be one more place for the shape to drift.
+     */
+    Function("startWorkoutActivity") { (json: String) in
+      WorkoutActivityController.start(json)
+    }
+
+    Function("updateWorkoutActivity") { (json: String) in
+      WorkoutActivityController.update(json)
+    }
+
+    Function("endWorkoutActivity") {
+      WorkoutActivityController.end()
+    }
+
+    Function("workoutActivitiesEnabled") { () -> Bool in
+      WorkoutActivityController.enabled
+    }
+
     AsyncFunction("installedWidgetsAsync") { (promise: Promise) in
       WidgetCenter.shared.getCurrentConfigurations { result in
         switch result {

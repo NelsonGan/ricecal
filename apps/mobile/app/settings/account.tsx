@@ -25,6 +25,9 @@ import { asAuthProblem, deleteAccount, emailSendRetryAfter, onPasswordRecovery }
 import { keys } from '@/data/keys'
 import { useSocialAction, useSocialOnline, useSocialProfile } from '@/data/social'
 import { CaptchaProvider, PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
+// From the store itself, not the feature's barrel: this screen has no use
+// for the rest of the logger, its native modules included.
+import { forgetWorkoutsOnPhone } from '@/features/workouts/store'
 import { datePattern } from '@/lib/dates'
 import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal'
 import { useBack } from '@/lib/navigation'
@@ -832,6 +835,7 @@ function ChangePasswordForm({
 function DeleteAccount({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['profile', 'common'])
   const toast = useToast()
+  const userId = useUserId()
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [confirmation, setConfirmation] = useState('')
   const [pending, setPending] = useState(false)
@@ -845,6 +849,9 @@ function DeleteAccount({ onClose }: { onClose: () => void }) {
     Keyboard.dismiss()
     try {
       await deleteAccount()
+      // The account's training that lives only on this phone: a workout in
+      // progress and any finished one still waiting to be sent.
+      forgetWorkoutsOnPhone(userId)
       toast.show({ title: t('profile:account.done') })
       onClose()
     } catch {
