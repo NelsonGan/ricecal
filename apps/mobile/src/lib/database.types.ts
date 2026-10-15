@@ -721,6 +721,54 @@ export type Database = {
         }
         Relationships: []
       }
+      packet_panels: {
+        Row: {
+          barcode: string
+          carbs_g: number
+          created_at: string
+          fat_g: number
+          food_log_id: string
+          kcal: number
+          protein_g: number
+          serving_g: number | null
+        }
+        Insert: {
+          barcode: string
+          carbs_g: number
+          created_at?: string
+          fat_g: number
+          food_log_id: string
+          kcal: number
+          protein_g: number
+          serving_g?: number | null
+        }
+        Update: {
+          barcode?: string
+          carbs_g?: number
+          created_at?: string
+          fat_g?: number
+          food_log_id?: string
+          kcal?: number
+          protein_g?: number
+          serving_g?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'packet_panels_food_log_id_fkey'
+            columns: ['food_log_id']
+            isOneToOne: true
+            referencedRelation: 'food_log_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'packet_panels_food_log_id_fkey'
+            columns: ['food_log_id']
+            isOneToOne: true
+            referencedRelation: 'food_logs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       profiles: {
         Row: {
           activity_level: Database['public']['Enums']['activity_level']
@@ -2514,6 +2562,7 @@ export type Database = {
         Returns: undefined
       }
       recipe_review_hourly_limit: { Args: never; Returns: number }
+      record_social_photo_etags: { Args: { p_etags: Json }; Returns: number }
       remove_ingredient: {
         Args: { p_ingredient_id: string }
         Returns: undefined

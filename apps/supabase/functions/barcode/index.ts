@@ -16,14 +16,20 @@
 // `foods.carbs_g` and its neighbours are `not null`, so storing one would mean
 // fabricating zeros, and "0 g protein" against a tin of tuna is worse than an
 // honest "we do not know this one". The client offers Describe instead.
+//
+// The second action, `{ named: <entry id> }`, names a photographed panel. A
+// miss hands the camera to the nutrition panel, and a panel read without a
+// product name waits in `packet_panels` until its entry is renamed. See
+// `namePanel` below.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
 import { gtin14 } from '../_shared/barcode.ts'
 import { type CatalogueProduct, cacheProduct, lookupBarcode } from '../_shared/catalogue.ts'
 import { json } from '../_shared/http.ts'
 import { iconFor } from '../_shared/icon-match.ts'
+import { catalogueName, namedProduct } from '../_shared/packet.ts'
 
 /** Open Food Facts asks that clients identify themselves. */
 const USER_AGENT = 'RiceCal/1.0 (https://ricecal.app; barcode lookup)'
@@ -147,26 +153,31 @@ Deno.serve(async (req: Request) => {
   if (caller instanceof Response) return caller
   const { userId } = caller
 
-  let body: { code?: string }
+  let body: { code?: string; named?: string }
   try {
     const parsed = await req.json()
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
       return json({ ok: false, error: 'body must be a JSON object' }, 400)
     }
-    body = parsed as { code?: string }
+    body = parsed as { code?: string; named?: string }
   } catch {
     return json({ ok: false, error: 'body is not JSON' }, 400)
   }
 
-  const gtin = gtin14(body.code ?? '')
-  if (!gtin) return json({ ok: false, error: 'not a usable barcode' }, 400)
-
-  // service_role, for the miss backlog and the scan throttle. It is the only
-  // thing this function writes to Postgres now that the catalogue lives in D1.
+  // service_role, for the miss backlog, the scan throttle and the panels that
+  // wait for a name. The catalogue itself lives in D1.
   const admin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
+
+  // Naming a panel rather than looking a packet up. Before the throttle, which
+  // counts lookups: this reads two rows and writes the catalogue at most once
+  // per photographed panel, so a loop of it runs nothing up.
+  if (typeof body.named === 'string') return await namePanel(caller.client, admin, body.named)
+
+  const gtin = gtin14(body.code ?? '')
+  if (!gtin) return json({ ok: false, error: 'not a usable barcode' }, 400)
 
   // A per-account hourly rate limit, claimed BEFORE any lookup work. This path
   // spends no AI budget, so the meter never sees it, and without this a signed-
@@ -269,6 +280,85 @@ Deno.serve(async (req: Request) => {
   return json({ ok: true, food: asFood(fetched, label) })
 })
 
+const ENTRY_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+type PanelRow = {
+  barcode: string
+  kcal: number
+  carbs_g: number | string
+  protein_g: number | string
+  fat_g: number | string
+  serving_g: number | string | null
+}
+
+/**
+ * Write a waiting panel to the catalogue under the name its owner gave the entry.
+ *
+ * A barcode miss sends the camera to the nutrition panel, and a panel whose
+ * figures passed every check but had no product name on it waits in
+ * `packet_panels` against the entry it logged. The app calls this after that
+ * entry is renamed. Only the entry's id comes from the request: the name is
+ * read off the row and the figures off the panel, so nothing the caller sends
+ * reaches the catalogue except by having been saved to their own diary first.
+ *
+ * The answer is `contributed`, and false is ordinary: most renames are of
+ * entries with no panel waiting.
+ */
+async function namePanel(
+  client: SupabaseClient,
+  admin: SupabaseClient,
+  entryId: string,
+): Promise<Response> {
+  if (!ENTRY_ID.test(entryId)) return json({ ok: false, error: 'named must be an entry id' }, 400)
+
+  // The caller's own client, so RLS decides whose entry this is. Somebody
+  // else's id reads as no row, which is the same answer as no panel.
+  const { data: entry, error: entryError } = await client
+    .from('food_logs')
+    .select('display_label')
+    .eq('id', entryId)
+    .maybeSingle<{ display_label: string | null }>()
+  if (entryError) return json({ ok: false, error: 'could not read the entry' }, 500)
+  if (!entry) return json({ ok: true, contributed: false })
+
+  const { data: panel, error: panelError } = await admin
+    .from('packet_panels')
+    .select('barcode, kcal, carbs_g, protein_g, fat_g, serving_g')
+    .eq('food_log_id', entryId)
+    .maybeSingle<PanelRow>()
+  if (panelError) return json({ ok: false, error: 'could not read the panel' }, 500)
+  if (!panel) return json({ ok: true, contributed: false })
+
+  // A name no stranger should be shown leaves the panel waiting, so a better
+  // rename later still counts.
+  const name = catalogueName(entry.display_label)
+  if (!name) return json({ ok: true, contributed: false })
+
+  // `numeric` columns may come back as strings, so each figure is read as a
+  // number rather than trusted to be one.
+  const outcome = await cacheProduct(
+    namedProduct(
+      {
+        barcode: Number(panel.barcode),
+        kcal: panel.kcal,
+        carbs_g: Number(panel.carbs_g),
+        protein_g: Number(panel.protein_g),
+        fat_g: Number(panel.fat_g),
+        serving_g: panel.serving_g == null ? null : Number(panel.serving_g),
+      },
+      name,
+      'user_named',
+    ),
+  )
+  // Unreachable catalogue: keep the panel, and the next rename tries again.
+  if (outcome === 'failed') return json({ ok: true, contributed: false })
+
+  // `present` counts too. Somebody filled the packet first, and either way it
+  // is answered now, so this panel has nothing left to do.
+  await admin.from('packet_panels').delete().eq('food_log_id', entryId)
+  return json({ ok: true, contributed: true })
+}
+
 /**
  * A catalogue product in the shape the client expects, which was written against
  * `food_details` rows and should not learn a second shape because the data moved.
@@ -319,13 +409,20 @@ function asFood(p: CatalogueProduct, label?: string) {
  * How a product row describes its own provenance.
  *
  * A bulk-loaded row has no `source` and is Open Food Facts, which is where the
- * import came from. The two contributed paths name themselves.
+ * import came from. The contributed paths name themselves. The app shows only
+ * the sentence, so a new `source_id` costs an older build nothing.
  */
 function attributionFor(source: CatalogueProduct['source']) {
   if (source === 'user_label') {
     return {
       source_id: 'user_label',
       source_attribution: 'Read from a nutrition label photographed by a RiceCal user',
+    }
+  }
+  if (source === 'user_named') {
+    return {
+      source_id: 'user_named',
+      source_attribution: 'Read from a nutrition label photographed and named by a RiceCal user',
     }
   }
   return {

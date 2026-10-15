@@ -78,7 +78,7 @@ export type CatalogueFood = {
  * from the import rather than from anybody. See `product_contribution` in
  * `apps/cloudflare/d1/food-catalogue/schema.sql`.
  */
-export type ProductSource = 'open_food_facts' | 'user_label'
+export type ProductSource = 'open_food_facts' | 'user_label' | 'user_named'
 
 export type CatalogueProduct = {
   barcode: number
@@ -89,7 +89,7 @@ export type CatalogueProduct = {
   protein_g: number
   fat_g: number
   serving_g: number | null
-  /** Null for a bulk-loaded row. Set only on the two contributed paths. */
+  /** Null for a bulk-loaded row. Set only on the contributed paths. */
   source?: ProductSource | null
 }
 

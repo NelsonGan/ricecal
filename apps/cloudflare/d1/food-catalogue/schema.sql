@@ -174,6 +174,8 @@ create table if not exists product (
 --
 --   'open_food_facts'  the live fallback in the `barcode` edge function
 --   'user_label'       somebody photographed the panel after a miss
+--   'user_named'       the same panel with no name on it, named afterwards by
+--                      the person who logged it
 --
 -- The point of writing this down is that it can be taken back. A panel read by
 -- a model off a phone camera is the least trustworthy thing in the catalogue,
@@ -182,6 +184,9 @@ create table if not exists product (
 --   delete from product where barcode in
 --     (select barcode from product_contribution where source = 'user_label');
 --   delete from product_contribution where source = 'user_label';
+--
+-- 'user_named' is its own value so that a name somebody typed can be taken back
+-- without the panels a model named, by the same two statements on that value.
 --
 -- No user id. This is the catalogue, not the diary, and the two are kept apart:
 -- a Supabase uuid in here would turn "who scanned this packet" into a question
