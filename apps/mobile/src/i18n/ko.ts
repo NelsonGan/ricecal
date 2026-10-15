@@ -1729,6 +1729,7 @@ export const ko = {
       exercises_one: '{{count}}종목',
       exercises_other: '{{count}}종목',
       edit: '루틴 편집',
+      saved: '루틴을 저장했습니다',
       delete: '루틴 삭제',
       deleteTitle: '이 루틴을 삭제할까요?',
       deleteBody: '이 루틴으로 한 운동 기록은 남습니다.',

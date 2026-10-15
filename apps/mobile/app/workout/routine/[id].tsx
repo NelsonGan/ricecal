@@ -99,7 +99,7 @@ function RoutineEditor({ routine }: { routine: Routine | null }) {
         exercises: plansToRoutine(plans),
         templateId: routine?.templateId ?? null,
       })
-      toast.show({ title: t('workouts:finish.saved'), tone: 'success' })
+      toast.show({ title: t('workouts:routines.saved'), tone: 'success' })
       if (!routine) router.replace({ pathname: '/workout/routine/[id]', params: { id: saved.id } })
       else goBack()
     } catch {
@@ -160,12 +160,14 @@ function RoutineEditor({ routine }: { routine: Routine | null }) {
         <Button
           variant="secondary"
           fullWidth
+          // What is on screen, unsaved edits included: starting from the
+          // stored copy dropped a change made a moment ago without a word.
           onPress={() =>
             starter.start({
-              name: routine.name,
+              name: draft.name.trim() || routine.name,
               source: 'routine',
               routineId: routine.id,
-              plans: routinePlans(routine),
+              plans,
             })
           }
         >
@@ -184,7 +186,12 @@ function RoutineEditor({ routine }: { routine: Routine | null }) {
         cancelLabel={t('common:action.keep')}
         onConfirm={async () => {
           if (!routine) return
-          await remove.mutateAsync(routine.id)
+          try {
+            await remove.mutateAsync(routine.id)
+          } catch (error) {
+            toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+            throw error
+          }
           goBack()
         }}
       />

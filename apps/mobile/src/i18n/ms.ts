@@ -1768,6 +1768,7 @@ export const ms = {
       exercises_one: '{{count}} latihan',
       exercises_other: '{{count}} latihan',
       edit: 'Sunting rutin',
+      saved: 'Rutin disimpan',
       delete: 'Padam rutin',
       deleteTitle: 'Padam rutin ini?',
       deleteBody: 'Senaman yang sudah anda buat dengannya dikekalkan.',

@@ -1724,6 +1724,7 @@ export const bn = {
       exercises_one: '{{count}}টি ব্যায়াম',
       exercises_other: '{{count}}টি ব্যায়াম',
       edit: 'রুটিন সম্পাদনা',
+      saved: 'রুটিন সেভ হয়েছে',
       delete: 'রুটিন মুছুন',
       deleteTitle: 'এই রুটিনটি মুছবেন?',
       deleteBody: 'এটি দিয়ে আগে করা ওয়ার্কআউটগুলো থেকে যাবে।',

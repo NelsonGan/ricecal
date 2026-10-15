@@ -51,6 +51,7 @@ export const workouts = {
     exercises_one: '{{count}} exercise',
     exercises_other: '{{count}} exercises',
     edit: 'Edit routine',
+    saved: 'Routine saved',
     delete: 'Delete routine',
     deleteTitle: 'Delete this routine?',
     deleteBody: 'Workouts you already did with it are kept.',

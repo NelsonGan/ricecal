@@ -1752,6 +1752,7 @@ export const id = {
       exercises_one: '{{count}} gerakan',
       exercises_other: '{{count}} gerakan',
       edit: 'Ubah rutinitas',
+      saved: 'Rutinitas disimpan',
       delete: 'Hapus rutinitas',
       deleteTitle: 'Hapus rutinitas ini?',
       deleteBody: 'Latihan yang sudah kamu lakukan dengannya tetap ada.',

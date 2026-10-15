@@ -1768,6 +1768,7 @@ export const fil = {
       exercises_one: '{{count}} ehersisyo',
       exercises_other: '{{count}} ehersisyo',
       edit: 'I-edit ang routine',
+      saved: 'Na-save ang routine',
       delete: 'Burahin ang routine',
       deleteTitle: 'Burahin ang routine na ito?',
       deleteBody: 'Mananatili ang mga workout na nagawa mo na gamit ito.',
