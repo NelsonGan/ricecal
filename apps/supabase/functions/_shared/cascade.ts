@@ -959,6 +959,11 @@ export function sizeDish({
   const plateRatio = ratio / share
 
   if (plateRatio >= 0.5 && plateRatio <= 2.5) return { tier: 1, quantity: share }
+  // The model often bounds the plate it can see rather than the share, so the
+  // band can be the plate's: a third with a band matching the row read as a
+  // plate three rows big and logged a whole one. Either reading, as
+  // `breakdownDisagrees` does.
+  if (share < 1 && ratio >= 0.5 && ratio <= 2.5) return { tier: 1, quantity: share }
 
   // Further out, the row is a different size of the right thing, which is what
   // quantity is for. Still bounded: `clampQuantity` will not claim more than

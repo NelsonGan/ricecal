@@ -199,6 +199,32 @@ Deno.test('a shared dish with no weights logs the share, not the bowl', () => {
   )
 })
 
+Deno.test('a shared dish with no weights logs the share when the band is the plate', () => {
+  // The model often bounds the plate it can see rather than the share. A band
+  // that matches the row (ratio 1) for a third of the plate used to read as a
+  // plate three rows big, and logged a whole one.
+  eq(
+    sizeDish({ byWeight: null, ratio: 1, count: 0.33, confidence: 0.8, servingLabel: '1 plate' })
+      ?.quantity,
+    0.33,
+    'a third, band for the plate',
+  )
+  eq(
+    sizeDish({ byWeight: null, ratio: 1, count: 0.25, confidence: 0.8, servingLabel: '1 plate' })
+      ?.quantity,
+    0.25,
+    'a quarter, band for the plate',
+  )
+  // Half, with a band a little over the row: 1.25 plates, which was more than
+  // the same input logged before shares existed.
+  eq(
+    sizeDish({ byWeight: null, ratio: 1.3, count: 0.5, confidence: 0.8, servingLabel: '1 plate' })
+      ?.quantity,
+    0.5,
+    'half, band for the plate',
+  )
+})
+
 Deno.test('a whole dish is sized exactly as before', () => {
   eq(
     sizeDish({ byWeight: null, ratio: 1.1, count: 1, confidence: 0.8, servingLabel: '1 bowl' })
