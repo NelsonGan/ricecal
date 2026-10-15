@@ -739,7 +739,7 @@ export const id = {
     },
 
     photoNote: {
-      title: 'Ada yang tidak terlihat di foto?',
+      title: 'Informasi tambahan',
       placeholder: 'Daging sapi bukan ayam, teh tawar, berbagi',
       skip: 'Lewati',
       log: 'Catat makanan',
@@ -1206,14 +1206,11 @@ export const id = {
     personalisation: {
       title: 'Personalisasi',
       mealsTitle: 'WAKTU MAKAN',
-      mealsNote: 'Ini jam pengingatmu berbunyi.',
       editMeal: 'Ubah kapan {{meal}}',
       hour: 'Jam',
       minute: 'Menit',
       preview: 'Mengingatkan pukul {{time}}',
-      cameraTitle: 'KAMERA',
       photoNote: 'Tanyakan detail setelah foto',
-      photoNoteBody: 'Beberapa kata tentang yang tidak terlihat di foto.',
     },
 
     reminders: {

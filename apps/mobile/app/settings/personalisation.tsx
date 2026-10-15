@@ -127,11 +127,7 @@ export default function PersonalisationScreen() {
         )}
       </Card>
 
-      <Text variant="meta" className="px-1">
-        {t('profile:personalisation.mealsNote')}
-      </Text>
-
-      <Card title={t('profile:personalisation.cameraTitle')} contentClassName="gap-0">
+      <Card contentClassName="gap-0">
         {/* A switch shows a position whatever it is given, so it waits for the
             row rather than claiming "on" for a beat and then flipping. */}
         {settingsPending ? (
@@ -139,7 +135,6 @@ export default function PersonalisationScreen() {
         ) : (
           <ToggleRow
             title={t('profile:personalisation.photoNote')}
-            description={t('profile:personalisation.photoNoteBody')}
             value={settings?.photo_note_prompt ?? true}
             onValueChange={(value) => updateSettings.mutate({ photo_note_prompt: value })}
             divider={false}

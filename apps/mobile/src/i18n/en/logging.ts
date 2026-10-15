@@ -179,13 +179,13 @@ export const logging = {
 
   /**
    * The step after the shutter: a few words about what the photo cannot show.
-   * The placeholder is the instruction, like the describe box's, and it names
-   * the three things a picture is worst at: which meat, what is in the cup, and
-   * whose plate it was. The chips are added to the note, not sent on their own,
-   * so they are short phrases a person would type.
+   * The title only names the field; the placeholder is the instruction, like the
+   * describe box's, and it names the three things a picture is worst at: which
+   * meat, what is in the cup, and whose plate it was. The chips are added to the
+   * note, not sent on their own, so they are short phrases a person would type.
    */
   photoNote: {
-    title: "Anything the photo can't show?",
+    title: 'Additional information',
     placeholder: 'Beef not chicken, teh o kosong, shared',
     skip: 'Skip',
     log: 'Log meal',

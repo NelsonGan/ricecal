@@ -722,7 +722,7 @@ export const zhHant = {
     },
 
     photoNote: {
-      title: '有照片看不出來的嗎？',
+      title: '補充資訊',
       placeholder: '是牛肉不是雞肉，無糖茶，和人分著吃',
       skip: '跳過',
       log: '記錄這餐',
@@ -1182,14 +1182,11 @@ export const zhHant = {
     personalisation: {
       title: '個人化',
       mealsTitle: '用餐時間',
-      mealsNote: '這些是提醒響起的時間。',
       editMeal: '更改{{meal}}的時間',
       hour: '時',
       minute: '分',
       preview: '{{time}} 提醒',
-      cameraTitle: '相機',
       photoNote: '拍照後詢問細節',
-      photoNoteBody: '補充幾句照片看不出來的內容。',
     },
 
     reminders: {

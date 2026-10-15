@@ -722,7 +722,7 @@ export const zhHans = {
     },
 
     photoNote: {
-      title: '有照片看不出来的吗？',
+      title: '补充信息',
       placeholder: '是牛肉不是鸡肉，无糖茶，和人分着吃',
       skip: '跳过',
       log: '记录这餐',
@@ -1182,14 +1182,11 @@ export const zhHans = {
     personalisation: {
       title: '个性化',
       mealsTitle: '用餐时间',
-      mealsNote: '这些是提醒响起的时间。',
       editMeal: '更改{{meal}}的时间',
       hour: '时',
       minute: '分',
       preview: '{{time}} 提醒',
-      cameraTitle: '相机',
       photoNote: '拍照后询问细节',
-      photoNoteBody: '补充几句照片看不出来的内容。',
     },
 
     reminders: {

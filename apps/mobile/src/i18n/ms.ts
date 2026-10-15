@@ -749,7 +749,7 @@ export const ms = {
     },
 
     photoNote: {
-      title: 'Apa yang foto tidak dapat tunjukkan?',
+      title: 'Maklumat tambahan',
       placeholder: 'Daging lembu bukan ayam, teh o kosong, kongsi',
       skip: 'Langkau',
       log: 'Catat hidangan',
@@ -1222,14 +1222,11 @@ export const ms = {
     personalisation: {
       title: 'Pemperibadian',
       mealsTitle: 'WAKTU MAKAN',
-      mealsNote: 'Ini masa peringatan anda berbunyi.',
       editMeal: 'Tukar bila {{meal}}',
       hour: 'Jam',
       minute: 'Minit',
       preview: 'Mengingatkan pada {{time}}',
-      cameraTitle: 'KAMERA',
       photoNote: 'Tanya butiran selepas foto',
-      photoNoteBody: 'Beberapa perkataan tentang apa yang foto tidak tunjukkan.',
     },
 
     reminders: {

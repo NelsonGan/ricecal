@@ -724,7 +724,7 @@ export const ko = {
     },
 
     photoNote: {
-      title: '사진으로 알 수 없는 게 있나요?',
+      title: '추가 정보',
       placeholder: '닭고기 말고 소고기, 무가당 차, 나눠 먹음',
       skip: '건너뛰기',
       log: '식사 기록',
@@ -1189,14 +1189,11 @@ export const ko = {
     personalisation: {
       title: '개인화',
       mealsTitle: '식사 시간',
-      mealsNote: '알림이 울리는 시간입니다.',
       editMeal: '{{meal}} 시간 바꾸기',
       hour: '시',
       minute: '분',
       preview: '{{time}}에 알림',
-      cameraTitle: '카메라',
       photoNote: '사진 찍은 후 자세히 묻기',
-      photoNoteBody: '사진으로 알 수 없는 내용을 몇 마디로.',
     },
 
     reminders: {

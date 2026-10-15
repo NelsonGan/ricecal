@@ -121,25 +121,29 @@ export function PhotoNotePanel({ photoUri, onLog, onSkip, onRetake }: PhotoNoteP
           </Tappable>
         </View>
 
-        <Text variant="subtitle">{t('logging:photoNote.title')}</Text>
+        {/* Closer to its field than the rest of the stack is spaced: the title
+            names the field, so the two read as one control. */}
+        <View className="gap-1.5">
+          <Text variant="subtitle">{t('logging:photoNote.title')}</Text>
 
-        <TextField
-          value={note}
-          onChangeText={setNote}
-          placeholder={t('logging:photoNote.placeholder')}
-          accessibilityLabel={t('logging:photoNote.title')}
-          // Up with the step, not a tap later: the whole point of asking here
-          // is that the thumb is already on the screen.
-          autoFocus
-          multiline
-          // Return logs. A note is a line, and making somebody reach past the
-          // keyboard for the button is the slow way to say "that's it".
-          submitBehavior="submit"
-          returnKeyType="done"
-          onSubmitEditing={log}
-          maxLength={PHOTO_NOTE_MAX}
-          className="max-h-[96px] min-h-[52px]"
-        />
+          <TextField
+            value={note}
+            onChangeText={setNote}
+            placeholder={t('logging:photoNote.placeholder')}
+            accessibilityLabel={t('logging:photoNote.title')}
+            // Up with the step, not a tap later: the whole point of asking here
+            // is that the thumb is already on the screen.
+            autoFocus
+            multiline
+            // Return logs. A note is a line, and making somebody reach past the
+            // keyboard for the button is the slow way to say "that's it".
+            submitBehavior="submit"
+            returnKeyType="done"
+            onSubmitEditing={log}
+            maxLength={PHOTO_NOTE_MAX}
+            className="max-h-[96px] min-h-[52px]"
+          />
+        </View>
 
         {/* One line that scrolls, like the fix sheet's suggestions, so a long
             translation runs off the edge rather than wrapping the row under
