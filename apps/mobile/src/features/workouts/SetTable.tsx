@@ -506,6 +506,17 @@ function useCellTools(
 }
 
 /**
+ * Android's own padding inside a text field, which left 38pt cells about ten
+ * points for the number: it sat at the top and lost its lower half. iOS has
+ * none to take away.
+ */
+const CELL_TEXT = {
+  paddingVertical: 0,
+  textAlignVertical: 'center',
+  includeFontPadding: false,
+} as const
+
+/**
  * Android draws a field's placeholder only as it was when the field mounted.
  * A new exercise's rows mount before last time's numbers arrive, and changing
  * the prop afterwards left those rows blank while PREVIOUS beside them filled
@@ -585,6 +596,7 @@ function NumberCell({
       keyboardType={decimal ? 'decimal-pad' : 'number-pad'}
       underlineColorAndroid="transparent"
       accessibilityLabel={label}
+      style={CELL_TEXT}
       className={cn(
         'h-[38px] rounded-sm border-2 px-1 text-center font-body-black text-[16px] text-ink',
         done ? 'bg-transparent' : 'bg-surface-alt',
@@ -657,6 +669,7 @@ function DurationCell({
       keyboardType="number-pad"
       underlineColorAndroid="transparent"
       accessibilityLabel={label}
+      style={CELL_TEXT}
       className={cn(
         'h-[38px] rounded-sm border-2 px-1 text-center font-body-black text-[16px] text-ink',
         done ? 'bg-transparent' : 'bg-surface-alt',
