@@ -25,6 +25,7 @@ import {
 import { announceRefusal, scanLimitAhead } from '@/data/refusals'
 import {
   type CaptureMode,
+  CaptureSwitch,
   DescribePanel,
   FoodSearchPanel,
   type FoodSearchState,
@@ -39,7 +40,7 @@ import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
 import { eatenQuantity } from '@/lib/portions'
 import { SessionGate } from '@/lib/SessionGate'
-import { SheetSurface, Tabs, Text, useToast } from '@/ui'
+import { SheetSurface, Text, useToast } from '@/ui'
 
 /**
  * Which of the three quick actions has its panel open below the row, if any. A
@@ -347,8 +348,10 @@ function LogSheet() {
     <SheetSurface
       closeLabel={t('common:action.close')}
       onClose={() => goBack()}
-      scrollable={panel !== 'describe'}
+      scrollable={panel !== 'describe' && panel !== 'camera'}
       fullHeight={panel !== null}
+      // The camera takes what is left of the panel; see `InlineCamera`'s `fill`.
+      fillBody={panel === 'camera'}
       onEntered={() => setEntered(true)}
     >
       {/* The heading is rendered here rather than through `title` so the
@@ -371,6 +374,7 @@ function LogSheet() {
 
       <View className="flex-row gap-2.5">
         <QuickAction
+          compact={panel !== null}
           label={t('logging:selector.snap')}
           icon={{ set: 'system', name: 'camera' }}
           tone="pandan"
@@ -380,6 +384,7 @@ function LogSheet() {
         {/* No "Say". Dictation would be typing without the keyboard, and typing
             already reaches the same cascade. */}
         <QuickAction
+          compact={panel !== null}
           label={t('logging:selector.describe')}
           icon={{ set: 'system', name: 'sparkle' }}
           tone="kaya"
@@ -395,6 +400,7 @@ function LogSheet() {
           }}
         />
         <QuickAction
+          compact={panel !== null}
           label={t('logging:selector.search')}
           icon={{ set: 'ui', name: 'search' }}
           selected={panel === 'search'}
@@ -403,47 +409,7 @@ function LogSheet() {
       </View>
 
       {panel === 'camera' ? (
-        <View className="gap-3">
-          {/* Two views of one camera, so the tabs sit ON the panel rather than
-              in the row of actions above it. Meal first because it is what the
-              log button is for; a packet is the exception you reach for. */}
-          <Tabs
-            align="center"
-            options={captureTabs}
-            value={captureMode}
-            onChange={setCaptureMode}
-            accessibilityLabel={t('logging:capture.tabs')}
-          />
-
-          {/* WHY THIS CAMERA IS OPEN, when it was not the user who opened it.
-              A scanned packet nobody has a record of arrives here rather than
-              stopping on a dead end, and without a line saying so the app has
-              silently swapped a barcode scanner for a plate camera.
-
-              Two lines rather than one, because one sentence was carrying two
-              jobs and doing neither: saying we have never seen this packet, and
-              saying what to point the camera at. A user who reads only the bold
-              half still knows to turn the box over.
-
-              "Turn the packet over" rather than "photograph the label": the
-              panel is on the back and the camera is already up, so the
-              instruction people actually need is which face of the box, not
-              which button to press.
-
-              Over the meal tab only: an instruction about the nutrition panel
-              above a barcode reader is an instruction about the wrong side of
-              the box. */}
-          {opening === 'label' && captureMode === 'meal' ? (
-            <View className="gap-1 px-2">
-              <Text variant="label" className="text-center">
-                {t('logging:barcode.labelTitle')}
-              </Text>
-              <Text variant="caption" className="text-center">
-                {t('logging:barcode.labelPrompt')}
-              </Text>
-            </View>
-          ) : null}
-
+        <View className="flex-1">
           {/* The shutter does not wait for recognition. It writes the row and
               closes: the waiting happens on the row itself, where the user can
               watch it or ignore it. See `useSnapFood`.
@@ -455,8 +421,81 @@ function LogSheet() {
               by photographing one plate. It also leaves on the CODE, before
               anything is looked up: the packet travels as an id of its own
               (`packetFoodId`) and the detail screen resolves it, which is what
-              took the waiting off the viewfinder. */}
+              took the waiting off the viewfinder.
+
+              FILLS THE REST OF THE SHEET, edge to edge and down under the home
+              indicator. Everything that used to sit around the box now floats
+              on it, because every point of the sheet the camera does not have
+              is a point of plate the user cannot see. */}
           <InlineCamera
+            fill
+            header={
+              <>
+                {/* Two views of one camera, so the switch sits ON the feed
+                    rather than in the row of actions above it. Meal first
+                    because it is what the log button is for; a packet is the
+                    exception you reach for. */}
+                <CaptureSwitch
+                  options={captureTabs}
+                  value={captureMode}
+                  onChange={setCaptureMode}
+                  accessibilityLabel={t('logging:capture.tabs')}
+                />
+                {/* WHY THIS CAMERA IS OPEN, when it was not the user who opened
+                    it. A scanned packet nobody has a record of arrives here
+                    rather than stopping on a dead end, and without a line saying
+                    so the app has silently swapped a barcode scanner for a plate
+                    camera.
+
+                    Two lines rather than one, because one sentence was carrying
+                    two jobs and doing neither: saying we have never seen this
+                    packet, and saying what to point the camera at. A user who
+                    reads only the bold half still knows to turn the box over.
+
+                    "Turn the packet over" rather than "photograph the label":
+                    the panel is on the back and the camera is already up, so the
+                    instruction people actually need is which face of the box,
+                    not which button to press.
+
+                    Over the meal tab only: an instruction about the nutrition
+                    panel above a barcode reader is an instruction about the
+                    wrong side of the box. */}
+                {opening === 'label' && captureMode === 'meal' ? (
+                  <View
+                    className="gap-0.5 rounded-2xl bg-black/55 px-3.5 py-2"
+                    pointerEvents="none"
+                  >
+                    <Text variant="label" className="text-center text-white">
+                      {t('logging:barcode.labelTitle')}
+                    </Text>
+                    <Text variant="caption" className="text-center text-white/80">
+                      {t('logging:barcode.labelPrompt')}
+                    </Text>
+                  </View>
+                ) : null}
+              </>
+            }
+            footnote={
+              /* WHAT IS LEFT, and only on a free account with a meal in the
+                 viewfinder. A ceiling nobody can see is a ceiling that arrives
+                 as a surprise, and it arrives on the one screen where a
+                 surprise costs a photograph somebody has already framed and
+                 taken.
+
+                 Not shown to a subscriber, whose ceiling is fifty and is not a
+                 number they are meant to be counting against — printing it
+                 would turn the thing they paid for into a quota. Not shown over
+                 the barcode tab either: a packet spends nothing. And nothing at
+                 all until the count has landed, since a line that says "3 left"
+                 and then corrects itself is worse than a beat of silence. */
+              quota.data && !quota.data.entitled ? (
+                <View className="rounded-full bg-black/55 px-3 py-1">
+                  <Text variant="caption" className="text-white">
+                    {t('logging:capture.scansLeft', { count: quota.data.remaining })}
+                  </Text>
+                </View>
+              ) : undefined
+            }
             mode={captureMode}
             onCapture={(photoUri) => {
               // The ceiling arriving before the request. The count is still the
@@ -486,23 +525,6 @@ function LogSheet() {
             }}
             onScanned={(code) => openFood(packetFoodId(code))}
           />
-
-          {/* WHAT IS LEFT, and only on a free account with a meal in the
-              viewfinder. A ceiling nobody can see is a ceiling that arrives as a
-              surprise, and it arrives on the one screen where a surprise costs a
-              photograph somebody has already framed and taken.
-
-              Not shown to a subscriber, whose ceiling is fifty and is not a
-              number they are meant to be counting against — printing it would
-              turn the thing they paid for into a quota. Not shown over the
-              barcode tab either: a packet spends nothing. And nothing at all
-              until the count has landed, since a line that says "3 left" and
-              then corrects itself is worse than a beat of silence. */}
-          {quota.data && !quota.data.entitled && captureMode === 'meal' ? (
-            <Text variant="caption" className="text-center">
-              {t('logging:capture.scansLeft', { count: quota.data.remaining })}
-            </Text>
-          ) : null}
         </View>
       ) : null}
       {panel === 'describe' ? (

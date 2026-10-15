@@ -21,6 +21,13 @@ export type QuickActionProps = {
    */
   selected?: boolean
   onPress: () => void
+  /**
+   * Icon beside the label in a short bar, rather than above it in a square.
+   * Used once a panel is open, so the panel gets the height the squares were
+   * holding: with the camera up, that is the difference between a viewfinder
+   * and a letterbox.
+   */
+  compact?: boolean
   className?: string
 }
 
@@ -31,6 +38,7 @@ export function QuickAction({
   tone = 'neutral',
   selected = false,
   onPress,
+  compact = false,
   className,
 }: QuickActionProps) {
   const colors = tones[tone]
@@ -45,7 +53,9 @@ export function QuickAction({
       containerClassName={cn('flex-1', className)}
       slabClassName={colors.slab}
       className={cn(
-        'items-center justify-center gap-2 px-1.5 py-3.5',
+        compact
+          ? 'flex-row items-center justify-center gap-1.5 px-1.5 py-2.5'
+          : 'items-center justify-center gap-2 px-1.5 py-3.5',
         colors.fill,
         selected && 'border-[3px] border-ink',
       )}
@@ -54,9 +64,11 @@ export function QuickAction({
       accessibilityLabel={label}
       accessibilityState={{ selected }}
     >
-      <Icon {...icon} size={26} />
-      <View>
-        <Text variant="micro" className="text-ink">
+      <Icon {...icon} size={compact ? 22 : 26} />
+      {/* Shrinks beside the icon in a compact bar, so a long translation is cut
+          short inside the tile rather than running out of it. */}
+      <View className={compact ? 'shrink' : undefined}>
+        <Text variant="micro" className="text-ink" numberOfLines={compact ? 1 : undefined}>
           {label}
         </Text>
       </View>

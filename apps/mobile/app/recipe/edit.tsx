@@ -602,9 +602,14 @@ export default function RecipeFormScreen() {
         onClose={() => setCamera(false)}
         title={t('recipes:new.scanTitle')}
         closeLabel={t('common:action.close')}
+        // Full height with the camera filling it, as every camera in the app
+        // does. A recipe card or a page of a cookbook is small print, and the
+        // 310pt box this used to be made it smaller still.
+        fullHeight
+        fillBody
         scrollable={false}
       >
-        <InlineCamera onCapture={readPhoto} />
+        <InlineCamera fill onCapture={readPhoto} />
       </Sheet>
 
       <Sheet

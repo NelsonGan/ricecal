@@ -152,6 +152,14 @@ export type SheetProps = {
    * and a keyboard. It stays a sheet, dismissed the same way.
    */
   fullHeight?: boolean
+  /**
+   * Lets a non-scrolling body take the panel's leftover height, so a child can
+   * claim it with `flex-1`. Only for a full-height sheet that wants it: a
+   * horizontal `ScrollView` grows by default, and in a stretched body it
+   * swallows the height and pushes whatever follows it under the keyboard.
+   * The cameras ask for it; nothing else should.
+   */
+  fillBody?: boolean
   // No `bodyClassName`. It capped the body of a sheet whose own field raises the
   // keyboard, and the cap was the wrong answer: a capped sheet is padded up off
   // the bottom edge, and the strip it leaves shows the scrim through the
@@ -237,6 +245,15 @@ export function Sheet({ visible, onShow, onDismiss, ...rest }: SheetProps) {
 }
 
 /**
+ * The space under a panel's last row; see the panel's `paddingBottom` for why it
+ * is one or the other. Exported for content that runs out to the panel's edge,
+ * the cameras, so it bleeds by exactly what the panel pads.
+ */
+export function sheetBottomPadding(safeAreaBottom: number) {
+  return Math.max(safeAreaBottom, spacing.gutter)
+}
+
+/**
  * The sheet without a window of its own, for a route that is itself a sheet and
  * presented as a `transparentModal`. Those already have everything `Sheet`'s
  * `Modal` provides, and nesting a second window costs a visible delay: the route
@@ -262,6 +279,7 @@ export function SheetSurface({
   scrollable = true,
   scrollResetKey,
   fullHeight = false,
+  fillBody = false,
   children,
   className,
 }: SheetSurfaceProps) {
@@ -474,7 +492,7 @@ export function SheetSurface({
       {children}
     </ScrollBody>
   ) : (
-    <View className="gap-md">{children}</View>
+    <View className={cn('gap-md', fullHeight && fillBody && 'flex-1')}>{children}</View>
   )
 
   return (
@@ -535,8 +553,7 @@ export function SheetSurface({
             style={[
               panel,
               {
-                paddingBottom:
-                  Math.max(insets.bottom, spacing.gutter) + (fullHeight ? 0 : numpad.height),
+                paddingBottom: sheetBottomPadding(insets.bottom) + (fullHeight ? 0 : numpad.height),
               },
             ]}
             accessibilityViewIsModal

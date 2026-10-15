@@ -42,7 +42,13 @@ jest.mock('@/features/logging', () => {
         <Text>{label}</Text>
       </Pressable>
     ),
-    InlineCamera: () => <Text>Camera panel</Text>,
+    InlineCamera: ({ header }: { header?: React.ReactNode }) => (
+      <>
+        {header}
+        <Text>Camera panel</Text>
+      </>
+    ),
+    CaptureSwitch: ({ value }: { value: string }) => <Text>{`Capture mode: ${value}`}</Text>,
     DescribePanel: () => <Text>Describe panel</Text>,
     FoodSearchPanel: ({ initialSource }: { initialSource?: string }) => (
       <Text>{initialSource === 'mine' ? 'My foods panel' : 'Search panel'}</Text>
@@ -54,7 +60,6 @@ jest.mock('@/ui', () => {
   return {
     Text,
     SheetSurface: ({ children }: { children: React.ReactNode }) => <View>{children}</View>,
-    Tabs: ({ value }: { value: string }) => <Text>{`Capture mode: ${value}`}</Text>,
     useToast: () => jest.fn(),
   }
 })
