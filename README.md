@@ -1530,6 +1530,15 @@ it has eaten before. Scanning a barcode is a tab inside the camera. Whatever the
 route, the entry is written against `selectedDate`, the day the strip on Today
 has selected.
 
+**Every camera fills its sheet.** `InlineCamera` with `fill` takes the height a
+full-height, non-scrolling sheet has left and runs out to its edges and under
+the home indicator; what used to sit around the box (the meal / barcode switch,
+the "turn the packet over" prompt, the scans left) floats on the feed instead.
+The three tiles above it shrink to a bar once a panel is open. It was a 310pt
+card with a third of the sheet empty below it, and a plate is only as legible as
+the frame it was taken in. The log sheet, the picture picker and the recipe
+reader all use it, so a fourth camera should too.
+
 Search, scan and quick-add are ordinary writes. The other two run the cascade.
 
 There was a fourth tile, **Recipes**, and it opened a shelf of the food the user

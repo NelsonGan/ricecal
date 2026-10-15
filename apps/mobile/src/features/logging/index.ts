@@ -1,4 +1,5 @@
 export { AddPartSheet, type AddPartSheetProps } from './AddPartSheet'
+export { CaptureSwitch, type CaptureSwitchProps } from './CaptureSwitch'
 export { DescribePanel, type DescribePanelProps } from './DescribePanel'
 export { DetailsSheet, type DetailsSheetProps, type EntryDetails } from './DetailsSheet'
 export { createDeleteGate } from './deleteGate'
