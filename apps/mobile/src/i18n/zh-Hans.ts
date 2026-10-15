@@ -2034,6 +2034,7 @@ export const zhHans = {
       export: '导出训练（CSV）',
       exportNone: '还没有可导出的训练',
       exportFailed: '导出失败，请重试。',
+      exportSaved: '已保存 {{name}}',
       pushTitle: '该训练了',
       pushBody: '你的训练在等你。练一会儿也算数。',
     },

@@ -392,9 +392,12 @@ grant execute on function public.exercise_bests(text) to authenticated;
 --
 -- Only the reps that still mean something are kept. A count whose best was
 -- matched or beaten at more reps is dropped: with 100 kg x 5 on the books, a
--- 3-rep best of 95 kg is not a 3-rep max, and listing it would say it was. So
--- the weights fall as the reps rise and every row is a lift worth beating.
--- The date is when that weight was first lifted for those reps.
+-- 3-rep best of 95 kg (or of 100 kg) is not a 3-rep max, and listing it would
+-- say it was. So the weights fall as the reps rise and every row is a lift
+-- worth beating. The date is when that weight was first lifted for those reps.
+--
+-- Past 30 reps a set is endurance, not a max, and one weight typed into the
+-- reps field (60 kg x 60) would otherwise sweep every lighter count away.
 -- ---------------------------------------------------------------------------
 create or replace function public.exercise_rep_bests(p_exercise_id text)
 returns table (
@@ -414,6 +417,7 @@ as $$
       and v.exercise_id = p_exercise_id
       and v.tracking in ('weight_reps', 'weighted_reps')
       and v.weight_counts
+      and v.reps <= 30
     order by v.reps, v.weight_kg desc, v.started_at
   ),
   beaten as (
@@ -429,8 +433,8 @@ as $$
 $$;
 
 comment on function public.exercise_rep_bests(text) is
-  'The heaviest weight lifted for each rep count of a weighted exercise, keeping '
-  'only counts no heavier set at more reps has beaten. Warm-ups excluded.';
+  'The heaviest weight lifted for each rep count up to 30 of a weighted exercise, '
+  'keeping only counts that nothing as heavy at more reps has matched. Warm-ups excluded.';
 
 revoke all on function public.exercise_rep_bests(text) from public, anon;
 grant execute on function public.exercise_rep_bests(text) to authenticated;

@@ -201,10 +201,7 @@ export default function ExerciseScreen() {
           {bests.data?.[0] ? (
             <Records bests={bests.data[0]} exercise={exercise} unit={unit} />
           ) : null}
-          {/* One row is the heaviest weight again, already in Records. */}
-          {repBests.data && repBests.data.length > 1 ? (
-            <RepRecords rows={repBests.data} unit={unit} />
-          ) : null}
+          {repBests.data ? <RepRecords rows={repBests.data} unit={unit} /> : null}
           <History exercise={exercise} sessions={history.data} unit={unit} />
         </>
       ) : (
@@ -469,6 +466,7 @@ function Records({
       action={
         <Text variant="caption">{t('workouts:exercise.sessions', { count: bests.workouts })}</Text>
       }
+      contentClassName="gap-0"
     >
       {rows.map((row, index) => (
         <View key={row.label}>
@@ -491,9 +489,19 @@ const LOADED: ReadonlySet<Tracking> = new Set(['weight_reps', 'weighted_reps'])
 
 function RepRecords({ rows, unit }: { rows: readonly RepBest[]; unit: WeightUnit }) {
   const { t } = useTranslation(['workouts'])
+  // Kilograms are compared exactly and shown rounded, so 61.25 kg typed in kg
+  // and 135 lb typed in pounds can both be records and read as the same
+  // weight. The one at more reps is the record that means something.
+  const shown = rows.filter(
+    (row, index) =>
+      index === rows.length - 1 ||
+      weightText(t, rows[index + 1].weightKg, unit) !== weightText(t, row.weightKg, unit),
+  )
+  // One row is the heaviest weight again, already in Records.
+  if (shown.length < 2) return null
   return (
     <Card title={t('workouts:exercise.repRecords')} contentClassName="gap-0">
-      {rows.map((row, index) => (
+      {shown.map((row, index) => (
         <View key={row.reps}>
           {index > 0 ? <Divider /> : null}
           <View className="flex-row items-center gap-3 py-2.5">

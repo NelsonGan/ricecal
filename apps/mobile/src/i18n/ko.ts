@@ -2041,6 +2041,7 @@ export const ko = {
       export: '운동 내보내기 (CSV)',
       exportNone: '아직 내보낼 운동이 없어요',
       exportFailed: '내보내지 못했어요. 다시 시도하세요.',
+      exportSaved: '{{name}} 저장됨',
       pushTitle: '운동할 시간입니다',
       pushBody: '운동이 기다리고 있습니다. 짧아도 충분합니다.',
     },

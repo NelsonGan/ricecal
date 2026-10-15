@@ -2053,6 +2053,7 @@ export const ja = {
       export: 'ワークアウトを書き出す（CSV）',
       exportNone: '書き出すワークアウトはまだありません',
       exportFailed: '書き出せませんでした。もう一度お試しください。',
+      exportSaved: '{{name}} を保存しました',
       pushTitle: 'トレーニングの時間です',
       pushBody: 'ワークアウトが待っています。短くても十分です。',
     },

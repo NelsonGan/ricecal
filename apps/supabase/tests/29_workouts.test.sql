@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(31);
+select plan(33);
 
 \set user_a '44444444-4444-4444-4444-444444444444'
 \set user_b '55555555-5555-5555-5555-555555555555'
@@ -297,9 +297,9 @@ select is(
   'deleting a workout takes its sets with it'
 );
 
--- Rep records keep only the counts nothing heavier at more reps has beaten:
--- 95 x 3 goes, because 100 x 5 was lifted. The missed 120 and the warm-up
--- are not lifts.
+-- Rep records keep only the counts nothing as heavy at more reps has matched:
+-- 95 x 3 and 100 x 3 go, because 100 x 5 was lifted. The missed 120, the
+-- warm-up and the 40 typed into the reps field are not in the table.
 select public.save_workout(jsonb_build_object(
   'id', gen_random_uuid()::text, 'name', 'Legs', 'started_at', '2026-10-14T10:00:00Z',
   'ended_at', '2026-10-14T11:00:00Z', 'log_date', '2026-10-14',
@@ -310,7 +310,9 @@ select public.save_workout(jsonb_build_object(
         jsonb_build_object('kind', 'warmup', 'weight_kg', 130, 'reps', 1),
         jsonb_build_object('weight_kg', 110, 'reps', 1),
         jsonb_build_object('weight_kg', 95, 'reps', 3),
+        jsonb_build_object('weight_kg', 100, 'reps', 3),
         jsonb_build_object('weight_kg', 100, 'reps', 5),
+        jsonb_build_object('weight_kg', 40, 'reps', 40),
         jsonb_build_object('weight_kg', 90, 'reps', 8),
         jsonb_build_object('weight_kg', 120, 'reps', 0))))
 ));
@@ -318,7 +320,34 @@ select is(
   (select array_agg(reps || ' x ' || weight_kg order by reps)
      from public.exercise_rep_bests('barbell-squat')),
   array['1 x 110.00', '5 x 100.00', '8 x 90.00'],
-  'a rep count beaten by a heavier set at more reps is not a rep record'
+  'a rep count matched or beaten at more reps is not a rep record'
+);
+
+-- The same 110 x 1 a week later: the record is still dated the first time.
+select public.save_workout(jsonb_build_object(
+  'id', gen_random_uuid()::text, 'name', 'Legs', 'started_at', '2026-10-21T10:00:00Z',
+  'ended_at', '2026-10-21T11:00:00Z', 'log_date', '2026-10-21',
+  'exercises', jsonb_build_array(
+    jsonb_build_object('exercise_id', 'barbell-squat', 'exercise_name', 'Squat (Barbell)',
+      'tracking', 'weight_reps',
+      'sets', jsonb_build_array(jsonb_build_object('weight_kg', 110, 'reps', 1))))
+));
+select is(
+  (select started_at from public.exercise_rep_bests('barbell-squat') where reps = 1),
+  '2026-10-14T10:00:00Z'::timestamptz,
+  'a repeated rep record keeps the date it was first lifted'
+);
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname in ('save_workout', 'exercise_bests', 'exercise_rep_bests', 'exercise_history',
+       'exercise_last_sets', 'workout_weeks', 'workout_overview', 'workout_exercise_totals')
+     and pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE')),
+  0,
+  'no workout function is callable signed out'
 );
 
 select * from finish();

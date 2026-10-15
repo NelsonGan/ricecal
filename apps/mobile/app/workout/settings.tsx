@@ -1,5 +1,5 @@
 import { format } from 'date-fns'
-import { File, Paths } from 'expo-file-system'
+import { Directory, File, Paths } from 'expo-file-system'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Platform, Share, View } from 'react-native'
@@ -58,8 +58,13 @@ export default function WorkoutSettingsScreen() {
   const [timeOpen, setTimeOpen] = useState(false)
   const { userId } = useSession()
 
-  // A file on iOS, which the share sheet can save, mail or open in Numbers.
-  // Android's share sheet carries text only, so there the CSV is the message.
+  // A file either way. iOS hands it to the share sheet, which can save, mail
+  // or open it in Numbers. React Native's Share carries only text on Android,
+  // and a year of sets as text outgrew the intent's size limit and failed, so
+  // there the user picks a folder and the file is written into it.
+  //
+  // The byte order mark is for Excel, which otherwise reads a CSV in the
+  // system's code page and garbles a workout named in Thai or Chinese.
   const exportAll = async () => {
     if (!userId || exporting) return
     setExporting(true)
@@ -69,16 +74,21 @@ export default function WorkoutSettingsScreen() {
         toast.show({ title: t('workouts:settings.exportNone') })
         return
       }
-      const csv = workoutsCsv(rows)
+      const csv = `\uFEFF${workoutsCsv(rows)}`
+      const name = `ricecal-workouts-${dateKey(new Date())}.csv`
       if (Platform.OS === 'ios') {
-        const file = new File(Paths.cache, `ricecal-workouts-${dateKey(new Date())}.csv`)
+        const file = new File(Paths.cache, name)
         file.create({ overwrite: true })
         file.write(csv)
         await Share.share({ url: file.uri })
       } else {
-        await Share.share({ message: csv })
+        const folder = await Directory.pickDirectoryAsync()
+        const file = folder.createFile(name, 'text/csv')
+        file.write(csv)
+        toast.show({ title: t('workouts:settings.exportSaved', { name: file.name }) })
       }
     } catch (failure) {
+      if ((failure as { code?: string }).code === 'ERR_PICKER_CANCELLED') return
       console.warn('[workouts] export failed', failure)
       toast.show({ title: t('workouts:settings.exportFailed'), tone: 'error' })
     } finally {

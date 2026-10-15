@@ -2085,6 +2085,7 @@ export const fil = {
       export: 'I-export ang mga workout (CSV)',
       exportNone: 'Wala pang workout na mai-export',
       exportFailed: 'Hindi na-export. Subukan ulit.',
+      exportSaved: 'Na-save ang {{name}}',
       pushTitle: 'Oras na para mag-train',
       pushBody: 'Naghihintay ang workout mo. Kahit maikli, bilang na.',
     },

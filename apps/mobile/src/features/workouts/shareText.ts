@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns'
+import { format, isThisYear, parseISO } from 'date-fns'
 import type { TFunction } from 'i18next'
 
 import type { WorkoutDetail } from '@/data'
@@ -19,8 +19,10 @@ import { describeSet } from './SetTable'
  *   Thu 15 Oct · 1 h 2 min · 2,100 kg
  *
  *   Bench Press (Barbell)
- *   1  60 kg × 8
  *   W  40 kg × 10
+ *   1  60 kg × 8 @8
+ *
+ * Pasted outside the app a date needs its year, once it is not this one.
  */
 export function workoutShareText(
   t: TFunction<['workouts', 'common']>,
@@ -29,20 +31,23 @@ export function workoutShareText(
   distanceUnit: DistanceUnit,
 ): string {
   const unitLabel = t(UNIT_KEY[unit])
+  const started = parseISO(workout.startedAt)
   const summary = [
-    format(parseISO(workout.startedAt), datePattern('weekdayDayMonth')),
+    format(started, datePattern(isThisYear(started) ? 'weekdayDayMonth' : 'dayMonthYear')),
     durationText(t, workout.durationS),
-    showsVolume(workout.entries.map((entry) => entry.tracking))
+    // Bodyweight pull-ups are a weighted exercise with nothing added: no "0 kg".
+    showsVolume(workout.entries.map((entry) => entry.tracking)) && workout.volumeKg > 0
       ? volumeText(t, workout.volumeKg, unit)
       : null,
   ].filter(Boolean)
   const blocks = workout.entries.map((entry) => {
     const badges = setBadges(entry.sets, t)
-    const lines = entry.sets.map((set, index) => {
-      const label = badges[index].label
+    const lines = entry.sets.flatMap((set, index) => {
       const figures = describeSet(set, entry.tracking, unit, distanceUnit, unitLabel)
+      // A ticked set can have its figures cleared afterwards; a badge alone says nothing.
+      if (!figures) return []
       const rpe = set.rpe !== null ? ` @${set.rpe}` : ''
-      return `${label}  ${figures}${rpe}`
+      return [`${badges[index].label}  ${figures}${rpe}`]
     })
     return [entry.name, ...lines].join('\n')
   })

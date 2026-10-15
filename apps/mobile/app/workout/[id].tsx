@@ -237,7 +237,8 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
         </Text>
         <StatGrid>
           <Stat label={t('workouts:logger.duration')} value={durationText(t, workout.durationS)} />
-          {showsVolume(workout.entries.map((entry) => entry.tracking)) ? (
+          {/* A bodyweight session is a weighted exercise with nothing added. */}
+          {showsVolume(workout.entries.map((entry) => entry.tracking)) && workout.volumeKg > 0 ? (
             <Stat
               label={t('workouts:logger.volume')}
               value={volumeText(t, workout.volumeKg, unit)}

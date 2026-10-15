@@ -2064,6 +2064,7 @@ export const id = {
       export: 'Ekspor latihan (CSV)',
       exportNone: 'Belum ada latihan untuk diekspor',
       exportFailed: 'Gagal mengekspor. Coba lagi.',
+      exportSaved: '{{name}} tersimpan',
       pushTitle: 'Waktunya latihan',
       pushBody: 'Latihanmu menunggu. Sebentar pun tetap dihitung.',
     },

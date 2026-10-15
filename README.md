@@ -3832,11 +3832,14 @@ set. `exercise_bests` is grouped the same way for the same reason.
   by the rounding. Badges show only while training: an edited workout would be
   compared with bests that already include it.
 - **Rep records** (`exercise_rep_bests`) are the heaviest weight lifted for
-  each rep count, keeping only the counts that nothing heavier at more reps has
-  beaten. With 100 kg × 5 on the books a 3-rep best of 95 kg is not a 3-rep
-  max, and listing it would say it was, so the weights fall as the reps rise.
-  The exercise page shows the table only from two rows; one row is the heaviest
-  weight again.
+  each rep count up to 30, keeping only the counts that nothing as heavy at
+  more reps has matched. With 100 kg × 5 on the books a 3-rep best of 95 kg (or
+  100 kg) is not a 3-rep max, and listing it would say it was, so the weights
+  fall as the reps rise. The cap is there because one weight typed into the
+  reps field (60 kg × 60) swept every lighter count away. The page also drops a
+  row that reads the same as the one below it once rounded, which a history
+  logged partly in pounds can produce, and shows the table only from two rows;
+  one row is the heaviest weight again.
 - **The streak is in weeks**, ending this week or last. A daily streak punishes
   exactly the rest days a program prescribes.
 - **The muscle split** spreads working sets over muscles by each exercise's
@@ -4086,6 +4089,10 @@ column would take width from the weight and reps on every one. Tapping the set
 number offers 6 to 10, each named by the reps left in the tank ("8, 2 reps
 left"), which is the question people actually answer; a rated set shows `@8`
 under its number, and the saved workout, the share text and the export carry it.
+It is offered only for sets counted in reps (a run has no reps left) and never
+in the routine editor: a routine is a plan, and a plan carries no RPE, so
+starting a routine or repeating a workout never arrives already rated. Editing
+a saved workout puts each set's RPE back by position (`edit/[id].tsx`).
 
 Cards and rows are memoised, and their handlers are one stable object keyed by
 exercise, so ticking a set re-renders that exercise's card and nothing else.
@@ -4145,11 +4152,18 @@ Left out on purpose:
 **Sharing is text, exporting is a file.** A workout shares as plain lines
 (`shareText.ts`), name, then date, duration and volume, then each set with its
 badge and RPE, because every app it can be pasted into reads text. The export
-(`exportCsv.ts`, read by `fetchWorkoutExport` a thousand rows at a time) uses
-the columns Strong and Hevy write, with weight always in kilograms and the date
-in the phone's wall time; an ISO stamp in UTC is not a date Sheets or Numbers
-recognises, and a late workout lands on the next day. iOS shares it as a file;
-Android's share sheet carries text, so there the CSV is the message.
+(`exportCsv.ts`) has one row a set in columns modelled on Strong's, with
+exercise and workout notes, weight always in kilograms and the date in the
+phone's wall time: an ISO stamp in UTC is not a date Sheets or Numbers
+recognises, and it files a workout near midnight on the wrong day.
+`fetchWorkoutExport` pages until a page comes back empty, never until a short
+one, because the server's row cap can sit below the page size, and it adds the
+workouts still in the outbox, which the history already shows. The file starts
+with a byte order mark so Excel reads Thai or Chinese names as text rather than
+in the system code page. iOS hands the file to the share sheet. React Native's
+`Share` carries only text on Android, and a year of sets as text outgrew the
+intent's size limit, so Android asks for a folder (`Directory.pickDirectoryAsync`)
+and writes the file there.
 
 ### Releasing it
 

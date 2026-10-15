@@ -372,6 +372,7 @@ export const workouts = {
     export: 'Export workouts (CSV)',
     exportNone: 'No workouts to export yet',
     exportFailed: 'Could not export. Try again.',
+    exportSaved: 'Saved {{name}}',
     pushTitle: 'Time to train',
     pushBody: 'Your workout is waiting. Even a short one counts.',
   },

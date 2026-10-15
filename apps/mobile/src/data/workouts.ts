@@ -1,3 +1,4 @@
+import type { PostgrestResponse } from '@supabase/supabase-js'
 import {
   keepPreviousData,
   onlineManager,
@@ -435,9 +436,10 @@ export type RepBest = { reps: number; weightKg: number; at: string }
 export function useExerciseRepBests(exerciseId: string | undefined) {
   const userId = useUserId()
 
+  // The default staleness, like the history under it: only the exercise page
+  // reads this, and a workout logged on another device should reach it.
   return useQuery({
     enabled: Boolean(exerciseId),
-    staleTime: UNTIL_SAVED,
     queryKey: keys.exerciseRepBests(userId, exerciseId ?? ''),
     queryFn: async (): Promise<RepBest[]> =>
       unwrap(await supabase.rpc('exercise_rep_bests', { p_exercise_id: exerciseId ?? '' })).map(
@@ -939,6 +941,7 @@ export type ExportRow = {
   startedAt: string
   durationS: number
   exerciseName: string
+  exerciseNotes: string | null
   exercisePosition: number
   setPosition: number
   kind: SetKind
@@ -949,67 +952,137 @@ export type ExportRow = {
   rpe: number | null
 }
 
-/** PostgREST answers at most this many rows a request, so the export pages. */
+/** Rows asked for a request. The server may answer fewer, so a short page is not the end. */
 const EXPORT_PAGE = 1000
+
+/**
+ * Every row of a select, a page at a time, until a page comes back empty.
+ * Stopping on a short page instead read the end of the history wherever the
+ * server's own row cap sat below the page size, and an installed app cannot
+ * see that cap move.
+ */
+async function everyRow<T>(
+  page: (from: number, to: number) => PromiseLike<PostgrestResponse<T>>,
+): Promise<T[]> {
+  const rows: T[] = []
+  for (;;) {
+    const next = unwrap(await page(rows.length, rows.length + EXPORT_PAGE - 1))
+    if (next.length === 0) return rows
+    rows.push(...next)
+  }
+}
 
 /**
  * Every set the user has saved, oldest workout first, for "Export workouts".
  * A one-off read rather than a query: it is asked for once, on a tap, and
  * caching a whole history would only fill the persisted cache.
+ *
+ * Workouts still in the outbox are included, newer than any copy on the
+ * server: the history list already shows them, so an export without them
+ * would be missing the session the user just finished in a basement.
  */
 export async function fetchWorkoutExport(userId: string): Promise<ExportRow[]> {
   const workouts = new Map<string, { name: string; notes: string | null; durationS: number }>()
-  for (let from = 0; ; from += EXPORT_PAGE) {
-    const page = unwrap(
-      await supabase
-        .from('workouts')
-        .select('id, name, notes, duration_s')
-        .eq('user_id', userId)
-        .order('started_at')
-        .range(from, from + EXPORT_PAGE - 1),
-    )
-    for (const row of page) {
-      workouts.set(row.id, { name: row.name, notes: row.notes, durationS: row.duration_s ?? 0 })
-    }
-    if (page.length < EXPORT_PAGE) break
+  const saved = await everyRow((from, to) =>
+    supabase
+      .from('workouts')
+      .select('id, name, notes, duration_s')
+      .eq('user_id', userId)
+      // By id as well: rows tied on the start could swap places between pages.
+      .order('started_at')
+      .order('id')
+      .range(from, to),
+  )
+  for (const row of saved) {
+    workouts.set(row.id, { name: row.name, notes: row.notes, durationS: row.duration_s ?? 0 })
   }
 
+  const noted = await everyRow((from, to) =>
+    supabase
+      .from('workout_exercises')
+      .select('id, notes')
+      .eq('user_id', userId)
+      .not('notes', 'is', null)
+      .order('id')
+      .range(from, to),
+  )
+  const notes = new Map(noted.map((row) => [row.id, row.notes]))
+
+  const queued = getOutbox(userId)
+  const pending = new Set(queued.map((document) => document.id))
+
+  const sets = await everyRow((from, to) =>
+    supabase
+      .from('workout_set_values')
+      .select(
+        'workout_id, workout_exercise_id, started_at, exercise_name, exercise_position, position, kind, weight_kg, reps, duration_s, distance_m, rpe',
+      )
+      .eq('user_id', userId)
+      .order('started_at')
+      .order('workout_id')
+      .order('exercise_position')
+      .order('position')
+      .range(from, to),
+  )
   const rows: ExportRow[] = []
-  for (let from = 0; ; from += EXPORT_PAGE) {
-    const page = unwrap(
-      await supabase
-        .from('workout_set_values')
-        .select(
-          'workout_id, started_at, exercise_name, exercise_position, position, kind, weight_kg, reps, duration_s, distance_m, rpe',
-        )
-        .eq('user_id', userId)
-        .order('started_at')
-        .order('workout_id')
-        .order('exercise_position')
-        .order('position')
-        .range(from, from + EXPORT_PAGE - 1),
-    )
-    for (const set of page) {
-      const workout = workouts.get(set.workout_id ?? '')
-      if (!workout) continue
-      rows.push({
-        workoutId: set.workout_id ?? '',
-        workoutName: workout.name,
-        workoutNotes: workout.notes,
-        startedAt: set.started_at ?? '',
-        durationS: workout.durationS,
-        exerciseName: set.exercise_name ?? '',
-        exercisePosition: set.exercise_position ?? 0,
-        setPosition: set.position ?? 0,
-        kind: set.kind ?? 'normal',
-        weightKg: num(set.weight_kg),
-        reps: set.reps,
-        setDurationS: set.duration_s,
-        distanceM: num(set.distance_m),
-        rpe: num(set.rpe),
-      })
-    }
-    if (page.length < EXPORT_PAGE) break
+  for (const set of sets) {
+    const workoutId = set.workout_id ?? ''
+    if (pending.has(workoutId)) continue
+    // A workout saved between the two reads has sets but no row here. The
+    // sets are the data, so they go out with a blank name rather than not at all.
+    const workout = workouts.get(workoutId)
+    rows.push({
+      workoutId,
+      workoutName: workout?.name ?? '',
+      workoutNotes: workout?.notes ?? null,
+      startedAt: set.started_at ?? '',
+      durationS: workout?.durationS ?? 0,
+      exerciseName: set.exercise_name ?? '',
+      exerciseNotes: notes.get(set.workout_exercise_id ?? '') ?? null,
+      exercisePosition: set.exercise_position ?? 0,
+      setPosition: set.position ?? 0,
+      kind: set.kind ?? 'normal',
+      weightKg: num(set.weight_kg),
+      reps: set.reps,
+      setDurationS: set.duration_s,
+      distanceM: num(set.distance_m),
+      rpe: num(set.rpe),
+    })
   }
-  return rows
+
+  for (const document of queued) {
+    const durationS = Math.max(
+      0,
+      Math.round((Date.parse(document.ended_at) - Date.parse(document.started_at)) / 1000),
+    )
+    document.exercises.forEach((exercise, exercisePosition) => {
+      exercise.sets.forEach((set, setPosition) => {
+        rows.push({
+          workoutId: document.id,
+          workoutName: document.name,
+          workoutNotes: document.notes,
+          startedAt: document.started_at,
+          durationS,
+          exerciseName: exercise.exercise_name,
+          exerciseNotes: exercise.notes,
+          exercisePosition,
+          setPosition,
+          kind: set.kind,
+          weightKg: set.weight_kg,
+          reps: set.reps,
+          setDurationS: set.duration_s,
+          distanceM: set.distance_m,
+          rpe: set.rpe,
+        })
+      })
+    })
+  }
+  // The queued ones are appended above; one sort puts them in the history's order.
+  return rows.sort(
+    (a, b) =>
+      Date.parse(a.startedAt) - Date.parse(b.startedAt) ||
+      a.workoutId.localeCompare(b.workoutId) ||
+      a.exercisePosition - b.exercisePosition ||
+      a.setPosition - b.setPosition,
+  )
 }
