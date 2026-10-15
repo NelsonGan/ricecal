@@ -55,6 +55,13 @@ create table public.user_settings (
   -- moving under them — the number is still shown, it just stops being spent.
   activity_extends_budget boolean not null default true,
 
+  -- Logging -----------------------------------------------------------------
+  -- Whether the camera asks for a few words after the shutter ("beef not
+  -- chicken", "shared"). On by default, because a photo alone cannot say what
+  -- is in the cup or how much of the plate was eaten. Off is for somebody who
+  -- only ever wants the shutter, and a photo is then read on its own.
+  photo_note_prompt      boolean not null default true,
+
   -- Privacy -----------------------------------------------------------------
   share_with_family      boolean not null default false,
   -- Consent to contribute logged dishes to the catalogue in aggregate. Off by

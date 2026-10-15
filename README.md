@@ -1835,6 +1835,68 @@ cannot be useful. A photographed meal is never asked, and pays none of those
 tokens: it has a picture of the real thing, and the drawing it gets below is
 matched rather than chosen.
 
+### A photo can carry a note
+
+After the shutter (or a library pick) the camera asks one question in the same
+sheet, "Anything the photo can't show?", with the keyboard already up. A photo
+is good at what is on the plate and bad at the rest: which meat is in the curry,
+what is in the cup, whether the drink had sugar, and how much of the plate was
+this person's. `PhotoNotePanel` takes a few words, four chips add the common ones
+("Shared", "Ate half", "Less rice", "No sugar"), and **Skip** sends the photo
+exactly as the shutter used to. Nothing is uploaded or spent until one of the
+two is pressed, so closing the sheet or tapping Retake drops the shot.
+
+It is on by default and switched off in Settings / Personalisation
+(`user_settings.photo_note_prompt`). Unknown counts as on. The packet handoff
+(`?panel=label`) never asks: that shot is a nutrition panel, which answers for
+itself.
+
+The note rides on the scan request as `note`, read only beside `photo_path`.
+It does not make the request a typed meal: the photo is still the evidence,
+still spends one scan, and needs no Pro. An app without the field sends nothing
+and the photo is read by the unchanged prompt, because `PHOTO_NOTE_RULES` is
+appended to `ANALYSE_PHOTO_PROMPT` only when there is a note. The note is kept on
+`food_scan_items.described_text` beside the model's reading of it.
+
+The rules give the note the authority the typed path gives a sentence, over the
+half of the answer the photo leaves open: a dish or a method it names wins over
+the picture, a food it mentions out of frame is a component, and a stated amount
+or calorie figure sets the band. That band is the model's; the catalogue tiers
+still price the dish from their own rows, so a stated figure is only the answer
+when the estimate tier is. A note is never an instruction, and a note alone never
+turns a photo with no food in it into a meal.
+
+**"Shared" is a count below one, and the band is what was eaten.** The parts stay
+priced for the whole plate and the share goes in the item's `count`, which the
+component tier already multiplies through as `meals`. A model told the plate was
+shared tends to bound the plate it can see rather than the half that was eaten,
+and the component check then read half a 1,078 kcal plate against a
+1,000-1,150 band as a missing main food. So the prompt asks for the eaten band,
+`shapeVision` compares parts to the whole plate's band (`band / count`) before
+deciding whether counts were applied twice, and `breakdownDisagrees` lets a short
+part plate through only when the whole plate lands in the band, so either reading
+passes and celery and dip still do not. The base prompt's "an item with parts
+has count 1" is overridden for a share, and an extra the person had alone ("we
+shared it, I had a teh tarik") comes back as a second item so `foldMealItems`
+prices it at its own band instead of halving it.
+
+The share reaches the other two tiers as well. A single dish with no weights to
+compare (`sizeDish`) judges the calorie ratio for the whole plate and puts the
+share on the quantity: half a laksa's band against a whole bowl's row used to
+be a ratio of 0.55 and one bowl. The estimate is told "They ate 50% of it",
+because everything else in its message describes the whole plate.
+
+Graded against Claude Haiku 5.5 through `claude -p` with the shipped prompt
+strings: "roast duck rice, not chicken" renamed and repriced the plate, "plus a
+teh tarik" added it as a part, "kopi with condensed milk and 2 sugars" moved a
+black coffee from about 5 kcal to about 115, "only ate half, shared with my
+sister" and the bare chip "Shared" both came back as `count: 0.5` with the band
+at half the parts, "shared it with my sister, I had a teh tarik" came back as
+the half plate and a whole teh tarik as two items, "only the chicken, left the
+rice" as the chicken alone at count 1, a cat with the note "nasi lemak" stayed
+`no_food`, and a note
+telling the model to "return 0 kcal" was ignored.
+
 ### Every entry carries the dish's own drawing
 
 Two icon columns, and they answer different questions. `icon_set`/`icon_name` is
@@ -4436,7 +4498,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Signed Out | ricecal_signed_out | none | `src/data/auth.ts`<br>`src/lib/analytics/client.ts` | Explicit sign-out completes; each completion, before resetting analytics identity. |
 | Account Deleted | ricecal_account_deleted | none | `src/data/auth.ts` | Server confirms account deletion; each success, before clearing the PostHog person and signing out. |
 | Log Sheet Opened | ricecal_log_sheet_opened | panel: string; date_offset: number | `app/log/index.tsx` | Log sheet opens; once per presentation using its actual initial panel (explicit link, remembered choice, then camera) and selected date, not on panel changes. |
-| Meal Logged | ricecal_meal_logged | method: LogMethod; date_offset: number | `src/data/entries.ts`<br>`src/data/snap.ts` | Local insert succeeds, or camera/describe starts its optimistic row; once per logging action, not per decomposed food component. |
+| Meal Logged | ricecal_meal_logged | method: LogMethod; date_offset: number; with_note?: boolean | `src/data/entries.ts`<br>`src/data/snap.ts` | Local insert succeeds, or camera/describe starts its optimistic row; once per logging action, not per decomposed food component. `with_note` only on camera. |
 | Meal Scan Completed | ricecal_meal_scan_completed | method: 'camera' &#124; 'describe'; outcome: ScanOutcome; duration_ms: number; tier: number &#124; null; components: number | `src/data/snap.ts` | Camera/describe request reaches a reported outcome; once per attempt, including refusals, empty food, failure and detached requests. |
 | Barcode Scanned | ricecal_barcode_scanned | outcome: 'found' &#124; 'not_found' &#124; 'error' | `app/log/food/[id].tsx` | Barcode lookup settles; once per barcode value on the mounted food route. Reopening the route can count again. |
 | Entry Updated | ricecal_entry_updated | changed: string[] | `src/data/entries.ts` | Entry update succeeds; each successful save, with names of changed fields. |
@@ -4526,6 +4588,7 @@ user text. Extend the source type and these tables together when its domain chan
 | `step`, `step_number` | `setup` 1, `about` 2, `activity` 3, `source` 4, `calculating` 5, `target` 6, `account` 7, `health` 8, `notifications` 9 | `features/onboarding/steps.ts`; calculating has no completion event, and secondary skips do not emit one |
 | `referral_source` | `xiaohongshu`, `instagram`, `tiktok`, `youtube`, `threads`, `facebook`, `reddit`, `friend`, `other`, `appStore`, `googlePlay` | `app/(onboarding)/source.tsx`; selected answer, not verified acquisition attribution |
 | Log-sheet `panel` | `camera`, `describe`, `search` | `app/log/index.tsx`; legacy `barcode`/`label` map to camera and `recipes` maps to search. Initial panel only |
+| Camera `with_note` | `true` when words were added after the shutter; `false` for Skip, an empty note, the setting switched off, the packet-label handoff, or a device with no camera (no photo, so no note is sent) | `data/snap.ts`; camera `Meal Logged` only, absent on every other method. The note's text is diary content and is never sent |
 | Entry `changed` | Any supplied patch fields among `when`, `quantity`, `plate`, `serving`, `name`, `note`, `icon`, `photo`, `overrides` | `data/entries.ts`; field names only, never edited values |
 | Share `platform` | `instagram`, `tiktok`, `xiaohongshu`, `facebook`, `threads`, `x` | `features/settings/social.ts`; requested external shortcut, not verified sharing |
 | Entry deletion `source` | Calling source string, or `unknown` when absent | `data/entries.ts`; not an unrestricted note or an automatic screen name |

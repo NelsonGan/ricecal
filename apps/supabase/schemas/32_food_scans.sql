@@ -38,6 +38,11 @@ create table public.food_scan_items (
   -- verbatim. The columns above are the model's reading of this sentence, and
   -- "which phrasings does it read badly" needs both halves on the row —
   -- there is no photo to go back to and look at.
+  --
+  -- Also set for a PHOTOGRAPHED meal the person added a note to after the
+  -- shutter ("beef not chicken", "shared"), verbatim. Tell the two apart by
+  -- the entry's `source`. Whether a note changed the reading is only
+  -- answerable with the note on the row.
   described_text text check (char_length(described_text) <= 500),
 
   -- Where the cascade landed. `resolved_tier` is 1..5; the food is the row the

@@ -717,6 +717,21 @@ export const hi = {
       send: 'यह भोजन दर्ज करें',
     },
 
+    photoNote: {
+      title: 'कुछ ऐसा जो फ़ोटो में नहीं दिखता?',
+      placeholder: 'चिकन नहीं, मटन, बिना चीनी की चाय, शेयर किया',
+      skip: 'छोड़ें',
+      log: 'भोजन दर्ज करें',
+      retake: 'फिर से लें',
+      photo: 'आपकी फ़ोटो',
+      suggestion: {
+        shared: 'शेयर किया',
+        half: 'आधा खाया',
+        lessRice: 'कम चावल',
+        noSugar: 'बिना चीनी',
+      },
+    },
+
     camera: {
       permissionTitle: 'कैमरे की अनुमति चाहिए',
       permissionBody: 'RiceCal आपकी थाली पढ़ने के लिए कैमरा इस्तेमाल करता है।',
@@ -1173,6 +1188,9 @@ export const hi = {
       hour: 'घंटा',
       minute: 'मिनट',
       preview: '{{time}} पर याद दिलाएगा',
+      cameraTitle: 'कैमरा',
+      photoNote: 'फ़ोटो के बाद विवरण पूछें',
+      photoNoteBody: 'जो फ़ोटो में नहीं दिखता, उसके बारे में कुछ शब्द।',
     },
 
     reminders: {

@@ -716,6 +716,21 @@ export const bn = {
       send: 'এই খাবারটি লিখুন',
     },
 
+    photoNote: {
+      title: 'ছবিতে দেখা যায় না এমন কিছু?',
+      placeholder: 'মুরগি নয়, গরুর মাংস, চিনি ছাড়া চা, ভাগ করে খেয়েছি',
+      skip: 'বাদ দিন',
+      log: 'খাবার লগ করুন',
+      retake: 'আবার তুলুন',
+      photo: 'আপনার ছবি',
+      suggestion: {
+        shared: 'ভাগ করে',
+        half: 'অর্ধেক খেয়েছি',
+        lessRice: 'কম ভাত',
+        noSugar: 'চিনি ছাড়া',
+      },
+    },
+
     camera: {
       permissionTitle: 'ক্যামেরার অনুমতি দরকার',
       permissionBody: 'RiceCal আপনার থালা পড়তে ক্যামেরা ব্যবহার করে।',
@@ -1170,6 +1185,9 @@ export const bn = {
       hour: 'ঘণ্টা',
       minute: 'মিনিট',
       preview: '{{time}} এ মনে করাবে',
+      cameraTitle: 'ক্যামেরা',
+      photoNote: 'ছবির পরে বিস্তারিত জিজ্ঞাসা করুন',
+      photoNoteBody: 'ছবিতে যা দেখা যায় না, সে সম্পর্কে কয়েকটি কথা।',
     },
 
     reminders: {

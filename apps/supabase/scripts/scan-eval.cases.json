@@ -241,5 +241,38 @@
     "parts": 0,
     "carbs": [5, 28],
     "note": "The carbohydrate band is the case, for the same reason the chicken rice case bands protein. The catalogue held no latte macchiato as anybody is served one: the nearest rows were a 21.5 g instant sachet and \"Starbucks Caramel Macchiato\", and the caramel one won six runs in six at 266 kcal and 40.4 g of carbohydrate. That is defensible on energy for a 350 ml drink and is a quarter of a cup of syrup the photograph does not contain. \"latte macchiato\" is an alias of the plain Latte row now; this is what stops it drifting back to the syrup."
+  },
+  {
+    "name": "photo + note: the chicken rice is roast duck",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Hainanese_Chicken_Rice_with_Radish_Soup.jpg/1280px-Hainanese_Chicken_Rice_with_Radish_Soup.jpg",
+    "photo_note": "this is roast duck rice, not chicken",
+    "kcal": [450, 1200],
+    "name_has": ["duck"],
+    "note": "The note names the meat. A model that trusts the photo over the person calls it chicken rice again."
+  },
+  {
+    "name": "photo + note: half a shared nasi lemak",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Nasi_lemak_on_banana_leaf.jpg/1280px-Nasi_lemak_on_banana_leaf.jpg",
+    "photo_note": "only ate half, shared with my sister",
+    "kcal": [150, 600],
+    "note": "The whole plate's case is 300-1,100. Half of it is the share, priced through a count below one rather than by shrinking the parts."
+  },
+  {
+    "name": "photo + note: the black coffee had condensed milk",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/f/fd/Cup_of_black_coffee.jpg",
+    "photo_note": "kopi with condensed milk and 2 sugars",
+    "kcal": [60, 250],
+    "note": "Sugar and milk are invisible in a dark cup. Without the note this case is 0-120."
+  },
+  {
+    "name": "photo + note: a shared nasi lemak and a teh tarik of their own",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Nasi_lemak_on_banana_leaf.jpg/1280px-Nasi_lemak_on_banana_leaf.jpg",
+    "photo_note": "shared it with my sister, I had a teh tarik",
+    "kcal": [300, 850],
+    "note": "The plate is halved and the drink is not. A drink folded into the shared item is halved with it, which is why the rules ask for a second item."
   }
 ]

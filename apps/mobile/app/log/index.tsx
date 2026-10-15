@@ -30,6 +30,7 @@ import {
   FoodSearchPanel,
   type FoodSearchState,
   InlineCamera,
+  PhotoNotePanel,
   QuickAction,
 } from '@/features/logging'
 import { type LogPanel, storedLogPanel, storeLogPanel } from '@/features/logging/preference'
@@ -190,6 +191,28 @@ function LogSheet() {
   )
   const toggle = (next: NonNullable<Panel>) =>
     setPanel((current) => (current === next ? null : next))
+
+  /**
+   * A photo waiting for its note, between the shutter and the scan. Nothing has
+   * been uploaded or spent yet: the scan starts when the note is sent or
+   * skipped, so closing the sheet here drops the shot the way closing it before
+   * the shutter would have.
+   *
+   * An object rather than the uri, because a device with no camera takes a shot
+   * whose uri is undefined and that is still a shot.
+   */
+  const [shot, setShot] = useState<{ uri: string | undefined } | null>(null)
+  /**
+   * On unless the user turned it off. Unknown counts as on: the setting's
+   * default is on, and a sheet that skipped the question while the row was
+   * still loading would be the one place the default did not hold.
+   */
+  const askForNote = settings?.photo_note_prompt !== false
+
+  const snapShot = (photoUri: string | undefined, note?: string) => {
+    snapFood({ photoUri, logDate: selectedDate, note })
+    goBack()
+  }
 
   /**
    * The top of the logging funnel: the sheet is up and nothing has been written.
@@ -372,43 +395,57 @@ function LogSheet() {
         <Text variant="meta">{format(parseISO(selectedDate), datePattern('weekdayDayMonth'))}</Text>
       ) : null}
 
-      <View className="flex-row gap-2.5">
-        <QuickAction
-          compact={panel !== null}
-          label={t('logging:selector.snap')}
-          icon={{ set: 'system', name: 'camera' }}
-          tone="pandan"
-          selected={panel === 'camera'}
-          onPress={() => toggle('camera')}
-        />
-        {/* No "Say". Dictation would be typing without the keyboard, and typing
+      {/* Put away while a photo waits for its note. Every tile would swap the
+          panel and drop the shot, and the step is one question with the
+          keyboard up, which needs the height more than it needs a way out
+          sideways. */}
+      {shot ? null : (
+        <View className="flex-row gap-2.5">
+          <QuickAction
+            compact={panel !== null}
+            label={t('logging:selector.snap')}
+            icon={{ set: 'system', name: 'camera' }}
+            tone="pandan"
+            selected={panel === 'camera'}
+            onPress={() => toggle('camera')}
+          />
+          {/* No "Say". Dictation would be typing without the keyboard, and typing
             already reaches the same cascade. */}
-        <QuickAction
-          compact={panel !== null}
-          label={t('logging:selector.describe')}
-          icon={{ set: 'system', name: 'sparkle' }}
-          tone="kaya"
-          selected={panel === 'describe'}
-          onPress={() => {
-            // Gated at the TAP, unlike the shutter beside it. The camera is
-            // free and framing a plate is most of what makes it legible, so
-            // that panel opens for everybody; this one is Pro outright, and
-            // opening it would have somebody type out a meal before being told
-            // the sentence has nowhere to go.
-            if (panel !== 'describe' && !requirePro('describe')) return
-            toggle('describe')
-          }}
-        />
-        <QuickAction
-          compact={panel !== null}
-          label={t('logging:selector.search')}
-          icon={{ set: 'ui', name: 'search' }}
-          selected={panel === 'search'}
-          onPress={() => toggle('search')}
-        />
-      </View>
+          <QuickAction
+            compact={panel !== null}
+            label={t('logging:selector.describe')}
+            icon={{ set: 'system', name: 'sparkle' }}
+            tone="kaya"
+            selected={panel === 'describe'}
+            onPress={() => {
+              // Gated at the TAP, unlike the shutter beside it. The camera is
+              // free and framing a plate is most of what makes it legible, so
+              // that panel opens for everybody; this one is Pro outright, and
+              // opening it would have somebody type out a meal before being told
+              // the sentence has nowhere to go.
+              if (panel !== 'describe' && !requirePro('describe')) return
+              toggle('describe')
+            }}
+          />
+          <QuickAction
+            compact={panel !== null}
+            label={t('logging:selector.search')}
+            icon={{ set: 'ui', name: 'search' }}
+            selected={panel === 'search'}
+            onPress={() => toggle('search')}
+          />
+        </View>
+      )}
 
-      {panel === 'camera' ? (
+      {panel === 'camera' && shot ? (
+        <PhotoNotePanel
+          photoUri={shot.uri}
+          onLog={(note) => snapShot(shot.uri, note || undefined)}
+          onSkip={() => snapShot(shot.uri)}
+          onRetake={() => setShot(null)}
+        />
+      ) : null}
+      {panel === 'camera' && !shot ? (
         <View className="flex-1">
           {/* The shutter does not wait for recognition. It writes the row and
               closes: the waiting happens on the row itself, where the user can
@@ -520,6 +557,13 @@ function LogSheet() {
               // everybody's.
               const barcode = captureMode === 'meal' ? labelCode : undefined
               setLabelCode(undefined)
+              // A few words about what the photo cannot show, before anything
+              // is sent. Not for the packet handoff: that shot is of a
+              // nutrition panel, which answers for itself.
+              if (askForNote && !barcode) {
+                setShot({ uri: photoUri })
+                return
+              }
               snapFood({ photoUri, logDate: selectedDate, barcode })
               goBack()
             }}

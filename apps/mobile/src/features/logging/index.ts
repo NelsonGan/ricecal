@@ -27,6 +27,7 @@ export {
   type TypedFigures,
 } from './NutritionSheet'
 export { PartLine } from './PartLine'
+export { PhotoNotePanel, type PhotoNotePanelProps } from './PhotoNotePanel'
 export { PlateEditor, type PlateEditorProps } from './PlateEditor'
 export { type PartEdits, partChanges, stagedParts } from './parts'
 export { QuickAction, type QuickActionProps } from './QuickAction'
