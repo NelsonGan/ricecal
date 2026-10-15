@@ -65,6 +65,7 @@ export function toPlans(
       reps: set.reps,
       durationS: set.durationS,
       distanceM: set.distanceM,
+      rpe: set.rpe,
     })),
   }))
 }

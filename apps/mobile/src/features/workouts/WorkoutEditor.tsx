@@ -31,6 +31,9 @@ import { recordSets } from './records'
 import type { CardHandlers } from './SetTable'
 import { warmupSets } from './warmup'
 
+/** Hardest first, as the sheet lists them. */
+const RPE_SCALE = [10, 9, 8, 7, 6] as const
+
 /**
  * The body of the logger: every exercise card, their menus, and the moves
  * between them. Shared by the live logger and by editing a finished workout,
@@ -83,6 +86,8 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     number: number
   } | null>(null)
   const [restFor, setRestFor] = useState<LiveExercise | null>(null)
+  // The set whose effort is being rated, from its menu.
+  const [rpeFor, setRpeFor] = useState<{ exercise: LiveExercise; set: LiveSet } | null>(null)
   // The exercise the calculator was opened for, and the weight to open it on
   // when it came from a set's own field rather than the exercise's menu.
   const [platesFor, setPlatesFor] = useState<{ exercise: LiveExercise; kg?: number | null } | null>(
@@ -104,6 +109,14 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     awaitPick({ single, deliver })
     router.push({ pathname: '/workout/exercises', params: { pick: single ? 'one' : 'many' } })
   }
+
+  const setRpe = (target: { exercise: LiveExercise; set: LiveSet }, rpe: number | null) =>
+    dispatch({
+      type: 'updateSet',
+      key: target.exercise.key,
+      setId: target.set.id,
+      patch: { rpe },
+    })
 
   /** Ticks or unticks a set. False when it had no numbers to tick. */
   const toggle = (exercise: LiveExercise, set: LiveSet, fill: SetPatch | undefined): boolean => {
@@ -362,6 +375,15 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
                       }),
                   })),
                   {
+                    key: 'rpe',
+                    label:
+                      setMenu.set.rpe === null
+                        ? t('workouts:logger.rpe')
+                        : t('workouts:logger.rpeValue', { value: setMenu.set.rpe }),
+                    icon: { set: 'body', name: 'heart-rate' } as const,
+                    onPress: () => setRpeFor({ exercise: setMenu.exercise, set: setMenu.set }),
+                  },
+                  {
                     key: 'remove',
                     label: t('workouts:logger.removeSet'),
                     icon: { set: 'ui', name: 'delete' } as const,
@@ -372,6 +394,35 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
                         key: setMenu.exercise.key,
                         setId: setMenu.set.id,
                       }),
+                  },
+                ]
+              : []
+          }
+        />
+
+        {/* Effort as reps left in the tank, the way a lifter says it: whole
+            steps from 6 to 10, each named by what it means. */}
+        <ActionSheet
+          visible={rpeFor !== null}
+          onClose={() => setRpeFor(null)}
+          title={t('workouts:logger.rpeTitle')}
+          actions={
+            rpeFor
+              ? [
+                  ...RPE_SCALE.map((value) => ({
+                    key: String(value),
+                    label:
+                      value === 10
+                        ? t('workouts:logger.rpe10')
+                        : t('workouts:logger.rpeLeft', { value, count: 10 - value }),
+                    selected: rpeFor.set.rpe === value,
+                    onPress: () => setRpe(rpeFor, value),
+                  })),
+                  {
+                    key: 'none',
+                    label: t('workouts:logger.rpeNone'),
+                    selected: rpeFor.set.rpe === null,
+                    onPress: () => setRpe(rpeFor, null),
                   },
                 ]
               : []

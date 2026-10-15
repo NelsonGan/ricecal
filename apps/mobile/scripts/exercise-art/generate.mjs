@@ -73,7 +73,7 @@ console.log(`${queue.length} to draw, ${jobs} at a time`)
 function brief(exercise) {
   return `Asset type: exercise illustration for the exercise library of a gym workout logging app, shown from 48pt to 240pt. It must be technically accurate so a gym-goer instantly recognises the exact exercise: "${exercise.name}".
 Subject: one figure ${POSES[exercise.id]}
-Style/medium: match the reference image exactly: soft matte clay 3D render, smooth rounded forms, a featureless round bald head with no face, warm skin-tone clay body, a sporty tank top and shorts in solid muted clay colours, light sneakers. Equipment in mid-grey and graphite clay with soft highlights, never pure black, so it reads on both light and dark backgrounds.
+Style/medium: match the reference image exactly: soft matte clay 3D render, smooth rounded forms, a featureless round bald head with no face, warm skin-tone clay body, a brown tank top and charcoal shorts exactly as in the reference (never another colour, so every figure in the library is the same person), light sneakers. Equipment in mid-grey and graphite clay with soft highlights, never pure black, so it reads on both light and dark backgrounds.
 Composition/framing: the whole figure and all of the equipment fully visible, centered, filling about 85% of a square canvas, nothing cropped.
 Lighting/mood: soft studio light from the top-left, gentle ambient occlusion.
 Avoid: text, letters, numbers, labels, arrows, motion lines, watermark, background, floor plane, scenery beyond what the subject names, drop shadow, extra people.`

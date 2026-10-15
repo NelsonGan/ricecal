@@ -3687,7 +3687,7 @@ app/workout/exercise/[id].tsx an exercise's history, charts, records and split
 app/workout/routine/[id].tsx  edit a routine
 app/workout/templates.tsx     the built-in templates; template/[id] is one
 app/workout/stats.tsx         12 weeks of totals, 30 days of muscles, records
-app/workout/settings.tsx      rest timer, units, Apple Health, reminders
+app/workout/settings.tsx      rest timer, units, Apple Health, reminders, CSV export
 app/workout/custom.tsx        a custom exercise
 src/features/workouts         the document, catalogue, templates, logger parts
 src/data/workouts.ts          every read and write, and the outbox
@@ -3698,12 +3698,13 @@ apps/supabase/schemas/96_workouts.sql  every number: volume, 1RM, records, strea
 What a user can do: start an empty workout, a routine, a template or a repeat of
 an old one; log a sport as one timed set; log a past workout after the fact. The
 logger shows each exercise's last numbers in a PREVIOUS column, takes warm-up,
-drop and failure sets, supersets, notes, replacing and reordering, a rest timer
-per exercise, a plate calculator and generated warm-up sets, and marks a record
-the moment a set beats one. A saved workout can be opened, edited, deleted,
-repeated or saved as a routine. Every exercise has a page with its history,
-charts, bests and muscle split. Weekly bars, a 30-day muscle split, a calendar
-and the personal-records list are on the progress screen.
+drop and failure sets, an RPE per set, supersets, notes, replacing and
+reordering, a rest timer per exercise, a plate calculator and generated warm-up
+sets, and marks a record the moment a set beats one. A saved workout can be
+opened, edited, deleted, repeated, shared as text or saved as a routine. Every
+exercise has a page with its history, charts, bests, rep records and muscle
+split. Weekly bars, a 30-day muscle split, a calendar and the personal-records
+list are on the progress screen, and settings exports every set as CSV.
 
 ### The catalogue is code, and every entry has a drawing
 
@@ -3744,6 +3745,11 @@ to its outline, re-centres it with the same margin, and writes the WebP and the
 registry. **Look at every image before committing it**: a model can swap a grip
 or draw the wrong machine, and an exercise library with a wrong picture is worse
 than one with none.
+
+The brief pins the outfit as well as the style. With only the reference to go
+on, Zumba, basketball and volleyball came back in team colours, which read as a
+different person in a library that is otherwise one figure; those three were
+redrawn once the brief said brown tank top and charcoal shorts in words.
 
 **Templates** (`templates.ts`) are 19 standard programs in seven groups: two
 beginner full-body days, push/pull/legs, upper/lower, 5×5, one muscle a day,
@@ -3825,6 +3831,12 @@ set. `exercise_bests` is grouped the same way for the same reason.
   they are typed, or matching last week's 135 lb (saved as 61.23 kg) beat it
   by the rounding. Badges show only while training: an edited workout would be
   compared with bests that already include it.
+- **Rep records** (`exercise_rep_bests`) are the heaviest weight lifted for
+  each rep count, keeping only the counts that nothing heavier at more reps has
+  beaten. With 100 kg × 5 on the books a 3-rep best of 95 kg is not a 3-rep
+  max, and listing it would say it was, so the weights fall as the reps rise.
+  The exercise page shows the table only from two rows; one row is the heaviest
+  weight again.
 - **The streak is in weeks**, ending this week or last. A daily streak punishes
   exactly the rest days a program prescribes.
 - **The muscle split** spreads working sets over muscles by each exercise's
@@ -4069,6 +4081,12 @@ Done. **A set swipes left to delete.** `SwipeRow`'s tap recogniser only runs
 while a row is open or has its own tap, because over a row of fields and
 buttons it took their touches.
 
+**RPE is in the set's menu, not a column.** Most sets are never rated, and a
+column would take width from the weight and reps on every one. Tapping the set
+number offers 6 to 10, each named by the reps left in the tank ("8, 2 reps
+left"), which is the question people actually answer; a rated set shows `@8`
+under its number, and the saved workout, the share text and the export carry it.
+
 Cards and rows are memoised, and their handlers are one stable object keyed by
 exercise, so ticking a set re-renders that exercise's card and nothing else.
 The live workout, the outbox and the workout preferences all sit on
@@ -4102,13 +4120,44 @@ passes no `formatValue` and stays a picture. `BarChart` takes `selected` and
 `onSelect`, and the workout progress page puts the tapped week's figure in its
 headline; each selectable bar carries its own VoiceOver name.
 
+### Against Hevy and Strong
+
+The feature list was taken from both apps and checked off against them before
+release. In: empty, routine, template and repeat starts; the PREVIOUS column;
+warm-up, drop and failure sets; RPE; supersets; per-exercise rest with ±15 s and
+skip; plate calculator and warm-up sets; live records; rep records and charts
+per exercise; muscle split; weekly bars, calendar and week streak; the Live
+Activity with its buttons; Apple Health; past workouts and late finishes;
+reminders; custom exercises; kg and lb; keeping the screen on; sharing a workout
+and CSV export.
+
+Left out on purpose:
+- **Routine folders.** The built-in templates are already grouped, and a user's
+  own routines are a handful; folders are a screen of management for a list
+  that fits on one.
+- **A workout feed.** RiceCal's feed is about food, and posting a set list to it
+  is a separate decision about what the feed is for.
+- **Body measurements.** Weight is already logged on Today; tape measurements
+  belong there, not in a training log.
+- **A watch app and CSV import.** Each is a project of its own, not a gap in
+  this one.
+
+**Sharing is text, exporting is a file.** A workout shares as plain lines
+(`shareText.ts`), name, then date, duration and volume, then each set with its
+badge and RPE, because every app it can be pasted into reads text. The export
+(`exportCsv.ts`, read by `fetchWorkoutExport` a thousand rows at a time) uses
+the columns Strong and Hevy write, with weight always in kilograms and the date
+in the phone's wall time; an ISO stamp in UTC is not a date Sheets or Numbers
+recognises, and a late workout lands on the next day. iOS shares it as a file;
+Android's share sheet carries text, so there the CSV is the message.
+
 ### Releasing it
 
-Additive end to end. The migration adds two enums, five tables, three views, seven
-functions and three `user_settings` columns with defaults, and touches nothing
-an older binary reads; no edge function or Worker changes. Deploy the migration
-before the app, as always. The four analytics events are in the canonical
-table under Analytics.
+Additive end to end. Two migrations add two enums, five tables, three views,
+eight functions and three `user_settings` columns with defaults, and touch
+nothing an older binary reads; no edge function or Worker changes. Deploy the
+migrations before the app, as always. The four analytics events are in the
+canonical table under Analytics; sharing and exporting send none.
 
 ---
 

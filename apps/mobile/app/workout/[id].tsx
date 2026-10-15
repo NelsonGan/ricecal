@@ -2,7 +2,7 @@ import { format, parseISO } from 'date-fns'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { Share, View } from 'react-native'
 
 import {
   useDeleteWorkout,
@@ -31,6 +31,7 @@ import {
   useExerciseLibrary,
   useWorkoutStarter,
   volumeText,
+  workoutShareText,
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
@@ -137,6 +138,16 @@ export default function WorkoutScreen() {
                       sets: plan.sets.map((set) => ({ kind: set.kind })),
                     })),
                   }),
+              },
+              {
+                key: 'share',
+                label: t('workouts:detail.share'),
+                icon: { set: 'ui', name: 'share' },
+                onPress: () => {
+                  Share.share({
+                    message: workoutShareText(t, workout, unit, distanceUnitFor(unit)),
+                  }).catch(() => {})
+                },
               },
               {
                 key: 'routine',
@@ -328,6 +339,9 @@ function EntryCard({
                 <Text variant="bodyStrong" className="flex-1">
                   {describeSet(set, entry.tracking, unit, distanceUnit, t(UNIT_KEY[unit]))}
                 </Text>
+                {set.rpe !== null ? (
+                  <Text variant="caption">{t('workouts:logger.rpeValue', { value: set.rpe })}</Text>
+                ) : null}
                 {set.records.length ? (
                   <Badge tone="kaya" size="sm" className="gap-1 self-center">
                     <Icon set="system" name="trophy" size={14} />

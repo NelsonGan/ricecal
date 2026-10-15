@@ -28,6 +28,7 @@ export * from './copy'
 export { ExerciseArt } from './ExerciseArt'
 export { WorkoutEffects } from './effects'
 export { estimateKcal } from './energy'
+export { workoutsCsv } from './exportCsv'
 export * from './format'
 export { removeWorkoutFromHealth, syncWorkoutToHealth } from './health'
 export {
@@ -56,6 +57,7 @@ export {
 export { describeSet } from './SetTable'
 export { StaleWorkoutSheet } from './StaleWorkoutSheet'
 export { asCategory, asEquipment } from './search'
+export { workoutShareText } from './shareText'
 export { defaultWorkoutName, discardWorkout, useWorkoutStarter } from './start'
 export {
   dispatchWorkout,

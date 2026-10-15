@@ -324,7 +324,13 @@ const SetRow = memo(function SetRow({
           accessibilityRole="button"
           accessibilityLabel={`${t('workouts:logger.set')} ${badge}`}
         >
-          <Text className={cn('font-display text-[17px]', badgeTone)}>{badge}</Text>
+          <Text className={cn('font-display text-[17px] leading-[20px]', badgeTone)}>{badge}</Text>
+          {set.rpe !== null ? (
+            // Small under the number: it qualifies the set rather than being one of its figures.
+            <Text variant="micro" className="text-muted" numberOfLines={1}>
+              {`@${set.rpe}`}
+            </Text>
+          ) : null}
         </Tappable>
 
         {/* Tapping last time's figure copies it in, for the set that is the
