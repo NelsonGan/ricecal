@@ -53,11 +53,11 @@ export function FieldOrderProvider({
   order.current = keys
 
   const value = useMemo<Order>(() => {
-    /** Focuses the first registered field from `index` in `direction`, not counting `index`. */
-    const focusFrom = (index: number, direction: 1 | -1): boolean => {
+    /** Focuses the first registered field after `index`. */
+    const focusAfter = (index: number): boolean => {
       const list = order.current
       if (index < 0) return false
-      for (let at = index + direction; at >= 0 && at < list.length; at += direction) {
+      for (let at = index + 1; at < list.length; at++) {
         const focus = focusers.current.get(list[at])
         if (focus) {
           focus()
@@ -74,7 +74,7 @@ export function FieldOrderProvider({
           if (focusers.current.get(key) === focus) focusers.current.delete(key)
         }
       },
-      next: (key) => focusFrom(order.current.indexOf(key), 1),
+      next: (key) => focusAfter(order.current.indexOf(key)),
       hasNext: (key) => {
         const list = order.current
         const index = list.indexOf(key)
@@ -86,7 +86,7 @@ export function FieldOrderProvider({
         let index = list.indexOf(key)
         if (index < 0) return false
         while (index + 1 < list.length && setOf(list[index + 1]) === set) index += 1
-        return focusFrom(index, 1)
+        return focusAfter(index)
       },
     }
   }, [])

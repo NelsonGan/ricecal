@@ -152,6 +152,7 @@ function WeekBars({
           key: week.week,
           value: weekValue(week, metric),
           highlight: index === weeks.length - 1,
+          a11yLabel: `${format(parseISO(week.week), datePattern('dayMonth'))}, ${show(weekValue(week, metric))}`,
         }))}
       />
       <View className="flex-row justify-between">

@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useReducer, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { useWorkout, type WorkoutDetail } from '@/data'
+import { useLastSets, useWorkout, type WorkoutDetail } from '@/data'
 import {
   apply,
   completeAll,
@@ -90,6 +90,12 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
     }
   })
   const [saving, setSaving] = useState(false)
+  // Last time's sets, which a past workout's empty rows show and so save with.
+  // Not for an edit: there the newest workout with these exercises is this one.
+  // The editor asks for the same key, so this reads its cache.
+  const previous = useLastSets(
+    initial ? [] : workout.exercises.map((exercise) => exercise.exerciseId),
+  ).data
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: once, for a past workout being logged
   useEffect(() => {
@@ -104,7 +110,7 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
     if (error || saving) return
     // Here every set with numbers in it counts: a past workout has no ticking,
     // and an edited one should not lose a set because a new row went unticked.
-    const document = completeAll(workout, startedAt)
+    const document = completeAll(workout, startedAt, previous)
     if (doneSets(document) === 0) {
       toast.show({ title: t('workouts:finish.nothingTitle'), tone: 'error' })
       return

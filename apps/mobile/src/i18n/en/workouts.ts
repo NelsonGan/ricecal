@@ -280,8 +280,6 @@ export const workouts = {
     level: 'Level',
     muscle: 'Muscle',
     clear: 'Clear',
-    results_one: '{{count}} exercise',
-    results_other: '{{count}} exercises',
     noneTitle: 'No exercise by that name',
     create: 'Create exercise',
     recent: 'Recent',

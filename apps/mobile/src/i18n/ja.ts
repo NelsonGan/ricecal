@@ -1961,8 +1961,6 @@ export const ja = {
       level: 'レベル',
       muscle: '筋肉',
       clear: 'クリア',
-      results_one: '{{count}} 種目',
-      results_other: '{{count}} 種目',
       noneTitle: 'その名前の種目はありません',
       create: '種目を作成',
       recent: '最近',

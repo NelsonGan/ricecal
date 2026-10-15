@@ -1942,8 +1942,6 @@ export const th = {
       level: 'ระดับ',
       muscle: 'กล้ามเนื้อ',
       clear: 'ล้าง',
-      results_one: '{{count}} ท่า',
-      results_other: '{{count}} ท่า',
       noneTitle: 'ไม่มีท่าชื่อนี้',
       create: 'สร้างท่า',
       recent: 'ล่าสุด',

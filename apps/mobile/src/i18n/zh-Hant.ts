@@ -1943,8 +1943,6 @@ export const zhHant = {
       level: '難度',
       muscle: '肌群',
       clear: '清除',
-      results_one: '{{count}} 個動作',
-      results_other: '{{count}} 個動作',
       noneTitle: '沒有叫這個名字的動作',
       create: '建立動作',
       recent: '最近',

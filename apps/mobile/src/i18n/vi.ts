@@ -1963,8 +1963,6 @@ export const vi = {
       level: 'Trình độ',
       muscle: 'Nhóm cơ',
       clear: 'Xoá lọc',
-      results_one: '{{count}} bài tập',
-      results_other: '{{count}} bài tập',
       noneTitle: 'Không có bài tập tên này',
       create: 'Tạo bài tập',
       recent: 'Gần đây',

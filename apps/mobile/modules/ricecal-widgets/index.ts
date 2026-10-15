@@ -161,6 +161,11 @@ export type WorkoutActivityState = {
   canComplete: boolean
   /** The rest ticking it starts, which the activity shows the moment it is pressed. */
   restAfterS: number | null
+  /** The "rest is over" notice, which a button that moves the rest rebooks itself. */
+  restTitle: string
+  restBody: string
+  /** The buttons' names for VoiceOver. The extension has no strings of its own. */
+  labels: { complete: string; less: string; more: string; skip: string }
 }
 
 /** A button pressed on the workout's Live Activity, queued for the app. */

@@ -1971,8 +1971,6 @@ export const ta = {
       level: 'நிலை',
       muscle: 'தசை',
       clear: 'அழி',
-      results_one: '{{count}} பயிற்சி',
-      results_other: '{{count}} பயிற்சிகள்',
       noneTitle: 'அந்தப் பெயரில் பயிற்சி இல்லை',
       create: 'பயிற்சியை உருவாக்கு',
       recent: 'சமீபத்தியவை',

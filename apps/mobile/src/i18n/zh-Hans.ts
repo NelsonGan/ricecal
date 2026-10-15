@@ -1943,8 +1943,6 @@ export const zhHans = {
       level: '难度',
       muscle: '肌群',
       clear: '清除',
-      results_one: '{{count}} 个动作',
-      results_other: '{{count}} 个动作',
       noneTitle: '没有叫这个名字的动作',
       create: '创建动作',
       recent: '最近',
