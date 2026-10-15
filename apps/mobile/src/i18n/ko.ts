@@ -235,7 +235,7 @@ export const ko = {
       workoutsBody: '종류, 시간, 페이스, 심박수',
 
       privacy:
-        '읽기 전용입니다. 운동을 저장하도록 직접 켜지 않는 한 아무것도 다시 쓰지 않으며, 건강 데이터는 오직 본인 계정에만 저장됩니다.',
+        '연결은 읽기만 합니다. 직접 켠 경우에만 운동을 그곳에 저장하며, 건강 데이터는 본인 계정에만 보관됩니다.',
 
       appleBody: 'Apple Health, iPhone과 Apple Watch',
       connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
@@ -1865,6 +1865,9 @@ export const ko = {
       },
       superset: '슈퍼세트',
       restTitle: '휴식 타이머',
+      menuFor: '{{name}} 옵션',
+      removeTitle: '{{name}}을(를) 삭제할까요?',
+      removeBody: '세트도 함께 삭제돼요.',
       restDefault: '기본값 사용 ({{time}})',
       pr: '신기록',
       noNumbers: '먼저 세트를 입력하세요',
@@ -1986,6 +1989,7 @@ export const ko = {
       records: '개인 기록',
       split: '부위 비율',
       noHistoryTitle: '아직 한 적이 없습니다',
+      missing: '이 종목은 더 이상 없습니다.',
       chart: {
         heaviest: '최고 무게',
         e1rm: '추정 1RM',
@@ -2026,6 +2030,7 @@ export const ko = {
       splitRange: '최근 30일',
       records: '개인 기록',
       calendar: '달력',
+      dayTrained: '{{day}}, 운동 기록 있음',
     },
 
     settings: {
@@ -2053,6 +2058,8 @@ export const ko = {
       perSide: '한쪽',
       none: '바만',
       unreachable: '일반 원판으로는 맞출 수 없습니다.',
+      closest: '가장 가까운 무게: {{weight}}',
+      closestOr: '가장 가까운 무게: {{weight}} 또는 {{other}}',
     },
 
     warmup: {

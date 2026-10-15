@@ -9,6 +9,7 @@ import {
   completeAll,
   discardWorkout,
   doneSets,
+  getActiveWorkout,
   liveTotals,
   RestBar,
   STALE_AFTER_MS,
@@ -49,6 +50,7 @@ export default function ActiveWorkoutScreen() {
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const [unfinished, setUnfinished] = useState(0)
   const [nothing, setNothing] = useState(false)
+  const finishParams = useRef<FinishParams>({})
 
   // The last document seen, drawn while this screen leaves. Finishing and
   // discarding clear the workout and then navigate away, and in between the
@@ -69,7 +71,10 @@ export default function ActiveWorkoutScreen() {
   // Sets showing numbers but not ticked are asked about, even when none are
   // ticked: a workout logged by typing and never ticking is the commonest
   // way to finish with "nothing to save".
-  const finish = () => {
+  // `params` carries what "Still training?" chose (the last set's time, or
+  // picking one) through the same checks to the save screen.
+  const finish = (params: FinishParams = {}) => {
+    finishParams.current = params
     const open = unfinishedSets(workout, previous)
     if (open > 0) {
       setUnfinished(open)
@@ -79,7 +84,7 @@ export default function ActiveWorkoutScreen() {
       setNothing(true)
       return
     }
-    router.push('/workout/finish')
+    router.push({ pathname: '/workout/finish', params })
   }
 
   const discard = async () => {
@@ -118,7 +123,7 @@ export default function ActiveWorkoutScreen() {
               : undefined
           }
           action={
-            <Button size="sm" onPress={finish}>
+            <Button size="sm" onPress={() => finish()}>
               {t('workouts:logger.finish')}
             </Button>
           }
@@ -176,8 +181,11 @@ export default function ActiveWorkoutScreen() {
             label: t('workouts:finish.completeThem'),
             icon: { set: 'ui', name: 'checkbox-checked' },
             onPress: () => {
-              replace(completeAll(workout, Date.now(), previous))
-              router.push('/workout/finish')
+              // The stored document, not this render's: a lock-screen tick or a
+              // rest ending before the sheet closed would otherwise be undone.
+              const latest = userId ? getActiveWorkout(userId) : null
+              if (latest) replace(completeAll(latest, Date.now(), previous))
+              router.push({ pathname: '/workout/finish', params: finishParams.current })
             },
           },
           // Leaving them out of a workout with nothing ticked saves nothing.
@@ -187,7 +195,8 @@ export default function ActiveWorkoutScreen() {
                   key: 'drop',
                   label: t('workouts:finish.dropThem'),
                   icon: { set: 'ui', name: 'checkbox-empty' } as const,
-                  onPress: () => router.push('/workout/finish'),
+                  onPress: () =>
+                    router.push({ pathname: '/workout/finish', params: finishParams.current }),
                 },
               ]
             : []),
@@ -209,6 +218,8 @@ export default function ActiveWorkoutScreen() {
           startedAt={current.startedAt}
           answered={current.staleAnswered === true}
           onAnswered={() => dispatch({ type: 'staleAnswered' })}
+          onFinish={finish}
+          onDiscard={() => setConfirmDiscard(true)}
         />
       ) : null}
     </Screen>
@@ -233,20 +244,32 @@ function RestCountdown(props: Omit<Parameters<typeof RestBar>[0], 'now'>) {
  * "Still training?", once the workout has run long enough to be a forgotten
  * one, and not again once it has been answered.
  */
+type FinishParams = { endedAt?: string; pickEnd?: string }
+
 function StaleCheck({
   startedAt,
   answered,
   onAnswered,
+  onFinish,
+  onDiscard,
 }: {
   startedAt: number
   answered: boolean
   onAnswered: () => void
+  onFinish: (params: FinishParams) => void
+  onDiscard: () => void
 }) {
   const now = useNow(60_000, !answered)
   const [closed, setClosed] = useState(false)
   const visible = !answered && !closed && now - startedAt > STALE_AFTER_MS
   return (
-    <StaleWorkoutSheet visible={visible} onClose={() => setClosed(true)} onKeepGoing={onAnswered} />
+    <StaleWorkoutSheet
+      visible={visible}
+      onClose={() => setClosed(true)}
+      onKeepGoing={onAnswered}
+      onFinish={onFinish}
+      onDiscard={onDiscard}
+    />
   )
 }
 

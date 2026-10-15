@@ -114,9 +114,22 @@ export function RoutineCard({
         date: format(parseISO(routine.lastUsedAt), datePattern('dayMonth')),
       })
     : t('workouts:routines.never')
+  const exercises = t('workouts:routines.exercises', { count: routine.exercises.length })
+  const start = t('workouts:start.routine')
 
   return (
-    <Card contentClassName="flex-row items-center gap-3 p-3" onPress={onOpen}>
+    <Card
+      contentClassName="flex-row items-center gap-3 p-3"
+      onPress={onOpen}
+      // The card is one element to VoiceOver, which hides the Start button
+      // inside it, so Start is offered as the card's own action instead.
+      accessibilityRole="button"
+      accessibilityLabel={`${routine.name}, ${exercises}, ${when}`}
+      accessibilityActions={[{ name: 'start', label: start }]}
+      onAccessibilityAction={(event) => {
+        if (event.nativeEvent.actionName === 'start') onStart()
+      }}
+    >
       <ExerciseArt
         exerciseId={first?.exercise_id ?? ''}
         category={first ? library.byId(first.exercise_id)?.category : undefined}
@@ -127,11 +140,11 @@ export function RoutineCard({
           {routine.name}
         </Text>
         <Text variant="meta" numberOfLines={1}>
-          {`${t('workouts:routines.exercises', { count: routine.exercises.length })} · ${when}`}
+          {`${exercises} · ${when}`}
         </Text>
       </View>
       <Button size="sm" onPress={onStart}>
-        {t('workouts:start.routine')}
+        {start}
       </Button>
     </Card>
   )

@@ -15,7 +15,14 @@ import {
   useNow,
   WorkoutEffects,
 } from '@/features/workouts'
-import { NAV_BAR_HEIGHT, NavBar, NavInsetProvider, NavItem, useNavBarFootprint } from '@/ui'
+import {
+  NAV_BAR_HEIGHT,
+  NavBar,
+  NavInsetProvider,
+  NavItem,
+  ToastHost,
+  useNavBarFootprint,
+} from '@/ui'
 
 /**
  * Today is the first tab, and saying so is not decoration.
@@ -121,6 +128,13 @@ function SignedInTabs() {
         </TabList>
       </Tabs>
       {running ? <RunningWorkout /> : null}
+      {/* The app's toasts clear the nav bar and not the workout bar over it,
+          so on the other tabs a toast covered "Resume". Today has a host of its
+          own, above its add button, and the newest host draws, so this one
+          stands aside there. */}
+      {running && pathname !== '/today' ? (
+        <ToastHost offset={NAV_BAR_HEIGHT + WORKOUT_BAR_SPACE} />
+      ) : null}
       <WorkoutEffects />
     </NavInsetProvider>
   )

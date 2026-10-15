@@ -240,7 +240,7 @@ export const zhHans = {
       workoutsBody: '类型、时长、配速、心率',
 
       privacy:
-        '只读。除非你选择把训练保存到那里，否则我们不会写回任何内容，你的健康数据只保存在你自己的账户中。',
+        '连接后只读取数据。只有你开启后，我们才会把训练保存到那里，你的健康数据只保存在你自己的账户中。',
 
       appleBody: 'Apple Health，iPhone 和 Apple Watch',
       connectHealthBody: 'Health Connect：Samsung Health、Fitbit、Garmin',
@@ -1859,6 +1859,9 @@ export const zhHans = {
       },
       superset: '超级组',
       restTitle: '休息计时',
+      menuFor: '{{name}} 的选项',
+      removeTitle: '移除{{name}}？',
+      removeBody: '它的组也会一起删除。',
       restDefault: '使用默认（{{time}}）',
       pr: '新纪录',
       noNumbers: '先填好这一组',
@@ -1980,6 +1983,7 @@ export const zhHans = {
       records: '纪录',
       split: '肌群分布',
       noHistoryTitle: '还没练过',
+      missing: '这个动作已经不在了。',
       chart: {
         heaviest: '最大重量',
         e1rm: '估算 1RM',
@@ -2020,6 +2024,7 @@ export const zhHans = {
       splitRange: '最近 30 天',
       records: '个人纪录',
       calendar: '日历',
+      dayTrained: '{{day}}，有训练',
     },
 
     settings: {
@@ -2046,6 +2051,8 @@ export const zhHans = {
       perSide: '每边',
       none: '空杆即可',
       unreachable: '用标准杠铃片配不出这个重量。',
+      closest: '最接近：{{weight}}',
+      closestOr: '最接近：{{weight}} 或 {{other}}',
     },
 
     warmup: {

@@ -67,9 +67,12 @@ export function SegmentedControl<T extends string>({
           >
             {/* One line, always. Four segments fit across a 393pt screen only
                 at this size, and a wrapped label makes one segment taller than
-                its neighbours. */}
+                its neighbours. A longer word (Tamil, Filipino, or English on a
+                375pt phone) shrinks a little rather than losing its end. */}
             <Text
               numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
               className={cn(
                 'font-display text-[15px] leading-[20px]',
                 selected ? 'text-heading' : 'text-muted',

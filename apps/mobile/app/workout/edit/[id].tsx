@@ -125,7 +125,19 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
     }
     setSaving(true)
     try {
-      const { payload, queued } = await saveWorkout(document, endedAt)
+      const { payload, queued, health, durationS } = await saveWorkout(document, endedAt)
+      // A past workout is a new one, finished here rather than on the finish
+      // screen, and it opened with `Workout Started`. An edit is neither.
+      if (!initial) {
+        track('Workout Finished', {
+          exercises: payload.exercises.length,
+          sets: doneSets(document),
+          duration_min: Math.round(durationS / 60),
+          from_routine: Boolean(document.routineId),
+          saved_to_health: Boolean(health.healthId),
+          queued,
+        })
+      }
       toast.show({
         title: t('workouts:finish.saved'),
         description: queued ? t('workouts:finish.queued') : undefined,

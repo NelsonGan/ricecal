@@ -234,7 +234,7 @@ export const bn = {
       workoutsBody: 'ধরন, সময়, গতি, হৃৎস্পন্দন',
 
       privacy:
-        'শুধু পড়ি। আপনি নিজে ওয়ার্কআউট সেখানে সেভ করা চালু না করলে আমরা কিছু ফিরিয়ে লিখি না, আর আপনার স্বাস্থ্য তথ্য কেবল আপনার নিজের অ্যাকাউন্টেই থাকে।',
+        'সংযোগ শুধু পড়ে। আপনি চালু করলে তবেই আমরা সেখানে ওয়ার্কআউট সেভ করি, আর আপনার স্বাস্থ্য তথ্য আপনার নিজের অ্যাকাউন্টেই থাকে।',
 
       appleBody: 'Apple Health, iPhone ও Apple Watch-এ',
       connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
@@ -1864,6 +1864,9 @@ export const bn = {
       },
       superset: 'সুপারসেট',
       restTitle: 'বিশ্রামের টাইমার',
+      menuFor: '{{name}}-এর বিকল্প',
+      removeTitle: '{{name}} সরাবেন?',
+      removeBody: 'এর সেটগুলোও যাবে।',
       restDefault: 'ডিফল্ট ({{time}})',
       pr: 'নতুন রেকর্ড',
       noNumbers: 'আগে সেটটি পূরণ করুন',
@@ -1987,6 +1990,7 @@ export const bn = {
       records: 'রেকর্ড',
       split: 'পেশির ভাগ',
       noHistoryTitle: 'এখনো করা হয়নি',
+      missing: 'এই ব্যায়ামটি আর নেই।',
       chart: {
         heaviest: 'সবচেয়ে ভারী',
         e1rm: 'আনু. 1RM',
@@ -2027,6 +2031,7 @@ export const bn = {
       splitRange: 'গত ৩০ দিন',
       records: 'ব্যক্তিগত রেকর্ড',
       calendar: 'ক্যালেন্ডার',
+      dayTrained: '{{day}}, ওয়ার্কআউট হয়েছে',
     },
 
     settings: {
@@ -2053,6 +2058,8 @@ export const bn = {
       perSide: 'প্রতি পাশে',
       none: 'শুধু বার',
       unreachable: 'সাধারণ প্লেট দিয়ে এই ওজন হয় না।',
+      closest: 'সবচেয়ে কাছে: {{weight}}',
+      closestOr: 'সবচেয়ে কাছে: {{weight}} বা {{other}}',
     },
 
     warmup: {

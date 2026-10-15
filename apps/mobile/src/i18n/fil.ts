@@ -243,7 +243,7 @@ export const fil = {
       workoutsBody: 'Uri, oras, bilis, tibok ng puso',
 
       privacy:
-        'Basa lang. Wala kaming isinusulat pabalik maliban kung pipiliin mong i-save doon ang mga workout mo, at ang health data mo ay nasa sarili mong account lamang.',
+        'Pagbasa lang ang pagkonekta. Sine-save lang namin doon ang mga workout kung bubuksan mo iyon, at nasa sarili mong account lang ang health data mo.',
 
       appleBody: 'Apple Health, sa iPhone at Apple Watch',
       connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
@@ -1910,6 +1910,9 @@ export const fil = {
       },
       superset: 'Superset',
       restTitle: 'Timer ng pahinga',
+      menuFor: 'Mga opsyon para sa {{name}}',
+      removeTitle: 'Alisin ang {{name}}?',
+      removeBody: 'Kasama ang mga set nito.',
       restDefault: 'Gamitin ang default ({{time}})',
       pr: 'Bagong record',
       noNumbers: 'Punan muna ang set',
@@ -2031,6 +2034,7 @@ export const fil = {
       records: 'Mga record',
       split: 'Hati ng muscle',
       noHistoryTitle: 'Hindi pa nagagawa',
+      missing: 'Wala na ang ehersisyong ito.',
       chart: {
         heaviest: 'Pinakamabigat',
         e1rm: 'Tantyang 1RM',
@@ -2071,6 +2075,7 @@ export const fil = {
       splitRange: 'Huling 30 araw',
       records: 'Mga personal record',
       calendar: 'Kalendaryo',
+      dayTrained: '{{day}}, may workout',
     },
 
     settings: {
@@ -2097,6 +2102,8 @@ export const fil = {
       perSide: 'Bawat gilid',
       none: 'Bar lang',
       unreachable: 'Hindi kaya sa karaniwang mga plate.',
+      closest: 'Pinakamalapit: {{weight}}',
+      closestOr: 'Pinakamalapit: {{weight}} o {{other}}',
     },
 
     warmup: {

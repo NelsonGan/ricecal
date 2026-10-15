@@ -65,6 +65,10 @@ export const ExerciseCard = memo(function ExerciseCard({
     if (noteRequest > 0) setNoting(true)
   }, [noteRequest])
   const restS = exercise.restS ?? defaultRestS
+  const restText =
+    restS > 0
+      ? t('workouts:logger.rest', { time: shortClock(restS) })
+      : t('workouts:logger.restOff')
   const key = exercise.key
   const open = () => handlers.open(exercise.exerciseId)
   const reorder = () => handlers.reorder(key)
@@ -98,12 +102,19 @@ export const ExerciseCard = memo(function ExerciseCard({
         >
           <ExerciseArt exerciseId={exercise.exerciseId} category={category} size={56} />
         </Tappable>
+        {/* One element to VoiceOver, so the rest chip inside it cannot be
+            reached on its own: its figure is read with the name, and opening
+            it is the element's action. */}
         <Tappable
           className="min-w-0 flex-1 gap-1.5"
           onPress={open}
           onLongPress={reorder}
           accessibilityRole="button"
-          accessibilityLabel={exercise.name}
+          accessibilityLabel={`${exercise.name}, ${restText}`}
+          accessibilityActions={[{ name: 'rest', label: t('workouts:logger.restTitle') }]}
+          onAccessibilityAction={(event) => {
+            if (event.nativeEvent.actionName === 'rest') handlers.rest(key)
+          }}
         >
           <Text variant="bodyStrong" numberOfLines={2}>
             {exercise.name}
@@ -117,16 +128,14 @@ export const ExerciseCard = memo(function ExerciseCard({
             >
               <Icon set="system" name="clock" size={14} />
               <Text variant="caption" className="text-kaya-ink">
-                {restS > 0
-                  ? t('workouts:logger.rest', { time: shortClock(restS) })
-                  : t('workouts:logger.restOff')}
+                {restText}
               </Text>
             </Tappable>
           </View>
         </Tappable>
         <IconButton
           onPress={() => handlers.menu(key)}
-          accessibilityLabel={t('common:action.edit')}
+          accessibilityLabel={t('workouts:logger.menuFor', { name: exercise.name })}
           variant="ghost"
           size="sm"
         >

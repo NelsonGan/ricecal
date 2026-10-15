@@ -6,6 +6,7 @@ import { View } from 'react-native'
 import { useExerciseBests, useSettings, useWorkoutOverview } from '@/data'
 import {
   describeSet,
+  distanceText,
   distanceUnitFor,
   doneSets,
   durationText,
@@ -115,6 +116,8 @@ export default function FinishWorkoutScreen() {
         return volumeText(t, setVolume(set, exercise.tracking) ?? 0, unit)
       case 'duration':
         return shortClock(set.durationS ?? 0)
+      case 'distance':
+        return distanceText(set.distanceM ?? 0, distanceUnit, exercise.tracking)
       default:
         return describeSet(set, exercise.tracking, unit, distanceUnit, unitLabel)
     }
@@ -122,6 +125,17 @@ export default function FinishWorkoutScreen() {
 
   const onSave = async () => {
     if (error || saving) return
+    // Every way here goes through the logger's checks, but this screen is the
+    // one that clears the workout from the phone, so it holds the line itself:
+    // a save of nothing kept nothing and threw the typed sets away.
+    if (doneSets(workout) === 0) {
+      toast.show({
+        title: t('workouts:finish.nothingTitle'),
+        description: t('workouts:finish.nothingBody'),
+        tone: 'error',
+      })
+      return
+    }
     setSaving(true)
     try {
       const document = { ...workout, name: name.trim() || workout.name, notes, startedAt }
@@ -283,7 +297,14 @@ export default function FinishWorkoutScreen() {
 }
 
 /** Which record a line shows when a set took several: the one people quote. */
-const RECORD_ORDER: readonly RecordKind[] = ['weight', 'reps', 'duration', 'e1rm', 'volume']
+const RECORD_ORDER: readonly RecordKind[] = [
+  'weight',
+  'reps',
+  'distance',
+  'duration',
+  'e1rm',
+  'volume',
+]
 
 /**
  * The set an exercise is remembered by: the heaviest, or for an exercise with

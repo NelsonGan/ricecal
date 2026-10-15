@@ -384,11 +384,13 @@ export type ExerciseBests = {
 }
 
 /**
- * Only a save on this phone changes these, and saving invalidates them, so
- * they are never stale on their own. The default thirty seconds refetched
- * every bests and last-sets query each time the logger was reopened.
+ * A save on this phone invalidates these, so they can sit for a while. Not
+ * forever: a workout logged on a second phone changes them too, and never
+ * stale they kept that phone's old bests and PREVIOUS column until this one
+ * saved. Five minutes, because the default thirty seconds refetched them every
+ * time the logger was reopened between sets.
  */
-const UNTIL_SAVED = Number.POSITIVE_INFINITY
+const UNTIL_SAVED = 5 * 60_000
 
 /**
  * Personal bests: one exercise's, or every exercise's when the id is null.
@@ -537,6 +539,10 @@ export function useLastSets(exerciseIds: readonly string[]) {
     // Adding an exercise changes the key. Without this every PREVIOUS column
     // emptied until the new answer landed.
     placeholderData: keepPreviousData,
+    // Every mix of exercises is a key of its own, and kept forever each one
+    // was written into the persisted cache again on every change. A day keeps
+    // tomorrow's offline gym covered for today's workout.
+    gcTime: 24 * 60 * 60_000,
     queryKey: keys.lastSets(userId, sorted.join(',')),
     queryFn: async (): Promise<Record<string, LastSet[]>> => {
       const rows = unwrap(await supabase.rpc('exercise_last_sets', { p_exercise_ids: sorted }))
@@ -589,6 +595,35 @@ function invalidateWorkouts(queryClient: ReturnType<typeof useQueryClient>, user
 export type WorkoutSaveResult = { queued: boolean }
 
 /**
+ * How long a save waits for an answer before the workout goes to the outbox.
+ * Nothing else limits it: on a gym's weak signal the phone still counts as
+ * online, and the finish screen spun until the OS gave up, which on Android
+ * may be never. The id is the phone's, so a late commit is harmless.
+ */
+const SAVE_TIMEOUT_MS = 15_000
+
+/**
+ * The outbox's request for each workout id while it is in flight. A save or a
+ * delete of that workout waits for it: otherwise a queued copy landing after
+ * a delete brought the workout back, and an older copy landing after a newer
+ * save put the old one back.
+ */
+const sendingIds = new Map<string, Promise<unknown>>()
+const settledSend = (id: string) => sendingIds.get(id)?.catch(() => {}) ?? Promise.resolve()
+
+async function sendWorkout(document: WorkoutDocument) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), SAVE_TIMEOUT_MS)
+  try {
+    return await supabase
+      .rpc('save_workout', { p_workout: document as unknown as Json })
+      .abortSignal(controller.signal)
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/**
  * Save a finished (or edited) workout.
  *
  * `networkMode: 'always'` because this must never pause: a paused mutation is
@@ -607,9 +642,10 @@ export function useSaveWorkout() {
         enqueueWorkout(userId, document)
         return { queued: true }
       }
-      const { error } = await supabase.rpc('save_workout', {
-        p_workout: document as unknown as Json,
-      })
+      await settledSend(document.id)
+      // An abort after the timeout comes back as an error with no SQLSTATE,
+      // which is not a refusal, so it lands in the outbox below.
+      const { error } = await sendWorkout(document)
       if (error) {
         // Refused for what it says: stay on the finish screen, where the
         // workout is still the running one and can be fixed.
@@ -650,9 +686,9 @@ export function useWorkoutOutbox(): void {
         if (!data.session) return
         for (const document of queued) {
           if (!alive) break
-          const { error } = await supabase.rpc('save_workout', {
-            p_workout: document as unknown as Json,
-          })
+          const request = sendWorkout(document)
+          sendingIds.set(document.id, request)
+          const { error } = await request.finally(() => sendingIds.delete(document.id))
           if (!error) {
             // Only if it is still the copy that was sent: an edit queued while
             // this one was in flight must not be cleared by its reply.
@@ -692,9 +728,12 @@ export function useDeleteWorkout() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      dequeueWorkout(userId, id)
+      await settledSend(id)
       const { error } = await supabase.from('workouts').delete().eq('id', id).eq('user_id', userId)
       if (error) throw error
+      // Only now: a delete that failed offline had already dropped a queued
+      // edit, so the workout neither went nor kept the change.
+      dequeueWorkout(userId, id)
     },
     onSettled: () => invalidateWorkouts(queryClient, userId),
   })

@@ -241,7 +241,7 @@ export const id = {
       workoutsBody: 'Jenis, waktu, pace, detak jantung',
 
       privacy:
-        'Hanya baca. Kami tidak menulis apa pun kembali kecuali kamu memilih menyimpan latihanmu di sana, dan data kesehatanmu hanya tersimpan di akunmu sendiri.',
+        'Menghubungkan hanya membaca. Kami menyimpan latihanmu di sana hanya jika kamu mengaktifkannya, dan data kesehatanmu tetap di akunmu sendiri.',
 
       appleBody: 'Apple Health, di iPhone dan Apple Watch',
       connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
@@ -1888,6 +1888,9 @@ export const id = {
       },
       superset: 'Superset',
       restTitle: 'Timer istirahat',
+      menuFor: 'Opsi untuk {{name}}',
+      removeTitle: 'Hapus {{name}}?',
+      removeBody: 'Set-setnya ikut terhapus.',
       restDefault: 'Pakai default ({{time}})',
       pr: 'Rekor baru',
       noNumbers: 'Isi set dulu',
@@ -2009,6 +2012,7 @@ export const id = {
       records: 'Rekor',
       split: 'Pembagian otot',
       noHistoryTitle: 'Belum pernah dilakukan',
+      missing: 'Gerakan ini sudah tidak ada.',
       chart: {
         heaviest: 'Terberat',
         e1rm: 'Est. 1RM',
@@ -2049,6 +2053,7 @@ export const id = {
       splitRange: '30 hari terakhir',
       records: 'Rekor pribadi',
       calendar: 'Kalender',
+      dayTrained: '{{day}}, ada latihan',
     },
 
     settings: {
@@ -2076,6 +2081,8 @@ export const id = {
       perSide: 'Tiap sisi',
       none: 'Bar saja',
       unreachable: 'Tidak bisa dicapai dengan plat standar.',
+      closest: 'Terdekat: {{weight}}',
+      closestOr: 'Terdekat: {{weight}} atau {{other}}',
     },
 
     warmup: {

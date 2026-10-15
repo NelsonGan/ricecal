@@ -12,7 +12,7 @@ import { estimatedOneRepMax, type LiveExercise, setVolume } from './model'
  * workout sets the baseline and wins nothing, exactly as on the server.
  */
 
-export type RecordKind = 'weight' | 'e1rm' | 'volume' | 'reps' | 'duration'
+export type RecordKind = 'weight' | 'e1rm' | 'volume' | 'reps' | 'duration' | 'distance'
 
 export function recordSets(
   exercise: LiveExercise,
@@ -27,12 +27,18 @@ export function recordSets(
     out.set(id, [...(out.get(id) ?? []), kind])
   }
 
-  const best = (score: (set: (typeof working)[number]) => number | null) => {
+  // The first set with the highest score, or with `tie` the one ahead on it,
+  // which is the order `workout_set_details` ranks a workout's sets in.
+  const best = (
+    score: (set: (typeof working)[number]) => number | null,
+    tie?: (set: (typeof working)[number]) => number,
+  ) => {
     let winner: (typeof working)[number] | undefined
     let value = -Infinity
     for (const set of working) {
       const next = score(set)
-      if (next !== null && next > value) {
+      if (next === null) continue
+      if (next > value || (next === value && winner && tie && tie(set) > tie(winner))) {
         value = next
         winner = set
       }
@@ -50,8 +56,10 @@ export function recordSets(
     // nowhere is not the heaviest anything. `weight_counts` on the server.
     const lifted = (set: (typeof working)[number]) =>
       tracking === 'weight_distance' ? (set.distanceM ?? 0) > 0 : (set.reps ?? 0) >= 1
-    const heaviest = best((set) =>
-      set.weightKg && set.weightKg > 0 && lifted(set) ? set.weightKg : null,
+    // Two sets at the same weight: the one with more reps holds it.
+    const heaviest = best(
+      (set) => (set.weightKg && set.weightKg > 0 && lifted(set) ? set.weightKg : null),
+      (set) => set.reps ?? 0,
     )
     if (heaviest && bests.bestWeightKg !== null && heaviest.value > bests.bestWeightKg) {
       mark(heaviest.id, 'weight')
@@ -77,6 +85,16 @@ export function recordSets(
     const longest = best((set) => set.durationS)
     if (longest && bests.bestDurationS !== null && longest.value > bests.bestDurationS) {
       mark(longest.id, 'duration')
+    }
+  }
+  if (tracking === 'distance_duration' || tracking === 'weight_distance') {
+    // To the tenth of a metre the database keeps: a run typed in miles is
+    // otherwise a hair longer than the same run saved last week.
+    const furthest = best((set) =>
+      set.distanceM && set.distanceM > 0 ? Math.round(set.distanceM * 10) / 10 : null,
+    )
+    if (furthest && bests.bestDistanceM !== null && furthest.value > bests.bestDistanceM) {
+      mark(furthest.id, 'distance')
     }
   }
   return out

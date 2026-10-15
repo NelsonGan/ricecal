@@ -186,6 +186,8 @@ create table public.workouts (
   started_at         timestamptz not null,
   ended_at           timestamptz not null,
   duration_s         integer generated always as (extract(epoch from (ended_at - started_at))::integer) stored,
+  -- The phone's own date for the start, so within a day of the UTC one; a
+  -- client sending 9999-12-31 put the workout on a calendar nobody reaches.
   log_date           date not null,
   routine_id         uuid,
   -- An estimate from the exercises' MET values and the user's weight, made on
@@ -201,6 +203,10 @@ create table public.workouts (
 
   constraint workouts_ends_after_start check (ended_at >= started_at),
   constraint workouts_at_most_a_day check (ended_at - started_at <= interval '24 hours'),
+  constraint workouts_log_date_near_start check (
+    log_date between (started_at at time zone 'UTC')::date - 1
+                 and (started_at at time zone 'UTC')::date + 1
+  ),
   -- Keyed by owner as well as id, so a workout can only name its own user's
   -- routine. Deleting the routine clears the column and keeps the workout.
   constraint workouts_routine_fkey foreign key (routine_id, user_id)
@@ -454,6 +460,11 @@ begin
     if jsonb_array_length(v_exercise -> 'sets') > 99 then
       raise exception 'Too many sets' using errcode = '22023';
     end if;
+    -- An exercise with nothing done is not part of the workout, and one saved
+    -- anyway blanked that exercise's PREVIOUS column the next time.
+    if jsonb_array_length(v_exercise -> 'sets') = 0 then
+      raise exception 'An exercise needs a set' using errcode = '22023';
+    end if;
 
     insert into public.workout_exercises (
       workout_id, user_id, position, exercise_id, exercise_name, tracking, superset, rest_s, notes
@@ -474,6 +485,12 @@ begin
     v_set_pos := 0;
     for v_set in select value from jsonb_array_elements(v_exercise -> 'sets')
     loop
+      -- A set with no number in it counted in every total of sets and muscles.
+      if jsonb_typeof(v_set) is distinct from 'object'
+        or num_nonnulls(v_set ->> 'weight_kg', v_set ->> 'reps', v_set ->> 'duration_s', v_set ->> 'distance_m') = 0
+      then
+        raise exception 'A set needs a number' using errcode = '22023';
+      end if;
       insert into public.workout_sets (
         workout_exercise_id, user_id, position, kind, weight_kg, reps, duration_s, distance_m, rpe
       )

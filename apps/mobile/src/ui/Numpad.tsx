@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import {
   createContext,
   type ReactNode,
@@ -10,7 +11,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
-import { type TextInput, type TextInputProps, View } from 'react-native'
+import { type TextInput, type TextInputProps, useWindowDimensions, View } from 'react-native'
 import Animated, {
   Easing,
   type SharedValue,
@@ -47,10 +48,23 @@ const TALL_KEY_BOX = 'h-[104px]'
 const KEY_GAP = spacing.sm
 const HEADER_HEIGHT = 36
 const PANEL_PAD = 10
+/** Languages whose script needs taller lines than the header's default. */
+const TALL_SCRIPT = /^(th|hi|ta|bn)\b/
 
-/** What the pad occupies above the home indicator's inset. */
+/** What the pad occupies above the home indicator's inset, at the default text size. */
 export const NUMPAD_BODY_HEIGHT =
   PANEL_PAD * 2 + HEADER_HEIGHT + KEY_GAP + KEY_HEIGHT * 4 + KEY_GAP * 3
+
+/**
+ * The header's two lines grow with the text size, so the exercise and the set
+ * are not drawn into the first row of keys. Capped where the system caps a
+ * caption, so the largest sizes still leave the keys on screen. `extra` is for
+ * scripts whose marks stack above and below the line (Thai, Devanagari, Tamil,
+ * Bengali), which two lines of 36pt clip at the default size.
+ */
+export function numpadHeaderHeight(fontScale: number, extra = 0): number {
+  return Math.round(HEADER_HEIGHT * Math.min(Math.max(fontScale, 1), 1.6)) + extra
+}
 
 /** Digits, then the decimal point, zero, and a rub-out. */
 const ROWS = [
@@ -140,6 +154,8 @@ type Session = {
 type NumpadValue = {
   /** The field being edited, or null. Drives geometry the moment it changes. */
   session: Session | null
+  /** The header's height at this text size; see `numpadHeaderHeight`. */
+  headerHeight: number
   /** What is drawn — the session, held through the close animation. */
   shown: Session | null
   /** Points the pad occupies at the bottom of the window when it is open. */
@@ -234,7 +250,13 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
    */
   const [shown, setShown] = useState<Session | null>(null)
 
-  const height = NUMPAD_BODY_HEIGHT + insets.bottom
+  const { fontScale } = useWindowDimensions()
+  // Read, not subscribed to: changing language re-renders the whole app.
+  const headerHeight = numpadHeaderHeight(
+    fontScale,
+    TALL_SCRIPT.test(i18next.language ?? '') ? 6 : 0,
+  )
+  const height = NUMPAD_BODY_HEIGHT - HEADER_HEIGHT + headerHeight + insets.bottom
   const offset = useSharedValue(0)
 
   useEffect(() => {
@@ -298,12 +320,13 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
     () => ({
       session,
       shown,
+      headerHeight,
       height,
       offset,
       labels,
       dismiss: actions.dismiss,
     }),
-    [session, shown, height, offset, labels, actions],
+    [session, shown, headerHeight, height, offset, labels, actions],
   )
 
   return (
@@ -634,7 +657,7 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
           the platform's own pill had taught everybody to reach. */}
       <View
         className="flex-row items-center gap-1.5"
-        style={{ height: HEADER_HEIGHT, marginBottom: KEY_GAP }}
+        style={{ height: context.headerHeight, marginBottom: KEY_GAP }}
       >
         {/* A label with a line break is a name over a detail: the exercise,
             then the set and unit, so neither is cut off by the keys beside it. */}

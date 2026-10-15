@@ -51,6 +51,10 @@ public enum RiceCalWidgetStore {
     guard let defaults else { return }
     defaults.removeObject(forKey: snapshotKey)
     defaults.removeObject(forKey: pendingKey)
+    // The workout's too: an exercise name in the notice words, and presses
+    // for a workout that belonged to the account signing out.
+    defaults.removeObject(forKey: workoutKey)
+    defaults.removeObject(forKey: restNoticeKey)
   }
 
   // MARK: - Water added on the widget
@@ -150,15 +154,18 @@ public enum RiceCalWidgetStore {
    move the notice with it, possibly before the app's JS has run at all, and
    the words are the app's to choose.
    */
-  public static func setRestNotice(title: String, body: String) {
-    defaults?.set(["title": title, "body": body], forKey: restNoticeKey)
+  public static func setRestNotice(title: String, body: String, tickBody: String?) {
+    var words = ["title": title, "body": body]
+    if let tickBody { words["tickBody"] = tickBody }
+    defaults?.set(words, forKey: restNoticeKey)
   }
 
-  public static func restNotice() -> (title: String, body: String)? {
+  /// `tickBody` names the exercise a tick on the activity would start a rest for.
+  public static func restNotice() -> (title: String, body: String, tickBody: String?)? {
     guard let stored = defaults?.dictionary(forKey: restNoticeKey) as? [String: String],
       let title = stored["title"], let body = stored["body"]
     else { return nil }
-    return (title, body)
+    return (title, body, stored["tickBody"])
   }
 
   private static func decodeQueue(_ json: String?) -> [[String: Any]] {

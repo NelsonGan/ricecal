@@ -236,7 +236,7 @@ export const ta = {
       workoutsBody: 'வகை, நேரம், வேகம், இதயத் துடிப்பு',
 
       privacy:
-        'படிப்பது மட்டுமே. உங்கள் உடற்பயிற்சிகளை அங்கே சேமிக்க நீங்கள் தேர்ந்தெடுத்தால் தவிர நாங்கள் எதையும் திரும்ப எழுதுவதில்லை, உங்கள் ஆரோக்கியத் தரவு உங்கள் கணக்கில் மட்டுமே இருக்கும்.',
+        'இணைப்பது படிக்க மட்டுமே. நீங்கள் இயக்கினால் மட்டுமே உடற்பயிற்சிகளை அங்கே சேமிப்போம், உங்கள் ஆரோக்கியத் தரவு உங்கள் கணக்கில் மட்டுமே இருக்கும்.',
 
       appleBody: 'Apple Health, iPhone மற்றும் Apple Watch இல்',
       connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
@@ -1885,6 +1885,9 @@ export const ta = {
       },
       superset: 'சூப்பர்செட்',
       restTitle: 'ஓய்வு டைமர்',
+      menuFor: '{{name}} விருப்பங்கள்',
+      removeTitle: '{{name}} ஐ நீக்கவா?',
+      removeBody: 'அதன் செட்களும் நீங்கும்.',
       restDefault: 'இயல்புநிலை ({{time}})',
       pr: 'புதிய சாதனை',
       noNumbers: 'முதலில் செட்டை நிரப்புங்கள்',
@@ -2008,6 +2011,7 @@ export const ta = {
       records: 'சாதனைகள்',
       split: 'தசைப் பங்கீடு',
       noHistoryTitle: 'இன்னும் செய்யவில்லை',
+      missing: 'இந்தப் பயிற்சி இனி இல்லை.',
       chart: {
         heaviest: 'அதிக எடை',
         e1rm: 'கணித்த 1RM',
@@ -2048,6 +2052,7 @@ export const ta = {
       splitRange: 'கடந்த 30 நாட்கள்',
       records: 'தனிப்பட்ட சாதனைகள்',
       calendar: 'நாட்காட்டி',
+      dayTrained: '{{day}}, வொர்க்அவுட் செய்தீர்கள்',
     },
 
     settings: {
@@ -2074,6 +2079,8 @@ export const ta = {
       perSide: 'ஒவ்வொரு பக்கமும்',
       none: 'பார் மட்டும்',
       unreachable: 'வழக்கமான பிளேட்களால் இதை எட்ட முடியாது.',
+      closest: 'மிக அருகில்: {{weight}}',
+      closestOr: 'மிக அருகில்: {{weight}} அல்லது {{other}}',
     },
 
     warmup: {

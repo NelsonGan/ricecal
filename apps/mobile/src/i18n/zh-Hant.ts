@@ -240,7 +240,7 @@ export const zhHant = {
       workoutsBody: '類型、時間、配速、心率',
 
       privacy:
-        '唯讀。除非你選擇把訓練儲存到那裡，否則我們不會寫回任何內容，你的健康資料只會儲存在你自己的帳戶中。',
+        '連結後只讀取資料。只有你開啟後，我們才會把訓練儲存到那裡，你的健康資料只會儲存在你自己的帳戶中。',
 
       appleBody: 'Apple Health，iPhone 和 Apple Watch',
       connectHealthBody: 'Health Connect：Samsung Health、Fitbit、Garmin',
@@ -1859,6 +1859,9 @@ export const zhHant = {
       },
       superset: '超級組',
       restTitle: '休息計時',
+      menuFor: '{{name}} 的選項',
+      removeTitle: '移除{{name}}？',
+      removeBody: '它的組也會一起刪除。',
       restDefault: '使用預設（{{time}}）',
       pr: '新紀錄',
       noNumbers: '先填好這一組',
@@ -1980,6 +1983,7 @@ export const zhHant = {
       records: '紀錄',
       split: '肌群分布',
       noHistoryTitle: '還沒練過',
+      missing: '這個動作已經不在了。',
       chart: {
         heaviest: '最大重量',
         e1rm: '預估 1RM',
@@ -2020,6 +2024,7 @@ export const zhHant = {
       splitRange: '最近 30 天',
       records: '個人紀錄',
       calendar: '日曆',
+      dayTrained: '{{day}}，有訓練',
     },
 
     settings: {
@@ -2046,6 +2051,8 @@ export const zhHant = {
       perSide: '每邊',
       none: '空槓就好',
       unreachable: '用標準槓片湊不出這個重量。',
+      closest: '最接近：{{weight}}',
+      closestOr: '最接近：{{weight}} 或 {{other}}',
     },
 
     warmup: {

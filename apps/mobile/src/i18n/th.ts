@@ -239,7 +239,7 @@ export const th = {
       workoutsBody: 'ประเภท เวลา เพซ อัตราการเต้นหัวใจ',
 
       privacy:
-        'อ่านอย่างเดียว เราไม่เขียนอะไรกลับไป เว้นแต่คุณเลือกบันทึกการออกกำลังกายไว้ที่นั่น และข้อมูลสุขภาพของคุณจะเก็บไว้ในบัญชีของคุณเท่านั้น',
+        'การเชื่อมต่อเป็นการอ่านอย่างเดียว เราจะบันทึกการออกกำลังกายไว้ที่นั่นเฉพาะเมื่อคุณเปิดใช้ และข้อมูลสุขภาพของคุณจะอยู่ในบัญชีของคุณเท่านั้น',
 
       appleBody: 'Apple Health บน iPhone และ Apple Watch',
       connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
@@ -1858,6 +1858,9 @@ export const th = {
       },
       superset: 'ซูเปอร์เซ็ต',
       restTitle: 'ตัวจับเวลาพัก',
+      menuFor: 'ตัวเลือกสำหรับ {{name}}',
+      removeTitle: 'ลบ {{name}} ไหม',
+      removeBody: 'เซ็ตของท่านี้จะถูกลบด้วย',
       restDefault: 'ใช้ค่าเริ่มต้น ({{time}})',
       pr: 'สถิติใหม่',
       noNumbers: 'กรอกเซ็ตก่อน',
@@ -1979,6 +1982,7 @@ export const th = {
       records: 'สถิติ',
       split: 'สัดส่วนกล้ามเนื้อ',
       noHistoryTitle: 'ยังไม่เคยทำ',
+      missing: 'ท่านี้ไม่มีแล้ว',
       chart: {
         heaviest: 'หนักสุด',
         e1rm: '1RM ประมาณ',
@@ -2019,6 +2023,7 @@ export const th = {
       splitRange: '30 วันล่าสุด',
       records: 'สถิติส่วนตัว',
       calendar: 'ปฏิทิน',
+      dayTrained: '{{day}} มีการออกกำลังกาย',
     },
 
     settings: {
@@ -2045,6 +2050,8 @@ export const th = {
       perSide: 'ข้างละ',
       none: 'บาร์เปล่า',
       unreachable: 'แผ่นมาตรฐานจัดน้ำหนักนี้ไม่ได้',
+      closest: 'ใกล้ที่สุด: {{weight}}',
+      closestOr: 'ใกล้ที่สุด: {{weight}} หรือ {{other}}',
     },
 
     warmup: {

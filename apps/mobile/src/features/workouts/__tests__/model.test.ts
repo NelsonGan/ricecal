@@ -20,8 +20,11 @@ import {
   type LiveWorkout,
   lastActivityAt,
   liveTotals,
+  matchPrevious,
   newWorkout,
+  restAfter,
   setHints,
+  setVolume,
   showsVolume,
   timedSeconds,
   toPayload,
@@ -43,11 +46,42 @@ function workoutWith(...plans: ExercisePlan[][]): LiveWorkout {
 }
 
 describe('the workout document', () => {
-  it('copies the set above when a set is added, because the next set is usually the same', () => {
-    let workout = workoutWith([{ ...bench, sets: [{ weightKg: 60, reps: 8 }] }])
+  it('adds an empty set, which offers the row above unless last time had one there', () => {
+    let workout = workoutWith([
+      {
+        ...bench,
+        sets: [
+          { weightKg: 60, reps: 8 },
+          { weightKg: 60, reps: 8 },
+        ],
+      },
+    ])
     const key = workout.exercises[0].key
     workout = apply(workout, { type: 'addSet', key })
-    expect(workout.exercises[0].sets[1]).toMatchObject({ weightKg: 60, reps: 8, done: false })
+    const sets = workout.exercises[0].sets
+    expect(sets[2]).toMatchObject({ weightKg: null, reps: null, done: false })
+    expect(setHints(sets, [])[2]).toMatchObject({ weightKg: 60, reps: 8 })
+    const lastTime = [
+      { weightKg: 60, reps: 8 },
+      { weightKg: 60, reps: 8 },
+      { weightKg: 60, reps: 5 },
+    ]
+    expect(setHints(sets, lastTime)[2].reps).toBe(5)
+  })
+
+  it('keeps only what a replacement records, and unticks a set it cannot hold', () => {
+    let workout = completeAll(workoutWith([{ ...bench, sets: [{ weightKg: 60, reps: 8 }] }]), 1)
+    const key = workout.exercises[0].key
+    workout = apply(workout, {
+      type: 'replaceExercise',
+      key,
+      plan: { exerciseId: 'plank', name: 'Plank', tracking: 'duration', sets: [] },
+    })
+    expect(workout.exercises[0].sets[0]).toMatchObject({
+      weightKg: null,
+      reps: null,
+      done: false,
+    })
   })
 
   it('ticking an empty set takes the hint, but never overwrites what was typed', () => {
@@ -152,6 +186,30 @@ describe('the workout document', () => {
     // Unlinking one leaves the other alone, which is no superset at all.
     workout = apply(workout, { type: 'superset', key: a.key, withKey: null })
     expect(workout.exercises.map((exercise) => exercise.superset)).toEqual([null, null])
+  })
+
+  it('keeps a superset to neighbouring cards, whatever moves', () => {
+    let workout = workoutWith(
+      [{ ...bench, sets: [{}] }],
+      [{ ...bench, sets: [{}] }],
+      [{ ...bench, sets: [{}] }],
+    )
+    const [a, b, c] = workout.exercises
+    workout = apply(workout, { type: 'superset', key: a.key, withKey: b.key })
+    // A, C, B: the pair is split, so neither half is a superset any more.
+    workout = apply(workout, { type: 'reorderExercises', keys: [a.key, c.key, b.key] })
+    expect(workout.exercises.map((exercise) => exercise.superset)).toEqual([null, null, null])
+  })
+
+  it('rests after the last set of a round, rounds of unequal length included', () => {
+    let workout = workoutWith([{ ...bench, sets: [{}, {}, {}] }], [{ ...bench, sets: [{}, {}] }])
+    const [a, b] = workout.exercises
+    workout = apply(workout, { type: 'superset', key: a.key, withKey: b.key })
+    const [first, second] = workout.exercises
+    expect(restAfter(workout, first, 90, first.sets[0].id)).toBe(0)
+    expect(restAfter(workout, second, 90, second.sets[0].id)).toBe(90)
+    // B has no third set, so A's third ends its round.
+    expect(restAfter(workout, first, 90, first.sets[2].id)).toBe(90)
   })
 
   it('dissolves a superset when its partner is removed', () => {
@@ -290,6 +348,40 @@ describe('what an empty set offers', () => {
     expect(hints[1]).toEqual({ weightKg: null, reps: null, durationS: null, distanceM: null })
   })
 
+  it('pairs last time by kind, not by position', () => {
+    const lastTime = [
+      { kind: 'warmup' as const, weightKg: 40, reps: 10 },
+      { kind: 'warmup' as const, weightKg: 60, reps: 5 },
+      { kind: 'normal' as const, weightKg: 100, reps: 5 },
+      { kind: 'normal' as const, weightKg: 100, reps: 5 },
+    ]
+    // No warm-ups today: the working sets still get last time's working sets.
+    const plain = setHints([set('normal', null, null), set('normal', null, null)], lastTime)
+    expect(plain.map((hint) => hint.weightKg)).toEqual([100, 100])
+    // Warm-ups added today get last time's warm-ups, in order.
+    const warmed = setHints(
+      [set('warmup', null, null), set('normal', null, null)],
+      [{ kind: 'normal' as const, weightKg: 100, reps: 5 }],
+    )
+    expect(warmed.map((hint) => hint.weightKg)).toEqual([null, 100])
+    expect(matchPrevious([{ kind: 'normal' }, { kind: 'warmup' }], lastTime)).toEqual([
+      lastTime[2],
+      lastTime[0],
+    ])
+  })
+
+  it('stops handing a change down once a set goes back to last time', () => {
+    const hints = setHints(
+      [set('normal', 105, null), set('normal', 100, null), set('normal', null, null)],
+      [
+        { weightKg: 100, reps: 5 },
+        { weightKg: 100, reps: 5 },
+        { weightKg: 100, reps: 5 },
+      ],
+    )
+    expect(hints[2].weightKg).toBe(100)
+  })
+
   it('falls back to last time, and hands down what a row shows', () => {
     const hints = setHints(
       [set('normal', null, null), set('normal', null, null)],
@@ -353,6 +445,42 @@ describe('records while training', () => {
     expect(estimatedOneRepMax(62.5, 5)).toBe(72.9)
     expect(estimatedOneRepMax(100, 1)).toBe(100)
     expect(estimatedOneRepMax(100, 20)).toBeNull()
+    // weight x (30 + reps) / 30 in cents, rounded half up: 63.75 is 63.8 on
+    // both sides, where floating point had made it 63.75000000000001.
+    expect(estimatedOneRepMax(56.25, 4)).toBe(63.8)
+  })
+
+  it('totals a set in cents, as the database does', () => {
+    expect(setVolume({ weightKg: 43.09, reps: 5 }, 'weight_reps')).toBe(215.45)
+    expect(setVolume({ weightKg: 40, reps: 5 }, 'assisted_reps')).toBeNull()
+  })
+
+  it('gives a tie on weight to the set with more reps', () => {
+    const workout = completeAll(
+      workoutWith([
+        {
+          ...bench,
+          sets: [
+            { weightKg: 105, reps: 3 },
+            { weightKg: 105, reps: 5 },
+          ],
+        },
+      ]),
+      1,
+    )
+    const records = recordSets(workout.exercises[0], { ...bests, bestWeightKg: 100 })
+    expect(records.get(workout.exercises[0].sets[1].id)).toContain('weight')
+    expect(records.get(workout.exercises[0].sets[0].id) ?? []).not.toContain('weight')
+  })
+
+  it('marks a run further than the best distance', () => {
+    const run = { exerciseId: 'running', name: 'Running', tracking: 'distance_duration' as const }
+    const workout = completeAll(
+      workoutWith([{ ...run, sets: [{ distanceM: 10000, durationS: 3000 }] }]),
+      1,
+    )
+    const records = recordSets(workout.exercises[0], { ...bests, bestDistanceM: 8000 })
+    expect(records.get(workout.exercises[0].sets[0].id)).toContain('distance')
   })
 })
 
@@ -529,6 +657,14 @@ describe('numbers', () => {
   it('builds warm-ups up to the first working weight, in loadable steps', () => {
     const workout = workoutWith([{ ...bench, sets: [{ weightKg: 100, reps: 5 }] }])
     expect(warmupSets(workout.exercises[0], 'kg').map((set) => set.weightKg)).toEqual([40, 60, 80])
+  })
+
+  it('warms up to the weight a set only offers, and never below the bar', () => {
+    const workout = workoutWith([{ ...bench, sets: [{}] }])
+    expect(warmupSets(workout.exercises[0], 'kg')).toEqual([])
+    const offered = warmupSets(workout.exercises[0], 'kg', { workingKg: 40, barbell: true })
+    // 40% of 40 is 15 kg, less than a 20 kg bar.
+    expect(offered.map((set) => set.weightKg)).toEqual([22.5, 30])
   })
 
   it('loads a bar from the heaviest plate down', () => {

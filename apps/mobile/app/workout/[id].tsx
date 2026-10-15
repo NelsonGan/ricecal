@@ -61,7 +61,7 @@ export default function WorkoutScreen() {
   const toast = useToast()
   const goBack = useBack('/workouts')
   const { id } = useLocalSearchParams<{ id: string }>()
-  const { data: workout, isPending } = useWorkout(id)
+  const { data: fetched, isPending, isPaused, isError } = useWorkout(id)
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
   const remove = useDeleteWorkout()
@@ -70,6 +70,11 @@ export default function WorkoutScreen() {
   const starter = useWorkoutStarter()
   const [menu, setMenu] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // Held from the moment a delete starts. The delete refetches this query to
+  // nothing before the page has gone back, and "This workout is gone" flashed
+  // up while the confirm sheet, rendered from the workout, unmounted under it.
+  const [deleting, setDeleting] = useState<WorkoutDetail | null>(null)
+  const workout = deleting ?? fetched
 
   return (
     <Screen
@@ -84,7 +89,7 @@ export default function WorkoutScreen() {
               <IconButton
                 size="sm"
                 variant="neutral"
-                accessibilityLabel={t('common:action.edit')}
+                accessibilityLabel={t('workouts:logger.menuFor', { name: workout.name })}
                 onPress={() => setMenu(true)}
               >
                 <Icon set="ui" name="more-horizontal" size={20} />
@@ -94,17 +99,31 @@ export default function WorkoutScreen() {
         />
       }
     >
-      {isPending ? (
+      {workout ? (
+        <WorkoutBody workout={workout} unit={unit} />
+      ) : isPending && isPaused ? (
+        // Offline with nothing cached: the request is held, not failed, and
+        // the skeleton would wait for it forever.
+        <EmptyState
+          title={t('common:offline.title')}
+          description={t('common:offline.body')}
+          icon={{ set: 'ui', name: 'offline' }}
+        />
+      ) : isPending ? (
         <Card>
           <Skeleton className="h-[220px] w-full" />
         </Card>
-      ) : !workout ? (
+      ) : isError ? (
+        <EmptyState
+          title={t('common:offline.unreachableTitle')}
+          description={t('common:offline.unreachableBody')}
+          icon={{ set: 'ui', name: 'warning' }}
+        />
+      ) : (
         <EmptyState
           title={t('workouts:detail.missing')}
           icon={{ set: 'body', name: 'stopwatch' }}
         />
-      ) : (
-        <WorkoutBody workout={workout} unit={unit} />
       )}
 
       {workout ? (
@@ -193,9 +212,11 @@ export default function WorkoutScreen() {
                 toast.show({ title: t('common:offline.title'), tone: 'error' })
                 throw new Error('offline')
               }
+              setDeleting(workout)
               try {
                 await remove.mutateAsync(workout.id)
               } catch (error) {
+                setDeleting(null)
                 toast.show({ title: t('common:offline.unreachableTitle'), tone: 'error' })
                 throw error
               }

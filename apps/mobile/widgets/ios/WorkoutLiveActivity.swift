@@ -67,8 +67,11 @@ struct WorkoutLiveActivity: Widget {
       } compactTrailing: {
         CompactClock(state: context.state, startedAt: context.attributes.startedAt)
       } minimal: {
-        if let ends = context.state.restEndsAt, ends > Date() {
-          Text(timerInterval: Date()...ends, countsDown: true)
+        // The clock read once: read twice, a rest ending between the two made
+        // the range run backwards, and a backwards range traps.
+        let now = Date()
+        if let ends = context.state.restEndsAt, ends > now {
+          Text(timerInterval: now...ends, countsDown: true)
             .font(WidgetFont.label(12))
             .monospacedDigit()
             .foregroundStyle(Palette.dark.kaya)
@@ -243,17 +246,20 @@ private struct CompactClock: View {
   let startedAt: Date
 
   var body: some View {
-    if let ends = state.restEndsAt, ends > Date() {
-      Text(timerInterval: Date()...ends, countsDown: true)
+    let now = Date()
+    if let ends = state.restEndsAt, ends > now {
+      Text(timerInterval: now...ends, countsDown: true)
         .font(WidgetFont.label(14))
         .monospacedDigit()
         .foregroundStyle(Palette.dark.kaya)
         .frame(width: 44, alignment: .trailing)
     } else {
+      // Wide enough for "1:05:23" once a workout passes the hour.
       ElapsedClock(startedAt: startedAt)
         .font(WidgetFont.label(14))
+        .minimumScaleFactor(0.8)
         .foregroundStyle(Palette.dark.pandan)
-        .frame(width: 52, alignment: .trailing)
+        .frame(width: 62, alignment: .trailing)
     }
   }
 }

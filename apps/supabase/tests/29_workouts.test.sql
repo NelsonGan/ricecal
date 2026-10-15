@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(33);
+select plan(37);
 
 \set user_a '44444444-4444-4444-4444-444444444444'
 \set user_b '55555555-5555-5555-5555-555555555555'
@@ -348,6 +348,48 @@ select is(
      and pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE')),
   0,
   'no workout function is callable signed out'
+);
+
+-- What a save refuses, and an estimate rounded the way the app rounds it.
+select throws_ok(
+  $$select public.save_workout(jsonb_build_object(
+    'id', gen_random_uuid()::text, 'name', 'Empty', 'started_at', '2026-10-15T10:00:00Z',
+    'ended_at', '2026-10-15T11:00:00Z', 'log_date', '2026-10-15',
+    'exercises', jsonb_build_array(jsonb_build_object('exercise_id', 'plank', 'exercise_name', 'Plank',
+      'tracking', 'duration', 'sets', jsonb_build_array('{}'::jsonb)))))$$,
+  '22023',
+  null,
+  'a set with no number in it is refused'
+);
+select throws_ok(
+  $$select public.save_workout(jsonb_build_object(
+    'id', gen_random_uuid()::text, 'name', 'Empty', 'started_at', '2026-10-15T10:00:00Z',
+    'ended_at', '2026-10-15T11:00:00Z', 'log_date', '2026-10-15',
+    'exercises', jsonb_build_array(jsonb_build_object('exercise_id', 'plank', 'exercise_name', 'Plank',
+      'tracking', 'duration', 'sets', '[]'::jsonb))))$$,
+  '22023',
+  null,
+  'so is an exercise with no sets'
+);
+select throws_ok(
+  $$select public.save_workout(jsonb_build_object(
+    'id', gen_random_uuid()::text, 'name', 'Far', 'started_at', '2026-10-15T10:00:00Z',
+    'ended_at', '2026-10-15T11:00:00Z', 'log_date', '9999-12-31', 'exercises', '[]'::jsonb))$$,
+  '23514',
+  null,
+  'and a date that is not the start''s'
+);
+select public.save_workout(jsonb_build_object(
+  'id', 'a0000000-0000-4000-8000-000000000009', 'name', 'Push', 'started_at', '2026-10-20T10:00:00Z',
+  'ended_at', '2026-10-20T11:00:00Z', 'log_date', '2026-10-20',
+  'exercises', jsonb_build_array(
+    jsonb_build_object('exercise_id', 'dumbbell-bench-press', 'exercise_name', 'Bench Press (Dumbbell)',
+      'tracking', 'weight_reps', 'sets', jsonb_build_array(jsonb_build_object('weight_kg', 56.25, 'reps', 4))))
+));
+select is(
+  (select e1rm_kg from public.workout_set_values where workout_id = 'a0000000-0000-4000-8000-000000000009'),
+  63.8::numeric,
+  'an estimate is weight x (30 + reps) / 30, rounded half up, as the app has it'
 );
 
 select * from finish();

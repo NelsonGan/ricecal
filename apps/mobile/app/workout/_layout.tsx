@@ -15,6 +15,11 @@ import { useSession } from '@/data'
  * library and an exercise's page on top of itself, and on iOS a card pushed
  * after a modal in the same native stack is presented UNDER it, so the tap
  * did nothing anybody could see.
+ *
+ * The options below only reach a logger pushed inside this stack. Opened from
+ * the tabs it is this stack's first screen, and what slides in is the whole
+ * group, under the root stack's options for `workout`: `app/_layout.tsx` sets
+ * the same two there whenever the logger is the screen showing.
  */
 export default function WorkoutLayout() {
   const { session, loading } = useSession()

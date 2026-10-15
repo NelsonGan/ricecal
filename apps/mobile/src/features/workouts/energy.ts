@@ -87,6 +87,8 @@ export function estimateKcal(
   return Math.round(Math.min(kcal, 10000))
 }
 
+const UPPER_BODY: ReadonlySet<string> = new Set(['chest', 'back', 'shoulders', 'arms'])
+
 /**
  * The `HKWorkoutActivityType` a workout is saved as.
  *
@@ -109,9 +111,16 @@ export function healthActivityType(workout: LiveWorkout): number {
     return FLEXIBILITY
   if (lifted.length > 0 && lifted.every((row) => row.exercise?.category === 'fullBody'))
     return FUNCTIONAL
+  // Conditioning moves only: pull-ups carry a MET of 8 too, and a pull-up day
+  // is strength training, not an interval session.
   if (
     lifted.length > 0 &&
-    lifted.every((row) => row.exercise?.met !== undefined && row.exercise.met >= 8)
+    lifted.every(
+      (row) =>
+        row.exercise?.met !== undefined &&
+        row.exercise.met >= 8 &&
+        !UPPER_BODY.has(row.exercise.category),
+    )
   ) {
     return HIIT
   }

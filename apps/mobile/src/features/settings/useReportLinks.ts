@@ -49,8 +49,12 @@ export function useReportLinks(): void {
       // talking, not a way back into the app. A notice can outlive its
       // workout in Notification Center, so with none running it lands on the
       // tab rather than on an empty logger.
+      //
+      // `navigate`, not `push`: a rest notice is usually tapped with the
+      // logger already open, and a push stacked a second logger on it.
+      // Navigating to the route on top reuses it.
       if (kind === 'rest' || kind === 'workout') {
-        router.push(userId && getActiveWorkout(userId) ? '/workout/active' : '/workouts')
+        router.navigate(userId && getActiveWorkout(userId) ? '/workout/active' : '/workouts')
         return
       }
       if (kind === 'workout-reminder') {

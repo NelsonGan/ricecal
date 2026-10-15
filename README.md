@@ -3814,8 +3814,25 @@ for every set. That made the work quadratic: three years at four sessions a week
 history. Grouped first, they take 15 ms and 80 ms, with the same flags on every
 set. `exercise_bests` is grouped the same way for the same reason.
 
-- **Estimated 1RM** is Epley, `weight × (1 + reps / 30)`, over 1 to 15 reps of
-  a weight-and-reps set. Past fifteen the formula means nothing.
+**The earlier bests are joined to the sets before the ranking windows, not
+after.** Row security leaves the planner guessing that every user owns the
+average number of sets, so for a heavy user among many light ones it chose a
+nested loop and recomputed every window once per workout: 100 workouts took
+3 s and about 150 passed the statement timeout, which emptied the history list
+and Today's workouts without an error. Joined first, the windows run once; with
+nested loops forced on 200 workouts the history page takes about 130 ms, with
+the same flag on every one of 5,000 sets as before.
+
+- **Estimated 1RM** is Epley, written `weight × (30 + reps) / 30`, over 1 to 15
+  reps of a weight-and-reps set. Past fifteen the formula means nothing. Written
+  that way because `reps / 30.0` is cut to twenty places, which made 56.25 × 4
+  63.7 here and 63.8 on the phone, and a trophy the saved workout did not have.
+  The phone does the same sum in cents (`estimatedOneRepMax`, `setVolume`), so
+  95 lb × 5 is 215.45 on both sides rather than 215.45000000000002 on one.
+- **A save refuses a set with no number in it**, an exercise with no sets, and
+  a `log_date` more than a day from the start, all as class 22 or 23 so the
+  outbox drops them as final. The phone never sends the first two: a ticked set
+  whose figures were cleared afterwards is left out of the document.
 - **A set is a record** when it beats the best of every earlier workout *and* is
   the best of its kind in its own workout. The second half is what stops a
   heavy day lighting up three trophies for three successively heavier sets.
@@ -3883,8 +3900,12 @@ estimates of one hour must not both reach the budget.
 So on Android, and on an iPhone where saving to Health is off, a workout is a
 record of training and changes no budget. That is deliberate rather than
 missing, and Today's row says so: it shows a workout's burn, in the colour of
-burned energy, only when the workout went to Health, and its length otherwise.
-A burn figure beside a ring that did not move reads as a bug.
+burned energy, only when the workout went to Health *and* Health is read back,
+and its length otherwise. Saving to Health works with reading switched off,
+and then the energy never returns to the budget. A burn figure beside a ring
+that did not move reads as a bug. The workout's totals in Health also carry
+only what the user let us write, so a refused Active Energy no longer shows
+the estimate on the workout there.
 
 ### Saving to Apple Health
 
@@ -3992,7 +4013,21 @@ background if it has to.
   drain it on another thread, and a quick double tap could otherwise apply one
   press twice.
 - **"Next set" follows superset rounds**: after A1 comes B1, not A2, and the
-  tick between two members of a round starts no rest.
+  tick between two members of a round starts no rest. A round ends early where
+  the partners after this one have no set that far down, so A's third set
+  under a two-set B rests. A superset is only ever a run of neighbouring cards
+  (`tidySupersets`): a reorder or an unlink that split one used to leave the
+  rest timer and the lock screen each reading a different group.
+- **The notice the intent books carries its kind at the top of `userInfo`.**
+  expo-notifications hands JS a local notification's whole `userInfo` as its
+  `data` (only a remote push nests it under `body`). Nested, JS saw no kind:
+  the reminder sync cancelled it as a stray, and tapping it opened nothing.
+- **Presses queued while the app was closed are applied before the app writes
+  anything.** On a launch the effects used to rebook the rest notice and draw
+  the activity from the document as it was before the presses, putting back a
+  skipped rest and its notice. And ActivityKit's calls run in order through one
+  queue (`WorkoutActivityController.serially`): two updates a few milliseconds
+  apart could land either way round and leave the older state showing.
 - The tick names its set by key (`exerciseKey`, `setId`) as the activity drew
   it, so a press that arrives after the workout moved on ticks the set it was
   for, or nothing if that set is gone or already done.
@@ -4069,7 +4104,14 @@ selected instead, so the first digit replaces it and backspace clears it.
 
 A figure that only repeats last time's, typed or taken by a tick, is not a
 change: otherwise ticking a 100 × 10 first set offered 10 reps to a second set
-that last time was 100 × 5. Warm-ups only hand down to warm-ups. Finishing
+that last time was 100 × 5. A set put back to last time's figure ends the
+change above it. Warm-ups only hand down to warm-ups, and "last time's set" is
+paired by kind (`matchPrevious`), warm-ups with warm-ups and working sets with
+working sets: by position, last week's two warm-ups fed this week's first two
+working sets 40 × 10 on a 100 kg day. The PREVIOUS column reads the same
+pairing. A set added with Add set is empty and offered a figure like any other,
+rather than copying the row above as typed values, which hid last time's
+100 × 5 under a third set of 100 × 10. Finishing
 counts these too: a set that shows numbers and was never ticked is asked about
 ("Tick them and save" ticks it with what it shows) rather than left out, which
 is what happened while only typed numbers counted. A past workout is saved the
@@ -5056,7 +5098,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Card share helper reports sent; each card send. Android share intent cannot confirm completion. |
 | Meal Shared | ricecal_meal_shared | picture: 'photo' &#124; 'drawing' | `app/log/food/[id].tsx` | Meal picture share helper reports sent; each send. Android share intent cannot confirm completion. |
 | Workout Started | ricecal_workout_started | source: WorkoutSource; exercises: number | `src/features/workouts/start.tsx`<br>`app/workout/edit/[id].tsx` | A workout is opened on the logger from empty, a routine, a template, a past workout repeated, or as a past workout being logged; once per start, including one that is later discarded. |
-| Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `app/workout/finish.tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
+| Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `app/workout/finish.tsx`<br>`app/workout/edit/[id].tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. A past workout logged after the fact sends it from its own save, so it closes the `Workout Started` its editor sent. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
 | Workout Discarded | ricecal_workout_discarded | sets: number; minutes: number | `src/features/workouts/start.tsx` | A running workout is thrown away from the logger, the "still training?" prompt, or by starting another over it; once per discard, with its ticked sets and minutes. |
 | Routine Saved | ricecal_routine_saved | is_new: boolean; exercises: number; from_template: boolean | `src/data/workouts.ts` | A routine insert or update succeeds, including a template added to the user's routines or a workout saved as one; each success, with counts only. |
 | Widget Added | ricecal_widget_added | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a widget kind absent from the previous stored set; one per newly observed kind. The first poll is a silent baseline. |
@@ -5142,7 +5184,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Log sheet, food route and data mutations | Sheet entry, catalogue answer/selection, logging, scan/refinement outcome, entry edits/deletes | Search debounces; mutations distinguish intent/optimistic inserts from confirmed success as listed above |
 | Recipes | Draft/save/publish/copy/report/block | Public moderation outcomes count separately; a draft is not a meal or a saved recipe. `Suggestions Shown` appears only in data from app versions released before "what to eat next" was removed |
 | Activity, reminders and reports | Health connection/disconnection, reminder writes, report notification taps and review opens/shares | No background health-import events. Locked review opens count before the paywall redirect |
-| Workouts | Workout started (by source), finished, discarded; routine saved | Started counts discarded workouts too, so finished over started is the completion rate. Finished fires on the save returning, queued saves included (`queued: true`); a queued save that lands later and edits to a saved workout send nothing. Rest timers, sets and records are not tracked |
+| Workouts | Workout started (by source), finished, discarded; routine saved | Started counts discarded workouts too, so finished over started is the completion rate. Finished fires on the save returning, queued saves included (`queued: true`), and on saving a past workout logged after the fact; a queued save that lands later and edits to a saved workout send nothing. Rest timers, sets and records are not tracked |
 | Home-screen widgets | Observed kind additions/removals, supported deep links and queued water actions | First observation is a silent baseline; later foreground diffs can miss intermediate changes. Stored baseline belongs to the handset, not reset on account switches. Each account gets the current count without fabricated add/remove events; results from a cancelled account's poll are discarded even if it returns |
 | Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
 | Hard paywall `/paywall` | `Paywall Shown` with `screen: hard` and refused `ProFeature` | `data/refusals.ts` records before navigation; review redirects also record. Free camera allowance is three scans/day; a further refusal can reach camera trigger |

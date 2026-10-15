@@ -194,6 +194,10 @@ export const workouts = {
     },
     superset: 'Superset',
     restTitle: 'Rest timer',
+    /** The exercise card's menu button and the workout page's, named for VoiceOver. */
+    menuFor: 'Options for {{name}}',
+    removeTitle: 'Remove {{name}}?',
+    removeBody: 'Its sets go with it.',
     restDefault: 'Use default ({{time}})',
     pr: 'New record',
     noNumbers: 'Fill in the set first',
@@ -317,6 +321,8 @@ export const workouts = {
     records: 'Records',
     split: 'Muscle split',
     noHistoryTitle: 'Not done yet',
+    /** An exercise id nothing names: not the catalogue, the user's own or a saved set. */
+    missing: 'This exercise is gone.',
     chart: {
       heaviest: 'Heaviest',
       e1rm: 'Est. 1RM',
@@ -358,6 +364,8 @@ export const workouts = {
     splitRange: 'Last 30 days',
     records: 'Personal records',
     calendar: 'Calendar',
+    /** A calendar day's screen-reader label when it had a workout. */
+    dayTrained: '{{day}}, workout logged',
   },
 
   settings: {
@@ -384,6 +392,9 @@ export const workouts = {
     perSide: 'Each side',
     none: 'Just the bar',
     unreachable: 'Not reachable with standard plates.',
+    /** A weight the plates cannot make: the nearest they can, nearer first. */
+    closest: 'Closest: {{weight}}',
+    closestOr: 'Closest: {{weight}} or {{other}}',
   },
 
   warmup: {

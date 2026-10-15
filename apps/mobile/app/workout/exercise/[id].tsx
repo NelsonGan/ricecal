@@ -8,7 +8,9 @@ import { View } from 'react-native'
 import {
   type ExerciseBests,
   type ExerciseSession,
+  type IconRef,
   type RepBest,
+  useCustomExercises,
   useExerciseBests,
   useExerciseHistory,
   useExerciseRepBests,
@@ -102,6 +104,8 @@ export default function ExerciseScreen() {
   const goBack = useBack('/workouts')
   const { id } = useLocalSearchParams<{ id: string }>()
   const library = useExerciseLibrary()
+  // The library's custom half, asked directly to know whether it has answered.
+  const customs = useCustomExercises()
   const known = library.byId(id ?? '')
   const history = useExerciseHistory(id)
   const bests = useExerciseBests(id ?? null)
@@ -139,6 +143,41 @@ export default function ExerciseScreen() {
   const repBests = useExerciseRepBests(
     exercise && LOADED.has(exercise.tracking) ? exercise.id : undefined,
   )
+
+  // Nothing names this id yet: not the catalogue, the user's own exercises or
+  // a saved set. Until all three have answered that is loading; after, it is
+  // an exercise that is not there, which a blank title over "Not done yet"
+  // passed off as one never done.
+  if (!exercise) {
+    const sources = [customs, bests, history]
+    if (sources.some((query) => query.isPending && query.isPaused)) {
+      return (
+        <Empty
+          title={t('common:offline.title')}
+          description={t('common:offline.body')}
+          icon={{ set: 'ui', name: 'offline' }}
+        />
+      )
+    }
+    if (sources.some((query) => query.isPending)) {
+      return (
+        <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
+          <Card>
+            <Skeleton className="h-[200px] w-full" />
+          </Card>
+        </Screen>
+      )
+    }
+    return sources.some((query) => query.isError) ? (
+      <Empty
+        title={t('common:offline.unreachableTitle')}
+        description={t('common:offline.unreachableBody')}
+        icon={{ set: 'ui', name: 'warning' }}
+      />
+    ) : (
+      <Empty title={t('workouts:exercise.missing')} icon={{ set: 'body', name: 'dumbbell' }} />
+    )
+  }
 
   return (
     <Screen
@@ -191,11 +230,20 @@ export default function ExerciseScreen() {
     >
       {known ? <About exercise={known} /> : null}
 
-      {history.isPending ? (
+      {history.isPending && !history.isPaused ? (
         <Card>
           <Skeleton className="h-[200px] w-full" />
         </Card>
-      ) : history.data?.length && exercise ? (
+      ) : history.isPaused && !history.data ? (
+        <Card>
+          <EmptyState
+            title={t('common:offline.title')}
+            description={t('common:offline.body')}
+            icon={{ set: 'ui', name: 'offline' }}
+            className="py-md"
+          />
+        </Card>
+      ) : history.data?.length ? (
         <>
           <Progress exercise={exercise} sessions={history.data} unit={unit} />
           {bests.data?.[0] ? (
@@ -214,6 +262,25 @@ export default function ExerciseScreen() {
         </Card>
       )}
       {starter.sheet}
+    </Screen>
+  )
+}
+
+/** The page with nothing in it but a way back. */
+function Empty({
+  title,
+  description,
+  icon,
+}: {
+  title: string
+  description?: string
+  icon: IconRef
+}) {
+  const { t } = useTranslation(['common'])
+  const goBack = useBack('/workouts')
+  return (
+    <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
+      <EmptyState title={title} description={description} icon={icon} />
     </Screen>
   )
 }

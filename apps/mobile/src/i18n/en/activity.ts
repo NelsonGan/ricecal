@@ -29,7 +29,7 @@ export const activity = {
      * workout settings, off until the user turns it on.
      */
     privacy:
-      'Read only. We write nothing back unless you choose to save your workouts there, and your health data is only stored in your own account.',
+      'Connecting only reads. We save workouts there only if you turn that on, and your health data stays in your own account.',
 
     /**
      * The line UNDER the connect button, on each platform. There is no longer a

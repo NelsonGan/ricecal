@@ -9,7 +9,7 @@ import {
 } from '@shopify/react-native-skia'
 import * as Haptics from 'expo-haptics'
 import { useEffect, useState } from 'react'
-import { View } from 'react-native'
+import { useWindowDimensions, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 
@@ -56,8 +56,25 @@ export type TrendLineProps = {
   className?: string
 }
 
-/** How wide a date label is given, and so how many fit along the axis. */
-const LABEL_W = 56
+/**
+ * About how wide an axis label's character draws at `micro` (11pt): a full em
+ * for CJK, Hangul and kana, a narrow space, and roughly 6.5pt for the rest.
+ * An estimate, so `LABEL_GAP` is generous: it only has to say whether seven
+ * weekdays fit, which they do on a phone and twenty dates do not.
+ */
+const LABEL_CHAR = 6.5
+const LABEL_WIDE = 11
+const LABEL_SPACE = 3
+const LABEL_GAP = 8
+const WIDE = /[ᄀ-ᇿ⺀-鿿가-힯豈-﫿＀-￯]/
+
+function labelWidth(label: string): number {
+  let width = 0
+  for (const char of label) {
+    width += char === ' ' ? LABEL_SPACE : WIDE.test(char) ? LABEL_WIDE : LABEL_CHAR
+  }
+  return width
+}
 
 /** Stroke width, and the radius the end cap needs to clear the edges. */
 const STROKE = 3
@@ -122,6 +139,8 @@ export function TrendLine({
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the data changes
   useEffect(() => setSelected(null), [pointsKey])
   const colors = useThemeColors()
+  // The labels grow with the text size, so the room they need does too.
+  const { fontScale } = useWindowDimensions()
   // With a scale, its values get a gutter of their own on the right, so they
   // never sit on the newest point, which is always at the right edge.
   const plotWidth = formatValue ? Math.max(0, width - SCALE_W) : width
@@ -224,10 +243,27 @@ export function TrendLine({
     }
   }
 
-  // Every other label when they do not all fit, always keeping the newest.
+  // Every label when they fit, and every second, third... when they would
+  // overlap, always keeping the newest. Measured against the labels' own
+  // text: a fixed width per label dropped three of a week's seven days.
   const labelled = points.flatMap((point, index) => (point.label ? [index] : []))
-  const room = Math.max(2, Math.floor(plotWidth / LABEL_W))
-  const every = Math.ceil(labelled.length / room)
+  const column = points.length ? plotWidth / points.length : 0
+  // The fewest columns between two labelled points: one on most charts, two
+  // on the year's, which labels every other month.
+  const pitch = labelled.reduce(
+    (least, index, at) => (at === 0 ? least : Math.min(least, index - labelled[at - 1])),
+    Number.POSITIVE_INFINITY,
+  )
+  const widest =
+    Math.max(0, ...labelled.map((index) => labelWidth(points[index].label))) * fontScale + LABEL_GAP
+  const every =
+    labelled.length > 1 && column > 0 ? Math.max(1, Math.ceil(widest / (pitch * column))) : 1
+  // Each label's box is the room up to the next one shown, so it is never
+  // clipped narrower than the space it has.
+  const labelBox = Math.min(
+    plotWidth,
+    labelled.length > 1 ? Math.max(widest, every * pitch * column) : widest,
+  )
   const shownLabels = labelled.filter((_, at) => {
     const last = at === labelled.length - 1
     if (last) return true
@@ -395,8 +431,8 @@ export function TrendLine({
                   variant="micro"
                   className="absolute text-center"
                   style={{
-                    width: LABEL_W,
-                    left: Math.max(0, Math.min(plotWidth - LABEL_W, x - LABEL_W / 2)),
+                    width: labelBox,
+                    left: Math.max(0, Math.min(plotWidth - labelBox, x - labelBox / 2)),
                   }}
                 >
                   {points[index].label}

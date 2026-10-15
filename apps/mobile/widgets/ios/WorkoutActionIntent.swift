@@ -56,6 +56,10 @@ struct WorkoutActionIntent: LiveActivityIntent {
 
   func perform() async throws -> some IntentResult {
     let at = Date()
+    // The guess first, then the queue: queueing wakes the app's JS, which
+    // writes the truth, and a guess landing after it would draw over it.
+    await WorkoutActivityNudge.apply(
+      action, workoutId: workoutId, exerciseKey: exerciseKey, setId: setId, at: at)
     RiceCalWidgetStore.queueWorkoutAction([
       "type": action,
       "workoutId": workoutId,
@@ -63,7 +67,6 @@ struct WorkoutActionIntent: LiveActivityIntent {
       "setId": setId,
       "at": Int(at.timeIntervalSince1970 * 1000),
     ])
-    await WorkoutActivityNudge.apply(action, workoutId: workoutId, at: at)
     return .result()
   }
 }
@@ -75,7 +78,9 @@ struct WorkoutActionIntent: LiveActivityIntent {
  */
 @available(iOS 17.0, *)
 enum WorkoutActivityNudge {
-  static func apply(_ action: String, workoutId: String, at: Date) async {
+  static func apply(
+    _ action: String, workoutId: String, exerciseKey: String, setId: String, at: Date
+  ) async {
     #if canImport(RiceCalWidgetBridge)
       guard
         let activity = Activity<WorkoutActivityAttributes>.activities.first(where: {
@@ -99,6 +104,11 @@ enum WorkoutActivityNudge {
           state.restTotalS = max(1, (state.restTotalS ?? 0) + by)
         }
       case "completeSet":
+        // Only the set the tick was drawn for, and only once: a second tap
+        // before the redraw counted the set twice and restarted the rest, and
+        // the app, which ignores a set already done, never wrote it back.
+        guard state.canComplete == true, state.setId == setId, state.exerciseKey == exerciseKey
+        else { return }
         state.done = min(state.total, state.done + 1)
         state.canComplete = false
         if let rest = state.restAfterS, rest > 0 {
@@ -110,7 +120,7 @@ enum WorkoutActivityNudge {
       }
       let stale = state.restEndsAt.flatMap { $0 > at ? $0 : nil }
       await activity.update(ActivityContent(state: state, staleDate: stale))
-      await RestNotice.reschedule(endsAt: stale, at: at)
+      await RestNotice.reschedule(endsAt: stale, at: at, forTick: action == "completeSet")
     #endif
   }
 }
@@ -126,20 +136,25 @@ enum WorkoutActivityNudge {
 enum RestNotice {
   static let identifier = "workout-rest"
 
-  static func reschedule(endsAt: Date?, at: Date) async {
+  static func reschedule(endsAt: Date?, at: Date, forTick: Bool = false) async {
     #if canImport(RiceCalWidgetBridge)
       let center = UNUserNotificationCenter.current()
       center.removePendingNotificationRequests(withIdentifiers: [identifier])
       guard let endsAt, let words = RiceCalWidgetStore.restNotice() else { return }
+      // A tick starts the rest after the set it ticked, which names that
+      // exercise; a running rest belongs to the one before it.
+      let body = forTick ? (words.tickBody ?? words.body) : words.body
       let seconds = endsAt.timeIntervalSince(at)
       guard seconds >= 1 else { return }
       let content = UNMutableNotificationContent()
       content.title = words.title
-      content.body = words.body
+      content.body = body
       content.sound = .default
-      // Where expo-notifications keeps a notification's `data`, so a tap on
-      // this one is handled like the app's own.
-      content.userInfo = ["body": ["kind": "rest"]]
+      // A local notification's `data` is its whole userInfo to
+      // expo-notifications (only a remote push nests it under "body"). Nested,
+      // JS read no kind: the reminder sync cancelled it as a stray, and a tap
+      // on it opened nothing.
+      content.userInfo = ["kind": "rest"]
       let request = UNNotificationRequest(
         identifier: identifier,
         content: content,

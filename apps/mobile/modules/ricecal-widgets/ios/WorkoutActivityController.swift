@@ -30,6 +30,8 @@ enum WorkoutActivityController {
     /// The "rest is over" notice for the next set, kept for the buttons. See `RiceCalWidgetStore.setRestNotice`.
     let restTitle: String?
     let restBody: String?
+    /// The same notice for a rest the activity's tick would start.
+    let tickRestBody: String?
     /// Screen-reader names for the buttons, which the extension cannot translate itself.
     let labels: WorkoutActivityAttributes.ActionLabels?
 
@@ -71,13 +73,51 @@ enum WorkoutActivityController {
       let payload = try? JSONDecoder().decode(Payload.self, from: data)
     else { return nil }
     if let title = payload.restTitle, let body = payload.restBody {
-      RiceCalWidgetStore.setRestNotice(title: title, body: body)
+      RiceCalWidgetStore.setRestNotice(title: title, body: body, tickBody: payload.tickRestBody)
     }
     return payload
   }
 
   static var enabled: Bool {
     ActivityAuthorizationInfo().areActivitiesEnabled
+  }
+
+  /**
+   ActivityKit's calls run one after another, in the order JS made them. Each
+   was its own `Task`, and two updates a few milliseconds apart (a launch's
+   first write and the drain of a lock-screen press) could land in either
+   order and leave the older state on the lock screen.
+   */
+  private static let lock = NSLock()
+  private static var tail: Task<Void, Never>?
+
+  private static func serially(_ work: @escaping () async -> Void) {
+    lock.lock()
+    defer { lock.unlock() }
+    let previous = tail
+    tail = Task {
+      await previous?.value
+      await work()
+    }
+  }
+
+  /**
+   The activity showing this workout, if it is still alive. iOS keeps an
+   activity it has ended (at eight hours, or swiped away) in the list for a
+   while, and updating that one changed nothing, so it is ended for good and
+   the caller starts a fresh one.
+   */
+  private static func live(for workoutId: String) -> Activity<WorkoutActivityAttributes>? {
+    let matches = Activity<WorkoutActivityAttributes>.activities.filter {
+      $0.attributes.workoutId == workoutId
+    }
+    if let alive = matches.first(where: { $0.activityState == .active || $0.activityState == .stale }) {
+      return alive
+    }
+    for dead in matches {
+      serially { await dead.end(nil, dismissalPolicy: .immediate) }
+    }
+    return nil
   }
 
   /**
@@ -91,12 +131,10 @@ enum WorkoutActivityController {
     let content = payload.content
     for activity in Activity<WorkoutActivityAttributes>.activities
     where activity.attributes.workoutId != payload.id {
-      Task { await activity.end(nil, dismissalPolicy: .immediate) }
+      serially { await activity.end(nil, dismissalPolicy: .immediate) }
     }
-    if let current = Activity<WorkoutActivityAttributes>.activities.first(where: {
-      $0.attributes.workoutId == payload.id
-    }) {
-      Task { await current.update(content) }
+    if let current = live(for: payload.id) {
+      serially { await current.update(content) }
       return
     }
     do {
@@ -115,25 +153,20 @@ enum WorkoutActivityController {
 
   static func update(_ json: String) {
     guard let payload = decode(json) else { return }
-    guard
-      let current = Activity<WorkoutActivityAttributes>.activities.first(where: {
-        $0.attributes.workoutId == payload.id
-      })
-    else {
+    guard let current = live(for: payload.id) else {
       // Lost (the system ends an activity after eight hours, and a user can
       // swipe one away): start it again rather than going quiet.
       start(json)
       return
     }
     let content = payload.content
-    Task { await current.update(content) }
+    serially { await current.update(content) }
   }
 
+  /// Taken now rather than inside the task, so a start that follows cannot be ended by it.
   static func end() {
-    Task {
-      for activity in Activity<WorkoutActivityAttributes>.activities {
-        await activity.end(nil, dismissalPolicy: .immediate)
-      }
+    for activity in Activity<WorkoutActivityAttributes>.activities {
+      serially { await activity.end(nil, dismissalPolicy: .immediate) }
     }
   }
 }

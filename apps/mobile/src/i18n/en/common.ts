@@ -29,7 +29,7 @@ export const common = {
     workouts: 'Workouts',
     trends: 'Trends',
     me: 'Me',
-    /** The add button at the right end of the nav bar. Not a tab: it opens the log sheet. */
+    /** The add button floating over Today, above the nav bar. Not a tab: it opens the log sheet. */
     log: 'Log food',
   },
 

@@ -242,7 +242,7 @@ export const ms = {
       workoutsBody: 'Jenis, masa, rentak, kadar denyutan jantung',
 
       privacy:
-        'Baca sahaja. Kami tidak menulis apa-apa kembali melainkan anda memilih untuk menyimpan senaman anda di sana, dan data kesihatan anda hanya disimpan dalam akaun anda sendiri.',
+        'Sambungan hanya membaca. Kami menyimpan senaman anda di sana hanya jika anda menghidupkannya, dan data kesihatan anda kekal dalam akaun anda sendiri.',
 
       appleBody: 'Apple Health, pada iPhone dan Apple Watch',
       connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
@@ -1907,6 +1907,9 @@ export const ms = {
       },
       superset: 'Superset',
       restTitle: 'Pemasa rehat',
+      menuFor: 'Pilihan untuk {{name}}',
+      removeTitle: 'Buang {{name}}?',
+      removeBody: 'Setnya turut dibuang.',
       restDefault: 'Guna lalai ({{time}})',
       pr: 'Rekod baharu',
       noNumbers: 'Isi set dahulu',
@@ -2028,6 +2031,7 @@ export const ms = {
       records: 'Rekod',
       split: 'Pembahagian otot',
       noHistoryTitle: 'Belum pernah dibuat',
+      missing: 'Latihan ini sudah tiada.',
       chart: {
         heaviest: 'Terberat',
         e1rm: 'Angg. 1RM',
@@ -2068,6 +2072,7 @@ export const ms = {
       splitRange: '30 hari lepas',
       records: 'Rekod peribadi',
       calendar: 'Kalendar',
+      dayTrained: '{{day}}, ada senaman',
     },
 
     settings: {
@@ -2095,6 +2100,8 @@ export const ms = {
       perSide: 'Setiap sisi',
       none: 'Bar sahaja',
       unreachable: 'Tidak boleh dicapai dengan plat standard.',
+      closest: 'Paling hampir: {{weight}}',
+      closestOr: 'Paling hampir: {{weight}} atau {{other}}',
     },
 
     warmup: {

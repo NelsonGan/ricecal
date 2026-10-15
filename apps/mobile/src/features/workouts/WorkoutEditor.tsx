@@ -6,7 +6,7 @@ import { View } from 'react-native'
 
 import { useExerciseBests, useLastSets, useSettings } from '@/data'
 import { unitFor } from '@/lib/units'
-import { Button, EmptyState, useToast } from '@/ui'
+import { Button, ConfirmSheet, EmptyState, useToast } from '@/ui'
 import { ActionSheet, type SheetAction } from './ActionSheet'
 import type { Tracking } from './catalogue'
 import { RECORD_KEY, SET_KIND_KEY } from './copy'
@@ -24,6 +24,7 @@ import {
   restAfter,
   SET_KINDS,
   type SetPatch,
+  setHints,
 } from './model'
 import { PlateSheet } from './PlateSheet'
 import { awaitPick } from './pick'
@@ -95,6 +96,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     number: number
   } | null>(null)
   const [restFor, setRestFor] = useState<LiveExercise | null>(null)
+  const [removeFor, setRemoveFor] = useState<LiveExercise | null>(null)
   // The set whose effort is being rated, from its menu.
   const [rpeFor, setRpeFor] = useState<{ exercise: LiveExercise; set: LiveSet } | null>(null)
   // The exercise the calculator was opened for, and the weight to open it on
@@ -162,7 +164,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     }
 
     if (live) {
-      const rest = restAfter(workout, exercise, defaultRestS)
+      const rest = restAfter(workout, exercise, defaultRestS, set.id)
       if (rest > 0) dispatch({ type: 'startRest', exerciseKey: exercise.key, totalS: rest, at })
     }
     return true
@@ -243,7 +245,10 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
         label: t('workouts:logger.addWarmups'),
         icon: { set: 'body', name: 'stretching' },
         onPress: () => {
-          const sets = warmupSets(exercise, unit)
+          const sets = warmupSets(exercise, unit, {
+            workingKg: offeredWeight(exercise, lastSets?.[exercise.exerciseId]),
+            barbell: library.byId(exercise.exerciseId)?.equipment === 'barbell',
+          })
           if (!sets.length) {
             toast.show({ title: t('workouts:warmup.needWeight'), tone: 'error' })
             return
@@ -297,7 +302,19 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
       label: t('workouts:logger.menu.remove'),
       icon: { set: 'ui', name: 'delete' },
       tone: 'danger',
-      onPress: () => dispatch({ type: 'removeExercise', key: exercise.key }),
+      // Asked first only when it takes something with it: a card with every
+      // set blank goes in one tap, one with sets in it takes them all.
+      onPress: () =>
+        exercise.sets.some(
+          (set) =>
+            set.done ||
+            set.weightKg !== null ||
+            set.reps !== null ||
+            set.durationS !== null ||
+            set.distanceM !== null,
+        )
+          ? setRemoveFor(exercise)
+          : dispatch({ type: 'removeExercise', key: exercise.key }),
     })
     return actions
   }
@@ -367,7 +384,13 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
         <ActionSheet
           visible={setMenu !== null}
           onClose={() => setSetMenu(null)}
-          title={setMenu ? `${t('workouts:logger.set')} ${setMenu.number}` : undefined}
+          title={
+            setMenu
+              ? setMenu.set.kind === 'warmup'
+                ? t(SET_KIND_KEY.warmup)
+                : `${t('workouts:logger.set')} ${setMenu.number}`
+              : undefined
+          }
           actions={
             setMenu
               ? [
@@ -471,6 +494,19 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
           }
         />
 
+        <ConfirmSheet
+          visible={removeFor !== null}
+          onClose={() => setRemoveFor(null)}
+          title={t('workouts:logger.removeTitle', { name: removeFor?.name ?? '' })}
+          description={t('workouts:logger.removeBody')}
+          confirmLabel={t('workouts:logger.menu.remove')}
+          cancelLabel={t('common:action.keep')}
+          onConfirm={() => {
+            if (removeFor) dispatch({ type: 'removeExercise', key: removeFor.key })
+            setRemoveFor(null)
+          }}
+        />
+
         <PlateSheet
           visible={platesFor !== null}
           onClose={() => setPlatesFor(null)}
@@ -483,11 +519,27 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
             platesFor?.exercise.sets.find((set) => !set.done && set.weightKg)?.weightKg ??
             platesFor?.exercise.sets.findLast((set) => set.kind !== 'warmup' && set.weightKg)
               ?.weightKg ??
-            platesFor?.exercise.sets.find((set) => set.weightKg)?.weightKg ??
-            null
+            (platesFor
+              ? offeredWeight(platesFor.exercise, lastSets?.[platesFor.exercise.exerciseId])
+              : null)
           }
         />
       </View>
     </FieldOrderProvider>
   )
+}
+
+/**
+ * The first working set's weight, typed or offered: a routine's rows show last
+ * week's 100 kg as a hint, and "Add warm-ups" answered "enter a weight first"
+ * over a screen full of them.
+ */
+function offeredWeight(
+  exercise: LiveExercise,
+  previous: Parameters<typeof setHints>[1],
+): number | null {
+  const hints = setHints(exercise.sets, previous)
+  const index = exercise.sets.findIndex((set) => set.kind !== 'warmup')
+  if (index === -1) return null
+  return exercise.sets[index].weightKg ?? hints[index].weightKg
 }

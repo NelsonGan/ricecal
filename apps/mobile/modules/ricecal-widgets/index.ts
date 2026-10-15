@@ -164,6 +164,8 @@ export type WorkoutActivityState = {
   /** The "rest is over" notice, which a button that moves the rest rebooks itself. */
   restTitle: string
   restBody: string
+  /** The same notice for the rest the tick would start, which names that set's exercise. */
+  tickRestBody: string
   /** The buttons' names for VoiceOver. The extension has no strings of its own. */
   labels: { complete: string; less: string; more: string; skip: string }
 }

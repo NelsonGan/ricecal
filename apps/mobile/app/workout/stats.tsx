@@ -83,10 +83,12 @@ export default function WorkoutStatsScreen() {
           onChange={setMetric}
           accessibilityLabel={t('workouts:stats.weeks')}
         />
-        {weeks.isPending || !weeks.data ? (
+        {weeks.data ? (
+          <WeekBars weeks={weeks.data} metric={metric} unit={unit} />
+        ) : weeks.isPending && !weeks.isPaused ? (
           <Skeleton className="h-[160px] w-full" />
         ) : (
-          <WeekBars weeks={weeks.data} metric={metric} unit={unit} />
+          <Unavailable offline={weeks.isPaused} />
         )}
       </Card>
 
@@ -94,6 +96,19 @@ export default function WorkoutStatsScreen() {
       <Split />
       <Records unit={unit} />
     </Screen>
+  )
+}
+
+/**
+ * A card whose numbers did not come: offline with nothing cached, where the
+ * request is held and a skeleton would wait forever, or a request that failed.
+ */
+function Unavailable({ offline }: { offline: boolean }) {
+  const { t } = useTranslation(['common'])
+  return (
+    <Text variant="meta">
+      {offline ? t('common:offline.title') : t('common:offline.unreachableTitle')}
+    </Text>
   )
 }
 
@@ -231,8 +246,15 @@ function Calendar() {
                 return <View key={`blank-${index}`} className="flex-1" />
               }
               const trained = (dates[key] ?? 0) > 0
+              const day = format(parseISO(key), datePattern('weekdayDayMonthLong'))
               return (
-                <View key={key} className="flex-1 items-center">
+                <View
+                  key={key}
+                  className="flex-1 items-center"
+                  // Said, not only coloured: a filled day is a trained one.
+                  accessible
+                  accessibilityLabel={trained ? t('workouts:stats.dayTrained', { day }) : day}
+                >
                   <View
                     // Not flattened, for the reason a set row is not (`SetRow`):
                     // a day whose workouts arrive after it is drawn turned into
@@ -278,8 +300,10 @@ function Split() {
       title={t('workouts:stats.split')}
       action={<Text variant="caption">{t('workouts:stats.splitRange')}</Text>}
     >
-      {totals.isPending ? (
+      {totals.isPending && !totals.isPaused ? (
         <Skeleton className="h-[160px] w-full" />
+      ) : !totals.data && (totals.isPaused || totals.isError) ? (
+        <Unavailable offline={totals.isPaused} />
       ) : split.length ? (
         <MuscleSplitBars rows={split.map((row) => ({ group: row.group, value: row.sets }))} />
       ) : (
@@ -298,8 +322,10 @@ function Records({ unit }: { unit: WeightUnit }) {
 
   return (
     <Card title={t('workouts:stats.records')} contentClassName="gap-0">
-      {bests.isPending ? (
+      {bests.isPending && !bests.isPaused ? (
         <Skeleton className="h-[160px] w-full" />
+      ) : !bests.data && (bests.isPaused || bests.isError) ? (
+        <Unavailable offline={bests.isPaused} />
       ) : rows.length ? (
         rows.map((entry, index) => {
           const exercise = library.byId(entry.exerciseId)
