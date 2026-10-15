@@ -82,6 +82,8 @@ export default function ActiveWorkoutScreen() {
 
   return (
     <Screen
+      // Set rows swipe to delete, so the scroll has to share the finger. See `gestureScroll`.
+      gestureScroll
       header={
         <AppBar
           leading="minimise"

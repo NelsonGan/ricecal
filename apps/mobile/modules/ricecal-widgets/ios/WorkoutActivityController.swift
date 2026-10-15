@@ -23,6 +23,10 @@ enum WorkoutActivityController {
     let total: Int
     let restEndsAt: Double?
     let restTotalS: Double?
+    let exerciseKey: String?
+    let setId: String?
+    let canComplete: Bool?
+    let restAfterS: Double?
 
     var state: WorkoutActivityAttributes.ContentState {
       WorkoutActivityAttributes.ContentState(
@@ -32,7 +36,11 @@ enum WorkoutActivityController {
         done: done,
         total: total,
         restEndsAt: restEndsAt.map { Date(timeIntervalSince1970: $0 / 1000) },
-        restTotalS: restTotalS
+        restTotalS: restTotalS,
+        exerciseKey: exerciseKey,
+        setId: setId,
+        canComplete: canComplete,
+        restAfterS: restAfterS
       )
     }
 

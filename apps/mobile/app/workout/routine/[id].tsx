@@ -92,6 +92,8 @@ function RoutineEditor({ routine }: { routine: Routine | null }) {
 
   return (
     <Screen
+      // Set rows swipe to delete, so the scroll has to share the finger. See `gestureScroll`.
+      gestureScroll
       header={
         <AppBar
           title={routine ? t('workouts:routines.edit') : t('workouts:routines.new')}

@@ -21,6 +21,7 @@ import {
   lastActivityAt,
   liveTotals,
   newWorkout,
+  setHints,
   showsVolume,
   timedSeconds,
   toPayload,
@@ -174,6 +175,64 @@ describe('the workout document', () => {
     const [set] = toPayload(workout, 2_000_000, { kcal: 12000, healthWorkoutId: null }).exercises[0]
       .sets
     expect(set).toMatchObject({ weight_kg: 1000, reps: 1000 })
+  })
+})
+
+describe('reordering exercises', () => {
+  it('takes the order of keys, and keeps anything it does not name at the end', () => {
+    let workout = newWorkout({ name: 'W' })
+    workout = apply(workout, {
+      type: 'addExercises',
+      plans: ['a', 'b', 'c'].map((id) => ({
+        exerciseId: id,
+        name: id,
+        tracking: 'reps',
+        sets: [],
+      })),
+    })
+    const [a, , c] = workout.exercises
+    const moved = apply(workout, { type: 'reorderExercises', keys: [c.key, a.key] })
+    expect(moved.exercises.map((exercise) => exercise.exerciseId)).toEqual(['c', 'a', 'b'])
+  })
+})
+
+describe('what an empty set offers', () => {
+  const set = (kind: 'normal' | 'warmup', weightKg: number | null, reps: number | null) => ({
+    kind,
+    weightKg,
+    reps,
+    durationS: null,
+    distanceM: null,
+  })
+
+  it('hands a typed figure down its column, over last time', () => {
+    const hints = setHints(
+      [set('normal', 105, null), set('normal', null, null), set('normal', null, 6)],
+      [
+        { weightKg: 100, reps: 5 },
+        { weightKg: 100, reps: 5 },
+        { weightKg: 100, reps: 5 },
+      ],
+    )
+    expect(hints.map((hint) => [hint.weightKg, hint.reps])).toEqual([
+      [100, 5],
+      [105, 5],
+      [105, 5],
+    ])
+  })
+
+  it('keeps warm-ups to themselves', () => {
+    const hints = setHints([set('warmup', 40, 10), set('normal', null, null)], [])
+    expect(hints[1]).toEqual({ weightKg: null, reps: null, durationS: null, distanceM: null })
+  })
+
+  it('falls back to last time, then to nothing', () => {
+    const hints = setHints(
+      [set('normal', null, null), set('normal', null, null)],
+      [{ weightKg: 60, reps: 8 }],
+    )
+    expect(hints[0].weightKg).toBe(60)
+    expect(hints[1].weightKg).toBeNull()
   })
 })
 

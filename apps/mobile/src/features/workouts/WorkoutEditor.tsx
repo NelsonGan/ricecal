@@ -20,11 +20,13 @@ import {
   type LiveExercise,
   type LiveSet,
   type LiveWorkout,
+  restAfter,
   SET_KINDS,
   type SetPatch,
 } from './model'
 import { PlateSheet } from './PlateSheet'
 import { awaitPick } from './pick'
+import { ReorderSheet } from './ReorderSheet'
 import { recordSets } from './records'
 import type { CardHandlers } from './SetTable'
 import { warmupSets } from './warmup'
@@ -72,6 +74,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
   )
 
   const [menuFor, setMenuFor] = useState<LiveExercise | null>(null)
+  const [reordering, setReordering] = useState(false)
   const [setMenu, setSetMenu] = useState<{
     exercise: LiveExercise
     set: LiveSet
@@ -100,20 +103,11 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     router.push({ pathname: '/workout/exercises', params: { pick: single ? 'one' : 'many' } })
   }
 
-  const restAfter = (exercise: LiveExercise): number => {
-    // In a superset the rest comes after the last exercise of the round, not
-    // between its members.
-    if (exercise.superset !== null) {
-      const group = workout.exercises.filter((entry) => entry.superset === exercise.superset)
-      if (group[group.length - 1]?.key !== exercise.key) return 0
-    }
-    return exercise.restS ?? defaultRestS
-  }
-
-  const toggle = (exercise: LiveExercise, set: LiveSet, fill: SetPatch | undefined) => {
+  /** Ticks or unticks a set. False when it had no numbers to tick. */
+  const toggle = (exercise: LiveExercise, set: LiveSet, fill: SetPatch | undefined): boolean => {
     if (set.done) {
       dispatch({ type: 'uncompleteSet', key: exercise.key, setId: set.id })
-      return
+      return true
     }
     // The tick as `apply` will make it, on this exercise alone: what it fills
     // in decides whether the set can be ticked and whether it is a record.
@@ -124,7 +118,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     if (!tickedSet || !isLoggable(tickedSet, exercise.tracking)) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {})
       toast.show({ title: t('workouts:logger.noNumbers'), tone: 'error' })
-      return
+      return false
     }
 
     const bests = bestsById.get(exercise.exerciseId)
@@ -144,9 +138,10 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     }
 
     if (live) {
-      const rest = restAfter(exercise)
+      const rest = restAfter(workout, exercise, defaultRestS)
       if (rest > 0) dispatch({ type: 'startRest', exerciseKey: exercise.key, totalS: rest, at })
     }
+    return true
   }
 
   // One handlers object for every card and row, keyed rather than closed over
@@ -162,7 +157,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
       changeSet: (key, setId, patch) => dispatch({ type: 'updateSet', key, setId, patch }),
       toggleSet: (key, set, fill) => {
         const exercise = find(key)
-        if (exercise) latest.current.toggle(exercise, set, fill)
+        return exercise ? latest.current.toggle(exercise, set, fill) : false
       },
       setMenu: (key, set, number) => {
         const exercise = find(key)
@@ -173,6 +168,10 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
         if (exercise) setPlatesFor({ exercise, kg })
       },
       addSet: (key) => dispatch({ type: 'addSet', key }),
+      removeSet: (key, setId) => dispatch({ type: 'removeSet', key, setId }),
+      reorder: () => {
+        if (latest.current.workout.exercises.length > 1) setReordering(true)
+      },
       notes: (key, notes) => dispatch({ type: 'exerciseNotes', key, notes }),
       menu: (key) => setMenuFor(find(key) ?? null),
       rest: (key) => setRestFor(find(key) ?? null),
@@ -218,12 +217,16 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
           toast.show({ title: t('workouts:warmup.added', { count: sets.length }), tone: 'success' })
         },
       })
-      actions.push({
-        key: 'plates',
-        label: t('workouts:logger.menu.plates'),
-        icon: { set: 'body', name: 'weight-plate' },
-        onPress: () => setPlatesFor({ exercise }),
-      })
+      // Plates only for a bar, as on the pad: a cable stack or a pair of
+      // dumbbells has nothing to load.
+      if (library.byId(exercise.exerciseId)?.equipment === 'barbell') {
+        actions.push({
+          key: 'plates',
+          label: t('workouts:logger.menu.plates'),
+          icon: { set: 'body', name: 'weight-plate' },
+          onPress: () => setPlatesFor({ exercise }),
+        })
+      }
     }
     actions.push({
       key: 'rest',
@@ -246,20 +249,12 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
         onPress: () => dispatch({ type: 'superset', key: exercise.key, withKey: next.key }),
       })
     }
-    if (index > 0) {
+    if (workout.exercises.length > 1) {
       actions.push({
-        key: 'up',
-        label: t('workouts:logger.menu.moveUp'),
-        icon: { set: 'ui', name: 'arrow-up' },
-        onPress: () => dispatch({ type: 'moveExercise', key: exercise.key, by: -1 }),
-      })
-    }
-    if (next) {
-      actions.push({
-        key: 'down',
-        label: t('workouts:logger.menu.moveDown'),
-        icon: { set: 'ui', name: 'arrow-down' },
-        onPress: () => dispatch({ type: 'moveExercise', key: exercise.key, by: 1 }),
+        key: 'reorder',
+        label: t('workouts:logger.menu.reorder'),
+        icon: { set: 'ui', name: 'reorder' },
+        onPress: () => setReordering(true),
       })
     }
     actions.push({
@@ -278,7 +273,6 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
         {workout.exercises.length === 0 ? (
           <EmptyState
             title={t('workouts:logger.emptyTitle')}
-            description={t('workouts:logger.emptyBody')}
             icon={{ set: 'body', name: 'dumbbell' }}
           />
         ) : null}
@@ -316,6 +310,17 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
           {t('workouts:logger.addExercise')}
         </Button>
 
+        <ReorderSheet
+          visible={reordering}
+          items={workout.exercises.map((exercise) => ({
+            key: exercise.key,
+            exerciseId: exercise.exerciseId,
+            name: exercise.name,
+            category: library.byId(exercise.exerciseId)?.category,
+          }))}
+          onClose={() => setReordering(false)}
+          onDone={(keys) => dispatch({ type: 'reorderExercises', keys })}
+        />
         <ActionSheet
           visible={menuFor !== null}
           onClose={() => setMenuFor(null)}

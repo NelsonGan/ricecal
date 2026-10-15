@@ -36,7 +36,6 @@ import {
   useHasActiveWorkout,
   useWorkoutStarter,
   volumeText,
-  weightField,
   weightText,
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
@@ -198,7 +197,6 @@ export default function ExerciseScreen() {
         <Card>
           <EmptyState
             title={t('workouts:exercise.noHistoryTitle')}
-            description={t('workouts:exercise.noHistoryBody')}
             icon={{ set: 'system', name: 'trophy' }}
             className="py-md"
           />
@@ -320,20 +318,14 @@ function Progress({
       [...sessions]
         .slice(0, 20)
         .reverse()
-        .map((session) => {
-          const value = metricValue(session, metric)
-          return {
-            key: session.workoutId,
-            label: format(parseISO(session.startedAt), datePattern('dayMonth')),
-            value:
-              value === null
-                ? null
-                : metric === 'e1rm' || metric === 'heaviest' || metric === 'volume'
-                  ? Number(weightField(value, unit))
-                  : value,
-          }
-        }),
-    [sessions, metric, unit],
+        // Kilograms and seconds as stored: the line's shape is the same in any
+        // unit, and the readout converts.
+        .map((session) => ({
+          key: session.workoutId,
+          label: format(parseISO(session.startedAt), datePattern('dayMonth')),
+          value: metricValue(session, metric),
+        })),
+    [sessions, metric],
   )
   const latest = metricValue(sessions[0], metric)
 
@@ -353,7 +345,14 @@ function Progress({
         </Text>
       ) : null}
       {points.filter((point) => point.value !== null).length > 1 ? (
-        <TrendLine points={points} height={140} accessibilityLabel={t(METRIC_KEY[metric])} />
+        <TrendLine
+          points={points}
+          height={160}
+          formatValue={(value) =>
+            formatMetric(t, value, metric, unit, distanceUnit, exercise.tracking)
+          }
+          accessibilityLabel={t(METRIC_KEY[metric])}
+        />
       ) : null}
     </Card>
   )
@@ -369,7 +368,6 @@ function Records({
   unit: WeightUnit
 }) {
   const { t } = useTranslation(['workouts', 'common'])
-  const _unitLabel = t(UNIT_KEY[unit])
   const distanceUnit = distanceUnitFor(unit)
   const rows: { label: string; value: string }[] = []
   const tracking = exercise.tracking

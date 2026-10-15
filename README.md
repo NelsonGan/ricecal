@@ -843,23 +843,24 @@ same My foods results instead of Today or All foods. `openOwn` and `openCreate`
 sit beside `openPicked`, and the page does not focus its field when any of them
 sent it, since a keyboard would come up under the screen on top.
 
-Four tabs (Today, Feed, Trends, Me) on the headless `expo-router/ui` Tabs
-rather than a styled navigator, because `NavBar` and `NavItem` are the design
-system's and a native tab bar cannot be made to look like them.
+Five tabs (Today, Workouts, Feed, Trends, Me) on the headless `expo-router/ui`
+Tabs rather than a styled navigator, because `NavBar` and `NavItem` are the
+design system's and a native tab bar cannot be made to look like them.
 
-**The bar floats.** It is drawn over the bottom of the screen with no background
-of its own, so content scrolls on under the pill. `NavInsetProvider` in the tabs
-layout tells each screen how much of its bottom the bar covers (its height plus
-the home indicator), and `Screen` pads the last row and lifts its floating
-corner by that much. Zero on a pushed page. A list that `Screen` does not scroll,
-the feed, reads `useNavInset` and pads itself.
+**The bar floats, the full width of the screen.** It is drawn over the bottom of
+the screen with no background of its own, so content scrolls on under the pill.
+`NavInsetProvider` in the tabs layout tells each screen how much of its bottom
+the bar covers (its height plus the home indicator), and `Screen` pads the last
+row and lifts its floating corners by that much. Zero on a pushed page. A list
+that `Screen` does not scroll, the feed, reads `useNavInset` and pads itself.
 
-**The log button is at the right end of the bar**, a `NavAction` beside the pill
-that holds the tabs, on every tab. It has been raised in the middle of the bar,
-which capped it at four tabs because a centre action needs the same number on
-each side, and then a floating button on Today alone, which sat over the last
-row of the day and over the Delete of any row swiped open beneath it. Beside the
-pill it covers nothing.
+**The log button floats over Today alone**, at the bottom right, as `Screen`'s
+`floatingTrailing`. It has been raised in the middle of the bar, which capped
+it at four tabs, and beside the pill on every tab, which took the width a fifth
+tab needed. The first time it floated over Today it sat over the last row of
+the day and over the Delete of any row swiped open beneath it; `Screen` now
+pads its content by the button's height whenever a trailing control floats, so
+the last row scrolls clear of it.
 
 If an earlier day remains selected, the log sheet shows its date. This matters
 when opening it from Feed, Trends or Me, where the diary's date is not visible.
@@ -3941,6 +3942,30 @@ opens the logger (by way of the Workouts tab, below), not through
 - Signing out ends it, and an activity with no workout behind it (a crash, the
   last launch) is ended whenever the effects run with none.
 
+**Its buttons work without opening the app** (iOS 17 and up): −15, +15 and
+skip on the rest, and a tick for the next set when that set has numbers to
+tick, its own or the ones it offers. Each is `WorkoutActionIntent`, a
+`LiveActivityIntent`, which iOS runs in the app's process, launching it in the
+background if it has to.
+
+- **The file is in both targets.** The extension needs the type to draw
+  `Button(intent:)`; the app needs it because iOS finds the intent through the
+  App Intents metadata Xcode extracts from the app target's own sources, and a
+  pod's are not extracted. `withWidgets.js` copies
+  `widgets/ios/WorkoutActionIntent.swift` beside `AppDelegate` and adds it to
+  the app target once, so adding an intent needs a `--clean` prebuild.
+- **The press is queued and the activity moved at once.** `perform` puts the
+  action on `RiceCalWidgetStore`'s workout queue in the App Group and updates
+  the activity itself: the rest shortened, lengthened or gone, or the tick
+  counted and its rest started (`restAfterS`, sent ahead in the content state).
+  The workout itself is the app's JS's to change: it drains the queue on
+  launch, on returning to the foreground, and when the intent's notification
+  reaches the module while JS is running, and applies each action with the
+  time it was pressed. Its next write to the activity replaces the guess.
+- The tick names its set by key (`exerciseKey`, `setId`) as the activity drew
+  it, so a press that arrives after the workout moved on ticks the set it was
+  for, or nothing if that set is gone or already done.
+
 ### The rest timer and reminders
 
 The rest is an end time in the document. `useWorkoutEffects` books a local
@@ -3985,6 +4010,73 @@ dismissed to see what had been opened. Its chevron goes back like any card.
 `ActionSheet` runs the chosen action in the sheet's `onDismiss`, not on the tap:
 most actions open another sheet or push a screen, and starting either while the
 native sheet is still leaving is how iOS ends up presenting nothing.
+
+### The set pad
+
+A set's fields use the app's own number pad laid out the way Strong's and
+Hevy's are. Fields pass the extras as `tools` to `useNumpadField`, and every
+other numeric field in the app keeps the plain pad.
+
+- **Quick-add keys** over the digits: −2.5, +2.5, +5, +10, +20 kg (−5 to +45
+  lb), reps by 1 to 10, time by 0:15 to 5:00, a carry by 5 to 50 m and a
+  distance by 0.1 to 5. On an empty field they count from the figure the field
+  offers, and a quick-added value is a finished one: the next digit starts a
+  new number rather than appending.
+- **The whole value is selected while the next key would replace it**: when a
+  field opens and after a quick-add. The pad already replaced on the first key;
+  showing the selection is what makes that expected rather than surprising.
+- **↑ and ↓** in the header walk the fields, and **Next** (two keys tall) moves
+  on, both in the order a set is written on paper: weight, then reps, then the
+  next set's weight, then the next exercise (`fieldOrder.tsx`). The order comes
+  from the document rather than from what is mounted, so a set added mid-edit
+  slots in. On the last field Next reads Done. **⌄** puts the pad away.
+- **✓ Set** ticks the set the field belongs to, with what its empty fields
+  offer, and moves to the first field of the next set. **Clear** empties the
+  field.
+- **The header** names the exercise, the set and the unit, because the field
+  being typed into is often under the pad. A barbell's weight adds a Plates
+  shortcut there.
+
+**An empty field offers the figure above it in its column**, or last time's
+for that set when nothing above has one (`setHints`), and ticking the empty set
+takes what it offers. Typing 105 into the first set offers 105 to every set
+under it. Warm-ups only hand down to warm-ups.
+
+**Exercises reorder by dragging** in a sheet of short rows, opened from an
+exercise's menu or by long-pressing its name. Cards are too tall to drag past
+one another without the drag turning into a scroll, which is why Hevy and
+Strong collapse them too. The rows are a fixed height so the arithmetic of
+where each lands runs on the UI thread, and the order is applied once, on
+Done. **A set swipes left to delete.** `SwipeRow`'s tap recogniser only runs
+while a row is open or has its own tap, because over a row of fields and
+buttons it took their touches.
+
+Cards and rows are memoised, and their handlers are one stable object keyed by
+exercise, so ticking a set re-renders that exercise's card and nothing else.
+The live workout, the outbox and the workout preferences all sit on
+`createJsonStore` (`lib/jsonStore.ts`). It hands back the same object until the
+key is written again, which is what lets a memoised card see that nothing
+changed: parsing the stored string on every read gave React a new tree each
+time.
+
+### Saving, and the charts
+
+**The save screen is the session's summary before it is a form**: "Workout
+complete" with the running total, the duration, volume and sets, one line per
+exercise that set a record (judged by `records.ts` against the bests from
+before the workout, so it is the same trophy the logger showed), then the name,
+note and times, and each exercise with its best set. No explanatory captions:
+anything a screen needed a sentence to explain has been made to explain
+itself or cut.
+
+**The charts can be read off, not only looked at.** `TrendLine` takes a
+`formatValue`, which adds three rules at the lowest, middle and highest readings
+with their values, and a tap or a sideways drag that names the reading under
+the finger; a vertical drag stays the scroll's. Its dates are thinned to as
+many as fit and centred on their own points, because twenty sessions side by
+side were twenty clipped stubs. The shareable review card passes no
+`formatValue` and stays a picture. `BarChart` takes `selected` and `onSelect`,
+and the workout progress page puts the tapped week's figure in its headline.
 
 ### Releasing it
 
@@ -6521,6 +6613,13 @@ In dev Reanimated does say so ("Tried to modify key `current` of an object which
 has been already passed to a worklet"), buried among warnings; in a release build
 it is silent. The fix is one line of destructuring. **Never let a worklet close
 over an object that owns mutable state.** Pull the primitives out first.
+
+**A field subscribes to whether it is the one being edited, not to the pad.**
+The provider's value changes on every open, close and Next, and a field reading
+it re-rendered on each one, memoised or not: in a workout that was every set row
+at every keypress of Next. Fields read a second context of stable actions and
+`useSyncExternalStore` one boolean, so a move between two fields renders those
+two.
 
 **The keyboard's reported height is still not where the keys start.** `Screen`'s
 footer skirts for it: canvas continuing below the footer for a screen's worth, so

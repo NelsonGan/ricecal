@@ -45,10 +45,17 @@ const KEY_BOX = 'h-[48px]'
 const KEY_GAP = spacing.sm
 const HEADER_HEIGHT = 36
 const PANEL_PAD = 10
+/** The quick-add row a set's field adds above the digits. See `NumpadTools`. */
+const QUICK_HEIGHT = 40
+const QUICK_BOX = 'h-[40px]'
 
 /** What the pad occupies above the home indicator's inset. */
 export const NUMPAD_BODY_HEIGHT =
   PANEL_PAD * 2 + HEADER_HEIGHT + KEY_GAP + KEY_HEIGHT * 4 + KEY_GAP * 3
+
+/** The same, for a field that asked for quick-add keys. */
+const bodyHeight = (tools: NumpadTools | undefined) =>
+  NUMPAD_BODY_HEIGHT + (tools?.quick?.length ? QUICK_HEIGHT + KEY_GAP : 0)
 
 /** Digits, then the decimal point, zero, and a rub-out. */
 const ROWS = [
@@ -89,27 +96,34 @@ export type NumpadFieldSpec = {
 /**
  * The keys a run of fields needs and a lone field does not: the set logger's.
  *
- * Asked for, they take a fourth column on the right, the way Strong lays its
- * pad out: put the pad away, step the value up, step it down, and move on.
- * Stepping is how a set is usually changed, one plate at a time, and moving on
- * is how a set is filled in, weight then reps then the next set, without
- * reaching up the screen for each field. Everything is the field's to say, and
- * read fresh on every press like the rest of the spec.
+ * Laid out the way Strong and Hevy lay theirs out. A row of quick-add keys over
+ * the digits, because a set is usually changed a plate or a quarter-minute at a
+ * time and should not have to be retyped for it. Arrows in the header to walk
+ * the fields and a chevron to put the pad away. A fourth column of Clear, a
+ * tick for the set, and Next, which is how a set is filled in, weight then
+ * reps then the next set, without reaching up the screen for each field.
+ *
+ * Everything is the field's to say, and read fresh on every press like the rest
+ * of the spec.
  */
 export type NumpadTools = {
-  /** "2.5" for a plate, "1" for a rep, "15s" for time. The keys read "+2.5", "−2.5". */
-  step?: {
-    label: string
-    up: () => void
-    down: () => void
-    /** Screen-reader names, since "+2.5" alone does not say of what. */
-    upLabel: string
-    downLabel: string
-  }
+  /** "−2.5", "+2.5", "+5", "+0:30". A quick key's value is a finished one. */
+  quick?: readonly NumpadKey[]
   /** "Next", or "Done" on the last field there is. */
-  next?: { label: string; onPress: () => void }
+  next?: NumpadKey
+  /** The field before this one, for the header's up arrow. */
+  previous?: NumpadKey
+  /** Ticks the set the field belongs to: "✓ Set". */
+  complete?: NumpadKey
   /** A shortcut in the header, beside the label: the plate calculator for a barbell. */
-  accessory?: { label: string; onPress: () => void }
+  accessory?: NumpadKey
+}
+
+export type NumpadKey = {
+  label: string
+  onPress: () => void
+  /** For a screen reader, where the label alone ("+5") does not say of what. */
+  accessibilityLabel?: string
 }
 
 type Session = {
@@ -120,6 +134,11 @@ type Session = {
   blur: () => void
   /** Where the field is on screen, so a host can scroll it clear of the pad. */
   measure: (report: (top: number, height: number) => void) => void
+  /**
+   * Whether the next key replaces the value, which the field draws as the
+   * whole value selected. The pad says so after each key and each step.
+   */
+  setFresh: (fresh: boolean) => void
 }
 
 type NumpadValue = {
@@ -177,6 +196,8 @@ export type NumpadLabels = {
   backspace: string
   /** Screen-reader name for the decimal key. */
   decimal: string
+  /** The key that empties a set's field. */
+  clear: string
 }
 
 function useNumpad() {
@@ -219,7 +240,8 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
    */
   const [shown, setShown] = useState<Session | null>(null)
 
-  const height = NUMPAD_BODY_HEIGHT + insets.bottom
+  // Read off the field, since a set's field draws a row more than any other.
+  const height = bodyHeight(session?.field.current.tools) + insets.bottom
   const offset = useSharedValue(0)
 
   useEffect(() => {
@@ -300,6 +322,18 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
   )
 }
 
+/**
+ * Whether the pad is up anywhere. For something that floats at the bottom of
+ * the window over every screen, the toast, which would otherwise land on the
+ * keys a moment after a tick and take the next tap.
+ */
+export function useNumpadOpen(): boolean {
+  const actions = useContext(ActionsContext)
+  return useSyncExternalStore(actions?.subscribe ?? noSubscription, () =>
+    Boolean(actions?.current()),
+  )
+}
+
 export type NumpadFieldOptions = {
   value: string
   onChangeText: (next: string) => void
@@ -372,12 +406,14 @@ export function useNumpadField({
   // One session object for the life of the field, so `close` can tell whether
   // the pad it is being asked to shut is still this field's.
   const session = useRef<Session | null>(null)
+  const [fresh, setFresh] = useState(false)
   if (!session.current) {
     session.current = {
       hostId,
       field,
       blur: () => input.current?.blur(),
       measure: (report) => input.current?.measureInWindow((_x, y, _w, h) => report(y, h)),
+      setFresh,
     }
   }
   session.current.hostId = hostId
@@ -417,8 +453,9 @@ export function useNumpadField({
 
   const handleFocus = useCallback(() => {
     if (live && session.current) openPad?.(session.current)
+    setFresh(replaceFirst)
     onFocus?.()
-  }, [live, openPad, onFocus])
+  }, [live, openPad, onFocus, replaceFirst])
 
   const handleBlur = useCallback(() => {
     if (session.current) closePad?.(session.current)
@@ -450,11 +487,16 @@ export function useNumpadField({
      */
     returnKeyType: live ? undefined : returnKeyType,
     /**
-     * The caret lives at the end, where the pad writes. Controlled only while the
-     * pad is driving: a controlled selection fights the platform's own caret
-     * handling, and is worth it only where the value changes by no other route.
+     * The caret lives at the end, where the pad writes, or the whole value is
+     * selected while the next key would replace it: a weight opened for editing
+     * reads as "type to replace", the way a field with `selectTextOnFocus` does.
+     * Controlled only while the pad is driving: a controlled selection fights
+     * the platform's own caret handling, and is worth it only where the value
+     * changes by no other route.
      */
-    selection: active ? { start: value.length, end: value.length } : undefined,
+    selection: active
+      ? { start: fresh && replaceFirst ? 0 : value.length, end: value.length }
+      : undefined,
   }
 }
 
@@ -539,6 +581,8 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
   const colors = useThemeColors()
   const spec = session.field.current
   const tools = spec.tools
+  const [title, detail] = (spec.label ?? '').split('\n')
+  const heading = { title, detail }
 
   /**
    * True until the first key of an edit, and only interesting for a field that
@@ -556,6 +600,7 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
       const live = session.field.current
       const base = pristine.current && live.replaceFirst ? '' : live.value
       pristine.current = false
+      session.setFresh(false)
 
       if (key === 'back') {
         // On a field that opened with everything selected, the first rub-out
@@ -575,17 +620,22 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
     [session],
   )
 
-  // A stepped value is a finished one: the next digit starts a new number
+  // A quick-added value is a finished one: the next digit starts a new number
   // rather than growing "75" into "758".
-  const step = useCallback(
-    (direction: 1 | -1) => {
-      const tools = session.field.current.tools
-      if (direction === 1) tools?.step?.up()
-      else tools?.step?.down()
+  const quick = useCallback(
+    (key: NumpadKey) => {
+      key.onPress()
       pristine.current = true
+      session.setFresh(session.field.current.replaceFirst)
     },
     [session],
   )
+
+  const clear = useCallback(() => {
+    session.field.current.onChangeText('')
+    pristine.current = false
+    session.setFresh(false)
+  }, [session])
 
   /**
    * The worklet takes two numbers rather than the context, which looks like a
@@ -618,15 +668,24 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
           pad by the time it opens, and carries the way out on the right — where
           the platform's own pill had taught everybody to reach. */}
       <View
-        className="flex-row items-center justify-between"
+        className="flex-row items-center gap-1.5"
         style={{ height: HEADER_HEIGHT, marginBottom: KEY_GAP }}
       >
-        <Text variant="label" numberOfLines={1} className="flex-1">
-          {spec.label ?? ''}
-        </Text>
+        {/* A label with a line break is a name over a detail: the exercise,
+            then the set and unit, so neither is cut off by the keys beside it. */}
+        <View className="min-w-0 flex-1">
+          {heading.detail ? (
+            <Text variant="caption" numberOfLines={1}>
+              {heading.title}
+            </Text>
+          ) : null}
+          <Text variant="label" numberOfLines={1}>
+            {heading.detail ?? heading.title}
+          </Text>
+        </View>
         {tools?.accessory ? (
           <Tappable
-            className="rounded-full bg-surface px-3 py-1.5"
+            className="h-[34px] justify-center rounded-full bg-surface px-3"
             onPress={() => session.field.current.tools?.accessory?.onPress()}
             accessibilityRole="button"
             accessibilityLabel={tools.accessory.label}
@@ -635,9 +694,28 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
               {tools.accessory.label}
             </Text>
           </Tappable>
-        ) : tools ? null : (
-          // With tools the way out is the column's top key, where Strong puts
-          // it, and saying it twice would be one control too many.
+        ) : null}
+        {tools ? (
+          <>
+            <HeaderKey
+              icon="arrow-up"
+              disabled={!tools.previous}
+              onPress={() => session.field.current.tools?.previous?.onPress()}
+              accessibilityLabel={tools.previous?.label ?? ''}
+            />
+            <HeaderKey
+              icon="arrow-down"
+              disabled={!tools.next}
+              onPress={() => session.field.current.tools?.next?.onPress()}
+              accessibilityLabel={tools.next?.label ?? ''}
+            />
+            <HeaderKey
+              icon="chevron-down"
+              onPress={context.dismiss}
+              accessibilityLabel={context.labels.done}
+            />
+          </>
+        ) : (
           <Tappable
             className="px-2 py-1.5"
             onPress={context.dismiss}
@@ -650,6 +728,36 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
           </Tappable>
         )}
       </View>
+
+      {tools?.quick?.length ? (
+        <View className="flex-row" style={{ gap: KEY_GAP, marginBottom: KEY_GAP }}>
+          {tools.quick.map((key, index) => (
+            <Squish
+              // biome-ignore lint/suspicious/noArrayIndexKey: the row's order is the field's
+              key={index}
+              containerClassName={cn('flex-1', QUICK_BOX)}
+              className="flex-1 items-center justify-center bg-pandan-soft"
+              slabClassName="bg-pandan-soft-line"
+              depth={slab.sm}
+              radius={radius.sm}
+              onPress={() => {
+                const live = session.field.current.tools?.quick?.[index]
+                if (live) quick(live)
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={key.accessibilityLabel ?? key.label}
+            >
+              <Text
+                className="font-display text-[16px] leading-[21px] text-pandan-ink"
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {key.label}
+              </Text>
+            </Squish>
+          ))}
+        </View>
+      ) : null}
 
       <View className="flex-row" style={{ gap: KEY_GAP }}>
         <View className="flex-[3]" style={{ gap: KEY_GAP }}>
@@ -699,43 +807,47 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
           ))}
         </View>
         {tools ? (
-          <View className="flex-1" style={{ gap: KEY_GAP }}>
-            <ToolKey onPress={context.dismiss} accessibilityLabel={context.labels.done}>
-              <Icon set="ui" name="chevron-down" size={20} tintColor={colors.muted} />
+          <View className="flex-[1.3]" style={{ gap: KEY_GAP }}>
+            <ToolKey onPress={clear} accessibilityLabel={context.labels.clear}>
+              <Text className="font-display text-[16px] leading-[21px] text-muted">
+                {context.labels.clear}
+              </Text>
             </ToolKey>
-            {tools.step ? (
-              <>
-                <ToolKey onPress={() => step(1)} accessibilityLabel={tools.step.upLabel}>
-                  <Text className={TOOL_TEXT}>{`+${tools.step.label}`}</Text>
-                </ToolKey>
-                <ToolKey onPress={() => step(-1)} accessibilityLabel={tools.step.downLabel}>
-                  <Text className={TOOL_TEXT}>{`−${tools.step.label}`}</Text>
-                </ToolKey>
-              </>
-            ) : (
-              <>
-                <View className={KEY_BOX} />
-                <View className={KEY_BOX} />
-              </>
-            )}
-            {tools.next ? (
-              <Squish
-                containerClassName={KEY_BOX}
-                className="flex-1 items-center justify-center bg-pandan"
-                slabClassName="bg-pandan-slab"
-                depth={slab.sm}
-                radius={radius.sm}
-                onPress={() => session.field.current.tools?.next?.onPress()}
-                accessibilityRole="button"
-                accessibilityLabel={tools.next.label}
+            {tools.complete ? (
+              <ToolKey
+                tone="pandan"
+                onPress={() => session.field.current.tools?.complete?.onPress()}
+                accessibilityLabel={tools.complete.accessibilityLabel ?? tools.complete.label}
               >
-                <Text className="font-display text-[17px] leading-[22px] text-on-pandan">
-                  {tools.next.label}
-                </Text>
-              </Squish>
+                <View className="flex-row items-center gap-1">
+                  <Icon set="ui" name="check" size={16} tintColor={colors.pandanInk} />
+                  <Text className="font-display text-[16px] leading-[21px] text-pandan-ink">
+                    {tools.complete.label}
+                  </Text>
+                </View>
+              </ToolKey>
             ) : (
               <View className={KEY_BOX} />
             )}
+            {/* Two keys tall, as Strong draws its own: it is the key pressed most. */}
+            <Squish
+              containerClassName="flex-1"
+              className="flex-1 items-center justify-center bg-pandan"
+              slabClassName="bg-pandan-slab"
+              depth={slab.sm}
+              radius={radius.sm}
+              onPress={() => {
+                const live = session.field.current.tools?.next
+                if (live) live.onPress()
+                else context.dismiss()
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={tools.next?.label ?? context.labels.done}
+            >
+              <Text className="font-display text-[18px] leading-[23px] text-on-pandan">
+                {tools.next?.label ?? context.labels.done}
+              </Text>
+            </Squish>
           </View>
         ) : null}
       </View>
@@ -743,14 +855,50 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
   )
 }
 
-const TOOL_TEXT = 'font-display text-[18px] leading-[24px] text-pandan-ink'
+/** A small key in the header: the field arrows and the keyboard-hide. */
+function HeaderKey({
+  icon,
+  disabled = false,
+  onPress,
+  accessibilityLabel,
+}: {
+  /** The field arrows, or the chevron that puts the pad away. */
+  icon: 'arrow-up' | 'arrow-down' | 'chevron-down'
+  disabled?: boolean
+  onPress: () => void
+  accessibilityLabel: string
+}) {
+  const colors = useThemeColors()
+  return (
+    <Tappable
+      className={cn(
+        'h-[34px] w-[38px] items-center justify-center rounded-sm bg-surface',
+        disabled && 'opacity-40',
+      )}
+      disabled={disabled}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      accessibilityLabel={accessibilityLabel}
+    >
+      <Icon
+        set="ui"
+        name={icon}
+        size={18}
+        tintColor={icon === 'chevron-down' ? colors.pandanInk : colors.muted}
+      />
+    </Tappable>
+  )
+}
 
 /** A key in the tools column: the same slab as a digit, tinted to read as a tool. */
 function ToolKey({
+  tone = 'neutral',
   onPress,
   accessibilityLabel,
   children,
 }: {
+  tone?: 'neutral' | 'pandan'
   onPress: () => void
   accessibilityLabel: string
   children: ReactNode
@@ -758,8 +906,11 @@ function ToolKey({
   return (
     <Squish
       containerClassName={KEY_BOX}
-      className="flex-1 items-center justify-center bg-pandan-soft"
-      slabClassName="bg-pandan-soft-line"
+      className={cn(
+        'flex-1 items-center justify-center',
+        tone === 'pandan' ? 'bg-pandan-soft' : 'bg-surface',
+      )}
+      slabClassName={tone === 'pandan' ? 'bg-pandan-soft-line' : 'bg-line'}
       depth={slab.sm}
       radius={radius.sm}
       onPress={onPress}

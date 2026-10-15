@@ -58,6 +58,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   const restS = exercise.restS ?? defaultRestS
   const key = exercise.key
   const open = () => handlers.open(exercise.exerciseId)
+  const reorder = () => handlers.reorder(key)
   // Records only while training. Editing compares a saved workout with bests
   // that already include it, and every later one, so its trophies are the
   // saved page's to show.
@@ -78,12 +79,20 @@ export const ExerciseCard = memo(function ExerciseCard({
       ) : null}
 
       <View className="flex-row items-center gap-3">
-        <Tappable onPress={open} accessibilityRole="button" accessibilityLabel={exercise.name}>
+        {/* A long press on the exercise picks it up into the reorder sheet,
+            the way a long press lifts a row in Hevy. */}
+        <Tappable
+          onPress={open}
+          onLongPress={reorder}
+          accessibilityRole="button"
+          accessibilityLabel={exercise.name}
+        >
           <ExerciseArt exerciseId={exercise.exerciseId} category={category} size={56} />
         </Tappable>
         <Tappable
           className="min-w-0 flex-1 gap-1.5"
           onPress={open}
+          onLongPress={reorder}
           accessibilityRole="button"
           accessibilityLabel={exercise.name}
         >

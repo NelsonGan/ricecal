@@ -96,6 +96,48 @@ public enum RiceCalWidgetStore {
     return json
   }
 
+  // MARK: - Buttons pressed on the workout's Live Activity
+
+  private static let workoutKey = "workoutActions"
+
+  /// Posted in the app's process once a Live Activity button has queued an action.
+  public static let workoutActionQueued = Notification.Name("RiceCalWorkoutActionQueued")
+
+  /**
+   Queue a button pressed on the workout's Live Activity for the app to apply.
+
+   The workout lives in the app's own storage, which the intent cannot write,
+   so it leaves the action here and the app's JS applies it: at once when it
+   is running, and on its next launch when it is not. Same trade as the water
+   queue, and the same reason it need not be atomic.
+   */
+  public static func queueWorkoutAction(_ action: [String: Any]) {
+    guard let defaults else { return }
+    var queue = decodeQueue(defaults.string(forKey: workoutKey))
+    queue.append(action)
+    if let encoded = try? JSONSerialization.data(withJSONObject: queue),
+      let json = String(data: encoded, encoding: .utf8)
+    {
+      defaults.set(json, forKey: workoutKey)
+    }
+    NotificationCenter.default.post(name: workoutActionQueued, object: nil)
+  }
+
+  /// Read the workout queue and empty it. The app's half of `queueWorkoutAction`.
+  public static func takeWorkoutActions() -> String {
+    guard let defaults else { return "[]" }
+    let json = defaults.string(forKey: workoutKey) ?? "[]"
+    defaults.removeObject(forKey: workoutKey)
+    return json
+  }
+
+  private static func decodeQueue(_ json: String?) -> [[String: Any]] {
+    guard let json, let data = json.data(using: .utf8),
+      let parsed = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+    else { return [] }
+    return parsed
+  }
+
   private static func pendingActions() -> [[String: Any]] {
     guard let json = defaults?.string(forKey: pendingKey),
       let data = json.data(using: .utf8),

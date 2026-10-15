@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Platform, TextInput, View } from 'react-native'
 
 import type { LastSet } from '@/data'
+import { SwipeRow } from '@/features/shared/SwipeRow'
 import { fromKg, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn, Icon, type NumpadTools, Tappable, Text, useNumpadField } from '@/ui'
@@ -22,7 +23,7 @@ import {
   trim,
   weightField,
 } from './format'
-import { fieldsFor, type LiveSet, type SetPatch } from './model'
+import { fieldsFor, type LiveSet, type SetPatch, setHints } from './model'
 
 /**
  * The sets of one exercise: the table the logger is mostly made of.
@@ -31,9 +32,10 @@ import { fieldsFor, type LiveSet, type SetPatch } from './model'
  *    W    40 × 10      40     10      ✓
  *    1    60 × 8       62.5   8       ✓ 🏆
  *
- * A row turns green when it is ticked. An empty field shows last time's figure
- * as its placeholder, and ticking an empty row takes that figure: the commonest
- * set in a gym is "the same as last time", and it should cost one tap.
+ * A row turns green when it is ticked. An empty field shows the figure above
+ * it in its column, or last time's (`setHints`), and ticking an empty row takes
+ * those: the commonest set in a gym is "the same again", and it should cost
+ * one tap.
  */
 
 /**
@@ -43,10 +45,14 @@ import { fieldsFor, type LiveSet, type SetPatch } from './model'
  */
 export type CardHandlers = {
   changeSet: (key: string, setId: string, patch: SetPatch) => void
-  toggleSet: (key: string, set: LiveSet, fill: SetPatch | undefined) => void
+  /** False when the set could not be ticked: it has no numbers to tick. */
+  toggleSet: (key: string, set: LiveSet, fill: SetPatch | undefined) => boolean
   setMenu: (key: string, set: LiveSet, number: number) => void
   plates: (key: string, kg: number | null) => void
   addSet: (key: string) => void
+  removeSet: (key: string, setId: string) => void
+  /** Opens the reorder sheet. Keyed like the rest, though the order is the workout's. */
+  reorder: (key: string) => void
   notes: (key: string, notes: string) => void
   menu: (key: string) => void
   rest: (key: string) => void
@@ -120,6 +126,7 @@ export function SetTable({
             : distanceUnit
 
   const badges = setBadges(sets, t)
+  const hints = setHints(sets, previous)
 
   return (
     <View className="gap-1">
@@ -145,6 +152,7 @@ export function SetTable({
 
       {sets.map((set, index) => {
         const badge = badges[index]
+        const hint = hints[index]
         return (
           <SetRow
             key={set.id}
@@ -156,6 +164,10 @@ export function SetTable({
             badgeNumber={badge.number}
             tracking={tracking}
             last={previous?.[index]}
+            hintWeight={hint.weightKg}
+            hintReps={hint.reps}
+            hintDuration={hint.durationS}
+            hintDistance={hint.distanceM}
             showPrevious={previous !== null}
             unit={unit}
             distanceUnit={distanceUnit}
@@ -229,6 +241,10 @@ const SetRow = memo(function SetRow({
   badgeNumber,
   tracking,
   last,
+  hintWeight,
+  hintReps,
+  hintDuration,
+  hintDistance,
   showPrevious,
   unit,
   distanceUnit,
@@ -245,6 +261,11 @@ const SetRow = memo(function SetRow({
   badgeNumber: number
   tracking: Tracking
   last: LastSet | undefined
+  /** The figures an empty field offers. Plain values, so the row stays memoised. */
+  hintWeight: number | null
+  hintReps: number | null
+  hintDuration: number | null
+  hintDistance: number | null
   showPrevious: boolean
   unit: WeightUnit
   distanceUnit: DistanceUnit
@@ -254,7 +275,15 @@ const SetRow = memo(function SetRow({
   handlers: CardHandlers
 }) {
   const onChange = (patch: SetPatch) => handlers.changeSet(exerciseKey, set.id, patch)
-  const onToggle = () => handlers.toggleSet(exerciseKey, set, last ? fillFrom(last) : undefined)
+  const onToggle = () =>
+    handlers.toggleSet(exerciseKey, set, {
+      weightKg: hintWeight,
+      reps: hintReps,
+      durationS: hintDuration,
+      distanceM: hintDistance,
+    })
+  // The pad's tick: a set already ticked is left ticked, and the pad moves on.
+  const onComplete = checkable ? () => set.done || onToggle() : undefined
   const onMenu = () => handlers.setMenu(exerciseKey, set, badgeNumber)
   const onPlates = plates ? (kg: number | null) => handlers.plates(exerciseKey, kg) : undefined
   const { t } = useTranslation(['workouts', 'common'])
@@ -265,208 +294,243 @@ const SetRow = memo(function SetRow({
   const previousText = last ? describeSet(last, tracking, unit, distanceUnit) : ''
 
   return (
-    <View
-      // Kept as a view of its own. An untouched row draws nothing, so it is
-      // flattened away, and on Android the view brought back when a tick gave
-      // it a background came back without its rounded corners.
-      collapsable={false}
-      className={cn(
-        'min-h-[46px] flex-row items-center rounded-md px-1',
-        ticked ? 'bg-pandan-soft' : undefined,
-      )}
+    // Swiped left, a set shows Delete, as every gym logger's sets do.
+    <SwipeRow
+      square
+      actions={[
+        {
+          label: t('common:action.delete'),
+          a11yLabel: t('workouts:logger.removeSet'),
+          icon: 'delete',
+          tone: 'hibiscus',
+          exits: true,
+          onPress: () => handlers.removeSet(exerciseKey, set.id),
+        },
+      ]}
     >
-      <Tappable
-        className={cn(COL_SET, 'h-[40px] items-center justify-center rounded-sm')}
-        onPress={onMenu}
-        accessibilityRole="button"
-        accessibilityLabel={`${t('workouts:logger.set')} ${badge}`}
+      <View
+        // Kept as a view of its own. An untouched row draws nothing, so it is
+        // flattened away, and on Android the view brought back when a tick gave
+        // it a background came back without its rounded corners.
+        collapsable={false}
+        className={cn(
+          'min-h-[46px] flex-row items-center rounded-md px-1',
+          ticked ? 'bg-pandan-soft' : undefined,
+        )}
       >
-        <Text className={cn('font-display text-[17px]', badgeTone)}>{badge}</Text>
-      </Tappable>
-
-      {/* Tapping last time's figure copies it in, for the set that is the
-          same as last week's. */}
-      <Tappable
-        className="h-[40px] flex-1 justify-center pl-2"
-        disabled={!last || ticked}
-        onPress={() => {
-          if (!last) return
-          onChange(fillFrom(last))
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={previousText || t('workouts:logger.previous')}
-      >
-        {showPrevious ? (
-          <Text variant="meta" numberOfLines={1} className="text-faint">
-            {previousText || t('workouts:logger.noPrevious')}
-          </Text>
-        ) : null}
-      </Tappable>
-
-      {fields.map((field) => {
-        const key = fieldKey(exerciseKey, set.id, field)
-        // "Bench Press · Set 2 · kg": the field is often under the pad.
-        const header = (unitLabel: string) =>
-          `${exerciseName} · ${t('workouts:logger.set')} ${badge} · ${unitLabel}`
-        return (
-          <View key={field} className={cn(fieldWidth(fields.length), 'px-1')}>
-            {field === 'weight' ? (
-              <NumberCell
-                fieldKey={key}
-                value={weightField(set.weightKg, unit)}
-                placeholder={last ? weightField(last.weightKg, unit) : ''}
-                decimal
-                done={ticked}
-                label={header(t(UNIT_KEY[unit]))}
-                step={{
-                  label: unit === 'lb' ? '5' : '2.5',
-                  by: (direction) => {
-                    const base = fromKg(set.weightKg ?? last?.weightKg ?? 0, unit)
-                    const next = Math.max(0, base + direction * (unit === 'lb' ? 5 : 2.5))
-                    onChange({ weightKg: parseWeight(trim(next, 2), unit) })
-                  },
-                }}
-                plates={
-                  onPlates
-                    ? { label: t('workouts:logger.plates'), open: () => onPlates(set.weightKg) }
-                    : undefined
-                }
-                onCommit={(text) => onChange({ weightKg: parseWeight(text, unit) })}
-              />
-            ) : field === 'reps' ? (
-              <NumberCell
-                fieldKey={key}
-                value={set.reps === null ? '' : String(set.reps)}
-                placeholder={last?.reps != null ? String(last.reps) : ''}
-                decimal={false}
-                done={ticked}
-                label={header(t('workouts:logger.reps'))}
-                step={{
-                  label: '1',
-                  by: (direction) =>
-                    onChange({ reps: Math.max(0, (set.reps ?? last?.reps ?? 0) + direction) }),
-                }}
-                onCommit={(text) => onChange({ reps: parseWhole(text) })}
-              />
-            ) : field === 'duration' ? (
-              <DurationCell
-                fieldKey={key}
-                seconds={set.durationS}
-                placeholder={last?.durationS != null ? shortClock(last.durationS) : '0:00'}
-                done={ticked}
-                label={header(t('workouts:logger.time'))}
-                step={{
-                  label: t('workouts:logger.timeStep'),
-                  by: (direction) =>
-                    onChange({
-                      durationS: Math.max(
-                        0,
-                        (set.durationS ?? last?.durationS ?? 0) + direction * 15,
-                      ),
-                    }),
-                }}
-                onCommit={(seconds) => onChange({ durationS: seconds })}
-              />
-            ) : tracking === 'weight_distance' ? (
-              // A carry is tens of metres, and in kilometres the smallest step
-              // the field can hold (0.01) is already ten of them.
-              <NumberCell
-                fieldKey={key}
-                value={set.distanceM === null ? '' : trim(set.distanceM, 0)}
-                placeholder={last?.distanceM ? trim(last.distanceM, 0) : ''}
-                decimal={false}
-                done={ticked}
-                label={header('m')}
-                step={{
-                  label: '5',
-                  by: (direction) =>
-                    onChange({
-                      distanceM: Math.max(
-                        0,
-                        (set.distanceM ?? last?.distanceM ?? 0) + direction * 5,
-                      ),
-                    }),
-                }}
-                onCommit={(text) => onChange({ distanceM: parseWhole(text) })}
-              />
-            ) : (
-              <NumberCell
-                fieldKey={key}
-                value={distanceField(set.distanceM, distanceUnit)}
-                placeholder={last ? distanceField(last.distanceM, distanceUnit) : ''}
-                decimal
-                done={ticked}
-                label={header(distanceUnit)}
-                step={{
-                  label: '0.1',
-                  by: (direction) => {
-                    const base = Number(
-                      distanceField(set.distanceM ?? last?.distanceM ?? 0, distanceUnit),
-                    )
-                    const next = Math.max(0, base + direction * 0.1)
-                    onChange({ distanceM: parseDistance(trim(next, 2), distanceUnit) })
-                  },
-                }}
-                onCommit={(text) => onChange({ distanceM: parseDistance(text, distanceUnit) })}
-              />
-            )}
-          </View>
-        )
-      })}
-
-      {checkable ? (
         <Tappable
-          className={cn(COL_CHECK, 'h-[40px] items-center justify-center')}
-          onPress={onToggle}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: set.done }}
+          className={cn(COL_SET, 'h-[40px] items-center justify-center rounded-sm')}
+          onPress={onMenu}
+          accessibilityRole="button"
           accessibilityLabel={`${t('workouts:logger.set')} ${badge}`}
         >
-          {set.done ? (
-            <View className="h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-pandan">
-              <Icon set="ui" name="check" size={20} tintColor={colors.onPandan} />
-            </View>
-          ) : (
-            <View className="h-[30px] w-[30px] rounded-[9px] border-2 border-line-strong bg-surface" />
-          )}
+          <Text className={cn('font-display text-[17px]', badgeTone)}>{badge}</Text>
         </Tappable>
-      ) : null}
 
-      {record ? (
-        <View className="absolute right-[44px] top-[2px]">
-          <Icon set="system" name="trophy" size={16} accessibilityLabel={t('workouts:logger.pr')} />
-        </View>
-      ) : null}
-    </View>
+        {/* Tapping last time's figure copies it in, for the set that is the
+          same as last week's. */}
+        <Tappable
+          className="h-[40px] flex-1 justify-center pl-2"
+          disabled={!last || ticked}
+          onPress={() => {
+            if (!last) return
+            onChange(fillFrom(last))
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={previousText || t('workouts:logger.previous')}
+        >
+          {showPrevious ? (
+            <Text variant="meta" numberOfLines={1} className="text-faint">
+              {previousText || t('workouts:logger.noPrevious')}
+            </Text>
+          ) : null}
+        </Tappable>
+
+        {fields.map((field) => {
+          const key = fieldKey(exerciseKey, set.id, field)
+          // "Bench Press" over "Set 2 · kg": the field is often under the pad.
+          const header = (unitLabel: string) =>
+            `${exerciseName}\n${t('workouts:logger.set')} ${badge} · ${unitLabel}`
+          return (
+            <View key={field} className={cn(fieldWidth(fields.length), 'px-1')}>
+              {field === 'weight' ? (
+                <NumberCell
+                  fieldKey={key}
+                  value={weightField(set.weightKg, unit)}
+                  placeholder={weightField(hintWeight, unit)}
+                  decimal
+                  done={ticked}
+                  label={header(t(UNIT_KEY[unit]))}
+                  quick={{
+                    keys: unit === 'lb' ? QUICK_LB : QUICK_KG,
+                    add: (by) => {
+                      const base = fromKg(set.weightKg ?? hintWeight ?? 0, unit)
+                      onChange({ weightKg: parseWeight(trim(Math.max(0, base + by), 2), unit) })
+                    },
+                  }}
+                  complete={onComplete}
+                  plates={
+                    onPlates
+                      ? { label: t('workouts:logger.plates'), open: () => onPlates(set.weightKg) }
+                      : undefined
+                  }
+                  onCommit={(text) => onChange({ weightKg: parseWeight(text, unit) })}
+                />
+              ) : field === 'reps' ? (
+                <NumberCell
+                  fieldKey={key}
+                  value={set.reps === null ? '' : String(set.reps)}
+                  placeholder={hintReps === null ? '' : String(hintReps)}
+                  decimal={false}
+                  done={ticked}
+                  label={header(t('workouts:logger.reps'))}
+                  quick={{
+                    keys: QUICK_REPS,
+                    add: (by) => onChange({ reps: Math.max(0, (set.reps ?? hintReps ?? 0) + by) }),
+                  }}
+                  complete={onComplete}
+                  onCommit={(text) => onChange({ reps: parseWhole(text) })}
+                />
+              ) : field === 'duration' ? (
+                <DurationCell
+                  fieldKey={key}
+                  seconds={set.durationS}
+                  placeholder={hintDuration === null ? '0:00' : shortClock(hintDuration)}
+                  done={ticked}
+                  label={header(t('workouts:logger.time'))}
+                  quick={{
+                    keys: QUICK_TIME,
+                    add: (by) =>
+                      onChange({
+                        durationS: Math.max(0, (set.durationS ?? hintDuration ?? 0) + by),
+                      }),
+                  }}
+                  complete={onComplete}
+                  onCommit={(seconds) => onChange({ durationS: seconds })}
+                />
+              ) : tracking === 'weight_distance' ? (
+                // A carry is tens of metres, and in kilometres the smallest step
+                // the field can hold (0.01) is already ten of them.
+                <NumberCell
+                  fieldKey={key}
+                  value={set.distanceM === null ? '' : trim(set.distanceM, 0)}
+                  placeholder={hintDistance ? trim(hintDistance, 0) : ''}
+                  decimal={false}
+                  done={ticked}
+                  label={header('m')}
+                  quick={{
+                    keys: QUICK_METRES,
+                    add: (by) =>
+                      onChange({
+                        distanceM: Math.max(0, (set.distanceM ?? hintDistance ?? 0) + by),
+                      }),
+                  }}
+                  complete={onComplete}
+                  onCommit={(text) => onChange({ distanceM: parseWhole(text) })}
+                />
+              ) : (
+                <NumberCell
+                  fieldKey={key}
+                  value={distanceField(set.distanceM, distanceUnit)}
+                  placeholder={distanceField(hintDistance, distanceUnit)}
+                  decimal
+                  done={ticked}
+                  label={header(distanceUnit)}
+                  quick={{
+                    keys: QUICK_DISTANCE,
+                    add: (by) => {
+                      const base = Number(
+                        distanceField(set.distanceM ?? hintDistance ?? 0, distanceUnit),
+                      )
+                      onChange({
+                        distanceM: parseDistance(trim(Math.max(0, base + by), 2), distanceUnit),
+                      })
+                    },
+                  }}
+                  complete={onComplete}
+                  onCommit={(text) => onChange({ distanceM: parseDistance(text, distanceUnit) })}
+                />
+              )}
+            </View>
+          )
+        })}
+
+        {checkable ? (
+          <Tappable
+            className={cn(COL_CHECK, 'h-[40px] items-center justify-center')}
+            onPress={onToggle}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: set.done }}
+            accessibilityLabel={`${t('workouts:logger.set')} ${badge}`}
+          >
+            {set.done ? (
+              <View className="h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-pandan">
+                <Icon set="ui" name="check" size={20} tintColor={colors.onPandan} />
+              </View>
+            ) : (
+              <View className="h-[30px] w-[30px] rounded-[9px] border-2 border-line-strong bg-surface" />
+            )}
+          </Tappable>
+        ) : null}
+
+        {record ? (
+          <View className="absolute right-[44px] top-[2px]">
+            <Icon
+              set="system"
+              name="trophy"
+              size={16}
+              accessibilityLabel={t('workouts:logger.pr')}
+            />
+          </View>
+        ) : null}
+      </View>
+    </SwipeRow>
   )
 })
 
-/** How a field steps: the keys read `+label` and `−label`. */
-type CellStep = { label: string; by: (direction: 1 | -1) => void }
+/**
+ * What a field's quick-add keys add, in the field's own unit: a plate's worth,
+ * a rep, a quarter-minute. The first takes one step back, so a set that went
+ * one plate too far is a tap rather than a retype.
+ */
+type QuickKey = { label: string; by: number }
+const quickKeys = (steps: readonly number[], label: (by: number) => string): QuickKey[] =>
+  steps.map((by) => ({ by, label: `${by < 0 ? '−' : '+'}${label(Math.abs(by))}` }))
+const QUICK_KG = quickKeys([-2.5, 2.5, 5, 10, 20], String)
+const QUICK_LB = quickKeys([-5, 5, 10, 25, 45], String)
+const QUICK_REPS = quickKeys([-1, 1, 2, 5, 10], String)
+const QUICK_TIME = quickKeys([-15, 15, 30, 60, 300], shortClock)
+const QUICK_METRES = quickKeys([-5, 5, 10, 25, 50], String)
+const QUICK_DISTANCE = quickKeys([-0.1, 0.1, 0.5, 1, 5], String)
+
+type CellQuick = { keys: readonly QuickKey[]; add: (by: number) => void }
 type CellPlates = { label: string; open: () => void }
 
 /**
- * The pad's tools column for a set field: step the value, open the plate
- * calculator on a barbell's weight, and Next through the workout in the order
- * `fieldOrder.tsx` keeps. `input` is read when a key is pressed, because the
- * field's ref belongs to `useNumpadField`, which is called after this.
+ * The pad's tools for a set field: quick-add keys, the plate calculator on a
+ * barbell's weight, the arrows and Next through the workout in the order
+ * `fieldOrder.tsx` keeps, and a tick that completes the set and moves to the
+ * next one. `input` is read when a key is pressed, because the field's ref
+ * belongs to `useNumpadField`, which is called after this.
  */
 function useCellTools(
   fieldKey: string,
-  step: CellStep,
+  quick: CellQuick,
   plates: CellPlates | undefined,
+  complete: (() => boolean) | undefined,
   input: () => TextInput | null,
 ): NumpadTools {
   const { t } = useTranslation(['workouts', 'common'])
   const order = useFieldOrder(fieldKey, () => input()?.focus())
   return {
-    step: {
-      label: step.label,
-      up: () => step.by(1),
-      down: () => step.by(-1),
-      upLabel: `${t('common:a11y.increase')} ${step.label}`,
-      downLabel: `${t('common:a11y.decrease')} ${step.label}`,
-    },
+    quick: quick.keys.map((key) => ({
+      label: key.label,
+      onPress: () => quick.add(key.by),
+      accessibilityLabel: `${t(key.by < 0 ? 'common:a11y.decrease' : 'common:a11y.increase')} ${key.label.slice(1)}`,
+    })),
+    previous: order?.hasPrevious(fieldKey)
+      ? { label: t('workouts:logger.previousField'), onPress: () => order.previous(fieldKey) }
+      : undefined,
     next: order
       ? {
           // Read when the pad draws, not when this row last rendered: a set
@@ -476,6 +540,16 @@ function useCellTools(
           },
           onPress: () => {
             if (!order.next(fieldKey)) input()?.blur()
+          },
+        }
+      : undefined,
+    complete: complete
+      ? {
+          label: t('workouts:logger.set'),
+          accessibilityLabel: t('workouts:logger.completeSet'),
+          onPress: () => {
+            if (!complete()) return
+            if (!order?.nextSet(fieldKey)) input()?.blur()
           },
         }
       : undefined,
@@ -514,8 +588,9 @@ function NumberCell({
   decimal,
   done,
   label,
-  step,
+  quick,
   plates,
+  complete,
   onCommit,
 }: {
   fieldKey: string
@@ -524,13 +599,14 @@ function NumberCell({
   decimal: boolean
   done: boolean
   label: string
-  step: CellStep
+  quick: CellQuick
   plates?: CellPlates
+  complete?: () => boolean
   onCommit: (text: string) => void
 }) {
   const colors = useThemeColors()
   const input = useRef<() => TextInput | null>(() => null)
-  const tools = useCellTools(fieldKey, step, plates, () => input.current())
+  const tools = useCellTools(fieldKey, quick, plates, complete, () => input.current())
   const [typed, setTyped] = useState<string | null>(null)
   const change = (next: string) => {
     setTyped(next)
@@ -595,7 +671,8 @@ function DurationCell({
   placeholder,
   done,
   label,
-  step,
+  quick,
+  complete,
   onCommit,
 }: {
   fieldKey: string
@@ -603,12 +680,13 @@ function DurationCell({
   placeholder: string
   done: boolean
   label: string
-  step: CellStep
+  quick: CellQuick
+  complete?: () => boolean
   onCommit: (seconds: number | null) => void
 }) {
   const colors = useThemeColors()
   const input = useRef<() => TextInput | null>(() => null)
-  const tools = useCellTools(fieldKey, step, undefined, () => input.current())
+  const tools = useCellTools(fieldKey, quick, undefined, complete, () => input.current())
   const [digits, setDigits] = useState<string | null>(null)
   const change = (next: string) => {
     const clean = next.replace(/\D/g, '').slice(0, 6)
@@ -653,9 +731,17 @@ function DurationCell({
         numpad.selection ? 'border-pandan bg-surface' : 'border-transparent',
       )}
       {...numpad}
-      // The pad writes digits and the field shows a clock, so the caret is put
-      // at the end of what is shown rather than of what was typed.
-      selection={numpad.selection ? { start: shown.length, end: shown.length } : undefined}
+      // The pad writes digits and the field shows a clock, so the selection is
+      // measured on what is shown rather than on what was typed: all of it while
+      // the next key replaces it, otherwise the caret at the end.
+      selection={
+        numpad.selection
+          ? {
+              start: numpad.selection.start === 0 && numpad.selection.end > 0 ? 0 : shown.length,
+              end: shown.length,
+            }
+          : undefined
+      }
     />
   )
 }

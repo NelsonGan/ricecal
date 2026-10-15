@@ -340,6 +340,12 @@ copies those files into `ios/RiceCalWidgets/` at prebuild time, so
 Activity keeps the old code with no warning. `cp widgets/ios/*.swift
 ios/RiceCalWidgets/` before an incremental build is enough.
 
+**`pod install` from an agent's shell needs `LANG=en_US.UTF-8`.** Without a
+UTF-8 locale CocoaPods dies while *reporting* whatever went wrong
+(`Unicode Normalization not appropriate for ASCII-8BIT`), so a prebuild looks
+like it failed for an encoding reason. With the locale set the same install
+passes. `expo prebuild` runs it, so set it there too.
+
 A simulator build is already on disk, so verifying a UI change does not need
 `pnpm ios` (a prebuild plus a full compile):
 

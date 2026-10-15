@@ -39,7 +39,6 @@ import {
   Radio,
   Screen,
   Skeleton,
-  Text,
   TextField,
   useToast,
 } from '@/ui'
@@ -195,7 +194,6 @@ function Form({
       </Card>
 
       <Card title={t('workouts:custom.muscles')} contentClassName="gap-3">
-        <Text variant="meta">{t('workouts:custom.musclesHint')}</Text>
         <View className="flex-row flex-wrap gap-2">
           {MUSCLES.map((value) => {
             const order = muscles.indexOf(value)

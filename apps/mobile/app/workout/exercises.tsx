@@ -281,7 +281,6 @@ export default function ExercisesScreen() {
         ListEmptyComponent={
           <EmptyState
             title={t('workouts:library.noneTitle')}
-            description={t('workouts:library.noneBody')}
             icon={{ set: 'body', name: 'gym-bench' }}
             action={
               <Button

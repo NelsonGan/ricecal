@@ -2,6 +2,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 
 const {
+  IOSConfig,
   withDangerousMod,
   withEntitlementsPlist,
   withInfoPlist,
@@ -89,7 +90,48 @@ module.exports = function withWidgets(config) {
   next = withAppGroupEntitlement(next, appGroup)
   next = withAppInfoPlist(next, appGroup)
   next = withWidgetTarget(next, { bundleId, appGroup })
+  next = withAppIntents(next)
   return next
+}
+
+/**
+ * Intents the APP has to contain as well as the extension.
+ *
+ * A Live Activity's button runs a `LiveActivityIntent`, and iOS runs that in
+ * the app's process, finding it through the App Intents metadata Xcode extracts
+ * from the app target's own sources. A pod's sources are not extracted, so the
+ * file has to be one of the app target's: copied in beside `AppDelegate`, and
+ * added to its Sources phase once.
+ */
+const APP_INTENTS = ['WorkoutActionIntent.swift']
+
+function withAppIntents(config) {
+  config = withDangerousMod(config, [
+    'ios',
+    async (cfg) => {
+      const projectRoot = cfg.modRequest.projectRoot
+      const appDir = path.join(cfg.modRequest.platformProjectRoot, cfg.modRequest.projectName)
+      for (const name of APP_INTENTS) {
+        fs.copyFileSync(path.join(projectRoot, 'widgets/ios', name), path.join(appDir, name))
+      }
+      return cfg
+    },
+  ])
+  return withXcodeProject(config, (cfg) => {
+    const project = cfg.modResults
+    const app = cfg.modRequest.projectName
+    for (const name of APP_INTENTS) {
+      const filepath = `${app}/${name}`
+      if (project.hasFile(filepath)) continue
+      IOSConfig.XcodeUtils.addBuildSourceFileToGroup({
+        filepath,
+        groupName: app,
+        project,
+        targetUuid: project.getFirstTarget().uuid,
+      })
+    }
+    return cfg
+  })
 }
 
 /**

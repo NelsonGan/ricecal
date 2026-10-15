@@ -15,14 +15,7 @@ import {
   useNow,
   WorkoutEffects,
 } from '@/features/workouts'
-import {
-  NAV_BAR_HEIGHT,
-  NavAction,
-  NavBar,
-  NavInsetProvider,
-  NavItem,
-  useNavBarFootprint,
-} from '@/ui'
+import { NAV_BAR_HEIGHT, NavBar, NavInsetProvider, NavItem, useNavBarFootprint } from '@/ui'
 
 /**
  * Today is the first tab, and saying so is not decoration.
@@ -39,10 +32,9 @@ import {
 export const unstable_settings = { anchor: 'today' }
 
 /**
- * Five tabs, and the add action at the right end of the bar. Workouts sits
- * beside Today because the two are the daily pair: what went in, and what was
- * done. It used to float
- * over Today alone; in the bar it is one tap away on every tab. See `NavBar`.
+ * Five tabs across the full width of a floating bar. Workouts sits beside Today
+ * because the two are the daily pair: what went in, and what was done. The add
+ * button floats over Today alone, where logging happens. See `NavBar`.
  *
  * Still the headless `expo-router/ui` tabs rather than a styled navigator,
  * because `NavBar` / `NavItem` are the design system's and a native tab bar
@@ -72,7 +64,6 @@ export default function TabsLayout() {
 
 function SignedInTabs() {
   const { t } = useTranslation(['common', 'social'])
-  const router = useRouter()
   const navFootprint = useNavBarFootprint()
 
   // Here rather than in the root layout: they need a session, and this is the
@@ -105,7 +96,7 @@ function SignedInTabs() {
       <Tabs>
         <TabSlot />
         <TabList asChild>
-          <NavBar action={<NavAction onPress={() => router.push('/log')} label={t('nav.log')} />}>
+          <NavBar>
             <TabTrigger name="today" href="/today" asChild>
               <NavItem label={t('nav.today')} icon={{ set: 'ui', name: 'home' }} />
             </TabTrigger>
