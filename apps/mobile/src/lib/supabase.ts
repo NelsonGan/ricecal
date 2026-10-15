@@ -324,16 +324,15 @@ async function endSessionIfGone(): Promise<void> {
  *
  * A request that never got a response is reported too, for the same reason it
  * is caught here rather than in each query: this is the one place every request
- * passes, the token refresh included. An abort is a caller changing its mind.
+ * passes, the token refresh included. An abort is a caller changing its mind,
+ * and `reportNetworkFailure` tells the two apart from the request's signal.
  */
 async function guardedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   let response: Response
   try {
     response = await fetch(input, init)
   } catch (error) {
-    if ((error as { name?: unknown } | null)?.name !== 'AbortError') {
-      void reportNetworkFailure(requestUrl(input), error)
-    }
+    void reportNetworkFailure(requestUrl(input), error, init?.signal)
     throw error
   }
   if (tokenWasRefused(requestUrl(input), response.status)) void endSessionIfGone()
