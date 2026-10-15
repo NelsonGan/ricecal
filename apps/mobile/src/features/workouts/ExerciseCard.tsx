@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
@@ -30,6 +30,11 @@ export type ExerciseCardProps = {
   checkable: boolean
   /** Whether weight fields offer the plate calculator: a barbell's do. */
   plates: boolean
+  /**
+   * Bumped by the exercise menu's "Add a note", which opens the note field. A
+   * count rather than a flag, so asking twice opens it twice.
+   */
+  noteRequest: number
   handlers: CardHandlers
 }
 
@@ -50,11 +55,15 @@ export const ExerciseCard = memo(function ExerciseCard({
   bests,
   checkable,
   plates,
+  noteRequest,
   handlers,
 }: ExerciseCardProps) {
   const { t } = useTranslation(['workouts', 'common'])
   const colors = useThemeColors()
   const [noting, setNoting] = useState(Boolean(exercise.notes))
+  useEffect(() => {
+    if (noteRequest > 0) setNoting(true)
+  }, [noteRequest])
   const restS = exercise.restS ?? defaultRestS
   const key = exercise.key
   const open = () => handlers.open(exercise.exerciseId)
@@ -113,17 +122,6 @@ export const ExerciseCard = memo(function ExerciseCard({
                   : t('workouts:logger.restOff')}
               </Text>
             </Tappable>
-            {!noting ? (
-              <Tappable
-                className="flex-row items-center gap-1 rounded-full bg-surface-alt px-2.5 py-1"
-                onPress={() => setNoting(true)}
-                accessibilityRole="button"
-                accessibilityLabel={t('workouts:logger.exerciseNotes')}
-              >
-                <Icon set="ui" name="edit" size={14} />
-                <Text variant="caption">{t('workouts:logger.exerciseNotes')}</Text>
-              </Tappable>
-            ) : null}
           </View>
         </Tappable>
         <IconButton

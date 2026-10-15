@@ -126,7 +126,6 @@ export const id = {
       cancel: 'Batal',
       save: 'Simpan perubahan',
       done: 'Selesai',
-      clear: 'Hapus',
       edit: 'Ubah',
       delete: 'Hapus',
       add: 'Tambah',
@@ -1746,6 +1745,9 @@ export const id = {
     routines: {
       title: 'Rutinitas saya',
       new: 'Baru',
+      newTitle: 'Rutinitas baru',
+      namePlaceholder: 'mis. Push day',
+      save: 'Simpan rutinitas',
       emptyTitle: 'Belum ada rutinitas',
       lastDone: 'Terakhir dilakukan {{date}}',
       never: 'Belum pernah dilakukan',
@@ -1854,7 +1856,6 @@ export const id = {
       rest: 'Istirahat {{time}}',
       next: 'Lanjut',
       completeSet: 'Selesaikan set',
-      previousField: 'Kolom sebelumnya',
       plates: 'Pelat',
       exerciseNotes: 'Tambah catatan',
       kind: {
@@ -1952,7 +1953,6 @@ export const id = {
       records: 'Rekor',
       kcal: '{{value}} kkal',
       kcalLabel: 'Terbakar',
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2038,7 +2038,6 @@ export const id = {
       },
       split: 'Pembagian otot',
       splitRange: '30 hari terakhir',
-      splitSets: '{{value}} set',
       records: 'Rekor pribadi',
       calendar: 'Kalender',
     },

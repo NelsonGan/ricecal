@@ -75,6 +75,8 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
 
   const [menuFor, setMenuFor] = useState<LiveExercise | null>(null)
   const [reordering, setReordering] = useState(false)
+  // Which card the menu asked to open its note on, and how many times.
+  const [noteRequest, setNoteRequest] = useState<{ key: string; count: number } | null>(null)
   const [setMenu, setSetMenu] = useState<{
     exercise: LiveExercise
     set: LiveSet
@@ -184,6 +186,17 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     const index = workout.exercises.findIndex((entry) => entry.key === exercise.key)
     const next = workout.exercises[index + 1]
     const actions: SheetAction[] = [
+      ...(exercise.notes
+        ? []
+        : [
+            {
+              key: 'note',
+              label: t('workouts:logger.exerciseNotes'),
+              icon: { set: 'ui', name: 'edit' } as const,
+              onPress: () =>
+                setNoteRequest((last) => ({ key: exercise.key, count: (last?.count ?? 0) + 1 })),
+            },
+          ]),
       {
         key: 'details',
         label: t('workouts:logger.menu.details'),
@@ -297,6 +310,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
               // switched nothing.
               checkable={live}
               plates={info?.equipment === 'barbell'}
+              noteRequest={noteRequest?.key === exercise.key ? noteRequest.count : 0}
               handlers={handlers}
             />
           )

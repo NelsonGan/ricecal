@@ -47,6 +47,23 @@ export function useHasActiveWorkout(userId: string | null | undefined): boolean 
   return store.useValue(activeKey(userId ?? ''), (workout) => Boolean(userId) && workout !== null)
 }
 
+/**
+ * Whether the running workout already has this exercise in it. A boolean for
+ * the reason `useHasActiveWorkout` is one: the exercise page stays mounted
+ * under the logger.
+ */
+export function useWorkoutHasExercise(
+  userId: string | null | undefined,
+  exerciseId: string,
+): boolean {
+  return store.useValue(
+    activeKey(userId ?? ''),
+    (workout) =>
+      Boolean(userId) &&
+      Boolean(workout?.exercises.some((exercise) => exercise.exerciseId === exerciseId)),
+  )
+}
+
 /** Starts a workout, or replaces the whole document for the moves that are not one action. */
 export function startActiveWorkout(userId: string, workout: LiveWorkout): void {
   store.set(activeKey(userId), workout)

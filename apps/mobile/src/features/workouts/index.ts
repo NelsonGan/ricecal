@@ -62,6 +62,7 @@ export {
   forgetWorkoutsOnPhone,
   getActiveWorkout,
   useHasActiveWorkout,
+  useWorkoutHasExercise,
 } from './store'
 export {
   TEMPLATE_GROUPS,

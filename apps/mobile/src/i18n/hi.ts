@@ -120,7 +120,6 @@ export const hi = {
       cancel: 'रद्द करें',
       save: 'बदलाव सहेजें',
       done: 'हो गया',
-      clear: 'साफ़ करें',
       edit: 'बदलें',
       delete: 'हटाएं',
       add: 'जोड़ें',
@@ -1721,6 +1720,9 @@ export const hi = {
     routines: {
       title: 'मेरे रूटीन',
       new: 'नया',
+      newTitle: 'नई रूटीन',
+      namePlaceholder: 'जैसे पुश डे',
+      save: 'रूटीन सहेजें',
       emptyTitle: 'अभी कोई रूटीन नहीं',
       lastDone: 'पिछली बार {{date}}',
       never: 'अभी तक नहीं किया',
@@ -1829,7 +1831,6 @@ export const hi = {
       rest: 'आराम {{time}}',
       next: 'अगला',
       completeSet: 'सेट पूरा करें',
-      previousField: 'पिछला खाना',
       plates: 'प्लेट्स',
       exerciseNotes: 'नोट जोड़ें',
       kind: {
@@ -1927,7 +1928,6 @@ export const hi = {
       records: 'रिकॉर्ड',
       kcal: '{{value}} kcal',
       kcalLabel: 'खर्च',
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2013,7 +2013,6 @@ export const hi = {
       },
       split: 'मसल्स का बंटवारा',
       splitRange: 'पिछले 30 दिन',
-      splitSets: '{{value}} सेट',
       records: 'पर्सनल रिकॉर्ड',
       calendar: 'कैलेंडर',
     },

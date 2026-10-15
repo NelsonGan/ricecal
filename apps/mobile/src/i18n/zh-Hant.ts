@@ -125,7 +125,6 @@ export const zhHant = {
       cancel: '取消',
       save: '儲存變更',
       done: '完成',
-      clear: '清除',
       edit: '編輯',
       delete: '刪除',
       add: '新增',
@@ -1717,6 +1716,9 @@ export const zhHant = {
     routines: {
       title: '我的課表',
       new: '新增',
+      newTitle: '新增計劃',
+      namePlaceholder: '例如：推日',
+      save: '儲存計劃',
       emptyTitle: '還沒有課表',
       lastDone: '上次 {{date}}',
       never: '還沒練過',
@@ -1825,7 +1827,6 @@ export const zhHant = {
       rest: '休息 {{time}}',
       next: '下一個',
       completeSet: '完成本組',
-      previousField: '上一項',
       plates: '槓片',
       exerciseNotes: '新增備註',
       kind: {
@@ -1923,7 +1924,6 @@ export const zhHant = {
       records: '紀錄',
       kcal: '{{value}} 大卡',
       kcalLabel: '消耗',
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2009,7 +2009,6 @@ export const zhHant = {
       },
       split: '肌群分布',
       splitRange: '最近 30 天',
-      splitSets: '{{value}} 組',
       records: '個人紀錄',
       calendar: '日曆',
     },

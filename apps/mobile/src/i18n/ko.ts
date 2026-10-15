@@ -120,7 +120,6 @@ export const ko = {
       cancel: '취소',
       save: '변경사항 저장',
       done: '완료',
-      clear: '지우기',
       edit: '편집',
       delete: '삭제',
       add: '추가',
@@ -1723,6 +1722,9 @@ export const ko = {
     routines: {
       title: '내 루틴',
       new: '새 루틴',
+      newTitle: '새 루틴',
+      namePlaceholder: '예: 푸시 데이',
+      save: '루틴 저장',
       emptyTitle: '아직 루틴이 없습니다',
       lastDone: '마지막 {{date}}',
       never: '아직 안 함',
@@ -1831,7 +1833,6 @@ export const ko = {
       rest: '휴식 {{time}}',
       next: '다음',
       completeSet: '세트 완료',
-      previousField: '이전 항목',
       plates: '원판',
       exerciseNotes: '메모 추가',
       kind: {
@@ -1929,7 +1930,6 @@ export const ko = {
       records: '개인 기록',
       kcal: '{{value}} kcal',
       kcalLabel: '소모',
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2015,7 +2015,6 @@ export const ko = {
       },
       split: '부위 비율',
       splitRange: '최근 30일',
-      splitSets: '{{value}}세트',
       records: '개인 기록',
       calendar: '달력',
     },

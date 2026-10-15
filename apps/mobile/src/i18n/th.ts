@@ -124,7 +124,6 @@ export const th = {
       cancel: 'ยกเลิก',
       save: 'บันทึกการเปลี่ยนแปลง',
       done: 'เสร็จสิ้น',
-      clear: 'ล้าง',
       edit: 'แก้ไข',
       delete: 'ลบ',
       add: 'เพิ่ม',
@@ -1716,6 +1715,9 @@ export const th = {
     routines: {
       title: 'รูทีนของฉัน',
       new: 'สร้าง',
+      newTitle: 'รูทีนใหม่',
+      namePlaceholder: 'เช่น วันดัน',
+      save: 'บันทึกรูทีน',
       emptyTitle: 'ยังไม่มีรูทีน',
       lastDone: 'ทำล่าสุด {{date}}',
       never: 'ยังไม่เคยทำ',
@@ -1824,7 +1826,6 @@ export const th = {
       rest: 'พัก {{time}}',
       next: 'ถัดไป',
       completeSet: 'ทำเซ็ตเสร็จ',
-      previousField: 'ช่องก่อนหน้า',
       plates: 'แผ่น',
       exerciseNotes: 'เพิ่มโน้ต',
       kind: {
@@ -1922,7 +1923,6 @@ export const th = {
       records: 'สถิติ',
       kcal: '{{value}} แคล',
       kcalLabel: 'เผาผลาญ',
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2008,7 +2008,6 @@ export const th = {
       },
       split: 'สัดส่วนกล้ามเนื้อ',
       splitRange: '30 วันล่าสุด',
-      splitSets: '{{value}} เซ็ต',
       records: 'สถิติส่วนตัว',
       calendar: 'ปฏิทิน',
     },

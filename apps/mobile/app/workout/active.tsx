@@ -3,9 +3,10 @@ import { useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { useSettings } from '@/data'
+import { useLastSets, useSettings } from '@/data'
 import {
   ActionSheet,
+  completeAll,
   discardWorkout,
   doneSets,
   liveTotals,
@@ -38,7 +39,7 @@ import { AppBar, Button, ConfirmSheet, Screen } from '@/ui'
 export default function ActiveWorkoutScreen() {
   const { t } = useTranslation(['workouts', 'common'])
   const router = useRouter()
-  const { userId, workout: current, dispatch } = useLiveWorkout()
+  const { userId, workout: current, dispatch, replace } = useLiveWorkout()
   const { data: settings } = useSettings()
   const prefs = useWorkoutPrefs()
   const unit = unitFor(settings?.units)
@@ -56,20 +57,26 @@ export default function ActiveWorkoutScreen() {
   const lastSeen = useRef(current)
   if (current) lastSeen.current = current
   const workout = current ?? lastSeen.current
+  // Last time's sets, for what an unticked set offers. The editor asks for
+  // the same key, so this reads its cache.
+  const previous = useLastSets(workout?.exercises.map((exercise) => exercise.exerciseId) ?? []).data
 
   // A notice tapped after its workout was finished: say so, rather than redirect.
   if (!workout) return <WorkoutMissing />
 
   const totals = liveTotals(workout)
 
+  // Sets showing numbers but not ticked are asked about, even when none are
+  // ticked: a workout logged by typing and never ticking is the commonest
+  // way to finish with "nothing to save".
   const finish = () => {
-    if (doneSets(workout) === 0) {
-      setNothing(true)
-      return
-    }
-    const open = unfinishedSets(workout)
+    const open = unfinishedSets(workout, previous)
     if (open > 0) {
       setUnfinished(open)
+      return
+    }
+    if (doneSets(workout) === 0) {
+      setNothing(true)
       return
     }
     router.push('/workout/finish')
@@ -168,14 +175,22 @@ export default function ActiveWorkoutScreen() {
             key: 'complete',
             label: t('workouts:finish.completeThem'),
             icon: { set: 'ui', name: 'checkbox-checked' },
-            onPress: () => router.push({ pathname: '/workout/finish', params: { complete: '1' } }),
+            onPress: () => {
+              replace(completeAll(workout, Date.now(), previous))
+              router.push('/workout/finish')
+            },
           },
-          {
-            key: 'drop',
-            label: t('workouts:finish.dropThem'),
-            icon: { set: 'ui', name: 'checkbox-empty' },
-            onPress: () => router.push('/workout/finish'),
-          },
+          // Leaving them out of a workout with nothing ticked saves nothing.
+          ...(doneSets(workout) > 0
+            ? [
+                {
+                  key: 'drop',
+                  label: t('workouts:finish.dropThem'),
+                  icon: { set: 'ui', name: 'checkbox-empty' } as const,
+                  onPress: () => router.push('/workout/finish'),
+                },
+              ]
+            : []),
         ]}
       />
 

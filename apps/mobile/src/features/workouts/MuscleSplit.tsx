@@ -7,7 +7,7 @@ import { MUSCLE_GROUP_KEY } from './copy'
 
 /**
  * Where the work went, as one bar per body part: the muscle split of a
- * workout, a month, or (with shares rather than sets) one exercise.
+ * workout or a month.
  *
  * Bars rather than a body diagram. A diagram reads beautifully when one part
  * is lit and becomes a heat map nobody can quantify the moment four are; a bar
@@ -23,16 +23,20 @@ const GROUP_TONE: Record<MuscleGroup, string> = {
   core: 'bg-inverse-accent',
 }
 
+/**
+ * Each bar says its share of the whole. A split counted in sets came out in
+ * tenths ("1.8 sets"), since a set of a compound lift counts towards several
+ * groups, and that reads as a bug rather than as a split.
+ */
 export function MuscleSplitBars({
   rows,
-  format,
 }: {
   rows: readonly { group: MuscleGroup; value: number }[]
-  /** The figure printed at the end of each bar. */
-  format: (value: number) => string
 }) {
   const { t } = useTranslation(['workouts'])
   const max = Math.max(...rows.map((row) => row.value), 0)
+  const total = rows.reduce((sum, row) => sum + row.value, 0)
+  const share = (value: number) => `${total > 0 ? Math.round((value / total) * 100) : 0}%`
 
   return (
     <View className="gap-2.5">
@@ -48,7 +52,7 @@ export function MuscleSplitBars({
             />
           </View>
           <Text variant="meta" className="w-[64px] text-right" numberOfLines={1}>
-            {format(row.value)}
+            {share(row.value)}
           </Text>
         </View>
       ))}

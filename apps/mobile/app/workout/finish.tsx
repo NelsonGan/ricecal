@@ -1,11 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { useExerciseBests, useSettings, useWorkoutOverview } from '@/data'
 import {
-  completeAll,
   describeSet,
   distanceUnitFor,
   doneSets,
@@ -19,7 +18,6 @@ import {
   type RecordKind,
   recordSets,
   Stat,
-  StatStrip,
   setVolume,
   shortClock,
   showsVolume,
@@ -51,8 +49,8 @@ export default function FinishWorkoutScreen() {
   const { t } = useTranslation(['workouts', 'common'])
   const router = useRouter()
   const toast = useToast()
-  const params = useLocalSearchParams<{ complete?: string; endedAt?: string; pickEnd?: string }>()
-  const { workout: current, replace, clear } = useLiveWorkout()
+  const params = useLocalSearchParams<{ endedAt?: string; pickEnd?: string }>()
+  const { workout: current, clear } = useLiveWorkout()
   // Saving clears the workout and then leaves; the last document is drawn
   // until the screen has gone, rather than a <Redirect> racing the navigation.
   const lastSeen = useRef(current)
@@ -82,13 +80,6 @@ export default function FinishWorkoutScreen() {
     return Math.min(started, endedAt - timedS * 1000)
   })
   const [saving, setSaving] = useState(false)
-
-  // "Tick them and save" ticks every set that has numbers in it, once, on the
-  // way in, so what this screen summarises is what will be saved.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: on arrival only
-  useEffect(() => {
-    if (params.complete && workout) replace(completeAll(workout, Date.now()))
-  }, [])
 
   const totals = useMemo(() => (workout ? liveTotals(workout) : null), [workout])
   const exercises = useMemo(
@@ -179,33 +170,41 @@ export default function FinishWorkoutScreen() {
         </Button>
       }
     >
-      <Card tone="kaya" contentClassName="flex-row items-center gap-3">
-        <View className="min-w-0 flex-1 gap-1">
-          <Text variant="title" numberOfLines={2}>
-            {t('workouts:finish.complete')}
-          </Text>
-          {overview ? (
-            <Text variant="meta" className="text-kaya-ink">
-              {t('workouts:finish.total', { count: overview.totalWorkouts + 1 })}
+      {/* The session in one card: that it is done, then what it came to. */}
+      <Card tone="kaya" contentClassName="gap-4">
+        <View className="flex-row items-center gap-3">
+          <View className="min-w-0 flex-1 gap-1">
+            <Text variant="title" numberOfLines={2}>
+              {t('workouts:finish.complete')}
             </Text>
-          ) : null}
+            {overview ? (
+              <Text variant="meta" className="text-kaya-ink">
+                {t('workouts:finish.total', { count: overview.totalWorkouts + 1 })}
+              </Text>
+            ) : null}
+          </View>
+          <Icon set="system" name="trophy" size={64} />
         </View>
-        <Icon set="system" name="trophy" size={72} />
+        <View className="flex-row">
+          <View className="flex-1">
+            <Stat
+              label={t('workouts:finish.duration')}
+              value={durationText(t, Math.max(0, durationS))}
+            />
+          </View>
+          {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
+            <View className="flex-1">
+              <Stat
+                label={t('workouts:logger.volume')}
+                value={volumeText(t, totals?.volumeKg ?? 0, unit)}
+              />
+            </View>
+          ) : null}
+          <View className="flex-1">
+            <Stat label={t('workouts:logger.sets')} value={String(totals?.done ?? 0)} />
+          </View>
+        </View>
       </Card>
-
-      <StatStrip>
-        <Stat
-          label={t('workouts:finish.duration')}
-          value={durationText(t, Math.max(0, durationS))}
-        />
-        {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
-          <Stat
-            label={t('workouts:logger.volume')}
-            value={volumeText(t, totals?.volumeKg ?? 0, unit)}
-          />
-        ) : null}
-        <Stat label={t('workouts:logger.sets')} value={String(totals?.done ?? 0)} />
-      </StatStrip>
 
       {records.length ? (
         <Card title={t('workouts:detail.records')} contentClassName="gap-2">

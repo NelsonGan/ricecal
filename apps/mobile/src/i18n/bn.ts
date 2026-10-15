@@ -119,7 +119,6 @@ export const bn = {
       cancel: 'বাতিল',
       save: 'পরিবর্তন সংরক্ষণ করুন',
       done: 'হয়ে গেছে',
-      clear: 'মুছুন',
       edit: 'সম্পাদনা',
       delete: 'মুছুন',
       add: 'যোগ করুন',
@@ -1718,6 +1717,9 @@ export const bn = {
     routines: {
       title: 'আমার রুটিন',
       new: 'নতুন',
+      newTitle: 'নতুন রুটিন',
+      namePlaceholder: 'যেমন পুশ ডে',
+      save: 'রুটিন সংরক্ষণ',
       emptyTitle: 'এখনো কোনো রুটিন নেই',
       lastDone: 'শেষবার {{date}}',
       never: 'এখনো করা হয়নি',
@@ -1828,7 +1830,6 @@ export const bn = {
       rest: 'বিশ্রাম {{time}}',
       next: 'পরের',
       completeSet: 'সেট সম্পন্ন',
-      previousField: 'আগের ঘর',
       plates: 'প্লেট',
       exerciseNotes: 'নোট যোগ করুন',
       /** A set's type, as the menu offers it. */
@@ -1930,8 +1931,6 @@ export const bn = {
       records: 'রেকর্ড',
       kcal: '{{value}} kcal',
       kcalLabel: 'পোড়ানো',
-      /** A set's estimated one-rep max, beside it. */
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2017,7 +2016,6 @@ export const bn = {
       },
       split: 'পেশির ভাগ',
       splitRange: 'গত ৩০ দিন',
-      splitSets: '{{value}} সেট',
       records: 'ব্যক্তিগত রেকর্ড',
       calendar: 'ক্যালেন্ডার',
     },

@@ -114,18 +114,20 @@ describe('the workout document', () => {
   })
 
   it('finds sets that were typed but not ticked, and ticks them on request', () => {
+    // The empty set under a filled one offers its numbers, so it counts too.
     const workout = workoutWith([{ ...bench, sets: [{ weightKg: 60, reps: 8 }, {}] }])
-    expect(unfinishedSets(workout)).toBe(1)
+    expect(unfinishedSets(workout)).toBe(2)
     const done = completeAll(workout, 9)
-    expect(done.exercises[0].sets.map((set) => set.done)).toEqual([true, false])
+    expect(done.exercises[0].sets.map((set) => set.done)).toEqual([true, true])
     expect(lastActivityAt(done)).toBe(9)
   })
 
   it('sums volume over ticked sets only', () => {
     const workout = completeAll(
-      workoutWith([{ ...bench, sets: [{ weightKg: 60, reps: 8 }, {}] }]),
+      workoutWith([{ ...bench, sets: [{ weightKg: 60, reps: 8 }, { kind: 'warmup' }] }]),
       1,
     )
+    // The warm-up under a working set offers nothing, so it stays unticked.
     expect(liveTotals(workout)).toEqual({ volumeKg: 480, sets: 2, done: 1 })
   })
 
@@ -175,6 +177,46 @@ describe('the workout document', () => {
     const [set] = toPayload(workout, 2_000_000, { kcal: 12000, healthWorkoutId: null }).exercises[0]
       .sets
     expect(set).toMatchObject({ weight_kg: 1000, reps: 1000 })
+  })
+})
+
+describe('finishing with sets not ticked', () => {
+  const workout = () => {
+    let w = newWorkout({ name: 'W' })
+    w = apply(w, {
+      type: 'addExercises',
+      plans: [
+        {
+          exerciseId: 'bench',
+          name: 'Bench',
+          tracking: 'weight_reps',
+          sets: [{ weightKg: 100, reps: 5 }, {}, {}],
+        },
+      ],
+    })
+    return w
+  }
+
+  it('counts a set that only shows what it offers', () => {
+    const w = workout()
+    expect(unfinishedSets(w)).toBe(3)
+    expect(unfinishedSets(w, {})).toBe(3)
+    // With nothing above or from last time, an empty set offers nothing.
+    const bare = apply(newWorkout({ name: 'W' }), {
+      type: 'addExercises',
+      plans: [{ exerciseId: 'bench', name: 'Bench', tracking: 'weight_reps', sets: [{}] }],
+    })
+    expect(unfinishedSets(bare)).toBe(0)
+    expect(unfinishedSets(bare, { bench: [{ weightKg: 60, reps: 8 }] })).toBe(1)
+  })
+
+  it('ticks them with what they offer', () => {
+    const done = completeAll(workout(), 1000)
+    expect(done.exercises[0].sets.map((set) => [set.weightKg, set.reps, set.done])).toEqual([
+      [100, 5, true],
+      [100, 5, true],
+      [100, 5, true],
+    ])
   })
 })
 

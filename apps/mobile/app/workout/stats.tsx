@@ -21,7 +21,6 @@ import {
   ExerciseArt,
   groupSplit,
   MuscleSplitBars,
-  trim,
   useExerciseLibrary,
   volumeText,
   weightText,
@@ -281,10 +280,7 @@ function Split() {
       {totals.isPending ? (
         <Skeleton className="h-[160px] w-full" />
       ) : split.length ? (
-        <MuscleSplitBars
-          rows={split.map((row) => ({ group: row.group, value: row.sets }))}
-          format={(value) => t('workouts:stats.splitSets', { value: trim(value, 1) })}
-        />
+        <MuscleSplitBars rows={split.map((row) => ({ group: row.group, value: row.sets }))} />
       ) : (
         <Text variant="meta">{t('workouts:history.emptyTitle')}</Text>
       )}

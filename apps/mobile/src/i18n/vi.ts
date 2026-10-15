@@ -121,7 +121,6 @@ export const vi = {
       cancel: 'Huỷ',
       save: 'Lưu thay đổi',
       done: 'Xong',
-      clear: 'Xóa',
       edit: 'Sửa',
       delete: 'Xoá',
       add: 'Thêm',
@@ -1734,6 +1733,9 @@ export const vi = {
     routines: {
       title: 'Giáo án của tôi',
       new: 'Tạo mới',
+      newTitle: 'Lịch tập mới',
+      namePlaceholder: 'vd. Ngày đẩy',
+      save: 'Lưu lịch tập',
       emptyTitle: 'Chưa có giáo án',
       lastDone: 'Tập lần cuối {{date}}',
       never: 'Chưa tập lần nào',
@@ -1845,7 +1847,6 @@ export const vi = {
       rest: 'Nghỉ {{time}}',
       next: 'Tiếp',
       completeSet: 'Hoàn thành hiệp',
-      previousField: 'Ô trước',
       plates: 'Bánh tạ',
       exerciseNotes: 'Thêm ghi chú',
       kind: {
@@ -1943,7 +1944,6 @@ export const vi = {
       records: 'Kỷ lục',
       kcal: '{{value}} kcal',
       kcalLabel: 'Đã đốt',
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2029,7 +2029,6 @@ export const vi = {
       },
       split: 'Phân bổ nhóm cơ',
       splitRange: '30 ngày gần nhất',
-      splitSets: '{{value}} set',
       records: 'Kỷ lục cá nhân',
       calendar: 'Lịch',
     },

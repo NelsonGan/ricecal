@@ -28,11 +28,9 @@ import {
   setBadges,
   showsVolume,
   toPlans,
-  trim,
   useExerciseLibrary,
   useWorkoutStarter,
   volumeText,
-  weightText,
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
@@ -260,10 +258,7 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
 
       {split.length ? (
         <Card title={t('workouts:detail.muscles')}>
-          <MuscleSplitBars
-            rows={split.map((row) => ({ group: row.group, value: row.sets }))}
-            format={(value) => t('workouts:stats.splitSets', { value: trim(value, 1) })}
-          />
+          <MuscleSplitBars rows={split.map((row) => ({ group: row.group, value: row.sets }))} />
         </Card>
       ) : null}
 
@@ -333,13 +328,6 @@ function EntryCard({
                 <Text variant="bodyStrong" className="flex-1">
                   {describeSet(set, entry.tracking, unit, distanceUnit, t(UNIT_KEY[unit]))}
                 </Text>
-                {set.e1rmKg && set.kind !== 'warmup' ? (
-                  <Text variant="caption">
-                    {t('workouts:detail.e1rm', {
-                      value: weightText(t, set.e1rmKg, unit),
-                    })}
-                  </Text>
-                ) : null}
                 {set.records.length ? (
                   <Badge tone="kaya" size="sm" className="gap-1 self-center">
                     <Icon set="system" name="trophy" size={14} />

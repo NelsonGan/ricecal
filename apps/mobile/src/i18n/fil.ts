@@ -128,7 +128,6 @@ export const fil = {
       cancel: 'Kanselahin',
       save: 'I-save ang pagbabago',
       done: 'Tapos na',
-      clear: 'Burahin',
       edit: 'I-edit',
       delete: 'Burahin',
       add: 'Idagdag',
@@ -1762,6 +1761,9 @@ export const fil = {
     routines: {
       title: 'Mga routine ko',
       new: 'Bago',
+      newTitle: 'Bagong routine',
+      namePlaceholder: 'hal. Push day',
+      save: 'I-save ang routine',
       emptyTitle: 'Wala pang routine',
       lastDone: 'Huling ginawa {{date}}',
       never: 'Hindi pa nagagawa',
@@ -1876,7 +1878,6 @@ export const fil = {
       rest: 'Pahinga {{time}}',
       next: 'Susunod',
       completeSet: 'Tapusin ang set',
-      previousField: 'Nakaraang field',
       plates: 'Plates',
       exerciseNotes: 'Magdagdag ng tala',
       kind: {
@@ -1974,7 +1975,6 @@ export const fil = {
       records: 'Mga record',
       kcal: '{{value}} kcal',
       kcalLabel: 'Nasunog',
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2060,7 +2060,6 @@ export const fil = {
       },
       split: 'Hati ng muscle',
       splitRange: 'Huling 30 araw',
-      splitSets: '{{value}} set',
       records: 'Mga personal record',
       calendar: 'Kalendaryo',
     },

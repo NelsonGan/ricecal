@@ -121,7 +121,6 @@ export const ja = {
       cancel: 'キャンセル',
       save: '変更を保存',
       done: '完了',
-      clear: 'クリア',
       edit: '編集',
       delete: '削除',
       add: '追加',
@@ -1729,6 +1728,9 @@ export const ja = {
     routines: {
       title: 'マイルーティン',
       new: '新規',
+      newTitle: '新しいルーティン',
+      namePlaceholder: '例: プッシュの日',
+      save: 'ルーティンを保存',
       emptyTitle: 'ルーティンはまだありません',
       lastDone: '前回 {{date}}',
       never: '未実施',
@@ -1843,7 +1845,6 @@ export const ja = {
       rest: '休憩 {{time}}',
       next: '次へ',
       completeSet: 'セットを完了',
-      previousField: '前の項目',
       plates: 'プレート',
       exerciseNotes: 'メモを追加',
       kind: {
@@ -1941,7 +1942,6 @@ export const ja = {
       records: '自己ベスト',
       kcal: '{{value}} kcal',
       kcalLabel: '消費',
-      e1rm: '1RM {{value}}',
     },
 
     edit: {
@@ -2027,7 +2027,6 @@ export const ja = {
       },
       split: '部位の割合',
       splitRange: '直近 30 日',
-      splitSets: '{{value}} セット',
       records: '自己ベスト',
       calendar: 'カレンダー',
     },

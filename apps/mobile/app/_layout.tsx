@@ -218,7 +218,6 @@ function NumpadScope({ children }: { children: ReactNode }) {
       done: t('action.done'),
       backspace: t('a11y.backspace'),
       decimal: t('a11y.decimalPoint'),
-      clear: t('action.clear'),
     }),
     [t],
   )
