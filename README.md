@@ -5215,9 +5215,14 @@ on a live request.
   a crash on a screen somebody is already looking at.
 
 CI does the first arrow: `cloudflare.yml` runs the schema job before the deploy
-job and stops if it fails. **The rest is manual**, because the Supabase functions
-deploy with the Supabase CLI and the app ships through EAS. Make every step
-backwards compatible so the window is survivable rather than merely short.
+job and stops if it fails. The Supabase half happens on merge as well, through
+the Supabase GitHub integration rather than a workflow in this repo: production's
+default branch tracks git `main`, so a merge applies new migrations and then
+redeploys every edge function, within a minute or so. The app ships through EAS
+from the same merge, and a store build takes far longer than that, so in practice
+the order holds. `supabase functions deploy` is for a hotfix between merges. Make
+every step backwards compatible so the window is survivable rather than merely
+short.
 
 **Removing runs backwards**: stop reading it everywhere, ship that, then drop the
 column. Now that the app is in a store, "ship that" means a release people have
