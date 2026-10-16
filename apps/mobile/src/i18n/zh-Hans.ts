@@ -1342,6 +1342,11 @@ export const zhHans = {
           free: '{{recipes}} 个食物',
           pro: '无限',
         },
+        routines: {
+          label: '训练计划',
+          free: '{{routines}} 个',
+          pro: '无限',
+        },
         recipeFill: {
           label: '用照片填好一个食物',
           free: '',
@@ -1400,6 +1405,8 @@ export const zhHans = {
         read_recipe: '用照片填好一个食物需要 RiceCal Pro。',
         new_recipe: '保存超过 {{recipes}} 个自己的食物需要 RiceCal Pro。',
         trend_range: '往前看超过一周需要 RiceCal Pro。',
+        new_routine: '保存超过 {{routines}} 个训练计划需要 RiceCal Pro。',
+        workout_range: '查看 3 个月以前的训练进度需要 RiceCal Pro。',
         review: '看更早的回顾需要 RiceCal Pro。',
         nudge: 'RiceCal Pro 把上限拿掉。',
       },
@@ -1695,20 +1702,18 @@ export const zhHans = {
     title: '训练',
 
     overview: {
-      thisWeek_one: '本周训练次数',
-      thisWeek_other: '本周训练次数',
+      title: '本周',
+      workouts: '训练次数',
       time: '时长',
       volume: '总重量',
       streak_one: '连续 {{count}} 周',
       streak_other: '连续 {{count}} 周',
-      noStreak: '本周练一次，开始连续记录',
     },
 
     start: {
       empty: '开始空白训练',
       resume: '继续训练',
       routine: '开始',
-      past: '补记一次训练',
       replaceTitle: '已有训练在进行',
       replaceBody: '丢弃它，开始这个？',
       replaceConfirm: '丢弃并开始',
@@ -1719,7 +1724,6 @@ export const zhHans = {
 
     routines: {
       title: '我的计划',
-      new: '新建',
       newTitle: '新建计划',
       namePlaceholder: '例如：推日',
       save: '保存计划',
@@ -1785,6 +1789,11 @@ export const zhHans = {
       glutes: { name: '臀部', description: '臀推、分腿蹲和后踢腿。' },
       hiit: { name: 'HIIT', description: '短组短歇，练到喘。' },
       mobility: { name: '灵活性', description: '泡沫轴放松、拉伸和流动练习。' },
+    },
+
+    calendar: {
+      showList: '显示列表',
+      dayEmpty: '这一天没有训练',
     },
 
     history: {
@@ -1917,7 +1926,6 @@ export const zhHans = {
       routineFailed: '计划没能更新',
       endBeforeStart: '结束时间要晚于开始时间。',
       tooLong: '一次训练最长 24 小时。',
-      health: '已保存到 Apple 健康',
       healthFailed: '没能保存到 Apple 健康。',
     },
 
@@ -1954,7 +1962,6 @@ export const zhHans = {
     edit: {
       title: '编辑训练',
       save: '保存更改',
-      newTitle: '补记训练',
       leaveTitle: '不保存就离开？',
       leaveBody: '你在这里做的更改会丢掉。',
     },
@@ -2029,7 +2036,15 @@ export const zhHans = {
     stats: {
       title: '进度',
       entry: '进度和纪录',
-      weeks: '最近 12 周',
+      weeks: '训练',
+      range: {
+        label: '时间范围',
+        '3m': '最近 3 个月',
+        '1y': '一年',
+        all: '全部时间',
+      },
+      thisMonth: '本月',
+      thisYear: '今年',
       metric: {
         workouts: '训练次数',
         duration: '时长',

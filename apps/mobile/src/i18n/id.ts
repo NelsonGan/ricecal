@@ -1367,6 +1367,11 @@ export const id = {
           free: '{{recipes}} makanan',
           pro: 'Tanpa batas',
         },
+        routines: {
+          label: 'Rutinitas latihan',
+          free: '{{routines}} rutinitas',
+          pro: 'Tanpa batas',
+        },
         recipeFill: {
           label: 'Isi makanan dari sebuah foto',
           free: '',
@@ -1425,6 +1430,8 @@ export const id = {
         read_recipe: 'Mengisi makanan dari sebuah foto butuh RiceCal Pro.',
         new_recipe: 'Menyimpan lebih dari {{recipes}} makanan sendiri butuh RiceCal Pro.',
         trend_range: 'Melihat lebih jauh dari seminggu butuh RiceCal Pro.',
+        new_routine: 'Menyimpan lebih dari {{routines}} rutinitas latihan butuh RiceCal Pro.',
+        workout_range: 'Melihat progres latihan lebih dari 3 bulan butuh RiceCal Pro.',
         review: 'Membaca ulasan yang lebih lama butuh RiceCal Pro.',
         nudge: 'RiceCal Pro melepas batasnya.',
       },
@@ -1725,20 +1732,18 @@ export const id = {
     title: 'Latihan',
 
     overview: {
-      thisWeek_one: 'latihan minggu ini',
-      thisWeek_other: 'latihan minggu ini',
+      title: 'Minggu ini',
+      workouts: 'Latihan',
       time: 'Waktu',
       volume: 'Diangkat',
       streak_one: 'Rentetan {{count}} minggu',
       streak_other: 'Rentetan {{count}} minggu',
-      noStreak: 'Berlatih minggu ini untuk memulai rentetan',
     },
 
     start: {
       empty: 'Mulai latihan kosong',
       resume: 'Lanjutkan latihan',
       routine: 'Mulai',
-      past: 'Catat latihan lalu',
       replaceTitle: 'Ada latihan yang sedang berjalan',
       replaceBody: 'Buang yang itu dan mulai yang ini?',
       replaceConfirm: 'Buang dan mulai',
@@ -1749,7 +1754,6 @@ export const id = {
 
     routines: {
       title: 'Rutinitas saya',
-      new: 'Baru',
       newTitle: 'Rutinitas baru',
       namePlaceholder: 'mis. Push day',
       save: 'Simpan rutinitas',
@@ -1815,6 +1819,11 @@ export const id = {
       glutes: { name: 'Bokong', description: 'Hip thrust, split squat dan kickback.' },
       hiit: { name: 'HIIT', description: 'Set singkat, istirahat singkat, terengah-engah.' },
       mobility: { name: 'Mobilitas', description: 'Foam roll, peregangan dan flow.' },
+    },
+
+    calendar: {
+      showList: 'Tampilkan daftar',
+      dayEmpty: 'Tidak ada latihan di hari ini',
     },
 
     history: {
@@ -1947,7 +1956,6 @@ export const id = {
       routineFailed: 'Rutinitas tidak bisa diperbarui',
       endBeforeStart: 'Waktu selesai harus setelah waktu mulai.',
       tooLong: 'Satu latihan paling lama 24 jam.',
-      health: 'Disimpan ke Apple Health',
       healthFailed: 'Tidak bisa menyimpan ke Apple Health.',
     },
 
@@ -1984,7 +1992,6 @@ export const id = {
     edit: {
       title: 'Ubah latihan',
       save: 'Simpan perubahan',
-      newTitle: 'Catat latihan sebelumnya',
       leaveTitle: 'Keluar tanpa menyimpan?',
       leaveBody: 'Perubahan yang kamu buat di sini akan hilang.',
     },
@@ -2059,7 +2066,15 @@ export const id = {
     stats: {
       title: 'Progres',
       entry: 'Progres dan rekor',
-      weeks: '12 minggu terakhir',
+      weeks: 'Latihan',
+      range: {
+        label: 'Rentang waktu',
+        '3m': '3 bulan terakhir',
+        '1y': 'Tahun',
+        all: 'Sepanjang waktu',
+      },
+      thisMonth: 'Bulan ini',
+      thisYear: 'Tahun ini',
       metric: {
         workouts: 'Latihan',
         duration: 'Waktu',

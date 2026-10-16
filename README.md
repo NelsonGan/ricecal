@@ -722,7 +722,8 @@ diary appears, and permanently from a row in Me.
 
 The paywall is the last thing rather than a step of its own. "Later" lands on
 the real app, and the app it lands on works: three photographed plates a day,
-the barcode scanner, the whole catalogue, three recipes, the week's trends.
+the barcode scanner, the whole catalogue, three recipes, three workout
+routines, the week's trends.
 
 ### No edge swipe anywhere in this flow
 
@@ -3717,17 +3718,20 @@ the records they set. Today is what went in; Workouts is what was done, which is
 why the two sit side by side.
 
 ```
-app/(tabs)/workouts.tsx       overview, start buttons, routines, history
+app/(tabs)/workouts.tsx       streak, start button, routines, history, and a
+                              month calendar view
 app/workout/active.tsx        the logger
 app/workout/finish.tsx        name, notes, start and end times, save
 app/workout/[id].tsx          a saved workout, with its records and muscles
-app/workout/edit/[id].tsx     edit a saved one, or log a past one (id = new)
+app/workout/edit/[id].tsx     edit a saved one
 app/workout/exercises.tsx     the library, as a browser and as a picker
 app/workout/exercise/[id].tsx an exercise's history, charts, records and split
 app/workout/routine/[id].tsx  edit a routine
 app/workout/templates.tsx     the built-in templates; template/[id] is one
-app/workout/stats.tsx         12 weeks of totals, 30 days of muscles, records
-app/workout/settings.tsx      rest timer, units, Apple Health, reminders, CSV export
+app/workout/stats.tsx         this week, totals over 3 months to all time,
+                              30 days of muscles, records
+app/workout/settings.tsx      rest timer, units, Apple Health, reminders, CSV export;
+                              a row on the tab's list and in Me, Settings
 app/workout/import.tsx        import a Strong or Hevy CSV
 app/workout/custom.tsx        a custom exercise
 src/features/workouts         the document, catalogue, templates, logger parts
@@ -3738,15 +3742,22 @@ apps/supabase/schemas/96_workouts.sql  every number: volume, 1RM, records, strea
 ```
 
 What a user can do: start an empty workout, a routine, a template or a repeat of
-an old one; log a past workout after the fact. The
-logger shows each exercise's last numbers in a PREVIOUS column, takes warm-up,
+an old one. The logger shows each exercise's last numbers in a PREVIOUS column, takes warm-up,
 drop and failure sets, an RPE per set, supersets, notes, replacing and
 reordering, a rest timer per exercise and generated warm-up sets, and marks a
 record the moment a set beats one. A saved workout can be
 opened, edited, deleted, repeated, shared as text or saved as a routine. Every
 exercise has a page with its history, charts, bests, rep records and muscle
-split. Weekly bars, a 30-day muscle split, a calendar and the personal-records
-list are on the progress screen. Settings exports every set as CSV and imports
+split. This week's totals, bars over three months (free) or a year and all
+time (Pro), a 30-day muscle split, a calendar and the personal-records list are
+on the progress screen; the week streak sits beside the tab's title, as the day
+streak does on Today. The toggle on the title's other side is Today's too: it
+swaps the tab for the month (`WorkoutCalendar`, the progress page's calendar
+with days that can be picked), every trained day filled, and under it the
+workouts of the day tapped, today until another is. That list is History's
+cards for one day, PR badges included (it asks for the record counts History
+has, for one day's workouts), and it holds the day's workouts still waiting to
+sync, as History does. Settings exports every set as CSV and imports
 a history from Strong or Hevy.
 
 ### The catalogue is code, and every entry has a drawing
@@ -3820,7 +3831,24 @@ with `template_id` set, so the template page can say it is already there.
 
 **The routine editor is the plan and nothing else.** Its page is the exercise
 editor; the name and the note are asked for on Save, in a card over it, so a
-routine is built first and named once it is something to name.
+routine is built first and named once it is something to name. It has no Start
+button: the routine's row on the tab has one, on the right beside its name (one
+line, a size under a card title) and the date it was last done as a badge, with
+its exercises named under them in up to two lines. A second Start a tap further
+in was the same button twice.
+
+**A free account keeps three routines.** `workout_routines_enforce_free_limit`
+refuses a fourth insert with `routine_limit_reached`, as the recipe ceiling does
+(see "What each tier gets"), so a template added to "My routines" and a workout
+saved as one count too. The three ways to make one ("New routine", the first
+row of the tab's list under the routines, "Add to my routines" and "Save as
+routine") check the list on screen first (`useRoutineGate`) and open the paywall before anything is built;
+the trigger is the last word for a routine added on another phone. Only a
+known free account is stopped at the button: while the subscription is still
+being checked, or cannot be, the editor opens and the trigger decides at Save,
+so a Pro account is never told "checking" by New routine at launch. Editing,
+starting and deleting are never gated, and an account that lapses with more
+than three keeps them all.
 
 ### A workout lives on the phone until it is finished
 
@@ -3868,7 +3896,8 @@ user could attach sets to somebody else's workout by knowing its id.
 
 `96_workouts.sql` is the arithmetic: a set's volume and estimated one-rep max,
 whether it was a record, a workout's totals, an exercise's bests and history,
-the weekly bars, the streak, and sets per exercise for the muscle split. The
+the weekly and monthly bars, the streak, and sets per exercise for the muscle
+split. The
 phone adds nothing up except the live totals of the workout on screen.
 
 **Two views, and the split is for speed.** `workout_set_values` is every set
@@ -3935,6 +3964,15 @@ the same flag on every one of 5,000 sets as before.
   one row is the heaviest weight again.
 - **The streak is in weeks**, ending this week or last. A daily streak punishes
   exactly the rest days a program prescribes.
+- **The progress bars** are `workout_weeks(13)` for three months,
+  `workout_months(12)` for a year, and `workout_months()` for all time: every
+  month from the first workout's (or eleven months back, if that is earlier) to
+  this one, empty ones included. A year passes its length so only that year's
+  sets are added up; all time reads the whole history once. A year of weeks would be 52
+  bars too thin to tap, and `workout_weeks` stops at 104. All time past two
+  years of months is summed into years on the phone (`periodsFor`). The ranges
+  past three months are Pro, gated in the client alone like the Trends ranges:
+  they are reads of the user's own data.
 - **The muscle split** spreads working sets over muscles by each exercise's
   split. The counting is in the database (`workout_exercise_totals`); the split
   is in the app, with the catalogue it belongs to. It is shown as each body
@@ -4241,8 +4279,7 @@ rather than copying the row above as typed values, which hid last time's
 counts these too: a set that shows numbers and was never ticked is asked about
 ("Complete unfinished sets" ticks it with what it shows, "Discard unfinished
 sets" saves without it) rather than left out, which is what happened while only
-typed numbers counted. A past workout is saved the same way, with last time's
-sets. The copy says "complete", as Strong and Hevy do; "tick" read oddly.
+typed numbers counted. The copy says "complete", as Strong and Hevy do; "tick" read oddly.
 
 **A workout that left its routine asks about the routine on Save**, as Strong
 asks about templates and Hevy about routines (`routineUpdate.ts`). Two kinds of
@@ -4314,8 +4351,12 @@ readout where its axis label is short or blank, as every other month is on the
 year's weight chart. Dates are thinned to as many as fit, because twenty
 sessions side by side were twenty clipped stubs. The shareable review card
 passes no `formatValue` and stays a picture. `BarChart` takes `selected` and
-`onSelect`, and the workout progress page puts the tapped week's figure in its
-headline; each selectable bar carries its own VoiceOver name.
+`onSelect`, and the workout progress page puts the tapped period's figure in its
+headline; each selectable bar carries its own VoiceOver name. It also takes an
+`axis`: about three round steps (`axisTicks`) counted in a unit the reader uses
+(minutes or hours, kilograms or pounds, whole workouts), drawn as faint rules
+behind the bars with their figures in a gutter on the right, and no figure on
+zero, where it would sit on the dates under the chart.
 
 ### Against Hevy and Strong
 
@@ -4324,11 +4365,15 @@ release. In: empty, routine, template and repeat starts; the PREVIOUS column;
 warm-up, drop and failure sets; RPE; supersets; per-exercise rest with ±15 s and
 skip; warm-up sets; live records; rep records and charts
 per exercise; muscle split; weekly bars, calendar and week streak; the Live
-Activity with its buttons; Apple Health; past workouts and late finishes;
+Activity with its buttons; Apple Health; late finishes;
 reminders; custom exercises; kg and lb; keeping the screen on; sharing a workout;
 CSV export; and importing a Strong or Hevy history.
 
 Left out on purpose:
+- **Logging a past workout from nothing.** It was built and taken out: a
+  forgotten session is a workout started and finished with its times moved on
+  the finish screen, or a saved one edited, and a second blank form for it was
+  one more button on the tab.
 - **Routine folders.** The built-in templates are already grouped, and a user's
   own routines are a handful; folders are a screen of management for a list
   that fits on one.
@@ -4638,21 +4683,24 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 | a meal corrected in words | no | yes |
 | a recipe read out of a photograph | no | yes |
 | recipes kept | 3 | unlimited |
+| workout routines kept | 3 | unlimited |
 | trends | 7 days | 7d / 30d / a year |
+| workout progress bars | 3 months | a year, all time |
 | reviews | the newest week | every week and month |
 | meal photographs kept | 30 days, or 60 past a lapsed subscription | for good |
 | budget, health sync, reminders, the whole catalogue | yes | yes |
 
-Three of those numbers live in `packages/shared` for the copy to interpolate,
-and all three are enforced in Postgres: `free_daily_scans()`,
-`free_recipe_limit()`, `free_photo_retention_days()`. A fourth,
+Four of those numbers live in `packages/shared` for the copy to interpolate,
+and all four are enforced in Postgres: `free_daily_scans()`,
+`free_recipe_limit()`, `free_routine_limit()`, `free_photo_retention_days()`.
+A fifth,
 `lapsed_photo_grace_days()`, is Postgres-only, because the grace period is not
 advertised and a promise about it would be one more thing that cannot be
 narrowed later.
 
 The client's copy makes the buttons read honestly; the database's is what
-refuses. The trend ranges and the older reviews are gated in the **client
-alone** and deliberately: they are reads of the user's own data, so the worst a
+refuses. The trend ranges, the workout progress ranges and the older reviews
+are gated in the **client alone** and deliberately: they are reads of the user's own data, so the worst a
 modified client buys is somebody seeing their own year.
 
 ### The scan meter
@@ -5388,8 +5436,8 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Review Opened | ricecal_review_opened | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Review period resolves; once per resolved period in a mounted route. Locked reviews count before redirecting; this is not a read-completion event. |
 | Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Card share helper reports sent; each card send. Android share intent cannot confirm completion. |
 | Meal Shared | ricecal_meal_shared | picture: 'photo' &#124; 'drawing' | `app/log/food/[id].tsx` | Meal picture share helper reports sent; each send. Android share intent cannot confirm completion. |
-| Workout Started | ricecal_workout_started | source: WorkoutSource; exercises: number | `src/features/workouts/start.tsx`<br>`app/workout/edit/[id].tsx` | A workout is opened on the logger from empty, a routine, a template, a past workout repeated, or as a past workout being logged; once per start, including one that is later discarded. |
-| Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `src/features/workouts/WorkoutForm.tsx`<br>`app/workout/finish.tsx`<br>`app/workout/edit/[id].tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. A past workout logged after the fact sends it from its own save, so it closes the `Workout Started` its editor sent. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
+| Workout Started | ricecal_workout_started | source: WorkoutSource; exercises: number | `src/features/workouts/start.tsx` | A workout is opened on the logger from empty, a routine, a template, or a past workout repeated; once per start, including one that is later discarded. `source: past` appears only in data from builds that still had "Log a past workout". |
+| Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `src/features/workouts/WorkoutForm.tsx`<br>`app/workout/finish.tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
 | Workout Discarded | ricecal_workout_discarded | sets: number; minutes: number | `src/features/workouts/start.tsx` | A running workout is thrown away from the logger, the "still training?" prompt, or by starting another over it; once per discard, with its ticked sets and minutes. |
 | Routine Saved | ricecal_routine_saved | is_new: boolean; exercises: number; from_template: boolean | `src/data/workouts.ts` | A routine insert or update succeeds, including a template added to the user's routines, a workout saved as one, or a finished workout updating the routine it started from; each success, with counts only. |
 | Workouts Imported | ricecal_workouts_imported | source: 'strong' &#124; 'hevy'; workouts: number; existing: number; failed: number; custom_exercises: number | `app/workout/import.tsx` | A Strong or Hevy CSV import finishes, whether every workout saved or some were refused; once per finished run, with counts only. `custom_exercises` is how many the run created. A run stopped by a lost connection sends nothing; a retry that finishes sends its own. |
@@ -5444,7 +5492,7 @@ user text. Extend the source type and these tables together when its domain chan
 | `method` / `LogMethod` | `camera`, `describe`, `search`, `barcode`, `recipe`, `quick_add`, `history` | `events.ts`; compare logging actions, not individual food components |
 | `method` / `SignInMethod` | `apple`, `google`, `email`, `password` | `email` means code/link. Failure coverage currently covers Apple/Google only |
 | `screen` / `PaywallScreen` | `hard`, `intro` | Paywall surfaces below; no generic screen-view event. `reminder` and `ended` appear only in data from app versions released before those two screens were deleted; no build ever navigated to them |
-| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `trend_range`, `review`, `nudge` | Refused capability or standing offer; trial expiration is a paywall screen value, not a feature. `suggest` appears only in data from app versions released before "what to eat next" was removed |
+| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `new_routine`, `trend_range`, `workout_range`, `review`, `nudge` | Refused capability or standing offer; trial expiration is a paywall screen value, not a feature. `suggest` appears only in data from app versions released before "what to eat next" was removed |
 | `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
 | `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |
 | `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder category only |
@@ -5476,7 +5524,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Log sheet, food route and data mutations | Sheet entry, catalogue answer/selection, logging, scan/refinement outcome, entry edits/deletes | Search debounces; mutations distinguish intent/optimistic inserts from confirmed success as listed above |
 | Recipes | Draft/save/publish/copy/report/block | Public moderation outcomes count separately; a draft is not a meal or a saved recipe. `Suggestions Shown` appears only in data from app versions released before "what to eat next" was removed |
 | Activity, reminders and reports | Health connection/disconnection, reminder writes, report notification taps and review opens/shares | No background health-import events. Locked review opens count before the paywall redirect |
-| Workouts | Workout started (by source), finished, discarded; routine saved | Started counts discarded workouts too, so finished over started is the completion rate. Finished fires on the save returning, queued saves included (`queued: true`), and on saving a past workout logged after the fact; a queued save that lands later and edits to a saved workout send nothing. Rest timers, sets and records are not tracked |
+| Workouts | Workout started (by source), finished, discarded; routine saved | Started counts discarded workouts too, so finished over started is the completion rate. Finished fires on the save returning, queued saves included (`queued: true`); a queued save that lands later and edits to a saved workout send nothing. Rest timers, sets and records are not tracked |
 | Home-screen widgets | Observed kind additions/removals, supported deep links and queued water actions | First observation is a silent baseline; later foreground diffs can miss intermediate changes. Stored baseline belongs to the handset, not reset on account switches. Each account gets the current count without fabricated add/remove events; results from a cancelled account's poll are discarded even if it returns |
 | Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
 | Hard paywall `/paywall` | `Paywall Shown` with `screen: hard` and refused `ProFeature` | `data/refusals.ts` records before navigation; review redirects also record. Free camera allowance is three scans/day; a further refusal can reach camera trigger |

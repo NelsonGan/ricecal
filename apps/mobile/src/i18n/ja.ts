@@ -1353,6 +1353,11 @@ export const ja = {
           free: 'フード {{recipes}} 件',
           pro: '無制限',
         },
+        routines: {
+          label: 'ワークアウトのルーティン',
+          free: '{{routines}} 件',
+          pro: '無制限',
+        },
         recipeFill: {
           label: '写真からフードを埋める',
           free: '',
@@ -1411,6 +1416,8 @@ export const ja = {
         read_recipe: '写真からフードを埋めるには RiceCal Pro が必要です。',
         new_recipe: '自分のフードを {{recipes}} 件より多く持つには RiceCal Pro が必要です。',
         trend_range: '1 週間より前を見るには RiceCal Pro が必要です。',
+        new_routine: 'ルーティンを {{routines}} 件より多く持つには RiceCal Pro が必要です。',
+        workout_range: '3 か月より前の記録を見るには RiceCal Pro が必要です。',
         review: '古い振り返りを読むには RiceCal Pro が必要です。',
         nudge: 'RiceCal Pro なら上限がなくなります。',
       },
@@ -1708,20 +1715,18 @@ export const ja = {
     title: 'ワークアウト',
 
     overview: {
-      thisWeek_one: '今週のワークアウト',
-      thisWeek_other: '今週のワークアウト',
+      title: '今週',
+      workouts: 'ワークアウト',
       time: '時間',
       volume: '総重量',
       streak_one: '{{count}} 週連続',
       streak_other: '{{count}} 週連続',
-      noStreak: '今週トレーニングして連続記録をスタート',
     },
 
     start: {
       empty: '空のワークアウトを開始',
       resume: 'ワークアウトを再開',
       routine: '開始',
-      past: '過去のワークアウトを記録',
       replaceTitle: 'すでにワークアウト中です',
       replaceBody: '破棄して、こちらを開始しますか。',
       replaceConfirm: '破棄して開始',
@@ -1732,7 +1737,6 @@ export const ja = {
 
     routines: {
       title: 'マイルーティン',
-      new: '新規',
       newTitle: '新しいルーティン',
       namePlaceholder: '例: プッシュの日',
       save: 'ルーティンを保存',
@@ -1804,6 +1808,11 @@ export const ja = {
       },
       hiit: { name: 'HIIT', description: '短いセット、短い休憩、息が上がるまで。' },
       mobility: { name: 'モビリティ', description: 'ほぐして、伸ばして、流れるように。' },
+    },
+
+    calendar: {
+      showList: 'リストを表示',
+      dayEmpty: 'この日のワークアウトはありません',
     },
 
     history: {
@@ -1936,7 +1945,6 @@ export const ja = {
       routineFailed: 'ルーティンを更新できませんでした',
       endBeforeStart: '終了は開始より後にしてください。',
       tooLong: 'ワークアウトは最長 24 時間です。',
-      health: 'Apple ヘルスケアに保存しました',
       healthFailed: 'Apple ヘルスケアに保存できませんでした。',
     },
 
@@ -1973,7 +1981,6 @@ export const ja = {
     edit: {
       title: 'ワークアウトを編集',
       save: '変更を保存',
-      newTitle: '過去のワークアウトを記録',
       leaveTitle: '保存せずに戻りますか',
       leaveBody: 'ここでの変更は失われます。',
     },
@@ -2048,7 +2055,15 @@ export const ja = {
     stats: {
       title: '進捗',
       entry: '進捗と自己ベスト',
-      weeks: '直近 12 週',
+      weeks: 'トレーニング',
+      range: {
+        label: '期間',
+        '3m': '直近 3 か月',
+        '1y': '1 年',
+        all: '全期間',
+      },
+      thisMonth: '今月',
+      thisYear: '今年',
       metric: {
         workouts: 'ワークアウト',
         duration: '時間',

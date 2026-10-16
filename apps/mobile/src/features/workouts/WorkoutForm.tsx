@@ -170,8 +170,8 @@ export function useWorkoutSave() {
 }
 
 /**
- * `Workout Finished`, once per new workout saved: from the finish screen, or
- * logged afterwards on the edit screen. An edit of a saved one is not counted.
+ * `Workout Finished`, once per new workout saved from the finish screen. An
+ * edit of a saved one is not counted.
  */
 export function trackWorkoutFinished(
   document: LiveWorkout,

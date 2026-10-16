@@ -32,6 +32,7 @@ import {
   unavailableState,
   useDeleteConfirm,
   useExerciseLibrary,
+  useRoutineGate,
   useWorkoutStarter,
   volumeText,
   WorkoutUnavailable,
@@ -76,6 +77,7 @@ function WorkoutPage({ id }: { id: string }) {
   const unit = unitFor(settings?.units)
   const remove = useDeleteWorkout()
   const saveRoutine = useSaveRoutine()
+  const routineGate = useRoutineGate()
   const starter = useWorkoutStarter()
   const [menu, setMenu] = useState(false)
   // Held from the moment a delete starts. The delete refetches this query to
@@ -186,6 +188,7 @@ function WorkoutPage({ id }: { id: string }) {
             label: t('workouts:detail.saveRoutine'),
             icon: { set: 'ui', name: 'bookmark' },
             onPress: async () => {
+              if (!routineGate.allowNew()) return
               try {
                 await saveRoutine.mutateAsync({
                   name: workout.name,
@@ -193,8 +196,10 @@ function WorkoutPage({ id }: { id: string }) {
                   exercises: plansToRoutine(toPlans(workout.entries)),
                 })
                 toast.show({ title: t('workouts:detail.savedRoutine'), tone: 'success' })
-              } catch {
-                toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+              } catch (error) {
+                if (!routineGate.refused(error)) {
+                  toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+                }
               }
             },
           },
@@ -262,12 +267,6 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
             />
           ) : null}
         </StatGrid>
-        {workout.healthWorkoutId ? (
-          <View className="flex-row items-center gap-2">
-            <Icon set="body" name="heart-rate" size={18} />
-            <Text variant="caption">{t('workouts:finish.health')}</Text>
-          </View>
-        ) : null}
         {workout.notes ? <Text variant="body">{workout.notes}</Text> : null}
       </Card>
 

@@ -195,24 +195,31 @@ export function useWorkouts() {
   })
 }
 
-/** One day's workouts, for Today. */
-export function useWorkoutsOn(date: string) {
+/**
+ * One day's workouts. Today's row shows no records, and leaving the count out
+ * lets the planner skip scoring them: 0.3 ms rather than 270 on a long
+ * history. The Workouts tab's calendar draws history cards, which show them,
+ * so it asks with `records` and pays for one day.
+ */
+export function useWorkoutsOn(date: string, { records = false }: { records?: boolean } = {}) {
   const userId = useUserId()
 
   return useQuery({
-    queryKey: keys.workoutsOn(userId, date),
+    queryKey: records ? keys.workoutsOnWithRecords(userId, date) : keys.workoutsOn(userId, date),
     gcTime: KEPT_A_DAY,
-    queryFn: async (): Promise<WorkoutSummary[]> =>
-      unwrap(
-        await supabase
-          .from('workout_summaries')
-          // Today's row shows no records, and leaving the count out lets the
-          // planner skip scoring them: 0.3 ms rather than 270 on a long history.
-          .select(SUMMARY_WITHOUT_RECORDS)
+    queryFn: async (): Promise<WorkoutSummary[]> => {
+      // Two literal selects rather than one chosen string, which the typed
+      // client cannot parse.
+      const rows = records
+        ? supabase.from('workout_summaries').select('*')
+        : supabase.from('workout_summaries').select(SUMMARY_WITHOUT_RECORDS)
+      return unwrap(
+        await rows
           .eq('user_id', userId)
           .eq('log_date', date)
           .order('started_at', { ascending: true }),
-      ).map(toSummary),
+      ).map(toSummary)
+    },
   })
 }
 
@@ -368,6 +375,30 @@ export function useWorkoutWeeks(weeks = 12) {
         volumeKg: num(row.volume_kg) ?? 0,
         sets: row.sets,
       })),
+  })
+}
+
+/**
+ * The same totals by calendar month, up to this one: the last `months` of
+ * them, or with null every month from the first workout's (never fewer than
+ * twelve). `week` is the month's first day, so one chart draws either.
+ */
+export function useWorkoutMonths(months: number | null, enabled = true) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.workoutMonths(userId, months),
+    enabled,
+    queryFn: async (): Promise<WorkoutWeek[]> =>
+      unwrap(await supabase.rpc('workout_months', months === null ? {} : { p_months: months })).map(
+        (row) => ({
+          week: row.month,
+          workouts: row.workouts,
+          durationS: row.duration_s,
+          volumeKg: num(row.volume_kg) ?? 0,
+          sets: row.sets,
+        }),
+      ),
   })
 }
 
@@ -985,6 +1016,18 @@ export function useSaveRoutine() {
       }),
     onSettled: () => queryClient.invalidateQueries({ queryKey: keys.routines(userId) }),
   })
+}
+
+/**
+ * Did this insert hit the free tier's routine ceiling? The rule is the
+ * `workout_routines_enforce_free_limit` trigger, which raises a token rather
+ * than a sentence for the reason `isRecipeLimit` explains.
+ */
+const ROUTINE_LIMIT = 'routine_limit_reached'
+
+export function isRoutineLimit(error: unknown): boolean {
+  const message = (error as { message?: unknown })?.message
+  return typeof message === 'string' && message.includes(ROUTINE_LIMIT)
 }
 
 export function useDeleteRoutine() {

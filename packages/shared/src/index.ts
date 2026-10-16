@@ -12,11 +12,12 @@
 export const SCHEMA_VERSION = '5'
 
 /**
- * The free tier's three ceilings, as the app prints them.
+ * The free tier's ceilings, as the app prints them.
  *
  * Copies. Postgres holds the original of each (`free_daily_scans()`,
- * `free_recipe_limit()`, `free_photo_retention_days()`), because a limit the
- * client is trusted to apply only applies to people running the client. These
+ * `free_recipe_limit()`, `free_routine_limit()`,
+ * `free_photo_retention_days()`), because a limit the client is trusted to
+ * apply only applies to people running the client. These
  * are what the comparison table and the toasts say, and they have to change
  * with the database: a paywall promising three scans while the database allows
  * five is a support thread.
@@ -30,4 +31,5 @@ export const SCHEMA_VERSION = '5'
  */
 export const FREE_DAILY_SCANS = 3
 export const FREE_RECIPES = 3
+export const FREE_ROUTINES = 3
 export const FREE_PHOTO_RETENTION_DAYS = 30

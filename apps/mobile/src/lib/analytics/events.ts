@@ -35,7 +35,7 @@ import type { RatingSkipReason, RatingTrigger } from '@/lib/rating/state'
  */
 
 /** What a workout started from. See `Workout Started`. */
-export type WorkoutSource = 'empty' | 'routine' | 'template' | 'repeat' | 'past'
+export type WorkoutSource = 'empty' | 'routine' | 'template' | 'repeat'
 
 /** How an entry reached the diary. The one property most reports break down by. */
 export type LogMethod =
@@ -72,6 +72,10 @@ export type ProFeature =
   | 'new_recipe'
   /** A range on Trends that a free account cannot see: 30 days, or a year. */
   | 'trend_range'
+  /** A fourth workout routine on a free account. */
+  | 'new_routine'
+  /** A range on the workout progress chart past three months: a year, or all time. */
+  | 'workout_range'
   /** An older weekly or monthly review. The latest one is free. */
   | 'review'
   /** The standing offer on launch, which no button refused. See `useProNudge`. */
