@@ -36,6 +36,12 @@ export async function syncWorkoutToHealth(
     // alone: turning a switch off is not asking for history to be erased.
     return { healthId: workout.healthWorkoutId, failed: false, replaced: false }
   }
+  if (workout.watch?.recorded) {
+    // The watch saved its own copy, with its measured heart rate and energy.
+    // A second one from here would count the session's energy twice, and an
+    // edit replacing it would throw away what the watch measured.
+    return { healthId: workout.healthWorkoutId, failed: false, replaced: false }
+  }
   try {
     if (!(await mayWrite())) {
       return { healthId: workout.healthWorkoutId, failed: false, replaced: false }

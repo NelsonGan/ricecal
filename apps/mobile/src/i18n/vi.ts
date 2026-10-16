@@ -1960,6 +1960,20 @@ export const vi = {
       healthFailed: 'Không lưu được vào Apple Health.',
     },
 
+    watch: {
+      noRoutines: 'Tạo giáo án trên iPhone để bắt đầu tại đây.',
+      openPhone: 'Mở RiceCal trên iPhone để bắt đầu.',
+      exercises: 'Bài tập',
+      undo: 'Hoàn tác',
+      end: 'Kết thúc buổi tập',
+      endTitle: 'Kết thúc buổi tập này?',
+      allDone: 'Đã xong mọi set',
+      upNext: 'Tiếp theo',
+      empty: 'Thêm bài tập trên iPhone.',
+      syncing: 'Đồng bộ khi iPhone ở gần',
+      pulse: 'Nhịp tim {{value}} bpm',
+    },
+
     stale: {
       title: 'Vẫn đang tập?',
       body: 'Buổi tập này bắt đầu từ {{time}} trước.',

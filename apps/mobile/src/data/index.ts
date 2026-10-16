@@ -159,6 +159,12 @@ export { useTrendSeries, useTrendSummary } from './trends'
 export * from './types'
 export { useCurrentWeight, useDeleteWeighIn, useLogWeight, useWeighIns } from './weight'
 export {
+  type HeartTrace,
+  queueHeartTrace,
+  useHeartRateOutbox,
+  type WorkoutHeartRate,
+} from './workout-heart'
+export {
   findAlreadyImported,
   type ImportProgress,
   type ImportResult,

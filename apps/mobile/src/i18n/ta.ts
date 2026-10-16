@@ -1968,6 +1968,20 @@ export const ta = {
     },
 
     /** A workout that has been running for hours: the user probably forgot it. */
+    watch: {
+      noRoutines: 'இங்கே தொடங்க உங்கள் iPhone-இல் ஒரு வழக்கத்தை உருவாக்குங்கள்.',
+      openPhone: 'தொடங்க உங்கள் iPhone-இல் RiceCal-ஐத் திறக்கவும்.',
+      exercises: 'பயிற்சிகள்',
+      undo: 'செயல்தவிர்',
+      end: 'வொர்க்அவுட்டை முடி',
+      endTitle: 'இந்த வொர்க்அவுட்டை முடிக்கவா?',
+      allDone: 'எல்லா செட்களும் முடிந்தன',
+      upNext: 'அடுத்தது',
+      empty: 'உங்கள் iPhone-இல் பயிற்சிகளைச் சேர்க்கவும்.',
+      syncing: 'iPhone அருகில் இருக்கும்போது ஒத்திசைக்கும்',
+      pulse: 'இதயத் துடிப்பு {{value}} bpm',
+    },
+
     stale: {
       title: 'இன்னும் பயிற்சியில் இருக்கிறீர்களா?',
       body: 'இந்த வொர்க்அவுட் {{time}} முன் தொடங்கியது.',

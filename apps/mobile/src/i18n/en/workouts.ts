@@ -255,6 +255,27 @@ export const workouts = {
     healthFailed: 'Could not save to Apple Health.',
   },
 
+  /**
+   * The Apple Watch app. The phone sends these to the watch in the user's
+   * language, as it does the Live Activity's; the watch has English of its own
+   * for before the first one arrives. A watch screen is narrower than a
+   * thumb, so every one of these is as short as it can be.
+   */
+  watch: {
+    noRoutines: 'Make a routine on your iPhone to start it here.',
+    openPhone: 'Open RiceCal on your iPhone to begin.',
+    exercises: 'Exercises',
+    undo: 'Undo',
+    end: 'End workout',
+    endTitle: 'End this workout?',
+    allDone: 'All sets done',
+    upNext: 'Up next',
+    empty: 'Add exercises on your iPhone.',
+    syncing: 'Syncs when your iPhone is near',
+    /** The live reading beside the logger's clock, named for VoiceOver. */
+    pulse: 'Heart rate {{value}} bpm',
+  },
+
   /** A workout that has been running for hours: the user probably forgot it. */
   stale: {
     title: 'Still training?',
