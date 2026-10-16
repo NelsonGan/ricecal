@@ -44,6 +44,8 @@ export type ActivityDay = {
 export type ActivitySession = {
   id: string
   provider: ProviderId
+  /** The store's own id: a HealthKit uuid, which `workouts.health_workout_id` also holds. */
+  externalId: string
   date: string
   kind: string
   kindLabel: string | null
@@ -105,6 +107,7 @@ function toSession(row: Tables<'activity_sessions'>): ActivitySession {
   return {
     id: row.id,
     provider: row.provider,
+    externalId: row.external_id,
     date: row.log_date,
     kind: row.kind,
     kindLabel: row.kind_label,

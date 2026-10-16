@@ -177,10 +177,15 @@ export default function TodayScreen() {
   // The day's workouts, drawn among its meals. Not part of the wait below: a day
   // whose meals are ready should not hold for the list of sessions, which on
   // most accounts is empty.
-  const sessions = useActivitySessions(selectedDate).data ?? []
-  // And the workouts logged in the app, which the health sync deliberately
-  // does not read back as sessions (see `isOwnWorkout` in `lib/health/apple.ts`).
+  //
+  // The ones logged in the app are not read back from Health as sessions (see
+  // `isOwnWorkout` in `lib/health/apple.ts`), but a build from before workouts,
+  // on a second iPhone or an iPad, does read them back. Each would show twice.
   const workouts = useWorkoutsOn(selectedDate).data ?? []
+  const savedToHealth = new Set(workouts.map((workout) => workout.healthWorkoutId))
+  const sessions = (useActivitySessions(selectedDate).data ?? []).filter(
+    (session) => !savedToHealth.has(session.externalId),
+  )
 
   /**
    * Everything under the strip waits together.

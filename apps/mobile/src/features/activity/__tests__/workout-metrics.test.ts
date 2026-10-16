@@ -6,6 +6,7 @@ const session: ActivitySession = {
   id: 'workout',
   date: '2026-10-03',
   provider: 'apple_health',
+  externalId: 'run-uuid',
   kind: 'run',
   kindLabel: null,
   startedAt: '2026-10-03T06:00:00+08:00',

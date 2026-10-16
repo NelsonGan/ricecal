@@ -4002,7 +4002,10 @@ Connecting health for the budget still asks to write nothing.
 - **The sync skips workouts carrying that key** (`isOwnWorkout` in
   `lib/health/apple.ts`). Reading them back would list each one twice on Today,
   once as the workout and once as a bare session with no idea what was lifted.
-  Its energy is still read, which is the point of saving it.
+  Its energy is still read, which is the point of saving it. A build from
+  before workouts has no such skip, and on a second iPhone or an iPad sharing
+  the same Health data it reads them back anyway, so Today also drops a session
+  whose uuid one of the day's workouts holds in `health_workout_id`.
 - An edit deletes the old copy and its samples (by uuid and by that metadata
   key) and saves a new one; deleting a workout deletes its copy.
 - Each type on Health's sheet is its own switch, and a sample of a refused type
@@ -4485,7 +4488,8 @@ Existing feed members get `auto_post_workouts` on with everyone else.
 `db diff` left out the revokes that keep new functions from `PUBLIC` and
 `anon`, and the client-table revokes, so the migration restates both at its
 foot. The `social` function now reviews a workout post's name, not just its
-caption; it ships with the merge like every function. Deploy the migrations
+caption, reading it from `social_post_details` because the author is not granted
+`source_workout_id`; it ships with the merge like every function. Deploy the migrations
 before the app, as always. The five analytics events are in the
 canonical table under Analytics; sharing and exporting send none.
 
