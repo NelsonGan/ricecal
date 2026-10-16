@@ -51,14 +51,7 @@ struct WorkoutLiveActivity: Widget {
         }
         DynamicIslandExpandedRegion(.bottom) {
           VStack(alignment: .leading, spacing: 6) {
-            NextSetLine(
-              state: context.state, workoutId: context.attributes.workoutId, palette: .dark)
-            if let ends = context.state.restEndsAt, ends > Date() {
-              RestLine(
-                ends: ends, total: context.state.restTotalS,
-                workoutId: context.attributes.workoutId, labels: context.state.labels,
-                palette: .dark)
-            }
+            NextSetAndRest(context: context, palette: .dark)
           }
           .padding(.horizontal, 4)
         }
@@ -119,16 +112,26 @@ private struct WorkoutLockScreen: View {
           .foregroundStyle(palette.pandanInk)
           .frame(maxWidth: 110, alignment: .trailing)
       }
-      NextSetLine(state: context.state, workoutId: context.attributes.workoutId, palette: palette)
-      if let ends = context.state.restEndsAt, ends > Date() {
-        RestLine(
-          ends: ends, total: context.state.restTotalS, workoutId: context.attributes.workoutId,
-          labels: context.state.labels, palette: palette)
-      }
+      NextSetAndRest(context: context, palette: palette)
     }
     .padding(16)
     .activityBackgroundTint(palette.surface)
     .activitySystemActionForegroundColor(palette.heading)
+  }
+}
+
+/// The next set and, while one runs, the rest: two rows of whatever stack holds them.
+private struct NextSetAndRest: View {
+  let context: ActivityViewContext<WorkoutActivityAttributes>
+  let palette: Palette
+
+  var body: some View {
+    NextSetLine(state: context.state, workoutId: context.attributes.workoutId, palette: palette)
+    if let ends = context.state.restEndsAt, ends > Date() {
+      RestLine(
+        ends: ends, total: context.state.restTotalS, workoutId: context.attributes.workoutId,
+        labels: context.state.labels, palette: palette)
+    }
   }
 }
 

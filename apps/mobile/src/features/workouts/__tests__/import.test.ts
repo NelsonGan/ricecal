@@ -78,7 +78,6 @@ describe('a Strong export', () => {
   it('is recognised, and its rest-timer rows are not sets', () => {
     expect(file.source).toBe('strong')
     expect(file.workouts).toHaveLength(2)
-    expect(file.rows).toBe(10)
     const bench = file.workouts[0].exercises[0]
     expect(bench.sets.map((set) => set.kind)).toEqual(['warmup', 'normal', 'normal', 'drop'])
     expect(bench.rests).toEqual([120, 120, 90])
@@ -151,7 +150,6 @@ describe('a Strong export', () => {
     ])
     expect(plan.workouts[0].customNames).toEqual([null, null, null, null, 'Zottman Curl'])
     expect(plan.workouts[1].document.exercises).toHaveLength(1)
-    expect(plan.skipped).toBe(1)
   })
 })
 
@@ -395,7 +393,6 @@ describe('fixes from the review', () => {
     expect(Date.parse(long.ended_at) - Date.parse(long.started_at)).toBe(24 * 3_600_000)
     expect(many.exercises[0].sets).toHaveLength(99)
     expect(plan.customs).toHaveLength(60)
-    expect(plan.skipped).toBe(2)
   })
 
   it('dissolves a superset left with one member', () => {

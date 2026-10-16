@@ -4046,10 +4046,11 @@ opens the logger (by way of the Workouts tab, below), not through
   is compiled into both the module pod and the extension, because ActivityKit
   matches an activity to its view by the attributes type.
   `NSSupportsLiveActivities` is set by `plugins/withWidgets.js`.
-- JS calls `startWorkoutActivity` / `updateWorkoutActivity` /
-  `endWorkoutActivity` from `useWorkoutEffects`, mounted in the tabs layout and
-  driven by the stored document, so it is right after the app is killed and
-  reopened. A start for another workout ends any activity left behind.
+- JS calls `startWorkoutActivity`, which updates the activity when one is
+  already up, and `endWorkoutActivity` from `useWorkoutEffects`, mounted in the
+  tabs layout and driven by the stored document, so it is right after the app
+  is killed and reopened. A start for another workout ends any activity left
+  behind.
 - **The clocks are dates, not text the app updates.** The elapsed time and the
   rest are `Text(timerInterval:)` and `ProgressView(timerInterval:)` over dates
   in the content state, so the system counts them and the app never has to wake.
@@ -5388,7 +5389,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Card share helper reports sent; each card send. Android share intent cannot confirm completion. |
 | Meal Shared | ricecal_meal_shared | picture: 'photo' &#124; 'drawing' | `app/log/food/[id].tsx` | Meal picture share helper reports sent; each send. Android share intent cannot confirm completion. |
 | Workout Started | ricecal_workout_started | source: WorkoutSource; exercises: number | `src/features/workouts/start.tsx`<br>`app/workout/edit/[id].tsx` | A workout is opened on the logger from empty, a routine, a template, a past workout repeated, or as a past workout being logged; once per start, including one that is later discarded. |
-| Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `app/workout/finish.tsx`<br>`app/workout/edit/[id].tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. A past workout logged after the fact sends it from its own save, so it closes the `Workout Started` its editor sent. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
+| Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `src/features/workouts/WorkoutForm.tsx`<br>`app/workout/finish.tsx`<br>`app/workout/edit/[id].tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. A past workout logged after the fact sends it from its own save, so it closes the `Workout Started` its editor sent. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
 | Workout Discarded | ricecal_workout_discarded | sets: number; minutes: number | `src/features/workouts/start.tsx` | A running workout is thrown away from the logger, the "still training?" prompt, or by starting another over it; once per discard, with its ticked sets and minutes. |
 | Routine Saved | ricecal_routine_saved | is_new: boolean; exercises: number; from_template: boolean | `src/data/workouts.ts` | A routine insert or update succeeds, including a template added to the user's routines, a workout saved as one, or a finished workout updating the routine it started from; each success, with counts only. |
 | Workouts Imported | ricecal_workouts_imported | source: 'strong' &#124; 'hevy'; workouts: number; existing: number; failed: number; custom_exercises: number | `app/workout/import.tsx` | A Strong or Hevy CSV import finishes, whether every workout saved or some were refused; once per finished run, with counts only. `custom_exercises` is how many the run created. A run stopped by a lost connection sends nothing; a retry that finishes sends its own. |

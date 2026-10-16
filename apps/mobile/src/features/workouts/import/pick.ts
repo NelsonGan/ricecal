@@ -3,7 +3,7 @@ import { File } from 'expo-file-system'
 import { type ParsedExport, parseExport } from './parse'
 
 /** Why a picked file could not be imported, each a `workouts:import.*` message. */
-export type ReadError = 'unknown' | 'empty' | 'failed' | 'dates'
+type ReadError = 'unknown' | 'empty' | 'failed' | 'dates'
 
 /**
  * Opens the file picker and reads a Strong or Hevy export. Null when the

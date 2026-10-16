@@ -368,6 +368,34 @@ export function Screen({
     </View>
   )
 
+  /**
+   * A floating control in a bottom corner. Rides up with the footer, so it is
+   * never left under an open keyboard, and sits one gutter above the floating
+   * nav bar, whose footprint already includes the home indicator, so the safe
+   * area is not added again.
+   *
+   * Styled rather than classed: the position is what makes this an overlay at
+   * all, and NativeWind's support for a third-party animated view is not worth
+   * depending on for that.
+   */
+  const corner = (side: 'left' | 'right', control: ReactNode) =>
+    control ? (
+      <Reanimated.View
+        style={[
+          {
+            position: 'absolute',
+            ...(side === 'left' ? { left: spacing.gutter } : { right: spacing.gutter }),
+            bottom: spacing.gutter + navInset,
+            alignItems: side === 'left' ? 'flex-start' : 'flex-end',
+          },
+          lift,
+        ]}
+        pointerEvents="box-none"
+      >
+        {control}
+      </Reanimated.View>
+    ) : null
+
   return (
     <KeyboardShell
       className={cn('flex-1 bg-canvas', className)}
@@ -399,53 +427,14 @@ export function Screen({
 
         {overlayHeader}
 
-        {/* Rides up with the footer, so a floating control is never left under an
-          open keyboard.
-
-          One gutter above the floating nav bar, whose footprint already
-          includes the home indicator, so the safe area is not added again.
-
-          Styled rather than classed: the position is what makes this an overlay
-          at all, and NativeWind's support for a third-party animated view is
-          not worth depending on for that. */}
-        {floatingTrailing ? (
-          <Reanimated.View
-            style={[
-              {
-                position: 'absolute',
-                right: spacing.gutter,
-                bottom: spacing.gutter + navInset,
-                alignItems: 'flex-end',
-              },
-              lift,
-            ]}
-            pointerEvents="box-none"
-          >
-            {floatingTrailing}
-          </Reanimated.View>
-        ) : null}
+        {corner('right', floatingTrailing)}
 
         {toastsAboveFloating ? (
           // The provider already clears the safe area, so it comes off here.
           <ToastHost offset={FLOATING_CLEARANCE + navInset - insets.bottom} />
         ) : null}
 
-        {floatingLeading ? (
-          <Reanimated.View
-            style={[
-              {
-                position: 'absolute',
-                left: spacing.gutter,
-                bottom: spacing.gutter + navInset,
-                alignItems: 'flex-start',
-              },
-              lift,
-            ]}
-            pointerEvents="box-none"
-          >
-            {floatingLeading}
-          </Reanimated.View>
-        ) : null}
+        {corner('left', floatingLeading)}
 
         {footer ? (
           /* A transform, so the scroll view above keeps the frame the keyboard is

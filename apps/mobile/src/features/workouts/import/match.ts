@@ -1,4 +1,5 @@
 import { EXERCISES, type Exercise, exerciseById } from '../catalogue'
+import { nameKey } from './existing'
 import { HEVY_NAMES, STRONG_NAMES } from './names'
 import type { ImportSource } from './parse'
 
@@ -16,7 +17,7 @@ import type { ImportSource } from './parse'
  */
 
 const lower = (table: Readonly<Record<string, string | null>>) =>
-  new Map(Object.entries(table).map(([name, id]) => [name.trim().toLowerCase(), id]))
+  new Map(Object.entries(table).map(([name, id]) => [nameKey(name), id]))
 
 const TABLES: Record<ImportSource, Map<string, string | null>> = {
   strong: lower(STRONG_NAMES),
@@ -69,7 +70,7 @@ function catalogueByWords(): Map<string, string> {
 }
 
 export function matchExercise(name: string, source: ImportSource): Exercise | null {
-  const key = name.trim().toLowerCase()
+  const key = nameKey(name)
   const listed = TABLES[source].get(key)
   if (listed !== undefined) return listed === null ? null : (exerciseById(listed) ?? null)
 

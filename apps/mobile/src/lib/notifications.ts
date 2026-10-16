@@ -181,21 +181,24 @@ export function rescheduleReminders(
   mealTimes: readonly MealTime[],
   copy: ReminderCopy,
 ): Promise<void> {
-  // One at a time. Two runs that overlapped each read the booked list before
-  // the other had booked, and both full sets stayed: tapping Mon then Wed on
-  // the workout reminders quickly left Monday booked twice.
-  const run = reminderRun.catch(() => {}).then(() => writeReminders(settings, mealTimes, copy))
-  reminderRun = run
-  return run
+  return afterReminders(() => writeReminders(settings, mealTimes, copy))
 }
 
 let reminderRun: Promise<void> = Promise.resolve()
 
+/**
+ * One at a time. Two runs that overlapped each read the booked list before
+ * the other had booked, and both full sets stayed: tapping Mon then Wed on
+ * the workout reminders quickly left Monday booked twice.
+ */
+function afterReminders(step: () => Promise<void>): Promise<void> {
+  reminderRun = reminderRun.catch(() => {}).then(step)
+  return reminderRun
+}
+
 /** Every scheduled reminder, unbooked. For signing out: they are that account's. */
 export function cancelReminders(): Promise<void> {
-  const run = reminderRun.catch(() => {}).then(unbookReminders)
-  reminderRun = run
-  return run
+  return afterReminders(unbookReminders)
 }
 
 async function unbookReminders(): Promise<void> {

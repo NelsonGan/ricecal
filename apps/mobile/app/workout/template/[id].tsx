@@ -19,7 +19,7 @@ import {
 } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
 import { useOnline } from '@/lib/online'
-import { AppBar, Badge, Button, Card, Divider, Screen, Text, useToast } from '@/ui'
+import { AppBar, Badge, Button, Card, Divided, Screen, Text, useToast } from '@/ui'
 
 /**
  * One built-in template: its exercises and sets, and the two things to do with
@@ -117,22 +117,21 @@ export default function TemplateScreen() {
       </Card>
 
       <Card contentClassName="gap-0">
-        {template.exercises.map((entry, index) => {
-          const exercise = exerciseById(entry.id)
-          if (!exercise) return null
-          const working = entry.sets.filter((set) => set.kind !== 'warmup')
-          const warmups = entry.sets.length - working.length
-          const target = working[0]
-          const shape =
-            target?.durationS != null
-              ? `${working.length} × ${shortClock(target.durationS)}`
-              : `${working.length} × ${target?.reps ?? ''}`
-          return (
-            // A template may list an exercise twice, so the position is part of its identity.
-            // biome-ignore lint/suspicious/noArrayIndexKey: a fixed list, never reordered
-            <View key={`${entry.id}-${index}`}>
-              {index > 0 ? <Divider /> : null}
-              <View className="flex-row items-center gap-3 py-3">
+        <Divided>
+          {template.exercises.map((entry, index) => {
+            const exercise = exerciseById(entry.id)
+            if (!exercise) return null
+            const working = entry.sets.filter((set) => set.kind !== 'warmup')
+            const warmups = entry.sets.length - working.length
+            const target = working[0]
+            const shape =
+              target?.durationS != null
+                ? `${working.length} × ${shortClock(target.durationS)}`
+                : `${working.length} × ${target?.reps ?? ''}`
+            return (
+              // A template may list an exercise twice, so the position is part of its identity.
+              // biome-ignore lint/suspicious/noArrayIndexKey: a fixed list, never reordered
+              <View key={`${entry.id}-${index}`} className="flex-row items-center gap-3 py-3">
                 <ExerciseArt exerciseId={exercise.id} category={exercise.category} size={52} />
                 <View className="min-w-0 flex-1 gap-0.5">
                   <Text variant="bodyStrong" numberOfLines={2}>
@@ -148,9 +147,9 @@ export default function TemplateScreen() {
                   </Text>
                 ) : null}
               </View>
-            </View>
-          )
-        })}
+            )
+          })}
+        </Divided>
       </Card>
       {starter.dialog}
     </Screen>

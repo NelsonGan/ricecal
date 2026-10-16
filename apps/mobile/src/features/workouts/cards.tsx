@@ -159,10 +159,10 @@ export function RowChevron() {
   return <Icon set="ui" name="chevron-right" size={20} tintColor={colors.faint} />
 }
 
-/** A past workout in the history list. */
 /**
- * Memoised with the workout handed to `onPress`, so the history list re-renders
- * only the cards that changed rather than every one loaded.
+ * A past workout in the history list. Memoised with the workout handed to
+ * `onPress`, so the list re-renders only the cards that changed rather than
+ * every one loaded.
  */
 export const WorkoutCard = memo(function WorkoutCard({
   workout,
@@ -171,33 +171,19 @@ export const WorkoutCard = memo(function WorkoutCard({
 }: {
   workout: WorkoutSummary
   unit: WeightUnit
-  onPress?: (workout: WorkoutSummary) => void
+  onPress: (workout: WorkoutSummary) => void
 }) {
   const { t } = useTranslation(['workouts', 'common'])
-  const first = workout.exercises[0]
-  const library = useExerciseLibrary()
-  const started = parseISO(workout.startedAt)
 
   return (
-    <Card contentClassName="gap-3 p-4" onPress={onPress ? () => onPress(workout) : undefined}>
-      <View className="flex-row items-center gap-3">
-        {first ? (
-          <ExerciseArt
-            exerciseId={first.exerciseId}
-            category={library.byId(first.exerciseId)?.category}
-            size={52}
-          />
-        ) : null}
-        <View className="min-w-0 flex-1 gap-0.5">
-          <Text variant="bodyStrong" numberOfLines={1}>
-            {workout.name}
-          </Text>
-          <Text variant="meta" numberOfLines={1}>
-            {format(started, `${datePattern('weekdayDayMonth')}, ${datePattern('time')}`)}
-          </Text>
-        </View>
-        {onPress ? <RowChevron /> : null}
-      </View>
+    <Card contentClassName="gap-3 p-4" onPress={() => onPress(workout)}>
+      <WorkoutHeading
+        exerciseId={workout.exercises[0]?.exerciseId}
+        name={workout.name}
+        startedAt={workout.startedAt}
+      >
+        <RowChevron />
+      </WorkoutHeading>
 
       <View className="flex-row flex-wrap gap-2">
         <Metric
@@ -265,31 +251,16 @@ export function WorkoutPreview({
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const library = useExerciseLibrary()
-  const first = exercises[0]
   const shown = exercises.slice(0, 4)
 
   return (
     <View className="gap-4 bg-surface-alt px-5 py-5">
-      <View className="flex-row items-center gap-3">
-        {first ? (
-          <ExerciseArt
-            exerciseId={first.exerciseId}
-            category={library.byId(first.exerciseId)?.category}
-            size={56}
-          />
-        ) : null}
-        <View className="min-w-0 flex-1 gap-0.5">
-          <Text variant="subtitle" numberOfLines={2}>
-            {name}
-          </Text>
-          <Text variant="meta" numberOfLines={1}>
-            {format(
-              parseISO(startedAt),
-              `${datePattern('weekdayDayMonth')}, ${datePattern('time')}`,
-            )}
-          </Text>
-        </View>
-      </View>
+      <WorkoutHeading
+        large
+        exerciseId={exercises[0]?.exerciseId}
+        name={name}
+        startedAt={startedAt}
+      />
 
       <StatStrip>
         <Stat label={t('workouts:logger.duration')} value={durationText(t, durationS)} />
@@ -333,6 +304,46 @@ export function WorkoutPreview({
   )
 }
 
+/**
+ * A workout's first exercise drawn, then its name and when it started: a
+ * history card's top line, and larger, a shared workout's.
+ */
+function WorkoutHeading({
+  exerciseId,
+  name,
+  startedAt,
+  large = false,
+  children,
+}: {
+  exerciseId: string | undefined
+  name: string
+  startedAt: string
+  large?: boolean
+  children?: ReactNode
+}) {
+  const library = useExerciseLibrary()
+  return (
+    <View className="flex-row items-center gap-3">
+      {exerciseId ? (
+        <ExerciseArt
+          exerciseId={exerciseId}
+          category={library.byId(exerciseId)?.category}
+          size={large ? 56 : 52}
+        />
+      ) : null}
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text variant={large ? 'subtitle' : 'bodyStrong'} numberOfLines={large ? 2 : 1}>
+          {name}
+        </Text>
+        <Text variant="meta" numberOfLines={1}>
+          {format(parseISO(startedAt), `${datePattern('weekdayDayMonth')}, ${datePattern('time')}`)}
+        </Text>
+      </View>
+      {children}
+    </View>
+  )
+}
+
 function Metric({ icon, text, tone }: { icon: ReactNode; text: string; tone?: 'kaya' }) {
   return (
     <Badge tone={tone ?? 'neutral'} size="sm">
@@ -346,27 +357,18 @@ function Metric({ icon, text, tone }: { icon: ReactNode; text: string; tone?: 'k
 
 /**
  * A row of figures with thin rules between them: the logger's duration, volume
- * and sets, a shared workout's, and a profile's workout totals. Each child is
- * one `Stat`, or a component that renders one, so a clock can re-render its
- * own figure each second and nothing else.
+ * and sets, and a shared workout's. Each child is one `Stat`, or a component
+ * that renders one, so a clock can re-render its own figure each second and
+ * nothing else.
  */
-export function StatStrip({
-  children,
-  className,
-  compact = false,
-}: {
-  children: ReactNode
-  className?: string
-  /** Tighter cells, for a strip inside a card's own padding, where "WORKOUTS" was cut short. */
-  compact?: boolean
-}) {
+export function StatStrip({ children }: { children: ReactNode }) {
   return (
-    <View className={cn('flex-row rounded-card bg-surface py-3', className)}>
+    <View className="flex-row rounded-card bg-surface py-3">
       {Children.toArray(children).map((child, index) => (
         <View
           // biome-ignore lint/suspicious/noArrayIndexKey: the strip's order is its layout
           key={index}
-          className={cn('flex-1', compact ? 'px-3' : 'px-4', index > 0 && 'border-line border-l')}
+          className={cn('flex-1 px-4', index > 0 && 'border-line border-l')}
         >
           {child}
         </View>

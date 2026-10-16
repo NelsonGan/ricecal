@@ -6,13 +6,13 @@ import { useTranslation } from 'react-i18next'
 import { useLastSets, useSettings } from '@/data'
 import {
   completeAll,
+  DiscardDialog,
   discardWorkout,
   doneSets,
+  type FinishParams,
   getActiveWorkout,
-  type LiveWorkout,
   liveTotals,
   RestBar,
-  STALE_AFTER_MS,
   StaleWorkoutDialog,
   Stat,
   StatStrip,
@@ -28,7 +28,7 @@ import {
   clock as workoutClock,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
-import { AppBar, Button, Dialog, Screen } from '@/ui'
+import { AppBar, Button, Dialog, Screen, useHeld } from '@/ui'
 
 /**
  * The logger: a workout being trained.
@@ -49,9 +49,9 @@ export default function ActiveWorkoutScreen() {
 
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState('')
-  const [confirmDiscard, setConfirmDiscard] = useState(false)
+  // The logger's own Discard, or a finish with nothing to save.
+  const [discarding, setDiscarding] = useState<'discard' | 'nothing' | null>(null)
   const [unfinished, setUnfinished] = useState(0)
-  const [nothing, setNothing] = useState(false)
   const finishParams = useRef<FinishParams>({})
   // Under the finish screen, the library or an exercise's page this stays
   // mounted, and "Still training?" asked from there over whatever was on top.
@@ -61,9 +61,7 @@ export default function ActiveWorkoutScreen() {
   // discarding clear the workout and then navigate away, and in between the
   // screen re-renders with nothing; a <Redirect> there raced the navigation
   // and could mount the tabs a second time.
-  const lastSeen = useRef(current)
-  if (current) lastSeen.current = current
-  const workout = current ?? lastSeen.current
+  const workout = useHeld(current, Boolean(current))
   // Last time's sets, for what an unticked set offers. The editor asks for
   // the same key, so this reads its cache.
   const previous = useLastSets(workout?.exercises.map((exercise) => exercise.exerciseId) ?? []).data
@@ -94,13 +92,13 @@ export default function ActiveWorkoutScreen() {
       return
     }
     if (doneSets(workout) === 0) {
-      setNothing(true)
+      setDiscarding('nothing')
       return
     }
     router.push({ pathname: '/workout/finish', params })
   }
 
-  const discard = async () => {
+  const discard = () => {
     if (userId) discardWorkout(userId, workout)
     router.dismissTo('/workouts')
   }
@@ -164,24 +162,15 @@ export default function ActiveWorkoutScreen() {
 
       <WorkoutEditor workout={workout} dispatch={dispatch} mode="live" />
 
-      <Button variant="ghost" fullWidth onPress={() => setConfirmDiscard(true)}>
+      <Button variant="ghost" fullWidth onPress={() => setDiscarding('discard')}>
         {t('workouts:logger.discard')}
       </Button>
 
-      <Dialog
-        visible={confirmDiscard}
-        onClose={() => setConfirmDiscard(false)}
-        title={t('workouts:logger.discardTitle')}
-        description={t('workouts:logger.discardBody')}
-        cancelLabel={t('common:action.keep')}
-        actions={[
-          {
-            key: 'discard',
-            label: t('workouts:logger.discardConfirm'),
-            tone: 'danger',
-            onPress: discard,
-          },
-        ]}
+      <DiscardDialog
+        visible={discarding !== null}
+        nothing={discarding === 'nothing'}
+        onClose={() => setDiscarding(null)}
+        onDiscard={discard}
       />
 
       {/* Numbers typed into a set but never ticked: ask, rather than guess.
@@ -218,29 +207,12 @@ export default function ActiveWorkoutScreen() {
         ]}
       />
 
-      <Dialog
-        visible={nothing}
-        onClose={() => setNothing(false)}
-        title={t('workouts:finish.nothingTitle')}
-        description={t('workouts:finish.nothingBody')}
-        cancelLabel={t('common:action.keep')}
-        actions={[
-          {
-            key: 'discard',
-            label: t('workouts:logger.discardConfirm'),
-            tone: 'danger',
-            onPress: discard,
-          },
-        ]}
-      />
-
       {current && focused ? (
-        <StaleCheck
+        <StaleWorkoutDialog
           workout={current}
-          answered={current.staleAnswered === true}
-          onAnswered={() => dispatch({ type: 'staleAnswered' })}
+          onKeepGoing={() => dispatch({ type: 'staleAnswered' })}
           onFinish={finish}
-          onDiscard={() => setConfirmDiscard(true)}
+          onDiscard={() => setDiscarding('discard')}
         />
       ) : null}
     </Screen>
@@ -259,40 +231,6 @@ function Elapsed({ label, startedAt }: { label: string; startedAt: number }) {
 function RestCountdown(props: Omit<Parameters<typeof RestBar>[0], 'now'>) {
   const now = useNow(1000)
   return <RestBar {...props} now={now} />
-}
-
-/**
- * "Still training?", once the workout has run long enough to be a forgotten
- * one, and not again once it has been answered.
- */
-type FinishParams = { endedAt?: string; pickEnd?: string }
-
-function StaleCheck({
-  workout,
-  answered,
-  onAnswered,
-  onFinish,
-  onDiscard,
-}: {
-  workout: LiveWorkout
-  answered: boolean
-  onAnswered: () => void
-  onFinish: (params: FinishParams) => void
-  onDiscard: () => void
-}) {
-  const now = useNow(60_000, !answered)
-  const [closed, setClosed] = useState(false)
-  const visible = !answered && !closed && now - workout.startedAt > STALE_AFTER_MS
-  return (
-    <StaleWorkoutDialog
-      workout={workout}
-      visible={visible}
-      onClose={() => setClosed(true)}
-      onKeepGoing={onAnswered}
-      onFinish={onFinish}
-      onDiscard={onDiscard}
-    />
-  )
 }
 
 /** A component only so the hook can be switched on and off with the setting. */

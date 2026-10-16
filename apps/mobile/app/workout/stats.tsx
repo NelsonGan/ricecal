@@ -14,13 +14,15 @@ import {
   useWorkoutWeeks,
   type WorkoutWeek,
 } from '@/data'
-import { monthEnd, monthStart, monthWeeks, weekdayColumns } from '@/features/logging/month'
+import { MonthHeader } from '@/features/logging/MonthCalendar'
+import { monthEnd, monthStart, monthWeeks } from '@/features/logging/month'
 import { BarChart } from '@/features/shared'
 import {
   durationText,
   ExerciseArt,
   groupSplit,
   MuscleSplitBars,
+  NOT_LOADED,
   useExerciseLibrary,
   volumeText,
   weightText,
@@ -28,15 +30,12 @@ import {
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
 import { unitFor, type WeightUnit } from '@/lib/units'
-import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
   Button,
   Card,
   cn,
-  Divider,
-  Icon,
-  IconButton,
+  Divided,
   Screen,
   SegmentedControl,
   Skeleton,
@@ -106,11 +105,7 @@ export default function WorkoutStatsScreen() {
  */
 function Unavailable({ offline }: { offline: boolean }) {
   const { t } = useTranslation(['common'])
-  return (
-    <Text variant="meta">
-      {offline ? t('common:offline.title') : t('common:offline.unreachableTitle')}
-    </Text>
-  )
+  return <Text variant="meta">{t(NOT_LOADED[offline ? 'offline' : 'unreachable'].title)}</Text>
 }
 
 function weekValue(week: WorkoutWeek, metric: WeekMetric): number {
@@ -185,58 +180,27 @@ function WeekBars({
 
 /**
  * The month, with every day that had a workout filled in. Laid out like the
- * diary's month (`features/logging/MonthCalendar.tsx`): the same weekday row,
- * the same muted chevrons either side of the month, and a row per week. Only
- * the paging differs: workouts go back further than the diary's twelve months.
+ * diary's month (`features/logging/MonthCalendar.tsx`): its header, chevrons
+ * and weekday row, and a row per week. Only the paging differs: workouts go
+ * back further than the diary's twelve months.
  */
 function Calendar() {
-  const { t } = useTranslation(['workouts', 'logging'])
-  const colors = useThemeColors()
+  const { t } = useTranslation(['workouts'])
   const now = today()
   const [month, setMonth] = useState(() => monthStart(now))
   const to = monthEnd(month)
   const dates = useWorkoutDates(month, to).data ?? {}
   const weeks = useMemo(() => monthWeeks(month), [month])
-  const columns = weekdayColumns((date) => format(date, 'EEEEE'))
   const isCurrent = month >= monthStart(now)
   const step = (by: -1 | 1) => setMonth(dateKey(addMonths(parseISO(month), by)))
 
   return (
     <Card title={t('workouts:stats.calendar')} contentClassName="gap-3">
-      <View className="flex-row items-center justify-between">
-        <IconButton
-          size="sm"
-          onPress={() => step(-1)}
-          accessibilityLabel={t('logging:calendar.previousMonth')}
-        >
-          <Icon set="ui" name="chevron-left" size={18} tintColor={colors.muted} />
-        </IconButton>
-        <Text variant="subtitle" className="min-w-0 flex-1 text-center">
-          {format(parseISO(month), datePattern('monthYear'))}
-        </Text>
-        <IconButton
-          size="sm"
-          onPress={isCurrent ? undefined : () => step(1)}
-          disabled={isCurrent}
-          accessibilityLabel={t('logging:calendar.nextMonth')}
-        >
-          <Icon set="ui" name="chevron-right" size={18} tintColor={colors.muted} />
-        </IconButton>
-      </View>
-
-      <View className="flex-row">
-        {columns.map((column) => (
-          <Text
-            key={column.key}
-            variant="micro"
-            className="flex-1 text-center"
-            numberOfLines={1}
-            maxFontSizeMultiplier={1.3}
-          >
-            {column.label}
-          </Text>
-        ))}
-      </View>
+      <MonthHeader
+        month={month}
+        onPrevious={() => step(-1)}
+        onNext={isCurrent ? undefined : () => step(1)}
+      />
 
       <View className="gap-1">
         {weeks.map((week) => (
@@ -306,7 +270,7 @@ function Split() {
       ) : !totals.data && (totals.isPaused || totals.isError) ? (
         <Unavailable offline={totals.isPaused} />
       ) : split.length ? (
-        <MuscleSplitBars rows={split.map((row) => ({ group: row.group, value: row.sets }))} />
+        <MuscleSplitBars rows={split} />
       ) : (
         <Text variant="meta">{t('workouts:history.emptyTitle')}</Text>
       )}
@@ -319,7 +283,7 @@ function Records({ unit }: { unit: WeightUnit }) {
   const router = useRouter()
   const library = useExerciseLibrary()
   const bests = useExerciseBests(null)
-  const rows = (bests.data ?? []).filter((entry) => entry.workouts > 0)
+  const rows = bests.data ?? []
   // Ten at a time, as an exercise's history is: a few years of training is a
   // hundred exercises, each a picture, drawn at once.
   const [shown, setShown] = useState(10)
@@ -331,29 +295,29 @@ function Records({ unit }: { unit: WeightUnit }) {
       ) : !bests.data && (bests.isPaused || bests.isError) ? (
         <Unavailable offline={bests.isPaused} />
       ) : rows.length ? (
-        rows.slice(0, shown).map((entry, index) => {
-          const exercise = library.byId(entry.exerciseId)
-          // The heaviest set as lifted, "72.5 kg × 8". The estimated 1RM was
-          // here first and read as a weight somebody had put on the bar.
-          const heaviest =
-            entry.bestWeightKg !== null ? weightText(t, entry.bestWeightKg, unit) : null
-          const best =
-            heaviest !== null
-              ? entry.bestWeightReps
-                ? t('workouts:exercise.weightReps', {
-                    weight: heaviest,
-                    reps: entry.bestWeightReps,
-                  })
-                : heaviest
-              : entry.bestReps !== null
-                ? `× ${entry.bestReps}`
-                : entry.bestDurationS
-                  ? durationText(t, entry.bestDurationS)
-                  : ''
-          return (
-            <View key={entry.exerciseId}>
-              {index > 0 ? <Divider /> : null}
+        <Divided>
+          {rows.slice(0, shown).map((entry) => {
+            const exercise = library.byId(entry.exerciseId)
+            // The heaviest set as lifted, "72.5 kg × 8". The estimated 1RM was
+            // here first and read as a weight somebody had put on the bar.
+            const heaviest =
+              entry.bestWeightKg !== null ? weightText(t, entry.bestWeightKg, unit) : null
+            const best =
+              heaviest !== null
+                ? entry.bestWeightReps
+                  ? t('workouts:exercise.weightReps', {
+                      weight: heaviest,
+                      reps: entry.bestWeightReps,
+                    })
+                  : heaviest
+                : entry.bestReps !== null
+                  ? `× ${entry.bestReps}`
+                  : entry.bestDurationS
+                    ? durationText(t, entry.bestDurationS)
+                    : ''
+            return (
               <Tappable
+                key={entry.exerciseId}
                 className="flex-row items-center gap-3 py-2.5"
                 onPress={() =>
                   router.push({
@@ -379,9 +343,9 @@ function Records({ unit }: { unit: WeightUnit }) {
                 </View>
                 <Text variant="label">{best}</Text>
               </Tappable>
-            </View>
-          )
-        })
+            )
+          })}
+        </Divided>
       ) : (
         <Text variant="meta">{t('workouts:history.emptyTitle')}</Text>
       )}

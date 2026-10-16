@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -32,6 +32,7 @@ import {
   showsVolume,
   timedSeconds,
   timesError,
+  trackWorkoutFinished,
   updatedRoutine,
   useExerciseLibrary,
   useLeaveGuard,
@@ -42,9 +43,20 @@ import {
   WorkoutUnavailable,
   weightText,
 } from '@/features/workouts'
-import { track } from '@/lib/analytics'
 import { UNIT_KEY, unitFor } from '@/lib/units'
-import { AppBar, Button, Card, Dialog, Divider, Icon, Screen, Text, useToast } from '@/ui'
+import {
+  AppBar,
+  Button,
+  Card,
+  Dialog,
+  type DialogAction,
+  Divided,
+  Icon,
+  Screen,
+  Text,
+  useHeld,
+  useToast,
+} from '@/ui'
 
 /**
  * Saving a finished workout: a moment to see what it came to, then its name, a
@@ -64,9 +76,7 @@ export default function FinishWorkoutScreen() {
   const { workout: current, clear } = useLiveWorkout()
   // Saving clears the workout and then leaves; the last document is drawn
   // until the screen has gone, rather than a <Redirect> racing the navigation.
-  const lastSeen = useRef(current)
-  if (current) lastSeen.current = current
-  const workout = current ?? lastSeen.current
+  const workout = useHeld(current, Boolean(current))
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
   const distanceUnit = distanceUnitFor(unit)
@@ -98,7 +108,6 @@ export default function FinishWorkoutScreen() {
   // cleared a workout somebody had gone back to keep logging.
   const guard = useLeaveGuard({ busy: saving, dirty: false })
 
-  const totals = useMemo(() => (workout ? liveTotals(workout) : null), [workout])
   const exercises = useMemo(
     () => workout?.exercises.filter((exercise) => exercise.sets.some((set) => set.done)) ?? [],
     [workout],
@@ -123,11 +132,23 @@ export default function FinishWorkoutScreen() {
 
   if (!workout) return <WorkoutUnavailable />
 
+  const totals = liveTotals(workout)
+
   // The routine it was started from, if it still exists and the workout left it.
   const routine = workout.routineId
     ? routines?.find((entry) => entry.id === workout.routineId)
     : undefined
   const changes = routine ? routineChanges(routine.exercises, workout) : null
+  const answer = (
+    key: RoutineUpdate | 'keep',
+    label: 'routineUpdateAll' | 'routineUpdate' | 'routineValues' | 'routineKeep',
+    tone: DialogAction['tone'],
+  ): DialogAction => ({
+    key,
+    label: t(`workouts:finish.${label}`),
+    tone,
+    onPress: () => onSave(key),
+  })
 
   const durationS = Math.round((endedAt - startedAt) / 1000)
   const error = timesError(t, startedAt, endedAt)
@@ -169,7 +190,8 @@ export default function FinishWorkoutScreen() {
     setSaving(true)
     try {
       const document = { ...workout, name: name.trim() || workout.name, notes, startedAt }
-      const { payload, queued, health } = await saveWorkout(document, endedAt)
+      const result = await saveWorkout(document, endedAt)
+      const { payload, queued, health } = result
       // After the workout is safe, and without holding up leaving: a routine
       // that fails to update is worth a toast, not a lost workout.
       if (routine && update && update !== 'keep') {
@@ -183,14 +205,7 @@ export default function FinishWorkoutScreen() {
           })
           .catch(() => toast.show({ title: t('workouts:finish.routineFailed'), tone: 'error' }))
       }
-      track('Workout Finished', {
-        exercises: payload.exercises.length,
-        sets: doneSets(document),
-        duration_min: Math.round(durationS / 60),
-        from_routine: Boolean(document.routineId),
-        saved_to_health: Boolean(health.healthId),
-        queued,
-      })
+      trackWorkoutFinished(document, result)
       clear()
       toast.show({
         title: t('workouts:finish.saved'),
@@ -253,16 +268,16 @@ export default function FinishWorkoutScreen() {
             />
           </View>
           {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) &&
-          (totals?.volumeKg ?? 0) > 0 ? (
+          totals.volumeKg > 0 ? (
             <View className="flex-1">
               <Stat
                 label={t('workouts:logger.volume')}
-                value={volumeText(t, totals?.volumeKg ?? 0, unit)}
+                value={volumeText(t, totals.volumeKg, unit)}
               />
             </View>
           ) : null}
           <View className="flex-1">
-            <Stat label={t('workouts:logger.sets')} value={String(totals?.done ?? 0)} />
+            <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
           </View>
         </View>
       </Card>
@@ -305,13 +320,11 @@ export default function FinishWorkoutScreen() {
       />
 
       <Card title={t('workouts:detail.exercises')} contentClassName="gap-0">
-        {exercises.map((exercise, index) => {
-          const done = exercise.sets.filter((set) => set.done)
-          const best = bestSet(exercise)
-          return (
-            <View key={exercise.key}>
-              {index > 0 ? <Divider /> : null}
-              <View className="flex-row items-center gap-3 py-2.5">
+        <Divided>
+          {exercises.map((exercise) => {
+            const best = bestSet(exercise)
+            return (
+              <View key={exercise.key} className="flex-row items-center gap-3 py-2.5">
                 <ExerciseArt
                   exerciseId={exercise.exerciseId}
                   category={library.byId(exercise.exerciseId)?.category}
@@ -322,7 +335,9 @@ export default function FinishWorkoutScreen() {
                     {exercise.name}
                   </Text>
                   <Text variant="caption">
-                    {t('workouts:history.sets', { count: done.length })}
+                    {t('workouts:history.sets', {
+                      count: exercise.sets.filter((set) => set.done).length,
+                    })}
                   </Text>
                 </View>
                 {best ? (
@@ -334,9 +349,9 @@ export default function FinishWorkoutScreen() {
                   </View>
                 ) : null}
               </View>
-            </View>
-          )
-        })}
+            )
+          })}
+        </Divided>
       </Card>
 
       {/* Only the answers that would change something: Strong's four when both
@@ -350,43 +365,14 @@ export default function FinishWorkoutScreen() {
           description={t('workouts:finish.routineBody')}
           cancelLabel={t('common:action.cancel')}
           actions={[
-            ...(changes.layout && changes.values
-              ? [
-                  {
-                    key: 'layoutAndValues',
-                    label: t('workouts:finish.routineUpdateAll'),
-                    tone: changes.removes ? ('danger' as const) : ('primary' as const),
-                    onPress: () => onSave('layoutAndValues'),
-                  },
-                ]
-              : []),
-            ...(changes.layout
-              ? [
-                  {
-                    key: 'layout',
-                    label: t('workouts:finish.routineUpdate'),
-                    tone: changes.removes ? ('danger' as const) : ('secondary' as const),
-                    onPress: () => onSave('layout'),
-                  },
-                ]
-              : []),
-            ...(changes.values
-              ? [
-                  {
-                    key: 'values',
-                    label: t('workouts:finish.routineValues'),
-                    tone: 'secondary' as const,
-                    onPress: () => onSave('values'),
-                  },
-                ]
-              : []),
-            {
-              key: 'keep',
-              label: t('workouts:finish.routineKeep'),
-              tone: 'secondary',
-              onPress: () => onSave('keep'),
-            },
-          ]}
+            changes.layout &&
+              changes.values &&
+              answer('layoutAndValues', 'routineUpdateAll', changes.removes ? 'danger' : 'primary'),
+            changes.layout &&
+              answer('layout', 'routineUpdate', changes.removes ? 'danger' : 'secondary'),
+            changes.values && answer('values', 'routineValues', 'secondary'),
+            answer('keep', 'routineKeep', 'secondary'),
+          ].filter((action) => action !== false)}
         />
       ) : null}
     </Screen>

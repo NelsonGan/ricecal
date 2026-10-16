@@ -5,7 +5,7 @@ import { TextInput, View } from 'react-native'
 import type { ExerciseBests, LastSet } from '@/data'
 import type { WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
-import { Badge, Card, cn, Icon, IconButton, Tappable, Text } from '@/ui'
+import { Badge, Card, Icon, IconButton, Tappable, Text } from '@/ui'
 import type { Category } from './catalogue'
 import { ExerciseArt } from './ExerciseArt'
 import { type DistanceUnit, shortClock } from './format'
@@ -176,9 +176,7 @@ export const ExerciseCard = memo(function ExerciseCard({
       />
 
       <Tappable
-        className={cn(
-          'h-[44px] flex-row items-center justify-center gap-2 rounded-md bg-surface-alt',
-        )}
+        className="h-[44px] flex-row items-center justify-center gap-2 rounded-md bg-surface-alt"
         onPress={() => handlers.addSet(key)}
         accessibilityRole="button"
         accessibilityLabel={t('workouts:logger.addSet')}

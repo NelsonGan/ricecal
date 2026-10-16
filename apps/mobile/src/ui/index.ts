@@ -70,7 +70,7 @@ export {
   type DateStripProps,
 } from './DateStrip'
 export { Dialog, type DialogAction, type DialogProps } from './Dialog'
-export { Divider, type DividerProps } from './Divider'
+export { Divided, Divider, type DividerProps } from './Divider'
 export { EmptyState, type EmptyStateProps } from './EmptyState'
 export { Icon, type IconProps, type IconSet, icons } from './Icon'
 export {
@@ -140,6 +140,7 @@ export {
   type ToastTone,
   useToast,
 } from './Toast'
+export { useHeld } from './useHeld'
 export { WaterTank, type WaterTankProps } from './WaterTank'
 export { type DayStatus, type WeekDay, WeekStrip, type WeekStripProps } from './WeekStrip'
 export { WHEEL_BAND, Wheel, type WheelOption, type WheelProps } from './Wheel'

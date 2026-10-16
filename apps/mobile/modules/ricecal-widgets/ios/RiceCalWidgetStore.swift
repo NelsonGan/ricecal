@@ -74,21 +74,9 @@ public enum RiceCalWidgetStore {
    millisecond as the drain — costs 250 ml on one day.
    */
   public static func addWater(ml: Int, date: String, at: Date = Date()) {
-    guard let defaults else { return }
-
-    var queue = pendingActions()
-    queue.append([
-      "type": "water",
-      "ml": ml,
-      "date": date,
-      "at": Int(at.timeIntervalSince1970 * 1000),
-    ])
-    if let encoded = try? JSONSerialization.data(withJSONObject: queue),
-      let json = String(data: encoded, encoding: .utf8)
-    {
-      defaults.set(json, forKey: pendingKey)
-    }
-
+    enqueue(
+      ["type": "water", "ml": ml, "date": date, "at": Int(at.timeIntervalSince1970 * 1000)],
+      at: pendingKey)
     bumpWater(by: ml)
   }
 
@@ -125,15 +113,9 @@ public enum RiceCalWidgetStore {
    is running, and on its next launch when it is not.
    */
   public static func queueWorkoutAction(_ action: [String: Any]) {
-    guard let defaults else { return }
+    guard defaults != nil else { return }
     workoutLock.lock()
-    var queue = decodeQueue(defaults.string(forKey: workoutKey))
-    queue.append(action)
-    if let encoded = try? JSONSerialization.data(withJSONObject: queue),
-      let json = String(data: encoded, encoding: .utf8)
-    {
-      defaults.set(json, forKey: workoutKey)
-    }
+    enqueue(action, at: workoutKey)
     workoutLock.unlock()
     NotificationCenter.default.post(name: workoutActionQueued, object: nil)
   }
@@ -168,19 +150,21 @@ public enum RiceCalWidgetStore {
     return (title, body, stored["tickBody"])
   }
 
-  private static func decodeQueue(_ json: String?) -> [[String: Any]] {
-    guard let json, let data = json.data(using: .utf8),
+  /// Adds one entry to the end of the queue stored under `key`, written back as JSON.
+  private static func enqueue(_ entry: [String: Any], at key: String) {
+    guard let defaults else { return }
+    var queue: [[String: Any]] = []
+    if let json = defaults.string(forKey: key), let data = json.data(using: .utf8),
       let parsed = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
-    else { return [] }
-    return parsed
-  }
-
-  private static func pendingActions() -> [[String: Any]] {
-    guard let json = defaults?.string(forKey: pendingKey),
-      let data = json.data(using: .utf8),
-      let parsed = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
-    else { return [] }
-    return parsed
+    {
+      queue = parsed
+    }
+    queue.append(entry)
+    if let encoded = try? JSONSerialization.data(withJSONObject: queue),
+      let json = String(data: encoded, encoding: .utf8)
+    {
+      defaults.set(json, forKey: key)
+    }
   }
 
   /**

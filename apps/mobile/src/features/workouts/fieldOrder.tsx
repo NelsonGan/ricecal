@@ -104,14 +104,12 @@ export function FieldOrderProvider({
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>
 }
 
-/** Registers a field's focus under its key. Outside a provider, it does nothing. */
-export function useFieldOrder(key: string | undefined, focus: () => void) {
+/** Registers a field's focus under its key. Set fields are only drawn inside the editor's provider. */
+export function useFieldOrder(key: string, focus: () => void): Order {
   const order = useContext(OrderContext)
   const latest = useRef(focus)
   latest.current = focus
-  useEffect(() => {
-    if (!order || !key) return
-    return order.register(key, () => latest.current())
-  }, [order, key])
+  useEffect(() => order?.register(key, () => latest.current()), [order, key])
+  if (!order) throw new Error('useFieldOrder needs a FieldOrderProvider')
   return order
 }

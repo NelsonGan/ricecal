@@ -31,11 +31,11 @@ const GROUP_TONE: Record<MuscleGroup, string> = {
 export function MuscleSplitBars({
   rows,
 }: {
-  rows: readonly { group: MuscleGroup; value: number }[]
+  rows: readonly { group: MuscleGroup; sets: number }[]
 }) {
   const { t } = useTranslation(['workouts'])
-  const max = Math.max(...rows.map((row) => row.value), 0)
-  const total = rows.reduce((sum, row) => sum + row.value, 0)
+  const max = Math.max(...rows.map((row) => row.sets), 0)
+  const total = rows.reduce((sum, row) => sum + row.sets, 0)
   const share = (value: number) => `${total > 0 ? Math.round((value / total) * 100) : 0}%`
 
   return (
@@ -48,11 +48,11 @@ export function MuscleSplitBars({
           <View className="h-[12px] flex-1 overflow-hidden rounded-full bg-track">
             <View
               className={`h-full rounded-full ${GROUP_TONE[row.group]}`}
-              style={{ width: `${max > 0 ? Math.max(4, (row.value / max) * 100) : 0}%` }}
+              style={{ width: `${max > 0 ? Math.max(4, (row.sets / max) * 100) : 0}%` }}
             />
           </View>
           <Text variant="meta" className="w-[64px] text-right" numberOfLines={1}>
-            {share(row.value)}
+            {share(row.sets)}
           </Text>
         </View>
       ))}

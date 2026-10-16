@@ -22,18 +22,20 @@ const CORE = 59 // coreTraining
 const HIIT = 63 // highIntensityIntervalTraining
 const FUNCTIONAL = 20 // functionalStrengthTraining
 
-/** A workout's exercises, resolved to the catalogue where they can be. */
+/** A workout's exercises with a set done, resolved to the catalogue where they can be. */
 function catalogued(
   workout: LiveWorkout,
 ): { exercise: Exercise | undefined; doneSets: number; seconds: number }[] {
-  return workout.exercises.map((entry) => {
-    const done = entry.sets.filter((set) => set.done)
-    return {
-      exercise: exerciseById(entry.exerciseId),
-      doneSets: done.length,
-      seconds: done.reduce((sum, set) => sum + (set.durationS ?? 0), 0),
-    }
-  })
+  return workout.exercises
+    .map((entry) => {
+      const done = entry.sets.filter((set) => set.done)
+      return {
+        exercise: exerciseById(entry.exerciseId),
+        doneSets: done.length,
+        seconds: done.reduce((sum, set) => sum + (set.durationS ?? 0), 0),
+      }
+    })
+    .filter((row) => row.doneSets > 0)
 }
 
 /** MET for a custom exercise, which has no entry to read one from. */
@@ -54,7 +56,7 @@ export function estimateKcal(
   bodyKg: number | undefined,
 ): number | null {
   if (!bodyKg || bodyKg <= 0 || durationS <= 0) return null
-  const rows = catalogued(workout).filter((row) => row.doneSets > 0)
+  const rows = catalogued(workout)
   if (!rows.length) return null
 
   // Timed sets cannot add up to more than the workout lasted: an hour on the
@@ -97,7 +99,7 @@ const UPPER_BODY: ReadonlySet<string> = new Set(['chest', 'back', 'shoulders', '
  * session; a workout of nothing but core work is core training.
  */
 export function healthActivityType(workout: LiveWorkout): number {
-  const rows = catalogued(workout).filter((row) => row.doneSets > 0)
+  const rows = catalogued(workout)
   const timed = rows.filter((row) => row.exercise?.health !== undefined)
   const lifted = rows.filter((row) => row.exercise?.health === undefined)
 

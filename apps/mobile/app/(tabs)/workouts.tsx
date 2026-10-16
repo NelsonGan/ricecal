@@ -19,7 +19,9 @@ import {
 import { ScreenTitle } from '@/features/shared'
 import {
   ActionSheet,
+  DiscardDialog,
   defaultWorkoutName,
+  NOT_LOADED,
   OverviewCard,
   openLogger,
   RoutineCard,
@@ -28,7 +30,10 @@ import {
   WorkoutCard,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
-import { Button, Card, Dialog, Icon, IconButton, ListRow, Screen, Skeleton, Text } from '@/ui'
+import { Button, Card, Icon, IconButton, ListRow, Screen, Skeleton, Text } from '@/ui'
+
+/** Whether this launch's Live Activity resume has been answered. */
+let resumedThisLaunch = false
 
 /**
  * The Workouts tab: start one, start from a routine, and look back.
@@ -38,9 +43,6 @@ import { Button, Card, Dialog, Icon, IconButton, ListRow, Screen, Skeleton, Text
  * in. The history follows, newest first, with anything still waiting to sync
  * at the top of it.
  */
-/** Whether this launch's Live Activity resume has been answered. */
-let resumedThisLaunch = false
-
 export default function WorkoutsScreen() {
   const { t } = useTranslation(['workouts', 'common'])
   const router = useRouter()
@@ -254,22 +256,12 @@ export default function WorkoutsScreen() {
         }
       />
 
-      <Dialog
+      <DiscardDialog
         visible={discarding !== null}
         onClose={() => setDiscarding(null)}
-        title={t('workouts:logger.discardTitle')}
-        description={t('workouts:logger.discardBody')}
-        cancelLabel={t('common:action.keep')}
-        actions={[
-          {
-            key: 'discard',
-            label: t('workouts:logger.discardConfirm'),
-            tone: 'danger',
-            onPress: () => {
-              if (userId && discarding) void discardQueuedWorkout(userId, discarding.id)
-            },
-          },
-        ]}
+        onDiscard={() => {
+          if (userId && discarding) void discardQueuedWorkout(userId, discarding.id)
+        }}
       />
     </Screen>
   )
@@ -281,12 +273,8 @@ export default function WorkoutsScreen() {
  */
 function Unavailable({ offline }: { offline: boolean }) {
   const { t } = useTranslation(['common'])
-  return (
-    <EmptyRow
-      icon={offline ? { set: 'ui', name: 'offline' } : { set: 'ui', name: 'warning' }}
-      title={offline ? t('common:offline.title') : t('common:offline.unreachableTitle')}
-    />
-  )
+  const reason = NOT_LOADED[offline ? 'offline' : 'unreachable']
+  return <EmptyRow icon={reason.icon} title={t(reason.title)} />
 }
 
 /** An empty list as one quiet row rather than a card-sized illustration. */

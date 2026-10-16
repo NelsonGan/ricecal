@@ -1,4 +1,4 @@
-import type { ExerciseBests } from '@/data'
+import type { ExerciseBests, WorkoutEntry } from '@/data'
 import { estimatedOneRepMax, type LiveExercise, roundMetres, setVolume } from './model'
 
 /**
@@ -16,7 +16,7 @@ import { estimatedOneRepMax, type LiveExercise, roundMetres, setVolume } from '.
  * scored card by card each card took its own trophies.
  */
 
-export type RecordKind = 'weight' | 'e1rm' | 'volume' | 'reps' | 'duration' | 'distance'
+export type RecordKind = WorkoutEntry['sets'][number]['records'][number]
 
 export function recordSets(
   cards: LiveExercise | readonly LiveExercise[],

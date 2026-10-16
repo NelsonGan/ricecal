@@ -77,7 +77,7 @@ export function matchLogged(
       const apart = Math.abs(workout.start - start)
       const shifted =
         shift > 0 &&
-        nameKey(workout.name) === name &&
+        workout.name === name &&
         workout.sets === sets &&
         Math.abs(apart - shift) < SAME_SESSION_MS
       if ((apart < SAME_SESSION_MS || shifted) && apart < bestApart) {

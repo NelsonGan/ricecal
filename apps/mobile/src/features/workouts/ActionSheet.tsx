@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { IconRef } from '@/data'
-import { cn, Divider, Icon, Sheet, Tappable, Text } from '@/ui'
+import { cn, Divided, Icon, Sheet, Tappable, Text, useHeld } from '@/ui'
 
 export type SheetAction = {
   key: string
@@ -41,9 +41,7 @@ export function ActionSheet({
   // What it showed while open, kept while it slides away. Callers clear the
   // thing a sheet is about as it closes, and the list emptied and the title
   // went blank in the middle of the slide.
-  const held = useRef({ title, description, actions })
-  if (visible) held.current = { title, description, actions }
-  const shown = visible ? { title, description, actions } : held.current
+  const shown = useHeld({ title, description, actions }, visible)
 
   return (
     <Sheet
@@ -61,10 +59,10 @@ export function ActionSheet({
       }}
     >
       <View>
-        {shown.actions.map((action, index) => (
-          <View key={action.key}>
-            {index > 0 ? <Divider /> : null}
+        <Divided>
+          {shown.actions.map((action) => (
             <Tappable
+              key={action.key}
               className="min-h-md flex-row items-center gap-3 py-3"
               onPress={() => {
                 pending.current = action.onPress
@@ -83,8 +81,8 @@ export function ActionSheet({
               </Text>
               {action.selected ? <Icon set="ui" name="check" size={22} /> : null}
             </Tappable>
-          </View>
-        ))}
+          ))}
+        </Divided>
       </View>
     </Sheet>
   )

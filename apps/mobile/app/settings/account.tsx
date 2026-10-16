@@ -77,7 +77,6 @@ export default function AccountScreen() {
   const [publicSubmitted, setPublicSubmitted] = useState(false)
   const [handleTaken, setHandleTaken] = useState(false)
   const [handleHelpOpen, setHandleHelpOpen] = useState(false)
-  const [privateHelpOpen, setPrivateHelpOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -364,36 +363,21 @@ export default function AccountScreen() {
           >
             {t('social:save')}
           </Button>
-          <View className="flex-row items-center gap-3 border-t border-line pt-4">
-            <View className="min-w-0 flex-1 flex-row items-center gap-0">
-              <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
-                {t('social:privateProfile')}
-              </Text>
-              <IconButton
-                variant="ghost"
-                size="xxs"
-                hitSlop={8}
-                accessibilityLabel={t('social:privateProfileHint')}
-                onPress={() => setPrivateHelpOpen(true)}
-              >
-                <Icon set="ui" name="info" size={18} />
-              </IconButton>
-            </View>
-            <Switch
-              value={profile?.is_private ?? false}
-              onValueChange={setPrivate}
-              disabled={!profile || busy || !online}
-              accessibilityLabel={t('social:privateProfile')}
-            />
-          </View>
-          <AutoPostRow
+          <HelpSwitchRow
+            label={t('social:privateProfile')}
+            hint={t('social:privateProfileHint')}
+            value={profile?.is_private ?? false}
+            onValueChange={setPrivate}
+            disabled={!profile || busy || !online}
+          />
+          <HelpSwitchRow
             label={t('social:autoPostFoods')}
             hint={t('social:autoPostFoodsHint')}
             value={profile?.auto_post_foods ?? false}
             onValueChange={(value) => setAutoPost({ autoPostFoods: value })}
             disabled={!profile || busy || !online}
           />
-          <AutoPostRow
+          <HelpSwitchRow
             label={t('social:autoPostWorkouts')}
             hint={t('social:autoPostWorkoutsHint')}
             // On by default: the column says so, and a profile not yet read
@@ -456,14 +440,6 @@ export default function AccountScreen() {
       >
         <Text>{t('social:handleHint')}</Text>
       </Sheet>
-      <Sheet
-        visible={privateHelpOpen}
-        onClose={() => setPrivateHelpOpen(false)}
-        title={t('social:privateProfile')}
-        closeLabel={t('common:action.close')}
-      >
-        <Text>{t('social:privateProfileHint')}</Text>
-      </Sheet>
       {passwordOpen ? <ChangePassword onClose={() => setPasswordOpen(false)} /> : null}
       {confirming ? <DeleteAccount onClose={() => setConfirming(false)} /> : null}
     </Screen>
@@ -475,9 +451,8 @@ export default function AccountScreen() {
 const CODE_LENGTH = 6
 const RESEND_COOLDOWN_S = 60
 
-// Mounted only while open so a dismissed password never survives in the form.
-/** A sharing switch with what it does a tap away, for meals and for workouts. */
-function AutoPostRow({
+/** A switch with what it does a tap away: a private profile, and sharing meals and workouts. */
+function HelpSwitchRow({
   label,
   hint,
   value,
@@ -526,6 +501,7 @@ function AutoPostRow({
   )
 }
 
+// Mounted only while open so a dismissed password never survives in the form.
 function ChangePassword({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['profile', 'common'])
   const [pending, setPending] = useState(false)

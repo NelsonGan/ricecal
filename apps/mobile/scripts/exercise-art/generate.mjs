@@ -34,16 +34,7 @@ const here = dirname(fileURLToPath(import.meta.url))
 const APP = join(here, '..', '..')
 const RAW = process.env.EXERCISE_ART_RAW ?? join(homedir(), '.cache', 'ricecal', 'exercise-art')
 const REFERENCE = join(here, 'style-reference.png')
-const CODEX_IMAGE = join(
-  APP,
-  '..',
-  '..',
-  '.agents',
-  'skills',
-  'codex-imagegen',
-  'scripts',
-  'codex-image.sh',
-)
+const CODEX_IMAGE = join(APP, '../../.agents/skills/codex-imagegen/scripts/codex-image.sh')
 
 const args = process.argv.slice(2)
 const flag = (name) => args.includes(name)

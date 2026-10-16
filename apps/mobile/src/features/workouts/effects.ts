@@ -3,7 +3,6 @@ import {
   endWorkoutActivity,
   startWorkoutActivity,
   takeWorkoutActions,
-  updateWorkoutActivity,
   type WorkoutActivityState,
 } from '@modules/ricecal-widgets'
 import * as Haptics from 'expo-haptics'
@@ -15,15 +14,16 @@ import { type LastSet, useLastSets, useSettings } from '@/data'
 import { cancelNotice, scheduleNoticeAt } from '@/lib/notifications'
 import { STALE_AFTER_MS, useLiveWorkout } from './live'
 import {
-  apply,
   isLoggable,
   type LiveExercise,
   type LiveSet,
   type LiveWorkout,
+  liveTotals,
   restAfter,
   type SetHint,
   setHints,
   supersetRuns,
+  tickedSet,
 } from './model'
 import { getActiveWorkout } from './store'
 
@@ -131,8 +131,9 @@ function useWorkoutEffects(): void {
   }, [workoutId, startedAt, t])
 
   // The Live Activity: started with the workout, updated as it moves, ended
-  // with it. The native side ignores all three where Live Activities do not
-  // exist (Android, iOS before 16.2, a user who switched them off).
+  // with it. A start for the workout already showing updates it. The native
+  // side ignores both where Live Activities do not exist (Android, iOS before
+  // 16.2, a user who switched them off).
   const live = useRef<string | null>(null)
   const state = workout ? activityState(workout, previous, defaultRestS, t) : null
   const stateKey = state ? JSON.stringify(state) : null
@@ -151,7 +152,7 @@ function useWorkoutEffects(): void {
       live.current = state.id
       return
     }
-    const timer = setTimeout(() => updateWorkoutActivity(state), ACTIVITY_SETTLE_MS)
+    const timer = setTimeout(() => startWorkoutActivity(state), ACTIVITY_SETTLE_MS)
     return () => clearTimeout(timer)
   }, [stateKey, drained])
 
@@ -189,19 +190,9 @@ function useWorkoutEffects(): void {
             if (!exercise || !set || set.done) break
             // The same test the logger's own tick makes: a set with nothing
             // in it and nothing to offer is not a set.
-            const tick = {
-              type: 'completeSet',
-              key: exercise.key,
-              setId: set.id,
-              at: action.at,
-              fill: hintFor(exercise, set, previous),
-            } as const
-            const ticked = apply(
-              { ...workout, exercises: [exercise] },
-              tick,
-            ).exercises[0].sets.find((entry) => entry.id === set.id)
-            if (!ticked || !isLoggable(ticked, exercise.tracking)) break
-            dispatch(tick)
+            const fill = hintFor(exercise, set, previous)
+            if (!isLoggable(tickedSet(set, action.at, fill), exercise.tracking)) break
+            dispatch({ type: 'completeSet', key: exercise.key, setId: set.id, at: action.at, fill })
             const rest = restAfter(workout, exercise, defaultRestS, set.id)
             // A press taken long after it was made starts no rest that would
             // already be over: it only buzzed "rest over" as the app opened.
@@ -297,26 +288,10 @@ function activityState(
   defaultRestS: number,
   t: TFunction<['workouts']>,
 ): WorkoutActivityState {
-  let done = 0
-  let total = 0
-  for (const exercise of workout.exercises) {
-    total += exercise.sets.length
-    done += exercise.sets.filter((set) => set.done).length
-  }
+  const { sets: total, done } = liveTotals(workout)
   const next = nextSet(workout)
   const last = workout.exercises[workout.exercises.length - 1]
-  const filled = next
-    ? apply(
-        { ...workout, exercises: [next.exercise] },
-        {
-          type: 'completeSet',
-          key: next.exercise.key,
-          setId: next.set.id,
-          at: 0,
-          fill: hintFor(next.exercise, next.set, previous),
-        },
-      ).exercises[0].sets.find((set) => set.id === next.set.id)
-    : undefined
+  const filled = next && tickedSet(next.set, 0, hintFor(next.exercise, next.set, previous))
   // The notice names the exercise of the rest it ends: the running one, or
   // the one a tick would start.
   const resting = workout.rest

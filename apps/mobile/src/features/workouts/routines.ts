@@ -17,6 +17,15 @@ export const routineSetPlan = (set: RoutineSet | undefined): SetPlan => ({
   distanceM: set?.distance_m ?? null,
 })
 
+/** A set's plan alone, without what the logger keeps beside it: its id, its tick, its RPE. */
+export const planOf = (set: SetPlan): SetPlan => ({
+  kind: set.kind,
+  weightKg: set.weightKg,
+  reps: set.reps,
+  durationS: set.durationS,
+  distanceM: set.distanceM,
+})
+
 export function routinePlans(routine: Pick<Routine, 'exercises'>): ExercisePlan[] {
   return routine.exercises.map((exercise) => ({
     exerciseId: exercise.exercise_id,
@@ -62,13 +71,7 @@ export function toPlans(
     restS: exercise.restS,
     superset: exercise.superset,
     notes: exercise.notes,
-    sets: exercise.sets.map((set) => ({
-      kind: set.kind,
-      weightKg: set.weightKg,
-      reps: set.reps,
-      durationS: set.durationS,
-      distanceM: set.distanceM,
-    })),
+    sets: exercise.sets.map(planOf),
   }))
 }
 

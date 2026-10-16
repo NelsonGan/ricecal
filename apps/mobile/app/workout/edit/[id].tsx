@@ -13,6 +13,8 @@ import {
   newWorkout,
   timesError,
   toPlans,
+  trackWorkoutFinished,
+  unavailableState,
   useLeaveGuard,
   useWorkoutSave,
   WorkoutEditor,
@@ -34,15 +36,10 @@ import { AppBar, Button, Screen, useToast } from '@/ui'
 export default function EditWorkoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const isNew = id === 'new'
-  const { data: saved, isPending, isPaused, isError } = useWorkout(isNew ? undefined : id)
+  const query = useWorkout(isNew ? undefined : id)
+  const saved = query.data
 
-  if (!isNew && !saved) {
-    return (
-      <WorkoutUnavailable
-        state={isPending ? (isPaused ? 'offline' : 'loading') : isError ? 'unreachable' : 'missing'}
-      />
-    )
-  }
+  if (!isNew && !saved) return <WorkoutUnavailable state={unavailableState(query)} />
   // Keyed by the route's id: a link that reuses this screen for another
   // workout (or for `new`) kept the first one's document in the reducer and
   // saved it under the first one's id.
@@ -130,7 +127,7 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
     }
     setSaving(true)
     try {
-      const { payload, queued, health, durationS } = await saveWorkout(
+      const result = await saveWorkout(
         document,
         endedAt,
         initial
@@ -141,18 +138,10 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
             }
           : undefined,
       )
+      const { payload, queued } = result
       // A past workout is a new one, finished here rather than on the finish
       // screen, and it opened with `Workout Started`. An edit is neither.
-      if (!initial) {
-        track('Workout Finished', {
-          exercises: payload.exercises.length,
-          sets: doneSets(document),
-          duration_min: Math.round(durationS / 60),
-          from_routine: Boolean(document.routineId),
-          saved_to_health: Boolean(health.healthId),
-          queued,
-        })
-      }
+      if (!initial) trackWorkoutFinished(document, result)
       toast.show({
         title: t('workouts:finish.saved'),
         description: queued ? t('workouts:finish.queued') : undefined,

@@ -1,5 +1,6 @@
 import { dateKey } from '@/data/client'
 import type { WorkoutDocument } from '@/data/workout-outbox'
+import { Constants, type Enums } from '@/lib/database.types'
 import type { Tracking } from './catalogue'
 
 /**
@@ -16,8 +17,8 @@ import type { Tracking } from './catalogue'
  * twice the first time anyone forgot which one it was.
  */
 
-export type SetKind = 'normal' | 'warmup' | 'drop' | 'failure'
-export const SET_KINDS: readonly SetKind[] = ['normal', 'warmup', 'drop', 'failure']
+export type SetKind = Enums<'workout_set_kind'>
+export const SET_KINDS: readonly SetKind[] = Constants.public.Enums.workout_set_kind
 
 export type LiveSet = {
   id: string
@@ -209,7 +210,8 @@ const mapExercise = (
   exercises: workout.exercises.map((exercise) => (exercise.key === key ? fn(exercise) : exercise)),
 })
 
-const mapSet = (
+/** The exercise with one of its sets changed by `fn`. */
+export const mapSet = (
   exercise: LiveExercise,
   setId: string,
   fn: (set: LiveSet) => LiveSet,
@@ -325,12 +327,7 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
       )
     case 'completeSet':
       return mapExercise(workout, action.key, (exercise) =>
-        mapSet(exercise, action.setId, (set) => ({
-          ...set,
-          ...fillBlanks(set, action.fill),
-          done: true,
-          doneAt: action.at,
-        })),
+        mapSet(exercise, action.setId, (set) => tickedSet(set, action.at, action.fill)),
       )
     case 'uncompleteSet':
       return mapExercise(workout, action.key, (exercise) =>
@@ -478,6 +475,18 @@ export function setHints(
   })
 }
 
+/**
+ * A set as ticking it leaves it, with what it offers in its blanks. Exported so
+ * a tick can be tried before it is made: what it fills in decides whether the
+ * set can be ticked at all.
+ */
+export const tickedSet = (set: LiveSet, at: number, fill?: SetPatch): LiveSet => ({
+  ...set,
+  ...fillBlanks(set, fill),
+  done: true,
+  doneAt: at,
+})
+
 /** Only the blanks: a value the user typed is never overwritten by a hint. */
 function fillBlanks(set: LiveSet, fill: SetPatch | undefined): SetPatch {
   if (!fill) return {}
@@ -596,15 +605,15 @@ export function fieldsFor(tracking: Tracking): ('weight' | 'reps' | 'duration' |
   }
 }
 
+/** Whether any field of a set holds a number: what `save_workout` requires of a set. */
+export const hasFigures = (set: Pick<LiveSet, 'weightKg' | 'reps' | 'durationS' | 'distanceM'>) =>
+  set.weightKg !== null || set.reps !== null || set.durationS !== null || set.distanceM !== null
+
 /**
  * Whether a set says enough to be a set. A bench press with no reps is not a
  * set, and neither is a plank with no time; the weight of a pull-up is
  * optional, since most of them are done with none added.
  */
-/** Whether any field of a set holds a number: what `save_workout` requires of a set. */
-export const hasFigures = (set: Pick<LiveSet, 'weightKg' | 'reps' | 'durationS' | 'distanceM'>) =>
-  set.weightKg !== null || set.reps !== null || set.durationS !== null || set.distanceM !== null
-
 export function isLoggable(
   set: Pick<LiveSet, 'weightKg' | 'reps' | 'durationS' | 'distanceM'>,
   tracking: Tracking,
@@ -752,12 +761,7 @@ export function timedSeconds(workout: LiveWorkout): number {
 }
 
 /** How many sets were actually done, which is what decides there is anything to save. */
-export function doneSets(workout: LiveWorkout): number {
-  return workout.exercises.reduce(
-    (sum, exercise) => sum + exercise.sets.filter((set) => set.done).length,
-    0,
-  )
-}
+export const doneSets = (workout: LiveWorkout): number => liveTotals(workout).done
 
 // ---------------------------------------------------------------------------
 // Saving.
@@ -772,16 +776,34 @@ export function doneSets(workout: LiveWorkout): number {
 export const roundKg = (kg: number) => Math.round(kg * 100) / 100
 export const roundMetres = (metres: number) => Math.round(metres * 10) / 10
 
-/**
- * A number held inside the range its column checks. The server refuses a whole
- * workout for one value outside it, so a typo (2250 lb for 225) has to become a
- * wrong set rather than a lost session; the set can be edited afterwards.
- */
-const within = (value: number | null, min: number, max: number) =>
-  value === null || !Number.isFinite(value) ? null : Math.min(max, Math.max(min, value))
+/** The limits the tables check (`42_workouts.sql`), which every save is held to. */
+export const LIMIT = {
+  exercises: 60,
+  sets: 99,
+  name: 80,
+  exerciseId: 80,
+  exerciseName: 120,
+  notes: 2000,
+  exerciseNotes: 1000,
+  kcal: 10_000,
+  superset: 99,
+  restS: 3600,
+  kg: 1000,
+  reps: 1000,
+  durationS: 86_400,
+  metres: 1_000_000,
+  workoutS: 24 * 3600,
+} as const
 
-// By character, as Postgres counts: slicing UTF-16 units could cut an emoji in
-// half, and the broken surrogate failed the whole request.
+/**
+ * A number rounded as its column keeps it and held inside the range it checks,
+ * which starts at 0 for every one. The server refuses a whole workout for one
+ * value outside it, so a typo (2250 lb for 225) has to become a wrong set
+ * rather than a lost session; the set can be edited afterwards.
+ */
+const within = (value: number | null, max: number, round = (n: number) => n) =>
+  value === null || !Number.isFinite(value) ? null : Math.min(max, Math.max(0, round(value)))
+
 /**
  * A string cut to a length in characters, as Postgres counts them, with no
  * space left dangling at the cut. Cutting UTF-16 units split an emoji at the
@@ -807,8 +829,8 @@ export function toPayload(
 ): WorkoutDocument {
   return {
     id: workout.id,
-    name: clip(workout.name.trim(), 80) || 'Workout',
-    notes: clip(workout.notes.trim(), 2000) || null,
+    name: clip(workout.name.trim(), LIMIT.name) || 'Workout',
+    notes: clip(workout.notes.trim(), LIMIT.notes) || null,
     started_at: new Date(workout.startedAt).toISOString(),
     ended_at: new Date(Math.max(endedAt, workout.startedAt)).toISOString(),
     // The day it started on, in the phone's own zone.
@@ -817,44 +839,36 @@ export function toPayload(
         ? workout.filed.date
         : dateKey(new Date(workout.startedAt)),
     routine_id: workout.routineId,
-    kcal: within(extra.kcal === null ? null : Math.round(extra.kcal), 0, 10000),
+    kcal: within(extra.kcal, LIMIT.kcal, Math.round),
     health_workout_id: extra.healthWorkoutId,
     // Tidied after the empty ones go: a superset whose partner was never done
     // is a single exercise, not a bracket of one that a repeat brings back.
     exercises: tidySupersets(
       workout.exercises
         .map((exercise) => ({
-          exercise_id: clip(exercise.exerciseId, 80),
-          exercise_name: clip(exercise.name.trim(), 120) || exercise.exerciseId,
+          exercise_id: clip(exercise.exerciseId, LIMIT.exerciseId),
+          exercise_name: clip(exercise.name.trim(), LIMIT.exerciseName) || exercise.exerciseId,
           tracking: exercise.tracking,
-          superset: within(exercise.superset, 0, 99),
-          rest_s: within(exercise.restS, 0, 3600),
-          notes: clip(exercise.notes.trim(), 1000) || null,
+          superset: within(exercise.superset, LIMIT.superset),
+          rest_s: within(exercise.restS, LIMIT.restS),
+          notes: clip(exercise.notes.trim(), LIMIT.exerciseNotes) || null,
           // Ticked and with a number in it: a ticked set's fields stay editable,
           // and one cleared afterwards is refused by `save_workout`, which would
           // turn the whole save into a final refusal.
           sets: exercise.sets
             .filter((set) => set.done && hasFigures(set))
-            .slice(0, 99)
+            .slice(0, LIMIT.sets)
             .map((set) => ({
               kind: set.kind,
-              weight_kg: within(set.weightKg === null ? null : roundKg(set.weightKg), 0, 1000),
-              reps: within(set.reps === null ? null : Math.round(set.reps), 0, 1000),
-              duration_s: within(
-                set.durationS === null ? null : Math.round(set.durationS),
-                0,
-                86400,
-              ),
-              distance_m: within(
-                set.distanceM === null ? null : roundMetres(set.distanceM),
-                0,
-                1_000_000,
-              ),
+              weight_kg: within(set.weightKg, LIMIT.kg, roundKg),
+              reps: within(set.reps, LIMIT.reps, Math.round),
+              duration_s: within(set.durationS, LIMIT.durationS, Math.round),
+              distance_m: within(set.distanceM, LIMIT.metres, roundMetres),
               rpe: set.rpe === null || set.rpe < 1 || set.rpe > 10 ? null : set.rpe,
             })),
         }))
         .filter((exercise) => exercise.sets.length > 0)
-        .slice(0, 60),
+        .slice(0, LIMIT.exercises),
     ),
   }
 }

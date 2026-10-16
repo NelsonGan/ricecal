@@ -22,7 +22,7 @@ export function WorkoutItem({
   onPress,
 }: {
   workout: WorkoutSummary
-  onPress?: () => void
+  onPress: () => void
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const first = workout.exercises[0]

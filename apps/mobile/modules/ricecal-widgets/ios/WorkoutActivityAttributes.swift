@@ -36,34 +36,6 @@ public struct WorkoutActivityAttributes: ActivityAttributes {
     public var restAfterS: Double?
     /// The buttons' names for VoiceOver, in the user's language.
     public var labels: ActionLabels?
-
-    public init(
-      name: String,
-      exercise: String,
-      set: String,
-      done: Int,
-      total: Int,
-      restEndsAt: Date?,
-      restTotalS: Double?,
-      exerciseKey: String? = nil,
-      setId: String? = nil,
-      canComplete: Bool? = nil,
-      restAfterS: Double? = nil,
-      labels: ActionLabels? = nil
-    ) {
-      self.name = name
-      self.exercise = exercise
-      self.set = set
-      self.done = done
-      self.total = total
-      self.restEndsAt = restEndsAt
-      self.restTotalS = restTotalS
-      self.exerciseKey = exerciseKey
-      self.setId = setId
-      self.canComplete = canComplete
-      self.restAfterS = restAfterS
-      self.labels = labels
-    }
   }
 
   /// What VoiceOver calls the activity's buttons. The extension has no strings of its own.
@@ -77,9 +49,4 @@ public struct WorkoutActivityAttributes: ActivityAttributes {
   /// The workout's own id, so a stale activity from an earlier run can be told apart.
   public var workoutId: String
   public var startedAt: Date
-
-  public init(workoutId: String, startedAt: Date) {
-    self.workoutId = workoutId
-    self.startedAt = startedAt
-  }
 }

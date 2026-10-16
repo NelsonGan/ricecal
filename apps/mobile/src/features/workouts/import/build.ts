@@ -1,11 +1,11 @@
 import type { WorkoutDocument } from '@/data/workout-outbox'
 import { toKg } from '@/lib/units'
 import type { Category, Equipment, Tracking } from '../catalogue'
-import { M_PER_MI } from '../format'
-import { clip, roundKg, roundMetres } from '../model'
+import { type DistanceUnit, M_PER_MI } from '../format'
+import { clip, LIMIT, roundKg, roundMetres, tidySupersets } from '../model'
 import { matchExercise } from './match'
 import type {
-  DistanceUnit,
+  FileDistanceUnit,
   ImportSource,
   LocalTime,
   ParsedExercise,
@@ -23,7 +23,7 @@ import type {
  * `useWorkoutImport` fills them in.
  */
 
-export type ImportUnits = { weight: WeightUnit; distance: 'km' | 'mi' }
+export type ImportUnits = { weight: WeightUnit; distance: DistanceUnit }
 
 /** An exercise the import has to create, because no catalogue entry is that movement. */
 type CustomExercisePlan = {
@@ -49,25 +49,7 @@ export type ImportPlan = {
   /** From and to, as `yyyy-MM-dd`, or null for a file with no workouts. */
   from: string | null
   to: string | null
-  /** Rows the parser could not read, and sets dropped for holding nothing or a broken number. */
-  skipped: number
 }
-
-/** The database's own limits (`42_workouts.sql`), so a save is never refused for size. */
-const LIMIT = {
-  exercises: 60,
-  sets: 99,
-  name: 80,
-  exerciseName: 120,
-  notes: 2000,
-  exerciseNotes: 1000,
-  kg: 1000,
-  reps: 1000,
-  durationS: 86_400,
-  metres: 1_000_000,
-  restS: 3600,
-  workoutS: 24 * 3600,
-} as const
 
 const pad = (value: number) => String(value).padStart(2, '0')
 const dayOf = (t: LocalTime) => `${t.year}-${pad(t.month)}-${pad(t.day)}`
@@ -113,7 +95,7 @@ type DocumentSet = WorkoutDocument['exercises'][number]['sets'][number]
 function convertSet(set: ParsedSet, units: ImportUnits): DocumentSet | null {
   const weightUnit = set.weightUnit ?? units.weight
   const kg = set.weight === null ? null : roundKg(toKg(set.weight, weightUnit))
-  const distanceUnit: DistanceUnit = set.distanceUnit ?? units.distance
+  const distanceUnit: FileDistanceUnit = set.distanceUnit ?? units.distance
   const metres =
     set.distance === null
       ? null
@@ -247,7 +229,6 @@ export function buildImport(
   const matched = new Set<string>()
   const workouts: PlannedWorkout[] = []
   let sets = 0
-  let skipped = parsed.skippedRows
 
   for (const workout of parsed.workouts) {
     const exercises: WorkoutDocument['exercises'] = []
@@ -256,19 +237,9 @@ export function buildImport(
     const supersets = new Map<string, number>()
 
     for (const exercise of workout.exercises) {
-      const converted: DocumentSet[] = []
-      for (const set of exercise.sets) {
-        const document = convertSet(set, units)
-        if (document) converted.push(document)
-        else skipped++
-      }
-      if (!converted.length) continue
-      if (exercises.length === LIMIT.exercises) {
-        skipped += converted.length
-        continue
-      }
+      const converted = exercise.sets.flatMap((set) => convertSet(set, units) ?? [])
+      if (!converted.length || exercises.length === LIMIT.exercises) continue
       const kept = converted.slice(0, LIMIT.sets)
-      skipped += converted.length - kept.length
 
       const catalogue = matchExercise(exercise.name, parsed.source)
       const name = clip(exercise.name.trim(), LIMIT.exerciseName)
@@ -315,16 +286,6 @@ export function buildImport(
     }
     if (!exercises.length) continue
 
-    // A superset is exercises side by side sharing a label; one left alone
-    // after the rest were dropped is just an exercise.
-    for (const [index, exercise] of exercises.entries()) {
-      if (exercise.superset === null) continue
-      const shared = exercises.some(
-        (other, at) => at !== index && other.superset === exercise.superset,
-      )
-      if (!shared) exercise.superset = null
-    }
-
     const { start } = workout
     const startedAt = new Date(
       start.year,
@@ -347,7 +308,9 @@ export function buildImport(
         routine_id: null,
         kcal: null,
         health_workout_id: null,
-        exercises,
+        // A superset is exercises side by side sharing a label; one left alone
+        // after the rest were dropped is just an exercise.
+        exercises: tidySupersets(exercises),
       },
     })
   }
@@ -375,6 +338,5 @@ export function buildImport(
     sets,
     from: workouts[0]?.document.log_date ?? null,
     to: workouts.at(-1)?.document.log_date ?? null,
-    skipped,
   }
 }
