@@ -1979,7 +1979,6 @@ export const ta = {
       upNext: 'அடுத்தது',
       empty: 'உங்கள் iPhone-இல் பயிற்சிகளைச் சேர்க்கவும்.',
       syncing: 'iPhone அருகில் இருக்கும்போது ஒத்திசைக்கும்',
-      pulse: 'இதயத் துடிப்பு {{value}} bpm',
     },
 
     stale: {

@@ -6,6 +6,7 @@ import { Share, View } from 'react-native'
 
 import {
   useDeleteWorkout,
+  useProfile,
   useSaveRoutine,
   useSettings,
   useWorkout,
@@ -13,6 +14,7 @@ import {
   type WorkoutEntry,
 } from '@/data'
 import { useWorkoutPost } from '@/data/social'
+import { HeartRateCard } from '@/features/activity'
 import {
   ActionSheet,
   describeSet,
@@ -21,6 +23,7 @@ import {
   ExerciseArt,
   groupSplit,
   MuscleSplitBars,
+  PulseLine,
   plansToRoutine,
   RowChevron,
   removeWorkoutFromHealth,
@@ -29,6 +32,7 @@ import {
   setBadges,
   showsVolume,
   toPlans,
+  traceZones,
   unavailableState,
   useDeleteConfirm,
   useExerciseLibrary,
@@ -40,6 +44,7 @@ import {
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
+import { ageFrom } from '@/lib/nutrition'
 import { UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
 import {
   AppBar,
@@ -224,6 +229,12 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
   const library = useExerciseLibrary()
   const distanceUnit = distanceUnitFor(unit)
   const started = parseISO(workout.startedAt)
+  const birthDate = useProfile().data?.birth_date ?? null
+  const heart = workout.heartRate ?? null
+  const zones = useMemo(
+    () => (heart ? traceZones(heart, birthDate ? ageFrom(birthDate) : null) : null),
+    [heart, birthDate],
+  )
 
   const split = useMemo(
     () =>
@@ -269,6 +280,15 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
         </StatGrid>
         {workout.notes ? <Text variant="body">{workout.notes}</Text> : null}
       </Card>
+
+      {heart ? (
+        <HeartRateCard
+          avgHr={heart.avgBpm}
+          maxHr={heart.maxBpm}
+          zones={zones}
+          chart={<PulseLine heart={heart} />}
+        />
+      ) : null}
 
       {split.length ? (
         <Card title={t('workouts:detail.muscles')}>

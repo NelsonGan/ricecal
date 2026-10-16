@@ -1980,7 +1980,6 @@ export const id = {
       upNext: 'Berikutnya',
       empty: 'Tambahkan gerakan di iPhone.',
       syncing: 'Disinkronkan saat iPhone ada di dekat',
-      pulse: 'Detak jantung {{value}} bpm',
     },
 
     stale: {

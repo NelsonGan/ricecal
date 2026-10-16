@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(18);
 
 \set user_a '77777777-7777-4777-8777-777777777771'
 \set user_b '77777777-7777-4777-8777-777777777772'
@@ -64,6 +64,12 @@ select is(
   (select health_workout_id from public.workouts where id = :'lift'),
   'WATCH-UUID',
   'the watch''s Health copy is recorded on a workout that had none'
+);
+
+select is(
+  (select kcal from public.workouts where id = :'lift'),
+  213,
+  'the workout carries the energy the watch measured, which is what Health holds'
 );
 
 -- Sent again, as a retry would: one row, the newer trace.

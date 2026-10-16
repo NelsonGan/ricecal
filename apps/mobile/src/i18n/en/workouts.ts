@@ -272,8 +272,6 @@ export const workouts = {
     upNext: 'Up next',
     empty: 'Add exercises on your iPhone.',
     syncing: 'Syncs when your iPhone is near',
-    /** The live reading beside the logger's clock, named for VoiceOver. */
-    pulse: 'Heart rate {{value}} bpm',
   },
 
   /** A workout that has been running for hours: the user probably forgot it. */

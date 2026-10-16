@@ -77,9 +77,10 @@ export type LiveWorkout = {
    * a workout session for it, which saves its own copy to Apple Health, so the
    * phone writes none beside it. `applied` names the watch's commands already
    * applied, so one delivered twice is applied once (`features/watch`).
-   * Absent on every workout the watch never touched.
+   * Absent on every workout the watch never touched. `kcal` is the energy the
+   * watch measured, carried by an edit so it is not replaced by an estimate.
    */
-  watch?: { recorded: boolean; applied: string[] }
+  watch?: { recorded: boolean; applied: string[]; kcal?: number | null }
 }
 
 /** How many applied watch commands a workout remembers. */
@@ -348,6 +349,7 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
         // The newest few are enough: the watch only resends what it has not
         // yet seen acknowledged, which is never many commands back.
         watch: {
+          ...workout.watch,
           recorded: workout.watch?.recorded ?? false,
           applied: [...applied, action.id].slice(-WATCH_APPLIED_KEPT),
         },

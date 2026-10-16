@@ -1969,7 +1969,6 @@ export const ja = {
       upNext: '次',
       empty: 'iPhoneで種目を追加してください。',
       syncing: 'iPhoneが近くにあると同期します',
-      pulse: '心拍数 {{value}} bpm',
     },
 
     stale: {

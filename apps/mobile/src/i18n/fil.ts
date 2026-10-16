@@ -2003,7 +2003,6 @@ export const fil = {
       upNext: 'Susunod',
       empty: 'Magdagdag ng ehersisyo sa iPhone mo.',
       syncing: 'Magsi-sync kapag malapit ang iPhone mo',
-      pulse: 'Tibok ng puso {{value}} bpm',
     },
 
     stale: {

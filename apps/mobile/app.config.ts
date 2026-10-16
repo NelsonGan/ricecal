@@ -7,6 +7,10 @@ const { WIDGET_TARGET, appGroupFor, widgetBundleId } = require('./plugins/withWi
   appGroupFor: (bundleId: string) => string
   widgetBundleId: (bundleId: string) => string
 }
+const { WATCH_TARGET, watchBundleId } = require('./plugins/withWatch') as {
+  WATCH_TARGET: string
+  watchBundleId: (bundleId: string) => string
+}
 
 const appJson = require('./app.json') as { expo: ExpoConfig }
 const baseConfig = appJson.expo
@@ -88,7 +92,7 @@ function applySimulatorVariant(cfg: ExpoConfig): ExpoConfig {
 }
 
 /**
- * Tells EAS that the widget extension exists. EAS resolves credentials from the
+ * Tells EAS that the widget extension and the watch app exist. EAS resolves credentials from the
  * app config before it builds anything, and the Xcode project does not exist yet
  * under Continuous Native Generation, so without this block the server prebuilds
  * a second target it has no profile for and signing fails.
@@ -122,6 +126,16 @@ function withEasExtension(cfg: ExpoConfig): ExpoConfig {
                   bundleIdentifier: widgetBundleId(bundleId),
                   entitlements: {
                     'com.apple.security.application-groups': [appGroupFor(bundleId)],
+                  },
+                },
+                // The Apple Watch app, a target of its own with its own
+                // profile, which records workouts into HealthKit.
+                {
+                  targetName: WATCH_TARGET,
+                  bundleIdentifier: watchBundleId(bundleId),
+                  entitlements: {
+                    'com.apple.developer.healthkit': true,
+                    'com.apple.developer.healthkit.access': [],
                   },
                 },
               ],

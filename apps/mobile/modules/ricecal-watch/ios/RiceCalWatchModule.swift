@@ -15,25 +15,7 @@ public class RiceCalWatchModule: Module {
 
     OnCreate {
       RiceCalWatchLink.shared.activate()
-      let center = NotificationCenter.default
-      self.observers = [
-        center.addObserver(forName: RiceCalWatchLink.inboxChanged, object: nil, queue: .main) {
-          [weak self] _ in
-          self?.sendEvent("onInbox", [:])
-        },
-        center.addObserver(forName: RiceCalWatchLink.pulseReceived, object: nil, queue: .main) {
-          [weak self] note in
-          var pulse: [String: Any] = [:]
-          for (key, value) in note.userInfo ?? [:] {
-            if let key = key as? String { pulse[key] = value }
-          }
-          self?.sendEvent("onPulse", pulse)
-        },
-        center.addObserver(forName: RiceCalWatchLink.statusChanged, object: nil, queue: .main) {
-          [weak self] _ in
-          self?.sendEvent("onStatus", [:])
-        },
-      ]
+      self.observe()
     }
 
     OnDestroy {
@@ -56,5 +38,28 @@ public class RiceCalWatchModule: Module {
     AsyncFunction("startWatchWorkoutAsync") { (promise: Promise) in
       RiceCalWatchLink.shared.startWatchWorkout { started in promise.resolve(started) }
     }
+  }
+
+  /// Passes the link's notifications on to JS as events.
+  private func observe() {
+    let center = NotificationCenter.default
+    observers = [
+      center.addObserver(forName: RiceCalWatchLink.inboxChanged, object: nil, queue: .main) {
+        [weak self] _ in
+        self?.sendEvent("onInbox", [:])
+      },
+      center.addObserver(forName: RiceCalWatchLink.pulseReceived, object: nil, queue: .main) {
+        [weak self] note in
+        var pulse: [String: Any] = [:]
+        for (key, value) in note.userInfo ?? [:] {
+          if let key = key as? String { pulse[key] = value }
+        }
+        self?.sendEvent("onPulse", pulse)
+      },
+      center.addObserver(forName: RiceCalWatchLink.statusChanged, object: nil, queue: .main) {
+        [weak self] _ in
+        self?.sendEvent("onStatus", [:])
+      },
+    ]
   }
 }
