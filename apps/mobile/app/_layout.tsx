@@ -28,6 +28,7 @@ import { EntitlementSync } from '@/features/paywall'
 import { RatePromptSheet } from '@/features/rating'
 import { LanguageSync } from '@/features/settings'
 import { WidgetSync } from '@/features/widgets'
+import { WatchSignOut } from '@/features/workouts'
 import { currentLanguage, scriptFor } from '@/i18n'
 import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
@@ -146,6 +147,7 @@ export default function RootLayout() {
                             screen. Inside `SessionProvider` because all three
                             are about one account's day. */}
                               <WidgetSync />
+                              <WatchSignOut />
                               {/* The one thing here that DOES render, and it
                             is here for the same reason the toast host is:
                             the moment it appears is a moment on whichever

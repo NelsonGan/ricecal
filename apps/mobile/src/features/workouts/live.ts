@@ -36,15 +36,16 @@ export function useLiveWorkout() {
     [userId],
   )
   /**
-   * Takes the workout off the phone, saying how it ended: the watch saves or
-   * throws away its own recording of it by that.
+   * Takes the workout off the phone, saying how it ended and when: the watch
+   * saves or throws away its own recording of it by that, ending it at the
+   * time the workout was saved with rather than the time it was saved.
    */
   const end = useCallback(
-    (saved: boolean) => {
+    (saved: boolean, endedAt = Date.now()) => {
       if (!userId) return
       const ending = getActiveWorkout(userId)
       clearActiveWorkout(userId)
-      if (ending) recordEndedWorkout(userId, ending.id, saved)
+      if (ending) recordEndedWorkout(userId, ending.id, saved, endedAt)
     },
     [userId],
   )

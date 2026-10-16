@@ -489,8 +489,22 @@ begin
     ended_at = excluded.ended_at,
     log_date = excluded.log_date,
     routine_id = excluded.routine_id,
-    kcal = excluded.kcal,
-    health_workout_id = excluded.health_workout_id
+    -- A workout the Apple Watch recorded keeps the energy it measured and
+    -- the Health copy it saved (43_workout_heart_rates.sql). A save sent
+    -- before the watch's trace landed, retried after it, or an older build
+    -- editing the workout, would otherwise put the phone's estimate and no
+    -- Health copy back over them.
+    kcal = case
+      when exists (select 1 from public.workout_heart_rates h
+                    where h.workout_id = w.id and h.active_kcal is not null)
+        then w.kcal
+      else excluded.kcal
+    end,
+    health_workout_id = case
+      when exists (select 1 from public.workout_heart_rates h where h.workout_id = w.id)
+        then coalesce(w.health_workout_id, excluded.health_workout_id)
+      else excluded.health_workout_id
+    end
   where w.user_id = v_user
   -- A row with no previous version was inserted rather than updated: a retry
   -- or an edit of the same workout is not a new workout to post.

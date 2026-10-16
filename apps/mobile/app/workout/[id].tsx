@@ -281,7 +281,7 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
         {workout.notes ? <Text variant="body">{workout.notes}</Text> : null}
       </Card>
 
-      {heart ? (
+      {heart && heart.avgBpm !== null ? (
         <HeartRateCard
           avgHr={heart.avgBpm}
           maxHr={heart.maxBpm}

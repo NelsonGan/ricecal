@@ -27,9 +27,12 @@ create table public.workout_heart_rates (
   started_at   timestamptz not null,
   interval_s   smallint not null check (interval_s between 1 and 60),
   bpm          smallint[] not null,
-  avg_bpm      smallint not null check (avg_bpm between 25 and 250),
-  max_bpm      smallint not null check (max_bpm between 25 and 250),
-  min_bpm      smallint not null check (min_bpm between 25 and 250),
+  -- Null when the watch read no pulse at all (a loose strap, heart rate not
+  -- allowed in Health). The row is still written: it is how the phone knows
+  -- the watch recorded the workout and holds its Health copy and energy.
+  avg_bpm      smallint check (avg_bpm between 25 and 250),
+  max_bpm      smallint check (max_bpm between 25 and 250),
+  min_bpm      smallint check (min_bpm between 25 and 250),
   -- The watch's own measurement of the session's active energy. Not read by
   -- the budget, which hears energy only from the health store, where the
   -- watch saved the same figure.
@@ -75,9 +78,10 @@ create policy "workout_heart_rates: read own"
 -- once the workout has landed. An error here would be class 23 and read as a
 -- refusal of the trace itself.
 --
--- A trace that cannot be a pulse (a reading outside 25 to 250, no reading at
--- all, a spacing outside a second to a minute) is refused as class 22, which
--- the phone treats as final.
+-- A trace that cannot be a pulse (a reading outside 25 to 250, a spacing
+-- outside a second to a minute) is refused as class 22, which the phone treats
+-- as final. One with no reading at all is kept, with no figures: the watch
+-- still recorded the workout.
 --
 -- `security definer` because clients have no write grant on the table; the
 -- owner check is the first thing it does. Saving twice replaces the trace, so a
@@ -134,9 +138,6 @@ begin
     from unnest(v_bpm) as b
    where b is not null;
 
-  if v_max is null then
-    raise exception 'A trace needs a reading' using errcode = '22023';
-  end if;
   if v_min < 25 or v_max > 250 then
     raise exception 'A reading is not a heartbeat' using errcode = '22003';
   end if;

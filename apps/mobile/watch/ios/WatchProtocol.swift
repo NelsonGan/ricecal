@@ -124,19 +124,20 @@ struct WatchWorkout: Codable, Equatable {
   var startedAt: Double
   var rest: WatchRest?
   var recorded: Bool
-  var applied: [String]
+  /// The last of the watch's commands this copy includes.
+  var appliedSeq: Double
   var exercises: [WatchExercise]
 
   init(
     id: String, name: String, startedAt: Double, rest: WatchRest?, recorded: Bool,
-    applied: [String], exercises: [WatchExercise]
+    appliedSeq: Double, exercises: [WatchExercise]
   ) {
     self.id = id
     self.name = name
     self.startedAt = startedAt
     self.rest = rest
     self.recorded = recorded
-    self.applied = applied
+    self.appliedSeq = appliedSeq
     self.exercises = exercises
   }
 
@@ -147,7 +148,7 @@ struct WatchWorkout: Codable, Equatable {
     startedAt = c.value(.startedAt, Date().timeIntervalSince1970 * 1000)
     rest = c.value(.rest, nil)
     recorded = c.value(.recorded, false)
-    applied = c.value(.applied, [])
+    appliedSeq = c.value(.appliedSeq, 0)
     exercises = c.value(.exercises, [])
   }
 }
@@ -179,6 +180,8 @@ struct WatchState: Codable, Equatable {
   var distanceUnit: String
   var workout: WatchWorkout?
   var ended: [WatchEnded]
+  /// Workouts whose heart rate trace the phone has.
+  var heard: [String]
   var routines: [WatchRoutine]
   var labels: [String: String]
 
@@ -191,6 +194,7 @@ struct WatchState: Codable, Equatable {
     distanceUnit = c.value(.distanceUnit, "km")
     workout = c.value(.workout, nil)
     ended = c.value(.ended, [])
+    heard = c.value(.heard, [])
     routines = c.value(.routines, [])
     labels = c.value(.labels, [:])
   }
@@ -223,10 +227,11 @@ struct StartExercise: Codable, Equatable {
 /**
  A press on the watch, for the phone to apply. One flat type with the fields of
  every kind optional, rather than an enum, so it encodes to exactly the JSON
- the phone's `WatchCommand` union reads.
+ the phone's `WatchCommand` union reads. `seq` orders them and is how the phone
+ says how far it got (`WatchStore.nextSeq`).
  */
 struct WatchCommand: Codable, Equatable, Identifiable {
-  var id: String = UUID().uuidString.lowercased()
+  var seq: Double
   var workoutId: String
   /// Epoch milliseconds of the press.
   var at: Double = Date().timeIntervalSince1970 * 1000
@@ -244,6 +249,8 @@ struct WatchCommand: Codable, Equatable, Identifiable {
   var restS: Double?
   var byS: Double?
   var endedAt: Double?
+
+  var id: Double { seq }
 }
 
 /// The heart rate the watch recorded, sent once its session has ended.

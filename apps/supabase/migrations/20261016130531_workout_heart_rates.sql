@@ -57,9 +57,6 @@ begin
     from unnest(v_bpm) as b
    where b is not null;
 
-  if v_max is null then
-    raise exception 'A trace needs a reading' using errcode = '22023';
-  end if;
   if v_min < 25 or v_max > 250 then
     raise exception 'A reading is not a heartbeat' using errcode = '22003';
   end if;
@@ -117,15 +114,190 @@ COMMENT ON FUNCTION public.save_workout_heart_rate(jsonb) IS 'Stores the Apple W
 
 GRANT ALL ON FUNCTION public.save_workout_heart_rate(jsonb) TO authenticated;
 
+CREATE OR REPLACE FUNCTION public.save_workout (
+  p_workout jsonb
+)
+  RETURNS uuid
+  LANGUAGE plpgsql
+  SET search_path TO ''
+  AS $function$
+declare
+  v_user      uuid := (select auth.uid());
+  v_id        uuid;
+  v_exercise  jsonb;
+  v_set       jsonb;
+  v_ex_id     uuid;
+  v_ex_pos    integer := 0;
+  v_set_pos   integer;
+  v_inserted  boolean;
+begin
+  if v_user is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+  if p_workout is null or jsonb_typeof(p_workout) <> 'object' then
+    raise exception 'Expected a workout' using errcode = '22023';
+  end if;
+  if jsonb_typeof(p_workout -> 'exercises') is distinct from 'array' then
+    raise exception 'Expected a list of exercises' using errcode = '22023';
+  end if;
+  if jsonb_array_length(p_workout -> 'exercises') > 60 then
+    raise exception 'Too many exercises' using errcode = '22023';
+  end if;
+
+  v_id := (p_workout ->> 'id')::uuid;
+
+  insert into public.workouts as w (
+    id, user_id, name, notes, started_at, ended_at, log_date, routine_id, kcal, health_workout_id
+  )
+  values (
+    v_id,
+    v_user,
+    btrim(p_workout ->> 'name'),
+    nullif(btrim(p_workout ->> 'notes'), ''),
+    (p_workout ->> 'started_at')::timestamptz,
+    (p_workout ->> 'ended_at')::timestamptz,
+    (p_workout ->> 'log_date')::date,
+    -- A routine deleted while the workout was running is not an error: the
+    -- workout still happened, it just no longer has a plan to point at.
+    (select r.id from public.workout_routines r
+      where r.id = (p_workout ->> 'routine_id')::uuid and r.user_id = v_user),
+    (p_workout ->> 'kcal')::integer,
+    nullif(p_workout ->> 'health_workout_id', '')
+  )
+  on conflict (id) do update set
+    name = excluded.name,
+    notes = excluded.notes,
+    started_at = excluded.started_at,
+    ended_at = excluded.ended_at,
+    log_date = excluded.log_date,
+    routine_id = excluded.routine_id,
+    -- A workout the Apple Watch recorded keeps the energy it measured and
+    -- the Health copy it saved (43_workout_heart_rates.sql). A save sent
+    -- before the watch's trace landed, retried after it, or an older build
+    -- editing the workout, would otherwise put the phone's estimate and no
+    -- Health copy back over them.
+    kcal = case
+      when exists (select 1 from public.workout_heart_rates h
+                    where h.workout_id = w.id and h.active_kcal is not null)
+        then w.kcal
+      else excluded.kcal
+    end,
+    health_workout_id = case
+      when exists (select 1 from public.workout_heart_rates h where h.workout_id = w.id)
+        then coalesce(w.health_workout_id, excluded.health_workout_id)
+      else excluded.health_workout_id
+    end
+  where w.user_id = v_user
+  -- A row with no previous version was inserted rather than updated: a retry
+  -- or an edit of the same workout is not a new workout to post.
+  returning (xmax = 0) into v_inserted;
+
+  -- The `where` above makes a foreign id a silent no-op rather than an error,
+  -- so check that the row really is ours before touching its children.
+  if not exists (select 1 from public.workouts w where w.id = v_id and w.user_id = v_user) then
+    raise exception 'Workout belongs to another account' using errcode = '42501';
+  end if;
+
+  delete from public.workout_exercises e where e.workout_id = v_id and e.user_id = v_user;
+
+  for v_exercise in select value from jsonb_array_elements(p_workout -> 'exercises')
+  loop
+    if jsonb_typeof(v_exercise -> 'sets') is distinct from 'array' then
+      raise exception 'Expected a list of sets' using errcode = '22023';
+    end if;
+    if jsonb_array_length(v_exercise -> 'sets') > 99 then
+      raise exception 'Too many sets' using errcode = '22023';
+    end if;
+    -- An exercise with nothing done is not part of the workout, and one saved
+    -- anyway blanked that exercise's PREVIOUS column the next time.
+    if jsonb_array_length(v_exercise -> 'sets') = 0 then
+      raise exception 'An exercise needs a set' using errcode = '22023';
+    end if;
+
+    insert into public.workout_exercises (
+      workout_id, user_id, position, exercise_id, exercise_name, tracking, superset, rest_s, notes
+    )
+    values (
+      v_id,
+      v_user,
+      v_ex_pos,
+      v_exercise ->> 'exercise_id',
+      btrim(v_exercise ->> 'exercise_name'),
+      (v_exercise ->> 'tracking')::public.exercise_tracking,
+      (v_exercise ->> 'superset')::smallint,
+      (v_exercise ->> 'rest_s')::integer,
+      nullif(btrim(v_exercise ->> 'notes'), '')
+    )
+    returning id into v_ex_id;
+
+    v_set_pos := 0;
+    for v_set in select value from jsonb_array_elements(v_exercise -> 'sets')
+    loop
+      -- A set with no number in it counted in every total of sets and muscles.
+      if jsonb_typeof(v_set) is distinct from 'object'
+        or num_nonnulls(v_set ->> 'weight_kg', v_set ->> 'reps', v_set ->> 'duration_s', v_set ->> 'distance_m') = 0
+      then
+        raise exception 'A set needs a number' using errcode = '22023';
+      end if;
+      insert into public.workout_sets (
+        workout_exercise_id, user_id, position, kind, weight_kg, reps, duration_s, distance_m, rpe
+      )
+      values (
+        v_ex_id,
+        v_user,
+        v_set_pos,
+        coalesce((v_set ->> 'kind')::public.workout_set_kind, 'normal'),
+        (v_set ->> 'weight_kg')::numeric,
+        (v_set ->> 'reps')::smallint,
+        (v_set ->> 'duration_s')::integer,
+        (v_set ->> 'distance_m')::numeric,
+        (v_set ->> 'rpe')::numeric
+      );
+      v_set_pos := v_set_pos + 1;
+    end loop;
+
+    v_ex_pos := v_ex_pos + 1;
+  end loop;
+
+  -- The routines list is ordered by use as well as by hand: "last done 3 days
+  -- ago" is how somebody running a split knows which day is next.
+  update public.workout_routines r
+     set last_used_at = greatest(r.last_used_at, (p_workout ->> 'started_at')::timestamptz)
+   where r.id = (p_workout ->> 'routine_id')::uuid and r.user_id = v_user;
+
+  -- A new workout goes to the feed for someone who is on it and shares
+  -- workouts, which is the default (98_social_workout_posts.sql). An import
+  -- sends "post": false, since years of history at once is not news. The
+  -- record count is taken here, where row security limits the scoring to this
+  -- account's own sets; the posting function runs as its owner and would
+  -- score every account's. Scoring reads the whole history, so the posting
+  -- function's own checks (ended in the last day, a profile in good standing)
+  -- are made first, and a workout that will not be posted is not scored.
+  if v_inserted and coalesce((p_workout ->> 'post')::boolean, true)
+     and (p_workout ->> 'ended_at')::timestamptz > now() - interval '24 hours'
+     and exists (
+       select 1 from public.profiles p
+       where p.id = v_user and p.auto_post_workouts and p.social_joined_at is not null
+         and p.review_status = 'approved' and not p.quarantined
+     ) then
+    perform private.social_insert_workout_post(
+      v_id, (select s.pr_count from public.workout_summaries s where s.id = v_id), '', null, true
+    );
+  end if;
+
+  return v_id;
+end;
+$function$;
+
 CREATE TABLE public.workout_heart_rates (
   workout_id  uuid                     NOT NULL,
   user_id     uuid                     NOT NULL,
   started_at  timestamp with time zone NOT NULL,
   interval_s  smallint                 NOT NULL,
   bpm         smallint[]               NOT NULL,
-  avg_bpm     smallint                 NOT NULL,
-  max_bpm     smallint                 NOT NULL,
-  min_bpm     smallint                 NOT NULL,
+  avg_bpm     smallint,
+  max_bpm     smallint,
+  min_bpm     smallint,
   active_kcal integer,
   source      text                     DEFAULT 'apple_watch'::text NOT NULL,
   created_at  timestamp with time zone DEFAULT now() NOT NULL,

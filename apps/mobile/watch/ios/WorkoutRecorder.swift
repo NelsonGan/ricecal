@@ -37,6 +37,10 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
 
   var onHeartRate: ((Int) -> Void)?
   var onEnergy: ((Double) -> Void)?
+  /// Recovery has finished, with or without a session to recover.
+  var onRecovered: (() -> Void)?
+  /// Asked HealthKit for a session it kept, and not yet answered.
+  private(set) var isRecovering = false
 
   private let defaults = UserDefaults.standard
   private let idKey = "RiceCalRecordingWorkout"
@@ -191,10 +195,18 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
 
   /// A session HealthKit kept while this app was relaunched.
   func recover() {
+    guard !isRecovering else { return }
+    isRecovering = true
     healthStore.recoverActiveWorkoutSession { [weak self] session, error in
-      guard let session else { return }
       Task { @MainActor in
         guard let self else { return }
+        self.isRecovering = false
+        defer { self.onRecovered?() }
+        guard let session else { return }
+        // Asked for by the store at launch and by HealthKit's own recovery
+        // call, and both answers are the one session HealthKit allows; a
+        // recorder holding one already keeps it rather than a second object.
+        guard self.session == nil else { return }
         let builder = session.associatedWorkoutBuilder()
         session.delegate = self
         builder.delegate = self

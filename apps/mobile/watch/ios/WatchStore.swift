@@ -9,7 +9,9 @@ import WatchKit
  last state with the presses it has not yet confirmed laid over it
  (`project`), so a press shows at once, holds while the phone is out of reach,
  and gives way to the phone's own copy as soon as that copy includes it: the
- state names the commands it has applied, and those leave `pending`.
+ state says how far through the watch's commands it got (`appliedSeq`), and
+ those leave `pending`. Until then the whole of `pending` is sent again whenever
+ the phone may have missed it.
 
  Both halves are kept in the defaults, so a watch app relaunched mid-workout
  picks up where it was, and so do presses still waiting for the phone.
@@ -46,6 +48,9 @@ final class WatchStore: ObservableObject {
   private var restTimer: Timer?
   private var restBuzzedFor: Double?
   private var lastPulse = Date.distantPast
+  private var lastResend = Date.distantPast
+  /// Heart rate traces the phone has not yet said it has.
+  private var unsent: [HeartTrace] = []
   private var announced: Set<String> = []
   private var readings: [Int] = []
   /// The phone launched this app to record its workout.
@@ -61,12 +66,19 @@ final class WatchStore: ObservableObject {
     if let text = defaults.string(forKey: "RiceCalPending") {
       pending = Wire.decode([WatchCommand].self, text) ?? []
     }
+    if let text = defaults.string(forKey: "RiceCalUnsentTraces") {
+      unsent = Wire.decode([HeartTrace].self, text) ?? []
+    }
     link.onState = { [weak self] text in
       DispatchQueue.main.async { self?.receive(text) }
     }
     link.onReachability = { [weak self] reachable in
       DispatchQueue.main.async { self?.reachable = reachable }
     }
+    link.onActivated = { [weak self] in
+      DispatchQueue.main.async { self?.resend(force: true) }
+    }
+    recorder.onRecovered = { [weak self] in self?.reconcile() }
     recorder.onHeartRate = { [weak self] bpm in self?.heard(bpm) }
     recorder.onEnergy = { [weak self] kcal in self?.activeKcal = kcal }
   }
@@ -76,6 +88,7 @@ final class WatchStore: ObservableObject {
     couldNotRecord = nil
     reachable = link.isReachable
     link.askForState()
+    resend(force: true)
     reconcile()
   }
 
@@ -120,6 +133,7 @@ final class WatchStore: ObservableObject {
     phone = state
     defaults.set(text, forKey: "RiceCalPhoneState")
     prune()
+    resend()
     reconcile()
   }
 
@@ -127,18 +141,47 @@ final class WatchStore: ObservableObject {
   private func prune() {
     guard let phone else { return }
     let ended = Set(phone.ended.map(\.id))
-    let applied = Set(phone.workout?.applied ?? [])
     let before = pending.count
     pending.removeAll { command in
-      if ended.contains(command.workoutId) || applied.contains(command.id) { return true }
+      if ended.contains(command.workoutId) { return true }
+      guard let running = phone.workout else { return false }
+      if running.id == command.workoutId { return command.seq <= running.appliedSeq }
       // The phone is running another workout and has spoken since this
       // press: it will not apply it, and its own workout is the one to follow.
-      if let running = phone.workout, running.id != command.workoutId, phone.rev > command.at {
-        return true
-      }
-      return false
+      return phone.rev > command.at
     }
-    if pending.count != before { savePending() }
+    if pending.count != before {
+      savePending()
+      // So the copy the system keeps for the phone is the shorter list.
+      link.sendPending(pending)
+    }
+    unsent.removeAll { phone.heard.contains($0.workoutId) }
+    saveUnsent()
+  }
+
+  /**
+   Sends again what the phone may have missed: the commands it has not
+   confirmed, and the traces it has not said it has. Not more than every few
+   seconds, since every state that arrives calls this.
+   */
+  private func resend(force: Bool = false) {
+    let now = Date()
+    guard force || now.timeIntervalSince(lastResend) > 3 else { return }
+    lastResend = now
+    if !pending.isEmpty { link.sendPending(pending) }
+    for trace in unsent { link.send(trace) }
+  }
+
+  /**
+   Rises with every press and across relaunches, starting from the clock in
+   milliseconds, so a reinstalled app's first press is still past anything the
+   phone applied before it.
+   */
+  private func nextSeq() -> Double {
+    let now = (Date().timeIntervalSince1970 * 1000).rounded()
+    let seq = max(now, defaults.double(forKey: "RiceCalLastSeq") + 1)
+    defaults.set(seq, forKey: "RiceCalLastSeq")
+    return seq
   }
 
   // MARK: Presses
@@ -146,12 +189,16 @@ final class WatchStore: ObservableObject {
   private func enqueue(_ command: WatchCommand) {
     pending.append(command)
     savePending()
-    link.send(command)
+    link.sendPending(pending)
     reconcile()
   }
 
   private func savePending() {
     defaults.set(Wire.encode(pending), forKey: "RiceCalPending")
+  }
+
+  private func saveUnsent() {
+    defaults.set(Wire.encode(unsent), forKey: "RiceCalUnsentTraces")
   }
 
   func start(_ routine: WatchRoutine) {
@@ -177,7 +224,7 @@ final class WatchStore: ObservableObject {
     page = .set
     enqueue(
       WatchCommand(
-        workoutId: workoutId, type: "start", routineId: routine.id, name: routine.name,
+        seq: nextSeq(), workoutId: workoutId, type: "start", routineId: routine.id, name: routine.name,
         exercises: exercises))
     Task {
       _ = await recorder.requestAuthorization()
@@ -195,7 +242,7 @@ final class WatchStore: ObservableObject {
     picked = nil
     enqueue(
       WatchCommand(
-        workoutId: workout.id, type: "complete", exerciseKey: exercise.key, setId: set.id,
+        seq: nextSeq(), workoutId: workout.id, type: "complete", exerciseKey: exercise.key, setId: set.id,
         weightKg: figures.weightKg, reps: figures.reps, durationS: figures.durationS,
         distanceM: figures.distanceM, restS: set.restS))
   }
@@ -204,13 +251,13 @@ final class WatchStore: ObservableObject {
     guard let workout else { return }
     WKInterfaceDevice.current().play(.click)
     enqueue(
-      WatchCommand(workoutId: workout.id, type: "uncomplete", exerciseKey: exercise.key, setId: set.id))
+      WatchCommand(seq: nextSeq(), workoutId: workout.id, type: "uncomplete", exerciseKey: exercise.key, setId: set.id))
   }
 
   func addSet(to exercise: WatchExercise) {
     guard let workout else { return }
     let id = UUID().uuidString.lowercased()
-    enqueue(WatchCommand(workoutId: workout.id, type: "addSet", exerciseKey: exercise.key, setId: id))
+    enqueue(WatchCommand(seq: nextSeq(), workoutId: workout.id, type: "addSet", exerciseKey: exercise.key, setId: id))
     picked = id
     page = .set
   }
@@ -218,12 +265,12 @@ final class WatchStore: ObservableObject {
   func adjustRest(by seconds: Double) {
     guard let workout, workout.rest != nil else { return }
     WKInterfaceDevice.current().play(.click)
-    enqueue(WatchCommand(workoutId: workout.id, type: "restAdjust", byS: seconds))
+    enqueue(WatchCommand(seq: nextSeq(), workoutId: workout.id, type: "restAdjust", byS: seconds))
   }
 
   func skipRest() {
     guard let workout, workout.rest != nil else { return }
-    enqueue(WatchCommand(workoutId: workout.id, type: "restSkip"))
+    enqueue(WatchCommand(seq: nextSeq(), workoutId: workout.id, type: "restSkip"))
   }
 
   /// Saves the workout: the phone saves the sets done, the watch its session.
@@ -236,14 +283,14 @@ final class WatchStore: ObservableObject {
       sets: Self.doneSets(workout),
       avgBpm: readings.isEmpty ? nil : readings.reduce(0, +) / readings.count,
       kcal: activeKcal > 0 ? activeKcal : nil)
-    enqueue(WatchCommand(workoutId: workout.id, type: "finish", endedAt: end.timeIntervalSince1970 * 1000))
+    enqueue(WatchCommand(seq: nextSeq(), workoutId: workout.id, type: "finish", endedAt: end.timeIntervalSince1970 * 1000))
     endRecording(saved: true, at: end, workoutId: workout.id)
     WKInterfaceDevice.current().play(.success)
   }
 
   func discard() {
     guard let workout else { return }
-    enqueue(WatchCommand(workoutId: workout.id, type: "discard"))
+    enqueue(WatchCommand(seq: nextSeq(), workoutId: workout.id, type: "discard"))
     endRecording(saved: false, at: Date(), workoutId: workout.id)
   }
 
@@ -300,6 +347,9 @@ final class WatchStore: ObservableObject {
       return
     }
     guard let running, summary?.workoutId != running.id, couldNotRecord != running.id else { return }
+    // A session HealthKit kept may be on its way back; starting another now
+    // would make two. Recovery calls this again when it is done.
+    guard !recorder.isRecovering else { return }
     // Only on the wrist, or when the phone launched this app for it: a
     // session cannot be started from the background otherwise.
     let active = WKApplication.shared().applicationState == .active
@@ -324,7 +374,7 @@ final class WatchStore: ObservableObject {
   private func announce(_ workout: WatchWorkout) {
     guard !workout.recorded, !announced.contains(workout.id) else { return }
     announced.insert(workout.id)
-    enqueue(WatchCommand(workoutId: workout.id, type: "recording"))
+    enqueue(WatchCommand(seq: nextSeq(), workoutId: workout.id, type: "recording"))
   }
 
   private func endRecording(saved: Bool, at end: Date, workoutId: String) {
@@ -341,6 +391,9 @@ final class WatchStore: ObservableObject {
     activeKcal = 0
     Task {
       if let trace = await recorder.finish(endDate: end) {
+        unsent.removeAll { $0.workoutId == trace.workoutId }
+        unsent.append(trace)
+        saveUnsent()
         link.send(trace)
         if summary?.workoutId == trace.workoutId {
           let heard = trace.bpm.compactMap { $0 }
@@ -452,7 +505,7 @@ final class WatchStore: ObservableObject {
   private static func started(_ command: WatchCommand) -> WatchWorkout {
     WatchWorkout(
       id: command.workoutId, name: command.name ?? "", startedAt: command.at, rest: nil,
-      recorded: false, applied: [],
+      recorded: false, appliedSeq: 0,
       exercises: (command.exercises ?? []).map { exercise in
         WatchExercise(
           key: exercise.key, exerciseId: exercise.exerciseId, name: exercise.name,

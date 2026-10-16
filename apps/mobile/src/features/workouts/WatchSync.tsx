@@ -5,6 +5,7 @@ import {
   publishWatchState,
   startWatchWorkout,
   takeWatchInbox,
+  type WatchCommand,
   type WatchState,
   type WatchStatus,
   watchStatus,
@@ -17,6 +18,7 @@ import { AppState, Platform } from 'react-native'
 
 import {
   queueHeartTrace,
+  useHeardTraces,
   useHeartRateOutbox,
   useLastSets,
   useRoutines,
@@ -74,6 +76,7 @@ function useWatchSync(): void {
   const { userId } = useSession()
   const workout = useActiveWorkout(userId)
   const ended = useEndedWorkouts(userId)
+  const heard = useHeardTraces(userId)
   const status = useWatchStatus()
   const watching = status.installed
 
@@ -121,11 +124,12 @@ function useWatchSync(): void {
             distanceUnit: distanceUnitFor(unit),
             workout: current,
             ended,
+            heard,
             routines: routineList,
             labels,
           })
         : null,
-    [watching, userId, unit, current, ended, routineList, labels],
+    [watching, userId, unit, current, ended, heard, routineList, labels],
   )
   useEffect(() => {
     if (!body) return
@@ -135,26 +139,6 @@ function useWatchSync(): void {
     }, PUBLISH_SETTLE_MS)
     return () => clearTimeout(timer)
   }, [body])
-
-  // Signing out unmounts this, and the watch must not go on showing the
-  // account's routines or workout to whoever holds the phone next.
-  useEffect(
-    () => () => {
-      if (!watchStatus().installed) return
-      publishWatchState({
-        v: 1,
-        rev: Date.now(),
-        signedIn: false,
-        unit: 'kg',
-        distanceUnit: 'km',
-        workout: null,
-        ended: [],
-        routines: [],
-        labels: {},
-      })
-    },
-    [],
-  )
 
   // Ask the watch to record a workout just started here. Once per workout per
   // launch, and not for one the watch started or is already recording.
@@ -168,8 +152,11 @@ function useWatchSync(): void {
     void startWatchWorkout()
   }, [watching, askId, askStarted])
 
-  // The watch's commands and traces. Applied one at a time in the order they
-  // arrived: a finish saves before anything after it is read.
+  // The watch's commands and traces. The watch sends every command the phone
+  // has not confirmed, each time, so each list is applied in the order the
+  // presses were made, from where the workout got to: a finish after the sets
+  // it saves, a set after the press that added it. Whatever is not finished
+  // here (the app killed mid-list) comes again in the watch's next list.
   const save = useWorkoutSave()
   const latest = useRef({ save, router, toast, t })
   latest.current = { save, router, toast, t }
@@ -188,7 +175,7 @@ function useWatchSync(): void {
         const result = await save(document, endedAt)
         trackWorkoutFinished(document, result)
         clearActiveWorkout(userId)
-        recordEndedWorkout(userId, document.id, true)
+        recordEndedWorkout(userId, document.id, true, endedAt)
         toast.show({
           title: t('workouts:finish.saved'),
           description: result.queued ? t('workouts:finish.queued') : undefined,
@@ -200,6 +187,43 @@ function useWatchSync(): void {
       if (loggerIsOpen()) router.dismissTo('/workouts')
     }
 
+    const apply = async (command: WatchCommand) => {
+      const outcome = applyWatchCommand(getActiveWorkout(userId), command, {
+        now: Date.now(),
+        ended: getEndedWorkouts(userId),
+      })
+      switch (outcome.kind) {
+        case 'actions':
+          for (const action of outcome.actions) dispatchWorkout(userId, action)
+          break
+        case 'start':
+          startActiveWorkout(userId, outcome.workout)
+          track('Workout Started', {
+            source: outcome.workout.routineId ? 'routine' : 'empty',
+            exercises: outcome.workout.exercises.length,
+          })
+          break
+        case 'finish':
+          try {
+            await finish(outcome.endedAt)
+          } catch (failure) {
+            // Refused for what it holds: it stays the running workout on
+            // the phone, where the finish screen can say what is wrong.
+            // Marked as applied, or the watch would go on drawing it as
+            // finished while the phone still has it running.
+            console.warn('[workouts] could not save a workout finished on the watch', failure)
+            dispatchWorkout(userId, { type: 'watchApplied', seq: outcome.seq })
+          }
+          break
+        case 'discard': {
+          const document = getActiveWorkout(userId)
+          if (document) discardWorkout(userId, document)
+          if (loggerIsOpen()) latest.current.router.dismissTo('/workouts')
+          break
+        }
+      }
+    }
+
     const drain = async () => {
       for (const item of takeWatchInbox()) {
         if (!alive) return
@@ -207,36 +231,9 @@ function useWatchSync(): void {
           queueHeartTrace(userId, item.trace)
           continue
         }
-        const outcome = applyWatchCommand(getActiveWorkout(userId), item.command, {
-          now: Date.now(),
-          ended: getEndedWorkouts(userId),
-        })
-        switch (outcome.kind) {
-          case 'actions':
-            for (const action of outcome.actions) dispatchWorkout(userId, action)
-            break
-          case 'start':
-            startActiveWorkout(userId, outcome.workout)
-            track('Workout Started', {
-              source: outcome.workout.routineId ? 'routine' : 'empty',
-              exercises: outcome.workout.exercises.length,
-            })
-            break
-          case 'finish':
-            try {
-              await finish(outcome.endedAt)
-            } catch (failure) {
-              // Refused for what it holds: it stays the running workout on
-              // the phone, where the finish screen can say what is wrong.
-              console.warn('[workouts] could not save a workout finished on the watch', failure)
-            }
-            break
-          case 'discard': {
-            const document = getActiveWorkout(userId)
-            if (document) discardWorkout(userId, document)
-            if (loggerIsOpen()) latest.current.router.dismissTo('/workouts')
-            break
-          }
+        for (const command of [...item.commands].sort((a, b) => a.seq - b.seq)) {
+          if (!alive) return
+          await apply(command)
         }
       }
     }
@@ -327,6 +324,32 @@ function watchLabels(
     sets: t('workouts:logger.sets'),
     done: t('common:action.done'),
   }
+}
+
+/**
+ * Signed out, the watch is told so, and stops showing the account's routines
+ * and workout to whoever holds the phone next. Mounted at the root rather than
+ * done when `WatchSync` unmounts: the tabs can unmount without anyone signing
+ * out, and a signed-out state makes the watch throw away a recording.
+ */
+export function WatchSignOut(): null {
+  const { userId, loading } = useSession()
+  useEffect(() => {
+    if (loading || userId || !watchStatus().installed) return
+    publishWatchState({
+      v: 1,
+      rev: Date.now(),
+      signedIn: false,
+      unit: 'kg',
+      distanceUnit: 'km',
+      workout: null,
+      ended: [],
+      heard: [],
+      routines: [],
+      labels: {},
+    })
+  }, [loading, userId])
+  return null
 }
 
 /**

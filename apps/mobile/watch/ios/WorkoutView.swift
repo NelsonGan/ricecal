@@ -114,6 +114,10 @@ private struct SetEditor: View {
   @State private var focus: Field = .weight
   @State private var crown: Double = 0
   @State private var ready = false
+  /// The crown has moved a figure here. Until then the figures follow the
+  /// phone's, so a weight typed there while this set was on the wrist is the
+  /// one completing it here sends.
+  @State private var touched = false
 
   private var fields: [Field] {
     switch exercise.tracking {
@@ -156,7 +160,14 @@ private struct SetEditor: View {
         $crown, from: 0, through: range(focus), by: step(focus), sensitivity: sensitivity(focus),
         isContinuous: false, isHapticFeedbackEnabled: true)
       .onChange(of: crown) { _, value in
-        if ready { write(value, to: focus) }
+        guard ready else { return }
+        touched = true
+        write(value, to: focus)
+      }
+      .onChange(of: set.figures) { _, figures in
+        guard !touched else { return }
+        draft = figures
+        point(focus)
       }
 
       Spacer(minLength: 0)
@@ -185,8 +196,7 @@ private struct SetEditor: View {
     .onAppear {
       draft = set.figures
       focus = fields.first ?? .reps
-      crown = display(focus) ?? 0
-      ready = true
+      point(focus)
     }
   }
 
@@ -213,8 +223,13 @@ private struct SetEditor: View {
 
   private func select(_ field: Field) {
     guard !set.done else { return }
-    ready = false
     focus = field
+    point(field)
+  }
+
+  /// Sets the crown to a field's figure without that counting as a turn.
+  private func point(_ field: Field) {
+    ready = false
     crown = display(field) ?? 0
     // The crown's value moves before the field it drives does; written on
     // the next turn, setting it here is not taken as a turn of the crown.

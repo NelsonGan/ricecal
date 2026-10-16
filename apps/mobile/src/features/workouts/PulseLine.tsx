@@ -48,8 +48,11 @@ export function PulseLine({ heart }: { heart: WorkoutHeartRate }) {
   const [width, setWidth] = useState(0)
   const plotWidth = Math.max(0, width - SCALE_W)
   const points = useMemo(() => pulsePoints(heart.bpm), [heart.bpm])
-  const low = heart.minBpm - 5
-  const high = heart.maxBpm + 5
+  // Drawn only for a trace with readings, which always has both.
+  const lowest = heart.minBpm ?? 0
+  const highest = heart.maxBpm ?? 0
+  const low = lowest - 5
+  const high = highest + 5
 
   const { line, area } = useMemo(() => {
     if (plotWidth <= 0 || points.length === 0) return { line: null, area: null }
@@ -112,10 +115,10 @@ export function PulseLine({ heart }: { heart: WorkoutHeartRate }) {
         </Canvas>
         <View className="justify-between pl-2" style={{ width: SCALE_W }}>
           <Text variant="caption" className="text-muted">
-            {heart.maxBpm}
+            {highest}
           </Text>
           <Text variant="caption" className="text-muted">
-            {heart.minBpm}
+            {lowest}
           </Text>
         </View>
       </View>

@@ -4,10 +4,15 @@
  * The phone is the record of a running workout, as it is for the Live
  * Activity: the document in MMKV that the logger edits. The watch draws a copy
  * the phone sends it (`WatchState`) and asks for changes (`WatchCommand`),
- * which the phone applies through the same actions the logger uses. Each
- * command carries an id, and the state names the ids already applied, so the
- * watch can draw its own presses at once and drop each one when the phone's
- * copy has caught up with it.
+ * which the phone applies through the same actions the logger uses.
+ *
+ * Commands are numbered (`seq`, rising on the watch) and the watch always sends
+ * every one the phone has not confirmed, in order, never one at a time. The
+ * phone applies a list from where it got to (`appliedSeq`) and says so in the
+ * next state, and the watch drops what that covers. Sent one at a time over
+ * two paths of different speed, a finish overtook the sets before it and the
+ * phone threw away a workout it thought was empty; a batch the phone lost
+ * halfway was never sent again.
  *
  * Mirrored in Swift by `watch/ios/WatchProtocol.swift`. A field added here has
  * to be added there, optional on both sides: a watch app and a phone app are
@@ -68,8 +73,8 @@ export type WatchWorkout = {
   rest: { endsAt: number; totalS: number } | null
   /** Whether the watch has said it is recording this workout. */
   recorded: boolean
-  /** The watch's commands this copy already includes. */
-  applied: string[]
+  /** The last of the watch's commands this copy includes. */
+  appliedSeq: number
   exercises: WatchExercise[]
 }
 
@@ -91,13 +96,16 @@ export type WatchState = {
   distanceUnit: 'km' | 'mi'
   workout: WatchWorkout | null
   ended: WatchEnded[]
+  /** Workouts whose heart rate trace the phone has, so the watch stops sending it. */
+  heard: string[]
   routines: WatchRoutine[]
   /** The watch's words in the phone's language. The watch has English of its own. */
   labels: Record<string, string>
 }
 
 type CommandBase = {
-  id: string
+  /** Rising with every press, across relaunches (it starts from the clock). */
+  seq: number
   workoutId: string
   /** Epoch ms of the press, on the watch's clock. */
   at: number
@@ -136,9 +144,12 @@ export type WatchHeartTrace = {
   healthWorkoutId: string | null
 }
 
-/** What the watch sent while JS was not there to hear it, in arrival order. */
+/**
+ * What the watch sent while JS was not there to hear it: its latest list of
+ * unconfirmed commands (each list replaces the one before), and traces.
+ */
 export type WatchInboxItem =
-  | { kind: 'command'; command: WatchCommand }
+  | { kind: 'commands'; commands: WatchCommand[] }
   | { kind: 'heart'; trace: WatchHeartTrace }
 
 export type WatchStatus = { paired: boolean; installed: boolean; reachable: boolean }

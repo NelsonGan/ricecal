@@ -39,9 +39,28 @@ final class PhoneLink: NSObject, WCSessionDelegate {
 
   // MARK: To the phone
 
-  func send(_ command: WatchCommand) {
-    guard let json = Wire.encode(command) else { return }
-    deliver(["command": json])
+  /// Fires when the session is up, so what waited for it can go.
+  var onActivated: (() -> Void)?
+
+  /**
+   Every command the phone has not confirmed, as one list, in order. As the
+   application context, which the system keeps, newest replacing the last, and
+   hands to the phone app whenever it next runs; and as a message too while
+   the phone is reachable, which arrives at once. Never one command at a time
+   over two paths, which let a finish overtake the sets before it.
+   */
+  func sendPending(_ commands: [WatchCommand]) {
+    guard WCSession.isSupported(), let json = Wire.encode(commands) else { return }
+    let session = WCSession.default
+    guard session.activationState == .activated else { return }
+    do {
+      try session.updateApplicationContext(["pending": json])
+    } catch {
+      NSLog("[RiceCalWatch] could not update the context: \(error.localizedDescription)")
+    }
+    if session.isReachable {
+      session.sendMessage(["pending": json], replyHandler: { _ in }, errorHandler: nil)
+    }
   }
 
   /**
@@ -99,6 +118,7 @@ final class PhoneLink: NSObject, WCSessionDelegate {
   ) {
     if let state = session.receivedApplicationContext["state"] as? String { onState?(state) }
     askForState()
+    onActivated?()
   }
 
   func session(_ session: WCSession, didReceiveApplicationContext context: [String: Any]) {
@@ -111,6 +131,9 @@ final class PhoneLink: NSObject, WCSessionDelegate {
 
   func sessionReachabilityDidChange(_ session: WCSession) {
     onReachability?(session.isReachable)
-    if session.isReachable { askForState() }
+    if session.isReachable {
+      askForState()
+      onActivated?()
+    }
   }
 }
