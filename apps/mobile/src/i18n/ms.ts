@@ -1745,6 +1745,16 @@ export const ms = {
       distanceValue: '{{value}} km dilalui',
     },
   },
+  news: {
+    title: 'Berita',
+    done: 'Faham',
+    feedAutoShare: {
+      title: 'Makanan anda kini disiarkan ke suapan',
+      body: 'Senaman yang selesai turut disiarkan. Matikan mana-mana satu dalam Edit profil.',
+      you: 'Anda',
+      previewLabel: 'Contoh makanan yang disiarkan ke suapan anda',
+    },
+  },
   workouts: {
     title: 'Senaman',
 

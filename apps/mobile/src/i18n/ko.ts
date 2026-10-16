@@ -1704,6 +1704,16 @@ export const ko = {
       distanceValue: '{{value}} km 이동',
     },
   },
+  news: {
+    title: '소식',
+    done: '확인',
+    feedAutoShare: {
+      title: '이제 식사가 피드에 게시돼요',
+      body: '완료한 운동도 게시돼요. 프로필 수정에서 각각 끌 수 있어요.',
+      you: '나',
+      previewLabel: '피드에 게시된 식사 예시',
+    },
+  },
   workouts: {
     title: '운동',
 

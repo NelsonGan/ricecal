@@ -4,6 +4,8 @@
 // dashboard groups by.
 import type { WidgetKind } from '@modules/ricecal-widgets'
 import type { ActivityLevel, ReportReason } from '@/data/types'
+// The announcement vocabulary is the news catalogue's, for the rating reason.
+import type { AnnouncementCta, AnnouncementSource } from '@/features/news/announcements'
 // The trigger list and the skip reasons are the rating gate, so a trigger added
 // there and forgotten here should be a compile error.
 import type { RatingSkipReason, RatingTrigger } from '@/lib/rating/state'
@@ -484,6 +486,40 @@ export type Events = {
    * with none of these after it is the decline.
    */
   'Rating Feedback Opened': { trigger: RatingTrigger }
+
+  // ── News ─────────────────────────────────────────────────────────────────
+  /**
+   * An announcement card went up. `launch` is the app putting the newest one
+   * over Today, once per account; `settings` is somebody opening one from the
+   * list under Me, as often as they like. `announcement` is its id from
+   * `features/news/announcements.ts`, which never changes once shipped.
+   */
+  'Announcement Shown': { announcement: string; source: AnnouncementSource }
+  /**
+   * Its button was taken. Counted as the tap, before the screen it opens has
+   * loaded, so it says the card worked and nothing about what was done there.
+   */
+  'Announcement CTA Tapped': {
+    announcement: string
+    source: AnnouncementSource
+    cta: AnnouncementCta
+  }
+  /**
+   * Closed without the button: `done` is "Got it", `close` is the cross, the
+   * scrim or the back gesture. Shown minus CTA minus this is a card the app
+   * was closed over.
+   */
+  'Announcement Dismissed': {
+    announcement: string
+    source: AnnouncementSource
+    via: 'done' | 'close'
+  }
+  /**
+   * A switch on Edit profile that sends meals or workouts to the feed, after
+   * the write lands. Not fired by onboarding or an announcement switching meals
+   * on, so `enabled: false` after `Announcement Shown` is somebody opting out.
+   */
+  'Auto Post Toggled': { kind: 'foods' | 'workouts'; enabled: boolean }
 }
 
 export type EventName = keyof Events

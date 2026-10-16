@@ -28,7 +28,15 @@ import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Te
 
 /** U1 PROFILE */
 export default function MeScreen() {
-  const { t } = useTranslation(['profile', 'activity', 'common', 'paywall', 'social', 'workouts'])
+  const { t } = useTranslation([
+    'profile',
+    'activity',
+    'common',
+    'news',
+    'paywall',
+    'social',
+    'workouts',
+  ])
   const router = useRouter()
   const colors = useThemeColors()
   const { session } = useSession()
@@ -297,6 +305,13 @@ export default function MeScreen() {
           icon={{ set: 'system', name: 'lightbulb' }}
           title={t('profile:home.tutorial')}
           onPress={() => router.push('/tutorial')}
+        />
+        {/* The announcements' permanent home, for the tour's reason: the card
+            over Today is shown once and only for the newest. */}
+        <SettingRow
+          icon={{ set: 'system', name: 'megaphone' }}
+          title={t('news:title')}
+          onPress={() => router.push('/settings/news')}
         />
         {/* A sheet rather than a route, because there is no help centre in the
             app: the row explains where support actually happens and opens

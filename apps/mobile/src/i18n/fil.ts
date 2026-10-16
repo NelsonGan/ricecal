@@ -1745,6 +1745,16 @@ export const fil = {
       distanceValue: '{{value}} km ang nalakbay',
     },
   },
+  news: {
+    title: 'Balita',
+    done: 'Sige',
+    feedAutoShare: {
+      title: 'Naka-post na sa feed mo ang mga kinakain mo',
+      body: 'Naipo-post din ang mga natapos na workout. I-off ang alinman sa I-edit ang profile.',
+      you: 'Ikaw',
+      previewLabel: 'Halimbawa ng pagkaing naka-post sa feed mo',
+    },
+  },
   workouts: {
     title: 'Workout',
 

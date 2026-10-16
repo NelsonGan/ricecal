@@ -1698,6 +1698,16 @@ export const zhHans = {
       distanceValue: '走了 {{value}} 公里',
     },
   },
+  news: {
+    title: '公告',
+    done: '知道了',
+    feedAutoShare: {
+      title: '你的餐食现在会发布到动态',
+      body: '完成的训练也会发布。可在“编辑个人资料”中分别关闭。',
+      you: '你',
+      previewLabel: '发布到你动态中的餐食示例',
+    },
+  },
   workouts: {
     title: '训练',
 

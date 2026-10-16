@@ -32,6 +32,55 @@ export function useProfile() {
   })
 }
 
+/**
+ * Records announcements as seen, and switches on what the first one shown
+ * enables, in one statement (`see_announcements`, 98_announcements.sql).
+ *
+ * Null when every id was already seen, by this phone or another, in which case
+ * nothing was switched. The list is the server's to append to: the client has
+ * no grant on the column, so two phones claiming different ids cannot drop
+ * each other's.
+ */
+export async function seeAnnouncements(
+  ids: string[],
+  enables: { autoPostFoods?: boolean } = {},
+): Promise<Profile | null> {
+  return unwrapMaybe(
+    await supabase
+      .rpc('see_announcements', { p_ids: ids, p_auto_post_foods: enables.autoPostFoods })
+      .maybeSingle(),
+  )
+}
+
+/**
+ * Marks one announcement seen the moment its card is on screen, applying what
+ * it enables, and puts the row the server returns into the cache.
+ *
+ * In-flight profile reads are cancelled first, as `useUpdateProfile` does: one
+ * that read the row before this write and landed after it would put the old
+ * row back, and Edit profile would show the switch off while the server has it
+ * on. With nothing claimed (seen elsewhere already) the cache is out of date,
+ * so it is refetched instead.
+ */
+export function useSeeAnnouncement() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, enables }: { id: string; enables?: { autoPostFoods?: boolean } }) =>
+      seeAnnouncements([id], enables),
+    onSuccess: async (profile) => {
+      const key = keys.profile(userId)
+      if (!profile) {
+        await queryClient.invalidateQueries({ queryKey: key })
+        return
+      }
+      await queryClient.cancelQueries({ queryKey: key })
+      queryClient.setQueryData(key, profile)
+    },
+  })
+}
+
 /** The fields onboarding and the settings screens can write. */
 export type ProfilePatch = {
   displayName?: string
@@ -183,6 +232,11 @@ export type OnboardingAnswers = ProfilePatch & {
    * `is_custom` so the trigger reads the flag and stops.
    */
   targets?: { kcal: number; carbs: number; protein: number; fat: number }
+  /**
+   * Every announcement this build carries, marked seen before the account is
+   * finished: news about a change is for people who used the app before it.
+   */
+  seenAnnouncements?: string[]
 }
 
 /**
@@ -209,10 +263,20 @@ export function useFinishOnboarding() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ weightKg, units, targets, ...patch }: OnboardingAnswers) => {
+    mutationFn: async ({
+      weightKg,
+      units,
+      targets,
+      seenAnnouncements: seen,
+      ...patch
+    }: OnboardingAnswers) => {
       unwrapOne(
         await supabase.from('profiles').update(toRow(patch)).eq('id', userId).select('id').single(),
       )
+
+      // Before `onboarded_at`, so no launch can find the account finished and
+      // its announcements still due. A retry finds them seen, which is fine.
+      if (seen?.length) await seeAnnouncements(seen)
 
       unwrapOne(
         await supabase

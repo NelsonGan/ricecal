@@ -1711,6 +1711,16 @@ export const ja = {
       distanceValue: '{{value}} km 移動',
     },
   },
+  news: {
+    title: 'お知らせ',
+    done: 'OK',
+    feedAutoShare: {
+      title: '食事がフィードに投稿されるようになりました',
+      body: '終えたワークアウトも投稿されます。どちらも「プロフィールを編集」からオフにできます。',
+      you: 'あなた',
+      previewLabel: 'フィードに投稿された食事の例',
+    },
+  },
   workouts: {
     title: 'ワークアウト',
 
