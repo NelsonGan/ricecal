@@ -33,33 +33,52 @@ export function useProfile() {
 }
 
 /**
- * Records an announcement as seen, with whatever it switches on, in one write.
+ * Records announcements as seen, and switches on what the first one shown
+ * enables, in one statement (`see_announcements`, 98_announcements.sql).
  *
- * Null when it was not this call that claimed it: already seen, which another
- * phone may have done since the cache was filled, or no row at all. The
- * caller shows the card only on a profile back, so a card that claims to have
- * switched something on is never put up over a write that failed.
- *
- * The list is read fresh rather than from the cache, which is persisted and
- * may predate a claim made elsewhere; the filter on the update is what makes
- * two phones racing for the same id end with one card between them.
+ * Null when every id was already seen, by this phone or another, in which case
+ * nothing was switched. The list is the server's to append to: the client has
+ * no grant on the column, so two phones claiming different ids cannot drop
+ * each other's.
  */
-export async function claimAnnouncement(
-  userId: string,
-  id: string,
-  patch: Pick<ProfilePatch, 'autoPostFoods'> = {},
+export async function seeAnnouncements(
+  ids: string[],
+  enables: { autoPostFoods?: boolean } = {},
 ): Promise<Profile | null> {
-  const current = await fetchProfile(userId)
-  if (!current || current.seen_announcements.includes(id)) return null
   return unwrapMaybe(
     await supabase
-      .from('profiles')
-      .update({ ...toRow(patch), seen_announcements: [...current.seen_announcements, id] })
-      .eq('id', userId)
-      .not('seen_announcements', 'cs', `{${id}}`)
-      .select('*')
+      .rpc('see_announcements', { p_ids: ids, p_auto_post_foods: enables.autoPostFoods })
       .maybeSingle(),
   )
+}
+
+/**
+ * Marks one announcement seen the moment its card is on screen, applying what
+ * it enables, and puts the row the server returns into the cache.
+ *
+ * In-flight profile reads are cancelled first, as `useUpdateProfile` does: one
+ * that read the row before this write and landed after it would put the old
+ * row back, and Edit profile would show the switch off while the server has it
+ * on. With nothing claimed (seen elsewhere already) the cache is out of date,
+ * so it is refetched instead.
+ */
+export function useSeeAnnouncement() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, enables }: { id: string; enables?: { autoPostFoods?: boolean } }) =>
+      seeAnnouncements([id], enables),
+    onSuccess: async (profile) => {
+      const key = keys.profile(userId)
+      if (!profile) {
+        await queryClient.invalidateQueries({ queryKey: key })
+        return
+      }
+      await queryClient.cancelQueries({ queryKey: key })
+      queryClient.setQueryData(key, profile)
+    },
+  })
 }
 
 /** The fields onboarding and the settings screens can write. */
@@ -77,8 +96,6 @@ export type ProfilePatch = {
   isPrivate?: boolean
   autoPostFoods?: boolean
   autoPostWorkouts?: boolean
-  /** Announcement ids, for onboarding to start a new account with. See `claimAnnouncement`. */
-  seenAnnouncements?: string[]
   sex?: Sex
   birthDate?: string
   heightCm?: number
@@ -98,7 +115,6 @@ function toRow(patch: ProfilePatch): TablesUpdate<'profiles'> {
   if (patch.isPrivate !== undefined) row.is_private = patch.isPrivate
   if (patch.autoPostFoods !== undefined) row.auto_post_foods = patch.autoPostFoods
   if (patch.autoPostWorkouts !== undefined) row.auto_post_workouts = patch.autoPostWorkouts
-  if (patch.seenAnnouncements !== undefined) row.seen_announcements = patch.seenAnnouncements
   if (patch.sex !== undefined) row.sex = patch.sex
   if (patch.birthDate !== undefined) row.birth_date = patch.birthDate
   if (patch.heightCm !== undefined) row.height_cm = patch.heightCm
@@ -216,6 +232,11 @@ export type OnboardingAnswers = ProfilePatch & {
    * `is_custom` so the trigger reads the flag and stops.
    */
   targets?: { kcal: number; carbs: number; protein: number; fat: number }
+  /**
+   * Every announcement this build carries, marked seen before the account is
+   * finished: news about a change is for people who used the app before it.
+   */
+  seenAnnouncements?: string[]
 }
 
 /**
@@ -242,10 +263,20 @@ export function useFinishOnboarding() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ weightKg, units, targets, ...patch }: OnboardingAnswers) => {
+    mutationFn: async ({
+      weightKg,
+      units,
+      targets,
+      seenAnnouncements: seen,
+      ...patch
+    }: OnboardingAnswers) => {
       unwrapOne(
         await supabase.from('profiles').update(toRow(patch)).eq('id', userId).select('id').single(),
       )
+
+      // Before `onboarded_at`, so no launch can find the account finished and
+      // its announcements still due. A retry finds them seen, which is fine.
+      if (seen?.length) await seeAnnouncements(seen)
 
       unwrapOne(
         await supabase

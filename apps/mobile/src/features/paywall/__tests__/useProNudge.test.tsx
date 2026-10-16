@@ -12,7 +12,6 @@ const mockState = {
   unknown: false,
   due: true,
   announcing: false,
-  claimed: false,
 }
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }))
 jest.mock('@/data', () => ({
@@ -22,7 +21,6 @@ jest.mock('@/data', () => ({
 }))
 jest.mock('@/features/news/useAnnouncementOffer', () => ({
   announcementHasTheFloor: () => mockState.announcing,
-  announcementClaimedThisLaunch: () => mockState.claimed,
 }))
 jest.mock('@/features/tutorial', () => ({ tutorialOffered: () => true }))
 jest.mock('@/lib/analytics', () => ({ track: jest.fn() }))
@@ -43,7 +41,6 @@ beforeEach(() => {
     unknown: false,
     due: true,
     announcing: false,
-    claimed: false,
   })
 })
 afterEach(() => jest.useRealTimers())
@@ -83,9 +80,10 @@ it('stands aside on a launch with an announcement due', async () => {
   expect(markPaywallSeen).not.toHaveBeenCalled()
 })
 
-it('does not push over an announcement claimed during the delay', async () => {
-  await render(<Probe />)
-  mockState.claimed = true
+it('does not push over an announcement put up during the delay', async () => {
+  const view = await render(<Probe />)
+  mockState.announcing = true
+  await view.rerender(<Probe />)
   await act(() => jest.advanceTimersByTimeAsync(1500))
   expect(mockPush).not.toHaveBeenCalled()
   expect(track).not.toHaveBeenCalled()

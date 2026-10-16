@@ -2,10 +2,7 @@ import { useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
 
 import { useEntitlement, useProfile, useSession } from '@/data'
-import {
-  announcementClaimedThisLaunch,
-  announcementHasTheFloor,
-} from '@/features/news/useAnnouncementOffer'
+import { announcementHasTheFloor } from '@/features/news/useAnnouncementOffer'
 import { tutorialOffered } from '@/features/tutorial'
 import { track } from '@/lib/analytics'
 import { markPaywallSeen, paywallDue } from './nudge'
@@ -46,7 +43,7 @@ export function useProNudge(): void {
   // Booleans rather than the profile, so a refetch does not restart the delay.
   const { data: profile } = useProfile()
   const profileLoaded = profile !== undefined
-  const announcing = userId ? announcementHasTheFloor(userId, profile?.seen_announcements) : false
+  const announcing = userId ? announcementHasTheFloor(userId, profile) : false
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const offered = useRef(false)
@@ -64,13 +61,12 @@ export function useProNudge(): void {
     if (!tutorialOffered(userId)) return
     // Nor while an announcement is due or up. It is once per account and the
     // paywall has its two-day clock, so the paywall waits for the next launch.
-    // Without the profile there is no telling, and waiting costs nothing.
+    // Without the profile there is no telling, and waiting costs nothing. One
+    // put up during the delay flips `announcing`, which cancels this timer.
     if (!profileLoaded || announcing) return
 
     timer.current = setTimeout(() => {
       timer.current = null
-      // The announcement claims its launch between this booking and now.
-      if (announcementClaimedThisLaunch(userId)) return
       // A different paywall may have moved this account's clock during the wait.
       if (!paywallDue(userId)) return
       offered.current = true

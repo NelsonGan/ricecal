@@ -70,20 +70,26 @@ const ANNOUNCE_MS = 8000
 const yesterday = (key: string) => dateKey(subDays(parseISO(key), 1))
 
 /**
- * Today, with the launch announcement over whichever state it is in. Beside the
- * screen rather than inside it because the screen has several early returns.
+ * Today, with its launch offers beside it. Beside rather than inside, because
+ * the screen has several early returns, and because both offers read the
+ * profile: inside, every profile save anywhere re-rendered the whole day.
  */
 export default function TodayScreen() {
   return (
     <>
       <TodayContent />
-      <LaunchAnnouncement />
+      <LaunchOffers />
     </>
   )
 }
 
-/** The newest news, put up once per account. See `useAnnouncementOffer`. */
-function LaunchAnnouncement() {
+/**
+ * The Pro nudge and the newest news, each at most once a launch. Here rather
+ * than in the tabs layout because both appear over this screen, a beat after
+ * it. See `features/paywall/nudge.ts` and `useAnnouncementOffer`.
+ */
+function LaunchOffers() {
+  useProNudge()
   const { announcement, close } = useAnnouncementOffer()
   return <AnnouncementCard announcement={announcement} source="launch" onClose={close} />
 }
@@ -107,13 +113,6 @@ function TodayContent() {
    * The tour, offered once and never again.
    */
   useTutorialOffer()
-
-  /**
-   * The standing offer, for a free account, at most once every two days. Here
-   * rather than in the tabs layout for the reason the tour is: it appears over
-   * this screen, a beat after it. See `features/paywall/nudge.ts`.
-   */
-  useProNudge()
 
   const { selectedDate, setSelectedDate, todayKey } = useSelectedDate()
   const day = useDayLog(selectedDate)

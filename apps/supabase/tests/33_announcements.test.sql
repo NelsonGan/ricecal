@@ -12,43 +12,39 @@ from unnest(array[:'owner'::uuid, :'other'::uuid]) id;
 
 select is((select seen_announcements from public.profiles where id = :'owner'), '{}'::text[],
   'a new account has seen no announcements');
+select ok(not has_function_privilege('anon', 'public.see_announcements(text[], boolean)', 'EXECUTE'),
+  'signed-out callers cannot mark anything seen');
+select ok(not has_column_privilege('authenticated', 'public.profiles', 'seen_announcements', 'UPDATE'),
+  'the list is written only through the function');
 
 select set_config('request.jwt.claims', json_build_object('sub', :'owner', 'role', 'authenticated')::text, true);
 set local role authenticated;
 
--- The app claims an announcement and switches auto post on in one write, and
--- only when the id is not in the list yet, so a second phone claims nothing.
-update public.profiles
-set seen_announcements = array['feed_auto_share_2026_10'], auto_post_foods = true
-where id = :'owner' and not seen_announcements @> array['feed_auto_share_2026_10'];
-update public.profiles
-set seen_announcements = array['feed_auto_share_2026_10'], auto_post_foods = true
-where id = :'other';
+select is((select count(*)::int from public.see_announcements(array['feed_auto_share_2026_10'], true)), 1,
+  'the first claim returns the row');
+select is((select count(*)::int from public.see_announcements(array['feed_auto_share_2026_10'], false)), 0,
+  'a second claim returns nothing and changes nothing');
+select throws_ok($$
+  update public.profiles set seen_announcements = '{}'
+  where id = 'a8900000-0000-4000-8000-000000000001'
+$$, '42501', null, 'the column cannot be written directly');
+select throws_ok($$ select * from public.see_announcements(array['Not An Id'], null) $$,
+  '22023', null, 'ids are validated');
+select throws_ok($$ select * from public.see_announcements('{}'::text[], null) $$,
+  '22023', null, 'an empty list is refused');
+
+-- Onboarding marks several at once and leaves the setting alone.
+select is((select count(*)::int from public.see_announcements(
+  array['feed_auto_share_2026_10', 'later_news_2027_01'], null)), 1,
+  'a list with one unseen id still claims');
 reset role;
 
 select is((select seen_announcements from public.profiles where id = :'owner'),
-  array['feed_auto_share_2026_10'], 'the owner records an announcement as seen');
+  array['feed_auto_share_2026_10', 'later_news_2027_01'], 'ids are appended once each');
 select is((select auto_post_foods from public.profiles where id = :'owner'), true,
-  'the same write switches auto post foods on');
+  'the first claim switched auto post foods on, and the later ones did not undo it');
 select is((select seen_announcements from public.profiles where id = :'other'), '{}'::text[],
-  'nobody can mark another account''s announcements');
-
-set local role authenticated;
-select is_empty($$
-  update public.profiles set auto_post_foods = false
-  where id = 'a8900000-0000-4000-8000-000000000001'
-    and not seen_announcements @> array['feed_auto_share_2026_10']
-  returning id
-$$, 'a claim already made matches no row');
-select throws_ok($$
-  update public.profiles set seen_announcements = array_fill('x'::text, array[201])
-  where id = 'a8900000-0000-4000-8000-000000000001'
-$$, '23514', null, 'the list is bounded in count');
-select throws_ok($$
-  update public.profiles set seen_announcements = array[repeat('x', 9000)]
-  where id = 'a8900000-0000-4000-8000-000000000001'
-$$, '23514', null, 'and in size, since the client writes it');
-reset role;
+  'nobody else''s list moves');
 
 select * from finish();
 rollback;

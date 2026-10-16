@@ -1747,12 +1747,10 @@ export const ms = {
   },
   news: {
     title: 'Berita',
-    close: 'Tutup',
     done: 'Faham',
     feedAutoShare: {
       title: 'Makanan anda kini disiarkan ke suapan',
-      body: 'Makanan yang anda catat kini dikongsi ke suapan anda secara automatik. Anda boleh mematikannya dalam Edit profil.',
-      cta: 'Buka tetapan',
+      body: 'Senaman yang selesai turut disiarkan. Matikan mana-mana satu dalam Edit profil.',
       you: 'Anda',
       previewLabel: 'Contoh makanan yang disiarkan ke suapan anda',
     },

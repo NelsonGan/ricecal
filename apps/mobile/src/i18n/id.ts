@@ -1730,12 +1730,10 @@ export const id = {
   },
   news: {
     title: 'Berita',
-    close: 'Tutup',
     done: 'Oke',
     feedAutoShare: {
       title: 'Makananmu kini diposting ke linimasa',
-      body: 'Makanan yang kamu catat kini otomatis dibagikan ke linimasamu. Kamu bisa mematikannya di Edit profil.',
-      cta: 'Buka pengaturan',
+      body: 'Latihan yang selesai juga diposting. Matikan salah satunya di Edit profil.',
       you: 'Kamu',
       previewLabel: 'Contoh makanan yang diposting ke linimasamu',
     },
