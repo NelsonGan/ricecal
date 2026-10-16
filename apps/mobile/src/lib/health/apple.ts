@@ -672,6 +672,24 @@ function mayWrite(hk: HealthKitModule, type: string): boolean {
 }
 
 /**
+ * Whether this phone may write workouts to Health: allowed, refused, never
+ * asked, or no Health on this device at all.
+ */
+export type WorkoutWriteStatus = 'allowed' | 'refused' | 'unasked' | 'unavailable'
+
+export function workoutWriteStatus(): WorkoutWriteStatus {
+  const hk = load()
+  if (!hk) return 'unavailable'
+  try {
+    // 0 is `notDetermined`, 1 `sharingDenied` and 2 `sharingAuthorized`.
+    const status = hk.authorizationStatusFor(WORKOUT_TYPE as never)
+    return status === 2 ? 'allowed' : status === 0 ? 'unasked' : 'refused'
+  } catch {
+    return 'unavailable'
+  }
+}
+
+/**
  * Asks for permission to write workouts and their energy. Resolves true when
  * Health says writing is allowed, which unlike reading it will say: an app may
  * know whether it can write, only never whether it can read.

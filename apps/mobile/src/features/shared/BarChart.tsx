@@ -1,12 +1,20 @@
+import { type ReactNode, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 
 import { cn, Tappable, Text } from '@/ui'
+import { AxisLabels } from './AxisLabels'
 import { axisTicks, labelWidth } from './axis'
 
 export type Bar = {
   key: string
   /** The axis label under the bar. One or two characters. Left out, no label row. */
   label?: string
+  /**
+   * A date for the row under the chart, drawn only where it has room among its
+   * neighbours. Unlike `label` it is not squeezed into the bar's own width, and
+   * it works with `axis`.
+   */
+  tick?: string
   value: number
   /** Draws this bar in the accent colour. Usually the newest or the current one. */
   highlight?: boolean
@@ -47,7 +55,8 @@ export type BarChartProps = {
    * `format` writes a value as its label; `unit` is what a round number is
    * counted in (60 for minutes of a figure in seconds, a pound in kilograms),
    * and the steps are whole units of it. Zero-based charts only, and bars
-   * without `label`s, since the rules are measured against the bars' height.
+   * without `label`s (use `tick`), since the rules are measured against the
+   * bars' height.
    */
   axis?: { format: (value: number) => string; unit?: number }
   /** Screen-reader summary. The bars themselves are decorative. */
@@ -73,6 +82,9 @@ const softFills = {
 } as const
 
 const COLUMN = 'h-full min-w-0 flex-1 items-center gap-1.5'
+/** The gap between bars, `gap-1` and `gap-1.5`, which the ticks' positions are worked out from. */
+const NARROW_GAP = 4
+const GAP = 6
 
 /**
  * A plain column chart.
@@ -94,6 +106,9 @@ export function BarChart({
   className,
 }: BarChartProps) {
   const { fontScale } = useWindowDimensions()
+  // The bars' row as laid out, to put each tick under its own bar.
+  const [rowWidth, setRowWidth] = useState(0)
+  const ticked = bars.some((bar) => bar.tick !== undefined)
   const values = bars.map((bar) => bar.value)
   const ticks = axis && scale === 'zero' ? axisTicks(Math.max(...values, 0), axis.unit) : []
   // With a scale the top rule is the top of the chart, so the rules and the
@@ -113,9 +128,10 @@ export function BarChart({
         // A year of months is two dozen bars; the usual gap would leave them
         // thinner than the gaps between them.
         bars.length > 16 ? 'gap-1' : 'gap-1.5',
-        ticks.length ? 'flex-1' : className,
+        ticks.length ? 'flex-1' : ticked ? undefined : className,
       )}
       style={{ height }}
+      onLayout={ticked ? (event) => setRowWidth(event.nativeEvent.layout.width) : undefined}
       // One image to VoiceOver, unless its bars are buttons of their own.
       accessible={Boolean(accessibilityLabel) && !onSelect}
       accessibilityRole={accessibilityLabel && !onSelect ? 'image' : undefined}
@@ -171,13 +187,42 @@ export function BarChart({
     </View>
   )
 
-  if (!ticks.length || !axis) return columns
+  const gap = bars.length > 16 ? NARROW_GAP : GAP
+  const barWidth = (rowWidth - gap * (bars.length - 1)) / bars.length
+  const withTicks = (chart: ReactNode) =>
+    ticked ? (
+      <View className={cn('gap-2', className)}>
+        {chart}
+        <AxisLabels
+          span={rowWidth}
+          labels={
+            rowWidth > 0
+              ? bars.flatMap((bar, index) =>
+                  bar.tick === undefined
+                    ? []
+                    : [
+                        {
+                          key: bar.key,
+                          text: bar.tick,
+                          centre: index * (barWidth + gap) + barWidth / 2,
+                        },
+                      ],
+                )
+              : []
+          }
+        />
+      </View>
+    ) : (
+      chart
+    )
+
+  if (!ticks.length || !axis) return withTicks(columns)
 
   const labels = ticks.map((tick) => axis.format(tick))
   const gutter = Math.ceil(Math.max(...labels.map(labelWidth)) * fontScale) + 6
 
-  return (
-    <View className={cn('flex-row', className)} style={{ height }}>
+  return withTicks(
+    <View className={cn('flex-row', ticked ? undefined : className)} style={{ height }}>
       <View className="flex-1">
         {/* Behind the bars: the rules are a scale to read them against, not
             something drawn over them. The zero rule is the baseline. */}
@@ -211,6 +256,6 @@ export function BarChart({
           </Text>
         ))}
       </View>
-    </View>
+    </View>,
   )
 }

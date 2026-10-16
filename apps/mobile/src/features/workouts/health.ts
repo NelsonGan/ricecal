@@ -1,9 +1,14 @@
 import { Platform } from 'react-native'
 
-import { deleteWorkoutFromHealth, saveWorkoutToHealth } from '@/lib/health'
+import {
+  deleteWorkoutFromHealth,
+  requestWorkoutWrite,
+  saveWorkoutToHealth,
+  workoutWriteStatus,
+} from '@/lib/health'
 import { healthActivityType, totalDistanceM } from './energy'
 import type { LiveWorkout } from './model'
-import { getWorkoutPrefs } from './prefs'
+import { getWorkoutPrefs, setWorkoutPrefs } from './prefs'
 
 /**
  * A workout's copy in Apple Health.
@@ -32,6 +37,14 @@ export async function syncWorkoutToHealth(
     return { healthId: workout.healthWorkoutId, failed: false, replaced: false }
   }
   try {
+    if (!(await mayWrite())) {
+      return { healthId: workout.healthWorkoutId, failed: false, replaced: false }
+    }
+  } catch (error) {
+    console.warn('[workouts] could not request Apple Health permission', error)
+    return { healthId: workout.healthWorkoutId, failed: true, replaced: false }
+  }
+  try {
     // Whatever copy is there already: the one on record, or one a save that
     // never heard back left behind.
     await deleteWorkoutFromHealth(workout.healthWorkoutId, workout.id)
@@ -57,13 +70,38 @@ export async function syncWorkoutToHealth(
   }
 }
 
+/**
+ * Saving is on until it is turned off, so the first save is where Health's
+ * sheet is shown, and a "no" there turns the switch off rather than reporting
+ * a failure the user just chose. Refused afterwards, in Health's own settings,
+ * is still a save that failed, and the finish screen says so.
+ */
+async function mayWrite(): Promise<boolean> {
+  const status = workoutWriteStatus()
+  if (status === 'unavailable') return false
+  if (status !== 'unasked') return true
+  if (await requestWorkoutWrite()) return true
+  // A cancelled or failed request can leave permission undetermined. Only a
+  // recorded refusal is the user's choice to turn saving off on this phone.
+  if (workoutWriteStatus() === 'refused') {
+    setWorkoutPrefs({ healthWrite: false })
+    return false
+  }
+  throw new Error('Apple Health workout permission request did not complete')
+}
+
 export async function removeWorkoutFromHealth(
   healthId: string | null,
   workoutId: string,
 ): Promise<void> {
-  // With no copy on record and saving off, there is nothing of this workout's
-  // in Health to find, and nothing to ask HealthKit for.
-  if (Platform.OS !== 'ios' || (!healthId && !getWorkoutPrefs().healthWrite)) return
+  // With no copy on record and saving off, or never allowed, there is nothing
+  // of this workout's in Health to find, and nothing to ask HealthKit for.
+  if (
+    Platform.OS !== 'ios' ||
+    (!healthId && (!getWorkoutPrefs().healthWrite || workoutWriteStatus() !== 'allowed'))
+  ) {
+    return
+  }
   try {
     await deleteWorkoutFromHealth(healthId, workoutId)
   } catch (error) {
