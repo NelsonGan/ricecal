@@ -36,6 +36,13 @@ export function wordKey(name: string): string {
     .join(' ')
 }
 
+/**
+ * Aliases that are search tags rather than another name for one exercise:
+ * typing "recovery" in the library should find foam rolling, but a custom
+ * exercise someone called "Recovery" is not foam rolling.
+ */
+const TAGS = new Set(['olympic', 'recovery', 'mobility', 'cooldown', 'circuit', 'interval'])
+
 let byWords: Map<string, string> | null = null
 
 function catalogueByWords(): Map<string, string> {
@@ -46,12 +53,17 @@ function catalogueByWords(): Map<string, string> {
     const key = wordKey(exercise.name)
     if (!map.has(key)) map.set(key, exercise.id)
   }
+  // An alias two entries share names neither of them.
+  const aliases = new Map<string, string | null>()
   for (const exercise of EXERCISES) {
     for (const alias of exercise.aliases ?? []) {
+      if (TAGS.has(alias)) continue
       const key = wordKey(alias)
-      if (!map.has(key)) map.set(key, exercise.id)
+      const seen = aliases.get(key)
+      aliases.set(key, seen === undefined || seen === exercise.id ? exercise.id : null)
     }
   }
+  for (const [key, id] of aliases) if (id && !map.has(key)) map.set(key, id)
   byWords = map
   return map
 }

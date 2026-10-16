@@ -70,17 +70,30 @@ const LIMIT = {
 const pad = (value: number) => String(value).padStart(2, '0')
 const dayOf = (t: LocalTime) => `${t.year}-${pad(t.month)}-${pad(t.day)}`
 
-const clip = (text: string, length: number) =>
-  text.length > length ? text.slice(0, length).trimEnd() : text
+/**
+ * A string cut to a length in characters, as Postgres counts them. Cutting
+ * UTF-16 units split an emoji at the limit and left half of it, which the
+ * database's JSON reader refuses, so the save of a long "Push Day 💪" failed.
+ */
+function clip(text: string, length: number): string {
+  const characters = Array.from(text)
+  return characters.length > length ? characters.slice(0, length).join('').trimEnd() : text
+}
 
 /**
- * An id for an imported workout that is the same every time the same file is
- * imported, so a second import finds the first one's workouts already there
- * instead of adding them again. A 128-bit hash of what identifies the workout
- * in its file, written as a UUID (version 8, the RFC's "custom" kind).
+ * An id for an imported workout that is the same every time the same person
+ * imports the same file, so a second import finds the first one's workouts
+ * already there instead of adding them again. A hash (cyrb128, about 96 bits
+ * of it independent) of the account and what identifies the workout in its
+ * file, written as a UUID (version 8, the RFC's "custom" kind).
+ *
+ * The account is in it because `workouts.id` is unique across every account:
+ * from the file alone, two people with a Hevy "Morning Workout" started in the
+ * same minute minted one id, and the second one's save was refused as
+ * belonging to another account, on every retry.
  */
-export function importedWorkoutId(source: ImportSource, key: string): string {
-  const text = `${source}|${key}`
+export function importedWorkoutId(owner: string, source: ImportSource, key: string): string {
+  const text = `${owner}|${source}|${key}`
   let h1 = 0x6a09e667
   let h2 = 0xbb67ae85
   let h3 = 0x3c6ef372
@@ -204,16 +217,16 @@ export function equipmentFor(name: string): Equipment {
  */
 // biome-ignore format: one rule per line
 const CATEGORY_RULES: [RegExp, Category][] = [
-  [/\b(leg curl|hamstring curl|nordic)\b/, 'legs'],
-  [/\b(wrist|forearm|curl|bicep|biceps|tricep|triceps|skull|pushdown|kickback)\b/, 'arms'],
+  [/\b(leg curls?|hamstring curls?|nordics?)\b/, 'legs'],
+  [/\b(wrist|forearms?|curls?|biceps?|triceps?|skull\w*|pushdowns?|kickbacks?)\b/, 'arms'],
   [/\bchest supported\b/, 'back'],
-  [/\b(bench|chest|pec|fly|flye|crossover|dip|push ?up)\b/, 'chest'],
-  [/\b(row|pulldown|pull ?up|chin ?up|lat|deadlift|shrug|back extension)\b/, 'back'],
-  [/\b(shoulder|delt|overhead press|military|lateral raise|front raise|face pull|arnold)\b/, 'shoulders'],
-  [/\b(squat|lunge|leg|glute|calf|calves|hip thrust|step ?up|hamstring|quad)\b/, 'legs'],
-  [/\b(ab|abs|core|plank|crunch|sit ?up|oblique|twist|hollow)\b/, 'core'],
-  [/\b(run|running|jog|walk|bike|cycling|row(ing)? machine|rope|swim|elliptical|stair|sprint|cardio)\b/, 'cardio'],
-  [/\b(yoga|stretch|mobility|pilates|foam)\b/, 'mobility'],
+  [/\b(bench|chest|pecs?|fly|flyes?|flies|crossovers?|dips?|push ?ups?)\b/, 'chest'],
+  [/\b(rows?|pulldowns?|pull ?ups?|chin ?ups?|lats?|deadlifts?|shrugs?|back extensions?)\b/, 'back'],
+  [/\b(shoulders?|delts?|overhead press|military|lateral raises?|front raises?|face pulls?|arnold)\b/, 'shoulders'],
+  [/\b(squats?|lunges?|legs?|glutes?|calf|calves|hip thrusts?|step ?ups?|hamstrings?|quads?)\b/, 'legs'],
+  [/\b(ab|abs|core|planks?|crunch(es)?|sit ?ups?|obliques?|twists?|hollow)\b/, 'core'],
+  [/\b(run|running|jog|jogging|walk|walking|bike|cycling|rowing|row(ing)? machine|rope|swim|swimming|elliptical|stairs?|sprints?|cardio)\b/, 'cardio'],
+  [/\b(yoga|stretch\w*|mobility|pilates|foam)\b/, 'mobility'],
 ]
 
 export function categoryFor(name: string, tracking: Tracking): Category {
@@ -236,8 +249,12 @@ export function buildImport(
   units: ImportUnits,
   /** A name for a workout the file left unnamed, from when it started. */
   fallbackName: (startedAt: Date) => string,
+  /** The account importing, which every workout id is minted for. */
+  owner: string,
 ): ImportPlan {
   const customs = new Map<string, CustomExercisePlan>()
+  /** Every set of each custom exercise across the file, to settle its tracking on. */
+  const customSets = new Map<string, DocumentSet[]>()
   const matched = new Set<string>()
   const workouts: PlannedWorkout[] = []
   let sets = 0
@@ -274,6 +291,7 @@ export function buildImport(
         // limited to 80 characters; a longer one is saved under its first 80.
         customName = clip(name, 80)
         const key = customName.toLowerCase()
+        customSets.set(key, [...(customSets.get(key) ?? []), ...kept])
         if (!customs.has(key)) {
           customs.set(key, {
             name: customName,
@@ -327,7 +345,7 @@ export function buildImport(
     workouts.push({
       customNames,
       document: {
-        id: importedWorkoutId(parsed.source, workout.key),
+        id: importedWorkoutId(owner, parsed.source, workout.key),
         name: clip(workout.name.trim() || fallbackName(startedAt), LIMIT.name),
         notes: workout.notes ? clip(workout.notes.trim(), LIMIT.notes) : null,
         started_at: startedAt.toISOString(),
@@ -339,6 +357,21 @@ export function buildImport(
         exercises,
       },
     })
+  }
+
+  // A custom exercise is one exercise everywhere it appears, so its tracking
+  // comes from all of its sets: dips done bodyweight in one workout and with a
+  // plate in the next are weighted dips, and taking the first workout's
+  // tracking left the custom exercise with no weight column for the plate.
+  for (const [key, custom] of customs) {
+    custom.tracking = trackingFor(null, customSets.get(key) ?? [], custom.name)
+    custom.category = categoryFor(custom.name, custom.tracking)
+  }
+  for (const { document, customNames } of workouts) {
+    for (const [index, customName] of customNames.entries()) {
+      const custom = customName ? customs.get(customName.toLowerCase()) : undefined
+      if (custom) document.exercises[index].tracking = custom.tracking
+    }
   }
 
   return {

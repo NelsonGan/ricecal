@@ -2,7 +2,8 @@
  * Every exercise and activity the logger knows, hard-coded.
  *
  * Hard-coded rather than a table, because the list is the app's own design
- * rather than user data: each entry has a drawing made for it, and an entry the
+ * rather than user data: each entry has a drawing made for it (or is listed as
+ * awaiting one in `model.test.ts`), and an entry the
  * server could add would arrive with no picture. Anything missing is a custom
  * exercise (`custom_exercises`), which the user names and describes.
  *
@@ -28,7 +29,7 @@
  *   reps               reps                      push-up
  *   weighted_reps      added kg (optional), reps pull-up, dip
  *   assisted_reps      assistance kg, reps       assisted pull-up machine
- *   duration           time                      plank, badminton
+ *   duration           time                      plank, wall sit
  *   distance_duration  distance and time         running, rowing machine
  *   weight_distance    kg and distance           farmer's walk, sled push
  */
@@ -145,9 +146,9 @@ export type Exercise = {
    */
   met: number
   /**
-   * `HKWorkoutActivityType` when the exercise IS the session (a badminton game,
-   * a run). Strength work leaves it out and the workout is saved as strength
-   * training. 3000 is HealthKit's "other".
+   * `HKWorkoutActivityType` when the exercise IS the session (a run, a swim, a
+   * yoga class). Strength work leaves it out and the workout is saved as
+   * strength training.
    */
   health?: number
   /** Other words people search by. Lower case. */
@@ -260,7 +261,7 @@ const BACK = rows('back', [
   ['underhand-pulldown', 'Lat Pulldown - Underhand (Cable)', 'weight_reps', 'cable', 'beginner', { lats: 0.55, biceps: 0.3, upperBack: 0.15 }, 3.5, { aliases: ['reverse grip lat pulldown'] }],
   ['wide-grip-pulldown', 'Lat Pulldown - Wide Grip (Cable)', 'weight_reps', 'cable', 'beginner', { lats: 0.7, upperBack: 0.2, biceps: 0.1 }, 3.5],
   ['pendlay-row', 'Pendlay Row (Barbell)', 'weight_reps', 'barbell', 'intermediate', { lats: 0.35, upperBack: 0.35, biceps: 0.15, lowerBack: 0.15 }, 5],
-  ['band-assisted-pull-up', 'Pull Up (Band)', 'assisted_reps', 'band', 'beginner', { lats: 0.6, biceps: 0.25, upperBack: 0.15 }, 5],
+  ['band-assisted-pull-up', 'Pull Up (Band)', 'assisted_reps', 'band', 'beginner', { lats: 0.6, biceps: 0.25, upperBack: 0.15 }, 4],
   ['machine-pullover', 'Pullover (Machine)', 'weight_reps', 'machine', 'beginner', { lats: 0.7, chest: 0.2, triceps: 0.1 }, 3.5],
   ['wide-grip-cable-row', 'Seated Wide-Grip Row (Cable)', 'weight_reps', 'cable', 'beginner', { upperBack: 0.5, lats: 0.3, shoulders: 0.1, biceps: 0.1 }, 3.5],
   ['machine-shrug', 'Shrug (Machine)', 'weight_reps', 'machine', 'beginner', { traps: 0.9, forearms: 0.1 }, 3.5],
@@ -336,7 +337,7 @@ const ARMS = rows('arms', [
   ['assisted-dip', 'Triceps Dip (Assisted)', 'assisted_reps', 'machine', 'beginner', { triceps: 0.6, chest: 0.25, shoulders: 0.15 }, 4],
   ['barbell-triceps-extension', 'Triceps Extension (Barbell)', 'weight_reps', 'barbell', 'intermediate', { triceps: 0.95, shoulders: 0.05 }, 3.5],
   ['machine-triceps-extension', 'Triceps Extension (Machine)', 'weight_reps', 'machine', 'beginner', { triceps: 1 }, 3.5],
-  ['cable-triceps-kickback', 'Cable Kickback', 'weight_reps', 'cable', 'beginner', { triceps: 1 }, 3.5, { aliases: ['triceps kickback (cable)'] }],
+  ['cable-triceps-kickback', 'Triceps Kickback (Cable)', 'weight_reps', 'cable', 'beginner', { triceps: 1 }, 3.5, { aliases: ['cable kickback'] }],
   ['wrist-roller', 'Wrist Roller', 'weight_reps', 'other', 'beginner', { forearms: 0.9, shoulders: 0.1 }, 3],
 ])
 
@@ -411,7 +412,7 @@ const CORE = rows('core', [
   ['lying-leg-raise', 'Flat Leg Raise', 'reps', 'none', 'beginner', { abs: 0.9, obliques: 0.1 }, 3.8, { aliases: ['lying leg raise'] }],
   ['hanging-knee-raise', 'Hanging Knee Raise', 'reps', 'none', 'beginner', { abs: 0.8, obliques: 0.1, forearms: 0.1 }, 3.8],
   ['hanging-leg-raise', 'Hanging Leg Raise', 'reps', 'none', 'intermediate', { abs: 0.75, obliques: 0.15, forearms: 0.1 }, 3.8],
-  ['toes-to-bar', 'Toes To Bar', 'reps', 'none', 'advanced', { abs: 0.7, obliques: 0.1, lats: 0.1, forearms: 0.1 }, 5, { aliases: ['toes to bar'] }],
+  ['toes-to-bar', 'Toes To Bar', 'reps', 'none', 'advanced', { abs: 0.7, obliques: 0.1, lats: 0.1, forearms: 0.1 }, 5],
   ['v-up', 'V Up', 'reps', 'none', 'intermediate', { abs: 0.9, obliques: 0.1 }, 3.8, { aliases: ['v-up'] }],
   ['flutter-kicks', 'Flutter Kicks', 'reps', 'none', 'beginner', { abs: 0.9, obliques: 0.1 }, 3.8],
   ['dead-bug', 'Dead Bug', 'reps', 'none', 'beginner', { abs: 0.9, obliques: 0.1 }, 3],
@@ -425,7 +426,7 @@ const CORE = rows('core', [
   ['stability-ball-crunch', 'Crunch (Stability Ball)', 'reps', 'other', 'beginner', { abs: 0.9, obliques: 0.1 }, 3.8, { aliases: ['swiss ball crunch'] }],
   ['flat-knee-raise', 'Flat Knee Raise', 'reps', 'none', 'beginner', { abs: 0.9, obliques: 0.1 }, 3.8, { aliases: ['lying knee raise'] }],
   ['jackknife-sit-up', 'Jackknife Sit Up', 'reps', 'none', 'intermediate', { abs: 0.9, obliques: 0.1 }, 3.8],
-  ['captains-chair-knee-raise', "Knee Raise (Captain's Chair)", 'reps', 'other', 'beginner', { abs: 0.85, obliques: 0.15 }, 3.8, { aliases: ['knee raise parallel bars', 'roman chair'] }],
+  ['captains-chair-knee-raise', "Knee Raise (Captain's Chair)", 'reps', 'other', 'beginner', { abs: 0.85, obliques: 0.15 }, 3.8, { aliases: ['knee raise parallel bars'] }],
   ['knees-to-elbows', 'Knees to Elbows', 'reps', 'none', 'intermediate', { abs: 0.7, obliques: 0.1, lats: 0.1, forearms: 0.1 }, 5],
   ['oblique-crunch', 'Oblique Crunch', 'reps', 'none', 'beginner', { obliques: 0.8, abs: 0.2 }, 3.8],
   ['reverse-crunch', 'Reverse Crunch', 'reps', 'none', 'beginner', { abs: 0.9, obliques: 0.1 }, 3.8],
@@ -459,7 +460,7 @@ const FULL_BODY = rows('fullBody', [
   ['hang-snatch', 'Hang Snatch (Barbell)', 'weight_reps', 'barbell', 'advanced', { shoulders: 0.25, traps: 0.2, quads: 0.2, glutes: 0.15, hamstrings: 0.1, upperBack: 0.1 }, 6, { aliases: ['olympic'] }],
   ['jump-shrug', 'Jump Shrug (Barbell)', 'weight_reps', 'barbell', 'intermediate', { traps: 0.5, calves: 0.2, quads: 0.15, glutes: 0.15 }, 6],
   ['power-snatch', 'Power Snatch (Barbell)', 'weight_reps', 'barbell', 'advanced', { shoulders: 0.25, traps: 0.2, quads: 0.2, glutes: 0.15, hamstrings: 0.1, upperBack: 0.1 }, 6, { aliases: ['olympic'] }],
-  ['press-under', 'Press Under (Barbell)', 'weight_reps', 'barbell', 'advanced', { shoulders: 0.5, triceps: 0.2, quads: 0.2, abs: 0.1 }, 5, { aliases: ['snatch balance'] }],
+  ['press-under', 'Press Under (Barbell)', 'weight_reps', 'barbell', 'advanced', { shoulders: 0.5, triceps: 0.2, quads: 0.2, abs: 0.1 }, 5],
   ['snatch-pull', 'Snatch Pull (Barbell)', 'weight_reps', 'barbell', 'advanced', { hamstrings: 0.25, glutes: 0.25, traps: 0.25, lowerBack: 0.15, quads: 0.1 }, 6],
   ['split-jerk', 'Split Jerk (Barbell)', 'weight_reps', 'barbell', 'advanced', { shoulders: 0.35, quads: 0.25, triceps: 0.2, glutes: 0.2 }, 6, { aliases: ['olympic'] }],
   ['sumo-high-pull', 'Sumo Deadlift High Pull (Barbell)', 'weight_reps', 'barbell', 'intermediate', { traps: 0.3, glutes: 0.2, quads: 0.2, shoulders: 0.2, adductors: 0.1 }, 6, { aliases: ['sdhp'] }],

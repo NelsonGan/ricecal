@@ -44,7 +44,7 @@ const DEFAULT_MET = 4
  * Active kilocalories for the workout, or null when the body weight is not
  * known (a figure computed against a made-up weight is a made-up figure).
  *
- * Time logged against a timed exercise (a 60-minute badminton set) is priced
+ * Time logged against a timed exercise (a 30-minute run) is priced
  * at that exercise's MET. Whatever is left of the workout's duration is the
  * lifting and the rest between sets, priced at the average MET of the rep-based
  * exercises weighted by how many sets each got.
@@ -58,8 +58,8 @@ export function estimateKcal(
   const rows = catalogued(workout).filter((row) => row.doneSets > 0)
   if (!rows.length) return null
 
-  // Timed sets cannot add up to more than the workout lasted: an hour of
-  // badminton typed into a workout finished a minute after it started is
+  // Timed sets cannot add up to more than the workout lasted: an hour on the
+  // treadmill typed into a workout finished a minute after it started is
   // priced as that minute, not as an hour squeezed into it.
   const timedTotal = rows.reduce((sum, row) => sum + row.seconds, 0)
   const squeeze = timedTotal > durationS ? durationS / timedTotal : 1

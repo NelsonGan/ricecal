@@ -509,7 +509,7 @@ export const POSES = {
   'dumbbell-lunge':
     'in a stationary forward lunge holding a dumbbell in each hand at the sides, front knee bent 90 degrees, back knee lowered toward the floor. Side view.',
   'overhead-squat':
-    'in a deep squat holding an olympic barbell locked out overhead with a WIDE snatch grip and straight arms, torso upright. Front-3/4 view.',
+    'standing UP out of an overhead squat, halfway: thighs at about 45 degrees, an olympic barbell locked out overhead with straight arms and a wide grip, torso upright. Side view, so the bar stays over the mid-foot.',
   'single-leg-bridge':
     'lying on its back with one foot flat on the floor and the other leg extended straight in the air, hips lifted so the torso and thigh form a straight line. Side view.',
   'band-squat':
@@ -539,7 +539,7 @@ export const POSES = {
   'cable-twist':
     'standing side-on to a cable tower, holding a single handle with both hands and straight arms, rotating the torso diagonally across the body in a woodchop from high to low. Front-3/4 view showing the cable.',
   'cross-body-crunch':
-    'lying on its back with knees bent, one hand behind the head, crunching up and twisting to bring that elbow toward the opposite raised knee. 3/4 view.',
+    'lying on its back with one foot flat on the floor and the other ankle crossed over that knee (a figure-four), one hand behind the head, crunching that elbow across toward the crossed knee. 3/4 view; not a bicycle crunch with a leg extended.',
   'machine-crunch':
     'seated in an ab crunch machine, chest against the pad or holding the handles at the chest, curled forward in a crunch; weight stack visible. Side view.',
   'stability-ball-crunch':
@@ -547,7 +547,7 @@ export const POSES = {
   'flat-knee-raise':
     'lying flat on its back on a flat bench, hands holding the bench behind the head, knees bent and drawn up toward the chest. Side view.',
   'jackknife-sit-up':
-    'lying on its back folding the body in half: straight legs and straight arms lifting to meet above the hips, hands reaching toward the toes. Side view.',
+    'starting a jackknife on a mat: lying flat with straight arms reaching overhead past the head and straight legs, both just lifting off the floor at the same moment so the body forms a shallow, wide V at the hips. Side view; not the balanced V-up.',
   'captains-chair-knee-raise':
     "supported upright in a captain's chair (vertical knee raise station): forearms on the padded armrests, back against the backrest, knees raised to hip height with the feet off the ground. Side view showing the station.",
   'knees-to-elbows':
@@ -569,23 +569,23 @@ export const POSES = {
 
   // Full body, added for parity with Strong
   clean:
-    'catching an olympic barbell in the FRONT RACK (bar resting on the front of the shoulders, elbows high and forward) at the bottom of a DEEP front squat. Side view.',
+    'mid TURNOVER of a squat clean, the moment that is not a front squat: the loaded olympic barbell floating at chest height, elbows whipping around and forward under it, feet just landing wide, knees starting to bend as the body drops under the bar. Side view.',
   'deadlift-high-pull':
     'standing extended up on the toes, pulling an olympic barbell with a narrow overhand grip up to chest height with elbows high and out to the sides, at the top of a high pull from the floor. Side-3/4 view.',
   'hang-clean':
-    'starting from the hang: standing tall having just pulled an olympic barbell from mid-thigh, receiving it in the front rack on the shoulders with elbows high, knees slightly bent. Side view.',
+    'in the HANG, the start of a hang clean: standing with knees slightly bent and hips hinged a little, arms straight, holding a loaded olympic barbell at mid-thigh with a shoulder-width grip, shoulders over the bar. Side view.',
   'hang-snatch':
     'receiving an olympic barbell locked out OVERHEAD with a wide snatch grip, in a partial squat, after pulling it from the thighs. Front-3/4 view.',
   'jump-shrug':
     'jumping up off the toes with an olympic barbell held at the hips with straight arms, shoulders shrugged up toward the ears, feet just leaving the floor. Side view.',
   'power-snatch':
-    'standing in a quarter squat (NOT a deep squat) with an olympic barbell locked out overhead with a WIDE snatch grip and straight arms. Front-3/4 view.',
+    'mid PULL of a power snatch: rising explosively onto the toes, hips fully extended, a loaded olympic barbell with a very WIDE snatch grip travelling up past the chest, elbows high and out to the sides, before it is caught. Front-3/4 view.',
   'press-under':
     'in a deep overhead squat position pressing an empty olympic barbell up from behind the neck with a wide snatch grip, arms bending as it moves overhead. Side-3/4 view.',
   'snatch-pull':
     'standing extended on the toes with an olympic barbell pulled to the hips with a WIDE snatch grip and STRAIGHT arms, shoulders shrugged, hips fully extended. Side view.',
   'split-jerk':
-    'in a split stance (one foot forward, one foot back, knees bent) with an olympic barbell locked out overhead with straight arms. Side view showing the split legs.',
+    'the DROP under a split jerk: feet in mid-split just landing (front knee bending, back leg reaching back on the ball of the foot), the olympic barbell still travelling up past the forehead with the arms not yet locked. Side view.',
   'sumo-high-pull':
     'standing in a wide sumo stance pulling an olympic barbell with a NARROW grip up to chin height with elbows high above the hands. Front-3/4 view showing the wide stance.',
   'kettlebell-thruster':

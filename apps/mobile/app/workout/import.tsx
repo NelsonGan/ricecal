@@ -1,20 +1,24 @@
 import { format } from 'date-fns'
 import { File } from 'expo-file-system'
 import { Stack, useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { usePreventRemove } from 'expo-router/react-navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
+  findAlreadyImported,
   type ImportProgress,
   type ImportResult,
-  useImportOverlap,
+  ImportStopped,
+  useSession,
   useSettings,
   useWorkoutImport,
 } from '@/data'
 import {
   buildImport,
   defaultWorkoutName,
+  type ImportPlan,
   type ImportUnits,
   type ParsedExport,
   parseExport,
@@ -36,14 +40,17 @@ import {
   Screen,
   SegmentedControl,
   Text,
+  useToast,
 } from '@/ui'
 
+type ReadError = 'unknown' | 'empty' | 'failed' | 'dates'
+
 type Phase =
-  | { step: 'pick'; error?: 'unknown' | 'empty' | 'failed' }
+  | { step: 'pick'; error?: ReadError }
   | { step: 'preview'; parsed: ParsedExport }
   | { step: 'importing'; progress: ImportProgress }
   | { step: 'done'; result: ImportResult }
-  | { step: 'stopped' }
+  | { step: 'stopped'; plan: ImportPlan; result: ImportResult }
 
 const APP_NAME = { strong: 'Strong', hevy: 'Hevy' } as const
 
@@ -59,11 +66,16 @@ const APP_NAME = { strong: 'Strong', hevy: 'Hevy' } as const
 export default function WorkoutImportScreen() {
   const { t } = useTranslation(['workouts', 'common'])
   const router = useRouter()
+  const toast = useToast()
   const goBack = useBack('/workout/settings')
+  const { userId } = useSession()
   const { data: settings } = useSettings()
   const runImport = useWorkoutImport()
   const [phase, setPhase] = useState<Phase>({ step: 'pick' })
   const [picking, setPicking] = useState(false)
+  // A second tap in the same frame, before the phase has changed, started a
+  // second run beside the first.
+  const running = useRef(false)
 
   const weightUnit = unitFor(settings?.units)
   const [units, setUnits] = useState<ImportUnits | null>(null)
@@ -77,19 +89,45 @@ export default function WorkoutImportScreen() {
 
   const parsed = phase.step === 'preview' ? phase.parsed : null
   const plan = useMemo(
-    () => (parsed ? buildImport(parsed, chosen, (at) => defaultWorkoutName(t, at)) : null),
-    [parsed, chosen, t],
+    () =>
+      parsed && userId
+        ? buildImport(parsed, chosen, (at) => defaultWorkoutName(t, at), userId)
+        : null,
+    [parsed, chosen, t, userId],
   )
 
-  const overlap = useImportOverlap(plan)
-  // Unknown until the history answers, and treated as none if it cannot
-  // (offline): the import checks again before it writes anything.
-  const already = overlap.data?.length ?? 0
-  const fresh = plan ? plan.workouts.length - already : 0
+  // How much of the file is already in the history, asked fresh for each plan
+  // rather than cached: the answer goes stale the moment an import lands, and
+  // a persisted copy of it showed an old count on the next launch. Unknown
+  // (offline, an error) counts as none; the import checks again anyway.
+  const [already, setAlready] = useState<{ plan: ImportPlan; ids: Set<string> } | null>(null)
+  useEffect(() => {
+    if (!plan || !userId) return
+    let live = true
+    findAlreadyImported(userId, plan)
+      .then((ids) => {
+        if (live) setAlready({ plan, ids })
+      })
+      .catch(() => {
+        if (live) setAlready({ plan, ids: new Set() })
+      })
+    return () => {
+      live = false
+    }
+  }, [plan, userId])
+  const checked = already && already.plan === plan ? already.ids.size : null
+  const fresh = plan ? plan.workouts.length - (checked ?? 0) : 0
 
   const pick = async () => {
     if (picking) return
     setPicking(true)
+    // A file that fails while a good one is previewed says so and keeps the
+    // preview, rather than throwing away the file that worked.
+    const fail = (error: ReadError) => {
+      if (phase.step === 'preview')
+        toast.show({ title: t(`workouts:import.${error}`), tone: 'error' })
+      else setPhase({ step: 'pick', error })
+    }
     try {
       // Every type a CSV turns up as: Android's file providers and anything
       // that passed through Windows label one as Excel's, and a picker
@@ -105,8 +143,8 @@ export default function WorkoutImportScreen() {
       })
       if (picked.canceled) return
       const result = parseExport(await picked.result.text())
-      if ('error' in result) setPhase({ step: 'pick', error: result.error })
-      else if (!result.workouts.length) setPhase({ step: 'pick', error: 'empty' })
+      if ('error' in result) fail(result.error)
+      else if (!result.workouts.length) fail(result.skippedRows ? 'dates' : 'empty')
       else {
         setUnits(null)
         setPhase({ step: 'preview', parsed: result })
@@ -114,32 +152,47 @@ export default function WorkoutImportScreen() {
     } catch (failure) {
       if ((failure as { code?: string }).code === 'ERR_PICKER_CANCELLED') return
       console.warn('[workouts] import read failed', failure)
-      setPhase({ step: 'pick', error: 'failed' })
+      fail('failed')
     } finally {
       setPicking(false)
     }
   }
 
-  const start = async () => {
-    if (!plan?.workouts.length) return
-    setPhase({ step: 'importing', progress: { done: 0, total: plan.workouts.length } })
+  const start = async (toImport: ImportPlan | null) => {
+    if (!toImport?.workouts.length || running.current) return
+    running.current = true
+    setPhase({ step: 'importing', progress: { done: 0, total: toImport.workouts.length } })
     try {
-      const result = await runImport(plan, (progress) => setPhase({ step: 'importing', progress }))
+      const result = await runImport(toImport, (progress) =>
+        setPhase({ step: 'importing', progress }),
+      )
       track('Workouts Imported', {
-        source: plan.source,
+        source: toImport.source,
         workouts: result.saved,
         existing: result.existing,
         failed: result.failed,
-        custom_exercises: plan.customs.length,
+        custom_exercises: result.created,
       })
       setPhase({ step: 'done', result })
     } catch (failure) {
-      console.warn('[workouts] import failed', failure)
-      setPhase({ step: 'stopped' })
+      const result =
+        failure instanceof ImportStopped
+          ? failure.result
+          : { saved: 0, existing: 0, failed: 0, created: 0 }
+      setPhase({ step: 'stopped', plan: toImport, result })
+    } finally {
+      running.current = false
     }
   }
 
   const importing = phase.step === 'importing'
+  // Leaving mid-import would leave its requests running with nothing to show
+  // what landed, and going back in started a second run beside it. The app
+  // bar's back is hidden, and this holds the swipe, the Android back button,
+  // and the swipe that would close the whole workout stack, which a screen's
+  // own `gestureEnabled` does not reach.
+  usePreventRemove(importing, () => {})
+
   const range = (from: string, to: string) => {
     const show = (day: string) => format(new Date(`${day}T00:00:00`), datePattern('dayMonthYear'))
     return from === to ? show(from) : t('workouts:import.range', { from: show(from), to: show(to) })
@@ -159,8 +212,8 @@ export default function WorkoutImportScreen() {
           <View className="gap-2">
             <Button
               fullWidth
-              onPress={start}
-              loading={overlap.isPending && !overlap.isPaused}
+              onPress={() => start(plan)}
+              loading={checked === null}
               disabled={fresh === 0}
             >
               {fresh === 0
@@ -172,18 +225,26 @@ export default function WorkoutImportScreen() {
             </Button>
           </View>
         ) : phase.step === 'done' ? (
-          <Button fullWidth onPress={() => router.navigate('/workouts')}>
+          // Back to the tabs underneath, not a new copy of them on top.
+          <Button fullWidth onPress={() => router.dismissTo('/workouts')}>
             {t('common:action.done')}
           </Button>
-        ) : phase.step === 'pick' || phase.step === 'stopped' ? (
+        ) : phase.step === 'stopped' ? (
+          <View className="gap-2">
+            <Button fullWidth onPress={() => start(phase.plan)}>
+              {t('common:action.retry')}
+            </Button>
+            <Button fullWidth variant="neutral" onPress={pick} loading={picking}>
+              {t('workouts:import.another')}
+            </Button>
+          </View>
+        ) : phase.step === 'pick' ? (
           <Button fullWidth onPress={pick} loading={picking}>
             {t('workouts:import.choose')}
           </Button>
         ) : null
       }
     >
-      {/* Leaving mid-import would orphan the requests still in flight and
-          the count of what landed, so the way back is shut until it ends. */}
       <Stack.Screen options={{ gestureEnabled: !importing }} />
 
       {phase.step === 'pick' ? (
@@ -208,8 +269,8 @@ export default function WorkoutImportScreen() {
               {plan.from && plan.to ? (
                 <Text variant="subtitle">{range(plan.from, plan.to)}</Text>
               ) : null}
-              {already ? (
-                <Text variant="meta">{t('workouts:import.existing', { count: already })}</Text>
+              {checked ? (
+                <Text variant="meta">{t('workouts:import.existing', { count: checked })}</Text>
               ) : null}
             </View>
             <StatGrid>
@@ -233,7 +294,7 @@ export default function WorkoutImportScreen() {
                   ]}
                   value={chosen.weight}
                   onChange={(weight) => setUnits({ ...chosen, weight })}
-                  accessibilityLabel={t('workouts:import.units')}
+                  accessibilityLabel={t('workouts:settings.units')}
                 />
               ) : null}
               {phase.parsed.unitless.distance ? (
@@ -244,7 +305,7 @@ export default function WorkoutImportScreen() {
                   ]}
                   value={chosen.distance}
                   onChange={(distance) => setUnits({ ...chosen, distance })}
-                  accessibilityLabel={t('workouts:import.units')}
+                  accessibilityLabel={t('workouts:import.distanceUnit')}
                 />
               ) : null}
             </Card>
@@ -274,30 +335,65 @@ export default function WorkoutImportScreen() {
         </Card>
       ) : null}
 
-      {phase.step === 'done' ? (
-        <Card tone="kaya" contentClassName="gap-2">
-          <View className="flex-row items-center gap-3">
-            <Text variant="title" className="flex-1">
-              {t('workouts:import.done', { count: phase.result.saved })}
-            </Text>
-            <Icon set="system" name="trophy" size={56} />
-          </View>
-          {phase.result.existing ? (
-            <Text variant="meta" className="text-kaya-ink">
-              {t('workouts:import.existing', { count: phase.result.existing })}
-            </Text>
-          ) : null}
-          {phase.result.failed ? (
-            <Text variant="meta" className="text-kaya-ink">
-              {t('workouts:import.notSaved', { count: phase.result.failed })}
-            </Text>
-          ) : null}
-        </Card>
-      ) : null}
+      {phase.step === 'done' ? <Outcome result={phase.result} /> : null}
 
       {phase.step === 'stopped' ? (
-        <Alert tone="error" title={t('workouts:import.stopped')} />
+        <>
+          <Alert tone="error" title={t('workouts:import.stopped')} />
+          {phase.result.saved ? (
+            <Text variant="meta">{t('workouts:import.done', { count: phase.result.saved })}</Text>
+          ) : null}
+        </>
       ) : null}
     </Screen>
+  )
+}
+
+/**
+ * What an import came to. The trophy only for workouts actually saved: a run
+ * that found everything already there, or had every workout refused, read
+ * "0 workouts imported" under a trophy.
+ */
+function Outcome({ result }: { result: ImportResult }) {
+  const { t } = useTranslation(['workouts'])
+  const lines = (
+    <>
+      {result.existing ? (
+        <Text variant="meta">{t('workouts:import.existing', { count: result.existing })}</Text>
+      ) : null}
+      {result.failed ? (
+        <Text variant="meta">{t('workouts:import.notSaved', { count: result.failed })}</Text>
+      ) : null}
+    </>
+  )
+  if (result.saved) {
+    return (
+      <Card tone="kaya" contentClassName="gap-2">
+        <View className="flex-row items-center gap-3">
+          <Text variant="title" className="flex-1">
+            {t('workouts:import.done', { count: result.saved })}
+          </Text>
+          <Icon set="system" name="trophy" size={56} />
+        </View>
+        {lines}
+      </Card>
+    )
+  }
+  if (result.failed) {
+    return (
+      <Alert
+        tone="error"
+        title={t('workouts:import.notSaved', { count: result.failed })}
+        description={
+          result.existing ? t('workouts:import.existing', { count: result.existing }) : undefined
+        }
+      />
+    )
+  }
+  return (
+    <Card contentClassName="gap-2">
+      <Text variant="subtitle">{t('workouts:import.nothingNew')}</Text>
+      {lines}
+    </Card>
   )
 }

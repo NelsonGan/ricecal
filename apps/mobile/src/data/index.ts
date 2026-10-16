@@ -157,9 +157,10 @@ export { useTrendSeries, useTrendSummary } from './trends'
 export * from './types'
 export { useCurrentWeight, useDeleteWeighIn, useLogWeight, useWeighIns } from './weight'
 export {
+  findAlreadyImported,
   type ImportProgress,
   type ImportResult,
-  useImportOverlap,
+  ImportStopped,
   useWorkoutImport,
 } from './workout-import'
 export {

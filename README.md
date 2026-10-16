@@ -3727,12 +3727,17 @@ any other.
 - **Ids are permanent.** A saved workout stores the id. Renaming is changing
   `name`; removing an entry strands its history (the saved name still reads,
   the picture and the muscles go). Never reuse an id for another movement.
-- **Names are Strong's.** Every exercise Strong ships is in the catalogue under
-  Strong's own name ("Push Up", "Seated Row (Cable)", "Pec Deck (Machine)"),
-  and Hevy uses the same names for most of them, so someone arriving from
-  either app finds the movement they know. The name an entry had before is
-  kept as an alias, so a search for "push-up" still finds it. Only Strong's
-  four sports (climbing, skating, skiing, snowboarding) are left out.
+- **Names are Strong's.** Every exercise Strong ships has a catalogue entry,
+  under Strong's own name where that name says what the movement is ("Push
+  Up", "Seated Row (Cable)", "Pec Deck (Machine)"), and Hevy uses the same
+  names for most of them, so someone arriving from either app finds the
+  movement they know. A few Strong names are a second name for an entry
+  ("Chest Fly" is the pec deck, "Strict Military Press (Barbell)" the overhead
+  press) or too vague to be one ("Cable Kickback" is drawn and named as the
+  triceps kickback it is). The name an entry had before is kept as an alias,
+  so a search for "push-up" still finds it. Strong's four sports (climbing,
+  skating, skiing, snowboarding) and its plain "Triceps Extension" import as
+  custom exercises.
 - **Names stay English in every language**, the way a dish name does. "Lat
   Pulldown" is what the machine is called in every gym the app is used in. The
   words around the names (muscles, equipment, categories) are translated.
@@ -4283,7 +4288,10 @@ end_time, description, exercise_title, superset_id, exercise_notes, set_index,
 set_type, weight_kg, reps, distance_km, duration_seconds, rpe`, with
 `weight_lbs` and `distance_miles` for an account in pounds, a date like
 "14 Oct 2026, 17:14" in whatever language the app is set to, and supersets
-numbered.
+numbered. Hevy's date follows its language, so day-first, month-first with AM
+or PM, and year-first ("2026年10月14日") are all read, with month names in the
+Latin-script languages, Russian, Polish and Turkish; a file whose dates cannot
+be read says so rather than importing nothing in silence.
 
 - **Strong does not say its units.** Its Weight and Distance are in whatever the
   app was set to, so the preview asks, defaulting to the account's own. Hevy
@@ -4292,14 +4300,30 @@ numbered.
   and on the day the file says, in the phone's zone. Hevy's own import of a
   Strong file reads Strong's times as UTC: a Hevy export of a history that came
   from Strong is shifted by the phone's offset, and is imported as Hevy wrote it.
-- **Importing twice adds nothing.** An imported workout's id is a hash of its
-  start and name in the file, and a workout already in the history is skipped
-  rather than written over, so an edit made since survives a second import.
-  Already there means that id, any workout starting within a minute of it, or
-  one with the same name and set count starting within 14 hours. The last is
-  for someone who moved from Strong to Hevy and imports both files: Hevy's
-  copies of the Strong workouts are shifted by up to the largest time-zone
-  offset (above), and without it every one of them came in twice.
+- **Importing twice adds nothing.** An imported workout's id is a hash of the
+  account and the workout's start and name in the file. The account is in it
+  because `workouts.id` is unique across all accounts: from the file alone,
+  two people's Hevy "Morning Workout" started in the same minute shared an id,
+  and the second save was refused as another account's on every retry. A
+  workout already in the history is skipped rather than written over, so an
+  edit made since survives a second import. Already there means that id
+  (looked up exactly, wherever the workout now sits), any workout starting
+  within a minute of it, or one with the same name and set count starting a
+  whole time-zone offset away, up to 14 hours. The last is for someone who
+  moved from Strong to Hevy and imports both files: Hevy's copies of the
+  Strong workouts are shifted by their offset (above), and without it every
+  one came in twice. Each logged workout stands for one file workout at most,
+  nearest first, so a run already logged cannot hide a second run that day.
+- **A lost connection stops it; trying again resumes.** Each save has the
+  app's 15-second timeout. A failure a retry can fix (no signal, a timeout,
+  the app sent to the background) stops the run instead of marking every
+  remaining workout failed, the screen keeps what landed, and Try again
+  carries on, since what was saved is skipped. Only a workout the server
+  refuses for what it holds counts as not saved. The screen cannot be left
+  while saving (`usePreventRemove`, which also holds Android's back button).
+- **Each block stays an exercise.** Rows of one exercise are consecutive, so
+  bench, squat, then bench again imports as three exercises in that order;
+  within a superset the alternating rows are grouped by name.
 - **Not written to Apple Health.** The app that logged them already did.
 
 **Names are looked up, never guessed.** `names.ts` lists all 253 names Strong
@@ -4310,12 +4334,17 @@ importer, which wins where the sources disagree: Strong's plain "Cable
 Kickback" is the triceps movement. The tables are per app because the apps
 disagree: Strong's plain "Hack Squat" and "Chest Fly" are the machines (Hevy's
 own Strong importer files them so), Hevy's plain "Hack Squat" is the barbell
-lift. A Hevy title mapped to null is a movement the catalogue does not have (a
-suspension, single-leg or kettlebell variant), listed so nothing looser can
-file it under another lift. A name in neither table matches only a catalogue
-name or alias with its words reordered ("Barbell Bench Press"); anything else
-becomes the person's own custom exercise, with equipment read from its
-brackets and tracking from its numbers. openGym and LiftShift are AGPL, so they
+lift; Hevy's plain "Walking Lunge" is bodyweight, beside its own dumbbell one.
+A name mapped to null is a movement the catalogue does not have (a suspension,
+single-leg, assisted or kettlebell variant) or one that does not say which
+lift it is (Strong's plain "Triceps Extension", beside its own dumbbell one),
+listed so nothing looser can file it under another lift. A name in neither
+table matches only a catalogue name or alias with its words reordered
+("Barbell Bench Press"), and only an alias that belongs to one entry and is a
+name rather than a search tag ("olympic" and "recovery" find exercises in the
+library but name none); anything else becomes the person's own custom
+exercise, with equipment read from its brackets and its tracking from all of
+its sets across the file. openGym and LiftShift are AGPL, so they
 were read for facts about the formats and names; none of their code is in here.
 
 **A saved exercise carries its own tracking**, so the file's numbers decide it
@@ -4331,9 +4360,24 @@ fails if it points at an id that does not exist.
 
 **Not before the 48 drawings in `awaitingArt` exist** (see the catalogue
 section): run `generate.mjs` once Codex's image limit resets, look at every
-one, `process.py`, then empty the list.
+one, `process.py`, then empty the list. Codex's image allowance is its own
+daily cap, apart from the general usage the Codex app shows; when it runs out
+the drawing fails with `usage_limit_reached` and a `resets_at` in
+`$TMPDIR/codex-image.*/run.jsonl.err`.
 
-Additive end to end. Two migrations add two enums, five tables, three views,
+**Imports make big histories.** A five-year Strong export is around 20,000 to
+25,000 sets, a few megabytes in `workout_sets` with its indexes, so a hundred
+such imports is a real share of the free plan's 500 MB, past which the whole
+database goes read-only (see the workbench notes in `AGENTS.md`). Watch
+`pg_database_size` after launch. Speed holds up: against a synthetic 1,500
+workouts and 36,000 sets (about 9 MB with indexes), a page of the history list
+took 255 ms locally, almost all of it scoring records over the whole history,
+which every page repeats; one workout's header took 46 ms and the import's
+overlap read 17 ms. If pages slow down past that, store each workout's record
+count at save rather than narrowing the view, and rescore the later workouts of
+the same exercises whenever an earlier one is saved, which an import always is.
+
+Additive end to end. Three migrations add two enums, five tables, three views,
 eight functions and three `user_settings` columns with defaults, and touch
 nothing an older binary reads; no edge function or Worker changes. Deploy the
 migrations before the app, as always. The five analytics events are in the
@@ -5225,7 +5269,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `app/workout/finish.tsx`<br>`app/workout/edit/[id].tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. A past workout logged after the fact sends it from its own save, so it closes the `Workout Started` its editor sent. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
 | Workout Discarded | ricecal_workout_discarded | sets: number; minutes: number | `src/features/workouts/start.tsx` | A running workout is thrown away from the logger, the "still training?" prompt, or by starting another over it; once per discard, with its ticked sets and minutes. |
 | Routine Saved | ricecal_routine_saved | is_new: boolean; exercises: number; from_template: boolean | `src/data/workouts.ts` | A routine insert or update succeeds, including a template added to the user's routines or a workout saved as one; each success, with counts only. |
-| Workouts Imported | ricecal_workouts_imported | source: 'strong' &#124; 'hevy'; workouts: number; existing: number; failed: number; custom_exercises: number | `app/workout/import.tsx` | A Strong or Hevy CSV import finishes, whether every workout saved or some were refused; once per import, with counts only. An import stopped by a lost connection sends nothing. |
+| Workouts Imported | ricecal_workouts_imported | source: 'strong' &#124; 'hevy'; workouts: number; existing: number; failed: number; custom_exercises: number | `app/workout/import.tsx` | A Strong or Hevy CSV import finishes, whether every workout saved or some were refused; once per finished run, with counts only. `custom_exercises` is how many the run created. A run stopped by a lost connection sends nothing; a retry that finishes sends its own. |
 | Widget Added | ricecal_widget_added | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a widget kind absent from the previous stored set; one per newly observed kind. The first poll is a silent baseline. |
 | Widget Removed | ricecal_widget_removed | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a previously stored widget kind absent now; one per removed kind. Intermediate add/remove changes between polls can be missed. |
 | Widget Opened | ricecal_widget_opened | widget: WidgetKind; target: WidgetTarget | `app/widget/[action].tsx` | Supported widget deep link is handled; once per handled widget route. Legacy recipes target remains a valid reported value. |

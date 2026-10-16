@@ -5,18 +5,22 @@
  * resolves by lookup and never by guessing. Strong's list is the 253 names its
  * app ships (published in Fitnotes2Hevy's `strong_exercises.txt`); Hevy's is
  * the 430 titles of its library (LiftShift's exercise dataset). Each mapping
- * was checked against openGym's importer, which the two disagreements below
- * defer to.
+ * was checked against openGym's importer, which decides where the sources
+ * leave it open.
  *
  * `null` is a name we deliberately do not map: a movement the catalogue does
- * not have (a sport, a suspension variant, a single-leg version), which comes
- * in as the user's own custom exercise. It is listed so a looser match can
- * never file it under a lift it is not.
+ * not have (a sport, a suspension variant, a single-leg or assisted version),
+ * or a name that does not say which lift it is (Strong's plain "Triceps
+ * Extension", beside its own "(Dumbbell)" one). It comes in as the user's own
+ * custom exercise, and is listed so a looser match can never file it under a
+ * lift it is not.
  *
  * Two tables because the apps disagree about a few names. Strong's plain
  * "Hack Squat" is the machine and Hevy's is the barbell lift; Strong's plain
- * "Chest Fly" is the machine, which is how Hevy's own importer files it. And
- * Strong's "Cable Kickback" is the triceps movement, as openGym reads it.
+ * "Chest Fly" is the machine, which is how Hevy's own importer files it; and
+ * Hevy's plain "Walking Lunge" is bodyweight, beside a dumbbell one of its
+ * own, so it is not the catalogue's dumbbell walking lunge. Strong's "Cable
+ * Kickback" is the triceps movement, as openGym reads it.
  *
  * Generated once from those lists, then kept by hand. A name added here must
  * point at an id that exists, which `import.test.ts` checks.
@@ -262,7 +266,7 @@ export const STRONG_NAMES: Readonly<Record<string, string | null>> = {
   "Trap Bar Deadlift": "trap-bar-deadlift",
   "Triceps Dip": "triceps-dip",
   "Triceps Dip (Assisted)": "assisted-dip",
-  "Triceps Extension": "overhead-triceps-extension",
+  "Triceps Extension": null,
   "Triceps Extension (Barbell)": "barbell-triceps-extension",
   "Triceps Extension (Cable)": "cable-overhead-extension",
   "Triceps Extension (Dumbbell)": "overhead-triceps-extension",
@@ -288,7 +292,7 @@ export const HEVY_NAMES: Readonly<Record<string, string | null>> = {
   "Air Bike": "air-bike",
   "Arnold Press (Dumbbell)": "arnold-press",
   "Around The World": "around-the-world",
-  "Assisted Pistol Squats": "pistol-squat",
+  "Assisted Pistol Squats": null,
   "Back Extension (Hyperextension)": "back-extension",
   "Back Extension (Machine)": "machine-back-extension",
   "Back Extension (Weighted Hyperextension)": "back-extension",
@@ -700,7 +704,7 @@ export const HEVY_NAMES: Readonly<Record<string, string | null>> = {
   "Vertical Traction (Machine)": "machine-lat-pulldown",
   "Waiter Curl (Dumbbell)": null,
   "Walking": "walking",
-  "Walking Lunge": "walking-lunge",
+  "Walking Lunge": null,
   "Walking Lunge (Dumbbell)": "walking-lunge",
   "Wall Ball": "wall-ball",
   "Wall Sit": "wall-sit",
