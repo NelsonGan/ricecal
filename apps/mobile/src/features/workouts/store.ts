@@ -1,3 +1,4 @@
+import { forgetHeartOutbox } from '@/data/workout-heart'
 import { forgetOutbox } from '@/data/workout-outbox'
 import { createJsonStore } from '@/lib/jsonStore'
 import { type Action, apply, type LiveWorkout } from './model'
@@ -81,8 +82,43 @@ export function clearActiveWorkout(userId: string): void {
   store.set(activeKey(userId), null)
 }
 
+// ---------------------------------------------------------------------------
+// How the last few workouts ended.
+//
+// For the Apple Watch, which records a running workout's heart rate in a
+// session of its own and has to know, once the workout is gone from the phone,
+// whether to save that session or throw it away. Kept on the phone so the
+// answer is still there when the watch next hears from it, and so a command
+// the watch sent for a workout that has ended is not taken as a new one.
+// ---------------------------------------------------------------------------
+
+export type EndedWorkout = { id: string; saved: boolean; at: number }
+
+const ENDED_KEPT = 10
+const NO_ENDED: EndedWorkout[] = []
+const ended = createJsonStore<EndedWorkout[]>('ricecal-workout-ended', (stored) =>
+  Array.isArray(stored) ? (stored as EndedWorkout[]) : NO_ENDED,
+)
+const endedKey = (userId: string) => `ended:${userId}`
+
+export function getEndedWorkouts(userId: string): EndedWorkout[] {
+  return ended.get(endedKey(userId))
+}
+
+export function useEndedWorkouts(userId: string | null | undefined): EndedWorkout[] {
+  return ended.useValue(endedKey(userId ?? ''), (list) => (userId ? list : NO_ENDED))
+}
+
+/** A workout left the phone: saved, or thrown away. */
+export function recordEndedWorkout(userId: string, id: string, saved: boolean, at = Date.now()) {
+  const list = getEndedWorkouts(userId).filter((entry) => entry.id !== id)
+  ended.set(endedKey(userId), [...list, { id, saved, at }].slice(-ENDED_KEPT))
+}
+
 /** Everything of one account's training kept on this phone, for deleting the account. */
 export function forgetWorkoutsOnPhone(userId: string): void {
+  ended.set(endedKey(userId), null)
   clearActiveWorkout(userId)
   forgetOutbox(userId)
+  forgetHeartOutbox(userId)
 }

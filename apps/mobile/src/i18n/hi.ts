@@ -1943,6 +1943,23 @@ export const hi = {
       healthFailed: 'Apple Health में सहेजा नहीं जा सका।',
     },
 
+    watch: {
+      noRoutines: 'यहाँ शुरू करने के लिए अपने iPhone पर रूटीन बनाएँ।',
+      openPhone: 'शुरू करने के लिए अपने iPhone पर RiceCal खोलें।',
+      exercises: 'एक्सरसाइज़',
+      undo: 'वापस लें',
+      end: 'वर्कआउट खत्म करें',
+      endTitle: 'यह वर्कआउट खत्म करें?',
+      allDone: 'सभी सेट पूरे',
+      upNext: 'अगला',
+      empty: 'अपने iPhone पर एक्सरसाइज़ जोड़ें।',
+      syncing: 'iPhone पास होने पर सिंक होगा',
+      previousSet: 'पिछला सेट',
+      nextSet: 'अगला सेट',
+      startedTitle: 'आपकी घड़ी पर वर्कआउट शुरू हुआ',
+      startedBody: '{{name}}। यहाँ देखने के लिए टैप करें।',
+    },
+
     stale: {
       title: 'अब भी ट्रेनिंग कर रहे हैं?',
       body: 'यह वर्कआउट {{time}} पहले शुरू हुआ था।',

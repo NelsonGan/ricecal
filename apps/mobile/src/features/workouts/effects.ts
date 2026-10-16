@@ -122,6 +122,8 @@ function useWorkoutEffects(): void {
   useEffect(() => {
     if (!workoutId || startedAt === null) {
       cancelNotice('workout')
+      // The watch's "started" notice, which is about a workout that is over.
+      cancelNotice('started')
       return
     }
     scheduleNoticeAt(startedAt + STALE_AFTER_MS, 'workout', {
@@ -155,6 +157,24 @@ function useWorkoutEffects(): void {
     const timer = setTimeout(() => startWorkoutActivity(state), ACTIVITY_SETTLE_MS)
     return () => clearTimeout(timer)
   }, [stateKey, drained])
+
+  // And again whenever the app comes forward. iOS starts a Live Activity only
+  // for an app in the foreground, and a workout started on the watch reaches
+  // the phone with the app in the background: the request was refused there,
+  // and without this the activity waited for the next set to change something.
+  // The watch's "started" notice has done its job by then, and goes.
+  const latestState = useRef(state)
+  latestState.current = state
+  useEffect(() => {
+    if (!drained) return
+    if (AppState.currentState === 'active') cancelNotice('started')
+    const foreground = AppState.addEventListener('change', (next) => {
+      if (next !== 'active' || !latestState.current) return
+      startWorkoutActivity(latestState.current)
+      cancelNotice('started')
+    })
+    return () => foreground.remove()
+  }, [drained])
 
   // The activity's buttons. Pressed with the app running, the intent says so
   // and they are applied at once; pressed with it closed, they wait in the
@@ -229,6 +249,7 @@ function useWorkoutEffects(): void {
     () => () => {
       cancelNotice('rest')
       cancelNotice('workout')
+      cancelNotice('started')
       endWorkoutActivity()
     },
     [],

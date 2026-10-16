@@ -15,6 +15,7 @@ import {
   useHasActiveWorkout,
   useLiveWorkout,
   useNow,
+  WatchSync,
   WorkoutEffects,
 } from '@/features/workouts'
 import {
@@ -124,6 +125,7 @@ function SignedInTabs() {
         </TabList>
       </Tabs>
       <WorkoutEffects />
+      <WatchSync />
     </WithRunningWorkout>
   )
 }

@@ -1946,6 +1946,23 @@ export const bn = {
     },
 
     /** A workout that has been running for hours: the user probably forgot it. */
+    watch: {
+      noRoutines: 'এখানে শুরু করতে আপনার iPhone-এ একটি রুটিন বানান।',
+      openPhone: 'শুরু করতে আপনার iPhone-এ RiceCal খুলুন।',
+      exercises: 'ব্যায়াম',
+      undo: 'ফিরিয়ে নিন',
+      end: 'ওয়ার্কআউট শেষ করুন',
+      endTitle: 'এই ওয়ার্কআউট শেষ করবেন?',
+      allDone: 'সব সেট শেষ',
+      upNext: 'এরপর',
+      empty: 'আপনার iPhone-এ ব্যায়াম যোগ করুন।',
+      syncing: 'iPhone কাছে এলে সিঙ্ক হবে',
+      previousSet: 'আগের সেট',
+      nextSet: 'পরের সেট',
+      startedTitle: 'আপনার ঘড়িতে ওয়ার্কআউট শুরু হয়েছে',
+      startedBody: '{{name}}। এখানে দেখতে ট্যাপ করুন।',
+    },
+
     stale: {
       title: 'এখনো ব্যায়াম করছেন?',
       body: 'এই ওয়ার্কআউটটি {{time}} আগে শুরু হয়েছে।',

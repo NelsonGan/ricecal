@@ -11,6 +11,7 @@ import { doneSets, type ExercisePlan, type LiveWorkout, newWorkout } from './mod
 import {
   clearActiveWorkout,
   getActiveWorkout,
+  recordEndedWorkout,
   startActiveWorkout,
   useHasActiveWorkout,
 } from './store'
@@ -51,6 +52,7 @@ export function discardWorkout(
     minutes: Math.round((Date.now() - workout.startedAt) / 60000),
   })
   clearActiveWorkout(userId)
+  recordEndedWorkout(userId, workout.id, false)
   // A copy can already be in Health: the app was killed after writing it and
   // before the server answered, and the workout came back as the running one.
   // Found by the workout's own id, so it is nothing when there is none.
