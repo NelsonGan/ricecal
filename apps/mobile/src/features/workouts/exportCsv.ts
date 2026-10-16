@@ -30,10 +30,18 @@ const HEADER = [
 
 export function workoutsCsv(rows: readonly ExportRow[]): string {
   const lines = [HEADER.join(',')]
+  // Formatted once a workout rather than once a set: the formatting was most of
+  // the export's time, and every set of a workout repeats its start.
+  let started = ''
+  let date = ''
   for (const row of rows) {
+    if (row.startedAt !== started) {
+      started = row.startedAt
+      date = format(new Date(started), 'yyyy-MM-dd HH:mm:ss')
+    }
     lines.push(
       [
-        format(new Date(row.startedAt), 'yyyy-MM-dd HH:mm:ss'),
+        date,
         row.workoutName,
         Math.round(row.durationS / 60),
         row.exerciseName,

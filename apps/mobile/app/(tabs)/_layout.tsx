@@ -1,5 +1,6 @@
 import { Redirect, usePathname, useRouter, useSegments } from 'expo-router'
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -94,19 +95,9 @@ function SignedInTabs() {
   // Activity of one that is running (`<WorkoutEffects />` below), which matter
   // most when its screen is not the one on top.
   useWorkoutOutbox()
-  const { userId } = useSession()
-  // Minimised over every tab but its own, where "Resume workout" already is,
-  // and only while a tab is on top. This layout stays mounted under the
-  // logger and every page pushed over the tabs, and its toast host, the
-  // newest, drew each of their toasts down here out of sight.
-  const pathname = usePathname()
-  const onTabs = useSegments()[0] === '(tabs)'
-  const running = useHasActiveWorkout(userId) && onTabs && pathname !== '/workouts'
 
   return (
-    // The bar floats over the screens, so each one is told how much of its
-    // bottom the bar covers. See `useNavInset`.
-    <NavInsetProvider value={navFootprint + (running ? WORKOUT_BAR_SPACE : 0)}>
+    <WithRunningWorkout navFootprint={navFootprint}>
       <Tabs>
         <TabSlot />
         <TabList asChild>
@@ -132,6 +123,39 @@ function SignedInTabs() {
           </NavBar>
         </TabList>
       </Tabs>
+      <WorkoutEffects />
+    </WithRunningWorkout>
+  )
+}
+
+/**
+ * The tabs, with the workout in progress minimised over every tab but its
+ * own, where "Resume workout" already is, and only while a tab is on top.
+ * The layout stays mounted under the logger and every page pushed over the
+ * tabs, and its toast host, the newest, drew each of their toasts down here
+ * out of sight.
+ *
+ * Its own component because the route it reads changes on every navigation
+ * anywhere, and in the layout that re-rendered the navigator and its bar each
+ * time. `children` is made by the layout, so here it is the same element.
+ */
+function WithRunningWorkout({
+  navFootprint,
+  children,
+}: {
+  navFootprint: number
+  children: ReactNode
+}) {
+  const { userId } = useSession()
+  const pathname = usePathname()
+  const onTabs = useSegments()[0] === '(tabs)'
+  const running = useHasActiveWorkout(userId) && onTabs && pathname !== '/workouts'
+
+  return (
+    // The bar floats over the screens, so each one is told how much of its
+    // bottom the bar covers. See `useNavInset`.
+    <NavInsetProvider value={navFootprint + (running ? WORKOUT_BAR_SPACE : 0)}>
+      {children}
       {running ? <RunningWorkout /> : null}
       {/* The app's toasts clear the nav bar and not the workout bar over it,
           so on the other tabs a toast covered "Resume". Today has a host of its
@@ -140,7 +164,6 @@ function SignedInTabs() {
       {running && pathname !== '/today' ? (
         <ToastHost offset={NAV_BAR_HEIGHT + WORKOUT_BAR_SPACE} />
       ) : null}
-      <WorkoutEffects />
     </NavInsetProvider>
   )
 }

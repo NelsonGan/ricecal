@@ -160,18 +160,31 @@ returns uuid language sql stable security definer set search_path = '' as $$
   where p.source_workout_id = p_workout_id and p.author_id = (select auth.uid());
 $$;
 
--- A profile's workout figures, over the workouts its viewer can see.
-create or replace function public.social_workout_stats(p_user_id uuid)
-returns table (workouts integer, duration_s bigint, volume_kg numeric)
-language sql stable security definer set search_path = '' as $$
-  select count(*)::integer, coalesce(sum(w.duration_s), 0)::bigint,
-    coalesce(sum(volume.kg), 0)
-  from public.social_posts p
-  join public.workouts w on w.id = p.source_workout_id and w.user_id = p.author_id
-  left join lateral (
-    select sum(v.volume_kg) as kg from public.workout_set_values v where v.workout_id = w.id
-  ) volume on true
-  where p.author_id = p_user_id and p.kind = 'workout' and private.social_can_view_post(p.id);
+-- How many of a profile's workout posts its viewer can see, which the profile
+-- adds to the meal count the server keeps. `social_can_view_post`'s rules, with
+-- the ones about the author asked once rather than once a post: through it, a
+-- long history took 70 ms on every profile open. Keep the two in step.
+create or replace function public.social_workout_count(p_user_id uuid)
+returns integer language sql stable security definer set search_path = '' as $$
+  -- Materialized, or the planner folds it into the scan and asks about the
+  -- author once a post again.
+  with viewer as materialized (
+    select (select auth.uid()) as id,
+      private.social_can_view_profile(p_user_id) as sees_author,
+      exists (select 1 from public.social_follows f
+        where f.follower_id = (select auth.uid()) and f.followed_id = p_user_id) as follows
+  )
+  select count(*)::integer
+  from viewer v
+  join public.social_posts p on p.author_id = p_user_id and p.kind = 'workout'
+  where v.id is not null and (
+    p.author_id = v.id or (
+      v.sees_author and p.review_status = 'approved' and not p.quarantined
+      and (p.audience = 'public' or v.follows)
+      and not exists (select 1 from public.social_reports r
+        where r.kind = 'post' and r.content_id = p.id and r.reporter_id = v.id)
+    )
+  );
 $$;
 
 create or replace function public.social_entry_post(p_entry_id uuid)
@@ -547,14 +560,14 @@ revoke execute on function public.record_social_photo_etags from public, anon, a
 grant execute on function public.record_social_photo_etags to service_role;
 
 revoke execute on function public.social_profile, public.social_post, public.social_entry_post,
-  public.social_workout_post, public.social_workout_stats,
+  public.social_workout_post, public.social_workout_count,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
   public.social_notifications, public.social_unread_notification_count,
   public.mark_social_notifications_read,
   public.social_photo_claims from public, anon;
 grant execute on function public.social_profile, public.social_post, public.social_entry_post,
-  public.social_workout_post, public.social_workout_stats,
+  public.social_workout_post, public.social_workout_count,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
   public.social_notifications, public.social_unread_notification_count,

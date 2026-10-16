@@ -10,16 +10,13 @@ import { fetchWorkoutExport, useSession, useSettings, useUpdateSettings } from '
 import { dateKey } from '@/data/client'
 import { ToggleRow } from '@/features/shared'
 import {
-  handExport,
-  IMPORT_APPS,
-  pickExport,
   RestSheet,
   setWorkoutPrefs,
   shortClock,
   useWorkoutPrefs,
   workoutsCsv,
 } from '@/features/workouts'
-import type { ImportSource } from '@/features/workouts/import/parse'
+import { handExport, IMPORT_APPS, type ImportSource, pickExport } from '@/features/workouts/import'
 import { datePattern } from '@/lib/dates'
 import { requestWorkoutWrite } from '@/lib/health'
 import { parseTime } from '@/lib/meal-times'

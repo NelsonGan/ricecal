@@ -299,20 +299,13 @@ export function useSocialPost(id: string) {
     ...MEMORY_OPTIONS,
   })
 }
-/** A profile's workout figures, over the workouts its viewer can see. */
-export function useSocialWorkoutStats(profileId: string) {
+/** How many of a profile's workout posts its viewer can see. */
+export function useSocialWorkoutCount(profileId: string) {
   const viewer = useUserId()
   const params = { p_user_id: profileId }
   return useQuery({
-    queryKey: keys.socialRead(viewer, 'social_workout_stats', params),
-    queryFn: async ({ signal }) => {
-      const row = (await rpc('social_workout_stats', params, signal))[0]
-      return {
-        workouts: row?.workouts ?? 0,
-        durationS: Number(row?.duration_s ?? 0),
-        volumeKg: Number(row?.volume_kg ?? 0),
-      }
-    },
+    queryKey: keys.socialRead(viewer, 'social_workout_count', params),
+    queryFn: async ({ signal }) => (await rpc('social_workout_count', params, signal)) ?? 0,
     enabled: Boolean(profileId),
     ...MEMORY_OPTIONS,
   })
@@ -693,7 +686,7 @@ export function useSocialAction() {
             'social_profile',
             'social_profile_posts',
             'social_post',
-            'social_workout_stats',
+            'social_workout_count',
             'social_connections',
             'social_suggestions',
             'social_search_profiles',
@@ -708,7 +701,7 @@ export function useSocialAction() {
                   'social_feed',
                   'social_profile_posts',
                   'social_profile',
-                  'social_workout_stats',
+                  'social_workout_count',
                   'entry',
                   'workoutPost',
                 ]
@@ -728,7 +721,7 @@ export function useSocialAction() {
                       'social_profile',
                       'social_profile_posts',
                       'social_post',
-                      'social_workout_stats',
+                      'social_workout_count',
                       'social_comments',
                       'social_connections',
                       'social_suggestions',
@@ -742,7 +735,7 @@ export function useSocialAction() {
                       'social_profile',
                       'social_profile_posts',
                       'social_post',
-                      'social_workout_stats',
+                      'social_workout_count',
                       'social_comments',
                       'social_notifications',
                       'unread',

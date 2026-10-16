@@ -287,6 +287,48 @@ comment on view public.workout_summaries is
 
 
 -- ---------------------------------------------------------------------------
+-- The history list, a page at a time.
+--
+-- Paged straight off `workout_summaries`, every page scored the user's whole
+-- history for its record counts, which are joined from all of it: 300 to 450 ms
+-- a page at 1,500 workouts, and a save refetched every loaded page. Here the
+-- page is picked without them and only its own workouts are counted, a filter
+-- the ranking's partitions let through: 70 ms.
+-- ---------------------------------------------------------------------------
+create or replace function public.workout_history(p_offset integer, p_limit integer)
+returns setof public.workout_summaries
+language sql stable security invoker set search_path = '' as $$
+  with page as materialized (
+    select s.id, s.user_id, s.name, s.notes, s.started_at, s.ended_at, s.duration_s, s.log_date,
+      s.routine_id, s.kcal, s.health_workout_id, s.created_at, s.updated_at, s.exercise_count,
+      s.set_count, s.volume_kg, s.exercises
+    from public.workout_summaries s
+    where s.user_id = (select auth.uid())
+    order by s.started_at desc, s.id desc
+    limit p_limit offset p_offset
+  ),
+  records as (
+    select d.workout_id, count(*) filter (
+      where d.is_weight_pr or d.is_e1rm_pr or d.is_volume_pr
+        or d.is_reps_pr or d.is_duration_pr or d.is_distance_pr
+    )::integer as pr_count
+    from public.workout_set_details d
+    where d.workout_id = any (array(select p.id from page p))
+    group by d.workout_id
+  )
+  select p.id, p.user_id, p.name, p.notes, p.started_at, p.ended_at, p.duration_s, p.log_date,
+    p.routine_id, p.kcal, p.health_workout_id, p.created_at, p.updated_at, p.exercise_count,
+    p.set_count, p.volume_kg, coalesce(r.pr_count, 0), p.exercises
+  from page p
+  left join records r on r.workout_id = p.id
+  order by p.started_at desc, p.id desc;
+$$;
+
+revoke all on function public.workout_history(integer, integer) from public, anon;
+grant execute on function public.workout_history(integer, integer) to authenticated;
+
+
+-- ---------------------------------------------------------------------------
 -- An exercise's bests, for its records card, and the same row for every
 -- exercise the user has done, for the records list.
 --

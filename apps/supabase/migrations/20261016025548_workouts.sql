@@ -757,6 +757,40 @@ COMMENT ON FUNCTION public.save_workout(jsonb) IS 'Writes a whole workout (exerc
 
 GRANT ALL ON FUNCTION public.save_workout(jsonb) TO authenticated;
 
+CREATE FUNCTION public.social_workout_count (
+  p_user_id uuid
+)
+  RETURNS integer
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+  -- Materialized, or the planner folds it into the scan and asks about the
+  -- author once a post again.
+  with viewer as materialized (
+    select (select auth.uid()) as id,
+      private.social_can_view_profile(p_user_id) as sees_author,
+      exists (select 1 from public.social_follows f
+        where f.follower_id = (select auth.uid()) and f.followed_id = p_user_id) as follows
+  )
+  select count(*)::integer
+  from viewer v
+  join public.social_posts p on p.author_id = p_user_id and p.kind = 'workout'
+  where v.id is not null and (
+    p.author_id = v.id or (
+      v.sees_author and p.review_status = 'approved' and not p.quarantined
+      and (p.audience = 'public' or v.follows)
+      and not exists (select 1 from public.social_reports r
+        where r.kind = 'post' and r.content_id = p.id and r.reporter_id = v.id)
+    )
+  );
+$function$;
+
+GRANT ALL ON FUNCTION public.social_workout_count(uuid) TO authenticated;
+
+GRANT ALL ON FUNCTION public.social_workout_count(uuid) TO service_role;
+
 CREATE FUNCTION public.social_workout_post (
   p_workout_id uuid
 )
@@ -773,33 +807,6 @@ $function$;
 GRANT ALL ON FUNCTION public.social_workout_post(uuid) TO authenticated;
 
 GRANT ALL ON FUNCTION public.social_workout_post(uuid) TO service_role;
-
-CREATE FUNCTION public.social_workout_stats (
-  p_user_id uuid
-)
-  RETURNS TABLE (
-    workouts   integer,
-    duration_s bigint,
-    volume_kg  numeric
-  )
-  LANGUAGE sql
-  STABLE
-  SECURITY DEFINER
-  SET search_path TO ''
-  AS $function$
-  select count(*)::integer, coalesce(sum(w.duration_s), 0)::bigint,
-    coalesce(sum(volume.kg), 0)
-  from public.social_posts p
-  join public.workouts w on w.id = p.source_workout_id and w.user_id = p.author_id
-  left join lateral (
-    select sum(v.volume_kg) as kg from public.workout_set_values v where v.workout_id = w.id
-  ) volume on true
-  where p.author_id = p_user_id and p.kind = 'workout' and private.social_can_view_post(p.id);
-$function$;
-
-GRANT ALL ON FUNCTION public.social_workout_stats(uuid) TO authenticated;
-
-GRANT ALL ON FUNCTION public.social_workout_stats(uuid) TO service_role;
 
 CREATE FUNCTION public.workout_exercise_totals (
   p_from date,
@@ -1683,6 +1690,43 @@ CREATE VIEW public.workout_summaries WITH (security_invoker=true) AS SELECT w.id
            FROM public.workout_exercises e
           WHERE (e.workout_id = w.id)) list ON (true));
 
+CREATE FUNCTION public.workout_history (
+  p_offset integer,
+  p_limit  integer
+)
+  RETURNS SETOF public.workout_summaries
+  LANGUAGE sql
+  STABLE
+  SET search_path TO ''
+  AS $function$
+  with page as materialized (
+    select s.id, s.user_id, s.name, s.notes, s.started_at, s.ended_at, s.duration_s, s.log_date,
+      s.routine_id, s.kcal, s.health_workout_id, s.created_at, s.updated_at, s.exercise_count,
+      s.set_count, s.volume_kg, s.exercises
+    from public.workout_summaries s
+    where s.user_id = (select auth.uid())
+    order by s.started_at desc, s.id desc
+    limit p_limit offset p_offset
+  ),
+  records as (
+    select d.workout_id, count(*) filter (
+      where d.is_weight_pr or d.is_e1rm_pr or d.is_volume_pr
+        or d.is_reps_pr or d.is_duration_pr or d.is_distance_pr
+    )::integer as pr_count
+    from public.workout_set_details d
+    where d.workout_id = any (array(select p.id from page p))
+    group by d.workout_id
+  )
+  select p.id, p.user_id, p.name, p.notes, p.started_at, p.ended_at, p.duration_s, p.log_date,
+    p.routine_id, p.kcal, p.health_workout_id, p.created_at, p.updated_at, p.exercise_count,
+    p.set_count, p.volume_kg, coalesce(r.pr_count, 0), p.exercises
+  from page p
+  left join records r on r.workout_id = p.id
+  order by p.started_at desc, p.id desc;
+$function$;
+
+GRANT ALL ON FUNCTION public.workout_history(integer, integer) TO authenticated;
+
 COMMENT ON VIEW public.workout_summaries IS 'One row per workout with its totals, record count and exercise list.';
 
 GRANT SELECT ON public.workout_summaries TO authenticated;
@@ -1699,9 +1743,10 @@ REVOKE ALL ON FUNCTION public.exercise_rep_bests(text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.workout_weeks(integer) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.workout_overview() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.workout_exercise_totals(date, date) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.workout_history(integer, integer) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.create_social_workout_post(uuid, text, public.social_audience) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.social_workout_post(uuid) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.social_workout_stats(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.social_workout_count(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.social_feed(text, timestamp with time zone, uuid, integer, public.social_post_kind[]) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.social_post(uuid, public.social_post_kind[]) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.social_profile_posts(uuid, timestamp with time zone, uuid, integer, public.social_post_kind[]) FROM PUBLIC, anon;
