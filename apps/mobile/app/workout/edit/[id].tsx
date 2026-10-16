@@ -1,19 +1,16 @@
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useReducer, useState } from 'react'
+import { useLocalSearchParams } from 'expo-router'
+import { useReducer, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { useLastSets, useWorkout, type WorkoutDetail } from '@/data'
+import { useWorkout, type WorkoutDetail } from '@/data'
 import {
   apply,
   completeAll,
-  defaultWorkoutName,
   doneSets,
   exerciseFromPlan,
   type LiveWorkout,
-  newWorkout,
   timesError,
   toPlans,
-  trackWorkoutFinished,
   unavailableState,
   useLeaveGuard,
   useWorkoutSave,
@@ -21,29 +18,30 @@ import {
   WorkoutFields,
   WorkoutUnavailable,
 } from '@/features/workouts'
-import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Button, Screen, useToast } from '@/ui'
 
 /**
- * Editing a finished workout, or logging one after the fact (`id` = `new`).
+ * Editing a finished workout.
  *
  * The same editor as the logger with the clock taken away: both times are
  * fields, every set counts whether or not it was ticked, and nothing rests.
  * Saving writes the whole workout again under its id, which is how
  * `save_workout` treats every save, and replaces its Apple Health copy.
+ *
+ * It also logged a past workout once (`id` = `new`), which was taken out: a
+ * forgotten session is a workout started and finished with its times moved.
  */
 export default function EditWorkoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const isNew = id === 'new'
-  const query = useWorkout(isNew ? undefined : id)
+  const query = useWorkout(id)
   const saved = query.data
 
-  if (!isNew && !saved) return <WorkoutUnavailable state={unavailableState(query)} />
+  if (!saved) return <WorkoutUnavailable state={unavailableState(query)} />
   // Keyed by the route's id: a link that reuses this screen for another
-  // workout (or for `new`) kept the first one's document in the reducer and
-  // saved it under the first one's id.
-  return <Editor key={id} initial={isNew ? null : (saved ?? null)} />
+  // workout kept the first one's document in the reducer and saved it under
+  // the first one's id.
+  return <Editor key={id} initial={saved} />
 }
 
 /** A saved workout as the editor's document, every set already ticked. */
@@ -77,40 +75,17 @@ function fromSaved(workout: WorkoutDetail): LiveWorkout {
   }
 }
 
-function Editor({ initial }: { initial: WorkoutDetail | null }) {
+function Editor({ initial }: { initial: WorkoutDetail }) {
   const { t } = useTranslation(['workouts', 'common'])
-  const router = useRouter()
   const toast = useToast()
   const goBack = useBack('/workouts')
   const saveWorkout = useWorkoutSave()
 
-  const [workout, dispatch] = useReducer(apply, initial, (from) => {
-    if (from) return fromSaved(from)
-    // A past workout starts as an hour ending now; both ends are a tap away.
-    const now = Date.now()
-    return {
-      ...newWorkout({
-        name: defaultWorkoutName(t, new Date(now - 60 * 60 * 1000)),
-        startedAt: now - 60 * 60 * 1000,
-      }),
-      endedAt: now,
-    }
-  })
+  const [workout, dispatch] = useReducer(apply, initial, fromSaved)
   const [saving, setSaving] = useState(false)
   // Any dispatch makes a new document, so the first one is "nothing changed".
   const [opened] = useState(workout)
   const guard = useLeaveGuard({ busy: saving, dirty: workout !== opened })
-  // Last time's sets, which a past workout's empty rows show and so save with.
-  // Not for an edit: there the newest workout with these exercises is this one.
-  // The editor asks for the same key, so this reads its cache.
-  const previous = useLastSets(
-    initial ? [] : workout.exercises.map((exercise) => exercise.exerciseId),
-  ).data
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: once, for a past workout being logged
-  useEffect(() => {
-    if (!initial) track('Workout Started', { source: 'past', exercises: 0 })
-  }, [])
 
   const startedAt = workout.startedAt
   const endedAt = workout.endedAt ?? Date.now()
@@ -118,39 +93,26 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
 
   const onSave = async () => {
     if (error || saving) return
-    // Here every set with numbers in it counts: a past workout has no ticking,
-    // and an edited one should not lose a set because a new row went unticked.
-    const document = completeAll(workout, startedAt, previous)
+    // Here every set with numbers in it counts: an edited workout should not
+    // lose a set because a new row went unticked.
+    const document = completeAll(workout, startedAt)
     if (doneSets(document) === 0) {
       toast.show({ title: t('workouts:finish.nothingTitle'), tone: 'error' })
       return
     }
     setSaving(true)
     try {
-      const result = await saveWorkout(
-        document,
-        endedAt,
-        initial
-          ? {
-              workout: fromSaved(initial),
-              endedAt: Date.parse(initial.endedAt),
-              kcal: initial.kcal,
-            }
-          : undefined,
-      )
-      const { payload, queued } = result
-      // A past workout is a new one, finished here rather than on the finish
-      // screen, and it opened with `Workout Started`. An edit is neither.
-      if (!initial) trackWorkoutFinished(document, result)
+      const { queued } = await saveWorkout(document, endedAt, {
+        workout: fromSaved(initial),
+        endedAt: Date.parse(initial.endedAt),
+        kcal: initial.kcal,
+      })
       toast.show({
         title: t('workouts:finish.saved'),
         description: queued ? t('workouts:finish.queued') : undefined,
         tone: 'success',
       })
-      guard.leave(() => {
-        if (initial || queued) goBack()
-        else router.replace({ pathname: '/workout/[id]', params: { id: payload.id } })
-      })
+      guard.leave(goBack)
     } catch (failure) {
       console.warn('[workouts] edit save failed', failure)
       toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
@@ -164,7 +126,7 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
       gestureScroll
       header={
         <AppBar
-          title={initial ? t('workouts:edit.title') : t('workouts:edit.newTitle')}
+          title={t('workouts:edit.title')}
           onBack={goBack}
           backDisabled={saving}
           backLabel={t('common:action.back')}
@@ -172,7 +134,7 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
       }
       footer={
         <Button fullWidth onPress={onSave} loading={saving} disabled={Boolean(error)}>
-          {initial ? t('workouts:edit.save') : t('workouts:finish.save')}
+          {t('workouts:edit.save')}
         </Button>
       }
     >
@@ -188,7 +150,7 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
         onEnded={(at) => dispatch({ type: 'times', startedAt, endedAt: at })}
       />
 
-      <WorkoutEditor workout={workout} dispatch={dispatch} mode={initial ? 'edit' : 'past'} />
+      <WorkoutEditor workout={workout} dispatch={dispatch} mode="edit" />
       {guard.dialog}
     </Screen>
   )

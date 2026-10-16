@@ -7,6 +7,7 @@ export {
   Stat,
   StatGrid,
   StatStrip,
+  WeekStreakBadge,
   WorkoutCard,
 } from './cards'
 export {
@@ -46,9 +47,11 @@ export { MuscleSplitBars } from './MuscleSplit'
 export * from './model'
 export { cancelPick, deliverPick, hasPick } from './pick'
 export { setWorkoutPrefs, useWorkoutPrefs } from './prefs'
+export * from './progress'
 export { RestBar } from './RestBar'
 export { RestSheet } from './RestSheet'
 export { type RecordKind, recordSets } from './records'
+export { useRoutineGate } from './routineGate'
 export { plansToRoutine, routinePlans, templateRoutine, toPlans } from './routines'
 export { type RoutineUpdate, routineChanges, updatedRoutine } from './routineUpdate'
 export { DiscardDialog, type FinishParams, StaleWorkoutDialog } from './StaleWorkoutDialog'
@@ -63,6 +66,7 @@ export {
 } from './store'
 export { TEMPLATE_GROUPS, TEMPLATES, templateById, templatePlans } from './templates'
 export { WheelSheet } from './WheelSheet'
+export { WorkoutCalendar } from './WorkoutCalendar'
 export { WorkoutEditor } from './WorkoutEditor'
 export {
   NOT_LOADED,

@@ -58,12 +58,10 @@ type WorkoutEditorProps = {
   dispatch: (action: Action) => void
   /**
    * `live`: being trained, so ticking a set starts the rest timer. `edit`: a
-   * finished workout, every set counts. `past`: the same, for one being logged
-   * after the fact, which unlike an edit has a last time to show. `plan`: a
-   * routine, which has targets rather than sets done, so there is nothing to
-   * tick.
+   * finished workout, every set counts. `plan`: a routine, which has targets
+   * rather than sets done, so there is nothing to tick.
    */
-  mode: 'live' | 'edit' | 'past' | 'plan'
+  mode: 'live' | 'edit' | 'plan'
 }
 
 export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {

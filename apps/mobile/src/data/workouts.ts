@@ -371,6 +371,28 @@ export function useWorkoutWeeks(weeks = 12) {
   })
 }
 
+/**
+ * The same totals by calendar month, from the first workout's month (or a year
+ * back, whichever is earlier) to this one. `week` is the month's first day, so
+ * one chart draws either.
+ */
+export function useWorkoutMonths(enabled = true) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.workoutMonths(userId),
+    enabled,
+    queryFn: async (): Promise<WorkoutWeek[]> =>
+      unwrap(await supabase.rpc('workout_months')).map((row) => ({
+        week: row.month,
+        workouts: row.workouts,
+        durationS: row.duration_s,
+        volumeKg: num(row.volume_kg) ?? 0,
+        sets: row.sets,
+      })),
+  })
+}
+
 type ExerciseTotal = { exerciseId: string; sets: number }
 
 /** Working sets per exercise between two dates: what the muscle split is drawn from. */
@@ -985,6 +1007,18 @@ export function useSaveRoutine() {
       }),
     onSettled: () => queryClient.invalidateQueries({ queryKey: keys.routines(userId) }),
   })
+}
+
+/**
+ * Did this insert hit the free tier's routine ceiling? The rule is the
+ * `workout_routines_enforce_free_limit` trigger, which raises a token rather
+ * than a sentence for the reason `isRecipeLimit` explains.
+ */
+const ROUTINE_LIMIT = 'routine_limit_reached'
+
+export function isRoutineLimit(error: unknown): boolean {
+  const message = (error as { message?: unknown })?.message
+  return typeof message === 'string' && message.includes(ROUTINE_LIMIT)
 }
 
 export function useDeleteRoutine() {

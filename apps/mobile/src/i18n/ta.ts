@@ -1356,6 +1356,11 @@ export const ta = {
           free: '{{recipes}} உணவுகள்',
           pro: 'வரம்பில்லை',
         },
+        routines: {
+          label: 'வொர்க்அவுட் வழக்கங்கள்',
+          free: '{{routines}} வழக்கங்கள்',
+          pro: 'வரம்பில்லை',
+        },
         recipeFill: {
           label: 'படத்திலிருந்து உணவை நிரப்பு',
           free: '',
@@ -1414,6 +1419,8 @@ export const ta = {
         read_recipe: 'படத்திலிருந்து உணவை நிரப்ப RiceCal Pro தேவை.',
         new_recipe: 'சொந்த உணவுகள் {{recipes}} க்கு மேல் வைத்திருக்க RiceCal Pro தேவை.',
         trend_range: 'ஒரு வாரத்திற்கும் பின் பார்க்க RiceCal Pro தேவை.',
+        new_routine: '{{routines}} க்கு மேல் வொர்க்அவுட் வழக்கங்கள் வைத்திருக்க RiceCal Pro தேவை.',
+        workout_range: '3 மாதங்களுக்கு முந்தைய முன்னேற்றத்தைப் பார்க்க RiceCal Pro தேவை.',
         review: 'பழைய மீள்பார்வையைப் படிக்க RiceCal Pro தேவை.',
         nudge: 'RiceCal Pro வரம்புகளை நீக்குகிறது.',
       },
@@ -1712,13 +1719,12 @@ export const ta = {
     title: 'உடற்பயிற்சி',
 
     overview: {
-      thisWeek_one: 'இந்த வார வொர்க்அவுட்',
-      thisWeek_other: 'இந்த வார வொர்க்அவுட்கள்',
+      title: 'இந்த வாரம்',
+      workouts: 'வொர்க்அவுட்கள்',
       time: 'நேரம்',
       volume: 'தூக்கிய எடை',
       streak_one: '{{count}} வாரத் தொடர்ச்சி',
       streak_other: '{{count}} வாரத் தொடர்ச்சி',
-      noStreak: 'இந்த வாரம் பயிற்சி செய்து தொடர்ச்சியைத் தொடங்குங்கள்',
     },
 
     start: {
@@ -1726,7 +1732,6 @@ export const ta = {
       resume: 'வொர்க்அவுட்டைத் தொடர்',
       /** The minimised bar over the tabs while a workout runs. */
       routine: 'தொடங்கு',
-      past: 'முந்தைய பயிற்சியைப் பதிவுசெய்',
       /** Starting another while one runs. */
       replaceTitle: 'ஒரு வொர்க்அவுட் ஏற்கனவே நடக்கிறது',
       replaceBody: 'அதைக் கைவிட்டு இதைத் தொடங்கவா?',
@@ -1739,7 +1744,6 @@ export const ta = {
 
     routines: {
       title: 'என் ரொட்டீன்கள்',
-      new: 'புதியது',
       newTitle: 'புதிய வழக்கம்',
       namePlaceholder: 'எ.கா. புஷ் நாள்',
       save: 'வழக்கத்தைச் சேமி',
@@ -1808,6 +1812,11 @@ export const ta = {
       glutes: { name: 'க்ளூட்ஸ்', description: 'ஹிப் த்ரஸ்ட், ஸ்பிளிட் ஸ்குவாட், கிக்பேக்.' },
       hiit: { name: 'HIIT', description: 'குறுகிய செட், குறுகிய ஓய்வு, மூச்சு வாங்கும்.' },
       mobility: { name: 'நெகிழ்வு', description: 'உருட்டல், நீட்டல், மெதுவான அசைவு.' },
+    },
+
+    calendar: {
+      showList: 'பட்டியலைக் காட்டு',
+      dayEmpty: 'இந்த நாளில் வொர்க்அவுட் இல்லை',
     },
 
     history: {
@@ -1945,7 +1954,6 @@ export const ta = {
       routineFailed: 'ரொட்டீனைப் புதுப்பிக்க முடியவில்லை',
       endBeforeStart: 'முடிவு நேரம் தொடக்கத்திற்குப் பின் இருக்க வேண்டும்.',
       tooLong: 'ஒரு வொர்க்அவுட் அதிகபட்சம் 24 மணி நேரம்.',
-      health: 'Apple Health இல் சேமிக்கப்பட்டது',
       healthFailed: 'Apple Health இல் சேமிக்க முடியவில்லை.',
     },
 
@@ -1983,7 +1991,6 @@ export const ta = {
     edit: {
       title: 'வொர்க்அவுட்டைத் திருத்து',
       save: 'மாற்றங்களைச் சேமி',
-      newTitle: 'முந்தைய வொர்க்அவுட்டைப் பதிவு செய்',
       leaveTitle: 'சேமிக்காமல் வெளியேறவா?',
       leaveBody: 'இங்கே செய்த மாற்றங்கள் போய்விடும்.',
     },
@@ -2058,7 +2065,15 @@ export const ta = {
     stats: {
       title: 'முன்னேற்றம்',
       entry: 'முன்னேற்றமும் சாதனைகளும்',
-      weeks: 'கடந்த 12 வாரங்கள்',
+      weeks: 'பயிற்சி',
+      range: {
+        label: 'காலம்',
+        '3m': 'கடந்த 3 மாதங்கள்',
+        '1y': 'ஆண்டு',
+        all: 'எல்லா காலமும்',
+      },
+      thisMonth: 'இந்த மாதம்',
+      thisYear: 'இந்த ஆண்டு',
       metric: {
         workouts: 'வொர்க்அவுட்கள்',
         duration: 'நேரம்',

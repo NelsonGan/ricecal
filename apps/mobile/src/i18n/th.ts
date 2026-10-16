@@ -1341,6 +1341,11 @@ export const th = {
           free: '{{recipes}} อย่าง',
           pro: 'ไม่จำกัด',
         },
+        routines: {
+          label: 'รูทีนออกกำลังกาย',
+          free: '{{routines}} รูทีน',
+          pro: 'ไม่จำกัด',
+        },
         recipeFill: {
           label: 'กรอกอาหารจากรูปถ่าย',
           free: '',
@@ -1399,6 +1404,8 @@ export const th = {
         read_recipe: 'การกรอกอาหารจากรูปถ่ายต้องใช้ RiceCal Pro',
         new_recipe: 'การเก็บอาหารของตัวเองเกิน {{recipes}} อย่างต้องใช้ RiceCal Pro',
         trend_range: 'การย้อนดูเกินหนึ่งสัปดาห์ต้องใช้ RiceCal Pro',
+        new_routine: 'การเก็บรูทีนออกกำลังกายเกิน {{routines}} รูทีนต้องใช้ RiceCal Pro',
+        workout_range: 'การย้อนดูความคืบหน้าเกิน 3 เดือนต้องใช้ RiceCal Pro',
         review: 'การอ่านสรุปเก่ากว่านี้ต้องใช้ RiceCal Pro',
         nudge: 'RiceCal Pro ปลดขีดจำกัดออก',
       },
@@ -1694,20 +1701,18 @@ export const th = {
     title: 'ออกกำลังกาย',
 
     overview: {
-      thisWeek_one: 'ครั้งในสัปดาห์นี้',
-      thisWeek_other: 'ครั้งในสัปดาห์นี้',
+      title: 'สัปดาห์นี้',
+      workouts: 'ครั้ง',
       time: 'เวลา',
       volume: 'ยกรวม',
       streak_one: 'ต่อเนื่อง {{count}} สัปดาห์',
       streak_other: 'ต่อเนื่อง {{count}} สัปดาห์',
-      noStreak: 'ออกกำลังกายสัปดาห์นี้เพื่อเริ่มนับต่อเนื่อง',
     },
 
     start: {
       empty: 'เริ่มออกกำลังกายแบบว่าง',
       resume: 'ออกกำลังกายต่อ',
       routine: 'เริ่ม',
-      past: 'บันทึกการออกกำลังกายย้อนหลัง',
       replaceTitle: 'กำลังออกกำลังกายอยู่แล้ว',
       replaceBody: 'ทิ้งอันนั้นแล้วเริ่มอันนี้ไหม',
       replaceConfirm: 'ทิ้งแล้วเริ่ม',
@@ -1718,7 +1723,6 @@ export const th = {
 
     routines: {
       title: 'รูทีนของฉัน',
-      new: 'สร้าง',
       newTitle: 'รูทีนใหม่',
       namePlaceholder: 'เช่น วันดัน',
       save: 'บันทึกรูทีน',
@@ -1784,6 +1788,11 @@ export const th = {
       glutes: { name: 'ก้น', description: 'ฮิปทรัสต์ สปลิตสควอท และคิกแบ็ก' },
       hiit: { name: 'HIIT', description: 'เซ็ตสั้น พักสั้น เหนื่อยหอบ' },
       mobility: { name: 'โมบิลิตี้', description: 'โฟมโรล ยืดเหยียด และเคลื่อนไหวต่อเนื่อง' },
+    },
+
+    calendar: {
+      showList: 'แสดงรายการ',
+      dayEmpty: 'ไม่มีการออกกำลังกายในวันนี้',
     },
 
     history: {
@@ -1916,7 +1925,6 @@ export const th = {
       routineFailed: 'อัปเดตรูทีนไม่ได้',
       endBeforeStart: 'เวลาจบต้องอยู่หลังเวลาเริ่ม',
       tooLong: 'ออกกำลังกายได้นานสุด 24 ชั่วโมง',
-      health: 'บันทึกลง Apple Health แล้ว',
       healthFailed: 'บันทึกลง Apple Health ไม่สำเร็จ',
     },
 
@@ -1953,7 +1961,6 @@ export const th = {
     edit: {
       title: 'แก้ไขการออกกำลังกาย',
       save: 'บันทึกการเปลี่ยนแปลง',
-      newTitle: 'บันทึกการออกกำลังกายย้อนหลัง',
       leaveTitle: 'ออกโดยไม่บันทึกไหม',
       leaveBody: 'สิ่งที่คุณแก้ตรงนี้จะหายไป',
     },
@@ -2028,7 +2035,15 @@ export const th = {
     stats: {
       title: 'ความคืบหน้า',
       entry: 'ความคืบหน้าและสถิติ',
-      weeks: '12 สัปดาห์ล่าสุด',
+      weeks: 'การฝึก',
+      range: {
+        label: 'ช่วงเวลา',
+        '3m': '3 เดือนล่าสุด',
+        '1y': 'ปี',
+        all: 'ทั้งหมด',
+      },
+      thisMonth: 'เดือนนี้',
+      thisYear: 'ปีนี้',
       metric: {
         workouts: 'ออกกำลังกาย',
         duration: 'เวลา',

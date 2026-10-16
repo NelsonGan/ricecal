@@ -209,13 +209,13 @@ export default function FinishWorkoutScreen() {
       clear()
       toast.show({
         title: t('workouts:finish.saved'),
+        // A failure is said; a success is not, since saving to Health is the
+        // setting working as asked.
         description: queued
           ? t('workouts:finish.queued')
           : health.failed
             ? t('workouts:finish.healthFailed')
-            : health.healthId
-              ? t('workouts:finish.health')
-              : undefined,
+            : undefined,
         tone: 'success',
       })
       guard.leave(() => {

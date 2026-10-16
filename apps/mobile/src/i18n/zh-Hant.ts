@@ -1342,6 +1342,11 @@ export const zhHant = {
           free: '{{recipes}} 個食物',
           pro: '無限',
         },
+        routines: {
+          label: '訓練計劃',
+          free: '{{routines}} 個',
+          pro: '無限',
+        },
         recipeFill: {
           label: '用照片填好一個食物',
           free: '',
@@ -1400,6 +1405,8 @@ export const zhHant = {
         read_recipe: '用照片填好一個食物需要 RiceCal Pro。',
         new_recipe: '保留超過 {{recipes}} 個自己的食物需要 RiceCal Pro。',
         trend_range: '往前看超過一週需要 RiceCal Pro。',
+        new_routine: '保留超過 {{routines}} 個訓練計劃需要 RiceCal Pro。',
+        workout_range: '查看 3 個月以前的訓練進度需要 RiceCal Pro。',
         review: '看更早的回顧需要 RiceCal Pro。',
         nudge: 'RiceCal Pro 把上限拿掉。',
       },
@@ -1695,20 +1702,18 @@ export const zhHant = {
     title: '訓練',
 
     overview: {
-      thisWeek_one: '本週訓練次數',
-      thisWeek_other: '本週訓練次數',
+      title: '本週',
+      workouts: '訓練次數',
       time: '時間',
       volume: '總重量',
       streak_one: '連續 {{count}} 週',
       streak_other: '連續 {{count}} 週',
-      noStreak: '本週練一次，開始連續紀錄',
     },
 
     start: {
       empty: '開始空白訓練',
       resume: '繼續訓練',
       routine: '開始',
-      past: '補記一次訓練',
       replaceTitle: '已有訓練在進行',
       replaceBody: '丟棄它，開始這個？',
       replaceConfirm: '丟棄並開始',
@@ -1719,7 +1724,6 @@ export const zhHant = {
 
     routines: {
       title: '我的課表',
-      new: '新增',
       newTitle: '新增計劃',
       namePlaceholder: '例如：推日',
       save: '儲存計劃',
@@ -1785,6 +1789,11 @@ export const zhHant = {
       glutes: { name: '臀部', description: '臀推、分腿蹲和後踢腿。' },
       hiit: { name: 'HIIT', description: '短組短休，練到喘。' },
       mobility: { name: '活動度', description: '滾筒放鬆、伸展和流動練習。' },
+    },
+
+    calendar: {
+      showList: '顯示列表',
+      dayEmpty: '這一天沒有訓練',
     },
 
     history: {
@@ -1917,7 +1926,6 @@ export const zhHant = {
       routineFailed: '課表沒能更新',
       endBeforeStart: '結束時間要晚於開始時間。',
       tooLong: '一次訓練最長 24 小時。',
-      health: '已儲存到 Apple 健康',
       healthFailed: '沒能儲存到 Apple 健康。',
     },
 
@@ -1954,7 +1962,6 @@ export const zhHant = {
     edit: {
       title: '編輯訓練',
       save: '儲存變更',
-      newTitle: '補記訓練',
       leaveTitle: '不儲存就離開？',
       leaveBody: '你在這裡做的變更會丟掉。',
     },
@@ -2029,7 +2036,15 @@ export const zhHant = {
     stats: {
       title: '進度',
       entry: '進度和紀錄',
-      weeks: '最近 12 週',
+      weeks: '訓練',
+      range: {
+        label: '時間範圍',
+        '3m': '最近 3 個月',
+        '1y': '一年',
+        all: '全部時間',
+      },
+      thisMonth: '本月',
+      thisYear: '今年',
       metric: {
         workouts: '訓練次數',
         duration: '時間',

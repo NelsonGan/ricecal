@@ -188,6 +188,7 @@ export const keys = {
   workoutDates: (userId: string, from: string, to: string) =>
     ['workouts', userId, 'dates', from, to] as const,
   workoutWeeks: (userId: string, weeks: number) => ['workouts', userId, 'weeks', weeks] as const,
+  workoutMonths: (userId: string) => ['workouts', userId, 'months'] as const,
   exerciseTotals: (userId: string, from: string, to: string) =>
     ['workouts', userId, 'exercise-totals', from, to] as const,
   exerciseBests: (userId: string, exerciseId: string | null) =>

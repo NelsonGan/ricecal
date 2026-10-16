@@ -1,4 +1,9 @@
-import { FREE_DAILY_SCANS, FREE_PHOTO_RETENTION_DAYS, FREE_RECIPES } from '@ricecal/shared'
+import {
+  FREE_DAILY_SCANS,
+  FREE_PHOTO_RETENTION_DAYS,
+  FREE_RECIPES,
+  FREE_ROUTINES,
+} from '@ricecal/shared'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -32,6 +37,8 @@ export const PLAN_FEATURES = [
   { key: 'search', free: 'yes', pro: 'yes' },
   { key: 'fix', free: 'no', pro: 'yes' },
   { key: 'recipes', free: 'text', pro: 'text' },
+  // Beside the recipes: both are things kept, and both stop at three.
+  { key: 'routines', free: 'text', pro: 'text' },
   { key: 'recipeFill', free: 'no', pro: 'yes' },
   { key: 'budget', free: 'yes', pro: 'yes' },
   { key: 'health', free: 'yes', pro: 'yes' },
@@ -64,6 +71,7 @@ export function PlanTable() {
   const limits = {
     scans: FREE_DAILY_SCANS,
     recipes: FREE_RECIPES,
+    routines: FREE_ROUTINES,
     days: FREE_PHOTO_RETENTION_DAYS,
   }
 

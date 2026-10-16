@@ -13,9 +13,11 @@ import { durationText, volumeText } from './format'
 import { useExerciseLibrary } from './library'
 
 /**
- * The week so far: how many workouts, how long, how much lifted, and the
- * streak of weeks. A week rather than a day because nobody trains every day
- * and a daily figure would read as a miss four days out of seven.
+ * The week so far: how many workouts, how long and how much lifted, on the
+ * progress page above the bars they come from. A week rather than a day
+ * because nobody trains every day and a daily figure would read as a miss four
+ * days out of seven. The week streak is not here: it rides beside the
+ * Workouts title, as the day streak does on Today.
  */
 export function OverviewCard({
   overview,
@@ -31,27 +33,22 @@ export function OverviewCard({
   if (loading) {
     return (
       <Card>
-        <Skeleton className="h-[148px] w-full" />
+        <Skeleton className="h-[64px] w-full" />
       </Card>
     )
   }
   // Nothing to say (the request failed, or the phone is offline with nothing
-  // cached): no card, rather than a skeleton that never resolves above the
-  // buttons that still work.
+  // cached): no card, rather than a skeleton that never resolves.
   if (!overview) return null
 
   return (
-    <Card contentClassName="gap-4">
-      <View className="flex-row items-center gap-3">
-        <Text className="font-display text-[56px] leading-[76px] text-heading">
-          {overview.thisWeekWorkouts}
-        </Text>
-        <Text variant="subtitle" className="flex-1">
-          {t('workouts:overview.thisWeek', { count: overview.thisWeekWorkouts })}
-        </Text>
-        <Icon set="scenes" name="dumbbell" size={72} />
-      </View>
+    <Card title={t('workouts:overview.title')}>
       <View className="flex-row gap-2.5">
+        <Tile
+          icon={<Icon set="body" name="stopwatch" size={22} />}
+          label={t('workouts:overview.workouts')}
+          value={String(overview.thisWeekWorkouts)}
+        />
         <Tile
           icon={<Icon set="system" name="clock" size={22} />}
           label={t('workouts:overview.time')}
@@ -63,39 +60,50 @@ export function OverviewCard({
           value={volumeText(t, overview.thisWeekVolumeKg, unit)}
         />
       </View>
-      <View className="flex-row items-center justify-center gap-2 rounded-md bg-kaya-soft px-3 py-2.5">
-        <Icon set="body" name="flame-burn" size={22} />
-        <Text variant="label" className="text-kaya-ink">
-          {overview.weekStreak > 0
-            ? t('workouts:overview.streak', { count: overview.weekStreak })
-            : t('workouts:overview.noStreak')}
-        </Text>
-      </View>
     </Card>
   )
 }
 
+/** A figure over its name, with an icon above both: three of them fit a row. */
 function Tile({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <View className="flex-1 flex-row items-center gap-2 rounded-md bg-surface-alt px-3 py-2.5">
+    <View className="min-w-0 flex-1 gap-1 rounded-md bg-surface-alt px-3 py-2.5">
       {icon}
-      <View className="min-w-0 flex-1">
-        <Text variant="label" numberOfLines={1} adjustsFontSizeToFit>
-          {value}
-        </Text>
-        <Text variant="caption" numberOfLines={1}>
-          {label}
-        </Text>
-      </View>
+      <Text variant="label" numberOfLines={1} adjustsFontSizeToFit>
+        {value}
+      </Text>
+      <Text variant="caption" numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   )
 }
 
 /**
- * One routine as a row: its first exercise's drawing, its name, how many
- * exercises and when it was last done, and Start, which is the whole reason
- * the row exists. A row rather than a tile, so a long name or a dozen routines
- * read the same way two short ones do.
+ * The week streak as a pill, for beside the Workouts title: the same pill
+ * Today puts beside its date for the day streak. Nothing until the count is
+ * known, because "0 week streak" is the wrong sentence about somebody whose
+ * request is still out.
+ */
+export function WeekStreakBadge({ weeks }: { weeks: number | undefined }) {
+  const { t } = useTranslation(['workouts'])
+  if (weeks === undefined) return null
+  return (
+    <Badge tone="kaya">
+      <Icon set="body" name="flame-burn" size={18} />
+      <Text variant="caption" className="text-kaya-ink">
+        {t('workouts:overview.streak', { count: weeks })}
+      </Text>
+    </Badge>
+  )
+}
+
+/**
+ * One routine: its first exercise's drawing, its name on one line, when it was
+ * last done as a badge, and Start on the right, which is the whole reason the
+ * row exists; under them, what it holds, as up to two lines of exercise
+ * names. The name is a size down from a card title so more of it fits, and the
+ * exercises say what a routine is when the name does not.
  */
 export function RoutineCard({
   routine,
@@ -109,43 +117,56 @@ export function RoutineCard({
   const { t } = useTranslation(['workouts', 'common'])
   const first = routine.exercises[0]
   const library = useExerciseLibrary()
-  const when = routine.lastUsedAt
-    ? t('workouts:routines.lastDone', {
-        date: format(parseISO(routine.lastUsedAt), datePattern('dayMonth')),
-      })
-    : t('workouts:routines.never')
-  const exercises = t('workouts:routines.exercises', { count: routine.exercises.length })
+  const last = routine.lastUsedAt ? parseISO(routine.lastUsedAt) : null
+  // The year only when it is not this one, as a diary date would.
+  const date = last
+    ? format(
+        last,
+        datePattern(last.getFullYear() === new Date().getFullYear() ? 'dayMonth' : 'dayMonthYear'),
+      )
+    : null
+  const when = date ? t('workouts:routines.lastDone', { date }) : t('workouts:routines.never')
+  // Names as saved: they stay English in every language (see the catalogue),
+  // so a plain comma joins them everywhere.
+  const exercises = routine.exercises.map((exercise) => exercise.exercise_name).join(', ')
   const start = t('workouts:start.routine')
 
   return (
     <Card
-      contentClassName="flex-row items-center gap-3 p-3"
+      contentClassName="gap-2 p-3"
       onPress={onOpen}
       // The card is one element to VoiceOver, which hides the Start button
       // inside it, so Start is offered as the card's own action instead.
       accessibilityRole="button"
-      accessibilityLabel={`${routine.name}, ${exercises}, ${when}`}
+      accessibilityLabel={[routine.name, when, exercises].filter(Boolean).join(', ')}
       accessibilityActions={[{ name: 'start', label: start }]}
       onAccessibilityAction={(event) => {
         if (event.nativeEvent.actionName === 'start') onStart()
       }}
     >
-      <ExerciseArt
-        exerciseId={first?.exercise_id ?? ''}
-        category={first ? library.byId(first.exercise_id)?.category : undefined}
-        size={52}
-      />
-      <View className="min-w-0 flex-1 gap-0.5">
-        <Text variant="bodyStrong" numberOfLines={1}>
-          {routine.name}
-        </Text>
-        <Text variant="meta" numberOfLines={1}>
-          {`${exercises} · ${when}`}
-        </Text>
+      <View className="flex-row items-center gap-3">
+        <ExerciseArt
+          exerciseId={first?.exercise_id ?? ''}
+          category={first ? library.byId(first.exercise_id)?.category : undefined}
+          size={44}
+        />
+        <View className="min-w-0 flex-1 gap-1">
+          <Text variant="label" numberOfLines={1}>
+            {routine.name}
+          </Text>
+          {date ? (
+            <Metric icon={<Icon set="system" name="calendar" size={16} />} text={date} />
+          ) : null}
+        </View>
+        <Button size="sm" onPress={onStart}>
+          {start}
+        </Button>
       </View>
-      <Button size="sm" onPress={onStart}>
-        {start}
-      </Button>
+      {exercises ? (
+        <Text variant="meta" numberOfLines={2}>
+          {exercises}
+        </Text>
+      ) : null}
     </Card>
   )
 }
