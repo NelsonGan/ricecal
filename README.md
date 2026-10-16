@@ -4094,6 +4094,13 @@ water reminder mid-workout took the rest timer's notice with it. The default
 rest is `workout_rest_s`. Keeping the screen awake while training is per phone,
 with Health.
 
+Both rests, the default and an exercise's own, are picked on two wheels
+(`RestSheet`): minutes up to ten, the most `workout_rest_s` accepts, and seconds
+in fives; at ten minutes the seconds wheel offers only 00. 0:00 is no timer. An
+exercise on the default has `restS` null, and Done without moving the wheels
+keeps it null, so a later change to the default still reaches it. "Use default"
+appears only once it has a rest of its own.
+
 ### The logger is a card, not a modal
 
 `app/workout/active` is a stack card that slides up (`slide_from_bottom`), not a

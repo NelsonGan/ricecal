@@ -1925,6 +1925,10 @@ export const fil = {
       skip: 'Laktawan',
       over: 'Tapos na ang pahinga',
       overBody: 'Oras na para sa susunod mong set ng {{name}}.',
+      min: 'min',
+      sec: 's',
+      minutes: 'Minuto',
+      seconds: 'Segundo',
     },
 
     finish: {

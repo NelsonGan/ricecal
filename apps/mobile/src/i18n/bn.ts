@@ -1880,6 +1880,10 @@ export const bn = {
       skip: 'এড়িয়ে যান',
       over: 'বিশ্রাম শেষ',
       overBody: '{{name}}-এর পরের সেটের সময়।',
+      min: 'মিনিট',
+      sec: 'সেকেন্ড',
+      minutes: 'মিনিট',
+      seconds: 'সেকেন্ড',
     },
 
     finish: {

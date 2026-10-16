@@ -1922,6 +1922,10 @@ export const ms = {
       skip: 'Langkau',
       over: 'Rehat tamat',
       overBody: 'Masa untuk set {{name}} seterusnya.',
+      min: 'min',
+      sec: 's',
+      minutes: 'Minit',
+      seconds: 'Saat',
     },
 
     finish: {

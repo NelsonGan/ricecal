@@ -8,8 +8,7 @@ import { fetchWorkoutExport, useSession, useSettings, useUpdateSettings } from '
 import { dateKey } from '@/data/client'
 import { ToggleRow } from '@/features/shared'
 import {
-  ActionSheet,
-  REST_CHOICES,
+  RestSheet,
   setWorkoutPrefs,
   shortClock,
   useWorkoutPrefs,
@@ -206,16 +205,13 @@ export default function WorkoutSettingsScreen() {
         />
       </Card>
 
-      <ActionSheet
+      <RestSheet
         visible={restOpen}
         onClose={() => setRestOpen(false)}
         title={t('workouts:settings.rest')}
-        actions={REST_CHOICES.map((seconds) => ({
-          key: String(seconds),
-          label: seconds === 0 ? t('workouts:logger.restOff') : shortClock(seconds),
-          selected: rest === seconds,
-          onPress: () => update.mutate({ workout_rest_s: seconds }),
-        }))}
+        seconds={rest}
+        defaultS={rest}
+        onPick={(seconds) => update.mutate({ workout_rest_s: seconds })}
       />
 
       <TimeSheet

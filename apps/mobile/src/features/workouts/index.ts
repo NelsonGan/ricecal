@@ -48,6 +48,7 @@ export * from './model'
 export { awaitPick, cancelPick, deliverPick, hasPick } from './pick'
 export { setWorkoutPrefs, useWorkoutPrefs } from './prefs'
 export { RestBar } from './RestBar'
+export { RestSheet } from './RestSheet'
 export { type RecordKind, recordSets } from './records'
 export {
   plansToRoutine,

@@ -140,4 +140,4 @@ export {
 } from './Toast'
 export { WaterTank, type WaterTankProps } from './WaterTank'
 export { type DayStatus, type WeekDay, WeekStrip, type WeekStripProps } from './WeekStrip'
-export { Wheel, type WheelOption, type WheelProps } from './Wheel'
+export { WHEEL_BAND, Wheel, type WheelOption, type WheelProps } from './Wheel'
