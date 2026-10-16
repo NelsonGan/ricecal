@@ -1,7 +1,7 @@
 import { onlineManager } from '@tanstack/react-query'
 import { format, parseISO, subDays } from 'date-fns'
 import { useIsFocused, useRouter } from 'expo-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWindowDimensions, View } from 'react-native'
 import {
@@ -364,17 +364,17 @@ export default function TodayScreen() {
    * Declared here because the offline screen below wants it most: a day this
    * phone has never seen is where the answer is "go back to one it has".
    */
-  // Stood aside while a row is swiped open: SwipeRow reports each row's open
-  // and shut exactly once, so a count is enough to know whether any is open.
-  const [openRows, setOpenRows] = useState(0)
-  const onRowOpenChange = useCallback(
-    (open: boolean) => setOpenRows((count) => Math.max(0, count + (open ? 1 : -1))),
-    [],
+  // Stood aside while a row is swiped open. Counted outside the screen's
+  // state, because a swipe re-rendered the whole day, every row and every
+  // row's gestures, to hide one button.
+  const [openRows] = useState(openRowCount)
+  const addButton = (
+    <AddButton
+      openRows={openRows}
+      onPress={() => router.push('/log')}
+      label={t('common:nav.log')}
+    />
   )
-  const addButton =
-    openRows > 0 ? null : (
-      <NavAction onPress={() => router.push('/log')} label={t('common:nav.log')} />
-    )
 
   const backToToday = isToday ? null : (
     <Button
@@ -634,7 +634,7 @@ export default function TodayScreen() {
            an add button, so two entries filled a screen with furniture. */
             <EntryList
               day={day}
-              onRowOpenChange={onRowOpenChange}
+              onRowOpenChange={openRows.change}
               title={t('logging:today.dayHeading')}
               action={
                 // Only when a health store reported the day. Zero steps on an
@@ -733,4 +733,39 @@ export default function TodayScreen() {
       />
     </Screen>
   )
+}
+
+type OpenRows = ReturnType<typeof openRowCount>
+
+/**
+ * How many rows are swiped open. SwipeRow reports each row's open and shut
+ * exactly once, so a count is enough to know whether any is.
+ */
+function openRowCount() {
+  let count = 0
+  const listeners = new Set<() => void>()
+  return {
+    change: (open: boolean) => {
+      count = Math.max(0, count + (open ? 1 : -1))
+      for (const listener of listeners) listener()
+    },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    read: () => count,
+  }
+}
+
+function AddButton({
+  openRows,
+  onPress,
+  label,
+}: {
+  openRows: OpenRows
+  onPress: () => void
+  label: string
+}) {
+  const open = useSyncExternalStore(openRows.subscribe, openRows.read) > 0
+  return open ? null : <NavAction onPress={onPress} label={label} />
 }

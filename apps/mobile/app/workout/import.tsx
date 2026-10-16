@@ -14,20 +14,17 @@ import {
   useSettings,
   useWorkoutImport,
 } from '@/data'
+import { defaultWorkoutName, Stat, StatGrid, whole } from '@/features/workouts'
 import {
   buildImport,
   clearHandedExport,
-  defaultWorkoutName,
   handedExport,
   IMPORT_APPS,
   type ImportPlan,
   type ImportUnits,
   type ParsedExport,
   pickExport,
-  Stat,
-  StatGrid,
-  whole,
-} from '@/features/workouts'
+} from '@/features/workouts/import'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'

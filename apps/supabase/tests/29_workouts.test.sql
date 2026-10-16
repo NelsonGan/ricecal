@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(37);
+select plan(40);
 
 \set user_a '44444444-4444-4444-4444-444444444444'
 \set user_b '55555555-5555-5555-5555-555555555555'
@@ -124,6 +124,12 @@ select is(
   607.5::numeric,
   'volume counts every set, warm-ups included'
 );
+select results_eq(
+  'select * from public.workout_history(0, 20)',
+  'select * from public.workout_summaries order by started_at desc, id desc',
+  'a history page is the summaries, record counts and all'
+);
+select is((select count(*)::integer from public.workout_history(1, 20)), 1, 'and pages by offset');
 
 select is(
   (select best_weight_kg from public.exercise_bests('barbell-bench-press')),
@@ -257,6 +263,7 @@ select set_config('request.jwt.claims',
   json_build_object('sub', :'user_b', 'role', 'authenticated')::text, true);
 
 select is((select count(*)::integer from public.workout_summaries), 0, 'a user sees none of another''s workouts');
+select is((select count(*)::integer from public.workout_history(0, 20)), 0, 'nor in the history');
 
 select throws_ok(
   format($$select public.save_workout(jsonb_build_object(

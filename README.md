@@ -2683,7 +2683,9 @@ A profile is one grid, meals and workouts together and newest first. A whole
 workout card does not fit a half-width tile, so a workout there is the first
 exercise's drawing with its name and length (`WorkoutTile`), and opens its post
 for the full card. The header's post count adds the workouts the viewer can see
-(`social_workout_stats`) to the meal count the server keeps.
+(`social_workout_count`) to the meal count the server keeps. That count restates
+`social_can_view_post` so it can ask about the author once rather than once a
+post (0.4 ms rather than 70 at 400 posts), and a test holds the two together.
 
 There is at most one post per source entry, so a retried publish returns that
 post; the entry is the retry key and a post carries no request token. A client
@@ -4468,12 +4470,22 @@ such imports is a real share of the free plan's 500 MB, past which the whole
 database goes read-only (see the workbench notes in `AGENTS.md`). Watch
 `pg_database_size` after launch. Speed holds up: against a synthetic 1,500
 workouts and 36,000 sets (about 9 MB with indexes), a page of the history list
-took 255 to 350 ms locally, almost all of it scoring records over the whole
-history, which every page repeats; one workout's header took 46 to 65 ms and the
-import's overlap read 17 ms. Today's row leaves the record count out and takes
-under a millisecond, and a save scores records only when it is about to post. If pages slow down past that, store each workout's record
-count at save rather than narrowing the view, and rescore the later workouts of
-the same exercises whenever an earlier one is saved, which an import always is.
+takes 70 ms locally (160 ms 1,400 workouts in), the import's overlap read 17 ms,
+and opening a workout about 60 ms, all of it the sets' record flags.
+
+Records are what cost, because a filter on one workout cannot reach inside the
+running best, so every read that asks for them scores the whole history. Each
+read asks only where it must. `workout_history(offset, limit)` picks its page
+without them and counts records for that page's workouts alone; paged straight
+off `workout_summaries`, every page scored everything, 300 to 450 ms, and a
+save refetched every loaded page. A workout's header leaves the count out
+(selected by `id = any(…)`, since on `id = x` the planner kept the scoring for a
+column nobody asked for) and counts the flagged sets it already has. Today's
+rows leave it out too and take under a millisecond, and a save scores records
+only when it is about to post. If pages slow down past that, store each
+workout's record count at save rather than narrowing the view, and rescore the
+later workouts of the same exercises whenever an earlier one is saved, which an
+import always is.
 
 Additive end to end. One migration (`20261016025548_workouts.sql`) adds the
 workout enums, tables, views and functions, three `user_settings` columns with

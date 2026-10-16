@@ -197,12 +197,7 @@ export function useWorkouts() {
     initialPageParam: 0,
     queryFn: async ({ pageParam }): Promise<WorkoutSummary[]> =>
       unwrap(
-        await supabase
-          .from('workout_summaries')
-          .select('*')
-          .eq('user_id', userId)
-          .order('started_at', { ascending: false })
-          .range(pageParam, pageParam + PAGE - 1),
+        await supabase.rpc('workout_history', { p_offset: pageParam, p_limit: PAGE }),
       ).map(toSummary),
     getNextPageParam: (last, pages) => (last.length < PAGE ? undefined : pages.length * PAGE),
   })
@@ -242,10 +237,14 @@ export function useWorkout(id: string | undefined) {
     gcTime: KEPT_A_DAY,
     queryFn: async (): Promise<WorkoutDetail | null> => {
       const [summary, entries, sets] = await Promise.all([
+        // The record count comes from the sets below, which carry the flags,
+        // so the summary leaves it out. And `in` rather than `eq`: on `id = x`
+        // the planner kept scoring the whole history for the column nobody
+        // asked for, and on `id = any(...)` it drops it.
         supabase
           .from('workout_summaries')
-          .select('*')
-          .eq('id', id ?? '')
+          .select(SUMMARY_WITHOUT_RECORDS)
+          .in('id', [id ?? ''])
           .maybeSingle(),
         supabase
           .from('workout_exercises')
@@ -263,7 +262,10 @@ export function useWorkout(id: string | undefined) {
       if (!row) return null
       const setRows = unwrap(sets)
       return {
-        ...toSummary(row),
+        ...toSummary({
+          ...row,
+          pr_count: setRows.filter((set) => recordsOf(set).length > 0).length,
+        }),
         entries: unwrap(entries).map((entry) => ({
           id: entry.id,
           position: entry.position,
@@ -286,20 +288,23 @@ export function useWorkout(id: string | undefined) {
               rpe: num(set.rpe),
               volumeKg: num(set.volume_kg),
               e1rmKg: num(set.e1rm_kg),
-              records: [
-                set.is_weight_pr && ('weight' as const),
-                set.is_e1rm_pr && ('e1rm' as const),
-                set.is_volume_pr && ('volume' as const),
-                set.is_reps_pr && ('reps' as const),
-                set.is_duration_pr && ('duration' as const),
-                set.is_distance_pr && ('distance' as const),
-              ].filter((record): record is WorkoutSet['records'][number] => Boolean(record)),
+              records: recordsOf(set),
             })),
         })),
       }
     },
   })
 }
+
+const recordsOf = (set: Tables<'workout_set_details'>): WorkoutSet['records'] =>
+  [
+    set.is_weight_pr && ('weight' as const),
+    set.is_e1rm_pr && ('e1rm' as const),
+    set.is_volume_pr && ('volume' as const),
+    set.is_reps_pr && ('reps' as const),
+    set.is_duration_pr && ('duration' as const),
+    set.is_distance_pr && ('distance' as const),
+  ].filter((record): record is WorkoutSet['records'][number] => Boolean(record))
 
 /** The days with a workout between two dates, for the calendar. */
 export function useWorkoutDates(from: string, to: string) {
@@ -631,7 +636,7 @@ const WORKOUT_SOCIAL = new Set([
   'social_profile_posts',
   'social_post',
   'social_profile',
-  'social_workout_stats',
+  'social_workout_count',
   'workoutPost',
 ])
 

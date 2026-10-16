@@ -122,7 +122,7 @@ select is((select workout_name || '|' || workout_sets || '|' || workout_volume_k
   'Push day, edited|3|1180.00|2', 'a post reads the workout as it is now');
 select is((select count(*)::int from public.social_post(:'old'::uuid)), 0,
   'one post is food-only by default too');
-select is((select workouts from public.social_workout_stats(:'owner')), 1,
+select is(public.social_workout_count(:'owner'), 1,
   'a stranger counts only the workouts they can see');
 reset role;
 
@@ -130,8 +130,7 @@ select set_config('request.jwt.claims', json_build_object('sub', :'reader', 'rol
 set local role authenticated;
 select is((select count(*)::int from public.social_profile_posts(:'owner', p_kinds => '{workout}')), 2,
   'a follower sees the public and the followers-only workout');
-select is((select workouts || '|' || duration_s from public.social_workout_stats(:'owner')), '2|7200',
-  'and counts both');
+select is(public.social_workout_count(:'owner'), 2, 'and counts both');
 select is((select count(*)::int from public.social_profile_posts(:'owner')), 0,
   'a profile''s posts are meals only unless workouts are asked for');
 reset role;
@@ -157,6 +156,30 @@ reset role;
 select is((select count(*)::int from public.social_posts where source_workout_id = :'held'), 0,
   'and posts nothing');
 update public.profiles set quarantined = false where id = :'owner';
+
+-- The count restates `social_can_view_post` to ask about the author once, so
+-- hold it to that for every viewer, with one post the stranger reported and
+-- one still in review.
+insert into public.social_reports (kind, content_id, content_revision, reporter_id, reason)
+select 'post', id, 1, :'stranger', 'spam' from public.social_posts where source_workout_id = :'fresh';
+update public.social_posts set review_status = 'pending' where source_workout_id = :'old';
+create function pg_temp.count_agrees(p_viewer uuid, p_author uuid) returns boolean
+language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', p_viewer, 'role', 'authenticated')::text, true);
+  return public.social_workout_count(p_author) = (
+    select count(*)::integer from public.social_posts p
+    where p.author_id = p_author and p.kind = 'workout' and private.social_can_view_post(p.id));
+end;
+$$;
+select ok(bool_and(pg_temp.count_agrees(viewer, :'owner')),
+  'the workout count agrees with what each viewer can open')
+from unnest(array[:'owner'::uuid, :'reader'::uuid, :'stranger'::uuid, :'lurker'::uuid]) viewer;
+select set_config('request.jwt.claims', json_build_object('sub', :'owner', 'role', 'authenticated')::text, true);
+select is(public.social_workout_count(:'owner'), 2, 'the author counts a post still in review');
+select set_config('request.jwt.claims', json_build_object('sub', :'stranger', 'role', 'authenticated')::text, true);
+select is(public.social_workout_count(:'owner'), 0, 'and a stranger counts neither that nor the one they reported');
 
 -- A deleted workout takes its post with it.
 delete from public.workouts where id = :'fresh';

@@ -3489,15 +3489,8 @@ export type Database = {
         }
       }
       social_unread_notification_count: { Args: never; Returns: number }
+      social_workout_count: { Args: { p_user_id: string }; Returns: number }
       social_workout_post: { Args: { p_workout_id: string }; Returns: string }
-      social_workout_stats: {
-        Args: { p_user_id: string }
-        Returns: {
-          duration_s: number
-          volume_kg: number
-          workouts: number
-        }[]
-      }
       sync_weight_readings: {
         Args: {
           p_provider: Database['public']['Enums']['health_provider']
@@ -3595,6 +3588,35 @@ export type Database = {
           sets: number
           volume_kg: number
         }[]
+      }
+      workout_history: {
+        Args: { p_limit: number; p_offset: number }
+        Returns: {
+          created_at: string | null
+          duration_s: number | null
+          ended_at: string | null
+          exercise_count: number | null
+          exercises: Json | null
+          health_workout_id: string | null
+          id: string | null
+          kcal: number | null
+          log_date: string | null
+          name: string | null
+          notes: string | null
+          pr_count: number | null
+          routine_id: string | null
+          set_count: number | null
+          started_at: string | null
+          updated_at: string | null
+          user_id: string | null
+          volume_kg: number | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'workout_summaries'
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       workout_overview: {
         Args: never
