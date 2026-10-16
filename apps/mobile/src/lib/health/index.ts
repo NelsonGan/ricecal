@@ -12,6 +12,8 @@ export {
   eachDay,
   requestWorkoutWrite,
   saveWorkoutToHealth,
+  type WorkoutWriteStatus,
+  workoutWriteStatus,
 } from './apple'
 // `ANDROID_HEALTH_PERMISSIONS` deliberately stays out of the barrel. It answers
 // a question about the MANIFEST, and nothing at runtime can act on it — a

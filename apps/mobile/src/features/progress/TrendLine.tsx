@@ -9,11 +9,11 @@ import {
 } from '@shopify/react-native-skia'
 import * as Haptics from 'expo-haptics'
 import { useEffect, useMemo, useState } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 
-import { labelWidth } from '@/features/shared/axis'
+import { type AxisLabel, AxisLabels } from '@/features/shared/AxisLabels'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn, Text } from '@/ui'
 
@@ -56,9 +56,6 @@ export type TrendLineProps = {
   accessibilityLabel?: string
   className?: string
 }
-
-/** The gap between two axis labels, so neighbours never touch. */
-const LABEL_GAP = 8
 
 /** Stroke width, and the radius the end cap needs to clear the edges. */
 const STROKE = 3
@@ -123,8 +120,6 @@ export function TrendLine({
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the data changes
   useEffect(() => setSelected(null), [pointsKey])
   const colors = useThemeColors()
-  // The labels grow with the text size, so the room they need does too.
-  const { fontScale } = useWindowDimensions()
   // With a scale, its values get a gutter of their own on the right, so they
   // never sit on the newest point, which is always at the right edge.
   const plotWidth = formatValue ? Math.max(0, width - SCALE_W) : width
@@ -133,7 +128,7 @@ export function TrendLine({
   // rebuilt each time it took every path, rule and label with it.
   const labelsKey = points.map((point) => point.label ?? '').join(',')
   // biome-ignore lint/correctness/useExhaustiveDependencies: the keys stand for `points`, and `formatValue` is an inline arrow whose output follows `unitFactor`
-  const { top, measured, line, area, rules, labelBox, shownLabels } = useMemo(() => {
+  const { top, measured, line, area, rules, axisLabels } = useMemo(() => {
     const values = points
       .map((point) => point.value)
       .filter((value): value is number => value !== null)
@@ -234,36 +229,20 @@ export function TrendLine({
       }
     }
 
-    // Every label when they fit, and every second, third... when they would
-    // overlap, always keeping the newest. Measured against the labels' own
-    // text: a fixed width per label dropped three of a week's seven days.
-    const labelled = points.flatMap((point, index) => (point.label ? [index] : []))
-    const column = points.length ? plotWidth / points.length : 0
-    // The fewest columns between two labelled points: one on most charts, two
-    // on the year's, which labels every other month.
-    const pitch = labelled.reduce(
-      (least, index, at) => (at === 0 ? least : Math.min(least, index - labelled[at - 1])),
-      Number.POSITIVE_INFINITY,
+    // Each date under its own point's column, which is where its dot is drawn.
+    const axisLabels: AxisLabel[] = points.flatMap((point, index) =>
+      point.label
+        ? [
+            {
+              key: point.key,
+              text: point.label,
+              centre: (plotWidth * (index + 0.5)) / points.length,
+            },
+          ]
+        : [],
     )
-    const widest =
-      Math.max(0, ...labelled.map((index) => labelWidth(points[index].label))) * fontScale +
-      LABEL_GAP
-    const every =
-      labelled.length > 1 && column > 0 ? Math.max(1, Math.ceil(widest / (pitch * column))) : 1
-    // Each label's box is the room up to the next one shown, so it is never
-    // clipped narrower than the space it has.
-    const labelBox = Math.min(
-      plotWidth,
-      labelled.length > 1 ? Math.max(widest, every * pitch * column) : widest,
-    )
-    const shownLabels = labelled.filter((_, at) => {
-      const last = at === labelled.length - 1
-      if (last) return true
-      // Dropped when it would sit on top of the newest one.
-      return at % every === 0 && labelled.length - 1 - at >= every
-    })
-    return { top, measured, line, area, rules, labelBox, shownLabels }
-  }, [pointsKey, labelsKey, carryFrom, width, plotWidth, height, unitFactor, fontScale])
+    return { top, measured, line, area, rules, axisLabels }
+  }, [pointsKey, labelsKey, carryFrom, width, plotWidth, height, unitFactor])
 
   // The reading being read: always a real one, never a held stretch.
   const picked = measured.find((entry) => entry.point.key === selected) ?? null
@@ -411,30 +390,10 @@ export function TrendLine({
         </View>
       </GestureDetector>
 
-      {/* Labels sit on their own points' columns, which is what the x positions
-          above are derived from, and only as many as fit: twenty dates side by
-          side were twenty clipped stubs. */}
-      <View className="h-[14px]">
-        {width > 0
-          ? shownLabels.map((index) => {
-              const x = (plotWidth * (index + 0.5)) / points.length
-              return (
-                <Text
-                  key={points[index].key}
-                  numberOfLines={1}
-                  variant="micro"
-                  className="absolute text-center"
-                  style={{
-                    width: labelBox,
-                    left: Math.max(0, Math.min(plotWidth - labelBox, x - labelBox / 2)),
-                  }}
-                >
-                  {points[index].label}
-                </Text>
-              )
-            })
-          : null}
-      </View>
+      {/* Only as many dates as fit: twenty side by side were twenty clipped
+          stubs, and thinned by a step measured at their centres, the two at
+          either end still sat on their neighbours. */}
+      <AxisLabels labels={width > 0 ? axisLabels : []} span={plotWidth} />
     </View>
   )
 }

@@ -14,7 +14,9 @@ type WorkoutPrefs = {
   healthWrite: boolean
 }
 
-const DEFAULTS: WorkoutPrefs = { keepAwake: true, healthWrite: false }
+// Saving to Health is on from the start, and its permission is asked for at
+// the first save rather than behind a switch few people found. See `health.ts`.
+const DEFAULTS: WorkoutPrefs = { keepAwake: true, healthWrite: true }
 
 const store = createJsonStore<WorkoutPrefs>('ricecal-workout-prefs', (stored) =>
   stored && typeof stored === 'object'
