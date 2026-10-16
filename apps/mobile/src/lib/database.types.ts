@@ -1794,6 +1794,66 @@ export type Database = {
           },
         ]
       }
+      workout_heart_rates: {
+        Row: {
+          active_kcal: number | null
+          avg_bpm: number
+          bpm: number[]
+          created_at: string
+          interval_s: number
+          max_bpm: number
+          min_bpm: number
+          source: string
+          started_at: string
+          updated_at: string
+          user_id: string
+          workout_id: string
+        }
+        Insert: {
+          active_kcal?: number | null
+          avg_bpm: number
+          bpm: number[]
+          created_at?: string
+          interval_s: number
+          max_bpm: number
+          min_bpm: number
+          source?: string
+          started_at: string
+          updated_at?: string
+          user_id: string
+          workout_id: string
+        }
+        Update: {
+          active_kcal?: number | null
+          avg_bpm?: number
+          bpm?: number[]
+          created_at?: string
+          interval_s?: number
+          max_bpm?: number
+          min_bpm?: number
+          source?: string
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'workout_heart_rates_workout_fkey'
+            columns: ['workout_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'workout_summaries'
+            referencedColumns: ['id', 'user_id']
+          },
+          {
+            foreignKeyName: 'workout_heart_rates_workout_fkey'
+            columns: ['workout_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'workouts'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
       workout_routines: {
         Row: {
           created_at: string
@@ -3114,6 +3174,7 @@ export type Database = {
         Returns: string
       }
       save_workout: { Args: { p_workout: Json }; Returns: string }
+      save_workout_heart_rate: { Args: { p_trace: Json }; Returns: string }
       scan_daily_limit: { Args: { p_user: string }; Returns: number }
       scan_usage_today: {
         Args: never
