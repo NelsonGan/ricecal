@@ -1945,6 +1945,20 @@ export const ko = {
       healthFailed: 'Apple 건강에 저장하지 못했습니다.',
     },
 
+    watch: {
+      noRoutines: 'iPhone에서 루틴을 만들면 여기서 시작할 수 있습니다.',
+      openPhone: 'iPhone에서 RiceCal을 열어 시작하세요.',
+      exercises: '종목',
+      undo: '실행 취소',
+      end: '운동 종료',
+      endTitle: '이 운동을 종료할까요?',
+      allDone: '모든 세트 완료',
+      upNext: '다음',
+      empty: 'iPhone에서 종목을 추가하세요.',
+      syncing: 'iPhone이 가까이 있으면 동기화됩니다',
+      pulse: '심박수 {{value}} bpm',
+    },
+
     stale: {
       title: '아직 운동 중인가요?',
       body: '이 운동은 {{time}} 전에 시작했습니다.',

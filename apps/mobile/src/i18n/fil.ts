@@ -1992,6 +1992,20 @@ export const fil = {
       healthFailed: 'Hindi ma-save sa Apple Health.',
     },
 
+    watch: {
+      noRoutines: 'Gumawa ng routine sa iPhone mo para simulan ito rito.',
+      openPhone: 'Buksan ang RiceCal sa iPhone mo para magsimula.',
+      exercises: 'Mga ehersisyo',
+      undo: 'I-undo',
+      end: 'Tapusin ang workout',
+      endTitle: 'Tapusin ang workout na ito?',
+      allDone: 'Tapos na lahat ng set',
+      upNext: 'Susunod',
+      empty: 'Magdagdag ng ehersisyo sa iPhone mo.',
+      syncing: 'Magsi-sync kapag malapit ang iPhone mo',
+      pulse: 'Tibok ng puso {{value}} bpm',
+    },
+
     stale: {
       title: 'Nagte-train ka pa?',
       body: 'Nagsimula ang workout na ito {{time}} na ang nakalipas.',

@@ -1938,6 +1938,20 @@ export const th = {
       healthFailed: 'บันทึกลง Apple Health ไม่สำเร็จ',
     },
 
+    watch: {
+      noRoutines: 'สร้างรูทีนใน iPhone เพื่อเริ่มจากที่นี่',
+      openPhone: 'เปิด RiceCal ใน iPhone เพื่อเริ่ม',
+      exercises: 'ท่า',
+      undo: 'เลิกทำ',
+      end: 'จบการออกกำลังกาย',
+      endTitle: 'จบการออกกำลังกายนี้ไหม',
+      allDone: 'ครบทุกเซ็ตแล้ว',
+      upNext: 'ถัดไป',
+      empty: 'เพิ่มท่าใน iPhone',
+      syncing: 'ซิงค์เมื่อ iPhone อยู่ใกล้',
+      pulse: 'อัตราการเต้นของหัวใจ {{value}} bpm',
+    },
+
     stale: {
       title: 'ยังออกกำลังกายอยู่ไหม',
       body: 'การออกกำลังกายนี้เริ่มมา {{time}} แล้ว',
