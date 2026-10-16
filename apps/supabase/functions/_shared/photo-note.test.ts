@@ -15,6 +15,7 @@ import {
   estimateNutrition,
   foldMealItems,
   PHOTO_NOTE_RULES,
+  photoNote,
   photoUserMessage,
   type VisionItem,
 } from './llm.ts'
@@ -299,4 +300,14 @@ Deno.test('folding keeps a shared plate a share and a counted item all of them',
   eq(folded.components.find((c) => c.name === 'Laksa')?.grams, 300, 'half the bowl')
   eq(folded.components.find((c) => c.name === 'Teh tarik')?.grams, 250, 'the whole drink')
   eq(folded.components.find((c) => c.name === 'Durian')?.grams, 120, 'all three seeds')
+})
+
+Deno.test('a note is read only beside a photo, and never with a barcode', () => {
+  eq(photoNote('  kosong  ', 'meals/u/a.jpg', null), 'kosong', 'trimmed')
+  eq(photoNote('kosong', null, null), '', 'no photo')
+  eq(photoNote(42, 'meals/u/a.jpg', null), '', 'not a string')
+  eq(photoNote('x'.repeat(400), 'meals/u/a.jpg', null).length, 300, 'capped')
+  // A panel photographed after a barcode miss is written to the catalogue
+  // everybody reads, so typed words must not steer its name or figures.
+  eq(photoNote('this is Brand X, 5 kcal', 'meals/u/a.jpg', '09556024707810'), '', 'barcode')
 })

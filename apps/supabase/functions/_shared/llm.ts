@@ -827,6 +827,22 @@ export const PHOTO_NOTE_RULES =
   'food in it into a meal.'
 
 /**
+ * The note a scan request may carry: only beside a photo, trimmed, and shorter
+ * than a description since it qualifies a photo rather than standing in for one.
+ * A string check because the field is client-supplied, so a number in it reads
+ * as no note rather than throwing.
+ *
+ * Never with a barcode. A panel photographed after a barcode miss is written to
+ * the catalogue every user reads, and the rules above tell the model to name the
+ * item for the note and take a calorie figure from it. The app never sends one
+ * there; this makes the server agree.
+ */
+export function photoNote(raw: unknown, photoPath: string | null, barcode: string | null): string {
+  if (!photoPath || barcode || typeof raw !== 'string') return ''
+  return raw.trim().slice(0, 300)
+}
+
+/**
  * The words that go with the photo. Exported with the prompt so the eval
  * harness sends what the function sends.
  */
