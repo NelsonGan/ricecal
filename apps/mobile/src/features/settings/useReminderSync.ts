@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useMealTimes, useSession, useSettings } from '@/data'
-import { rescheduleReminders } from '@/lib/notifications'
+import { cancelReminders, rescheduleReminders } from '@/lib/notifications'
 
 /**
  * Keeps the phone's scheduled reminders equal to the user's settings.
@@ -18,7 +18,7 @@ import { rescheduleReminders } from '@/lib/notifications'
  * the user had when they turned it on is the language it fires in.
  */
 export function useReminderSync(): void {
-  const { t } = useTranslation(['profile', 'common'])
+  const { t } = useTranslation(['profile', 'common', 'workouts'])
   const { userId } = useSession()
   const { data: settings } = useSettings()
   const { data: mealTimes } = useMealTimes()
@@ -27,6 +27,11 @@ export function useReminderSync(): void {
   // doing it on every render would cancel a queue and rebuild it several times
   // a second while a screen is mounted.
   const lastKey = useRef<string | undefined>(undefined)
+
+  // Signing out unmounts the tabs, and this with them. The reminders were
+  // booked from that account's settings, and left booked they went on asking
+  // the next person on this phone to log meals and train on its days.
+  useEffect(() => () => void cancelReminders(), [])
 
   useEffect(() => {
     if (!userId || !settings || !mealTimes) return
@@ -38,6 +43,8 @@ export function useReminderSync(): void {
       settings.notify_monthly_report,
       settings.quiet_from,
       settings.quiet_to,
+      settings.workout_reminder_days,
+      settings.workout_reminder_at,
       mealTimes.map((meal) => [meal.meal, meal.at, meal.reminder_enabled]),
     ])
 
@@ -59,6 +66,8 @@ export function useReminderSync(): void {
       weeklyBody: t('profile:reminders.push.weeklyBody'),
       monthlyTitle: t('profile:reminders.push.monthlyTitle'),
       monthlyBody: t('profile:reminders.push.monthlyBody'),
+      workoutTitle: t('workouts:settings.pushTitle'),
+      workoutBody: t('workouts:settings.pushBody'),
     })
   }, [userId, settings, mealTimes, t])
 }

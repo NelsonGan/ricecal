@@ -14,6 +14,8 @@ import WidgetKit
  on a completion handler.
  */
 public class RiceCalWidgetsModule: Module {
+  private var workoutObserver: NSObjectProtocol?
+
   public func definition() -> ModuleDefinition {
     Name("RiceCalWidgets")
 
@@ -45,6 +47,48 @@ public class RiceCalWidgetsModule: Module {
 
     Function("takePendingActions") { () -> String in
       RiceCalWidgetStore.takePendingActions()
+    }
+
+    /**
+     The workout's Live Activity buttons. The intent queues what was pressed
+     and posts a notification in this process; this passes it on to JS, which
+     drains the queue with `takeWorkoutActions`. A launch the intent itself
+     caused may post before this module exists, which is why the queue is the
+     record and the event only a nudge: JS drains it on start as well.
+     */
+    Events("onWorkoutAction")
+
+    OnCreate {
+      self.workoutObserver = NotificationCenter.default.addObserver(
+        forName: RiceCalWidgetStore.workoutActionQueued,
+        object: nil,
+        queue: .main
+      ) { [weak self] _ in
+        self?.sendEvent("onWorkoutAction", [:])
+      }
+    }
+
+    OnDestroy {
+      if let observer = self.workoutObserver {
+        NotificationCenter.default.removeObserver(observer)
+      }
+    }
+
+    Function("takeWorkoutActions") { () -> String in
+      RiceCalWidgetStore.takeWorkoutActions()
+    }
+
+    /**
+     The running workout's Live Activity. JSON in, for the reason the snapshot
+     is: the native side only forwards it, so a dictionary parsed into Swift
+     here would be one more place for the shape to drift.
+     */
+    Function("startWorkoutActivity") { (json: String) in
+      WorkoutActivityController.start(json)
+    }
+
+    Function("endWorkoutActivity") {
+      WorkoutActivityController.end()
     }
 
     AsyncFunction("installedWidgetsAsync") { (promise: Promise) in

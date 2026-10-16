@@ -1,8 +1,13 @@
 import * as Notifications from 'expo-notifications'
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 
 import type { MealTime, Settings } from '@/data/types'
-import { type ReminderCopy, rescheduleReminders } from '@/lib/notifications'
+import {
+  type ReminderCopy,
+  rescheduleReminders,
+  scheduleNoticeAt,
+  whenWorkoutPromptShown,
+} from '@/lib/notifications'
 
 jest.mock('expo-notifications', () => ({
   SchedulableTriggerInputTypes: {
@@ -10,14 +15,22 @@ jest.mock('expo-notifications', () => ({
     DAILY: 'daily',
     WEEKLY: 'weekly',
     MONTHLY: 'monthly',
+    TIME_INTERVAL: 'timeInterval',
   },
-  AndroidImportance: { DEFAULT: 3 },
+  AndroidImportance: { DEFAULT: 3, HIGH: 4 },
   setNotificationHandler: jest.fn(),
   setNotificationChannelAsync: jest.fn(),
   cancelAllScheduledNotificationsAsync: jest.fn(),
+  getAllScheduledNotificationsAsync: jest.fn(),
+  cancelScheduledNotificationAsync: jest.fn(),
   getPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn(),
 }))
+
+// Taken at import, before any test clears the mocks.
+const handler = (Notifications.setNotificationHandler as jest.Mock).mock.calls[0]?.[0] as {
+  handleNotification: (n: unknown) => Promise<{ shouldShowBanner: boolean }>
+}
 
 const copy: ReminderCopy = {
   mealTitle: (meal) => meal,
@@ -30,6 +43,8 @@ const copy: ReminderCopy = {
   weeklyBody: 'Week',
   monthlyTitle: 'Month',
   monthlyBody: 'Month',
+  workoutTitle: 'Train',
+  workoutBody: 'Train',
 }
 const settings = {
   notify_water: true,
@@ -51,6 +66,7 @@ afterEach(() => {
 beforeEach(() => {
   jest.clearAllMocks()
   jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({ granted: true } as never)
+  jest.mocked(Notifications.getAllScheduledNotificationsAsync).mockResolvedValue([])
   jest.mocked(Notifications.scheduleNotificationAsync).mockImplementation(async ({ trigger }) => {
     // Model the native rejection that stopped every later reminder on Android.
     if (
@@ -93,4 +109,85 @@ it('schedules nothing without notification permission', async () => {
   jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({ granted: false } as never)
   await rescheduleReminders(settings, meals, copy)
   expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled()
+})
+
+it('books a workout reminder on each training day, as this API numbers weekdays', async () => {
+  await rescheduleReminders(
+    { ...settings, workout_reminder_days: [1, 3, 0], workout_reminder_at: '18:30:00' } as Settings,
+    [],
+    copy,
+  )
+  const workouts = jest
+    .mocked(Notifications.scheduleNotificationAsync)
+    .mock.calls.map(([request]) => request)
+    .filter((request) => request.content.data?.kind === 'workout-reminder')
+  expect(workouts.map((request) => request.trigger)).toEqual([
+    { type: 'weekly', weekday: 2, hour: 18, minute: 30, channelId: 'reminders' },
+    { type: 'weekly', weekday: 4, hour: 18, minute: 30, channelId: 'reminders' },
+    { type: 'weekly', weekday: 1, hour: 18, minute: 30, channelId: 'reminders' },
+  ])
+})
+
+it('rewrites only the reminders, never a running workout or scan notice', async () => {
+  jest.mocked(Notifications.getAllScheduledNotificationsAsync).mockResolvedValue([
+    { identifier: 'meal', content: { data: { kind: 'meal' } } },
+    { identifier: 'old', content: { data: {} } },
+    { identifier: 'rest', content: { data: { kind: 'rest' } } },
+    { identifier: 'stale', content: { data: { kind: 'workout' } } },
+    { identifier: 'scan', content: { data: { kind: 'scan' } } },
+  ] as never)
+  await rescheduleReminders(settings, meals, copy)
+  const cancelled = jest
+    .mocked(Notifications.cancelScheduledNotificationAsync)
+    .mock.calls.map(([id]) => id)
+  expect(cancelled.sort()).toEqual(['meal', 'old'])
+  expect(Notifications.cancelAllScheduledNotificationsAsync).not.toHaveBeenCalled()
+})
+
+it('books "rest is over" on a channel that can be heard, and "still training?" on the quiet one', async () => {
+  Platform.OS = 'android'
+  const at = Date.now() + 90_000
+  await scheduleNoticeAt(at, 'rest', { title: 'Rest', body: 'Rest' })
+  await scheduleNoticeAt(at, 'workout', { title: 'Still', body: 'Still' })
+
+  const requests = jest.mocked(Notifications.scheduleNotificationAsync).mock.calls.map(([r]) => r)
+  expect(requests.map((r) => [r.identifier, r.content.sound, r.trigger])).toEqual([
+    ['workout-rest', 'default', { type: 'timeInterval', seconds: 90, channelId: 'workout-rest' }],
+    ['workout-stale', undefined, { type: 'timeInterval', seconds: 90, channelId: 'reminders' }],
+  ])
+  expect(jest.mocked(Notifications.setNotificationChannelAsync).mock.calls).toContainEqual([
+    'workout-rest',
+    { name: 'Rest timer', importance: 4 },
+  ])
+})
+
+describe('with the app open', () => {
+  // The jest preset makes it a mock function rather than a state, so it is
+  // set to one for these and put back after.
+  const original = Object.getOwnPropertyDescriptor(AppState, 'currentState')
+  beforeEach(() => {
+    Object.defineProperty(AppState, 'currentState', { value: 'active', configurable: true })
+  })
+  afterEach(() => {
+    if (original) Object.defineProperty(AppState, 'currentState', original)
+  })
+
+  const shown = async (kind: string) =>
+    (await handler.handleNotification({ request: { content: { data: { kind } } } }))
+      .shouldShowBanner
+
+  it('keeps the rest banner away, its countdown being on every screen', async () => {
+    expect(await shown('rest')).toBe(false)
+  })
+
+  it('shows "still training?" unless a logger is open to ask it', async () => {
+    whenWorkoutPromptShown(() => false)
+    expect(await shown('workout')).toBe(true)
+    whenWorkoutPromptShown(() => true)
+    expect(await shown('workout')).toBe(false)
+  })
+
+  it('shows reminders', async () => {
+    expect(await shown('meal')).toBe(true)
+  })
 })

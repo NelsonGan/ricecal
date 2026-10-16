@@ -7,6 +7,7 @@ import '@/i18n'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
+import { getFocusedRouteNameFromRoute } from 'expo-router/react-navigation'
 import * as SplashScreen from 'expo-splash-screen'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -348,6 +349,20 @@ function RootStack() {
           a horizontal swipe there means "next step" and a pushed screen would
           spend that gesture going back. See `reviews/_layout.tsx`. */}
       <Stack.Screen name="reviews" />
+      {/* The workouts push like any page, except while the logger is the
+          screen showing: then the group rises and cannot be swiped away, as
+          the logger does inside it (see `workout/_layout.tsx`). Opened from
+          the tabs, the logger is the group's first screen, so these are the
+          options that animate it; the ones on `active` never applied there
+          and it slid in sideways and swiped away to the tabs. */}
+      <Stack.Screen
+        name="workout"
+        options={({ route }) =>
+          getFocusedRouteNameFromRoute(route) === 'active'
+            ? { animation: 'slide_from_bottom', gestureEnabled: false }
+            : {}
+        }
+      />
       {/* The one paywall that is not dismissable by gesture: it replaces the
           tour at the end of onboarding, so there is nothing behind it to swipe
           back to. "Maybe later" is the way out and it is on the screen. */}

@@ -31,6 +31,33 @@ export type ReminderCopy = {
   weeklyBody: string
   monthlyTitle: string
   monthlyBody: string
+  workoutTitle: string
+  workoutBody: string
+}
+
+/**
+ * The kinds `rescheduleReminders` owns. Everything else that is scheduled (a
+ * scan's notice, a workout's rest timer and its "still training?") belongs to
+ * whatever booked it, and rewriting the reminders must not cancel it: turning
+ * the water reminder on mid-workout used to take the rest timer's notice with
+ * it.
+ */
+const REMINDER_KINDS: ReadonlySet<unknown> = new Set([
+  'meal',
+  'water',
+  'weigh-in',
+  'weekly',
+  'monthly',
+  'workout-reminder',
+])
+
+/**
+ * Whether the screen that asks "still training?" is open. The workouts feature
+ * says how to tell; until it does, the prompt is taken to be on screen.
+ */
+let workoutPromptShown: () => boolean = () => true
+export function whenWorkoutPromptShown(check: () => boolean): void {
+  workoutPromptShown = check
 }
 
 Notifications.setNotificationHandler({
@@ -45,8 +72,13 @@ Notifications.setNotificationHandler({
      * a plate that is not counted yet. The row in front of them is the better
      * answer, so the banner steps aside.
      */
-    const scan = notification.request.content.data?.kind === 'scan'
-    const watching = scan && AppState.currentState === 'active'
+    const kind = notification.request.content.data?.kind
+    // The same goes for a workout's rest timer, whose countdown is on every
+    // screen, and its "still training?", but only where the logger can ask it:
+    // on Today at the three-hour mark nothing else would.
+    const transient =
+      kind === 'scan' || kind === 'rest' || (kind === 'workout' && workoutPromptShown())
+    const watching = transient && AppState.currentState === 'active'
 
     return {
       shouldShowBanner: !watching,
@@ -111,6 +143,22 @@ async function ensureChannel(): Promise<void> {
   })
 }
 
+/**
+ * "Rest is over" has a channel of its own on Android, where the sound belongs
+ * to the channel rather than to the notification. On the reminders channel,
+ * silent by design, it arrived with no sound and no banner while iOS played
+ * one. High importance is what lets it pop up over whatever else is on screen.
+ */
+const REST_CHANNEL = 'workout-rest'
+
+async function ensureRestChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return
+  await Notifications.setNotificationChannelAsync(REST_CHANNEL, {
+    name: 'Rest timer',
+    importance: Notifications.AndroidImportance.HIGH,
+  })
+}
+
 // CALENDAR is iOS-only; DAILY repeats at the chosen local time on both platforms.
 const dailyTrigger = (hour: number, minute: number): Notifications.DailyTriggerInput => ({
   type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -128,13 +176,51 @@ const dailyTrigger = (hour: number, minute: number): Notifications.DailyTriggerI
  * change. Cancelling everything also cleans up after a reminder whose meal was
  * deleted, or one scheduled by a previous version of this function.
  */
-export async function rescheduleReminders(
+export function rescheduleReminders(
+  settings: Settings,
+  mealTimes: readonly MealTime[],
+  copy: ReminderCopy,
+): Promise<void> {
+  return afterReminders(() => writeReminders(settings, mealTimes, copy))
+}
+
+let reminderRun: Promise<void> = Promise.resolve()
+
+/**
+ * One at a time. Two runs that overlapped each read the booked list before
+ * the other had booked, and both full sets stayed: tapping Mon then Wed on
+ * the workout reminders quickly left Monday booked twice.
+ */
+function afterReminders(step: () => Promise<void>): Promise<void> {
+  reminderRun = reminderRun.catch(() => {}).then(step)
+  return reminderRun
+}
+
+/** Every scheduled reminder, unbooked. For signing out: they are that account's. */
+export function cancelReminders(): Promise<void> {
+  return afterReminders(unbookReminders)
+}
+
+async function unbookReminders(): Promise<void> {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync()
+  await Promise.all(
+    scheduled
+      // A notification with no kind at all predates the kinds, and was a reminder.
+      .filter((entry) => {
+        const kind = entry.content.data?.kind
+        return kind === undefined || REMINDER_KINDS.has(kind)
+      })
+      .map((entry) => Notifications.cancelScheduledNotificationAsync(entry.identifier)),
+  )
+}
+
+async function writeReminders(
   settings: Settings,
   mealTimes: readonly MealTime[],
   copy: ReminderCopy,
 ): Promise<void> {
   await ensureChannel()
-  await Notifications.cancelAllScheduledNotificationsAsync()
+  await unbookReminders()
 
   if (!(await notificationsAllowed())) return
 
@@ -209,6 +295,27 @@ export async function rescheduleReminders(
       },
     })
   }
+
+  // Workouts, on the days the user trains. Stored as JavaScript's `getDay()`
+  // (0 is Sunday) and booked as this API's weekday, where 1 is Sunday.
+  const at = parseTime(settings.workout_reminder_at ?? '18:00')
+  for (const day of settings.workout_reminder_days ?? []) {
+    if (day < 0 || day > 6) continue
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: copy.workoutTitle,
+        body: copy.workoutBody,
+        data: { kind: 'workout-reminder' },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+        weekday: day + 1,
+        hour: at.hour,
+        minute: at.minute,
+        channelId: CHANNEL,
+      },
+    })
+  }
 }
 
 /**
@@ -271,4 +378,69 @@ export async function announceScan(title: string, body: string): Promise<void> {
   } catch (error) {
     console.warn('[notifications] could not announce the finished scan', error)
   }
+}
+
+/**
+ * The one-off notices a running workout books: its rest timer and its "still
+ * training?". Each has one fixed identifier, so booking it again replaces it.
+ * With random ids, every relaunch mid-workout booked a second "still
+ * training?" that finishing never cancelled, and it fired hours later for a
+ * workout already saved.
+ */
+const WORKOUT_NOTICE = { rest: 'workout-rest', workout: 'workout-stale' } as const
+
+/**
+ * Bumped by every booking and every cancel of a kind, so a booking that is
+ * still waiting on the permission check gives up if anything came after it. A
+ * rest skipped in that moment was cancelled first and then booked anyway.
+ */
+const noticeGeneration: Record<string, number> = {}
+const nextGeneration = (kind: string) => {
+  noticeGeneration[kind] = (noticeGeneration[kind] ?? 0) + 1
+  return noticeGeneration[kind]
+}
+
+/**
+ * Book a workout notice for a moment. Best effort, like the scan notice: it
+ * does nothing when notifications are not allowed or the moment has passed.
+ */
+export async function scheduleNoticeAt(
+  at: number,
+  kind: keyof typeof WORKOUT_NOTICE,
+  content: { title: string; body: string },
+): Promise<void> {
+  const generation = nextGeneration(kind)
+  const seconds = Math.round((at - Date.now()) / 1000)
+  if (seconds < 1) return
+  const rest = kind === 'rest'
+  try {
+    if (!(await notificationsAllowed())) return
+    await (rest ? ensureRestChannel() : ensureChannel())
+    if (noticeGeneration[kind] !== generation) return
+    await Notifications.scheduleNotificationAsync({
+      identifier: WORKOUT_NOTICE[kind],
+      content: { ...content, data: { kind }, sound: rest ? 'default' : undefined },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+        channelId: rest ? REST_CHANNEL : CHANNEL,
+      },
+    })
+  } catch (error) {
+    console.warn('[notifications] could not book a workout notice', error)
+  }
+}
+
+/**
+ * Take a workout notice back: unbooked if it is still to come, and cleared from
+ * Notification Center if it already came, so "Rest is over" for a workout that
+ * has since finished is not left there to tap.
+ */
+export async function cancelNotice(kind: keyof typeof WORKOUT_NOTICE): Promise<void> {
+  nextGeneration(kind)
+  const id = WORKOUT_NOTICE[kind]
+  await Promise.allSettled([
+    Notifications.cancelScheduledNotificationAsync(id),
+    Notifications.dismissNotificationAsync(id),
+  ])
 }

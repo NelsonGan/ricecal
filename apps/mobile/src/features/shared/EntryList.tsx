@@ -31,6 +31,11 @@ export type EntryListProps = {
    * to delete — the row is dismissed and goes.
    */
   onDismissEntry?: (entry: Entry) => void
+  /**
+   * A row swiped open or shut. Today hides its floating add button while one
+   * is open, because over the bottom of the list it covered that row's Delete.
+   */
+  onRowOpenChange?: (open: boolean) => void
   /** The card's heading. */
   title: string
   /** Opposite the heading: on Today, the day's steps. */
@@ -60,6 +65,7 @@ export function EntryList({
   onFixEntry,
   onDeleteEntry,
   onDismissEntry,
+  onRowOpenChange,
   title,
   action,
   extras = [],
@@ -85,6 +91,7 @@ export function EntryList({
           onFix={onFixEntry}
           onDelete={onDeleteEntry}
           onDismiss={onDismissEntry}
+          onOpenChange={onRowOpenChange}
         />
       ),
     })),
@@ -131,12 +138,14 @@ function EntryRow({
   onFix,
   onDelete,
   onDismiss,
+  onOpenChange,
 }: {
   entry: Entry
   onPress?: (entry: Entry) => void
   onFix?: (entry: Entry) => void
   onDelete?: ((entry: Entry) => void) | ((entry: Entry) => Promise<boolean>)
   onDismiss?: (entry: Entry) => void
+  onOpenChange?: (open: boolean) => void
 }) {
   const { t } = useTranslation(['logging', 'common'])
 
@@ -253,6 +262,7 @@ function EntryRow({
         },
       ]}
       onPress={onPress ? () => onPress(entry) : undefined}
+      onOpenChange={onOpenChange}
     >
       {row()}
     </SwipeRow>

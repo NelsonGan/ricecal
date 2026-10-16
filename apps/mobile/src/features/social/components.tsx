@@ -22,7 +22,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
-import { useAvatarUrl, useMealPhotoUrl, useUserId } from '@/data'
+import { useAvatarUrl, useMealPhotoUrl, useSettings, useUserId } from '@/data'
 import { toIcon } from '@/data/mappers'
 import {
   type SocialAction,
@@ -37,8 +37,12 @@ import {
   useSocialProfile,
 } from '@/data/social'
 import type { IconRef, ReportReason } from '@/data/types'
+import { WorkoutPreview } from '@/features/workouts/cards'
+import { ExerciseArt } from '@/features/workouts/ExerciseArt'
+import { durationText, volumeText } from '@/features/workouts/format'
 import { useBack } from '@/lib/navigation'
 import { energyShare } from '@/lib/nutrition'
+import { unitFor } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -300,18 +304,40 @@ function totalsOf(facts?: Partial<FoodFacts> | null): Totals | null {
   }
 }
 
-/** What a screen reader says for a dish: its name, then every figure the picture shows. */
-function useFoodLabel() {
-  const { t } = useTranslation('common')
-  return (name: string, facts?: Partial<FoodFacts> | null) => {
-    const totals = totalsOf(facts)
+/**
+ * A post's picture read aloud. A dish is its name, then every figure the
+ * picture shows. A workout is its name and what it came to: the preview is one
+ * element to VoiceOver, so without this it read as the name alone while a meal
+ * read its calories and macros.
+ */
+function usePostLabel() {
+  const { t } = useTranslation(['workouts', 'common'])
+  const { data: settings } = useSettings()
+  const unit = unitFor(settings?.units)
+  return (post: SocialPost) => {
+    if (post.kind === 'workout') {
+      const volumeKg = Number(post.workout_volume_kg ?? 0)
+      const records = post.workout_records ?? 0
+      return [
+        post.workout_name ?? '',
+        durationText(t, post.workout_duration_s ?? 0),
+        volumeKg > 0
+          ? volumeText(t, volumeKg, unit)
+          : t('workouts:history.sets', { count: post.workout_sets ?? 0 }),
+        records > 0 ? t('workouts:history.prs', { count: records }) : '',
+      ]
+        .filter(Boolean)
+        .join(', ')
+    }
+    const name = post.food_name ?? ''
+    const totals = totalsOf(post)
     if (!totals) return name
     return [
       name,
-      `${Math.round(totals.kcal)} ${t('unit.kcal')}`,
+      `${Math.round(totals.kcal)} ${t('common:unit.kcal')}`,
       ...MACROS.map(
         (macro) =>
-          `${t(macro.label)} ${t('unit.gramsLong', { count: Math.round(totals[macro.key]) })}`,
+          `${t(`common:${macro.label}`)} ${t('common:unit.gramsLong', { count: Math.round(totals[macro.key]) })}`,
       ),
     ].join(', ')
   }
@@ -952,7 +978,7 @@ export const PostCard = memo(function PostCard({
   const ownAvatar = useAvatarUrl(mine ? (post.avatar_path ?? undefined) : undefined)
   const open = () => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })
   const time = useSocialTime(post.published_at ?? post.created_at)
-  const foodLabel = useFoodLabel()
+  const postLabel = usePostLabel()
   const zoom = useSharedValue(1)
   const zoomX = useSharedValue(0)
   const zoomY = useSharedValue(0)
@@ -1011,21 +1037,24 @@ export const PostCard = memo(function PostCard({
     })
     .withTestId(`post-pinch-${post.id}`)
   const mediaGesture = Gesture.Simultaneous(doubleTap, pinch)
-  const preview = (
-    <FoodPreview
-      name={post.food_name}
-      photo={privatePhoto ? null : post.photo_path}
-      icon={toIcon(post.icon_set, post.icon_name)}
-      visible={visible}
-      privateUri={ownPhoto.data}
-      hasPhoto={Boolean(post.photo_path)}
-      photoUnavailable={Boolean(
-        privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
-      )}
-      facts={post}
-      mediaStyle={mediaStyle}
-    />
-  )
+  const preview =
+    post.kind === 'workout' ? (
+      <WorkoutPostPreview post={post} />
+    ) : (
+      <FoodPreview
+        name={post.food_name ?? ''}
+        photo={privatePhoto ? null : post.photo_path}
+        icon={toIcon(post.icon_set, post.icon_name)}
+        visible={visible}
+        privateUri={ownPhoto.data}
+        hasPhoto={Boolean(post.photo_path)}
+        photoUnavailable={Boolean(
+          privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
+        )}
+        facts={post}
+        mediaStyle={mediaStyle}
+      />
+    )
   return (
     <View className="overflow-hidden border-b-2 border-track bg-surface">
       <View className="flex-row items-center gap-3 px-5 py-3">
@@ -1091,7 +1120,7 @@ export const PostCard = memo(function PostCard({
         <View
           accessible
           accessibilityRole="image"
-          accessibilityLabel={foodLabel(post.food_name, post)}
+          accessibilityLabel={postLabel(post)}
           onLayout={(event) => {
             mediaSize.value = event.nativeEvent.layout.width
           }}
@@ -1247,6 +1276,27 @@ export const PostCard = memo(function PostCard({
   )
 })
 
+/** A workout post's workout, in the viewer's own weight unit. */
+export function WorkoutPostPreview({ post }: { post: SocialPost }) {
+  const { data: settings } = useSettings()
+  return (
+    <WorkoutPreview
+      name={post.workout_name ?? ''}
+      startedAt={post.workout_started_at ?? post.created_at}
+      durationS={post.workout_duration_s ?? 0}
+      volumeKg={Number(post.workout_volume_kg ?? 0)}
+      sets={post.workout_sets ?? 0}
+      records={post.workout_records ?? 0}
+      exercises={(post.workout_exercises ?? []).map((exercise) => ({
+        exerciseId: exercise.exercise_id,
+        name: exercise.exercise_name,
+        sets: exercise.sets,
+      }))}
+      unit={unitFor(settings?.units)}
+    />
+  )
+}
+
 export const PostTile = memo(function PostTile({
   post,
   visible = true,
@@ -1261,32 +1311,33 @@ export const PostTile = memo(function PostTile({
   const status = post.quarantined ? 'quarantined' : post.review_status
   const privatePhoto = mine && status !== 'approved' ? (post.photo_path ?? undefined) : undefined
   const ownPhoto = useMealPhotoUrl(privatePhoto)
-  const foodLabel = useFoodLabel()
+  const postLabel = usePostLabel()
   return (
     <Tappable
       className="overflow-hidden rounded-md bg-surface p-1"
       accessibilityRole="button"
-      accessibilityLabel={[
-        foodLabel(post.food_name, post),
-        mine && status !== 'approved' ? t(status) : '',
-      ]
+      accessibilityLabel={[postLabel(post), mine && status !== 'approved' ? t(status) : '']
         .filter(Boolean)
         .join(', ')}
       onPress={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
     >
-      <FoodPreview
-        name={post.food_name}
-        photo={privatePhoto ? null : post.photo_path}
-        icon={toIcon(post.icon_set, post.icon_name)}
-        visible={visible}
-        privateUri={ownPhoto.data}
-        hasPhoto={Boolean(post.photo_path)}
-        photoUnavailable={Boolean(
-          privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
-        )}
-        facts={post}
-        variant="tile"
-      />
+      {post.kind === 'workout' ? (
+        <WorkoutTile post={post} />
+      ) : (
+        <FoodPreview
+          name={post.food_name ?? ''}
+          photo={privatePhoto ? null : post.photo_path}
+          icon={toIcon(post.icon_set, post.icon_name)}
+          visible={visible}
+          privateUri={ownPhoto.data}
+          hasPhoto={Boolean(post.photo_path)}
+          photoUnavailable={Boolean(
+            privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
+          )}
+          facts={post}
+          variant="tile"
+        />
+      )}
       {mine && status !== 'approved' ? (
         <Badge className="absolute left-3 top-3" tone="kaya" size="sm">
           {t(status)}
@@ -1295,6 +1346,35 @@ export const PostTile = memo(function PostTile({
     </Tappable>
   )
 })
+
+/**
+ * A shared workout in a profile's grid, cut down to what a half-width square
+ * holds: the first exercise's drawing, the name and how long it took. The post
+ * it opens has the rest.
+ */
+function WorkoutTile({ post }: { post: SocialPost }) {
+  const { t } = useTranslation(['workouts', 'common'])
+  const first = post.workout_exercises?.[0]
+  return (
+    <View className="aspect-square overflow-hidden rounded-tile bg-exercise-tile">
+      <View className="absolute inset-0 items-center justify-center pb-10">
+        {first ? (
+          <ExerciseArt exerciseId={first.exercise_id} size={112} />
+        ) : (
+          <Icon set="body" name="dumbbell" size={72} />
+        )}
+      </View>
+      <View className="absolute inset-x-1.5 bottom-1.5 gap-0.5 rounded-[14px] bg-surface/90 px-2.5 py-1.5">
+        <Text numberOfLines={1} className="font-body-black text-[13px] leading-[18px] text-ink">
+          {post.workout_name ?? ''}
+        </Text>
+        <Text className="font-body-bold text-[12px] leading-[16px] text-muted">
+          {durationText(t, post.workout_duration_s ?? 0)}
+        </Text>
+      </View>
+    </View>
+  )
+}
 
 type PageQuery<T> = {
   data?: { pages: SocialPage<T>[] }

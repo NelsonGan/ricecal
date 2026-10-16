@@ -47,15 +47,14 @@ export type NavTab<T extends string> = {
 }
 
 /**
- * The bar itself: safe-area padding, the surface pill holding the tabs, and the
- * add action beside it on the right. Exported separately from `BottomNav`,
+ * The bar itself: safe-area padding, the surface pill holding the tabs, and an
+ * optional action beside it on the right. Exported separately from `BottomNav`,
  * because a router-driven tab bar has to make its own trigger components the
  * pill's direct children, which a controlled component cannot express.
  *
- * The action is outside the pill rather than a tile in the middle of it. It
- * used to float over Today instead, where it covered the last row of the day
- * and the Delete of any row swiped open beneath it; in the bar it covers
- * nothing and is in the same place on every tab.
+ * The app's tabs pass no action, so the pill spans the width of the screen and
+ * five tabs get the room. The add button floats over Today instead, as
+ * `Screen`'s `floatingTrailing`, which pads the day's last row clear of it.
  */
 export function NavBar({
   children,
@@ -97,7 +96,8 @@ export function NavBar({
   )
 }
 
-const FLOAT_SHADOW = {
+/** The lift of anything floating over the screen with the bar, so the two read as one layer. */
+export const FLOAT_SHADOW = {
   shadowColor: '#000',
   shadowOpacity: 0.12,
   shadowRadius: 16,
@@ -173,8 +173,9 @@ export type NavActionProps = {
 }
 
 /**
- * The add action: a pandan tile at the right end of the bar, beside the pill.
- * See `NavBar` for why it sits there.
+ * The add action: a pandan tile. Today floats it in the bottom right corner,
+ * above the bar, as `Screen`'s `floatingTrailing`; the bar's own `action` slot
+ * is unused, for the reason `NavBar` gives.
  */
 export function NavAction({ onPress, label, className }: NavActionProps) {
   const colors = useThemeColors()

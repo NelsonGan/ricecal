@@ -28,6 +28,9 @@ const VISIBLE = 5
 /** Blank rows above and below, so the first and last option can reach the middle. */
 const PAD = ROW * ((VISIBLE - 1) / 2)
 
+/** Where the selected band sits, for a caller that writes inside it (a unit beside the number). */
+export const WHEEL_BAND = { top: PAD, height: ROW } as const
+
 /**
  * A spinning column: one of the wheels a date and a time are picked on.
  *

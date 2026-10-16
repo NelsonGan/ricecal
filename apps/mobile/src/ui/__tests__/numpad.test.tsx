@@ -3,7 +3,13 @@ import { StyleSheet } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { fireEvent, render, screen, userEvent, waitFor } from '../../test-utils'
-import { NUMPAD_BODY_HEIGHT, NumpadHost, NumpadProvider, useNumpadZone } from '../Numpad'
+import {
+  NUMPAD_BODY_HEIGHT,
+  NumpadHost,
+  NumpadProvider,
+  numpadHeaderHeight,
+  useNumpadZone,
+} from '../Numpad'
 import { Text } from '../Text'
 import { TextField } from '../TextField'
 
@@ -16,7 +22,11 @@ import { TextField } from '../TextField'
 
 const user = userEvent.setup()
 
-const LABELS = { done: 'Done', backspace: 'Delete the last digit', decimal: 'Decimal point' }
+const LABELS = {
+  done: 'Done',
+  backspace: 'Delete the last digit',
+  decimal: 'Decimal point',
+}
 
 /** The pad's height ends at the home indicator, so it needs real insets. */
 const METRICS = {
@@ -360,7 +370,12 @@ describe('Numpad', () => {
     await openPad()
 
     // The pad's body plus the home indicator's inset, for the host drawing it.
-    expect(seen.near.at(-1)?.height).toBe(NUMPAD_BODY_HEIGHT + METRICS.insets.bottom)
+    // The header grows with the text size, which the test renderer reports as large.
+    const { fontScale } = require('react-native').Dimensions.get('window')
+    const header = numpadHeaderHeight(fontScale)
+    expect(seen.near.at(-1)?.height).toBe(
+      NUMPAD_BODY_HEIGHT - numpadHeaderHeight(1) + header + METRICS.insets.bottom,
+    )
     // And nothing at all for the one that is not, at any point.
     expect(seen.far.every((r) => r.height === 0)).toBe(true)
 

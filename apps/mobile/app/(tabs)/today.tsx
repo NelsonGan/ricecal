@@ -1,7 +1,7 @@
 import { onlineManager } from '@tanstack/react-query'
 import { format, parseISO, subDays } from 'date-fns'
 import { useIsFocused, useRouter } from 'expo-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWindowDimensions, View } from 'react-native'
 import {
@@ -17,6 +17,7 @@ import {
   useSettings,
   useStreak,
   useTargets,
+  useWorkoutsOn,
 } from '@/data'
 import { socialEntryPost } from '@/data/social'
 import { count, SessionItem } from '@/features/activity'
@@ -30,6 +31,7 @@ import {
 import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
+import { WorkoutItem } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
 import { useOnline } from '@/lib/online'
@@ -43,6 +45,7 @@ import {
   EmptyState,
   Icon,
   IconButton,
+  NavAction,
   Screen,
   Skeleton,
   SkeletonRow,
@@ -174,7 +177,15 @@ export default function TodayScreen() {
   // The day's workouts, drawn among its meals. Not part of the wait below: a day
   // whose meals are ready should not hold for the list of sessions, which on
   // most accounts is empty.
-  const sessions = useActivitySessions(selectedDate).data ?? []
+  //
+  // The ones logged in the app are not read back from Health as sessions (see
+  // `isOwnWorkout` in `lib/health/apple.ts`), but a build from before workouts,
+  // on a second iPhone or an iPad, does read them back. Each would show twice.
+  const workouts = useWorkoutsOn(selectedDate).data ?? []
+  const savedToHealth = new Set(workouts.map((workout) => workout.healthWorkoutId))
+  const sessions = (useActivitySessions(selectedDate).data ?? []).filter(
+    (session) => !savedToHealth.has(session.externalId),
+  )
 
   /**
    * Everything under the strip waits together.
@@ -353,6 +364,18 @@ export default function TodayScreen() {
    * Declared here because the offline screen below wants it most: a day this
    * phone has never seen is where the answer is "go back to one it has".
    */
+  // Stood aside while a row is swiped open. Counted outside the screen's
+  // state, because a swipe re-rendered the whole day, every row and every
+  // row's gestures, to hide one button.
+  const [openRows] = useState(openRowCount)
+  const addButton = (
+    <AddButton
+      openRows={openRows}
+      onPress={() => router.push('/log')}
+      label={t('common:nav.log')}
+    />
+  )
+
   const backToToday = isToday ? null : (
     <Button
       size="sm"
@@ -369,6 +392,12 @@ export default function TodayScreen() {
       {t('logging:today.title')}
     </Button>
   )
+  // The same corners on every version of the day below.
+  const floating = {
+    floatingLeading: backToToday,
+    floatingTrailing: addButton,
+    toastsAboveFloating: focused,
+  }
 
   /**
    * A day this phone has never seen, with no way to ask for it. The strip comes
@@ -382,7 +411,7 @@ export default function TodayScreen() {
     return (
       // Plain `Screen`: nothing here swipes, so this one does not need
       // gesture-handler's scroll view the way the day below does.
-      <Screen floatingLeading={backToToday}>
+      <Screen {...floating}>
         <ScreenTitle title={title} />
         <WeekPicker />
         <Card>
@@ -402,7 +431,7 @@ export default function TodayScreen() {
    */
   if (unreachable) {
     return (
-      <Screen floatingLeading={backToToday}>
+      <Screen {...floating}>
         <ScreenTitle title={title} />
         <WeekPicker />
         <Card>
@@ -425,7 +454,7 @@ export default function TodayScreen() {
     // The one screen with swipeable rows on it, and the one that needs
     // gesture-handler's scroll view for them to work. Nothing here takes
     // typing, which is what makes that trade free — see `gestureScroll`.
-    <Screen gestureScroll floatingLeading={backToToday}>
+    <Screen gestureScroll {...floating}>
       <ScreenTitle
         title={title}
         leading={
@@ -586,6 +615,7 @@ export default function TodayScreen() {
             </Card>
           ) : day.entries.length === 0 &&
             sessions.length === 0 &&
+            workouts.length === 0 &&
             !activity ? /* No "Nothing logged yet" block. A day
           before its first meal is the state this screen is in every morning,
           and a card announcing it pushed the water tracker and the ring apart
@@ -597,6 +627,7 @@ export default function TodayScreen() {
            an add button, so two entries filled a screen with furniture. */
             <EntryList
               day={day}
+              onRowOpenChange={openRows.change}
               title={t('logging:today.dayHeading')}
               action={
                 // Only when a health store reported the day. Zero steps on an
@@ -614,21 +645,35 @@ export default function TodayScreen() {
                   </View>
                 ) : undefined
               }
-              extras={sessions.map((session) => ({
-                key: session.id,
-                at: session.startedAt,
-                node: (
-                  <SessionItem
-                    session={session}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/activity/workout/[id]',
-                        params: { id: session.id },
-                      })
-                    }
-                  />
-                ),
-              }))}
+              extras={[
+                ...workouts.map((workout) => ({
+                  key: `workout-${workout.id}`,
+                  at: workout.startedAt,
+                  node: (
+                    <WorkoutItem
+                      workout={workout}
+                      onPress={() =>
+                        router.push({ pathname: '/workout/[id]', params: { id: workout.id } })
+                      }
+                    />
+                  ),
+                })),
+                ...sessions.map((session) => ({
+                  key: session.id,
+                  at: session.startedAt,
+                  node: (
+                    <SessionItem
+                      session={session}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/activity/workout/[id]',
+                          params: { id: session.id },
+                        })
+                      }
+                    />
+                  ),
+                })),
+              ]}
               onPressEntry={(entry) =>
                 router.push({
                   pathname: '/log/food/[id]',
@@ -681,4 +726,39 @@ export default function TodayScreen() {
       />
     </Screen>
   )
+}
+
+type OpenRows = ReturnType<typeof openRowCount>
+
+/**
+ * How many rows are swiped open. SwipeRow reports each row's open and shut
+ * exactly once, so a count is enough to know whether any is.
+ */
+function openRowCount() {
+  let count = 0
+  const listeners = new Set<() => void>()
+  return {
+    change: (open: boolean) => {
+      count = Math.max(0, count + (open ? 1 : -1))
+      for (const listener of listeners) listener()
+    },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    read: () => count,
+  }
+}
+
+function AddButton({
+  openRows,
+  onPress,
+  label,
+}: {
+  openRows: OpenRows
+  onPress: () => void
+  label: string
+}) {
+  const open = useSyncExternalStore(openRows.subscribe, openRows.read) > 0
+  return open ? null : <NavAction onPress={onPress} label={label} />
 }

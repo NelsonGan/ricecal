@@ -8,6 +8,8 @@ create type public.social_audience as enum ('public', 'followers');
 create type public.social_content_kind as enum ('profile', 'post', 'comment');
 create type public.social_activity_kind as enum ('follow', 'like', 'comment');
 create type public.social_counter_metric as enum ('followers', 'following', 'posts', 'likes', 'comments');
+-- What a post shares: a logged meal, or a finished workout.
+create type public.social_post_kind as enum ('food', 'workout');
 
 -- Public identity is part of the existing account profile. People can hide
 -- themselves from discovery without breaking existing follows or shared links.
@@ -92,9 +94,15 @@ create index blocked_authors_reverse_idx on public.blocked_authors(author_id, us
 create table public.social_posts (
   id uuid primary key default gen_random_uuid(),
   author_id uuid not null references public.profiles(id) on delete cascade,
-  -- One post per entry is also what makes a retried publish the same operation.
-  source_entry_id uuid not null unique references public.food_logs(id) on delete cascade,
-  food_name text not null check (char_length(food_name) between 1 and 160),
+  kind public.social_post_kind not null default 'food',
+  -- One post per entry or workout is also what makes a retried publish the
+  -- same operation. Exactly one of the two is set, by kind (below).
+  source_entry_id uuid unique references public.food_logs(id) on delete cascade,
+  source_workout_id uuid unique,
+  -- The records the workout set, counted when it was posted: scoring them
+  -- again for every reader would rescore the author's whole history.
+  workout_records smallint check (workout_records >= 0),
+  food_name text check (char_length(food_name) between 1 and 160),
   icon_set public.icon_set,
   icon_name text,
   photo_path text,
@@ -119,6 +127,17 @@ create table public.social_posts (
   constraint social_posts_icon_complete check ((icon_set is null) = (icon_name is null)),
   constraint social_posts_photo_owned check (
     photo_path is null or photo_path like 'meals/' || author_id::text || '/%'
+  ),
+  -- Keyed with the author, so a post can only ever share its author's workout.
+  constraint social_posts_workout_owned foreign key (source_workout_id, author_id)
+    references public.workouts(id, user_id) on delete cascade,
+  constraint social_posts_source check (
+    case kind
+      when 'food' then source_entry_id is not null and source_workout_id is null
+        and food_name is not null
+      else source_workout_id is not null and source_entry_id is null
+        and food_name is null and photo_path is null
+    end
   )
 );
 create index social_posts_author_idx on public.social_posts(author_id, created_at desc, id desc);
@@ -235,7 +254,8 @@ grant all on public.social_follows, public.social_posts,
 grant select on public.social_follows, public.social_likes,
   public.social_reports, public.social_notifications to authenticated;
 grant select (id, author_id, food_name, icon_set, icon_name, photo_path, kcal, carbs_g, protein_g, fat_g,
-  caption, audience, review_status, review_reason, revision, quarantined, photo_etag, created_at, published_at, updated_at)
+  caption, audience, review_status, review_reason, revision, quarantined, photo_etag, created_at, published_at, updated_at,
+  kind, workout_records)
   on public.social_posts to authenticated;
 grant select (id, post_id, author_id, body, review_status, review_reason, revision,
   quarantined, created_at, updated_at) on public.social_comments to authenticated;
@@ -485,7 +505,9 @@ declare v_before boolean := false; v_after boolean := false; v_row public.social
 begin
   if tg_op <> 'INSERT' then v_before := old.review_status = 'approved' and not old.quarantined; end if;
   if tg_op <> 'DELETE' then v_after := new.review_status = 'approved' and not new.quarantined; v_row := new; else v_row := old; end if;
-  if v_before <> v_after then
+  -- Meals only. An app from before workout posts draws this count over a grid
+  -- of meals; a newer one adds the workouts its viewer can see.
+  if v_before <> v_after and v_row.kind = 'food' then
     perform private.social_counter_change(v_row.author_id, 'posts', v_row.id, case when v_after then 1 else -1 end);
   end if;
   if tg_op = 'DELETE' then

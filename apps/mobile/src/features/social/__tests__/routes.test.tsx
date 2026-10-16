@@ -17,9 +17,13 @@ jest.mock('expo-router', () => ({
 jest.mock('@/data', () => ({
   useUserId: () => 'viewer',
   useMealPhotoUrl: (path?: string) => mockMealPhotoUrl(path),
+  useSettings: () => ({ data: undefined }),
+  // No workout is being shared in these meal tests.
+  useWorkout: () => ({ data: undefined, isPending: false, isError: false }),
 }))
 jest.mock('@/data/social', () => ({
   useSocialOnline: () => true,
+  useWorkoutPost: () => ({ data: null }),
   useSocialProfile: () => ({ data: { user_id: 'viewer', review_status: 'approved' } }),
   useSocialEntry: (entryId: string) => ({
     data: {

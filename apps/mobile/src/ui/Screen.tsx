@@ -27,6 +27,7 @@ import { spacing } from '@/theme/tokens'
 import { useNavInset } from './BottomNav'
 import { cn } from './cn'
 import { NumpadHost, useNumpadZone } from './Numpad'
+import { ToastHost } from './Toast'
 
 /**
  * The scroll view, taught `className`. NativeWind converts it to a style only for
@@ -69,6 +70,9 @@ const GestureScrollView = Reanimated.createAnimatedComponent(
  */
 const FIELD_CLEARANCE = spacing.lg + spacing.md + spacing.lg
 
+/** A floating trailing control's height and the gap above it: the add button's. */
+const FLOATING_CLEARANCE = 62 + spacing.gutter
+
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
   /**
@@ -99,6 +103,26 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * enough bottom padding that the last row can be read.
    */
   floatingLeading?: ReactNode
+  /**
+   * The same in the bottom-right corner: Today's add button. The content is
+   * padded by the button's height, so the last row of the day can be scrolled
+   * clear of it rather than sitting under it, which is what moved the button
+   * into the tab bar the first time it floated here.
+   */
+  floatingTrailing?: ReactNode
+  /**
+   * Draw toasts above `floatingTrailing` instead of across it. A toast sat on
+   * Today's add button, and the first one a new account sees, the tour offer,
+   * stays up for twelve seconds.
+   *
+   * Pass whether the screen is focused. A tab screen stays mounted behind the
+   * others, and a host it held would draw their toasts where nobody can see them.
+   *
+   * The host and the room under the last row stay while the button is hidden
+   * (Today hides it behind a swiped-open row): tied to the button, "Removed"
+   * appeared, then jumped up as the deleted row closed and the host came back.
+   */
+  toastsAboveFloating?: boolean
   /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
   flush?: boolean
   /**
@@ -116,7 +140,7 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * platform ScrollView the pan never activates, because the two arbitrate
    * through different systems.
    *
-   * Off by default; only Today renders a swipeable row.
+   * Off by default; on for Today and the workout editors, whose rows swipe.
    */
   gestureScroll?: boolean
   className?: string
@@ -167,6 +191,8 @@ export function Screen({
   scrollOffset,
   footer,
   floatingLeading,
+  floatingTrailing,
+  toastsAboveFloating = false,
   flush = false,
   safeAreaTop = true,
   scroll = true,
@@ -287,11 +313,14 @@ export function Screen({
         // somewhere to be scrolled TO. Without it the reveal asks for an offset
         // past the end of the content and the scroll view declines.
         paddingBottom:
-          (flush ? 0 : spacing.gutter) + (footer ? 0 : navInset || insets.bottom) + numpad.height,
+          (flush ? 0 : spacing.gutter) +
+          (footer ? 0 : navInset || insets.bottom) +
+          (floatingTrailing || toastsAboveFloating ? FLOATING_CLEARANCE : 0) +
+          numpad.height,
         gap: spacing.stack,
       }}
       bottomOffset={bottomOffset}
-      // Only Today, and only because its rows are swipeable. See `gestureScroll`.
+      // Only where rows swipe. See `gestureScroll`.
       ScrollViewComponent={gestureScroll ? GestureScrollView : undefined}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -339,6 +368,34 @@ export function Screen({
     </View>
   )
 
+  /**
+   * A floating control in a bottom corner. Rides up with the footer, so it is
+   * never left under an open keyboard, and sits one gutter above the floating
+   * nav bar, whose footprint already includes the home indicator, so the safe
+   * area is not added again.
+   *
+   * Styled rather than classed: the position is what makes this an overlay at
+   * all, and NativeWind's support for a third-party animated view is not worth
+   * depending on for that.
+   */
+  const corner = (side: 'left' | 'right', control: ReactNode) =>
+    control ? (
+      <Reanimated.View
+        style={[
+          {
+            position: 'absolute',
+            ...(side === 'left' ? { left: spacing.gutter } : { right: spacing.gutter }),
+            bottom: spacing.gutter + navInset,
+            alignItems: side === 'left' ? 'flex-start' : 'flex-end',
+          },
+          lift,
+        ]}
+        pointerEvents="box-none"
+      >
+        {control}
+      </Reanimated.View>
+    ) : null
+
   return (
     <KeyboardShell
       className={cn('flex-1 bg-canvas', className)}
@@ -370,31 +427,14 @@ export function Screen({
 
         {overlayHeader}
 
-        {/* Rides up with the footer, so a floating control is never left under an
-          open keyboard.
+        {corner('right', floatingTrailing)}
 
-          One gutter above the floating nav bar, whose footprint already
-          includes the home indicator, so the safe area is not added again.
-
-          Styled rather than classed: the position is what makes this an overlay
-          at all, and NativeWind's support for a third-party animated view is
-          not worth depending on for that. */}
-        {floatingLeading ? (
-          <Reanimated.View
-            style={[
-              {
-                position: 'absolute',
-                left: spacing.gutter,
-                bottom: spacing.gutter + navInset,
-                alignItems: 'flex-start',
-              },
-              lift,
-            ]}
-            pointerEvents="box-none"
-          >
-            {floatingLeading}
-          </Reanimated.View>
+        {toastsAboveFloating ? (
+          // The provider already clears the safe area, so it comes off here.
+          <ToastHost offset={FLOATING_CLEARANCE + navInset - insets.bottom} />
         ) : null}
+
+        {corner('left', floatingLeading)}
 
         {footer ? (
           /* A transform, so the scroll view above keeps the frame the keyboard is

@@ -2,6 +2,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 
 const {
+  IOSConfig,
   withDangerousMod,
   withEntitlementsPlist,
   withInfoPlist,
@@ -46,6 +47,7 @@ const ICONS = [
   ['ui/search.png', 'wg-search.png'],
   ['food/cooking-pot.png', 'wg-recipe.png'],
   ['food/rice-bowl.png', 'wg-mark.png'],
+  ['body/dumbbell.png', 'wg-dumbbell.png'],
 ]
 
 /**
@@ -88,7 +90,48 @@ module.exports = function withWidgets(config) {
   next = withAppGroupEntitlement(next, appGroup)
   next = withAppInfoPlist(next, appGroup)
   next = withWidgetTarget(next, { bundleId, appGroup })
+  next = withAppIntents(next)
   return next
+}
+
+/**
+ * The intent the APP has to contain as well as the extension.
+ *
+ * A Live Activity's button runs a `LiveActivityIntent`, and iOS runs that in
+ * the app's process, finding it through the App Intents metadata Xcode extracts
+ * from the app target's own sources. A pod's sources are not extracted, so the
+ * file has to be one of the app target's: copied in beside `AppDelegate`, and
+ * added to its Sources phase once.
+ */
+const APP_INTENT = 'WorkoutActionIntent.swift'
+
+function withAppIntents(config) {
+  config = withDangerousMod(config, [
+    'ios',
+    async (cfg) => {
+      const projectRoot = cfg.modRequest.projectRoot
+      const appDir = path.join(cfg.modRequest.platformProjectRoot, cfg.modRequest.projectName)
+      fs.copyFileSync(
+        path.join(projectRoot, 'widgets/ios', APP_INTENT),
+        path.join(appDir, APP_INTENT),
+      )
+      return cfg
+    },
+  ])
+  return withXcodeProject(config, (cfg) => {
+    const project = cfg.modResults
+    const app = cfg.modRequest.projectName
+    const filepath = `${app}/${APP_INTENT}`
+    if (!project.hasFile(filepath)) {
+      IOSConfig.XcodeUtils.addBuildSourceFileToGroup({
+        filepath,
+        groupName: app,
+        project,
+        targetUuid: project.getFirstTarget().uuid,
+      })
+    }
+    return cfg
+  })
 }
 
 /**
@@ -154,7 +197,13 @@ function swiftSources(projectRoot) {
     .filter((name) => name.endsWith('.swift'))
     .map((name) => path.join(own, name))
 
-  return [...files, path.join(projectRoot, 'modules/ricecal-widgets/ios/RiceCalWidgetStore.swift')]
+  return [
+    ...files,
+    path.join(projectRoot, 'modules/ricecal-widgets/ios/RiceCalWidgetStore.swift'),
+    // The Live Activity's attributes, which the app and the extension have to
+    // agree on exactly: ActivityKit pairs the two by this type.
+    path.join(projectRoot, 'modules/ricecal-widgets/ios/WorkoutActivityAttributes.swift'),
+  ]
 }
 
 /**
@@ -177,10 +226,16 @@ function withAppGroupEntitlement(config, appGroup) {
   })
 }
 
-/** So `RiceCalWidgetStore` finds the container from inside the app too. */
+/**
+ * So `RiceCalWidgetStore` finds the container from inside the app too, and so
+ * the app may start a Live Activity at all: without `NSSupportsLiveActivities`
+ * `Activity.request` throws and the workout simply never reaches the lock
+ * screen.
+ */
 function withAppInfoPlist(config, appGroup) {
   return withInfoPlist(config, (cfg) => {
     cfg.modResults.RiceCalAppGroup = appGroup
+    cfg.modResults.NSSupportsLiveActivities = true
     return cfg
   })
 }

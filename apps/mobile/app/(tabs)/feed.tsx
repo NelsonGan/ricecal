@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useUserId } from '@/data'
 import { keys } from '@/data/keys'
-import { useSocialFeed, useSocialUnread } from '@/data/social'
+import { socialFeedParams, useSocialFeed, useSocialUnread } from '@/data/social'
 import { ScreenTitle } from '@/features/shared'
 import { PostCard, SocialList } from '@/features/social/components'
 import { CountBadge, Icon, IconButton, Screen, Tabs } from '@/ui'
@@ -22,7 +22,7 @@ export default function FeedScreen() {
       // A food can publish while this tab is mounted behind the diary. Only when
       // stale: coming straight back from a post refetched every loaded page.
       void queryClient.refetchQueries({
-        queryKey: keys.socialRead(viewer, 'social_feed', { p_mode: mode }),
+        queryKey: keys.socialRead(viewer, 'social_feed', socialFeedParams(mode)),
         exact: true,
         stale: true,
       })

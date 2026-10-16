@@ -25,6 +25,10 @@ type Native = {
   setScheme?(scheme: string): void
   takePendingActions?(): string
   installedWidgetsAsync?(): Promise<string[]>
+  startWorkoutActivity?(json: string): void
+  endWorkoutActivity?(): void
+  takeWorkoutActions?(): string
+  addListener?(event: 'onWorkoutAction', listener: () => void): { remove(): void }
 }
 
 const native = requireOptionalNativeModule<Native>('RiceCalWidgets')
@@ -131,3 +135,91 @@ export async function installedWidgets(): Promise<WidgetKind[]> {
 
 const isWidgetKind = (value: string): value is WidgetKind =>
   (WIDGET_KINDS as readonly string[]).includes(value)
+
+/**
+ * A running workout, as its Live Activity shows it. Times are epoch
+ * milliseconds; the lock screen counts the elapsed time and the rest itself
+ * from them.
+ */
+export type WorkoutActivityState = {
+  id: string
+  name: string
+  startedAt: number
+  exercise: string
+  /** "2/4": the next set of `exercise`, out of its sets. Empty when all are done. */
+  set: string
+  done: number
+  total: number
+  restEndsAt: number | null
+  restTotalS: number | null
+  /** The next set, which the activity's tick button names back to the app. */
+  exerciseKey: string | null
+  setId: string | null
+  /** Whether that set has numbers to tick, so whether the tick is drawn. */
+  canComplete: boolean
+  /** The rest ticking it starts, which the activity shows the moment it is pressed. */
+  restAfterS: number | null
+  /** The "rest is over" notice, which a button that moves the rest rebooks itself. */
+  restTitle: string
+  restBody: string
+  /** The same notice for the rest the tick would start, which names that set's exercise. */
+  tickRestBody: string
+  /** The buttons' names for VoiceOver. The extension has no strings of its own. */
+  labels: { complete: string; less: string; more: string; skip: string }
+}
+
+/** A button pressed on the workout's Live Activity, queued for the app. */
+type WorkoutAction = {
+  type: 'skipRest' | 'restMinus' | 'restPlus' | 'completeSet'
+  workoutId: string
+  exerciseKey: string
+  setId: string
+  /** When it was pressed, in epoch milliseconds. */
+  at: number
+}
+
+/**
+ * The lock screen and Dynamic Island while a workout runs: started for a new
+ * workout, updated for the one already showing. iOS only, and a no-op
+ * everywhere else: on Android, on iOS before 16.2, and for a user who has
+ * switched Live Activities off, where the workout simply is not on the lock
+ * screen. Optional twice over for the reason every other call here is.
+ */
+export function startWorkoutActivity(state: WorkoutActivityState): void {
+  native?.startWorkoutActivity?.(JSON.stringify(state))
+}
+
+export function endWorkoutActivity(): void {
+  native?.endWorkoutActivity?.()
+}
+
+/**
+ * The Live Activity buttons pressed since the last call, oldest first, and
+ * the queue emptied. Anything unreadable is dropped rather than thrown on: a
+ * lost tap is a nuisance, a crash on launch is not.
+ */
+export function takeWorkoutActions(): WorkoutAction[] {
+  const raw = native?.takeWorkoutActions?.()
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed)
+      ? parsed.filter(
+          (entry): entry is WorkoutAction =>
+            typeof entry === 'object' &&
+            entry !== null &&
+            typeof entry.type === 'string' &&
+            typeof entry.workoutId === 'string' &&
+            typeof entry.at === 'number',
+        )
+      : []
+  } catch {
+    return []
+  }
+}
+
+/** Called when a button has queued an action while the app is running. */
+export function addWorkoutActionListener(listener: () => void): () => void {
+  const subscription = native?.addListener?.('onWorkoutAction', listener)
+  return () => subscription?.remove()
+}
