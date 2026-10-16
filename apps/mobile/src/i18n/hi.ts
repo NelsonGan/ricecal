@@ -1741,6 +1741,7 @@ export const hi = {
       delete: 'रूटीन हटाएं',
       deleteTitle: 'यह रूटीन हटाएं?',
       deleteBody: 'इससे किए गए वर्कआउट बने रहेंगे।',
+      missing: 'यह रूटीन अब नहीं है।',
     },
 
     explore: {
@@ -1964,6 +1965,8 @@ export const hi = {
       title: 'वर्कआउट बदलें',
       save: 'बदलाव सहेजें',
       newTitle: 'पिछला वर्कआउट दर्ज करें',
+      leaveTitle: 'बिना सहेजे बाहर जाएं?',
+      leaveBody: 'यहां किए गए बदलाव चले जाएंगे।',
     },
 
     library: {

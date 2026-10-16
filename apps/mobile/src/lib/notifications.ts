@@ -387,10 +387,6 @@ export async function announceScan(title: string, body: string): Promise<void> {
 const WORKOUT_NOTICE = { rest: 'workout-rest', workout: 'workout-stale' } as const
 
 /**
- * Book a workout notice for a moment. Best effort, like the scan notice: it
- * does nothing when notifications are not allowed or the moment has passed.
- */
-/**
  * Bumped by every booking and every cancel of a kind, so a booking that is
  * still waiting on the permission check gives up if anything came after it. A
  * rest skipped in that moment was cancelled first and then booked anyway.
@@ -401,6 +397,10 @@ const nextGeneration = (kind: string) => {
   return noticeGeneration[kind]
 }
 
+/**
+ * Book a workout notice for a moment. Best effort, like the scan notice: it
+ * does nothing when notifications are not allowed or the moment has passed.
+ */
 export async function scheduleNoticeAt(
   at: number,
   kind: keyof typeof WORKOUT_NOTICE,

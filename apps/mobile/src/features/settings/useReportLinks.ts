@@ -3,7 +3,7 @@ import { router } from 'expo-router'
 import { useEffect } from 'react'
 
 import { useSession } from '@/data/session'
-import { loggerIsOpen } from '@/features/workouts/loggerOpen'
+import { openLogger } from '@/features/workouts/loggerOpen'
 import { getActiveWorkout } from '@/features/workouts/store'
 import { track } from '@/lib/analytics'
 
@@ -53,12 +53,10 @@ export function useReportLinks(): void {
       //
       // Back to a logger that is already open, wherever it is in the stack:
       // with the library or an exercise's page on top of it, `navigate` pushed
-      // a second logger. `dismissTo` replaces the screen when the route is not
-      // there, so it is only for when it is.
+      // a second logger.
       if (kind === 'rest' || kind === 'workout') {
         if (!userId || !getActiveWorkout(userId)) router.navigate('/workouts')
-        else if (loggerIsOpen()) router.dismissTo('/workout/active')
-        else router.navigate('/workout/active')
+        else openLogger(router)
         return
       }
       if (kind === 'workout-reminder') {

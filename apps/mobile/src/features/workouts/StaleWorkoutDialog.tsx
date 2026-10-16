@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { datePattern } from '@/lib/dates'
 import { Dialog, type DialogAction } from '@/ui'
 import { durationText } from './format'
-import { useLiveWorkout } from './live'
-import { lastActivityAt } from './model'
+import { type LiveWorkout, lastActivityAt } from './model'
 
 /**
  * "Still training?", for the workout somebody forgot to finish.
@@ -16,13 +15,15 @@ import { lastActivityAt } from './model'
  * hours since are the drive home and dinner. So it offers that time by name,
  * then the choice of typing one, then carrying on or throwing it away.
  */
-export function StaleWorkoutSheet({
+export function StaleWorkoutDialog({
+  workout,
   visible,
   onClose,
   onKeepGoing,
   onFinish,
   onDiscard,
 }: {
+  workout: LiveWorkout
   visible: boolean
   onClose: () => void
   /** "Keep going", which is an answer to remember rather than a dismissal. */
@@ -37,9 +38,6 @@ export function StaleWorkoutSheet({
   onDiscard: () => void
 }) {
   const { t } = useTranslation(['workouts', 'common'])
-  const { workout } = useLiveWorkout()
-  if (!workout) return null
-
   const last = lastActivityAt(workout)
   const runningText = durationText(t, (Date.now() - workout.startedAt) / 1000)
 

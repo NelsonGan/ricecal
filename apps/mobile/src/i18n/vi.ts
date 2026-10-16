@@ -1755,6 +1755,7 @@ export const vi = {
       delete: 'Xoá giáo án',
       deleteTitle: 'Xoá giáo án này?',
       deleteBody: 'Các buổi đã tập theo giáo án này vẫn được giữ.',
+      missing: 'Giáo án này không còn nữa.',
     },
 
     explore: {
@@ -1981,6 +1982,8 @@ export const vi = {
       title: 'Sửa buổi tập',
       save: 'Lưu thay đổi',
       newTitle: 'Ghi buổi tập đã qua',
+      leaveTitle: 'Thoát mà không lưu?',
+      leaveBody: 'Những thay đổi bạn làm ở đây sẽ mất.',
     },
 
     library: {

@@ -24,7 +24,7 @@ const TABLES: Record<ImportSource, Map<string, string | null>> = {
 }
 
 /** A name as a bag of words: lower case, punctuation as spaces, sorted. */
-export function wordKey(name: string): string {
+function wordKey(name: string): string {
   return name
     .toLowerCase()
     .replace(/&/g, ' and ')

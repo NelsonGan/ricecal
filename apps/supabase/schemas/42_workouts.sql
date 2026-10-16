@@ -1,6 +1,6 @@
 -- ---------------------------------------------------------------------------
--- Workouts the user logs in the app: the gym sessions and sport games recorded
--- set by set on the Workouts tab.
+-- Workouts the user logs in the app: the gym sessions recorded set by set on
+-- the Workouts tab.
 --
 -- Not the same thing as `activity_sessions`, and the two are kept apart on
 -- purpose. A session is what a health store says happened (a watch saw a run);
@@ -50,7 +50,10 @@ create table public.custom_exercises (
   category    text not null default 'fullBody' check (char_length(category) between 1 and 40),
   -- `{"chest": 0.6, "triceps": 0.4}`, the same shape the catalogue uses, so a
   -- custom exercise takes part in the muscle split like any other.
-  muscles     jsonb not null default '{}'::jsonb check (jsonb_typeof(muscles) = 'object'),
+  -- Bounded in bytes as well as shape: on the free plan a full database goes
+  -- read-only for everyone, and one request could otherwise write megabytes.
+  muscles     jsonb not null default '{}'::jsonb
+                check (jsonb_typeof(muscles) = 'object' and octet_length(muscles::text) <= 4096),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
@@ -113,7 +116,8 @@ create table public.workout_routines (
   name          text not null check (char_length(btrim(name)) between 1 and 80),
   notes         text check (char_length(notes) <= 1000),
   exercises     jsonb not null default '[]'::jsonb
-                  check (jsonb_typeof(exercises) = 'array' and jsonb_array_length(exercises) <= 40),
+                  check (jsonb_typeof(exercises) = 'array' and jsonb_array_length(exercises) <= 40
+                         and octet_length(exercises::text) <= 65536),
   -- The built-in template this was copied from, if any. Kept so "already in
   -- your routines" can be said on the template screen.
   template_id   text check (char_length(template_id) <= 80),
@@ -526,11 +530,16 @@ begin
   -- sends "post": false, since years of history at once is not news. The
   -- record count is taken here, where row security limits the scoring to this
   -- account's own sets; the posting function runs as its owner and would
-  -- score every account's.
-  if v_inserted and coalesce((p_workout ->> 'post')::boolean, true) and exists (
-    select 1 from public.profiles p
-    where p.id = v_user and p.auto_post_workouts and p.social_joined_at is not null
-  ) then
+  -- score every account's. Scoring reads the whole history, so the posting
+  -- function's own checks (ended in the last day, a profile in good standing)
+  -- are made first, and a workout that will not be posted is not scored.
+  if v_inserted and coalesce((p_workout ->> 'post')::boolean, true)
+     and (p_workout ->> 'ended_at')::timestamptz > now() - interval '24 hours'
+     and exists (
+       select 1 from public.profiles p
+       where p.id = v_user and p.auto_post_workouts and p.social_joined_at is not null
+         and p.review_status = 'approved' and not p.quarantined
+     ) then
     perform private.social_insert_workout_post(
       v_id, (select s.pr_count from public.workout_summaries s where s.id = v_id), '', null, true
     );

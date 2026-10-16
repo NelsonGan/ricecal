@@ -192,6 +192,46 @@ describe('updatedRoutine', () => {
     expect(bench.sets[1].weight_kg).toBe(60)
   })
 
+  it('pairs sets by kind, so warm-ups added at the start shift nothing', () => {
+    const working: RoutineExercise = {
+      ...bench,
+      sets: [
+        { kind: 'normal', weight_kg: 100, reps: 5 },
+        { kind: 'normal', weight_kg: 100, reps: 5 },
+      ],
+    }
+    let workout = start([working])
+    const key = workout.exercises[0].key
+    workout = apply(workout, {
+      type: 'addSets',
+      key,
+      atStart: true,
+      sets: [{ kind: 'warmup', weightKg: 40, reps: 10 }],
+    })
+    workout = finishAll(workout)
+    const changes = routineChanges([working], workout)
+    // A warm-up was added (a layout change); the working sets are as planned.
+    expect(changes).toEqual({ layout: true, values: false, removes: false })
+    const next = updatedRoutine([working], workout, 'layout')
+    expect(next[0].sets.map((set) => [set.kind, set.weight_kg, set.reps])).toEqual([
+      ['warmup', null, null],
+      ['normal', 100, 5],
+      ['normal', 100, 5],
+    ])
+  })
+
+  it("keeps the routine's own notes on an update", () => {
+    let workout = start()
+    workout = apply(workout, {
+      type: 'exerciseNotes',
+      key: workout.exercises[0].key,
+      notes: 'Shoulder felt off',
+    })
+    workout = apply(workout, { type: 'addSet', key: workout.exercises[1].key })
+    const next = updatedRoutine(routine, finishAll(workout), 'layout')
+    expect(next[0].notes).toBe('Pause on the chest')
+  })
+
   it('pairs a repeated exercise by its order', () => {
     const twice = [
       bench,

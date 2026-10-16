@@ -781,12 +781,18 @@ export async function deleteWorkoutFromHealth(
   const hk = load()
   if (!hk) return
   const mine = { withMetadataKey: RICECAL_WORKOUT_KEY, operatorType: 4, value: workoutId }
-  await Promise.allSettled([
+  // Only the types this app may write: a type switched off on Health's sheet
+  // refuses the delete, and holds none of this app's samples to delete.
+  const types = [QUANTITY.activeEnergy, ...Object.values(DISTANCE)].filter((type) =>
+    mayWrite(hk, type),
+  )
+  const results = await Promise.allSettled([
     healthId ? hk.deleteObjects(WORKOUT_TYPE as never, { uuid: healthId } as never) : null,
     hk.deleteObjects(WORKOUT_TYPE as never, { metadata: mine } as never),
-    hk.deleteObjects(QUANTITY.activeEnergy as never, { metadata: mine } as never),
-    ...Object.values(DISTANCE).map((type) =>
-      hk.deleteObjects(type as never, { metadata: mine } as never),
-    ),
+    ...types.map((type) => hk.deleteObjects(type as never, { metadata: mine } as never)),
   ])
+  // Said, rather than swallowed: a copy left behind beside a new one counts
+  // the workout twice, and its energy twice in the budget.
+  const failed = results.find((result) => result.status === 'rejected')
+  if (failed) throw failed.reason
 }

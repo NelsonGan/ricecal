@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import { createMMKV } from 'react-native-mmkv'
 
 /**
@@ -25,12 +25,15 @@ import { createMMKV } from 'react-native-mmkv'
 export function createJsonStore<T>(id: string, parse: (stored: unknown) => T) {
   const storage = createMMKV({ id })
   const listeners = new Map<string, Set<() => void>>()
-  const cache = new Map<string, { raw: string | undefined; value: T }>()
+  const cache = new Map<string, T>()
 
   function get(key: string): T {
+    // Every write in this process goes through `set`, which keeps the cache,
+    // so a cached key is not read back from MMKV. React asks for the snapshot
+    // several times a render, and the workout in progress is a long string to
+    // copy out each time.
+    if (cache.has(key)) return cache.get(key) as T
     const raw = storage.getString(key)
-    const hit = cache.get(key)
-    if (hit && hit.raw === raw) return hit.value
     let stored: unknown
     if (raw !== undefined) {
       try {
@@ -40,7 +43,7 @@ export function createJsonStore<T>(id: string, parse: (stored: unknown) => T) {
       }
     }
     const value = parse(stored)
-    cache.set(key, { raw, value })
+    cache.set(key, value)
     return value
   }
 
@@ -50,9 +53,8 @@ export function createJsonStore<T>(id: string, parse: (stored: unknown) => T) {
       storage.remove(key)
       cache.delete(key)
     } else {
-      const raw = JSON.stringify(value)
-      storage.set(key, raw)
-      cache.set(key, { raw, value })
+      storage.set(key, JSON.stringify(value))
+      cache.set(key, value)
     }
     for (const listener of listeners.get(key) ?? []) listener()
   }
@@ -74,10 +76,10 @@ export function createJsonStore<T>(id: string, parse: (stored: unknown) => T) {
    * nothing it reads has changed: a field of the stored value, or a boolean.
    */
   function useValue<S>(key: string, select: (value: T) => S): S {
-    return useSyncExternalStore(
-      (listener) => subscribe(key, listener),
-      () => select(get(key)),
-    )
+    // A new subscribe function each render made React unsubscribe and
+    // subscribe again on every one.
+    const subscribeKey = useCallback((listener: () => void) => subscribe(key, listener), [key])
+    return useSyncExternalStore(subscribeKey, () => select(get(key)))
   }
 
   return { get, set, useValue }

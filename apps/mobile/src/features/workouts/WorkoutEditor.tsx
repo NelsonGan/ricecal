@@ -6,7 +6,7 @@ import { View } from 'react-native'
 
 import { useExerciseBests, useLastSets, useSettings } from '@/data'
 import { unitFor } from '@/lib/units'
-import { Button, ConfirmSheet, EmptyState, useToast } from '@/ui'
+import { Button, Dialog, EmptyState, useToast } from '@/ui'
 import { ActionSheet, type SheetAction } from './ActionSheet'
 import type { Tracking } from './catalogue'
 import { RECORD_KEY, SET_KIND_KEY } from './copy'
@@ -17,6 +17,7 @@ import { useExerciseLibrary } from './library'
 import {
   type Action,
   apply,
+  hasFigures,
   isLoggable,
   type LiveExercise,
   type LiveSet,
@@ -52,7 +53,7 @@ const RATED: ReadonlySet<Tracking> = new Set([
  * "Save") and not in how a set is typed.
  */
 
-export type WorkoutEditorProps = {
+type WorkoutEditorProps = {
   workout: LiveWorkout
   dispatch: (action: Action) => void
   /**
@@ -106,6 +107,17 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     null,
   )
 
+  // An exercise done in more than one card, keyed by id, for records scored
+  // across its cards. A card on its own gets nothing, so its memo holds.
+  const repeated = useMemo(() => {
+    const cards = new Map<string, LiveExercise[]>()
+    for (const exercise of workout.exercises) {
+      cards.set(exercise.exerciseId, [...(cards.get(exercise.exerciseId) ?? []), exercise])
+    }
+    for (const [id, list] of cards) if (list.length < 2) cards.delete(id)
+    return cards
+  }, [workout.exercises])
+
   // Superset groups are lettered in the order they first appear.
   const supersetLetters = useMemo(() => {
     const letters = new Map<number, string>()
@@ -149,9 +161,13 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     }
 
     const bests = bestsById.get(exercise.exerciseId)
-    const before = recordSets(exercise, bests)
+    const cards = workout.exercises.filter((card) => card.exerciseId === exercise.exerciseId)
+    const before = recordSets(cards, bests)
     dispatch(action)
-    const after = recordSets(ticked, bests)
+    const after = recordSets(
+      cards.map((card) => (card.key === exercise.key ? ticked : card)),
+      bests,
+    )
     const fresh = after.get(set.id)?.filter((kind) => !before.get(set.id)?.includes(kind))
     if (fresh?.length) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
@@ -306,14 +322,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
       // Asked first only when it takes something with it: a card with every
       // set blank goes in one tap, one with sets in it takes them all.
       onPress: () =>
-        exercise.sets.some(
-          (set) =>
-            set.done ||
-            set.weightKg !== null ||
-            set.reps !== null ||
-            set.durationS !== null ||
-            set.distanceM !== null,
-        )
+        exercise.sets.some((set) => set.done || hasFigures(set))
           ? setRemoveFor(exercise)
           : dispatch({ type: 'removeExercise', key: exercise.key }),
     })
@@ -345,6 +354,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
                 exercise.superset !== null ? (supersetLetters.get(exercise.superset) ?? null) : null
               }
               bests={live ? bestsById.get(exercise.exerciseId) : undefined}
+              sameExercise={repeated.get(exercise.exerciseId)}
               // Ticking is training. Editing and logging after the fact save every
               // set with numbers in it, so a tick there would be a switch that
               // switched nothing.
@@ -483,17 +493,22 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
           }}
         />
 
-        <ConfirmSheet
+        <Dialog
           visible={removeFor !== null}
           onClose={() => setRemoveFor(null)}
           title={t('workouts:logger.removeTitle', { name: removeFor?.name ?? '' })}
           description={t('workouts:logger.removeBody')}
-          confirmLabel={t('workouts:logger.menu.remove')}
           cancelLabel={t('common:action.keep')}
-          onConfirm={() => {
-            if (removeFor) dispatch({ type: 'removeExercise', key: removeFor.key })
-            setRemoveFor(null)
-          }}
+          actions={[
+            {
+              key: 'remove',
+              label: t('workouts:logger.menu.remove'),
+              tone: 'danger',
+              onPress: () => {
+                if (removeFor) dispatch({ type: 'removeExercise', key: removeFor.key })
+              },
+            },
+          ]}
         />
 
         <PlateSheet

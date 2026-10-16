@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query'
 
-import { datesBetween, seedMissing } from '../client'
+import { datesBetween, seedMissing, TIMED_OUT, withDeadline } from '../client'
 
 /**
  * The two pieces the week warm-up is built out of.
@@ -51,15 +51,19 @@ describe('datesBetween', () => {
 })
 
 describe('seedMissing', () => {
+  // Never collected, so no five-minute collection timer keeps Jest running
+  // after the file is done.
+  const newClient = () => new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } })
+
   it('fills in a key that holds nothing', () => {
-    const client = new QueryClient()
+    const client = newClient()
     seedMissing(client, [[['day', 'u1', '2026-03-02'], { kcal: 400 }]])
 
     expect(client.getQueryData(['day', 'u1', '2026-03-02'])).toEqual({ kcal: 400 })
   })
 
   it('leaves a key that already holds something', () => {
-    const client = new QueryClient()
+    const client = newClient()
     client.setQueryData(['day', 'u1', '2026-03-02'], { kcal: 900 })
 
     seedMissing(client, [[['day', 'u1', '2026-03-02'], { kcal: 400 }]])
@@ -73,7 +77,7 @@ describe('seedMissing', () => {
    * and the warm-up does nothing for exactly the days it is cheapest on.
    */
   it('seeds null, and then treats that day as known', () => {
-    const client = new QueryClient()
+    const client = newClient()
     const key = ['activity', 'u1', 'day', '2026-03-02']
 
     seedMissing(client, [[key, null]])
@@ -81,5 +85,19 @@ describe('seedMissing', () => {
 
     seedMissing(client, [[key, { activeKcal: 300 }]])
     expect(client.getQueryData(key)).toBeNull()
+  })
+})
+
+describe('withDeadline', () => {
+  it('answers with the work when it beats the deadline', async () => {
+    await expect(withDeadline(Promise.resolve('saved'), 1000)).resolves.toBe('saved')
+  })
+
+  it('answers TIMED_OUT when the work outlasts it, as a token refresh on no signal does', async () => {
+    jest.useFakeTimers()
+    const answer = withDeadline(new Promise(() => {}), 1000)
+    jest.advanceTimersByTime(1000)
+    await expect(answer).resolves.toBe(TIMED_OUT)
+    jest.useRealTimers()
   })
 })

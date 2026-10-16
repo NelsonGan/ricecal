@@ -236,7 +236,8 @@ it("draws a workout post as the workout, in the reader's own unit", async () => 
       }}
     />,
   )
-  expect(screen.getByRole('image', { name: 'Push day' })).toBeTruthy()
+  // Read aloud with its figures, as a meal is read with its calories.
+  expect(screen.getByRole('image', { name: 'Push day, 1 h 5 min, 2,205 lb, 2 PRs' })).toBeTruthy()
   expect(screen.getByText('Push day')).toBeTruthy()
   expect(screen.getByText('4 × Bench Press (Barbell)')).toBeTruthy()
   expect(screen.getByText('3 × My own press')).toBeTruthy()

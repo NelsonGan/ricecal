@@ -14,7 +14,12 @@ import { getWorkoutPrefs } from './prefs'
  * back as `failed` for the screen to mention and nothing is thrown.
  */
 
-export type HealthOutcome = { healthId: string | null; failed: boolean }
+export type HealthOutcome = {
+  healthId: string | null
+  failed: boolean
+  /** Whether the copy there before was taken out, so a refused save has one to put back. */
+  replaced: boolean
+}
 
 export async function syncWorkoutToHealth(
   workout: LiveWorkout,
@@ -24,12 +29,19 @@ export async function syncWorkoutToHealth(
   if (Platform.OS !== 'ios' || !getWorkoutPrefs().healthWrite) {
     // Writing is off on this phone. A copy saved while it was on is left
     // alone: turning a switch off is not asking for history to be erased.
-    return { healthId: workout.healthWorkoutId, failed: false }
+    return { healthId: workout.healthWorkoutId, failed: false, replaced: false }
   }
   try {
     // Whatever copy is there already: the one on record, or one a save that
     // never heard back left behind.
     await deleteWorkoutFromHealth(workout.healthWorkoutId, workout.id)
+  } catch (error) {
+    // Kept, and no second copy beside it: the old one stays on record until a
+    // later save can replace it.
+    console.warn('[workouts] could not replace the Apple Health copy', error)
+    return { healthId: workout.healthWorkoutId, failed: true, replaced: false }
+  }
+  try {
     const healthId = await saveWorkoutToHealth({
       id: workout.id,
       activityType: healthActivityType(workout),
@@ -38,10 +50,10 @@ export async function syncWorkoutToHealth(
       kcal,
       distanceM: totalDistanceM(workout) || null,
     })
-    return { healthId, failed: healthId === null }
+    return { healthId, failed: healthId === null, replaced: true }
   } catch (error) {
     console.warn('[workouts] could not save to Apple Health', error)
-    return { healthId: null, failed: true }
+    return { healthId: null, failed: true, replaced: true }
   }
 }
 

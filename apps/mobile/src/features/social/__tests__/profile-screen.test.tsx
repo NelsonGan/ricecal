@@ -32,6 +32,7 @@ jest.mock('@/data/social', () => ({
     fetchStatus: 'idle',
   }),
   useSocialPosts: () => ({ data: { pages: [{ rows: [] }] } }),
+  useSocialWorkoutStats: () => ({ data: undefined }),
 }))
 jest.mock('@/features/social/components', () => ({
   SocialBar: ({ title }: { title: string }) =>

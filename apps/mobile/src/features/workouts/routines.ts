@@ -1,4 +1,4 @@
-import type { Routine, RoutineExercise } from '@/data'
+import type { Routine, RoutineExercise, RoutineSet } from '@/data'
 import type { ExercisePlan, SetPlan } from './model'
 import { type Template, templatePlans } from './templates'
 
@@ -8,6 +8,15 @@ import { type Template, templatePlans } from './templates'
  * and a saved workout read back.
  */
 
+/** One stored set as the logger's plan has it; a set the routine does not have is an empty one. */
+export const routineSetPlan = (set: RoutineSet | undefined): SetPlan => ({
+  kind: set?.kind ?? 'normal',
+  weightKg: set?.weight_kg ?? null,
+  reps: set?.reps ?? null,
+  durationS: set?.duration_s ?? null,
+  distanceM: set?.distance_m ?? null,
+})
+
 export function routinePlans(routine: Pick<Routine, 'exercises'>): ExercisePlan[] {
   return routine.exercises.map((exercise) => ({
     exerciseId: exercise.exercise_id,
@@ -16,13 +25,7 @@ export function routinePlans(routine: Pick<Routine, 'exercises'>): ExercisePlan[
     restS: exercise.rest_s ?? null,
     superset: exercise.superset ?? null,
     notes: exercise.notes ?? null,
-    sets: exercise.sets.map((set) => ({
-      kind: set.kind,
-      weightKg: set.weight_kg ?? null,
-      reps: set.reps ?? null,
-      durationS: set.duration_s ?? null,
-      distanceM: set.distance_m ?? null,
-    })),
+    sets: exercise.sets.map((set) => routineSetPlan(set)),
   }))
 }
 

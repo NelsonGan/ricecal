@@ -13,7 +13,7 @@ import type { LiveExercise } from './model'
 import { recordSets } from './records'
 import { type CardHandlers, SetTable } from './SetTable'
 
-export type ExerciseCardProps = {
+type ExerciseCardProps = {
   exercise: LiveExercise
   /** The body part, for the drawing's fallback. A custom or retired exercise may have none. */
   category: Category | undefined
@@ -26,6 +26,11 @@ export type ExerciseCardProps = {
   supersetLabel: string | null
   /** The bests a tick is measured against, live; undefined anywhere else. */
   bests: ExerciseBests | undefined
+  /**
+   * Every card of this exercise in card order, when it appears in more than
+   * one: records are scored across them, as the server scores them.
+   */
+  sameExercise?: readonly LiveExercise[]
   /** On in the live logger only: elsewhere every set with numbers in it counts. */
   checkable: boolean
   /** Whether weight fields offer the plate calculator: a barbell's do. */
@@ -53,6 +58,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   defaultRestS,
   supersetLabel,
   bests,
+  sameExercise,
   checkable,
   plates,
   noteRequest,
@@ -76,8 +82,9 @@ export const ExerciseCard = memo(function ExerciseCard({
   // that already include it, and every later one, so its trophies are the
   // saved page's to show.
   const recordIds = useMemo(
-    () => (checkable && bests ? new Set(recordSets(exercise, bests).keys()) : NO_RECORDS),
-    [checkable, exercise, bests],
+    () =>
+      checkable && bests ? new Set(recordSets(sameExercise ?? exercise, bests).keys()) : NO_RECORDS,
+    [checkable, exercise, sameExercise, bests],
   )
 
   return (
@@ -94,12 +101,8 @@ export const ExerciseCard = memo(function ExerciseCard({
       <View className="flex-row items-center gap-3">
         {/* A long press on the exercise picks it up into the reorder sheet,
             the way a long press lifts a row in Hevy. */}
-        <Tappable
-          onPress={open}
-          onLongPress={reorder}
-          accessibilityRole="button"
-          accessibilityLabel={exercise.name}
-        >
+        {/* The same action as the name beside it, so one element to VoiceOver. */}
+        <Tappable onPress={open} onLongPress={reorder} accessible={false}>
           <ExerciseArt exerciseId={exercise.exerciseId} category={category} size={56} />
         </Tappable>
         {/* One element to VoiceOver, so the rest chip inside it cannot be
@@ -122,6 +125,9 @@ export const ExerciseCard = memo(function ExerciseCard({
           <View className="flex-row flex-wrap items-center gap-2">
             <Tappable
               className="flex-row items-center gap-1 rounded-full bg-kaya-soft px-2.5 py-1"
+              // About 26pt drawn, inside the name's own target: a near miss
+              // opened the exercise's page instead.
+              hitSlop={{ top: 9, bottom: 9, left: 6, right: 6 }}
               onPress={() => handlers.rest(key)}
               accessibilityRole="button"
               accessibilityLabel={t('workouts:logger.restTitle')}

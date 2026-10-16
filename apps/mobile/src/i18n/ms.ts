@@ -1783,6 +1783,7 @@ export const ms = {
       delete: 'Padam rutin',
       deleteTitle: 'Padam rutin ini?',
       deleteBody: 'Senaman yang sudah anda buat dengannya dikekalkan.',
+      missing: 'Rutin ini sudah tiada.',
     },
 
     explore: {
@@ -2009,6 +2010,8 @@ export const ms = {
       title: 'Sunting senaman',
       save: 'Simpan perubahan',
       newTitle: 'Rekod senaman lepas',
+      leaveTitle: 'Keluar tanpa menyimpan?',
+      leaveBody: 'Perubahan yang anda buat di sini akan hilang.',
     },
 
     library: {

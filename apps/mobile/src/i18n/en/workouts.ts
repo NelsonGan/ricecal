@@ -54,6 +54,8 @@ export const workouts = {
     delete: 'Delete routine',
     deleteTitle: 'Delete this routine?',
     deleteBody: 'Workouts you already did with it are kept.',
+    /** A routine's link after the routine was deleted, here or on another phone. */
+    missing: 'This routine is gone.',
   },
 
   explore: {
@@ -288,6 +290,9 @@ export const workouts = {
     title: 'Edit workout',
     save: 'Save changes',
     newTitle: 'Log a past workout',
+    /** Going back from an edit, a past workout or a routine with changes not saved. */
+    leaveTitle: 'Leave without saving?',
+    leaveBody: 'The changes you made here will be lost.',
   },
 
   library: {

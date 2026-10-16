@@ -46,6 +46,31 @@ function workoutWith(...plans: ExercisePlan[][]): LiveWorkout {
   return newWorkout({ name: 'Push', startedAt: 1_000_000, exercises: plans.flat() })
 }
 
+describe("pairing today's sets with last time's", () => {
+  it('matches drop sets with drop sets, not the working set they follow', () => {
+    const last = [
+      { kind: 'normal' as const, weightKg: 100, reps: 5 },
+      { kind: 'normal' as const, weightKg: 100, reps: 5 },
+      { kind: 'drop' as const, weightKg: 70, reps: 10 },
+    ]
+    const today = [{ kind: 'normal' as const }, { kind: 'drop' as const }]
+    expect(matchPrevious(today, last)).toEqual([last[0], last[2]])
+  })
+
+  it('drops RPE when an exercise is replaced by one that has no reps', () => {
+    let workout = workoutWith([{ ...bench, sets: [{ weightKg: 60, reps: 8 }] }])
+    const { key } = workout.exercises[0]
+    const setId = workout.exercises[0].sets[0].id
+    workout = apply(workout, { type: 'updateSet', key, setId, patch: { rpe: 8 } })
+    workout = apply(workout, {
+      type: 'replaceExercise',
+      key,
+      plan: { exerciseId: 'plank', name: 'Plank', tracking: 'duration', sets: [] },
+    })
+    expect(workout.exercises[0].sets[0].rpe).toBeNull()
+  })
+})
+
 describe('the workout document', () => {
   it('adds an empty set, which offers the row above unless last time had one there', () => {
     let workout = workoutWith([
@@ -402,6 +427,21 @@ describe('records while training', () => {
     bestReps: null,
     bestDurationS: null,
   } as ExerciseBests
+
+  it('scores an exercise done in two cards as one, as the server does', () => {
+    const workout = completeAll(
+      workoutWith(
+        [{ ...bench, sets: [{ weightKg: 110, reps: 3 }] }],
+        [{ ...bench, sets: [{ weightKg: 105, reps: 3 }] }],
+      ),
+      1,
+    )
+    const records = recordSets(workout.exercises, bests)
+    const kinds = [...records.values()].flat()
+    // One weight record, on the heavier card's set; the lighter card wins none.
+    expect(kinds.filter((kind) => kind === 'weight')).toHaveLength(1)
+    expect(records.has(workout.exercises[1].sets[0].id)).toBe(false)
+  })
 
   it('marks the heaviest set past the old best, once', () => {
     const workout = completeAll(

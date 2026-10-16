@@ -47,14 +47,32 @@ const CODEX_IMAGE = join(
 
 const args = process.argv.slice(2)
 const flag = (name) => args.includes(name)
+// A flag given without its value stops the run. Read as absent, `--only` with
+// nothing after it queued every exercise, and `--jobs` with no number made no
+// workers and reported "all drawn".
 const option = (name) => {
   const at = args.indexOf(name)
-  return at === -1 ? undefined : args[at + 1]
+  if (at === -1) return undefined
+  const value = args[at + 1]
+  if (value === undefined || value.startsWith('--')) {
+    console.error(`${name} needs a value`)
+    process.exit(1)
+  }
+  return value
 }
 
 const only = option('--only')?.split(',').filter(Boolean)
 const force = flag('--force')
 const jobs = Number(option('--jobs') ?? 6)
+if (!Number.isInteger(jobs) || jobs < 1) {
+  console.error('--jobs needs a whole number above zero')
+  process.exit(1)
+}
+const unknown = only?.filter((id) => !EXERCISES.some((exercise) => exercise.id === id)) ?? []
+if (unknown.length) {
+  console.error(`No such exercise: ${unknown.join(', ')}`)
+  process.exit(1)
+}
 
 const missing = EXERCISES.filter((exercise) => !POSES[exercise.id])
 if (missing.length) {

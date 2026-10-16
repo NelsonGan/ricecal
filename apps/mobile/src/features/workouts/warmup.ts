@@ -1,5 +1,5 @@
 import { fromKg, toKg, type WeightUnit } from '@/lib/units'
-import type { LiveExercise, SetPlan } from './model'
+import { type LiveExercise, roundKg, type SetPlan } from './model'
 
 /**
  * Warm-up sets ramping up to the first working weight: 40% for 10, 60% for 5,
@@ -38,7 +38,7 @@ export function warmupSets(
     last = value
     // To the database's two places, as a typed weight is: 95 lb unrounded is
     // 43.0912… kg, which then reads back as a different figure.
-    out.push({ kind: 'warmup', weightKg: Math.round(toKg(value, unit) * 100) / 100, reps })
+    out.push({ kind: 'warmup', weightKg: roundKg(toKg(value, unit)), reps })
   }
   return out
 }

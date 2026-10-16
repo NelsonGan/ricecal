@@ -279,8 +279,8 @@ other database is built from scratch.
 
 ### Things a diff cannot see
 
-Three kinds of change have to be hand-written into a migration, because
-`supabase db diff` only emits structure:
+These have to be hand-written into a migration, because `supabase db diff`
+only emits structure:
 
 | what | why |
 |---|---|
@@ -288,6 +288,7 @@ Three kinds of change have to be hand-written into a migration, because
 | seed data of any kind | the rows are data, and a diff only emits structure |
 | `create extension` / `drop extension` | the diff engine does not track extensions at all |
 | `cron.schedule(…)` calls | a schedule is a row in `cron.job`, so it is data too |
+| `ROWS n` on an existing function | the diff compares bodies and arguments, not the planner's row estimate, so changing only the hint emits nothing; a function the migration creates carries it |
 
 Nothing schedules anything here any more, and there is no seed function left
 either — `seed_archetype_foods()` went with the archetypes — but the rule is
@@ -3824,10 +3825,12 @@ than a counter, so killing the app mid-workout loses nothing.
 Finishing sends the whole document to `save_workout(jsonb)`, which writes the
 workout, its exercises and its sets in one transaction, replacing anything saved
 under the same id. **The id is minted on the phone when the workout starts**, so
-a save retried after a lost reply converges on one workout. A save that cannot
-reach the server goes to the outbox (`data/workout-outbox.ts`), which
-`useWorkoutOutbox` in the tabs layout sends on launch, on reconnect and on every
-return to the foreground, once there is a session to send it with.
+a save retried after a lost reply converges on one workout. **Every save goes
+into the outbox (`data/workout-outbox.ts`) before it is sent**, and leaves only
+when the server has it or refuses it, so a token refresh that hangs or the app
+killed mid-request loses nothing. `useWorkoutOutbox` in the tabs layout sends
+what is left on launch, on reconnect and on every return to the foreground, once
+there is a session to send it with.
 
 **Only a refusal about the data is final**: SQLSTATE classes 22 (a value out of
 range) and 23 (a constraint). An expired token, a refresh that failed on a weak
@@ -3839,11 +3842,15 @@ limits so a typo (2250 lb for 225) is a wrong set rather than a lost session. A
 reply only clears the copy that was sent: an edit queued while it was in
 flight stays. A queued workout's row in the history opens a sheet to send it
 again now (`retryQueuedWorkout`, which also lifts a refusal from this launch)
-or to discard it, with its Health copy; it used to read "Waiting to sync" with
-nothing to do about it. A save waits up to 15 seconds before going to the
-outbox, and a save or a delete of a workout first waits for any send of it the
-outbox has in flight, so a late copy cannot bring back a deleted workout or
-overwrite a newer one.
+or to discard it, with its Health copy only if the server has no copy of its
+own (a queued edit of a saved workout shows as waiting too); it used to read
+"Waiting to sync" with nothing to do about it. A save answers "queued" after 15
+seconds, measured over the whole request including the token refresh, which has
+no timeout of its own; a reply that lands later still clears the copy it sent.
+Every send of a workout, from a save, the outbox or a delete, is registered
+while in flight, each waits for the one before it and the outbox skips one in
+flight, so a late copy cannot bring back a deleted workout or overwrite a newer
+one. A delete takes the queued copy out before it is sent, for the same reason.
 
 Children are owned by `(workout_id, user_id)` composite foreign keys rather than
 the id alone: a foreign key check bypasses row security, so with the id alone a
@@ -3930,7 +3937,7 @@ the same flag on every one of 5,000 sets as before.
 
 The commonest bad workout is one somebody forgot to finish. Three hours after a
 start, a notification asks "Still training?", and the logger asks the same
-thing in a sheet. Its first answer is the useful one: **finish at the last
+thing in a dialog, only while it is the screen on top. Its first answer is the useful one: **finish at the last
 ticked set**, because the hours since then are the drive home. It can also open
 the finish screen on the end-time picker, carry on, or discard (after a
 confirm: it is hours of sets). Finishing from it goes through the logger's own
@@ -4167,10 +4174,13 @@ asks (unfinished sets, update the routine, "Still training?", nothing to save,
 discard, start over a running workout) are `Dialog`s (`ui/Dialog.tsx`): centred,
 answers stacked as full-width buttons in reach of either thumb, Cancel last. At
 the foot of a bottom sheet the answers sat at the far edge and read as a menu.
-Lists of things to do to an item (an exercise's menu, a set's type) stay sheets,
-and so do the delete confirmations, which share `ConfirmSheet` with the rest of
-the app and stay open when a delete fails. A `Dialog` answer runs once the modal
-has gone, for the same reason as `ActionSheet`'s.
+Deleting a workout, a routine or an exercise, removing an exercise from the
+logger, discarding a queued workout and "Leave without saving?" are dialogs too.
+Lists of things to do to an item (an exercise's menu, a set's type) stay sheets.
+A `Dialog` answer runs once the modal has gone, for the same reason as
+`ActionSheet`'s, except one marked `waits`: a delete runs while the dialog stays
+open with a spinner, and a failure keeps it open, since closing would say the
+thing happened.
 
 ### The set pad
 
@@ -4232,7 +4242,7 @@ one update and Keep. "Update routine" keeps the routine's numbers on the sets
 it already had and leaves new sets blank, which the logger then fills from
 last time, which is today. An update that deletes something is drawn red. The
 routine is saved after the workout, without holding it up, and a failure is a
-toast. Sheets dismissed are "not yet". Built-in templates started directly are
+toast. Cancel on the dialog is "not yet". Built-in templates started directly are
 not linked to a routine, so they are not asked about; "Save as routine" on the
 saved workout is the way to keep one changed.
 
@@ -4261,7 +4271,8 @@ The live workout, the outbox and the workout preferences all sit on
 `createJsonStore` (`lib/jsonStore.ts`). It hands back the same object until the
 key is written again, which is what lets a memoised card see that nothing
 changed: parsing the stored string on every read gave React a new tree each
-time.
+time. Every write goes through it, so a cached key is never read back from
+MMKV, which React asks for several times a render.
 
 ### Saving, and the charts
 
@@ -4436,9 +4447,10 @@ such imports is a real share of the free plan's 500 MB, past which the whole
 database goes read-only (see the workbench notes in `AGENTS.md`). Watch
 `pg_database_size` after launch. Speed holds up: against a synthetic 1,500
 workouts and 36,000 sets (about 9 MB with indexes), a page of the history list
-took 255 ms locally, almost all of it scoring records over the whole history,
-which every page repeats; one workout's header took 46 ms and the import's
-overlap read 17 ms. If pages slow down past that, store each workout's record
+took 255 to 350 ms locally, almost all of it scoring records over the whole
+history, which every page repeats; one workout's header took 46 to 65 ms and the
+import's overlap read 17 ms. Today's row leaves the record count out and takes
+under a millisecond, and a save scores records only when it is about to post. If pages slow down past that, store each workout's record
 count at save rather than narrowing the view, and rescore the later workouts of
 the same exercises whenever an earlier one is saved, which an import always is.
 
@@ -4446,11 +4458,17 @@ Additive end to end. One migration (`20261016025548_workouts.sql`) adds the
 workout enums, tables, views and functions, three `user_settings` columns with
 defaults, and workout posts: a `social_post_kind` enum, two nullable
 `social_posts` columns plus `workout_records`, `profiles.auto_post_workouts`,
-and a `p_kinds` argument on the post reads that defaults to food, so nothing an
-older binary reads changes. `db diff` left out the revokes that keep new
-functions from `PUBLIC` and `anon`, and the client-table revokes, so the
-migration restates both at its foot. No edge function or Worker changes. Deploy the
-migrations before the app, as always. The five analytics events are in the
+and a `p_kinds` argument on the post reads that defaults to food. An older
+binary is never handed a workout post, and the profile's `post_count` still
+counts meals only, since 1.0 draws it over a grid of meals; this app adds the
+workouts its viewer can see. One thing it cannot hide: a like or comment on a
+workout post notifies its author, and on 1.0 that row opens "unavailable".
+Existing feed members get `auto_post_workouts` on with everyone else.
+`db diff` left out the revokes that keep new functions from `PUBLIC` and
+`anon`, and the client-table revokes, so the migration restates both at its
+foot. The `social` function now reviews a workout post's name, not just its
+caption; it ships with the merge like every function. Deploy the migrations
+before the app, as always. The five analytics events are in the
 canonical table under Analytics; sharing and exporting send none.
 
 ---
@@ -6884,6 +6902,16 @@ the production archive fails on `third_party/base64.h` and then the Skia headers
 The pnpm patch adds the explicit `cpp/api`, `cpp/api/third_party` and `cpp/skia`
 roots to Skia's podspec. Keep it until Expo's supported Skia version contains the
 upstream static-framework fixes.
+
+**A screen that holds its own back cannot navigate while it holds it.**
+`usePreventRemove` refuses every removal of the screen, its own included: a
+save that ends in `router.dismissTo` was refused like a swipe. Sending the
+refused action again from the hook's callback, the pattern React Navigation's
+docs show, did nothing here either, so the finish screen stayed in the stack
+under the saved workout and came back when that page was deleted. The workout
+editors go through `useLeaveGuard` (`features/workouts/leaveGuard.tsx`), whose
+`leave` stands the guard down first and navigates once that has rendered. Use it,
+or the same order, for any screen that blocks leaving and then leaves itself.
 
 ### Sheets and the keyboard
 

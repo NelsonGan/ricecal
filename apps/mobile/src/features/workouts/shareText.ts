@@ -5,9 +5,8 @@ import type { WorkoutDetail } from '@/data'
 import { datePattern } from '@/lib/dates'
 import { UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { setBadges } from './copy'
-import { type DistanceUnit, durationText, volumeText } from './format'
+import { type DistanceUnit, describeSet, durationText, volumeText } from './format'
 import { showsVolume } from './model'
-import { describeSet } from './SetTable'
 
 /**
  * A finished workout as plain text, for the share sheet: what a gym chat or a

@@ -11,7 +11,7 @@
  * it holds no numbers, so a semicolon there is a separator.
  */
 export function parseCsv(text: string): string[][] {
-  const source = text.replace(/^﻿/, '')
+  const source = text.replace(/^\uFEFF/, '')
   const separator = separatorOf(source)
   const rows: string[][] = []
   let row: string[] = []
@@ -27,8 +27,12 @@ export function parseCsv(text: string): string[][] {
           i++
         } else quoted = false
       } else field += char
-    } else if (char === '"') quoted = true
-    else if (char === separator) {
+    } else if (char === '"' && field === '') {
+      // Only a quote that opens a field starts quoting: `5" deficit` in an
+      // unquoted note is an inch mark, and taken for an opening quote it
+      // swallowed the rest of the file into one cell.
+      quoted = true
+    } else if (char === separator) {
       row.push(field)
       field = ''
     } else if (char === '\n' || char === '\r') {

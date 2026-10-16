@@ -1767,6 +1767,7 @@ export const id = {
       delete: 'Hapus rutinitas',
       deleteTitle: 'Hapus rutinitas ini?',
       deleteBody: 'Latihan yang sudah kamu lakukan dengannya tetap ada.',
+      missing: 'Rutinitas ini sudah tidak ada.',
     },
 
     explore: {
@@ -1990,6 +1991,8 @@ export const id = {
       title: 'Ubah latihan',
       save: 'Simpan perubahan',
       newTitle: 'Catat latihan sebelumnya',
+      leaveTitle: 'Keluar tanpa menyimpan?',
+      leaveBody: 'Perubahan yang kamu buat di sini akan hilang.',
     },
 
     library: {

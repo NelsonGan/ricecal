@@ -19,8 +19,10 @@ import {
   SocialBar,
   SocialList,
   SocialPhoto,
+  useWorkoutLabel,
   WorkoutPostPreview,
 } from '@/features/social/components'
+import { Stat, StatStrip } from '@/features/workouts/cards'
 import { durationText, volumeText } from '@/features/workouts/format'
 import { unitFor } from '@/lib/units'
 import { Badge, Button, Icon, IconButton, Screen, Sheet, Tabs, Tappable, Text } from '@/ui'
@@ -41,6 +43,7 @@ function Profile({ id }: { id: string }) {
   // should not page through the other.
   const [tab, setTab] = useState<SocialPostKind>('food')
   const posts = useSocialPosts(id, tab)
+  const workoutStats = useSocialWorkoutStats(id).data
   const leaveProfile = useCallback(() => router.dismissTo('/feed'), [router])
   const [options, setOptions] = useState(false)
   const afterDismiss = useRef<(() => void) | null>(null)
@@ -87,7 +90,10 @@ function Profile({ id }: { id: string }) {
       <View className="flex-row items-stretch rounded-md bg-track px-1 py-1">
         <View className="min-h-sm flex-1 items-center justify-center px-1">
           <Text variant="label" className="text-center" numberOfLines={2}>
-            {t('posts', { count: person?.post_count ?? 0 })}
+            {/* `post_count` is meals only, which is what an app from before
+                workout posts draws it over; the workouts are the ones this
+                viewer can see. */}
+            {t('posts', { count: (person?.post_count ?? 0) + (workoutStats?.workouts ?? 0) })}
           </Text>
         </View>
         <Tappable
@@ -150,7 +156,7 @@ function Profile({ id }: { id: string }) {
         ]}
         onChange={setTab}
       />
-      {tab === 'workout' ? <WorkoutFigures id={id} /> : null}
+      {tab === 'workout' && workoutStats ? <WorkoutFigures stats={workoutStats} /> : null}
     </View>
   ) : undefined
   const action = visible ? (
@@ -240,39 +246,25 @@ function Profile({ id }: { id: string }) {
 }
 
 /** What the shared workouts add up to, over the ones this viewer can see. */
-function WorkoutFigures({ id }: { id: string }) {
+function WorkoutFigures({
+  stats,
+}: {
+  stats: { workouts: number; durationS: number; volumeKg: number }
+}) {
   const { t } = useTranslation(['workouts', 'common'])
-  const stats = useSocialWorkoutStats(id).data
   const { data: settings } = useSettings()
-  if (!stats?.workouts) return null
-  const figures = [
-    { label: t('workouts:stats.metric.workouts'), value: String(stats.workouts) },
-    { label: t('workouts:stats.metric.duration'), value: durationText(t, stats.durationS) },
-    ...(stats.volumeKg > 0
-      ? [
-          {
-            label: t('workouts:stats.metric.volume'),
-            value: volumeText(t, stats.volumeKg, unitFor(settings?.units)),
-          },
-        ]
-      : []),
-  ]
+  if (!stats.workouts) return null
   return (
-    <View className="flex-row rounded-md bg-track py-3">
-      {figures.map((figure, index) => (
-        <View
-          key={figure.label}
-          className={index > 0 ? 'flex-1 border-line border-l px-3' : 'flex-1 px-3'}
-        >
-          <Text variant="overlineSm" numberOfLines={1}>
-            {figure.label}
-          </Text>
-          <Text variant="numeric" numberOfLines={1} adjustsFontSizeToFit>
-            {figure.value}
-          </Text>
-        </View>
-      ))}
-    </View>
+    <StatStrip className="rounded-md bg-track" compact>
+      <Stat label={t('workouts:stats.metric.workouts')} value={String(stats.workouts)} />
+      <Stat label={t('workouts:stats.metric.duration')} value={durationText(t, stats.durationS)} />
+      {stats.volumeKg > 0 ? (
+        <Stat
+          label={t('workouts:stats.metric.volume')}
+          value={volumeText(t, stats.volumeKg, unitFor(settings?.units))}
+        />
+      ) : null}
+    </StatStrip>
   )
 }
 
@@ -280,13 +272,12 @@ function WorkoutFigures({ id }: { id: string }) {
 function WorkoutRow({ post }: { post: SocialPost }) {
   const { t } = useTranslation('social')
   const router = useRouter()
+  const workoutLabel = useWorkoutLabel()
   return (
     <Tappable
       className="overflow-hidden rounded-card border border-line"
       accessibilityRole="button"
-      accessibilityLabel={[post.workout_name ?? '', t('likes', { count: post.like_count })].join(
-        ', ',
-      )}
+      accessibilityLabel={[workoutLabel(post), t('likes', { count: post.like_count })].join(', ')}
       onPress={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
     >
       <WorkoutPostPreview post={post} />

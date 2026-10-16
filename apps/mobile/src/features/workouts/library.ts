@@ -23,7 +23,7 @@ const BUILT_IN = EXERCISES.map(fromCatalogue)
 const NONE: CustomExercise[] = []
 const built = new WeakMap<readonly CustomExercise[], ExerciseLibrary>()
 
-export type ExerciseLibrary = {
+type ExerciseLibrary = {
   all: LibraryExercise[]
   byId: (id: string) => LibraryExercise | undefined
 }

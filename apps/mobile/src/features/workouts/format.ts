@@ -2,14 +2,16 @@ import type { TFunction } from 'i18next'
 
 import { fromKg, toKg, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import type { Tracking } from './catalogue'
+import { roundKg, roundMetres } from './model'
 
 /**
  * How the Workouts tab writes its numbers.
  *
  * Every weight is stored in kilograms and shown in the user's unit; every
- * distance in metres and shown in kilometres or miles. The conversions round
- * once, at display, so a set typed as 135 lb is saved as 61.23 kg and reads
- * back as 135.
+ * distance in metres and shown in kilometres or miles. A typed figure is
+ * rounded to what its column keeps as it is read, and shown rounded to the
+ * unit's step, so a set typed as 135 lb is saved as 61.23 kg and reads back
+ * as 135.
  */
 
 export type DistanceUnit = 'km' | 'mi'
@@ -43,7 +45,7 @@ export function weightField(kg: number | null, unit: WeightUnit): string {
 export function parseWeight(text: string, unit: WeightUnit): number | null {
   const value = parseDecimal(text)
   if (value === null) return null
-  return Math.round(toKg(value, unit) * 100) / 100
+  return roundKg(toKg(value, unit))
 }
 
 /** "1,234". Whole numbers with the phone's own separators. */
@@ -86,7 +88,7 @@ export function parseDistance(text: string, unit: DistanceUnit): number | null {
   // To the tenth of a metre the database keeps, as a typed weight is rounded
   // to its two places: 3.1 mi unrounded is 4988.97… m, which never equals the
   // 4989.0 saved last week, so the same run read as a change and a record.
-  return Math.round((unit === 'mi' ? value * M_PER_MI : value * 1000) * 10) / 10
+  return roundMetres(unit === 'mi' ? value * M_PER_MI : value * 1000)
 }
 
 /** "1:05:09" or "05:09", the clock a running workout shows. */
@@ -161,4 +163,49 @@ export function volumeText(t: Words, kg: number, unit: WeightUnit): string {
 /** "62.5 kg": a weight with its unit. */
 export function weightText(t: Words, kg: number | null, unit: WeightUnit): string {
   return `${weightField(kg, unit)} ${t(UNIT_KEY[unit])}`
+}
+
+/** "60 × 8", "1:30", "5.2 km · 28:00": last time, in the row's own terms. */
+export function describeSet(
+  set: {
+    weightKg: number | null
+    reps: number | null
+    durationS: number | null
+    distanceM: number | null
+  },
+  tracking: Tracking,
+  unit: WeightUnit,
+  distanceUnit: DistanceUnit,
+  /** The weight unit's symbol, for a line that stands on its own rather than in a column. */
+  unitLabel?: string,
+): string {
+  const figure = set.weightKg === null ? null : weightField(set.weightKg, unit)
+  const weight = figure !== null && unitLabel ? `${figure} ${unitLabel}` : figure
+  switch (tracking) {
+    case 'weight_reps':
+      return weight !== null && set.reps !== null ? `${weight} × ${set.reps}` : ''
+    case 'weighted_reps':
+      if (set.reps === null) return ''
+      return set.weightKg ? `+${weight} × ${set.reps}` : `× ${set.reps}`
+    case 'assisted_reps':
+      if (set.reps === null) return ''
+      return set.weightKg ? `−${weight} × ${set.reps}` : `× ${set.reps}`
+    case 'reps':
+      return set.reps === null ? '' : `× ${set.reps}`
+    case 'duration':
+      return set.durationS === null ? '' : shortClock(set.durationS)
+    case 'distance_duration': {
+      const parts = [
+        set.distanceM ? `${distanceField(set.distanceM, distanceUnit)} ${distanceUnit}` : null,
+        set.durationS ? shortClock(set.durationS) : null,
+      ].filter(Boolean)
+      return parts.join(' · ')
+    }
+    case 'weight_distance':
+      // A sled pushed empty is still a carry: the distance alone, not nothing.
+      if (!set.distanceM) return ''
+      return weight !== null
+        ? `${weight} · ${trim(set.distanceM, 0)} m`
+        : `${trim(set.distanceM, 0)} m`
+  }
 }

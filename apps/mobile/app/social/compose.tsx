@@ -68,6 +68,10 @@ function Composer({
   const [audience, setAudience] = useState<SocialAudience>('public')
   const [detailsOpen, setDetailsOpen] = useState(false)
   const initialized = useRef(false)
+  // What the person has changed here already. A workout's page can open this
+  // before it knows the workout was posted automatically; when the post turns
+  // up, the screen becomes "Edit post", and seeding it wiped a caption half typed.
+  const touched = useRef({ caption: false, audience: false })
   const mounted = useRef(true)
   useEffect(() => {
     mounted.current = true
@@ -83,8 +87,8 @@ function Composer({
   useEffect(() => {
     if (existing && !initialized.current) {
       initialized.current = true
-      setCaption(existing.caption)
-      setAudience(existing.audience)
+      if (!touched.current.caption) setCaption(existing.caption)
+      if (!touched.current.audience) setAudience(existing.audience)
     }
   }, [existing])
   const entry = source.data?.entry
@@ -195,7 +199,10 @@ function Composer({
               }
               placeholder={t(aboutWorkout ? 'captionWorkoutPlaceholder' : 'captionPlaceholder')}
               value={caption}
-              onChangeText={setCaption}
+              onChangeText={(text) => {
+                touched.current.caption = true
+                setCaption(text)
+              }}
               maxLength={280}
               multiline
               className="min-h-[76px] items-start px-4"
@@ -210,7 +217,10 @@ function Composer({
 
           <Select
             value={audience}
-            onChange={setAudience}
+            onChange={(value) => {
+              touched.current.audience = true
+              setAudience(value)
+            }}
             label={t('audience')}
             closeLabel={t('cancel')}
             options={[

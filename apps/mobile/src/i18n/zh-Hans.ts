@@ -1737,6 +1737,7 @@ export const zhHans = {
       delete: '删除计划',
       deleteTitle: '删除这个计划？',
       deleteBody: '用它练过的训练会保留。',
+      missing: '这个计划已经不在了。',
     },
 
     explore: {
@@ -1960,6 +1961,8 @@ export const zhHans = {
       title: '编辑训练',
       save: '保存更改',
       newTitle: '补记训练',
+      leaveTitle: '不保存就离开？',
+      leaveBody: '你在这里做的更改会丢掉。',
     },
 
     library: {

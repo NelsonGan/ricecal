@@ -21,7 +21,6 @@ const STRENGTH = 50 // traditionalStrengthTraining
 const CORE = 59 // coreTraining
 const HIIT = 63 // highIntensityIntervalTraining
 const FUNCTIONAL = 20 // functionalStrengthTraining
-const FLEXIBILITY = 62
 
 /** A workout's exercises, resolved to the catalogue where they can be. */
 function catalogued(
@@ -107,8 +106,6 @@ export function healthActivityType(workout: LiveWorkout): number {
     return longest.exercise?.health ?? STRENGTH
   }
   if (lifted.length > 0 && lifted.every((row) => row.exercise?.category === 'core')) return CORE
-  if (lifted.length > 0 && lifted.every((row) => row.exercise?.category === 'mobility'))
-    return FLEXIBILITY
   if (lifted.length > 0 && lifted.every((row) => row.exercise?.category === 'fullBody'))
     return FUNCTIONAL
   // Conditioning moves only: pull-ups carry a MET of 8 too, and a pull-up day

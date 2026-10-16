@@ -1783,6 +1783,7 @@ export const fil = {
       delete: 'Burahin ang routine',
       deleteTitle: 'Burahin ang routine na ito?',
       deleteBody: 'Mananatili ang mga workout na nagawa mo na gamit ito.',
+      missing: 'Wala na ang routine na ito.',
     },
 
     explore: {
@@ -2012,6 +2013,8 @@ export const fil = {
       title: 'I-edit ang workout',
       save: 'I-save ang pagbabago',
       newTitle: 'Mag-log ng nakaraang workout',
+      leaveTitle: 'Umalis nang hindi nagse-save?',
+      leaveBody: 'Mawawala ang mga pagbabagong ginawa mo dito.',
     },
 
     library: {

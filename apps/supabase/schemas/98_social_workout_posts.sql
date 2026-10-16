@@ -32,6 +32,11 @@ begin
     if not found then return null; end if;
   else
     v_user := private.social_require_user();
+    -- Shared by hand, the sharer says who sees it, as for a meal. Defaulted
+    -- below, a private profile's workout went public.
+    if p_audience is null then
+      raise exception 'Choose who sees the post' using errcode = '22023';
+    end if;
   end if;
 
   -- An automatic post is for a workout that just happened. A past workout
@@ -82,8 +87,12 @@ create or replace function public.create_social_workout_post(
   p_workout_id uuid, p_caption text, p_audience public.social_audience
 )
 returns uuid language plpgsql security invoker set search_path = '' as $$
-declare v_records integer;
+declare v_records integer; v_id uuid;
 begin
+  -- Already shared: answered before the record count, which scores the
+  -- whole history.
+  v_id := public.social_workout_post(p_workout_id);
+  if v_id is not null then return v_id; end if;
   select s.pr_count into v_records from public.workout_summaries s where s.id = p_workout_id;
   if not found then raise exception 'Workout unavailable' using errcode = '42501'; end if;
   return private.social_insert_workout_post(p_workout_id, v_records, p_caption, p_audience, false);

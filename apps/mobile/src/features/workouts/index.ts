@@ -1,4 +1,4 @@
-export { ActionSheet, type SheetAction } from './ActionSheet'
+export { ActionSheet } from './ActionSheet'
 export {
   ActiveWorkoutBar,
   OverviewCard,
@@ -8,15 +8,12 @@ export {
   StatGrid,
   StatStrip,
   WorkoutCard,
-  WorkoutPreview,
 } from './cards'
 export {
   CATEGORIES,
   type Category,
   EQUIPMENT,
   type Equipment,
-  EXERCISES,
-  type Exercise,
   exerciseById,
   LEVELS,
   type Level,
@@ -28,13 +25,13 @@ export {
 export * from './copy'
 export { ExerciseArt } from './ExerciseArt'
 export { WorkoutEffects } from './effects'
-export { estimateKcal } from './energy'
 export { workoutsCsv } from './exportCsv'
 export * from './format'
-export { removeWorkoutFromHealth, syncWorkoutToHealth } from './health'
+export { removeWorkoutFromHealth } from './health'
 export { IMPORT_APPS } from './import/apps'
 export { buildImport, type ImportPlan, type ImportUnits } from './import/build'
 export { type ParsedExport, parseExport } from './import/parse'
+export { useLeaveGuard } from './leaveGuard'
 export {
   groupSplit,
   type LibraryExercise,
@@ -46,44 +43,27 @@ export {
   useExerciseLibrary,
 } from './library'
 export { STALE_AFTER_MS, useLiveWorkout, useNow } from './live'
-export { loggerIsOpen, useLoggerOpen } from './loggerOpen'
+export { openLogger, useLoggerOpen } from './loggerOpen'
 export { MuscleSplitBars } from './MuscleSplit'
 export * from './model'
-export { awaitPick, cancelPick, deliverPick, hasPick } from './pick'
+export { cancelPick, deliverPick, hasPick } from './pick'
 export { setWorkoutPrefs, useWorkoutPrefs } from './prefs'
 export { RestBar } from './RestBar'
 export { RestSheet } from './RestSheet'
 export { type RecordKind, recordSets } from './records'
-export {
-  plansToRoutine,
-  routinePlans,
-  templateRoutine,
-  toPlans,
-} from './routines'
-export {
-  type RoutineChanges,
-  type RoutineUpdate,
-  routineChanges,
-  updatedRoutine,
-} from './routineUpdate'
-export { describeSet } from './SetTable'
-export { StaleWorkoutSheet } from './StaleWorkoutSheet'
+export { plansToRoutine, routinePlans, templateRoutine, toPlans } from './routines'
+export { type RoutineUpdate, routineChanges, updatedRoutine } from './routineUpdate'
+export { StaleWorkoutDialog } from './StaleWorkoutDialog'
 export { asCategory, asEquipment } from './search'
 export { workoutShareText } from './shareText'
 export { defaultWorkoutName, discardWorkout, useWorkoutStarter } from './start'
 export {
   dispatchWorkout,
-  forgetWorkoutsOnPhone,
   getActiveWorkout,
   useHasActiveWorkout,
   useWorkoutHasExercise,
 } from './store'
-export {
-  TEMPLATE_GROUPS,
-  TEMPLATES,
-  templateById,
-  templatePlans,
-} from './templates'
+export { TEMPLATE_GROUPS, TEMPLATES, templateById, templatePlans } from './templates'
 export { WorkoutEditor } from './WorkoutEditor'
-export { timesError, useWorkoutSave, WorkoutFields, WorkoutMissing } from './WorkoutForm'
+export { timesError, useWorkoutSave, WorkoutFields, WorkoutUnavailable } from './WorkoutForm'
 export { WorkoutItem } from './WorkoutItem'

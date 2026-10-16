@@ -6,6 +6,7 @@ import { useSession } from '@/data/session'
 import { track, type WorkoutSource } from '@/lib/analytics'
 import { Dialog } from '@/ui'
 import { removeWorkoutFromHealth } from './health'
+import { loggerJustOpened, openLogger } from './loggerOpen'
 import { doneSets, type ExercisePlan, type LiveWorkout, newWorkout } from './model'
 import {
   clearActiveWorkout,
@@ -20,7 +21,7 @@ import {
  * page, a past workout's "repeat".
  */
 
-export type StartInput = {
+type StartInput = {
   name: string
   source: WorkoutSource
   plans?: ExercisePlan[]
@@ -69,7 +70,7 @@ function begin(userId: string, input: StartInput): void {
 /**
  * Starts a workout and opens the logger. One already running is not silently
  * replaced: the user is asked, because the running one may be an hour of sets.
- * Render `sheet` wherever the hook is used.
+ * Render `dialog` wherever the hook is used.
  */
 export function useWorkoutStarter() {
   const { t } = useTranslation(['workouts', 'common'])
@@ -81,19 +82,18 @@ export function useWorkoutStarter() {
   const running = useHasActiveWorkout(userId)
   const [pending, setPending] = useState<StartInput | null>(null)
 
-  const open = () => router.push('/workout/active')
-
   const start = (input: StartInput) => {
-    if (!userId) return
+    // The same tap again while the logger slides in, which is not a second start.
+    if (!userId || loggerJustOpened()) return
     if (getActiveWorkout(userId)) {
       setPending(input)
       return
     }
     begin(userId, input)
-    open()
+    openLogger(router)
   }
 
-  const sheet = (
+  const dialog = (
     <Dialog
       visible={pending !== null}
       onClose={() => setPending(null)}
@@ -111,12 +111,12 @@ export function useWorkoutStarter() {
             if (!userId || !pending) return
             discardWorkout(userId)
             begin(userId, pending)
-            open()
+            openLogger(router)
           },
         },
       ]}
     />
   )
 
-  return { start, sheet, running }
+  return { start, dialog, running }
 }

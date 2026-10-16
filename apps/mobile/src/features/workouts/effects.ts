@@ -23,8 +23,18 @@ import {
   restAfter,
   type SetHint,
   setHints,
+  supersetRuns,
 } from './model'
 import { getActiveWorkout } from './store'
+
+/** How late a rest's end can be noticed and still be news worth a buzz. */
+const OVERDUE_MS = 1500
+/**
+ * How long the Live Activity waits for typing to stop before it redraws.
+ * The next set's figures change a keystroke at a time, and ActivityKit
+ * throttles an app that updates that often.
+ */
+const ACTIVITY_SETTLE_MS = 400
 
 /**
  * What a running workout does outside its own screen. Mounted once, in the
@@ -41,7 +51,7 @@ import { getActiveWorkout } from './store'
  *   Live Activity    the lock screen and Dynamic Island, on iOS, and the
  *                    buttons pressed on it
  */
-export function useWorkoutEffects(): void {
+function useWorkoutEffects(): void {
   const { t } = useTranslation(['workouts'])
   const { userId, workout, dispatch } = useLiveWorkout()
   const settingsQuery = useSettings()
@@ -66,12 +76,18 @@ export function useWorkoutEffects(): void {
   // written from the document as it was before the presses, they rebooked a
   // skipped rest's notice and drew the old state over the button's own.
   const [drained, setDrained] = useState(false)
+  // Bumped after lock-screen ticks are applied. The intent books the notice
+  // for the rest it expects; a tick the app then refused, or one that started
+  // no rest, leaves the rest as it was, so the effect below would not run and
+  // that notice would fire with no rest behind it.
+  const [rebook, setRebook] = useState(0)
 
   // The rest-over notice, rebooked whenever the rest changes. Its identifier
   // is fixed, so booking it replaces the last one rather than adding another.
   const restKey = workout?.rest ? `${workout.id}:${workout.rest.endsAt}` : null
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the rest itself, not on every edit to the workout around it
   useEffect(() => {
+    void rebook
     if (!drained) return
     if (!workout?.rest) {
       cancelNotice('rest')
@@ -88,13 +104,17 @@ export function useWorkoutEffects(): void {
     // haptic and the timer clears itself.
     const timer = setTimeout(
       () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+        // Only for a rest that ends while someone is looking: one that ended
+        // with the app in the background buzzed as it opened.
+        if (Date.now() - rest.endsAt < OVERDUE_MS) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+        }
         dispatch({ type: 'stopRest' })
       },
       Math.max(0, rest.endsAt - Date.now()),
     )
     return () => clearTimeout(timer)
-  }, [restKey, drained])
+  }, [restKey, drained, rebook])
 
   // "Still training?", once per workout, three hours in.
   const workoutId = workout?.id ?? null
@@ -129,9 +149,10 @@ export function useWorkoutEffects(): void {
     if (live.current !== state.id) {
       startWorkoutActivity(state)
       live.current = state.id
-    } else {
-      updateWorkoutActivity(state)
+      return
     }
+    const timer = setTimeout(() => updateWorkoutActivity(state), ACTIVITY_SETTLE_MS)
+    return () => clearTimeout(timer)
   }, [stateKey, drained])
 
   // The activity's buttons. Pressed with the app running, the intent says so
@@ -144,6 +165,7 @@ export function useWorkoutEffects(): void {
     const drain = () => {
       const { userId, previous, defaultRestS, dispatch } = latest.current
       if (!userId) return
+      let anyTick = false
       for (const action of takeWorkoutActions()) {
         // Read fresh for each: the one before it may have changed it.
         const workout = getActiveWorkout(userId)
@@ -161,6 +183,7 @@ export function useWorkoutEffects(): void {
             })
             break
           case 'completeSet': {
+            anyTick = true
             const exercise = workout.exercises.find((entry) => entry.key === action.exerciseKey)
             const set = exercise?.sets.find((entry) => entry.id === action.setId)
             if (!exercise || !set || set.done) break
@@ -194,6 +217,7 @@ export function useWorkoutEffects(): void {
           }
         }
       }
+      if (anyTick) setRebook((count) => count + 1)
     }
     drain()
     setDrained(true)
@@ -246,14 +270,7 @@ function hintFor(
  * time, so after A1 comes B1 rather than A2.
  */
 function nextSet(workout: LiveWorkout): { exercise: LiveExercise; set: LiveSet } | null {
-  const exercises = workout.exercises
-  for (let start = 0; start < exercises.length; ) {
-    let end = start + 1
-    const group = exercises[start].superset
-    if (group !== null) {
-      while (end < exercises.length && exercises[end].superset === group) end += 1
-    }
-    const round = exercises.slice(start, end)
+  for (const round of supersetRuns(workout.exercises)) {
     const rounds = Math.max(...round.map((exercise) => exercise.sets.length))
     for (let index = 0; index < rounds; index++) {
       for (const exercise of round) {
@@ -261,7 +278,6 @@ function nextSet(workout: LiveWorkout): { exercise: LiveExercise; set: LiveSet }
         if (set && !set.done) return { exercise, set }
       }
     }
-    start = end
   }
   return null
 }

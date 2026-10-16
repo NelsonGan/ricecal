@@ -34,11 +34,12 @@ import {
   timesError,
   updatedRoutine,
   useExerciseLibrary,
+  useLeaveGuard,
   useLiveWorkout,
   useWorkoutSave,
   volumeText,
   WorkoutFields,
-  WorkoutMissing,
+  WorkoutUnavailable,
   weightText,
 } from '@/features/workouts'
 import { track } from '@/lib/analytics'
@@ -93,6 +94,9 @@ export default function FinishWorkoutScreen() {
   })
   const [saving, setSaving] = useState(false)
   const [askRoutine, setAskRoutine] = useState(false)
+  // Left mid-save, the save's own navigation landed on whatever came next and
+  // cleared a workout somebody had gone back to keep logging.
+  const guard = useLeaveGuard({ busy: saving, dirty: false })
 
   const totals = useMemo(() => (workout ? liveTotals(workout) : null), [workout])
   const exercises = useMemo(
@@ -105,7 +109,10 @@ export default function FinishWorkoutScreen() {
   const records = useMemo(() => {
     const byId = new Map((bests ?? []).map((entry) => [entry.exerciseId, entry]))
     return exercises.flatMap((exercise) => {
-      const marked = recordSets(exercise, byId.get(exercise.exerciseId))
+      const marked = recordSets(
+        exercises.filter((card) => card.exerciseId === exercise.exerciseId),
+        byId.get(exercise.exerciseId),
+      )
       for (const kind of RECORD_ORDER) {
         const set = exercise.sets.find((entry) => marked.get(entry.id)?.includes(kind))
         if (set) return [{ exercise, set, kind }]
@@ -114,7 +121,7 @@ export default function FinishWorkoutScreen() {
     })
   }, [exercises, bests])
 
-  if (!workout) return <WorkoutMissing />
+  if (!workout) return <WorkoutUnavailable />
 
   // The routine it was started from, if it still exists and the workout left it.
   const routine = workout.routineId
@@ -196,8 +203,10 @@ export default function FinishWorkoutScreen() {
               : undefined,
         tone: 'success',
       })
-      router.dismissTo('/workouts')
-      if (!queued) router.push({ pathname: '/workout/[id]', params: { id: payload.id } })
+      guard.leave(() => {
+        router.dismissTo('/workouts')
+        if (!queued) router.push({ pathname: '/workout/[id]', params: { id: payload.id } })
+      })
     } catch (failure) {
       console.warn('[workouts] save failed', failure)
       toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
@@ -211,6 +220,7 @@ export default function FinishWorkoutScreen() {
         <AppBar
           title={t('workouts:finish.title')}
           onBack={() => router.back()}
+          backDisabled={saving}
           backLabel={t('common:action.back')}
         />
       }

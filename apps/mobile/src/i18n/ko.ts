@@ -1743,6 +1743,7 @@ export const ko = {
       delete: '루틴 삭제',
       deleteTitle: '이 루틴을 삭제할까요?',
       deleteBody: '이 루틴으로 한 운동 기록은 남습니다.',
+      missing: '이 루틴은 더 이상 없습니다.',
     },
 
     explore: {
@@ -1966,6 +1967,8 @@ export const ko = {
       title: '운동 편집',
       save: '변경사항 저장',
       newTitle: '지난 운동 기록',
+      leaveTitle: '저장하지 않고 나갈까요?',
+      leaveBody: '여기서 만든 변경사항은 사라집니다.',
     },
 
     library: {

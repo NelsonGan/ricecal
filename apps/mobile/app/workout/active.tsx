@@ -1,5 +1,5 @@
 import { useKeepAwake } from 'expo-keep-awake'
-import { useRouter } from 'expo-router'
+import { useIsFocused, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -9,10 +9,11 @@ import {
   discardWorkout,
   doneSets,
   getActiveWorkout,
+  type LiveWorkout,
   liveTotals,
   RestBar,
   STALE_AFTER_MS,
-  StaleWorkoutSheet,
+  StaleWorkoutDialog,
   Stat,
   StatStrip,
   showsVolume,
@@ -23,7 +24,7 @@ import {
   useWorkoutPrefs,
   volumeText,
   WorkoutEditor,
-  WorkoutMissing,
+  WorkoutUnavailable,
   clock as workoutClock,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
@@ -52,6 +53,9 @@ export default function ActiveWorkoutScreen() {
   const [unfinished, setUnfinished] = useState(0)
   const [nothing, setNothing] = useState(false)
   const finishParams = useRef<FinishParams>({})
+  // Under the finish screen, the library or an exercise's page this stays
+  // mounted, and "Still training?" asked from there over whatever was on top.
+  const focused = useIsFocused()
 
   // The last document seen, drawn while this screen leaves. Finishing and
   // discarding clear the workout and then navigate away, and in between the
@@ -65,7 +69,7 @@ export default function ActiveWorkoutScreen() {
   const previous = useLastSets(workout?.exercises.map((exercise) => exercise.exerciseId) ?? []).data
 
   // A notice tapped after its workout was finished: say so, rather than redirect.
-  if (!workout) return <WorkoutMissing />
+  if (!workout) return <WorkoutUnavailable />
 
   const totals = liveTotals(workout)
 
@@ -74,7 +78,15 @@ export default function ActiveWorkoutScreen() {
   // way to finish with "nothing to save".
   // `params` carries what "Still training?" chose (the last set's time, or
   // picking one) through the same checks to the save screen.
+  const commitName = () => {
+    setRenaming(false)
+    if (name.trim()) dispatch({ type: 'rename', name: name.trim() })
+  }
+
   const finish = (params: FinishParams = {}) => {
+    // A name still being typed is saved first: it is only committed when the
+    // field closes, and the save screen reads the workout as it opens.
+    if (renaming) commitName()
     finishParams.current = params
     const open = unfinishedSets(workout, previous)
     if (open > 0) {
@@ -114,10 +126,7 @@ export default function ActiveWorkoutScreen() {
               ? {
                   value: name,
                   onChangeText: setName,
-                  onDone: () => {
-                    setRenaming(false)
-                    if (name.trim()) dispatch({ type: 'rename', name: name.trim() })
-                  },
+                  onDone: commitName,
                   label: t('workouts:logger.namePlaceholder'),
                   maxLength: 80,
                 }
@@ -189,7 +198,7 @@ export default function ActiveWorkoutScreen() {
             label: t('workouts:finish.completeThem'),
             onPress: () => {
               // The stored document, not this render's: a lock-screen tick or a
-              // rest ending before the sheet closed would otherwise be undone.
+              // rest ending before the dialog closed would otherwise be undone.
               const latest = userId ? getActiveWorkout(userId) : null
               if (latest) replace(completeAll(latest, Date.now(), previous))
               router.push({ pathname: '/workout/finish', params: finishParams.current })
@@ -225,9 +234,9 @@ export default function ActiveWorkoutScreen() {
         ]}
       />
 
-      {current ? (
+      {current && focused ? (
         <StaleCheck
-          startedAt={current.startedAt}
+          workout={current}
           answered={current.staleAnswered === true}
           onAnswered={() => dispatch({ type: 'staleAnswered' })}
           onFinish={finish}
@@ -239,8 +248,8 @@ export default function ActiveWorkoutScreen() {
 }
 
 /**
- * The pieces that change every second, each with its own clock, so a tick
- * re-renders a figure rather than every card and cell in the logger.
+ * The pieces that change every second, each with its own clock, so each
+ * second re-renders one figure rather than every card and cell in the logger.
  */
 function Elapsed({ label, startedAt }: { label: string; startedAt: number }) {
   const now = useNow(1000)
@@ -259,13 +268,13 @@ function RestCountdown(props: Omit<Parameters<typeof RestBar>[0], 'now'>) {
 type FinishParams = { endedAt?: string; pickEnd?: string }
 
 function StaleCheck({
-  startedAt,
+  workout,
   answered,
   onAnswered,
   onFinish,
   onDiscard,
 }: {
-  startedAt: number
+  workout: LiveWorkout
   answered: boolean
   onAnswered: () => void
   onFinish: (params: FinishParams) => void
@@ -273,9 +282,10 @@ function StaleCheck({
 }) {
   const now = useNow(60_000, !answered)
   const [closed, setClosed] = useState(false)
-  const visible = !answered && !closed && now - startedAt > STALE_AFTER_MS
+  const visible = !answered && !closed && now - workout.startedAt > STALE_AFTER_MS
   return (
-    <StaleWorkoutSheet
+    <StaleWorkoutDialog
+      workout={workout}
       visible={visible}
       onClose={() => setClosed(true)}
       onKeepGoing={onAnswered}

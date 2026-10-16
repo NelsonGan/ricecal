@@ -82,9 +82,9 @@ export type LibraryFilters = {
 const normalise = (text: string) =>
   text
     .toLowerCase()
-    // Letters and digits in any script, everything else a space. Spelled as a
-    // range rather than `\p{L}`, which not every JS engine the app has shipped
-    // on understands.
+    // Letters and digits in any script, everything else a space. A range
+    // rather than `\p{L}` keeps this a plain expression for the hot path of
+    // a search typed a letter at a time.
     .replace(/[^a-z0-9\u00c0-\uffff]+/g, ' ')
     .trim()
 
@@ -94,6 +94,23 @@ const normalise = (text: string) =>
  * word of the query has to match somewhere, so "db row" finds the dumbbell row
  * through its alias and "row cable" finds the seated cable row.
  */
+/**
+ * Each exercise's name and searchable text, worked out once: a query ran every
+ * name and alias in the library through the normaliser on each keystroke. Keyed
+ * by the exercise object, so a renamed custom exercise, which is a new object,
+ * is worked out again.
+ */
+const searchText = new WeakMap<LibraryExercise, { name: string; haystack: string }>()
+function textOf(exercise: LibraryExercise) {
+  let text = searchText.get(exercise)
+  if (!text) {
+    const name = normalise(exercise.name)
+    text = { name, haystack: [name, ...(exercise.aliases ?? []).map(normalise)].join(' | ') }
+    searchText.set(exercise, text)
+  }
+  return text
+}
+
 export function searchExercises(
   list: readonly LibraryExercise[],
   query: string,
@@ -111,11 +128,10 @@ export function searchExercises(
   if (!words.length) return filtered
 
   const scored: { exercise: LibraryExercise; score: number }[] = []
+  const phrase = words.join(' ')
   for (const exercise of filtered) {
-    const name = normalise(exercise.name)
-    const haystack = [name, ...(exercise.aliases ?? []).map(normalise)].join(' | ')
+    const { name, haystack } = textOf(exercise)
     if (!words.every((word) => haystack.includes(word))) continue
-    const phrase = words.join(' ')
     let score = 3
     if (name.startsWith(phrase)) score = 0
     else if (name.split(' ').some((part) => part.startsWith(words[0]))) score = 1

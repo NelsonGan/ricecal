@@ -28,7 +28,6 @@ type Native = {
   startWorkoutActivity?(json: string): void
   updateWorkoutActivity?(json: string): void
   endWorkoutActivity?(): void
-  workoutActivitiesEnabled?(): boolean
   takeWorkoutActions?(): string
   addListener?(event: 'onWorkoutAction', listener: () => void): { remove(): void }
 }

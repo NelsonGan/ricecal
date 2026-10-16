@@ -1,32 +1,22 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useMemo, useReducer, useState } from 'react'
+import { useMemo, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { type IconRef, type Routine, useDeleteRoutine, useRoutines, useSaveRoutine } from '@/data'
+import { type Routine, useDeleteRoutine, useRoutines, useSaveRoutine } from '@/data'
 import {
   apply,
   newWorkout,
   plansToRoutine,
   routinePlans,
   toPlans,
+  useLeaveGuard,
   useWorkoutStarter,
   WorkoutEditor,
-  WorkoutMissing,
+  WorkoutUnavailable,
 } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
-import {
-  AppBar,
-  Button,
-  Card,
-  ConfirmSheet,
-  EmptyState,
-  Icon,
-  IconButton,
-  Screen,
-  Skeleton,
-  TextField,
-  useToast,
-} from '@/ui'
+import { useOnline } from '@/lib/online'
+import { AppBar, Button, Card, Dialog, Icon, IconButton, Screen, TextField, useToast } from '@/ui'
 
 /**
  * A routine: a named plan of exercises and target sets that a workout starts
@@ -36,7 +26,7 @@ import {
  * what to do, and the PREVIOUS column shows what was done last time.
  */
 export default function RoutineScreen() {
-  const { t } = useTranslation(['common'])
+  const { t } = useTranslation(['workouts'])
   const { id } = useLocalSearchParams<{ id: string }>()
   const isNew = id === 'new'
   const routines = useRoutines()
@@ -46,48 +36,25 @@ export default function RoutineScreen() {
   const [deleting, setDeleting] = useState<Routine | null>(null)
   const routine = routines.data?.find((entry) => entry.id === id) ?? deleting ?? undefined
 
-  if (!isNew && !routine && routines.isPending) {
-    // Offline with nothing cached the request is held, and a skeleton would
-    // wait for it forever.
-    if (routines.isPaused) {
-      return (
-        <Empty
-          title={t('common:offline.title')}
-          description={t('common:offline.body')}
-          icon={{ set: 'ui', name: 'offline' }}
-        />
-      )
-    }
+  if (!isNew && !routine) {
     return (
-      <Screen>
-        <Card>
-          <Skeleton className="h-[240px] w-full" />
-        </Card>
-      </Screen>
+      <WorkoutUnavailable
+        state={
+          routines.isPending
+            ? routines.isPaused
+              ? 'offline'
+              : 'loading'
+            : routines.isError
+              ? 'unreachable'
+              : 'missing'
+        }
+        title={t('workouts:routines.missing')}
+        icon={{ set: 'system', name: 'guide-book' }}
+      />
     )
   }
-  if (!isNew && !routine) return <WorkoutMissing icon={{ set: 'system', name: 'guide-book' }} />
   return (
     <RoutineEditor key={routine?.id ?? 'new'} routine={routine ?? null} onDeleting={setDeleting} />
-  )
-}
-
-/** The page with nothing in it but a way back. */
-function Empty({
-  title,
-  description,
-  icon,
-}: {
-  title: string
-  description?: string
-  icon: IconRef
-}) {
-  const { t } = useTranslation(['common'])
-  const goBack = useBack('/workouts')
-  return (
-    <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
-      <EmptyState title={title} description={description} icon={icon} />
-    </Screen>
   )
 }
 
@@ -105,6 +72,7 @@ function RoutineEditor({
   const goBack = useBack('/workouts')
   const save = useSaveRoutine()
   const remove = useDeleteRoutine()
+  const online = useOnline()
   const starter = useWorkoutStarter()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [notes, setNotes] = useState(routine?.notes ?? '')
@@ -116,9 +84,24 @@ function RoutineEditor({
   )
   const plans = useMemo(() => toPlans(draft.exercises), [draft.exercises])
   const nameError = !draft.name.trim()
+  // Any dispatch makes a new draft, so the first one is "nothing changed".
+  const [opened] = useState(draft)
+  const busy = save.isPending || remove.isPending
+  const guard = useLeaveGuard({
+    busy,
+    dirty: draft !== opened || notes !== (routine?.notes ?? ''),
+  })
+  // A second tap before `isPending` had rendered saved a new routine twice.
+  const saving = useRef(false)
 
   const onSave = async () => {
-    if (nameError) return
+    if (nameError || saving.current) return
+    // Offline the save pauses rather than fails, and leaving is held while it runs.
+    if (!online) {
+      toast.show({ title: t('common:offline.title'), tone: 'error' })
+      return
+    }
+    saving.current = true
     try {
       const saved = await save.mutateAsync({
         id: routine?.id,
@@ -128,10 +111,15 @@ function RoutineEditor({
         templateId: routine?.templateId ?? null,
       })
       toast.show({ title: t('workouts:routines.saved'), tone: 'success' })
-      if (!routine) router.replace({ pathname: '/workout/routine/[id]', params: { id: saved.id } })
-      else goBack()
+      guard.leave(() => {
+        if (!routine) {
+          router.replace({ pathname: '/workout/routine/[id]', params: { id: saved.id } })
+        } else goBack()
+      })
     } catch {
       toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+    } finally {
+      saving.current = false
     }
   }
 
@@ -143,6 +131,7 @@ function RoutineEditor({
         <AppBar
           title={routine ? t('workouts:routines.edit') : t('workouts:routines.newTitle')}
           onBack={goBack}
+          backDisabled={busy}
           backLabel={t('common:action.back')}
           action={
             routine ? (
@@ -207,27 +196,40 @@ function RoutineEditor({
 
       <WorkoutEditor workout={draft} dispatch={dispatch} mode="plan" />
 
-      <ConfirmSheet
+      <Dialog
         visible={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         title={t('workouts:routines.deleteTitle')}
         description={t('workouts:routines.deleteBody')}
-        confirmLabel={t('common:action.delete')}
         cancelLabel={t('common:action.keep')}
-        onConfirm={async () => {
-          if (!routine) return
-          onDeleting(routine)
-          try {
-            await remove.mutateAsync(routine.id)
-          } catch (error) {
-            onDeleting(null)
-            toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
-            throw error
-          }
-          goBack()
-        }}
+        actions={[
+          {
+            key: 'delete',
+            label: t('common:action.delete'),
+            tone: 'danger',
+            waits: true,
+            onPress: async () => {
+              if (!routine) return
+              // Offline the delete pauses rather than fails, and would spin.
+              if (!online) {
+                toast.show({ title: t('common:offline.title'), tone: 'error' })
+                throw new Error('offline')
+              }
+              onDeleting(routine)
+              try {
+                await remove.mutateAsync(routine.id)
+              } catch (error) {
+                onDeleting(null)
+                toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+                throw error
+              }
+              guard.leave(goBack)
+            },
+          },
+        ]}
       />
-      {starter.sheet}
+      {starter.dialog}
+      {guard.dialog}
     </Screen>
   )
 }

@@ -1,4 +1,4 @@
-import { Redirect, usePathname, useRouter } from 'expo-router'
+import { Redirect, usePathname, useRouter, useSegments } from 'expo-router'
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
@@ -9,6 +9,7 @@ import { useReminderSync, useReportLinks } from '@/features/settings'
 import {
   ActiveWorkoutBar,
   clock,
+  openLogger,
   shortClock,
   useHasActiveWorkout,
   useLiveWorkout,
@@ -94,9 +95,13 @@ function SignedInTabs() {
   // most when its screen is not the one on top.
   useWorkoutOutbox()
   const { userId } = useSession()
-  // Minimised over every tab but its own, where "Resume workout" already is.
+  // Minimised over every tab but its own, where "Resume workout" already is,
+  // and only while a tab is on top. This layout stays mounted under the
+  // logger and every page pushed over the tabs, and its toast host, the
+  // newest, drew each of their toasts down here out of sight.
   const pathname = usePathname()
-  const running = useHasActiveWorkout(userId) && pathname !== '/workouts'
+  const onTabs = useSegments()[0] === '(tabs)'
+  const running = useHasActiveWorkout(userId) && onTabs && pathname !== '/workouts'
 
   return (
     // The bar floats over the screens, so each one is told how much of its
@@ -170,7 +175,7 @@ function RunningWorkout() {
         name={workout.name}
         elapsed={clock((now - workout.startedAt) / 1000)}
         rest={rest}
-        onPress={() => router.push('/workout/active')}
+        onPress={() => openLogger(router)}
       />
     </View>
   )

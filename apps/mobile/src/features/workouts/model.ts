@@ -65,6 +65,12 @@ export type LiveWorkout = {
    * it existed, which reads as not asked.
    */
   staleAnswered?: boolean
+  /**
+   * The day a finished workout being edited is filed under, with the start it
+   * was filed from. Kept while the start stays put, so renaming a Tokyo
+   * morning workout from London does not move it to the day before.
+   */
+  filed?: { startedAt: number; date: string }
 }
 
 let counter = 0
@@ -74,7 +80,13 @@ function localKey(): string {
   return `${Date.now().toString(36)}-${counter.toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 }
 
-/** RFC 4122 v4, for the workout id the server will store. */
+/**
+ * RFC 4122 v4, for the workout id the server will store. Hermes has no
+ * `crypto.getRandomValues` and nothing here adds one, so on a phone these are
+ * `Math.random`'s 122 bits from a randomly seeded generator: unique enough,
+ * and an id that did collide with another account's is refused by
+ * `save_workout` rather than written over.
+ */
 export function uuid(): string {
   const bytes = new Uint8Array(16)
   if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes)
@@ -177,7 +189,7 @@ export type Action =
   | { type: 'exerciseNotes'; key: string; notes: string }
   | { type: 'exerciseRest'; key: string; restS: number | null }
   | { type: 'superset'; key: string; withKey: string | null }
-  | { type: 'addSet'; key: string; kind?: SetKind }
+  | { type: 'addSet'; key: string }
   | { type: 'addSets'; key: string; sets: SetPlan[]; atStart?: boolean }
   | { type: 'removeSet'; key: string; setId: string }
   | { type: 'updateSet'; key: string; setId: string; patch: SetPatch }
@@ -248,6 +260,8 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
               reps: fields.has('reps') ? set.reps : null,
               durationS: fields.has('duration') ? set.durationS : null,
               distanceM: fields.has('distance') ? set.distanceM : null,
+              // RPE rates reps: a bench set rated 8 that becomes a plank is not.
+              rpe: fields.has('reps') ? set.rpe : null,
             }
             return kept.done && !isLoggable(kept, tracking)
               ? { ...kept, done: false, doneAt: null }
@@ -290,7 +304,7 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
       // values hid last time's 100 x 5 under a third set of 100 x 10.
       return mapExercise(workout, action.key, (exercise) => ({
         ...exercise,
-        sets: [...exercise.sets, emptySet(action.kind ?? 'normal')],
+        sets: [...exercise.sets, emptySet()],
       }))
     case 'addSets':
       return mapExercise(workout, action.key, (exercise) => {
@@ -358,33 +372,53 @@ export function restAfter(
   workout: LiveWorkout,
   exercise: LiveExercise,
   defaultRestS: number,
-  setId?: string,
+  setId: string,
 ): number {
   if (exercise.superset !== null) {
     const group = workout.exercises.filter((entry) => entry.superset === exercise.superset)
     const after = group.slice(group.findIndex((entry) => entry.key === exercise.key) + 1)
-    const index = setId ? exercise.sets.findIndex((set) => set.id === setId) : 0
+    const index = exercise.sets.findIndex((set) => set.id === setId)
     if (after.some((entry) => entry.sets.length > Math.max(0, index))) return 0
   }
   return exercise.restS ?? defaultRestS
 }
 
+/** Which sets pair with which: a warm-up is never a working set's last time, nor a drop set. */
+const pairing = (kind: SetKind | undefined) =>
+  kind === 'warmup' || kind === 'drop' ? kind : 'work'
+
 /**
- * Last time's set for each of today's: warm-ups with warm-ups, working sets with
- * working sets, each in order. Lined up by position, last week's two warm-ups
- * fed this week's first two working sets (40 x 10 offered on a 100 kg day), and
- * adding warm-ups today pushed every working set off its own last time.
+ * For each of today's sets, the position of its counterpart in `other`:
+ * warm-ups with warm-ups, drop sets with drop sets, the rest with the rest,
+ * each in order. Lined up by position, last week's two warm-ups fed this
+ * week's first two working sets (40 x 10 offered on a 100 kg day), adding
+ * warm-ups today pushed every working set off its own last time, and a drop
+ * set was offered the 100 x 5 of the working set it followed.
+ *
+ * The PREVIOUS column and a routine's update both pair this way.
  */
+export function pairSets(
+  sets: readonly { kind?: SetKind }[],
+  other: readonly ({ kind?: SetKind } | undefined)[],
+): (number | undefined)[] {
+  const queues = new Map<string, number[]>()
+  other.forEach((set, index) => {
+    if (!set) return
+    const key = pairing(set.kind)
+    const queue = queues.get(key) ?? []
+    queue.push(index)
+    queues.set(key, queue)
+  })
+  return sets.map((set) => queues.get(pairing(set.kind))?.shift())
+}
+
+/** Last time's set for each of today's, paired as `pairSets` pairs them. */
 export function matchPrevious<T extends { kind?: SetKind }>(
   sets: readonly { kind: SetKind }[],
   previous: readonly (T | undefined)[] | null | undefined,
 ): (T | undefined)[] {
   if (!previous) return sets.map(() => undefined)
-  const warm = previous.filter((set) => set?.kind === 'warmup')
-  const work = previous.filter((set) => set !== undefined && set.kind !== 'warmup')
-  let w = 0
-  let k = 0
-  return sets.map((set) => (set.kind === 'warmup' ? warm[w++] : work[k++]))
+  return pairSets(sets, previous).map((at) => (at === undefined ? undefined : previous[at]))
 }
 
 /** What an empty field shows and a tick takes. See `setHints`. */
@@ -411,6 +445,8 @@ const NO_HINT: SetHint = { weightKg: null, reps: null, durationS: null, distance
 export function setHints(
   sets: readonly Pick<LiveSet, 'kind' | 'weightKg' | 'reps' | 'durationS' | 'distanceM'>[],
   previous: readonly (SetPatch | undefined)[] | null | undefined,
+  /** `matchPrevious(sets, previous)`, for a caller that has already worked it out. */
+  matched: readonly (SetPatch | undefined)[] = matchPrevious(sets, previous),
 ): SetHint[] {
   const fresh = () => ({ typed: { ...NO_HINT }, shown: { ...NO_HINT } })
   const above = { warmup: fresh(), working: fresh() }
@@ -430,7 +466,6 @@ export function setHints(
     carry.shown[field] = set[field] ?? hint
     return hint
   }
-  const matched = matchPrevious(sets, previous)
   return sets.map((set, index) => {
     const carry = set.kind === 'warmup' ? above.warmup : above.working
     const last = matched[index]
@@ -455,6 +490,25 @@ function fillBlanks(set: LiveSet, fill: SetPatch | undefined): SetPatch {
 }
 
 /**
+ * The cards in the runs they are done in: a superset's neighbouring cards
+ * together, every other card alone. The rest timer, the lock screen's next set
+ * and the keyboard's Next all walk a workout this way.
+ */
+export function supersetRuns<T extends { superset: number | null }>(
+  exercises: readonly T[],
+): T[][] {
+  const runs: T[][] = []
+  for (let start = 0; start < exercises.length; ) {
+    const group = exercises[start].superset
+    let end = start + 1
+    if (group !== null) while (end < exercises.length && exercises[end].superset === group) end += 1
+    runs.push(exercises.slice(start, end))
+    start = end
+  }
+  return runs
+}
+
+/**
  * A superset is a run of neighbouring cards sharing a number, and nothing else
  * is. Removing a partner left one card alone under the bracket; reordering, or
  * unlinking the middle of three, left a group split around another card, which
@@ -473,11 +527,8 @@ export function tidySupersets<T extends { superset: number | null }>(exercises: 
   }
   const used = new Set<number>()
   const out: T[] = []
-  for (let start = 0; start < exercises.length; ) {
-    const group = exercises[start].superset
-    let end = start + 1
-    if (group !== null) while (end < exercises.length && exercises[end].superset === group) end += 1
-    const run = exercises.slice(start, end)
+  for (const run of supersetRuns(exercises)) {
+    const group = run[0].superset
     if (group === null) out.push(...run)
     else if (run.length < 2) out.push({ ...run[0], superset: null })
     else {
@@ -487,7 +538,6 @@ export function tidySupersets<T extends { superset: number | null }>(exercises: 
         ...run.map((exercise) => (number === group ? exercise : { ...exercise, superset: number })),
       )
     }
-    start = end
   }
   return out
 }
@@ -551,6 +601,10 @@ export function fieldsFor(tracking: Tracking): ('weight' | 'reps' | 'duration' |
  * set, and neither is a plank with no time; the weight of a pull-up is
  * optional, since most of them are done with none added.
  */
+/** Whether any field of a set holds a number: what `save_workout` requires of a set. */
+export const hasFigures = (set: Pick<LiveSet, 'weightKg' | 'reps' | 'durationS' | 'distanceM'>) =>
+  set.weightKg !== null || set.reps !== null || set.durationS !== null || set.distanceM !== null
+
 export function isLoggable(
   set: Pick<LiveSet, 'weightKg' | 'reps' | 'durationS' | 'distanceM'>,
   tracking: Tracking,
@@ -593,7 +647,7 @@ export function liveTotals(workout: LiveWorkout): { volumeKg: number; sets: numb
 
 /**
  * Whether a workout has anything in it that volume is counted for. A run or a
- * game has none, and "0 kg" under it is a figure about nothing; an empty
+ * plank has none, and "0 kg" under it is a figure about nothing; an empty
  * workout has not decided yet, so it keeps the figure.
  */
 export function showsVolume(trackings: readonly Tracking[]): boolean {
@@ -637,7 +691,7 @@ export function lastActivityAt(workout: LiveWorkout): number | null {
 }
 
 /** Last time's sets for each exercise in a workout, by exercise id and position. */
-export type PreviousSets = Readonly<Record<string, readonly SetPatch[] | undefined>>
+type PreviousSets = Readonly<Record<string, readonly SetPatch[] | undefined>>
 
 /**
  * Each unticked set as it would be ticked: its own numbers, and in the blanks
@@ -668,7 +722,7 @@ export function unfinishedSets(workout: LiveWorkout, previous?: PreviousSets): n
 
 /**
  * Ticks every set that says enough to be one, with what it offers in its
- * blanks. "Tick them and save" on a forgotten checkmark.
+ * blanks. "Complete unfinished sets" on a forgotten checkmark.
  */
 export function completeAll(
   workout: LiveWorkout,
@@ -688,7 +742,7 @@ export function completeAll(
   }
 }
 
-/** Seconds logged against timed sets that were ticked: a game, a run, a plank. */
+/** Seconds logged against timed sets that were ticked: a run, a plank. */
 export function timedSeconds(workout: LiveWorkout): number {
   let total = 0
   for (const exercise of workout.exercises) {
@@ -709,8 +763,14 @@ export function doneSets(workout: LiveWorkout): number {
 // Saving.
 // ---------------------------------------------------------------------------
 
-const round = (value: number | null, places: number) =>
-  value === null ? null : Math.round(value * 10 ** places) / 10 ** places
+/**
+ * Kilograms to the two places the database keeps, and metres to its one. A
+ * number typed, converted or imported goes through these before it is
+ * compared or saved: 135 lb unrounded never equals the same 135 lb saved last
+ * week, and read as a new record.
+ */
+export const roundKg = (kg: number) => Math.round(kg * 100) / 100
+export const roundMetres = (metres: number) => Math.round(metres * 10) / 10
 
 /**
  * A number held inside the range its column checks. The server refuses a whole
@@ -722,7 +782,16 @@ const within = (value: number | null, min: number, max: number) =>
 
 // By character, as Postgres counts: slicing UTF-16 units could cut an emoji in
 // half, and the broken surrogate failed the whole request.
-const clip = (text: string, length: number) => Array.from(text).slice(0, length).join('')
+/**
+ * A string cut to a length in characters, as Postgres counts them, with no
+ * space left dangling at the cut. Cutting UTF-16 units split an emoji at the
+ * limit and left half of it, which the database's JSON reader refuses, so the
+ * save of a long "Push Day 💪" failed.
+ */
+export function clip(text: string, length: number): string {
+  const characters = Array.from(text)
+  return characters.length > length ? characters.slice(0, length).join('').trimEnd() : text
+}
 
 /**
  * The document `save_workout` takes. Only ticked sets are saved, and an
@@ -743,7 +812,10 @@ export function toPayload(
     started_at: new Date(workout.startedAt).toISOString(),
     ended_at: new Date(Math.max(endedAt, workout.startedAt)).toISOString(),
     // The day it started on, in the phone's own zone.
-    log_date: dateKey(new Date(workout.startedAt)),
+    log_date:
+      workout.filed && workout.filed.startedAt === workout.startedAt
+        ? workout.filed.date
+        : dateKey(new Date(workout.startedAt)),
     routine_id: workout.routineId,
     kcal: within(extra.kcal === null ? null : Math.round(extra.kcal), 0, 10000),
     health_workout_id: extra.healthWorkoutId,
@@ -762,25 +834,22 @@ export function toPayload(
           // and one cleared afterwards is refused by `save_workout`, which would
           // turn the whole save into a final refusal.
           sets: exercise.sets
-            .filter(
-              (set) =>
-                set.done &&
-                (set.weightKg !== null ||
-                  set.reps !== null ||
-                  set.durationS !== null ||
-                  set.distanceM !== null),
-            )
+            .filter((set) => set.done && hasFigures(set))
             .slice(0, 99)
             .map((set) => ({
               kind: set.kind,
-              weight_kg: within(round(set.weightKg, 2), 0, 1000),
+              weight_kg: within(set.weightKg === null ? null : roundKg(set.weightKg), 0, 1000),
               reps: within(set.reps === null ? null : Math.round(set.reps), 0, 1000),
               duration_s: within(
                 set.durationS === null ? null : Math.round(set.durationS),
                 0,
                 86400,
               ),
-              distance_m: within(round(set.distanceM, 1), 0, 1_000_000),
+              distance_m: within(
+                set.distanceM === null ? null : roundMetres(set.distanceM),
+                0,
+                1_000_000,
+              ),
               rpe: set.rpe === null || set.rpe < 1 || set.rpe > 10 ? null : set.rpe,
             })),
         }))
