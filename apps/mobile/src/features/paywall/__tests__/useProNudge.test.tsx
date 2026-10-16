@@ -5,11 +5,22 @@ import { useProNudge } from '../useProNudge'
 
 const mockPush = jest.fn()
 const mockRouter = { push: mockPush }
-const mockState = { userId: 'first', entitled: false, loading: false, unknown: false, due: true }
+const mockState = {
+  userId: 'first',
+  entitled: false,
+  loading: false,
+  unknown: false,
+  due: true,
+  announcing: false,
+}
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }))
 jest.mock('@/data', () => ({
   useSession: () => ({ userId: mockState.userId }),
   useEntitlement: () => mockState,
+  useProfile: () => ({ data: { seen_announcements: [] } }),
+}))
+jest.mock('@/features/news/useAnnouncementOffer', () => ({
+  announcementHasTheFloor: () => mockState.announcing,
 }))
 jest.mock('@/features/tutorial', () => ({ tutorialOffered: () => true }))
 jest.mock('@/lib/analytics', () => ({ track: jest.fn() }))
@@ -29,6 +40,7 @@ beforeEach(() => {
     loading: false,
     unknown: false,
     due: true,
+    announcing: false,
   })
 })
 afterEach(() => jest.useRealTimers())
@@ -55,6 +67,23 @@ it('does not consume the preceding account clock after an account switch', async
 it('does not show another nudge if a different paywall resets the clock during the delay', async () => {
   await render(<Probe />)
   mockState.due = false
+  await act(() => jest.advanceTimersByTimeAsync(1500))
+  expect(mockPush).not.toHaveBeenCalled()
+  expect(track).not.toHaveBeenCalled()
+})
+
+it('stands aside on a launch with an announcement due', async () => {
+  mockState.announcing = true
+  await render(<Probe />)
+  await act(() => jest.advanceTimersByTimeAsync(1500))
+  expect(mockPush).not.toHaveBeenCalled()
+  expect(markPaywallSeen).not.toHaveBeenCalled()
+})
+
+it('does not push over an announcement put up during the delay', async () => {
+  const view = await render(<Probe />)
+  mockState.announcing = true
+  await view.rerender(<Probe />)
   await act(() => jest.advanceTimersByTimeAsync(1500))
   expect(mockPush).not.toHaveBeenCalled()
   expect(track).not.toHaveBeenCalled()

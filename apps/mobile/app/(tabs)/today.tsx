@@ -28,6 +28,7 @@ import {
   WaterCard,
   WeekPicker,
 } from '@/features/logging'
+import { AnnouncementCard, useAnnouncementOffer } from '@/features/news'
 import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
@@ -69,13 +70,38 @@ const ANNOUNCE_MS = 8000
 const yesterday = (key: string) => dateKey(subDays(parseISO(key), 1))
 
 /**
+ * Today, with its launch offers beside it. Beside rather than inside, because
+ * the screen has several early returns, and because both offers read the
+ * profile: inside, every profile save anywhere re-rendered the whole day.
+ */
+export default function TodayScreen() {
+  return (
+    <>
+      <TodayContent />
+      <LaunchOffers />
+    </>
+  )
+}
+
+/**
+ * The Pro nudge and the newest news, each at most once a launch. Here rather
+ * than in the tabs layout because both appear over this screen, a beat after
+ * it. See `features/paywall/nudge.ts` and `useAnnouncementOffer`.
+ */
+function LaunchOffers() {
+  useProNudge()
+  const { announcement, close } = useAnnouncementOffer()
+  return <AnnouncementCard announcement={announcement} source="launch" onClose={close} />
+}
+
+/**
  * Today.
  *
  * Three states: no budget yet, loading, and a day. The first is not an error;
  * `daily_goals` is empty until onboarding runs, because a ring drawn against a
  * placeholder is worse than no ring.
  */
-export default function TodayScreen() {
+function TodayContent() {
   const { t } = useTranslation(['logging', 'common', 'social'])
   const router = useRouter()
   const focused = useIsFocused()
@@ -87,13 +113,6 @@ export default function TodayScreen() {
    * The tour, offered once and never again.
    */
   useTutorialOffer()
-
-  /**
-   * The standing offer, for a free account, at most once every two days. Here
-   * rather than in the tabs layout for the reason the tour is: it appears over
-   * this screen, a beat after it. See `features/paywall/nudge.ts`.
-   */
-  useProNudge()
 
   const { selectedDate, setSelectedDate, todayKey } = useSelectedDate()
   const day = useDayLog(selectedDate)

@@ -1716,6 +1716,16 @@ export const vi = {
       distanceValue: 'đi được {{value}} km',
     },
   },
+  news: {
+    title: 'Tin tức',
+    done: 'Đã hiểu',
+    feedAutoShare: {
+      title: 'Bữa ăn của bạn giờ được đăng lên bảng tin',
+      body: 'Buổi tập đã hoàn thành cũng được đăng. Tắt từng mục trong Sửa hồ sơ.',
+      you: 'Bạn',
+      previewLabel: 'Ví dụ về một bữa ăn được đăng lên bảng tin của bạn',
+    },
+  },
   workouts: {
     title: 'Tập luyện',
 

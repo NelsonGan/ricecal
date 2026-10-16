@@ -779,6 +779,7 @@ export type Database = {
           review_reason: string | null
           review_status: Database['public']['Enums']['recipe_review']
           revision: number
+          seen_announcements: string[]
           sex: Database['public']['Enums']['sex'] | null
           social_joined_at: string | null
           target_weight_kg: number | null
@@ -806,6 +807,7 @@ export type Database = {
           review_reason?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           revision?: number
+          seen_announcements?: string[]
           sex?: Database['public']['Enums']['sex'] | null
           social_joined_at?: string | null
           target_weight_kg?: number | null
@@ -833,6 +835,7 @@ export type Database = {
           review_reason?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           revision?: number
+          seen_announcements?: string[]
           sex?: Database['public']['Enums']['sex'] | null
           social_joined_at?: string | null
           target_weight_kg?: number | null
@@ -3122,6 +3125,43 @@ export type Database = {
         }[]
       }
       search_normalize: { Args: { txt: string }; Returns: string }
+      see_announcements: {
+        Args: { p_auto_post_foods?: boolean; p_ids: string[] }
+        Returns: {
+          activity_level: Database['public']['Enums']['activity_level']
+          auto_post_foods: boolean
+          auto_post_workouts: boolean
+          avatar_path: string | null
+          bio: string
+          birth_date: string | null
+          created_at: string
+          display_name: string
+          food_styles: string[]
+          handle: string | null
+          height_cm: number | null
+          id: string
+          is_private: boolean
+          onboarded_at: string | null
+          photo_etag: string | null
+          quarantined: boolean
+          referral_source: string | null
+          review_reason: string | null
+          review_status: Database['public']['Enums']['recipe_review']
+          revision: number
+          seen_announcements: string[]
+          sex: Database['public']['Enums']['sex'] | null
+          social_joined_at: string | null
+          target_weight_kg: number | null
+          timezone: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'profiles'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       set_ingredient_quantity: {
         Args: { p_ingredient_id: string; p_quantity: number }
         Returns: undefined

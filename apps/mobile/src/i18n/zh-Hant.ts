@@ -1698,6 +1698,16 @@ export const zhHant = {
       distanceValue: '走了 {{value}} 公里',
     },
   },
+  news: {
+    title: '公告',
+    done: '知道了',
+    feedAutoShare: {
+      title: '你的餐點現在會發布到動態',
+      body: '完成的訓練也會發布。可在「編輯個人資料」中分別關閉。',
+      you: '你',
+      previewLabel: '發布到你動態中的餐點範例',
+    },
+  },
   workouts: {
     title: '訓練',
 

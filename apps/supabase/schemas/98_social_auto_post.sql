@@ -1,4 +1,6 @@
--- This is opt-in and defaults off for every existing and new account.
+-- Off by default in the column, so an account made by a build older than the
+-- feed never posts. Current builds switch it on: onboarding for a new account,
+-- and the feed announcement for an existing one (98_announcements.sql).
 alter table public.profiles
   add column auto_post_foods boolean not null default false;
 
@@ -21,6 +23,10 @@ begin
   if not found then return null; end if;
   select * into v_entry from public.food_logs f where f.id = new.id;
   if not found then return null; end if;
+  -- Only today's and yesterday's meals: a day filled in after the fact is not
+  -- news, and it would top everyone's feed as if just eaten. Workouts have the
+  -- same rule (save_workout).
+  if v_entry.log_date < public.local_today(new.user_id) - 1 then return null; end if;
   if exists (select 1 from public.social_posts p where p.source_entry_id = new.id) then
     return null;
   end if;

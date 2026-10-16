@@ -85,8 +85,10 @@ export {
   bodyFrom,
   type OnboardingAnswers,
   type ProfilePatch,
+  seeAnnouncements,
   useFinishOnboarding,
   useProfile,
+  useSeeAnnouncement,
   useUpdateProfile,
 } from './profile'
 export {

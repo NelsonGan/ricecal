@@ -10,6 +10,7 @@ select no_plan();
 \set fourth 'a8810000-0000-4000-8000-000000000004'
 \set fifth 'a8810000-0000-4000-8000-000000000005'
 \set sixth 'a8810000-0000-4000-8000-000000000006'
+\set seventh 'a8810000-0000-4000-8000-000000000007'
 
 insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
@@ -66,6 +67,11 @@ select is(public.create_social_post(:'fourth', 'My words', 'followers')::text,
 reset role;
 select is((select count(*)::int from public.social_posts where source_entry_id = :'fourth'), 1,
   'one meal cannot create duplicate posts');
+insert into public.food_logs
+  (id, user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor, log_date)
+values (:'seventh', :'owner', 'Last week rice', 200, 40, 4, 2, '1 bowl', 1, public.local_today(:'owner') - 3);
+select is((select count(*)::int from public.social_posts where source_entry_id = :'seventh'), 0,
+  'a meal filled in for an earlier day is not posted as news');
 select is((select used from public.social_rate_limits where user_id = :'owner' and action = 'post'), 3,
   'automatic posts spend the regular hourly posting budget');
 update public.social_rate_limits set used = 30

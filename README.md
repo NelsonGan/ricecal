@@ -33,6 +33,7 @@ project works is here.
 - [Photos](#photos)
 - [Money: free and Pro](#money-free-and-pro)
 - [Asking for a rating](#asking-for-a-rating)
+- [News announcements](#news-announcements)
 - [Periodic jobs](#periodic-jobs)
 - [Analytics](#analytics)
 - [The design system](#the-design-system)
@@ -1250,8 +1251,9 @@ The same page has a Private profile switch. It hides the account from people
 search, suggestions and Discover while leaving direct links and existing follows
 available.
 The switch's explanation sits behind its info button. Auto post foods sits below
-it, off by default. Turning it on shares each new food to the feed as the food
-is committed. A private profile shares those posts with followers only. Auto post
+it: on for an account made by a current build, and switched on by the feed
+announcement for an older one (see "News announcements"). On, it shares each
+new food for today or yesterday to the feed as the food is committed. A private profile shares those posts with followers only. Auto post
 workouts sits below that, on by default; see "Workouts on the feed".
 Clipboard support requires a native 1.0.5 build; the app-version runtime keeps this bundle off older binaries.
 
@@ -2565,7 +2567,8 @@ out of the middle.
 
 ### Product contract and implementation plan
 
-Posting is explicit by default. With Auto post foods off, logging a meal never
+Posting is automatic for new accounts and for any account that has seen the feed
+announcement, and either can turn it off. With Auto post foods off, logging a meal never
 publishes it. The saved entry offers **Share to feed**, which opens a preview of the food name,
 photograph or drawing, calories and macros, an optional caption (280 characters), and an audience:
 Everyone or Followers. With automatic posting off, only pressing Post creates a post. A failed publication
@@ -2639,10 +2642,15 @@ source-entry reference drives reads and deletion through the post visibility
 check. Read RPCs return explicit public fields. Diary and recipe RLS are never
 widened to implement the feed.
 
-Auto post foods is a private profile preference, false for every new and existing
-account. A deferred insert trigger publishes each new food after its transaction
+Auto post foods is a private profile preference. The column defaults to false,
+so an account made by an older build starts with it off; onboarding in a current
+build writes it on, and the feed announcement (see
+[News announcements](#news-announcements)) switches it on once for each account
+that existed before. Either way it stays the owner's switch on Edit profile. A deferred insert trigger publishes each new food after its transaction
 finishes, so a scan's components and any same-transaction correction are ready
-when it posts. It uses the same diary totals and ownership rules as manual sharing.
+when it posts. Only a food logged for today or yesterday in the account's
+timezone posts: a day filled in after the fact is not news, and would top
+everyone's feed as if just eaten, the rule workouts already had. It uses the same diary totals and ownership rules as manual sharing.
 Public profiles post to Everyone; private profiles post to Followers. Existing
 posts stay as they were when the preference is switched off. A manual share of
 an automatically posted entry opens its existing post instead of making another.
@@ -2674,8 +2682,9 @@ a newly inserted workout (never an edit or a retried save) when the account has
 `social_joined_at` set, the workout ended in the last 24 hours, and the document
 does not say `"post": false`, which an import always does: years of history at
 once is not news, and an old workout logged today would top everyone's feed.
-Unlike Auto post foods it never joins anyone to the feed; a default that did
-would give a public profile to everyone who has never opened the Feed tab. A
+It never joins anyone to the feed itself. Auto post foods does, and is now on
+by default (see "News announcements"), so for most accounts the first logged
+meal joins them and their workouts follow; the feed announcement says so. A
 failed automatic post (budget spent, profile under review) never fails the save.
 A workout can also be shared by hand from its page, which opens the composer
 with the workout's preview, or edited there once posted.
@@ -5046,6 +5055,78 @@ too tight looks exactly like a feature nobody uses.
 
 ---
 
+## News announcements
+
+A card over Today announces a change to the app, once per account, and a
+**News** row under Me lists every announcement since, newest first. The
+catalogue is code (`src/features/news/announcements.ts`): each entry has an id, a
+release date, a picture drawn from the app's own components, a title, a body
+and an optional button, with the copy under the `news` namespace in all thirteen
+languages. Adding one is an entry there, its copy, and a picture in
+`AnnouncementCard`.
+
+### The rules
+
+- **Once per account, not per phone.** `profiles.seen_announcements` holds the
+  ids an account has been shown. It is on the account because showing a card can
+  change a setting, and a per-install flag would show it again after a
+  reinstall or on a second phone and switch the setting back on.
+- **Seen when it is on screen, and not before.** The card records itself from
+  the native modal's `onShow`, through `see_announcements`
+  (`98_announcements.sql`), which appends the id and applies what the
+  announcement enables in one statement and returns nothing when the id was
+  already there. iOS refuses to present a modal over another one and says
+  nothing; anything written before `onShow` would switch a setting on behind a
+  card nobody saw. A write that fails leaves the card due, so it comes back.
+- **The client cannot write the list.** There is no column grant, only the
+  function, so two phones on builds that know different announcements append
+  rather than overwrite each other, and the ids are checked on the server.
+- **The first showing anywhere claims.** From the launch or from the list under
+  Me, whichever comes first. Every later showing finds it seen and changes
+  nothing, or reading old news would undo a choice made since.
+- **Only the newest.** Somebody who missed several releases sees one card. The
+  older ones are in the list; once the newest is seen, nothing older appears on
+  its own. So an announcement that switches something on must not be followed
+  by a newer one while it is still reaching people: a slow updater would get
+  the newer card and never the change. Fold the message into the newer card.
+- **Not for new accounts.** Onboarding marks every id this build knows as seen,
+  before `onboarded_at`, so somebody who has just joined is not told about
+  changes to an app they never used. Onboarding also sets the new default
+  itself. An account made by an older build has none of the ids, and sees the
+  newest the first time it opens a build that has it.
+- **Not on a launch the tour is offered on.** Whether the tour had been offered
+  is read once per run of the app, not live: the tour's toast marks itself
+  offered a second in, and a live read let the card cover it a tab switch
+  later. A fresh sign-in on a new phone is such a launch.
+- **Never on top of the Pro nudge.** The nudge stands aside on any launch where
+  an announcement is due or up (`announcementHasTheFloor`): an announcement is
+  once per account and the nudge has a two-day clock.
+- **Only while Today is on top, online, after a fresh read.** Leaving Today
+  cancels the wait and focus is asked again after the read; the read is the
+  profile within 30 seconds, so a card another phone has shown is not shown
+  again from a persisted cache.
+
+### Auto post foods, the first announcement
+
+`feed_auto_share_2026_10` tells an existing account that meals now post to the
+feed, and switches `auto_post_foods` on when it is first on screen. Its button
+opens Edit profile, where the switch is. New accounts get the same default
+from onboarding instead (`autoPostFoods: true` in the profile write) and no
+card. Neither path touches the column default, which stays false: a binary
+already in the stores that onboards somebody has no announcement to tell them,
+so it keeps the old opt-in behaviour.
+
+The first automatic meal joins the account to the feed, and workouts post for
+anyone on the feed (see "Workouts on the feed"), so the card says workouts post
+too. It cannot tell an account that never touched the switch from one that
+turned it off in an earlier build: both are false, and both are switched on.
+
+It grows the database. Over the 30 days to 2026-10-16 the hosted project logged
+about 27,400 meals and held 361 posts in 400 kB, so a post for every meal is
+roughly 15 to 30 MB a month on a 115 MB database with a 500 MB ceiling (see
+"Running SQL against the hosted database" in `AGENTS.md`). Check
+`pg_database_size` after the release reaches most accounts.
+
 ## Periodic jobs
 
 `apps/cloudflare/workers/jobs` is the whole scheduler. One Worker, one job per
@@ -5349,12 +5430,13 @@ events, 815 weekly users, 338 installs) ×4.3.
 | --- | --- | --- |
 | The 48 decision events | 230,000 | Mixpanel's week minus its SDK events, ×4.3. `Log Sheet Opened`, `Food Searched`, `Meal Logged` and `Food Picked` are three quarters of it |
 | Workout events (`Workout Started`, `Finished`, `Discarded`, `Routine Saved`, `Workouts Imported`) | 4,000 | New with the Workouts tab, so no history: about 60 workouts a day at launch, each a start and an end, plus routine saves. An import is one event however many workouts it brings |
+| News (`Announcement Shown`, `CTA Tapped`, `Dismissed`, `Auto Post Toggled`) | 3,000 | One launch card per account per announcement (~1,500 monthly accounts, a shown and a close each), plus the News list and the rare switch on Edit profile |
 | `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
 | `First App Open` | 1,500 | ~340 installs a week |
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
-| **Total** | **~254,000 (25%)** | Room for four times today's audience |
+| **Total** | **~257,000 (26%)** | Room for four times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -5372,17 +5454,17 @@ belongs in GA4 only, and RiceCal has none yet.
 
 ### Product analytics coverage
 
-Audited 2026-10-15 against the mobile tracking plan and call sites. This is the
+Audited 2026-10-16 against the mobile tracking plan and call sites. This is the
 full mobile product tracking reference. The website section records the separate
 acquisition surface and links its own repository contract. A defined event is
 eligible for delivery; its presence here is not proof of ingestion or billing.
 
 | Surface / operation | Definitions | Destinations / counting rule |
 | --- | --- | --- |
-| Native app custom events | 54 | All 54 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
+| Native app custom events | 59 | All 59 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
 | Website decisions | 6 | Same PostHog project (page views as `$pageview`); five namespaced GA4 events plus manually managed `page_view` in the shared property |
 | Native screen views | 0 | No `$screen` or `screen_view` emitter; Firebase automatic screen reporting is disabled. Session replay shows navigation |
-| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 54 custom app definitions |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 59 custom app definitions |
 | Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
 | Per-install engagement events | 2 | `First App Open` once per install and `Daily App Open` once per local day; every other event is repeatable product use |
 
@@ -5449,6 +5531,10 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Rating Prompt Skipped | ricecal_rating_prompt_skipped | trigger: RatingTrigger; reason: RatingSkipReason | `src/lib/rating/prompt.ts` | Automatic meal/review checkpoint fails a gate; once per tested checkpoint, with the first failing reason. Not every logged meal. |
 | Rating Prompt Answered | ricecal_rating_prompt_answered | trigger: RatingTrigger; answer: 'liked' &#124; 'disliked' &#124; 'dismissed' | `src/lib/rating/prompt.ts` | App rating question receives liked/disliked/dismissed; each answer. It does not report a store rating. |
 | Rating Feedback Opened | ricecal_rating_feedback_opened | trigger: RatingTrigger | `src/lib/rating/prompt.ts` | Feedback link after disliking is requested; each request, without claiming a message was sent. |
+| Announcement Shown | ricecal_announcement_shown | announcement: string; source: AnnouncementSource | `src/features/news/AnnouncementCard.tsx` | The native modal reports the card on screen (`onShow`): `launch` at most once per account per run of the app, `settings` each time one is opened from the News list. A card iOS refuses to present is not counted. |
+| Announcement CTA Tapped | ricecal_announcement_cta_tapped | announcement: string; source: AnnouncementSource; cta: AnnouncementCta | `src/features/news/AnnouncementCard.tsx` | The card's button is tapped; each tap, before the destination screen opens. It does not prove anything was changed there. |
+| Announcement Dismissed | ricecal_announcement_dismissed | announcement: string; source: AnnouncementSource; via: 'done' &#124; 'close' | `src/features/news/AnnouncementCard.tsx` | The card closes without its button: "Got it" (`done`), or the cross, scrim or back gesture (`close`); once per close. |
+| Auto Post Toggled | ricecal_auto_post_toggled | kind: 'foods' &#124; 'workouts'; enabled: boolean | `app/settings/account.tsx` | An Auto post foods or workouts switch on Edit profile is saved; each successful write. Onboarding's default and an announcement switching it on send nothing. |
 <!-- analytics-app-events:end -->
 
 ### Common context and provider conversion
@@ -5465,7 +5551,7 @@ that instant.
 
 | Contract | PostHog | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 55 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 59 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
@@ -5513,6 +5599,11 @@ user text. Extend the source type and these tables together when its domain chan
 | Rating skip `reason` / `RatingSkipReason` | `too_soon_after_install`, `too_soon_after_update`, `too_few_meals`, `too_few_active_days`, `asked_recently`, `asked_on_this_version` | `lib/rating/state.ts`; first failing gate at a checkpoint |
 | Counts and durations | `results`, `position`, `ingredients`, `servings`, `components`, `count`, `days`, `duration_ms`, `tier` | Shape/operation diagnostics. Search result counts/positions describe the answer or selected result, not diary nutrition |
 | Widget water `preset` | Home-screen action preset volume | Widget action choice; no daily water total or diary history |
+| `announcement` | An id from `features/news/announcements.ts`, lowercase letters, digits and underscores (checked by `see_announcements`); currently `feed_auto_share_2026_10` | Never free text; a renamed id is a new announcement |
+| `source` / `AnnouncementSource` | `launch`, `settings` | `launch` is the card the app puts over Today; `settings` is one opened from the News list under Me |
+| `cta` / `AnnouncementCta` | `edit_profile` | Where the button leads, named for analytics; a tap, not a changed setting |
+| Announcement `via` | `done` ("Got it"), `close` (cross, scrim or back gesture) | Closing without the button |
+| Auto post `kind`, `enabled` | `foods` or `workouts`; the new switch value | Edit profile switches only; onboarding's default and the announcement's switch-on send nothing |
 
 ### Instrumented surfaces, paywalls and frequency gates
 
@@ -5529,11 +5620,13 @@ user text. Extend the source type and these tables together when its domain chan
 | Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
 | Hard paywall `/paywall` | `Paywall Shown` with `screen: hard` and refused `ProFeature` | `data/refusals.ts` records before navigation; review redirects also record. Free camera allowance is three scans/day; a further refusal can reach camera trigger |
 | Intro paywall | `Paywall Shown` with `intro` as screen and trigger | `useTrackPaywallShown` records once per mounted presentation; revisits count again |
-| Standing Pro nudge | `Paywall Shown`, `screen: hard`, `trigger: nudge` | At timer scheduling: known free entitlement, tutorial already offered, due per-account clock and not offered in this mounted launch. Account/entitlement changes cancel the timer; a newly eligible account schedules its own. Any recorded paywall restarts the two-day clock, which is rechecked when the timer fires |
+| Standing Pro nudge | `Paywall Shown`, `screen: hard`, `trigger: nudge` | At timer scheduling: known free entitlement, tutorial already offered, profile loaded with no announcement due or claimed this launch, due per-account clock and not offered in this mounted launch. Account/entitlement changes cancel the timer; a newly eligible account schedules its own. Any recorded paywall restarts the two-day clock, which is rechecked when the timer fires |
 | Checkout | Optional plan change, checkout attempt and caught cancellation/error | Default selection sends no Plan Selected. Purchase Started precedes offering lookup. Purchase Abandoned can include a post-purchase entitlement-wait error |
 | Restore | Returned restored/nothing or unavailable result | Restore Requested is a result event; thrown restores have no row. Restoration never adds settled revenue |
 | Automatic rating checkpoints | Crossing each 15-meal boundary; second unlocked review read, then each fifth read | Gates require five days since install, two since version change, at least 15 meals, three active days, 60 days since last ask and no ask on this version |
 | Manual rating request | App rating question requested manually | Bypasses automatic gates. Answers still update the cooldown; shown/answered is not a published store rating |
+| News announcements | `Announcement Shown`, then `CTA Tapped` or `Dismissed`, by `source` | Counted from `onShow`. `launch` is the newest card, once per account unless its seen write fails (then it is shown again on a later launch); `settings` repeats per open. The launch card skips the launch the tour is offered on, and the Pro nudge skips any launch with one due |
+| Auto post switches | `Auto Post Toggled` by `kind` and `enabled` | Only the Edit profile switches. The onboarding default and the announcement's switch-on are writes, not events |
 
 ### Product reports and funnel definitions
 
@@ -5551,6 +5644,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Are reports/reminders useful? | Notification Opened, Review Opened and Review Card Shared by kind | Notification taps exclude meal reminders; locked review opens count. Open/share does not prove the full report was read |
 | Why did they drop off or crash? | Session replays linked from a funnel step or an exception; `$exception` by issue | Replays are sampled; absence of a replay is not absence of the problem |
 | Does the public site drive demand? | Website `$pageview` → App Download Clicked, by placement/target/live and region | Clicks are acquisition intent; no browser-to-account installation or purchase join is implemented |
+| Do announcements land? | Announcement Shown (`source: launch`) → Announcement CTA Tapped or Dismissed, by announcement; Auto Post Toggled with `enabled: false` afterwards | A tap is intent, not a change. For the feed announcement, opting out after it is the toggle event; auto post was already on when the card appeared |
 | Are rating prompts timely? | Rating Prompt Skipped/Shown/Answered, by trigger/reason | Skips are checkpoint results. Liked/disliked/dismissed is the app question; no star rating or store review completion is collected |
 
 Use unique users for adoption/conversion and event totals for operation volume.
@@ -5851,7 +5945,7 @@ includes the optimistic camera/describe insert; it is not a persisted-meal total
 Investigate a new name, a sharp volume change, unexpected free-text properties,
 missing identity, or purchase events from a second producer.
 
-Automated checks: the inventory test (`inventory.test.ts`) checks all 55 names,
+Automated checks: the inventory test (`inventory.test.ts`) checks all 59 names,
 exact GA4 mappings, typed payloads, source-file existence and a nonempty
 trigger column, and forbids app-side settled revenue fields; `engagement.test.ts`
 covers install detection and the once-a-day claim; `posthog.test.ts` covers the
