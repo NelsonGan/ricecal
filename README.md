@@ -1249,7 +1249,8 @@ search, suggestions and Discover while leaving direct links and existing follows
 available.
 The switch's explanation sits behind its info button. Auto post foods sits below
 it, off by default. Turning it on shares each new food to the feed as the food
-is committed. A private profile shares those posts with followers only.
+is committed. A private profile shares those posts with followers only. Auto post
+workouts sits below that, on by default; see "Workouts on the feed".
 Clipboard support requires a native 1.0.5 build; the app-version runtime keeps this bundle off older binaries.
 
 **Password setup and changes are different forms.** `has_account_password()`
@@ -2647,6 +2648,40 @@ Automatic posts join the account to the social feed and use the same hourly post
 limit as Share. A quarantined profile does not publish; neither condition blocks
 the private diary entry.
 
+### Workouts on the feed
+
+A post shares a meal or a workout (`social_posts.kind`). A workout post points at
+its workout (`source_workout_id`, keyed with the author so it can only be the
+author's own) and reads it live through `private.social_post_workout`: name,
+start, duration, sets, volume and the exercise list, never the notes. Records are
+counted once, when it is posted (`workout_records`), because scoring them per
+reader would rescore the author's whole history; the count is taken inside
+`save_workout` or `create_social_workout_post`, which run as the user, since the
+owner-run posting function would score every account's sets. Likes, comments,
+reports, counters and notifications are the same rows for both kinds.
+
+**Every read that returns posts is food-only unless asked.** `social_feed`,
+`social_profile_posts`, `social_post` and the candidate helper take `p_kinds`,
+defaulting to `{food}`. The apps released before workout posts can only draw a
+meal, and a workout post reaching one would draw an empty food card; this app
+asks for both. A new kind of post must follow the same rule.
+
+**Sharing workouts is on by default, but only for someone already on the
+feed.** `profiles.auto_post_workouts` defaults to true, and `save_workout` posts
+a newly inserted workout (never an edit or a retried save) when the account has
+`social_joined_at` set, the workout ended in the last 24 hours, and the document
+does not say `"post": false`, which an import always does: years of history at
+once is not news, and an old workout logged today would top everyone's feed.
+Unlike Auto post foods it never joins anyone to the feed; a default that did
+would give a public profile to everyone who has never opened the Feed tab. A
+failed automatic post (budget spent, profile under review) never fails the save.
+A workout can also be shared by hand from its page, which opens the composer
+with the workout's preview, or edited there once posted.
+
+The profile has two tabs, Food (the grid) and Workouts (the shared workouts as
+cards, under their count, time and volume from `social_workout_stats`, over what
+the viewer can see).
+
 There is at most one post per source entry, so a retried publish returns that
 post; the entry is the retry key and a post carries no request token. A client
 request UUID makes a retry of an interrupted comment submission the same
@@ -3748,10 +3783,8 @@ any other.
 
 **The drawings** are 320 px WebPs in `apps/mobile/assets/exercises/`, one per
 id, registered in the generated `exerciseArt.generated.ts`. A test fails when an
-exercise has none, apart from the 48 entries added for parity with Strong while
-Codex image generation was at its usage limit: they are listed in that test
-(`awaitingArt` in `model.test.ts`), draw their category's icon until then, and
-**must be drawn before the tab ships**. To add or redraw one:
+exercise has none, so a new catalogue entry needs its drawing in the same
+change. To add or redraw one:
 
 ```sh
 node scripts/exercise-art/generate.mjs --only <id>[,<id>] [--force]
@@ -4129,6 +4162,16 @@ dismissed to see what had been opened. Its chevron goes back like any card.
 most actions open another sheet or push a screen, and starting either while the
 native sheet is still leaving is how iOS ends up presenting nothing.
 
+**A question is a dialog; a menu is a sheet.** The questions the workout flow
+asks (unfinished sets, update the routine, "Still training?", nothing to save,
+discard, start over a running workout) are `Dialog`s (`ui/Dialog.tsx`): centred,
+answers stacked as full-width buttons in reach of either thumb, Cancel last. At
+the foot of a bottom sheet the answers sat at the far edge and read as a menu.
+Lists of things to do to an item (an exercise's menu, a set's type) stay sheets,
+and so do the delete confirmations, which share `ConfirmSheet` with the rest of
+the app and stay open when a delete fails. A `Dialog` answer runs once the modal
+has gone, for the same reason as `ActionSheet`'s.
+
 ### The set pad
 
 A set's fields use the app's own number pad with two big keys beside the
@@ -4260,8 +4303,6 @@ Left out on purpose:
 - **Routine folders.** The built-in templates are already grouped, and a user's
   own routines are a handful; folders are a screen of management for a list
   that fits on one.
-- **A workout feed.** RiceCal's feed is about food, and posting a set list to it
-  is a separate decision about what the feed is for.
 - **Body measurements.** Weight is already logged on Today; tape measurements
   belong there, not in a training log.
 - **A watch app.** A project of its own, not a gap in this one.
@@ -4287,8 +4328,13 @@ and writes the file there.
 
 ### Importing from Strong and Hevy
 
-Settings, then "Import from Strong or Hevy": pick the CSV either app exports,
-see what is in it, import. `features/workouts/import/` is pure and tested from
+Settings has a row for each app, Import from Strong and Import from Hevy, each
+with that app's own icon (from Brandfetch, committed under
+`assets/brands/apps/`, `features/workouts/import/apps.ts`). The row names the
+screen and says where that app keeps its export; the file still decides the
+format, so the other app's export picked by mistake imports all the same. Pick
+the CSV, see what is in it, import. Imported workouts are never posted to the
+feed. `features/workouts/import/` is pure and tested from
 strings; `data/workout-import.ts` does the saving.
 
 ```
@@ -4379,11 +4425,9 @@ fails if it points at an id that does not exist.
 
 ### Releasing it
 
-**Not before the 48 drawings in `awaitingArt` exist** (see the catalogue
-section): run `generate.mjs` once Codex's image limit resets, look at every
-one, `process.py`, then empty the list. Codex's image allowance is its own
-daily cap, apart from the general usage the Codex app shows; when it runs out
-the drawing fails with `usage_limit_reached` and a `resets_at` in
+Codex's image allowance, which draws the exercises, is its own daily cap,
+apart from the general usage the Codex app shows; when it runs out the drawing
+fails with `usage_limit_reached` and a `resets_at` in
 `$TMPDIR/codex-image.*/run.jsonl.err`.
 
 **Imports make big histories.** A five-year Strong export is around 20,000 to
@@ -4398,9 +4442,14 @@ overlap read 17 ms. If pages slow down past that, store each workout's record
 count at save rather than narrowing the view, and rescore the later workouts of
 the same exercises whenever an earlier one is saved, which an import always is.
 
-Additive end to end. Three migrations add two enums, five tables, three views,
-eight functions and three `user_settings` columns with defaults, and touch
-nothing an older binary reads; no edge function or Worker changes. Deploy the
+Additive end to end. One migration (`20261016025548_workouts.sql`) adds the
+workout enums, tables, views and functions, three `user_settings` columns with
+defaults, and workout posts: a `social_post_kind` enum, two nullable
+`social_posts` columns plus `workout_records`, `profiles.auto_post_workouts`,
+and a `p_kinds` argument on the post reads that defaults to food, so nothing an
+older binary reads changes. `db diff` left out the revokes that keep new
+functions from `PUBLIC` and `anon`, and the client-table revokes, so the
+migration restates both at its foot. No edge function or Worker changes. Deploy the
 migrations before the app, as always. The five analytics events are in the
 canonical table under Analytics; sharing and exporting send none.
 

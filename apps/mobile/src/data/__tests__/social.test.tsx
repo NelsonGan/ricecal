@@ -8,6 +8,7 @@ import {
   type SocialPost,
   socialCursorArgs,
   socialEntryPost,
+  socialFeedParams,
   socialPage,
   useSocialAction,
   useSocialFeed,
@@ -230,7 +231,7 @@ it('does not ask for the unread count while the feed is off screen', async () =>
 it('draws a like on every cached copy of the post without refetching a feed', async () => {
   mockRpc.mockImplementation(() => response(null))
   const { client, wrapper } = setup()
-  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'following' })
+  const feedKey = keys.socialRead('viewer', 'social_feed', socialFeedParams('following'))
   const postKey = keys.socialRead('viewer', 'social_post', { id: 'post' })
   const liked = { id: 'post', is_liked: false, like_count: 4 } as SocialPost
   const other = { id: 'other', is_liked: false, like_count: 1 } as SocialPost
@@ -262,7 +263,7 @@ it('draws a like on every cached copy of the post without refetching a feed', as
 it('keeps a successful like when an older feed request finishes late', async () => {
   mockRpc.mockImplementation(() => response(null))
   const { client, wrapper } = setup()
-  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'following' })
+  const feedKey = keys.socialRead('viewer', 'social_feed', socialFeedParams('following'))
   const stale = { id: 'post', is_liked: false, like_count: 4 } as SocialPost
   client.setQueryData(feedKey, {
     pages: [{ rows: [stale], next: null }],
@@ -308,7 +309,7 @@ it('keeps a successful like when an older feed request finishes late', async () 
 it('puts a like back when the server refuses it', async () => {
   mockRpc.mockImplementation(() => response(null, new Error('Post unavailable')))
   const { client, wrapper } = setup()
-  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'discover' })
+  const feedKey = keys.socialRead('viewer', 'social_feed', socialFeedParams('discover'))
   const post = { id: 'post', is_liked: true, like_count: 2 } as SocialPost
   client.setQueryData(feedKey, { pages: [{ rows: [post], next: null }], pageParams: [null] })
 
@@ -332,7 +333,7 @@ it('rolls back only the failed post while another Like succeeds', async () => {
     params.p_post_id === 'first' ? firstRequest.request : secondRequest.request,
   )
   const { client, wrapper } = setup()
-  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'discover' })
+  const feedKey = keys.socialRead('viewer', 'social_feed', socialFeedParams('discover'))
   const first = { id: 'first', is_liked: false, like_count: 4 } as SocialPost
   const second = { id: 'second', is_liked: false, like_count: 8 } as SocialPost
   client.setQueryData(feedKey, {
@@ -394,7 +395,7 @@ it('sends same-post Likes in tap order and keeps the newer choice after a failur
     .mockImplementationOnce(() => olderRequest.request)
     .mockImplementationOnce(() => newerRequest.request)
   const { client, wrapper } = setup()
-  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'discover' })
+  const feedKey = keys.socialRead('viewer', 'social_feed', socialFeedParams('discover'))
   const post = { id: 'post', is_liked: false, like_count: 4 } as SocialPost
   client.setQueryData(feedKey, { pages: [{ rows: [post], next: null }], pageParams: [null] })
 
@@ -453,7 +454,7 @@ it('sends same-post Likes in tap order and keeps the newer choice after a failur
 it('refreshes only the commented post and counts an approved comment in place', async () => {
   mockRpc.mockImplementation(() => response('comment-id'))
   const { client, wrapper } = setup()
-  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'following' })
+  const feedKey = keys.socialRead('viewer', 'social_feed', socialFeedParams('following'))
   const commentsKey = keys.socialRead('viewer', 'social_comments', { p_post_id: 'post' })
   const otherCommentsKey = keys.socialRead('viewer', 'social_comments', { p_post_id: 'other' })
   const postKey = keys.socialRead('viewer', 'social_post', { id: 'post' })
@@ -606,8 +607,8 @@ it.each([
 it('keeps Discover stable after Follow and refreshes only the Following feed', async () => {
   mockRpc.mockImplementation(() => response(null))
   const { client, wrapper } = setup()
-  const discoverKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'discover' })
-  const followingKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'following' })
+  const discoverKey = keys.socialRead('viewer', 'social_feed', socialFeedParams('discover'))
+  const followingKey = keys.socialRead('viewer', 'social_feed', socialFeedParams('following'))
   const profileKey = keys.socialRead('viewer', 'social_profile', { p_user_id: 'author' })
   const target = {
     id: 'target',
@@ -688,7 +689,7 @@ it('keeps loaded pages and retries the same cursor after the next page fails', a
 it('clears cached public content after reporting instead of leaving it visible while stale', async () => {
   mockRpc.mockImplementation(() => response(null))
   const { client, wrapper } = setup()
-  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'following' })
+  const feedKey = keys.socialRead('viewer', 'social_feed', socialFeedParams('following'))
   client.setQueryData(feedKey, {
     pages: [{ rows: [{ id: 'reported' } as SocialPost], next: null }],
     pageParams: [null],

@@ -8,6 +8,7 @@ export {
   StatGrid,
   StatStrip,
   WorkoutCard,
+  WorkoutPreview,
 } from './cards'
 export {
   CATEGORIES,
@@ -31,6 +32,7 @@ export { estimateKcal } from './energy'
 export { workoutsCsv } from './exportCsv'
 export * from './format'
 export { removeWorkoutFromHealth, syncWorkoutToHealth } from './health'
+export { IMPORT_APPS } from './import/apps'
 export { buildImport, type ImportPlan, type ImportUnits } from './import/build'
 export { type ParsedExport, parseExport } from './import/parse'
 export {

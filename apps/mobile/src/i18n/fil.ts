@@ -105,6 +105,17 @@ export const fil = {
     emptyFollowing: 'Sundan ang iba o magbahagi ng pagkain mula sa talaarawan.',
     emptyPeople: 'Walang nahanap',
     emptyPosts: 'Wala pang post',
+    foodTab: 'Pagkain',
+    workoutsTab: 'Workout',
+    emptyMeals: 'Wala pang naibahaging pagkain',
+    emptyWorkouts: 'Wala pang naibahaging workout',
+    newWorkoutPost: 'Ibahagi ang workout',
+    captionWorkoutPlaceholder: 'Magsabi tungkol sa workout mo',
+    shareWorkoutHint:
+      'Ang pangalan, oras, mga numero, ehersisyo ng workout na ito at ang caption mo lang ang ibinabahagi, hindi kailanman ang notes. Kapag binura ang workout, mabubura rin ang post nito.',
+    autoPostWorkouts: 'Awtomatikong i-post ang workout',
+    autoPostWorkoutsHint:
+      'Awtomatikong lalabas sa feed ang mga workout na matatapos mo. Hindi kailanman ang mga na-import.',
     emptyComments: 'Simulan ang usapan',
     emptyConnections: 'Wala pa rito',
     emptyBlocked: 'Walang naka-block',
@@ -2106,8 +2117,11 @@ export const fil = {
 
     import: {
       title: 'I-import ang mga workout',
-      entry: 'I-import mula sa Strong o Hevy',
+      fromStrong: 'I-import mula sa Strong',
+      fromHevy: 'I-import mula sa Hevy',
       intro: 'I-export ang mga workout mo bilang CSV sa Strong o Hevy, saka piliin dito ang file.',
+      introStrong: 'I-export ang mga workout mo sa Strong bilang CSV, saka piliin dito ang file.',
+      introHevy: 'I-export ang mga workout mo sa Hevy bilang CSV, saka piliin dito ang file.',
       choose: 'Pumili ng CSV file',
       another: 'Pumili ng ibang file',
       unknown: 'Hindi ito export mula sa Strong o Hevy.',

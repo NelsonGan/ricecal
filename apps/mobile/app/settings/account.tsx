@@ -79,6 +79,7 @@ export default function AccountScreen() {
   const [handleHelpOpen, setHandleHelpOpen] = useState(false)
   const [privateHelpOpen, setPrivateHelpOpen] = useState(false)
   const [autoPostHelpOpen, setAutoPostHelpOpen] = useState(false)
+  const [workoutPostHelpOpen, setWorkoutPostHelpOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -165,6 +166,16 @@ export default function AccountScreen() {
     try {
       if (!(await save())) return
       await updateProfile.mutateAsync({ autoPostFoods: value })
+    } catch {
+      toast.show({ title: t('social:saveFailed'), tone: 'error' })
+    }
+  }
+
+  const setAutoPostWorkouts = async (value: boolean) => {
+    if (!profile || busy || !online) return
+    try {
+      if (!(await save())) return
+      await updateProfile.mutateAsync({ autoPostWorkouts: value })
     } catch {
       toast.show({ title: t('social:saveFailed'), tone: 'error' })
     }
@@ -409,6 +420,30 @@ export default function AccountScreen() {
               accessibilityLabel={t('social:autoPostFoods')}
             />
           </View>
+          <View className="flex-row items-center gap-3 border-t border-line pt-4">
+            <View className="min-w-0 flex-1 flex-row items-center gap-0">
+              <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
+                {t('social:autoPostWorkouts')}
+              </Text>
+              <IconButton
+                variant="ghost"
+                size="xxs"
+                hitSlop={8}
+                accessibilityLabel={t('social:autoPostWorkoutsHint')}
+                onPress={() => setWorkoutPostHelpOpen(true)}
+              >
+                <Icon set="ui" name="info" size={18} />
+              </IconButton>
+            </View>
+            {/* On by default: the column says so, and a profile not yet read
+                should not flash the switch off and then on. */}
+            <Switch
+              value={profile?.auto_post_workouts ?? true}
+              onValueChange={setAutoPostWorkouts}
+              disabled={!profile || busy || !online}
+              accessibilityLabel={t('social:autoPostWorkouts')}
+            />
+          </View>
         </View>
         <ListRow
           title={t('profile:account.changePassword')}
@@ -478,6 +513,14 @@ export default function AccountScreen() {
         closeLabel={t('common:action.close')}
       >
         <Text>{t('social:autoPostFoodsHint')}</Text>
+      </Sheet>
+      <Sheet
+        visible={workoutPostHelpOpen}
+        onClose={() => setWorkoutPostHelpOpen(false)}
+        title={t('social:autoPostWorkouts')}
+        closeLabel={t('common:action.close')}
+      >
+        <Text>{t('social:autoPostWorkoutsHint')}</Text>
       </Sheet>
       {passwordOpen ? <ChangePassword onClose={() => setPasswordOpen(false)} /> : null}
       {confirming ? <DeleteAccount onClose={() => setConfirming(false)} /> : null}

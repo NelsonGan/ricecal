@@ -399,6 +399,7 @@ declare
   v_ex_id     uuid;
   v_ex_pos    integer := 0;
   v_set_pos   integer;
+  v_inserted  boolean;
 begin
   if v_user is null then
     raise exception 'Authentication required' using errcode = '42501';
@@ -442,7 +443,10 @@ begin
     routine_id = excluded.routine_id,
     kcal = excluded.kcal,
     health_workout_id = excluded.health_workout_id
-  where w.user_id = v_user;
+  where w.user_id = v_user
+  -- A row with no previous version was inserted rather than updated: a retry
+  -- or an edit of the same workout is not a new workout to post.
+  returning (xmax = 0) into v_inserted;
 
   -- The `where` above makes a foreign id a silent no-op rather than an error,
   -- so check that the row really is ours before touching its children.
@@ -516,6 +520,21 @@ begin
   update public.workout_routines r
      set last_used_at = greatest(r.last_used_at, (p_workout ->> 'started_at')::timestamptz)
    where r.id = (p_workout ->> 'routine_id')::uuid and r.user_id = v_user;
+
+  -- A new workout goes to the feed for someone who is on it and shares
+  -- workouts, which is the default (98_social_workout_posts.sql). An import
+  -- sends "post": false, since years of history at once is not news. The
+  -- record count is taken here, where row security limits the scoring to this
+  -- account's own sets; the posting function runs as its owner and would
+  -- score every account's.
+  if v_inserted and coalesce((p_workout ->> 'post')::boolean, true) and exists (
+    select 1 from public.profiles p
+    where p.id = v_user and p.auto_post_workouts and p.social_joined_at is not null
+  ) then
+    perform private.social_insert_workout_post(
+      v_id, (select s.pr_count from public.workout_summaries s where s.id = v_id), '', null, true
+    );
+  end if;
 
   return v_id;
 end;

@@ -103,6 +103,17 @@ export const id = {
     emptyFollowing: 'Ikuti orang atau bagikan makanan dari jurnal Anda.',
     emptyPeople: 'Tidak ada orang ditemukan',
     emptyPosts: 'Belum ada postingan',
+    foodTab: 'Makanan',
+    workoutsTab: 'Latihan',
+    emptyMeals: 'Belum ada makanan yang dibagikan',
+    emptyWorkouts: 'Belum ada latihan yang dibagikan',
+    newWorkoutPost: 'Bagikan latihan',
+    captionWorkoutPlaceholder: 'Ceritakan sesuatu tentang latihanmu',
+    shareWorkoutHint:
+      'Hanya nama, waktu, angka, gerakan latihan ini, dan keteranganmu yang dibagikan, tidak pernah catatannya. Menghapus latihan juga menghapus postingannya.',
+    autoPostWorkouts: 'Posting latihan otomatis',
+    autoPostWorkoutsHint:
+      'Latihan yang selesai otomatis masuk ke feed. Latihan yang diimpor tidak pernah.',
     emptyComments: 'Mulai percakapan',
     emptyConnections: 'Belum ada orang',
     emptyBlocked: 'Tidak ada yang diblokir',
@@ -2085,8 +2096,11 @@ export const id = {
 
     import: {
       title: 'Impor latihan',
-      entry: 'Impor dari Strong atau Hevy',
+      fromStrong: 'Impor dari Strong',
+      fromHevy: 'Impor dari Hevy',
       intro: 'Ekspor latihan Anda sebagai CSV di Strong atau Hevy, lalu pilih filenya di sini.',
+      introStrong: 'Ekspor latihan Anda dari Strong sebagai CSV, lalu pilih filenya di sini.',
+      introHevy: 'Ekspor latihan Anda dari Hevy sebagai CSV, lalu pilih filenya di sini.',
       choose: 'Pilih file CSV',
       another: 'Pilih file lain',
       unknown: 'Ini bukan ekspor Strong atau Hevy.',

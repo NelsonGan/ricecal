@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
 import { Directory, File, Paths } from 'expo-file-system'
+import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -9,6 +10,7 @@ import { fetchWorkoutExport, useSession, useSettings, useUpdateSettings } from '
 import { dateKey } from '@/data/client'
 import { ToggleRow } from '@/features/shared'
 import {
+  IMPORT_APPS,
   RestSheet,
   setWorkoutPrefs,
   shortClock,
@@ -199,10 +201,21 @@ export default function WorkoutSettingsScreen() {
       </Card>
 
       <Card contentClassName="gap-0 px-5 py-1">
-        <ListRow
-          title={t('workouts:import.entry')}
-          onPress={() => router.push('/workout/import')}
-        />
+        {IMPORT_APPS.map((app) => (
+          <ListRow
+            key={app.id}
+            title={t(app.entry)}
+            leading={
+              <Image
+                source={app.logo}
+                style={{ width: 32, height: 32, borderRadius: 8 }}
+                contentFit="cover"
+                accessible={false}
+              />
+            }
+            onPress={() => router.push({ pathname: '/workout/import', params: { app: app.id } })}
+          />
+        ))}
         <ListRow
           title={t('workouts:settings.export')}
           trailing={exporting ? <ActivityIndicator /> : undefined}

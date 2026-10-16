@@ -104,6 +104,17 @@ export const ms = {
     emptyFollowing: 'Ikuti orang atau kongsi makanan dari diari anda.',
     emptyPeople: 'Tiada orang ditemui',
     emptyPosts: 'Belum ada siaran',
+    foodTab: 'Makanan',
+    workoutsTab: 'Senaman',
+    emptyMeals: 'Belum ada makanan dikongsi',
+    emptyWorkouts: 'Belum ada senaman dikongsi',
+    newWorkoutPost: 'Kongsi senaman',
+    captionWorkoutPlaceholder: 'Katakan sesuatu tentang senaman anda',
+    shareWorkoutHint:
+      'Hanya nama, masa, angka, senaman dan kapsyen anda dikongsi, bukan nota. Memadam senaman juga memadam siarannya.',
+    autoPostWorkouts: 'Siarkan senaman automatik',
+    autoPostWorkoutsHint:
+      'Senaman yang selesai disiarkan secara automatik. Senaman yang diimport tidak sekali-kali.',
     emptyComments: 'Mulakan perbualan',
     emptyConnections: 'Belum ada orang',
     emptyBlocked: 'Tiada orang disekat',
@@ -2104,9 +2115,12 @@ export const ms = {
 
     import: {
       title: 'Import senaman',
-      entry: 'Import dari Strong atau Hevy',
+      fromStrong: 'Import dari Strong',
+      fromHevy: 'Import dari Hevy',
       intro:
         'Eksport senaman anda sebagai CSV dalam Strong atau Hevy, kemudian pilih fail itu di sini.',
+      introStrong: 'Eksport senaman anda dari Strong sebagai CSV, kemudian pilih fail itu di sini.',
+      introHevy: 'Eksport senaman anda dari Hevy sebagai CSV, kemudian pilih fail itu di sini.',
       choose: 'Pilih fail CSV',
       another: 'Pilih fail lain',
       unknown: 'Ini bukan eksport Strong atau Hevy.',

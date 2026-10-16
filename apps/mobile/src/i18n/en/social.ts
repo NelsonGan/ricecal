@@ -90,6 +90,17 @@ export const social = {
   emptyFollowing: 'Follow people or share a meal from your diary.',
   emptyPeople: 'No people found',
   emptyPosts: 'No posts yet',
+  foodTab: 'Food',
+  workoutsTab: 'Workouts',
+  emptyMeals: 'No meals shared yet',
+  emptyWorkouts: 'No workouts shared yet',
+  newWorkoutPost: 'Share workout',
+  captionWorkoutPlaceholder: 'Say something about your workout',
+  shareWorkoutHint:
+    'Only the workout name, time, figures, exercises and your caption are shared, never its notes. Deleting the workout also removes its post.',
+  autoPostWorkouts: 'Auto post workouts',
+  autoPostWorkoutsHint:
+    'Workouts you finish appear in your feed automatically. Imported workouts never do.',
   emptyComments: 'Start the conversation',
   emptyConnections: 'No people yet',
   emptyBlocked: 'Nobody blocked',

@@ -48,6 +48,8 @@ jest.mock('@/data', () => ({
   useUserId: () => 'viewer',
   useMealPhotoUrl: () => ({ data: undefined }),
   useAvatarUrl: () => ({ data: undefined }),
+  useSettings: () => ({ data: { units: 'imperial' } }),
+  useCustomExercises: () => ({ data: [] }),
 }))
 jest.mock('@/data/social', () => ({
   useSocialAction: () => ({ mutateAsync: mockMutate, isPending: false }),
@@ -81,6 +83,7 @@ const post: SocialPost = {
   handle: person.handle,
   display_name: person.display_name,
   avatar_path: null,
+  kind: 'food',
   food_name: 'Rice',
   icon_set: null,
   icon_name: null,
@@ -101,6 +104,13 @@ const post: SocialPost = {
   comment_count: 0,
   is_liked: false,
   is_following: true,
+  workout_name: null,
+  workout_started_at: null,
+  workout_duration_s: null,
+  workout_sets: null,
+  workout_volume_kg: null,
+  workout_exercises: null,
+  workout_records: null,
 }
 
 beforeEach(async () => {
@@ -203,6 +213,38 @@ it('lays the name, calories and macros over the food and reads them out', async 
   for (const text of ['Carbs', '45g', 'Protein', '4g', 'Fat', '0g']) {
     expect(screen.getByText(text)).toBeTruthy()
   }
+})
+
+it("draws a workout post as the workout, in the reader's own unit", async () => {
+  await render(
+    <PostCard
+      post={{
+        ...post,
+        kind: 'workout',
+        food_name: null,
+        kcal: null,
+        workout_name: 'Push day',
+        workout_started_at: '2026-10-15T10:00:00.000Z',
+        workout_duration_s: 3900,
+        workout_sets: 13,
+        workout_volume_kg: 1000,
+        workout_exercises: [
+          { exercise_id: 'barbell-bench-press', exercise_name: 'Bench Press (Barbell)', sets: 4 },
+          { exercise_id: 'not-in-the-catalogue', exercise_name: 'My own press', sets: 3 },
+        ],
+        workout_records: 2,
+      }}
+    />,
+  )
+  expect(screen.getByRole('image', { name: 'Push day' })).toBeTruthy()
+  expect(screen.getByText('Push day')).toBeTruthy()
+  expect(screen.getByText('4 × Bench Press (Barbell)')).toBeTruthy()
+  expect(screen.getByText('3 × My own press')).toBeTruthy()
+  // 1,000 kg read by someone who lifts in pounds.
+  expect(screen.getByText(/2,205 lb/)).toBeTruthy()
+  expect(screen.getByText('2')).toBeTruthy()
+  // Nothing of a meal post's figures.
+  expect(screen.queryByText('Carbs')).toBeNull()
 })
 
 it('opens comments from the comment button, not the food image', async () => {

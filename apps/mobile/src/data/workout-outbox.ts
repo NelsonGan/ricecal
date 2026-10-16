@@ -26,6 +26,11 @@ export type WorkoutDocument = {
   routine_id: string | null
   kcal: number | null
   health_workout_id: string | null
+  /**
+   * False to keep a new workout off the feed whatever the account's setting:
+   * an import's history is not news. Absent means the setting decides.
+   */
+  post?: boolean
   exercises: {
     exercise_id: string
     exercise_name: string

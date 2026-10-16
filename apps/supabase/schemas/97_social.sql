@@ -18,7 +18,7 @@ begin
   select p.source_entry_id, p.author_id, p.photo_path
     into v_entry_id, v_author_id, v_photo_path
   from public.social_posts p
-  where p.id = p_post_id and private.social_can_view_post(p.id);
+  where p.id = p_post_id and p.kind = 'food' and private.social_can_view_post(p.id);
   if not found then return; end if;
 
   -- Look up the one entry by primary key. Joining the expanded diary view to
@@ -33,6 +33,48 @@ end;
 $$;
 revoke execute on function private.social_post_food from public, anon;
 grant execute on function private.social_post_food to authenticated, service_role;
+
+-- The same for a workout: what a card draws, read live, so an edit to the
+-- workout shows in its post. Never its notes, which are the author's own.
+-- Figures follow workout_summaries' definitions, taken for the one workout
+-- rather than through that view, which scores records over every account's
+-- sets when read as its owner.
+create or replace function private.social_post_workout(p_post_id uuid)
+returns table (
+  workout_name text, workout_started_at timestamptz, workout_duration_s integer,
+  workout_sets integer, workout_volume_kg numeric, workout_exercises jsonb
+)
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_workout_id uuid;
+  v_author_id uuid;
+begin
+  select p.source_workout_id, p.author_id into v_workout_id, v_author_id
+  from public.social_posts p
+  where p.id = p_post_id and p.kind = 'workout' and private.social_can_view_post(p.id);
+  if not found then return; end if;
+
+  return query select w.name, w.started_at, w.duration_s,
+    coalesce(stats.set_count, 0), coalesce(stats.volume_kg, 0),
+    coalesce(list.exercises, '[]'::jsonb)
+  from public.workouts w
+  left join lateral (
+    select count(*)::integer as set_count, sum(v.volume_kg) as volume_kg
+    from public.workout_set_values v where v.workout_id = w.id
+  ) stats on true
+  left join lateral (
+    select jsonb_agg(jsonb_build_object(
+      'exercise_id', e.exercise_id,
+      'exercise_name', e.exercise_name,
+      'sets', (select count(*) from public.workout_sets s where s.workout_exercise_id = e.id)
+    ) order by e.position) as exercises
+    from public.workout_exercises e where e.workout_id = w.id
+  ) list on true
+  where w.id = v_workout_id and w.user_id = v_author_id;
+end;
+$$;
+revoke execute on function private.social_post_workout from public, anon;
+grant execute on function private.social_post_workout to authenticated, service_role;
 
 create or replace view public.social_profile_details with (security_invoker = true) as
 select p.user_id, p.handle, p.display_name, p.bio, p.avatar_path,
@@ -54,10 +96,19 @@ select p.id, p.author_id, a.handle, a.display_name, a.avatar_path,
   private.social_count(p.id, 'likes') as like_count,
   private.social_count(p.id, 'comments') as comment_count,
   coalesce((select true from public.social_likes l where l.post_id = p.id and l.user_id = (select auth.uid()) limit 1), false) as is_liked,
-  coalesce((select true from public.social_follows f where f.follower_id = (select auth.uid()) and f.followed_id = p.author_id limit 1), false) as is_following
+  coalesce((select true from public.social_follows f where f.follower_id = (select auth.uid()) and f.followed_id = p.author_id limit 1), false) as is_following,
+  -- Appended, so every column an older app reads keeps its place.
+  p.kind,
+  workout.workout_name, workout.workout_started_at, workout.workout_duration_s,
+  workout.workout_sets, workout.workout_volume_kg, workout.workout_exercises,
+  p.workout_records
 from public.social_posts p
 join public.social_profiles a on a.user_id = p.author_id
-join lateral private.social_post_food(p.id) food on true;
+left join lateral private.social_post_food(p.id) food on true
+left join lateral private.social_post_workout(p.id) workout on true
+-- A post whose source cannot be read is not a post, as the inner join to the
+-- food made it before workouts were shareable.
+where food.food_name is not null or workout.workout_name is not null;
 
 create or replace view public.social_comment_details with (security_invoker = true) as
 select c.id, c.post_id, c.author_id, a.handle, a.display_name, a.avatar_path,
@@ -93,9 +144,34 @@ returns setof public.social_profile_details language sql stable security invoker
   select * from public.social_profile_details where user_id = p_user_id;
 $$;
 
-create or replace function public.social_post(p_id uuid)
+-- `p_kinds` defaults to food so an app from before workout posts, which can
+-- only draw a meal, is never handed one. Read lists do the same below.
+create or replace function public.social_post(
+  p_id uuid, p_kinds public.social_post_kind[] default '{food}'
+)
 returns setof public.social_post_details language sql stable security invoker set search_path = '' as $$
-  select * from public.social_post_details where id = p_id;
+  select * from public.social_post_details where id = p_id and kind = any(p_kinds);
+$$;
+
+-- The workout's own post, for its page to offer Share or Edit post.
+create or replace function public.social_workout_post(p_workout_id uuid)
+returns uuid language sql stable security definer set search_path = '' as $$
+  select p.id from public.social_posts p
+  where p.source_workout_id = p_workout_id and p.author_id = (select auth.uid());
+$$;
+
+-- A profile's workout figures, over the workouts its viewer can see.
+create or replace function public.social_workout_stats(p_user_id uuid)
+returns table (workouts integer, duration_s bigint, volume_kg numeric)
+language sql stable security definer set search_path = '' as $$
+  select count(*)::integer, coalesce(sum(w.duration_s), 0)::bigint,
+    coalesce(sum(volume.kg), 0)
+  from public.social_posts p
+  join public.workouts w on w.id = p.source_workout_id and w.user_id = p.author_id
+  left join lateral (
+    select sum(v.volume_kg) as kg from public.workout_set_values v where v.workout_id = w.id
+  ) volume on true
+  where p.author_id = p_user_id and p.kind = 'workout' and private.social_can_view_post(p.id);
 $$;
 
 create or replace function public.social_entry_post(p_entry_id uuid)
@@ -107,7 +183,8 @@ $$;
 -- nested row-policy functions for every post. Only visible ids leave this private
 -- helper; the public function still hydrates its small page through invoker RLS.
 create or replace function private.social_feed_candidates(
-  p_mode text, p_before_at timestamptz, p_before_id uuid, p_limit integer
+  p_mode text, p_before_at timestamptz, p_before_id uuid, p_limit integer,
+  p_kinds public.social_post_kind[] default '{food}'
 )
 returns table (id uuid, created_at timestamptz)
 language plpgsql stable security definer set search_path = '' as $$
@@ -115,6 +192,7 @@ declare v_user uuid := (select auth.uid());
 begin
   perform private.social_validate_page(p_before_at, p_before_id, p_limit);
   if p_mode not in ('following', 'discover') or p_mode is null then raise exception 'Invalid feed' using errcode = '22023'; end if;
+  if p_kinds is null or cardinality(p_kinds) = 0 then raise exception 'Invalid feed' using errcode = '22023'; end if;
   if v_user is null then return; end if;
   if p_mode = 'following' then
     return query
@@ -136,6 +214,7 @@ begin
         select p.id, p.created_at from authors a cross join lateral (
           select sp.id, sp.created_at from public.social_posts sp
           where sp.author_id = a.user_id and sp.review_status = 'approved' and not sp.quarantined
+            and sp.kind = any(p_kinds)
             and (p_before_at is null or (sp.created_at, sp.id) < (p_before_at, p_before_id))
             and (sp.author_id = v_user or sp.id not in (select h.content_id from hidden_posts h))
           order by sp.created_at desc, sp.id desc limit p_limit + 1
@@ -154,6 +233,7 @@ begin
       select sp.id, sp.created_at from public.social_posts sp
         join public.profiles a on a.id = sp.author_id
       where sp.audience = 'public' and sp.review_status = 'approved' and not sp.quarantined
+        and sp.kind = any(p_kinds)
         and not a.is_private and a.review_status = 'approved' and not a.quarantined
         and sp.author_id not in (select e.user_id from excluded_authors e)
         and sp.id not in (select r.content_id from public.social_reports r where r.reporter_id = v_user and r.kind = 'post')
@@ -167,13 +247,14 @@ grant execute on function private.social_feed_candidates to authenticated, servi
 
 create or replace function public.social_feed(
   p_mode text default 'following', p_before_at timestamptz default null,
-  p_before_id uuid default null, p_limit integer default 20
+  p_before_id uuid default null, p_limit integer default 20,
+  p_kinds public.social_post_kind[] default '{food}'
 )
 returns setof public.social_post_details language plpgsql stable security invoker set search_path = '' as $$
 begin
   return query
     with page as materialized (
-      select c.id, c.created_at from private.social_feed_candidates(p_mode, p_before_at, p_before_id, p_limit) c
+      select c.id, c.created_at from private.social_feed_candidates(p_mode, p_before_at, p_before_id, p_limit, p_kinds) c
     )
     select d.* from page p join public.social_post_details d on d.id = p.id order by p.created_at desc, p.id desc;
 end;
@@ -181,12 +262,14 @@ $$;
 
 create or replace function public.social_profile_posts(
   p_user_id uuid, p_before_at timestamptz default null,
-  p_before_id uuid default null, p_limit integer default 20
+  p_before_id uuid default null, p_limit integer default 20,
+  p_kinds public.social_post_kind[] default '{food}'
 )
 returns setof public.social_post_details language plpgsql stable security invoker set search_path = '' as $$
 begin
   perform private.social_validate_page(p_before_at, p_before_id, p_limit);
   return query select d.* from public.social_post_details d where d.author_id = p_user_id
+    and d.kind = any(p_kinds)
     and (p_before_at is null or (d.created_at, d.id) < (p_before_at, p_before_id))
     order by d.created_at desc, d.id desc limit p_limit + 1;
 end;
@@ -439,12 +522,14 @@ revoke execute on function public.record_social_photo_etags from public, anon, a
 grant execute on function public.record_social_photo_etags to service_role;
 
 revoke execute on function public.social_profile, public.social_post, public.social_entry_post,
+  public.social_workout_post, public.social_workout_stats,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
   public.social_notifications, public.social_unread_notification_count,
   public.mark_social_notifications_read,
   public.social_photo_claims from public, anon;
 grant execute on function public.social_profile, public.social_post, public.social_entry_post,
+  public.social_workout_post, public.social_workout_stats,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
   public.social_notifications, public.social_unread_notification_count,

@@ -22,7 +22,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
-import { useAvatarUrl, useMealPhotoUrl, useUserId } from '@/data'
+import { useAvatarUrl, useMealPhotoUrl, useSettings, useUserId } from '@/data'
 import { toIcon } from '@/data/mappers'
 import {
   type SocialAction,
@@ -37,8 +37,10 @@ import {
   useSocialProfile,
 } from '@/data/social'
 import type { IconRef, ReportReason } from '@/data/types'
+import { WorkoutPreview } from '@/features/workouts/cards'
 import { useBack } from '@/lib/navigation'
 import { energyShare } from '@/lib/nutrition'
+import { unitFor } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -1011,21 +1013,24 @@ export const PostCard = memo(function PostCard({
     })
     .withTestId(`post-pinch-${post.id}`)
   const mediaGesture = Gesture.Simultaneous(doubleTap, pinch)
-  const preview = (
-    <FoodPreview
-      name={post.food_name}
-      photo={privatePhoto ? null : post.photo_path}
-      icon={toIcon(post.icon_set, post.icon_name)}
-      visible={visible}
-      privateUri={ownPhoto.data}
-      hasPhoto={Boolean(post.photo_path)}
-      photoUnavailable={Boolean(
-        privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
-      )}
-      facts={post}
-      mediaStyle={mediaStyle}
-    />
-  )
+  const preview =
+    post.kind === 'workout' ? (
+      <WorkoutPostPreview post={post} />
+    ) : (
+      <FoodPreview
+        name={post.food_name ?? ''}
+        photo={privatePhoto ? null : post.photo_path}
+        icon={toIcon(post.icon_set, post.icon_name)}
+        visible={visible}
+        privateUri={ownPhoto.data}
+        hasPhoto={Boolean(post.photo_path)}
+        photoUnavailable={Boolean(
+          privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
+        )}
+        facts={post}
+        mediaStyle={mediaStyle}
+      />
+    )
   return (
     <View className="overflow-hidden border-b-2 border-track bg-surface">
       <View className="flex-row items-center gap-3 px-5 py-3">
@@ -1091,7 +1096,11 @@ export const PostCard = memo(function PostCard({
         <View
           accessible
           accessibilityRole="image"
-          accessibilityLabel={foodLabel(post.food_name, post)}
+          accessibilityLabel={
+            post.kind === 'workout'
+              ? (post.workout_name ?? '')
+              : foodLabel(post.food_name ?? '', post)
+          }
           onLayout={(event) => {
             mediaSize.value = event.nativeEvent.layout.width
           }}
@@ -1247,6 +1256,27 @@ export const PostCard = memo(function PostCard({
   )
 })
 
+/** A workout post's workout, in the viewer's own weight unit. */
+export function WorkoutPostPreview({ post }: { post: SocialPost }) {
+  const { data: settings } = useSettings()
+  return (
+    <WorkoutPreview
+      name={post.workout_name ?? ''}
+      startedAt={post.workout_started_at ?? post.created_at}
+      durationS={post.workout_duration_s ?? 0}
+      volumeKg={Number(post.workout_volume_kg ?? 0)}
+      sets={post.workout_sets ?? 0}
+      records={post.workout_records ?? 0}
+      exercises={(post.workout_exercises ?? []).map((exercise) => ({
+        exerciseId: exercise.exercise_id,
+        name: exercise.exercise_name,
+        sets: exercise.sets,
+      }))}
+      unit={unitFor(settings?.units)}
+    />
+  )
+}
+
 export const PostTile = memo(function PostTile({
   post,
   visible = true,
@@ -1267,7 +1297,7 @@ export const PostTile = memo(function PostTile({
       className="overflow-hidden rounded-md bg-surface p-1"
       accessibilityRole="button"
       accessibilityLabel={[
-        foodLabel(post.food_name, post),
+        post.kind === 'workout' ? (post.workout_name ?? '') : foodLabel(post.food_name ?? '', post),
         mine && status !== 'approved' ? t(status) : '',
       ]
         .filter(Boolean)
@@ -1275,7 +1305,7 @@ export const PostTile = memo(function PostTile({
       onPress={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
     >
       <FoodPreview
-        name={post.food_name}
+        name={post.food_name ?? ''}
         photo={privatePhoto ? null : post.photo_path}
         icon={toIcon(post.icon_set, post.icon_name)}
         visible={visible}

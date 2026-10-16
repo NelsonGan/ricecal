@@ -1,6 +1,7 @@
 import { format } from 'date-fns'
 import { File } from 'expo-file-system'
-import { Stack, useRouter } from 'expo-router'
+import { Image } from 'expo-image'
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { usePreventRemove } from 'expo-router/react-navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +19,7 @@ import {
 import {
   buildImport,
   defaultWorkoutName,
+  IMPORT_APPS,
   type ImportPlan,
   type ImportUnits,
   type ParsedExport,
@@ -68,6 +70,11 @@ export default function WorkoutImportScreen() {
   const router = useRouter()
   const toast = useToast()
   const goBack = useBack('/workout/settings')
+  // Which app's button was pressed: it names the screen and says where that
+  // app keeps its export. The file itself still decides the format, so the
+  // other app's export picked by mistake imports all the same.
+  const { app: appId } = useLocalSearchParams<{ app?: string }>()
+  const app = IMPORT_APPS.find((entry) => entry.id === appId)
   const { userId } = useSession()
   const { data: settings } = useSettings()
   const runImport = useWorkoutImport()
@@ -202,7 +209,7 @@ export default function WorkoutImportScreen() {
     <Screen
       header={
         <AppBar
-          title={t('workouts:import.title')}
+          title={t(app?.entry ?? 'workouts:import.title')}
           onBack={importing ? undefined : goBack}
           backLabel={t('common:action.back')}
         />
@@ -250,9 +257,18 @@ export default function WorkoutImportScreen() {
       {phase.step === 'pick' ? (
         <>
           <Card contentClassName="flex-row items-center gap-4">
-            <Icon set="system" name="sync" size={56} />
+            {app ? (
+              <Image
+                source={app.logo}
+                style={{ width: 56, height: 56, borderRadius: 14 }}
+                contentFit="cover"
+                accessible={false}
+              />
+            ) : (
+              <Icon set="system" name="sync" size={56} />
+            )}
             <Text variant="body" className="flex-1">
-              {t('workouts:import.intro')}
+              {t(app?.intro ?? 'workouts:import.intro')}
             </Text>
           </Card>
           {phase.error ? <Alert tone="error" title={t(`workouts:import.${phase.error}`)} /> : null}
