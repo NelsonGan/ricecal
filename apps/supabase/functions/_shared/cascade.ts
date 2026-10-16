@@ -916,6 +916,15 @@ async function resolveByDish(
 }
 
 /**
+ * Whether a row's serving is one whole helping of a dish (a plate, a bowl, a
+ * set, "1 serving"), so that a band for the whole plate can be read against it.
+ * Not a measurement and not a countable piece.
+ */
+const HELPING = /\b(bowls?|servings?|portions?)\b/i
+const rowIsAHelping = (label: string | null): boolean =>
+  isWholeMealServing(label) || HELPING.test(label ?? '')
+
+/**
  * How many of a matched dish row the plate was, or null when the row cannot be
  * this plate at any size. The second half of `resolveByDish`, apart so it can
  * be tested without a catalogue.
@@ -959,6 +968,15 @@ export function sizeDish({
   const plateRatio = ratio / share
 
   if (plateRatio >= 0.5 && plateRatio <= 2.5) return { tier: 1, quantity: share }
+  // The model often bounds the plate it can see rather than the share, so the
+  // band can be the plate's: a third with a band matching the row read as a
+  // plate three rows big and logged a whole one. Either reading, as
+  // `breakdownDisagrees` does, but only against a row that is one whole helping.
+  // Against "100 g" or "1 piece" a plate really is several rows, and reading the
+  // share's band as the plate would log a third of one.
+  if (share < 1 && ratio >= 0.5 && ratio <= 2.5 && rowIsAHelping(servingLabel)) {
+    return { tier: 1, quantity: share }
+  }
 
   // Further out, the row is a different size of the right thing, which is what
   // quantity is for. Still bounded: `clampQuantity` will not claim more than
