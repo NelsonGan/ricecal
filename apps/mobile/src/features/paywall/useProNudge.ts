@@ -1,7 +1,11 @@
 import { useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
 
-import { useEntitlement, useSession } from '@/data'
+import { useEntitlement, useProfile, useSession } from '@/data'
+import {
+  announcementClaimedThisLaunch,
+  announcementHasTheFloor,
+} from '@/features/news/useAnnouncementOffer'
 import { tutorialOffered } from '@/features/tutorial'
 import { track } from '@/lib/analytics'
 import { markPaywallSeen, paywallDue } from './nudge'
@@ -39,6 +43,10 @@ export function useProNudge(): void {
   const router = useRouter()
   const { userId } = useSession()
   const { entitled, loading, unknown } = useEntitlement()
+  // Booleans rather than the profile, so a refetch does not restart the delay.
+  const { data: profile } = useProfile()
+  const profileLoaded = profile !== undefined
+  const announcing = userId ? announcementHasTheFloor(userId, profile?.seen_announcements) : false
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const offered = useRef(false)
@@ -54,9 +62,15 @@ export function useProNudge(): void {
     // across the paywall's buy button. The tour belongs to a first launch; the
     // paywall has a two-day clock and loses nothing by waiting.
     if (!tutorialOffered(userId)) return
+    // Nor while an announcement is due or up. It is once per account and the
+    // paywall has its two-day clock, so the paywall waits for the next launch.
+    // Without the profile there is no telling, and waiting costs nothing.
+    if (!profileLoaded || announcing) return
 
     timer.current = setTimeout(() => {
       timer.current = null
+      // The announcement claims its launch between this booking and now.
+      if (announcementClaimedThisLaunch(userId)) return
       // A different paywall may have moved this account's clock during the wait.
       if (!paywallDue(userId)) return
       offered.current = true
@@ -74,5 +88,5 @@ export function useProNudge(): void {
       if (timer.current) clearTimeout(timer.current)
       timer.current = null
     }
-  }, [userId, entitled, loading, unknown, router])
+  }, [userId, entitled, loading, unknown, router, profileLoaded, announcing])
 }

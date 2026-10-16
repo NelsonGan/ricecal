@@ -83,6 +83,7 @@ export {
 } from './photos'
 export {
   bodyFrom,
+  claimAnnouncement,
   type OnboardingAnswers,
   type ProfilePatch,
   useFinishOnboarding,

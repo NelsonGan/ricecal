@@ -28,6 +28,7 @@ import { CaptchaProvider, PasswordField, useAuthMessage, useCaptchaToken } from 
 // From the store itself, not the feature's barrel: this screen has no use
 // for the rest of the logger, its native modules included.
 import { forgetWorkoutsOnPhone } from '@/features/workouts/store'
+import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal'
 import { useBack } from '@/lib/navigation'
@@ -163,6 +164,12 @@ export default function AccountScreen() {
     try {
       if (!(await save())) return
       await updateProfile.mutateAsync(patch)
+      track(
+        'Auto Post Toggled',
+        'autoPostFoods' in patch
+          ? { kind: 'foods', enabled: patch.autoPostFoods }
+          : { kind: 'workouts', enabled: patch.autoPostWorkouts },
+      )
     } catch {
       toast.show({ title: t('social:saveFailed'), tone: 'error' })
     }
