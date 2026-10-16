@@ -129,11 +129,11 @@ function SignedInTabs() {
 }
 
 /**
- * The tabs, with the workout in progress minimised over every tab but its
- * own, where "Resume workout" already is, and only while a tab is on top.
- * The layout stays mounted under the logger and every page pushed over the
- * tabs, and its toast host, the newest, drew each of their toasts down here
- * out of sight.
+ * The tabs, with the workout in progress minimised over every tab, its own
+ * included, and only while a tab is on top. Workouts used to leave it out for
+ * its "Resume workout" button, which scrolls away with the page. The layout
+ * stays mounted under the logger and every page pushed over the tabs, and its
+ * toast host, the newest, drew each of their toasts down here out of sight.
  *
  * Its own component because the route it reads changes on every navigation
  * anywhere, and in the layout that re-rendered the navigator and its bar each
@@ -149,7 +149,7 @@ function WithRunningWorkout({
   const { userId } = useSession()
   const pathname = usePathname()
   const onTabs = useSegments()[0] === '(tabs)'
-  const running = useHasActiveWorkout(userId) && onTabs && pathname !== '/workouts'
+  const running = useHasActiveWorkout(userId) && onTabs
 
   return (
     // The bar floats over the screens, so each one is told how much of its
