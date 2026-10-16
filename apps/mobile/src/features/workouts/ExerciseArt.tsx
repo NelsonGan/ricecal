@@ -9,9 +9,11 @@ import { EXERCISE_ART } from './exerciseArt.generated'
 /**
  * An exercise's drawing on its tile.
  *
- * Every built-in exercise has one made for it. A custom exercise (or an id the
- * catalogue has since retired) draws the body-part icon instead, which is the
- * most a name typed by the user can honestly be pictured as.
+ * Every built-in exercise has one made for it, apart from those still listed
+ * as awaiting art in `model.test.ts`. A custom exercise (or an id the
+ * catalogue has since retired, or one still awaiting its drawing) draws the
+ * body-part icon instead, which is the most a name typed by the user can
+ * honestly be pictured as.
  *
  * The tile is `exercise-tile`, which stays pale in dark mode too: the drawings
  * carry grey equipment that reads on a pale tile and disappears on a dark card.
@@ -50,6 +52,7 @@ const OWN_ICON: Record<string, IconRef> = {
   stretching: { set: 'body', name: 'stretching' },
   dance: { set: 'body', name: 'dancing' },
   zumba: { set: 'body', name: 'dancing' },
+  aerobics: { set: 'body', name: 'dancing' },
   'stair-climber': { set: 'body', name: 'stairs' },
 }
 

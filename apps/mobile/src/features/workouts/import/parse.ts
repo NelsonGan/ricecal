@@ -178,7 +178,9 @@ function isoTime(text: string): LocalTime | null {
  * Month names as Hevy writes them. Hevy writes the date in the language the
  * app is set to, so an English table alone drops a French history's "févr."
  * and "août" without a word. Keys are lower case without accents; a name is
- * tried whole, then by its first four letters, then its first three.
+ * tried whole, then by its first four letters, then its first three; "май"
+ * is keyed "маи" because stripping accents takes the breve off its й. Chinese,
+ * Japanese and Korean write the month as a number ("10月", "10월").
  */
 // biome-ignore format: one language per line
 const MONTHS: Readonly<Record<string, number>> = {
@@ -189,27 +191,84 @@ const MONTHS: Readonly<Record<string, number>> = {
   mrz: 3, marz: 3, okt: 10,
   mrt: 3, maart: 3, mei: 5,
   gen: 1, mag: 5, giu: 6, lug: 7, ott: 10,
+  agu: 8, agt: 8, des: 12,
+  maj: 5,
+  sty: 1, lut: 2, kwi: 4, cze: 6, lip: 7, sie: 8, wrz: 9, paz: 10, lis: 11, gru: 12,
+  oca: 1, sub: 2, nis: 4, haz: 6, tem: 7, eyl: 9, eki: 10, kas: 11, ara: 12,
+  янв: 1, фев: 2, мар: 3, апр: 4, маи: 5, мая: 5, июн: 6, июл: 7, авг: 8, сен: 9, окт: 10, ноя: 11, дек: 12,
 }
 
 function monthOf(word: string): number | null {
-  const key = word.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\.$/, '')
+  const numbered = word.match(/^(\d{1,2})\s*[月월]$/)
+  if (numbered) return +numbered[1] >= 1 && +numbered[1] <= 12 ? +numbered[1] : null
+  const key = word
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\.$/, '')
   return MONTHS[key] ?? MONTHS[key.slice(0, 4)] ?? MONTHS[key.slice(0, 3)] ?? null
 }
 
-/** Hevy's "14 Oct 2026, 17:14", in whichever language, or an ISO date. */
+/** An hour read off a 12-hour clock, when the time carries AM or PM. */
+function hour24(hour: number, meridiem: string | undefined): number {
+  if (!meridiem) return hour
+  const pm = /^p/i.test(meridiem)
+  return (hour % 12) + (pm ? 12 : 0)
+}
+
+const CLOCK = String.raw`(\d{1,2}):(\d{2})(?:\s*([AaPp]\.?[Mm]\.?))?`
+
+/**
+ * Hevy's "14 Oct 2026, 17:14", in whichever language and clock, or an ISO
+ * date. Month first ("Oct 14, 2026, 5:14 PM") and year first
+ * ("2026年10月14日 17:14") are read too, since the order follows the language.
+ */
 function hevyTime(text: string): LocalTime | null {
   const value = text.trim()
-  const dayFirst = value.match(/^(\d{1,2})\s+(\p{L}+\.?)\s+(\d{4}),?\s+(\d{1,2}):(\d{2})/u)
+  const dayFirst = value.match(
+    new RegExp(String.raw`^(\d{1,2})\.?\s+([\p{L}\d]+\.?)\s+(\d{4}),?\s+${CLOCK}`, 'u'),
+  )
   if (dayFirst) {
     const month = monthOf(dayFirst[2])
-    if (month) return localTime(+dayFirst[3], month, +dayFirst[1], +dayFirst[4], +dayFirst[5])
+    if (month) {
+      return localTime(
+        +dayFirst[3],
+        month,
+        +dayFirst[1],
+        hour24(+dayFirst[4], dayFirst[6]),
+        +dayFirst[5],
+      )
+    }
   }
-  const monthFirst = value.match(/^(\p{L}+\.?)\s+(\d{1,2}),?\s+(\d{4}),?\s+(\d{1,2}):(\d{2})/u)
+  const monthFirst = value.match(
+    new RegExp(String.raw`^(\p{L}+\.?)\s+(\d{1,2}),?\s+(\d{4}),?\s+${CLOCK}`, 'u'),
+  )
   if (monthFirst) {
     const month = monthOf(monthFirst[1])
     if (month) {
-      return localTime(+monthFirst[3], month, +monthFirst[2], +monthFirst[4], +monthFirst[5])
+      return localTime(
+        +monthFirst[3],
+        month,
+        +monthFirst[2],
+        hour24(+monthFirst[4], monthFirst[6]),
+        +monthFirst[5],
+      )
     }
+  }
+  const yearFirst = value.match(
+    new RegExp(
+      String.raw`^(\d{4})\s*[年년]\s*(\d{1,2})\s*[月월]\s*(\d{1,2})\s*[日일]?,?\s+${CLOCK}`,
+      'u',
+    ),
+  )
+  if (yearFirst) {
+    return localTime(
+      +yearFirst[1],
+      +yearFirst[2],
+      +yearFirst[3],
+      hour24(+yearFirst[4], yearFirst[6]),
+      +yearFirst[5],
+    )
   }
   return isoTime(value)
 }
@@ -241,7 +300,15 @@ const timeKey = (t: LocalTime) => `${t.year}-${t.month}-${t.day} ${t.hour}:${t.m
 
 type Builder = {
   workouts: Map<string, ParsedWorkout>
-  exercises: Map<string, ParsedExercise>
+  /** Each workout's exercise in progress, and the superset it belongs to. */
+  runs: Map<string, Run>
+}
+
+type Run = {
+  current: ParsedExercise | null
+  superset: string | null
+  /** The exercises of the superset in progress, by name. */
+  members: Map<string, ParsedExercise>
 }
 
 function workoutFor(
@@ -258,9 +325,12 @@ function workoutFor(
 }
 
 /**
- * The exercise a row belongs to: by name and superset within its workout, in
- * the order each was first seen. A superset's rows alternate between its
- * exercises, and grouping by name keeps each one's sets together.
+ * The exercise a row belongs to, in the order the workout did them. Rows of
+ * one exercise are consecutive, so a name that comes back after another
+ * exercise is a second block of it and stays a second entry: bench, squat,
+ * bench again is three exercises, not two with the order lost. A superset's
+ * rows alternate between its exercises, so within one superset the rows are
+ * grouped by name.
  */
 function exerciseFor(
   builder: Builder,
@@ -268,13 +338,31 @@ function exerciseFor(
   name: string,
   superset: string | null,
 ): ParsedExercise {
-  const key = `${workout.key}|${name.toLowerCase()}|${superset ?? ''}`
-  let exercise = builder.exercises.get(key)
-  if (!exercise) {
-    exercise = { name, superset, notes: [], rests: [], sets: [] }
-    builder.exercises.set(key, exercise)
-    workout.exercises.push(exercise)
+  let run = builder.runs.get(workout.key)
+  if (!run) {
+    run = { current: null, superset: null, members: new Map() }
+    builder.runs.set(workout.key, run)
   }
+  const key = name.toLowerCase()
+  if (superset !== null && superset === run.superset) {
+    const member = run.members.get(key)
+    if (member) {
+      run.current = member
+      return member
+    }
+  } else if (
+    superset === null &&
+    run.superset === null &&
+    run.current?.name.toLowerCase() === key
+  ) {
+    return run.current
+  }
+  if (superset !== run.superset) run.members = new Map()
+  const exercise: ParsedExercise = { name, superset, notes: [], rests: [], sets: [] }
+  workout.exercises.push(exercise)
+  run.current = exercise
+  run.superset = superset
+  if (superset !== null) run.members.set(key, exercise)
   return exercise
 }
 
@@ -314,7 +402,15 @@ function parseStrong(header: string[], rows: string[][]): ParsedExport {
     weight: col('weight', 'weight kg', 'weight lbs', 'weight lb'),
     weightUnit: col('weight unit'),
     reps: col('reps'),
-    distance: col('distance', 'distance km', 'distance mi', 'distance m'),
+    distance: col(
+      'distance',
+      'distance km',
+      'distance mi',
+      'distance miles',
+      'distance m',
+      'distance meters',
+      'distance metres',
+    ),
     distanceUnit: col('distance unit'),
     seconds: col('seconds'),
     notes: col('notes'),
@@ -324,7 +420,7 @@ function parseStrong(header: string[], rows: string[][]): ParsedExport {
   const headerWeightUnit = c.weight === -1 ? null : weightUnitOf(header[c.weight].slice(7))
   const headerDistanceUnit = c.distance === -1 ? null : distanceUnitOf(header[c.distance].slice(9))
 
-  const builder: Builder = { workouts: new Map(), exercises: new Map() }
+  const builder: Builder = { workouts: new Map(), runs: new Map() }
   const unitless = { weight: false, distance: false }
   let read = 0
   let skipped = 0
@@ -416,7 +512,7 @@ function parseHevy(header: string[], rows: string[][]): ParsedExport {
     rpe: col('rpe'),
   }
 
-  const builder: Builder = { workouts: new Map(), exercises: new Map() }
+  const builder: Builder = { workouts: new Map(), runs: new Map() }
   let read = 0
   let skipped = 0
 

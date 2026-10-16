@@ -198,8 +198,6 @@ export const keys = {
     ['workouts', userId, 'rep-bests', exerciseId] as const,
   lastSets: (userId: string, exerciseIds: string) =>
     ['workouts', userId, 'last-sets', exerciseIds] as const,
-  importOverlap: (userId: string, file: string) =>
-    ['workouts', userId, 'import-overlap', file] as const,
   /** Not under `workouts`: a saved workout does not change a routine's plan. */
   routines: (userId: string) => ['routines', userId] as const,
   customExercises: (userId: string) => ['custom-exercises', userId] as const,

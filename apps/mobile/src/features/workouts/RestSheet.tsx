@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -7,7 +7,9 @@ import { shortClock } from './format'
 
 /**
  * The longest rest the wheels offer. `user_settings.workout_rest_s` allows
- * 600, and a rest past ten minutes is a new session rather than a pause.
+ * 600, and a rest past ten minutes is a new session rather than a pause. An
+ * exercise's own rest can be longer (an imported one, up to an hour); the
+ * wheels show it as 10:00 and leave it alone unless they are moved.
  */
 const MAX_MINUTES = 10
 /** The seconds wheel moves in fives: nobody rests for 1:07 on purpose. */
@@ -25,10 +27,13 @@ const split = (seconds: number) => {
  * A rest on two wheels, minutes and seconds, where a fixed list of choices used
  * to be. 0:00 is no timer.
  *
- * `seconds` null is an exercise following the default rest: the wheels start
- * on the default, and Done without moving them keeps it following, so a later
- * change to the default still reaches it. `onUseDefault` puts an exercise back
- * on the default and is only offered when it has a rest of its own.
+ * Done saves only a rest that differs from the one the sheet opened on. An
+ * exercise following the default (`seconds` null) keeps following it, so a
+ * later change to the default still reaches it; a rest the wheels cannot show
+ * exactly (2:07, 15:00) is not rounded by a look; and an untouched default is
+ * not written back, which before the settings had loaded wrote 90 over it.
+ * `onUseDefault` puts an exercise back on the default and is only offered
+ * when it has a rest of its own.
  */
 export function RestSheet({
   visible,
@@ -48,10 +53,25 @@ export function RestSheet({
   onUseDefault?: () => void
 }) {
   const { t } = useTranslation(['workouts', 'common'])
-  const start = split(seconds ?? defaultS)
-  const [m, setM] = useState(start.minutes)
-  const [s, setS] = useState(start.seconds)
-  const [moved, setMoved] = useState(false)
+  // What was opened, held while the sheet closes: the editor clears the
+  // exercise on close, and reading that mid-slide took "Use default" away and
+  // shrank the panel as it fell.
+  const held = useRef({ seconds, defaultS, title })
+  if (visible) held.current = { seconds, defaultS, title }
+  const shown = held.current
+  const opening = split(shown.seconds ?? shown.defaultS)
+  const [m, setM] = useState(opening.minutes)
+  const [s, setS] = useState(opening.seconds)
+
+  // Set before the panel is drawn. The sheet stays mounted between opens, and
+  // resetting in `onShow`, which fires once the window is up, showed the last
+  // exercise's rest for a frame before the wheels jumped.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only on opening
+  useLayoutEffect(() => {
+    if (!visible) return
+    setM(opening.minutes)
+    setS(opening.seconds)
+  }, [visible])
 
   const minutes = useMemo<WheelOption[]>(
     () =>
@@ -75,14 +95,8 @@ export function RestSheet({
     <Sheet
       visible={visible}
       onClose={onClose}
-      onShow={() => {
-        const next = split(seconds ?? defaultS)
-        setM(next.minutes)
-        setS(next.seconds)
-        setMoved(false)
-      }}
       closeLabel={t('common:action.close')}
-      title={title}
+      title={shown.title}
       scrollable={false}
     >
       <View className="gap-5">
@@ -98,7 +112,6 @@ export function RestSheet({
               const value = Number(next)
               setM(value)
               if (value === MAX_MINUTES) setS(0)
-              setMoved(true)
             }}
             accessibilityLabel={t('workouts:rest.minutes')}
           />
@@ -106,10 +119,7 @@ export function RestSheet({
             unit={t('workouts:rest.sec')}
             options={secondsOptions}
             value={String(s)}
-            onChange={(next) => {
-              setS(Number(next))
-              setMoved(true)
-            }}
+            onChange={(next) => setS(Number(next))}
             accessibilityLabel={t('workouts:rest.seconds')}
           />
         </View>
@@ -117,13 +127,13 @@ export function RestSheet({
           <Button
             fullWidth
             onPress={() => {
-              if (moved || seconds !== null) onPick(total)
+              if (total !== opening.minutes * 60 + opening.seconds) onPick(total)
               onClose()
             }}
           >
             {t('common:action.done')}
           </Button>
-          {onUseDefault && seconds !== null ? (
+          {onUseDefault && shown.seconds !== null ? (
             <Button
               fullWidth
               variant="neutral"
@@ -133,7 +143,8 @@ export function RestSheet({
               }}
             >
               {t('workouts:logger.restDefault', {
-                time: defaultS > 0 ? shortClock(defaultS) : t('workouts:logger.restOff'),
+                time:
+                  shown.defaultS > 0 ? shortClock(shown.defaultS) : t('workouts:logger.restOff'),
               })}
             </Button>
           ) : null}

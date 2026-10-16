@@ -575,7 +575,7 @@ export function useLastSets(exerciseIds: readonly string[]) {
  * went out as anon (`42501`), a timeout (`57014`), the database flipped read
  * only (`25006`).
  */
-function wasRefused(error: unknown): boolean {
+export function wasRefused(error: unknown): boolean {
   const code = (error as { code?: unknown })?.code
   return typeof code === 'string' && /^2[23][0-9A-Z]{3}$/.test(code)
 }
@@ -613,7 +613,7 @@ export type WorkoutSaveResult = { queued: boolean }
  * online, and the finish screen spun until the OS gave up, which on Android
  * may be never. The id is the phone's, so a late commit is harmless.
  */
-const SAVE_TIMEOUT_MS = 15_000
+export const SAVE_TIMEOUT_MS = 15_000
 
 /**
  * The outbox's request for each workout id while it is in flight. A save or a

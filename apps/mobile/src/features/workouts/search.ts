@@ -180,7 +180,7 @@ export function groupSplit(
  * lifting, one for something timed, which is what somebody adding it is about
  * to do most of the time.
  *
- * A game or a run gets no rest timer. A badminton set is the whole game, and a
+ * A run or a stretch gets no rest timer. A 30-minute run is one set, and a
  * "rest is over" ninety seconds after it is a notification about nothing.
  */
 export function planFor(exercise: LibraryExercise): ExercisePlan {

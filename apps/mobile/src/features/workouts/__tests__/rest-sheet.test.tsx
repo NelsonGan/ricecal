@@ -100,3 +100,21 @@ it('reads 0:00 as no timer', async () => {
   await user.press(screen.getByText('Done'))
   expect(onPick).toHaveBeenCalledWith(0)
 })
+
+it('leaves a rest the wheels cannot show exactly alone when Done is pressed untouched', async () => {
+  await open(127)
+
+  await user.press(screen.getByText('Done'))
+
+  expect(onPick).not.toHaveBeenCalled()
+})
+
+it('saves nothing when a wheel is moved away and back', async () => {
+  await open(null)
+
+  await turn('Minutes', 'increment')
+  await turn('Minutes', 'decrement')
+  await user.press(screen.getByText('Done'))
+
+  expect(onPick).not.toHaveBeenCalled()
+})
