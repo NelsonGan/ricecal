@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 
 import { datePattern } from '@/lib/dates'
-import { ActionSheet, type SheetAction } from './ActionSheet'
+import { Dialog, type DialogAction } from '@/ui'
 import { durationText } from './format'
 import { useLiveWorkout } from './live'
 import { lastActivityAt } from './model'
@@ -43,12 +43,11 @@ export function StaleWorkoutSheet({
   const last = lastActivityAt(workout)
   const runningText = durationText(t, (Date.now() - workout.startedAt) / 1000)
 
-  const actions: SheetAction[] = []
+  const actions: DialogAction[] = []
   if (last) {
     actions.push({
       key: 'last',
       label: t('workouts:stale.endAtLast', { time: format(last, datePattern('time')) }),
-      icon: { set: 'system', name: 'clock' },
       onPress: () => onFinish({ endedAt: String(last) }),
     })
   }
@@ -56,30 +55,30 @@ export function StaleWorkoutSheet({
     {
       key: 'pick',
       label: t('workouts:stale.endAt'),
-      icon: { set: 'ui', name: 'edit' },
+      tone: last ? 'secondary' : 'primary',
       onPress: () => onFinish({ pickEnd: '1' }),
     },
     {
       key: 'keep',
       label: t('workouts:stale.keepGoing'),
-      icon: { set: 'body', name: 'dumbbell' },
+      tone: 'secondary',
       onPress: onKeepGoing,
     },
     {
       key: 'discard',
       label: t('workouts:stale.discard'),
-      icon: { set: 'ui', name: 'delete' },
       tone: 'danger',
       onPress: onDiscard,
     },
   )
 
   return (
-    <ActionSheet
+    <Dialog
       visible={visible}
       onClose={onClose}
       title={t('workouts:stale.title')}
       description={t('workouts:stale.body', { time: runningText })}
+      cancelLabel={t('common:action.close')}
       actions={actions}
     />
   )

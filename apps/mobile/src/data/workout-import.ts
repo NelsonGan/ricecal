@@ -204,6 +204,7 @@ export function useWorkoutImport() {
           if (already.has(document.id)) continue
           fresh.push({
             ...document,
+            post: false,
             exercises: document.exercises.map((exercise, index) => {
               const customName = customNames[index]
               if (!customName) return exercise

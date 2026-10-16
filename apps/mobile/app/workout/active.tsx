@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 
 import { useLastSets, useSettings } from '@/data'
 import {
-  ActionSheet,
   completeAll,
   discardWorkout,
   doneSets,
@@ -28,7 +27,7 @@ import {
   clock as workoutClock,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
-import { AppBar, Button, ConfirmSheet, Screen } from '@/ui'
+import { AppBar, Button, Dialog, Screen } from '@/ui'
 
 /**
  * The logger: a workout being trained.
@@ -160,28 +159,34 @@ export default function ActiveWorkoutScreen() {
         {t('workouts:logger.discard')}
       </Button>
 
-      <ConfirmSheet
+      <Dialog
         visible={confirmDiscard}
         onClose={() => setConfirmDiscard(false)}
         title={t('workouts:logger.discardTitle')}
         description={t('workouts:logger.discardBody')}
-        confirmLabel={t('workouts:logger.discardConfirm')}
         cancelLabel={t('common:action.keep')}
-        onConfirm={discard}
+        actions={[
+          {
+            key: 'discard',
+            label: t('workouts:logger.discardConfirm'),
+            tone: 'danger',
+            onPress: discard,
+          },
+        ]}
       />
 
       {/* Numbers typed into a set but never ticked: ask, rather than guess.
-          Dismissing the sheet is the third answer, "not yet". */}
-      <ActionSheet
+          Cancel is the third answer, "not yet". */}
+      <Dialog
         visible={unfinished > 0}
         onClose={() => setUnfinished(0)}
         title={t('workouts:finish.unfinishedTitle')}
         description={t('workouts:finish.unfinishedBody', { count: unfinished })}
+        cancelLabel={t('common:action.cancel')}
         actions={[
           {
             key: 'complete',
             label: t('workouts:finish.completeThem'),
-            icon: { set: 'ui', name: 'checkbox-checked' },
             onPress: () => {
               // The stored document, not this render's: a lock-screen tick or a
               // rest ending before the sheet closed would otherwise be undone.
@@ -196,7 +201,6 @@ export default function ActiveWorkoutScreen() {
                 {
                   key: 'drop',
                   label: t('workouts:finish.dropThem'),
-                  icon: { set: 'ui', name: 'checkbox-empty' } as const,
                   onPress: () =>
                     router.push({ pathname: '/workout/finish', params: finishParams.current }),
                 },
@@ -205,14 +209,20 @@ export default function ActiveWorkoutScreen() {
         ]}
       />
 
-      <ConfirmSheet
+      <Dialog
         visible={nothing}
         onClose={() => setNothing(false)}
         title={t('workouts:finish.nothingTitle')}
         description={t('workouts:finish.nothingBody')}
-        confirmLabel={t('workouts:logger.discardConfirm')}
         cancelLabel={t('common:action.keep')}
-        onConfirm={discard}
+        actions={[
+          {
+            key: 'discard',
+            label: t('workouts:logger.discardConfirm'),
+            tone: 'danger',
+            onPress: discard,
+          },
+        ]}
       />
 
       {current ? (

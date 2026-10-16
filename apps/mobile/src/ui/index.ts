@@ -69,6 +69,7 @@ export {
   type DateStripMark,
   type DateStripProps,
 } from './DateStrip'
+export { Dialog, type DialogAction, type DialogProps } from './Dialog'
 export { Divider, type DividerProps } from './Divider'
 export { EmptyState, type EmptyStateProps } from './EmptyState'
 export { Icon, type IconProps, type IconSet, icons } from './Icon'

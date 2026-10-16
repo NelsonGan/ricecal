@@ -37,13 +37,19 @@ export type SocialProfile = {
   created_at: string
   connection_created_at?: string
 }
+/** What a post shares. `food` posts are meals; `workout` posts are finished workouts. */
+export type SocialPostKind = 'food' | 'workout'
+/** One exercise of a shared workout, as the card lists it. */
+export type SocialWorkoutExercise = { exercise_id: string; exercise_name: string; sets: number }
 export type SocialPost = {
   id: string
   author_id: string
   handle: string
   display_name: string
   avatar_path: string | null
-  food_name: string
+  kind: SocialPostKind
+  /** Set on a meal post; null on a workout post. */
+  food_name: string | null
   icon_set: IconRef['set'] | null
   icon_name: string | null
   photo_path: string | null
@@ -64,6 +70,15 @@ export type SocialPost = {
   comment_count: number
   is_liked: boolean
   is_following: boolean
+  /** A workout post's workout as it is now; null on a meal post. Never its notes. */
+  workout_name: string | null
+  workout_started_at: string | null
+  workout_duration_s: number | null
+  workout_sets: number | null
+  workout_volume_kg: number | null
+  workout_exercises: SocialWorkoutExercise[] | null
+  /** Records the workout set, counted when it was posted. */
+  workout_records: number | null
 }
 export type SocialComment = {
   id: string
@@ -223,11 +238,22 @@ const personCursor = (row: SocialProfile): SocialCursor => ({
   at: row.connection_created_at ?? row.created_at,
   id: row.user_id,
 })
+/**
+ * The kinds this app can draw. The server answers meals only unless asked,
+ * because the apps released before workout posts can draw nothing else.
+ */
+const ALL_KINDS: SocialPostKind[] = ['food', 'workout']
+/** The feed's parameters, which are also its cache key. */
+export const socialFeedParams = (mode: 'following' | 'discover') => ({
+  p_mode: mode,
+  p_kinds: ALL_KINDS,
+})
 export const useSocialFeed = (mode: 'following' | 'discover') =>
-  useSocialPages<SocialPost>({ name: 'social_feed', params: { p_mode: mode } }, timeCursor)
-export const useSocialPosts = (userId: string) =>
+  useSocialPages<SocialPost>({ name: 'social_feed', params: socialFeedParams(mode) }, timeCursor)
+/** One profile's posts of one kind: its Food and Workouts tabs. */
+export const useSocialPosts = (userId: string, kind: SocialPostKind = 'food') =>
   useSocialPages<SocialPost>(
-    { name: 'social_profile_posts', params: { p_user_id: userId } },
+    { name: 'social_profile_posts', params: { p_user_id: userId, p_kinds: [kind] } },
     timeCursor,
   )
 export const useSocialComments = (postId: string) =>
@@ -266,8 +292,39 @@ export function useSocialPost(id: string) {
   return useQuery({
     queryKey: keys.socialRead(viewer, 'social_post', { id }),
     queryFn: async ({ signal }): Promise<SocialPost | null> =>
-      ((await rpc('social_post', { p_id: id }, signal))[0] as SocialPost | undefined) ?? null,
+      ((await rpc('social_post', { p_id: id, p_kinds: ALL_KINDS }, signal))[0] as
+        | SocialPost
+        | undefined) ?? null,
     enabled: Boolean(id),
+    ...MEMORY_OPTIONS,
+  })
+}
+/** A profile's workout figures, over the workouts its viewer can see. */
+export function useSocialWorkoutStats(profileId: string) {
+  const viewer = useUserId()
+  const params = { p_user_id: profileId }
+  return useQuery({
+    queryKey: keys.socialRead(viewer, 'social_workout_stats', params),
+    queryFn: async ({ signal }) => {
+      const row = (await rpc('social_workout_stats', params, signal))[0]
+      return {
+        workouts: row?.workouts ?? 0,
+        durationS: Number(row?.duration_s ?? 0),
+        volumeKg: Number(row?.volume_kg ?? 0),
+      }
+    },
+    enabled: Boolean(profileId),
+    ...MEMORY_OPTIONS,
+  })
+}
+/** The caller's post of one workout, or null, for its page to offer Share or Edit post. */
+export function useWorkoutPost(workoutId: string) {
+  const viewer = useUserId()
+  return useQuery({
+    queryKey: keys.socialRead(viewer, 'workoutPost', { workoutId }),
+    queryFn: async ({ signal }) =>
+      (await rpc('social_workout_post', { p_workout_id: workoutId }, signal)) ?? null,
+    enabled: Boolean(workoutId),
     ...MEMORY_OPTIONS,
   })
 }
@@ -343,6 +400,7 @@ export async function socialEntryPost(
 export type SocialAction =
   | { action: 'profile'; handle: string; name: string; bio: string; avatar: string | null }
   | { action: 'post'; entryId: string; caption: string; audience: SocialAudience }
+  | { action: 'postWorkout'; workoutId: string; caption: string; audience: SocialAudience }
   | { action: 'editPost'; id: string; caption: string; audience: SocialAudience }
   | { action: 'deletePost'; id: string }
   | { action: 'follow'; id: string; following: boolean }
@@ -477,6 +535,14 @@ export function useSocialAction() {
         case 'post': {
           const id = await rpc('create_social_post', {
             p_entry_id: input.entryId,
+            p_caption: input.caption,
+            p_audience: input.audience,
+          })
+          return { id, status: 'approved' }
+        }
+        case 'postWorkout': {
+          const id = await rpc('create_social_workout_post', {
+            p_workout_id: input.workoutId,
             p_caption: input.caption,
             p_audience: input.audience,
           })
@@ -620,7 +686,7 @@ export function useSocialAction() {
         markAuthorFollowed(input.id)
         await Promise.all([
           client.invalidateQueries({
-            queryKey: keys.socialRead(viewer, 'social_feed', { p_mode: 'following' }),
+            queryKey: keys.socialRead(viewer, 'social_feed', socialFeedParams('following')),
             exact: true,
           }),
           refresh([
@@ -636,8 +702,15 @@ export function useSocialAction() {
         const names =
           input.action === 'read'
             ? ['social_notifications', 'unread']
-            : input.action === 'post'
-              ? ['social_feed', 'social_profile_posts', 'social_profile', 'entry']
+            : input.action === 'post' || input.action === 'postWorkout'
+              ? [
+                  'social_feed',
+                  'social_profile_posts',
+                  'social_profile',
+                  'social_workout_stats',
+                  'entry',
+                  'workoutPost',
+                ]
               : input.action === 'removeFollower'
                 ? [
                     'social_feed',

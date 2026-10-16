@@ -98,6 +98,17 @@ export const vi = {
     emptyFollowing: 'Theo dõi người khác hoặc chia sẻ bữa ăn từ nhật ký.',
     emptyPeople: 'Không tìm thấy ai',
     emptyPosts: 'Chưa có bài đăng',
+    foodTab: 'Món ăn',
+    workoutsTab: 'Buổi tập',
+    emptyMeals: 'Chưa chia sẻ món ăn nào',
+    emptyWorkouts: 'Chưa chia sẻ buổi tập nào',
+    newWorkoutPost: 'Chia sẻ buổi tập',
+    captionWorkoutPlaceholder: 'Nói đôi điều về buổi tập của bạn',
+    shareWorkoutHint:
+      'Chỉ tên, thời gian, số liệu, bài tập của buổi tập này và chú thích của bạn được chia sẻ, không bao giờ có ghi chú. Xóa buổi tập cũng xóa bài đăng của nó.',
+    autoPostWorkouts: 'Tự động đăng buổi tập',
+    autoPostWorkoutsHint:
+      'Buổi tập bạn hoàn thành sẽ tự động xuất hiện trên bảng tin. Buổi tập được nhập thì không.',
     emptyComments: 'Bắt đầu trò chuyện',
     emptyConnections: 'Chưa có ai',
     emptyBlocked: 'Chưa chặn ai',
@@ -2076,8 +2087,11 @@ export const vi = {
 
     import: {
       title: 'Nhập buổi tập',
-      entry: 'Nhập từ Strong hoặc Hevy',
+      fromStrong: 'Nhập từ Strong',
+      fromHevy: 'Nhập từ Hevy',
       intro: 'Xuất buổi tập dưới dạng CSV trong Strong hoặc Hevy, rồi chọn tệp đó ở đây.',
+      introStrong: 'Xuất buổi tập dưới dạng CSV trong Strong, rồi chọn tệp đó ở đây.',
+      introHevy: 'Xuất buổi tập dưới dạng CSV trong Hevy, rồi chọn tệp đó ở đây.',
       choose: 'Chọn tệp CSV',
       another: 'Chọn tệp khác',
       unknown: 'Đây không phải tệp xuất từ Strong hoặc Hevy.',

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { useSession } from '@/data/session'
 import { track, type WorkoutSource } from '@/lib/analytics'
-import { ConfirmSheet } from '@/ui'
+import { Dialog } from '@/ui'
 import { removeWorkoutFromHealth } from './health'
 import { doneSets, type ExercisePlan, type LiveWorkout, newWorkout } from './model'
 import {
@@ -94,20 +94,27 @@ export function useWorkoutStarter() {
   }
 
   const sheet = (
-    <ConfirmSheet
+    <Dialog
       visible={pending !== null}
       onClose={() => setPending(null)}
       title={t('workouts:start.replaceTitle')}
       description={t('workouts:start.replaceBody')}
-      confirmLabel={t('workouts:start.replaceConfirm')}
       cancelLabel={t('common:action.keep')}
-      onConfirm={async () => {
-        if (!userId || !pending) return
-        discardWorkout(userId)
-        begin(userId, pending)
-        setPending(null)
-        open()
-      }}
+      actions={[
+        {
+          key: 'replace',
+          label: t('workouts:start.replaceConfirm'),
+          tone: 'danger',
+          onPress: () => {
+            // This closure is the one the dialog was answered from, so it still
+            // holds the start that closing the dialog has since cleared.
+            if (!userId || !pending) return
+            discardWorkout(userId)
+            begin(userId, pending)
+            open()
+          },
+        },
+      ]}
     />
   )
 

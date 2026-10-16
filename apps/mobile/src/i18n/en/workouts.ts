@@ -396,8 +396,11 @@ export const workouts = {
 
   import: {
     title: 'Import workouts',
-    entry: 'Import from Strong or Hevy',
+    fromStrong: 'Import from Strong',
+    fromHevy: 'Import from Hevy',
     intro: 'Export your workouts as a CSV in Strong or Hevy, then choose the file here.',
+    introStrong: 'Export your workouts from Strong as a CSV, then choose the file here.',
+    introHevy: 'Export your workouts from Hevy as a CSV, then choose the file here.',
     choose: 'Choose CSV file',
     another: 'Choose another file',
     unknown: 'This is not a Strong or Hevy export.',

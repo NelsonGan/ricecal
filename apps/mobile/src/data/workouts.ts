@@ -603,6 +603,9 @@ export function retryQueuedWorkout(id: string): void {
 function invalidateWorkouts(queryClient: ReturnType<typeof useQueryClient>, userId: string): void {
   queryClient.invalidateQueries({ queryKey: keys.workoutsAll(userId) })
   queryClient.invalidateQueries({ queryKey: keys.routines(userId) })
+  // A new workout can publish its post in the same save, and a deleted one
+  // takes its post with it.
+  queryClient.invalidateQueries({ queryKey: keys.social(userId) })
 }
 
 export type WorkoutSaveResult = { queued: boolean }

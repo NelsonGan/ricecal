@@ -761,6 +761,7 @@ export type Database = {
         Row: {
           activity_level: Database['public']['Enums']['activity_level']
           auto_post_foods: boolean
+          auto_post_workouts: boolean
           avatar_path: string | null
           bio: string
           birth_date: string | null
@@ -787,6 +788,7 @@ export type Database = {
         Insert: {
           activity_level?: Database['public']['Enums']['activity_level']
           auto_post_foods?: boolean
+          auto_post_workouts?: boolean
           avatar_path?: string | null
           bio?: string
           birth_date?: string | null
@@ -813,6 +815,7 @@ export type Database = {
         Update: {
           activity_level?: Database['public']['Enums']['activity_level']
           auto_post_foods?: boolean
+          auto_post_workouts?: boolean
           avatar_path?: string | null
           bio?: string
           birth_date?: string | null
@@ -1419,11 +1422,12 @@ export type Database = {
           carbs_g: number | null
           created_at: string
           fat_g: number | null
-          food_name: string
+          food_name: string | null
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string
           kcal: number | null
+          kind: Database['public']['Enums']['social_post_kind']
           photo_etag: string | null
           photo_path: string | null
           protein_g: number | null
@@ -1432,8 +1436,10 @@ export type Database = {
           review_reason: string | null
           review_status: Database['public']['Enums']['recipe_review']
           revision: number
-          source_entry_id: string
+          source_entry_id: string | null
+          source_workout_id: string | null
           updated_at: string
+          workout_records: number | null
         }
         Insert: {
           audience?: Database['public']['Enums']['social_audience']
@@ -1442,11 +1448,12 @@ export type Database = {
           carbs_g?: number | null
           created_at?: string
           fat_g?: number | null
-          food_name: string
+          food_name?: string | null
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
           kcal?: number | null
+          kind?: Database['public']['Enums']['social_post_kind']
           photo_etag?: string | null
           photo_path?: string | null
           protein_g?: number | null
@@ -1455,8 +1462,10 @@ export type Database = {
           review_reason?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           revision?: number
-          source_entry_id: string
+          source_entry_id?: string | null
+          source_workout_id?: string | null
           updated_at?: string
+          workout_records?: number | null
         }
         Update: {
           audience?: Database['public']['Enums']['social_audience']
@@ -1465,11 +1474,12 @@ export type Database = {
           carbs_g?: number | null
           created_at?: string
           fat_g?: number | null
-          food_name?: string
+          food_name?: string | null
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
           kcal?: number | null
+          kind?: Database['public']['Enums']['social_post_kind']
           photo_etag?: string | null
           photo_path?: string | null
           protein_g?: number | null
@@ -1478,8 +1488,10 @@ export type Database = {
           review_reason?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           revision?: number
-          source_entry_id?: string
+          source_entry_id?: string | null
+          source_workout_id?: string | null
           updated_at?: string
+          workout_records?: number | null
         }
         Relationships: [
           {
@@ -1516,6 +1528,20 @@ export type Database = {
             isOneToOne: true
             referencedRelation: 'food_logs'
             referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_workout_owned'
+            columns: ['source_workout_id', 'author_id']
+            isOneToOne: false
+            referencedRelation: 'workout_summaries'
+            referencedColumns: ['id', 'user_id']
+          },
+          {
+            foreignKeyName: 'social_posts_workout_owned'
+            columns: ['source_workout_id', 'author_id']
+            isOneToOne: false
+            referencedRelation: 'workouts'
+            referencedColumns: ['id', 'user_id']
           },
         ]
       }
@@ -2299,6 +2325,7 @@ export type Database = {
           is_following: boolean | null
           is_liked: boolean | null
           kcal: number | null
+          kind: Database['public']['Enums']['social_post_kind'] | null
           like_count: number | null
           photo_path: string | null
           protein_g: number | null
@@ -2307,6 +2334,13 @@ export type Database = {
           review_reason: string | null
           review_status: Database['public']['Enums']['recipe_review'] | null
           revision: number | null
+          workout_duration_s: number | null
+          workout_exercises: Json | null
+          workout_name: string | null
+          workout_records: number | null
+          workout_sets: number | null
+          workout_started_at: string | null
+          workout_volume_kg: number | null
         }
         Relationships: [
           {
@@ -2703,6 +2737,14 @@ export type Database = {
           p_audience: Database['public']['Enums']['social_audience']
           p_caption: string
           p_entry_id: string
+        }
+        Returns: string
+      }
+      create_social_workout_post: {
+        Args: {
+          p_audience: Database['public']['Enums']['social_audience']
+          p_caption: string
+          p_workout_id: string
         }
         Returns: string
       }
@@ -3195,6 +3237,7 @@ export type Database = {
         Args: {
           p_before_at?: string
           p_before_id?: string
+          p_kinds?: Database['public']['Enums']['social_post_kind'][]
           p_limit?: number
           p_mode?: string
         }
@@ -3216,6 +3259,7 @@ export type Database = {
           is_following: boolean | null
           is_liked: boolean | null
           kcal: number | null
+          kind: Database['public']['Enums']['social_post_kind'] | null
           like_count: number | null
           photo_path: string | null
           protein_g: number | null
@@ -3224,6 +3268,13 @@ export type Database = {
           review_reason: string | null
           review_status: Database['public']['Enums']['recipe_review'] | null
           revision: number | null
+          workout_duration_s: number | null
+          workout_exercises: Json | null
+          workout_name: string | null
+          workout_records: number | null
+          workout_sets: number | null
+          workout_started_at: string | null
+          workout_volume_kg: number | null
         }[]
         SetofOptions: {
           from: '*'
@@ -3263,7 +3314,10 @@ export type Database = {
         }[]
       }
       social_post: {
-        Args: { p_id: string }
+        Args: {
+          p_id: string
+          p_kinds?: Database['public']['Enums']['social_post_kind'][]
+        }
         Returns: {
           audience: Database['public']['Enums']['social_audience'] | null
           author_id: string | null
@@ -3282,6 +3336,7 @@ export type Database = {
           is_following: boolean | null
           is_liked: boolean | null
           kcal: number | null
+          kind: Database['public']['Enums']['social_post_kind'] | null
           like_count: number | null
           photo_path: string | null
           protein_g: number | null
@@ -3290,6 +3345,13 @@ export type Database = {
           review_reason: string | null
           review_status: Database['public']['Enums']['recipe_review'] | null
           revision: number | null
+          workout_duration_s: number | null
+          workout_exercises: Json | null
+          workout_name: string | null
+          workout_records: number | null
+          workout_sets: number | null
+          workout_started_at: string | null
+          workout_volume_kg: number | null
         }[]
         SetofOptions: {
           from: '*'
@@ -3328,6 +3390,7 @@ export type Database = {
         Args: {
           p_before_at?: string
           p_before_id?: string
+          p_kinds?: Database['public']['Enums']['social_post_kind'][]
           p_limit?: number
           p_user_id: string
         }
@@ -3349,6 +3412,7 @@ export type Database = {
           is_following: boolean | null
           is_liked: boolean | null
           kcal: number | null
+          kind: Database['public']['Enums']['social_post_kind'] | null
           like_count: number | null
           photo_path: string | null
           protein_g: number | null
@@ -3357,6 +3421,13 @@ export type Database = {
           review_reason: string | null
           review_status: Database['public']['Enums']['recipe_review'] | null
           revision: number | null
+          workout_duration_s: number | null
+          workout_exercises: Json | null
+          workout_name: string | null
+          workout_records: number | null
+          workout_sets: number | null
+          workout_started_at: string | null
+          workout_volume_kg: number | null
         }[]
         SetofOptions: {
           from: '*'
@@ -3418,6 +3489,15 @@ export type Database = {
         }
       }
       social_unread_notification_count: { Args: never; Returns: number }
+      social_workout_post: { Args: { p_workout_id: string }; Returns: string }
+      social_workout_stats: {
+        Args: { p_user_id: string }
+        Returns: {
+          duration_s: number
+          volume_kg: number
+          workouts: number
+        }[]
+      }
       sync_weight_readings: {
         Args: {
           p_provider: Database['public']['Enums']['health_provider']
@@ -3561,6 +3641,7 @@ export type Database = {
       social_audience: 'public' | 'followers'
       social_content_kind: 'profile' | 'post' | 'comment'
       social_counter_metric: 'followers' | 'following' | 'posts' | 'likes' | 'comments'
+      social_post_kind: 'food' | 'workout'
       subscription_plan: 'monthly' | 'yearly' | 'lifetime'
       subscription_status: 'none' | 'trial' | 'active' | 'expired' | 'billing_retry'
       unit_system: 'metric' | 'imperial'
@@ -3717,6 +3798,7 @@ export const Constants = {
       social_audience: ['public', 'followers'],
       social_content_kind: ['profile', 'post', 'comment'],
       social_counter_metric: ['followers', 'following', 'posts', 'likes', 'comments'],
+      social_post_kind: ['food', 'workout'],
       subscription_plan: ['monthly', 'yearly', 'lifetime'],
       subscription_status: ['none', 'trial', 'active', 'expired', 'billing_retry'],
       unit_system: ['metric', 'imperial'],

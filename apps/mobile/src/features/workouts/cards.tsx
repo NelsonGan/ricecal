@@ -235,6 +235,108 @@ export function WorkoutCard({
   )
 }
 
+/**
+ * A shared workout, as a feed post draws it where a meal post has its photo:
+ * the name and when, the figures people compare (time, volume, sets, records),
+ * and what was done. Never the notes, which stay the author's.
+ */
+export function WorkoutPreview({
+  name,
+  startedAt,
+  durationS,
+  volumeKg,
+  sets,
+  records,
+  exercises,
+  unit,
+}: {
+  name: string
+  startedAt: string
+  durationS: number
+  volumeKg: number
+  sets: number
+  records: number
+  exercises: readonly { exerciseId: string; name: string; sets: number }[]
+  unit: WeightUnit
+}) {
+  const { t } = useTranslation(['workouts', 'common'])
+  const library = useExerciseLibrary()
+  const first = exercises[0]
+  const shown = exercises.slice(0, 4)
+
+  return (
+    <View className="gap-4 bg-surface-alt px-5 py-5">
+      <View className="flex-row items-center gap-3">
+        {first ? (
+          <ExerciseArt
+            exerciseId={first.exerciseId}
+            category={library.byId(first.exerciseId)?.category}
+            size={56}
+          />
+        ) : null}
+        <View className="min-w-0 flex-1 gap-0.5">
+          <Text variant="subtitle" numberOfLines={2}>
+            {name}
+          </Text>
+          <Text variant="meta" numberOfLines={1}>
+            {format(
+              parseISO(startedAt),
+              `${datePattern('weekdayDayMonth')}, ${datePattern('time')}`,
+            )}
+          </Text>
+        </View>
+      </View>
+
+      <View className="flex-row rounded-card bg-surface py-3">
+        <View className="flex-1 px-4">
+          <Stat label={t('workouts:logger.duration')} value={durationText(t, durationS)} />
+        </View>
+        {volumeKg > 0 ? (
+          <View className="flex-1 border-line border-l px-4">
+            <Stat label={t('workouts:logger.volume')} value={volumeText(t, volumeKg, unit)} />
+          </View>
+        ) : (
+          <View className="flex-1 border-line border-l px-4">
+            <Stat label={t('workouts:logger.sets')} value={String(sets)} />
+          </View>
+        )}
+        {records > 0 ? (
+          <View className="flex-1 border-line border-l px-4">
+            <Stat
+              label={t('workouts:detail.records')}
+              value={String(records)}
+              icon={{ set: 'system', name: 'trophy' }}
+            />
+          </View>
+        ) : null}
+      </View>
+
+      {shown.length ? (
+        <View className="gap-2">
+          {shown.map((exercise, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: a workout may repeat an exercise
+            <View key={index} className="flex-row items-center gap-2.5">
+              <ExerciseArt
+                exerciseId={exercise.exerciseId}
+                category={library.byId(exercise.exerciseId)?.category}
+                size={32}
+              />
+              <Text variant="label" className="min-w-0 flex-1" numberOfLines={1}>
+                {t('workouts:history.exerciseLine', { sets: exercise.sets, name: exercise.name })}
+              </Text>
+            </View>
+          ))}
+          {exercises.length > shown.length ? (
+            <Text variant="caption">
+              {t('workouts:history.moreExercises', { count: exercises.length - shown.length })}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
 function Metric({ icon, text, tone }: { icon: ReactNode; text: string; tone?: 'kaya' }) {
   return (
     <Badge tone={tone ?? 'neutral'} size="sm">

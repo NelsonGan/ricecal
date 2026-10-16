@@ -11,7 +11,6 @@ import {
   useWorkoutOverview,
 } from '@/data'
 import {
-  ActionSheet,
   describeSet,
   distanceText,
   distanceUnitFor,
@@ -44,7 +43,7 @@ import {
 } from '@/features/workouts'
 import { track } from '@/lib/analytics'
 import { UNIT_KEY, unitFor } from '@/lib/units'
-import { AppBar, Button, Card, Divider, Icon, Screen, Text, useToast } from '@/ui'
+import { AppBar, Button, Card, Dialog, Divider, Icon, Screen, Text, useToast } from '@/ui'
 
 /**
  * Saving a finished workout: a moment to see what it came to, then its name, a
@@ -331,22 +330,22 @@ export default function FinishWorkoutScreen() {
       </Card>
 
       {/* Only the answers that would change something: Strong's four when both
-          the layout and the numbers moved, two otherwise. Dismissing it is
-          "not yet", and saves nothing. */}
+          the layout and the numbers moved, two otherwise. Cancel is "not
+          yet", and saves nothing. */}
       {routine && changes ? (
-        <ActionSheet
+        <Dialog
           visible={askRoutine}
           onClose={() => setAskRoutine(false)}
           title={t('workouts:finish.routineTitle', { name: routine.name })}
           description={t('workouts:finish.routineBody')}
+          cancelLabel={t('common:action.cancel')}
           actions={[
             ...(changes.layout && changes.values
               ? [
                   {
                     key: 'layoutAndValues',
                     label: t('workouts:finish.routineUpdateAll'),
-                    icon: { set: 'ui', name: 'save' } as const,
-                    tone: changes.removes ? ('danger' as const) : undefined,
+                    tone: changes.removes ? ('danger' as const) : ('primary' as const),
                     onPress: () => onSave('layoutAndValues'),
                   },
                 ]
@@ -356,8 +355,7 @@ export default function FinishWorkoutScreen() {
                   {
                     key: 'layout',
                     label: t('workouts:finish.routineUpdate'),
-                    icon: { set: 'ui', name: 'reorder' } as const,
-                    tone: changes.removes ? ('danger' as const) : undefined,
+                    tone: changes.removes ? ('danger' as const) : ('secondary' as const),
                     onPress: () => onSave('layout'),
                   },
                 ]
@@ -367,7 +365,7 @@ export default function FinishWorkoutScreen() {
                   {
                     key: 'values',
                     label: t('workouts:finish.routineValues'),
-                    icon: { set: 'ui', name: 'edit' } as const,
+                    tone: 'secondary' as const,
                     onPress: () => onSave('values'),
                   },
                 ]
@@ -375,7 +373,7 @@ export default function FinishWorkoutScreen() {
             {
               key: 'keep',
               label: t('workouts:finish.routineKeep'),
-              icon: { set: 'ui', name: 'bookmark' },
+              tone: 'secondary',
               onPress: () => onSave('keep'),
             },
           ]}

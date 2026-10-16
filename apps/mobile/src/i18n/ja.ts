@@ -98,6 +98,17 @@ export const ja = {
     emptyFollowing: '誰かをフォローするか、日記から食事をシェアしましょう。',
     emptyPeople: 'ユーザーが見つかりません',
     emptyPosts: 'まだ投稿がありません',
+    foodTab: '食事',
+    workoutsTab: 'ワークアウト',
+    emptyMeals: 'まだ共有した食事はありません',
+    emptyWorkouts: 'まだ共有したワークアウトはありません',
+    newWorkoutPost: 'ワークアウトを共有',
+    captionWorkoutPlaceholder: 'ワークアウトについてひとこと',
+    shareWorkoutHint:
+      '共有されるのはこのワークアウトの名前、時間、数値、種目とキャプションだけで、メモは共有しません。ワークアウトを削除すると投稿も消えます。',
+    autoPostWorkouts: 'ワークアウトを自動投稿',
+    autoPostWorkoutsHint:
+      '終えたワークアウトを自動で投稿します。読み込んだワークアウトは投稿しません。',
     emptyComments: 'コメントしてみましょう',
     emptyConnections: 'まだユーザーがいません',
     emptyBlocked: 'ブロックしたユーザーはいません',
@@ -2074,8 +2085,11 @@ export const ja = {
 
     import: {
       title: 'ワークアウトを読み込む',
-      entry: 'Strong・Hevyから読み込む',
+      fromStrong: 'Strongから読み込む',
+      fromHevy: 'Hevyから読み込む',
       intro: 'StrongまたはHevyでワークアウトをCSVに書き出し、ここでそのファイルを選んでください。',
+      introStrong: 'StrongでワークアウトをCSVに書き出し、ここでそのファイルを選んでください。',
+      introHevy: 'HevyでワークアウトをCSVに書き出し、ここでそのファイルを選んでください。',
       choose: 'CSVファイルを選ぶ',
       another: '別のファイルを選ぶ',
       unknown: 'StrongまたはHevyの書き出しファイルではありません。',

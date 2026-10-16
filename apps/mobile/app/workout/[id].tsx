@@ -12,6 +12,7 @@ import {
   type WorkoutDetail,
   type WorkoutEntry,
 } from '@/data'
+import { useWorkoutPost } from '@/data/social'
 import {
   ActionSheet,
   describeSet,
@@ -56,12 +57,16 @@ import {
 
 /** One finished workout: what was done, set by set, and what it set a record for. */
 export default function WorkoutScreen() {
-  const { t } = useTranslation(['workouts', 'common'])
+  const { t } = useTranslation(['workouts', 'common', 'social'])
   const router = useRouter()
   const toast = useToast()
   const goBack = useBack('/workouts')
   const { id } = useLocalSearchParams<{ id: string }>()
   const { data: fetched, isPending, isPaused, isError } = useWorkout(id)
+  // Whether it is on the feed already, so the menu offers Edit post rather
+  // than a second share. Unknown (offline, still loading) offers Share, and the
+  // server answers a second share with the post it has.
+  const feedPost = useWorkoutPost(id).data ?? null
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
   const remove = useDeleteWorkout()
@@ -156,6 +161,16 @@ export default function WorkoutScreen() {
                       // than pre-ticked in the fields.
                       sets: plan.sets.map((set) => ({ kind: set.kind })),
                     })),
+                  }),
+              },
+              {
+                key: 'feed',
+                label: t(feedPost ? 'social:editPost' : 'social:share'),
+                icon: { set: 'system', name: 'users-group' },
+                onPress: () =>
+                  router.push({
+                    pathname: '/social/compose',
+                    params: feedPost ? { postId: feedPost } : { workoutId: id },
                   }),
               },
               {
