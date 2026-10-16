@@ -1,3 +1,4 @@
+const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
 
@@ -12,6 +13,7 @@ const { withAppDelegate, withDangerousMod, withXcodeProject } = require('expo/co
  *
  *   watch/ios/*.swift   the watch app, SwiftUI, watchOS 10 and up
  *   assets/icon.png     its icon, which watchOS crops to a circle
+ *   assets/exercises/   every exercise's drawing, made small for a watch row
  *
  * One target, the single-target watch app Xcode has made since 14: an
  * application built for watchOS, embedded in the phone app under `Watch/`.
@@ -38,7 +40,8 @@ module.exports = function withWatch(config) {
 }
 
 /**
- * Copies the sources, the icon and the two plists into `ios/RiceCalWatch`.
+ * Copies the sources, the icon, the exercise drawings and the two plists into
+ * `ios/RiceCalWatch`.
  * Runs on every prebuild, so editing a watch file and rebuilding is enough;
  * a NEW file needs a `--clean` prebuild, as a widget file does, because the
  * target's source list is written once.
@@ -75,6 +78,7 @@ function withWatchFiles(config, { bundleId }) {
           2,
         )}\n`,
       )
+      writeExerciseArt(projectRoot, path.join(targetDir, 'Assets.xcassets'))
 
       fs.writeFileSync(
         path.join(targetDir, 'Info.plist'),
@@ -131,6 +135,44 @@ function withHealthAuthorizationHandoff(config) {
     cfg.modResults.contents = contents
     return cfg
   })
+}
+
+/** Side of a drawing in pixels: a 36 pt row icon at the watch's 2x, with room. */
+const ART_PX = 80
+
+/**
+ * The exercise drawings as images in the watch's asset catalog, named
+ * `exercise-<id>`, so `Image("exercise-bench-press")` finds one. The app's
+ * 320 px WebPs are 4.9 MB, most of a watch app's worth, and a watch row needs
+ * a fraction of that: `sips`, which every Mac that builds for iOS has, makes
+ * 80 px PNGs, about 2 MB in all. A drawing already made from an unchanged
+ * source is kept, so only the first prebuild pays the few seconds.
+ */
+function writeExerciseArt(projectRoot, catalog) {
+  const source = path.join(projectRoot, 'assets/exercises')
+  for (const name of fs.readdirSync(source).filter((file) => file.endsWith('.webp'))) {
+    const id = name.slice(0, -'.webp'.length)
+    const set = path.join(catalog, `exercise-${id}.imageset`)
+    const png = path.join(set, `${id}.png`)
+    const from = path.join(source, name)
+    fs.mkdirSync(set, { recursive: true })
+    if (!fs.existsSync(png) || fs.statSync(png).mtimeMs < fs.statSync(from).mtimeMs) {
+      execFileSync('sips', ['-s', 'format', 'png', '-Z', String(ART_PX), from, '--out', png], {
+        stdio: 'ignore',
+      })
+    }
+    fs.writeFileSync(
+      path.join(set, 'Contents.json'),
+      `${JSON.stringify(
+        {
+          images: [{ filename: `${id}.png`, idiom: 'universal' }],
+          info: { author: 'xcode', version: 1 },
+        },
+        null,
+        2,
+      )}\n`,
+    )
+  }
 }
 
 function swiftSources(projectRoot) {

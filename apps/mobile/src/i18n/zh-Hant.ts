@@ -1950,6 +1950,10 @@ export const zhHant = {
       upNext: '下一個',
       empty: '請在 iPhone 上新增動作。',
       syncing: 'iPhone 在附近時同步',
+      previousSet: '上一組',
+      nextSet: '下一組',
+      startedTitle: '已在手錶上開始訓練',
+      startedBody: '{{name}}。點一下即可在這裡繼續查看。',
     },
 
     stale: {

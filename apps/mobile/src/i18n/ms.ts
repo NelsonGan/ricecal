@@ -2000,6 +2000,10 @@ export const ms = {
       upNext: 'Seterusnya',
       empty: 'Tambah latihan di iPhone anda.',
       syncing: 'Disegerakkan apabila iPhone anda berdekatan',
+      previousSet: 'Set sebelumnya',
+      nextSet: 'Set seterusnya',
+      startedTitle: 'Senaman dimulakan pada jam tangan anda',
+      startedBody: '{{name}}. Ketik untuk mengikutinya di sini.',
     },
 
     stale: {

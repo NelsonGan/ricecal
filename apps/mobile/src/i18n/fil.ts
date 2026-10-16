@@ -2003,6 +2003,10 @@ export const fil = {
       upNext: 'Susunod',
       empty: 'Magdagdag ng ehersisyo sa iPhone mo.',
       syncing: 'Magsi-sync kapag malapit ang iPhone mo',
+      previousSet: 'Nakaraang set',
+      nextSet: 'Susunod na set',
+      startedTitle: 'Nagsimula ang workout sa relo mo',
+      startedBody: '{{name}}. I-tap para sundan dito.',
     },
 
     stale: {

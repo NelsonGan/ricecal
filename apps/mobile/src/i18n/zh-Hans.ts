@@ -1950,6 +1950,10 @@ export const zhHans = {
       upNext: '下一个',
       empty: '请在 iPhone 上添加动作。',
       syncing: 'iPhone 在附近时同步',
+      previousSet: '上一组',
+      nextSet: '下一组',
+      startedTitle: '已在手表上开始训练',
+      startedBody: '{{name}}。轻点即可在这里继续查看。',
     },
 
     stale: {

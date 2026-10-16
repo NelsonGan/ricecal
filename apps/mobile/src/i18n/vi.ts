@@ -1971,6 +1971,10 @@ export const vi = {
       upNext: 'Tiếp theo',
       empty: 'Thêm bài tập trên iPhone.',
       syncing: 'Đồng bộ khi iPhone ở gần',
+      previousSet: 'Set trước',
+      nextSet: 'Set tiếp theo',
+      startedTitle: 'Buổi tập đã bắt đầu trên đồng hồ',
+      startedBody: '{{name}}. Chạm để theo dõi tại đây.',
     },
 
     stale: {

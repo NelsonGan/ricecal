@@ -59,10 +59,11 @@ struct HeartBadge: View {
 // MARK: The set page
 
 /**
- The set to do: the exercise, which set of how many, its figures in two boxes
- and one big button. Tapping a box picks it and the Digital Crown changes it,
- a plate at a time; the figures start at what the phone offers (typed, or last
- time's), so most sets are a single tap. While a rest runs it is the rest.
+ The set to do: the exercise, which set of how many, its figures in two boxes,
+ and under them the set before, a tick and the set after. Tapping a box picks
+ it and the Digital Crown changes it, a plate at a time; the figures start at
+ what the phone offers (typed, or last time's), so most sets are a single tap.
+ While a rest runs it is the rest.
  */
 struct SetPage: View {
   @EnvironmentObject private var store: WatchStore
@@ -141,7 +142,7 @@ private struct SetEditor: View {
         Text("\(store.label("set")) \(index)/\(exercise.sets.count)")
           .font(.system(.footnote, design: .rounded).monospacedDigit())
           .foregroundStyle(Palette.muted)
-        if let badge = badge {
+        if let badge = store.badge(for: set.kind) {
           Text(badge)
             .font(.system(size: 11, weight: .bold, design: .rounded))
             .foregroundStyle(Palette.kaya)
@@ -172,25 +173,18 @@ private struct SetEditor: View {
 
       Spacer(minLength: 0)
 
-      if set.done {
-        Button {
-          store.undo(exercise, set)
-        } label: {
-          Label(store.label("undo"), systemImage: "arrow.uturn.backward")
-            .frame(maxWidth: .infinity)
+      // The set before, the tick, the set after: the tick completes this set,
+      // or takes back one already done, and the arrows walk the workout in
+      // the order it is done, so any set can be looked at or fixed.
+      let ends = store.ends(of: set.id)
+      HStack(spacing: 6) {
+        StepButton(systemImage: "chevron.left", label: store.label("previousSet"), enabled: !ends.first) {
+          store.step(from: set.id, by: -1)
         }
-      } else {
-        Button {
-          store.complete(exercise, set, figures: draft)
-        } label: {
-          Label(store.label("completeSet"), systemImage: "checkmark")
-            .font(.system(.body, design: .rounded).weight(.bold))
-            .frame(maxWidth: .infinity)
-            .foregroundStyle(Palette.onPandan)
+        tick
+        StepButton(systemImage: "chevron.right", label: store.label("nextSet"), enabled: !ends.last) {
+          store.step(from: set.id, by: 1)
         }
-        .tint(Palette.pandan)
-        .buttonStyle(.borderedProminent)
-        .disabled(!loggable)
       }
     }
     .onAppear {
@@ -200,13 +194,22 @@ private struct SetEditor: View {
     }
   }
 
-  private var badge: String? {
-    switch set.kind {
-    case "warmup": return store.label("warmup")
-    case "drop": return store.label("drop")
-    case "failure": return store.label("failure")
-    default: return nil
+  /// Filled to complete the set; an outline on a completed one, to take it back.
+  private var tick: some View {
+    Button {
+      if set.done { store.undo(exercise, set) } else { store.complete(exercise, set, figures: draft) }
+    } label: {
+      Image(systemName: "checkmark")
+        .font(.system(size: 22, weight: .heavy))
+        .foregroundStyle(set.done ? Palette.pandan : Palette.onPandan)
+        .frame(maxWidth: .infinity, minHeight: 46)
+        .background(Capsule().fill(set.done ? Palette.pandanSoft : Palette.pandan))
+        .overlay(Capsule().strokeBorder(Palette.pandan, lineWidth: set.done ? 1.5 : 0))
     }
+    .buttonStyle(.plain)
+    .opacity(set.done || loggable ? 1 : 0.4)
+    .disabled(!set.done && !loggable)
+    .accessibilityLabel(store.label(set.done ? "undo" : "completeSet"))
   }
 
   /// The same test the phone's tick makes, so the button is never pressed for nothing.
@@ -338,7 +341,7 @@ private struct RestView: View {
   var body: some View {
     let end = Date(timeIntervalSince1970: rest.endsAt / 1000)
     VStack(spacing: 8) {
-      HStack(spacing: 6) {
+      HStack(spacing: 4) {
         RoundButton(systemImage: "gobackward.15", label: store.label("restMinus")) {
           store.adjustRest(by: -15)
         }
@@ -361,9 +364,12 @@ private struct RestView: View {
               .font(.system(size: 12, weight: .semibold, design: .rounded))
               .foregroundStyle(Palette.kaya)
           }
-          .padding(.horizontal, 10)
+          .padding(.horizontal, 6)
         }
-        .frame(width: 88, height: 88)
+        // As big as the row leaves: 88 points on a 46 mm watch, less on a
+        // 40 mm one, where a fixed ring pushed both buttons off the screen.
+        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: 88)
         RoundButton(systemImage: "goforward.15", label: store.label("restPlus")) {
           store.adjustRest(by: 15)
         }
@@ -391,6 +397,27 @@ private struct RestView: View {
   }
 }
 
+/// One of the set page's arrows, dimmed at either end of the workout.
+private struct StepButton: View {
+  let systemImage: String
+  let label: String
+  let enabled: Bool
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      Image(systemName: systemImage)
+        .font(.system(size: 17, weight: .bold))
+        .frame(width: 40, height: 46)
+        .background(Capsule().fill(Palette.surface))
+    }
+    .buttonStyle(.plain)
+    .disabled(!enabled)
+    .opacity(enabled ? 1 : 0.35)
+    .accessibilityLabel(label)
+  }
+}
+
 /// A small round button with a symbol, named for VoiceOver by the phone's words.
 private struct RoundButton: View {
   let systemImage: String
@@ -401,7 +428,7 @@ private struct RoundButton: View {
     Button(action: action) {
       Image(systemName: systemImage)
         .font(.system(size: 17, weight: .semibold))
-        .frame(width: 42, height: 42)
+        .frame(width: 38, height: 38)
         .background(Circle().fill(Palette.surface))
     }
     .buttonStyle(.plain)
@@ -421,7 +448,8 @@ struct ExercisesPage: View {
         ForEach(workout.exercises) { exercise in
           let done = exercise.sets.filter(\.done).count
           NavigationLink(value: exercise.key) {
-            HStack {
+            HStack(spacing: 8) {
+              ExerciseArt(exerciseId: exercise.exerciseId)
               VStack(alignment: .leading, spacing: 2) {
                 Text(exercise.name)
                   .font(.system(.footnote, design: .rounded).weight(.semibold))
@@ -457,9 +485,10 @@ struct ExerciseSetsView: View {
           dismiss()
         } label: {
           HStack(spacing: 8) {
-            Text(badge(set) ?? "\(index + 1)")
+            let badge = store.badge(for: set.kind)
+            Text(badge ?? "\(index + 1)")
               .font(.system(.footnote, design: .rounded).weight(.bold).monospacedDigit())
-              .foregroundStyle(badge(set) == nil ? Palette.muted : Palette.kaya)
+              .foregroundStyle(badge == nil ? Palette.muted : Palette.kaya)
               .frame(width: 18)
             Text(summary(set))
               .font(.system(.footnote, design: .rounded).monospacedDigit())
@@ -479,15 +508,6 @@ struct ExerciseSetsView: View {
       }
     }
     .navigationTitle(exercise.name)
-  }
-
-  private func badge(_ set: WatchSet) -> String? {
-    switch set.kind {
-    case "warmup": return store.label("warmup")
-    case "drop": return store.label("drop")
-    case "failure": return store.label("failure")
-    default: return nil
-    }
   }
 
   private func summary(_ set: WatchSet) -> String {

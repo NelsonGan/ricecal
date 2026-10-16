@@ -4,19 +4,14 @@ import WatchConnectivity
 /**
  The watch's end of WatchConnectivity.
 
- Two directions, each with a slow path that always arrives and a fast one that
- arrives at once when it can:
-
-   phone to watch   the application context, which the system keeps and hands
-                    over whenever this app next runs, and a message beside it
-                    while the phone is reachable
-   watch to phone   a message with a reply while the phone is reachable, and
-                    `transferUserInfo` otherwise, which the system queues and
-                    delivers once it can, even with both apps closed
-
- A command whose message fails goes by `transferUserInfo` too. If the message
- did arrive and only its reply was lost, the phone sees it twice and applies it
- once, because every command carries an id.
+ Each way, a slow path that always arrives and a fast one that arrives at
+ once when it can. The phone's state and the watch's list of unconfirmed
+ commands both go as the application context, which the system keeps, newest
+ replacing the last, and hands over whenever the other app next runs, and as
+ a message beside it while the other side is reachable. A heart rate trace
+ goes by message, or by `transferUserInfo` when the phone is out of reach,
+ which the system delivers even with both apps closed. Anything that arrives
+ twice is applied once: commands are numbered, and a trace replaces itself.
  */
 final class PhoneLink: NSObject, WCSessionDelegate {
   static let shared = PhoneLink()
@@ -39,8 +34,9 @@ final class PhoneLink: NSObject, WCSessionDelegate {
 
   // MARK: To the phone
 
-  /// Fires when the session is up, so what waited for it can go.
-  var onActivated: (() -> Void)?
+  /// Fires when the session is up or the phone comes back in reach, so what
+  /// waited for it can go.
+  var onReady: (() -> Void)?
 
   /**
    Every command the phone has not confirmed, as one list, in order. As the
@@ -65,13 +61,25 @@ final class PhoneLink: NSObject, WCSessionDelegate {
 
   /**
    A message while the phone is reachable, so the workout page has its heart
-   rate within seconds of the save, and the queue otherwise. The queue runs at
+   rate within seconds of the save. The first time a trace is sent it also
+   goes in the queue when the phone is out of reach, which delivers it even
+   with both apps closed; the store sends it again, by message, until the phone
+   says it has it, so the queue is never given a second copy. The queue runs at
    background priority: on a simulator a trace sent only that way had still
    not arrived two minutes after the save.
    */
-  func send(_ trace: HeartTrace) {
-    guard let json = Wire.encode(trace) else { return }
-    deliver(["heart": json])
+  func send(_ trace: HeartTrace, queueIfAway: Bool) {
+    guard WCSession.isSupported(), let json = Wire.encode(trace) else { return }
+    let session = WCSession.default
+    let payload: [String: Any] = ["heart": json]
+    if session.activationState == .activated, session.isReachable {
+      session.sendMessage(
+        payload, replyHandler: { _ in },
+        errorHandler: { _ in if queueIfAway { session.transferUserInfo(payload) } })
+    } else if queueIfAway {
+      // Not reachable, or not active yet: the queue takes it either way.
+      session.transferUserInfo(payload)
+    }
   }
 
   /// A live reading, which is only worth sending while the phone can hear it.
@@ -93,23 +101,6 @@ final class PhoneLink: NSObject, WCSessionDelegate {
       }, errorHandler: nil)
   }
 
-  private func deliver(_ payload: [String: Any]) {
-    guard WCSession.isSupported() else { return }
-    let session = WCSession.default
-    guard session.activationState == .activated else {
-      // Not yet active: the queue still takes it, and sends it when it is.
-      session.transferUserInfo(payload)
-      return
-    }
-    if session.isReachable {
-      session.sendMessage(
-        payload, replyHandler: { _ in },
-        errorHandler: { _ in session.transferUserInfo(payload) })
-    } else {
-      session.transferUserInfo(payload)
-    }
-  }
-
   // MARK: From the phone
 
   func session(
@@ -118,7 +109,7 @@ final class PhoneLink: NSObject, WCSessionDelegate {
   ) {
     if let state = session.receivedApplicationContext["state"] as? String { onState?(state) }
     askForState()
-    onActivated?()
+    onReady?()
   }
 
   func session(_ session: WCSession, didReceiveApplicationContext context: [String: Any]) {
@@ -133,7 +124,7 @@ final class PhoneLink: NSObject, WCSessionDelegate {
     onReachability?(session.isReachable)
     if session.isReachable {
       askForState()
-      onActivated?()
+      onReady?()
     }
   }
 }

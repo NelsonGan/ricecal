@@ -74,10 +74,14 @@ Notifications.setNotificationHandler({
      */
     const kind = notification.request.content.data?.kind
     // The same goes for a workout's rest timer, whose countdown is on every
-    // screen, and its "still training?", but only where the logger can ask it:
-    // on Today at the three-hour mark nothing else would.
+    // screen, a workout started on the watch, which the bar over every tab
+    // already shows, and its "still training?", but only where the logger can
+    // ask it: on Today at the three-hour mark nothing else would.
     const transient =
-      kind === 'scan' || kind === 'rest' || (kind === 'workout' && workoutPromptShown())
+      kind === 'scan' ||
+      kind === 'rest' ||
+      kind === 'started' ||
+      (kind === 'workout' && workoutPromptShown())
     const watching = transient && AppState.currentState === 'active'
 
     return {
@@ -387,7 +391,12 @@ export async function announceScan(title: string, body: string): Promise<void> {
  * training?" that finishing never cancelled, and it fired hours later for a
  * workout already saved.
  */
-const WORKOUT_NOTICE = { rest: 'workout-rest', workout: 'workout-stale' } as const
+const WORKOUT_NOTICE = {
+  rest: 'workout-rest',
+  workout: 'workout-stale',
+  /** A workout started on the Apple Watch, so the phone says where it is. */
+  started: 'workout-started',
+} as const
 
 /**
  * Bumped by every booking and every cancel of a kind, so a booking that is
@@ -428,6 +437,26 @@ export async function scheduleNoticeAt(
     })
   } catch (error) {
     console.warn('[notifications] could not book a workout notice', error)
+  }
+}
+
+/** Post a workout notice now. Best effort, as booking one is. */
+export async function announceNotice(
+  kind: keyof typeof WORKOUT_NOTICE,
+  content: { title: string; body: string },
+): Promise<void> {
+  const generation = nextGeneration(kind)
+  try {
+    if (!(await notificationsAllowed())) return
+    await ensureChannel()
+    if (noticeGeneration[kind] !== generation) return
+    await Notifications.scheduleNotificationAsync({
+      identifier: WORKOUT_NOTICE[kind],
+      content: { ...content, data: { kind } },
+      trigger: null,
+    })
+  } catch (error) {
+    console.warn('[notifications] could not post a workout notice', error)
   }
 }
 

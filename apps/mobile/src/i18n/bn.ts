@@ -1957,6 +1957,10 @@ export const bn = {
       upNext: 'এরপর',
       empty: 'আপনার iPhone-এ ব্যায়াম যোগ করুন।',
       syncing: 'iPhone কাছে এলে সিঙ্ক হবে',
+      previousSet: 'আগের সেট',
+      nextSet: 'পরের সেট',
+      startedTitle: 'আপনার ঘড়িতে ওয়ার্কআউট শুরু হয়েছে',
+      startedBody: '{{name}}। এখানে দেখতে ট্যাপ করুন।',
     },
 
     stale: {

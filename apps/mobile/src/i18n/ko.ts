@@ -1956,6 +1956,10 @@ export const ko = {
       upNext: '다음',
       empty: 'iPhone에서 종목을 추가하세요.',
       syncing: 'iPhone이 가까이 있으면 동기화됩니다',
+      previousSet: '이전 세트',
+      nextSet: '다음 세트',
+      startedTitle: '워치에서 운동을 시작했습니다',
+      startedBody: '{{name}}. 탭하여 여기서 확인하세요.',
     },
 
     stale: {

@@ -1979,6 +1979,10 @@ export const ta = {
       upNext: 'அடுத்தது',
       empty: 'உங்கள் iPhone-இல் பயிற்சிகளைச் சேர்க்கவும்.',
       syncing: 'iPhone அருகில் இருக்கும்போது ஒத்திசைக்கும்',
+      previousSet: 'முந்தைய செட்',
+      nextSet: 'அடுத்த செட்',
+      startedTitle: 'உங்கள் கடிகாரத்தில் வொர்க்அவுட் தொடங்கியது',
+      startedBody: '{{name}}. இங்கே தொடர தட்டவும்.',
     },
 
     stale: {
