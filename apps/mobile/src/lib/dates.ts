@@ -32,6 +32,8 @@ export type DatePattern =
   | 'dayMonthYear'
   /** "August 2026" */
   | 'monthYear'
+  /** "Aug" — a month on a chart's axis, where the headline says the year. */
+  | 'month'
 
 /** Day then month, twelve hour clock. English, and every language that agrees. */
 const DEFAULT: Record<DatePattern, string> = {
@@ -44,6 +46,7 @@ const DEFAULT: Record<DatePattern, string> = {
   dayMonthLong: 'd MMMM',
   dayMonthYear: 'd MMM yyyy',
   monthYear: 'MMMM yyyy',
+  month: 'MMM',
 }
 
 /**
@@ -66,6 +69,7 @@ const CJK: Record<DatePattern, string> = {
   dayMonthLong: 'M月d日',
   dayMonthYear: 'yyyy年M月d日',
   monthYear: 'yyyy年M月',
+  month: 'M月',
 }
 
 /** The same shape, in the markers Korean uses. */
@@ -79,6 +83,7 @@ const KO: Record<DatePattern, string> = {
   dayMonthLong: 'M월 d일',
   dayMonthYear: 'yyyy년 M월 d일',
   monthYear: 'yyyy년 M월',
+  month: 'M월',
 }
 
 const BY_LANGUAGE: Partial<Record<Language, Record<DatePattern, string>>> = {

@@ -282,6 +282,9 @@ function PeriodBars({
           ? datePattern('monthYear')
           : 'yyyy',
     )
+  // Shorter on the axis, where a dozen "September 2026"s would leave room for two.
+  const tick = (period: WorkoutWeek) =>
+    bucket === 'month' ? format(parseISO(period.week), datePattern('month')) : name(period)
   const current =
     bucket === 'week'
       ? t('progress:weight.thisWeek')
@@ -320,15 +323,12 @@ function PeriodBars({
         axis={axis}
         bars={periods.map((period, index) => ({
           key: period.week,
+          tick: tick(period),
           value: periodValue(period, metric),
           highlight: index === periods.length - 1,
           a11yLabel: `${name(period)}, ${show(periodValue(period, metric))}`,
         }))}
       />
-      <View className="flex-row justify-between">
-        <Text variant="micro">{periods[0] ? name(periods[0]) : ''}</Text>
-        <Text variant="micro">{last ? name(last) : ''}</Text>
-      </View>
     </View>
   )
 }

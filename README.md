@@ -4038,10 +4038,15 @@ the estimate on the workout there.
 
 ### Saving to Apple Health
 
-Off until the user turns it on in workout settings, **per phone** (MMKV, in
+On by default, and a switch in workout settings, **per phone** (MMKV, in
 `features/workouts/prefs.ts`), because it is a permission this handset granted
-and a second phone on the same account has granted nothing. Turning it on asks
-for its own permissions: workouts, active energy, and the three distance types.
+and a second phone on the same account has granted nothing. It asks for its own
+permissions (workouts, active energy, and the three distance types) at the
+first save, or when the switch is turned back on. A "no" on that first sheet
+turns the switch off rather than toasting a failure the user just chose; a
+permission withdrawn later in Health's settings is still reported as a failed
+save. An interrupted or failed permission request keeps saving enabled for a
+later retry and reports a Health failure without blocking the workout save.
 Connecting health for the budget still asks to write nothing.
 
 - Each finished workout is saved as an `HKWorkout` of the activity type its
@@ -4358,7 +4363,13 @@ same once formatted, which a flat week of 80.0 and 80.1 kg otherwise drew as
 three "80 kg" stacked on each other. A point can carry a `title` for the
 readout where its axis label is short or blank, as every other month is on the
 year's weight chart. Dates are thinned to as many as fit, because twenty
-sessions side by side were twenty clipped stubs. The shareable review card
+sessions side by side were twenty clipped stubs: `spreadLabels` in
+`features/shared/axis.ts` picks an even step from the newest back, prefers one
+that lands on the oldest too, and checks the gaps where the end labels land
+after being pulled inside the axis, since a step judged at the centres let the
+dates at either end sit on their neighbours. `AxisLabels` draws the row for
+`TrendLine` and for a `BarChart` whose bars carry a `tick`, which the workout
+progress page uses instead of its old first-and-last pair. The shareable review card
 passes no `formatValue` and stays a picture. `BarChart` takes `selected` and
 `onSelect`, and the workout progress page puts the tapped period's figure in its
 headline; each selectable bar carries its own VoiceOver name. It also takes an
