@@ -3624,7 +3624,8 @@ bars showing the recorded seconds in each zone. Summaries without samples keep
 their average and maximum; zones without summaries still draw their bars. No
 heart data means no heart card, and zero total zone time means no zone chart.
 There are no stored pulse traces, routes, laps, repetitions or personal records,
-so the page cannot draw them. `features/activity/WorkoutDetails.tsx` owns the
+so the page cannot draw them. (A gym workout recorded on the Apple Watch does keep
+its trace; see "The Apple Watch app".) `features/activity/WorkoutDetails.tsx` owns the
 layout and `workoutMetrics.ts` owns the sport-specific measurement choices.
 With large text, supporting measurements stack and the decorative illustration
 gives its space to the figures. Zone names can wrap instead of truncating.
@@ -3679,7 +3680,7 @@ hours. Year charts, Trends, Reviews and calorie budgets use `activity_days` and
 already omit empty step buckets, and Android drops flat buckets apportioned
 from a whole-day reading. Pulse samples are reduced on the phone to workout
 averages, maxima and four zone durations. Routes and raw pulse traces are not
-stored. Daily readings, workouts and weigh-ins keep their history.
+stored, except a gym workout's from the Apple Watch app. Daily readings, workouts and weigh-ins keep their history.
 
 `replace_activity_hours` replaces a read window atomically: it deletes hours
 that disappeared when a duplicate source was removed, inserts new hours and
@@ -4170,6 +4171,182 @@ background if it has to.
   it, so a press that arrives after the workout moved on ticks the set it was
   for, or nothing if that set is gone or already done.
 
+### The Apple Watch app
+
+A watch app in the shape of Hevy's and Strong's: start a routine from the wrist,
+see the set to do with its figures already in it, change them with the Digital
+Crown, complete it with one tap, rest with a countdown that taps the wrist when it
+ends, and finish or throw the workout away. All the while the watch records the
+heart rate, which the phone shows live in the logger and keeps with the saved
+workout, drawn as a line and four zones on its page.
+
+```
+watch/ios/                            the watch app (SwiftUI, watchOS 10)
+plugins/withWatch.js                  puts it in the Xcode project, and the Health
+                                      handoff into AppDelegate
+modules/ricecal-watch/                the phone's end of WatchConnectivity
+src/features/workouts/watch.ts        what the watch is sent, what its presses do
+src/features/workouts/WatchSync.tsx   the effects, mounted in the tabs layout
+src/data/workout-heart.ts             the trace's outbox, and reading it back
+apps/supabase/schemas/43_workout_heart_rates.sql
+```
+
+On the watch a running workout is three pages side by side, as in the Workout
+app: the controls (end, and the session's figures) on the left, the set to do in
+the middle, where it opens, and every exercise on the right, where any set can be
+picked out of order or one added. With no workout running it lists the routines;
+an empty workout is started on the phone, where the exercise library is.
+
+**The phone is the record, and the watch is a remote for it.** The running
+workout stays the MMKV document the logger edits (see "A workout lives on the
+phone until it is finished"), as it does for the Live Activity's buttons. The
+phone sends the watch a copy of it (`WatchState`: each set's figures as the
+logger would offer them, the rest, the routines, the words), and the watch sends
+back commands (`WatchCommand`: start, complete, undo, add a set, move or skip the
+rest, finish, discard), which `applyWatchCommand` turns into the logger's own
+actions. So a set completed on the wrist is saved exactly as one completed on
+the phone, PREVIOUS column, records and all. A second copy of the workout living
+on the watch would have needed merging, and every rule in "The set pad" written
+twice in two languages.
+
+- **Every command has an id, and the workout remembers the ones it applied**
+  (`watch.applied`, the newest 64). A command that arrives twice is applied once,
+  and the watch draws the phone's copy with the presses it has not seen
+  confirmed laid over it (`WatchStore.project`), so a tap shows at once and
+  holds while the phone is out of reach. A command for a workout that has ended
+  is dropped, so a late one cannot bring it back.
+- **A workout started on the watch is named by the watch**: its id, its
+  exercises' keys and its sets' ids, which `ExercisePlan.key` and `SetPlan.id`
+  carry into the document. The commands that follow name those same sets before
+  the phone has ever heard of them. A start that arrives while another workout
+  runs on the phone is dropped, and the watch follows the phone's workout.
+- **Two paths each way.** Phone to watch: the application context, which the
+  system keeps and hands over whenever the watch app next runs, and a message
+  beside it while the watch is reachable. Watch to phone: a message with a reply
+  while the phone is reachable, which wakes the phone app in the background if it
+  has to, and `transferUserInfo` otherwise, which the system queues until it can
+  deliver. The phone puts whatever arrives into an inbox in its own defaults and
+  JS drains it on launch, on returning to the foreground and on the module's
+  event. The session is activated by an app delegate subscriber, not by the
+  module, so a command that launched the app before any JS ran is kept.
+- **The queue is slow.** `transferUserInfo` runs at background priority: on a
+  simulator a heart rate trace sent only that way had not arrived two minutes
+  after the save. Commands and traces go by message whenever the phone is
+  reachable and fall back to the queue.
+- **`isWatchAppInstalled` lags.** It stays false for a while after the Watch app
+  installs the watch app, and for good on a simulator where the watch app was
+  installed directly, and the phone published nothing to a watch that was
+  plainly running. The phone counts the app installed once it has heard from it.
+- **The phone tells the watch how each workout ended** (`recordEndedWorkout`,
+  the last ten, in MMKV), because a workout gone from the phone could have been
+  saved or thrown away and the watch has to save or discard its session
+  accordingly. The finish screen and `discardWorkout` are the only two ways a
+  workout leaves the phone, and both record it.
+
+**Finishing on the watch saves on the phone**, without the finish screen: the
+sets that were completed, the name the workout has, no question about the
+routine (it is kept as it was, which is the screen's own default). A watch has no
+room for "complete unfinished sets?", and a set that was not completed on the
+wrist was not lifted. With nothing done the only answer offered is to discard.
+The phone saves through the same `useWorkoutSave` as the screen, outbox included,
+and if the logger is open it closes.
+
+**The watch records the workout, and the phone writes no Health copy of its
+own.** The watch runs an `HKWorkoutSession` (traditional strength training,
+indoor) for every workout it is part of, which keeps the app on the wrist between
+sets, reads the heart rate at workout rate, measures the energy rather than
+estimating it, and saves an `HKWorkout` at the end that closes the rings. The
+first time it records a workout it says so (the `recording` command, which sets
+`watch.recorded`), and `syncWorkoutToHealth` then leaves Health alone: two copies
+of one hour would put its energy in the budget twice. The session carries
+`RiceCalWorkoutId` in its metadata from the moment the workout's id is known,
+not only at the end, because a session the system ends by itself is saved with
+whatever it carries, and one saved without the key was read back on Today as a
+second, unnamed "Strength". An edit of a watch-recorded workout keeps the energy
+the watch measured (`watch.kcal`) instead of replacing it with an estimate.
+
+- A workout started on the phone asks HealthKit to launch the watch app for it
+  (`startWatchApp`), once, within two minutes of the start, and the watch
+  receives it in `handle(_ workoutConfiguration:)`. Opening the watch app on a
+  workout already running starts recording too.
+- **A session HealthKit kept** (the app killed or relaunched mid-workout) comes
+  back through `recoverActiveWorkoutSession` and is adopted only if it belongs.
+  One whose workout the phone says ended is saved or discarded as it says; one
+  with no workout running and nothing on its way to the phone is discarded,
+  rather than left draining the battery; and one that began well before the
+  running workout is discarded rather than taken over. Adopted, a session left
+  from earlier put half an hour of another workout's pulse at the head of a
+  two-minute one.
+- **Health access is asked for through the phone.** A watch app that is not
+  independent of its iPhone app can have its request shown on the iPhone, and
+  iOS then asks the phone app's delegate to hand it on
+  (`applicationShouldRequestHealthAuthorization`, answered with
+  `handleAuthorizationForExtension`). Expo's delegate does not forward that call,
+  so `withWatch.js` writes it into the generated `AppDelegate`. Without it the
+  request came back refused with no sheet shown. A refusal is not an error: the
+  workout is logged as ever, with no heart rate.
+
+**Heart rate, end to end.**
+
+- Live: while the phone is reachable the watch sends its latest reading every
+  five seconds, and the logger shows it beside the clock (`useWatchPulse`), for
+  as long as readings keep coming. It is a glance and is not kept.
+- At the end the watch sends a trace (`HeartTrace`): one figure every five
+  seconds from the start, the mean of the readings inside each step, null where
+  there were none (off the wrist, the sensor between readings). It reads Health's
+  own record of the window, which survives the app being relaunched, and falls
+  back to what it saw live.
+- `workout_heart_rates` keeps one row per workout, beside it rather than inside
+  `save_workout`, because the trace usually reaches the phone after the save and
+  an edit rewrites the workout whole. `save_workout_heart_rate` works out the
+  average, maximum and minimum itself, sets the workout's `health_workout_id` to
+  the watch's copy when it had none, and its `kcal` to the energy the watch
+  measured, which is what Health holds and so what reaches the budget. Clients
+  can read the table and write it only through the function.
+- **A trace waits for its workout** (`useHeartRateOutbox`). The function answers
+  `missing` rather than failing while the workout has not been saved, which is
+  common: a workout finished on the watch sends the finish and the trace
+  together, and a phone with no signal holds the workout in its outbox. The trace
+  is asked about again every half minute while it waits, and on reconnecting and
+  every foreground, for up to a week.
+- The workout page draws it with the activity page's heart card
+  (`features/activity/HeartRateCard.tsx`): average and maximum, the line
+  (`PulseLine`, broken where the watch read nothing), and the four zones, worked
+  out on the phone from the trace with the same bands and the same age as a
+  health-store session's (`hrZonesFromSamples`).
+
+**The watch has no words of its own** beyond English. The phone sends its
+labels in the user's language with every state, as it sends the Live Activity
+its button names (`watchLabels` in `WatchSync.tsx`, the strings under
+`workouts.watch` and existing ones), and the watch falls back to its own English
+(`Labels.swift`) for any it has not been sent.
+
+**Left out, for now:** starting an empty workout or adding an exercise on the
+watch (the library is 278 drawings on the phone), changing a set's kind or RPE,
+complications, and a watch app that works with no iPhone app at all
+(`WKRunsIndependentlyOfCompanionApp` is false: it needs the phone's account and
+routines). Once a workout has started, the phone can be in a locker: presses
+queue and arrive when it is back.
+
+**The simulator.** The watchOS simulator measures energy for a strength session
+but no heart rate at all, so a simulator build feeds the session a made-up pulse
+(`simulatePulse` in `WorkoutRecorder.swift`, compiled out of device builds).
+Everything after the sensor (the reading on the wrist, the logger, the trace,
+the chart) can then be tried there. "Driving the Apple Watch app" in `AGENTS.md`
+has the rest.
+
+**Releasing it.** Additive: one migration (`20261016130531_workout_heart_rates.sql`)
+adds the table and the function and nothing reads them but this app; an older
+binary never sends a trace, and its workouts are untouched. The watch app is
+embedded in the phone app's binary, so the two always arrive together, and both
+sides read every field of the other's messages as optional. Before the first EAS
+build with it, the watch app's bundle id (`<app id>.watchkitapp`) needs creating
+in the developer portal with the HealthKit capability: `app.config.ts` declares
+the target to EAS beside the widget extension, but the identifier itself is a
+portal step. A workout started from the watch is counted as `Workout Started`
+with source `routine`, which is what it is; nothing else new is sent to
+analytics.
+
 ### The rest timer and reminders
 
 The rest is an end time in the document. `useWorkoutEffects` books a local
@@ -4387,7 +4564,8 @@ skip; warm-up sets; live records; rep records and charts
 per exercise; muscle split; weekly bars, calendar and week streak; the Live
 Activity with its buttons; Apple Health; late finishes;
 reminders; custom exercises; kg and lb; keeping the screen on; sharing a workout;
-CSV export; and importing a Strong or Hevy history.
+CSV export; importing a Strong or Hevy history; and an Apple Watch app that logs
+sets, runs the rest and records the heart rate.
 
 Left out on purpose:
 - **Logging a past workout from nothing.** It was built and taken out: a
@@ -4399,7 +4577,6 @@ Left out on purpose:
   that fits on one.
 - **Body measurements.** Weight is already logged on Today; tape measurements
   belong there, not in a training log.
-- **A watch app.** A project of its own, not a gap in this one.
 - **A plate calculator.** It was built and taken out: loading a bar is
   arithmetic people do at the rack without opening a sheet, and it put a key on
   the number pad of every barbell's weight that nobody pressed.
