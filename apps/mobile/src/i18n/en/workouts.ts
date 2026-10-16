@@ -13,21 +13,20 @@
 export const workouts = {
   title: 'Workouts',
 
+  /** The week so far, on the progress page; the streak beside the tab's title. */
   overview: {
-    thisWeek_one: 'workout this week',
-    thisWeek_other: 'workouts this week',
+    title: 'This week',
+    workouts: 'Workouts',
     time: 'Time',
     volume: 'Lifted',
     streak_one: '{{count}} week streak',
     streak_other: '{{count}} week streak',
-    noStreak: 'Train this week to start a streak',
   },
 
   start: {
     empty: 'Start empty workout',
     resume: 'Resume workout',
     routine: 'Start',
-    past: 'Log a past workout',
     /** Starting another while one runs. */
     replaceTitle: 'A workout is already running',
     replaceBody: 'Discard it and start this one?',
@@ -40,7 +39,6 @@ export const workouts = {
 
   routines: {
     title: 'My routines',
-    new: 'New',
     newTitle: 'New routine',
     namePlaceholder: 'e.g. Push day',
     save: 'Save routine',
@@ -107,6 +105,12 @@ export const workouts = {
     glutes: { name: 'Glutes', description: 'Hip thrusts, split squats and kickbacks.' },
     hiit: { name: 'HIIT', description: 'Short sets, short rests, out of breath.' },
     mobility: { name: 'Mobility', description: 'Roll, stretch and flow.' },
+  },
+
+  /** The tab's calendar view. Its other toggle label is `logging:calendar.showMonth`. */
+  calendar: {
+    showList: 'Show the list',
+    dayEmpty: 'No workouts this day',
   },
 
   history: {
@@ -248,7 +252,6 @@ export const workouts = {
     routineFailed: 'Could not update the routine',
     endBeforeStart: 'The end has to be after the start.',
     tooLong: 'A workout can last at most 24 hours.',
-    health: 'Saved to Apple Health',
     healthFailed: 'Could not save to Apple Health.',
   },
 
@@ -286,8 +289,7 @@ export const workouts = {
   edit: {
     title: 'Edit workout',
     save: 'Save changes',
-    newTitle: 'Log a past workout',
-    /** Going back from an edit, a past workout or a routine with changes not saved. */
+    /** Going back from an edit or a routine with changes not saved. */
     leaveTitle: 'Leave without saving?',
     leaveBody: 'The changes you made here will be lost.',
   },
@@ -364,7 +366,17 @@ export const workouts = {
   stats: {
     title: 'Progress',
     entry: 'Progress and records',
-    weeks: 'Last 12 weeks',
+    weeks: 'Training',
+    /** How far back the bars go. Year and All time are Pro. */
+    range: {
+      label: 'Time range',
+      '3m': 'Last 3 months',
+      '1y': 'Year',
+      all: 'All time',
+    },
+    /** The headline over the bars when none is tapped, for month and year bars. */
+    thisMonth: 'This month',
+    thisYear: 'This year',
     metric: {
       workouts: 'Workouts',
       duration: 'Time',

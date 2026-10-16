@@ -1356,6 +1356,11 @@ export const vi = {
           free: '{{recipes}} món ăn',
           pro: 'Không giới hạn',
         },
+        routines: {
+          label: 'Giáo án tập',
+          free: '{{routines}} giáo án',
+          pro: 'Không giới hạn',
+        },
         recipeFill: {
           label: 'Điền món ăn từ một tấm ảnh',
           free: '',
@@ -1414,6 +1419,8 @@ export const vi = {
         read_recipe: 'Điền món ăn từ một tấm ảnh cần RiceCal Pro.',
         new_recipe: 'Giữ hơn {{recipes}} món ăn của mình cần RiceCal Pro.',
         trend_range: 'Nhìn lại xa hơn một tuần cần RiceCal Pro.',
+        new_routine: 'Giữ hơn {{routines}} giáo án tập cần RiceCal Pro.',
+        workout_range: 'Xem tiến độ tập xa hơn 3 tháng cần RiceCal Pro.',
         review: 'Đọc một bản tổng kết cũ hơn cần RiceCal Pro.',
         nudge: 'RiceCal Pro gỡ bỏ giới hạn.',
       },
@@ -1713,20 +1720,18 @@ export const vi = {
     title: 'Tập luyện',
 
     overview: {
-      thisWeek_one: 'buổi tập tuần này',
-      thisWeek_other: 'buổi tập tuần này',
+      title: 'Tuần này',
+      workouts: 'Buổi tập',
       time: 'Thời gian',
       volume: 'Tổng tạ',
       streak_one: 'Chuỗi {{count}} tuần',
       streak_other: 'Chuỗi {{count}} tuần',
-      noStreak: 'Tập tuần này để bắt đầu chuỗi',
     },
 
     start: {
       empty: 'Bắt đầu buổi tập trống',
       resume: 'Tiếp tục buổi tập',
       routine: 'Bắt đầu',
-      past: 'Ghi lại buổi tập trước',
       replaceTitle: 'Bạn đang có buổi tập chưa xong',
       replaceBody: 'Bỏ buổi đó và bắt đầu buổi này?',
       replaceConfirm: 'Bỏ và bắt đầu',
@@ -1737,7 +1742,6 @@ export const vi = {
 
     routines: {
       title: 'Giáo án của tôi',
-      new: 'Tạo mới',
       newTitle: 'Lịch tập mới',
       namePlaceholder: 'vd. Ngày đẩy',
       save: 'Lưu lịch tập',
@@ -1806,6 +1810,11 @@ export const vi = {
       glutes: { name: 'Mông', description: 'Hip thrust, split squat và kickback.' },
       hiit: { name: 'HIIT', description: 'Set ngắn, nghỉ ngắn, thở dốc.' },
       mobility: { name: 'Linh hoạt', description: 'Lăn cơ, giãn cơ và chuyển động liền mạch.' },
+    },
+
+    calendar: {
+      showList: 'Hiện danh sách',
+      dayEmpty: 'Không có buổi tập ngày này',
     },
 
     history: {
@@ -1938,7 +1947,6 @@ export const vi = {
       routineFailed: 'Không cập nhật được giáo án',
       endBeforeStart: 'Giờ kết thúc phải sau giờ bắt đầu.',
       tooLong: 'Một buổi tập dài tối đa 24 giờ.',
-      health: 'Đã lưu vào Apple Health',
       healthFailed: 'Không lưu được vào Apple Health.',
     },
 
@@ -1975,7 +1983,6 @@ export const vi = {
     edit: {
       title: 'Sửa buổi tập',
       save: 'Lưu thay đổi',
-      newTitle: 'Ghi buổi tập đã qua',
       leaveTitle: 'Thoát mà không lưu?',
       leaveBody: 'Những thay đổi bạn làm ở đây sẽ mất.',
     },
@@ -2050,7 +2057,15 @@ export const vi = {
     stats: {
       title: 'Tiến độ',
       entry: 'Tiến độ và kỷ lục',
-      weeks: '12 tuần gần nhất',
+      weeks: 'Tập luyện',
+      range: {
+        label: 'Khoảng thời gian',
+        '3m': '3 tháng gần nhất',
+        '1y': 'Năm',
+        all: 'Toàn bộ',
+      },
+      thisMonth: 'Tháng này',
+      thisYear: 'Năm nay',
       metric: {
         workouts: 'Buổi tập',
         duration: 'Thời gian',

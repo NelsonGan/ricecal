@@ -1,4 +1,4 @@
-import { addMonths, format, parseISO, subDays } from 'date-fns'
+import { format, parseISO, subDays } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,24 +7,35 @@ import { View } from 'react-native'
 import {
   dateKey,
   today,
+  useEntitlement,
   useExerciseBests,
   useExerciseTotals,
   useSettings,
-  useWorkoutDates,
+  useWorkoutMonths,
+  useWorkoutOverview,
   useWorkoutWeeks,
   type WorkoutWeek,
 } from '@/data'
-import { MonthHeader } from '@/features/logging/MonthCalendar'
-import { monthEnd, monthStart, monthWeeks } from '@/features/logging/month'
+import { useRequirePro } from '@/features/paywall'
 import { BarChart } from '@/features/shared'
 import {
+  type Bucket,
+  compactVolume,
   durationText,
   ExerciseArt,
+  FREE_WEEKS,
   groupSplit,
+  KG_PER_LB,
   MuscleSplitBars,
   NOT_LOADED,
+  OverviewCard,
+  PROGRESS_RANGE_KEY,
+  PROGRESS_RANGES,
+  type ProgressRange,
+  periodsFor,
   useExerciseLibrary,
   volumeText,
+  WorkoutCalendar,
   weightText,
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
@@ -32,12 +43,15 @@ import { useBack } from '@/lib/navigation'
 import { unitFor, type WeightUnit } from '@/lib/units'
 import {
   AppBar,
+  Badge,
   Button,
   Card,
   cn,
   Divided,
+  Icon,
   Screen,
   SegmentedControl,
+  Sheet,
   Skeleton,
   Tappable,
   Text,
@@ -53,16 +67,16 @@ const WEEK_KEY = {
 } as const satisfies Record<WeekMetric, string>
 
 /**
- * Progress: twelve weeks of training as bars, the month as a calendar, where
- * the last thirty days of sets went by muscle, and every personal best.
+ * Progress: the week so far, training as bars over three months to all time,
+ * the month as a calendar, where the last thirty days of sets went by muscle,
+ * and every personal best.
  */
 export default function WorkoutStatsScreen() {
   const { t } = useTranslation(['workouts', 'common'])
   const goBack = useBack('/workouts')
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
-  const weeks = useWorkoutWeeks(12)
-  const [metric, setMetric] = useState<WeekMetric>('workouts')
+  const overview = useWorkoutOverview()
 
   return (
     <Screen
@@ -74,25 +88,13 @@ export default function WorkoutStatsScreen() {
         />
       }
     >
-      <Card title={t('workouts:stats.weeks')} contentClassName="gap-4">
-        {/* One row whatever the language: four chips wrapped "Sets" onto a
-            line of its own. */}
-        <SegmentedControl
-          options={WEEK_METRICS.map((value) => ({ value, label: t(WEEK_KEY[value]) }))}
-          value={metric}
-          onChange={setMetric}
-          accessibilityLabel={t('workouts:stats.weeks')}
-        />
-        {weeks.data ? (
-          <WeekBars weeks={weeks.data} metric={metric} unit={unit} />
-        ) : weeks.isPending && !weeks.isPaused ? (
-          <Skeleton className="h-[160px] w-full" />
-        ) : (
-          <Unavailable offline={weeks.isPaused} />
-        )}
-      </Card>
-
-      <Calendar />
+      <OverviewCard
+        overview={overview.data}
+        unit={unit}
+        loading={overview.isPending && !overview.isPaused}
+      />
+      <Totals unit={unit} />
+      <WorkoutCalendar />
       <Split />
       <Records unit={unit} />
     </Screen>
@@ -108,144 +110,225 @@ function Unavailable({ offline }: { offline: boolean }) {
   return <Text variant="meta">{t(NOT_LOADED[offline ? 'offline' : 'unreachable'].title)}</Text>
 }
 
-function weekValue(week: WorkoutWeek, metric: WeekMetric): number {
+function Totals({ unit }: { unit: WeightUnit }) {
+  const { t } = useTranslation(['workouts', 'common'])
+  const [metric, setMetric] = useState<WeekMetric>('workouts')
+  const [range, setRange] = useState<ProgressRange>('3m')
+  // A Pro range on an account that lapsed while the page was open falls back
+  // to the free one rather than keeping a year it no longer pays for.
+  const { entitled } = useEntitlement()
+  const shownRange = entitled ? range : '3m'
+  const weeks = useWorkoutWeeks(FREE_WEEKS)
+  const months = useWorkoutMonths(shownRange !== '3m')
+  const query = shownRange === '3m' ? weeks : months
+  const periods = useMemo(
+    () => (query.data ? periodsFor(shownRange, query.data) : null),
+    [shownRange, query.data],
+  )
+
+  return (
+    <Card
+      title={t('workouts:stats.weeks')}
+      action={<RangePicker value={shownRange} onChange={setRange} />}
+      contentClassName="gap-4"
+    >
+      {/* One row whatever the language: four chips wrapped "Sets" onto a
+          line of its own. */}
+      <SegmentedControl
+        options={WEEK_METRICS.map((value) => ({ value, label: t(WEEK_KEY[value]) }))}
+        value={metric}
+        onChange={setMetric}
+        accessibilityLabel={t('workouts:stats.weeks')}
+      />
+      {periods ? (
+        <PeriodBars
+          // A new range is a new set of bars, and a bar tapped in the old one
+          // would name a different period in the new.
+          key={`${shownRange}-${periods.bucket}`}
+          periods={periods.rows}
+          bucket={periods.bucket}
+          metric={metric}
+          unit={unit}
+        />
+      ) : query.isPending && !query.isPaused ? (
+        <Skeleton className="h-[160px] w-full" />
+      ) : (
+        <Unavailable offline={query.isPaused} />
+      )}
+    </Card>
+  )
+}
+
+/**
+ * The range as a pill opposite the card's title, which opens the three in a
+ * sheet. Year and All time stay listed for a free account, marked Pro, and
+ * refuse with the paywall, as Trends does with its ranges: a hidden option is
+ * a feature nobody knows they are missing.
+ */
+function RangePicker({
+  value,
+  onChange,
+}: {
+  value: ProgressRange
+  onChange: (range: ProgressRange) => void
+}) {
+  const { t } = useTranslation(['workouts', 'common', 'paywall'])
+  const [open, setOpen] = useState(false)
+  const { entitled } = useEntitlement()
+  // The sheet is a native modal, so the paywall would open behind it.
+  const requirePro = useRequirePro({ beforePaywall: () => setOpen(false) })
+
+  return (
+    <>
+      <Tappable
+        onPress={() => setOpen(true)}
+        className="flex-row items-center gap-1 rounded-full bg-surface-alt py-1.5 pl-3 pr-2"
+        accessibilityRole="button"
+        accessibilityLabel={t('workouts:stats.range.label')}
+        accessibilityValue={{ text: t(PROGRESS_RANGE_KEY[value]) }}
+      >
+        <Text variant="label">{t(PROGRESS_RANGE_KEY[value])}</Text>
+        <Icon set="ui" name="chevron-down" size={16} />
+      </Tappable>
+      <Sheet
+        visible={open}
+        onClose={() => setOpen(false)}
+        title={t('workouts:stats.range.label')}
+        closeLabel={t('common:action.close')}
+      >
+        <View>
+          {PROGRESS_RANGES.map((range, index) => {
+            const selected = range === value
+            const locked = range !== '3m' && !entitled
+            return (
+              <Tappable
+                key={range}
+                onPress={() => {
+                  if (range !== '3m' && !requirePro('workout_range')) return
+                  onChange(range)
+                  setOpen(false)
+                }}
+                className={cn(
+                  'min-h-sm flex-row items-center gap-3 py-4',
+                  index > 0 && 'border-t-2 border-track',
+                )}
+                accessibilityRole="menuitem"
+                accessibilityState={{ selected }}
+              >
+                <Text
+                  variant="bodyStrong"
+                  className={cn('flex-1', selected ? 'text-pandan-ink' : 'font-body-bold')}
+                >
+                  {t(PROGRESS_RANGE_KEY[range])}
+                </Text>
+                {locked ? (
+                  <Badge tone="kaya" size="sm">
+                    {t('paywall:table.pro')}
+                  </Badge>
+                ) : null}
+                {selected ? <Icon set="ui" name="check" size={22} /> : null}
+              </Tappable>
+            )
+          })}
+        </View>
+      </Sheet>
+    </>
+  )
+}
+
+function periodValue(period: WorkoutWeek, metric: WeekMetric): number {
   switch (metric) {
     case 'workouts':
-      return week.workouts
+      return period.workouts
     case 'duration':
-      return week.durationS
+      return period.durationS
     case 'volume':
-      return week.volumeKg
+      return period.volumeKg
     case 'sets':
-      return week.sets
+      return period.sets
   }
 }
 
-function WeekBars({
-  weeks,
+function PeriodBars({
+  periods,
+  bucket,
   metric,
   unit,
 }: {
-  weeks: readonly WorkoutWeek[]
+  periods: readonly WorkoutWeek[]
+  bucket: Bucket
   metric: WeekMetric
   unit: WeightUnit
 }) {
   const { t } = useTranslation(['workouts', 'common', 'progress'])
-  const last = weeks[weeks.length - 1]
-  // A tapped week takes over the headline, named by its Monday; nothing
-  // tapped is this week.
+  const last = periods[periods.length - 1]
+  // A tapped bar takes over the headline, named by its period; nothing tapped
+  // is the current one.
   const [selected, setSelected] = useState<number | null>(null)
-  const shown = selected === null ? last : weeks[selected]
+  const shown = selected === null ? last : periods[selected]
   const show = (value: number) =>
     metric === 'duration'
       ? durationText(t, value)
       : metric === 'volume'
         ? volumeText(t, value, unit)
         : String(value)
+  const name = (period: WorkoutWeek) =>
+    format(
+      parseISO(period.week),
+      bucket === 'week'
+        ? datePattern('dayMonth')
+        : bucket === 'month'
+          ? datePattern('monthYear')
+          : 'yyyy',
+    )
+  const current =
+    bucket === 'week'
+      ? t('progress:weight.thisWeek')
+      : bucket === 'month'
+        ? t('workouts:stats.thisMonth')
+        : t('workouts:stats.thisYear')
+
+  // The scale's steps in a unit a person counts in: hours once the tallest
+  // bar is an hour and a half, minutes below that, and whole pounds or
+  // kilograms.
+  const peak = Math.max(0, ...periods.map((period) => periodValue(period, metric)))
+  const axis =
+    metric === 'duration'
+      ? peak >= 5400
+        ? { unit: 3600, format: (s: number) => t('workouts:duration.hours', { hours: s / 3600 }) }
+        : { unit: 60, format: (s: number) => t('workouts:duration.minutes', { minutes: s / 60 }) }
+      : metric === 'volume'
+        ? {
+            unit: unit === 'lb' ? KG_PER_LB : 1,
+            format: (kg: number) => compactVolume(kg, unit),
+          }
+        : { format: (value: number) => String(value) }
 
   return (
     <View className="gap-2">
-      {/* The figure is the week drawn in full colour: this one, or the one tapped. */}
+      {/* The figure is the period drawn in full colour: this one, or the one tapped. */}
       <View className="gap-0.5">
-        <Text variant="overlineSm">
-          {selected === null || !shown
-            ? t('progress:weight.thisWeek')
-            : format(parseISO(shown.week), datePattern('dayMonth'))}
-        </Text>
-        <Text variant="displayMd">{shown ? show(weekValue(shown, metric)) : '0'}</Text>
+        <Text variant="overlineSm">{selected === null || !shown ? current : name(shown)}</Text>
+        <Text variant="displayMd">{shown ? show(periodValue(shown, metric)) : '0'}</Text>
       </View>
       <BarChart
         height={140}
         others="soft"
         selected={selected}
         onSelect={setSelected}
-        bars={weeks.map((week, index) => ({
-          key: week.week,
-          value: weekValue(week, metric),
-          highlight: index === weeks.length - 1,
-          a11yLabel: `${format(parseISO(week.week), datePattern('dayMonth'))}, ${show(weekValue(week, metric))}`,
+        axis={axis}
+        bars={periods.map((period, index) => ({
+          key: period.week,
+          value: periodValue(period, metric),
+          highlight: index === periods.length - 1,
+          a11yLabel: `${name(period)}, ${show(periodValue(period, metric))}`,
         }))}
       />
       <View className="flex-row justify-between">
-        <Text variant="micro">
-          {weeks[0] ? format(parseISO(weeks[0].week), datePattern('dayMonth')) : ''}
-        </Text>
-        <Text variant="micro">
-          {last ? format(parseISO(last.week), datePattern('dayMonth')) : ''}
-        </Text>
+        <Text variant="micro">{periods[0] ? name(periods[0]) : ''}</Text>
+        <Text variant="micro">{last ? name(last) : ''}</Text>
       </View>
     </View>
-  )
-}
-
-/**
- * The month, with every day that had a workout filled in. Laid out like the
- * diary's month (`features/logging/MonthCalendar.tsx`): its header, chevrons
- * and weekday row, and a row per week. Only the paging differs: workouts go
- * back further than the diary's twelve months.
- */
-function Calendar() {
-  const { t } = useTranslation(['workouts'])
-  const now = today()
-  const [month, setMonth] = useState(() => monthStart(now))
-  const to = monthEnd(month)
-  const dates = useWorkoutDates(month, to).data ?? {}
-  const weeks = useMemo(() => monthWeeks(month), [month])
-  const isCurrent = month >= monthStart(now)
-  const step = (by: -1 | 1) => setMonth(dateKey(addMonths(parseISO(month), by)))
-
-  return (
-    <Card title={t('workouts:stats.calendar')} contentClassName="gap-3">
-      <MonthHeader
-        month={month}
-        onPrevious={() => step(-1)}
-        onNext={isCurrent ? undefined : () => step(1)}
-      />
-
-      <View className="gap-1">
-        {weeks.map((week) => (
-          <View key={week.find(Boolean) ?? week.join()} className="flex-row">
-            {week.map((key, index) => {
-              if (!key) {
-                // biome-ignore lint/suspicious/noArrayIndexKey: blank cells hold a place, not a day
-                return <View key={`blank-${index}`} className="flex-1" />
-              }
-              const trained = (dates[key] ?? 0) > 0
-              const day = format(parseISO(key), datePattern('weekdayDayMonthLong'))
-              return (
-                <View
-                  key={key}
-                  className="flex-1 items-center"
-                  // Said, not only coloured: a filled day is a trained one.
-                  accessible
-                  accessibilityLabel={trained ? t('workouts:stats.dayTrained', { day }) : day}
-                >
-                  <View
-                    // Not flattened, for the reason a set row is not (`SetRow`):
-                    // a day whose workouts arrive after it is drawn turned into
-                    // a green square on Android.
-                    collapsable={false}
-                    className={cn(
-                      'h-[34px] w-[34px] items-center justify-center rounded-full',
-                      trained ? 'bg-pandan' : key === now ? 'border-2 border-pandan' : undefined,
-                    )}
-                  >
-                    <Text
-                      className={cn(
-                        'font-body-black text-[14px]',
-                        trained ? 'text-on-pandan' : key > now ? 'text-faint' : 'text-ink',
-                      )}
-                    >
-                      {format(parseISO(key), 'd')}
-                    </Text>
-                  </View>
-                </View>
-              )
-            })}
-          </View>
-        ))}
-      </View>
-    </Card>
   )
 }
 
