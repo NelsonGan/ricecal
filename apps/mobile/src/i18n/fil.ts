@@ -1746,7 +1746,6 @@ export const fil = {
     start: {
       empty: 'Simulan ang blangkong workout',
       resume: 'Ituloy ang workout',
-      running: 'Kasalukuyang workout',
       routine: 'Simulan',
       past: 'Mag-log ng nakaraang workout',
       replaceTitle: 'May workout pang tumatakbo',

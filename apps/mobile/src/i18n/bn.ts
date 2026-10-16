@@ -1700,7 +1700,6 @@ export const bn = {
       empty: 'খালি ওয়ার্কআউট শুরু করুন',
       resume: 'ওয়ার্কআউট চালিয়ে যান',
       /** The minimised bar over the tabs while a workout runs. */
-      running: 'ওয়ার্কআউট চলছে',
       routine: 'শুরু করুন',
       past: 'আগের ওয়ার্কআউট লগ করুন',
       /** Starting another while one runs. */

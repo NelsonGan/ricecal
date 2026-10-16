@@ -148,13 +148,17 @@ const WORKOUT_BAR_SPACE = 66
  * Its own component so the clock re-renders the bar and not the navigator.
  */
 function RunningWorkout() {
-  const { t } = useTranslation('workouts')
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { workout } = useLiveWorkout()
   const now = useNow(1000)
   if (!workout) return null
-  const resting = workout.rest && workout.rest.endsAt > now ? workout.rest.endsAt - now : null
+  // Rounded up, as the logger's rest bar does, so the two never disagree by a second.
+  const left = workout.rest ? Math.ceil((workout.rest.endsAt - now) / 1000) : 0
+  const rest =
+    workout.rest && left > 0
+      ? { left: shortClock(left), progress: Math.min(1, left / Math.max(1, workout.rest.totalS)) }
+      : null
 
   return (
     <View
@@ -165,7 +169,7 @@ function RunningWorkout() {
       <ActiveWorkoutBar
         name={workout.name}
         elapsed={clock((now - workout.startedAt) / 1000)}
-        resting={resting === null ? null : t('logger.rest', { time: shortClock(resting / 1000) })}
+        rest={rest}
         onPress={() => router.push('/workout/active')}
       />
     </View>

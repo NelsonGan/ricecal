@@ -1707,7 +1707,6 @@ export const ko = {
     start: {
       empty: '빈 운동 시작',
       resume: '운동 이어서 하기',
-      running: '운동 중',
       routine: '시작',
       past: '지난 운동 기록하기',
       replaceTitle: '이미 진행 중인 운동이 있습니다',

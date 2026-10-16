@@ -96,7 +96,8 @@ export function NavBar({
   )
 }
 
-const FLOAT_SHADOW = {
+/** The lift of anything floating over the screen with the bar, so the two read as one layer. */
+export const FLOAT_SHADOW = {
   shadowColor: '#000',
   shadowOpacity: 0.12,
   shadowRadius: 16,

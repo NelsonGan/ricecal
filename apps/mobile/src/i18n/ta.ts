@@ -1718,7 +1718,6 @@ export const ta = {
       empty: 'வெற்று வொர்க்அவுட்டைத் தொடங்கு',
       resume: 'வொர்க்அவுட்டைத் தொடர்',
       /** The minimised bar over the tabs while a workout runs. */
-      running: 'வொர்க்அவுட் நடக்கிறது',
       routine: 'தொடங்கு',
       past: 'முந்தைய பயிற்சியைப் பதிவுசெய்',
       /** Starting another while one runs. */

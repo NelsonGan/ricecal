@@ -7,7 +7,7 @@ import type { IconRef, Routine, WorkoutOverview, WorkoutSummary } from '@/data'
 import { datePattern } from '@/lib/dates'
 import type { WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
-import { Badge, Button, Card, cn, Icon, Skeleton, Tappable, Text } from '@/ui'
+import { Badge, Button, Card, cn, FLOAT_SHADOW, Icon, Skeleton, Tappable, Text } from '@/ui'
 import { ExerciseArt } from './ExerciseArt'
 import { durationText, volumeText } from './format'
 import { useExerciseLibrary } from './library'
@@ -297,44 +297,75 @@ export function Stat({ label, value, icon }: { label: string; value: string; ico
   )
 }
 
-/** The minimised workout, over the tab bar on every tab while one runs. */
+/** Figures that tick keep their width, so nothing beside them shuffles each second. */
+const TABULAR = { fontVariant: ['tabular-nums' as const] }
+
+/**
+ * The minimised workout, over the tab bar on every tab while one runs.
+ *
+ * Drawn as part of the bar's layer (its surface and shadow) rather than as
+ * another card, and with one figure on the right at a time: the rest, when
+ * one is counting down, since that is what someone on another tab is waiting
+ * for. It used to carry a caption, the name, the rest and the clock in a row,
+ * two figures side by side in two sizes, which read as clutter.
+ */
 export function ActiveWorkoutBar({
   name,
   elapsed,
-  resting,
+  rest,
   onPress,
 }: {
   name: string
   /** "12:04", already formatted. */
   elapsed: string
-  /** "Rest 1:12", when a rest is counting down. */
-  resting: string | null
+  /** The countdown ("1:12") and the share of it still to go, while a rest runs. */
+  rest: { left: string; progress: number } | null
   onPress: () => void
 }) {
-  const { t } = useTranslation(['workouts', 'common'])
+  const { t } = useTranslation('workouts')
 
   return (
-    <Tappable
-      onPress={onPress}
-      className="flex-row items-center gap-3 rounded-tile border border-pandan-soft-line bg-pandan-soft px-4 py-2.5"
-      accessibilityRole="button"
-      accessibilityLabel={`${t('workouts:start.resume')}: ${name}`}
-    >
-      <Icon set="body" name="dumbbell" size={28} />
-      <View className="min-w-0 flex-1">
-        <Text variant="caption" className="text-pandan-ink">
-          {t('workouts:start.running')}
-        </Text>
-        <Text variant="label" numberOfLines={1}>
-          {name}
-        </Text>
-      </View>
-      {resting ? (
-        <Text variant="label" className="text-kaya-ink">
-          {resting}
-        </Text>
-      ) : null}
-      <Text className="font-display text-[20px] leading-[28px] text-pandan-ink">{elapsed}</Text>
-    </Tappable>
+    // The shadow on a layer of its own: iOS drops the shadow of anything that
+    // clips, and the bar clips the rest line to its corners.
+    <View className="rounded-card bg-surface" style={FLOAT_SHADOW}>
+      <Tappable
+        onPress={onPress}
+        className="overflow-hidden rounded-card border border-line"
+        accessibilityRole="button"
+        accessibilityLabel={`${t('start.resume')}: ${name}`}
+      >
+        <View className="flex-row items-center gap-3 py-2.5 pl-2.5 pr-3.5">
+          <View className="h-9 w-9 items-center justify-center rounded-md bg-pandan-soft">
+            <Icon set="body" name="dumbbell" size={24} />
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text variant="label" numberOfLines={1}>
+              {name}
+            </Text>
+            <View className="flex-row items-center gap-1.5">
+              {/* The dot says "live" where a caption used to spell it out. */}
+              <View className="h-1.5 w-1.5 rounded-full bg-pandan" />
+              <Text variant="caption" style={TABULAR}>
+                {elapsed}
+              </Text>
+            </View>
+          </View>
+          {rest ? (
+            <View className="flex-row items-center gap-1 rounded-full bg-kaya-soft py-1 pl-2 pr-2.5">
+              <Icon set="system" name="clock" size={16} />
+              <Text variant="label" className="text-kaya-ink" style={TABULAR}>
+                {rest.left}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        {rest ? (
+          <View
+            className="absolute bottom-0 left-0 h-[3px] bg-kaya"
+            style={{ width: `${rest.progress * 100}%` }}
+          />
+        ) : null}
+      </Tappable>
+    </View>
   )
 }
