@@ -38,9 +38,9 @@ export type SocialProfile = {
   connection_created_at?: string
 }
 /** What a post shares. `food` posts are meals; `workout` posts are finished workouts. */
-export type SocialPostKind = 'food' | 'workout'
+type SocialPostKind = Database['public']['Enums']['social_post_kind']
 /** One exercise of a shared workout, as the card lists it. */
-export type SocialWorkoutExercise = { exercise_id: string; exercise_name: string; sets: number }
+type SocialWorkoutExercise = { exercise_id: string; exercise_name: string; sets: number }
 export type SocialPost = {
   id: string
   author_id: string

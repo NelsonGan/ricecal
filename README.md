@@ -4211,8 +4211,8 @@ A superset is walked a round at a time, A1, B1, A2, B2, as it is lifted and as
 the lock screen's tick already went; walked card by card, ✓ Set after A1 went
 to A2.
 On the last field Next reads Done. The header names the exercise over the set
-and unit, because the field is often under the pad, with Plates for a barbell's
-weight and ⌄ to put the pad away. Every other numeric field keeps the plain pad.
+and unit, because the field is often under the pad, with ⌄ to put the pad away.
+Every other numeric field keeps the plain pad.
 
 **It had more keys, and they were cut.** A row of quick-add keys (−2.5 to +20 kg,
 +0:15 to +5:00), Clear, and up and down arrows made a pad of twenty keys that
