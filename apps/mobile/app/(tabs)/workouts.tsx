@@ -1,10 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
-  dequeueWorkout,
+  discardQueuedWorkout,
   type IconRef,
   retryQueuedWorkout,
   summaryFromDocument,
@@ -14,31 +14,21 @@ import {
   useSettings,
   useWorkoutOverview,
   useWorkouts,
+  type WorkoutSummary,
 } from '@/data'
 import { ScreenTitle } from '@/features/shared'
 import {
   ActionSheet,
   defaultWorkoutName,
   OverviewCard,
+  openLogger,
   RoutineCard,
-  removeWorkoutFromHealth,
   routinePlans,
   useWorkoutStarter,
   WorkoutCard,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
-import {
-  Button,
-  Card,
-  ConfirmSheet,
-  Icon,
-  IconButton,
-  ListRow,
-  Screen,
-  Skeleton,
-  Tappable,
-  Text,
-} from '@/ui'
+import { Button, Card, Dialog, Icon, IconButton, ListRow, Screen, Skeleton, Text } from '@/ui'
 
 /**
  * The Workouts tab: start one, start from a routine, and look back.
@@ -76,8 +66,17 @@ export default function WorkoutsScreen() {
   useEffect(() => {
     if (!resume || resumedThisLaunch) return
     resumedThisLaunch = true
-    if (running) router.push('/workout/active')
+    if (running) openLogger(router)
   }, [resume, running, router])
+
+  // Stable, so the memoised cards only re-render when their own workout does.
+  const openWorkout = useCallback(
+    (workout: WorkoutSummary) => {
+      if (workout.pending) setQueued({ id: workout.id, name: workout.name })
+      else router.push({ pathname: '/workout/[id]', params: { id: workout.id } })
+    },
+    [router],
+  )
 
   const history = useMemo(() => {
     const saved = workouts.data?.pages.flat() ?? []
@@ -109,7 +108,7 @@ export default function WorkoutsScreen() {
       />
 
       {starter.running ? (
-        <Button fullWidth size="lg" onPress={() => router.push('/workout/active')}>
+        <Button fullWidth size="lg" onPress={() => openLogger(router)}>
           {t('workouts:start.resume')}
         </Button>
       ) : (
@@ -122,13 +121,14 @@ export default function WorkoutsScreen() {
         </Button>
       )}
 
-      <View className="flex-row">
-        <QuickAction
-          icon={<Icon set="system" name="calendar" size={30} />}
-          label={t('workouts:start.past')}
-          onPress={() => router.push({ pathname: '/workout/edit/[id]', params: { id: 'new' } })}
-        />
-      </View>
+      <Button
+        fullWidth
+        variant="secondary"
+        leftIcon={<Icon set="system" name="calendar" size={22} />}
+        onPress={() => router.push({ pathname: '/workout/edit/[id]', params: { id: 'new' } })}
+      >
+        {t('workouts:start.past')}
+      </Button>
 
       <View className="flex-row items-center justify-between pt-2">
         <Text variant="subtitle">{t('workouts:routines.title')}</Text>
@@ -204,16 +204,7 @@ export default function WorkoutsScreen() {
       ) : history.length ? (
         <View className="gap-stack">
           {history.map((workout) => (
-            <WorkoutCard
-              key={workout.id}
-              workout={workout}
-              unit={unit}
-              onPress={
-                workout.pending
-                  ? () => setQueued({ id: workout.id, name: workout.name })
-                  : () => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })
-              }
-            />
+            <WorkoutCard key={workout.id} workout={workout} unit={unit} onPress={openWorkout} />
           ))}
           {workouts.hasNextPage ? (
             <Button
@@ -235,7 +226,7 @@ export default function WorkoutsScreen() {
         />
       )}
 
-      {starter.sheet}
+      {starter.dialog}
 
       <ActionSheet
         visible={queued !== null}
@@ -263,46 +254,24 @@ export default function WorkoutsScreen() {
         }
       />
 
-      <ConfirmSheet
+      <Dialog
         visible={discarding !== null}
         onClose={() => setDiscarding(null)}
         title={t('workouts:logger.discardTitle')}
         description={t('workouts:logger.discardBody')}
-        confirmLabel={t('workouts:logger.discardConfirm')}
         cancelLabel={t('common:action.keep')}
-        onConfirm={() => {
-          if (!userId || !discarding) return
-          const document = outbox.find((entry) => entry.id === discarding.id)
-          dequeueWorkout(userId, discarding.id)
-          // Its Health copy too, if the save had got that far.
-          if (document) void removeWorkoutFromHealth(document.health_workout_id, document.id)
-        }}
+        actions={[
+          {
+            key: 'discard',
+            label: t('workouts:logger.discardConfirm'),
+            tone: 'danger',
+            onPress: () => {
+              if (userId && discarding) void discardQueuedWorkout(userId, discarding.id)
+            },
+          },
+        ]}
       />
     </Screen>
-  )
-}
-
-function QuickAction({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: React.ReactNode
-  label: string
-  onPress: () => void
-}) {
-  return (
-    <Tappable
-      className="flex-1 flex-row items-center gap-2.5 rounded-card border border-line bg-surface px-4 py-3"
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      {icon}
-      <Text variant="label" className="flex-1" numberOfLines={2}>
-        {label}
-      </Text>
-    </Tappable>
   )
 }
 

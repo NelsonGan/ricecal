@@ -172,6 +172,27 @@ on the local stack.
 Local stack ports are 544xx (`api 54421`, `db 54422`, Mailpit `54424`). `psql`
 is not on PATH: `docker exec supabase_db_ricecal psql -U postgres`.
 
+**Resetting the local database without losing its accounts.** `pnpm db:reset`
+wipes every row, including the signed-in simulator's session. To keep them,
+dump first with `pg_dump --data-only --disable-triggers --schema=public
+--schema=auth --schema=storage` inside the db container, reset, then restore.
+The restore looks clean and is not: `--disable-triggers` cannot disable the
+triggers on `auth.users` (another role owns it), so loading the users fires
+`handle_new_user`, which makes default `profiles`, `user_settings` and
+`meal_times` rows; the dump's own rows for those three then collide and each
+table's whole `COPY` is refused, while the row counts still match. Load those
+three again into a temp table and upsert them by primary key. Never delete a
+profile to make room, since everything cascades from it. Compare a few known
+values (`onboarded_at`, reminder days) rather than counts.
+
+**Folding a change into a branch's one unreleased migration needs no reset.**
+`pnpm db:diff` compares the schema files with what the migrations folder builds,
+not with the local database. Move the branch's migration out of `migrations/`,
+diff, and the output is the whole migration again from `main`; give it the old
+file's version, restate the hand-written revokes at its foot, and apply only the
+difference to the local database with `psql`, since it already holds the old
+version. Diff once more with the file back in place: it should report nothing.
+
 ## Running SQL against the hosted database
 
 Two routes, and the first is the one scripts use.

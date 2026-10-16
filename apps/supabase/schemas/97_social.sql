@@ -187,7 +187,10 @@ create or replace function private.social_feed_candidates(
   p_kinds public.social_post_kind[] default '{food}'
 )
 returns table (id uuid, created_at timestamptz)
-language plpgsql stable security definer set search_path = '' as $$
+-- A page is at most 51 rows. Costed at the default 1,000, the join that
+-- hydrates the page switched to a scan of every post with a visibility check
+-- each, about a second at 7,000 posts.
+language plpgsql stable security definer rows 51 set search_path = '' as $$
 declare v_user uuid := (select auth.uid());
 begin
   perform private.social_validate_page(p_before_at, p_before_id, p_limit);
@@ -260,6 +263,25 @@ begin
 end;
 $$;
 
+-- One profile's page of posts of the asked kinds. Picked here rather than
+-- through the view: row security runs before a kind filter, so a Workouts tab
+-- checked the visibility of every meal it skipped (260 ms for an author with
+-- 2,000 meals and two workouts).
+create or replace function private.social_profile_post_candidates(
+  p_user_id uuid, p_before_at timestamptz, p_before_id uuid, p_limit integer,
+  p_kinds public.social_post_kind[]
+)
+returns table (id uuid, created_at timestamptz)
+language sql stable security definer rows 51 set search_path = '' as $$
+  select sp.id, sp.created_at from public.social_posts sp
+  where sp.author_id = p_user_id and sp.kind = any(p_kinds)
+    and (p_before_at is null or (sp.created_at, sp.id) < (p_before_at, p_before_id))
+    and private.social_can_view_post(sp.id)
+  order by sp.created_at desc, sp.id desc limit p_limit + 1;
+$$;
+revoke execute on function private.social_profile_post_candidates from public, anon;
+grant execute on function private.social_profile_post_candidates to authenticated, service_role;
+
 create or replace function public.social_profile_posts(
   p_user_id uuid, p_before_at timestamptz default null,
   p_before_id uuid default null, p_limit integer default 20,
@@ -268,10 +290,13 @@ create or replace function public.social_profile_posts(
 returns setof public.social_post_details language plpgsql stable security invoker set search_path = '' as $$
 begin
   perform private.social_validate_page(p_before_at, p_before_id, p_limit);
-  return query select d.* from public.social_post_details d where d.author_id = p_user_id
-    and d.kind = any(p_kinds)
-    and (p_before_at is null or (d.created_at, d.id) < (p_before_at, p_before_id))
-    order by d.created_at desc, d.id desc limit p_limit + 1;
+  return query
+    with page as materialized (
+      select c.id, c.created_at
+      from private.social_profile_post_candidates(p_user_id, p_before_at, p_before_id, p_limit, p_kinds) c
+    )
+    select d.* from page p join public.social_post_details d on d.id = p.id
+    order by p.created_at desc, p.id desc;
 end;
 $$;
 

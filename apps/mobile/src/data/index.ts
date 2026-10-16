@@ -163,19 +163,12 @@ export {
   ImportStopped,
   useWorkoutImport,
 } from './workout-import'
-export {
-  dequeueWorkout,
-  enqueueWorkout,
-  getOutbox,
-  useOutbox,
-  type WorkoutDocument,
-} from './workout-outbox'
+export { useOutbox, type WorkoutDocument } from './workout-outbox'
 export {
   type CustomExercise,
-  type CustomExerciseInput,
+  discardQueuedWorkout,
   type ExerciseBests,
   type ExerciseSession,
-  type ExerciseTotal,
   type ExportRow,
   fetchWorkoutExport,
   isDuplicateName,
@@ -183,7 +176,6 @@ export {
   type RepBest,
   type Routine,
   type RoutineExercise,
-  type RoutineInput,
   type RoutineSet,
   retryQueuedWorkout,
   summaryFromDocument,
@@ -210,8 +202,6 @@ export {
   type WorkoutDetail,
   type WorkoutEntry,
   type WorkoutOverview,
-  type WorkoutSaveResult,
-  type WorkoutSet,
   type WorkoutSummary,
   type WorkoutWeek,
 } from './workouts'

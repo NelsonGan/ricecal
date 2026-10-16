@@ -82,11 +82,14 @@ enum WorkoutActivityNudge {
     _ action: String, workoutId: String, exerciseKey: String, setId: String, at: Date
   ) async {
     #if canImport(RiceCalWidgetBridge)
+      // A live one: an ended activity can still be listed, and updating it is a no-op.
       guard
         let activity = Activity<WorkoutActivityAttributes>.activities.first(where: {
           $0.attributes.workoutId == workoutId
+            && ($0.activityState == .active || $0.activityState == .stale)
         })
       else { return }
+      var startedRest = false
       var state = activity.content.state
       switch action {
       case "skipRest":
@@ -114,13 +117,16 @@ enum WorkoutActivityNudge {
         if let rest = state.restAfterS, rest > 0 {
           state.restEndsAt = at.addingTimeInterval(rest)
           state.restTotalS = rest
+          startedRest = true
         }
       default:
         return
       }
       let stale = state.restEndsAt.flatMap { $0 > at ? $0 : nil }
       await activity.update(ActivityContent(state: state, staleDate: stale))
-      await RestNotice.reschedule(endsAt: stale, at: at, forTick: action == "completeSet")
+      // The tick's wording only for a rest the tick started: one already
+      // running after it is about the exercise that started it.
+      await RestNotice.reschedule(endsAt: stale, at: at, forTick: startedRest)
     #endif
   }
 }

@@ -6,15 +6,24 @@ import type { ImportPlan } from './build'
  * preview share it and it can be tested without a server.
  */
 
-/** A workout already in the history, as `workout_summaries` gives it. */
+/** A workout already in the history, from `workout_summaries`, its name already through `nameKey`. */
 export type Logged = { id: string; start: number; name: string; sets: number }
 
 const SAME_SESSION_MS = 60_000
+/** No zone is further than 14 hours from UTC. */
 const SHIFT_MAX_MS = 14 * 3_600_000
-/** Time-zone offsets come in quarter hours (Nepal's is +5:45). */
-const OFFSET_STEP_MS = 15 * 60_000
 
-const nameKey = (name: string) => name.trim().toLowerCase()
+/** A workout's name as two copies of it are compared: trimmed, any case. */
+export const nameKey = (name: string) => name.trim().toLowerCase()
+
+/**
+ * How far Hevy's import of a Strong history moved a workout: the phone's UTC
+ * offset on that date, since Hevy read Strong's wall-clock times as UTC. On
+ * that date rather than today's, so a summer workout carries summer time.
+ * Any whole quarter hour up to 14 hours matched too much: a "Push" on
+ * Tuesday morning was taken for a "Push" on Monday evening and skipped.
+ */
+const shiftOn = (at: number) => Math.abs(new Date(at).getTimezoneOffset()) * 60_000
 
 /** The index of the first logged workout starting at or after `at`. */
 function firstFrom(logged: Logged[], at: number): number {
@@ -38,8 +47,11 @@ export function matchLogged(
   plan: ImportPlan,
   logged: Logged[],
   saved: ReadonlySet<string>,
+  /** The shift on a date; the phone's own, or a fixed one in tests. */
+  shiftAt: (at: number) => number = shiftOn,
 ): Set<string> {
   const sorted = [...logged].sort((a, b) => a.start - b.start)
+  const position = new Map(sorted.map((workout, index) => [workout.id, index]))
   const used = new Set<number>()
   const found = new Set<string>()
   // Ids first, so another planned workout cannot take the logged copy of one
@@ -47,14 +59,15 @@ export function matchLogged(
   for (const { document } of plan.workouts) {
     if (!saved.has(document.id)) continue
     found.add(document.id)
-    const index = sorted.findIndex((workout) => workout.id === document.id)
-    if (index !== -1) used.add(index)
+    const index = position.get(document.id)
+    if (index !== undefined) used.add(index)
   }
   for (const { document } of plan.workouts) {
     if (found.has(document.id)) continue
     const start = new Date(document.started_at).getTime()
     const name = nameKey(document.name)
     const sets = document.exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0)
+    const shift = shiftAt(start)
     let best = -1
     let bestApart = Number.POSITIVE_INFINITY
     for (let index = firstFrom(sorted, start - SHIFT_MAX_MS); index < sorted.length; index++) {
@@ -62,11 +75,11 @@ export function matchLogged(
       if (workout.start > start + SHIFT_MAX_MS) break
       if (used.has(index)) continue
       const apart = Math.abs(workout.start - start)
-      const offBy = apart % OFFSET_STEP_MS
       const shifted =
-        workout.name === name &&
+        shift > 0 &&
+        nameKey(workout.name) === name &&
         workout.sets === sets &&
-        Math.min(offBy, OFFSET_STEP_MS - offBy) < SAME_SESSION_MS
+        Math.abs(apart - shift) < SAME_SESSION_MS
       if ((apart < SAME_SESSION_MS || shifted) && apart < bestApart) {
         best = index
         bestApart = apart

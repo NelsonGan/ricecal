@@ -2,7 +2,7 @@ import { Image } from 'expo-image'
 import { View } from 'react-native'
 
 import type { IconRef } from '@/data'
-import { cn, Icon } from '@/ui'
+import { Icon } from '@/ui'
 import type { Category } from './catalogue'
 import { EXERCISE_ART } from './exerciseArt.generated'
 
@@ -59,29 +59,22 @@ export function exerciseIcon(exerciseId: string): IconRef {
   return OWN_ICON[exerciseId] ?? { set: 'body', name: 'dumbbell' }
 }
 
-export type ExerciseArtProps = {
+type ExerciseArtProps = {
   exerciseId: string
   /** The body part, whose icon stands in where the exercise has no drawing. */
   category?: Category
   size: number
   /** Tile corner radius; defaults to a third of the size, which reads as a soft square. */
   radius?: number
-  className?: string
 }
 
-export function ExerciseArt({
-  exerciseId,
-  category = 'fullBody',
-  size,
-  radius,
-  className,
-}: ExerciseArtProps) {
+export function ExerciseArt({ exerciseId, category = 'fullBody', size, radius }: ExerciseArtProps) {
   const source = EXERCISE_ART[exerciseId]
   const icon = FALLBACK[category]
 
   return (
     <View
-      className={cn('items-center justify-center overflow-hidden bg-exercise-tile', className)}
+      className="items-center justify-center overflow-hidden bg-exercise-tile"
       style={{ width: size, height: size, borderRadius: radius ?? Math.round(size / 3.2) }}
     >
       {source ? (

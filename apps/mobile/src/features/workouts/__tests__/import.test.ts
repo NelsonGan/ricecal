@@ -325,6 +325,47 @@ describe('fixes from the review', () => {
     expect(file.workouts[0].start).toMatchObject({ year: 2026, month, day: 14, hour })
   })
 
+  it.each([
+    ['14 oct 2026, 5:14 p. m.', 17],
+    ['14 oct 2026, 5:14 a. m.', 5],
+    ['14 Oct 2026, 17:14:05', 17],
+  ])('reads %s on the right side of noon', (date, hour) => {
+    const file = parsed([HEVY_HEADER, hevyRow('Day', date, date, 'Plank')].join('\n'))
+    expect(file.workouts[0].start).toMatchObject({ day: 14, hour, minute: 14 })
+  })
+
+  it('refuses a time with a marker it cannot read rather than shifting it', () => {
+    const date = '14 Oct 2026, 5:14 nachm.'
+    const file = parsed([HEVY_HEADER, hevyRow('Day', date, date, 'Plank')].join('\n'))
+    expect(file.workouts).toEqual([])
+    expect(file.skippedRows).toBe(1)
+  })
+
+  it("reads this app's own export back: set types and minutes", () => {
+    const file = parsed(
+      [
+        'Date,Workout Name,Duration (min),Exercise Name,Set Order,Set Type,Weight (kg),Reps,Seconds,Distance (m),RPE,Notes,Workout Notes',
+        '2026-10-13 19:05:00,Leg day,65,Squat (Barbell),1,warmup,40,10,,,,,',
+        '2026-10-13 19:05:00,Leg day,65,Squat (Barbell),2,normal,95,5,,,8,,',
+        '2026-10-13 19:05:00,Leg day,65,Squat (Barbell),3,drop,70,8,,,,,',
+      ].join('\r\n'),
+    )
+    expect(file.workouts[0].durationS).toBe(3900)
+    expect(file.workouts[0].exercises[0].sets.map((set) => set.kind)).toEqual([
+      'warmup',
+      'normal',
+      'drop',
+    ])
+  })
+
+  it('reads an inch mark inside an unquoted field as text', () => {
+    expect(parseCsv('a,b\n5" deficit,2\nnext,3')).toEqual([
+      ['a', 'b'],
+      ['5" deficit', '2'],
+      ['next', '3'],
+    ])
+  })
+
   it('reads a newer Strong export: semicolons, named units, the duration in seconds', () => {
     const file = parsed(
       [
@@ -424,6 +465,8 @@ describe('fixes from the review', () => {
 })
 
 describe('matchLogged', () => {
+  // Fixed rather than the machine's own zone, which CI does not share.
+  const eightHours = () => 8 * 3_600_000
   const plan = (workouts: [string, string, string, number][]) =>
     ({
       workouts: workouts.map(([id, startedAt, name, sets]) => ({
@@ -455,8 +498,21 @@ describe('matchLogged', () => {
         logged('y', '2026-07-12T17:00:00Z', 'Chest', 25),
       ],
       new Set(['a']),
+      eightHours,
     )
     expect([...found].sort()).toEqual(['a', 'b', 'c'])
+  })
+
+  it("takes only the phone's own offset for a shifted copy, not any whole hour", () => {
+    // Monday 18:00 and Tuesday 08:00 are 14 hours apart, a whole number of
+    // hours but not this phone's 8, so the Tuesday workout is a new one.
+    const found = matchLogged(
+      plan([['tuesday', '2026-07-14T08:00:00Z', 'Push', 12]]),
+      [logged('monday', '2026-07-13T18:00:00Z', 'Push', 12)],
+      new Set(),
+      eightHours,
+    )
+    expect([...found]).toEqual([])
   })
 
   it('lets one logged workout stand for one file workout only', () => {

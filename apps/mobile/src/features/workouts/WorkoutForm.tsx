@@ -1,4 +1,5 @@
 import { format } from 'date-fns'
+import type { Href } from 'expo-router'
 import type { TFunction } from 'i18next'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -6,9 +7,9 @@ import { useTranslation } from 'react-i18next'
 import { type IconRef, useCurrentWeight, useSaveWorkout } from '@/data'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
-import { AppBar, Card, EmptyState, ListRow, Screen, Text, TextField } from '@/ui'
+import { AppBar, Card, EmptyState, ListRow, Screen, Skeleton, Text, TextField } from '@/ui'
 import { estimateKcal } from './energy'
-import { removeWorkoutFromHealth, syncWorkoutToHealth } from './health'
+import { type HealthOutcome, removeWorkoutFromHealth, syncWorkoutToHealth } from './health'
 import { type LiveWorkout, toPayload } from './model'
 import { WhenSheet } from './WhenSheet'
 
@@ -121,29 +122,39 @@ export function WorkoutFields({
   )
 }
 
+/** A saved workout as it was before an edit, to put back in Health if the edit is refused. */
+export type SavedVersion = { workout: LiveWorkout; endedAt: number; kcal: number | null }
+
 /**
  * Saving a workout, from either screen: its energy estimate, its Apple Health
  * copy, then the server, or the outbox when the server cannot be reached.
+ * Throws on a save the server refused.
  *
- * A Health copy that went in when the save then failed is taken back out, or
- * pressing Save again would leave two. Throws on a save the server refused.
+ * Health is written first, replacing whatever copy was there, so a refusal
+ * undoes it: a new workout's copy is taken out, or pressing Save again would
+ * leave two, and an edit's `previous` version is written back, since the
+ * server still holds that one and its copy went to make room.
  */
 export function useWorkoutSave() {
   const save = useSaveWorkout()
   const bodyKg = useCurrentWeight()
 
-  const run = async (document: LiveWorkout, endedAt: number) => {
+  const run = async (document: LiveWorkout, endedAt: number, previous?: SavedVersion) => {
     const durationS = Math.round((endedAt - document.startedAt) / 1000)
     const kcal = estimateKcal(document, durationS, bodyKg)
-    let healthCopy: string | null = null
+    let health: HealthOutcome | null = null
     try {
-      const health = await syncWorkoutToHealth(document, endedAt, kcal)
-      if (health.healthId !== document.healthWorkoutId) healthCopy = health.healthId
+      health = await syncWorkoutToHealth(document, endedAt, kcal)
       const payload = toPayload(document, endedAt, { kcal, healthWorkoutId: health.healthId })
       const result = await save.mutateAsync(payload)
       return { payload, queued: result.queued, health, durationS }
     } catch (failure) {
-      if (healthCopy) void removeWorkoutFromHealth(healthCopy, document.id)
+      // Awaited: a retry tapped at once could otherwise have its own new copy
+      // be the one this removes.
+      if (health?.replaced) {
+        if (previous) await syncWorkoutToHealth(previous.workout, previous.endedAt, previous.kcal)
+        else await removeWorkoutFromHealth(health.healthId, document.id)
+      }
       throw failure
     }
   }
@@ -151,13 +162,47 @@ export function useWorkoutSave() {
   return run
 }
 
-/** A workout screen opened with nothing to show: saved, discarded or deleted since. */
-export function WorkoutMissing({ icon = { set: 'body', name: 'stopwatch' } }: { icon?: IconRef }) {
+/**
+ * A workout screen with nothing to draw, always with a way back: still
+ * loading, offline with nothing cached (the request is held rather than
+ * failed, so a skeleton would wait forever), unreachable, or missing because
+ * it was saved, discarded or deleted since.
+ */
+export function WorkoutUnavailable({
+  state = 'missing',
+  title,
+  icon = { set: 'body', name: 'stopwatch' },
+  fallback = '/workouts',
+}: {
+  state?: 'loading' | 'offline' | 'unreachable' | 'missing'
+  /** What is missing, when it is not a workout. */
+  title?: string
+  icon?: IconRef
+  fallback?: Href
+}) {
   const { t } = useTranslation(['workouts', 'common'])
-  const goBack = useBack('/workouts')
+  const goBack = useBack(fallback)
   return (
     <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
-      <EmptyState title={t('workouts:detail.missing')} icon={icon} />
+      {state === 'loading' ? (
+        <Card>
+          <Skeleton className="h-[240px] w-full" />
+        </Card>
+      ) : state === 'offline' ? (
+        <EmptyState
+          title={t('common:offline.title')}
+          description={t('common:offline.body')}
+          icon={{ set: 'ui', name: 'offline' }}
+        />
+      ) : state === 'unreachable' ? (
+        <EmptyState
+          title={t('common:offline.unreachableTitle')}
+          description={t('common:offline.unreachableBody')}
+          icon={{ set: 'ui', name: 'warning' }}
+        />
+      ) : (
+        <EmptyState title={title ?? t('workouts:detail.missing')} icon={icon} />
+      )}
     </Screen>
   )
 }

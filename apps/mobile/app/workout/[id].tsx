@@ -42,8 +42,8 @@ import {
   AppBar,
   Badge,
   Card,
-  ConfirmSheet,
   cn,
+  Dialog,
   Divider,
   EmptyState,
   Icon,
@@ -57,11 +57,17 @@ import {
 
 /** One finished workout: what was done, set by set, and what it set a record for. */
 export default function WorkoutScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>()
+  // Keyed by id, so a link that reuses this screen for another one starts
+  // clean rather than carrying the last one's menus and held state.
+  return <WorkoutPage key={id} id={id} />
+}
+
+function WorkoutPage({ id }: { id: string }) {
   const { t } = useTranslation(['workouts', 'common', 'social'])
   const router = useRouter()
   const toast = useToast()
   const goBack = useBack('/workouts')
-  const { id } = useLocalSearchParams<{ id: string }>()
   const { data: fetched, isPending, isPaused, isError } = useWorkout(id)
   // Whether it is on the feed already, so the menu offers Edit post rather
   // than a second share. Unknown (offline, still loading) offers Share, and the
@@ -209,7 +215,7 @@ export default function WorkoutScreen() {
               },
             ]}
           />
-          <ConfirmSheet
+          <Dialog
             visible={confirmDelete}
             onClose={() => setConfirmDelete(false)}
             title={t('workouts:detail.deleteTitle')}
@@ -218,30 +224,37 @@ export default function WorkoutScreen() {
                 ? `${t('workouts:detail.deleteBody')} ${t('workouts:detail.deleteHealth')}`
                 : t('workouts:detail.deleteBody')
             }
-            confirmLabel={t('common:action.delete')}
             cancelLabel={t('common:action.keep')}
-            onConfirm={async () => {
-              // Offline the delete would pause rather than fail, and the sheet
-              // would spin with no way out. Say why instead, and stay open.
-              if (!online) {
-                toast.show({ title: t('common:offline.title'), tone: 'error' })
-                throw new Error('offline')
-              }
-              setDeleting(workout)
-              try {
-                await remove.mutateAsync(workout.id)
-              } catch (error) {
-                setDeleting(null)
-                toast.show({ title: t('common:offline.unreachableTitle'), tone: 'error' })
-                throw error
-              }
-              await removeWorkoutFromHealth(workout.healthWorkoutId, workout.id)
-              goBack()
-            }}
+            actions={[
+              {
+                key: 'delete',
+                label: t('common:action.delete'),
+                tone: 'danger',
+                waits: true,
+                onPress: async () => {
+                  // Offline the delete would pause rather than fail, and the
+                  // dialog would spin with no way out. Say why, and stay open.
+                  if (!online) {
+                    toast.show({ title: t('common:offline.title'), tone: 'error' })
+                    throw new Error('offline')
+                  }
+                  setDeleting(workout)
+                  try {
+                    await remove.mutateAsync(workout.id)
+                  } catch (error) {
+                    setDeleting(null)
+                    toast.show({ title: t('common:offline.unreachableTitle'), tone: 'error' })
+                    throw error
+                  }
+                  await removeWorkoutFromHealth(workout.healthWorkoutId, workout.id)
+                  goBack()
+                },
+              },
+            ]}
           />
         </>
       ) : null}
-      {starter.sheet}
+      {starter.dialog}
     </Screen>
   )
 }

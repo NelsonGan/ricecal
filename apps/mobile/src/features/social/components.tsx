@@ -38,6 +38,7 @@ import {
 } from '@/data/social'
 import type { IconRef, ReportReason } from '@/data/types'
 import { WorkoutPreview } from '@/features/workouts/cards'
+import { durationText, volumeText } from '@/features/workouts/format'
 import { useBack } from '@/lib/navigation'
 import { energyShare } from '@/lib/nutrition'
 import { unitFor } from '@/lib/units'
@@ -303,6 +304,31 @@ function totalsOf(facts?: Partial<FoodFacts> | null): Totals | null {
 }
 
 /** What a screen reader says for a dish: its name, then every figure the picture shows. */
+/**
+ * A workout post read aloud: its name and what it came to. The preview is one
+ * element to VoiceOver, so without this it read as the name alone while a
+ * meal read its calories and macros.
+ */
+export function useWorkoutLabel() {
+  const { t } = useTranslation(['workouts', 'common'])
+  const { data: settings } = useSettings()
+  const unit = unitFor(settings?.units)
+  return (post: SocialPost) => {
+    const volumeKg = Number(post.workout_volume_kg ?? 0)
+    const records = post.workout_records ?? 0
+    return [
+      post.workout_name ?? '',
+      durationText(t, post.workout_duration_s ?? 0),
+      volumeKg > 0
+        ? volumeText(t, volumeKg, unit)
+        : t('workouts:history.sets', { count: post.workout_sets ?? 0 }),
+      records > 0 ? t('workouts:history.prs', { count: records }) : '',
+    ]
+      .filter(Boolean)
+      .join(', ')
+  }
+}
+
 function useFoodLabel() {
   const { t } = useTranslation('common')
   return (name: string, facts?: Partial<FoodFacts> | null) => {
@@ -955,6 +981,7 @@ export const PostCard = memo(function PostCard({
   const open = () => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })
   const time = useSocialTime(post.published_at ?? post.created_at)
   const foodLabel = useFoodLabel()
+  const workoutLabel = useWorkoutLabel()
   const zoom = useSharedValue(1)
   const zoomX = useSharedValue(0)
   const zoomY = useSharedValue(0)
@@ -1097,9 +1124,7 @@ export const PostCard = memo(function PostCard({
           accessible
           accessibilityRole="image"
           accessibilityLabel={
-            post.kind === 'workout'
-              ? (post.workout_name ?? '')
-              : foodLabel(post.food_name ?? '', post)
+            post.kind === 'workout' ? workoutLabel(post) : foodLabel(post.food_name ?? '', post)
           }
           onLayout={(event) => {
             mediaSize.value = event.nativeEvent.layout.width
@@ -1297,7 +1322,8 @@ export const PostTile = memo(function PostTile({
       className="overflow-hidden rounded-md bg-surface p-1"
       accessibilityRole="button"
       accessibilityLabel={[
-        post.kind === 'workout' ? (post.workout_name ?? '') : foodLabel(post.food_name ?? '', post),
+        // Meals only: the profile's grid is its Food tab.
+        foodLabel(post.food_name ?? '', post),
         mine && status !== 'approved' ? t(status) : '',
       ]
         .filter(Boolean)
@@ -1428,7 +1454,13 @@ export function SocialList<T>({
       style={{ flex: 1 }}
       ListHeaderComponent={header}
       ListHeaderComponentStyle={
-        header ? { marginBottom: variant === 'feed' ? 0 : variant === 'grid' ? 12 : 16 } : undefined
+        !header
+          ? undefined
+          : variant === 'cards'
+            ? // Edge to edge over the cards' padding, as a profile's header is
+              // over its grid: inset, it moved in when the Workouts tab opened.
+              { marginHorizontal: -20, marginTop: -20, marginBottom: 16 }
+            : { marginBottom: variant === 'feed' ? 0 : variant === 'grid' ? 12 : 16 }
       }
       ItemSeparatorComponent={
         variant === 'rows' ? () => <View className="h-[2px] bg-track" /> : undefined

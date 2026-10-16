@@ -78,8 +78,6 @@ export default function AccountScreen() {
   const [handleTaken, setHandleTaken] = useState(false)
   const [handleHelpOpen, setHandleHelpOpen] = useState(false)
   const [privateHelpOpen, setPrivateHelpOpen] = useState(false)
-  const [autoPostHelpOpen, setAutoPostHelpOpen] = useState(false)
-  const [workoutPostHelpOpen, setWorkoutPostHelpOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -161,21 +159,11 @@ export default function AccountScreen() {
     }
   }
 
-  const setAutoPost = async (value: boolean) => {
+  const setAutoPost = async (patch: { autoPostFoods: boolean } | { autoPostWorkouts: boolean }) => {
     if (!profile || busy || !online) return
     try {
       if (!(await save())) return
-      await updateProfile.mutateAsync({ autoPostFoods: value })
-    } catch {
-      toast.show({ title: t('social:saveFailed'), tone: 'error' })
-    }
-  }
-
-  const setAutoPostWorkouts = async (value: boolean) => {
-    if (!profile || busy || !online) return
-    try {
-      if (!(await save())) return
-      await updateProfile.mutateAsync({ autoPostWorkouts: value })
+      await updateProfile.mutateAsync(patch)
     } catch {
       toast.show({ title: t('social:saveFailed'), tone: 'error' })
     }
@@ -398,52 +386,22 @@ export default function AccountScreen() {
               accessibilityLabel={t('social:privateProfile')}
             />
           </View>
-          <View className="flex-row items-center gap-3 border-t border-line pt-4">
-            <View className="min-w-0 flex-1 flex-row items-center gap-0">
-              <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
-                {t('social:autoPostFoods')}
-              </Text>
-              <IconButton
-                variant="ghost"
-                size="xxs"
-                hitSlop={8}
-                accessibilityLabel={t('social:autoPostFoodsHint')}
-                onPress={() => setAutoPostHelpOpen(true)}
-              >
-                <Icon set="ui" name="info" size={18} />
-              </IconButton>
-            </View>
-            <Switch
-              value={profile?.auto_post_foods ?? false}
-              onValueChange={setAutoPost}
-              disabled={!profile || busy || !online}
-              accessibilityLabel={t('social:autoPostFoods')}
-            />
-          </View>
-          <View className="flex-row items-center gap-3 border-t border-line pt-4">
-            <View className="min-w-0 flex-1 flex-row items-center gap-0">
-              <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
-                {t('social:autoPostWorkouts')}
-              </Text>
-              <IconButton
-                variant="ghost"
-                size="xxs"
-                hitSlop={8}
-                accessibilityLabel={t('social:autoPostWorkoutsHint')}
-                onPress={() => setWorkoutPostHelpOpen(true)}
-              >
-                <Icon set="ui" name="info" size={18} />
-              </IconButton>
-            </View>
-            {/* On by default: the column says so, and a profile not yet read
-                should not flash the switch off and then on. */}
-            <Switch
-              value={profile?.auto_post_workouts ?? true}
-              onValueChange={setAutoPostWorkouts}
-              disabled={!profile || busy || !online}
-              accessibilityLabel={t('social:autoPostWorkouts')}
-            />
-          </View>
+          <AutoPostRow
+            label={t('social:autoPostFoods')}
+            hint={t('social:autoPostFoodsHint')}
+            value={profile?.auto_post_foods ?? false}
+            onValueChange={(value) => setAutoPost({ autoPostFoods: value })}
+            disabled={!profile || busy || !online}
+          />
+          <AutoPostRow
+            label={t('social:autoPostWorkouts')}
+            hint={t('social:autoPostWorkoutsHint')}
+            // On by default: the column says so, and a profile not yet read
+            // should not flash the switch off and then on.
+            value={profile?.auto_post_workouts ?? true}
+            onValueChange={(value) => setAutoPost({ autoPostWorkouts: value })}
+            disabled={!profile || busy || !online}
+          />
         </View>
         <ListRow
           title={t('profile:account.changePassword')}
@@ -506,22 +464,6 @@ export default function AccountScreen() {
       >
         <Text>{t('social:privateProfileHint')}</Text>
       </Sheet>
-      <Sheet
-        visible={autoPostHelpOpen}
-        onClose={() => setAutoPostHelpOpen(false)}
-        title={t('social:autoPostFoods')}
-        closeLabel={t('common:action.close')}
-      >
-        <Text>{t('social:autoPostFoodsHint')}</Text>
-      </Sheet>
-      <Sheet
-        visible={workoutPostHelpOpen}
-        onClose={() => setWorkoutPostHelpOpen(false)}
-        title={t('social:autoPostWorkouts')}
-        closeLabel={t('common:action.close')}
-      >
-        <Text>{t('social:autoPostWorkoutsHint')}</Text>
-      </Sheet>
       {passwordOpen ? <ChangePassword onClose={() => setPasswordOpen(false)} /> : null}
       {confirming ? <DeleteAccount onClose={() => setConfirming(false)} /> : null}
     </Screen>
@@ -534,6 +476,56 @@ const CODE_LENGTH = 6
 const RESEND_COOLDOWN_S = 60
 
 // Mounted only while open so a dismissed password never survives in the form.
+/** A sharing switch with what it does a tap away, for meals and for workouts. */
+function AutoPostRow({
+  label,
+  hint,
+  value,
+  disabled,
+  onValueChange,
+}: {
+  label: string
+  hint: string
+  value: boolean
+  disabled: boolean
+  onValueChange: (value: boolean) => void
+}) {
+  const { t } = useTranslation(['common'])
+  const [help, setHelp] = useState(false)
+  return (
+    <View className="flex-row items-center gap-3 border-t border-line pt-4">
+      <View className="min-w-0 flex-1 flex-row items-center gap-0">
+        <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
+          {label}
+        </Text>
+        <IconButton
+          variant="ghost"
+          size="xxs"
+          hitSlop={8}
+          accessibilityLabel={hint}
+          onPress={() => setHelp(true)}
+        >
+          <Icon set="ui" name="info" size={18} />
+        </IconButton>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        disabled={disabled}
+        accessibilityLabel={label}
+      />
+      <Sheet
+        visible={help}
+        onClose={() => setHelp(false)}
+        title={label}
+        closeLabel={t('common:action.close')}
+      >
+        <Text>{hint}</Text>
+      </Sheet>
+    </View>
+  )
+}
+
 function ChangePassword({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['profile', 'common'])
   const [pending, setPending] = useState(false)

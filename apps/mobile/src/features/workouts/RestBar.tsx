@@ -58,6 +58,7 @@ function RestButton({ label, onPress }: { label: string; onPress: () => void }) 
   return (
     <Tappable
       className="h-[42px] min-w-[54px] items-center justify-center rounded-md border border-kaya-soft-line bg-surface px-2"
+      hitSlop={{ top: 2, bottom: 2 }}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}

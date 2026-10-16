@@ -95,10 +95,6 @@ public class RiceCalWidgetsModule: Module {
       WorkoutActivityController.end()
     }
 
-    Function("workoutActivitiesEnabled") { () -> Bool in
-      WorkoutActivityController.enabled
-    }
-
     AsyncFunction("installedWidgetsAsync") { (promise: Promise) in
       WidgetCenter.shared.getCurrentConfigurations { result in
         switch result {

@@ -1,3 +1,4 @@
+import type { WeightUnit } from '@/lib/units'
 import type { SetKind } from '../model'
 import { parseCsv } from './csv'
 
@@ -17,7 +18,7 @@ import { parseCsv } from './csv'
  */
 
 export type ImportSource = 'strong' | 'hevy'
-export type WeightUnit = 'kg' | 'lb'
+export type { WeightUnit } from '@/lib/units'
 export type DistanceUnit = 'km' | 'mi' | 'm'
 
 /** A wall-clock time as the file wrote it: both apps write local time with no zone. */
@@ -52,7 +53,7 @@ export type ParsedExercise = {
   sets: ParsedSet[]
 }
 
-export type ParsedWorkout = {
+type ParsedWorkout = {
   /** What tells this workout apart in the file: its start and its name. */
   key: string
   name: string
@@ -74,7 +75,7 @@ export type ParsedExport = {
   unitless: { weight: boolean; distance: boolean }
 }
 
-export type ParseError = { error: 'empty' | 'unknown' }
+type ParseError = { error: 'empty' | 'unknown' }
 
 /** A header, lower case with punctuation as spaces: "Weight (kg)" reads "weight kg". */
 const normalize = (header: string) =>
@@ -102,8 +103,9 @@ export function parseExport(text: string): ParsedExport | ParseError {
 // ---------------------------------------------------------------------------
 
 /**
- * A number from a cell, or null for an empty one. A comma is a decimal point
- * in a semicolon file. Negative is read as its size: an older Strong export
+ * A number from a cell, or null for an empty one. A comma is a decimal point:
+ * a comma-separated file quotes any cell that holds one, and a semicolon file
+ * from a comma-decimal locale writes them bare. Negative is read as its size: an older Strong export
  * writes an assisted set's help as a negative weight.
  */
 function number(cell: string | undefined): number | null {
@@ -216,7 +218,20 @@ function hour24(hour: number, meridiem: string | undefined): number {
   return (hour % 12) + (pm ? 12 : 0)
 }
 
-const CLOCK = String.raw`(\d{1,2}):(\d{2})(?:\s*([AaPp]\.?[Mm]\.?))?`
+// Anchored at the end: an AM/PM this does not recognise must fail the date
+// rather than be dropped, which read "5:14 p. m." as 05:14, twelve hours early.
+// The marker may be spaced ("p. m.") and the seconds may be there.
+const CLOCK = String.raw`(\d{1,2}):(\d{2})(?::\d{2})?(?:\s*([AaPp])\.?\s?[Mm]\.?)?\s*$`
+// Compiled once: an export repeats them on every row, twice.
+const DAY_FIRST = new RegExp(
+  String.raw`^(\d{1,2})\.?\s+([\p{L}\d]+\.?)\s+(\d{4}),?\s+${CLOCK}`,
+  'u',
+)
+const MONTH_FIRST = new RegExp(String.raw`^(\p{L}+\.?)\s+(\d{1,2}),?\s+(\d{4}),?\s+${CLOCK}`, 'u')
+const YEAR_FIRST = new RegExp(
+  String.raw`^(\d{4})\s*[年년]\s*(\d{1,2})\s*[月월]\s*(\d{1,2})\s*[日일]?,?\s+${CLOCK}`,
+  'u',
+)
 
 /**
  * Hevy's "14 Oct 2026, 17:14", in whichever language and clock, or an ISO
@@ -225,9 +240,7 @@ const CLOCK = String.raw`(\d{1,2}):(\d{2})(?:\s*([AaPp]\.?[Mm]\.?))?`
  */
 function hevyTime(text: string): LocalTime | null {
   const value = text.trim()
-  const dayFirst = value.match(
-    new RegExp(String.raw`^(\d{1,2})\.?\s+([\p{L}\d]+\.?)\s+(\d{4}),?\s+${CLOCK}`, 'u'),
-  )
+  const dayFirst = value.match(DAY_FIRST)
   if (dayFirst) {
     const month = monthOf(dayFirst[2])
     if (month) {
@@ -240,9 +253,7 @@ function hevyTime(text: string): LocalTime | null {
       )
     }
   }
-  const monthFirst = value.match(
-    new RegExp(String.raw`^(\p{L}+\.?)\s+(\d{1,2}),?\s+(\d{4}),?\s+${CLOCK}`, 'u'),
-  )
+  const monthFirst = value.match(MONTH_FIRST)
   if (monthFirst) {
     const month = monthOf(monthFirst[1])
     if (month) {
@@ -255,12 +266,7 @@ function hevyTime(text: string): LocalTime | null {
       )
     }
   }
-  const yearFirst = value.match(
-    new RegExp(
-      String.raw`^(\d{4})\s*[年년]\s*(\d{1,2})\s*[月월]\s*(\d{1,2})\s*[日일]?,?\s+${CLOCK}`,
-      'u',
-    ),
-  )
+  const yearFirst = value.match(YEAR_FIRST)
   if (yearFirst) {
     return localTime(
       +yearFirst[1],
@@ -271,6 +277,26 @@ function hevyTime(text: string): LocalTime | null {
     )
   }
   return isoTime(value)
+}
+
+const minutesToSeconds = (minutes: number | null) => (minutes === null ? null : minutes * 60)
+
+/** A set type written out, as this app's export and Hevy's write it. */
+function kindOf(text: string): SetKind | null {
+  switch (text.toLowerCase()) {
+    case 'normal':
+      return 'normal'
+    case 'warmup':
+    case 'warm-up':
+      return 'warmup'
+    case 'drop':
+    case 'dropset':
+      return 'drop'
+    case 'failure':
+      return 'failure'
+    default:
+      return null
+  }
 }
 
 /** Strong's workout length: "1h 5m", "57m", "45s". */
@@ -397,8 +423,11 @@ function parseStrong(header: string[], rows: string[][]): ParsedExport {
     name: col('workout name'),
     duration: col('duration', 'workout duration'),
     durationSec: col('duration sec', 'duration secs', 'duration s'),
+    // This app's own export reads as Strong's, with minutes and a set type.
+    durationMin: col('duration min'),
     exercise: col('exercise name'),
     order: col('set order'),
+    type: col('set type'),
     weight: col('weight', 'weight kg', 'weight lbs', 'weight lb'),
     weightUnit: col('weight unit'),
     reps: col('reps'),
@@ -439,7 +468,11 @@ function parseStrong(header: string[], rows: string[][]): ParsedExport {
       notes: cell(c.workoutNotes) || null,
       start,
       durationS:
-        c.durationSec !== -1 ? number(cell(c.durationSec)) : strongDuration(cell(c.duration)),
+        c.durationSec !== -1
+          ? number(cell(c.durationSec))
+          : c.durationMin !== -1
+            ? minutesToSeconds(number(cell(c.durationMin)))
+            : strongDuration(cell(c.duration)),
     }))
     const exercise = exerciseFor(builder, workout, name, null)
     const order = cell(c.order).toLowerCase()
@@ -460,7 +493,8 @@ function parseStrong(header: string[], rows: string[][]): ParsedExport {
     if (distance !== null && !distanceUnit) unitless.distance = true
     exercise.sets.push({
       kind:
-        order === 'w' ? 'warmup' : order === 'd' ? 'drop' : order === 'f' ? 'failure' : 'normal',
+        kindOf(cell(c.type)) ??
+        (order === 'w' ? 'warmup' : order === 'd' ? 'drop' : order === 'f' ? 'failure' : 'normal'),
       weight,
       weightUnit,
       reps: positive(cell(c.reps)),

@@ -1,4 +1,3 @@
-import type { PostgrestResponse } from '@supabase/supabase-js'
 import {
   keepPreviousData,
   onlineManager,
@@ -9,11 +8,12 @@ import {
 } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
-
+import { removeWorkoutFromHealth } from '@/features/workouts/health'
+import { setVolume } from '@/features/workouts/model'
 import { track } from '@/lib/analytics'
 import type { Enums, Json, Tables } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
-import { unwrap, unwrapMaybe } from './client'
+import { everyRow, TIMED_OUT, unwrap, unwrapMaybe, withDeadline } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
 import { dequeueWorkout, enqueueWorkout, getOutbox, type WorkoutDocument } from './workout-outbox'
@@ -50,7 +50,7 @@ export type WorkoutSummary = {
   pending?: boolean
 }
 
-export type WorkoutSet = {
+type WorkoutSet = {
   id: string
   position: number
   kind: SetKind
@@ -83,7 +83,12 @@ const num = (value: number | string | null | undefined): number | null =>
 
 type SummaryRow = Tables<'workout_summaries'>
 
-function toSummary(row: SummaryRow): WorkoutSummary {
+/** A summary row as `toSummary` reads it, which Today's narrower select also is. */
+type SummaryFields = Omit<SummaryRow, 'pr_count' | 'created_at' | 'updated_at'> & {
+  pr_count?: number | null
+}
+
+function toSummary(row: SummaryFields): WorkoutSummary {
   const exercises = Array.isArray(row.exercises) ? row.exercises : []
   return {
     id: row.id ?? '',
@@ -128,13 +133,7 @@ export function summaryFromDocument(document: WorkoutDocument): WorkoutSummary {
   for (const exercise of document.exercises) {
     for (const set of exercise.sets) {
       setCount += 1
-      if (
-        (exercise.tracking === 'weight_reps' || exercise.tracking === 'weighted_reps') &&
-        set.weight_kg &&
-        set.reps
-      ) {
-        volumeKg += set.weight_kg * set.reps
-      }
+      volumeKg += setVolume({ weightKg: set.weight_kg, reps: set.reps }, exercise.tracking) ?? 0
     }
   }
   const started = Date.parse(document.started_at)
@@ -164,6 +163,26 @@ export function summaryFromDocument(document: WorkoutDocument): WorkoutSummary {
   }
 }
 
+/**
+ * A save on this phone invalidates these, so they can sit for a while. Not
+ * forever: a workout logged on a second phone changes them too, and never
+ * stale they kept that phone's old bests and PREVIOUS column until this one
+ * saved. Five minutes, because the default thirty seconds refetched them every
+ * time the logger was reopened between sets.
+ */
+const UNTIL_SAVED = 5 * 60_000
+
+/**
+ * How long a read keyed by one workout, exercise, day or range stays cached
+ * once nothing shows it. The default is forever, which wrote every workout
+ * ever opened into the persisted cache; a day keeps today's offline reopen.
+ */
+const KEPT_A_DAY = 24 * 60 * 60_000
+
+/** Every summary column but `pr_count`, which scores the whole history to count one workout's records. */
+const SUMMARY_WITHOUT_RECORDS =
+  'id, user_id, name, notes, started_at, ended_at, duration_s, log_date, routine_id, kcal, health_workout_id, exercise_count, set_count, volume_kg, exercises'
+
 const PAGE = 20
 
 /** Every workout, newest first, a page at a time. */
@@ -172,6 +191,9 @@ export function useWorkouts() {
 
   return useInfiniteQuery({
     queryKey: keys.workouts(userId),
+    // Every loaded page is fetched again on a refetch, each one scoring
+    // records, and the tab was refetching on every visit.
+    staleTime: UNTIL_SAVED,
     initialPageParam: 0,
     queryFn: async ({ pageParam }): Promise<WorkoutSummary[]> =>
       unwrap(
@@ -192,11 +214,14 @@ export function useWorkoutsOn(date: string) {
 
   return useQuery({
     queryKey: keys.workoutsOn(userId, date),
+    gcTime: KEPT_A_DAY,
     queryFn: async (): Promise<WorkoutSummary[]> =>
       unwrap(
         await supabase
           .from('workout_summaries')
-          .select('*')
+          // Today's row shows no records, and leaving the count out lets the
+          // planner skip scoring them: 0.3 ms rather than 270 on a long history.
+          .select(SUMMARY_WITHOUT_RECORDS)
           .eq('user_id', userId)
           .eq('log_date', date)
           .order('started_at', { ascending: true }),
@@ -211,6 +236,10 @@ export function useWorkout(id: string | undefined) {
   return useQuery({
     enabled: Boolean(id),
     queryKey: keys.workout(userId, id ?? ''),
+    // A saved workout changes only through a save or a delete here, which
+    // invalidate it.
+    staleTime: UNTIL_SAVED,
+    gcTime: KEPT_A_DAY,
     queryFn: async (): Promise<WorkoutDetail | null> => {
       const [summary, entries, sets] = await Promise.all([
         supabase
@@ -278,6 +307,7 @@ export function useWorkoutDates(from: string, to: string) {
 
   return useQuery({
     queryKey: keys.workoutDates(userId, from, to),
+    gcTime: KEPT_A_DAY,
     queryFn: async (): Promise<Record<string, number>> => {
       const rows = unwrap(
         await supabase
@@ -344,7 +374,7 @@ export function useWorkoutWeeks(weeks = 12) {
   })
 }
 
-export type ExerciseTotal = { exerciseId: string; sets: number; volumeKg: number }
+type ExerciseTotal = { exerciseId: string; sets: number; volumeKg: number }
 
 /** Working sets per exercise between two dates: what the muscle split is drawn from. */
 export function useExerciseTotals(from: string, to: string) {
@@ -352,6 +382,7 @@ export function useExerciseTotals(from: string, to: string) {
 
   return useQuery({
     queryKey: keys.exerciseTotals(userId, from, to),
+    gcTime: KEPT_A_DAY,
     queryFn: async (): Promise<ExerciseTotal[]> =>
       unwrap(await supabase.rpc('workout_exercise_totals', { p_from: from, p_to: to })).map(
         (row) => ({
@@ -384,15 +415,6 @@ export type ExerciseBests = {
 }
 
 /**
- * A save on this phone invalidates these, so they can sit for a while. Not
- * forever: a workout logged on a second phone changes them too, and never
- * stale they kept that phone's old bests and PREVIOUS column until this one
- * saved. Five minutes, because the default thirty seconds refetched them every
- * time the logger was reopened between sets.
- */
-const UNTIL_SAVED = 5 * 60_000
-
-/**
  * Personal bests: one exercise's, or every exercise's when the id is null.
  * The logger reads the whole list to say "new record" the moment a set beats
  * one, so it is fetched once per workout and kept.
@@ -403,6 +425,8 @@ export function useExerciseBests(exerciseId: string | null, options?: { enabled?
   return useQuery({
     enabled: options?.enabled ?? true,
     staleTime: UNTIL_SAVED,
+    // The whole list is the logger's and stays; one exercise's is a page's.
+    gcTime: exerciseId ? KEPT_A_DAY : Number.POSITIVE_INFINITY,
     queryKey: keys.exerciseBests(userId, exerciseId),
     queryFn: async (): Promise<ExerciseBests[]> =>
       unwrap(
@@ -443,6 +467,7 @@ export function useExerciseRepBests(exerciseId: string | undefined) {
   return useQuery({
     enabled: Boolean(exerciseId),
     queryKey: keys.exerciseRepBests(userId, exerciseId ?? ''),
+    gcTime: KEPT_A_DAY,
     queryFn: async (): Promise<RepBest[]> =>
       unwrap(await supabase.rpc('exercise_rep_bests', { p_exercise_id: exerciseId ?? '' })).map(
         (row) => ({ reps: row.reps, weightKg: Number(row.weight_kg), at: row.started_at }),
@@ -484,6 +509,7 @@ export function useExerciseHistory(exerciseId: string | undefined) {
   return useQuery({
     enabled: Boolean(exerciseId),
     queryKey: keys.exerciseHistory(userId, exerciseId ?? ''),
+    gcTime: KEPT_A_DAY,
     queryFn: async (): Promise<ExerciseSession[]> =>
       unwrap(
         await supabase.rpc('exercise_history', {
@@ -540,9 +566,8 @@ export function useLastSets(exerciseIds: readonly string[]) {
     // emptied until the new answer landed.
     placeholderData: keepPreviousData,
     // Every mix of exercises is a key of its own, and kept forever each one
-    // was written into the persisted cache again on every change. A day keeps
-    // tomorrow's offline gym covered for today's workout.
-    gcTime: 24 * 60 * 60_000,
+    // was written into the persisted cache again on every change.
+    gcTime: KEPT_A_DAY,
     queryKey: keys.lastSets(userId, sorted.join(',')),
     queryFn: async (): Promise<Record<string, LastSet[]>> => {
       const rows = unwrap(await supabase.rpc('exercise_last_sets', { p_exercise_ids: sorted }))
@@ -600,15 +625,39 @@ export function retryQueuedWorkout(id: string): void {
   flushOutbox?.()
 }
 
-function invalidateWorkouts(queryClient: ReturnType<typeof useQueryClient>, userId: string): void {
+/** The social reads a workout can change: its post, where that post is drawn, and the counts. */
+const WORKOUT_SOCIAL = new Set([
+  'social_feed',
+  'social_profile_posts',
+  'social_post',
+  'social_profile',
+  'social_workout_stats',
+  'workoutPost',
+])
+
+function invalidateWorkouts(
+  queryClient: ReturnType<typeof useQueryClient>,
+  userId: string,
+  { social = false }: { social?: boolean } = {},
+): void {
   queryClient.invalidateQueries({ queryKey: keys.workoutsAll(userId) })
+  // `save_workout` moves a routine's "last done".
   queryClient.invalidateQueries({ queryKey: keys.routines(userId) })
-  // A new workout can publish its post in the same save, and a deleted one
-  // takes its post with it.
-  queryClient.invalidateQueries({ queryKey: keys.social(userId) })
+  // Only when the server took a workout, which may have posted it, and only
+  // the reads it can change, marked stale rather than refetched: the Feed tab
+  // stays mounted, and every save refetched all its loaded pages, the profile,
+  // the notifications and the comments. The tab refetches stale reads when it
+  // is next shown.
+  if (social) {
+    queryClient.invalidateQueries({
+      queryKey: keys.social(userId),
+      predicate: (query) => WORKOUT_SOCIAL.has(String(query.queryKey[2])),
+      refetchType: 'none',
+    })
+  }
 }
 
-export type WorkoutSaveResult = { queued: boolean }
+type WorkoutSaveResult = { queued: boolean }
 
 /**
  * How long a save waits for an answer before the workout goes to the outbox.
@@ -619,15 +668,28 @@ export type WorkoutSaveResult = { queued: boolean }
 export const SAVE_TIMEOUT_MS = 15_000
 
 /**
- * The outbox's request for each workout id while it is in flight. A save or a
- * delete of that workout waits for it: otherwise a queued copy landing after
- * a delete brought the workout back, and an older copy landing after a newer
- * save put the old one back.
+ * The request in flight for each workout id, whoever sent it: a save, the
+ * outbox or a delete. Each waits for the one before it and the outbox skips
+ * an id that is in flight. Registered one way only, a queued copy the outbox
+ * sent beside a newer save could land last and put the old workout back, and
+ * one sent beside a delete brought the deleted workout back.
  */
 const sendingIds = new Map<string, Promise<unknown>>()
 const settledSend = (id: string) => sendingIds.get(id)?.catch(() => {}) ?? Promise.resolve()
 
-async function sendWorkout(document: WorkoutDocument) {
+/** Registers `request` as the one in flight for `id` until it settles. */
+function inFlight<T>(id: string, request: Promise<T>): Promise<T> {
+  sendingIds.set(id, request)
+  void request
+    .finally(() => {
+      if (sendingIds.get(id) === request) sendingIds.delete(id)
+    })
+    .catch(() => {})
+  return request
+}
+
+/** One save request, bounded by `SAVE_TIMEOUT_MS` at the fetch. The import sends through it too. */
+export async function sendWorkout(document: WorkoutDocument) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), SAVE_TIMEOUT_MS)
   try {
@@ -654,25 +716,47 @@ export function useSaveWorkout() {
   return useMutation({
     networkMode: 'always',
     mutationFn: async (document: WorkoutDocument): Promise<WorkoutSaveResult> => {
-      if (!onlineManager.isOnline()) {
-        enqueueWorkout(userId, document)
+      // Queued first and kept until the server answers, so nothing between
+      // here and that answer (a token refresh that hangs, the app killed) can
+      // lose it. Taken out again only once the server has it, or refused it.
+      const before = getOutbox(userId).find((queued) => queued.id === document.id)
+      enqueueWorkout(userId, document)
+      if (!onlineManager.isOnline()) return { queued: true }
+      const request = inFlight(
+        document.id,
+        settledSend(document.id).then(() => sendWorkout(document)),
+      )
+      let late = false
+      void request.then(
+        ({ error }) => {
+          if (error) return
+          // A reply after the deadline still clears the copy it sent, and
+          // refreshes the lists the screen that asked has stopped waiting for.
+          dequeueWorkout(userId, document.id, document)
+          if (late) invalidateWorkouts(queryClient, userId, { social: true })
+        },
+        () => {},
+      )
+      const answer = await withDeadline(request, SAVE_TIMEOUT_MS)
+      if (answer === TIMED_OUT) {
+        late = true
         return { queued: true }
       }
-      await settledSend(document.id)
-      // An abort after the timeout comes back as an error with no SQLSTATE,
-      // which is not a refusal, so it lands in the outbox below.
-      const { error } = await sendWorkout(document)
-      if (error) {
+      if (answer.error) {
         // Refused for what it says: stay on the finish screen, where the
-        // workout is still the running one and can be fixed.
-        if (wasRefused(error)) throw error
-        enqueueWorkout(userId, document)
+        // workout is still the running one and can be fixed. An abort or a
+        // lost connection has no SQLSTATE and stays queued.
+        if (wasRefused(answer.error)) {
+          dequeueWorkout(userId, document.id, document)
+          if (before) enqueueWorkout(userId, before)
+          throw answer.error
+        }
         return { queued: true }
       }
-      dequeueWorkout(userId, document.id)
       return { queued: false }
     },
-    onSettled: () => invalidateWorkouts(queryClient, userId),
+    onSettled: (result) =>
+      invalidateWorkouts(queryClient, userId, { social: result?.queued === false }),
   })
 }
 
@@ -685,26 +769,39 @@ export function useWorkoutOutbox(): void {
   const userId = useUserId()
   const queryClient = useQueryClient()
   const sending = useRef(false)
+  // A flush asked for while one runs, which runs once more when it ends:
+  // returned from silently, a retry tapped mid-flush did nothing.
+  const again = useRef(false)
 
   useEffect(() => {
     let alive = true
 
     const flush = async () => {
-      if (sending.current || !onlineManager.isOnline()) return
+      if (!onlineManager.isOnline()) return
+      if (sending.current) {
+        again.current = true
+        return
+      }
       const queued = getOutbox(userId).filter((document) => !refusedThisLaunch.has(document.id))
       if (!queued.length) return
       sending.current = true
       let sent = 0
       try {
         // Without a session the request goes out as anon and is refused for
-        // that, not for the workout. Wait for the session to come back.
-        const { data } = await supabase.auth.getSession()
-        if (!data.session) return
+        // that, not for the workout. Wait for the session to come back. With
+        // a deadline: a token refresh on a weak signal can wait forever.
+        const session = await withDeadline(supabase.auth.getSession(), SAVE_TIMEOUT_MS)
+        if (session === TIMED_OUT || !session.data.session) return
         for (const document of queued) {
           if (!alive) break
-          const request = sendWorkout(document)
-          sendingIds.set(document.id, request)
-          const { error } = await request.finally(() => sendingIds.delete(document.id))
+          // A save or a delete of it is in flight, and answers for it.
+          if (sendingIds.has(document.id)) continue
+          const answer = await withDeadline(
+            inFlight(document.id, sendWorkout(document)),
+            SAVE_TIMEOUT_MS,
+          )
+          if (answer === TIMED_OUT) break
+          const { error } = answer
           if (!error) {
             // Only if it is still the copy that was sent: an edit queued while
             // this one was in flight must not be cleared by its reply.
@@ -719,7 +816,12 @@ export function useWorkoutOutbox(): void {
         }
       } finally {
         sending.current = false
-        if (sent) invalidateWorkouts(queryClient, userId)
+        if (sent) invalidateWorkouts(queryClient, userId, { social: true })
+        if (again.current) {
+          again.current = false
+          // The mounted flush, which after an account change is not this one.
+          flushOutbox?.()
+        }
       }
     }
 
@@ -740,6 +842,26 @@ export function useWorkoutOutbox(): void {
   }, [userId, queryClient])
 }
 
+/**
+ * Stop sending a queued workout. Its Apple Health copy goes only if the
+ * server has no workout under its id: a queued edit of a saved workout shows
+ * as waiting too, and discarding the edit must not take the saved workout's
+ * Health copy, and its energy in the budget, with it.
+ */
+export async function discardQueuedWorkout(userId: string, id: string): Promise<void> {
+  await settledSend(id)
+  const document = getOutbox(userId).find((queued) => queued.id === id)
+  dequeueWorkout(userId, id)
+  if (!document) return
+  const answer = await withDeadline(
+    Promise.resolve(supabase.from('workouts').select('id').eq('id', id).maybeSingle()),
+    SAVE_TIMEOUT_MS,
+  )
+  // Unknown is not "none": leave the copy rather than risk the saved one's.
+  if (answer === TIMED_OUT || answer.error || answer.data) return
+  await removeWorkoutFromHealth(document.health_workout_id, document.id)
+}
+
 export function useDeleteWorkout() {
   const userId = useUserId()
   const queryClient = useQueryClient()
@@ -747,11 +869,26 @@ export function useDeleteWorkout() {
   return useMutation({
     mutationFn: async (id: string) => {
       await settledSend(id)
-      const { error } = await supabase.from('workouts').delete().eq('id', id).eq('user_id', userId)
-      if (error) throw error
-      // Only now: a delete that failed offline had already dropped a queued
-      // edit, so the workout neither went nor kept the change.
+      // Out of the outbox before the delete is sent, so a flush cannot send a
+      // queued copy behind it and bring the workout back. A queued edit of a
+      // workout being deleted is not worth keeping if the delete fails.
       dequeueWorkout(userId, id)
+      const answer = await withDeadline(
+        inFlight(
+          id,
+          Promise.resolve(supabase.from('workouts').delete().eq('id', id).eq('user_id', userId)),
+        ),
+        SAVE_TIMEOUT_MS,
+      )
+      if (answer === TIMED_OUT) throw new Error('timed out')
+      if (answer.error) throw answer.error
+    },
+    onSuccess: async () => {
+      // Its post went with it. Reset rather than invalidate, as deleting a
+      // meal does: a profile or post screen opened again within the cache's
+      // minute would otherwise draw the deleted card until its refetch landed.
+      await queryClient.cancelQueries({ queryKey: keys.social(userId) })
+      queryClient.resetQueries({ queryKey: keys.social(userId) })
     },
     onSettled: () => invalidateWorkouts(queryClient, userId),
   })
@@ -820,7 +957,7 @@ export function useRoutines() {
   })
 }
 
-export type RoutineInput = {
+type RoutineInput = {
   id?: string
   name: string
   notes: string | null
@@ -935,7 +1072,7 @@ export function useCustomExercises() {
   })
 }
 
-export type CustomExerciseInput = Omit<CustomExercise, 'id'> & { id?: string }
+type CustomExerciseInput = Omit<CustomExercise, 'id'> & { id?: string }
 
 export function useSaveCustomExercise() {
   const userId = useUserId()
@@ -1009,26 +1146,6 @@ export type ExportRow = {
   rpe: number | null
 }
 
-/** Rows asked for a request. The server may answer fewer, so a short page is not the end. */
-const EXPORT_PAGE = 1000
-
-/**
- * Every row of a select, a page at a time, until a page comes back empty.
- * Stopping on a short page instead read the end of the history wherever the
- * server's own row cap sat below the page size, and an installed app cannot
- * see that cap move.
- */
-async function everyRow<T>(
-  page: (from: number, to: number) => PromiseLike<PostgrestResponse<T>>,
-): Promise<T[]> {
-  const rows: T[] = []
-  for (;;) {
-    const next = unwrap(await page(rows.length, rows.length + EXPORT_PAGE - 1))
-    if (next.length === 0) return rows
-    rows.push(...next)
-  }
-}
-
 /**
  * Every set the user has saved, oldest workout first, for "Export workouts".
  * A one-off read rather than a query: it is asked for once, on a tap, and
@@ -1040,52 +1157,53 @@ async function everyRow<T>(
  */
 export async function fetchWorkoutExport(userId: string): Promise<ExportRow[]> {
   const workouts = new Map<string, { name: string; notes: string | null; durationS: number }>()
-  const saved = await everyRow((from, to) =>
-    supabase
-      .from('workouts')
-      .select('id, name, notes, duration_s')
-      .eq('user_id', userId)
-      // By id as well: rows tied on the start could swap places between pages.
-      .order('started_at')
-      .order('id')
-      .range(from, to),
-  )
+  // Three independent reads, side by side: on a long history each is many pages.
+  const [saved, noted, sets] = await Promise.all([
+    everyRow((from, to) =>
+      supabase
+        .from('workouts')
+        .select('id, name, notes, duration_s')
+        .eq('user_id', userId)
+        // By id as well: rows tied on the start could swap places between pages.
+        .order('started_at')
+        .order('id')
+        .range(from, to),
+    ),
+    everyRow((from, to) =>
+      supabase
+        .from('workout_exercises')
+        .select('id, notes')
+        .eq('user_id', userId)
+        .not('notes', 'is', null)
+        .order('id')
+        .range(from, to),
+    ),
+    everyRow((from, to) =>
+      supabase
+        .from('workout_set_values')
+        .select(
+          'workout_id, workout_exercise_id, started_at, exercise_name, exercise_position, position, kind, weight_kg, reps, duration_s, distance_m, rpe',
+        )
+        .eq('user_id', userId)
+        .order('started_at')
+        .order('workout_id')
+        .order('exercise_position')
+        .order('position')
+        .range(from, to),
+    ),
+  ])
   for (const row of saved) {
     workouts.set(row.id, { name: row.name, notes: row.notes, durationS: row.duration_s ?? 0 })
   }
-
-  const noted = await everyRow((from, to) =>
-    supabase
-      .from('workout_exercises')
-      .select('id, notes')
-      .eq('user_id', userId)
-      .not('notes', 'is', null)
-      .order('id')
-      .range(from, to),
-  )
   const notes = new Map(noted.map((row) => [row.id, row.notes]))
-
   const queued = getOutbox(userId)
   const pending = new Set(queued.map((document) => document.id))
 
-  const sets = await everyRow((from, to) =>
-    supabase
-      .from('workout_set_values')
-      .select(
-        'workout_id, workout_exercise_id, started_at, exercise_name, exercise_position, position, kind, weight_kg, reps, duration_s, distance_m, rpe',
-      )
-      .eq('user_id', userId)
-      .order('started_at')
-      .order('workout_id')
-      .order('exercise_position')
-      .order('position')
-      .range(from, to),
-  )
   const rows: ExportRow[] = []
   for (const set of sets) {
     const workoutId = set.workout_id ?? ''
     if (pending.has(workoutId)) continue
-    // A workout saved between the two reads has sets but no row here. The
+    // A workout saved between the reads has sets but no row here. The
     // sets are the data, so they go out with a blank name rather than not at all.
     const workout = workouts.get(workoutId)
     rows.push({

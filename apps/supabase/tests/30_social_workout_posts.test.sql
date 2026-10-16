@@ -12,6 +12,8 @@ select no_plan();
 \set old 'a8910000-0000-4000-8000-000000000004'
 \set unshared 'a8910000-0000-4000-8000-000000000005'
 \set lurking 'a8910000-0000-4000-8000-000000000006'
+\set budget 'a8910000-0000-4000-8000-000000000007'
+\set held 'a8910000-0000-4000-8000-000000000008'
 
 insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
@@ -54,6 +56,9 @@ select is((select count(*)::int from public.social_posts where source_workout_id
   'a new workout from someone on the feed is posted');
 select is((select kind::text || '/' || audience::text from public.social_posts where source_workout_id = :'fresh'),
   'workout/public', 'it is a public workout post from a discoverable profile');
+select is((select workout_records::int from public.social_posts where source_workout_id = :'fresh'),
+  (select pr_count::int from public.workout_summaries where id = :'fresh'),
+  'the post carries the workout''s record count');
 
 set local role authenticated;
 select public.save_workout(pg_temp.workout(:'fresh', 'Push day, edited'));
@@ -94,6 +99,13 @@ select is(public.create_social_workout_post(:'old', 'Again', 'public')::text,
 reset role;
 select is((select audience::text from public.social_posts where source_workout_id = :'old'), 'followers',
   'the audience chosen when it was shared stands');
+select is(private.social_count(:'owner', 'posts'), 0::bigint,
+  'workout posts stay out of the post count an app from before them draws over its meals');
+
+set local role authenticated;
+select throws_ok(format('select public.create_social_workout_post(%L, %L, null)', :'unshared', ''),
+  '22023', null, 'a workout shared by hand says who sees it, rather than going public');
+reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'stranger', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -120,7 +132,31 @@ select is((select count(*)::int from public.social_profile_posts(:'owner', p_kin
   'a follower sees the public and the followers-only workout');
 select is((select workouts || '|' || duration_s from public.social_workout_stats(:'owner')), '2|7200',
   'and counts both');
+select is((select count(*)::int from public.social_profile_posts(:'owner')), 0,
+  'a profile''s posts are meals only unless workouts are asked for');
 reset role;
+
+-- An automatic post never costs the save.
+update public.profiles set auto_post_workouts = true where id = :'owner';
+insert into public.social_rate_limits (user_id, action, bucket, used)
+values (:'owner', 'post', date_trunc('hour', now()), 30)
+on conflict (user_id, action) do update set bucket = excluded.bucket, used = excluded.used;
+select set_config('request.jwt.claims', json_build_object('sub', :'owner', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select lives_ok(format('select public.save_workout(pg_temp.workout(%L, %L))', :'budget', 'Spent'),
+  'a save lands when the hour''s posting budget is spent');
+reset role;
+select is((select count(*)::int from public.social_posts where source_workout_id = :'budget'), 0,
+  'and posts nothing');
+delete from public.social_rate_limits where user_id = :'owner';
+update public.profiles set quarantined = true where id = :'owner';
+set local role authenticated;
+select lives_ok(format('select public.save_workout(pg_temp.workout(%L, %L))', :'held', 'Held'),
+  'a save lands while the profile is held for review');
+reset role;
+select is((select count(*)::int from public.social_posts where source_workout_id = :'held'), 0,
+  'and posts nothing');
+update public.profiles set quarantined = false where id = :'owner';
 
 -- A deleted workout takes its post with it.
 delete from public.workouts where id = :'fresh';

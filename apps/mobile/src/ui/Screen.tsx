@@ -140,7 +140,7 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * platform ScrollView the pan never activates, because the two arbitrate
    * through different systems.
    *
-   * Off by default: Today and the workout editors, whose rows swipe.
+   * Off by default; on for Today and the workout editors, whose rows swipe.
    */
   gestureScroll?: boolean
   className?: string

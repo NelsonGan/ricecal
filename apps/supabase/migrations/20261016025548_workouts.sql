@@ -40,6 +40,11 @@ begin
     if not found then return null; end if;
   else
     v_user := private.social_require_user();
+    -- Shared by hand, the sharer says who sees it, as for a meal. Defaulted
+    -- below, a private profile's workout went public.
+    if p_audience is null then
+      raise exception 'Choose who sees the post' using errcode = '22023';
+    end if;
   end if;
 
   -- An automatic post is for a workout that just happened. A past workout
@@ -85,6 +90,29 @@ $function$;
 GRANT ALL ON FUNCTION private.social_insert_workout_post(uuid, integer, text, public.social_audience, boolean) TO authenticated;
 
 GRANT ALL ON FUNCTION private.social_insert_workout_post(uuid, integer, text, public.social_audience, boolean) TO service_role;
+
+CREATE OR REPLACE FUNCTION private.social_post_changed()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare v_before boolean := false; v_after boolean := false; v_row public.social_posts;
+begin
+  if tg_op <> 'INSERT' then v_before := old.review_status = 'approved' and not old.quarantined; end if;
+  if tg_op <> 'DELETE' then v_after := new.review_status = 'approved' and not new.quarantined; v_row := new; else v_row := old; end if;
+  -- Meals only. An app from before workout posts draws this count over a grid
+  -- of meals; a newer one adds the workouts its viewer can see.
+  if v_before <> v_after and v_row.kind = 'food' then
+    perform private.social_counter_change(v_row.author_id, 'posts', v_row.id, case when v_after then 1 else -1 end);
+  end if;
+  if tg_op = 'DELETE' then
+    delete from public.social_counters where entity_id = old.id;
+    delete from public.social_reports where kind = 'post' and content_id = old.id;
+  end if;
+  return null;
+end;
+$function$;
 
 CREATE OR REPLACE FUNCTION private.social_post_food (
   p_post_id uuid
@@ -204,6 +232,7 @@ CREATE FUNCTION private.social_feed_candidates (
   LANGUAGE plpgsql
   STABLE
   SECURITY DEFINER
+  ROWS 51
   SET search_path TO ''
   AS $function$
 declare v_user uuid := (select auth.uid());
@@ -265,6 +294,34 @@ GRANT ALL ON FUNCTION private.social_feed_candidates(text, timestamp WITH time z
 
 GRANT ALL ON FUNCTION private.social_feed_candidates(text, timestamp WITH time zone, uuid, integer, public.social_post_kind[]) TO service_role;
 
+CREATE FUNCTION private.social_profile_post_candidates (
+  p_user_id   uuid,
+  p_before_at timestamp with time zone,
+  p_before_id uuid,
+  p_limit     integer,
+  p_kinds     public.social_post_kind[]
+)
+  RETURNS TABLE (
+    id         uuid,
+    created_at timestamp with time zone
+  )
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  ROWS 51
+  SET search_path TO ''
+  AS $function$
+  select sp.id, sp.created_at from public.social_posts sp
+  where sp.author_id = p_user_id and sp.kind = any(p_kinds)
+    and (p_before_at is null or (sp.created_at, sp.id) < (p_before_at, p_before_id))
+    and private.social_can_view_post(sp.id)
+  order by sp.created_at desc, sp.id desc limit p_limit + 1;
+$function$;
+
+GRANT ALL ON FUNCTION private.social_profile_post_candidates(uuid, timestamp WITH time zone, uuid, integer, public.social_post_kind[]) TO authenticated;
+
+GRANT ALL ON FUNCTION private.social_profile_post_candidates(uuid, timestamp WITH time zone, uuid, integer, public.social_post_kind[]) TO service_role;
+
 CREATE TYPE public.workout_set_kind AS ENUM (
   'normal',
   'warmup',
@@ -281,8 +338,12 @@ CREATE FUNCTION public.create_social_workout_post (
   LANGUAGE plpgsql
   SET search_path TO ''
   AS $function$
-declare v_records integer;
+declare v_records integer; v_id uuid;
 begin
+  -- Already shared: answered before the record count, which scores the
+  -- whole history.
+  v_id := public.social_workout_post(p_workout_id);
+  if v_id is not null then return v_id; end if;
   select s.pr_count into v_records from public.workout_summaries s where s.id = p_workout_id;
   if not found then raise exception 'Workout unavailable' using errcode = '42501'; end if;
   return private.social_insert_workout_post(p_workout_id, v_records, p_caption, p_audience, false);
@@ -673,11 +734,16 @@ begin
   -- sends "post": false, since years of history at once is not news. The
   -- record count is taken here, where row security limits the scoring to this
   -- account's own sets; the posting function runs as its owner and would
-  -- score every account's.
-  if v_inserted and coalesce((p_workout ->> 'post')::boolean, true) and exists (
-    select 1 from public.profiles p
-    where p.id = v_user and p.auto_post_workouts and p.social_joined_at is not null
-  ) then
+  -- score every account's. Scoring reads the whole history, so the posting
+  -- function's own checks (ended in the last day, a profile in good standing)
+  -- are made first, and a workout that will not be posted is not scored.
+  if v_inserted and coalesce((p_workout ->> 'post')::boolean, true)
+     and (p_workout ->> 'ended_at')::timestamptz > now() - interval '24 hours'
+     and exists (
+       select 1 from public.profiles p
+       where p.id = v_user and p.auto_post_workouts and p.social_joined_at is not null
+         and p.review_status = 'approved' and not p.quarantined
+     ) then
     perform private.social_insert_workout_post(
       v_id, (select s.pr_count from public.workout_summaries s where s.id = v_id), '', null, true
     );
@@ -895,7 +961,7 @@ ALTER TABLE public.custom_exercises
   ADD CONSTRAINT custom_exercises_equipment_check CHECK (char_length(equipment) >= 1 AND char_length(equipment) <= 40);
 
 ALTER TABLE public.custom_exercises
-  ADD CONSTRAINT custom_exercises_muscles_check CHECK (jsonb_typeof(muscles) = 'object'::text);
+  ADD CONSTRAINT custom_exercises_muscles_check CHECK (jsonb_typeof(muscles) = 'object'::text AND octet_length(muscles::text) <= 4096);
 
 ALTER TABLE public.custom_exercises
   ADD CONSTRAINT custom_exercises_name_check CHECK (char_length(btrim(name)) >= 1 AND char_length(btrim(name)) <= 80);
@@ -1084,7 +1150,7 @@ ALTER TABLE public.workout_routines
   ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.workout_routines
-  ADD CONSTRAINT workout_routines_exercises_check CHECK (jsonb_typeof(exercises) = 'array'::text AND jsonb_array_length(exercises) <= 40);
+  ADD CONSTRAINT workout_routines_exercises_check CHECK (jsonb_typeof(exercises) = 'array'::text AND jsonb_array_length(exercises) <= 40 AND octet_length(exercises::text) <= 65536);
 
 ALTER TABLE public.workout_routines
   ADD CONSTRAINT workout_routines_id_user_key UNIQUE (id, user_id);
@@ -1405,10 +1471,13 @@ CREATE FUNCTION public.social_profile_posts (
   AS $function$
 begin
   perform private.social_validate_page(p_before_at, p_before_id, p_limit);
-  return query select d.* from public.social_post_details d where d.author_id = p_user_id
-    and d.kind = any(p_kinds)
-    and (p_before_at is null or (d.created_at, d.id) < (p_before_at, p_before_id))
-    order by d.created_at desc, d.id desc limit p_limit + 1;
+  return query
+    with page as materialized (
+      select c.id, c.created_at
+      from private.social_profile_post_candidates(p_user_id, p_before_at, p_before_id, p_limit, p_kinds) c
+    )
+    select d.* from page p join public.social_post_details d on d.id = p.id
+    order by p.created_at desc, p.id desc;
 end;
 $function$;
 
@@ -1639,6 +1708,7 @@ REVOKE ALL ON FUNCTION public.social_profile_posts(uuid, timestamp with time zon
 REVOKE ALL ON FUNCTION private.social_feed_candidates(text, timestamp with time zone, uuid, integer, public.social_post_kind[]) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION private.social_post_workout(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION private.social_insert_workout_post(uuid, integer, text, public.social_audience, boolean) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION private.social_profile_post_candidates(uuid, timestamp with time zone, uuid, integer, public.social_post_kind[]) FROM PUBLIC, anon;
 
 -- And the table grants 98_client_table_privileges.sql takes back from every
 -- client table, which the diff does not repeat for tables it creates.

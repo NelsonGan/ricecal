@@ -505,7 +505,9 @@ declare v_before boolean := false; v_after boolean := false; v_row public.social
 begin
   if tg_op <> 'INSERT' then v_before := old.review_status = 'approved' and not old.quarantined; end if;
   if tg_op <> 'DELETE' then v_after := new.review_status = 'approved' and not new.quarantined; v_row := new; else v_row := old; end if;
-  if v_before <> v_after then
+  -- Meals only. An app from before workout posts draws this count over a grid
+  -- of meals; a newer one adds the workouts its viewer can see.
+  if v_before <> v_after and v_row.kind = 'food' then
     perform private.social_counter_change(v_row.author_id, 'posts', v_row.id, case when v_after then 1 else -1 end);
   end if;
   if tg_op = 'DELETE' then

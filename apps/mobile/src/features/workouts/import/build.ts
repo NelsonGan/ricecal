@@ -1,6 +1,8 @@
 import type { WorkoutDocument } from '@/data/workout-outbox'
+import { toKg } from '@/lib/units'
 import type { Category, Equipment, Tracking } from '../catalogue'
 import { M_PER_MI } from '../format'
+import { clip, roundKg, roundMetres } from '../model'
 import { matchExercise } from './match'
 import type {
   DistanceUnit,
@@ -24,14 +26,14 @@ import type {
 export type ImportUnits = { weight: WeightUnit; distance: 'km' | 'mi' }
 
 /** An exercise the import has to create, because no catalogue entry is that movement. */
-export type CustomExercisePlan = {
+type CustomExercisePlan = {
   name: string
   tracking: Tracking
   equipment: Equipment
   category: Category
 }
 
-export type PlannedWorkout = {
+type PlannedWorkout = {
   document: WorkoutDocument
   /** The index of each exercise that is a custom one, by the name it is created under. */
   customNames: (string | null)[]
@@ -69,16 +71,6 @@ const LIMIT = {
 
 const pad = (value: number) => String(value).padStart(2, '0')
 const dayOf = (t: LocalTime) => `${t.year}-${pad(t.month)}-${pad(t.day)}`
-
-/**
- * A string cut to a length in characters, as Postgres counts them. Cutting
- * UTF-16 units split an emoji at the limit and left half of it, which the
- * database's JSON reader refuses, so the save of a long "Push Day 💪" failed.
- */
-function clip(text: string, length: number): string {
-  const characters = Array.from(text)
-  return characters.length > length ? characters.slice(0, length).join('').trimEnd() : text
-}
 
 /**
  * An id for an imported workout that is the same every time the same person
@@ -120,21 +112,18 @@ type DocumentSet = WorkoutDocument['exercises'][number]['sets'][number]
 
 function convertSet(set: ParsedSet, units: ImportUnits): DocumentSet | null {
   const weightUnit = set.weightUnit ?? units.weight
-  const kg =
-    set.weight === null
-      ? null
-      : Math.round((weightUnit === 'lb' ? set.weight / 2.2046226218 : set.weight) * 100) / 100
+  const kg = set.weight === null ? null : roundKg(toKg(set.weight, weightUnit))
   const distanceUnit: DistanceUnit = set.distanceUnit ?? units.distance
   const metres =
     set.distance === null
       ? null
-      : Math.round(
-          (distanceUnit === 'mi'
+      : roundMetres(
+          distanceUnit === 'mi'
             ? set.distance * M_PER_MI
             : distanceUnit === 'km'
               ? set.distance * 1000
-              : set.distance) * 10,
-        ) / 10
+              : set.distance,
+        )
   const reps = set.reps === null ? null : Math.round(set.reps)
   const durationS = set.durationS === null ? null : Math.round(set.durationS)
 
@@ -167,7 +156,7 @@ function convertSet(set: ParsedSet, units: ImportUnits): DocumentSet | null {
  * as reps keeps its reps. A saved exercise carries its own tracking, so this
  * changes the one workout and not the catalogue.
  */
-export function trackingFor(base: Tracking | null, sets: DocumentSet[], name: string): Tracking {
+function trackingFor(base: Tracking | null, sets: DocumentSet[], name: string): Tracking {
   const any = (pick: (set: DocumentSet) => number | null) => sets.some((set) => !!pick(set))
   const weight = any((set) => set.weight_kg)
   const reps = any((set) => set.reps)
@@ -291,7 +280,11 @@ export function buildImport(
         // limited to 80 characters; a longer one is saved under its first 80.
         customName = clip(name, 80)
         const key = customName.toLowerCase()
-        customSets.set(key, [...(customSets.get(key) ?? []), ...kept])
+        // Pushed onto one list rather than copied per workout: an exercise
+        // in every workout of a long history re-copied all its sets each time.
+        const sets = customSets.get(key)
+        if (sets) sets.push(...kept)
+        else customSets.set(key, [...kept])
         if (!customs.has(key)) {
           customs.set(key, {
             name: customName,

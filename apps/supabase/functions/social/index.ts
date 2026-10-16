@@ -48,14 +48,26 @@ async function loadSubmission(
   if (kind === 'post') {
     const { data, error } = await db
       .from('social_posts')
-      .select(`food_name,caption,photo_path,${state}`)
+      .select(`kind,food_name,source_workout_id,caption,photo_path,${state}`)
       .eq('id', id)
       .eq('author_id', owner)
       .maybeSingle()
     if (error) throw error
-    return data
-      ? { ...data, text: `${data.food_name}\n${data.caption}`, photo: data.photo_path }
-      : null
+    if (!data) return null
+    // A workout post's title is the workout's name, which the author typed and
+    // the feed shows; `food_name` is empty for one and read as "null".
+    let title = data.food_name ?? ''
+    if (data.kind === 'workout' && data.source_workout_id) {
+      const workout = await db
+        .from('workouts')
+        .select('name')
+        .eq('id', data.source_workout_id)
+        .eq('user_id', owner)
+        .maybeSingle()
+      if (workout.error) throw workout.error
+      title = workout.data?.name ?? ''
+    }
+    return { ...data, text: `${title}\n${data.caption}`, photo: data.photo_path }
   }
   const { data, error } = await db
     .from('social_comments')

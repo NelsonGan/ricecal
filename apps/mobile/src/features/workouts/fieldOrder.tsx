@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef } from 'react'
 
-import { fieldsFor, type LiveExercise } from './model'
+import { fieldsFor, type LiveExercise, supersetRuns } from './model'
 
 /**
  * The order the pad's Next key walks a workout's fields in: each exercise top
@@ -42,17 +42,9 @@ export function walkOrder(exercises: readonly LiveExercise[]): string[] {
     for (const field of fieldsFor(exercise.tracking))
       out.push(fieldKey(exercise.key, set.id, field))
   }
-  // A superset is a run of neighbouring cards sharing a number (`tidySupersets`).
-  for (let start = 0; start < exercises.length; ) {
-    let end = start + 1
-    const group = exercises[start].superset
-    if (group !== null) {
-      while (end < exercises.length && exercises[end].superset === group) end += 1
-    }
-    const run = exercises.slice(start, end)
+  for (const run of supersetRuns(exercises)) {
     const rounds = Math.max(...run.map((exercise) => exercise.sets.length))
     for (let index = 0; index < rounds; index++) for (const exercise of run) fields(exercise, index)
-    start = end
   }
   return out
 }

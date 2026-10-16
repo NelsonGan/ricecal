@@ -9,7 +9,7 @@ import { createJsonStore } from '@/lib/jsonStore'
  * rest, the reminders) is in `user_settings` instead.
  */
 
-export type WorkoutPrefs = {
+type WorkoutPrefs = {
   keepAwake: boolean
   healthWrite: boolean
 }

@@ -13,14 +13,15 @@ import {
   newWorkout,
   timesError,
   toPlans,
+  useLeaveGuard,
   useWorkoutSave,
   WorkoutEditor,
   WorkoutFields,
-  WorkoutMissing,
+  WorkoutUnavailable,
 } from '@/features/workouts'
 import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
-import { AppBar, Button, Card, Screen, Skeleton, useToast } from '@/ui'
+import { AppBar, Button, Screen, useToast } from '@/ui'
 
 /**
  * Editing a finished workout, or logging one after the fact (`id` = `new`).
@@ -33,19 +34,19 @@ import { AppBar, Button, Card, Screen, Skeleton, useToast } from '@/ui'
 export default function EditWorkoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const isNew = id === 'new'
-  const { data: saved, isPending } = useWorkout(isNew ? undefined : id)
+  const { data: saved, isPending, isPaused, isError } = useWorkout(isNew ? undefined : id)
 
-  if (!isNew && isPending) {
+  if (!isNew && !saved) {
     return (
-      <Screen>
-        <Card>
-          <Skeleton className="h-[240px] w-full" />
-        </Card>
-      </Screen>
+      <WorkoutUnavailable
+        state={isPending ? (isPaused ? 'offline' : 'loading') : isError ? 'unreachable' : 'missing'}
+      />
     )
   }
-  if (!isNew && !saved) return <WorkoutMissing />
-  return <Editor initial={isNew ? null : (saved ?? null)} />
+  // Keyed by the route's id: a link that reuses this screen for another
+  // workout (or for `new`) kept the first one's document in the reducer and
+  // saved it under the first one's id.
+  return <Editor key={id} initial={isNew ? null : (saved ?? null)} />
 }
 
 /** A saved workout as the editor's document, every set already ticked. */
@@ -60,6 +61,7 @@ function fromSaved(workout: WorkoutDetail): LiveWorkout {
     routineId: workout.routineId,
     rest: null,
     healthWorkoutId: workout.healthWorkoutId,
+    filed: { startedAt: started, date: workout.date },
     exercises: toPlans(workout.entries).map((plan, index) => {
       const exercise = exerciseFromPlan(plan)
       // RPE is put back here rather than carried by the plan: a plan also
@@ -98,6 +100,9 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
     }
   })
   const [saving, setSaving] = useState(false)
+  // Any dispatch makes a new document, so the first one is "nothing changed".
+  const [opened] = useState(workout)
+  const guard = useLeaveGuard({ busy: saving, dirty: workout !== opened })
   // Last time's sets, which a past workout's empty rows show and so save with.
   // Not for an edit: there the newest workout with these exercises is this one.
   // The editor asks for the same key, so this reads its cache.
@@ -125,7 +130,17 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
     }
     setSaving(true)
     try {
-      const { payload, queued, health, durationS } = await saveWorkout(document, endedAt)
+      const { payload, queued, health, durationS } = await saveWorkout(
+        document,
+        endedAt,
+        initial
+          ? {
+              workout: fromSaved(initial),
+              endedAt: Date.parse(initial.endedAt),
+              kcal: initial.kcal,
+            }
+          : undefined,
+      )
       // A past workout is a new one, finished here rather than on the finish
       // screen, and it opened with `Workout Started`. An edit is neither.
       if (!initial) {
@@ -143,8 +158,10 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
         description: queued ? t('workouts:finish.queued') : undefined,
         tone: 'success',
       })
-      if (initial || queued) goBack()
-      else router.replace({ pathname: '/workout/[id]', params: { id: payload.id } })
+      guard.leave(() => {
+        if (initial || queued) goBack()
+        else router.replace({ pathname: '/workout/[id]', params: { id: payload.id } })
+      })
     } catch (failure) {
       console.warn('[workouts] edit save failed', failure)
       toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
@@ -160,6 +177,7 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
         <AppBar
           title={initial ? t('workouts:edit.title') : t('workouts:edit.newTitle')}
           onBack={goBack}
+          backDisabled={saving}
           backLabel={t('common:action.back')}
         />
       }
@@ -182,6 +200,7 @@ function Editor({ initial }: { initial: WorkoutDetail | null }) {
       />
 
       <WorkoutEditor workout={workout} dispatch={dispatch} mode={initial ? 'edit' : 'past'} />
+      {guard.dialog}
     </Screen>
   )
 }

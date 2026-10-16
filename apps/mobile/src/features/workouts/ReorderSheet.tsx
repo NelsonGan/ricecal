@@ -32,7 +32,7 @@ import { ExerciseArt } from './ExerciseArt'
 
 const ROW = 64
 
-export type ReorderItem = { key: string; exerciseId: string; name: string; category?: Category }
+type ReorderItem = { key: string; exerciseId: string; name: string; category?: Category }
 
 export function ReorderSheet({
   visible,

@@ -84,7 +84,7 @@ export const SET_KIND_KEY = {
   failure: 'workouts:logger.kind.failure',
 } as const satisfies Record<SetKind, string>
 
-export const SET_BADGE_KEY = {
+const SET_BADGE_KEY = {
   warmup: 'workouts:logger.kindBadge.warmup',
   drop: 'workouts:logger.kindBadge.drop',
   failure: 'workouts:logger.kindBadge.failure',
@@ -101,7 +101,7 @@ export const RECORD_KEY = {
 } as const satisfies Record<RecordKind, string>
 
 /** A set kind's letter colour, everywhere a set is listed. */
-export const SET_BADGE_TONE = {
+const SET_BADGE_TONE = {
   normal: 'text-ink',
   warmup: 'text-kaya-ink',
   drop: 'text-water-ink',
@@ -140,7 +140,7 @@ export const TEMPLATE_GROUP_KEY = {
 
 /**
  * A template's name and description. The ids are data, so this one is
- * assembled, and `templates.test.ts` checks every template has both keys.
+ * assembled, and `model.test.ts` checks every template has both keys.
  */
 export const templateNameKey = (id: string) =>
   `workouts:template.${id}.name` as 'workouts:template.push.name'

@@ -1,7 +1,7 @@
-import type { RoutineExercise, RoutineSet } from '@/data'
-import type { ExercisePlan, LiveExercise, LiveWorkout, SetPlan } from './model'
-import { tidySupersets } from './model'
-import { plansToRoutine } from './routines'
+import type { RoutineExercise } from '@/data'
+import type { ExercisePlan, LiveExercise, LiveWorkout } from './model'
+import { pairSets, tidySupersets } from './model'
+import { plansToRoutine, routineSetPlan } from './routines'
 
 /**
  * Whether a workout started from a routine left it, and the routine it would
@@ -24,7 +24,7 @@ import { plansToRoutine } from './routines'
  * is usually about that day.
  */
 
-export type RoutineChanges = {
+type RoutineChanges = {
   /** Exercises or sets added, removed, swapped or moved, or their kind, rest or superset. */
   layout: boolean
   /** A finished set's number differs from one the routine holds. */
@@ -89,9 +89,12 @@ export function routineChanges(
     const from = matched[index]
     if (from === null) return
     const planned = routine[from]
-    if (exercise.sets.length < plannedSets(planned)) removes = true
+    // A routine set with no counterpart today is one an update would delete.
+    if (pairSets(planned.sets, exercise.sets).some((at) => at === undefined)) removes = true
+    const counterpart = pairSets(exercise.sets, planned.sets)
     exercise.sets.forEach((set, setIndex) => {
-      const target = planned.sets[setIndex]
+      const at = counterpart[setIndex]
+      const target = at === undefined ? undefined : planned.sets[at]
       if (!set.done || !target) return
       for (const [live, stored] of FIELDS) {
         const want = target[stored]
@@ -121,21 +124,17 @@ export function routineChanges(
   return { layout, values, removes }
 }
 
-const toSetPlan = (set: RoutineSet | undefined): SetPlan => ({
-  kind: set?.kind ?? 'normal',
-  weightKg: set?.weight_kg ?? null,
-  reps: set?.reps ?? null,
-  durationS: set?.duration_s ?? null,
-  distanceM: set?.distance_m ?? null,
-})
+/** The routine's own limit (`workout_routines.exercises`), below a workout's 60. */
+const ROUTINE_EXERCISES = 40
 
 /**
  * The routine after an update.
  *
- * `layout` takes the workout's exercises, order, sets, kinds, rests, supersets
- * and notes. A set that was already in the routine keeps the routine's numbers;
- * a new one starts blank, which the logger fills with last time's numbers, and
- * last time is today.
+ * `layout` takes the workout's exercises, order, sets, kinds, rests and
+ * supersets. A set that was already in the routine (paired by kind, as the
+ * PREVIOUS column pairs them) keeps the routine's numbers; a new one starts
+ * blank, which the logger fills with last time's numbers, and last time is
+ * today. Notes stay the routine's: a note typed mid-workout is about that day.
  *
  * `layoutAndValues` is the same layout with today's numbers in every set.
  *
@@ -157,8 +156,10 @@ export function updatedRoutine(
     workout.exercises.forEach((exercise, index) => {
       const from = matched[index]
       if (from === null) return
+      const counterpart = pairSets(exercise.sets, next[from].sets)
       exercise.sets.forEach((set, setIndex) => {
-        const target = next[from].sets[setIndex]
+        const at = counterpart[setIndex]
+        const target = at === undefined ? undefined : next[from].sets[at]
         if (!set.done || !target) return
         for (const [live, stored] of FIELDS) {
           if (target[stored] !== null && target[stored] !== undefined && set[live] !== null) {
@@ -170,17 +171,19 @@ export function updatedRoutine(
     return next
   }
 
-  const plans = workout.exercises.map(
-    (exercise, index): ExercisePlan & { superset: number | null } => {
+  const plans = workout.exercises
+    .slice(0, ROUTINE_EXERCISES)
+    .map((exercise, index): ExercisePlan & { superset: number | null } => {
       const from = matched[index]
       const planned = from === null ? null : routine[from]
+      const counterpart = planned ? pairSets(exercise.sets, planned.sets) : []
       return {
         exerciseId: exercise.exerciseId,
         name: exercise.name,
         tracking: exercise.tracking,
         restS: exercise.restS,
         superset: exercise.superset,
-        notes: exercise.notes,
+        notes: planned ? (planned.notes ?? null) : exercise.notes,
         sets: exercise.sets.map((set, setIndex) =>
           how === 'layoutAndValues'
             ? {
@@ -190,10 +193,16 @@ export function updatedRoutine(
                 durationS: set.durationS,
                 distanceM: set.distanceM,
               }
-            : { ...toSetPlan(planned?.sets[setIndex]), kind: set.kind },
+            : {
+                ...routineSetPlan(
+                  counterpart[setIndex] === undefined
+                    ? undefined
+                    : planned?.sets[counterpart[setIndex] as number],
+                ),
+                kind: set.kind,
+              },
         ),
       }
-    },
-  )
+    })
   return plansToRoutine(tidySupersets(plans))
 }

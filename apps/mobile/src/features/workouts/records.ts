@@ -1,5 +1,5 @@
 import type { ExerciseBests } from '@/data'
-import { estimatedOneRepMax, type LiveExercise, setVolume } from './model'
+import { estimatedOneRepMax, type LiveExercise, roundMetres, setVolume } from './model'
 
 /**
  * Which ticked sets of a workout in progress would be personal records.
@@ -10,18 +10,25 @@ import { estimatedOneRepMax, type LiveExercise, setVolume } from './model'
  * record beats the best of every earlier workout and is the best of its kind
  * in this one. An exercise never done before has nothing to beat, so its first
  * workout sets the baseline and wins nothing, exactly as on the server.
+ *
+ * Every card of one exercise is scored together, in card order, as the server
+ * ranks a workout's sets: bench pressed in two cards is one bench press, and
+ * scored card by card each card took its own trophies.
  */
 
 export type RecordKind = 'weight' | 'e1rm' | 'volume' | 'reps' | 'duration' | 'distance'
 
 export function recordSets(
-  exercise: LiveExercise,
+  cards: LiveExercise | readonly LiveExercise[],
   bests: ExerciseBests | undefined,
 ): Map<string, RecordKind[]> {
   const out = new Map<string, RecordKind[]>()
-  if (!bests) return out
+  const all: readonly LiveExercise[] = Array.isArray(cards) ? cards : [cards as LiveExercise]
+  if (!bests || all.length === 0) return out
 
-  const working = exercise.sets.filter((set) => set.done && set.kind !== 'warmup')
+  const working = all.flatMap((card) =>
+    card.sets.filter((set) => set.done && set.kind !== 'warmup'),
+  )
   const mark = (id: string | undefined, kind: RecordKind) => {
     if (!id) return
     out.set(id, [...(out.get(id) ?? []), kind])
@@ -46,7 +53,7 @@ export function recordSets(
     return winner ? { id: winner.id, value } : undefined
   }
 
-  const tracking = exercise.tracking
+  const tracking = all[0].tracking
   if (
     tracking === 'weight_reps' ||
     tracking === 'weighted_reps' ||
@@ -91,7 +98,7 @@ export function recordSets(
     // To the tenth of a metre the database keeps: a run typed in miles is
     // otherwise a hair longer than the same run saved last week.
     const furthest = best((set) =>
-      set.distanceM && set.distanceM > 0 ? Math.round(set.distanceM * 10) / 10 : null,
+      set.distanceM && set.distanceM > 0 ? roundMetres(set.distanceM) : null,
     )
     if (furthest && bests.bestDistanceM !== null && furthest.value > bests.bestDistanceM) {
       mark(furthest.id, 'distance')

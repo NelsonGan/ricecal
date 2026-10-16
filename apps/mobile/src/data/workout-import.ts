@@ -2,13 +2,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
 import type { ImportPlan } from '@/features/workouts/import/build'
-import { type Logged, matchLogged } from '@/features/workouts/import/existing'
-import type { Json } from '@/lib/database.types'
+import { type Logged, matchLogged, nameKey } from '@/features/workouts/import/existing'
 import { supabase } from '@/lib/supabase'
+import { everyRow, TIMED_OUT, unwrap, withDeadline } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
 import type { WorkoutDocument } from './workout-outbox'
-import { SAVE_TIMEOUT_MS, wasRefused } from './workouts'
+import { SAVE_TIMEOUT_MS, sendWorkout, wasRefused } from './workouts'
 
 /**
  * Saves a planned import (`features/workouts/import/build.ts`) into the
@@ -52,29 +52,19 @@ export class ImportStopped extends Error {
 
 /** Requests in flight at once: enough to be quick, few enough to stay under the API's rate. */
 const PARALLEL = 4
-const PAGE = 1000
 /** Ids per `in` filter, which travels in the URL. */
 const ID_BATCH = 150
 
 /**
- * Every row of a paged query. Until a page comes back empty rather than until
- * a short one, because the server's own row cap can sit below `PAGE`, and a
- * short first page then read as the end of the list.
+ * A request with the save's deadline, as a throw that stops the import: a
+ * token refresh on a weak signal can wait forever, and the progress bar sat
+ * still with no way to retry.
  */
-async function everyRow<T>(
-  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
-): Promise<T[]> {
-  const rows: T[] = []
-  for (let from = 0; ; ) {
-    const { data, error } = await page(from, from + PAGE - 1)
-    if (error) throw error
-    if (!data?.length) return rows
-    rows.push(...data)
-    from += data.length
-  }
+async function bounded<T>(work: PromiseLike<T>): Promise<T> {
+  const answer = await withDeadline(work, SAVE_TIMEOUT_MS)
+  if (answer === TIMED_OUT) throw new Error('timed out')
+  return answer
 }
-
-const nameKey = (name: string) => name.trim().toLowerCase()
 
 async function customIds(
   userId: string,
@@ -84,12 +74,14 @@ async function customIds(
     new Map(
       (
         await everyRow((from, to) =>
-          supabase
-            .from('custom_exercises')
-            .select('id, name')
-            .eq('user_id', userId)
-            .order('id')
-            .range(from, to),
+          bounded(
+            supabase
+              .from('custom_exercises')
+              .select('id, name')
+              .eq('user_id', userId)
+              .order('id')
+              .range(from, to),
+          ),
         )
       ).map((row) => [nameKey(row.name), row.id]),
     )
@@ -100,13 +92,15 @@ async function customIds(
   // per account, so one made in between on another device failed the whole
   // batch, and every other new exercise went missing with it.
   for (const custom of missing) {
-    const { error } = await supabase.from('custom_exercises').insert({
-      user_id: userId,
-      name: custom.name,
-      tracking: custom.tracking,
-      equipment: custom.equipment,
-      category: custom.category,
-    })
+    const { error } = await bounded(
+      supabase.from('custom_exercises').insert({
+        user_id: userId,
+        name: custom.name,
+        tracking: custom.tracking,
+        equipment: custom.equipment,
+        category: custom.category,
+      }),
+    )
     if (!error) created++
     else if (error.code !== '23505') throw error
   }
@@ -121,15 +115,17 @@ async function loggedAround(userId: string, plan: ImportPlan): Promise<Logged[]>
   const to = new Date(`${plan.to}T00:00:00`)
   to.setDate(to.getDate() + 2)
   const rows = await everyRow((first, last) =>
-    supabase
-      .from('workout_summaries')
-      .select('id, name, started_at, set_count')
-      .eq('user_id', userId)
-      .gte('started_at', from.toISOString())
-      .lt('started_at', to.toISOString())
-      .order('started_at')
-      .order('id')
-      .range(first, last),
+    bounded(
+      supabase
+        .from('workout_summaries')
+        .select('id, name, started_at, set_count')
+        .eq('user_id', userId)
+        .gte('started_at', from.toISOString())
+        .lt('started_at', to.toISOString())
+        .order('started_at')
+        .order('id')
+        .range(first, last),
+    ),
   )
   return rows.flatMap((row) =>
     row.id && row.started_at
@@ -152,35 +148,22 @@ async function loggedAround(userId: string, plan: ImportPlan): Promise<Logged[]>
  */
 async function savedIds(userId: string, plan: ImportPlan): Promise<Set<string>> {
   const ids = plan.workouts.map(({ document }) => document.id)
-  const saved = new Set<string>()
-  for (let at = 0; at < ids.length; at += ID_BATCH) {
-    const { data, error } = await supabase
-      .from('workouts')
-      .select('id')
-      .eq('user_id', userId)
-      .in('id', ids.slice(at, at + ID_BATCH))
-    if (error) throw error
-    for (const row of data) saved.add(row.id)
-  }
-  return saved
+  const batches: string[][] = []
+  for (let at = 0; at < ids.length; at += ID_BATCH) batches.push(ids.slice(at, at + ID_BATCH))
+  const pages = await Promise.all(
+    batches.map(async (batch) =>
+      unwrap(
+        await bounded(supabase.from('workouts').select('id').eq('user_id', userId).in('id', batch)),
+      ),
+    ),
+  )
+  return new Set(pages.flat().map((row) => row.id))
 }
 
 /** The planned workouts already in the history, by id, for the preview and the import. */
 export async function findAlreadyImported(userId: string, plan: ImportPlan): Promise<Set<string>> {
   const [logged, saved] = await Promise.all([loggedAround(userId, plan), savedIds(userId, plan)])
   return matchLogged(plan, logged, saved)
-}
-
-async function save(document: WorkoutDocument) {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), SAVE_TIMEOUT_MS)
-  try {
-    return await supabase
-      .rpc('save_workout', { p_workout: document as unknown as Json })
-      .abortSignal(controller.signal)
-  } finally {
-    clearTimeout(timer)
-  }
 }
 
 export function useWorkoutImport() {
@@ -195,9 +178,11 @@ export function useWorkoutImport() {
       const result: ImportResult = { saved: 0, existing: 0, failed: 0, created: 0 }
       let stopped = false
       try {
-        const customs = await customIds(userId, plan)
+        const [customs, already] = await Promise.all([
+          customIds(userId, plan),
+          findAlreadyImported(userId, plan),
+        ])
         result.created = customs.created
-        const already = await findAlreadyImported(userId, plan)
 
         const fresh: WorkoutDocument[] = []
         for (const { document, customNames } of plan.workouts) {
@@ -223,13 +208,13 @@ export function useWorkoutImport() {
             if (document.exercises.some((exercise) => !exercise.exercise_id)) {
               result.failed++
             } else {
-              const { error } = await save(document)
-              if (!error) result.saved++
-              else if (wasRefused(error)) result.failed++
-              else {
+              const answer = await withDeadline(sendWorkout(document), SAVE_TIMEOUT_MS)
+              if (answer === TIMED_OUT || (answer.error && !wasRefused(answer.error))) {
                 stopped = true
                 break
               }
+              if (answer.error) result.failed++
+              else result.saved++
             }
             onProgress({ done: result.saved + result.failed, total: fresh.length })
           }

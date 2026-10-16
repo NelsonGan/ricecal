@@ -2,9 +2,9 @@
  * Every exercise and activity the logger knows, hard-coded.
  *
  * Hard-coded rather than a table, because the list is the app's own design
- * rather than user data: each entry has a drawing made for it (or is listed as
- * awaiting one in `model.test.ts`), and an entry the
- * server could add would arrive with no picture. Anything missing is a custom
+ * rather than user data: each entry has a drawing made for it, which
+ * `model.test.ts` holds it to, and an entry the server could add would arrive
+ * with no picture. Anything missing is a custom
  * exercise (`custom_exercises`), which the user names and describes.
  *
  * Names are English and stay English in every language, the way a dish name

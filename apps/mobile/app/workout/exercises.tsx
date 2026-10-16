@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -114,8 +114,13 @@ export default function ExercisesScreen() {
 
   const activeFilters = Object.values(filters).filter(Boolean).length
 
+  // Set on the first answer: a second tap before this screen has gone went
+  // back twice, which closed the routine editor under it, draft and all.
+  const leaving = useRef(false)
   const finish = useCallback(
     (exercises: LibraryExercise[]) => {
+      if (leaving.current) return
+      leaving.current = true
       // Back first, then hand over. An opener that navigates with the result
       // pushed its screen and then had this back pop it straight off again.
       router.back()
@@ -255,7 +260,7 @@ export default function ExercisesScreen() {
         keyboardDismissMode="on-drag"
         initialNumToRender={14}
         renderItem={renderItem}
-        // A few screens either way: the default rendered all 181 rows.
+        // A few screens either way: the default rendered every row, now near 300.
         windowSize={5}
         ListEmptyComponent={
           <EmptyState

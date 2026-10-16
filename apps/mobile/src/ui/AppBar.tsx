@@ -29,6 +29,11 @@ export type AppBarProps = {
   /** Screen-reader name for the back button. Pass translated copy. */
   backLabel?: string
   /**
+   * Keeps the back button where it is but inert, for a save in flight. Taken
+   * away instead, the bar lost its height and the whole screen jumped up.
+   */
+  backDisabled?: boolean
+  /**
    * Which affordance the leading control is.
    *
    * `back` (a chevron) means "up one level, the previous screen is still
@@ -105,6 +110,7 @@ export function AppBar({
   titleContent,
   onBack,
   backLabel = 'Go back',
+  backDisabled = false,
   leading = 'back',
   action,
   onPressTitle,
@@ -132,7 +138,12 @@ export function AppBar({
       <View style={{ minWidth: sideWidth }} className="items-start">
         {onBack ? (
           <View onLayout={measureLeading}>
-            <IconButton size="sm" accessibilityLabel={backLabel} onPress={onBack}>
+            <IconButton
+              size="sm"
+              accessibilityLabel={backLabel}
+              onPress={onBack}
+              disabled={backDisabled}
+            >
               {/* Tinted: chrome is monochrome, and the illustration's own palette
                   reads as a stray accent next to a title. */}
               <Icon

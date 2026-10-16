@@ -1737,6 +1737,7 @@ export const zhHant = {
       delete: '刪除課表',
       deleteTitle: '刪除這個課表？',
       deleteBody: '用它練過的訓練會保留。',
+      missing: '這個課表已經不在了。',
     },
 
     explore: {
@@ -1960,6 +1961,8 @@ export const zhHant = {
       title: '編輯訓練',
       save: '儲存變更',
       newTitle: '補記訓練',
+      leaveTitle: '不儲存就離開？',
+      leaveBody: '你在這裡做的變更會丟掉。',
     },
 
     library: {

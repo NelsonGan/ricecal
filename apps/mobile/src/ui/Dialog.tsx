@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Modal, Platform, Pressable, View } from 'react-native'
 
 import { Button } from './Button'
@@ -9,8 +9,13 @@ export type DialogAction = {
   label: string
   /** `primary` for the answer most people give, `danger` for one that deletes. */
   tone?: 'primary' | 'secondary' | 'danger'
-  icon?: ReactNode
   onPress: () => void | Promise<void>
+  /**
+   * Run while the dialog stays open, with a spinner, and close when it
+   * resolves. For an answer that writes to the server: a rejection keeps the
+   * dialog open, since closing would say the thing happened.
+   */
+  waits?: boolean
 }
 
 export type DialogProps = {
@@ -21,8 +26,6 @@ export type DialogProps = {
   actions: readonly DialogAction[]
   /** The way out without answering. Omit for a question that must be answered. */
   cancelLabel?: string
-  /** Shows the first action as working and blocks the rest. */
-  pending?: boolean
 }
 
 /**
@@ -44,8 +47,8 @@ export function Dialog({
   description,
   actions,
   cancelLabel,
-  pending = false,
 }: DialogProps) {
+  const [working, setWorking] = useState<string | null>(null)
   const queued = useRef<DialogAction['onPress'] | null>(null)
   // What it showed while open, kept while it fades. Callers clear the thing a
   // dialog is about as it closes, and the title went blank mid-fade.
@@ -56,7 +59,9 @@ export function Dialog({
   const runQueued = () => {
     const run = queued.current
     queued.current = null
-    void run?.()
+    // A failure is the caller's to show; here it is only kept from surfacing as
+    // an unhandled rejection.
+    Promise.resolve(run?.()).catch((error) => console.warn('[dialog] answer failed', error))
   }
 
   // Android has no `onDismiss`; its modal is gone once `visible` is false.
@@ -64,10 +69,25 @@ export function Dialog({
     if (!visible && Platform.OS !== 'ios') runQueued()
   })
 
-  const answer = (action: DialogAction) => {
-    queued.current = action.onPress
-    onClose()
+  const answer = async (action: DialogAction) => {
+    if (!action.waits) {
+      queued.current = action.onPress
+      onClose()
+      return
+    }
+    setWorking(action.key)
+    try {
+      await action.onPress()
+      onClose()
+    } catch {
+      // The caller says what went wrong; consuming the rejection keeps it from
+      // surfacing as an unhandled promise.
+    } finally {
+      setWorking(null)
+    }
   }
+  const pending = working !== null
+  const dismiss = cancelLabel && !pending ? onClose : () => undefined
 
   return (
     <Modal
@@ -75,13 +95,15 @@ export function Dialog({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={cancelLabel ? onClose : () => undefined}
+      onRequestClose={dismiss}
       onDismiss={runQueued}
     >
       <View className="flex-1 items-center justify-center px-6">
         <Pressable
           className="absolute inset-0 bg-black/45"
-          onPress={cancelLabel ? onClose : undefined}
+          onPress={dismiss}
+          // A way out only when there is one; otherwise not a control at all.
+          accessible={Boolean(cancelLabel)}
           accessibilityRole="button"
           accessibilityLabel={cancelLabel}
           disabled={!cancelLabel || pending}
@@ -107,10 +129,9 @@ export function Dialog({
                 key={action.key}
                 fullWidth
                 variant={action.tone ?? (index === 0 ? 'primary' : 'secondary')}
-                leftIcon={action.icon}
-                loading={pending && index === 0}
+                loading={working === action.key}
                 disabled={pending}
-                onPress={() => answer(action)}
+                onPress={() => void answer(action)}
               >
                 {action.label}
               </Button>

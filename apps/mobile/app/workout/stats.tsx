@@ -31,6 +31,7 @@ import { unitFor, type WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
+  Button,
   Card,
   cn,
   Divider,
@@ -319,6 +320,9 @@ function Records({ unit }: { unit: WeightUnit }) {
   const library = useExerciseLibrary()
   const bests = useExerciseBests(null)
   const rows = (bests.data ?? []).filter((entry) => entry.workouts > 0)
+  // Ten at a time, as an exercise's history is: a few years of training is a
+  // hundred exercises, each a picture, drawn at once.
+  const [shown, setShown] = useState(10)
 
   return (
     <Card title={t('workouts:stats.records')} contentClassName="gap-0">
@@ -327,7 +331,7 @@ function Records({ unit }: { unit: WeightUnit }) {
       ) : !bests.data && (bests.isPaused || bests.isError) ? (
         <Unavailable offline={bests.isPaused} />
       ) : rows.length ? (
-        rows.map((entry, index) => {
+        rows.slice(0, shown).map((entry, index) => {
           const exercise = library.byId(entry.exerciseId)
           // The heaviest set as lifted, "72.5 kg × 8". The estimated 1RM was
           // here first and read as a weight somebody had put on the bar.
@@ -358,7 +362,7 @@ function Records({ unit }: { unit: WeightUnit }) {
                   })
                 }
                 accessibilityRole="button"
-                accessibilityLabel={entry.name}
+                accessibilityLabel={best ? `${entry.name}, ${best}` : entry.name}
               >
                 <ExerciseArt
                   exerciseId={entry.exerciseId}
@@ -381,6 +385,11 @@ function Records({ unit }: { unit: WeightUnit }) {
       ) : (
         <Text variant="meta">{t('workouts:history.emptyTitle')}</Text>
       )}
+      {rows.length > shown ? (
+        <Button variant="ghost" fullWidth onPress={() => setShown((count) => count + 10)}>
+          {t('workouts:history.more')}
+        </Button>
+      ) : null}
     </Card>
   )
 }

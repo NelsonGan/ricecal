@@ -1,11 +1,10 @@
 import { useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
   type CustomExercise,
-  type IconRef,
   isDuplicateName,
   useCustomExercises,
   useDeleteCustomExercise,
@@ -27,20 +26,21 @@ import {
   TRACKING_KEY,
   TRACKINGS,
   type Tracking,
+  useLeaveGuard,
+  WorkoutUnavailable,
 } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
+import { useOnline } from '@/lib/online'
 import {
   AppBar,
   Button,
   Card,
   Chip,
-  ConfirmSheet,
-  EmptyState,
+  Dialog,
   Icon,
   IconButton,
   Radio,
   Screen,
-  Skeleton,
   TextField,
   useToast,
 } from '@/ui'
@@ -66,31 +66,23 @@ export default function CustomExerciseScreen() {
   if (params.id && !existing) {
     // Editing waits for the exercise: the form reads it once, as its starting
     // values, and opened before the list had loaded it stayed empty for good.
-    if (custom.isPending && !custom.isPaused) {
-      return (
-        <Screen>
-          <Card>
-            <Skeleton className="h-[240px] w-full" />
-          </Card>
-        </Screen>
-      )
-    }
     // Never the blank form: an id it cannot find saved as a brand new
     // exercise beside the one that was meant.
-    return custom.isPending ? (
-      <Empty
-        title={t('common:offline.title')}
-        description={t('common:offline.body')}
-        icon={{ set: 'ui', name: 'offline' }}
+    return (
+      <WorkoutUnavailable
+        state={
+          custom.isPending
+            ? custom.isPaused
+              ? 'offline'
+              : 'loading'
+            : custom.isError
+              ? 'unreachable'
+              : 'missing'
+        }
+        title={t('workouts:exercise.missing')}
+        icon={{ set: 'body', name: 'dumbbell' }}
+        fallback="/workout/exercises"
       />
-    ) : custom.isError ? (
-      <Empty
-        title={t('common:offline.unreachableTitle')}
-        description={t('common:offline.unreachableBody')}
-        icon={{ set: 'ui', name: 'warning' }}
-      />
-    ) : (
-      <Empty title={t('workouts:exercise.missing')} icon={{ set: 'body', name: 'dumbbell' }} />
     )
   }
   return (
@@ -100,25 +92,6 @@ export default function CustomExerciseScreen() {
       initialName={params.name ?? ''}
       onDeleting={setDeleting}
     />
-  )
-}
-
-/** The page with nothing in it but a way back. */
-function Empty({
-  title,
-  description,
-  icon,
-}: {
-  title: string
-  description?: string
-  icon: IconRef
-}) {
-  const { t } = useTranslation(['common'])
-  const goBack = useBack('/workout/exercises')
-  return (
-    <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
-      <EmptyState title={title} description={description} icon={icon} />
-    </Screen>
   )
 }
 
@@ -137,6 +110,12 @@ function Form({
   const toast = useToast()
   const save = useSaveCustomExercise()
   const remove = useDeleteCustomExercise()
+  const online = useOnline()
+  const busy = save.isPending || remove.isPending
+  const guard = useLeaveGuard({ busy, dirty: false })
+  // Set before the first await: a second tap in the same frame, before
+  // `isPending` had rendered, saved the exercise twice.
+  const saving = useRef(false)
 
   const [name, setName] = useState(existing?.name ?? initialName)
   const [tracking, setTracking] = useState<Tracking>(existing?.tracking ?? 'weight_reps')
@@ -159,7 +138,13 @@ function Form({
   }
 
   const onSave = async () => {
-    if (!name.trim()) return
+    if (!name.trim() || saving.current) return
+    // Offline the save pauses rather than fails, and leaving is held while it runs.
+    if (!online) {
+      toast.show({ title: t('common:offline.title'), tone: 'error' })
+      return
+    }
+    saving.current = true
     setTaken(false)
     try {
       await save.mutateAsync({
@@ -170,10 +155,12 @@ function Form({
         equipment,
         muscles: split(),
       })
-      goBack()
+      guard.leave(goBack)
     } catch (error) {
       if (isDuplicateName(error)) setTaken(true)
       else toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+    } finally {
+      saving.current = false
     }
   }
 
@@ -183,6 +170,7 @@ function Form({
         <AppBar
           title={existing ? t('workouts:custom.editTitle') : t('workouts:custom.title')}
           onBack={goBack}
+          backDisabled={busy}
           backLabel={t('common:action.back')}
           action={
             existing ? (
@@ -272,25 +260,37 @@ function Form({
         </View>
       </Card>
 
-      <ConfirmSheet
+      <Dialog
         visible={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         title={t('workouts:custom.deleteTitle')}
         description={t('workouts:custom.deleteBody')}
-        confirmLabel={t('common:action.delete')}
         cancelLabel={t('common:action.keep')}
-        onConfirm={async () => {
-          if (!existing) return
-          onDeleting(existing)
-          try {
-            await remove.mutateAsync(existing.id)
-          } catch (error) {
-            onDeleting(null)
-            toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
-            throw error
-          }
-          goBack()
-        }}
+        actions={[
+          {
+            key: 'delete',
+            label: t('common:action.delete'),
+            tone: 'danger',
+            waits: true,
+            onPress: async () => {
+              if (!existing) return
+              // Offline the delete pauses rather than fails, and would spin.
+              if (!online) {
+                toast.show({ title: t('common:offline.title'), tone: 'error' })
+                throw new Error('offline')
+              }
+              onDeleting(existing)
+              try {
+                await remove.mutateAsync(existing.id)
+              } catch (error) {
+                onDeleting(null)
+                toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+                throw error
+              }
+              guard.leave(goBack)
+            },
+          },
+        ]}
       />
     </Screen>
   )

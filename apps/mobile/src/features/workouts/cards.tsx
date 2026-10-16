@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns'
-import { Children, type ReactNode } from 'react'
+import { Children, memo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -160,14 +160,18 @@ export function RowChevron() {
 }
 
 /** A past workout in the history list. */
-export function WorkoutCard({
+/**
+ * Memoised with the workout handed to `onPress`, so the history list re-renders
+ * only the cards that changed rather than every one loaded.
+ */
+export const WorkoutCard = memo(function WorkoutCard({
   workout,
   unit,
   onPress,
 }: {
   workout: WorkoutSummary
   unit: WeightUnit
-  onPress?: () => void
+  onPress?: (workout: WorkoutSummary) => void
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const first = workout.exercises[0]
@@ -175,7 +179,7 @@ export function WorkoutCard({
   const started = parseISO(workout.startedAt)
 
   return (
-    <Card contentClassName="gap-3 p-4" onPress={onPress}>
+    <Card contentClassName="gap-3 p-4" onPress={onPress ? () => onPress(workout) : undefined}>
       <View className="flex-row items-center gap-3">
         {first ? (
           <ExerciseArt
@@ -233,7 +237,7 @@ export function WorkoutCard({
       ) : null}
     </Card>
   )
-}
+})
 
 /**
  * A shared workout, as a feed post draws it where a meal post has its photo:
@@ -287,29 +291,21 @@ export function WorkoutPreview({
         </View>
       </View>
 
-      <View className="flex-row rounded-card bg-surface py-3">
-        <View className="flex-1 px-4">
-          <Stat label={t('workouts:logger.duration')} value={durationText(t, durationS)} />
-        </View>
+      <StatStrip>
+        <Stat label={t('workouts:logger.duration')} value={durationText(t, durationS)} />
         {volumeKg > 0 ? (
-          <View className="flex-1 border-line border-l px-4">
-            <Stat label={t('workouts:logger.volume')} value={volumeText(t, volumeKg, unit)} />
-          </View>
+          <Stat label={t('workouts:logger.volume')} value={volumeText(t, volumeKg, unit)} />
         ) : (
-          <View className="flex-1 border-line border-l px-4">
-            <Stat label={t('workouts:logger.sets')} value={String(sets)} />
-          </View>
+          <Stat label={t('workouts:logger.sets')} value={String(sets)} />
         )}
         {records > 0 ? (
-          <View className="flex-1 border-line border-l px-4">
-            <Stat
-              label={t('workouts:detail.records')}
-              value={String(records)}
-              icon={{ set: 'system', name: 'trophy' }}
-            />
-          </View>
+          <Stat
+            label={t('workouts:detail.records')}
+            value={String(records)}
+            icon={{ set: 'system', name: 'trophy' }}
+          />
         ) : null}
-      </View>
+      </StatStrip>
 
       {shown.length ? (
         <View className="gap-2">
@@ -350,17 +346,27 @@ function Metric({ icon, text, tone }: { icon: ReactNode; text: string; tone?: 'k
 
 /**
  * A row of figures with thin rules between them: the logger's duration, volume
- * and sets, and the finish screen's. Each child is one `Stat`, or a component
- * that renders one, so a figure that ticks can re-render on its own.
+ * and sets, a shared workout's, and a profile's workout totals. Each child is
+ * one `Stat`, or a component that renders one, so a clock can re-render its
+ * own figure each second and nothing else.
  */
-export function StatStrip({ children }: { children: ReactNode }) {
+export function StatStrip({
+  children,
+  className,
+  compact = false,
+}: {
+  children: ReactNode
+  className?: string
+  /** Tighter cells, for a strip inside a card's own padding, where "WORKOUTS" was cut short. */
+  compact?: boolean
+}) {
   return (
-    <View className="flex-row rounded-card bg-surface py-3">
+    <View className={cn('flex-row rounded-card bg-surface py-3', className)}>
       {Children.toArray(children).map((child, index) => (
         <View
           // biome-ignore lint/suspicious/noArrayIndexKey: the strip's order is its layout
           key={index}
-          className={cn('flex-1 px-4', index > 0 && 'border-line border-l')}
+          className={cn('flex-1', compact ? 'px-3' : 'px-4', index > 0 && 'border-line border-l')}
         >
           {child}
         </View>
@@ -399,7 +405,7 @@ export function Stat({ label, value, icon }: { label: string; value: string; ico
   )
 }
 
-/** Figures that tick keep their width, so nothing beside them shuffles each second. */
+/** Figures that count keep their width, so nothing beside them shuffles each second. */
 const TABULAR = { fontVariant: ['tabular-nums' as const] }
 
 /**

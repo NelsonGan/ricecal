@@ -674,6 +674,7 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
         {tools?.accessory ? (
           <Tappable
             className="h-[34px] justify-center rounded-full bg-surface px-3"
+            hitSlop={5}
             onPress={() => session.field.current.tools?.accessory?.onPress()}
             accessibilityRole="button"
             accessibilityLabel={tools.accessory.label}
@@ -687,6 +688,7 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
           // An icon rather than "Done": on the last field Next already says it.
           <Tappable
             className="h-[34px] w-[40px] items-center justify-center rounded-sm bg-surface"
+            hitSlop={5}
             onPress={context.dismiss}
             accessibilityRole="button"
             accessibilityLabel={context.labels.done}

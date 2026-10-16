@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { Directory, File, Paths } from 'expo-file-system'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Platform, Share, View } from 'react-native'
 
@@ -284,14 +284,19 @@ function TimeSheet({
     [],
   )
 
+  // Set before the panel is drawn, as `RestSheet` does: reset in `onShow`, the
+  // wheels showed the last time picked for a frame before jumping.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only on opening
+  useLayoutEffect(() => {
+    if (!visible) return
+    setH(hour)
+    setM(minute - (minute % 5))
+  }, [visible])
+
   return (
     <Sheet
       visible={visible}
       onClose={onClose}
-      onShow={() => {
-        setH(hour)
-        setM(minute - (minute % 5))
-      }}
       closeLabel={t('common:action.close')}
       title={t('workouts:settings.reminderTime')}
       scrollable={false}

@@ -31,6 +31,7 @@ import {
   type LibraryExercise,
   M_PER_MI,
   MUSCLE_KEY,
+  openLogger,
   planFor,
   rankedMuscles,
   setBadges,
@@ -99,10 +100,16 @@ const METRIC_KEY = {
  * their bests, and every session they did it in.
  */
 export default function ExerciseScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>()
+  // Keyed by id, so a link that reuses this screen for another one starts
+  // clean rather than carrying the last one's menus and held state.
+  return <ExercisePage key={id} id={id} />
+}
+
+function ExercisePage({ id }: { id: string }) {
   const { t } = useTranslation(['workouts', 'common'])
   const router = useRouter()
   const goBack = useBack('/workouts')
-  const { id } = useLocalSearchParams<{ id: string }>()
   const library = useExerciseLibrary()
   // The library's custom half, asked directly to know whether it has answered.
   const customs = useCustomExercises()
@@ -212,7 +219,7 @@ export default function ExerciseScreen() {
               fullWidth
               onPress={() => {
                 if (userId) dispatchWorkout(userId, { type: 'addExercises', plans: [plan] })
-                router.dismissTo('/workout/active')
+                openLogger(router)
               }}
             >
               {t('workouts:exercise.addToWorkout')}
@@ -261,7 +268,7 @@ export default function ExerciseScreen() {
           />
         </Card>
       )}
-      {starter.sheet}
+      {starter.dialog}
     </Screen>
   )
 }

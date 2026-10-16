@@ -1750,6 +1750,7 @@ export const ja = {
       delete: 'ルーティンを削除',
       deleteTitle: 'このルーティンを削除しますか',
       deleteBody: 'このルーティンで行ったワークアウトは残ります。',
+      missing: 'このルーティンはもうありません。',
     },
 
     explore: {
@@ -1979,6 +1980,8 @@ export const ja = {
       title: 'ワークアウトを編集',
       save: '変更を保存',
       newTitle: '過去のワークアウトを記録',
+      leaveTitle: '保存せずに戻りますか',
+      leaveBody: 'ここでの変更は失われます。',
     },
 
     library: {

@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -14,9 +15,10 @@ import {
   templatePlans,
   templateRoutine,
   useWorkoutStarter,
-  WorkoutMissing,
+  WorkoutUnavailable,
 } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
+import { useOnline } from '@/lib/online'
 import { AppBar, Badge, Button, Card, Divider, Screen, Text, useToast } from '@/ui'
 
 /**
@@ -30,14 +32,26 @@ export default function TemplateScreen() {
   const goBack = useBack('/workout/templates')
   const { id } = useLocalSearchParams<{ id: string }>()
   const template = templateById(id ?? '')
-  const routines = useRoutines().data ?? []
+  // Unknown until loaded, and Add waits for it: read as "none" it made a
+  // second routine from a template already in the list.
+  const routines = useRoutines().data
   const save = useSaveRoutine()
   const starter = useWorkoutStarter()
+  const online = useOnline()
+  // A second tap before `isPending` had rendered added the routine twice.
+  const adding = useRef(false)
 
-  if (!template) return <WorkoutMissing icon={{ set: 'system', name: 'guide-book' }} />
+  if (!template) {
+    return (
+      <WorkoutUnavailable
+        title={t('workouts:routines.missing')}
+        icon={{ set: 'system', name: 'guide-book' }}
+      />
+    )
+  }
 
   const name = t(templateNameKey(template.id))
-  const existing = routines.find((routine) => routine.templateId === template.id)
+  const existing = routines?.find((routine) => routine.templateId === template.id)
 
   return (
     <Screen
@@ -56,11 +70,19 @@ export default function TemplateScreen() {
             variant="secondary"
             fullWidth
             loading={save.isPending}
+            disabled={!routines}
             onPress={async () => {
               if (existing) {
                 router.push({ pathname: '/workout/routine/[id]', params: { id: existing.id } })
                 return
               }
+              if (adding.current) return
+              // Offline the save pauses rather than fails, and would spin.
+              if (!online) {
+                toast.show({ title: t('common:offline.title'), tone: 'error' })
+                return
+              }
+              adding.current = true
               try {
                 const routine = await save.mutateAsync({
                   name,
@@ -72,6 +94,8 @@ export default function TemplateScreen() {
                 router.push({ pathname: '/workout/routine/[id]', params: { id: routine.id } })
               } catch {
                 toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+              } finally {
+                adding.current = false
               }
             }}
           >
@@ -128,7 +152,7 @@ export default function TemplateScreen() {
           )
         })}
       </Card>
-      {starter.sheet}
+      {starter.dialog}
     </Screen>
   )
 }

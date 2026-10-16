@@ -14,9 +14,10 @@
 --               (`weight_reps`, `weighted_reps`). An assisted pull-up's weight
 --               is the machine HELPING, and multiplying it by reps would make
 --               the easiest set the biggest.
---   est. 1RM    Epley, weight x (1 + reps / 30), over 1 to 15 reps of a
---               `weight_reps` set. Past fifteen the formula stops meaning
---               anything, and a single is its own answer.
+--   est. 1RM    Epley, weight x (1 + reps / 30), written as
+--               weight x (30 + reps) / 30 (see `workout_set_values`), over 1 to
+--               15 reps of a `weight_reps` set. Past fifteen the formula stops
+--               meaning anything, and a single is its own answer.
 --
 -- A warm-up counts towards volume (it was lifted) and never towards a record.
 -- ---------------------------------------------------------------------------

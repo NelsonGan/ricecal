@@ -12,6 +12,7 @@ import { SET_KIND_KEY, setBadges } from './copy'
 import { fieldKey, useFieldOrder } from './fieldOrder'
 import {
   type DistanceUnit,
+  describeSet,
   digitsClock,
   digitsToSeconds,
   distanceField,
@@ -59,7 +60,7 @@ export type CardHandlers = {
   open: (exerciseId: string) => void
 }
 
-export type SetTableProps = {
+type SetTableProps = {
   /** The exercise's key in the document, which places its fields in the Next order. */
   exerciseKey: string
   /** Named in the pad's header, since the card may be scrolled under the pad. */
@@ -83,9 +84,13 @@ export type SetTableProps = {
 }
 
 const COL_SET = 'w-[34px]'
+/** A row is 46pt and its cells 40, so each takes the row's height to tap. */
+const ROW_SLOP = { top: 3, bottom: 3 }
+const ROW_SLOP_EDGE = { top: 3, bottom: 3, left: 4 }
+const ROW_SLOP_EDGE_RIGHT = { top: 3, bottom: 3, right: 4 }
 const COL_FIELD = 'w-[66px]'
 /**
- * A lone field gets the width two would have used: a plank or a game has only
+ * A lone field gets the width two would have used: a plank or a class has only
  * a time, and "1:30:00" does not fit where "62.5" does.
  */
 const COL_FIELD_WIDE = 'w-[132px]'
@@ -126,8 +131,9 @@ export function SetTable({
             : distanceUnit
 
   const badges = setBadges(sets, t)
-  const hints = setHints(sets, previous)
+  // Paired once: the hints are worked out from the same pairing.
   const lastTime = matchPrevious(sets, previous)
+  const hints = setHints(sets, previous, lastTime)
 
   return (
     <View className="gap-1">
@@ -189,46 +195,6 @@ function fillFrom(last: LastSet): SetPatch {
     reps: last.reps,
     durationS: last.durationS,
     distanceM: last.distanceM,
-  }
-}
-
-/** "60 × 8", "1:30", "5.2 km · 28:00": last time, in the row's own terms. */
-export function describeSet(
-  set: Pick<LastSet, 'weightKg' | 'reps' | 'durationS' | 'distanceM'>,
-  tracking: Tracking,
-  unit: WeightUnit,
-  distanceUnit: DistanceUnit,
-  /** The weight unit's symbol, for a line that stands on its own rather than in a column. */
-  unitLabel?: string,
-): string {
-  const figure = set.weightKg === null ? null : weightField(set.weightKg, unit)
-  const weight = figure !== null && unitLabel ? `${figure} ${unitLabel}` : figure
-  switch (tracking) {
-    case 'weight_reps':
-      return weight !== null && set.reps !== null ? `${weight} × ${set.reps}` : ''
-    case 'weighted_reps':
-      if (set.reps === null) return ''
-      return set.weightKg ? `+${weight} × ${set.reps}` : `× ${set.reps}`
-    case 'assisted_reps':
-      if (set.reps === null) return ''
-      return set.weightKg ? `−${weight} × ${set.reps}` : `× ${set.reps}`
-    case 'reps':
-      return set.reps === null ? '' : `× ${set.reps}`
-    case 'duration':
-      return set.durationS === null ? '' : shortClock(set.durationS)
-    case 'distance_duration': {
-      const parts = [
-        set.distanceM ? `${distanceField(set.distanceM, distanceUnit)} ${distanceUnit}` : null,
-        set.durationS ? shortClock(set.durationS) : null,
-      ].filter(Boolean)
-      return parts.join(' · ')
-    }
-    case 'weight_distance':
-      // A sled pushed empty is still a carry: the distance alone, not nothing.
-      if (!set.distanceM) return ''
-      return weight !== null
-        ? `${weight} · ${trim(set.distanceM, 0)} m`
-        : `${trim(set.distanceM, 0)} m`
   }
 }
 
@@ -333,6 +299,9 @@ const SetRow = memo(function SetRow({
       >
         <Tappable
           className={cn(COL_SET, 'h-[40px] items-center justify-center rounded-sm')}
+          // The row's full height and its edge: the cell is drawn smaller than
+          // a finger, and nothing sits above, below or left of it.
+          hitSlop={ROW_SLOP_EDGE}
           onPress={onMenu}
           accessibilityRole="button"
           // The label replaces the text inside, so the RPE has to be in it.
@@ -355,7 +324,10 @@ const SetRow = memo(function SetRow({
           same as last week's. */}
         <Tappable
           className="h-[40px] flex-1 justify-center pl-2"
+          hitSlop={ROW_SLOP}
           disabled={!last || ticked}
+          // Nothing to read or tap where last time is not shown (an edit).
+          accessible={showPrevious}
           onPress={() => {
             if (!last) return
             onChange(fillFrom(last))
@@ -446,6 +418,7 @@ const SetRow = memo(function SetRow({
         {checkable ? (
           <Tappable
             className={cn(COL_CHECK, 'h-[40px] items-center justify-center')}
+            hitSlop={ROW_SLOP_EDGE_RIGHT}
             onPress={onToggle}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: set.done }}
