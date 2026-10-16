@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { useFinishOnboarding, useSession } from '@/data'
+import { allAnnouncementIds } from '@/features/news/announcements'
 import {
   type CompleteDraft,
   isComplete,
@@ -86,6 +87,11 @@ function Flush({ draft }: { draft: CompleteDraft }) {
         targetWeightKg: draft.targetWeightKg,
         activity: draft.activity,
         referralSource: draft.referralSource,
+        // New accounts share what they log to the feed, and start having seen
+        // every announcement this build carries: news about a change is for
+        // people who used the app before it.
+        autoPostFoods: true,
+        seenAnnouncements: allAnnouncementIds(),
         // Undefined unless the target step was edited, in which case this is the
         // one write that has to land after the weigh-in. See `useFinishOnboarding`.
         targets: draft.targets,

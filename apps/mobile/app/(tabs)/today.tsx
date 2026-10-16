@@ -28,6 +28,7 @@ import {
   WaterCard,
   WeekPicker,
 } from '@/features/logging'
+import { AnnouncementCard, useAnnouncementOffer } from '@/features/news'
 import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
@@ -69,13 +70,32 @@ const ANNOUNCE_MS = 8000
 const yesterday = (key: string) => dateKey(subDays(parseISO(key), 1))
 
 /**
+ * Today, with the launch announcement over whichever state it is in. Beside the
+ * screen rather than inside it because the screen has several early returns.
+ */
+export default function TodayScreen() {
+  return (
+    <>
+      <TodayContent />
+      <LaunchAnnouncement />
+    </>
+  )
+}
+
+/** The newest news, put up once per account. See `useAnnouncementOffer`. */
+function LaunchAnnouncement() {
+  const { announcement, close } = useAnnouncementOffer()
+  return <AnnouncementCard announcement={announcement} source="launch" onClose={close} />
+}
+
+/**
  * Today.
  *
  * Three states: no budget yet, loading, and a day. The first is not an error;
  * `daily_goals` is empty until onboarding runs, because a ring drawn against a
  * placeholder is worse than no ring.
  */
-export default function TodayScreen() {
+function TodayContent() {
   const { t } = useTranslation(['logging', 'common', 'social'])
   const router = useRouter()
   const focused = useIsFocused()

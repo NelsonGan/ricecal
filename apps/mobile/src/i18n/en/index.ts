@@ -2,6 +2,7 @@ import { activity } from './activity'
 import { auth } from './auth'
 import { common } from './common'
 import { logging } from './logging'
+import { news } from './news'
 import { onboarding } from './onboarding'
 import { paywall } from './paywall'
 import { profile } from './profile'
@@ -26,6 +27,7 @@ export const en = {
   auth,
   onboarding,
   logging,
+  news,
   progress,
   profile,
   paywall,

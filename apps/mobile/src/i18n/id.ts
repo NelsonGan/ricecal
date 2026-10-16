@@ -1728,6 +1728,18 @@ export const id = {
       distanceValue: '{{value}} km ditempuh',
     },
   },
+  news: {
+    title: 'Berita',
+    close: 'Tutup',
+    done: 'Oke',
+    feedAutoShare: {
+      title: 'Makananmu kini diposting ke linimasa',
+      body: 'Makanan yang kamu catat kini otomatis dibagikan ke linimasamu. Kamu bisa mematikannya di Edit profil.',
+      cta: 'Buka pengaturan',
+      you: 'Kamu',
+      previewLabel: 'Contoh makanan yang diposting ke linimasamu',
+    },
+  },
   workouts: {
     title: 'Latihan',
 

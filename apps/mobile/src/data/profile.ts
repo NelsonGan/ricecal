@@ -32,6 +32,36 @@ export function useProfile() {
   })
 }
 
+/**
+ * Records an announcement as seen, with whatever it switches on, in one write.
+ *
+ * Null when it was not this call that claimed it: already seen, which another
+ * phone may have done since the cache was filled, or no row at all. The
+ * caller shows the card only on a profile back, so a card that claims to have
+ * switched something on is never put up over a write that failed.
+ *
+ * The list is read fresh rather than from the cache, which is persisted and
+ * may predate a claim made elsewhere; the filter on the update is what makes
+ * two phones racing for the same id end with one card between them.
+ */
+export async function claimAnnouncement(
+  userId: string,
+  id: string,
+  patch: Pick<ProfilePatch, 'autoPostFoods'> = {},
+): Promise<Profile | null> {
+  const current = await fetchProfile(userId)
+  if (!current || current.seen_announcements.includes(id)) return null
+  return unwrapMaybe(
+    await supabase
+      .from('profiles')
+      .update({ ...toRow(patch), seen_announcements: [...current.seen_announcements, id] })
+      .eq('id', userId)
+      .not('seen_announcements', 'cs', `{${id}}`)
+      .select('*')
+      .maybeSingle(),
+  )
+}
+
 /** The fields onboarding and the settings screens can write. */
 export type ProfilePatch = {
   displayName?: string
@@ -47,6 +77,8 @@ export type ProfilePatch = {
   isPrivate?: boolean
   autoPostFoods?: boolean
   autoPostWorkouts?: boolean
+  /** Announcement ids, for onboarding to start a new account with. See `claimAnnouncement`. */
+  seenAnnouncements?: string[]
   sex?: Sex
   birthDate?: string
   heightCm?: number
@@ -66,6 +98,7 @@ function toRow(patch: ProfilePatch): TablesUpdate<'profiles'> {
   if (patch.isPrivate !== undefined) row.is_private = patch.isPrivate
   if (patch.autoPostFoods !== undefined) row.auto_post_foods = patch.autoPostFoods
   if (patch.autoPostWorkouts !== undefined) row.auto_post_workouts = patch.autoPostWorkouts
+  if (patch.seenAnnouncements !== undefined) row.seen_announcements = patch.seenAnnouncements
   if (patch.sex !== undefined) row.sex = patch.sex
   if (patch.birthDate !== undefined) row.birth_date = patch.birthDate
   if (patch.heightCm !== undefined) row.height_cm = patch.heightCm

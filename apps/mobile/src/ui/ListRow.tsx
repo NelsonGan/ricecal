@@ -9,6 +9,11 @@ import { Text } from './Text'
 
 export type ListRowProps = {
   title: string
+  /**
+   * Lines the title may wrap to. One for a label; more for a row whose title
+   * is a sentence, such as a headline, which cut short says nothing.
+   */
+  titleLines?: number
   /** Second line: a current value, a count, a time. */
   subtitle?: string
   /** Leading slot — an Icon, an Avatar, a dish image. */
@@ -34,6 +39,7 @@ export type ListRowProps = {
  */
 export function ListRow({
   title,
+  titleLines = 1,
   subtitle,
   leading,
   trailing,
@@ -57,7 +63,7 @@ export function ListRow({
     >
       {leading}
       <View className="flex-1 gap-0.5">
-        <Text variant="bodyStrong" numberOfLines={1}>
+        <Text variant="bodyStrong" numberOfLines={titleLines}>
           {title}
         </Text>
         {subtitle ? (

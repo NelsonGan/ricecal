@@ -779,6 +779,7 @@ export type Database = {
           review_reason: string | null
           review_status: Database['public']['Enums']['recipe_review']
           revision: number
+          seen_announcements: string[]
           sex: Database['public']['Enums']['sex'] | null
           social_joined_at: string | null
           target_weight_kg: number | null
@@ -806,6 +807,7 @@ export type Database = {
           review_reason?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           revision?: number
+          seen_announcements?: string[]
           sex?: Database['public']['Enums']['sex'] | null
           social_joined_at?: string | null
           target_weight_kg?: number | null
@@ -833,6 +835,7 @@ export type Database = {
           review_reason?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           revision?: number
+          seen_announcements?: string[]
           sex?: Database['public']['Enums']['sex'] | null
           social_joined_at?: string | null
           target_weight_kg?: number | null
