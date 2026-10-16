@@ -693,61 +693,7 @@ describe('what ships with the catalogue', () => {
       (exercise) =>
         !registry.includes(`'${exercise.id}':`) && !registry.includes(`  ${exercise.id}:`),
     )
-    // Added for parity with Strong while Codex image generation was at its
-    // usage limit, so they show their category's icon for now. This list must
-    // be empty before the Workouts tab ships: draw them, then delete it.
-    // biome-ignore format: one id per line
-    const awaitingArt = [
-      'barbell-lunge',
-      'dumbbell-lunge',
-      'overhead-squat',
-      'single-leg-bridge',
-      'band-squat',
-      'dumbbell-squat',
-      'machine-squat',
-      'barbell-calf-raise',
-      'machine-glute-kickback',
-      'bodyweight-calf-raise',
-      'kettlebell-goblet-squat',
-      'dumbbell-calf-raise',
-      'barbell-hack-squat',
-      'smith-calf-raise',
-      'bodyweight-hip-thrust',
-      'stiff-leg-deadlift',
-      'dumbbell-stiff-leg-deadlift',
-      'zercher-squat',
-      'band-straight-leg-deadlift',
-      'cable-twist',
-      'cross-body-crunch',
-      'machine-crunch',
-      'stability-ball-crunch',
-      'flat-knee-raise',
-      'jackknife-sit-up',
-      'captains-chair-knee-raise',
-      'knees-to-elbows',
-      'oblique-crunch',
-      'reverse-crunch',
-      'reverse-plank',
-      'band-side-bend',
-      'cable-side-bend',
-      'dumbbell-side-bend',
-      'torso-rotation',
-      'clean',
-      'deadlift-high-pull',
-      'hang-clean',
-      'hang-snatch',
-      'jump-shrug',
-      'power-snatch',
-      'press-under',
-      'snatch-pull',
-      'lateral-box-jump',
-      'split-jerk',
-      'sumo-high-pull',
-      'kettlebell-thruster',
-      'band-squat-row',
-      'aerobics',
-    ]
-    expect(missing.map((exercise) => exercise.id).sort()).toEqual([...awaitingArt].sort())
+    expect(missing.map((exercise) => exercise.id)).toEqual([])
   })
 })
 

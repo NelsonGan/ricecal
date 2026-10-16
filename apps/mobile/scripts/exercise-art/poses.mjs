@@ -449,7 +449,7 @@ export const POSES = {
   'cable-reverse-fly':
     'standing between two high cable pulleys with the cables crossed in front, pulling the handles out and back to the sides with straight arms at shoulder height (reverse fly). Rear-3/4 view.',
   'push-press':
-    'standing with an olympic barbell resting on the FRONT of the shoulders, caught in the DIP: knees clearly bent in a short quarter squat, torso upright, about to drive the legs up and push the bar overhead. Side view, so the bent knees and the bar at the shoulders are what reads, not a strict press.',
+    'the DRIVE of a push press, mid-movement: legs just straightened out of a short dip and the heels rising off the floor, the olympic barbell travelling upward and already ABOVE the head by a hand width, arms half bent and pressing, elbows out. Side view. It must not look like a front squat or a clean catch (bar at the shoulders) nor a finished strict press (arms locked, flat feet).',
   'cable-upright-row':
     'standing upright facing a low cable pulley, pulling a straight bar attached to the cable up the front of the body to chest height with elbows high and out to the sides. Front-3/4 view.',
   'dumbbell-upright-row':
@@ -557,7 +557,7 @@ export const POSES = {
   'reverse-crunch':
     'lying on its back with arms flat at the sides, knees bent, curling the hips up off the floor and bringing the knees toward the chest. Side view.',
   'reverse-plank':
-    'facing UP, supported on straight arms with hands under the shoulders and heels on the floor, body in a straight line from shoulders to heels. Side view.',
+    'a REVERSE plank: the person sits with legs straight out in front, then lifts the hips, so the CHEST AND FACE POINT UP AT THE CEILING and the back faces the floor. Supported on straight arms with the hands on the floor BEHIND the hips, fingers toward the feet, and the HEELS on the floor, body a straight line from shoulders to heels. Side view. Not a push-up or a front plank: nobody faces the floor.',
   'band-side-bend':
     'standing upright with one foot on a resistance band, holding the other end in one hand at the side, bending the torso sideways away from the band. Front view.',
   'cable-side-bend':
