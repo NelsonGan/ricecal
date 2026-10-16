@@ -31,6 +31,8 @@ export { estimateKcal } from './energy'
 export { workoutsCsv } from './exportCsv'
 export * from './format'
 export { removeWorkoutFromHealth, syncWorkoutToHealth } from './health'
+export { buildImport, type ImportPlan, type ImportUnits } from './import/build'
+export { type ParsedExport, parseExport } from './import/parse'
 export {
   groupSplit,
   type LibraryExercise,

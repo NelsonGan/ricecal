@@ -394,6 +394,19 @@ export type Events = {
   'Workout Discarded': { sets: number; minutes: number }
   /** A routine was written, by hand or by adding a template. */
   'Routine Saved': { is_new: boolean; exercises: number; from_template: boolean }
+  /**
+   * A Strong or Hevy history was brought in. Counts only: the workouts saved,
+   * the ones already there (the same file imported twice), the ones refused,
+   * and how many of the file's exercises had no catalogue entry and became the
+   * person's own. Whether switchers bring their history is the question.
+   */
+  'Workouts Imported': {
+    source: 'strong' | 'hevy'
+    workouts: number
+    existing: number
+    failed: number
+    custom_exercises: number
+  }
 
   // ── The home screen ──────────────────────────────────────────────────────
   /**
