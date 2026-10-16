@@ -54,8 +54,8 @@ export function publishWatchState(state: WatchState): void {
 }
 
 /**
- * What the watch sent since the last call, oldest first, and the inbox
- * emptied. The native side keeps it in the app's defaults until it is taken,
+ * What the watch sent since the last call, and the inbox emptied: the newest
+ * list of commands it has not seen confirmed, and any traces. The native side keeps it in the app's defaults until it is taken,
  * so a command that woke the app before JS ran is not lost. Anything
  * unreadable is dropped rather than thrown on: the inbox can outlive the build
  * that wrote it.
@@ -74,8 +74,8 @@ export function takeWatchInbox(): WatchInboxItem[] {
 function readItem(value: unknown): WatchInboxItem[] {
   if (typeof value !== 'object' || value === null) return []
   const item = value as Record<string, unknown>
-  if (item.kind === 'command' && isCommand(item.command)) {
-    return [{ kind: 'command', command: item.command }]
+  if (item.kind === 'commands' && Array.isArray(item.commands)) {
+    return [{ kind: 'commands', commands: item.commands.filter(isCommand) }]
   }
   if (item.kind === 'heart' && isTrace(item.trace)) return [{ kind: 'heart', trace: item.trace }]
   return []
@@ -97,7 +97,7 @@ function isCommand(value: unknown): value is WatchCommand {
   if (typeof value !== 'object' || value === null) return false
   const command = value as Record<string, unknown>
   return (
-    typeof command.id === 'string' &&
+    typeof command.seq === 'number' &&
     typeof command.workoutId === 'string' &&
     typeof command.at === 'number' &&
     COMMANDS.has(command.type as WatchCommand['type'])

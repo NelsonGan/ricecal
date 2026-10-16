@@ -1797,12 +1797,12 @@ export type Database = {
       workout_heart_rates: {
         Row: {
           active_kcal: number | null
-          avg_bpm: number
+          avg_bpm: number | null
           bpm: number[]
           created_at: string
           interval_s: number
-          max_bpm: number
-          min_bpm: number
+          max_bpm: number | null
+          min_bpm: number | null
           source: string
           started_at: string
           updated_at: string
@@ -1811,12 +1811,12 @@ export type Database = {
         }
         Insert: {
           active_kcal?: number | null
-          avg_bpm: number
+          avg_bpm?: number | null
           bpm: number[]
           created_at?: string
           interval_s: number
-          max_bpm: number
-          min_bpm: number
+          max_bpm?: number | null
+          min_bpm?: number | null
           source?: string
           started_at: string
           updated_at?: string
@@ -1825,12 +1825,12 @@ export type Database = {
         }
         Update: {
           active_kcal?: number | null
-          avg_bpm?: number
+          avg_bpm?: number | null
           bpm?: number[]
           created_at?: string
           interval_s?: number
-          max_bpm?: number
-          min_bpm?: number
+          max_bpm?: number | null
+          min_bpm?: number | null
           source?: string
           started_at?: string
           updated_at?: string

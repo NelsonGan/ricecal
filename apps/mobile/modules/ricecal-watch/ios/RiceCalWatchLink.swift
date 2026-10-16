@@ -97,6 +97,12 @@ final class RiceCalWatchLink: NSObject, WCSessionDelegate {
     receive(userInfo)
   }
 
+  /// The watch's list of commands, kept by the system while this app was not
+  /// running and handed over now.
+  func session(_ session: WCSession, didReceiveApplicationContext context: [String: Any]) {
+    receive(context)
+  }
+
   /**
    Whether the watch app has ever sent anything. `isWatchAppInstalled` lags
    behind an install from the Watch app, and stays false for a watch app put
@@ -118,15 +124,21 @@ final class RiceCalWatchLink: NSObject, WCSessionDelegate {
     }
     // Commands and traces arrive as JSON text, so nothing in between has to
     // agree with JS about property list types.
-    var items: [String] = []
-    if let command = payload["command"] as? String { items.append(#"{"kind":"command","command":\#(command)}"#) }
-    if let trace = payload["heart"] as? String { items.append(#"{"kind":"heart","trace":\#(trace)}"#) }
-    guard !items.isEmpty else { return }
+    let commands = (payload["pending"] as? String).map { #"{"kind":"commands","commands":\#($0)}"# }
+    let trace = (payload["heart"] as? String).map { #"{"kind":"heart","trace":\#($0)}"# }
+    guard commands != nil || trace != nil else { return }
     lock.lock()
-    let inbox = (defaults.stringArray(forKey: inboxKey) ?? []) + items
+    var inbox = defaults.stringArray(forKey: inboxKey) ?? []
+    if let commands {
+      // The watch sends every command not yet confirmed each time, so its
+      // newest list holds everything an older one did that still matters.
+      inbox.removeAll { $0.hasPrefix(#"{"kind":"commands""#) }
+      inbox.append(commands)
+    }
+    if let trace { inbox.append(trace) }
     // A bound on a queue nobody drains, so it cannot grow without end. JS
     // drains it on every launch, so this is never reached in use.
-    defaults.set(Array(inbox.suffix(500)), forKey: inboxKey)
+    defaults.set(Array(inbox.suffix(100)), forKey: inboxKey)
     lock.unlock()
     NotificationCenter.default.post(name: Self.inboxChanged, object: nil)
   }
@@ -160,6 +172,8 @@ final class RiceCalWatchLink: NSObject, WCSessionDelegate {
     error: Error?
   ) {
     NotificationCenter.default.post(name: Self.statusChanged, object: nil)
+    // The watch's last list, if it changed while this app was not running.
+    if !session.receivedApplicationContext.isEmpty { receive(session.receivedApplicationContext) }
     send()
   }
 

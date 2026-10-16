@@ -98,7 +98,7 @@ describe("the watch's commands", () => {
     const live = workout()
     const set = live.exercises[0].sets[1]
     const after = run(live, {
-      id: 'c1',
+      seq: 1,
       workoutId: 'w1',
       at: NOW - 1000,
       type: 'complete',
@@ -121,14 +121,14 @@ describe("the watch's commands", () => {
       totalS: 120,
       exerciseKey: live.exercises[0].key,
     })
-    expect(after?.watch?.applied).toEqual(['c1'])
+    expect(after?.watch?.appliedSeq).toBe(1)
   })
 
   it('rewrites a typed figure the watch changed', () => {
     const live = workout()
     const set = live.exercises[0].sets[0]
     const after = run(live, {
-      id: 'c1',
+      seq: 1,
       workoutId: 'w1',
       at: NOW,
       type: 'complete',
@@ -147,7 +147,7 @@ describe("the watch's commands", () => {
   it('applies a command once however often it arrives', () => {
     const live = workout()
     const command: WatchCommand = {
-      id: 'add',
+      seq: 2,
       workoutId: 'w1',
       at: NOW,
       type: 'addSet',
@@ -162,10 +162,48 @@ describe("the watch's commands", () => {
     ])
   })
 
+  it('applies a list sent again from where it got to', () => {
+    const live = workout()
+    const [first, second] = live.exercises[0].sets
+    const complete = (seq: number, setId: string): WatchCommand => ({
+      seq,
+      workoutId: 'w1',
+      at: NOW,
+      type: 'complete',
+      exerciseKey: live.exercises[0].key,
+      setId,
+      weightKg: 60,
+      reps: 8,
+      durationS: null,
+      distanceM: null,
+      restS: 0,
+    })
+    // The phone got through the first of two before stopping; the watch,
+    // with neither confirmed, sends both again.
+    const partway = run(live, complete(10, first.id))
+    const list = [complete(10, first.id), complete(11, second.id)]
+    const after = list.reduce<LiveWorkout | null>(
+      (current, command) => run(current, command),
+      partway,
+    )
+    expect(after?.exercises[0].sets.map((set) => set.done)).toEqual([true, true])
+    expect(after?.watch?.appliedSeq).toBe(11)
+    // And an older command than the last applied is not applied at all.
+    const undone = run(after, {
+      seq: 9,
+      workoutId: 'w1',
+      at: NOW,
+      type: 'uncomplete',
+      exerciseKey: live.exercises[0].key,
+      setId: first.id,
+    })
+    expect(undone?.exercises[0].sets[0].done).toBe(true)
+  })
+
   it('refuses a set with nothing in it', () => {
     const live = newWorkout({ id: 'w1', name: 'Push', exercises: [{ ...bench, sets: [{}] }] })
     const after = run(live, {
-      id: 'c1',
+      seq: 1,
       workoutId: 'w1',
       at: NOW,
       type: 'complete',
@@ -178,12 +216,12 @@ describe("the watch's commands", () => {
       restS: 90,
     })
     expect(after?.exercises[0].sets[0].done).toBe(false)
-    expect(after?.watch?.applied).toEqual(['c1'])
+    expect(after?.watch?.appliedSeq).toBe(1)
   })
 
   it('starts a workout under the watch’s own ids', () => {
     const started = run(null, {
-      id: 's1',
+      seq: 1,
       workoutId: 'w9',
       at: NOW + 5000,
       type: 'start',
@@ -212,13 +250,13 @@ describe("the watch's commands", () => {
     })
     expect(started).toMatchObject({ id: 'w9', routineId: 'r1', startedAt: NOW })
     expect(started?.exercises[0]).toMatchObject({ key: 'k1', sets: [{ id: 's-a', reps: 5 }] })
-    expect(started?.watch).toEqual({ recorded: false, applied: ['s1'] })
+    expect(started?.watch).toEqual({ recorded: false, appliedSeq: 1 })
   })
 
   it('does not replace a workout already running, nor bring back one that ended', () => {
     const live = workout()
     const start: WatchCommand = {
-      id: 's1',
+      seq: 1,
       workoutId: 'w2',
       at: NOW,
       type: 'start',
@@ -232,11 +270,24 @@ describe("the watch's commands", () => {
     ).toEqual({ kind: 'ignore' })
   })
 
+  it('does not start a workout from a press made long ago', () => {
+    const late: WatchCommand = {
+      seq: 1,
+      workoutId: 'w3',
+      at: NOW - 13 * 60 * 60 * 1000,
+      type: 'start',
+      routineId: null,
+      name: 'Push',
+      exercises: [],
+    }
+    expect(applyWatchCommand(null, late, { now: NOW, ended: [] })).toEqual({ kind: 'ignore' })
+  })
+
   it('ignores a command for another workout', () => {
     expect(
       applyWatchCommand(
         workout(),
-        { id: 'x', workoutId: 'other', at: NOW, type: 'restSkip' },
+        { seq: 1, workoutId: 'other', at: NOW, type: 'restSkip' },
         {
           now: NOW,
           ended: [],
@@ -246,7 +297,7 @@ describe("the watch's commands", () => {
   })
 
   it('marks the workout as recorded, which keeps the phone from saving its own Health copy', () => {
-    const after = run(workout(), { id: 'r', workoutId: 'w1', at: NOW, type: 'recording' })
+    const after = run(workout(), { seq: 1, workoutId: 'w1', at: NOW, type: 'recording' })
     expect(after?.watch?.recorded).toBe(true)
     // The flag is the phone's own and never reaches the server.
     expect(
@@ -259,13 +310,13 @@ describe("the watch's commands", () => {
     expect(
       applyWatchCommand(
         live,
-        { id: 'f', workoutId: 'w1', at: NOW, type: 'finish', endedAt: NOW + 60_000 },
+        { seq: 1, workoutId: 'w1', at: NOW, type: 'finish', endedAt: NOW + 60_000 },
         {
           now: NOW,
           ended: [],
         },
       ),
-    ).toEqual({ kind: 'finish', endedAt: NOW })
+    ).toEqual({ kind: 'finish', seq: 1, endedAt: NOW })
   })
 })
 

@@ -4209,39 +4209,50 @@ the phone, PREVIOUS column, records and all. A second copy of the workout living
 on the watch would have needed merging, and every rule in "The set pad" written
 twice in two languages.
 
-- **Every command has an id, and the workout remembers the ones it applied**
-  (`watch.applied`, the newest 64). A command that arrives twice is applied once,
-  and the watch draws the phone's copy with the presses it has not seen
-  confirmed laid over it (`WatchStore.project`), so a tap shows at once and
-  holds while the phone is out of reach. A command for a workout that has ended
-  is dropped, so a late one cannot bring it back.
+- **Commands are numbered, and sent as one list.** Each press gets a `seq` that
+  rises with every press and across relaunches (it starts from the clock), and
+  the watch always sends every command the phone has not confirmed, in order,
+  never one at a time. The phone applies a list in that order from where the
+  workout got to (`watch.appliedSeq`) and says so in its next state, and the
+  watch drops what that covers. Sent singly over two paths of different speed,
+  a finish overtook the three sets before it and the phone discarded a workout
+  it thought was empty; a command the phone took from its inbox and lost before
+  applying was never sent again. Now anything not confirmed goes again with the
+  next list. Meanwhile the watch draws the phone's copy with its unconfirmed
+  presses laid over it (`WatchStore.project`), so a tap shows at once and holds
+  while the phone is out of reach. A command for a workout that has ended is
+  dropped, so a late one cannot bring it back.
 - **A workout started on the watch is named by the watch**: its id, its
   exercises' keys and its sets' ids, which `ExercisePlan.key` and `SetPlan.id`
   carry into the document. The commands that follow name those same sets before
   the phone has ever heard of them. A start that arrives while another workout
   runs on the phone is dropped, and the watch follows the phone's workout.
-- **Two paths each way.** Phone to watch: the application context, which the
-  system keeps and hands over whenever the watch app next runs, and a message
-  beside it while the watch is reachable. Watch to phone: a message with a reply
-  while the phone is reachable, which wakes the phone app in the background if it
-  has to, and `transferUserInfo` otherwise, which the system queues until it can
-  deliver. The phone puts whatever arrives into an inbox in its own defaults and
-  JS drains it on launch, on returning to the foreground and on the module's
+- **Two paths each way, and the same one for both directions.** The application
+  context, which the system keeps, newest replacing the last, and hands over
+  whenever the other app next runs; and a message beside it while the other side
+  is reachable, which arrives at once and wakes the phone app in the background
+  if it has to. The phone sends its state that way and the watch its list of
+  commands. The phone keeps whatever arrives in an inbox in its own defaults
+  (the newest command list only, since it holds everything an older one did),
+  and JS drains it on launch, on returning to the foreground and on the module's
   event. The session is activated by an app delegate subscriber, not by the
-  module, so a command that launched the app before any JS ran is kept.
-- **The queue is slow.** `transferUserInfo` runs at background priority: on a
-  simulator a heart rate trace sent only that way had not arrived two minutes
-  after the save. Commands and traces go by message whenever the phone is
-  reachable and fall back to the queue.
+  module, so a list that launched the app before any JS ran is kept.
+- **Traces are sent until the phone says it has them** (`heard` in the state):
+  by message when the phone is reachable, by `transferUserInfo` otherwise. That
+  queue runs at background priority: on a simulator a trace sent only that way
+  had not arrived two minutes after the save.
 - **`isWatchAppInstalled` lags.** It stays false for a while after the Watch app
   installs the watch app, and for good on a simulator where the watch app was
   installed directly, and the phone published nothing to a watch that was
   plainly running. The phone counts the app installed once it has heard from it.
 - **The phone tells the watch how each workout ended** (`recordEndedWorkout`,
-  the last ten, in MMKV), because a workout gone from the phone could have been
-  saved or thrown away and the watch has to save or discard its session
-  accordingly. The finish screen and `discardWorkout` are the only two ways a
-  workout leaves the phone, and both record it.
+  the last ten, in MMKV), and when: the end it was saved with, which the finish
+  screen can have moved back hours, not the moment of saving. A workout gone
+  from the phone could have been saved or thrown away, and the watch saves or
+  discards its session accordingly. The finish screen and `discardWorkout` are
+  the only two ways a workout leaves the phone, and both record it. Signing out
+  tells the watch too (`WatchSignOut`, at the root): it stops showing the
+  account's routines and throws away a recording in progress.
 
 **Finishing on the watch saves on the phone**, without the finish screen: the
 sets that were completed, the name the workout has, no question about the
@@ -4276,7 +4287,8 @@ the watch measured (`watch.kcal`) instead of replacing it with an estimate.
   rather than left draining the battery; and one that began well before the
   running workout is discarded rather than taken over. Adopted, a session left
   from earlier put half an hour of another workout's pulse at the head of a
-  two-minute one.
+  two-minute one. Nothing starts a new session while recovery is still being
+  asked about, since HealthKit allows one and the second start lost the first.
 - **Health access is asked for through the phone.** A watch app that is not
   independent of its iPhone app can have its request shown on the iPhone, and
   iOS then asks the phone app's delegate to hand it on
@@ -4295,14 +4307,19 @@ the watch measured (`watch.kcal`) instead of replacing it with an estimate.
   seconds from the start, the mean of the readings inside each step, null where
   there were none (off the wrist, the sensor between readings). It reads Health's
   own record of the window, which survives the app being relaunched, and falls
-  back to what it saw live.
+  back to what it saw live. It is sent even with no reading in it at all (heart
+  rate not allowed, a loose strap): the row is how the phone knows the watch
+  recorded the workout, and carries its Health copy and its energy.
 - `workout_heart_rates` keeps one row per workout, beside it rather than inside
   `save_workout`, because the trace usually reaches the phone after the save and
   an edit rewrites the workout whole. `save_workout_heart_rate` works out the
-  average, maximum and minimum itself, sets the workout's `health_workout_id` to
-  the watch's copy when it had none, and its `kcal` to the energy the watch
-  measured, which is what Health holds and so what reaches the budget. Clients
-  can read the table and write it only through the function.
+  average, maximum and minimum itself (null with no readings), sets the
+  workout's `health_workout_id` to the watch's copy when it had none, and its
+  `kcal` to the energy the watch measured, which is what Health holds and so what
+  reaches the budget. Clients can read the table and write it only through the
+  function. Once a workout has a trace, `save_workout` keeps those two as they
+  are: a save retried after the trace landed, or an older build editing the
+  workout, would otherwise put the phone's estimate and no Health copy back.
 - **A trace waits for its workout** (`useHeartRateOutbox`). The function answers
   `missing` rather than failing while the workout has not been saved, which is
   common: a workout finished on the watch sends the finish and the trace
@@ -4336,8 +4353,11 @@ the chart) can then be tried there. "Driving the Apple Watch app" in `AGENTS.md`
 has the rest.
 
 **Releasing it.** Additive: one migration (`20261016130531_workout_heart_rates.sql`)
-adds the table and the function and nothing reads them but this app; an older
-binary never sends a trace, and its workouts are untouched. The watch app is
+adds the table and the function, and `save_workout` now keeps a watch-recorded
+workout's energy and Health copy, which no older binary has a way to make. An
+older binary never sends a trace. One thing it can still do: edited on a second
+phone running 1.0, a watch-recorded workout gets a phone Health copy of its own
+beside the watch's, because that build knows nothing of the watch. The watch app is
 embedded in the phone app's binary, so the two always arrive together, and both
 sides read every field of the other's messages as optional. Before the first EAS
 build with it, the watch app's bundle id (`<app id>.watchkitapp`) needs creating

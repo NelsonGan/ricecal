@@ -206,7 +206,7 @@ export default function FinishWorkoutScreen() {
           .catch(() => toast.show({ title: t('workouts:finish.routineFailed'), tone: 'error' }))
       }
       trackWorkoutFinished(document, result)
-      end(true)
+      end(true, endedAt)
       toast.show({
         title: t('workouts:finish.saved'),
         // A failure is said; a success is not, since saving to Health is the

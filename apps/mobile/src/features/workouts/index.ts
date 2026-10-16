@@ -67,7 +67,7 @@ export {
   useWorkoutHasExercise,
 } from './store'
 export { TEMPLATE_GROUPS, TEMPLATES, templateById, templatePlans } from './templates'
-export { WatchSync } from './WatchSync'
+export { WatchSignOut, WatchSync } from './WatchSync'
 export { WheelSheet } from './WheelSheet'
 export { WorkoutCalendar } from './WorkoutCalendar'
 export { WorkoutEditor } from './WorkoutEditor'

@@ -75,16 +75,14 @@ export type LiveWorkout = {
   /**
    * The Apple Watch's part in it. `recorded` is set once the watch has begun
    * a workout session for it, which saves its own copy to Apple Health, so the
-   * phone writes none beside it. `applied` names the watch's commands already
-   * applied, so one delivered twice is applied once (`features/watch`).
-   * Absent on every workout the watch never touched. `kcal` is the energy the
-   * watch measured, carried by an edit so it is not replaced by an estimate.
+   * phone writes none beside it. `appliedSeq` is the last of the watch's
+   * commands applied, so a list sent again is applied from where it got to
+   * (`watch.ts`). `kcal` is the energy the watch measured, carried by an edit
+   * so it is not replaced by an estimate. Absent on every workout the watch
+   * never touched.
    */
-  watch?: { recorded: boolean; applied: string[]; kcal?: number | null }
+  watch?: { recorded: boolean; appliedSeq: number; kcal?: number | null }
 }
-
-/** How many applied watch commands a workout remembers. */
-export const WATCH_APPLIED_KEPT = 64
 
 let counter = 0
 /** Local keys for list rows. Not ids anything outside this document sees. */
@@ -221,8 +219,8 @@ export type Action =
   | { type: 'staleAnswered' }
   /** The watch began recording this workout. */
   | { type: 'watchRecorded' }
-  /** A command from the watch has been applied. */
-  | { type: 'watchApplied'; id: string }
+  /** The watch's commands up to this one have been applied. */
+  | { type: 'watchApplied'; seq: number }
 
 const mapExercise = (
   workout: LiveWorkout,
@@ -340,21 +338,16 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
         }
       })
     case 'watchRecorded':
-      return { ...workout, watch: { applied: [], ...workout.watch, recorded: true } }
-    case 'watchApplied': {
-      const applied = workout.watch?.applied ?? []
-      if (applied.includes(action.id)) return workout
+      return { ...workout, watch: { appliedSeq: 0, ...workout.watch, recorded: true } }
+    case 'watchApplied':
       return {
         ...workout,
-        // The newest few are enough: the watch only resends what it has not
-        // yet seen acknowledged, which is never many commands back.
         watch: {
           ...workout.watch,
           recorded: workout.watch?.recorded ?? false,
-          applied: [...applied, action.id].slice(-WATCH_APPLIED_KEPT),
+          appliedSeq: Math.max(workout.watch?.appliedSeq ?? 0, action.seq),
         },
       }
-    }
     case 'removeSet':
       return mapExercise(workout, action.key, (exercise) => ({
         ...exercise,

@@ -161,6 +161,7 @@ export { useCurrentWeight, useDeleteWeighIn, useLogWeight, useWeighIns } from '.
 export {
   type HeartTrace,
   queueHeartTrace,
+  useHeardTraces,
   useHeartRateOutbox,
   type WorkoutHeartRate,
 } from './workout-heart'

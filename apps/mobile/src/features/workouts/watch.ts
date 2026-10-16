@@ -38,6 +38,14 @@ type Previous = Record<string, LastSet[]> | undefined
 /** The most routines the watch is sent: its list is a few rows on a small screen. */
 export const WATCH_ROUTINES = 12
 
+/**
+ * A start that arrives this long after it was pressed is not acted on. The
+ * phone remembers only its last ten endings, and a start the system held back
+ * for hours, from a workout long finished, otherwise came back as a workout
+ * running on the phone that nobody had started.
+ */
+const START_LATE_MS = 12 * 60 * 60 * 1000
+
 const FIGURES = ['weightKg', 'reps', 'durationS', 'distanceM'] as const
 type Figure = (typeof FIGURES)[number]
 
@@ -102,7 +110,7 @@ export function watchWorkout(
     startedAt: workout.startedAt,
     rest: workout.rest ? { endsAt: workout.rest.endsAt, totalS: workout.rest.totalS } : null,
     recorded: workout.watch?.recorded ?? false,
-    applied: workout.watch?.applied ?? [],
+    appliedSeq: workout.watch?.appliedSeq ?? 0,
     exercises: watchExercises(workout, previous, defaultRestS),
   }
 }
@@ -146,7 +154,7 @@ export type WatchOutcome =
   | { kind: 'ignore' }
   | { kind: 'actions'; actions: Action[] }
   | { kind: 'start'; workout: LiveWorkout }
-  | { kind: 'finish'; endedAt: number }
+  | { kind: 'finish'; seq: number; endedAt: number }
   | { kind: 'discard' }
 
 const IGNORE: WatchOutcome = { kind: 'ignore' }
@@ -158,11 +166,12 @@ const figure = (value: unknown): number | null =>
 /**
  * What a command from the watch does to the running workout.
  *
- * Commands are applied once: the workout remembers the ids it has applied, and
- * a command for a workout that has ended, or that is not the one running, is
- * dropped. A start is the exception, since it makes the workout; one that
- * arrives while another workout runs is dropped too, and the watch, seeing
- * the phone's workout in the next state, follows that one instead.
+ * The watch sends every command the phone has not confirmed, in order, each
+ * time; the workout remembers how far it got (`appliedSeq`), so each is applied
+ * once whatever is sent again. A command for a workout that has ended, or that
+ * is not the one running, is dropped. A start is the exception, since it makes
+ * the workout; one that arrives while another workout runs is dropped too, and
+ * the watch, seeing the phone's workout in the next state, follows that one.
  */
 export function applyWatchCommand(
   workout: LiveWorkout | null,
@@ -172,7 +181,7 @@ export function applyWatchCommand(
   if (ended.some((entry) => entry.id === command.workoutId)) return IGNORE
 
   if (command.type === 'start') {
-    if (workout) return IGNORE
+    if (workout || now - command.at > START_LATE_MS) return IGNORE
     const started = newWorkout({
       id: command.workoutId,
       name: command.name.trim() || 'Workout',
@@ -198,13 +207,13 @@ export function applyWatchCommand(
     })
     return {
       kind: 'start',
-      workout: { ...started, watch: { recorded: false, applied: [command.id] } },
+      workout: { ...started, watch: { recorded: false, appliedSeq: command.seq } },
     }
   }
 
   if (!workout || workout.id !== command.workoutId) return IGNORE
-  if (workout.watch?.applied.includes(command.id)) return IGNORE
-  const applied: Action = { type: 'watchApplied', id: command.id }
+  if (command.seq <= (workout.watch?.appliedSeq ?? 0)) return IGNORE
+  const applied: Action = { type: 'watchApplied', seq: command.seq }
   const exerciseOf = (key: string) => workout.exercises.find((exercise) => exercise.key === key)
 
   switch (command.type) {
@@ -286,25 +295,10 @@ export function applyWatchCommand(
     case 'finish':
       return {
         kind: 'finish',
+        seq: command.seq,
         endedAt: Math.min(now, Math.max(workout.startedAt, command.endedAt)),
       }
     case 'discard':
       return { kind: 'discard' }
-  }
-}
-
-/**
- * The workout as the watch's finish saves it: only the sets that were done.
- * The phone's finish screen asks about sets with numbers that were never
- * completed; a watch has no room for that question, and a set that was not
- * completed on the wrist was not lifted.
- */
-export function doneOnly(workout: LiveWorkout): LiveWorkout {
-  return {
-    ...workout,
-    exercises: workout.exercises.map((exercise) => ({
-      ...exercise,
-      sets: exercise.sets.filter((set) => set.done),
-    })),
   }
 }

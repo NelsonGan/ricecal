@@ -30,9 +30,10 @@ export type WorkoutHeartRate = {
   intervalS: number
   /** One reading every `intervalS` seconds, null where the watch read nothing. */
   bpm: (number | null)[]
-  avgBpm: number
-  maxBpm: number
-  minBpm: number
+  /** Null when the watch recorded the workout but read no pulse. */
+  avgBpm: number | null
+  maxBpm: number | null
+  minBpm: number | null
   activeKcal: number | null
 }
 
@@ -97,17 +98,36 @@ function write(userId: string, waiting: Waiting[]): void {
   store.set(keyFor(userId), waiting.length ? waiting : null)
 }
 
+/**
+ * The workouts whose trace this phone has received, the newest few, which the
+ * watch is told so it stops sending them. A trace is sent again until it is
+ * on this list, because the phone can lose one it had not yet stored.
+ */
+const HEARD_KEPT = 20
+const NONE_HEARD: string[] = []
+const heard = createJsonStore<string[]>('ricecal-heart-heard', (stored) =>
+  Array.isArray(stored) ? (stored as string[]) : NONE_HEARD,
+)
+const heardKey = (userId: string) => `heard:${userId}`
+
+export function useHeardTraces(userId: string | null | undefined): string[] {
+  return heard.useValue(heardKey(userId ?? ''), (list) => (userId ? list : NONE_HEARD))
+}
+
 /** Keep a trace until the server has it, replacing an earlier one for the same workout. */
 export function queueHeartTrace(userId: string, trace: HeartTrace, now = Date.now()): void {
   write(userId, [
     ...getHeartOutbox(userId).filter((entry) => entry.trace.workoutId !== trace.workoutId),
     { trace, receivedAt: now },
   ])
+  const list = heard.get(heardKey(userId)).filter((id) => id !== trace.workoutId)
+  heard.set(heardKey(userId), [...list, trace.workoutId].slice(-HEARD_KEPT))
   flushHeart?.()
 }
 
 export function forgetHeartOutbox(userId: string): void {
   write(userId, [])
+  heard.set(heardKey(userId), null)
 }
 
 /** Whether a reply is final for this trace: saved, or refused for what it says. */
