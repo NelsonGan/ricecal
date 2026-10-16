@@ -102,10 +102,6 @@ export const zhHant = {
     emptyFollowing: '追蹤他人，或從日記中分享一餐。',
     emptyPeople: '找不到用戶',
     emptyPosts: '還沒有貼文',
-    foodTab: '食物',
-    workoutsTab: '訓練',
-    emptyMeals: '還沒有分享食物',
-    emptyWorkouts: '還沒有分享訓練',
     newWorkoutPost: '分享訓練',
     captionWorkoutPlaceholder: '說說你的訓練',
     shareWorkoutHint:
@@ -1843,7 +1839,6 @@ export const zhHant = {
       rest: '休息 {{time}}',
       next: '下一個',
       completeSet: '完成本組',
-      plates: '槓片',
       exerciseNotes: '新增備註',
       kind: {
         normal: '正式組',
@@ -1862,7 +1857,6 @@ export const zhHant = {
         reorder: '調整動作順序',
         unsuperset: '移出超級組',
         rest: '休息計時',
-        plates: '槓片計算機',
         remove: '移除動作',
         details: '歷史和紀錄',
       },
@@ -2070,10 +2064,6 @@ export const zhHant = {
       title: '匯入訓練',
       fromStrong: '從 Strong 匯入',
       fromHevy: '從 Hevy 匯入',
-      intro: '在 Strong 或 Hevy 中將訓練匯出為 CSV，再在這裡選擇該檔案。',
-      introStrong: '在 Strong 中將訓練匯出為 CSV，再在這裡選擇該檔案。',
-      introHevy: '在 Hevy 中將訓練匯出為 CSV，再在這裡選擇該檔案。',
-      choose: '選擇 CSV 檔案',
       another: '選擇其他檔案',
       unknown: '這不是 Strong 或 Hevy 的匯出檔案。',
       empty: '此檔案中沒有訓練。',
@@ -2098,17 +2088,6 @@ export const zhHant = {
       notSaved_other: '{{count}} 次無法儲存',
       stopped: '匯入已停止。請檢查網路後重試。',
       nothingNew: '此檔案中沒有新訓練',
-    },
-
-    plates: {
-      title: '槓片計算機',
-      target: '目標重量',
-      bar: '槓鈴桿',
-      perSide: '每邊',
-      none: '空槓就好',
-      unreachable: '用標準槓片湊不出這個重量。',
-      closest: '最接近：{{weight}}',
-      closestOr: '最接近：{{weight}} 或 {{other}}',
     },
 
     warmup: {

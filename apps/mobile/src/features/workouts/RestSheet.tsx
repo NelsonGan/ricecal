@@ -93,6 +93,7 @@ export function RestSheet({
 
   return (
     <Sheet
+      placement="center"
       visible={visible}
       onClose={onClose}
       closeLabel={t('common:action.close')}

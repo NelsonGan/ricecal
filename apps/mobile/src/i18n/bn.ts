@@ -96,10 +96,6 @@ export const bn = {
     emptyFollowing: 'মানুষকে অনুসরণ করুন বা ডায়েরি থেকে খাবার শেয়ার করুন।',
     emptyPeople: 'কাউকে পাওয়া যায়নি',
     emptyPosts: 'এখনও কোনো পোস্ট নেই',
-    foodTab: 'খাবার',
-    workoutsTab: 'ওয়ার্কআউট',
-    emptyMeals: 'এখনও কোনো খাবার শেয়ার করা হয়নি',
-    emptyWorkouts: 'এখনও কোনো ওয়ার্কআউট শেয়ার করা হয়নি',
     newWorkoutPost: 'ওয়ার্কআউট শেয়ার করুন',
     captionWorkoutPlaceholder: 'আপনার ওয়ার্কআউট নিয়ে কিছু বলুন',
     shareWorkoutHint:
@@ -1846,7 +1842,6 @@ export const bn = {
       rest: 'বিশ্রাম {{time}}',
       next: 'পরের',
       completeSet: 'সেট সম্পন্ন',
-      plates: 'প্লেট',
       exerciseNotes: 'নোট যোগ করুন',
       /** A set's type, as the menu offers it. */
       kind: {
@@ -1867,7 +1862,6 @@ export const bn = {
         reorder: 'ব্যায়ামের ক্রম বদলান',
         unsuperset: 'সুপারসেট থেকে সরান',
         rest: 'বিশ্রামের টাইমার',
-        plates: 'প্লেট ক্যালকুলেটর',
         remove: 'ব্যায়াম সরান',
         details: 'ইতিহাস ও রেকর্ড',
       },
@@ -2077,10 +2071,6 @@ export const bn = {
       title: 'ওয়ার্কআউট ইমপোর্ট',
       fromStrong: 'Strong থেকে ইমপোর্ট',
       fromHevy: 'Hevy থেকে ইমপোর্ট',
-      intro: 'Strong বা Hevy-তে আপনার ওয়ার্কআউট CSV হিসেবে এক্সপোর্ট করুন, তারপর ফাইলটি এখানে বেছে নিন।',
-      introStrong: 'Strong থেকে আপনার ওয়ার্কআউট CSV হিসেবে এক্সপোর্ট করুন, তারপর ফাইলটি এখানে বেছে নিন।',
-      introHevy: 'Hevy থেকে আপনার ওয়ার্কআউট CSV হিসেবে এক্সপোর্ট করুন, তারপর ফাইলটি এখানে বেছে নিন।',
-      choose: 'CSV ফাইল বেছে নিন',
       another: 'অন্য ফাইল বেছে নিন',
       unknown: 'এটি Strong বা Hevy-এর এক্সপোর্ট নয়।',
       empty: 'এই ফাইলে কোনো ওয়ার্কআউট নেই।',
@@ -2105,17 +2095,6 @@ export const bn = {
       notSaved_other: '{{count}}টি সেভ করা যায়নি',
       stopped: 'ইমপোর্ট থেমে গেছে। সংযোগ দেখে আবার চেষ্টা করুন।',
       nothingNew: 'এই ফাইলে নতুন কিছু নেই',
-    },
-
-    plates: {
-      title: 'প্লেট ক্যালকুলেটর',
-      target: 'লক্ষ্য ওজন',
-      bar: 'বার',
-      perSide: 'প্রতি পাশে',
-      none: 'শুধু বার',
-      unreachable: 'সাধারণ প্লেট দিয়ে এই ওজন হয় না।',
-      closest: 'সবচেয়ে কাছে: {{weight}}',
-      closestOr: 'সবচেয়ে কাছে: {{weight}} বা {{other}}',
     },
 
     warmup: {

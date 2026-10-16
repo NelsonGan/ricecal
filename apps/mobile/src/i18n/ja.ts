@@ -98,10 +98,6 @@ export const ja = {
     emptyFollowing: '誰かをフォローするか、日記から食事をシェアしましょう。',
     emptyPeople: 'ユーザーが見つかりません',
     emptyPosts: 'まだ投稿がありません',
-    foodTab: '食事',
-    workoutsTab: 'ワークアウト',
-    emptyMeals: 'まだ共有した食事はありません',
-    emptyWorkouts: 'まだ共有したワークアウトはありません',
     newWorkoutPost: 'ワークアウトを共有',
     captionWorkoutPlaceholder: 'ワークアウトについてひとこと',
     shareWorkoutHint:
@@ -1862,7 +1858,6 @@ export const ja = {
       rest: '休憩 {{time}}',
       next: '次へ',
       completeSet: 'セットを完了',
-      plates: 'プレート',
       exerciseNotes: 'メモを追加',
       kind: {
         normal: 'メインセット',
@@ -1881,7 +1876,6 @@ export const ja = {
         reorder: '種目の並べ替え',
         unsuperset: 'スーパーセットを解除',
         rest: '休憩タイマー',
-        plates: 'プレート計算',
         remove: '種目を削除',
         details: '履歴と自己ベスト',
       },
@@ -2090,10 +2084,6 @@ export const ja = {
       title: 'ワークアウトを読み込む',
       fromStrong: 'Strongから読み込む',
       fromHevy: 'Hevyから読み込む',
-      intro: 'StrongまたはHevyでワークアウトをCSVに書き出し、ここでそのファイルを選んでください。',
-      introStrong: 'StrongでワークアウトをCSVに書き出し、ここでそのファイルを選んでください。',
-      introHevy: 'HevyでワークアウトをCSVに書き出し、ここでそのファイルを選んでください。',
-      choose: 'CSVファイルを選ぶ',
       another: '別のファイルを選ぶ',
       unknown: 'StrongまたはHevyの書き出しファイルではありません。',
       empty: 'このファイルにワークアウトがありません。',
@@ -2118,17 +2108,6 @@ export const ja = {
       notSaved_other: '{{count}}件は保存できませんでした',
       stopped: '読み込みが止まりました。接続を確認してもう一度お試しください。',
       nothingNew: 'このファイルに新しいワークアウトはありません',
-    },
-
-    plates: {
-      title: 'プレート計算',
-      target: '目標重量',
-      bar: 'バー',
-      perSide: '片側',
-      none: 'バーのみ',
-      unreachable: '標準のプレートでは組めません。',
-      closest: '最も近い重量：{{weight}}',
-      closestOr: '最も近い重量：{{weight}} または {{other}}',
     },
 
     warmup: {

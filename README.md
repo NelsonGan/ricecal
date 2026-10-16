@@ -2679,9 +2679,11 @@ failed automatic post (budget spent, profile under review) never fails the save.
 A workout can also be shared by hand from its page, which opens the composer
 with the workout's preview, or edited there once posted.
 
-The profile has two tabs, Food (the grid) and Workouts (the shared workouts as
-cards, under their count, time and volume from `social_workout_stats`, over what
-the viewer can see).
+A profile is one grid, meals and workouts together and newest first. A whole
+workout card does not fit a half-width tile, so a workout there is the first
+exercise's drawing with its name and length (`WorkoutTile`), and opens its post
+for the full card. The header's post count adds the workouts the viewer can see
+(`social_workout_stats`) to the meal count the server keeps.
 
 There is at most one post per source entry, so a retried publish returns that
 post; the entry is the retry key and a post carries no request token. A client
@@ -3737,8 +3739,8 @@ What a user can do: start an empty workout, a routine, a template or a repeat of
 an old one; log a past workout after the fact. The
 logger shows each exercise's last numbers in a PREVIOUS column, takes warm-up,
 drop and failure sets, an RPE per set, supersets, notes, replacing and
-reordering, a rest timer per exercise, a plate calculator and generated warm-up
-sets, and marks a record the moment a set beats one. A saved workout can be
+reordering, a rest timer per exercise and generated warm-up sets, and marks a
+record the moment a set beats one. A saved workout can be
 opened, edited, deleted, repeated, shared as text or saved as a routine. Every
 exercise has a page with its history, charts, bests, rep records and muscle
 split. Weekly bars, a 30-day muscle split, a calendar and the personal-records
@@ -3813,6 +3815,10 @@ no-gym, and short focused sessions. They give reps and times, never weights: a
 weight in a template is somebody else's, and the PREVIOUS column already shows
 the user's own. Adding one to "My routines" copies it into `workout_routines`
 with `template_id` set, so the template page can say it is already there.
+
+**The routine editor is the plan and nothing else.** Its page is the exercise
+editor; the name and the note are asked for on Save, in a card over it, so a
+routine is built first and named once it is something to name.
 
 ### A workout lives on the phone until it is finished
 
@@ -4176,7 +4182,13 @@ answers stacked as full-width buttons in reach of either thumb, Cancel last. At
 the foot of a bottom sheet the answers sat at the far edge and read as a menu.
 Deleting a workout, a routine or an exercise, removing an exercise from the
 logger, discarding a queued workout and "Leave without saving?" are dialogs too.
-Lists of things to do to an item (an exercise's menu, a set's type) stay sheets.
+Lists of things to do to an item (an exercise's menu, a set's type) are
+`ActionSheet`s, and like every other modal the workout screens open (the rest
+timer, reordering, the start and end times, the library's filters, the reminder
+time, a routine's name) they float in the middle of the screen as a card:
+`Sheet` with `placement="center"`, which keeps a sheet's keyboard, number pad,
+toast and Android back handling and drops the drag handle for a tap on the
+scrim.
 A `Dialog` answer runs once the modal has gone, for the same reason as
 `ActionSheet`'s, except one marked `waits`: a delete runs while the dialog stays
 open with a spinner, and a failure keeps it open, since closing would say the
@@ -4246,7 +4258,7 @@ toast. Cancel on the dialog is "not yet". Built-in templates started directly ar
 not linked to a routine, so they are not asked about; "Save as routine" on the
 saved workout is the way to keep one changed.
 
-**Exercises reorder by dragging** in a sheet of short rows, opened from an
+**Exercises reorder by dragging** in a card of short rows, opened from an
 exercise's menu or by long-pressing its name. Cards are too tall to drag past
 one another without the drag turning into a scroll, which is why Hevy and
 Strong collapse them too. The rows are a fixed height so the arithmetic of
@@ -4304,7 +4316,7 @@ headline; each selectable bar carries its own VoiceOver name.
 The feature list was taken from both apps and checked off against them before
 release. In: empty, routine, template and repeat starts; the PREVIOUS column;
 warm-up, drop and failure sets; RPE; supersets; per-exercise rest with ±15 s and
-skip; plate calculator and warm-up sets; live records; rep records and charts
+skip; warm-up sets; live records; rep records and charts
 per exercise; muscle split; weekly bars, calendar and week streak; the Live
 Activity with its buttons; Apple Health; past workouts and late finishes;
 reminders; custom exercises; kg and lb; keeping the screen on; sharing a workout;
@@ -4317,6 +4329,9 @@ Left out on purpose:
 - **Body measurements.** Weight is already logged on Today; tape measurements
   belong there, not in a training log.
 - **A watch app.** A project of its own, not a gap in this one.
+- **A plate calculator.** It was built and taken out: loading a bar is
+  arithmetic people do at the rack without opening a sheet, and it put a key on
+  the number pad of every barbell's weight that nobody pressed.
 - **Sports.** A game has no sets, reps or weights, so logging one here was a
   timer with a picture; the health store already has it from a watch, and it
   reaches the budget from there.
@@ -4341,10 +4356,13 @@ and writes the file there.
 
 Settings has a row for each app, Import from Strong and Import from Hevy, each
 with that app's own icon (from Brandfetch, committed under
-`assets/brands/apps/`, `features/workouts/import/apps.ts`). The row names the
-screen and says where that app keeps its export; the file still decides the
-format, so the other app's export picked by mistake imports all the same. Pick
-the CSV, see what is in it, import. Imported workouts are never posted to the
+`assets/brands/apps/`, `features/workouts/import/apps.ts`). Tapping one opens
+the file picker straight away (`import/pick.ts`), and the import screen opens
+on the file already read, at its preview: a screen whose only content was a
+button to open the picker was one tap too many. A file that cannot be read says
+why in a toast and stays on settings. The file decides the format, so the other
+app's export picked by mistake imports all the same. See what is in it,
+import. Imported workouts are never posted to the
 feed. `features/workouts/import/` is pure and tested from
 strings; `data/workout-import.ts` does the saving.
 
@@ -6915,13 +6933,15 @@ or the same order, for any screen that blocks leaving and then leaves itself.
 
 ### Sheets and the keyboard
 
-**A sheet with a text field in it is `fullHeight`. Every time.** This has been
-got wrong repeatedly, so it is a rule rather than a judgement call. A capped
-panel is padded up off the bottom edge by `KeyboardAvoidingView` when the
+**A bottom sheet with a text field in it is `fullHeight`. Every time.** This
+has been got wrong repeatedly, so it is a rule rather than a judgement call. A
+capped panel is padded up off the bottom edge by `KeyboardAvoidingView` when the
 keyboard opens, and the strip left behind shows the scrim through the curve of
 the keyboard's top corners: the sheet stops reading as attached to the bottom of
 the screen. `fullHeight` keeps the panel where it is and lets the scroll view
-inset its own content instead.
+inset its own content instead. A `placement="center"` card is the exception: it
+floats, so being lifted above the keyboard is what it should do, and its footer
+rises with it. The routine editor's name and note card is one.
 
 Two corollaries, both learnt the hard way. Such a sheet has **no `footer`**: a
 footer sits outside the scroll view, so at full height it lands at the bottom of

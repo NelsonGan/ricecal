@@ -97,10 +97,6 @@ export const hi = {
     emptyFollowing: 'लोगों को फ़ॉलो करें या डायरी से भोजन साझा करें।',
     emptyPeople: 'कोई नहीं मिला',
     emptyPosts: 'अभी कोई पोस्ट नहीं',
-    foodTab: 'खाना',
-    workoutsTab: 'वर्कआउट',
-    emptyMeals: 'अभी कोई खाना शेयर नहीं किया गया',
-    emptyWorkouts: 'अभी कोई वर्कआउट शेयर नहीं किया गया',
     newWorkoutPost: 'वर्कआउट शेयर करें',
     captionWorkoutPlaceholder: 'अपने वर्कआउट के बारे में कुछ कहें',
     shareWorkoutHint:
@@ -1847,7 +1843,6 @@ export const hi = {
       rest: 'आराम {{time}}',
       next: 'अगला',
       completeSet: 'सेट पूरा करें',
-      plates: 'प्लेट्स',
       exerciseNotes: 'नोट जोड़ें',
       kind: {
         normal: 'वर्किंग सेट',
@@ -1866,7 +1861,6 @@ export const hi = {
         reorder: 'व्यायाम का क्रम बदलें',
         unsuperset: 'सुपरसेट से हटाएं',
         rest: 'आराम टाइमर',
-        plates: 'प्लेट कैलकुलेटर',
         remove: 'एक्सरसाइज़ हटाएं',
         details: 'इतिहास और रिकॉर्ड',
       },
@@ -2074,10 +2068,6 @@ export const hi = {
       title: 'वर्कआउट आयात करें',
       fromStrong: 'Strong से आयात करें',
       fromHevy: 'Hevy से आयात करें',
-      intro: 'Strong या Hevy में अपने वर्कआउट CSV के रूप में निर्यात करें, फिर वह फ़ाइल यहाँ चुनें।',
-      introStrong: 'Strong से अपने वर्कआउट CSV के रूप में निर्यात करें, फिर वह फ़ाइल यहाँ चुनें।',
-      introHevy: 'Hevy से अपने वर्कआउट CSV के रूप में निर्यात करें, फिर वह फ़ाइल यहाँ चुनें।',
-      choose: 'CSV फ़ाइल चुनें',
       another: 'दूसरी फ़ाइल चुनें',
       unknown: 'यह Strong या Hevy की निर्यात फ़ाइल नहीं है।',
       empty: 'इस फ़ाइल में कोई वर्कआउट नहीं है।',
@@ -2102,17 +2092,6 @@ export const hi = {
       notSaved_other: '{{count}} सहेजे नहीं जा सके',
       stopped: 'आयात रुक गया। अपना कनेक्शन जाँचें और फिर से कोशिश करें।',
       nothingNew: 'इस फ़ाइल में कुछ नया नहीं है',
-    },
-
-    plates: {
-      title: 'प्लेट कैलकुलेटर',
-      target: 'लक्ष्य वज़न',
-      bar: 'बार',
-      perSide: 'हर तरफ़',
-      none: 'सिर्फ़ बार',
-      unreachable: 'सामान्य प्लेटों से यह वज़न नहीं बनता।',
-      closest: 'सबसे पास: {{weight}}',
-      closestOr: 'सबसे पास: {{weight}} या {{other}}',
     },
 
     warmup: {

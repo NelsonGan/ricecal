@@ -103,10 +103,6 @@ export const id = {
     emptyFollowing: 'Ikuti orang atau bagikan makanan dari jurnal Anda.',
     emptyPeople: 'Tidak ada orang ditemukan',
     emptyPosts: 'Belum ada postingan',
-    foodTab: 'Makanan',
-    workoutsTab: 'Latihan',
-    emptyMeals: 'Belum ada makanan yang dibagikan',
-    emptyWorkouts: 'Belum ada latihan yang dibagikan',
     newWorkoutPost: 'Bagikan latihan',
     captionWorkoutPlaceholder: 'Ceritakan sesuatu tentang latihanmu',
     shareWorkoutHint:
@@ -1873,7 +1869,6 @@ export const id = {
       rest: 'Istirahat {{time}}',
       next: 'Lanjut',
       completeSet: 'Selesaikan set',
-      plates: 'Pelat',
       exerciseNotes: 'Tambah catatan',
       kind: {
         normal: 'Set utama',
@@ -1892,7 +1887,6 @@ export const id = {
         reorder: 'Urutkan latihan',
         unsuperset: 'Keluarkan dari superset',
         rest: 'Timer istirahat',
-        plates: 'Kalkulator plat',
         remove: 'Hapus gerakan',
         details: 'Riwayat dan rekor',
       },
@@ -2101,10 +2095,6 @@ export const id = {
       title: 'Impor latihan',
       fromStrong: 'Impor dari Strong',
       fromHevy: 'Impor dari Hevy',
-      intro: 'Ekspor latihan Anda sebagai CSV di Strong atau Hevy, lalu pilih filenya di sini.',
-      introStrong: 'Ekspor latihan Anda dari Strong sebagai CSV, lalu pilih filenya di sini.',
-      introHevy: 'Ekspor latihan Anda dari Hevy sebagai CSV, lalu pilih filenya di sini.',
-      choose: 'Pilih file CSV',
       another: 'Pilih file lain',
       unknown: 'Ini bukan ekspor Strong atau Hevy.',
       empty: 'Tidak ada latihan di file ini.',
@@ -2129,17 +2119,6 @@ export const id = {
       notSaved_other: '{{count}} tidak dapat disimpan',
       stopped: 'Impor berhenti. Periksa koneksi Anda dan coba lagi.',
       nothingNew: 'Tidak ada yang baru di file ini',
-    },
-
-    plates: {
-      title: 'Kalkulator plat',
-      target: 'Target beban',
-      bar: 'Bar',
-      perSide: 'Tiap sisi',
-      none: 'Bar saja',
-      unreachable: 'Tidak bisa dicapai dengan plat standar.',
-      closest: 'Terdekat: {{weight}}',
-      closestOr: 'Terdekat: {{weight}} atau {{other}}',
     },
 
     warmup: {

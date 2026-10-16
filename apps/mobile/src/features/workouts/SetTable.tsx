@@ -49,7 +49,6 @@ export type CardHandlers = {
   /** False when the set could not be ticked: it has no numbers to tick. */
   toggleSet: (key: string, set: LiveSet, fill: SetPatch | undefined) => boolean
   setMenu: (key: string, set: LiveSet, number: number) => void
-  plates: (key: string, kg: number | null) => void
   addSet: (key: string) => void
   removeSet: (key: string, setId: string) => void
   /** Opens the reorder sheet. Keyed like the rest, though the order is the workout's. */
@@ -78,8 +77,6 @@ type SetTableProps = {
   recordIds: ReadonlySet<string>
   /** Off outside the live logger: the column of ticks is replaced by nothing. */
   checkable: boolean
-  /** Whether weight fields offer the plate calculator: a barbell's do. */
-  plates: boolean
   handlers: CardHandlers
 }
 
@@ -107,7 +104,6 @@ export function SetTable({
   distanceUnit,
   recordIds,
   checkable,
-  plates,
   handlers,
 }: SetTableProps) {
   const { t } = useTranslation(['workouts', 'common'])
@@ -180,7 +176,6 @@ export function SetTable({
             distanceUnit={distanceUnit}
             record={recordIds.has(set.id)}
             checkable={checkable}
-            plates={plates}
             handlers={handlers}
           />
         )
@@ -221,7 +216,6 @@ const SetRow = memo(function SetRow({
   distanceUnit,
   record,
   checkable,
-  plates,
   handlers,
 }: {
   exerciseKey: string
@@ -242,7 +236,6 @@ const SetRow = memo(function SetRow({
   distanceUnit: DistanceUnit
   record: boolean
   checkable: boolean
-  plates: boolean
   handlers: CardHandlers
 }) {
   const onChange = (patch: SetPatch) => handlers.changeSet(exerciseKey, set.id, patch)
@@ -256,7 +249,6 @@ const SetRow = memo(function SetRow({
   // The pad's tick: a set already ticked is left ticked, and the pad moves on.
   const onComplete = checkable ? () => set.done || onToggle() : undefined
   const onMenu = () => handlers.setMenu(exerciseKey, set, badgeNumber)
-  const onPlates = plates ? (kg: number | null) => handlers.plates(exerciseKey, kg) : undefined
   const { t } = useTranslation(['workouts', 'common'])
   const colors = useThemeColors()
   const fields = fieldsFor(tracking)
@@ -358,11 +350,6 @@ const SetRow = memo(function SetRow({
                   done={ticked}
                   label={header(t(UNIT_KEY[unit]))}
                   complete={onComplete}
-                  plates={
-                    onPlates
-                      ? { label: t('workouts:logger.plates'), open: () => onPlates(set.weightKg) }
-                      : undefined
-                  }
                   onCommit={(text) => onChange({ weightKg: parseWeight(text, unit) })}
                 />
               ) : field === 'reps' ? (
@@ -449,17 +436,14 @@ const SetRow = memo(function SetRow({
   )
 })
 
-type CellPlates = { label: string; open: () => void }
-
 /**
- * The pad's tools for a set field: the plate calculator on a barbell's
- * weight, Next through the workout in the order `fieldOrder.tsx` keeps, and a
- * tick that completes the set and moves to the next one. `input` is read when a key is pressed, because the field's ref
+ * The pad's tools for a set field: Next through the workout in the order
+ * `fieldOrder.tsx` keeps, and a tick that completes the set and moves to the
+ * next one. `input` is read when a key is pressed, because the field's ref
  * belongs to `useNumpadField`, which is called after this.
  */
 function useCellTools(
   fieldKey: string,
-  plates: CellPlates | undefined,
   complete: (() => boolean) | undefined,
   input: () => TextInput | null,
 ): NumpadTools {
@@ -485,17 +469,6 @@ function useCellTools(
           onPress: () => {
             if (!complete()) return
             if (!order?.nextSet(fieldKey)) input()?.blur()
-          },
-        }
-      : undefined,
-    accessory: plates
-      ? {
-          label: plates.label,
-          // The pad goes first: the calculator is a sheet, and the pad is
-          // drawn by the screen under it.
-          onPress: () => {
-            input()?.blur()
-            plates.open()
           },
         }
       : undefined,
@@ -552,7 +525,6 @@ function NumberCell({
   decimal,
   done,
   label,
-  plates,
   complete,
   onCommit,
 }: {
@@ -562,13 +534,12 @@ function NumberCell({
   decimal: boolean
   done: boolean
   label: string
-  plates?: CellPlates
   complete?: () => boolean
   onCommit: (text: string) => void
 }) {
   const colors = useThemeColors()
   const input = useRef<() => TextInput | null>(() => null)
-  const tools = useCellTools(fieldKey, plates, complete, () => input.current())
+  const tools = useCellTools(fieldKey, complete, () => input.current())
   const [typed, setTyped] = useState<string | null>(null)
   const change = (next: string) => {
     setTyped(next)
@@ -649,7 +620,7 @@ function DurationCell({
 }) {
   const colors = useThemeColors()
   const input = useRef<() => TextInput | null>(() => null)
-  const tools = useCellTools(fieldKey, undefined, complete, () => input.current())
+  const tools = useCellTools(fieldKey, complete, () => input.current())
   const [digits, setDigits] = useState<string | null>(null)
   const change = (next: string) => {
     const clean = next.replace(/\D/g, '').slice(0, 6)

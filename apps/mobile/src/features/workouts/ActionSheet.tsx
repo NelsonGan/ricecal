@@ -47,6 +47,7 @@ export function ActionSheet({
 
   return (
     <Sheet
+      placement="center"
       visible={visible}
       onClose={onClose}
       closeLabel={t('action.close')}

@@ -27,7 +27,6 @@ import {
   type SetPatch,
   setHints,
 } from './model'
-import { PlateSheet } from './PlateSheet'
 import { awaitPick } from './pick'
 import { ReorderSheet } from './ReorderSheet'
 import { RestSheet } from './RestSheet'
@@ -101,11 +100,6 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
   const [removeFor, setRemoveFor] = useState<LiveExercise | null>(null)
   // The set whose effort is being rated, from its menu.
   const [rpeFor, setRpeFor] = useState<{ exercise: LiveExercise; set: LiveSet } | null>(null)
-  // The exercise the calculator was opened for, and the weight to open it on
-  // when it came from a set's own field rather than the exercise's menu.
-  const [platesFor, setPlatesFor] = useState<{ exercise: LiveExercise; kg?: number | null } | null>(
-    null,
-  )
 
   // An exercise done in more than one card, keyed by id, for records scored
   // across its cards. A card on its own gets nothing, so its memo holds.
@@ -206,10 +200,6 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
         const exercise = find(key)
         if (exercise) setSetMenu({ exercise, set, number })
       },
-      plates: (key, kg) => {
-        const exercise = find(key)
-        if (exercise) setPlatesFor({ exercise, kg })
-      },
       addSet: (key) => dispatch({ type: 'addSet', key }),
       removeSet: (key, setId) => dispatch({ type: 'removeSet', key, setId }),
       reorder: () => {
@@ -274,16 +264,6 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
           toast.show({ title: t('workouts:warmup.added', { count: sets.length }), tone: 'success' })
         },
       })
-      // Plates only for a bar, as on the pad: a cable stack or a pair of
-      // dumbbells has nothing to load.
-      if (library.byId(exercise.exerciseId)?.equipment === 'barbell') {
-        actions.push({
-          key: 'plates',
-          label: t('workouts:logger.menu.plates'),
-          icon: { set: 'body', name: 'weight-plate' },
-          onPress: () => setPlatesFor({ exercise }),
-        })
-      }
     }
     actions.push({
       key: 'rest',
@@ -359,7 +339,6 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
               // set with numbers in it, so a tick there would be a switch that
               // switched nothing.
               checkable={live}
-              plates={info?.equipment === 'barbell'}
               noteRequest={noteRequest?.key === exercise.key ? noteRequest.count : 0}
               handlers={handlers}
             />
@@ -509,24 +488,6 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
               },
             },
           ]}
-        />
-
-        <PlateSheet
-          visible={platesFor !== null}
-          onClose={() => setPlatesFor(null)}
-          unit={unit}
-          // The next set still to lift, or failing that the last working set:
-          // the first weight on the card is usually the warm-up, which nobody
-          // needs a calculator for.
-          initialKg={
-            platesFor?.kg ??
-            platesFor?.exercise.sets.find((set) => !set.done && set.weightKg)?.weightKg ??
-            platesFor?.exercise.sets.findLast((set) => set.kind !== 'warmup' && set.weightKg)
-              ?.weightKg ??
-            (platesFor
-              ? offeredWeight(platesFor.exercise, lastSets?.[platesFor.exercise.exerciseId])
-              : null)
-          }
         />
       </View>
     </FieldOrderProvider>
