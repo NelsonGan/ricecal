@@ -19,6 +19,7 @@ export {
   speed,
   syncedAgo,
 } from './format'
+export { HeartRateCard } from './HeartRateCard'
 export { SessionItem, type SessionItemProps } from './SessionItem'
 export { WorkoutDetails } from './WorkoutDetails'
 export {

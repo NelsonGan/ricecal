@@ -1950,7 +1950,6 @@ export const zhHant = {
       upNext: '下一個',
       empty: '請在 iPhone 上新增動作。',
       syncing: 'iPhone 在附近時同步',
-      pulse: '心率 {{value}} bpm',
     },
 
     stale: {

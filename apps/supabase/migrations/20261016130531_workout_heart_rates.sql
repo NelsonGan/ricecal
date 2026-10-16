@@ -100,6 +100,15 @@ begin
      where w.id = v_id and w.user_id = v_user and w.health_workout_id is null;
   end if;
 
+  -- And the energy in that copy is the watch's measurement, which is what
+  -- reaches the budget by way of Health. The workout's `kcal` is what Today
+  -- shows beside it, so it is that figure rather than the phone's estimate.
+  if v_kcal is not null then
+    update public.workouts w
+       set kcal = v_kcal
+     where w.id = v_id and w.user_id = v_user and w.kcal is distinct from v_kcal;
+  end if;
+
   return 'saved';
 end;
 $function$;
@@ -171,6 +180,7 @@ CREATE POLICY "workout_heart_rates: read own" ON public.workout_heart_rates
   FOR SELECT
   TO authenticated
   USING ((( SELECT auth.uid() AS uid) = user_id));
+
 -- `supabase db diff` emits the grants a function ends up with and not the
 -- revoke that shaped them, so `create function`'s default EXECUTE to PUBLIC
 -- would survive without this. See "Things a diff cannot see" in the README.

@@ -133,7 +133,8 @@
         }
       ],
       "react-native-health-connect",
-      "./plugins/withWidgets"
+      "./plugins/withWidgets",
+      "./plugins/withWatch"
     ],
     "extra": {
       "router": {},

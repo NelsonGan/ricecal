@@ -1949,7 +1949,6 @@ export const th = {
       upNext: 'ถัดไป',
       empty: 'เพิ่มท่าใน iPhone',
       syncing: 'ซิงค์เมื่อ iPhone อยู่ใกล้',
-      pulse: 'อัตราการเต้นของหัวใจ {{value}} bpm',
     },
 
     stale: {

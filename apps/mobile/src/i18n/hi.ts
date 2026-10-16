@@ -1954,7 +1954,6 @@ export const hi = {
       upNext: 'अगला',
       empty: 'अपने iPhone पर एक्सरसाइज़ जोड़ें।',
       syncing: 'iPhone पास होने पर सिंक होगा',
-      pulse: 'हृदय गति {{value}} bpm',
     },
 
     stale: {

@@ -1957,7 +1957,6 @@ export const bn = {
       upNext: 'এরপর',
       empty: 'আপনার iPhone-এ ব্যায়াম যোগ করুন।',
       syncing: 'iPhone কাছে এলে সিঙ্ক হবে',
-      pulse: 'হৃৎস্পন্দন {{value}} bpm',
     },
 
     stale: {

@@ -148,7 +148,9 @@ export function useWorkoutSave() {
 
   const run = async (document: LiveWorkout, endedAt: number, previous?: SavedVersion) => {
     const durationS = Math.round((endedAt - document.startedAt) / 1000)
-    const kcal = estimateKcal(document, durationS, bodyKg)
+    // What the watch measured, for a workout it recorded and the server has
+    // its trace for; an estimate otherwise.
+    const kcal = document.watch?.kcal ?? estimateKcal(document, durationS, bodyKg)
     let health: HealthOutcome | null = null
     try {
       health = await syncWorkoutToHealth(document, endedAt, kcal)

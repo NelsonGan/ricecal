@@ -31,6 +31,7 @@ final class RiceCalWatchLink: NSObject, WCSessionDelegate {
   private let defaults = UserDefaults.standard
   private let inboxKey = "RiceCalWatchInbox"
   private let stateKey = "RiceCalWatchState"
+  private let heardKey = "RiceCalWatchHeard"
   private let healthStore = HKHealthStore()
 
   func activate() {
@@ -52,15 +53,17 @@ final class RiceCalWatchLink: NSObject, WCSessionDelegate {
   private func send(_ json: String? = nil) {
     guard WCSession.isSupported() else { return }
     let session = WCSession.default
-    guard session.activationState == .activated, session.isPaired, session.isWatchAppInstalled,
+    guard session.activationState == .activated, session.isPaired,
       let state = json ?? defaults.string(forKey: stateKey)
     else { return }
-    do {
-      // Kept by the system and handed to the watch app whenever it next runs,
-      // the newest replacing the last.
-      try session.updateApplicationContext(["state": state])
-    } catch {
-      NSLog("[RiceCalWatch] could not update the context: \(error.localizedDescription)")
+    if session.isWatchAppInstalled || hasHeardFromWatch {
+      do {
+        // Kept by the system and handed to the watch app whenever it next
+        // runs, the newest replacing the last.
+        try session.updateApplicationContext(["state": state])
+      } catch {
+        NSLog("[RiceCalWatch] could not update the context: \(error.localizedDescription)")
+      }
     }
     if session.isReachable {
       // At once, for a watch app on screen. A failure is fine: the context
@@ -80,6 +83,7 @@ final class RiceCalWatchLink: NSObject, WCSessionDelegate {
     replyHandler: @escaping ([String: Any]) -> Void
   ) {
     if message["wantsState"] != nil {
+      heard()
       replyHandler(["state": defaults.string(forKey: stateKey) ?? ""])
       return
     }
@@ -93,7 +97,21 @@ final class RiceCalWatchLink: NSObject, WCSessionDelegate {
     receive(userInfo)
   }
 
+  /**
+   Whether the watch app has ever sent anything. `isWatchAppInstalled` lags
+   behind an install from the Watch app, and stays false for a watch app put
+   on a simulator directly, while a watch app that has spoken plainly exists.
+   */
+  private var hasHeardFromWatch: Bool { defaults.bool(forKey: heardKey) }
+
+  private func heard() {
+    guard !hasHeardFromWatch else { return }
+    defaults.set(true, forKey: heardKey)
+    NotificationCenter.default.post(name: Self.statusChanged, object: nil)
+  }
+
   private func receive(_ payload: [String: Any]) {
+    heard()
     if let pulse = payload["pulse"] as? [String: Any] {
       NotificationCenter.default.post(name: Self.pulseReceived, object: nil, userInfo: pulse)
       return
@@ -131,7 +149,8 @@ final class RiceCalWatchLink: NSObject, WCSessionDelegate {
     let session = WCSession.default
     return [
       "paired": session.isPaired,
-      "installed": session.isWatchAppInstalled,
+      "installed": session.isPaired
+        && (session.isWatchAppInstalled || session.isReachable || hasHeardFromWatch),
       "reachable": session.isReachable,
     ]
   }
@@ -171,7 +190,7 @@ final class RiceCalWatchLink: NSObject, WCSessionDelegate {
    */
   func startWatchWorkout(_ done: @escaping (Bool) -> Void) {
     guard HKHealthStore.isHealthDataAvailable(), WCSession.isSupported(),
-      WCSession.default.activationState == .activated, WCSession.default.isWatchAppInstalled
+      WCSession.default.activationState == .activated, WCSession.default.isPaired
     else {
       done(false)
       return

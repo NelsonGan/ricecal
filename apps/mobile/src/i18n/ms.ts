@@ -2000,7 +2000,6 @@ export const ms = {
       upNext: 'Seterusnya',
       empty: 'Tambah latihan di iPhone anda.',
       syncing: 'Disegerakkan apabila iPhone anda berdekatan',
-      pulse: 'Kadar denyutan jantung {{value}} bpm',
     },
 
     stale: {

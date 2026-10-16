@@ -1956,7 +1956,6 @@ export const ko = {
       upNext: '다음',
       empty: 'iPhone에서 종목을 추가하세요.',
       syncing: 'iPhone이 가까이 있으면 동기화됩니다',
-      pulse: '심박수 {{value}} bpm',
     },
 
     stale: {

@@ -292,13 +292,26 @@ function withWidgetTarget(config, { bundleId, appGroup }) {
     // `import`, so nothing goes in it.
     project.addBuildPhase([], 'PBXFrameworksBuildPhase', 'Frameworks', target.uuid)
 
-    // So the app cannot be built without a current .appex to embed.
-    project.addTargetDependency(project.getFirstTarget().uuid, [target.uuid])
+    // So the app cannot be built without a current .appex to embed. `addTarget`
+    // asked for this already, which lands only when the project has target
+    // dependency sections (`withWatch.js` creates them), so it is asked again
+    // only when that one did not.
+    if (!dependsOn(project, project.getFirstTarget().uuid, target.uuid)) {
+      project.addTargetDependency(project.getFirstTarget().uuid, [target.uuid])
+    }
 
     applyBuildSettings(project, target, { bundleId, appGroup, version: cfg.version })
 
     return cfg
   })
+}
+
+/** Whether `appUuid` already lists a dependency on `targetUuid`. */
+function dependsOn(project, appUuid, targetUuid) {
+  const dependencies = project.hash.project.objects.PBXTargetDependency ?? {}
+  return (project.pbxNativeTargetSection()[appUuid]?.dependencies ?? []).some(
+    (entry) => dependencies[entry.value]?.target === targetUuid,
+  )
 }
 
 /**

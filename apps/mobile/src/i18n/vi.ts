@@ -1971,7 +1971,6 @@ export const vi = {
       upNext: 'Tiếp theo',
       empty: 'Thêm bài tập trên iPhone.',
       syncing: 'Đồng bộ khi iPhone ở gần',
-      pulse: 'Nhịp tim {{value}} bpm',
     },
 
     stale: {
