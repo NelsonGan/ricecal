@@ -1747,12 +1747,10 @@ export const fil = {
   },
   news: {
     title: 'Balita',
-    close: 'Isara',
     done: 'Sige',
     feedAutoShare: {
       title: 'Naka-post na sa feed mo ang mga kinakain mo',
-      body: 'Awtomatiko nang naibabahagi sa feed mo ang mga pagkaing nila-log mo. Puwede mo itong i-off sa I-edit ang profile.',
-      cta: 'Buksan ang settings',
+      body: 'Naipo-post din ang mga natapos na workout. I-off ang alinman sa I-edit ang profile.',
       you: 'Ikaw',
       previewLabel: 'Halimbawa ng pagkaing naka-post sa feed mo',
     },

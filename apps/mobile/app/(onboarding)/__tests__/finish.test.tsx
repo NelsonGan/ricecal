@@ -3,6 +3,7 @@ import type { ReactElement, ReactNode } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import '@/i18n'
+import { allAnnouncementIds } from '@/features/news/announcements'
 import { ONBOARDING_STEPS } from '@/features/onboarding'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 import FinishStep from '../finish'
@@ -25,6 +26,7 @@ import FinishStep from '../finish'
 
 const mockSession = jest.fn()
 const mockDraft = jest.fn()
+const mockMutate = jest.fn()
 
 jest.mock('expo-router', () => ({
   Redirect: ({ href }: { href: string }) => {
@@ -44,7 +46,7 @@ jest.mock('@/features/onboarding', () => ({
 
 jest.mock('@/data', () => ({
   useSession: () => mockSession(),
-  useFinishOnboarding: () => ({ mutate: jest.fn(), isPaused: false, isError: false }),
+  useFinishOnboarding: () => ({ mutate: mockMutate, isPaused: false, isError: false }),
 }))
 
 /**
@@ -110,4 +112,14 @@ it('writes rather than redirecting once every answer is in hand', async () => {
   await render(<FinishStep />)
 
   expect(screen.queryByText(/^redirect:/)).toBeNull()
+})
+
+it('starts a new account sharing to the feed, with every announcement already seen', async () => {
+  await render(<FinishStep />)
+
+  expect(mockMutate).toHaveBeenCalledTimes(1)
+  expect(mockMutate.mock.calls[0][0]).toMatchObject({
+    autoPostFoods: true,
+    seenAnnouncements: allAnnouncementIds(),
+  })
 })

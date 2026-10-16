@@ -4,21 +4,32 @@ import { useTranslation } from 'react-i18next'
 import { Modal, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { useProfile, useSeeAnnouncement } from '@/data'
 import { track } from '@/lib/analytics'
+import { reportError } from '@/lib/errors'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, Text, useHeld } from '@/ui'
 import type { Announcement, AnnouncementCta, AnnouncementSource } from './announcements'
 import { FeedAutoSharePreview } from './FeedAutoSharePreview'
 
-/** Where each button goes. A route rather than a callback, so the list and the launch card agree. */
-const CTA_ROUTES = {
-  open_settings: '/settings/account',
-} as const satisfies Record<AnnouncementCta, Href>
+/**
+ * Where each button goes and what it says. A route rather than a callback, so
+ * the list and the launch card agree; the label is the destination's own name.
+ */
+const CTAS = {
+  edit_profile: { route: '/settings/account', label: 'social:editProfile' },
+} as const satisfies Record<AnnouncementCta, { route: Href; label: string }>
 
 /**
  * One announcement: its picture on a tinted panel, then the words and the way
  * on. A card floating over the screen rather than a page, because it is news
  * about the app, read in passing on the way to something else.
+ *
+ * Seen is recorded from `onShow`, the native confirmation that the card is on
+ * screen, never from the prop: iOS refuses to present over another modal and
+ * says nothing, and a card marked seen there would have switched a setting on
+ * behind a card nobody read. The first showing claims, from the launch or the
+ * list; later ones find it seen and change nothing.
  *
  * Every way out is counted, since "did anyone take the button" is the question
  * an announcement exists to answer. The button's route is pushed once the
@@ -35,11 +46,13 @@ export function AnnouncementCard({
   source: AnnouncementSource
   onClose: () => void
 }) {
-  const { t } = useTranslation(['news', 'common'])
+  const { t } = useTranslation(['news', 'common', 'social'])
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { height } = useWindowDimensions()
   const colors = useThemeColors()
+  const { data: profile } = useProfile()
+  const see = useSeeAnnouncement()
   const visible = announcement !== null
   // Kept while it fades, so the copy does not blank mid-animation.
   const shown = useHeld(announcement, visible)
@@ -48,11 +61,19 @@ export function AnnouncementCard({
   // button, lands before the parent has hidden the card and would count twice.
   const answered = useRef(false)
 
-  useEffect(() => {
+  const onShow = () => {
     if (!announcement) return
     answered.current = false
     track('Announcement Shown', { announcement: announcement.id, source })
-  }, [announcement, source])
+    if (profile?.seen_announcements?.includes(announcement.id)) return
+    see.mutate(
+      { id: announcement.id, enables: announcement.enables },
+      // Unclaimed, so the card comes back on a later launch and tries again.
+      {
+        onError: (error) => reportError(error, { scope: 'announcement_seen', id: announcement.id }),
+      },
+    )
+  }
 
   const runQueued = () => {
     const route = queued.current
@@ -74,11 +95,12 @@ export function AnnouncementCard({
     onClose()
   }
 
-  const takeCta = (cta: AnnouncementCta) => {
-    if (!announcement || answered.current) return
+  const takeCta = () => {
+    const cta = announcement?.cta
+    if (!announcement || !cta || answered.current) return
     answered.current = true
     track('Announcement CTA Tapped', { announcement: announcement.id, source, cta })
-    queued.current = CTA_ROUTES[cta]
+    queued.current = CTAS[cta].route
     onClose()
   }
 
@@ -89,7 +111,9 @@ export function AnnouncementCard({
       animationType="fade"
       statusBarTranslucent
       onRequestClose={() => close('close')}
+      onShow={onShow}
       onDismiss={runQueued}
+      testID="announcement-card"
     >
       <View
         className="flex-1 justify-end px-3"
@@ -99,7 +123,7 @@ export function AnnouncementCard({
           className="absolute inset-0 bg-black/45"
           onPress={() => close('close')}
           accessibilityRole="button"
-          accessibilityLabel={t('news:close')}
+          accessibilityLabel={t('common:a11y.close')}
         />
         <View
           className="overflow-hidden rounded-card bg-surface"
@@ -123,8 +147,8 @@ export function AnnouncementCard({
             </View>
             <View className="gap-1 px-5 pb-5 pt-5">
               {shown.cta ? (
-                <Button fullWidth onPress={() => shown.cta && takeCta(shown.cta)}>
-                  {t(`news:${shown.key}.cta`)}
+                <Button fullWidth onPress={takeCta}>
+                  {t(CTAS[shown.cta].label)}
                 </Button>
               ) : null}
               <Button
@@ -140,7 +164,7 @@ export function AnnouncementCard({
             <IconButton
               size="sm"
               variant="neutral"
-              accessibilityLabel={t('news:close')}
+              accessibilityLabel={t('common:a11y.close')}
               onPress={() => close('close')}
             >
               <Icon set="ui" name="close" size={18} tintColor={colors.muted} />

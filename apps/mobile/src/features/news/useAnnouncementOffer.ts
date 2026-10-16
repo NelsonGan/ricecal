@@ -2,11 +2,11 @@ import { onlineManager, useQueryClient } from '@tanstack/react-query'
 import { useIsFocused } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { claimAnnouncement, useProfile, useSession } from '@/data'
+import { useProfile, useSession } from '@/data'
 import { keys } from '@/data/keys'
+import { fetchProfile } from '@/data/profile'
 import { tutorialOffered } from '@/features/tutorial/prompt'
-import { reportError } from '@/lib/errors'
-import { type Announcement, announcementToShow } from './announcements'
+import { type Announcement, announcementDue } from './announcements'
 
 /**
  * How long Today gets to itself first, for the reason the tutorial offer gives.
@@ -14,31 +14,45 @@ import { type Announcement, announcementToShow } from './announcements'
  */
 const DELAY_MS = 1200
 
-/**
- * The account this launch has put an announcement up for, so the Pro nudge,
- * booked by the same screen at nearly the same beat, does not push a paywall
- * over it. Module state, because it is a fact about this run of the app; keyed
- * by account so signing into another one without a restart does not silence
- * that account's offer too.
- */
-let claimedFor: string | null = null
+/** Long enough to reuse the read this launch has just made. */
+const FRESH_MS = 30_000
 
 /**
- * Whether an announcement has the floor this launch: one is due on the profile
- * as cached, or one has already been put up. The Pro nudge asks before booking
- * and again before firing. An announcement is once per account and the nudge
- * has a two-day clock, so the nudge is the one that waits.
+ * The account this run of the app has put a card up for. The Pro nudge, booked
+ * by the same screen at nearly the same beat, does not push a paywall over it,
+ * and the card is not put up twice. Keyed by account, so signing into another
+ * one without a restart does not silence that account's offer too.
+ */
+let shownFor: string | null = null
+
+/**
+ * Whether the tour had already been offered when this run of the app first
+ * asked, per account. Read once rather than live: the tour's toast marks itself
+ * offered 1.2 s into a first launch, and a live read would then let the card
+ * cover that toast on the same launch, a tab switch later.
+ */
+const tourBefore = new Map<string, boolean>()
+
+function tourOfferedBeforeThisRun(userId: string): boolean {
+  let offered = tourBefore.get(userId)
+  if (offered === undefined) {
+    offered = tutorialOffered(userId)
+    tourBefore.set(userId, offered)
+  }
+  return offered
+}
+
+/**
+ * Whether an announcement has the floor this run: one is due, or one has been
+ * put up. The Pro nudge asks before booking. An announcement is once per
+ * account and the nudge has a two-day clock, so the nudge is the one that
+ * waits, until the app is next started.
  */
 export function announcementHasTheFloor(
   userId: string,
-  seen: readonly string[] | undefined,
+  profile: Parameters<typeof announcementDue>[0],
 ): boolean {
-  return claimedFor === userId || announcementToShow(seen) !== null
-}
-
-/** Whether this launch has started putting an announcement up for this account. */
-export function announcementClaimedThisLaunch(userId: string): boolean {
-  return claimedFor === userId
+  return shownFor === userId || announcementDue(profile) !== null
 }
 
 /**
@@ -46,19 +60,19 @@ export function announcementClaimedThisLaunch(userId: string): boolean {
  *
  * The rules, and where each one lives:
  *
- * - Once: claimed on the server (`claimAnnouncement`) before the card is
- *   drawn, so a reinstall or a second phone does not show it again, and
- *   whatever it switches on is switched on in the same write as "seen".
- * - Only the newest: `announcementToShow`.
- * - Not for new accounts: onboarding writes every current id as seen.
- * - Not on a first launch: the tutorial toast has that one, as it does over
- *   the Pro nudge, and a toast under a modal is a toast nobody sees.
- * - Online only. A card that says auto post was switched on cannot be shown
- *   over a write that never landed; it waits for a launch that can make it.
- * - Only while Today is on top. A modal put up over the log sheet or a pushed
- *   page stacks on a native modal, which iOS can refuse to present, and the
- *   claim would already be spent. Leaving Today cancels the wait; coming back
- *   books it again.
+ * - Once: the card marks itself seen on the server the moment it is on screen
+ *   (`AnnouncementCard`, `onShow`), applying what it enables in the same
+ *   statement. Nothing is written before then, so a card iOS refuses to
+ *   present (over another modal) or a request that never returns cannot
+ *   switch a setting on behind a card nobody saw.
+ * - Only the newest, and never for a new account: `announcementDue`, and
+ *   onboarding marking every current id seen.
+ * - Not on a launch the tour is offered on, a toast under a modal being a
+ *   toast nobody sees.
+ * - Online, with a fresh read: a card another phone has already shown is not
+ *   shown again from a cached profile.
+ * - Only while Today is on top. Leaving it cancels the wait, and focus is
+ *   asked again after the read.
  *
  * Mounted by Today rather than the tabs layout, like the other launch offers,
  * so it belongs to the screen it appears over.
@@ -68,46 +82,47 @@ export function useAnnouncementOffer(): { announcement: Announcement | null; clo
   const { userId } = useSession()
   const { data: profile } = useProfile()
   const focused = useIsFocused()
+  const focusedNow = useRef(focused)
+  focusedNow.current = focused
   const [announcement, setAnnouncement] = useState<Announcement | null>(null)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const started = useRef(false)
 
-  const due = profile?.onboarded_at ? announcementToShow(profile.seen_announcements) : null
+  const due = announcementDue(profile)
+  const tourDone = userId ? tourOfferedBeforeThisRun(userId) : false
 
   useEffect(() => {
-    if (!userId || !due || !focused || started.current || timer.current) return
-    if (!tutorialOffered(userId)) return
+    if (!userId || !due || !focused || !tourDone || shownFor === userId) return
+    let cancelled = false
 
-    timer.current = setTimeout(() => {
-      timer.current = null
+    const timer = setTimeout(async () => {
       if (!onlineManager.isOnline()) return
-      started.current = true
-      claimedFor = userId
-      claimAnnouncement(userId, due.id, due.enables)
-        .then((updated) => {
-          if (!updated) return
-          queryClient.setQueryData(keys.profile(userId), updated)
-          setAnnouncement(due)
+      let fresh: Awaited<ReturnType<typeof fetchProfile>>
+      try {
+        fresh = await queryClient.fetchQuery({
+          queryKey: keys.profile(userId),
+          queryFn: () => fetchProfile(userId),
+          staleTime: FRESH_MS,
         })
-        .catch((error: unknown) => {
-          // Unclaimed, so the next launch tries again. The nudge has already
-          // stood aside for this one, which costs nothing.
-          started.current = false
-          reportError(error, { scope: 'announcement_claim', announcement: due.id })
-        })
+      } catch {
+        return
+      }
+      if (cancelled || !focusedNow.current || shownFor === userId) return
+      if (announcementDue(fresh)?.id !== due.id) return
+      shownFor = userId
+      setAnnouncement(due)
     }, DELAY_MS)
 
     return () => {
-      if (timer.current) clearTimeout(timer.current)
-      timer.current = null
+      cancelled = true
+      clearTimeout(timer)
     }
-  }, [userId, due, focused, queryClient])
+  }, [userId, due, focused, tourDone, queryClient])
 
   const close = useCallback(() => setAnnouncement(null), [])
   return { announcement, close }
 }
 
-/** For tests: forget that this launch showed anything. */
-export function resetAnnouncementLaunchForTest(): void {
-  claimedFor = null
+/** For tests: forget what this run of the app has shown and read. */
+export function resetAnnouncementRunForTest(): void {
+  shownFor = null
+  tourBefore.clear()
 }

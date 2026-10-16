@@ -1700,12 +1700,10 @@ export const zhHant = {
   },
   news: {
     title: '公告',
-    close: '關閉',
     done: '知道了',
     feedAutoShare: {
       title: '你的餐點現在會發布到動態',
-      body: '你記錄的食物現在會自動分享到你的動態。你可以在「編輯個人資料」中關閉。',
-      cta: '開啟設定',
+      body: '完成的訓練也會發布。可在「編輯個人資料」中分別關閉。',
       you: '你',
       previewLabel: '發布到你動態中的餐點範例',
     },

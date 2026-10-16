@@ -11,11 +11,11 @@ import { Avatar, Icon, Text } from '@/ui'
  * stale against the real card. The author is the reader, with their own
  * picture, because the point is that this is what their meals will look like.
  *
- * The dish is an example and its figures are made up. Food names are data and
- * stay in their local spelling in every language, so it is not translated.
+ * The dish is the tour's example meal, named in the reader's language as the
+ * tour names it, with the same drawing and the tour's 644 kcal.
  */
 export function FeedAutoSharePreview() {
-  const { t } = useTranslation(['news', 'social'])
+  const { t } = useTranslation(['news', 'social', 'onboarding'])
   const { data: profile } = useProfile()
   const { data: avatarUri } = useAvatarUrl(profile?.avatar_path ?? undefined)
   const avatar = storedImageSource(profile?.avatar_path ?? undefined, avatarUri)
@@ -51,7 +51,7 @@ export function FeedAutoSharePreview() {
         <View className="px-2.5">
           <FoodPreview
             variant="tile"
-            name="Nasi lemak"
+            name={t('onboarding:tutorial.read.exampleName')}
             icon={{ set: 'dishes', name: 'nasi-lemak' }}
             facts={{ kcal: 644, carbs_g: 78, protein_g: 24, fat_g: 28 }}
           />
