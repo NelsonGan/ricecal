@@ -19,6 +19,7 @@ import {
   useWorkoutsOn,
   type WorkoutSummary,
 } from '@/data'
+import type { WorkoutDocument } from '@/data/workout-outbox'
 import { ScreenTitle } from '@/features/shared'
 import {
   ActionSheet,
@@ -121,7 +122,7 @@ export default function WorkoutsScreen() {
       />
 
       {calendar ? (
-        <CalendarView day={day} onDay={setDay} unit={unit} onOpen={openWorkout} />
+        <CalendarView day={day} onDay={setDay} unit={unit} outbox={outbox} onOpen={openWorkout} />
       ) : (
         <>
           {/* Medium rather than large: it is the first thing on the tab, and the
@@ -297,15 +298,28 @@ function CalendarView({
   day,
   onDay,
   unit,
+  outbox,
   onOpen,
 }: {
   day: string
   onDay: (date: string) => void
   unit: WeightUnit
+  outbox: readonly WorkoutDocument[]
   onOpen: (workout: WorkoutSummary) => void
 }) {
   const { t } = useTranslation(['workouts'])
-  const workouts = useWorkoutsOn(day)
+  // With records, so a card here carries the same PR badge it has in History.
+  const saved = useWorkoutsOn(day, { records: true })
+  // And the day's workouts still on the phone, as History lists them, or one
+  // finished offline is missing from its own day.
+  const list = useMemo(() => {
+    const rows = saved.data ?? []
+    const ids = new Set(rows.map((workout) => workout.id))
+    const pending = outbox
+      .filter((document) => document.log_date === day && !ids.has(document.id))
+      .map(summaryFromDocument)
+    return [...pending, ...rows]
+  }, [saved.data, outbox, day])
 
   return (
     <>
@@ -313,18 +327,18 @@ function CalendarView({
       <Text variant="subtitle" className="pt-2">
         {format(parseISO(day), datePattern('weekdayDayMonthLong'))}
       </Text>
-      {workouts.isPending && !workouts.isPaused ? (
-        <Card>
-          <Skeleton className="h-[120px] w-full" />
-        </Card>
-      ) : workouts.data?.length ? (
+      {list.length ? (
         <View className="gap-stack">
-          {workouts.data.map((workout) => (
+          {list.map((workout) => (
             <WorkoutCard key={workout.id} workout={workout} unit={unit} onPress={onOpen} />
           ))}
         </View>
-      ) : !workouts.data ? (
-        <Unavailable offline={workouts.isPaused} />
+      ) : saved.isPending && !saved.isPaused ? (
+        <Card>
+          <Skeleton className="h-[120px] w-full" />
+        </Card>
+      ) : !saved.data ? (
+        <Unavailable offline={saved.isPaused} />
       ) : (
         <EmptyRow
           icon={{ set: 'body', name: 'stopwatch' }}

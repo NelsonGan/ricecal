@@ -13,6 +13,7 @@ import { useWindowDimensions, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 
+import { labelWidth } from '@/features/shared/axis'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn, Text } from '@/ui'
 
@@ -56,25 +57,8 @@ export type TrendLineProps = {
   className?: string
 }
 
-/**
- * About how wide an axis label's character draws at `micro` (11pt): a full em
- * for CJK, Hangul and kana, a narrow space, and roughly 6.5pt for the rest.
- * An estimate, so `LABEL_GAP` is generous: it only has to say whether seven
- * weekdays fit, which they do on a phone and twenty dates do not.
- */
-const LABEL_CHAR = 6.5
-const LABEL_WIDE = 11
-const LABEL_SPACE = 3
+/** The gap between two axis labels, so neighbours never touch. */
 const LABEL_GAP = 8
-const WIDE = /[ᄀ-ᇿ⺀-鿿가-힯豈-﫿＀-￯]/
-
-function labelWidth(label: string): number {
-  let width = 0
-  for (const char of label) {
-    width += char === ' ' ? LABEL_SPACE : WIDE.test(char) ? LABEL_WIDE : LABEL_CHAR
-  }
-  return width
-}
 
 /** Stroke width, and the radius the end cap needs to clear the edges. */
 const STROKE = 3

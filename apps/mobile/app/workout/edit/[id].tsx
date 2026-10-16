@@ -34,9 +34,14 @@ import { AppBar, Button, Screen, useToast } from '@/ui'
  */
 export default function EditWorkoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const query = useWorkout(id)
+  // `new` was the past-workout form. A link to it from an older build is a
+  // workout that is not there, not a request that failed: asking for it
+  // would send "new" as a uuid and come back as an error.
+  const retired = id === 'new'
+  const query = useWorkout(retired ? undefined : id)
   const saved = query.data
 
+  if (retired) return <WorkoutUnavailable />
   if (!saved) return <WorkoutUnavailable state={unavailableState(query)} />
   // Keyed by the route's id: a link that reuses this screen for another
   // workout kept the first one's document in the reducer and saved it under

@@ -3608,7 +3608,7 @@ export type Database = {
         }
       }
       workout_months: {
-        Args: never
+        Args: { p_months?: number }
         Returns: {
           duration_s: number
           month: string

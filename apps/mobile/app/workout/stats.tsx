@@ -119,7 +119,8 @@ function Totals({ unit }: { unit: WeightUnit }) {
   const { entitled } = useEntitlement()
   const shownRange = entitled ? range : '3m'
   const weeks = useWorkoutWeeks(FREE_WEEKS)
-  const months = useWorkoutMonths(shownRange !== '3m')
+  // A year asks for twelve months, so only that year's sets are added up.
+  const months = useWorkoutMonths(shownRange === '1y' ? 12 : null, shownRange !== '3m')
   const query = shownRange === '3m' ? weeks : months
   const periods = useMemo(
     () => (query.data ? periodsFor(shownRange, query.data) : null),

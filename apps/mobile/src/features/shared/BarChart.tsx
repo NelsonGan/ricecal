@@ -1,7 +1,7 @@
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 
 import { cn, Tappable, Text } from '@/ui'
-import { axisTicks } from './axis'
+import { axisTicks, labelWidth } from './axis'
 
 export type Bar = {
   key: string
@@ -55,21 +55,8 @@ export type BarChartProps = {
   className?: string
 }
 
-/**
- * About how wide a `micro` (11pt) character draws: an estimate for the axis
- * gutter, as `TrendLine` makes one. A full em for CJK, Hangul and kana.
- */
-const LABEL_CHAR = 6.5
-const LABEL_WIDE = 11
-const WIDE = /[ᄀ-ᇿ⺀-鿿가-힯豈-﫿＀-￯]/
 /** Half the `micro` line, to centre a label on its rule. */
 const HALF_LINE = 7
-
-function labelWidth(label: string): number {
-  let width = 0
-  for (const char of label) width += WIDE.test(char) ? LABEL_WIDE : LABEL_CHAR
-  return width
-}
 
 const fills = {
   pandan: 'bg-pandan',
