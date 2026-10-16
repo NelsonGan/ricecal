@@ -58,6 +58,12 @@ export {
   templateRoutine,
   toPlans,
 } from './routines'
+export {
+  type RoutineChanges,
+  type RoutineUpdate,
+  routineChanges,
+  updatedRoutine,
+} from './routineUpdate'
 export { describeSet } from './SetTable'
 export { StaleWorkoutSheet } from './StaleWorkoutSheet'
 export { asCategory, asEquipment } from './search'

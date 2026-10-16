@@ -3,8 +3,15 @@ import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useExerciseBests, useSettings, useWorkoutOverview } from '@/data'
 import {
+  useExerciseBests,
+  useRoutines,
+  useSaveRoutine,
+  useSettings,
+  useWorkoutOverview,
+} from '@/data'
+import {
+  ActionSheet,
   describeSet,
   distanceText,
   distanceUnitFor,
@@ -17,13 +24,16 @@ import {
   liveTotals,
   RECORD_KEY,
   type RecordKind,
+  type RoutineUpdate,
   recordSets,
+  routineChanges,
   Stat,
   setVolume,
   shortClock,
   showsVolume,
   timedSeconds,
   timesError,
+  updatedRoutine,
   useExerciseLibrary,
   useLiveWorkout,
   useWorkoutSave,
@@ -64,6 +74,8 @@ export default function FinishWorkoutScreen() {
   const library = useExerciseLibrary()
   const overview = useWorkoutOverview().data
   const bests = useExerciseBests(null).data
+  const routines = useRoutines().data
+  const saveRoutine = useSaveRoutine()
 
   const [name, setName] = useState(workout?.name ?? '')
   const [notes, setNotes] = useState(workout?.notes ?? '')
@@ -81,6 +93,7 @@ export default function FinishWorkoutScreen() {
     return Math.min(started, endedAt - timedS * 1000)
   })
   const [saving, setSaving] = useState(false)
+  const [askRoutine, setAskRoutine] = useState(false)
 
   const totals = useMemo(() => (workout ? liveTotals(workout) : null), [workout])
   const exercises = useMemo(
@@ -104,6 +117,12 @@ export default function FinishWorkoutScreen() {
 
   if (!workout) return <WorkoutMissing />
 
+  // The routine it was started from, if it still exists and the workout left it.
+  const routine = workout.routineId
+    ? routines?.find((entry) => entry.id === workout.routineId)
+    : undefined
+  const changes = routine ? routineChanges(routine.exercises, workout) : null
+
   const durationS = Math.round((endedAt - startedAt) / 1000)
   const error = timesError(t, startedAt, endedAt)
   const unitLabel = t(UNIT_KEY[unit])
@@ -123,7 +142,8 @@ export default function FinishWorkoutScreen() {
     }
   }
 
-  const onSave = async () => {
+  // `update` is the answer about the routine: undefined until asked.
+  const onSave = async (update?: RoutineUpdate | 'keep') => {
     if (error || saving) return
     // Every way here goes through the logger's checks, but this screen is the
     // one that clears the workout from the phone, so it holds the line itself:
@@ -136,10 +156,27 @@ export default function FinishWorkoutScreen() {
       })
       return
     }
+    if (changes && (changes.layout || changes.values) && update === undefined) {
+      setAskRoutine(true)
+      return
+    }
     setSaving(true)
     try {
       const document = { ...workout, name: name.trim() || workout.name, notes, startedAt }
       const { payload, queued, health } = await saveWorkout(document, endedAt)
+      // After the workout is safe, and without holding up leaving: a routine
+      // that fails to update is worth a toast, not a lost workout.
+      if (routine && update && update !== 'keep') {
+        saveRoutine
+          .mutateAsync({
+            id: routine.id,
+            name: routine.name,
+            notes: routine.notes,
+            exercises: updatedRoutine(routine.exercises, workout, update),
+            templateId: routine.templateId,
+          })
+          .catch(() => toast.show({ title: t('workouts:finish.routineFailed'), tone: 'error' }))
+      }
       track('Workout Finished', {
         exercises: payload.exercises.length,
         sets: doneSets(document),
@@ -179,7 +216,7 @@ export default function FinishWorkoutScreen() {
         />
       }
       footer={
-        <Button fullWidth onPress={onSave} loading={saving} disabled={Boolean(error)}>
+        <Button fullWidth onPress={() => onSave()} loading={saving} disabled={Boolean(error)}>
           {t('workouts:finish.save')}
         </Button>
       }
@@ -292,6 +329,58 @@ export default function FinishWorkoutScreen() {
           )
         })}
       </Card>
+
+      {/* Only the answers that would change something: Strong's four when both
+          the layout and the numbers moved, two otherwise. Dismissing it is
+          "not yet", and saves nothing. */}
+      {routine && changes ? (
+        <ActionSheet
+          visible={askRoutine}
+          onClose={() => setAskRoutine(false)}
+          title={t('workouts:finish.routineTitle', { name: routine.name })}
+          description={t('workouts:finish.routineBody')}
+          actions={[
+            ...(changes.layout && changes.values
+              ? [
+                  {
+                    key: 'layoutAndValues',
+                    label: t('workouts:finish.routineUpdateAll'),
+                    icon: { set: 'ui', name: 'save' } as const,
+                    tone: changes.removes ? ('danger' as const) : undefined,
+                    onPress: () => onSave('layoutAndValues'),
+                  },
+                ]
+              : []),
+            ...(changes.layout
+              ? [
+                  {
+                    key: 'layout',
+                    label: t('workouts:finish.routineUpdate'),
+                    icon: { set: 'ui', name: 'reorder' } as const,
+                    tone: changes.removes ? ('danger' as const) : undefined,
+                    onPress: () => onSave('layout'),
+                  },
+                ]
+              : []),
+            ...(changes.values
+              ? [
+                  {
+                    key: 'values',
+                    label: t('workouts:finish.routineValues'),
+                    icon: { set: 'ui', name: 'edit' } as const,
+                    onPress: () => onSave('values'),
+                  },
+                ]
+              : []),
+            {
+              key: 'keep',
+              label: t('workouts:finish.routineKeep'),
+              icon: { set: 'ui', name: 'bookmark' },
+              onPress: () => onSave('keep'),
+            },
+          ]}
+        />
+      ) : null}
     </Screen>
   )
 }
