@@ -36,8 +36,13 @@ export async function syncWorkoutToHealth(
     // alone: turning a switch off is not asking for history to be erased.
     return { healthId: workout.healthWorkoutId, failed: false, replaced: false }
   }
-  if (!(await mayWrite())) {
-    return { healthId: workout.healthWorkoutId, failed: false, replaced: false }
+  try {
+    if (!(await mayWrite())) {
+      return { healthId: workout.healthWorkoutId, failed: false, replaced: false }
+    }
+  } catch (error) {
+    console.warn('[workouts] could not request Apple Health permission', error)
+    return { healthId: workout.healthWorkoutId, failed: true, replaced: false }
   }
   try {
     // Whatever copy is there already: the one on record, or one a save that
@@ -76,8 +81,13 @@ async function mayWrite(): Promise<boolean> {
   if (status === 'unavailable') return false
   if (status !== 'unasked') return true
   if (await requestWorkoutWrite()) return true
-  setWorkoutPrefs({ healthWrite: false })
-  return false
+  // A cancelled or failed request can leave permission undetermined. Only a
+  // recorded refusal is the user's choice to turn saving off on this phone.
+  if (workoutWriteStatus() === 'refused') {
+    setWorkoutPrefs({ healthWrite: false })
+    return false
+  }
+  throw new Error('Apple Health workout permission request did not complete')
 }
 
 export async function removeWorkoutFromHealth(

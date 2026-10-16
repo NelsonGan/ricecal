@@ -4045,7 +4045,9 @@ permissions (workouts, active energy, and the three distance types) at the
 first save, or when the switch is turned back on. A "no" on that first sheet
 turns the switch off rather than toasting a failure the user just chose; a
 permission withdrawn later in Health's settings is still reported as a failed
-save. Connecting health for the budget still asks to write nothing.
+save. An interrupted or failed permission request keeps saving enabled for a
+later retry and reports a Health failure without blocking the workout save.
+Connecting health for the budget still asks to write nothing.
 
 - Each finished workout is saved as an `HKWorkout` of the activity type its
   exercises add up to (a run is a run, lifting is strength training), with
