@@ -19,9 +19,13 @@ import { useToast } from '@/ui'
 export function useRoutineGate() {
   const toast = useToast()
   const requirePro = useRequirePro()
-  const { entitled } = useEntitlement()
+  const { entitled, loading, unknown } = useEntitlement()
   const routines = useRoutines()
-  const atLimit = !entitled && (routines.data?.length ?? 0) >= FREE_ROUTINES
+  // Only a known free account is held back. While the answer is loading, or
+  // offline, the button opens the editor and the trigger decides at Save:
+  // stopping a Pro account at launch with "checking" was a button that did
+  // nothing on the first tap.
+  const atLimit = !entitled && !loading && !unknown && (routines.data?.length ?? 0) >= FREE_ROUTINES
 
   return {
     /** Whether a new routine may be started. Shows the paywall when not. */

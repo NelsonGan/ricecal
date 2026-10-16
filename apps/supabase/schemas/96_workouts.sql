@@ -656,15 +656,18 @@ grant execute on function public.workout_weeks(integer) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Monthly bars, for the progress page's Year and All time: the same four
--- totals per calendar month, from the month of the first workout (or eleven
--- months back, whichever is earlier, so a year is always twelve columns) to
--- this one, empty months included.
+-- totals per calendar month, empty months included, up to this one.
+--
+-- `p_months` is how many months back, this one included: 12 for Year, so only
+-- that year's sets are added up. Null is all time, from the month of the first
+-- workout (or eleven months back, whichever is earlier, so it is never fewer
+-- than twelve columns).
 --
 -- Months rather than more weeks: a year of weeks is 52 bars on a phone, too
 -- thin to tap, and an imported history goes back further than `workout_weeks`
 -- will count. Bucketed by `log_date`, the workout's own day, as the weeks are.
 -- ---------------------------------------------------------------------------
-create or replace function public.workout_months()
+create or replace function public.workout_months(p_months integer default null)
 returns table (
   month       date,
   workouts    integer,
@@ -682,15 +685,18 @@ as $$
   ),
   bounds as (
     select
-      least(
-        coalesce(
-          (select date_trunc('month', min(w.log_date))::date
-             from public.workouts w
-            where w.user_id = (select auth.uid())),
-          t.first
-        ),
-        (t.first - interval '11 months')::date
-      ) as first,
+      case
+        when p_months is null then least(
+          coalesce(
+            (select date_trunc('month', min(w.log_date))::date
+               from public.workouts w
+              where w.user_id = (select auth.uid())),
+            t.first
+          ),
+          (t.first - interval '11 months')::date
+        )
+        else (t.first - make_interval(months => least(greatest(p_months, 1), 1200) - 1))::date
+      end as first,
       t.first as last
     from this_month t
   ),
@@ -709,9 +715,11 @@ as $$
       select v.workout_id, sum(v.volume_kg) as volume_kg, count(*) as sets
       from public.workout_set_values v
       where v.user_id = (select auth.uid())
+        and v.log_date >= (select b.first from bounds b)
       group by v.workout_id
     ) t on t.workout_id = w.id
     where w.user_id = (select auth.uid())
+      and w.log_date >= (select b.first from bounds b)
   )
   select
     c.month,
@@ -725,13 +733,13 @@ as $$
   order by c.month;
 $$;
 
-comment on function public.workout_months() is
-  'Workouts, seconds, volume and sets per calendar month, from the first '
-  'workout''s month (or eleven months back, if earlier) to this one, oldest '
-  'first, empty months included.';
+comment on function public.workout_months(integer) is
+  'Workouts, seconds, volume and sets per calendar month for the last p_months '
+  'months (at most 1200), or with null from the first workout''s month (or '
+  'eleven months back, if earlier) to this one; oldest first, empty months included.';
 
-revoke all on function public.workout_months() from public, anon;
-grant execute on function public.workout_months() to authenticated;
+revoke all on function public.workout_months(integer) from public, anon;
+grant execute on function public.workout_months(integer) to authenticated;
 
 
 -- ---------------------------------------------------------------------------

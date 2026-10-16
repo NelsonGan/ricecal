@@ -135,9 +135,10 @@ function DayCircle({
       collapsable={false}
       className={cn(
         'h-[34px] w-[34px] items-center justify-center rounded-full',
-        trained ? 'bg-pandan' : picked || isToday ? 'border-2 border-pandan' : undefined,
-        // The picked day keeps its fill and gains a darker ring.
-        picked && trained && 'border-2 border-pandan-ink',
+        // Today is a green ring; the picked day a darker one, over a pale fill
+        // when it had no workout, so the two never look alike.
+        trained ? 'bg-pandan' : picked ? 'bg-pandan-soft' : undefined,
+        picked ? 'border-2 border-pandan-ink' : isToday && !trained && 'border-2 border-pandan',
       )}
     >
       <Text

@@ -3754,7 +3754,10 @@ on the progress screen; the week streak sits beside the tab's title, as the day
 streak does on Today. The toggle on the title's other side is Today's too: it
 swaps the tab for the month (`WorkoutCalendar`, the progress page's calendar
 with days that can be picked), every trained day filled, and under it the
-workouts of the day tapped, today until another is. Settings exports every set as CSV and imports
+workouts of the day tapped, today until another is. That list is History's
+cards for one day, PR badges included (it asks for the record counts History
+has, for one day's workouts), and it holds the day's workouts still waiting to
+sync, as History does. Settings exports every set as CSV and imports
 a history from Strong or Hevy.
 
 ### The catalogue is code, and every entry has a drawing
@@ -3840,7 +3843,10 @@ refuses a fourth insert with `routine_limit_reached`, as the recipe ceiling does
 saved as one count too. The three ways to make one ("New routine", the first
 row of the tab's list under the routines, "Add to my routines" and "Save as
 routine") check the list on screen first (`useRoutineGate`) and open the paywall before anything is built;
-the trigger is the last word for a routine added on another phone. Editing,
+the trigger is the last word for a routine added on another phone. Only a
+known free account is stopped at the button: while the subscription is still
+being checked, or cannot be, the editor opens and the trigger decides at Save,
+so a Pro account is never told "checking" by New routine at launch. Editing,
 starting and deleting are never gated, and an account that lapses with more
 than three keeps them all.
 
@@ -3958,10 +3964,11 @@ the same flag on every one of 5,000 sets as before.
   one row is the heaviest weight again.
 - **The streak is in weeks**, ending this week or last. A daily streak punishes
   exactly the rest days a program prescribes.
-- **The progress bars** are `workout_weeks(13)` for three months and
-  `workout_months()` for a year and all time: every month from the first
-  workout's (or eleven months back, if that is earlier, so a year is always
-  twelve bars) to this one, empty ones included. A year of weeks would be 52
+- **The progress bars** are `workout_weeks(13)` for three months,
+  `workout_months(12)` for a year, and `workout_months()` for all time: every
+  month from the first workout's (or eleven months back, if that is earlier) to
+  this one, empty ones included. A year passes its length so only that year's
+  sets are added up; all time reads the whole history once. A year of weeks would be 52
   bars too thin to tap, and `workout_weeks` stops at 104. All time past two
   years of months is summed into years on the phone (`periodsFor`). The ranges
   past three months are Pro, gated in the client alone like the Trends ranges:

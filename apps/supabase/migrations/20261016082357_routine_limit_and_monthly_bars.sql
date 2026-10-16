@@ -18,7 +18,9 @@ GRANT ALL ON FUNCTION public.free_routine_limit() TO authenticated;
 
 GRANT ALL ON FUNCTION public.free_routine_limit() TO service_role;
 
-CREATE FUNCTION public.workout_months()
+CREATE FUNCTION public.workout_months (
+  p_months integer DEFAULT NULL::integer
+)
   RETURNS TABLE (
     month      date,
     workouts   integer,
@@ -35,15 +37,18 @@ CREATE FUNCTION public.workout_months()
   ),
   bounds as (
     select
-      least(
-        coalesce(
-          (select date_trunc('month', min(w.log_date))::date
-             from public.workouts w
-            where w.user_id = (select auth.uid())),
-          t.first
-        ),
-        (t.first - interval '11 months')::date
-      ) as first,
+      case
+        when p_months is null then least(
+          coalesce(
+            (select date_trunc('month', min(w.log_date))::date
+               from public.workouts w
+              where w.user_id = (select auth.uid())),
+            t.first
+          ),
+          (t.first - interval '11 months')::date
+        )
+        else (t.first - make_interval(months => least(greatest(p_months, 1), 1200) - 1))::date
+      end as first,
       t.first as last
     from this_month t
   ),
@@ -62,9 +67,11 @@ CREATE FUNCTION public.workout_months()
       select v.workout_id, sum(v.volume_kg) as volume_kg, count(*) as sets
       from public.workout_set_values v
       where v.user_id = (select auth.uid())
+        and v.log_date >= (select b.first from bounds b)
       group by v.workout_id
     ) t on t.workout_id = w.id
     where w.user_id = (select auth.uid())
+      and w.log_date >= (select b.first from bounds b)
   )
   select
     c.month,
@@ -78,9 +85,9 @@ CREATE FUNCTION public.workout_months()
   order by c.month;
 $function$;
 
-COMMENT ON FUNCTION public.workout_months() IS 'Workouts, seconds, volume and sets per calendar month, from the first workout''s month (or eleven months back, if earlier) to this one, oldest first, empty months included.';
+COMMENT ON FUNCTION public.workout_months(integer) IS 'Workouts, seconds, volume and sets per calendar month for the last p_months months (at most 1200), or with null from the first workout''s month (or eleven months back, if earlier) to this one; oldest first, empty months included.';
 
-GRANT ALL ON FUNCTION public.workout_months() TO authenticated;
+GRANT ALL ON FUNCTION public.workout_months(integer) TO authenticated;
 
 CREATE FUNCTION public.workout_routines_enforce_free_limit()
   RETURNS TRIGGER
@@ -118,4 +125,4 @@ CREATE TRIGGER workout_routines_enforce_free_limit
 -- 96_workouts.sql.
 revoke execute on function public.free_routine_limit from public, anon;
 revoke execute on function public.workout_routines_enforce_free_limit from public, anon, authenticated;
-revoke all on function public.workout_months() from public, anon;
+revoke all on function public.workout_months(integer) from public, anon;

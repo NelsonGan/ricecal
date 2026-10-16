@@ -183,12 +183,15 @@ export const keys = {
   workoutsAll: (userId: string) => ['workouts', userId] as const,
   workouts: (userId: string) => ['workouts', userId, 'list'] as const,
   workoutsOn: (userId: string, date: string) => ['workouts', userId, 'day', date] as const,
+  workoutsOnWithRecords: (userId: string, date: string) =>
+    ['workouts', userId, 'day', date, 'records'] as const,
   workout: (userId: string, id: string) => ['workouts', userId, 'one', id] as const,
   workoutOverview: (userId: string) => ['workouts', userId, 'overview'] as const,
   workoutDates: (userId: string, from: string, to: string) =>
     ['workouts', userId, 'dates', from, to] as const,
   workoutWeeks: (userId: string, weeks: number) => ['workouts', userId, 'weeks', weeks] as const,
-  workoutMonths: (userId: string) => ['workouts', userId, 'months'] as const,
+  workoutMonths: (userId: string, months: number | null) =>
+    ['workouts', userId, 'months', months] as const,
   exerciseTotals: (userId: string, from: string, to: string) =>
     ['workouts', userId, 'exercise-totals', from, to] as const,
   exerciseBests: (userId: string, exerciseId: string | null) =>
