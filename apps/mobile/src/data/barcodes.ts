@@ -37,3 +37,21 @@ export async function lookupPacket(code: string): Promise<Food | null> {
   // `snapshotFromFood` drops it again before it can reach `food_logs.food_id`.
   return toFood({ ...data.food, id: packetFoodId(code) })
 }
+
+/**
+ * Tell the server an entry from a scan has been renamed.
+ *
+ * A barcode miss hands the camera to the nutrition panel, and a panel with no
+ * product name on it is logged as "Packaged food". `scan-meal` kept its
+ * figures, and this is the moment the server learns the name: the `barcode`
+ * function reads the new name off the row and writes the packet into the
+ * catalogue, so the next scan finds it. Most renames have no panel waiting, and
+ * the answer is simply no.
+ *
+ * Not a hook, and never awaited: it invalidates nothing, and the rename has
+ * already been saved. A failure costs the catalogue one packet, never the user
+ * their edit.
+ */
+export function offerPacketName(entryId: string): void {
+  supabase.functions.invoke('barcode', { body: { named: entryId } }).catch(() => undefined)
+}

@@ -118,6 +118,42 @@ grant select, insert, delete on public.barcode_misses to service_role;
 
 
 -- ---------------------------------------------------------------------------
+-- A photographed panel waiting for its packet's name.
+--
+-- A barcode miss hands the camera to the nutrition panel, and `scan-meal`
+-- writes a panel that passes back to the catalogue under that code. A third of
+-- them failed on the name alone: the panel is the back of the box, the name is
+-- on the front, so the scan read the figures and called it "Packaged food".
+-- Nothing was saved and the next scan of the packet missed again. Meanwhile the
+-- people holding it typed the name into their own entry a minute later.
+--
+-- So the figures wait here, against the entry, and the `barcode` function
+-- writes the catalogue row when the entry is renamed. The figures come from
+-- this row and never from the request or from `food_logs`, whose `base_*`
+-- columns the owner can edit: the name is the only thing the person supplies.
+--
+-- Keyed by the entry, so deleting it takes the panel with it. Only figures
+-- that already passed every catalogue check except the name are written here,
+-- and the column checks hold the simplest of those lines again.
+-- ---------------------------------------------------------------------------
+create table public.packet_panels (
+  food_log_id uuid primary key references public.food_logs (id) on delete cascade,
+  barcode     text not null check (barcode ~ '^[0-9]{14}$'),
+  kcal        integer not null check (kcal > 0 and kcal <= 2000),
+  carbs_g     numeric(6, 1) not null check (carbs_g >= 0),
+  protein_g   numeric(6, 1) not null check (protein_g >= 0),
+  fat_g       numeric(6, 1) not null check (fat_g >= 0),
+  serving_g   numeric(7, 1) check (serving_g > 0),
+  created_at  timestamptz not null default now()
+);
+
+alter table public.packet_panels enable row level security;
+
+revoke all on public.packet_panels from public, anon, authenticated;
+grant select, insert, delete on public.packet_panels to service_role;
+
+
+-- ---------------------------------------------------------------------------
 -- How many packets an account has scanned in the current hour, and the ceiling.
 --
 -- The barcode function is the one model-adjacent path with no throttle: unlike a

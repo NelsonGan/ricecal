@@ -484,6 +484,26 @@ Deno.test('productFromLabel refuses a panel with no product name', () => {
   eq(labelRefusal(labelPanel({ name: '  ' })), no, 'whitespace')
 })
 
+// The panel with no name on it is the common case after a barcode miss: the
+// figures are on the back of the box and the name is on the front. Its figures
+// come back with the refusal so `scan-meal` can keep them until the entry is
+// named.
+Deno.test('productFromLabel hands back the figures of a panel with no name', () => {
+  const judged = productFromLabel(PANEL_CODE, labelPanel({ name: 'Packaged food' }))
+  if (!('unnamed' in judged) || !judged.unnamed) throw new Error('expected figures to keep')
+  eq(judged.unnamed.barcode, 9556001315694, 'the code it was photographed for')
+  eq(judged.unnamed.kcal, 157, 'the energy the panel printed')
+  eq(judged.unnamed.fat_g, 6.1, 'and the macros, rounded as a catalogue row')
+  eq(judged.unnamed.serving_g, 30, 'and the serving in grams')
+})
+
+// Only the name may be missing. Figures that fail are not worth keeping, since
+// no name could make them right.
+Deno.test('productFromLabel keeps nothing when the figures fail too', () => {
+  const judged = productFromLabel(PANEL_CODE, labelPanel({ name: 'Packaged food', fat_g: 61 }))
+  eq('unnamed' in judged, false, 'a slipped decimal point is not kept for later')
+})
+
 // And it does not refuse a real product whose name happens to contain one of
 // those words in passing.
 Deno.test('productFromLabel keeps a real name that reads like a heading', () => {
@@ -493,6 +513,13 @@ Deno.test('productFromLabel keeps a real name that reads like a heading', () => 
 // A zero means the model found the table and not the numbers in it.
 Deno.test('productFromLabel refuses an energy figure that cannot be right', () => {
   eq(labelRefusal(labelPanel({ kcal: 0 })).startsWith('implausible energy'), true, 'zero')
+  eq(
+    labelRefusal(labelPanel({ kcal: 0.4, carbs_g: 0.1, protein_g: 0, fat_g: 0 })).startsWith(
+      'implausible energy',
+    ),
+    true,
+    'a figure that rounds to zero',
+  )
   eq(
     labelRefusal(labelPanel({ kcal: 2600 })).startsWith('implausible energy'),
     true,

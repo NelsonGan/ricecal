@@ -286,6 +286,7 @@ only emits structure:
 | what | why |
 |---|---|
 | a `REVOKE` on a new function | the diff emits the grants a function ENDS UP with, not the revoke that shaped them, so `create function`'s default EXECUTE-to-PUBLIC survives into the migration |
+| client `REVOKE`s on a new table | the same gap for tables: the default grants to `anon` and `authenticated` survive, which a service-only table cannot have (`packet_panels` was the latest) |
 | seed data of any kind | the rows are data, and a diff only emits structure |
 | `create extension` / `drop extension` | the diff engine does not track extensions at all |
 | `cron.schedule(…)` calls | a schedule is a row in `cron.job`, so it is data too |
@@ -303,7 +304,7 @@ The `auth` schema is **not** one of these. The diff tracks triggers on
 made the next diff emit `DROP TRIGGER` for it. It stays declarative, in
 `16_new_user.sql`.
 
-Seven service-only tables have RLS enabled with no policies. That denies all
+Eight service-only tables have RLS enabled with no policies. That denies all
 row reads and writes by default; their client table grants are revoked too.
 `98_client_table_privileges.sql` also removes `TRUNCATE`, `REFERENCES`, `TRIGGER`
 and `MAINTAIN` from client roles on every public table. These operations do not
@@ -338,6 +339,7 @@ auth.users
 food_scan_items       what the model claimed, and where it landed
 food_scan_misses      the catalogue-widening backlog
 barcode_misses        the same, for packets
+packet_panels         a photographed panel's figures, waiting for the packet's name
 job_runs              what each periodic job did, written by the job itself
 ```
 
@@ -1656,6 +1658,40 @@ holding the packet to type out what is printed on the back of it. `scan-meal`
 already reads a photographed panel and logs it exactly — `resolveByLabel`, tier
 1, no cascade and no guessing — so the answer to a packet we do not have is to
 turn the camera around. It costs a scan, which the sheet's own quota line says.
+
+**A panel that passes is written back under the code.** The camera carries the
+barcode, and `scan-meal` judges the panel a second time as a catalogue row
+(`productFromLabel`): every macro, energy above zero and under 2,000 kcal a
+serving, figures that agree with themselves within 35%, and a product name. A
+row there is served to everybody who scans the packet, so anything short of that
+stays a miss, which is where it already was. The Worker records each one in
+`product_contribution`, so the lot can be taken back in one statement.
+
+**The name is usually on the other side of the box.** In one week a third of the
+panels photographed after a miss had good figures and no product name, because
+the panel is on the back. The scan names those "Packaged food", which is no name
+for a catalogue row, so the packet stayed a miss, while the people holding it
+typed the name into their entry a minute later. Now the figures wait in
+`packet_panels` against the entry, and renaming it writes the row. The app sends
+only the entry's id (`functions/barcode` with `{named}`), and the function reads
+the name off the row and the figures off the panel, never off the request.
+
+A typed name is weaker evidence than a printed one, so this path asks more:
+
+- the code has to have missed in the last hour (`barcode_misses`), or any
+  request could name any barcode it liked;
+- the entry still has to count the panel's figures, since fix-by-typing or an
+  override is its owner saying the photo was read wrong;
+- the panel has to be under a month old;
+- and the name has to pass `catalogueName`, the one rule for both names, which
+  also refuses meal words, links, handles, phone numbers and invisible
+  characters.
+
+A refusal leaves the panel waiting for a better edit. A typed name is recorded as
+`user_named` so it can be taken back without the panels a model named, and the
+Worker refuses a source it does not know rather than filing it as Open Food
+Facts. A build older than this one never reports a rename, so its panels wait
+until the entry is deleted.
 
 A lookup that could not be MADE is the other case and still stops: the packet may
 be fine and the connection was not, so "Scan again" is the primary there, with
