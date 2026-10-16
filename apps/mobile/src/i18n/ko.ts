@@ -1880,6 +1880,10 @@ export const ko = {
       skip: '건너뛰기',
       over: '휴식 끝',
       overBody: '{{name}} 다음 세트를 할 시간입니다.',
+      min: '분',
+      sec: '초',
+      minutes: '분',
+      seconds: '초',
     },
 
     finish: {

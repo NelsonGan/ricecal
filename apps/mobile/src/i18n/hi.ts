@@ -1878,6 +1878,10 @@ export const hi = {
       skip: 'छोड़ें',
       over: 'आराम ख़त्म',
       overBody: '{{name}} के अगले सेट का समय।',
+      min: 'मिनट',
+      sec: 'सेकंड',
+      minutes: 'मिनट',
+      seconds: 'सेकंड',
     },
 
     finish: {

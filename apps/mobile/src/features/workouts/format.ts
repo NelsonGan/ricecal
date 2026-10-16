@@ -100,9 +100,6 @@ export function clock(seconds: number): string {
   return `${String(minutes).padStart(2, '0')}:${ss}`
 }
 
-/** The rest timer's choices, in seconds, wherever one is picked. 0 is no timer. */
-export const REST_CHOICES = [0, 30, 45, 60, 90, 120, 150, 180, 240, 300] as const
-
 /** "1:30" for a rest or a set's time: minutes and seconds, no padding on the minutes. */
 export function shortClock(seconds: number): string {
   const total = Math.max(0, Math.round(seconds))

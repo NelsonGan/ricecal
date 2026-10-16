@@ -1892,6 +1892,10 @@ export const ja = {
       skip: 'スキップ',
       over: '休憩終了',
       overBody: '次は {{name}} のセットです。',
+      min: '分',
+      sec: '秒',
+      minutes: '分',
+      seconds: '秒',
     },
 
     finish: {

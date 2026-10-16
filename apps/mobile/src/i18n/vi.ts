@@ -1894,6 +1894,10 @@ export const vi = {
       skip: 'Bỏ qua',
       over: 'Hết giờ nghỉ',
       overBody: 'Đến set tiếp theo của {{name}}.',
+      min: 'phút',
+      sec: 'giây',
+      minutes: 'Phút',
+      seconds: 'Giây',
     },
 
     finish: {

@@ -1901,6 +1901,10 @@ export const ta = {
       skip: 'தவிர்',
       over: 'ஓய்வு முடிந்தது',
       overBody: '{{name}} இன் அடுத்த செட்டுக்கு நேரம்.',
+      min: 'நிமி',
+      sec: 'வினா',
+      minutes: 'நிமிடங்கள்',
+      seconds: 'வினாடிகள்',
     },
 
     finish: {

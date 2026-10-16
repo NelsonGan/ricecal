@@ -12,7 +12,7 @@ import type { Tracking } from './catalogue'
 import { RECORD_KEY, SET_KIND_KEY } from './copy'
 import { ExerciseCard } from './ExerciseCard'
 import { FieldOrderProvider } from './fieldOrder'
-import { distanceUnitFor, REST_CHOICES, shortClock } from './format'
+import { distanceUnitFor } from './format'
 import { useExerciseLibrary } from './library'
 import {
   type Action,
@@ -29,6 +29,7 @@ import {
 import { PlateSheet } from './PlateSheet'
 import { awaitPick } from './pick'
 import { ReorderSheet } from './ReorderSheet'
+import { RestSheet } from './RestSheet'
 import { recordSets } from './records'
 import type { CardHandlers } from './SetTable'
 import { warmupSets } from './warmup'
@@ -468,30 +469,18 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
           }
         />
 
-        <ActionSheet
+        <RestSheet
           visible={restFor !== null}
           onClose={() => setRestFor(null)}
           title={t('workouts:logger.restTitle')}
-          actions={
-            restFor
-              ? [
-                  {
-                    key: 'default',
-                    label: t('workouts:logger.restDefault', { time: shortClock(defaultRestS) }),
-                    selected: restFor.restS === null,
-                    onPress: () =>
-                      dispatch({ type: 'exerciseRest', key: restFor.key, restS: null }),
-                  },
-                  ...REST_CHOICES.map((seconds) => ({
-                    key: String(seconds),
-                    label: seconds === 0 ? t('workouts:logger.restOff') : shortClock(seconds),
-                    selected: restFor.restS === seconds,
-                    onPress: () =>
-                      dispatch({ type: 'exerciseRest', key: restFor.key, restS: seconds }),
-                  })),
-                ]
-              : []
-          }
+          seconds={restFor?.restS ?? null}
+          defaultS={defaultRestS}
+          onPick={(restS) => {
+            if (restFor) dispatch({ type: 'exerciseRest', key: restFor.key, restS })
+          }}
+          onUseDefault={() => {
+            if (restFor) dispatch({ type: 'exerciseRest', key: restFor.key, restS: null })
+          }}
         />
 
         <ConfirmSheet
