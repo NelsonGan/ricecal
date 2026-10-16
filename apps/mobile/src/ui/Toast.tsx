@@ -28,6 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
 import { Icon, type IconProps } from './Icon'
+import { useNumpadOpen } from './Numpad'
 import { Tappable } from './Tappable'
 import { Text } from './Text'
 
@@ -256,8 +257,17 @@ function ToastSurface({
   const insets = useSafeAreaInsets()
   const { toast, dismiss } = stage
   const palette = tones[toast?.tone ?? 'neutral']
-  const placement = forced ?? toast?.placement ?? (toast?.tone === 'error' ? 'top' : 'bottom')
-  const fromTop = placement === 'top'
+  // With the number pad up the bottom is its keys, and a toast there takes the
+  // next tap, so it comes from the top instead. Decided once per toast, as it
+  // appears: re-read on every render, "Workout saved" jumped to the bottom
+  // when leaving the logger closed the pad under it.
+  const padOpen = useNumpadOpen()
+  const placed = useRef<{ id: number; top: boolean } | null>(null)
+  if (toast && placed.current?.id !== toast.id) {
+    const wanted = toast.placement ?? (toast.tone === 'error' ? 'top' : 'bottom')
+    placed.current = { id: toast.id, top: padOpen || wanted === 'top' }
+  }
+  const fromTop = forced ? forced === 'top' : placed.current?.top === true
 
   if (!toast) return null
 

@@ -29,6 +29,7 @@ project works is here.
 - [History behind the charts](#history-behind-the-charts)
 - [Weekly and monthly reviews](#weekly-and-monthly-reviews)
 - [Activity and health](#activity-and-health)
+- [Workouts](#workouts)
 - [Photos](#photos)
 - [Money: free and Pro](#money-free-and-pro)
 - [Asking for a rating](#asking-for-a-rating)
@@ -278,8 +279,8 @@ other database is built from scratch.
 
 ### Things a diff cannot see
 
-Three kinds of change have to be hand-written into a migration, because
-`supabase db diff` only emits structure:
+These have to be hand-written into a migration, because `supabase db diff`
+only emits structure:
 
 | what | why |
 |---|---|
@@ -287,6 +288,7 @@ Three kinds of change have to be hand-written into a migration, because
 | seed data of any kind | the rows are data, and a diff only emits structure |
 | `create extension` / `drop extension` | the diff engine does not track extensions at all |
 | `cron.schedule(…)` calls | a schedule is a row in `cron.job`, so it is data too |
+| `ROWS n` on an existing function | the diff compares bodies and arguments, not the planner's row estimate, so changing only the hint emits nothing; a function the migration creates carries it |
 
 Nothing schedules anything here any more, and there is no seed function left
 either — `seed_archetype_foods()` went with the archetypes — but the rule is
@@ -323,6 +325,10 @@ auth.users
        ├── recipe_reports ─── a community recipe somebody reported
        ├── blocked_authors ── cooks this account never wants to see again
        ├── weight_logs ────── current weight, typed or synced
+       ├── custom_exercises ─ exercises the user named, beside the catalogue
+       ├── workout_routines ─ the plans a workout starts from
+       ├── workouts ───────── one logged session, saved whole by save_workout
+       │    └── workout_exercises → workout_sets
        └── health_connections  which health store, and how far back it has read
             ├── activity_days ───── one day of movement, keyed by local date
             ├── activity_sessions  one workout, keyed by the store's own id
@@ -344,7 +350,9 @@ shape.
 
 Read shapes are views, all `security_invoker`: `food_log_details`,
 `food_log_ingredient_details`, `daily_nutrition`, `user_food_stats`,
-`current_daily_goals`, `recipe_details`, `recipe_ingredient_details`.
+`current_daily_goals`, `recipe_details`, `recipe_ingredient_details`, and for
+workouts `workout_set_values`, `workout_set_details` and `workout_summaries`
+(see "Workouts").
 
 Plus `goals_on(date)`, `logging_streak()`, `day_marks(from, to)`,
 `day_plates(from, to)`, and three range families:
@@ -836,26 +844,29 @@ same My foods results instead of Today or All foods. `openOwn` and `openCreate`
 sit beside `openPicked`, and the page does not focus its field when any of them
 sent it, since a keyboard would come up under the screen on top.
 
-Four tabs (Today, Feed, Trends, Me) on the headless `expo-router/ui` Tabs
-rather than a styled navigator, because `NavBar` and `NavItem` are the design
-system's and a native tab bar cannot be made to look like them.
+Five tabs (Today, Workouts, Feed, Trends, Me) on the headless `expo-router/ui`
+Tabs rather than a styled navigator, because `NavBar` and `NavItem` are the
+design system's and a native tab bar cannot be made to look like them.
 
-**The bar floats.** It is drawn over the bottom of the screen with no background
-of its own, so content scrolls on under the pill. `NavInsetProvider` in the tabs
-layout tells each screen how much of its bottom the bar covers (its height plus
-the home indicator), and `Screen` pads the last row and lifts its floating
-corner by that much. Zero on a pushed page. A list that `Screen` does not scroll,
-the feed, reads `useNavInset` and pads itself.
+**The bar floats, the full width of the screen.** It is drawn over the bottom of
+the screen with no background of its own, so content scrolls on under the pill.
+`NavInsetProvider` in the tabs layout tells each screen how much of its bottom
+the bar covers (its height plus the home indicator), and `Screen` pads the last
+row and lifts its floating corners by that much. Zero on a pushed page. A list
+that `Screen` does not scroll, the feed, reads `useNavInset` and pads itself.
 
-**The log button is at the right end of the bar**, a `NavAction` beside the pill
-that holds the tabs, on every tab. It has been raised in the middle of the bar,
-which capped it at four tabs because a centre action needs the same number on
-each side, and then a floating button on Today alone, which sat over the last
-row of the day and over the Delete of any row swiped open beneath it. Beside the
-pill it covers nothing.
+**The log button floats over Today alone**, at the bottom right, as `Screen`'s
+`floatingTrailing`. It has been raised in the middle of the bar, which capped
+it at four tabs, and beside the pill on every tab, which took the width a fifth
+tab needed. The first time it floated over Today it sat over the last row of
+the day and over the Delete of any row swiped open beneath it. `Screen` now
+pads its content by the button's height whenever a trailing control floats, so
+the last row scrolls clear of it, and Today drops the button while any row is
+swiped open (`EntryList`'s `onRowOpenChange`), so it never covers a Delete.
 
 If an earlier day remains selected, the log sheet shows its date. This matters
-when opening it from Feed, Trends or Me, where the diary's date is not visible.
+when it is opened from somewhere the diary's date is not visible, such as a
+notification or a widget.
 
 The log sheet remembers its last nonempty option, Snap, Describe or Search, in
 MMKV per account on this phone. A fresh account starts with Snap; reopening the
@@ -1239,7 +1250,8 @@ search, suggestions and Discover while leaving direct links and existing follows
 available.
 The switch's explanation sits behind its info button. Auto post foods sits below
 it, off by default. Turning it on shares each new food to the feed as the food
-is committed. A private profile shares those posts with followers only.
+is committed. A private profile shares those posts with followers only. Auto post
+workouts sits below that, on by default; see "Workouts on the feed".
 Clipboard support requires a native 1.0.5 build; the app-version runtime keeps this bundle off older binaries.
 
 **Password setup and changes are different forms.** `has_account_password()`
@@ -2637,6 +2649,44 @@ Automatic posts join the account to the social feed and use the same hourly post
 limit as Share. A quarantined profile does not publish; neither condition blocks
 the private diary entry.
 
+### Workouts on the feed
+
+A post shares a meal or a workout (`social_posts.kind`). A workout post points at
+its workout (`source_workout_id`, keyed with the author so it can only be the
+author's own) and reads it live through `private.social_post_workout`: name,
+start, duration, sets, volume and the exercise list, never the notes. Records are
+counted once, when it is posted (`workout_records`), because scoring them per
+reader would rescore the author's whole history; the count is taken inside
+`save_workout` or `create_social_workout_post`, which run as the user, since the
+owner-run posting function would score every account's sets. Likes, comments,
+reports, counters and notifications are the same rows for both kinds.
+
+**Every read that returns posts is food-only unless asked.** `social_feed`,
+`social_profile_posts`, `social_post` and the candidate helper take `p_kinds`,
+defaulting to `{food}`. The apps released before workout posts can only draw a
+meal, and a workout post reaching one would draw an empty food card; this app
+asks for both. A new kind of post must follow the same rule.
+
+**Sharing workouts is on by default, but only for someone already on the
+feed.** `profiles.auto_post_workouts` defaults to true, and `save_workout` posts
+a newly inserted workout (never an edit or a retried save) when the account has
+`social_joined_at` set, the workout ended in the last 24 hours, and the document
+does not say `"post": false`, which an import always does: years of history at
+once is not news, and an old workout logged today would top everyone's feed.
+Unlike Auto post foods it never joins anyone to the feed; a default that did
+would give a public profile to everyone who has never opened the Feed tab. A
+failed automatic post (budget spent, profile under review) never fails the save.
+A workout can also be shared by hand from its page, which opens the composer
+with the workout's preview, or edited there once posted.
+
+A profile is one grid, meals and workouts together and newest first. A whole
+workout card does not fit a half-width tile, so a workout there is the first
+exercise's drawing with its name and length (`WorkoutTile`), and opens its post
+for the full card. The header's post count adds the workouts the viewer can see
+(`social_workout_count`) to the meal count the server keeps. That count restates
+`social_can_view_post` so it can ask about the author once rather than once a
+post (0.4 ms rather than 70 at 400 posts), and a test holds the two together.
+
 There is at most one post per source entry, so a retried publish returns that
 post; the entry is the retry key and a post carries no request token. A client
 request UUID makes a retry of an interrupted comment submission the same
@@ -3659,6 +3709,805 @@ separate maintenance decision because it locks and rewrites the table.
 
 ---
 
+## Workouts
+
+The second tab, between Today and the feed: gym sessions logged set by set,
+the way Hevy and Strong do it, plus the routines they start from and
+the records they set. Today is what went in; Workouts is what was done, which is
+why the two sit side by side.
+
+```
+app/(tabs)/workouts.tsx       overview, start buttons, routines, history
+app/workout/active.tsx        the logger
+app/workout/finish.tsx        name, notes, start and end times, save
+app/workout/[id].tsx          a saved workout, with its records and muscles
+app/workout/edit/[id].tsx     edit a saved one, or log a past one (id = new)
+app/workout/exercises.tsx     the library, as a browser and as a picker
+app/workout/exercise/[id].tsx an exercise's history, charts, records and split
+app/workout/routine/[id].tsx  edit a routine
+app/workout/templates.tsx     the built-in templates; template/[id] is one
+app/workout/stats.tsx         12 weeks of totals, 30 days of muscles, records
+app/workout/settings.tsx      rest timer, units, Apple Health, reminders, CSV export
+app/workout/import.tsx        import a Strong or Hevy CSV
+app/workout/custom.tsx        a custom exercise
+src/features/workouts         the document, catalogue, templates, logger parts
+src/data/workouts.ts          every read and write, and the outbox
+src/data/workout-import.ts    saving an import
+apps/supabase/schemas/42_workouts.sql  the tables and save_workout
+apps/supabase/schemas/96_workouts.sql  every number: volume, 1RM, records, streak
+```
+
+What a user can do: start an empty workout, a routine, a template or a repeat of
+an old one; log a past workout after the fact. The
+logger shows each exercise's last numbers in a PREVIOUS column, takes warm-up,
+drop and failure sets, an RPE per set, supersets, notes, replacing and
+reordering, a rest timer per exercise and generated warm-up sets, and marks a
+record the moment a set beats one. A saved workout can be
+opened, edited, deleted, repeated, shared as text or saved as a routine. Every
+exercise has a page with its history, charts, bests, rep records and muscle
+split. Weekly bars, a 30-day muscle split, a calendar and the personal-records
+list are on the progress screen. Settings exports every set as CSV and imports
+a history from Strong or Hevy.
+
+### The catalogue is code, and every entry has a drawing
+
+`features/workouts/catalogue.ts` holds 278 exercises (gym lifts, bodyweight,
+cardio and mobility), each with an equipment, a body part, a level, a MET value
+and a muscle split that sums to 1. **There are no sports.** The tab is a
+training log, and a badminton game or a football match is not one: it has no
+sets to log, and on iPhone the health store already records it from a watch.
+The 22 sports it once carried, and the "Log a sport" button, were taken out
+before release, so no saved workout names one.
+It is code rather than a table for the reason the food icons are: every entry
+has an illustration made for it, and a row the server could add would arrive
+with no picture. Anything missing is a **custom exercise** (`custom_exercises`),
+which the user names, gives a tracking and muscles, and which then behaves like
+any other.
+
+- **Ids are permanent.** A saved workout stores the id. Renaming is changing
+  `name`; removing an entry strands its history (the saved name still reads,
+  the picture and the muscles go). Never reuse an id for another movement.
+- **Names are Strong's.** Every exercise Strong ships has a catalogue entry,
+  under Strong's own name where that name says what the movement is ("Push
+  Up", "Seated Row (Cable)", "Pec Deck (Machine)"), and Hevy uses the same
+  names for most of them, so someone arriving from either app finds the
+  movement they know. A few Strong names are a second name for an entry
+  ("Chest Fly" is the pec deck, "Strict Military Press (Barbell)" the overhead
+  press) or too vague to be one ("Cable Kickback" is drawn and named as the
+  triceps kickback it is). The name an entry had before is kept as an alias,
+  so a search for "push-up" still finds it. Strong's four sports (climbing,
+  skating, skiing, snowboarding) and its plain "Triceps Extension" import as
+  custom exercises.
+- **Names stay English in every language**, the way a dish name does. "Lat
+  Pulldown" is what the machine is called in every gym the app is used in. The
+  words around the names (muscles, equipment, categories) are translated.
+- **The tracking decides the columns**: weight and reps, reps, added weight,
+  assistance, time, distance and time, weight and distance. Volume counts only
+  the two where the weight is load; an assisted pull-up's weight is the machine
+  helping, and multiplying it by reps would make the easiest set the biggest.
+
+**The drawings** are 320 px WebPs in `apps/mobile/assets/exercises/`, one per
+id, registered in the generated `exerciseArt.generated.ts`. A test fails when an
+exercise has none, so a new catalogue entry needs its drawing in the same
+change. To add or redraw one:
+
+```sh
+node scripts/exercise-art/generate.mjs --only <id>[,<id>] [--force]
+uv run scripts/exercise-art/process.py --only <id>
+```
+
+`generate.mjs` sends each pose brief in `poses.mjs` to Codex image generation
+with `style-reference.png` attached, because a set drawn without one shared
+reference drifts into five styles by the fortieth image. It writes 1254 px PNGs
+to `~/.cache/ricecal/exercise-art`, outside the app folder because Metro watches
+that folder and reloads on every file that lands in it. `process.py` trims each
+to its outline, re-centres it with the same margin, and writes the WebP and the
+registry. **Look at every image before committing it**: a model can swap a grip
+or draw the wrong machine, and an exercise library with a wrong picture is worse
+than one with none.
+
+The brief pins the outfit as well as the style. With only the reference to go
+on, Zumba came back in team colours, which read as a different person in a
+library that is otherwise one figure; it was redrawn once the brief said brown
+tank top and charcoal shorts in words.
+
+**Templates** (`templates.ts`) are 19 standard programs in seven groups: two
+beginner full-body days, push/pull/legs, upper/lower, 5×5, one muscle a day,
+no-gym, and short focused sessions. They give reps and times, never weights: a
+weight in a template is somebody else's, and the PREVIOUS column already shows
+the user's own. Adding one to "My routines" copies it into `workout_routines`
+with `template_id` set, so the template page can say it is already there.
+
+**The routine editor is the plan and nothing else.** Its page is the exercise
+editor; the name and the note are asked for on Save, in a card over it, so a
+routine is built first and named once it is something to name.
+
+### A workout lives on the phone until it is finished
+
+The running workout is a document in MMKV (`features/workouts/store.ts`), keyed
+by account, and every tick is a synchronous write to it. Nothing reaches the
+server until Finish. A gym is where the signal is worst, and a set that waited on
+a request would be a set lost to a basement; the timer is a start time rather
+than a counter, so killing the app mid-workout loses nothing.
+
+Finishing sends the whole document to `save_workout(jsonb)`, which writes the
+workout, its exercises and its sets in one transaction, replacing anything saved
+under the same id. **The id is minted on the phone when the workout starts**, so
+a save retried after a lost reply converges on one workout. **Every save goes
+into the outbox (`data/workout-outbox.ts`) before it is sent**, and leaves only
+when the server has it or refuses it, so a token refresh that hangs or the app
+killed mid-request loses nothing. `useWorkoutOutbox` in the tabs layout sends
+what is left on launch, on reconnect and on every return to the foreground, once
+there is a session to send it with.
+
+**Only a refusal about the data is final**: SQLSTATE classes 22 (a value out of
+range) and 23 (a constraint). An expired token, a refresh that failed on a weak
+signal so the request went out as anon (`42501`), a timeout or the database
+gone read only all pass on a later try, and treating any coded error as final
+used to delete the workout. Even a refused workout stays in the outbox, tried
+again on the next launch, and `toPayload` holds every value to the column's
+limits so a typo (2250 lb for 225) is a wrong set rather than a lost session. A
+reply only clears the copy that was sent: an edit queued while it was in
+flight stays. A queued workout's row in the history opens a sheet to send it
+again now (`retryQueuedWorkout`, which also lifts a refusal from this launch)
+or to discard it, with its Health copy only if the server has no copy of its
+own (a queued edit of a saved workout shows as waiting too); it used to read
+"Waiting to sync" with nothing to do about it. A save answers "queued" after 15
+seconds, measured over the whole request including the token refresh, which has
+no timeout of its own; a reply that lands later still clears the copy it sent.
+Every send of a workout, from a save, the outbox or a delete, is registered
+while in flight, each waits for the one before it and the outbox skips one in
+flight, so a late copy cannot bring back a deleted workout or overwrite a newer
+one. A delete takes the queued copy out before it is sent, for the same reason.
+
+Children are owned by `(workout_id, user_id)` composite foreign keys rather than
+the id alone: a foreign key check bypasses row security, so with the id alone a
+user could attach sets to somebody else's workout by knowing its id.
+
+### Every number is Postgres's
+
+`96_workouts.sql` is the arithmetic: a set's volume and estimated one-rep max,
+whether it was a record, a workout's totals, an exercise's bests and history,
+the weekly bars, the streak, and sets per exercise for the muscle split. The
+phone adds nothing up except the live totals of the workout on screen.
+
+**Two views, and the split is for speed.** `workout_set_values` is every set
+with its volume and 1RM and nothing that needs the sets around it, so a filter
+on one workout reaches the indexes. `workout_set_details` adds the record flags
+with window functions over the user's whole history, and a window cannot be
+filtered before it is computed: when the history list asked it for each
+workout's totals, Postgres scored every set the user owned once per row, which
+at a couple of years of training reaches the statement timeout. Totals read
+the values view; records are scored once and grouped.
+
+**The running best runs over workouts, not sets.** `workout_set_details` takes
+each workout's best per exercise first, then a running max over the earlier
+ones. The first version ran it over the sets with `exclude group` to leave out
+the set's own workout, and a frame with an exclusion cannot carry its result
+from one row to the next, so Postgres recomputed every prior best from scratch
+for every set. That made the work quadratic: three years at four sessions a week
+(15,000 sets) took 3 s to open one workout and 3 s for the first page of
+history. Grouped first, they take 15 ms and 80 ms, with the same flags on every
+set. `exercise_bests` is grouped the same way for the same reason.
+
+**The earlier bests are joined to the sets before the ranking windows, not
+after.** Row security leaves the planner guessing that every user owns the
+average number of sets, so for a heavy user among many light ones it chose a
+nested loop and recomputed every window once per workout: 100 workouts took
+3 s and about 150 passed the statement timeout, which emptied the history list
+and Today's workouts without an error. Joined first, the windows run once; with
+nested loops forced on 200 workouts the history page takes about 130 ms, with
+the same flag on every one of 5,000 sets as before.
+
+- **Estimated 1RM** is Epley, written `weight × (30 + reps) / 30`, over 1 to 15
+  reps of a weight-and-reps set. Past fifteen the formula means nothing. Written
+  that way because `reps / 30.0` is cut to twenty places, which made 56.25 × 4
+  63.7 here and 63.8 on the phone, and a trophy the saved workout did not have.
+  The phone does the same sum in cents (`estimatedOneRepMax`, `setVolume`), so
+  95 lb × 5 is 215.45 on both sides rather than 215.45000000000002 on one.
+- **A save refuses a set with no number in it**, an exercise with no sets, and
+  a `log_date` more than a day from the start, all as class 22 or 23 so the
+  outbox drops them as final. The phone never sends the first two: a ticked set
+  whose figures were cleared afterwards is left out of the document.
+- **A set is a record** when it beats the best of every earlier workout *and* is
+  the best of its kind in its own workout. The second half is what stops a
+  heavy day lighting up three trophies for three successively heavier sets.
+  The first workout of an exercise sets the baseline and wins nothing.
+  Warm-ups count toward volume and never toward a record. "Earlier" is by
+  start time and then id, so two workouts logged at the same minute cannot
+  both take the same record.
+- **The heaviest weight has to be lifted** (`weight_counts`): at least one rep,
+  or some distance for a carry. A missed 150 kg single is not a record.
+- The logger's live record badge (`records.ts`) applies the same rule against
+  `exercise_bests`, so the trophy during the set and the one on the saved
+  workout agree. Typed weights are rounded to the database's two places as
+  they are typed, or matching last week's 135 lb (saved as 61.23 kg) beat it
+  by the rounding. Badges show only while training: an edited workout would be
+  compared with bests that already include it.
+- **Rep records** (`exercise_rep_bests`) are the heaviest weight lifted for
+  each rep count up to 30, keeping only the counts that nothing as heavy at
+  more reps has matched. With 100 kg × 5 on the books a 3-rep best of 95 kg (or
+  100 kg) is not a 3-rep max, and listing it would say it was, so the weights
+  fall as the reps rise. The cap is there because one weight typed into the
+  reps field (60 kg × 60) swept every lighter count away. The page also drops a
+  row that reads the same as the one below it once rounded, which a history
+  logged partly in pounds can produce, and shows the table only from two rows;
+  one row is the heaviest weight again.
+- **The streak is in weeks**, ending this week or last. A daily streak punishes
+  exactly the rest days a program prescribes.
+- **The muscle split** spreads working sets over muscles by each exercise's
+  split. The counting is in the database (`workout_exercise_totals`); the split
+  is in the app, with the catalogue it belongs to. It is shown as each body
+  part's share of the whole: a set of a compound lift counts towards several
+  groups, so counted in sets it came out in tenths ("1.8 sets").
+
+### Finishing late
+
+The commonest bad workout is one somebody forgot to finish. Three hours after a
+start, a notification asks "Still training?", and the logger asks the same
+thing in a dialog, only while it is the screen on top. Its first answer is the useful one: **finish at the last
+ticked set**, because the hours since then are the drive home. It can also open
+the finish screen on the end-time picker, carry on, or discard (after a
+confirm: it is hours of sets). Finishing from it goes through the logger's own
+checks, so sets typed but never ticked are asked about rather than dropped.
+
+With the app open the notice's banner steps aside only while a logger is
+mounted to ask the question (`loggerOpen.ts`); on Today at the three-hour mark
+it shows, and tapping it opens the logger, which asks.
+
+Both times on the finish screen can be moved, because the other common mistake
+is starting in the car park. A workout can be at most 24 hours, which the table
+checks and the screen explains before it lets the save go. Anything else is
+fixed afterwards on the edit screen, which rewrites the whole workout under its
+id, as every save does.
+
+### Workouts and the budget
+
+A saved workout carries a `kcal` estimate: each movement's MET from the
+Compendium of Physical Activities, **minus one**, times body weight, times time.
+Timed sets are priced at their own MET; the rest of the session at the average
+MET of the lifting. Minus one because Apple Health's active energy excludes what
+the body would have burned sitting still, and a figure that included it would
+be counted twice the moment it met the day's resting energy. No weight on file
+means no estimate rather than a guessed one.
+
+**Nothing in the budget reads that column.** The budget hears movement only
+from the health store (see "Activity and health"), so a workout reaches the day
+by being saved to Apple Health, where its energy is a sample over the workout's
+own window, and coming back through the sync like any other active energy. A
+watch that recorded the same minutes wins over it in Health's own
+deduplication, which prefers the watch to any app. That is the point: two
+estimates of one hour must not both reach the budget.
+
+So on Android, and on an iPhone where saving to Health is off, a workout is a
+record of training and changes no budget. That is deliberate rather than
+missing, and Today's row says so: it shows a workout's burn, in the colour of
+burned energy, only when the workout went to Health *and* Health is read back,
+and its length otherwise. Saving to Health works with reading switched off,
+and then the energy never returns to the budget. A burn figure beside a ring
+that did not move reads as a bug. The workout's totals in Health also carry
+only what the user let us write, so a refused Active Energy no longer shows
+the estimate on the workout there.
+
+### Saving to Apple Health
+
+Off until the user turns it on in workout settings, **per phone** (MMKV, in
+`features/workouts/prefs.ts`), because it is a permission this handset granted
+and a second phone on the same account has granted nothing. Turning it on asks
+for its own permissions: workouts, active energy, and the three distance types.
+Connecting health for the budget still asks to write nothing.
+
+- Each finished workout is saved as an `HKWorkout` of the activity type its
+  exercises add up to (a run is a run, lifting is strength training), with
+  active energy and, for a run, ride or swim, distance as samples over the same
+  window. Everything carries `RiceCalWorkoutId` in its metadata.
+- **The sync skips workouts carrying that key** (`isOwnWorkout` in
+  `lib/health/apple.ts`). Reading them back would list each one twice on Today,
+  once as the workout and once as a bare session with no idea what was lifted.
+  Its energy is still read, which is the point of saving it. A build from
+  before workouts has no such skip, and on a second iPhone or an iPad sharing
+  the same Health data it reads them back anyway, so Today also drops a session
+  whose uuid one of the day's workouts holds in `health_workout_id`.
+- An edit deletes the old copy and its samples (by uuid and by that metadata
+  key) and saves a new one; deleting a workout deletes its copy.
+- Each type on Health's sheet is its own switch, and a sample of a refused type
+  fails the whole save, so refused types are left out rather than taking the
+  workout down with them.
+- **Health is a copy and Postgres is the record.** A Health failure never stops
+  the save; the toast says so. If the server refuses a save after the copy went
+  in, the copy is taken back out, or pressing Save again would leave two.
+
+`NSHealthUpdateUsageDescription` in `app.json` says this. It used to promise
+that the app never writes, which became untrue with this feature; the connect
+screen's "Read only" line was reworded in all thirteen languages for the same
+reason.
+
+### The Live Activity
+
+While a workout runs, the lock screen and the Dynamic Island show its clock,
+its name, sets done, the next set, and the rest countdown with a bar. Tapping it
+opens the logger (by way of the Workouts tab, below), not through
+`ricecal://widget/...`, which is how a home-screen widget tap is counted.
+
+- **A tap opens `ricecal://workout/resume`**, which `app/+native-intent.tsx`
+  rewrites: with the app running, to the logger; on a cold launch, to
+  `/workouts?resume=1`, and the Workouts tab pushes the logger once it has
+  mounted (once per launch). iOS often kills the app while the phone is locked
+  between sets, and a cold launch straight at `/workout/active` built a stack
+  with the logger and nothing under it: minimise went nowhere, and the tabs
+  layout, which runs the rest timer, "still training?" and the activity
+  itself, never mounted. Two cheaper fixes failed on the device: a landing
+  route that navigated to the tab and pushed the logger in one go (the two
+  navigations did not compose on a cold launch), and clearing a `resume` param
+  after use (`setParams` writes to the focused route, and `undefined` does not
+  remove a param).
+- It lives in the existing widget extension
+  (`widgets/ios/WorkoutLiveActivity.swift`). `WorkoutActivityAttributes.swift`
+  is compiled into both the module pod and the extension, because ActivityKit
+  matches an activity to its view by the attributes type.
+  `NSSupportsLiveActivities` is set by `plugins/withWidgets.js`.
+- JS calls `startWorkoutActivity`, which updates the activity when one is
+  already up, and `endWorkoutActivity` from `useWorkoutEffects`, mounted in the
+  tabs layout and driven by the stored document, so it is right after the app
+  is killed and reopened. A start for another workout ends any activity left
+  behind.
+- **The clocks are dates, not text the app updates.** The elapsed time and the
+  rest are `Text(timerInterval:)` and `ProgressView(timerInterval:)` over dates
+  in the content state, so the system counts them and the app never has to wake.
+- **On a dimmed lock screen iOS shows the seconds as dashes** ("19:--", and the
+  rest as "1:--") because it redraws there once a minute. It is the system, not
+  the view; the clocks read in full as soon as the screen wakes.
+- **A rest that ends while the phone is locked** would leave its bar at 0:00
+  until the next update, which a suspended app cannot send. The rest's end is
+  the content's `staleDate`, so the system redraws the activity at that moment
+  and the rest line drops.
+- iOS ends an activity after eight hours; `update` restarts a lost one rather
+  than going quiet. Whether to start or update is decided synchronously, on
+  the calling thread; decided inside a `Task`, an update that ran before its
+  start requested a second activity for the same workout.
+- Signing out ends it, and an activity with no workout behind it (a crash, the
+  last launch) is ended whenever the effects run with none.
+
+**Its buttons work without opening the app** (iOS 17 and up): −15, +15 and
+skip on the rest, and a tick for the next set when that set has numbers to
+tick, its own or the ones it offers. Each is `WorkoutActionIntent`, a
+`LiveActivityIntent`, which iOS runs in the app's process, launching it in the
+background if it has to.
+
+- **The file is in both targets.** The extension needs the type to draw
+  `Button(intent:)`; the app needs it because iOS finds the intent through the
+  App Intents metadata Xcode extracts from the app target's own sources, and a
+  pod's are not extracted. `withWidgets.js` copies
+  `widgets/ios/WorkoutActionIntent.swift` beside `AppDelegate` and adds it to
+  the app target once, so adding an intent needs a `--clean` prebuild.
+- **The press is queued and the activity moved at once.** `perform` puts the
+  action on `RiceCalWidgetStore`'s workout queue in the App Group and updates
+  the activity itself: the rest shortened, lengthened or gone, or the tick
+  counted and its rest started (`restAfterS`, sent ahead in the content state).
+  The workout itself is the app's JS's to change: it drains the queue on
+  launch, on returning to the foreground, and when the intent's notification
+  reaches the module while JS is running, and applies a tick and the rest it
+  starts at the time it was pressed. It waits until last time's sets and the
+  settings have loaded (or cannot, offline), and makes the same test as the
+  logger's own tick: drained on a cold launch before them, a tick on an empty
+  set found nothing to fill it with and saved a set of no numbers. Its next
+  write to the activity replaces the guess.
+- **The "rest is over" notification moves with the rest.** The intent rebooks
+  it (same identifier as the app's) with words the app left in the App Group,
+  because with the app not running a skipped rest still fired its notice and a
+  tick started a rest with none. The queue is locked: the press wakes JS to
+  drain it on another thread, and a quick double tap could otherwise apply one
+  press twice.
+- **"Next set" follows superset rounds**: after A1 comes B1, not A2, and the
+  tick between two members of a round starts no rest. A round ends early where
+  the partners after this one have no set that far down, so A's third set
+  under a two-set B rests. A superset is only ever a run of neighbouring cards
+  (`tidySupersets`): a reorder or an unlink that split one used to leave the
+  rest timer and the lock screen each reading a different group.
+- **The notice the intent books carries its kind at the top of `userInfo`.**
+  expo-notifications hands JS a local notification's whole `userInfo` as its
+  `data` (only a remote push nests it under `body`). Nested, JS saw no kind:
+  the reminder sync cancelled it as a stray, and tapping it opened nothing.
+- **Presses queued while the app was closed are applied before the app writes
+  anything.** On a launch the effects used to rebook the rest notice and draw
+  the activity from the document as it was before the presses, putting back a
+  skipped rest and its notice. And ActivityKit's calls run in order through one
+  queue (`WorkoutActivityController.serially`): two updates a few milliseconds
+  apart could land either way round and leave the older state showing.
+- The tick names its set by key (`exerciseKey`, `setId`) as the activity drew
+  it, so a press that arrives after the workout moved on ticks the set it was
+  for, or nothing if that set is gone or already done.
+
+### The rest timer and reminders
+
+The rest is an end time in the document. `useWorkoutEffects` books a local
+notification for that moment, because a suspended app cannot post one when the
+time comes, and with the app open fires a haptic and clears the rest instead.
+Adjusting or skipping rebooks or cancels it.
+
+**On Android the rest notice needs two things iOS does by itself.** The sound
+belongs to the channel rather than to the notification, so "Rest is over" has a
+channel of its own (`workout-rest`, high importance, the default sound); on the
+reminders channel, silent by design, it came with no sound and no banner. And
+an alarm is inexact unless the app may set exact ones, which lets Android
+deliver it up to three quarters of the wait late: 68 seconds after a 90 second
+rest, measured. `SCHEDULE_EXACT_ALARM` is declared so expo-notifications books
+it exactly wherever that is allowed. Android 12 and 13 allow it by default;
+from 14 a new install is refused until the user turns on "Alarms & reminders"
+for the app, and nothing in the app asks for that yet.
+
+**Both workout notices have fixed identifiers** (`WORKOUT_NOTICE`), so booking
+one replaces it. With random ids held in a ref, every relaunch mid-workout
+booked another "still training?" that finishing never cancelled, and it fired
+hours later for a workout already saved. Cancelling also clears a delivered
+one from Notification Center, and a tapped notice opens the logger only if a
+workout is still running. It goes back to a logger that is already open
+anywhere in the stack (`dismissTo`) rather than pushing a second one over the
+library or an exercise's page, and pushes one only when none is mounted:
+`dismissTo` replaces the current screen when its route is not in the stack.
+
+A booking waits on the permission check before it is made, so each kind keeps
+a generation number: a cancel that lands in that wait (a rest skipped the
+moment it started) wins, where it used to be overtaken by the booking. Reminder
+rewrites run one at a time, because two that overlapped each read the booked
+list before the other had booked and left Monday booked twice; and the tabs'
+unmount, which is signing out, cancels them, since they came from that
+account's settings.
+
+Workout reminders are days of the week and a time, in `user_settings`
+(`workout_reminder_days`, `workout_reminder_at`), because they follow the
+account; `useReminderSync` books them with the meal reminders, as weekly
+repeats. Rebooking the reminders cancels only the reminder kinds, never a rest
+or "still training?" notice: it used to cancel everything, so turning on the
+water reminder mid-workout took the rest timer's notice with it. The default
+rest is `workout_rest_s`. Keeping the screen awake while training is per phone,
+with Health.
+
+Both rests, the default and an exercise's own, are picked on two wheels
+(`RestSheet`): minutes up to ten, the most `workout_rest_s` accepts, and seconds
+in fives; at ten minutes the seconds wheel offers only 00. 0:00 is no timer. An
+exercise on the default has `restS` null, and Done without moving the wheels
+keeps it null, so a later change to the default still reaches it. "Use default"
+appears only once it has a rest of its own.
+
+### The logger is a card, not a modal
+
+`app/workout/active` is a stack card that slides up (`slide_from_bottom`), not a
+`fullScreenModal`. As a modal, every screen it pushed (the library, an
+exercise's page, the finish screen) opened *under* it, so the logger had to be
+dismissed to see what had been opened. Its chevron goes back like any card.
+
+`ActionSheet` runs the chosen action in the sheet's `onDismiss`, not on the tap:
+most actions open another sheet or push a screen, and starting either while the
+native sheet is still leaving is how iOS ends up presenting nothing.
+
+**A question is a dialog; a menu is a sheet.** The questions the workout flow
+asks (unfinished sets, update the routine, "Still training?", nothing to save,
+discard, start over a running workout) are `Dialog`s (`ui/Dialog.tsx`): centred,
+answers stacked as full-width buttons in reach of either thumb, Cancel last. At
+the foot of a bottom sheet the answers sat at the far edge and read as a menu.
+Deleting a workout, a routine or an exercise, removing an exercise from the
+logger, discarding a queued workout and "Leave without saving?" are dialogs too.
+Lists of things to do to an item (an exercise's menu, a set's type) are
+`ActionSheet`s, and like every other modal the workout screens open (the rest
+timer, reordering, the start and end times, the library's filters, the reminder
+time, a routine's name) they float in the middle of the screen as a card:
+`Sheet` with `placement="center"`, which keeps a sheet's keyboard, number pad,
+toast and Android back handling and drops the drag handle for a tap on the
+scrim.
+A `Dialog` answer runs once the modal has gone, for the same reason as
+`ActionSheet`'s, except one marked `waits`: a delete runs while the dialog stays
+open with a spinner, and a failure keeps it open, since closing would say the
+thing happened.
+
+### The set pad
+
+A set's fields use the app's own number pad with two big keys beside the
+digits, each two rows tall: **✓ Set**, which ticks the set the field belongs to
+with what its empty fields offer and moves to the next set, and **Next**, which
+walks the workout as a set is written on paper: weight, then reps, then the next
+set's weight, then the next exercise (`fieldOrder.tsx`). The order comes from
+the document rather than from what is mounted, so a set added mid-edit slots in.
+A superset is walked a round at a time, A1, B1, A2, B2, as it is lifted and as
+the lock screen's tick already went; walked card by card, ✓ Set after A1 went
+to A2.
+On the last field Next reads Done. The header names the exercise over the set
+and unit, because the field is often under the pad, with ⌄ to put the pad away.
+Every other numeric field keeps the plain pad.
+
+**It had more keys, and they were cut.** A row of quick-add keys (−2.5 to +20 kg,
++0:15 to +5:00), Clear, and up and down arrows made a pad of twenty keys that
+was slower to read than typing the number. A field opens with its whole value
+selected instead, so the first digit replaces it and backspace clears it.
+
+**An empty field offers a figure, and ticking it takes that figure**
+(`setHints`). Per column, the figure is the first of these that exists:
+- one changed today in a set above it (typing 105 into the first set offers 105
+  to every set under it);
+- last time's figure for this set;
+- whatever the row above shows, so a third set is not blank under two that read
+  60 × 10.
+
+A figure that only repeats last time's, typed or taken by a tick, is not a
+change: otherwise ticking a 100 × 10 first set offered 10 reps to a second set
+that last time was 100 × 5. A set put back to last time's figure ends the
+change above it. Warm-ups only hand down to warm-ups, and "last time's set" is
+paired by kind (`matchPrevious`), warm-ups with warm-ups and working sets with
+working sets: by position, last week's two warm-ups fed this week's first two
+working sets 40 × 10 on a 100 kg day. The PREVIOUS column reads the same
+pairing. A set added with Add set is empty and offered a figure like any other,
+rather than copying the row above as typed values, which hid last time's
+100 × 5 under a third set of 100 × 10. Finishing
+counts these too: a set that shows numbers and was never ticked is asked about
+("Complete unfinished sets" ticks it with what it shows, "Discard unfinished
+sets" saves without it) rather than left out, which is what happened while only
+typed numbers counted. A past workout is saved the same way, with last time's
+sets. The copy says "complete", as Strong and Hevy do; "tick" read oddly.
+
+**A workout that left its routine asks about the routine on Save**, as Strong
+asks about templates and Hevy about routines (`routineUpdate.ts`). Two kinds of
+change are told apart. The layout is exercises added, removed, swapped or
+moved, sets added or removed, and a set's kind, a rest or a superset; a set left
+unfinished is still in the logger, so running out of steam on the last set is
+not removing it. The numbers are a finished set that differs from a number the
+routine itself holds; a field the routine leaves blank means "last time", so
+filling it in is not a change, or a routine kept blank on purpose would ask
+after every workout. Exercise notes are not compared, since a note typed
+mid-workout is usually about that day. Only the answers that change something
+are offered: with both kinds, Strong's four ("Update routine and values",
+"Update routine", "Update values only", "Keep original routine"), otherwise
+one update and Keep. "Update routine" keeps the routine's numbers on the sets
+it already had and leaves new sets blank, which the logger then fills from
+last time, which is today. An update that deletes something is drawn red. The
+routine is saved after the workout, without holding it up, and a failure is a
+toast. Cancel on the dialog is "not yet". Built-in templates started directly are
+not linked to a routine, so they are not asked about; "Save as routine" on the
+saved workout is the way to keep one changed.
+
+**Exercises reorder by dragging** in a card of short rows, opened from an
+exercise's menu or by long-pressing its name. Cards are too tall to drag past
+one another without the drag turning into a scroll, which is why Hevy and
+Strong collapse them too. The rows are a fixed height so the arithmetic of
+where each lands runs on the UI thread, and the order is applied once, on
+Done. **A set swipes left to delete.** `SwipeRow`'s tap recogniser only runs
+while a row is open or has its own tap, because over a row of fields and
+buttons it took their touches.
+
+**RPE is in the set's menu, not a column.** Most sets are never rated, and a
+column would take width from the weight and reps on every one. Tapping the set
+number offers 6 to 10, each named by the reps left in the tank ("8, 2 reps
+left"), which is the question people actually answer; a rated set shows `@8`
+under its number, and the saved workout, the share text and the export carry it.
+It is offered only for sets counted in reps (a run has no reps left) and never
+in the routine editor: a routine is a plan, and a plan carries no RPE, so
+starting a routine or repeating a workout never arrives already rated. Editing
+a saved workout puts each set's RPE back by position (`edit/[id].tsx`).
+
+Cards and rows are memoised, and their handlers are one stable object keyed by
+exercise, so ticking a set re-renders that exercise's card and nothing else.
+The live workout, the outbox and the workout preferences all sit on
+`createJsonStore` (`lib/jsonStore.ts`). It hands back the same object until the
+key is written again, which is what lets a memoised card see that nothing
+changed: parsing the stored string on every read gave React a new tree each
+time. Every write goes through it, so a cached key is never read back from
+MMKV, which React asks for several times a render.
+
+### Saving, and the charts
+
+**The save screen is the session's summary before it is a form**: "Workout
+complete" with the running total, the duration, volume and sets, one line per
+exercise that set a record (judged by `records.ts` against the bests from
+before the workout, so it is the same trophy the logger showed), then the name,
+note and times, and each exercise with its best set. No explanatory captions:
+anything a screen needed a sentence to explain has been made to explain
+itself or cut.
+
+**The charts can be read off, not only looked at.** `TrendLine` takes a
+`formatValue`, which adds a few rules at round values with their figures in a
+gutter of their own, and a tap or a sideways drag that names the reading under
+the finger (a tap on it again puts it away; new data resets it). The rules are
+rounded in the unit the chart is read in (`unitFactor`: 80 and 85 kg are not
+round pounds), never closer than a label is tall, and never two that read the
+same once formatted, which a flat week of 80.0 and 80.1 kg otherwise drew as
+three "80 kg" stacked on each other. A point can carry a `title` for the
+readout where its axis label is short or blank, as every other month is on the
+year's weight chart. Dates are thinned to as many as fit, because twenty
+sessions side by side were twenty clipped stubs. The shareable review card
+passes no `formatValue` and stays a picture. `BarChart` takes `selected` and
+`onSelect`, and the workout progress page puts the tapped week's figure in its
+headline; each selectable bar carries its own VoiceOver name.
+
+### Against Hevy and Strong
+
+The feature list was taken from both apps and checked off against them before
+release. In: empty, routine, template and repeat starts; the PREVIOUS column;
+warm-up, drop and failure sets; RPE; supersets; per-exercise rest with ±15 s and
+skip; warm-up sets; live records; rep records and charts
+per exercise; muscle split; weekly bars, calendar and week streak; the Live
+Activity with its buttons; Apple Health; past workouts and late finishes;
+reminders; custom exercises; kg and lb; keeping the screen on; sharing a workout;
+CSV export; and importing a Strong or Hevy history.
+
+Left out on purpose:
+- **Routine folders.** The built-in templates are already grouped, and a user's
+  own routines are a handful; folders are a screen of management for a list
+  that fits on one.
+- **Body measurements.** Weight is already logged on Today; tape measurements
+  belong there, not in a training log.
+- **A watch app.** A project of its own, not a gap in this one.
+- **A plate calculator.** It was built and taken out: loading a bar is
+  arithmetic people do at the rack without opening a sheet, and it put a key on
+  the number pad of every barbell's weight that nobody pressed.
+- **Sports.** A game has no sets, reps or weights, so logging one here was a
+  timer with a picture; the health store already has it from a watch, and it
+  reaches the budget from there.
+
+**Sharing is text, exporting is a file.** A workout shares as plain lines
+(`shareText.ts`), name, then date, duration and volume, then each set with its
+badge and RPE, because every app it can be pasted into reads text. The export
+(`exportCsv.ts`) has one row a set in columns modelled on Strong's, with
+exercise and workout notes, weight always in kilograms and the date in the
+phone's wall time: an ISO stamp in UTC is not a date Sheets or Numbers
+recognises, and it files a workout near midnight on the wrong day.
+`fetchWorkoutExport` pages until a page comes back empty, never until a short
+one, because the server's row cap can sit below the page size, and it adds the
+workouts still in the outbox, which the history already shows. The file starts
+with a byte order mark so Excel reads Thai or Chinese names as text rather than
+in the system code page. iOS hands the file to the share sheet. React Native's
+`Share` carries only text on Android, and a year of sets as text outgrew the
+intent's size limit, so Android asks for a folder (`Directory.pickDirectoryAsync`)
+and writes the file there.
+
+### Importing from Strong and Hevy
+
+Settings has a row for each app, Import from Strong and Import from Hevy, each
+with that app's own icon (from Brandfetch, committed under
+`assets/brands/apps/`, `features/workouts/import/apps.ts`). Tapping one opens
+the file picker straight away (`import/pick.ts`), and the import screen opens
+on the file already read, at its preview: a screen whose only content was a
+button to open the picker was one tap too many. A file that cannot be read says
+why in a toast and stays on settings. The file decides the format, so the other
+app's export picked by mistake imports all the same. See what is in it,
+import. Imported workouts are never posted to the
+feed. `features/workouts/import/` is pure and tested from
+strings; `data/workout-import.ts` does the saving.
+
+```
+csv.ts     a real CSV reader: quotes, commas and line breaks in notes, BOM, ';'
+parse.ts   both formats into workouts, numbers still in the file's units
+names.ts   every built-in Strong and Hevy name, and the catalogue entry it is
+match.ts   a name to a catalogue entry, or null for a custom exercise
+build.ts   the documents save_workout takes, plus the custom exercises to make
+```
+
+**The two formats.** Strong writes `Date, Workout Name, Duration, Exercise Name,
+Set Order, Weight, Reps, Distance, Seconds, Notes, Workout Notes, RPE`, one row
+a set. Set Order is the set's number, `W`, `D` or `F` for a warm-up, drop or
+failure set, or `Rest Timer` for the rest Strong timed after it; those rows are
+not sets, and the rest most used becomes the exercise's own rest. Duration is
+the whole workout's ("1h 5m") on every row. Hevy writes `title, start_time,
+end_time, description, exercise_title, superset_id, exercise_notes, set_index,
+set_type, weight_kg, reps, distance_km, duration_seconds, rpe`, with
+`weight_lbs` and `distance_miles` for an account in pounds, a date like
+"14 Oct 2026, 17:14" in whatever language the app is set to, and supersets
+numbered. Hevy's date follows its language, so day-first, month-first with AM
+or PM, and year-first ("2026年10月14日") are all read, with month names in the
+Latin-script languages, Russian, Polish and Turkish; a file whose dates cannot
+be read says so rather than importing nothing in silence.
+
+- **Strong does not say its units.** Its Weight and Distance are in whatever the
+  app was set to, so the preview asks, defaulting to the account's own. Hevy
+  names the unit in the column.
+- **Both write wall-clock time with no zone**, so a workout is filed at the time
+  and on the day the file says, in the phone's zone. Hevy's own import of a
+  Strong file reads Strong's times as UTC: a Hevy export of a history that came
+  from Strong is shifted by the phone's offset, and is imported as Hevy wrote it.
+- **Importing twice adds nothing.** An imported workout's id is a hash of the
+  account and the workout's start and name in the file. The account is in it
+  because `workouts.id` is unique across all accounts: from the file alone,
+  two people's Hevy "Morning Workout" started in the same minute shared an id,
+  and the second save was refused as another account's on every retry. A
+  workout already in the history is skipped rather than written over, so an
+  edit made since survives a second import. Already there means that id
+  (looked up exactly, wherever the workout now sits), any workout starting
+  within a minute of it, or one with the same name and set count starting a
+  whole time-zone offset away, up to 14 hours. The last is for someone who
+  moved from Strong to Hevy and imports both files: Hevy's copies of the
+  Strong workouts are shifted by their offset (above), and without it every
+  one came in twice. Each logged workout stands for one file workout at most,
+  nearest first, so a run already logged cannot hide a second run that day.
+- **A lost connection stops it; trying again resumes.** Each save has the
+  app's 15-second timeout. A failure a retry can fix (no signal, a timeout,
+  the app sent to the background) stops the run instead of marking every
+  remaining workout failed, the screen keeps what landed, and Try again
+  carries on, since what was saved is skipped. Only a workout the server
+  refuses for what it holds counts as not saved. The screen cannot be left
+  while saving (`usePreventRemove`, which also holds Android's back button).
+- **Each block stays an exercise.** Rows of one exercise are consecutive, so
+  bench, squat, then bench again imports as three exercises in that order;
+  within a superset the alternating rows are grouped by name.
+- **Not written to Apple Health.** The app that logged them already did.
+
+**Names are looked up, never guessed.** `names.ts` lists all 253 names Strong
+ships (published in Fitnotes2Hevy's `strong_exercises.txt`) and all 430 Hevy
+titles (the Hevy block of LiftShift's exercise dataset), each with the
+catalogue id it is, or null. Every mapping was checked against openGym's
+importer, which wins where the sources disagree: Strong's plain "Cable
+Kickback" is the triceps movement. The tables are per app because the apps
+disagree: Strong's plain "Hack Squat" and "Chest Fly" are the machines (Hevy's
+own Strong importer files them so), Hevy's plain "Hack Squat" is the barbell
+lift; Hevy's plain "Walking Lunge" is bodyweight, beside its own dumbbell one.
+A name mapped to null is a movement the catalogue does not have (a suspension,
+single-leg, assisted or kettlebell variant) or one that does not say which
+lift it is (Strong's plain "Triceps Extension", beside its own dumbbell one),
+listed so nothing looser can file it under another lift. A name in neither
+table matches only a catalogue name or alias with its words reordered
+("Barbell Bench Press"), and only an alias that belongs to one entry and is a
+name rather than a search tag ("olympic" and "recovery" find exercises in the
+library but name none); anything else becomes the person's own custom
+exercise, with equipment read from its brackets and its tracking from all of
+its sets across the file. openGym and LiftShift are AGPL, so they
+were read for facts about the formats and names; none of their code is in here.
+
+**A saved exercise carries its own tracking**, so the file's numbers decide it
+where the catalogue's would lose one: a sit-up done holding a plate imports as
+a weighted sit-up, and a plank logged as reps keeps its reps. A number past the
+database's limits (a 2,000 kg set) is a broken cell and is dropped and counted,
+not kept as a record nobody can beat.
+
+To map a new name, add it to the app's table in `names.ts`; `import.test.ts`
+fails if it points at an id that does not exist.
+
+### Releasing it
+
+Codex's image allowance, which draws the exercises, is its own daily cap,
+apart from the general usage the Codex app shows; when it runs out the drawing
+fails with `usage_limit_reached` and a `resets_at` in
+`$TMPDIR/codex-image.*/run.jsonl.err`.
+
+**Imports make big histories.** A five-year Strong export is around 20,000 to
+25,000 sets, a few megabytes in `workout_sets` with its indexes, so a hundred
+such imports is a real share of the free plan's 500 MB, past which the whole
+database goes read-only (see the workbench notes in `AGENTS.md`). Watch
+`pg_database_size` after launch. Speed holds up: against a synthetic 1,500
+workouts and 36,000 sets (about 9 MB with indexes), a page of the history list
+takes 70 ms locally (160 ms 1,400 workouts in), the import's overlap read 17 ms,
+and opening a workout about 60 ms, all of it the sets' record flags.
+
+Records are what cost, because a filter on one workout cannot reach inside the
+running best, so every read that asks for them scores the whole history. Each
+read asks only where it must. `workout_history(offset, limit)` picks its page
+without them and counts records for that page's workouts alone; paged straight
+off `workout_summaries`, every page scored everything, 300 to 450 ms, and a
+save refetched every loaded page. A workout's header leaves the count out
+(selected by `id = any(…)`, since on `id = x` the planner kept the scoring for a
+column nobody asked for) and counts the flagged sets it already has. Today's
+rows leave it out too and take under a millisecond, and a save scores records
+only when it is about to post. If pages slow down past that, store each
+workout's record count at save rather than narrowing the view, and rescore the
+later workouts of the same exercises whenever an earlier one is saved, which an
+import always is.
+
+Additive end to end. One migration (`20261016025548_workouts.sql`) adds the
+workout enums, tables, views and functions, three `user_settings` columns with
+defaults, and workout posts: a `social_post_kind` enum, two nullable
+`social_posts` columns plus `workout_records`, `profiles.auto_post_workouts`,
+and a `p_kinds` argument on the post reads that defaults to food. An older
+binary is never handed a workout post, and the profile's `post_count` still
+counts meals only, since 1.0 draws it over a grid of meals; this app adds the
+workouts its viewer can see. One thing it cannot hide: a like or comment on a
+workout post notifies its author, and on 1.0 that row opens "unavailable".
+Existing feed members get `auto_post_workouts` on with everyone else.
+`db diff` left out the revokes that keep new functions from `PUBLIC` and
+`anon`, and the client-table revokes, so the migration restates both at its
+foot. The `social` function now reviews a workout post's name, not just its
+caption, reading it from `social_post_details` because the author is not granted
+`source_workout_id`; it ships with the merge like every function. Deploy the migrations
+before the app, as always. The five analytics events are in the
+canonical table under Analytics; sharing and exporting send none.
+
+---
+
 ## Photos
 
 **Images live in Cloudflare R2, behind the `photos` function.** Postgres used to
@@ -4451,12 +5300,13 @@ events, 815 weekly users, 338 installs) ×4.3.
 | Source | Estimated events / month | Basis |
 | --- | --- | --- |
 | The 48 decision events | 230,000 | Mixpanel's week minus its SDK events, ×4.3. `Log Sheet Opened`, `Food Searched`, `Meal Logged` and `Food Picked` are three quarters of it |
+| Workout events (`Workout Started`, `Finished`, `Discarded`, `Routine Saved`, `Workouts Imported`) | 4,000 | New with the Workouts tab, so no history: about 60 workouts a day at launch, each a start and an end, plus routine saves. An import is one event however many workouts it brings |
 | `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
 | `First App Open` | 1,500 | ~340 installs a week |
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
-| **Total** | **~250,000 (25%)** | Room for four times today's audience |
+| **Total** | **~254,000 (25%)** | Room for four times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -4474,17 +5324,17 @@ belongs in GA4 only, and RiceCal has none yet.
 
 ### Product analytics coverage
 
-Audited 2026-10-12 against the mobile tracking plan and call sites. This is the
+Audited 2026-10-15 against the mobile tracking plan and call sites. This is the
 full mobile product tracking reference. The website section records the separate
 acquisition surface and links its own repository contract. A defined event is
 eligible for delivery; its presence here is not proof of ingestion or billing.
 
 | Surface / operation | Definitions | Destinations / counting rule |
 | --- | --- | --- |
-| Native app custom events | 50 | All 50 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
+| Native app custom events | 54 | All 54 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
 | Website decisions | 6 | Same PostHog project (page views as `$pageview`); five namespaced GA4 events plus manually managed `page_view` in the shared property |
 | Native screen views | 0 | No `$screen` or `screen_view` emitter; Firebase automatic screen reporting is disabled. Session replay shows navigation |
-| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 50 custom app definitions |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 54 custom app definitions |
 | Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
 | Per-install engagement events | 2 | `First App Open` once per install and `Daily App Open` once per local day; every other event is repeatable product use |
 
@@ -4538,6 +5388,11 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Review Opened | ricecal_review_opened | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Review period resolves; once per resolved period in a mounted route. Locked reviews count before redirecting; this is not a read-completion event. |
 | Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Card share helper reports sent; each card send. Android share intent cannot confirm completion. |
 | Meal Shared | ricecal_meal_shared | picture: 'photo' &#124; 'drawing' | `app/log/food/[id].tsx` | Meal picture share helper reports sent; each send. Android share intent cannot confirm completion. |
+| Workout Started | ricecal_workout_started | source: WorkoutSource; exercises: number | `src/features/workouts/start.tsx`<br>`app/workout/edit/[id].tsx` | A workout is opened on the logger from empty, a routine, a template, a past workout repeated, or as a past workout being logged; once per start, including one that is later discarded. |
+| Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `src/features/workouts/WorkoutForm.tsx`<br>`app/workout/finish.tsx`<br>`app/workout/edit/[id].tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. A past workout logged after the fact sends it from its own save, so it closes the `Workout Started` its editor sent. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
+| Workout Discarded | ricecal_workout_discarded | sets: number; minutes: number | `src/features/workouts/start.tsx` | A running workout is thrown away from the logger, the "still training?" prompt, or by starting another over it; once per discard, with its ticked sets and minutes. |
+| Routine Saved | ricecal_routine_saved | is_new: boolean; exercises: number; from_template: boolean | `src/data/workouts.ts` | A routine insert or update succeeds, including a template added to the user's routines, a workout saved as one, or a finished workout updating the routine it started from; each success, with counts only. |
+| Workouts Imported | ricecal_workouts_imported | source: 'strong' &#124; 'hevy'; workouts: number; existing: number; failed: number; custom_exercises: number | `app/workout/import.tsx` | A Strong or Hevy CSV import finishes, whether every workout saved or some were refused; once per finished run, with counts only. `custom_exercises` is how many the run created. A run stopped by a lost connection sends nothing; a retry that finishes sends its own. |
 | Widget Added | ricecal_widget_added | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a widget kind absent from the previous stored set; one per newly observed kind. The first poll is a silent baseline. |
 | Widget Removed | ricecal_widget_removed | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a previously stored widget kind absent now; one per removed kind. Intermediate add/remove changes between polls can be missed. |
 | Widget Opened | ricecal_widget_opened | widget: WidgetKind; target: WidgetTarget | `app/widget/[action].tsx` | Supported widget deep link is handled; once per handled widget route. Legacy recipes target remains a valid reported value. |
@@ -4562,7 +5417,7 @@ that instant.
 
 | Contract | PostHog | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 50 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 55 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
@@ -4621,6 +5476,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Log sheet, food route and data mutations | Sheet entry, catalogue answer/selection, logging, scan/refinement outcome, entry edits/deletes | Search debounces; mutations distinguish intent/optimistic inserts from confirmed success as listed above |
 | Recipes | Draft/save/publish/copy/report/block | Public moderation outcomes count separately; a draft is not a meal or a saved recipe. `Suggestions Shown` appears only in data from app versions released before "what to eat next" was removed |
 | Activity, reminders and reports | Health connection/disconnection, reminder writes, report notification taps and review opens/shares | No background health-import events. Locked review opens count before the paywall redirect |
+| Workouts | Workout started (by source), finished, discarded; routine saved | Started counts discarded workouts too, so finished over started is the completion rate. Finished fires on the save returning, queued saves included (`queued: true`), and on saving a past workout logged after the fact; a queued save that lands later and edits to a saved workout send nothing. Rest timers, sets and records are not tracked |
 | Home-screen widgets | Observed kind additions/removals, supported deep links and queued water actions | First observation is a silent baseline; later foreground diffs can miss intermediate changes. Stored baseline belongs to the handset, not reset on account switches. Each account gets the current count without fabricated add/remove events; results from a cancelled account's poll are discarded even if it returns |
 | Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
 | Hard paywall `/paywall` | `Paywall Shown` with `screen: hard` and refused `ProFeature` | `data/refusals.ts` records before navigation; review redirects also record. Free camera allowance is three scans/day; a further refusal can reach camera trigger |
@@ -4947,7 +5803,7 @@ includes the optimistic camera/describe insert; it is not a persisted-meal total
 Investigate a new name, a sharp volume change, unexpected free-text properties,
 missing identity, or purchase events from a second producer.
 
-Automated checks: the inventory test (`inventory.test.ts`) checks all 50 names,
+Automated checks: the inventory test (`inventory.test.ts`) checks all 55 names,
 exact GA4 mappings, typed payloads, source-file existence and a nonempty
 trigger column, and forbids app-side settled revenue fields; `engagement.test.ts`
 covers install detection and the once-a-day claim; `posthog.test.ts` covers the
@@ -6082,15 +6938,27 @@ The pnpm patch adds the explicit `cpp/api`, `cpp/api/third_party` and `cpp/skia`
 roots to Skia's podspec. Keep it until Expo's supported Skia version contains the
 upstream static-framework fixes.
 
+**A screen that holds its own back cannot navigate while it holds it.**
+`usePreventRemove` refuses every removal of the screen, its own included: a
+save that ends in `router.dismissTo` was refused like a swipe. Sending the
+refused action again from the hook's callback, the pattern React Navigation's
+docs show, did nothing here either, so the finish screen stayed in the stack
+under the saved workout and came back when that page was deleted. The workout
+editors go through `useLeaveGuard` (`features/workouts/leaveGuard.tsx`), whose
+`leave` stands the guard down first and navigates once that has rendered. Use it,
+or the same order, for any screen that blocks leaving and then leaves itself.
+
 ### Sheets and the keyboard
 
-**A sheet with a text field in it is `fullHeight`. Every time.** This has been
-got wrong repeatedly, so it is a rule rather than a judgement call. A capped
-panel is padded up off the bottom edge by `KeyboardAvoidingView` when the
+**A bottom sheet with a text field in it is `fullHeight`. Every time.** This
+has been got wrong repeatedly, so it is a rule rather than a judgement call. A
+capped panel is padded up off the bottom edge by `KeyboardAvoidingView` when the
 keyboard opens, and the strip left behind shows the scrim through the curve of
 the keyboard's top corners: the sheet stops reading as attached to the bottom of
 the screen. `fullHeight` keeps the panel where it is and lets the scroll view
-inset its own content instead.
+inset its own content instead. A `placement="center"` card is the exception: it
+floats, so being lifted above the keyboard is what it should do, and its footer
+rises with it. The routine editor's name and note card is one.
 
 Two corollaries, both learnt the hard way. Such a sheet has **no `footer`**: a
 footer sits outside the scroll view, so at full height it lands at the bottom of
@@ -6178,6 +7046,13 @@ In dev Reanimated does say so ("Tried to modify key `current` of an object which
 has been already passed to a worklet"), buried among warnings; in a release build
 it is silent. The fix is one line of destructuring. **Never let a worklet close
 over an object that owns mutable state.** Pull the primitives out first.
+
+**A field subscribes to whether it is the one being edited, not to the pad.**
+The provider's value changes on every open, close and Next, and a field reading
+it re-rendered on each one, memoised or not: in a workout that was every set row
+at every keypress of Next. Fields read a second context of stable actions and
+`useSyncExternalStore` one boolean, so a move between two fields renders those
+two.
 
 **The keyboard's reported height is still not where the keys start.** `Screen`'s
 footer skirts for it: canvas continuing below the footer for a screen's worth, so

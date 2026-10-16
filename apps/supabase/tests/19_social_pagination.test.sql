@@ -48,7 +48,7 @@ select is((select count(*)::int from private.social_feed_candidates('discover', 
 select is((select count(*)::int from private.social_suggestion_candidates(12)), 0,
   'the privileged suggestions helper returns no identities without an authenticated user claim');
 reset role;
-select ok(not has_function_privilege('anon', 'private.social_feed_candidates(text,timestamptz,uuid,integer)', 'EXECUTE'),
+select ok(not has_function_privilege('anon', 'private.social_feed_candidates(text,timestamptz,uuid,integer,public.social_post_kind[])', 'EXECUTE'),
   'anonymous callers have no direct candidate-helper privilege');
 select ok(not has_function_privilege('anon', 'private.social_suggestion_candidates(integer)', 'EXECUTE'),
   'anonymous callers have no direct suggestion-helper privilege');

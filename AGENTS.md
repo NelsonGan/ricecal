@@ -172,6 +172,27 @@ on the local stack.
 Local stack ports are 544xx (`api 54421`, `db 54422`, Mailpit `54424`). `psql`
 is not on PATH: `docker exec supabase_db_ricecal psql -U postgres`.
 
+**Resetting the local database without losing its accounts.** `pnpm db:reset`
+wipes every row, including the signed-in simulator's session. To keep them,
+dump first with `pg_dump --data-only --disable-triggers --schema=public
+--schema=auth --schema=storage` inside the db container, reset, then restore.
+The restore looks clean and is not: `--disable-triggers` cannot disable the
+triggers on `auth.users` (another role owns it), so loading the users fires
+`handle_new_user`, which makes default `profiles`, `user_settings` and
+`meal_times` rows; the dump's own rows for those three then collide and each
+table's whole `COPY` is refused, while the row counts still match. Load those
+three again into a temp table and upsert them by primary key. Never delete a
+profile to make room, since everything cascades from it. Compare a few known
+values (`onboarded_at`, reminder days) rather than counts.
+
+**Folding a change into a branch's one unreleased migration needs no reset.**
+`pnpm db:diff` compares the schema files with what the migrations folder builds,
+not with the local database. Move the branch's migration out of `migrations/`,
+diff, and the output is the whole migration again from `main`; give it the old
+file's version, restate the hand-written revokes at its foot, and apply only the
+difference to the local database with `psql`, since it already holds the old
+version. Diff once more with the file back in place: it should report nothing.
+
 ## Running SQL against the hosted database
 
 Two routes, and the first is the one scripts use.
@@ -334,6 +355,22 @@ run `open -a Simulator --args -CurrentDeviceUDID <udid>`, then
 device window is visible, and leave it open on the tested screen so the user
 can follow along and inspect the result.
 
+**An edit under `widgets/ios/` needs a prebuild, or a copy.** `withWidgets.js`
+copies those files into `ios/RiceCalWidgets/` at prebuild time, so
+`expo run:ios` without one compiles the stale copy and the widget or Live
+Activity keeps the old code with no warning. `cp widgets/ios/*.swift
+ios/RiceCalWidgets/` before an incremental build is enough, plus `cp
+widgets/ios/WorkoutActionIntent.swift ios/RiceCal/`: the Live Activity's
+buttons run in the app, so that file is in the app target too, and a stale copy
+there runs old code behind a new-looking button. A *new* Swift file needs
+`expo prebuild --clean`, because the targets' source lists are written once.
+
+**`pod install` from an agent's shell needs `LANG=en_US.UTF-8`.** Without a
+UTF-8 locale CocoaPods dies while *reporting* whatever went wrong
+(`Unicode Normalization not appropriate for ASCII-8BIT`), so a prebuild looks
+like it failed for an encoding reason. With the locale set the same install
+passes. `expo prebuild` runs it, so set it there too.
+
 A simulator build is already on disk, so verifying a UI change does not need
 `pnpm ios` (a prebuild plus a full compile):
 
@@ -355,6 +392,11 @@ Metro reload picks up an edit without reinstalling.
   than tapping, and it reaches screens the UI only offers after a refusal. A
   deep link is restored as the route after a Metro reload, and some screens
   crash when they mount before the session has loaded; `restart-app` clears it.
+- **After a reinstall, the first `ricecal://` link raises an "Open in
+  RiceCal?" alert that screenshots do not show.** The screen just dims, ignores
+  every tap and even the Home button, and looks like a hung app. Each
+  `simctl openurl` queues another. Tap where Open sits, about (256, 476) in
+  points on an iPhone 18 Pro, once per queued link.
 - **A Metro answering on 8081 is not necessarily this project's.** Another
   project on the machine takes it first and answers `packager-status:running`
   identically. `curl -s localhost:8081/json/list` names the app. Start this one
@@ -367,6 +409,8 @@ Metro reload picks up an edit without reinstalling.
   `ricecal://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8082`, and
   warm the bundle with a `curl` of the entry bundle first (about 30 s cold) or
   the client red-boxes rather than waiting.
+- **The dev-menu "Tools button" switch ignores a simulated tap; a short
+  horizontal swipe on it flips it.** Off is what clean screenshots want.
 - **The dev-menu bubble eats taps in the top right** — roughly x 0.84-0.95,
   y 0.10-0.22, a region much larger than the visible circle, over every `AppBar`
   action and the plate sheet's first "+". Hiding the tools button leaves the

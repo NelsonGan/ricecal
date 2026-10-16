@@ -34,6 +34,9 @@ import type { RatingSkipReason, RatingTrigger } from '@/lib/rating/state'
  *   active days are the two engagement events below (`engagement.ts`).
  */
 
+/** What a workout started from. See `Workout Started`. */
+export type WorkoutSource = 'empty' | 'routine' | 'template' | 'repeat' | 'past'
+
 /** How an entry reached the diary. The one property most reports break down by. */
 export type LogMethod =
   | 'camera'
@@ -364,6 +367,46 @@ export type Events = {
    * Android, which cannot report what became of a share intent.
    */
   'Meal Shared': { picture: 'photo' | 'drawing' }
+
+  // ── Workouts ─────────────────────────────────────────────────────────────
+  /**
+   * A workout began on the logger. `source` is what it started from, which is
+   * the bet the tab's layout makes: whether people train from their own
+   * routines, from the templates, from a past workout, or from nothing.
+   * `exercises` is how many it opened with, zero for an empty start.
+   */
+  'Workout Started': { source: WorkoutSource; exercises: number }
+  /**
+   * A workout was saved. Counts and a duration, never a weight or an exercise
+   * name. `queued` is a save waiting on the phone for a connection, which lands
+   * later without another event; `saved_to_health` says whether the Apple
+   * Health copy is being used at all.
+   */
+  'Workout Finished': {
+    exercises: number
+    sets: number
+    duration_min: number
+    from_routine: boolean
+    saved_to_health: boolean
+    queued: boolean
+  }
+  /** Thrown away from the logger, with how far it had got. */
+  'Workout Discarded': { sets: number; minutes: number }
+  /** A routine was written, by hand or by adding a template. */
+  'Routine Saved': { is_new: boolean; exercises: number; from_template: boolean }
+  /**
+   * A Strong or Hevy history was brought in. Counts only: the workouts saved,
+   * the ones already there (the same file imported twice), the ones refused,
+   * and how many of the file's exercises had no catalogue entry and became the
+   * person's own. Whether switchers bring their history is the question.
+   */
+  'Workouts Imported': {
+    source: 'strong' | 'hevy'
+    workouts: number
+    existing: number
+    failed: number
+    custom_exercises: number
+  }
 
   // ── The home screen ──────────────────────────────────────────────────────
   /**

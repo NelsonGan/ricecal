@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import { keys } from '../keys'
 import { useBlockAuthor } from '../moderation'
+import { socialFeedParams } from '../social'
 
 const mockUpsert = jest.fn()
 jest.mock('@/lib/supabase', () => ({
@@ -27,7 +28,7 @@ beforeEach(() => {
 
 it('a recipe block clears social content and prevents an older read restoring it', async () => {
   const { client, wrapper } = setup()
-  const feedKey = keys.socialRead('viewer', 'social_feed', { p_mode: 'following' })
+  const feedKey = keys.socialRead('viewer', 'social_feed', socialFeedParams('following'))
   const profileKey = keys.socialRead('viewer', 'social_profile', { p_user_id: 'author' })
   const otherViewerKey = keys.socialRead('other-viewer', 'social_feed')
   const diaryKey = keys.day('viewer', '2026-09-22')

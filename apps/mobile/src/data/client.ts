@@ -86,3 +86,41 @@ export function seedMissing<T>(
     if (queryClient.getQueryData(key) === undefined) queryClient.setQueryData(key, value)
   }
 }
+
+/** Rows asked for a page. The server may answer fewer, so a short page is not the end. */
+const PAGE = 1000
+
+/**
+ * Every row of a select, a page at a time, until a page comes back empty.
+ * Stopping on a short page instead read the end of the list wherever the
+ * server's own row cap sat below the page size, and an installed app cannot
+ * see that cap move.
+ */
+export async function everyRow<T>(
+  page: (from: number, to: number) => PromiseLike<PostgrestResponse<T>>,
+): Promise<T[]> {
+  const rows: T[] = []
+  for (;;) {
+    const next = unwrap(await page(rows.length, rows.length + PAGE - 1))
+    if (next.length === 0) return rows
+    rows.push(...next)
+  }
+}
+
+/** What `withDeadline` answers when the time ran out first. */
+export const TIMED_OUT = Symbol('timed out')
+
+/**
+ * A promise's answer, or `TIMED_OUT` once `ms` have passed. For the whole of
+ * an operation, not just its request: supabase-js refreshes an expired token
+ * before it sends, with no signal and no timeout, and on Android a request
+ * with none can wait forever, so an abort on the fetch alone bounded nothing.
+ * The work itself carries on; only the wait for it ends.
+ */
+export function withDeadline<T>(work: PromiseLike<T>, ms: number): Promise<T | typeof TIMED_OUT> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<typeof TIMED_OUT>((resolve) => {
+    timer = setTimeout(() => resolve(TIMED_OUT), ms)
+  })
+  return Promise.race([Promise.resolve(work), deadline]).finally(() => clearTimeout(timer))
+}

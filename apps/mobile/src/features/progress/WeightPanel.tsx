@@ -11,7 +11,7 @@ import {
 } from '@/data'
 import { datePattern } from '@/lib/dates'
 import { goalDate } from '@/lib/nutrition'
-import { showChange, showWeight, UNIT_KEY, type WeightUnit } from '@/lib/units'
+import { fromKg, showChange, showWeight, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { radius } from '@/theme/tokens'
 import { Badge, Button, Card, Divider, EmptyState, Icon, ListRow, Squish, Text } from '@/ui'
 import { bucketLabels, chunk, SPAN_KEY } from './axis'
@@ -167,11 +167,15 @@ export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPan
           points={buckets.map((bucket, index) => ({
             key: bucket.start,
             label: labels[index],
+            // The year's axis names every other month; the readout names each.
+            title: range === '1y' ? format(parseISO(bucket.start), 'LLLL') : undefined,
             value: bucket.weight,
           }))}
           // Where the line starts. Without it a range opening on an unweighed
           // day begins partway across the card.
           carryFrom={summary.weightBefore}
+          formatValue={(value) => `${showWeight(value, unit)} ${unitLabel}`}
+          unitFactor={fromKg(1, unit)}
           accessibilityLabel={t('progress:weight.chart', { span: t(SPAN_KEY[range]) })}
         />
       </Card>

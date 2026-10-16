@@ -23,9 +23,13 @@ export const activity = {
     workouts: 'Workouts',
     workoutsBody: 'Type, time, pace, heart rate',
 
-    /** The promise, and it is a real one: `toShare` is empty in every request. */
+    /**
+     * The promise, and it is a real one: connecting asks to write nothing
+     * (`toShare` is empty). Saving workouts is a separate switch in the
+     * workout settings, off until the user turns it on.
+     */
     privacy:
-      'Read only. We never write anything back, and your health data is only ever stored in your own account.',
+      'Connecting only reads. We save workouts there only if you turn that on, and your health data stays in your own account.',
 
     /**
      * The line UNDER the connect button, on each platform. There is no longer a

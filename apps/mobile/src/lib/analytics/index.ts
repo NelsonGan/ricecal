@@ -21,5 +21,6 @@ export type {
   ScanOutcome,
   SignInMethod,
   WidgetTarget,
+  WorkoutSource,
 } from './events'
 export { dateOffset, planDirection } from './props'

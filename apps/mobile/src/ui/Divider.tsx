@@ -1,3 +1,4 @@
+import { Children, isValidElement, type ReactNode } from 'react'
 import { View, type ViewProps } from 'react-native'
 
 import { cn } from './cn'
@@ -24,5 +25,24 @@ export function Divider({ dashed = false, className, ...rest }: DividerProps) {
       )}
       {...rest}
     />
+  )
+}
+
+/**
+ * Keyed rows with a `Divider` between each, as a list inside a card draws
+ * them. A null child is left out rather than ruled off.
+ */
+export function Divided({ children }: { children: ReactNode }) {
+  return (
+    <>
+      {Children.toArray(children)
+        .filter(isValidElement)
+        .map((child, index) => (
+          <View key={child.key}>
+            {index > 0 ? <Divider /> : null}
+            {child}
+          </View>
+        ))}
+    </>
   )
 }

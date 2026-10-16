@@ -1,20 +1,28 @@
 import { View } from 'react-native'
 
-import { cn, Text } from '@/ui'
+import { cn, Tappable, Text } from '@/ui'
 
 export type Bar = {
   key: string
-  /** The axis label under the bar. One or two characters. */
-  label: string
+  /** The axis label under the bar. One or two characters. Left out, no label row. */
+  label?: string
   value: number
   /** Draws this bar in the accent colour. Usually the newest or the current one. */
   highlight?: boolean
+  /** What VoiceOver calls a selectable bar: its date and its value. */
+  a11yLabel?: string
 }
 
 export type BarChartProps = {
   bars: readonly Bar[]
   /** Accent for highlighted bars. */
   tone?: 'pandan' | 'hibiscus' | 'water' | 'kaya'
+  /**
+   * How the bars that are not highlighted are drawn. `track` greys them all;
+   * `soft` gives any with a value a pale wash of the tone, so a week with
+   * something in it stands apart from an empty one.
+   */
+  others?: 'track' | 'soft'
   /**
    * Where the bars start from.
    *
@@ -25,6 +33,13 @@ export type BarChartProps = {
    */
   scale?: 'zero' | 'range'
   height?: number
+  /**
+   * Makes the bars tappable: the tapped one is drawn in the accent and handed
+   * back, and tapping it again hands back null. The caller says what it was,
+   * usually in the headline the chart sits under.
+   */
+  selected?: number | null
+  onSelect?: (index: number | null) => void
   /** Screen-reader summary. The bars themselves are decorative. */
   accessibilityLabel?: string
   className?: string
@@ -37,18 +52,30 @@ const fills = {
   kaya: 'bg-kaya',
 } as const
 
+const softFills = {
+  pandan: 'bg-pandan-soft-line',
+  hibiscus: 'bg-hibiscus-soft-line',
+  water: 'bg-water-soft-line',
+  kaya: 'bg-kaya-soft-line',
+} as const
+
+const COLUMN = 'h-full min-w-0 flex-1 items-center gap-1.5'
+
 /**
  * A plain column chart.
  *
  * Deliberately not victory-native: every use here is a fixed handful of bars
- * with no axes, no tooltips and no gestures, and a flex row of rounded Views
- * renders that far more cheaply than a Skia canvas would.
+ * with no axes and at most a tap, and a flex row of rounded Views renders that
+ * far more cheaply than a Skia canvas would.
  */
 export function BarChart({
   bars,
   tone = 'pandan',
+  others = 'track',
   scale = 'zero',
   height = 110,
+  selected = null,
+  onSelect,
   accessibilityLabel,
   className,
 }: BarChartProps) {
@@ -65,28 +92,58 @@ export function BarChart({
     <View
       className={cn('flex-row items-end gap-1.5', className)}
       style={{ height }}
-      accessible={Boolean(accessibilityLabel)}
-      accessibilityRole={accessibilityLabel ? 'image' : undefined}
+      // One image to VoiceOver, unless its bars are buttons of their own.
+      accessible={Boolean(accessibilityLabel) && !onSelect}
+      accessibilityRole={accessibilityLabel && !onSelect ? 'image' : undefined}
       accessibilityLabel={accessibilityLabel}
     >
-      {bars.map((bar) => (
-        <View key={bar.key} className="h-full min-w-0 flex-1 items-center gap-1.5">
-          {/* The bar's percentage is of this box, not of the column: measuring
-              it against the column would make a full bar plus its label taller
-              than the chart, and it would ride up over whatever sits above. */}
-          <View className="w-full flex-1 justify-end">
-            <View
-              className={cn('w-full rounded-lg', bar.highlight ? fills[tone] : 'bg-track')}
-              // A floor of 4% keeps a zero-value day visible as a stub rather
-              // than vanishing, which reads as missing data.
-              style={{ height: `${Math.max(4, ((bar.value - floor) / span) * 100)}%` }}
-            />
+      {bars.map((bar, index) => {
+        const column = (
+          <>
+            {/* The bar's percentage is of this box, not of the column: measuring
+                it against the column would make a full bar plus its label taller
+                than the chart, and it would ride up over whatever sits above. */}
+            <View className="w-full flex-1 justify-end">
+              <View
+                className={cn(
+                  'w-full rounded-lg',
+                  (selected === null ? bar.highlight : selected === index)
+                    ? fills[tone]
+                    : others === 'soft' && bar.value > 0
+                      ? softFills[tone]
+                      : 'bg-track',
+                )}
+                // A floor of 4% keeps a zero-value day visible as a stub rather
+                // than vanishing, which reads as missing data.
+                style={{ height: `${Math.max(4, ((bar.value - floor) / span) * 100)}%` }}
+              />
+            </View>
+            {bar.label !== undefined ? (
+              <Text numberOfLines={1} variant="micro">
+                {bar.label}
+              </Text>
+            ) : null}
+          </>
+        )
+        // A plain View unless the bars can be picked: a Pressable that does
+        // nothing is still a stop TalkBack lands on, with nothing to say.
+        return onSelect ? (
+          <Tappable
+            key={bar.key}
+            onPress={() => onSelect(selected === index ? null : index)}
+            className={COLUMN}
+            accessibilityRole="button"
+            accessibilityState={{ selected: selected === index }}
+            accessibilityLabel={bar.a11yLabel ?? bar.label ?? bar.key}
+          >
+            {column}
+          </Tappable>
+        ) : (
+          <View key={bar.key} className={COLUMN}>
+            {column}
           </View>
-          <Text numberOfLines={1} variant="micro">
-            {bar.label}
-          </Text>
-        </View>
-      ))}
+        )
+      })}
     </View>
   )
 }

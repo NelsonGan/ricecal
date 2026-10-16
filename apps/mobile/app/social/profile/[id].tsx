@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useAvatarUrl, useProfile, useUserId } from '@/data'
-import { useSocialPosts, useSocialProfile } from '@/data/social'
+import { useSocialPosts, useSocialProfile, useSocialWorkoutCount } from '@/data/social'
 import {
   ContentSafety,
   FollowButton,
@@ -27,7 +27,10 @@ function Profile({ id }: { id: string }) {
   const viewer = useUserId()
   const ownProfile = useProfile()
   const profile = useSocialProfile(id)
+  // Meals and workouts in one grid, newest first; a workout is a compact tile
+  // there and opens its post for the whole card.
   const posts = useSocialPosts(id)
+  const workouts = useSocialWorkoutCount(id).data ?? 0
   const leaveProfile = useCallback(() => router.dismissTo('/feed'), [router])
   const [options, setOptions] = useState(false)
   const afterDismiss = useRef<(() => void) | null>(null)
@@ -74,7 +77,10 @@ function Profile({ id }: { id: string }) {
       <View className="flex-row items-stretch rounded-md bg-track px-1 py-1">
         <View className="min-h-sm flex-1 items-center justify-center px-1">
           <Text variant="label" className="text-center" numberOfLines={2}>
-            {t('posts', { count: person?.post_count ?? 0 })}
+            {/* `post_count` is meals only, which is what an app from before
+                workout posts draws it over; the workouts are the ones this
+                viewer can see. */}
+            {t('posts', { count: (person?.post_count ?? 0) + workouts })}
           </Text>
         </View>
         <Tappable

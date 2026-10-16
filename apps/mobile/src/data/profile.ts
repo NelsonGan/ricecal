@@ -46,6 +46,7 @@ export type ProfilePatch = {
   avatarPath?: string | null
   isPrivate?: boolean
   autoPostFoods?: boolean
+  autoPostWorkouts?: boolean
   sex?: Sex
   birthDate?: string
   heightCm?: number
@@ -64,6 +65,7 @@ function toRow(patch: ProfilePatch): TablesUpdate<'profiles'> {
   if (patch.avatarPath !== undefined) row.avatar_path = patch.avatarPath
   if (patch.isPrivate !== undefined) row.is_private = patch.isPrivate
   if (patch.autoPostFoods !== undefined) row.auto_post_foods = patch.autoPostFoods
+  if (patch.autoPostWorkouts !== undefined) row.auto_post_workouts = patch.autoPostWorkouts
   if (patch.sex !== undefined) row.sex = patch.sex
   if (patch.birthDate !== undefined) row.birth_date = patch.birthDate
   if (patch.heightCm !== undefined) row.height_cm = patch.heightCm

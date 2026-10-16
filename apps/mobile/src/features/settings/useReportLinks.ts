@@ -2,6 +2,9 @@ import * as Notifications from 'expo-notifications'
 import { router } from 'expo-router'
 import { useEffect } from 'react'
 
+import { useSession } from '@/data/session'
+import { openLogger } from '@/features/workouts/loggerOpen'
+import { getActiveWorkout } from '@/features/workouts/store'
 import { track } from '@/lib/analytics'
 
 /**
@@ -35,12 +38,32 @@ const isReport = (kind: unknown): kind is ReportKind => kind === 'weekly' || kin
  * hook living where the router already is.
  */
 export function useReportLinks(): void {
+  const { userId } = useSession()
   useEffect(() => {
     let alive = true
 
     const open = (response: Notifications.NotificationResponse | null) => {
       const kind = response?.notification.request.content.data?.kind
-      if (!alive || !isReport(kind)) return
+      if (!alive) return
+      // A running workout's notices open its logger, and a training-day
+      // reminder the tab it is about. Not counted: they are the workout
+      // talking, not a way back into the app. A notice can outlive its
+      // workout in Notification Center, so with none running it lands on the
+      // tab rather than on an empty logger.
+      //
+      // Back to a logger that is already open, wherever it is in the stack:
+      // with the library or an exercise's page on top of it, `navigate` pushed
+      // a second logger.
+      if (kind === 'rest' || kind === 'workout') {
+        if (!userId || !getActiveWorkout(userId)) router.navigate('/workouts')
+        else openLogger(router)
+        return
+      }
+      if (kind === 'workout-reminder') {
+        router.push('/workouts')
+        return
+      }
+      if (!isReport(kind)) return
       // The weekly and monthly reports are the app's only unprompted way back
       // in — meal reminders say something and go, and there is no push at all —
       // so whether anybody taps them is the whole question about them.
@@ -68,5 +91,5 @@ export function useReportLinks(): void {
       alive = false
       listener.remove()
     }
-  }, [])
+  }, [userId])
 }

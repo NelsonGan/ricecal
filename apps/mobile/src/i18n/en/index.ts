@@ -9,6 +9,7 @@ import { progress } from './progress'
 import { recipes } from './recipes'
 import { reviews } from './reviews'
 import { social } from './social'
+import { workouts } from './workouts'
 
 /**
  * The English bundle, and the shape every other locale must satisfy.
@@ -31,6 +32,7 @@ export const en = {
   recipes,
   reviews,
   social,
+  workouts,
 } as const
 
 export type Resources = typeof en

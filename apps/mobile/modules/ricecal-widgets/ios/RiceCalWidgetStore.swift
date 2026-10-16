@@ -51,6 +51,10 @@ public enum RiceCalWidgetStore {
     guard let defaults else { return }
     defaults.removeObject(forKey: snapshotKey)
     defaults.removeObject(forKey: pendingKey)
+    // The workout's too: an exercise name in the notice words, and presses
+    // for a workout that belonged to the account signing out.
+    defaults.removeObject(forKey: workoutKey)
+    defaults.removeObject(forKey: restNoticeKey)
   }
 
   // MARK: - Water added on the widget
@@ -70,21 +74,9 @@ public enum RiceCalWidgetStore {
    millisecond as the drain — costs 250 ml on one day.
    */
   public static func addWater(ml: Int, date: String, at: Date = Date()) {
-    guard let defaults else { return }
-
-    var queue = pendingActions()
-    queue.append([
-      "type": "water",
-      "ml": ml,
-      "date": date,
-      "at": Int(at.timeIntervalSince1970 * 1000),
-    ])
-    if let encoded = try? JSONSerialization.data(withJSONObject: queue),
-      let json = String(data: encoded, encoding: .utf8)
-    {
-      defaults.set(json, forKey: pendingKey)
-    }
-
+    enqueue(
+      ["type": "water", "ml": ml, "date": date, "at": Int(at.timeIntervalSince1970 * 1000)],
+      at: pendingKey)
     bumpWater(by: ml)
   }
 
@@ -96,12 +88,83 @@ public enum RiceCalWidgetStore {
     return json
   }
 
-  private static func pendingActions() -> [[String: Any]] {
-    guard let json = defaults?.string(forKey: pendingKey),
-      let data = json.data(using: .utf8),
+  // MARK: - Buttons pressed on the workout's Live Activity
+
+  private static let workoutKey = "workoutActions"
+  private static let restNoticeKey = "workoutRestNotice"
+
+  /**
+   Held around the read-append-write and the read-and-remove. Unlike the water
+   queue, this one is drained in the moment it is filled: the press itself
+   wakes the app's JS to take it, on another thread of the same process, and a
+   quick double tap on +15 could otherwise apply the first press twice or lose
+   the second.
+   */
+  private static let workoutLock = NSLock()
+
+  /// Posted in the app's process once a Live Activity button has queued an action.
+  public static let workoutActionQueued = Notification.Name("RiceCalWorkoutActionQueued")
+
+  /**
+   Queue a button pressed on the workout's Live Activity for the app to apply.
+
+   The workout lives in the app's own storage, which the intent cannot write,
+   so it leaves the action here and the app's JS applies it: at once when it
+   is running, and on its next launch when it is not.
+   */
+  public static func queueWorkoutAction(_ action: [String: Any]) {
+    guard defaults != nil else { return }
+    workoutLock.lock()
+    enqueue(action, at: workoutKey)
+    workoutLock.unlock()
+    NotificationCenter.default.post(name: workoutActionQueued, object: nil)
+  }
+
+  /// Read the workout queue and empty it. The app's half of `queueWorkoutAction`.
+  public static func takeWorkoutActions() -> String {
+    guard let defaults else { return "[]" }
+    workoutLock.lock()
+    defer { workoutLock.unlock() }
+    let json = defaults.string(forKey: workoutKey) ?? "[]"
+    defaults.removeObject(forKey: workoutKey)
+    return json
+  }
+
+  /**
+   The "rest is over" notice's words, in the user's language, written by the
+   app whenever it updates the activity. A button that moves the rest has to
+   move the notice with it, possibly before the app's JS has run at all, and
+   the words are the app's to choose.
+   */
+  public static func setRestNotice(title: String, body: String, tickBody: String?) {
+    var words = ["title": title, "body": body]
+    if let tickBody { words["tickBody"] = tickBody }
+    defaults?.set(words, forKey: restNoticeKey)
+  }
+
+  /// `tickBody` names the exercise a tick on the activity would start a rest for.
+  public static func restNotice() -> (title: String, body: String, tickBody: String?)? {
+    guard let stored = defaults?.dictionary(forKey: restNoticeKey) as? [String: String],
+      let title = stored["title"], let body = stored["body"]
+    else { return nil }
+    return (title, body, stored["tickBody"])
+  }
+
+  /// Adds one entry to the end of the queue stored under `key`, written back as JSON.
+  private static func enqueue(_ entry: [String: Any], at key: String) {
+    guard let defaults else { return }
+    var queue: [[String: Any]] = []
+    if let json = defaults.string(forKey: key), let data = json.data(using: .utf8),
       let parsed = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
-    else { return [] }
-    return parsed
+    {
+      queue = parsed
+    }
+    queue.append(entry)
+    if let encoded = try? JSONSerialization.data(withJSONObject: queue),
+      let json = String(data: encoded, encoding: .utf8)
+    {
+      defaults.set(json, forKey: key)
+    }
   }
 
   /**

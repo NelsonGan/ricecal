@@ -25,6 +25,9 @@ import { asAuthProblem, deleteAccount, emailSendRetryAfter, onPasswordRecovery }
 import { keys } from '@/data/keys'
 import { useSocialAction, useSocialOnline, useSocialProfile } from '@/data/social'
 import { CaptchaProvider, PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
+// From the store itself, not the feature's barrel: this screen has no use
+// for the rest of the logger, its native modules included.
+import { forgetWorkoutsOnPhone } from '@/features/workouts/store'
 import { datePattern } from '@/lib/dates'
 import { openLegal, PRIVACY_URL, TERMS_URL } from '@/lib/legal'
 import { useBack } from '@/lib/navigation'
@@ -74,8 +77,6 @@ export default function AccountScreen() {
   const [publicSubmitted, setPublicSubmitted] = useState(false)
   const [handleTaken, setHandleTaken] = useState(false)
   const [handleHelpOpen, setHandleHelpOpen] = useState(false)
-  const [privateHelpOpen, setPrivateHelpOpen] = useState(false)
-  const [autoPostHelpOpen, setAutoPostHelpOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -157,11 +158,11 @@ export default function AccountScreen() {
     }
   }
 
-  const setAutoPost = async (value: boolean) => {
+  const setAutoPost = async (patch: { autoPostFoods: boolean } | { autoPostWorkouts: boolean }) => {
     if (!profile || busy || !online) return
     try {
       if (!(await save())) return
-      await updateProfile.mutateAsync({ autoPostFoods: value })
+      await updateProfile.mutateAsync(patch)
     } catch {
       toast.show({ title: t('social:saveFailed'), tone: 'error' })
     }
@@ -362,50 +363,29 @@ export default function AccountScreen() {
           >
             {t('social:save')}
           </Button>
-          <View className="flex-row items-center gap-3 border-t border-line pt-4">
-            <View className="min-w-0 flex-1 flex-row items-center gap-0">
-              <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
-                {t('social:privateProfile')}
-              </Text>
-              <IconButton
-                variant="ghost"
-                size="xxs"
-                hitSlop={8}
-                accessibilityLabel={t('social:privateProfileHint')}
-                onPress={() => setPrivateHelpOpen(true)}
-              >
-                <Icon set="ui" name="info" size={18} />
-              </IconButton>
-            </View>
-            <Switch
-              value={profile?.is_private ?? false}
-              onValueChange={setPrivate}
-              disabled={!profile || busy || !online}
-              accessibilityLabel={t('social:privateProfile')}
-            />
-          </View>
-          <View className="flex-row items-center gap-3 border-t border-line pt-4">
-            <View className="min-w-0 flex-1 flex-row items-center gap-0">
-              <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
-                {t('social:autoPostFoods')}
-              </Text>
-              <IconButton
-                variant="ghost"
-                size="xxs"
-                hitSlop={8}
-                accessibilityLabel={t('social:autoPostFoodsHint')}
-                onPress={() => setAutoPostHelpOpen(true)}
-              >
-                <Icon set="ui" name="info" size={18} />
-              </IconButton>
-            </View>
-            <Switch
-              value={profile?.auto_post_foods ?? false}
-              onValueChange={setAutoPost}
-              disabled={!profile || busy || !online}
-              accessibilityLabel={t('social:autoPostFoods')}
-            />
-          </View>
+          <HelpSwitchRow
+            label={t('social:privateProfile')}
+            hint={t('social:privateProfileHint')}
+            value={profile?.is_private ?? false}
+            onValueChange={setPrivate}
+            disabled={!profile || busy || !online}
+          />
+          <HelpSwitchRow
+            label={t('social:autoPostFoods')}
+            hint={t('social:autoPostFoodsHint')}
+            value={profile?.auto_post_foods ?? false}
+            onValueChange={(value) => setAutoPost({ autoPostFoods: value })}
+            disabled={!profile || busy || !online}
+          />
+          <HelpSwitchRow
+            label={t('social:autoPostWorkouts')}
+            hint={t('social:autoPostWorkoutsHint')}
+            // On by default: the column says so, and a profile not yet read
+            // should not flash the switch off and then on.
+            value={profile?.auto_post_workouts ?? true}
+            onValueChange={(value) => setAutoPost({ autoPostWorkouts: value })}
+            disabled={!profile || busy || !online}
+          />
         </View>
         <ListRow
           title={t('profile:account.changePassword')}
@@ -460,22 +440,6 @@ export default function AccountScreen() {
       >
         <Text>{t('social:handleHint')}</Text>
       </Sheet>
-      <Sheet
-        visible={privateHelpOpen}
-        onClose={() => setPrivateHelpOpen(false)}
-        title={t('social:privateProfile')}
-        closeLabel={t('common:action.close')}
-      >
-        <Text>{t('social:privateProfileHint')}</Text>
-      </Sheet>
-      <Sheet
-        visible={autoPostHelpOpen}
-        onClose={() => setAutoPostHelpOpen(false)}
-        title={t('social:autoPostFoods')}
-        closeLabel={t('common:action.close')}
-      >
-        <Text>{t('social:autoPostFoodsHint')}</Text>
-      </Sheet>
       {passwordOpen ? <ChangePassword onClose={() => setPasswordOpen(false)} /> : null}
       {confirming ? <DeleteAccount onClose={() => setConfirming(false)} /> : null}
     </Screen>
@@ -486,6 +450,56 @@ export default function AccountScreen() {
  * `(auth)/new-password.tsx`, which asks for the same code. */
 const CODE_LENGTH = 6
 const RESEND_COOLDOWN_S = 60
+
+/** A switch with what it does a tap away: a private profile, and sharing meals and workouts. */
+function HelpSwitchRow({
+  label,
+  hint,
+  value,
+  disabled,
+  onValueChange,
+}: {
+  label: string
+  hint: string
+  value: boolean
+  disabled: boolean
+  onValueChange: (value: boolean) => void
+}) {
+  const { t } = useTranslation(['common'])
+  const [help, setHelp] = useState(false)
+  return (
+    <View className="flex-row items-center gap-3 border-t border-line pt-4">
+      <View className="min-w-0 flex-1 flex-row items-center gap-0">
+        <Text variant="label" numberOfLines={2} className="min-w-0 shrink">
+          {label}
+        </Text>
+        <IconButton
+          variant="ghost"
+          size="xxs"
+          hitSlop={8}
+          accessibilityLabel={hint}
+          onPress={() => setHelp(true)}
+        >
+          <Icon set="ui" name="info" size={18} />
+        </IconButton>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        disabled={disabled}
+        accessibilityLabel={label}
+      />
+      <Sheet
+        visible={help}
+        onClose={() => setHelp(false)}
+        title={label}
+        closeLabel={t('common:action.close')}
+      >
+        <Text>{hint}</Text>
+      </Sheet>
+    </View>
+  )
+}
 
 // Mounted only while open so a dismissed password never survives in the form.
 function ChangePassword({ onClose }: { onClose: () => void }) {
@@ -832,6 +846,7 @@ function ChangePasswordForm({
 function DeleteAccount({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['profile', 'common'])
   const toast = useToast()
+  const userId = useUserId()
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [confirmation, setConfirmation] = useState('')
   const [pending, setPending] = useState(false)
@@ -845,6 +860,9 @@ function DeleteAccount({ onClose }: { onClose: () => void }) {
     Keyboard.dismiss()
     try {
       await deleteAccount()
+      // The account's training that lives only on this phone: a workout in
+      // progress and any finished one still waiting to be sent.
+      forgetWorkoutsOnPhone(userId)
       toast.show({ title: t('profile:account.done') })
       onClose()
     } catch {

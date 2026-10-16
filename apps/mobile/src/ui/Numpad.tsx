@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import {
   createContext,
   type ReactNode,
@@ -8,8 +9,9 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react'
-import { type TextInput, type TextInputProps, View } from 'react-native'
+import { type TextInput, type TextInputProps, useWindowDimensions, View } from 'react-native'
 import Animated, {
   Easing,
   type SharedValue,
@@ -35,19 +37,34 @@ import { Text } from './Text'
  * into view all read it on the tick the pad opens. Measuring would move
  * everything a frame later, which is a visible settle.
  *
- * `KEY_HEIGHT` is duplicated in `KEY_BOX` because NativeWind needs a literal
- * class. They have to be edited together, or a row of keys ends up under the
- * bottom of the window.
+ * `KEY_HEIGHT` is duplicated in `KEY_BOX` and `TALL_KEY_BOX` because NativeWind
+ * needs a literal class. They have to be edited together, or a row of keys ends
+ * up under the bottom of the window.
  */
 const KEY_HEIGHT = 48
 const KEY_BOX = 'h-[48px]'
+/** Two rows and the gap between them: the tick and Next. 48 + 8 + 48. */
+const TALL_KEY_BOX = 'h-[104px]'
 const KEY_GAP = spacing.sm
 const HEADER_HEIGHT = 36
 const PANEL_PAD = 10
+/** Languages whose script needs taller lines than the header's default. */
+const TALL_SCRIPT = /^(th|hi|ta|bn)\b/
 
-/** What the pad occupies above the home indicator's inset. */
+/** What the pad occupies above the home indicator's inset, at the default text size. */
 export const NUMPAD_BODY_HEIGHT =
   PANEL_PAD * 2 + HEADER_HEIGHT + KEY_GAP + KEY_HEIGHT * 4 + KEY_GAP * 3
+
+/**
+ * The header's two lines grow with the text size, so the exercise and the set
+ * are not drawn into the first row of keys. Capped where the system caps a
+ * caption, so the largest sizes still leave the keys on screen. `extra` is for
+ * scripts whose marks stack above and below the line (Thai, Devanagari, Tamil,
+ * Bengali), which two lines of 36pt clip at the default size.
+ */
+export function numpadHeaderHeight(fontScale: number, extra = 0): number {
+  return Math.round(HEADER_HEIGHT * Math.min(Math.max(fontScale, 1), 1.6)) + extra
+}
 
 /** Digits, then the decimal point, zero, and a rub-out. */
 const ROWS = [
@@ -81,6 +98,34 @@ export type NumpadFieldSpec = {
   maxLength: number
   /** The first key replaces the value rather than appending to it. */
   replaceFirst: boolean
+  /** A column of extra keys, for a field that is one of many. See `NumpadTools`. */
+  tools?: NumpadTools
+}
+
+/**
+ * The keys a run of fields needs and a lone field does not: the set logger's.
+ *
+ * Two big keys beside the digits and nothing else: a tick for the set, and
+ * Next, which is how a set is filled in, weight then reps then the next set,
+ * without reaching up the screen for each field. A row of quick-add keys and a
+ * pair of field arrows were tried and cut: a pad with twenty keys is slower to
+ * read than typing the number.
+ *
+ * Everything is the field's to say, and read fresh on every press like the rest
+ * of the spec.
+ */
+export type NumpadTools = {
+  /** "Next", or "Done" on the last field there is. */
+  next?: NumpadKey
+  /** Ticks the set the field belongs to: "✓ Set". */
+  complete?: NumpadKey
+}
+
+export type NumpadKey = {
+  label: string
+  onPress: () => void
+  /** For a screen reader, where the label alone does not say of what. */
+  accessibilityLabel?: string
 }
 
 type Session = {
@@ -91,11 +136,24 @@ type Session = {
   blur: () => void
   /** Where the field is on screen, so a host can scroll it clear of the pad. */
   measure: (report: (top: number, height: number) => void) => void
+  /**
+   * True from a focus until the first key: the next key replaces the value
+   * rather than appending, for a field that asked for `replaceFirst`. Kept on
+   * the session, set by the field's own focus, so it cannot disagree with the
+   * selection the field draws: kept on the pad, a field put away and tapped
+   * again within the close animation showed its value selected while the next
+   * key appended to it.
+   */
+  pristine: boolean
+  /** Whether the field draws its whole value selected. Follows `pristine`. */
+  setFresh: (fresh: boolean) => void
 }
 
 type NumpadValue = {
   /** The field being edited, or null. Drives geometry the moment it changes. */
   session: Session | null
+  /** The header's height at this text size; see `numpadHeaderHeight`. */
+  headerHeight: number
   /** What is drawn — the session, held through the close animation. */
   shown: Session | null
   /** Points the pad occupies at the bottom of the window when it is open. */
@@ -103,14 +161,30 @@ type NumpadValue = {
   /** The same, animated, for anything that moves on the UI thread. */
   offset: SharedValue<number>
   labels: NumpadLabels
-  open: (session: Session) => void
-  /** Closes only if that session still owns the pad. */
-  close: (session: Session) => void
   /** Closes whatever is open. What a scroll does, the way a keyboard dismisses. */
   dismiss: () => void
 }
 
 const NumpadContext = createContext<NumpadValue | null>(null)
+
+/**
+ * The half of the pad a field needs, which never changes identity. A field
+ * only has to know whether it is the one being edited, so it subscribes to
+ * that one boolean rather than to `NumpadValue`, which changes on every open,
+ * close and Next: through the value, every set row in a workout re-rendered
+ * each time the pad moved between two of them.
+ */
+type NumpadActions = Pick<NumpadValue, 'dismiss'> & {
+  open: (session: Session) => void
+  /** Closes only if that session still owns the pad. */
+  close: (session: Session) => void
+  current: () => Session | null
+  subscribe: (listener: () => void) => () => void
+}
+
+const ActionsContext = createContext<NumpadActions | null>(null)
+
+const noSubscription = () => () => {}
 
 /**
  * Which host is nearest above a field.
@@ -174,7 +248,13 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
    */
   const [shown, setShown] = useState<Session | null>(null)
 
-  const height = NUMPAD_BODY_HEIGHT + insets.bottom
+  const { fontScale } = useWindowDimensions()
+  // Read, not subscribed to: changing language re-renders the whole app.
+  const headerHeight = numpadHeaderHeight(
+    fontScale,
+    TALL_SCRIPT.test(i18next.language ?? '') ? 6 : 0,
+  )
+  const height = NUMPAD_BODY_HEIGHT - HEADER_HEIGHT + headerHeight + insets.bottom
   const offset = useSharedValue(0)
 
   useEffect(() => {
@@ -190,39 +270,80 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
   }, [session, height, offset])
 
   /**
-   * The open session, readable outside a render. `dismiss` blurs the field with
-   * it, which from inside a state updater would be a side effect in a function
-   * React is free to call twice.
+   * The open session, the source of truth: `session` is its copy for rendering.
+   * Readable outside a render, which `dismiss` needs to blur the field (from a
+   * state updater that would be a side effect React is free to run twice), and
+   * which lets a field ask "is it me?" without rendering on every change.
    */
   const current = useRef<Session | null>(null)
-  current.current = session
+  const listeners = useRef(new Set<() => void>())
 
-  const open = useCallback((next: Session) => setSession(next), [])
-  // Identity-checked, because blur arrives AFTER the next field's focus when a
-  // tap moves from one field to another. Closing unconditionally would take the
-  // pad down on the field that had just opened it.
-  const close = useCallback(
-    (which: Session) => setSession((open) => (open === which ? null : open)),
-    [],
-  )
-  const dismiss = useCallback(() => {
-    // Nothing open is the common case: `Screen` calls this on every scroll that
-    // starts, and almost none have a pad up. Without the guard, every drag in
-    // the app pushes a state update through the provider above the whole tree.
-    if (!current.current) return
-    // Blur first: the field's own `onBlur` is what commits the number, and
-    // every caller hangs its commit there rather than on a key. Closing without
-    // it would take the pad away and leave the value uncommitted.
-    current.current.blur()
-    setSession(null)
+  const actions = useMemo<NumpadActions>(() => {
+    const set = (next: Session | null) => {
+      current.current = next
+      setSession(next)
+      for (const listener of listeners.current) listener()
+    }
+    return {
+      current: () => current.current,
+      subscribe: (listener) => {
+        listeners.current.add(listener)
+        return () => {
+          listeners.current.delete(listener)
+        }
+      },
+      open: set,
+      // Identity-checked, because blur arrives AFTER the next field's focus when
+      // a tap moves from one field to another. Closing unconditionally would
+      // take the pad down on the field that had just opened it.
+      close: (which) => {
+        if (current.current === which) set(null)
+      },
+      dismiss: () => {
+        // Nothing open is the common case: `Screen` calls this on every scroll
+        // that starts, and almost none have a pad up. Without the guard, every
+        // drag in the app pushes a state update through the provider above the
+        // whole tree.
+        if (!current.current) return
+        // Blur first: the field's own `onBlur` is what commits the number, and
+        // every caller hangs its commit there rather than on a key. Closing
+        // without it would take the pad away and leave the value uncommitted.
+        current.current.blur()
+        set(null)
+      },
+    }
   }, [])
 
   const value = useMemo<NumpadValue>(
-    () => ({ session, shown, height, offset, labels, open, close, dismiss }),
-    [session, shown, height, offset, labels, open, close, dismiss],
+    () => ({
+      session,
+      shown,
+      headerHeight,
+      height,
+      offset,
+      labels,
+      dismiss: actions.dismiss,
+    }),
+    [session, shown, headerHeight, height, offset, labels, actions],
   )
 
-  return <NumpadContext.Provider value={value}>{children}</NumpadContext.Provider>
+  return (
+    <ActionsContext.Provider value={actions}>
+      <NumpadContext.Provider value={value}>{children}</NumpadContext.Provider>
+    </ActionsContext.Provider>
+  )
+}
+
+/**
+ * Whether the pad is up anywhere. For something that floats at the bottom of
+ * the window over every screen, the toast, which would otherwise land on the
+ * keys a moment after a tick and take the next tap.
+ */
+export function useNumpadOpen(): boolean {
+  const actions = useContext(ActionsContext)
+  return useSyncExternalStore(actions?.subscribe ?? noSubscription, () =>
+    Boolean(actions?.current()),
+  )
 }
 
 export type NumpadFieldOptions = {
@@ -240,6 +361,8 @@ export type NumpadFieldOptions = {
   maxLength?: number
   /** The first key replaces the value. What `selectTextOnFocus` used to buy. */
   replaceFirst?: boolean
+  /** Extra keys for a field that is one of a run of them. See `NumpadTools`. */
+  tools?: NumpadTools
   /** Pass a field's own handlers through; this hook composes rather than replaces. */
   onFocus?: () => void
   onBlur?: () => void
@@ -270,12 +393,13 @@ export function useNumpadField({
   maxLength = MAX_LENGTH,
   label,
   replaceFirst = false,
+  tools,
   onFocus,
   onBlur,
   enabled = true,
   returnKeyType,
 }: NumpadFieldOptions) {
-  const context = useNumpad()
+  const actions = useContext(ActionsContext)
   const hostId = useContext(HostContext)
   const input = useRef<TextInput>(null)
 
@@ -287,23 +411,27 @@ export function useNumpadField({
     label,
     maxLength,
     replaceFirst,
+    tools,
   })
-  field.current = { value, onChangeText, decimal, label, maxLength, replaceFirst }
+  field.current = { value, onChangeText, decimal, label, maxLength, replaceFirst, tools }
 
   // One session object for the life of the field, so `close` can tell whether
   // the pad it is being asked to shut is still this field's.
   const session = useRef<Session | null>(null)
+  const [fresh, setFresh] = useState(false)
   if (!session.current) {
     session.current = {
       hostId,
       field,
       blur: () => input.current?.blur(),
       measure: (report) => input.current?.measureInWindow((_x, y, _w, h) => report(y, h)),
+      pristine: true,
+      setFresh,
     }
   }
   session.current.hostId = hostId
 
-  const live = enabled && Boolean(context) && hostId !== ''
+  const live = enabled && Boolean(actions) && hostId !== ''
 
   /**
    * A field that wanted the pad and could not find a host to draw it.
@@ -317,21 +445,15 @@ export function useNumpadField({
    * keyboard, and crashing a screen over a layout mistake is worse.
    */
   useEffect(() => {
-    if (!__DEV__ || !enabled || !context || hostId !== '') return
+    if (!__DEV__ || !enabled || !actions || hostId !== '') return
     console.warn(
       'useNumpadField: no <NumpadHost> above this field, so it is on the system keyboard. ' +
         'Render it inside a Screen or a Sheet rather than in the component that returns one.',
     )
-  }, [enabled, context, hostId])
+  }, [enabled, actions, hostId])
 
-  /**
-   * The two handlers, pulled out of the context value. They are stable where the
-   * object is not, since its identity changes on every open, close and keystroke.
-   * Depending on the object made the unmount guard re-run on the render that
-   * opened the pad, and its cleanup closes: the pad vanished inside one frame.
-   */
-  const openPad = context?.open
-  const closePad = context?.close
+  const openPad = actions?.open
+  const closePad = actions?.close
 
   // A field can be unmounted mid-edit — the totals card swaps its input back
   // for a heading the moment `editing` clears — and an unmount fires no blur.
@@ -343,16 +465,21 @@ export function useNumpadField({
   }, [closePad])
 
   const handleFocus = useCallback(() => {
+    if (session.current) session.current.pristine = true
     if (live && session.current) openPad?.(session.current)
+    setFresh(replaceFirst)
     onFocus?.()
-  }, [live, openPad, onFocus])
+  }, [live, openPad, onFocus, replaceFirst])
 
   const handleBlur = useCallback(() => {
     if (session.current) closePad?.(session.current)
     onBlur?.()
   }, [closePad, onBlur])
 
-  const active = live && context?.session === session.current
+  const active = useSyncExternalStore(
+    actions?.subscribe ?? noSubscription,
+    () => live && actions?.current() === session.current,
+  )
 
   return {
     ref: input,
@@ -374,11 +501,16 @@ export function useNumpadField({
      */
     returnKeyType: live ? undefined : returnKeyType,
     /**
-     * The caret lives at the end, where the pad writes. Controlled only while the
-     * pad is driving: a controlled selection fights the platform's own caret
-     * handling, and is worth it only where the value changes by no other route.
+     * The caret lives at the end, where the pad writes, or the whole value is
+     * selected while the next key would replace it: a weight opened for editing
+     * reads as "type to replace", the way a field with `selectTextOnFocus` does.
+     * Controlled only while the pad is driving: a controlled selection fights
+     * the platform's own caret handling, and is worth it only where the value
+     * changes by no other route.
      */
-    selection: active ? { start: value.length, end: value.length } : undefined,
+    selection: active
+      ? { start: fresh && replaceFirst ? 0 : value.length, end: value.length }
+      : undefined,
   }
 }
 
@@ -462,23 +594,15 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
   const insets = useSafeAreaInsets()
   const colors = useThemeColors()
   const spec = session.field.current
-
-  /**
-   * True until the first key of an edit, and only interesting for a field that
-   * asked for `replaceFirst`. A ref rather than state, since nothing on screen
-   * depends on it.
-   */
-  const pristine = useRef(true)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a new session is a new edit
-  useEffect(() => {
-    pristine.current = true
-  }, [session])
+  const tools = spec.tools
+  const [title, detail] = (spec.label ?? '').split('\n')
 
   const press = useCallback(
     (key: string) => {
       const live = session.field.current
-      const base = pristine.current && live.replaceFirst ? '' : live.value
-      pristine.current = false
+      const base = session.pristine && live.replaceFirst ? '' : live.value
+      session.pristine = false
+      session.setFresh(false)
 
       if (key === 'back') {
         // On a field that opened with everything selected, the first rub-out
@@ -529,69 +653,135 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
           pad by the time it opens, and carries the way out on the right — where
           the platform's own pill had taught everybody to reach. */}
       <View
-        className="flex-row items-center justify-between"
-        style={{ height: HEADER_HEIGHT, marginBottom: KEY_GAP }}
+        className="flex-row items-center gap-1.5"
+        style={{ height: context.headerHeight, marginBottom: KEY_GAP }}
       >
-        <Text variant="label" numberOfLines={1} className="flex-1">
-          {spec.label ?? ''}
-        </Text>
-        <Tappable
-          className="px-2 py-1.5"
-          onPress={context.dismiss}
-          accessibilityRole="button"
-          accessibilityLabel={context.labels.done}
-        >
-          <Text variant="label" className="text-pandan-ink">
-            {context.labels.done}
+        {/* A label with a line break is a name over a detail: the exercise,
+            then the set and unit, so neither is cut off by the keys beside it. */}
+        <View className="min-w-0 flex-1">
+          {detail ? (
+            <Text variant="caption" numberOfLines={1}>
+              {title}
+            </Text>
+          ) : null}
+          <Text variant="label" numberOfLines={1}>
+            {detail ?? title}
           </Text>
-        </Tappable>
+        </View>
+        {tools ? (
+          // An icon rather than "Done": on the last field Next already says it.
+          <Tappable
+            className="h-[34px] w-[40px] items-center justify-center rounded-sm bg-surface"
+            hitSlop={5}
+            onPress={context.dismiss}
+            accessibilityRole="button"
+            accessibilityLabel={context.labels.done}
+          >
+            <Icon set="ui" name="chevron-down" size={18} tintColor={colors.pandanInk} />
+          </Tappable>
+        ) : (
+          <Tappable
+            className="px-2 py-1.5"
+            onPress={context.dismiss}
+            accessibilityRole="button"
+            accessibilityLabel={context.labels.done}
+          >
+            <Text variant="label" className="text-pandan-ink">
+              {context.labels.done}
+            </Text>
+          </Tappable>
+        )}
       </View>
 
-      <View style={{ gap: KEY_GAP }}>
-        {ROWS.map((row) => (
-          <View key={row[0]} className="flex-row" style={{ gap: KEY_GAP }}>
-            {row.map((key) => {
-              // The decimal key is blanked rather than dropped on a whole-number
-              // field. Dropped, the row rebalances and 0 slides off centre —
-              // and 0 is the key on that row anybody is aiming for.
-              if (key === '.' && !spec.decimal) {
-                return <View key={key} className={cn('flex-1', KEY_BOX)} />
-              }
-              return (
-                <Squish
-                  key={key}
-                  containerClassName={cn('flex-1', KEY_BOX)}
-                  className="flex-1 items-center justify-center bg-surface"
-                  slabClassName="bg-line"
-                  depth={slab.sm}
-                  radius={radius.sm}
-                  onPress={() => press(key)}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    key === 'back'
-                      ? context.labels.backspace
-                      : key === '.'
-                        ? context.labels.decimal
-                        : key
-                  }
-                >
-                  {key === 'back' ? (
-                    // No rub-out in the icon set, and a trash can is a
-                    // different promise. The arrow is what the a11y label
-                    // above explains.
-                    <Icon set="ui" name="arrow-left" size={22} tintColor={colors.muted} />
-                  ) : (
-                    // Keep Baloo 2's full glyph box inside the key. A tighter
-                    // implicit leading clipped the digits on newer iOS.
-                    <Text className="font-display text-[24px] leading-[29px] text-heading">
-                      {key}
-                    </Text>
-                  )}
-                </Squish>
-              )
-            })}
+      <View className="flex-row" style={{ gap: KEY_GAP }}>
+        <View className="flex-[3]" style={{ gap: KEY_GAP }}>
+          {ROWS.map((row) => (
+            <View key={row[0]} className="flex-row" style={{ gap: KEY_GAP }}>
+              {row.map((key) => {
+                // The decimal key is blanked rather than dropped on a whole-number
+                // field. Dropped, the row rebalances and 0 slides off centre —
+                // and 0 is the key on that row anybody is aiming for.
+                if (key === '.' && !spec.decimal) {
+                  return <View key={key} className={cn('flex-1', KEY_BOX)} />
+                }
+                return (
+                  <Squish
+                    key={key}
+                    containerClassName={cn('flex-1', KEY_BOX)}
+                    className="flex-1 items-center justify-center bg-surface"
+                    slabClassName="bg-line"
+                    depth={slab.sm}
+                    radius={radius.sm}
+                    onPress={() => press(key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      key === 'back'
+                        ? context.labels.backspace
+                        : key === '.'
+                          ? context.labels.decimal
+                          : key
+                    }
+                  >
+                    {key === 'back' ? (
+                      // No rub-out in the icon set, and a trash can is a
+                      // different promise. The arrow is what the a11y label
+                      // above explains.
+                      <Icon set="ui" name="arrow-left" size={22} tintColor={colors.muted} />
+                    ) : (
+                      // Keep Baloo 2's full glyph box inside the key. A tighter
+                      // implicit leading clipped the digits on newer iOS.
+                      <Text className="font-display text-[24px] leading-[29px] text-heading">
+                        {key}
+                      </Text>
+                    )}
+                  </Squish>
+                )
+              })}
+            </View>
+          ))}
+        </View>
+        {tools ? (
+          // Two keys, each two rows tall: easy to hit without looking.
+          <View className="flex-[1.2]" style={{ gap: KEY_GAP }}>
+            {tools.complete ? (
+              <Squish
+                containerClassName={TALL_KEY_BOX}
+                className="flex-1 items-center justify-center gap-1 bg-pandan-soft"
+                slabClassName="bg-pandan-soft-line"
+                depth={slab.sm}
+                radius={radius.sm}
+                onPress={() => session.field.current.tools?.complete?.onPress()}
+                accessibilityRole="button"
+                accessibilityLabel={tools.complete.accessibilityLabel ?? tools.complete.label}
+              >
+                <Icon set="ui" name="check" size={22} tintColor={colors.pandanInk} />
+                <Text className="font-display text-[16px] leading-[21px] text-pandan-ink">
+                  {tools.complete.label}
+                </Text>
+              </Squish>
+            ) : (
+              <View className={TALL_KEY_BOX} />
+            )}
+            <Squish
+              containerClassName={TALL_KEY_BOX}
+              className="flex-1 items-center justify-center bg-pandan"
+              slabClassName="bg-pandan-slab"
+              depth={slab.sm}
+              radius={radius.sm}
+              onPress={() => {
+                const live = session.field.current.tools?.next
+                if (live) live.onPress()
+                else context.dismiss()
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={tools.next?.label ?? context.labels.done}
+            >
+              <Text className="font-display text-[18px] leading-[23px] text-on-pandan">
+                {tools.next?.label ?? context.labels.done}
+              </Text>
+            </Squish>
           </View>
-        ))}
+        ) : null}
       </View>
     </Animated.View>
   )

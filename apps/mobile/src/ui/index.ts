@@ -34,6 +34,7 @@ export { Badge, type BadgeProps, type BadgeTone, CountBadge, type CountBadgeProp
 export {
   BottomNav,
   type BottomNavProps,
+  FLOAT_SHADOW,
   NAV_BAR_HEIGHT,
   NavAction,
   type NavActionProps,
@@ -68,7 +69,8 @@ export {
   type DateStripMark,
   type DateStripProps,
 } from './DateStrip'
-export { Divider, type DividerProps } from './Divider'
+export { Dialog, type DialogAction, type DialogProps } from './Dialog'
+export { Divided, Divider, type DividerProps } from './Divider'
 export { EmptyState, type EmptyStateProps } from './EmptyState'
 export { Icon, type IconProps, type IconSet, icons } from './Icon'
 export {
@@ -85,6 +87,7 @@ export {
   type NumpadLabels,
   NumpadProvider,
   type NumpadProviderProps,
+  type NumpadTools,
   useNumpadField,
   useNumpadZone,
 } from './Numpad'
@@ -137,6 +140,7 @@ export {
   type ToastTone,
   useToast,
 } from './Toast'
+export { useHeld } from './useHeld'
 export { WaterTank, type WaterTankProps } from './WaterTank'
 export { type DayStatus, type WeekDay, WeekStrip, type WeekStripProps } from './WeekStrip'
-export { Wheel, type WheelOption, type WheelProps } from './Wheel'
+export { WHEEL_BAND, Wheel, type WheelOption, type WheelProps } from './Wheel'

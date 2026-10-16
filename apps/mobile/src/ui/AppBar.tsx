@@ -29,6 +29,11 @@ export type AppBarProps = {
   /** Screen-reader name for the back button. Pass translated copy. */
   backLabel?: string
   /**
+   * Keeps the back button where it is but inert, for a save in flight. Taken
+   * away instead, the bar lost its height and the whole screen jumped up.
+   */
+  backDisabled?: boolean
+  /**
    * Which affordance the leading control is.
    *
    * `back` (a chevron) means "up one level, the previous screen is still
@@ -36,8 +41,12 @@ export type AppBarProps = {
    * underneath is where you were". A modal is the second kind: it slides up
    * over the app rather than continuing a path through it, and a chevron there
    * promises a hierarchy the screen does not have.
+   *
+   * `minimise` (a downward chevron) is the third: the screen goes away and the
+   * thing in it keeps going, the way a running workout shrinks to a bar over
+   * the tabs. A cross there would read as stopping it.
    */
-  leading?: 'back' | 'dismiss'
+  leading?: 'back' | 'dismiss' | 'minimise'
   /** Trailing controls. Keep to one; two crowds a 340pt phone. */
   action?: ReactNode
   /**
@@ -101,6 +110,7 @@ export function AppBar({
   titleContent,
   onBack,
   backLabel = 'Go back',
+  backDisabled = false,
   leading = 'back',
   action,
   onPressTitle,
@@ -128,12 +138,23 @@ export function AppBar({
       <View style={{ minWidth: sideWidth }} className="items-start">
         {onBack ? (
           <View onLayout={measureLeading}>
-            <IconButton size="sm" accessibilityLabel={backLabel} onPress={onBack}>
+            <IconButton
+              size="sm"
+              accessibilityLabel={backLabel}
+              onPress={onBack}
+              disabled={backDisabled}
+            >
               {/* Tinted: chrome is monochrome, and the illustration's own palette
                   reads as a stray accent next to a title. */}
               <Icon
                 set="ui"
-                name={leading === 'dismiss' ? 'close' : 'chevron-left'}
+                name={
+                  leading === 'dismiss'
+                    ? 'close'
+                    : leading === 'minimise'
+                      ? 'chevron-down'
+                      : 'chevron-left'
+                }
                 size={20}
                 tintColor={colors.muted}
               />

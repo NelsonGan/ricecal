@@ -237,7 +237,7 @@ function DetailsForm({
  * rendered, which is affordable for 366 of them in a panel that opens rarely and
  * is what lets the wheel snap without a windowing list's blank frames.
  */
-function WhenWheels({
+export function WhenWheels({
   anchor,
   date,
   clock,
