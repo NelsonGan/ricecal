@@ -1969,6 +1969,23 @@ export const id = {
       healthFailed: 'Tidak bisa menyimpan ke Apple Health.',
     },
 
+    watch: {
+      noRoutines: 'Buat rutinitas di iPhone untuk memulainya di sini.',
+      openPhone: 'Buka RiceCal di iPhone untuk mulai.',
+      exercises: 'Gerakan',
+      undo: 'Urungkan',
+      end: 'Akhiri latihan',
+      endTitle: 'Akhiri latihan ini?',
+      allDone: 'Semua set selesai',
+      upNext: 'Berikutnya',
+      empty: 'Tambahkan gerakan di iPhone.',
+      syncing: 'Disinkronkan saat iPhone ada di dekat',
+      previousSet: 'Set sebelumnya',
+      nextSet: 'Set berikutnya',
+      startedTitle: 'Latihan dimulai di jam tangan Anda',
+      startedBody: '{{name}}. Ketuk untuk mengikutinya di sini.',
+    },
+
     stale: {
       title: 'Masih berlatih?',
       body: 'Latihan ini dimulai {{time}} lalu.',

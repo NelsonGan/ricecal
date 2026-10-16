@@ -1989,6 +1989,23 @@ export const ms = {
       healthFailed: 'Tidak dapat menyimpan ke Apple Health.',
     },
 
+    watch: {
+      noRoutines: 'Buat rutin di iPhone anda untuk memulakannya di sini.',
+      openPhone: 'Buka RiceCal di iPhone anda untuk bermula.',
+      exercises: 'Latihan',
+      undo: 'Buat asal',
+      end: 'Tamatkan senaman',
+      endTitle: 'Tamatkan senaman ini?',
+      allDone: 'Semua set selesai',
+      upNext: 'Seterusnya',
+      empty: 'Tambah latihan di iPhone anda.',
+      syncing: 'Disegerakkan apabila iPhone anda berdekatan',
+      previousSet: 'Set sebelumnya',
+      nextSet: 'Set seterusnya',
+      startedTitle: 'Senaman dimulakan pada jam tangan anda',
+      startedBody: '{{name}}. Ketik untuk mengikutinya di sini.',
+    },
+
     stale: {
       title: 'Masih bersenam?',
       body: 'Senaman ini bermula {{time}} lalu.',

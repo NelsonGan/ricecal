@@ -62,7 +62,9 @@ export function plansToRoutine(plans: readonly ExercisePlan[]): RoutineExercise[
  * Both carry the plan's fields under the plan's names.
  */
 export function toPlans(
-  exercises: readonly (Required<Omit<ExercisePlan, 'sets'>> & { sets: readonly SetPlan[] })[],
+  exercises: readonly (Required<Omit<ExercisePlan, 'sets' | 'key'>> & {
+    sets: readonly SetPlan[]
+  })[],
 ): ExercisePlan[] {
   return exercises.map((exercise) => ({
     exerciseId: exercise.exerciseId,

@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase'
 import { everyRow, TIMED_OUT, unwrap, unwrapMaybe, withDeadline } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
+import { HEART_RATE_COLUMNS, toHeartRate, type WorkoutHeartRate } from './workout-heart'
 import { dequeueWorkout, enqueueWorkout, getOutbox, type WorkoutDocument } from './workout-outbox'
 
 /**
@@ -75,7 +76,11 @@ export type WorkoutEntry = {
   sets: WorkoutSet[]
 }
 
-export type WorkoutDetail = WorkoutSummary & { entries: WorkoutEntry[] }
+export type WorkoutDetail = WorkoutSummary & {
+  entries: WorkoutEntry[]
+  /** What an Apple Watch recorded, if one did. Absent on a detail cached before it existed. */
+  heartRate?: WorkoutHeartRate | null
+}
 
 const num = (value: number | string | null | undefined): number | null =>
   value === null || value === undefined ? null : Number(value)
@@ -235,7 +240,7 @@ export function useWorkout(id: string | undefined) {
     staleTime: UNTIL_SAVED,
     gcTime: KEPT_A_DAY,
     queryFn: async (): Promise<WorkoutDetail | null> => {
-      const [summary, entries, sets] = await Promise.all([
+      const [summary, entries, sets, heart] = await Promise.all([
         // The record count comes from the sets below, which carry the flags,
         // so the summary leaves it out. And `in` rather than `eq`: on `id = x`
         // the planner kept scoring the whole history for the column nobody
@@ -256,6 +261,11 @@ export function useWorkout(id: string | undefined) {
           .eq('workout_id', id ?? '')
           .order('exercise_position')
           .order('position'),
+        supabase
+          .from('workout_heart_rates')
+          .select(HEART_RATE_COLUMNS)
+          .eq('workout_id', id ?? '')
+          .maybeSingle(),
       ])
       const row = unwrapMaybe(summary)
       if (!row) return null
@@ -265,6 +275,7 @@ export function useWorkout(id: string | undefined) {
           ...row,
           pr_count: setRows.filter((set) => recordsOf(set).length > 0).length,
         }),
+        heartRate: toHeartRate(unwrapMaybe(heart)),
         entries: unwrap(entries).map((entry) => ({
           id: entry.id,
           position: entry.position,
@@ -961,10 +972,11 @@ function toRoutine(row: Tables<'workout_routines'>): Routine {
   }
 }
 
-export function useRoutines() {
+export function useRoutines({ enabled = true }: { enabled?: boolean } = {}) {
   const userId = useUserId()
 
   return useQuery({
+    enabled,
     queryKey: keys.routines(userId),
     queryFn: async (): Promise<Routine[]> =>
       unwrap(

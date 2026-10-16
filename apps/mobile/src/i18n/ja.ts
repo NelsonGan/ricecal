@@ -1958,6 +1958,23 @@ export const ja = {
       healthFailed: 'Apple ヘルスケアに保存できませんでした。',
     },
 
+    watch: {
+      noRoutines: 'iPhoneでルーティンを作ると、ここから始められます。',
+      openPhone: 'iPhoneでRiceCalを開いて始めましょう。',
+      exercises: '種目',
+      undo: '元に戻す',
+      end: 'ワークアウトを終了',
+      endTitle: 'このワークアウトを終了しますか',
+      allDone: '全セット完了',
+      upNext: '次',
+      empty: 'iPhoneで種目を追加してください。',
+      syncing: 'iPhoneが近くにあると同期します',
+      previousSet: '前のセット',
+      nextSet: '次のセット',
+      startedTitle: 'ウォッチでワークアウトを開始しました',
+      startedBody: '{{name}}。タップしてこちらで確認できます。',
+    },
+
     stale: {
       title: 'まだトレーニング中ですか',
       body: 'このワークアウトは {{time}} 前に始まりました。',

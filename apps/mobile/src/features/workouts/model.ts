@@ -72,6 +72,16 @@ export type LiveWorkout = {
    * morning workout from London does not move it to the day before.
    */
   filed?: { startedAt: number; date: string }
+  /**
+   * The Apple Watch's part in it. `recorded` is set once the watch has begun
+   * a workout session for it, which saves its own copy to Apple Health, so the
+   * phone writes none beside it. `appliedSeq` is the last of the watch's
+   * commands applied, so a list sent again is applied from where it got to
+   * (`watch.ts`). `kcal` is the energy the watch measured, carried by an edit
+   * so it is not replaced by an estimate. Absent on every workout the watch
+   * never touched.
+   */
+  watch?: { recorded: boolean; appliedSeq: number; kcal?: number | null }
 }
 
 let counter = 0
@@ -114,6 +124,8 @@ function emptySet(kind: SetKind = 'normal'): LiveSet {
 
 /** What a set or a plan says to do, before anybody has done it. */
 export type SetPlan = {
+  /** Only for a workout started on the watch, which names its sets itself. */
+  id?: string
   kind?: SetKind
   weightKg?: number | null
   reps?: number | null
@@ -124,6 +136,7 @@ export type SetPlan = {
 function setFromPlan(set: SetPlan): LiveSet {
   return {
     ...emptySet(set.kind ?? 'normal'),
+    ...(set.id ? { id: set.id } : null),
     weightKg: set.weightKg ?? null,
     reps: set.reps ?? null,
     durationS: set.durationS ?? null,
@@ -132,6 +145,8 @@ function setFromPlan(set: SetPlan): LiveSet {
 }
 
 export type ExercisePlan = {
+  /** Only for a workout started on the watch, as `SetPlan.id`. */
+  key?: string
   exerciseId: string
   name: string
   tracking: Tracking
@@ -144,7 +159,7 @@ export type ExercisePlan = {
 export function exerciseFromPlan(plan: ExercisePlan): LiveExercise {
   const sets = plan.sets.length ? plan.sets : [{}]
   return {
-    key: localKey(),
+    key: plan.key ?? localKey(),
     exerciseId: plan.exerciseId,
     name: plan.name,
     tracking: plan.tracking,
@@ -156,13 +171,15 @@ export function exerciseFromPlan(plan: ExercisePlan): LiveExercise {
 }
 
 export function newWorkout(input: {
+  /** The watch's, for a workout started there. Minted here otherwise. */
+  id?: string
   name: string
   startedAt?: number
   routineId?: string | null
   exercises?: ExercisePlan[]
 }): LiveWorkout {
   return {
-    id: uuid(),
+    id: input.id ?? uuid(),
     name: input.name,
     notes: '',
     startedAt: input.startedAt ?? Date.now(),
@@ -200,6 +217,10 @@ export type Action =
   | { type: 'adjustRest'; byS: number; at: number }
   | { type: 'stopRest' }
   | { type: 'staleAnswered' }
+  /** The watch began recording this workout. */
+  | { type: 'watchRecorded' }
+  /** The watch's commands up to this one have been applied. */
+  | { type: 'watchApplied'; seq: number }
 
 const mapExercise = (
   workout: LiveWorkout,
@@ -316,6 +337,17 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
           sets: action.atStart ? [...added, ...exercise.sets] : [...exercise.sets, ...added],
         }
       })
+    case 'watchRecorded':
+      return { ...workout, watch: { appliedSeq: 0, ...workout.watch, recorded: true } }
+    case 'watchApplied':
+      return {
+        ...workout,
+        watch: {
+          ...workout.watch,
+          recorded: workout.watch?.recorded ?? false,
+          appliedSeq: Math.max(workout.watch?.appliedSeq ?? 0, action.seq),
+        },
+      }
     case 'removeSet':
       return mapExercise(workout, action.key, (exercise) => ({
         ...exercise,

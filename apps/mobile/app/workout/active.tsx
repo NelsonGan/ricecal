@@ -21,6 +21,7 @@ import {
   useLiveWorkout,
   useLoggerOpen,
   useNow,
+  useWatchPulse,
   useWorkoutPrefs,
   volumeText,
   WorkoutEditor,
@@ -158,6 +159,7 @@ export default function ActiveWorkoutScreen() {
           <Stat label={t('workouts:logger.volume')} value={volumeText(t, totals.volumeKg, unit)} />
         ) : null}
         <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
+        <WatchPulse workoutId={workout.id} />
       </StatStrip>
 
       <WorkoutEditor workout={workout} dispatch={dispatch} mode="live" />
@@ -226,6 +228,20 @@ export default function ActiveWorkoutScreen() {
 function Elapsed({ label, startedAt }: { label: string; startedAt: number }) {
   const now = useNow(1000)
   return <Stat label={label} value={workoutClock((now - startedAt) / 1000)} />
+}
+
+/** The heart rate an Apple Watch recording this workout is streaming, while it is. */
+function WatchPulse({ workoutId }: { workoutId: string }) {
+  const { t } = useTranslation(['activity'])
+  const bpm = useWatchPulse(workoutId)
+  if (bpm === null) return null
+  return (
+    <Stat
+      label={t('activity:workout.bpmUnit')}
+      value={String(bpm)}
+      icon={{ set: 'body', name: 'heart-rate' }}
+    />
+  )
 }
 
 function RestCountdown(props: Omit<Parameters<typeof RestBar>[0], 'now'>) {

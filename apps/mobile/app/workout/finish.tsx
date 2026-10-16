@@ -73,7 +73,7 @@ export default function FinishWorkoutScreen() {
   const router = useRouter()
   const toast = useToast()
   const params = useLocalSearchParams<{ endedAt?: string; pickEnd?: string }>()
-  const { workout: current, clear } = useLiveWorkout()
+  const { workout: current, end } = useLiveWorkout()
   // Saving clears the workout and then leaves; the last document is drawn
   // until the screen has gone, rather than a <Redirect> racing the navigation.
   const workout = useHeld(current, Boolean(current))
@@ -206,7 +206,7 @@ export default function FinishWorkoutScreen() {
           .catch(() => toast.show({ title: t('workouts:finish.routineFailed'), tone: 'error' }))
       }
       trackWorkoutFinished(document, result)
-      clear()
+      end(true, endedAt)
       toast.show({
         title: t('workouts:finish.saved'),
         // A failure is said; a success is not, since saving to Health is the

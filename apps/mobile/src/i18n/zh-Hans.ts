@@ -1939,6 +1939,23 @@ export const zhHans = {
       healthFailed: '没能保存到 Apple 健康。',
     },
 
+    watch: {
+      noRoutines: '在 iPhone 上建好计划，就能在这里开始。',
+      openPhone: '在 iPhone 上打开 RiceCal 开始。',
+      exercises: '动作',
+      undo: '撤销',
+      end: '结束训练',
+      endTitle: '结束这次训练？',
+      allDone: '所有组已完成',
+      upNext: '下一个',
+      empty: '请在 iPhone 上添加动作。',
+      syncing: 'iPhone 在附近时同步',
+      previousSet: '上一组',
+      nextSet: '下一组',
+      startedTitle: '已在手表上开始训练',
+      startedBody: '{{name}}。轻点即可在这里继续查看。',
+    },
+
     stale: {
       title: '还在练吗？',
       body: '这次训练 {{time}} 前就开始了。',

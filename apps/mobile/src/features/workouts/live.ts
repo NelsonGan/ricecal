@@ -4,7 +4,14 @@ import { useSession } from '@/data'
 import { whenWorkoutPromptShown } from '@/lib/notifications'
 import { loggerIsOpen } from './loggerOpen'
 import type { Action, LiveWorkout } from './model'
-import { clearActiveWorkout, dispatchWorkout, startActiveWorkout, useActiveWorkout } from './store'
+import {
+  clearActiveWorkout,
+  dispatchWorkout,
+  getActiveWorkout,
+  recordEndedWorkout,
+  startActiveWorkout,
+  useActiveWorkout,
+} from './store'
 
 /**
  * The workout in progress, bound to the signed-in account.
@@ -28,11 +35,22 @@ export function useLiveWorkout() {
     },
     [userId],
   )
-  const clear = useCallback(() => {
-    if (userId) clearActiveWorkout(userId)
-  }, [userId])
+  /**
+   * Takes the workout off the phone, saying how it ended and when: the watch
+   * saves or throws away its own recording of it by that, ending it at the
+   * time the workout was saved with rather than the time it was saved.
+   */
+  const end = useCallback(
+    (saved: boolean, endedAt = Date.now()) => {
+      if (!userId) return
+      const ending = getActiveWorkout(userId)
+      clearActiveWorkout(userId)
+      if (ending) recordEndedWorkout(userId, ending.id, saved, endedAt)
+    },
+    [userId],
+  )
 
-  return { userId, workout, dispatch, replace, clear }
+  return { userId, workout, dispatch, replace, end }
 }
 
 /**

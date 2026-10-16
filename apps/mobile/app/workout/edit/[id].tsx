@@ -62,6 +62,11 @@ function fromSaved(workout: WorkoutDetail): LiveWorkout {
     rest: null,
     healthWorkoutId: workout.healthWorkoutId,
     filed: { startedAt: started, date: workout.date },
+    // Recorded on the watch, which saved its own Apple Health copy: an edit
+    // here leaves that copy, and what the watch measured, alone.
+    ...(workout.heartRate
+      ? { watch: { recorded: true, appliedSeq: 0, kcal: workout.kcal } }
+      : null),
     exercises: toPlans(workout.entries).map((plan, index) => {
       const exercise = exerciseFromPlan(plan)
       // RPE is put back here rather than carried by the plan: a plan also

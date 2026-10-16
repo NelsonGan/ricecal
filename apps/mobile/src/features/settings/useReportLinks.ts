@@ -54,7 +54,7 @@ export function useReportLinks(): void {
       // Back to a logger that is already open, wherever it is in the stack:
       // with the library or an exercise's page on top of it, `navigate` pushed
       // a second logger.
-      if (kind === 'rest' || kind === 'workout') {
+      if (kind === 'rest' || kind === 'workout' || kind === 'started') {
         if (!userId || !getActiveWorkout(userId)) router.navigate('/workouts')
         else openLogger(router)
         return
