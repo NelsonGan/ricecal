@@ -186,8 +186,6 @@ select
   r.workout_id,
   r.workout_exercise_id,
   r.exercise_id,
-  r.exercise_name,
-  r.tracking,
   r.exercise_position,
   r.position,
   r.kind,
@@ -240,7 +238,6 @@ select
   w.health_workout_id,
   w.created_at,
   w.updated_at,
-  coalesce(stats.exercise_count, 0) as exercise_count,
   coalesce(stats.set_count, 0) as set_count,
   coalesce(stats.volume_kg, 0) as volume_kg,
   coalesce(prs.pr_count, 0) as pr_count,
@@ -248,7 +245,6 @@ select
 from public.workouts w
 left join lateral (
   select
-    count(distinct v.workout_exercise_id)::integer as exercise_count,
     count(*)::integer as set_count,
     sum(v.volume_kg) as volume_kg
   from public.workout_set_values v
@@ -271,7 +267,6 @@ left join lateral (
     jsonb_build_object(
       'exercise_id', e.exercise_id,
       'exercise_name', e.exercise_name,
-      'tracking', e.tracking,
       'sets', (select count(*) from public.workout_sets s where s.workout_exercise_id = e.id)
     )
     order by e.position
@@ -300,8 +295,8 @@ returns setof public.workout_summaries
 language sql stable security invoker set search_path = '' as $$
   with page as materialized (
     select s.id, s.user_id, s.name, s.notes, s.started_at, s.ended_at, s.duration_s, s.log_date,
-      s.routine_id, s.kcal, s.health_workout_id, s.created_at, s.updated_at, s.exercise_count,
-      s.set_count, s.volume_kg, s.exercises
+      s.routine_id, s.kcal, s.health_workout_id, s.created_at, s.updated_at, s.set_count,
+      s.volume_kg, s.exercises
     from public.workout_summaries s
     where s.user_id = (select auth.uid())
     order by s.started_at desc, s.id desc
@@ -317,8 +312,8 @@ language sql stable security invoker set search_path = '' as $$
     group by d.workout_id
   )
   select p.id, p.user_id, p.name, p.notes, p.started_at, p.ended_at, p.duration_s, p.log_date,
-    p.routine_id, p.kcal, p.health_workout_id, p.created_at, p.updated_at, p.exercise_count,
-    p.set_count, p.volume_kg, coalesce(r.pr_count, 0), p.exercises
+    p.routine_id, p.kcal, p.health_workout_id, p.created_at, p.updated_at, p.set_count,
+    p.volume_kg, coalesce(r.pr_count, 0), p.exercises
   from page p
   left join records r on r.workout_id = p.id
   order by p.started_at desc, p.id desc;
@@ -346,13 +341,10 @@ returns table (
   exercise_name           text,
   tracking                public.exercise_tracking,
   workouts                integer,
-  sets                    integer,
   last_at                 timestamptz,
   best_weight_kg          numeric,
   best_weight_reps        smallint,
-  best_weight_at          timestamptz,
   best_e1rm_kg            numeric,
-  best_e1rm_at            timestamptz,
   best_set_volume_kg      numeric,
   best_session_volume_kg  numeric,
   best_reps               smallint,
@@ -393,7 +385,6 @@ as $$
   figures as (
     select
       s.exercise_id,
-      count(*)::integer as sets,
       max(s.volume_kg) filter (where s.kind <> 'warmup') as best_set_volume_kg,
       max(s.reps) filter (where s.kind <> 'warmup' and s.tracking in ('reps', 'weighted_reps', 'assisted_reps')) as best_reps,
       max(s.duration_s) filter (where s.kind <> 'warmup' and s.tracking in ('duration', 'distance_duration')) as best_duration_s,
@@ -403,13 +394,13 @@ as $$
     group by s.exercise_id
   ),
   heaviest as (
-    select distinct on (s.exercise_id) s.exercise_id, s.weight_kg, s.reps, s.started_at
+    select distinct on (s.exercise_id) s.exercise_id, s.weight_kg, s.reps
     from sets s
     where s.weight_counts
     order by s.exercise_id, s.weight_kg desc, s.reps desc nulls last, s.started_at
   ),
   strongest as (
-    select distinct on (s.exercise_id) s.exercise_id, s.e1rm_kg, s.started_at
+    select distinct on (s.exercise_id) s.exercise_id, s.e1rm_kg
     from sets s
     where s.kind <> 'warmup' and s.e1rm_kg is not null
     order by s.exercise_id, s.e1rm_kg desc, s.started_at
@@ -419,13 +410,10 @@ as $$
     l.exercise_name,
     l.tracking,
     t.workouts,
-    f.sets,
     t.last_at,
     h.weight_kg,
     h.reps,
-    h.started_at,
     st.e1rm_kg,
-    st.started_at,
     f.best_set_volume_kg,
     t.best_session_volume_kg,
     f.best_reps,
@@ -517,7 +505,6 @@ returns table (
   best_weight_kg  numeric,
   best_e1rm_kg    numeric,
   volume_kg       numeric,
-  reps            integer,
   duration_s      integer,
   distance_m      numeric
 )
@@ -537,7 +524,6 @@ as $$
         'reps', d.reps,
         'duration_s', d.duration_s,
         'distance_m', d.distance_m,
-        'rpe', d.rpe,
         'is_pr', d.is_weight_pr or d.is_e1rm_pr or d.is_volume_pr
           or d.is_reps_pr or d.is_duration_pr or d.is_distance_pr
       )
@@ -546,7 +532,6 @@ as $$
     max(d.weight_kg) filter (where d.kind <> 'warmup'),
     max(d.e1rm_kg) filter (where d.kind <> 'warmup'),
     coalesce(sum(d.volume_kg), 0),
-    coalesce(sum(d.reps), 0)::integer,
     coalesce(sum(d.duration_s), 0)::integer,
     sum(d.distance_m)
   from public.workout_set_details d
@@ -572,9 +557,6 @@ grant execute on function public.exercise_history(text, integer) to authenticate
 create or replace function public.exercise_last_sets(p_exercise_ids text[])
 returns table (
   exercise_id  text,
-  workout_id   uuid,
-  started_at   timestamptz,
-  set_position smallint,
   kind         public.workout_set_kind,
   weight_kg    numeric,
   reps         smallint,
@@ -596,11 +578,9 @@ as $$
       and exists (select 1 from public.workout_sets s where s.workout_exercise_id = e.id)
     order by e.exercise_id, w.started_at desc, e.position desc
   )
-  select l.exercise_id, w.id, w.started_at, s.position, s.kind, s.weight_kg, s.reps, s.duration_s, s.distance_m
+  select l.exercise_id, s.kind, s.weight_kg, s.reps, s.duration_s, s.distance_m
   from last_entry l
-  join public.workout_exercises e on e.id = l.id
-  join public.workouts w on w.id = e.workout_id
-  join public.workout_sets s on s.workout_exercise_id = e.id
+  join public.workout_sets s on s.workout_exercise_id = l.id
   order by l.exercise_id, s.position;
 $$;
 
@@ -744,19 +724,14 @@ grant execute on function public.workout_overview() to authenticated;
 create or replace function public.workout_exercise_totals(p_from date, p_to date)
 returns table (
   exercise_id  text,
-  sets         integer,
-  volume_kg    numeric
+  sets         integer
 )
 language sql
 stable
 security invoker
 set search_path = ''
 as $$
-  select e.exercise_id,
-         count(s.id) filter (where s.kind <> 'warmup')::integer,
-         coalesce(sum(s.weight_kg * s.reps) filter (
-           where e.tracking in ('weight_reps', 'weighted_reps') and s.weight_kg > 0 and s.reps > 0
-         ), 0)
+  select e.exercise_id, count(s.id) filter (where s.kind <> 'warmup')::integer
   from public.workouts w
   join public.workout_exercises e on e.workout_id = w.id
   join public.workout_sets s on s.workout_exercise_id = e.id
@@ -766,8 +741,8 @@ as $$
 $$;
 
 comment on function public.workout_exercise_totals(date, date) is
-  'Working sets (warm-ups excluded) and volume per exercise between two local '
-  'dates, inclusive. The app spreads them across muscles.';
+  'Working sets (warm-ups excluded) per exercise between two local dates, '
+  'inclusive. The app spreads them across muscles.';
 
 revoke all on function public.workout_exercise_totals(date, date) from public, anon;
 grant execute on function public.workout_exercise_totals(date, date) to authenticated;

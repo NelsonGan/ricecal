@@ -27,8 +27,8 @@ import { dequeueWorkout, enqueueWorkout, getOutbox, type WorkoutDocument } from 
  * the streak. The phone sums nothing it has saved.
  */
 
-export type Tracking = Enums<'exercise_tracking'>
-export type SetKind = Enums<'workout_set_kind'>
+type Tracking = Enums<'exercise_tracking'>
+type SetKind = Enums<'workout_set_kind'>
 
 export type WorkoutSummary = {
   id: string
@@ -41,11 +41,10 @@ export type WorkoutSummary = {
   routineId: string | null
   kcal: number | null
   healthWorkoutId: string | null
-  exerciseCount: number
   setCount: number
   volumeKg: number
   prCount: number
-  exercises: { exerciseId: string; name: string; tracking: Tracking; sets: number }[]
+  exercises: { exerciseId: string; name: string; sets: number }[]
   /** Finished on the phone, still waiting in the outbox for the server. */
   pending?: boolean
 }
@@ -101,26 +100,23 @@ function toSummary(row: SummaryFields): WorkoutSummary {
     routineId: row.routine_id,
     kcal: row.kcal,
     healthWorkoutId: row.health_workout_id,
-    exerciseCount: row.exercise_count ?? 0,
     setCount: row.set_count ?? 0,
     volumeKg: num(row.volume_kg) ?? 0,
     prCount: row.pr_count ?? 0,
     exercises: exercises.map((value) => {
-      const entry = value as {
-        exercise_id: string
-        exercise_name: string
-        tracking: Tracking
-        sets: number
-      }
+      const entry = value as { exercise_id: string; exercise_name: string; sets: number }
       return {
         exerciseId: entry.exercise_id,
         name: entry.exercise_name,
-        tracking: entry.tracking,
         sets: Number(entry.sets) || 0,
       }
     }),
   }
 }
+
+/** How long a workout on the phone ran, as the server will work it out. */
+const queuedDuration = (document: WorkoutDocument) =>
+  Math.max(0, Math.round((Date.parse(document.ended_at) - Date.parse(document.started_at)) / 1000))
 
 /**
  * An outbox document drawn as a history row. Its figures are the phone's own
@@ -136,27 +132,23 @@ export function summaryFromDocument(document: WorkoutDocument): WorkoutSummary {
       volumeKg += setVolume({ weightKg: set.weight_kg, reps: set.reps }, exercise.tracking) ?? 0
     }
   }
-  const started = Date.parse(document.started_at)
-  const ended = Date.parse(document.ended_at)
   return {
     id: document.id,
     name: document.name,
     notes: document.notes,
     startedAt: document.started_at,
     endedAt: document.ended_at,
-    durationS: Math.max(0, Math.round((ended - started) / 1000)),
+    durationS: queuedDuration(document),
     date: document.log_date,
     routineId: document.routine_id,
     kcal: document.kcal,
     healthWorkoutId: document.health_workout_id,
-    exerciseCount: document.exercises.length,
     setCount,
     volumeKg,
     prCount: 0,
     exercises: document.exercises.map((exercise) => ({
       exerciseId: exercise.exercise_id,
       name: exercise.exercise_name,
-      tracking: exercise.tracking,
       sets: exercise.sets.length,
     })),
     pending: true,
@@ -181,7 +173,7 @@ const KEPT_A_DAY = 24 * 60 * 60_000
 
 /** Every summary column but `pr_count`, which scores the whole history to count one workout's records. */
 const SUMMARY_WITHOUT_RECORDS =
-  'id, user_id, name, notes, started_at, ended_at, duration_s, log_date, routine_id, kcal, health_workout_id, exercise_count, set_count, volume_kg, exercises'
+  'id, user_id, name, notes, started_at, ended_at, duration_s, log_date, routine_id, kcal, health_workout_id, set_count, volume_kg, exercises'
 
 const PAGE = 20
 
@@ -196,9 +188,9 @@ export function useWorkouts() {
     staleTime: UNTIL_SAVED,
     initialPageParam: 0,
     queryFn: async ({ pageParam }): Promise<WorkoutSummary[]> =>
-      unwrap(
-        await supabase.rpc('workout_history', { p_offset: pageParam, p_limit: PAGE }),
-      ).map(toSummary),
+      unwrap(await supabase.rpc('workout_history', { p_offset: pageParam, p_limit: PAGE })).map(
+        toSummary,
+      ),
     getNextPageParam: (last, pages) => (last.length < PAGE ? undefined : pages.length * PAGE),
   })
 }
@@ -379,7 +371,7 @@ export function useWorkoutWeeks(weeks = 12) {
   })
 }
 
-type ExerciseTotal = { exerciseId: string; sets: number; volumeKg: number }
+type ExerciseTotal = { exerciseId: string; sets: number }
 
 /** Working sets per exercise between two dates: what the muscle split is drawn from. */
 export function useExerciseTotals(from: string, to: string) {
@@ -390,11 +382,7 @@ export function useExerciseTotals(from: string, to: string) {
     gcTime: KEPT_A_DAY,
     queryFn: async (): Promise<ExerciseTotal[]> =>
       unwrap(await supabase.rpc('workout_exercise_totals', { p_from: from, p_to: to })).map(
-        (row) => ({
-          exerciseId: row.exercise_id,
-          sets: row.sets,
-          volumeKg: num(row.volume_kg) ?? 0,
-        }),
+        (row) => ({ exerciseId: row.exercise_id, sets: row.sets }),
       ),
   })
 }
@@ -404,13 +392,10 @@ export type ExerciseBests = {
   name: string
   tracking: Tracking
   workouts: number
-  sets: number
   lastAt: string | null
   bestWeightKg: number | null
   bestWeightReps: number | null
-  bestWeightAt: string | null
   bestE1rmKg: number | null
-  bestE1rmAt: string | null
   bestSetVolumeKg: number | null
   bestSessionVolumeKg: number | null
   bestReps: number | null
@@ -441,13 +426,10 @@ export function useExerciseBests(exerciseId: string | null, options?: { enabled?
         name: row.exercise_name,
         tracking: row.tracking,
         workouts: row.workouts,
-        sets: row.sets,
         lastAt: row.last_at,
         bestWeightKg: num(row.best_weight_kg),
         bestWeightReps: row.best_weight_reps,
-        bestWeightAt: row.best_weight_at,
         bestE1rmKg: num(row.best_e1rm_kg),
-        bestE1rmAt: row.best_e1rm_at,
         bestSetVolumeKg: num(row.best_set_volume_kg),
         bestSessionVolumeKg: num(row.best_session_volume_kg),
         bestReps: row.best_reps,
@@ -490,13 +472,11 @@ export type ExerciseSession = {
     reps: number | null
     durationS: number | null
     distanceM: number | null
-    rpe: number | null
     isPr: boolean
   }[]
   bestWeightKg: number | null
   bestE1rmKg: number | null
   volumeKg: number
-  reps: number
   durationS: number
   distanceM: number | null
 }
@@ -533,14 +513,12 @@ export function useExerciseHistory(exerciseId: string | undefined) {
             reps: num(set.reps as number | null),
             durationS: num(set.duration_s as number | null),
             distanceM: num(set.distance_m as number | null),
-            rpe: num(set.rpe as number | null),
             isPr: Boolean(set.is_pr),
           }
         }),
         bestWeightKg: num(row.best_weight_kg),
         bestE1rmKg: num(row.best_e1rm_kg),
         volumeKg: num(row.volume_kg) ?? 0,
-        reps: row.reps,
         durationS: row.duration_s,
         distanceM: num(row.distance_m),
       })),
@@ -671,6 +649,17 @@ type WorkoutSaveResult = { queued: boolean }
  * may be never. The id is the phone's, so a late commit is harmless.
  */
 export const SAVE_TIMEOUT_MS = 15_000
+
+/**
+ * A request with the save's deadline, as a throw: a token refresh on a weak
+ * signal can wait forever, and a spinner or the import's progress bar sat
+ * still with no way to retry.
+ */
+export async function bounded<T>(work: PromiseLike<T>): Promise<T> {
+  const answer = await withDeadline(work, SAVE_TIMEOUT_MS)
+  if (answer === TIMED_OUT) throw new Error('timed out')
+  return answer
+}
 
 /**
  * The request in flight for each workout id, whoever sent it: a save, the
@@ -859,7 +848,7 @@ export async function discardQueuedWorkout(userId: string, id: string): Promise<
   dequeueWorkout(userId, id)
   if (!document) return
   const answer = await withDeadline(
-    Promise.resolve(supabase.from('workouts').select('id').eq('id', id).maybeSingle()),
+    supabase.from('workouts').select('id').eq('id', id).maybeSingle(),
     SAVE_TIMEOUT_MS,
   )
   // Unknown is not "none": leave the copy rather than risk the saved one's.
@@ -878,15 +867,13 @@ export function useDeleteWorkout() {
       // queued copy behind it and bring the workout back. A queued edit of a
       // workout being deleted is not worth keeping if the delete fails.
       dequeueWorkout(userId, id)
-      const answer = await withDeadline(
+      const { error } = await bounded(
         inFlight(
           id,
           Promise.resolve(supabase.from('workouts').delete().eq('id', id).eq('user_id', userId)),
         ),
-        SAVE_TIMEOUT_MS,
       )
-      if (answer === TIMED_OUT) throw new Error('timed out')
-      if (answer.error) throw answer.error
+      if (error) throw error
     },
     onSuccess: async () => {
       // Its post went with it. Reset rather than invalidate, as deleting a
@@ -929,7 +916,6 @@ export type Routine = {
   templateId: string | null
   position: number
   lastUsedAt: string | null
-  updatedAt: string
 }
 
 function toRoutine(row: Tables<'workout_routines'>): Routine {
@@ -941,7 +927,6 @@ function toRoutine(row: Tables<'workout_routines'>): Routine {
     templateId: row.template_id,
     position: row.position,
     lastUsedAt: row.last_used_at,
-    updatedAt: row.updated_at,
   }
 }
 
@@ -982,25 +967,13 @@ export function useSaveRoutine() {
         exercises: input.exercises as unknown as Json,
         template_id: input.templateId ?? null,
       }
-      if (input.id) {
-        const { data, error } = await supabase
-          .from('workout_routines')
-          .update(values)
-          .eq('id', input.id)
-          .eq('user_id', userId)
-          .select('*')
-          .single()
-        if (error) throw error
-        return toRoutine(data)
-      }
       // New routines go to the end of the user's own order.
       const existing = queryClient.getQueryData<Routine[]>(keys.routines(userId)) ?? []
       const position = existing.reduce((max, routine) => Math.max(max, routine.position + 1), 0)
-      const { data, error } = await supabase
-        .from('workout_routines')
-        .insert({ ...values, user_id: userId, position })
-        .select('*')
-        .single()
+      const query = input.id
+        ? supabase.from('workout_routines').update(values).eq('id', input.id).eq('user_id', userId)
+        : supabase.from('workout_routines').insert({ ...values, user_id: userId, position })
+      const { data, error } = await query.select('*').single()
       if (error) throw error
       return toRoutine(data)
     },
@@ -1058,6 +1031,15 @@ export type CustomExercise = {
   muscles: Record<string, number>
 }
 
+const toCustomExercise = (row: Tables<'custom_exercises'>): CustomExercise => ({
+  id: row.id,
+  name: row.name,
+  tracking: row.tracking,
+  equipment: row.equipment,
+  category: row.category,
+  muscles: (row.muscles ?? {}) as Record<string, number>,
+})
+
 export function useCustomExercises() {
   const userId = useUserId()
 
@@ -1066,14 +1048,7 @@ export function useCustomExercises() {
     queryFn: async (): Promise<CustomExercise[]> =>
       unwrap(
         await supabase.from('custom_exercises').select('*').eq('user_id', userId).order('name'),
-      ).map((row) => ({
-        id: row.id,
-        name: row.name,
-        tracking: row.tracking,
-        equipment: row.equipment,
-        category: row.category,
-        muscles: (row.muscles ?? {}) as Record<string, number>,
-      })),
+      ).map(toCustomExercise),
   })
 }
 
@@ -1097,14 +1072,7 @@ export function useSaveCustomExercise() {
         : supabase.from('custom_exercises').insert({ ...values, user_id: userId })
       const { data, error } = await query.select('*').single()
       if (error) throw error
-      return {
-        id: data.id,
-        name: data.name,
-        tracking: data.tracking,
-        equipment: data.equipment,
-        category: data.category,
-        muscles: (data.muscles ?? {}) as Record<string, number>,
-      }
+      return toCustomExercise(data)
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: keys.customExercises(userId) }),
   })
@@ -1231,10 +1199,7 @@ export async function fetchWorkoutExport(userId: string): Promise<ExportRow[]> {
   }
 
   for (const document of queued) {
-    const durationS = Math.max(
-      0,
-      Math.round((Date.parse(document.ended_at) - Date.parse(document.started_at)) / 1000),
-    )
+    const durationS = queuedDuration(document)
     document.exercises.forEach((exercise, exercisePosition) => {
       exercise.sets.forEach((set, setPosition) => {
         rows.push({

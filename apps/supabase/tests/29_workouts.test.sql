@@ -153,8 +153,7 @@ select is(
   'exercise_history has one row per workout'
 );
 select is(
-  (select array_agg(weight_kg order by set_position)
-     from public.exercise_last_sets(array['barbell-bench-press'])),
+  (select array_agg(weight_kg) from public.exercise_last_sets(array['barbell-bench-press'])),
   array[100.00, 62.50, 65.00]::numeric[],
   'the PREVIOUS column reads the most recent workout'
 );

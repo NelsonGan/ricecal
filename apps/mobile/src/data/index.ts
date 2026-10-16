@@ -163,7 +163,7 @@ export {
   ImportStopped,
   useWorkoutImport,
 } from './workout-import'
-export { useOutbox, type WorkoutDocument } from './workout-outbox'
+export { useOutbox } from './workout-outbox'
 export {
   type CustomExercise,
   discardQueuedWorkout,

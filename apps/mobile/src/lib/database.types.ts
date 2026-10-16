@@ -2484,7 +2484,6 @@ export type Database = {
           duration_s: number | null
           e1rm_kg: number | null
           exercise_id: string | null
-          exercise_name: string | null
           exercise_position: number | null
           id: string | null
           is_distance_pr: boolean | null
@@ -2498,7 +2497,6 @@ export type Database = {
           reps: number | null
           rpe: number | null
           started_at: string | null
-          tracking: Database['public']['Enums']['exercise_tracking'] | null
           user_id: string | null
           volume_kg: number | null
           weight_kg: number | null
@@ -2554,7 +2552,6 @@ export type Database = {
           created_at: string | null
           duration_s: number | null
           ended_at: string | null
-          exercise_count: number | null
           exercises: Json | null
           health_workout_id: string | null
           id: string | null
@@ -2776,18 +2773,15 @@ export type Database = {
         Returns: {
           best_distance_m: number
           best_duration_s: number
-          best_e1rm_at: string
           best_e1rm_kg: number
           best_reps: number
           best_session_volume_kg: number
           best_set_volume_kg: number
-          best_weight_at: string
           best_weight_kg: number
           best_weight_reps: number
           exercise_id: string
           exercise_name: string
           last_at: string
-          sets: number
           total_volume_kg: number
           tracking: Database['public']['Enums']['exercise_tracking']
           workouts: number
@@ -2800,7 +2794,6 @@ export type Database = {
           best_weight_kg: number
           distance_m: number
           duration_s: number
-          reps: number
           sets: Json
           started_at: string
           volume_kg: number
@@ -2816,10 +2809,7 @@ export type Database = {
           exercise_id: string
           kind: Database['public']['Enums']['workout_set_kind']
           reps: number
-          set_position: number
-          started_at: string
           weight_kg: number
-          workout_id: string
         }[]
       }
       exercise_rep_bests: {
@@ -3586,7 +3576,6 @@ export type Database = {
         Returns: {
           exercise_id: string
           sets: number
-          volume_kg: number
         }[]
       }
       workout_history: {
@@ -3595,7 +3584,6 @@ export type Database = {
           created_at: string | null
           duration_s: number | null
           ended_at: string | null
-          exercise_count: number | null
           exercises: Json | null
           health_workout_id: string | null
           id: string | null

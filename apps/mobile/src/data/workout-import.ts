@@ -8,7 +8,7 @@ import { everyRow, TIMED_OUT, unwrap, withDeadline } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
 import type { WorkoutDocument } from './workout-outbox'
-import { SAVE_TIMEOUT_MS, sendWorkout, wasRefused } from './workouts'
+import { bounded, isDuplicateName, SAVE_TIMEOUT_MS, sendWorkout, wasRefused } from './workouts'
 
 /**
  * Saves a planned import (`features/workouts/import/build.ts`) into the
@@ -55,17 +55,6 @@ const PARALLEL = 4
 /** Ids per `in` filter, which travels in the URL. */
 const ID_BATCH = 150
 
-/**
- * A request with the save's deadline, as a throw that stops the import: a
- * token refresh on a weak signal can wait forever, and the progress bar sat
- * still with no way to retry.
- */
-async function bounded<T>(work: PromiseLike<T>): Promise<T> {
-  const answer = await withDeadline(work, SAVE_TIMEOUT_MS)
-  if (answer === TIMED_OUT) throw new Error('timed out')
-  return answer
-}
-
 async function customIds(
   userId: string,
   plan: ImportPlan,
@@ -102,7 +91,7 @@ async function customIds(
       }),
     )
     if (!error) created++
-    else if (error.code !== '23505') throw error
+    else if (!isDuplicateName(error)) throw error
   }
   return { ids: missing.length ? await read() : ids, created }
 }

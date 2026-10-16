@@ -290,8 +290,9 @@ create index workout_exercises_user_exercise_idx
 
 alter table public.workout_exercises enable row level security;
 
-grant select, insert, update, delete on public.workout_exercises to authenticated;
-grant select, insert, update, delete on public.workout_exercises to service_role;
+-- No update: `save_workout` replaces a workout's exercises and sets whole.
+grant select, insert, delete on public.workout_exercises to authenticated;
+grant select, insert, delete on public.workout_exercises to service_role;
 
 create policy "workout_exercises: read own"
   on public.workout_exercises for select
@@ -301,12 +302,6 @@ create policy "workout_exercises: read own"
 create policy "workout_exercises: insert own"
   on public.workout_exercises for insert
   to authenticated
-  with check ((select auth.uid()) = user_id);
-
-create policy "workout_exercises: update own"
-  on public.workout_exercises for update
-  to authenticated
-  using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
 create policy "workout_exercises: delete own"
@@ -347,8 +342,8 @@ create index workout_sets_user_idx on public.workout_sets (user_id);
 
 alter table public.workout_sets enable row level security;
 
-grant select, insert, update, delete on public.workout_sets to authenticated;
-grant select, insert, update, delete on public.workout_sets to service_role;
+grant select, insert, delete on public.workout_sets to authenticated;
+grant select, insert, delete on public.workout_sets to service_role;
 
 create policy "workout_sets: read own"
   on public.workout_sets for select
@@ -358,12 +353,6 @@ create policy "workout_sets: read own"
 create policy "workout_sets: insert own"
   on public.workout_sets for insert
   to authenticated
-  with check ((select auth.uid()) = user_id);
-
-create policy "workout_sets: update own"
-  on public.workout_sets for update
-  to authenticated
-  using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
 create policy "workout_sets: delete own"

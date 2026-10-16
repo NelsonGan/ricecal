@@ -362,13 +362,10 @@ CREATE FUNCTION public.exercise_bests (
     exercise_name          text,
     tracking               public.exercise_tracking,
     workouts               integer,
-    sets                   integer,
     last_at                timestamp with time zone,
     best_weight_kg         numeric,
     best_weight_reps       smallint,
-    best_weight_at         timestamp with time zone,
     best_e1rm_kg           numeric,
-    best_e1rm_at           timestamp with time zone,
     best_set_volume_kg     numeric,
     best_session_volume_kg numeric,
     best_reps              smallint,
@@ -408,7 +405,6 @@ CREATE FUNCTION public.exercise_bests (
   figures as (
     select
       s.exercise_id,
-      count(*)::integer as sets,
       max(s.volume_kg) filter (where s.kind <> 'warmup') as best_set_volume_kg,
       max(s.reps) filter (where s.kind <> 'warmup' and s.tracking in ('reps', 'weighted_reps', 'assisted_reps')) as best_reps,
       max(s.duration_s) filter (where s.kind <> 'warmup' and s.tracking in ('duration', 'distance_duration')) as best_duration_s,
@@ -418,13 +414,13 @@ CREATE FUNCTION public.exercise_bests (
     group by s.exercise_id
   ),
   heaviest as (
-    select distinct on (s.exercise_id) s.exercise_id, s.weight_kg, s.reps, s.started_at
+    select distinct on (s.exercise_id) s.exercise_id, s.weight_kg, s.reps
     from sets s
     where s.weight_counts
     order by s.exercise_id, s.weight_kg desc, s.reps desc nulls last, s.started_at
   ),
   strongest as (
-    select distinct on (s.exercise_id) s.exercise_id, s.e1rm_kg, s.started_at
+    select distinct on (s.exercise_id) s.exercise_id, s.e1rm_kg
     from sets s
     where s.kind <> 'warmup' and s.e1rm_kg is not null
     order by s.exercise_id, s.e1rm_kg desc, s.started_at
@@ -434,13 +430,10 @@ CREATE FUNCTION public.exercise_bests (
     l.exercise_name,
     l.tracking,
     t.workouts,
-    f.sets,
     t.last_at,
     h.weight_kg,
     h.reps,
-    h.started_at,
     st.e1rm_kg,
-    st.started_at,
     f.best_set_volume_kg,
     t.best_session_volume_kg,
     f.best_reps,
@@ -471,7 +464,6 @@ CREATE FUNCTION public.exercise_history (
     best_weight_kg numeric,
     best_e1rm_kg   numeric,
     volume_kg      numeric,
-    reps           integer,
     duration_s     integer,
     distance_m     numeric
   )
@@ -490,7 +482,6 @@ CREATE FUNCTION public.exercise_history (
         'reps', d.reps,
         'duration_s', d.duration_s,
         'distance_m', d.distance_m,
-        'rpe', d.rpe,
         'is_pr', d.is_weight_pr or d.is_e1rm_pr or d.is_volume_pr
           or d.is_reps_pr or d.is_duration_pr or d.is_distance_pr
       )
@@ -499,7 +490,6 @@ CREATE FUNCTION public.exercise_history (
     max(d.weight_kg) filter (where d.kind <> 'warmup'),
     max(d.e1rm_kg) filter (where d.kind <> 'warmup'),
     coalesce(sum(d.volume_kg), 0),
-    coalesce(sum(d.reps), 0)::integer,
     coalesce(sum(d.duration_s), 0)::integer,
     sum(d.distance_m)
   from public.workout_set_details d
@@ -518,15 +508,12 @@ CREATE FUNCTION public.exercise_last_sets (
   p_exercise_ids text[]
 )
   RETURNS TABLE (
-    exercise_id  text,
-    workout_id   uuid,
-    started_at   timestamp with time zone,
-    set_position smallint,
-    kind         public.workout_set_kind,
-    weight_kg    numeric,
-    reps         smallint,
-    duration_s   integer,
-    distance_m   numeric
+    exercise_id text,
+    kind        public.workout_set_kind,
+    weight_kg   numeric,
+    reps        smallint,
+    duration_s  integer,
+    distance_m  numeric
   )
   LANGUAGE sql
   STABLE
@@ -542,11 +529,9 @@ CREATE FUNCTION public.exercise_last_sets (
       and exists (select 1 from public.workout_sets s where s.workout_exercise_id = e.id)
     order by e.exercise_id, w.started_at desc, e.position desc
   )
-  select l.exercise_id, w.id, w.started_at, s.position, s.kind, s.weight_kg, s.reps, s.duration_s, s.distance_m
+  select l.exercise_id, s.kind, s.weight_kg, s.reps, s.duration_s, s.distance_m
   from last_entry l
-  join public.workout_exercises e on e.id = l.id
-  join public.workouts w on w.id = e.workout_id
-  join public.workout_sets s on s.workout_exercise_id = e.id
+  join public.workout_sets s on s.workout_exercise_id = l.id
   order by l.exercise_id, s.position;
 $function$;
 
@@ -814,18 +799,13 @@ CREATE FUNCTION public.workout_exercise_totals (
 )
   RETURNS TABLE (
     exercise_id text,
-    sets        integer,
-    volume_kg   numeric
+    sets        integer
   )
   LANGUAGE sql
   STABLE
   SET search_path TO ''
   AS $function$
-  select e.exercise_id,
-         count(s.id) filter (where s.kind <> 'warmup')::integer,
-         coalesce(sum(s.weight_kg * s.reps) filter (
-           where e.tracking in ('weight_reps', 'weighted_reps') and s.weight_kg > 0 and s.reps > 0
-         ), 0)
+  select e.exercise_id, count(s.id) filter (where s.kind <> 'warmup')::integer
   from public.workouts w
   join public.workout_exercises e on e.workout_id = w.id
   join public.workout_sets s on s.workout_exercise_id = e.id
@@ -834,7 +814,7 @@ CREATE FUNCTION public.workout_exercise_totals (
   group by e.exercise_id;
 $function$;
 
-COMMENT ON FUNCTION public.workout_exercise_totals(date,date) IS 'Working sets (warm-ups excluded) and volume per exercise between two local dates, inclusive. The app spreads them across muscles.';
+COMMENT ON FUNCTION public.workout_exercise_totals(date,date) IS 'Working sets (warm-ups excluded) per exercise between two local dates, inclusive. The app spreads them across muscles.';
 
 GRANT ALL ON FUNCTION public.workout_exercise_totals(date, date) TO authenticated;
 
@@ -1113,9 +1093,9 @@ ALTER TABLE public.workout_exercises
 ALTER TABLE public.workout_exercises
   ADD CONSTRAINT workout_exercises_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
-GRANT DELETE, INSERT, SELECT, UPDATE ON public.workout_exercises TO authenticated;
+GRANT DELETE, INSERT, SELECT ON public.workout_exercises TO authenticated;
 
-GRANT ALL ON public.workout_exercises TO service_role;
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.workout_exercises TO service_role;
 
 CREATE INDEX workout_exercises_user_exercise_idx ON public.workout_exercises (user_id, exercise_id);
 
@@ -1133,12 +1113,6 @@ CREATE POLICY "workout_exercises: read own" ON public.workout_exercises
   FOR SELECT
   TO authenticated
   USING ((( SELECT auth.uid() AS uid) = user_id));
-
-CREATE POLICY "workout_exercises: update own" ON public.workout_exercises
-  FOR UPDATE
-  TO authenticated
-  USING ((( SELECT auth.uid() AS uid) = user_id))
-  WITH CHECK ((( SELECT auth.uid() AS uid) = user_id));
 
 CREATE TABLE public.workout_routines (
   id           uuid                     DEFAULT gen_random_uuid() NOT NULL,
@@ -1255,9 +1229,9 @@ ALTER TABLE public.workout_sets
 ALTER TABLE public.workout_sets
   ADD CONSTRAINT workout_sets_weight_kg_check CHECK (weight_kg >= 0::numeric AND weight_kg <= 1000::numeric);
 
-GRANT DELETE, INSERT, SELECT, UPDATE ON public.workout_sets TO authenticated;
+GRANT DELETE, INSERT, SELECT ON public.workout_sets TO authenticated;
 
-GRANT ALL ON public.workout_sets TO service_role;
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.workout_sets TO service_role;
 
 CREATE INDEX workout_sets_user_idx ON public.workout_sets (user_id);
 
@@ -1275,12 +1249,6 @@ CREATE POLICY "workout_sets: read own" ON public.workout_sets
   FOR SELECT
   TO authenticated
   USING ((( SELECT auth.uid() AS uid) = user_id));
-
-CREATE POLICY "workout_sets: update own" ON public.workout_sets
-  FOR UPDATE
-  TO authenticated
-  USING ((( SELECT auth.uid() AS uid) = user_id))
-  WITH CHECK ((( SELECT auth.uid() AS uid) = user_id));
 
 CREATE TABLE public.workouts (
   id                uuid                     NOT NULL,
@@ -1623,8 +1591,6 @@ CREATE VIEW public.workout_set_details WITH (security_invoker=true) AS WITH best
     workout_id,
     workout_exercise_id,
     exercise_id,
-    exercise_name,
-    tracking,
     exercise_position,
     "position",
     kind,
@@ -1669,14 +1635,12 @@ CREATE VIEW public.workout_summaries WITH (security_invoker=true) AS SELECT w.id
     w.health_workout_id,
     w.created_at,
     w.updated_at,
-    COALESCE(stats.exercise_count, 0) AS exercise_count,
     COALESCE(stats.set_count, 0) AS set_count,
     COALESCE(stats.volume_kg, (0)::numeric) AS volume_kg,
     COALESCE(prs.pr_count, 0) AS pr_count,
     COALESCE(list.exercises, '[]'::jsonb) AS exercises
    FROM (((public.workouts w
-     LEFT JOIN LATERAL ( SELECT (count(DISTINCT v.workout_exercise_id))::integer AS exercise_count,
-            (count(*))::integer AS set_count,
+     LEFT JOIN LATERAL ( SELECT (count(*))::integer AS set_count,
             sum(v.volume_kg) AS volume_kg
            FROM public.workout_set_values v
           WHERE (v.workout_id = w.id)) stats ON (true))
@@ -1684,7 +1648,7 @@ CREATE VIEW public.workout_summaries WITH (security_invoker=true) AS SELECT w.id
             (count(*) FILTER (WHERE (d.is_weight_pr OR d.is_e1rm_pr OR d.is_volume_pr OR d.is_reps_pr OR d.is_duration_pr OR d.is_distance_pr)))::integer AS pr_count
            FROM public.workout_set_details d
           GROUP BY d.workout_id) prs ON ((prs.workout_id = w.id)))
-     LEFT JOIN LATERAL ( SELECT jsonb_agg(jsonb_build_object('exercise_id', e.exercise_id, 'exercise_name', e.exercise_name, 'tracking', e.tracking, 'sets', ( SELECT count(*) AS count
+     LEFT JOIN LATERAL ( SELECT jsonb_agg(jsonb_build_object('exercise_id', e.exercise_id, 'exercise_name', e.exercise_name, 'sets', ( SELECT count(*) AS count
                    FROM public.workout_sets s
                   WHERE (s.workout_exercise_id = e.id))) ORDER BY e."position") AS exercises
            FROM public.workout_exercises e
@@ -1701,8 +1665,8 @@ CREATE FUNCTION public.workout_history (
   AS $function$
   with page as materialized (
     select s.id, s.user_id, s.name, s.notes, s.started_at, s.ended_at, s.duration_s, s.log_date,
-      s.routine_id, s.kcal, s.health_workout_id, s.created_at, s.updated_at, s.exercise_count,
-      s.set_count, s.volume_kg, s.exercises
+      s.routine_id, s.kcal, s.health_workout_id, s.created_at, s.updated_at, s.set_count,
+      s.volume_kg, s.exercises
     from public.workout_summaries s
     where s.user_id = (select auth.uid())
     order by s.started_at desc, s.id desc
@@ -1718,8 +1682,8 @@ CREATE FUNCTION public.workout_history (
     group by d.workout_id
   )
   select p.id, p.user_id, p.name, p.notes, p.started_at, p.ended_at, p.duration_s, p.log_date,
-    p.routine_id, p.kcal, p.health_workout_id, p.created_at, p.updated_at, p.exercise_count,
-    p.set_count, p.volume_kg, coalesce(r.pr_count, 0), p.exercises
+    p.routine_id, p.kcal, p.health_workout_id, p.created_at, p.updated_at, p.set_count,
+    p.volume_kg, coalesce(r.pr_count, 0), p.exercises
   from page p
   left join records r on r.workout_id = p.id
   order by p.started_at desc, p.id desc;
