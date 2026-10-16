@@ -1746,7 +1746,6 @@ export const ms = {
     start: {
       empty: 'Mula senaman kosong',
       resume: 'Sambung senaman',
-      running: 'Senaman sedang berjalan',
       routine: 'Mula',
       past: 'Log senaman lepas',
       replaceTitle: 'Ada senaman sedang berjalan',

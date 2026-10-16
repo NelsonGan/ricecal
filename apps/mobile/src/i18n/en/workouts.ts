@@ -26,8 +26,6 @@ export const workouts = {
   start: {
     empty: 'Start empty workout',
     resume: 'Resume workout',
-    /** The minimised bar over the tabs while a workout runs. */
-    running: 'Workout in progress',
     routine: 'Start',
     past: 'Log a past workout',
     /** Starting another while one runs. */

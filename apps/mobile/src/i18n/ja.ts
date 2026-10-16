@@ -1713,7 +1713,6 @@ export const ja = {
     start: {
       empty: '空のワークアウトを開始',
       resume: 'ワークアウトを再開',
-      running: 'ワークアウト中',
       routine: '開始',
       past: '過去のワークアウトを記録',
       replaceTitle: 'すでにワークアウト中です',

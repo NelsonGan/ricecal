@@ -1730,7 +1730,6 @@ export const id = {
     start: {
       empty: 'Mulai latihan kosong',
       resume: 'Lanjutkan latihan',
-      running: 'Latihan sedang berlangsung',
       routine: 'Mulai',
       past: 'Catat latihan lalu',
       replaceTitle: 'Ada latihan yang sedang berjalan',

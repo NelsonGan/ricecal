@@ -1701,7 +1701,6 @@ export const zhHans = {
     start: {
       empty: '开始空白训练',
       resume: '继续训练',
-      running: '训练进行中',
       routine: '开始',
       past: '补记一次训练',
       replaceTitle: '已有训练在进行',

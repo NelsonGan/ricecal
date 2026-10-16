@@ -1718,7 +1718,6 @@ export const vi = {
     start: {
       empty: 'Bắt đầu buổi tập trống',
       resume: 'Tiếp tục buổi tập',
-      running: 'Đang tập',
       routine: 'Bắt đầu',
       past: 'Ghi lại buổi tập trước',
       replaceTitle: 'Bạn đang có buổi tập chưa xong',

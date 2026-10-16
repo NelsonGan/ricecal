@@ -1701,7 +1701,6 @@ export const zhHant = {
     start: {
       empty: '開始空白訓練',
       resume: '繼續訓練',
-      running: '訓練進行中',
       routine: '開始',
       past: '補記一次訓練',
       replaceTitle: '已有訓練在進行',

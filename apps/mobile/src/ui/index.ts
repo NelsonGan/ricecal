@@ -34,6 +34,7 @@ export { Badge, type BadgeProps, type BadgeTone, CountBadge, type CountBadgeProp
 export {
   BottomNav,
   type BottomNavProps,
+  FLOAT_SHADOW,
   NAV_BAR_HEIGHT,
   NavAction,
   type NavActionProps,
