@@ -26,7 +26,6 @@ type Native = {
   takePendingActions?(): string
   installedWidgetsAsync?(): Promise<string[]>
   startWorkoutActivity?(json: string): void
-  updateWorkoutActivity?(json: string): void
   endWorkoutActivity?(): void
   takeWorkoutActions?(): string
   addListener?(event: 'onWorkoutAction', listener: () => void): { remove(): void }
@@ -170,7 +169,7 @@ export type WorkoutActivityState = {
 }
 
 /** A button pressed on the workout's Live Activity, queued for the app. */
-export type WorkoutAction = {
+type WorkoutAction = {
   type: 'skipRest' | 'restMinus' | 'restPlus' | 'completeSet'
   workoutId: string
   exerciseKey: string
@@ -180,17 +179,14 @@ export type WorkoutAction = {
 }
 
 /**
- * The lock screen and Dynamic Island while a workout runs. iOS only, and a
- * no-op everywhere else: on Android, on iOS before 16.2, and for a user who has
+ * The lock screen and Dynamic Island while a workout runs: started for a new
+ * workout, updated for the one already showing. iOS only, and a no-op
+ * everywhere else: on Android, on iOS before 16.2, and for a user who has
  * switched Live Activities off, where the workout simply is not on the lock
  * screen. Optional twice over for the reason every other call here is.
  */
 export function startWorkoutActivity(state: WorkoutActivityState): void {
   native?.startWorkoutActivity?.(JSON.stringify(state))
-}
-
-export function updateWorkoutActivity(state: WorkoutActivityState): void {
-  native?.updateWorkoutActivity?.(JSON.stringify(state))
 }
 
 export function endWorkoutActivity(): void {

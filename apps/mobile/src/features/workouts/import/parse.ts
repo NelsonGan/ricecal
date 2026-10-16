@@ -14,12 +14,14 @@ import { parseCsv } from './csv'
  *
  * Nothing throws on a bad row. A history of thousands of sets will hold a
  * typo or two, and losing the whole file over one helps nobody, so a row that
- * cannot be read is counted and the count is shown.
+ * cannot be read is skipped and counted: a file of nothing but such rows is
+ * told apart from an empty one.
  */
 
 export type ImportSource = 'strong' | 'hevy'
 export type { WeightUnit } from '@/lib/units'
-export type DistanceUnit = 'km' | 'mi' | 'm'
+/** The units a file can write a distance in: a carry is metres. */
+export type FileDistanceUnit = 'km' | 'mi' | 'm'
 
 /** A wall-clock time as the file wrote it: both apps write local time with no zone. */
 export type LocalTime = {
@@ -39,7 +41,7 @@ export type ParsedSet = {
   reps: number | null
   durationS: number | null
   distance: number | null
-  distanceUnit: DistanceUnit | null
+  distanceUnit: FileDistanceUnit | null
   rpe: number | null
 }
 
@@ -67,8 +69,6 @@ type ParsedWorkout = {
 export type ParsedExport = {
   source: ImportSource
   workouts: ParsedWorkout[]
-  /** Set rows read. Strong's rest-timer rows are not sets and are not counted. */
-  rows: number
   /** Rows with no exercise or no readable date. */
   skippedRows: number
   /** Whether any set is a weight or a distance in a unit the file does not name. */
@@ -128,7 +128,7 @@ const weightUnitOf = (text: string): WeightUnit | null => {
   return null
 }
 
-const distanceUnitOf = (text: string): DistanceUnit | null => {
+const distanceUnitOf = (text: string): FileDistanceUnit | null => {
   const unit = text.trim().toLowerCase()
   if (unit === 'mi' || unit.startsWith('mile')) return 'mi'
   if (unit === 'km' || unit.startsWith('kilo')) return 'km'
@@ -240,30 +240,15 @@ const YEAR_FIRST = new RegExp(
  */
 function hevyTime(text: string): LocalTime | null {
   const value = text.trim()
-  const dayFirst = value.match(DAY_FIRST)
-  if (dayFirst) {
-    const month = monthOf(dayFirst[2])
-    if (month) {
-      return localTime(
-        +dayFirst[3],
-        month,
-        +dayFirst[1],
-        hour24(+dayFirst[4], dayFirst[6]),
-        +dayFirst[5],
-      )
-    }
-  }
-  const monthFirst = value.match(MONTH_FIRST)
-  if (monthFirst) {
-    const month = monthOf(monthFirst[1])
-    if (month) {
-      return localTime(
-        +monthFirst[3],
-        month,
-        +monthFirst[2],
-        hour24(+monthFirst[4], monthFirst[6]),
-        +monthFirst[5],
-      )
+  // Which group holds the day and which the month; the year and clock follow both.
+  for (const [pattern, day, name] of [
+    [DAY_FIRST, 1, 2],
+    [MONTH_FIRST, 2, 1],
+  ] as const) {
+    const match = value.match(pattern)
+    const month = match && monthOf(match[name])
+    if (match && month) {
+      return localTime(+match[3], month, +match[day], hour24(+match[4], match[6]), +match[5])
     }
   }
   const yearFirst = value.match(YEAR_FIRST)
@@ -281,22 +266,13 @@ function hevyTime(text: string): LocalTime | null {
 
 const minutesToSeconds = (minutes: number | null) => (minutes === null ? null : minutes * 60)
 
-/** A set type written out, as this app's export and Hevy's write it. */
+/** A set type written out, as this app's export and Hevy's write it: "warmup", "dropset". */
 function kindOf(text: string): SetKind | null {
-  switch (text.toLowerCase()) {
-    case 'normal':
-      return 'normal'
-    case 'warmup':
-    case 'warm-up':
-      return 'warmup'
-    case 'drop':
-    case 'dropset':
-      return 'drop'
-    case 'failure':
-      return 'failure'
-    default:
-      return null
-  }
+  const type = text.toLowerCase()
+  if (type.startsWith('warm')) return 'warmup'
+  if (type.startsWith('drop')) return 'drop'
+  if (type.startsWith('fail')) return 'failure'
+  return type === 'normal' ? 'normal' : null
 }
 
 /** Strong's workout length: "1h 5m", "57m", "45s". */
@@ -451,7 +427,6 @@ function parseStrong(header: string[], rows: string[][]): ParsedExport {
 
   const builder: Builder = { workouts: new Map(), runs: new Map() }
   const unitless = { weight: false, distance: false }
-  let read = 0
   let skipped = 0
 
   for (const row of rows) {
@@ -483,7 +458,6 @@ function parseStrong(header: string[], rows: string[][]): ParsedExport {
       continue
     }
 
-    read++
     addNote(exercise.notes, cell(c.notes))
     const weight = positive(cell(c.weight))
     const distance = positive(cell(c.distance))
@@ -508,7 +482,6 @@ function parseStrong(header: string[], rows: string[][]): ParsedExport {
   return {
     source: 'strong',
     workouts: sorted(builder.workouts.values()),
-    rows: read,
     skippedRows: skipped,
     unitless,
   }
@@ -547,7 +520,6 @@ function parseHevy(header: string[], rows: string[][]): ParsedExport {
   }
 
   const builder: Builder = { workouts: new Map(), runs: new Map() }
-  let read = 0
   let skipped = 0
 
   for (const row of rows) {
@@ -567,7 +539,6 @@ function parseHevy(header: string[], rows: string[][]): ParsedExport {
       durationS: end ? Math.max(0, secondsBetween(start, end)) : null,
     }))
     const exercise = exerciseFor(builder, workout, name, cell(c.superset) || null)
-    read++
     addNote(exercise.notes, cell(c.notes))
 
     const kg = positive(cell(c.weightKg))
@@ -575,15 +546,8 @@ function parseHevy(header: string[], rows: string[][]): ParsedExport {
     const km = positive(cell(c.distanceKm))
     const mi = positive(cell(c.distanceMi))
     const m = positive(cell(c.distanceM))
-    const type = cell(c.type).toLowerCase()
     exercise.sets.push({
-      kind: type.startsWith('warm')
-        ? 'warmup'
-        : type.startsWith('drop')
-          ? 'drop'
-          : type.startsWith('fail')
-            ? 'failure'
-            : 'normal',
+      kind: kindOf(cell(c.type)) ?? 'normal',
       weight: kg ?? lb,
       weightUnit: kg !== null ? 'kg' : lb !== null ? 'lb' : null,
       reps: positive(cell(c.reps)),
@@ -597,7 +561,6 @@ function parseHevy(header: string[], rows: string[][]): ParsedExport {
   return {
     source: 'hevy',
     workouts: sorted(builder.workouts.values()),
-    rows: read,
     skippedRows: skipped,
     unitless: { weight: false, distance: false },
   }

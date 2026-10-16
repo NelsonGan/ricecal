@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { View } from 'react-native'
 
 import { Button, type ButtonVariant } from './Button'
 import { Sheet } from './Sheet'
+import { useHeld } from './useHeld'
 
 export type ConfirmSheetProps = {
   visible: boolean
@@ -47,8 +48,7 @@ export function ConfirmSheet({
   const [pending, setPending] = useState(false)
   // The words it asked with, kept while it slides away: a caller that clears
   // the item on close otherwise read "Remove ?" on the way down.
-  const held = useRef({ title, description })
-  if (visible) held.current = { title, description }
+  const shown = useHeld({ title, description }, visible)
 
   const confirm = async () => {
     setPending(true)
@@ -72,8 +72,8 @@ export function ConfirmSheet({
       // The drag handle dismisses, which is exactly what the neutral button
       // does, so it says the same word rather than asking for a third label.
       closeLabel={cancelLabel}
-      title={held.current.title}
-      description={held.current.description}
+      title={shown.title}
+      description={shown.description}
       footer={
         <View className="flex-row gap-3">
           <Button variant={tone} className="flex-1" loading={pending} onPress={confirm}>

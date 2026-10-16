@@ -263,6 +263,41 @@ const SetRow = memo(function SetRow({
       : set.kind === 'warmup'
         ? t(SET_KIND_KEY.warmup)
         : `${t('workouts:logger.set')} ${badgeNumber}, ${t(SET_KIND_KEY[set.kind])}`
+  // What each number field shows, offers when empty, is called in the pad's
+  // header, and reads back. A carry is tens of metres, and in kilometres the
+  // smallest step the field can hold (0.01) is already ten of them.
+  const numbers = {
+    weight: {
+      value: weightField(set.weightKg, unit),
+      hint: weightField(hintWeight, unit),
+      decimal: true,
+      unit: t(UNIT_KEY[unit]),
+      read: (text: string): SetPatch => ({ weightKg: parseWeight(text, unit) }),
+    },
+    reps: {
+      value: set.reps === null ? '' : String(set.reps),
+      hint: hintReps === null ? '' : String(hintReps),
+      decimal: false,
+      unit: t('workouts:logger.reps'),
+      read: (text: string): SetPatch => ({ reps: parseWhole(text) }),
+    },
+    distance:
+      tracking === 'weight_distance'
+        ? {
+            value: set.distanceM === null ? '' : trim(set.distanceM, 0),
+            hint: hintDistance ? trim(hintDistance, 0) : '',
+            decimal: false,
+            unit: 'm',
+            read: (text: string): SetPatch => ({ distanceM: parseWhole(text) }),
+          }
+        : {
+            value: distanceField(set.distanceM, distanceUnit),
+            hint: distanceField(hintDistance, distanceUnit),
+            decimal: true,
+            unit: distanceUnit,
+            read: (text: string): SetPatch => ({ distanceM: parseDistance(text, distanceUnit) }),
+          },
+  }
 
   return (
     // Swiped left, a set shows Delete, as every gym logger's sets do.
@@ -336,66 +371,32 @@ const SetRow = memo(function SetRow({
 
         {fields.map((field) => {
           const key = fieldKey(exerciseKey, set.id, field)
+          const number = field === 'duration' ? null : numbers[field]
+          const unitLabel = number ? number.unit : t('workouts:logger.time')
           // "Bench Press" over "Set 2 · kg": the field is often under the pad.
-          const header = (unitLabel: string) =>
-            `${exerciseName}\n${t('workouts:logger.set')} ${badge} · ${unitLabel}`
+          const label = `${exerciseName}\n${t('workouts:logger.set')} ${badge} · ${unitLabel}`
           return (
             <View key={field} className={cn(fieldWidth(fields.length), 'px-1')}>
-              {field === 'weight' ? (
+              {number ? (
                 <NumberCell
                   fieldKey={key}
-                  value={weightField(set.weightKg, unit)}
-                  placeholder={weightField(hintWeight, unit)}
-                  decimal
+                  value={number.value}
+                  placeholder={number.hint}
+                  decimal={number.decimal}
                   done={ticked}
-                  label={header(t(UNIT_KEY[unit]))}
+                  label={label}
                   complete={onComplete}
-                  onCommit={(text) => onChange({ weightKg: parseWeight(text, unit) })}
+                  onCommit={(text) => onChange(number.read(text))}
                 />
-              ) : field === 'reps' ? (
-                <NumberCell
-                  fieldKey={key}
-                  value={set.reps === null ? '' : String(set.reps)}
-                  placeholder={hintReps === null ? '' : String(hintReps)}
-                  decimal={false}
-                  done={ticked}
-                  label={header(t('workouts:logger.reps'))}
-                  complete={onComplete}
-                  onCommit={(text) => onChange({ reps: parseWhole(text) })}
-                />
-              ) : field === 'duration' ? (
+              ) : (
                 <DurationCell
                   fieldKey={key}
                   seconds={set.durationS}
                   placeholder={hintDuration === null ? '0:00' : shortClock(hintDuration)}
                   done={ticked}
-                  label={header(t('workouts:logger.time'))}
+                  label={label}
                   complete={onComplete}
                   onCommit={(seconds) => onChange({ durationS: seconds })}
-                />
-              ) : tracking === 'weight_distance' ? (
-                // A carry is tens of metres, and in kilometres the smallest step
-                // the field can hold (0.01) is already ten of them.
-                <NumberCell
-                  fieldKey={key}
-                  value={set.distanceM === null ? '' : trim(set.distanceM, 0)}
-                  placeholder={hintDistance ? trim(hintDistance, 0) : ''}
-                  decimal={false}
-                  done={ticked}
-                  label={header('m')}
-                  complete={onComplete}
-                  onCommit={(text) => onChange({ distanceM: parseWhole(text) })}
-                />
-              ) : (
-                <NumberCell
-                  fieldKey={key}
-                  value={distanceField(set.distanceM, distanceUnit)}
-                  placeholder={distanceField(hintDistance, distanceUnit)}
-                  decimal
-                  done={ticked}
-                  label={header(distanceUnit)}
-                  complete={onComplete}
-                  onCommit={(text) => onChange({ distanceM: parseDistance(text, distanceUnit) })}
                 />
               )}
             </View>
@@ -450,25 +451,23 @@ function useCellTools(
   const { t } = useTranslation(['workouts', 'common'])
   const order = useFieldOrder(fieldKey, () => input()?.focus())
   return {
-    next: order
-      ? {
-          // Read when the pad draws, not when this row last rendered: a set
-          // added below a memoised row would otherwise leave it saying Done.
-          get label() {
-            return order.hasNext(fieldKey) ? t('workouts:logger.next') : t('common:action.done')
-          },
-          onPress: () => {
-            if (!order.next(fieldKey)) input()?.blur()
-          },
-        }
-      : undefined,
+    next: {
+      // Read when the pad draws, not when this row last rendered: a set
+      // added below a memoised row would otherwise leave it saying Done.
+      get label() {
+        return order.hasNext(fieldKey) ? t('workouts:logger.next') : t('common:action.done')
+      },
+      onPress: () => {
+        if (!order.next(fieldKey)) input()?.blur()
+      },
+    },
     complete: complete
       ? {
           label: t('workouts:logger.set'),
           accessibilityLabel: t('workouts:logger.completeSet'),
           onPress: () => {
             if (!complete()) return
-            if (!order?.nextSet(fieldKey)) input()?.blur()
+            if (!order.nextSet(fieldKey)) input()?.blur()
           },
         }
       : undefined,
@@ -485,6 +484,18 @@ const CELL_TEXT = {
   textAlignVertical: 'center',
   includeFontPadding: false,
 } as const
+
+/**
+ * A set field's box: filled until its set is ticked, and outlined while the
+ * pad types into it, since the pad covers the page below it and the header
+ * alone is easy to miss.
+ */
+const cellClass = (done: boolean, typing: boolean) =>
+  cn(
+    'h-[38px] rounded-sm border-2 px-1 text-center font-body-black text-[16px] text-ink',
+    done ? 'bg-transparent' : 'bg-surface-alt',
+    typing ? 'border-pandan bg-surface' : 'border-transparent',
+  )
 
 /**
  * Android draws a field's placeholder only as it was when the field mounted.
@@ -584,13 +595,7 @@ function NumberCell({
         underlineColorAndroid="transparent"
         accessibilityLabel={label}
         style={CELL_TEXT}
-        className={cn(
-          'h-[38px] rounded-sm border-2 px-1 text-center font-body-black text-[16px] text-ink',
-          done ? 'bg-transparent' : 'bg-surface-alt',
-          // The field the pad is typing into, since the pad covers the page
-          // below it and the header alone is easy to miss.
-          numpad.selection ? 'border-pandan bg-surface' : 'border-transparent',
-        )}
+        className={cellClass(done, Boolean(numpad.selection))}
         {...numpad}
       />
     </CellTouch>
@@ -659,13 +664,7 @@ function DurationCell({
         underlineColorAndroid="transparent"
         accessibilityLabel={label}
         style={CELL_TEXT}
-        className={cn(
-          'h-[38px] rounded-sm border-2 px-1 text-center font-body-black text-[16px] text-ink',
-          done ? 'bg-transparent' : 'bg-surface-alt',
-          // The field the pad is typing into, since the pad covers the page
-          // below it and the header alone is easy to miss.
-          numpad.selection ? 'border-pandan bg-surface' : 'border-transparent',
-        )}
+        className={cellClass(done, Boolean(numpad.selection))}
         {...numpad}
         // The pad writes digits and the field shows a clock, so the selection is
         // measured on what is shown rather than on what was typed: all of it while

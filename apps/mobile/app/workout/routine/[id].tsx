@@ -10,6 +10,8 @@ import {
   plansToRoutine,
   routinePlans,
   toPlans,
+  unavailableState,
+  useDeleteConfirm,
   useLeaveGuard,
   useWorkoutStarter,
   WorkoutEditor,
@@ -17,7 +19,7 @@ import {
 } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
 import { useOnline } from '@/lib/online'
-import { AppBar, Button, Dialog, Icon, IconButton, Screen, Sheet, TextField, useToast } from '@/ui'
+import { AppBar, Button, Screen, Sheet, TextField, useToast } from '@/ui'
 
 /**
  * A routine: a named plan of exercises and target sets that a workout starts
@@ -41,15 +43,7 @@ export default function RoutineScreen() {
   if (!isNew && !routine) {
     return (
       <WorkoutUnavailable
-        state={
-          routines.isPending
-            ? routines.isPaused
-              ? 'offline'
-              : 'loading'
-            : routines.isError
-              ? 'unreachable'
-              : 'missing'
-        }
+        state={unavailableState(routines)}
         title={t('workouts:routines.missing')}
         icon={{ set: 'system', name: 'guide-book' }}
       />
@@ -76,7 +70,6 @@ function RoutineEditor({
   const remove = useDeleteRoutine()
   const online = useOnline()
   const starter = useWorkoutStarter()
-  const [confirmDelete, setConfirmDelete] = useState(false)
   const [notes, setNotes] = useState(routine?.notes ?? '')
 
   // The editor's document, borrowed from the logger. Its clock and id mean
@@ -99,6 +92,15 @@ function RoutineEditor({
   // so the page itself is only the plan.
   const [naming, setNaming] = useState(false)
   const nameField = useRef<TextInput>(null)
+  const confirmDelete = useDeleteConfirm({
+    item: routine,
+    title: t('workouts:routines.deleteTitle'),
+    description: t('workouts:routines.deleteBody'),
+    remove: (gone) => remove.mutateAsync(gone.id),
+    hold: onDeleting,
+    failed: t('workouts:finish.failed'),
+    done: () => guard.leave(goBack),
+  })
 
   const onSave = async () => {
     if (nameError || saving.current) return
@@ -140,18 +142,7 @@ function RoutineEditor({
           onBack={goBack}
           backDisabled={busy}
           backLabel={t('common:action.back')}
-          action={
-            routine ? (
-              <IconButton
-                size="sm"
-                variant="neutral"
-                accessibilityLabel={t('workouts:routines.delete')}
-                onPress={() => setConfirmDelete(true)}
-              >
-                <Icon set="ui" name="delete" size={20} />
-              </IconButton>
-            ) : undefined
-          }
+          action={routine ? confirmDelete.button(t('workouts:routines.delete')) : undefined}
         />
       }
       footer={
@@ -181,38 +172,7 @@ function RoutineEditor({
 
       <WorkoutEditor workout={draft} dispatch={dispatch} mode="plan" />
 
-      <Dialog
-        visible={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        title={t('workouts:routines.deleteTitle')}
-        description={t('workouts:routines.deleteBody')}
-        cancelLabel={t('common:action.keep')}
-        actions={[
-          {
-            key: 'delete',
-            label: t('common:action.delete'),
-            tone: 'danger',
-            waits: true,
-            onPress: async () => {
-              if (!routine) return
-              // Offline the delete pauses rather than fails, and would spin.
-              if (!online) {
-                toast.show({ title: t('common:offline.title'), tone: 'error' })
-                throw new Error('offline')
-              }
-              onDeleting(routine)
-              try {
-                await remove.mutateAsync(routine.id)
-              } catch (error) {
-                onDeleting(null)
-                toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
-                throw error
-              }
-              guard.leave(goBack)
-            },
-          },
-        ]}
-      />
+      {confirmDelete.dialog}
       <Sheet
         placement="center"
         visible={naming}

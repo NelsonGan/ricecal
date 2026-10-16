@@ -8,7 +8,6 @@ import { View } from 'react-native'
 import {
   type ExerciseBests,
   type ExerciseSession,
-  type IconRef,
   type RepBest,
   useCustomExercises,
   useExerciseBests,
@@ -38,11 +37,13 @@ import {
   shortClock,
   TRACKING_KEY,
   type Tracking,
+  unavailableState,
   useExerciseLibrary,
   useHasActiveWorkout,
   useWorkoutHasExercise,
   useWorkoutStarter,
   volumeText,
+  WorkoutUnavailable,
   weightText,
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
@@ -54,7 +55,7 @@ import {
   Button,
   Card,
   cn,
-  Divider,
+  Divided,
   EmptyState,
   Icon,
   IconButton,
@@ -156,33 +157,13 @@ function ExercisePage({ id }: { id: string }) {
   // an exercise that is not there, which a blank title over "Not done yet"
   // passed off as one never done.
   if (!exercise) {
-    const sources = [customs, bests, history]
-    if (sources.some((query) => query.isPending && query.isPaused)) {
-      return (
-        <Empty
-          title={t('common:offline.title')}
-          description={t('common:offline.body')}
-          icon={{ set: 'ui', name: 'offline' }}
-        />
-      )
-    }
-    if (sources.some((query) => query.isPending)) {
-      return (
-        <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
-          <Card>
-            <Skeleton className="h-[200px] w-full" />
-          </Card>
-        </Screen>
-      )
-    }
-    return sources.some((query) => query.isError) ? (
-      <Empty
-        title={t('common:offline.unreachableTitle')}
-        description={t('common:offline.unreachableBody')}
-        icon={{ set: 'ui', name: 'warning' }}
+    return (
+      <WorkoutUnavailable
+        state={unavailableState(customs, bests, history)}
+        title={t('workouts:exercise.missing')}
+        icon={{ set: 'body', name: 'dumbbell' }}
+        skeleton="h-[200px]"
       />
-    ) : (
-      <Empty title={t('workouts:exercise.missing')} icon={{ set: 'body', name: 'dumbbell' }} />
     )
   }
 
@@ -269,25 +250,6 @@ function ExercisePage({ id }: { id: string }) {
         </Card>
       )}
       {starter.dialog}
-    </Screen>
-  )
-}
-
-/** The page with nothing in it but a way back. */
-function Empty({
-  title,
-  description,
-  icon,
-}: {
-  title: string
-  description?: string
-  icon: IconRef
-}) {
-  const { t } = useTranslation(['common'])
-  const goBack = useBack('/workouts')
-  return (
-    <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
-      <EmptyState title={title} description={description} icon={icon} />
     </Screen>
   )
 }
@@ -542,18 +504,17 @@ function Records({
       }
       contentClassName="gap-0"
     >
-      {rows.map((row, index) => (
-        <View key={row.label}>
-          {index > 0 ? <Divider /> : null}
-          <View className="flex-row items-center gap-3 py-2.5">
+      <Divided>
+        {rows.map((row) => (
+          <View key={row.label} className="flex-row items-center gap-3 py-2.5">
             <Icon set="system" name="trophy" size={20} />
             <Text variant="body" className="flex-1">
               {row.label}
             </Text>
             <Text variant="label">{row.value}</Text>
           </View>
-        </View>
-      ))}
+        ))}
+      </Divided>
     </Card>
   )
 }
@@ -575,10 +536,9 @@ function RepRecords({ rows, unit }: { rows: readonly RepBest[]; unit: WeightUnit
   if (shown.length < 2) return null
   return (
     <Card title={t('workouts:exercise.repRecords')} contentClassName="gap-0">
-      {shown.map((row, index) => (
-        <View key={row.reps}>
-          {index > 0 ? <Divider /> : null}
-          <View className="flex-row items-center gap-3 py-2.5">
+      <Divided>
+        {shown.map((row) => (
+          <View key={row.reps} className="flex-row items-center gap-3 py-2.5">
             <Text variant="body" className="flex-1">
               {t('workouts:exercise.repCount', { count: row.reps })}
             </Text>
@@ -587,8 +547,8 @@ function RepRecords({ rows, unit }: { rows: readonly RepBest[]; unit: WeightUnit
               {weightText(t, row.weightKg, unit)}
             </Text>
           </View>
-        </View>
-      ))}
+        ))}
+      </Divided>
     </Card>
   )
 }
@@ -615,12 +575,12 @@ function History({
 
   return (
     <Card title={t('workouts:exercise.history')} contentClassName="gap-0">
-      {sessions.slice(0, shown).map((session, index) => {
-        const badges = setBadges(session.sets, t)
-        return (
-          <View key={session.workoutId}>
-            {index > 0 ? <Divider /> : null}
+      <Divided>
+        {sessions.slice(0, shown).map((session) => {
+          const badges = setBadges(session.sets, t)
+          return (
             <Tappable
+              key={session.workoutId}
               className="gap-1.5 py-3"
               onPress={() =>
                 router.push({ pathname: '/workout/[id]', params: { id: session.workoutId } })
@@ -652,9 +612,9 @@ function History({
                 )
               })}
             </Tappable>
-          </View>
-        )
-      })}
+          )
+        })}
+      </Divided>
       {sessions.length > shown ? (
         <Button variant="ghost" fullWidth onPress={() => setShown((count) => count + 10)}>
           {t('workouts:history.more')}

@@ -1,16 +1,28 @@
 import { format } from 'date-fns'
 import type { Href } from 'expo-router'
 import type { TFunction } from 'i18next'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { type IconRef, useCurrentWeight, useSaveWorkout } from '@/data'
+import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
-import { AppBar, Card, EmptyState, ListRow, Screen, Skeleton, Text, TextField } from '@/ui'
+import {
+  AppBar,
+  Card,
+  cn,
+  EmptyState,
+  ListRow,
+  Screen,
+  Skeleton,
+  Text,
+  TextField,
+  useHeld,
+} from '@/ui'
 import { estimateKcal } from './energy'
 import { type HealthOutcome, removeWorkoutFromHealth, syncWorkoutToHealth } from './health'
-import { type LiveWorkout, toPayload } from './model'
+import { doneSets, type LiveWorkout, toPayload } from './model'
 import { WhenSheet } from './WhenSheet'
 
 /**
@@ -61,8 +73,9 @@ export function WorkoutFields({
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const [picking, setPicking] = useState<'start' | 'end' | null>(openOn ?? null)
-  const lastPicked = useRef<'start' | 'end'>(openOn ?? 'start')
-  if (picking) lastPicked.current = picking
+  // Which time the sheet is about, kept while it closes: `picking` clears
+  // first, and the title turned from "Started" to "Finished" on the way down.
+  const shown = useHeld(picking, picking !== null) ?? 'start'
   const when = (at: number) =>
     format(at, `${datePattern('weekdayDayMonth')}, ${datePattern('time')}`)
 
@@ -107,14 +120,8 @@ export function WorkoutFields({
 
       <WhenSheet
         visible={picking !== null}
-        // Which time it is about, kept while it closes: `picking` clears first,
-        // and the title turned from "Started" to "Finished" on the way down.
-        title={
-          (picking ?? lastPicked.current) === 'start'
-            ? t('workouts:finish.started')
-            : t('workouts:finish.ended')
-        }
-        value={(picking ?? lastPicked.current) === 'start' ? startedAt : endedAt}
+        title={shown === 'start' ? t('workouts:finish.started') : t('workouts:finish.ended')}
+        value={shown === 'start' ? startedAt : endedAt}
         onClose={() => setPicking(null)}
         onPick={(at) => (picking === 'start' ? onStarted(at) : onEnded(at))}
       />
@@ -123,7 +130,7 @@ export function WorkoutFields({
 }
 
 /** A saved workout as it was before an edit, to put back in Health if the edit is refused. */
-export type SavedVersion = { workout: LiveWorkout; endedAt: number; kcal: number | null }
+type SavedVersion = { workout: LiveWorkout; endedAt: number; kcal: number | null }
 
 /**
  * Saving a workout, from either screen: its energy estimate, its Apple Health
@@ -163,6 +170,53 @@ export function useWorkoutSave() {
 }
 
 /**
+ * `Workout Finished`, once per new workout saved: from the finish screen, or
+ * logged afterwards on the edit screen. An edit of a saved one is not counted.
+ */
+export function trackWorkoutFinished(
+  document: LiveWorkout,
+  { payload, queued, health, durationS }: Awaited<ReturnType<ReturnType<typeof useWorkoutSave>>>,
+) {
+  track('Workout Finished', {
+    exercises: payload.exercises.length,
+    sets: doneSets(document),
+    duration_min: Math.round(durationS / 60),
+    from_routine: Boolean(document.routineId),
+    saved_to_health: Boolean(health.healthId),
+    queued,
+  })
+}
+
+/** What a page says when its data did not come: offline, or unreachable. */
+export const NOT_LOADED = {
+  offline: {
+    title: 'common:offline.title',
+    body: 'common:offline.body',
+    icon: { set: 'ui', name: 'offline' },
+  },
+  unreachable: {
+    title: 'common:offline.unreachableTitle',
+    body: 'common:offline.unreachableBody',
+    icon: { set: 'ui', name: 'warning' },
+  },
+} as const
+
+type Unavailable = 'loading' | keyof typeof NOT_LOADED | 'missing'
+
+/**
+ * Which `WorkoutUnavailable` a page waiting on these queries draws: offline if
+ * any is held, loading while any runs, unreachable if any failed, and
+ * otherwise what it asked for is not there.
+ */
+export function unavailableState(
+  ...queries: { isPending: boolean; isPaused: boolean; isError: boolean }[]
+): Unavailable {
+  if (queries.some((query) => query.isPending && query.isPaused)) return 'offline'
+  if (queries.some((query) => query.isPending)) return 'loading'
+  return queries.some((query) => query.isError) ? 'unreachable' : 'missing'
+}
+
+/**
  * A workout screen with nothing to draw, always with a way back: still
  * loading, offline with nothing cached (the request is held rather than
  * failed, so a skeleton would wait forever), unreachable, or missing because
@@ -170,38 +224,38 @@ export function useWorkoutSave() {
  */
 export function WorkoutUnavailable({
   state = 'missing',
+  heading,
   title,
   icon = { set: 'body', name: 'stopwatch' },
   fallback = '/workouts',
+  skeleton = 'h-[240px]',
 }: {
-  state?: 'loading' | 'offline' | 'unreachable' | 'missing'
+  state?: Unavailable
+  /** The app bar's title, for a page that names itself while it loads. */
+  heading?: string
   /** What is missing, when it is not a workout. */
   title?: string
   icon?: IconRef
   fallback?: Href
+  /** The placeholder's height class, roughly the page it stands in for. */
+  skeleton?: string
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const goBack = useBack(fallback)
   return (
-    <Screen header={<AppBar onBack={goBack} backLabel={t('common:action.back')} />}>
+    <Screen header={<AppBar title={heading} onBack={goBack} backLabel={t('common:action.back')} />}>
       {state === 'loading' ? (
         <Card>
-          <Skeleton className="h-[240px] w-full" />
+          <Skeleton className={cn(skeleton, 'w-full')} />
         </Card>
-      ) : state === 'offline' ? (
-        <EmptyState
-          title={t('common:offline.title')}
-          description={t('common:offline.body')}
-          icon={{ set: 'ui', name: 'offline' }}
-        />
-      ) : state === 'unreachable' ? (
-        <EmptyState
-          title={t('common:offline.unreachableTitle')}
-          description={t('common:offline.unreachableBody')}
-          icon={{ set: 'ui', name: 'warning' }}
-        />
-      ) : (
+      ) : state === 'missing' ? (
         <EmptyState title={title ?? t('workouts:detail.missing')} icon={icon} />
+      ) : (
+        <EmptyState
+          title={t(NOT_LOADED[state].title)}
+          description={t(NOT_LOADED[state].body)}
+          icon={NOT_LOADED[state].icon}
+        />
       )}
     </Screen>
   )

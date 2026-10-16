@@ -135,6 +135,72 @@ function Cell({ date, plate, mark, ahead, onSelect, label }: CellProps) {
   )
 }
 
+/**
+ * A month's name between chevrons to the months either side, then its weekday
+ * initials: the diary's calendar and the workout one (`app/workout/stats.tsx`)
+ * page the same way. A chevron with no handler is disabled.
+ */
+export function MonthHeader({
+  month,
+  onPrevious,
+  onNext,
+  weekdaysClassName,
+}: {
+  month: string
+  onPrevious?: () => void
+  onNext?: () => void
+  /** The weekday row's spacing, to match the grid under it. */
+  weekdaysClassName?: string
+}) {
+  const { t } = useTranslation('logging')
+  const colors = useThemeColors()
+  // These seven labels follow the date locale when the language changes.
+  const columns = weekdayColumns((date) => format(date, 'EEEEE'))
+
+  return (
+    <>
+      <View className="flex-row items-center justify-between">
+        <IconButton
+          size="sm"
+          onPress={onPrevious}
+          disabled={!onPrevious}
+          accessibilityLabel={t('calendar.previousMonth')}
+        >
+          {/* Tinted, like every other chevron in the app: chrome is
+              monochrome, and the illustration's own palette reads as a stray
+              accent beside a month name. */}
+          <Icon set="ui" name="chevron-left" size={18} tintColor={colors.muted} />
+        </IconButton>
+        <Text variant="subtitle" className="min-w-0 flex-1 text-center">
+          {format(parseISO(month), datePattern('monthYear'))}
+        </Text>
+        <IconButton
+          size="sm"
+          onPress={onNext}
+          disabled={!onNext}
+          accessibilityLabel={t('calendar.nextMonth')}
+        >
+          <Icon set="ui" name="chevron-right" size={18} tintColor={colors.muted} />
+        </IconButton>
+      </View>
+
+      <View className={cn('flex-row', weekdaysClassName)}>
+        {columns.map((column) => (
+          <Text
+            key={column.key}
+            variant="micro"
+            className="flex-1 text-center"
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.3}
+          >
+            {column.label}
+          </Text>
+        ))}
+      </View>
+    </>
+  )
+}
+
 export type MonthCalendarProps = {
   /** First day of the month on screen, `yyyy-MM-dd`. */
   month: string
@@ -164,7 +230,6 @@ export function MonthCalendar({
   className,
 }: MonthCalendarProps) {
   const { t } = useTranslation('logging')
-  const colors = useThemeColors()
 
   const to = monthEnd(month)
   const { data: marks, isSuccess } = useDayMarks(month, to)
@@ -172,8 +237,6 @@ export function MonthCalendar({
   const { data: settings } = useSettings()
 
   const weeks = useMemo(() => monthWeeks(month), [month])
-  // These seven labels follow the date locale when the language changes.
-  const columns = weekdayColumns((date) => format(date, 'EEEEE'))
 
   const extendsBudget = settings?.activity_extends_budget !== false
   /**
@@ -189,44 +252,12 @@ export function MonthCalendar({
 
   return (
     <View className={cn('gap-3', className)}>
-      <View className="flex-row items-center justify-between">
-        <IconButton
-          size="sm"
-          onPress={previous ? () => onMonthChange(previous) : undefined}
-          disabled={!previous}
-          accessibilityLabel={t('calendar.previousMonth')}
-        >
-          {/* Tinted, like every other chevron in the app: chrome is
-              monochrome, and the illustration's own palette reads as a stray
-              accent beside a month name. */}
-          <Icon set="ui" name="chevron-left" size={18} tintColor={colors.muted} />
-        </IconButton>
-        <Text variant="subtitle" className="min-w-0 flex-1 text-center">
-          {format(parseISO(month), datePattern('monthYear'))}
-        </Text>
-        <IconButton
-          size="sm"
-          onPress={next ? () => onMonthChange(next) : undefined}
-          disabled={!next}
-          accessibilityLabel={t('calendar.nextMonth')}
-        >
-          <Icon set="ui" name="chevron-right" size={18} tintColor={colors.muted} />
-        </IconButton>
-      </View>
-
-      <View className="flex-row gap-[5px]">
-        {columns.map((column) => (
-          <Text
-            key={column.key}
-            variant="micro"
-            className="flex-1 text-center"
-            numberOfLines={1}
-            maxFontSizeMultiplier={1.3}
-          >
-            {column.label}
-          </Text>
-        ))}
-      </View>
+      <MonthHeader
+        month={month}
+        onPrevious={previous ? () => onMonthChange(previous) : undefined}
+        onNext={next ? () => onMonthChange(next) : undefined}
+        weekdaysClassName="gap-[5px]"
+      />
 
       {/* The weeks in a box of their own, so the rows sit at the grid's own
           spacing rather than at the gap between the calendar's SECTIONS — the

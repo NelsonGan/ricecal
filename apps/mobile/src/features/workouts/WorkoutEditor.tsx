@@ -16,16 +16,17 @@ import { distanceUnitFor } from './format'
 import { useExerciseLibrary } from './library'
 import {
   type Action,
-  apply,
   hasFigures,
   isLoggable,
   type LiveExercise,
   type LiveSet,
   type LiveWorkout,
+  mapSet,
   restAfter,
   SET_KINDS,
   type SetPatch,
   setHints,
+  tickedSet,
 } from './model'
 import { awaitPick } from './pick'
 import { ReorderSheet } from './ReorderSheet'
@@ -145,10 +146,9 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     // The tick as `apply` will make it, on this exercise alone: what it fills
     // in decides whether the set can be ticked and whether it is a record.
     const at = Date.now()
-    const action = { type: 'completeSet', key: exercise.key, setId: set.id, at, fill } as const
-    const ticked = apply({ ...workout, exercises: [exercise] }, action).exercises[0]
-    const tickedSet = ticked.sets.find((entry) => entry.id === set.id)
-    if (!tickedSet || !isLoggable(tickedSet, exercise.tracking)) {
+    const ticked = mapSet(exercise, set.id, (entry) => tickedSet(entry, at, fill))
+    const filled = ticked.sets.find((entry) => entry.id === set.id)
+    if (!filled || !isLoggable(filled, exercise.tracking)) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {})
       toast.show({ title: t('workouts:logger.noNumbers'), tone: 'error' })
       return false
@@ -157,7 +157,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
     const bests = bestsById.get(exercise.exerciseId)
     const cards = workout.exercises.filter((card) => card.exerciseId === exercise.exerciseId)
     const before = recordSets(cards, bests)
-    dispatch(action)
+    dispatch({ type: 'completeSet', key: exercise.key, setId: set.id, at, fill })
     const after = recordSets(
       cards.map((card) => (card.key === exercise.key ? ticked : card)),
       bests,
@@ -232,8 +232,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
         key: 'details',
         label: t('workouts:logger.menu.details'),
         icon: { set: 'system', name: 'trophy' },
-        onPress: () =>
-          router.push({ pathname: '/workout/exercise/[id]', params: { id: exercise.exerciseId } }),
+        onPress: () => handlers.open(exercise.exerciseId),
       },
       {
         key: 'replace',

@@ -23,6 +23,7 @@ export {
   type Tracking,
 } from './catalogue'
 export * from './copy'
+export { useDeleteConfirm } from './deleteConfirm'
 export { ExerciseArt } from './ExerciseArt'
 export { WorkoutEffects } from './effects'
 export { workoutsCsv } from './exportCsv'
@@ -50,7 +51,7 @@ export { RestSheet } from './RestSheet'
 export { type RecordKind, recordSets } from './records'
 export { plansToRoutine, routinePlans, templateRoutine, toPlans } from './routines'
 export { type RoutineUpdate, routineChanges, updatedRoutine } from './routineUpdate'
-export { StaleWorkoutDialog } from './StaleWorkoutDialog'
+export { DiscardDialog, type FinishParams, StaleWorkoutDialog } from './StaleWorkoutDialog'
 export { asCategory, asEquipment } from './search'
 export { workoutShareText } from './shareText'
 export { defaultWorkoutName, discardWorkout, useWorkoutStarter } from './start'
@@ -61,6 +62,15 @@ export {
   useWorkoutHasExercise,
 } from './store'
 export { TEMPLATE_GROUPS, TEMPLATES, templateById, templatePlans } from './templates'
+export { WheelSheet } from './WheelSheet'
 export { WorkoutEditor } from './WorkoutEditor'
-export { timesError, useWorkoutSave, WorkoutFields, WorkoutUnavailable } from './WorkoutForm'
+export {
+  NOT_LOADED,
+  timesError,
+  trackWorkoutFinished,
+  unavailableState,
+  useWorkoutSave,
+  WorkoutFields,
+  WorkoutUnavailable,
+} from './WorkoutForm'
 export { WorkoutItem } from './WorkoutItem'

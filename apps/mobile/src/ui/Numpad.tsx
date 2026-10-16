@@ -596,7 +596,6 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
   const spec = session.field.current
   const tools = spec.tools
   const [title, detail] = (spec.label ?? '').split('\n')
-  const heading = { title, detail }
 
   const press = useCallback(
     (key: string) => {
@@ -660,13 +659,13 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
         {/* A label with a line break is a name over a detail: the exercise,
             then the set and unit, so neither is cut off by the keys beside it. */}
         <View className="min-w-0 flex-1">
-          {heading.detail ? (
+          {detail ? (
             <Text variant="caption" numberOfLines={1}>
-              {heading.title}
+              {title}
             </Text>
           ) : null}
           <Text variant="label" numberOfLines={1}>
-            {heading.detail ?? heading.title}
+            {detail ?? title}
           </Text>
         </View>
         {tools ? (

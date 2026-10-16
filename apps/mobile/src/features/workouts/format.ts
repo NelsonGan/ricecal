@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next'
 
+import { clock as activityClock, count } from '@/features/activity/format'
 import { fromKg, toKg, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import type { Tracking } from './catalogue'
 import { roundKg, roundMetres } from './model'
@@ -48,13 +49,10 @@ export function parseWeight(text: string, unit: WeightUnit): number | null {
   return roundKg(toKg(value, unit))
 }
 
-/** "1,234". Whole numbers with the phone's own separators. */
-export const whole = (value: number): string => Math.round(value).toLocaleString()
-
 /** A volume in the user's unit: "8,420". The unit is the caller's label. */
-export const volume = (kg: number, unit: WeightUnit): string => whole(fromKg(kg, unit))
+const volume = (kg: number, unit: WeightUnit): string => count(fromKg(kg, unit))
 
-export function parseDecimal(text: string): number | null {
+function parseDecimal(text: string): number | null {
   const cleaned = text.replace(',', '.').trim()
   if (!cleaned) return null
   const value = Number(cleaned)
@@ -91,16 +89,8 @@ export function parseDistance(text: string, unit: DistanceUnit): number | null {
   return roundMetres(unit === 'mi' ? value * M_PER_MI : value * 1000)
 }
 
-/** "1:05:09" or "05:09", the clock a running workout shows. */
-export function clock(seconds: number): string {
-  const total = Math.max(0, Math.floor(seconds))
-  const hours = Math.floor(total / 3600)
-  const minutes = Math.floor((total % 3600) / 60)
-  const secs = total % 60
-  const ss = String(secs).padStart(2, '0')
-  if (hours > 0) return `${hours}:${String(minutes).padStart(2, '0')}:${ss}`
-  return `${String(minutes).padStart(2, '0')}:${ss}`
-}
+/** "1:05:09" or "05:09", the clock a running workout shows, in whole seconds gone. */
+export const clock = (seconds: number): string => activityClock(Math.floor(seconds))
 
 /** "1:30" for a rest or a set's time: minutes and seconds, no padding on the minutes. */
 export function shortClock(seconds: number): string {
@@ -140,7 +130,7 @@ export function digitsClock(digits: string): string {
 }
 
 /** Hours and minutes as two numbers, for copy like "1 h 12 min". */
-export function hoursMinutes(seconds: number): { hours: number; minutes: number } {
+function hoursMinutes(seconds: number): { hours: number; minutes: number } {
   const minutes = Math.round(Math.max(0, seconds) / 60)
   return { hours: Math.floor(minutes / 60), minutes: minutes % 60 }
 }
@@ -194,18 +184,18 @@ export function describeSet(
       return set.reps === null ? '' : `× ${set.reps}`
     case 'duration':
       return set.durationS === null ? '' : shortClock(set.durationS)
-    case 'distance_duration': {
-      const parts = [
-        set.distanceM ? `${distanceField(set.distanceM, distanceUnit)} ${distanceUnit}` : null,
+    case 'distance_duration':
+      return [
+        set.distanceM ? distanceText(set.distanceM, distanceUnit, tracking) : null,
         set.durationS ? shortClock(set.durationS) : null,
-      ].filter(Boolean)
-      return parts.join(' · ')
-    }
-    case 'weight_distance':
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    case 'weight_distance': {
       // A sled pushed empty is still a carry: the distance alone, not nothing.
       if (!set.distanceM) return ''
-      return weight !== null
-        ? `${weight} · ${trim(set.distanceM, 0)} m`
-        : `${trim(set.distanceM, 0)} m`
+      const distance = distanceText(set.distanceM, distanceUnit, tracking)
+      return weight !== null ? `${weight} · ${distance}` : distance
+    }
   }
 }

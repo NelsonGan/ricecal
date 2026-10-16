@@ -1,7 +1,7 @@
 import type { RoutineExercise } from '@/data'
-import type { ExercisePlan, LiveExercise, LiveWorkout } from './model'
+import type { ExercisePlan, LiveExercise, LiveSet, LiveWorkout, SetKind } from './model'
 import { pairSets, tidySupersets } from './model'
-import { plansToRoutine, routineSetPlan } from './routines'
+import { planOf, plansToRoutine, routineSetPlan } from './routines'
 
 /**
  * Whether a workout started from a routine left it, and the routine it would
@@ -76,6 +76,15 @@ function pair(routine: readonly RoutineExercise[], exercises: readonly LiveExerc
   return { matched, leftOver: [...unclaimed.values()].some((list) => list.length > 0) }
 }
 
+/** Each finished set with the routine set it pairs with, as `pairSets` pairs them. */
+function donePairs<T extends { kind?: SetKind }>(sets: readonly LiveSet[], planned: readonly T[]) {
+  const counterpart = pairSets(sets, planned)
+  return sets.flatMap((set, index) => {
+    const at = counterpart[index]
+    return set.done && at !== undefined ? [[set, planned[at]] as const] : []
+  })
+}
+
 export function routineChanges(
   routine: readonly RoutineExercise[],
   workout: Pick<LiveWorkout, 'exercises'>,
@@ -91,17 +100,13 @@ export function routineChanges(
     const planned = routine[from]
     // A routine set with no counterpart today is one an update would delete.
     if (pairSets(planned.sets, exercise.sets).some((at) => at === undefined)) removes = true
-    const counterpart = pairSets(exercise.sets, planned.sets)
-    exercise.sets.forEach((set, setIndex) => {
-      const at = counterpart[setIndex]
-      const target = at === undefined ? undefined : planned.sets[at]
-      if (!set.done || !target) return
+    for (const [set, target] of donePairs(exercise.sets, planned.sets)) {
       for (const [live, stored] of FIELDS) {
         const want = target[stored]
         const did = set[live]
         if (want !== null && want !== undefined && did !== null && !same(want, did)) values = true
       }
-    })
+    }
   })
 
   const layout =
@@ -156,17 +161,13 @@ export function updatedRoutine(
     workout.exercises.forEach((exercise, index) => {
       const from = matched[index]
       if (from === null) return
-      const counterpart = pairSets(exercise.sets, next[from].sets)
-      exercise.sets.forEach((set, setIndex) => {
-        const at = counterpart[setIndex]
-        const target = at === undefined ? undefined : next[from].sets[at]
-        if (!set.done || !target) return
+      for (const [set, target] of donePairs(exercise.sets, next[from].sets)) {
         for (const [live, stored] of FIELDS) {
           if (target[stored] !== null && target[stored] !== undefined && set[live] !== null) {
             target[stored] = set[live]
           }
         }
-      })
+      }
     })
     return next
   }
@@ -186,13 +187,7 @@ export function updatedRoutine(
         notes: planned ? (planned.notes ?? null) : exercise.notes,
         sets: exercise.sets.map((set, setIndex) =>
           how === 'layoutAndValues'
-            ? {
-                kind: set.kind,
-                weightKg: set.weightKg,
-                reps: set.reps,
-                durationS: set.durationS,
-                distanceM: set.distanceM,
-              }
+            ? planOf(set)
             : {
                 ...routineSetPlan(
                   counterpart[setIndex] === undefined

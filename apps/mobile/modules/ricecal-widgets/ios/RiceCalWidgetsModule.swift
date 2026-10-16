@@ -87,10 +87,6 @@ public class RiceCalWidgetsModule: Module {
       WorkoutActivityController.start(json)
     }
 
-    Function("updateWorkoutActivity") { (json: String) in
-      WorkoutActivityController.update(json)
-    }
-
     Function("endWorkoutActivity") {
       WorkoutActivityController.end()
     }

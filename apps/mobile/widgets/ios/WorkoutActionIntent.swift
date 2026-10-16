@@ -142,7 +142,7 @@ enum WorkoutActivityNudge {
 enum RestNotice {
   static let identifier = "workout-rest"
 
-  static func reschedule(endsAt: Date?, at: Date, forTick: Bool = false) async {
+  static func reschedule(endsAt: Date?, at: Date, forTick: Bool) async {
     #if canImport(RiceCalWidgetBridge)
       let center = UNUserNotificationCenter.current()
       center.removePendingNotificationRequests(withIdentifiers: [identifier])

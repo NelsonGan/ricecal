@@ -60,11 +60,9 @@ enum WorkoutActivityController {
      sit at 0:00 until the next set is ticked.
      */
     var content: ActivityContent<WorkoutActivityAttributes.ContentState> {
-      let restEnds = restEndsAt.map { Date(timeIntervalSince1970: $0 / 1000) }
+      let state = self.state
       return ActivityContent(
-        state: state,
-        staleDate: restEnds.flatMap { $0 > Date() ? $0 : nil }
-      )
+        state: state, staleDate: state.restEndsAt.flatMap { $0 > Date() ? $0 : nil })
     }
   }
 
@@ -76,10 +74,6 @@ enum WorkoutActivityController {
       RiceCalWidgetStore.setRestNotice(title: title, body: body, tickBody: payload.tickRestBody)
     }
     return payload
-  }
-
-  static var enabled: Bool {
-    ActivityAuthorizationInfo().areActivitiesEnabled
   }
 
   /**
@@ -121,13 +115,19 @@ enum WorkoutActivityController {
   }
 
   /**
+   Starts the workout's activity, or updates it when it is already showing. One
+   that was lost (the system ends an activity after eight hours, and a user can
+   swipe one away) is started again rather than going quiet.
+
    Which activity to touch is decided here, synchronously, on the thread JS
    calls from, and only the ActivityKit work that has to wait runs in a Task.
-   Deciding inside the Task let an `update` that ran before its `start` had
+   Deciding inside the Task let an update that ran before its start had
    requested the activity request a second one for the same workout.
    */
   static func start(_ json: String) {
-    guard let payload = decode(json), enabled else { return }
+    guard let payload = decode(json), ActivityAuthorizationInfo().areActivitiesEnabled else {
+      return
+    }
     let content = payload.content
     for activity in Activity<WorkoutActivityAttributes>.activities
     where activity.attributes.workoutId != payload.id {
@@ -149,18 +149,6 @@ enum WorkoutActivityController {
     } catch {
       NSLog("[RiceCalWidgets] could not start the workout activity: \(error)")
     }
-  }
-
-  static func update(_ json: String) {
-    guard let payload = decode(json) else { return }
-    guard let current = live(for: payload.id) else {
-      // Lost (the system ends an activity after eight hours, and a user can
-      // swipe one away): start it again rather than going quiet.
-      start(json)
-      return
-    }
-    let content = payload.content
-    serially { await current.update(content) }
   }
 
   /// Taken now rather than inside the task, so a start that follows cannot be ended by it.

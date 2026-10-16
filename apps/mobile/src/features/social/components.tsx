@@ -304,43 +304,40 @@ function totalsOf(facts?: Partial<FoodFacts> | null): Totals | null {
   }
 }
 
-/** What a screen reader says for a dish: its name, then every figure the picture shows. */
 /**
- * A workout post read aloud: its name and what it came to. The preview is one
- * element to VoiceOver, so without this it read as the name alone while a
- * meal read its calories and macros.
+ * A post's picture read aloud. A dish is its name, then every figure the
+ * picture shows. A workout is its name and what it came to: the preview is one
+ * element to VoiceOver, so without this it read as the name alone while a meal
+ * read its calories and macros.
  */
-function useWorkoutLabel() {
+function usePostLabel() {
   const { t } = useTranslation(['workouts', 'common'])
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
   return (post: SocialPost) => {
-    const volumeKg = Number(post.workout_volume_kg ?? 0)
-    const records = post.workout_records ?? 0
-    return [
-      post.workout_name ?? '',
-      durationText(t, post.workout_duration_s ?? 0),
-      volumeKg > 0
-        ? volumeText(t, volumeKg, unit)
-        : t('workouts:history.sets', { count: post.workout_sets ?? 0 }),
-      records > 0 ? t('workouts:history.prs', { count: records }) : '',
-    ]
-      .filter(Boolean)
-      .join(', ')
-  }
-}
-
-function useFoodLabel() {
-  const { t } = useTranslation('common')
-  return (name: string, facts?: Partial<FoodFacts> | null) => {
-    const totals = totalsOf(facts)
+    if (post.kind === 'workout') {
+      const volumeKg = Number(post.workout_volume_kg ?? 0)
+      const records = post.workout_records ?? 0
+      return [
+        post.workout_name ?? '',
+        durationText(t, post.workout_duration_s ?? 0),
+        volumeKg > 0
+          ? volumeText(t, volumeKg, unit)
+          : t('workouts:history.sets', { count: post.workout_sets ?? 0 }),
+        records > 0 ? t('workouts:history.prs', { count: records }) : '',
+      ]
+        .filter(Boolean)
+        .join(', ')
+    }
+    const name = post.food_name ?? ''
+    const totals = totalsOf(post)
     if (!totals) return name
     return [
       name,
-      `${Math.round(totals.kcal)} ${t('unit.kcal')}`,
+      `${Math.round(totals.kcal)} ${t('common:unit.kcal')}`,
       ...MACROS.map(
         (macro) =>
-          `${t(macro.label)} ${t('unit.gramsLong', { count: Math.round(totals[macro.key]) })}`,
+          `${t(`common:${macro.label}`)} ${t('common:unit.gramsLong', { count: Math.round(totals[macro.key]) })}`,
       ),
     ].join(', ')
   }
@@ -981,8 +978,7 @@ export const PostCard = memo(function PostCard({
   const ownAvatar = useAvatarUrl(mine ? (post.avatar_path ?? undefined) : undefined)
   const open = () => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })
   const time = useSocialTime(post.published_at ?? post.created_at)
-  const foodLabel = useFoodLabel()
-  const workoutLabel = useWorkoutLabel()
+  const postLabel = usePostLabel()
   const zoom = useSharedValue(1)
   const zoomX = useSharedValue(0)
   const zoomY = useSharedValue(0)
@@ -1124,9 +1120,7 @@ export const PostCard = memo(function PostCard({
         <View
           accessible
           accessibilityRole="image"
-          accessibilityLabel={
-            post.kind === 'workout' ? workoutLabel(post) : foodLabel(post.food_name ?? '', post)
-          }
+          accessibilityLabel={postLabel(post)}
           onLayout={(event) => {
             mediaSize.value = event.nativeEvent.layout.width
           }}
@@ -1317,16 +1311,12 @@ export const PostTile = memo(function PostTile({
   const status = post.quarantined ? 'quarantined' : post.review_status
   const privatePhoto = mine && status !== 'approved' ? (post.photo_path ?? undefined) : undefined
   const ownPhoto = useMealPhotoUrl(privatePhoto)
-  const foodLabel = useFoodLabel()
-  const workoutLabel = useWorkoutLabel()
+  const postLabel = usePostLabel()
   return (
     <Tappable
       className="overflow-hidden rounded-md bg-surface p-1"
       accessibilityRole="button"
-      accessibilityLabel={[
-        post.kind === 'workout' ? workoutLabel(post) : foodLabel(post.food_name ?? '', post),
-        mine && status !== 'approved' ? t(status) : '',
-      ]
+      accessibilityLabel={[postLabel(post), mine && status !== 'approved' ? t(status) : '']
         .filter(Boolean)
         .join(', ')}
       onPress={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
@@ -1488,13 +1478,7 @@ export function SocialList<T>({
       style={{ flex: 1 }}
       ListHeaderComponent={header}
       ListHeaderComponentStyle={
-        !header
-          ? undefined
-          : variant === 'cards'
-            ? // Edge to edge over the cards' padding, as a profile's header is
-              // over its grid: inset, it moved in when the Workouts tab opened.
-              { marginHorizontal: -20, marginTop: -20, marginBottom: 16 }
-            : { marginBottom: variant === 'feed' ? 0 : variant === 'grid' ? 12 : 16 }
+        header ? { marginBottom: variant === 'feed' ? 0 : variant === 'grid' ? 12 : 16 } : undefined
       }
       ItemSeparatorComponent={
         variant === 'rows' ? () => <View className="h-[2px] bg-track" /> : undefined

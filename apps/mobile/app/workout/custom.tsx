@@ -26,24 +26,14 @@ import {
   TRACKING_KEY,
   TRACKINGS,
   type Tracking,
+  unavailableState,
+  useDeleteConfirm,
   useLeaveGuard,
   WorkoutUnavailable,
 } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
 import { useOnline } from '@/lib/online'
-import {
-  AppBar,
-  Button,
-  Card,
-  Chip,
-  Dialog,
-  Icon,
-  IconButton,
-  Radio,
-  Screen,
-  TextField,
-  useToast,
-} from '@/ui'
+import { AppBar, Button, Card, Chip, Radio, Screen, TextField, useToast } from '@/ui'
 
 /**
  * An exercise the catalogue does not have, named by the user.
@@ -70,15 +60,7 @@ export default function CustomExerciseScreen() {
     // exercise beside the one that was meant.
     return (
       <WorkoutUnavailable
-        state={
-          custom.isPending
-            ? custom.isPaused
-              ? 'offline'
-              : 'loading'
-            : custom.isError
-              ? 'unreachable'
-              : 'missing'
-        }
+        state={unavailableState(custom)}
         title={t('workouts:exercise.missing')}
         icon={{ set: 'body', name: 'dumbbell' }}
         fallback="/workout/exercises"
@@ -129,7 +111,15 @@ function Form({
     existing ? rankedMuscles(existing.muscles).map((entry) => entry.muscle) : [],
   )
   const [taken, setTaken] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const confirmDelete = useDeleteConfirm({
+    item: existing,
+    title: t('workouts:custom.deleteTitle'),
+    description: t('workouts:custom.deleteBody'),
+    remove: (exercise) => remove.mutateAsync(exercise.id),
+    hold: onDeleting,
+    failed: t('workouts:finish.failed'),
+    done: () => guard.leave(goBack),
+  })
 
   const split = () => {
     const weights = muscles.map((_, index) => (index === 0 ? 2 : 1))
@@ -172,18 +162,7 @@ function Form({
           onBack={goBack}
           backDisabled={busy}
           backLabel={t('common:action.back')}
-          action={
-            existing ? (
-              <IconButton
-                size="sm"
-                variant="neutral"
-                accessibilityLabel={t('workouts:custom.delete')}
-                onPress={() => setConfirmDelete(true)}
-              >
-                <Icon set="ui" name="delete" size={20} />
-              </IconButton>
-            ) : undefined
-          }
+          action={existing ? confirmDelete.button(t('workouts:custom.delete')) : undefined}
         />
       }
       footer={
@@ -260,38 +239,7 @@ function Form({
         </View>
       </Card>
 
-      <Dialog
-        visible={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        title={t('workouts:custom.deleteTitle')}
-        description={t('workouts:custom.deleteBody')}
-        cancelLabel={t('common:action.keep')}
-        actions={[
-          {
-            key: 'delete',
-            label: t('common:action.delete'),
-            tone: 'danger',
-            waits: true,
-            onPress: async () => {
-              if (!existing) return
-              // Offline the delete pauses rather than fails, and would spin.
-              if (!online) {
-                toast.show({ title: t('common:offline.title'), tone: 'error' })
-                throw new Error('offline')
-              }
-              onDeleting(existing)
-              try {
-                await remove.mutateAsync(existing.id)
-              } catch (error) {
-                onDeleting(null)
-                toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
-                throw error
-              }
-              guard.leave(goBack)
-            },
-          },
-        ]}
-      />
+      {confirmDelete.dialog}
     </Screen>
   )
 }

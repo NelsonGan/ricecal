@@ -1,9 +1,10 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { Button, Sheet, Text, WHEEL_BAND, Wheel, type WheelOption, type WheelProps } from '@/ui'
+import { Button, Text, useHeld, WHEEL_BAND, Wheel, type WheelOption, type WheelProps } from '@/ui'
 import { shortClock } from './format'
+import { WheelSheet } from './WheelSheet'
 
 /**
  * The longest rest the wheels offer. `user_settings.workout_rest_s` allows
@@ -38,7 +39,7 @@ const split = (seconds: number) => {
 export function RestSheet({
   visible,
   title,
-  seconds,
+  seconds = null,
   defaultS,
   onClose,
   onPick,
@@ -46,7 +47,8 @@ export function RestSheet({
 }: {
   visible: boolean
   title: string
-  seconds: number | null
+  /** Absent or null: on the default. */
+  seconds?: number | null
   defaultS: number
   onClose: () => void
   onPick: (seconds: number) => void
@@ -56,22 +58,10 @@ export function RestSheet({
   // What was opened, held while the sheet closes: the editor clears the
   // exercise on close, and reading that mid-slide took "Use default" away and
   // shrank the panel as it fell.
-  const held = useRef({ seconds, defaultS, title })
-  if (visible) held.current = { seconds, defaultS, title }
-  const shown = held.current
+  const shown = useHeld({ seconds, defaultS, title }, visible)
   const opening = split(shown.seconds ?? shown.defaultS)
   const [m, setM] = useState(opening.minutes)
   const [s, setS] = useState(opening.seconds)
-
-  // Set before the panel is drawn. The sheet stays mounted between opens, and
-  // resetting in `onShow`, which fires once the window is up, showed the last
-  // exercise's rest for a frame before the wheels jumped.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only on opening
-  useLayoutEffect(() => {
-    if (!visible) return
-    setM(opening.minutes)
-    setS(opening.seconds)
-  }, [visible])
 
   const minutes = useMemo<WheelOption[]>(
     () =>
@@ -92,66 +82,58 @@ export function RestSheet({
   const total = m * 60 + s
 
   return (
-    <Sheet
-      placement="center"
+    <WheelSheet
       visible={visible}
-      onClose={onClose}
-      closeLabel={t('common:action.close')}
       title={shown.title}
-      scrollable={false}
-    >
-      <View className="gap-5">
-        <Text variant="display" className="text-center">
-          {total > 0 ? shortClock(total) : t('workouts:logger.restOff')}
-        </Text>
-        <View className="flex-row gap-2">
-          <UnitWheel
-            unit={t('workouts:rest.min')}
-            options={minutes}
-            value={String(m)}
-            onChange={(next) => {
-              const value = Number(next)
-              setM(value)
-              if (value === MAX_MINUTES) setS(0)
-            }}
-            accessibilityLabel={t('workouts:rest.minutes')}
-          />
-          <UnitWheel
-            unit={t('workouts:rest.sec')}
-            options={secondsOptions}
-            value={String(s)}
-            onChange={(next) => setS(Number(next))}
-            accessibilityLabel={t('workouts:rest.seconds')}
-          />
-        </View>
-        <View className="gap-2">
+      onOpen={() => {
+        setM(opening.minutes)
+        setS(opening.seconds)
+      }}
+      onClose={onClose}
+      onDone={() => {
+        if (total !== opening.minutes * 60 + opening.seconds) onPick(total)
+      }}
+      footer={
+        onUseDefault && shown.seconds !== null ? (
           <Button
             fullWidth
+            variant="neutral"
             onPress={() => {
-              if (total !== opening.minutes * 60 + opening.seconds) onPick(total)
+              onUseDefault()
               onClose()
             }}
           >
-            {t('common:action.done')}
+            {t('workouts:logger.restDefault', {
+              time: shown.defaultS > 0 ? shortClock(shown.defaultS) : t('workouts:logger.restOff'),
+            })}
           </Button>
-          {onUseDefault && shown.seconds !== null ? (
-            <Button
-              fullWidth
-              variant="neutral"
-              onPress={() => {
-                onUseDefault()
-                onClose()
-              }}
-            >
-              {t('workouts:logger.restDefault', {
-                time:
-                  shown.defaultS > 0 ? shortClock(shown.defaultS) : t('workouts:logger.restOff'),
-              })}
-            </Button>
-          ) : null}
-        </View>
+        ) : null
+      }
+    >
+      <Text variant="display" className="text-center">
+        {total > 0 ? shortClock(total) : t('workouts:logger.restOff')}
+      </Text>
+      <View className="flex-row gap-2">
+        <UnitWheel
+          unit={t('workouts:rest.min')}
+          options={minutes}
+          value={String(m)}
+          onChange={(next) => {
+            const value = Number(next)
+            setM(value)
+            if (value === MAX_MINUTES) setS(0)
+          }}
+          accessibilityLabel={t('workouts:rest.minutes')}
+        />
+        <UnitWheel
+          unit={t('workouts:rest.sec')}
+          options={secondsOptions}
+          value={String(s)}
+          onChange={(next) => setS(Number(next))}
+          accessibilityLabel={t('workouts:rest.seconds')}
+        />
       </View>
-    </Sheet>
+    </WheelSheet>
   )
 }
 

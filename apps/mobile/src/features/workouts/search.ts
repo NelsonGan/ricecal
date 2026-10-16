@@ -89,12 +89,6 @@ const normalise = (text: string) =>
     .trim()
 
 /**
- * Filters, then ranks by how the query matches: the start of the name first,
- * then the start of a word in it, then anywhere in the name or an alias. Every
- * word of the query has to match somewhere, so "db row" finds the dumbbell row
- * through its alias and "row cable" finds the seated cable row.
- */
-/**
  * Each exercise's name and searchable text, worked out once: a query ran every
  * name and alias in the library through the normaliser on each keystroke. Keyed
  * by the exercise object, so a renamed custom exercise, which is a new object,
@@ -111,6 +105,12 @@ function textOf(exercise: LibraryExercise) {
   return text
 }
 
+/**
+ * Filters, then ranks by how the query matches: the start of the name first,
+ * then the start of a word in it, then anywhere in the name or an alias. Every
+ * word of the query has to match somewhere, so "db row" finds the dumbbell row
+ * through its alias and "row cable" finds the seated cable row.
+ */
 export function searchExercises(
   list: readonly LibraryExercise[],
   query: string,
@@ -205,8 +205,6 @@ export function planFor(exercise: LibraryExercise): ExercisePlan {
     exerciseId: exercise.id,
     name: exercise.name,
     tracking: exercise.tracking,
-    // No timer between rounds of cardio or holds of a stretch: the default
-    // ninety seconds is for lifting.
     restS: exercise.category === 'cardio' || exercise.category === 'mobility' ? 0 : null,
     sets: timed ? [{}] : [{}, {}, {}],
   }

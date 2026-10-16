@@ -40,7 +40,7 @@ export function useLiveWorkout() {
  * start, never counted, so a phone that slept for an hour wakes up showing the
  * right figure rather than resuming a counter from where it froze.
  */
-export function useNow(ms = 1000, active = true): number {
+export function useNow(ms: number, active = true): number {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (!active) return

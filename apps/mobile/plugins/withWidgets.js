@@ -95,7 +95,7 @@ module.exports = function withWidgets(config) {
 }
 
 /**
- * Intents the APP has to contain as well as the extension.
+ * The intent the APP has to contain as well as the extension.
  *
  * A Live Activity's button runs a `LiveActivityIntent`, and iOS runs that in
  * the app's process, finding it through the App Intents metadata Xcode extracts
@@ -103,7 +103,7 @@ module.exports = function withWidgets(config) {
  * file has to be one of the app target's: copied in beside `AppDelegate`, and
  * added to its Sources phase once.
  */
-const APP_INTENTS = ['WorkoutActionIntent.swift']
+const APP_INTENT = 'WorkoutActionIntent.swift'
 
 function withAppIntents(config) {
   config = withDangerousMod(config, [
@@ -111,18 +111,18 @@ function withAppIntents(config) {
     async (cfg) => {
       const projectRoot = cfg.modRequest.projectRoot
       const appDir = path.join(cfg.modRequest.platformProjectRoot, cfg.modRequest.projectName)
-      for (const name of APP_INTENTS) {
-        fs.copyFileSync(path.join(projectRoot, 'widgets/ios', name), path.join(appDir, name))
-      }
+      fs.copyFileSync(
+        path.join(projectRoot, 'widgets/ios', APP_INTENT),
+        path.join(appDir, APP_INTENT),
+      )
       return cfg
     },
   ])
   return withXcodeProject(config, (cfg) => {
     const project = cfg.modResults
     const app = cfg.modRequest.projectName
-    for (const name of APP_INTENTS) {
-      const filepath = `${app}/${name}`
-      if (project.hasFile(filepath)) continue
+    const filepath = `${app}/${APP_INTENT}`
+    if (!project.hasFile(filepath)) {
       IOSConfig.XcodeUtils.addBuildSourceFileToGroup({
         filepath,
         groupName: app,

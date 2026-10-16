@@ -644,7 +644,9 @@ const DISTANCE = {
   swimming: 'HKQuantityTypeIdentifierDistanceSwimming',
 } as const
 
-const WRITE_TYPES = [WORKOUT_TYPE, QUANTITY.activeEnergy, ...Object.values(DISTANCE)]
+/** What is saved beside a workout, and so what deleting one has to clear. */
+const SAMPLE_TYPES = [QUANTITY.activeEnergy, ...Object.values(DISTANCE)]
+const WRITE_TYPES = [WORKOUT_TYPE, ...SAMPLE_TYPES]
 
 const DISTANCE_FOR: Record<number, string> = {
   37: DISTANCE.onFoot, // running
@@ -680,15 +682,10 @@ export async function requestWorkoutWrite(): Promise<boolean> {
   try {
     if (!(await hk.isHealthDataAvailableAsync())) return false
     await hk.requestAuthorization({ toRead: [] as never, toShare: WRITE_TYPES as never })
-    return canWriteWorkouts()
+    return mayWrite(hk, WORKOUT_TYPE)
   } catch {
     return false
   }
-}
-
-function canWriteWorkouts(): boolean {
-  const hk = load()
-  return hk ? mayWrite(hk, WORKOUT_TYPE) : false
 }
 
 export type WorkoutForHealth = {
@@ -714,39 +711,23 @@ export async function saveWorkoutToHealth(workout: WorkoutForHealth): Promise<st
   const hk = load()
   if (!hk) return null
   const metadata = { [RICECAL_WORKOUT_KEY]: workout.id, HKExternalUUID: workout.id }
-  const quantities: {
-    startDate: Date
-    endDate: Date
-    quantityType: string
-    quantity: number
-    unit: string
-    metadata: Record<string, string>
-  }[] = []
+  const sample = (quantityType: string, quantity: number, unit: string) => ({
+    startDate: workout.start,
+    endDate: workout.end,
+    quantityType,
+    quantity,
+    unit,
+    metadata,
+  })
   const kcal = workout.kcal ?? 0
   const energy = kcal > 0 && mayWrite(hk, QUANTITY.activeEnergy)
-  if (energy) {
-    quantities.push({
-      startDate: workout.start,
-      endDate: workout.end,
-      quantityType: QUANTITY.activeEnergy,
-      quantity: kcal,
-      unit: 'kcal',
-      metadata,
-    })
-  }
   const distanceType = DISTANCE_FOR[workout.activityType]
   const metres = workout.distanceM ?? 0
   const distance = Boolean(distanceType) && metres > 0 && mayWrite(hk, distanceType as string)
-  if (distance) {
-    quantities.push({
-      startDate: workout.start,
-      endDate: workout.end,
-      quantityType: distanceType,
-      quantity: metres,
-      unit: 'm',
-      metadata,
-    })
-  }
+  const quantities = [
+    ...(energy ? [sample(QUANTITY.activeEnergy, kcal, 'kcal')] : []),
+    ...(distance ? [sample(distanceType, metres, 'm')] : []),
+  ]
 
   const saved = await hk.saveWorkoutSample(
     workout.activityType as never,
@@ -783,9 +764,7 @@ export async function deleteWorkoutFromHealth(
   const mine = { withMetadataKey: RICECAL_WORKOUT_KEY, operatorType: 4, value: workoutId }
   // Only the types this app may write: a type switched off on Health's sheet
   // refuses the delete, and holds none of this app's samples to delete.
-  const types = [QUANTITY.activeEnergy, ...Object.values(DISTANCE)].filter((type) =>
-    mayWrite(hk, type),
-  )
+  const types = SAMPLE_TYPES.filter((type) => mayWrite(hk, type))
   const results = await Promise.allSettled([
     healthId ? hk.deleteObjects(WORKOUT_TYPE as never, { uuid: healthId } as never) : null,
     hk.deleteObjects(WORKOUT_TYPE as never, { metadata: mine } as never),

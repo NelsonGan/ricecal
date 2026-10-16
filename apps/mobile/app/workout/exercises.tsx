@@ -83,12 +83,11 @@ export default function ExercisesScreen() {
   )
 
   // Recently done first when nothing is being searched: the exercise somebody
-  // is looking for is usually one they did last week.
+  // is looking for is usually one they did last week. The bests come newest
+  // first (`exercise_bests` orders by when each was last done).
   const recent = useMemo(() => {
     if (debounced || category || Object.values(filters).some(Boolean)) return []
     return (bests ?? [])
-      .filter((entry) => entry.lastAt)
-      .sort((a, b) => (b.lastAt ?? '').localeCompare(a.lastAt ?? ''))
       .slice(0, 6)
       .map((entry) => library.byId(entry.exerciseId))
       .filter((exercise): exercise is LibraryExercise => Boolean(exercise))

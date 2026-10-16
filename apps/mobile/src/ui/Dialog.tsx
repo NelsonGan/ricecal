@@ -3,6 +3,7 @@ import { Modal, Platform, Pressable, View } from 'react-native'
 
 import { Button } from './Button'
 import { Text } from './Text'
+import { useHeld } from './useHeld'
 
 export type DialogAction = {
   key: string
@@ -24,8 +25,8 @@ export type DialogProps = {
   title: string
   description?: string
   actions: readonly DialogAction[]
-  /** The way out without answering. Omit for a question that must be answered. */
-  cancelLabel?: string
+  /** The way out without answering. */
+  cancelLabel: string
 }
 
 /**
@@ -52,9 +53,7 @@ export function Dialog({
   const queued = useRef<DialogAction['onPress'] | null>(null)
   // What it showed while open, kept while it fades. Callers clear the thing a
   // dialog is about as it closes, and the title went blank mid-fade.
-  const held = useRef({ title, description, actions })
-  if (visible) held.current = { title, description, actions }
-  const shown = visible ? { title, description, actions } : held.current
+  const shown = useHeld({ title, description, actions }, visible)
 
   const runQueued = () => {
     const run = queued.current
@@ -87,7 +86,7 @@ export function Dialog({
     }
   }
   const pending = working !== null
-  const dismiss = cancelLabel && !pending ? onClose : () => undefined
+  const dismiss = pending ? () => undefined : onClose
 
   return (
     <Modal
@@ -102,11 +101,9 @@ export function Dialog({
         <Pressable
           className="absolute inset-0 bg-black/45"
           onPress={dismiss}
-          // A way out only when there is one; otherwise not a control at all.
-          accessible={Boolean(cancelLabel)}
           accessibilityRole="button"
           accessibilityLabel={cancelLabel}
-          disabled={!cancelLabel || pending}
+          disabled={pending}
         />
         <View
           className="w-full max-w-[360px] gap-5 rounded-card bg-surface px-5 pb-5 pt-6"
@@ -136,11 +133,9 @@ export function Dialog({
                 {action.label}
               </Button>
             ))}
-            {cancelLabel ? (
-              <Button fullWidth variant="ghost" disabled={pending} onPress={onClose}>
-                {cancelLabel}
-              </Button>
-            ) : null}
+            <Button fullWidth variant="ghost" disabled={pending} onPress={onClose}>
+              {cancelLabel}
+            </Button>
           </View>
         </View>
       </View>

@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { Directory, File, Paths } from 'expo-file-system'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import { useLayoutEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Platform, Share, View } from 'react-native'
 
@@ -14,6 +14,7 @@ import {
   setWorkoutPrefs,
   shortClock,
   useWorkoutPrefs,
+  WheelSheet,
   workoutsCsv,
 } from '@/features/workouts'
 import { handExport, IMPORT_APPS, type ImportSource, pickExport } from '@/features/workouts/import'
@@ -24,7 +25,6 @@ import { useBack } from '@/lib/navigation'
 import { ensureNotificationPermission } from '@/lib/notifications'
 import {
   AppBar,
-  Button,
   Card,
   Chip,
   cn,
@@ -32,7 +32,6 @@ import {
   ListRow,
   Screen,
   SegmentedControl,
-  Sheet,
   Tappable,
   Text,
   useToast,
@@ -249,7 +248,6 @@ export default function WorkoutSettingsScreen() {
         visible={restOpen}
         onClose={() => setRestOpen(false)}
         title={t('workouts:settings.rest')}
-        seconds={rest}
         defaultS={rest}
         onPick={(seconds) => update.mutate({ workout_rest_s: seconds })}
       />
@@ -305,51 +303,33 @@ function TimeSheet({
     [],
   )
 
-  // Set before the panel is drawn, as `RestSheet` does: reset in `onShow`, the
-  // wheels showed the last time picked for a frame before jumping.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only on opening
-  useLayoutEffect(() => {
-    if (!visible) return
-    setH(hour)
-    setM(minute - (minute % 5))
-  }, [visible])
-
   return (
-    <Sheet
-      placement="center"
+    <WheelSheet
       visible={visible}
-      onClose={onClose}
-      closeLabel={t('common:action.close')}
       title={t('workouts:settings.reminderTime')}
-      scrollable={false}
+      onOpen={() => {
+        setH(hour)
+        setM(minute - (minute % 5))
+      }}
+      onClose={onClose}
+      onDone={() => onPick(h, m)}
     >
-      <View className="gap-5">
-        <View className="flex-row gap-2">
-          <Wheel
-            className="flex-[2]"
-            options={hours}
-            value={String(h)}
-            onChange={(next) => setH(Number(next))}
-            accessibilityLabel={t('logging:detail.hour')}
-          />
-          <Wheel
-            className="flex-1"
-            options={minutes}
-            value={String(m)}
-            onChange={(next) => setM(Number(next))}
-            accessibilityLabel={t('logging:detail.minute')}
-          />
-        </View>
-        <Button
-          fullWidth
-          onPress={() => {
-            onPick(h, m)
-            onClose()
-          }}
-        >
-          {t('common:action.done')}
-        </Button>
+      <View className="flex-row gap-2">
+        <Wheel
+          className="flex-[2]"
+          options={hours}
+          value={String(h)}
+          onChange={(next) => setH(Number(next))}
+          accessibilityLabel={t('logging:detail.hour')}
+        />
+        <Wheel
+          className="flex-1"
+          options={minutes}
+          value={String(m)}
+          onChange={(next) => setM(Number(next))}
+          accessibilityLabel={t('logging:detail.minute')}
+        />
       </View>
-    </Sheet>
+    </WheelSheet>
   )
 }

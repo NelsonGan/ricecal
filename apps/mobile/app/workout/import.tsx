@@ -14,7 +14,8 @@ import {
   useSettings,
   useWorkoutImport,
 } from '@/data'
-import { defaultWorkoutName, Stat, StatGrid, whole } from '@/features/workouts'
+import { count } from '@/features/activity'
+import { defaultWorkoutName, Stat, StatGrid } from '@/features/workouts'
 import {
   buildImport,
   clearHandedExport,
@@ -68,9 +69,9 @@ export default function WorkoutImportScreen() {
   const router = useRouter()
   const toast = useToast()
   const goBack = useBack('/workout/settings')
-  // Which app's button was pressed: it names the screen and says where that
-  // app keeps its export. The file itself still decides the format, so the
-  // other app's export picked by mistake imports all the same.
+  // Which app's button was pressed, which names the screen. The file itself
+  // still decides the format, so the other app's export picked by mistake
+  // imports all the same.
   const { app: appId } = useLocalSearchParams<{ app?: string }>()
   const app = IMPORT_APPS.find((entry) => entry.id === appId)
   const { userId } = useSession()
@@ -256,11 +257,11 @@ export default function WorkoutImportScreen() {
               ) : null}
             </View>
             <StatGrid>
-              <Stat label={t('workouts:import.workouts')} value={whole(plan.workouts.length)} />
-              <Stat label={t('workouts:import.sets')} value={whole(plan.sets)} />
+              <Stat label={t('workouts:import.workouts')} value={count(plan.workouts.length)} />
+              <Stat label={t('workouts:import.sets')} value={count(plan.sets)} />
               <Stat
                 label={t('workouts:import.exercises')}
-                value={whole(plan.matched + plan.customs.length)}
+                value={count(plan.matched + plan.customs.length)}
               />
             </StatGrid>
           </Card>
@@ -306,8 +307,8 @@ export default function WorkoutImportScreen() {
         <Card contentClassName="gap-3">
           <Text variant="bodyStrong">
             {t('workouts:import.importing', {
-              done: whole(phase.progress.done),
-              total: whole(phase.progress.total),
+              done: count(phase.progress.done),
+              total: count(phase.progress.total),
             })}
           </Text>
           <ProgressBar

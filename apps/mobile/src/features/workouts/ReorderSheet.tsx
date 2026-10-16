@@ -213,8 +213,8 @@ function SortableRow({
         <Text variant="label" numberOfLines={1} className="min-w-0 flex-1">
           {item.name}
         </Text>
-        {/* The handle is the only thing that drags, so the sheet's own swipe
-            down and a stray touch on a name both stay what they were. */}
+        {/* The handle is the only thing that drags, so the list's scroll and a
+            stray touch on a name both stay what they were. */}
         <GestureDetector gesture={pan}>
           <View
             className="h-full w-[52px] items-center justify-center"
