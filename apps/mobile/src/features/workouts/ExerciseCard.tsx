@@ -33,8 +33,6 @@ type ExerciseCardProps = {
   sameExercise?: readonly LiveExercise[]
   /** On in the live logger only: elsewhere every set with numbers in it counts. */
   checkable: boolean
-  /** Whether weight fields offer the plate calculator: a barbell's do. */
-  plates: boolean
   /**
    * Bumped by the exercise menu's "Add a note", which opens the note field. A
    * count rather than a flag, so asking twice opens it twice.
@@ -60,7 +58,6 @@ export const ExerciseCard = memo(function ExerciseCard({
   bests,
   sameExercise,
   checkable,
-  plates,
   noteRequest,
   handlers,
 }: ExerciseCardProps) {
@@ -175,7 +172,6 @@ export const ExerciseCard = memo(function ExerciseCard({
         distanceUnit={distanceUnit}
         recordIds={recordIds}
         checkable={checkable}
-        plates={plates}
         handlers={handlers}
       />
 

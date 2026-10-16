@@ -34,7 +34,7 @@ import {
 import { recordSets } from '../records'
 import { cleanSplit, groupSplit, planFor, searchExercises } from '../search'
 import { TEMPLATES, templatePlans } from '../templates'
-import { platesFor, warmupSets } from '../warmup'
+import { warmupSets } from '../warmup'
 
 const bench = {
   exerciseId: 'barbell-bench-press',
@@ -706,12 +706,6 @@ describe('numbers', () => {
     const offered = warmupSets(workout.exercises[0], 'kg', { workingKg: 40, barbell: true })
     // 40% of 40 is 15 kg, less than a 20 kg bar.
     expect(offered.map((set) => set.weightKg)).toEqual([22.5, 30])
-  })
-
-  it('loads a bar from the heaviest plate down', () => {
-    expect(platesFor(100, 20, 'kg')).toEqual([25, 15])
-    expect(platesFor(20, 20, 'kg')).toEqual([])
-    expect(platesFor(101, 20, 'kg')).toBeNull()
   })
 })
 

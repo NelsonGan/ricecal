@@ -398,6 +398,7 @@ function FilterSheet({
 
   return (
     <Sheet
+      placement="center"
       visible={visible}
       onClose={onClose}
       closeLabel={t('common:action.close')}

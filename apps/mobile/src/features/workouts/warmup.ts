@@ -42,25 +42,3 @@ export function warmupSets(
   }
   return out
 }
-
-/**
- * The plates for one side of a bar, heaviest first, from a full gym's set.
- * Null when the weight is below the bar or cannot be made with these plates.
- */
-const PLATES = {
-  kg: [25, 20, 15, 10, 5, 2.5, 1.25],
-  lb: [45, 35, 25, 10, 5, 2.5],
-} as const
-
-export function platesFor(total: number, bar: number, unit: WeightUnit): number[] | null {
-  if (total < bar) return null
-  let side = Math.round(((total - bar) / 2) * 1000) / 1000
-  const out: number[] = []
-  for (const plate of PLATES[unit]) {
-    while (side >= plate - 1e-9) {
-      out.push(plate)
-      side = Math.round((side - plate) * 1000) / 1000
-    }
-  }
-  return side > 1e-6 ? null : out
-}

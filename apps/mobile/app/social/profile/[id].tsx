@@ -2,14 +2,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useAvatarUrl, useProfile, useSettings, useUserId } from '@/data'
-import {
-  type SocialPost,
-  type SocialPostKind,
-  useSocialPosts,
-  useSocialProfile,
-  useSocialWorkoutStats,
-} from '@/data/social'
+import { useAvatarUrl, useProfile, useUserId } from '@/data'
+import { useSocialPosts, useSocialProfile, useSocialWorkoutStats } from '@/data/social'
 import {
   ContentSafety,
   FollowButton,
@@ -19,13 +13,8 @@ import {
   SocialBar,
   SocialList,
   SocialPhoto,
-  useWorkoutLabel,
-  WorkoutPostPreview,
 } from '@/features/social/components'
-import { Stat, StatStrip } from '@/features/workouts/cards'
-import { durationText, volumeText } from '@/features/workouts/format'
-import { unitFor } from '@/lib/units'
-import { Badge, Button, Icon, IconButton, Screen, Sheet, Tabs, Tappable, Text } from '@/ui'
+import { Badge, Button, Icon, IconButton, Screen, Sheet, Tappable, Text } from '@/ui'
 
 export default function ProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -38,11 +27,9 @@ function Profile({ id }: { id: string }) {
   const viewer = useUserId()
   const ownProfile = useProfile()
   const profile = useSocialProfile(id)
-  // Meals and workouts are two tabs rather than one stream: a grid of plates
-  // and a list of sessions read differently, and someone visiting for one
-  // should not page through the other.
-  const [tab, setTab] = useState<SocialPostKind>('food')
-  const posts = useSocialPosts(id, tab)
+  // Meals and workouts in one grid, newest first; a workout is a compact tile
+  // there and opens its post for the whole card.
+  const posts = useSocialPosts(id)
   const workoutStats = useSocialWorkoutStats(id).data
   const leaveProfile = useCallback(() => router.dismissTo('/feed'), [router])
   const [options, setOptions] = useState(false)
@@ -145,18 +132,6 @@ function Profile({ id }: { id: string }) {
       ) : (
         <FollowButton id={id} following={person?.is_following ?? false} fullWidth />
       )}
-
-      <Tabs
-        value={tab}
-        align="center"
-        accessibilityLabel={t('profile')}
-        options={[
-          { value: 'food', label: t('foodTab') },
-          { value: 'workout', label: t('workoutsTab') },
-        ]}
-        onChange={setTab}
-      />
-      {tab === 'workout' && workoutStats ? <WorkoutFigures stats={workoutStats} /> : null}
     </View>
   ) : undefined
   const action = visible ? (
@@ -181,28 +156,15 @@ function Profile({ id }: { id: string }) {
         header={<SocialBar title={t(mine ? 'myProfile' : 'profile')} action={action} />}
       >
         {visible ? (
-          tab === 'food' ? (
-            <SocialList
-              key="food"
-              query={posts}
-              rowKey={(post) => post.id}
-              renderRow={(post, visible) => <PostTile post={post} visible={visible} />}
-              header={header}
-              empty={t('emptyMeals')}
-              variant="grid"
-              columns={2}
-            />
-          ) : (
-            <SocialList
-              key="workout"
-              query={posts}
-              rowKey={(post) => post.id}
-              renderRow={(post) => <WorkoutRow post={post} />}
-              header={header}
-              empty={t('emptyWorkouts')}
-              variant="cards"
-            />
-          )
+          <SocialList
+            query={posts}
+            rowKey={(post) => post.id}
+            renderRow={(post, visible) => <PostTile post={post} visible={visible} />}
+            header={header}
+            empty={t('emptyPosts')}
+            variant="grid"
+            columns={2}
+          />
         ) : (
           <View className="p-5">
             <QueryNotice
@@ -242,45 +204,5 @@ function Profile({ id }: { id: string }) {
         </Button>
       </Sheet>
     </>
-  )
-}
-
-/** What the shared workouts add up to, over the ones this viewer can see. */
-function WorkoutFigures({
-  stats,
-}: {
-  stats: { workouts: number; durationS: number; volumeKg: number }
-}) {
-  const { t } = useTranslation(['workouts', 'common'])
-  const { data: settings } = useSettings()
-  if (!stats.workouts) return null
-  return (
-    <StatStrip className="rounded-md bg-track" compact>
-      <Stat label={t('workouts:stats.metric.workouts')} value={String(stats.workouts)} />
-      <Stat label={t('workouts:stats.metric.duration')} value={durationText(t, stats.durationS)} />
-      {stats.volumeKg > 0 ? (
-        <Stat
-          label={t('workouts:stats.metric.volume')}
-          value={volumeText(t, stats.volumeKg, unitFor(settings?.units))}
-        />
-      ) : null}
-    </StatStrip>
-  )
-}
-
-/** One shared workout on a profile, opening its post for likes and comments. */
-function WorkoutRow({ post }: { post: SocialPost }) {
-  const { t } = useTranslation('social')
-  const router = useRouter()
-  const workoutLabel = useWorkoutLabel()
-  return (
-    <Tappable
-      className="overflow-hidden rounded-card border border-line"
-      accessibilityRole="button"
-      accessibilityLabel={[workoutLabel(post), t('likes', { count: post.like_count })].join(', ')}
-      onPress={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
-    >
-      <WorkoutPostPreview post={post} />
-    </Tappable>
   )
 }

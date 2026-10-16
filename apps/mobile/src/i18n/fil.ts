@@ -105,10 +105,6 @@ export const fil = {
     emptyFollowing: 'Sundan ang iba o magbahagi ng pagkain mula sa talaarawan.',
     emptyPeople: 'Walang nahanap',
     emptyPosts: 'Wala pang post',
-    foodTab: 'Pagkain',
-    workoutsTab: 'Workout',
-    emptyMeals: 'Wala pang naibahaging pagkain',
-    emptyWorkouts: 'Wala pang naibahaging workout',
     newWorkoutPost: 'Ibahagi ang workout',
     captionWorkoutPlaceholder: 'Magsabi tungkol sa workout mo',
     shareWorkoutHint:
@@ -1895,7 +1891,6 @@ export const fil = {
       rest: 'Pahinga {{time}}',
       next: 'Susunod',
       completeSet: 'Tapusin ang set',
-      plates: 'Plates',
       exerciseNotes: 'Magdagdag ng tala',
       kind: {
         normal: 'Working set',
@@ -1914,7 +1909,6 @@ export const fil = {
         reorder: 'Ayusin ang pagkakasunod',
         unsuperset: 'Alisin sa superset',
         rest: 'Timer ng pahinga',
-        plates: 'Calculator ng plate',
         remove: 'Alisin ang ehersisyo',
         details: 'Kasaysayan at record',
       },
@@ -2122,10 +2116,6 @@ export const fil = {
       title: 'I-import ang mga workout',
       fromStrong: 'I-import mula sa Strong',
       fromHevy: 'I-import mula sa Hevy',
-      intro: 'I-export ang mga workout mo bilang CSV sa Strong o Hevy, saka piliin dito ang file.',
-      introStrong: 'I-export ang mga workout mo sa Strong bilang CSV, saka piliin dito ang file.',
-      introHevy: 'I-export ang mga workout mo sa Hevy bilang CSV, saka piliin dito ang file.',
-      choose: 'Pumili ng CSV file',
       another: 'Pumili ng ibang file',
       unknown: 'Hindi ito export mula sa Strong o Hevy.',
       empty: 'Walang workout sa file na ito.',
@@ -2150,17 +2140,6 @@ export const fil = {
       notSaved_other: '{{count}} ang hindi na-save',
       stopped: 'Huminto ang pag-import. Tingnan ang koneksyon mo at subukan ulit.',
       nothingNew: 'Walang bago sa file na ito',
-    },
-
-    plates: {
-      title: 'Calculator ng plate',
-      target: 'Target na bigat',
-      bar: 'Bar',
-      perSide: 'Bawat gilid',
-      none: 'Bar lang',
-      unreachable: 'Hindi kaya sa karaniwang mga plate.',
-      closest: 'Pinakamalapit: {{weight}}',
-      closestOr: 'Pinakamalapit: {{weight}} o {{other}}',
     },
 
     warmup: {

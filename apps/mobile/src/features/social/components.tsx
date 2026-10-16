@@ -38,6 +38,7 @@ import {
 } from '@/data/social'
 import type { IconRef, ReportReason } from '@/data/types'
 import { WorkoutPreview } from '@/features/workouts/cards'
+import { ExerciseArt } from '@/features/workouts/ExerciseArt'
 import { durationText, volumeText } from '@/features/workouts/format'
 import { useBack } from '@/lib/navigation'
 import { energyShare } from '@/lib/nutrition'
@@ -309,7 +310,7 @@ function totalsOf(facts?: Partial<FoodFacts> | null): Totals | null {
  * element to VoiceOver, so without this it read as the name alone while a
  * meal read its calories and macros.
  */
-export function useWorkoutLabel() {
+function useWorkoutLabel() {
   const { t } = useTranslation(['workouts', 'common'])
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
@@ -1317,32 +1318,36 @@ export const PostTile = memo(function PostTile({
   const privatePhoto = mine && status !== 'approved' ? (post.photo_path ?? undefined) : undefined
   const ownPhoto = useMealPhotoUrl(privatePhoto)
   const foodLabel = useFoodLabel()
+  const workoutLabel = useWorkoutLabel()
   return (
     <Tappable
       className="overflow-hidden rounded-md bg-surface p-1"
       accessibilityRole="button"
       accessibilityLabel={[
-        // Meals only: the profile's grid is its Food tab.
-        foodLabel(post.food_name ?? '', post),
+        post.kind === 'workout' ? workoutLabel(post) : foodLabel(post.food_name ?? '', post),
         mine && status !== 'approved' ? t(status) : '',
       ]
         .filter(Boolean)
         .join(', ')}
       onPress={() => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })}
     >
-      <FoodPreview
-        name={post.food_name ?? ''}
-        photo={privatePhoto ? null : post.photo_path}
-        icon={toIcon(post.icon_set, post.icon_name)}
-        visible={visible}
-        privateUri={ownPhoto.data}
-        hasPhoto={Boolean(post.photo_path)}
-        photoUnavailable={Boolean(
-          privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
-        )}
-        facts={post}
-        variant="tile"
-      />
+      {post.kind === 'workout' ? (
+        <WorkoutTile post={post} />
+      ) : (
+        <FoodPreview
+          name={post.food_name ?? ''}
+          photo={privatePhoto ? null : post.photo_path}
+          icon={toIcon(post.icon_set, post.icon_name)}
+          visible={visible}
+          privateUri={ownPhoto.data}
+          hasPhoto={Boolean(post.photo_path)}
+          photoUnavailable={Boolean(
+            privatePhoto && (ownPhoto.isError || (ownPhoto.isSuccess && !ownPhoto.data)),
+          )}
+          facts={post}
+          variant="tile"
+        />
+      )}
       {mine && status !== 'approved' ? (
         <Badge className="absolute left-3 top-3" tone="kaya" size="sm">
           {t(status)}
@@ -1351,6 +1356,35 @@ export const PostTile = memo(function PostTile({
     </Tappable>
   )
 })
+
+/**
+ * A shared workout in a profile's grid, cut down to what a half-width square
+ * holds: the first exercise's drawing, the name and how long it took. The post
+ * it opens has the rest.
+ */
+function WorkoutTile({ post }: { post: SocialPost }) {
+  const { t } = useTranslation(['workouts', 'common'])
+  const first = post.workout_exercises?.[0]
+  return (
+    <View className="aspect-square overflow-hidden rounded-tile bg-exercise-tile">
+      <View className="absolute inset-0 items-center justify-center pb-10">
+        {first ? (
+          <ExerciseArt exerciseId={first.exercise_id} size={112} />
+        ) : (
+          <Icon set="body" name="dumbbell" size={72} />
+        )}
+      </View>
+      <View className="absolute inset-x-1.5 bottom-1.5 gap-0.5 rounded-[14px] bg-surface/90 px-2.5 py-1.5">
+        <Text numberOfLines={1} className="font-body-black text-[13px] leading-[18px] text-ink">
+          {post.workout_name ?? ''}
+        </Text>
+        <Text className="font-body-bold text-[12px] leading-[16px] text-muted">
+          {durationText(t, post.workout_duration_s ?? 0)}
+        </Text>
+      </View>
+    </View>
+  )
+}
 
 type PageQuery<T> = {
   data?: { pages: SocialPage<T>[] }

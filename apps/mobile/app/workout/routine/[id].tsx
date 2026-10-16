@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMemo, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TextInput } from 'react-native'
 
 import { type Routine, useDeleteRoutine, useRoutines, useSaveRoutine } from '@/data'
 import {
@@ -16,14 +17,15 @@ import {
 } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
 import { useOnline } from '@/lib/online'
-import { AppBar, Button, Card, Dialog, Icon, IconButton, Screen, TextField, useToast } from '@/ui'
+import { AppBar, Button, Dialog, Icon, IconButton, Screen, Sheet, TextField, useToast } from '@/ui'
 
 /**
  * A routine: a named plan of exercises and target sets that a workout starts
  * from. `id` = `new` for one being written.
  *
  * The same exercise editor the logger uses, without the ticks: a routine says
- * what to do, and the PREVIOUS column shows what was done last time.
+ * what to do, and the PREVIOUS column shows what was done last time. The page
+ * is only the plan; its name and note are asked for when it is saved.
  */
 export default function RoutineScreen() {
   const { t } = useTranslation(['workouts'])
@@ -93,6 +95,10 @@ function RoutineEditor({
   })
   // A second tap before `isPending` had rendered saved a new routine twice.
   const saving = useRef(false)
+  // The name and note are asked for on Save, in a card over the exercises,
+  // so the page itself is only the plan.
+  const [naming, setNaming] = useState(false)
+  const nameField = useRef<TextInput>(null)
 
   const onSave = async () => {
     if (nameError || saving.current) return
@@ -111,6 +117,7 @@ function RoutineEditor({
         templateId: routine?.templateId ?? null,
       })
       toast.show({ title: t('workouts:routines.saved'), tone: 'success' })
+      setNaming(false)
       guard.leave(() => {
         if (!routine) {
           router.replace({ pathname: '/workout/routine/[id]', params: { id: saved.id } })
@@ -129,7 +136,7 @@ function RoutineEditor({
       gestureScroll
       header={
         <AppBar
-          title={routine ? t('workouts:routines.edit') : t('workouts:routines.newTitle')}
+          title={draft.name.trim() || t('workouts:routines.newTitle')}
           onBack={goBack}
           backDisabled={busy}
           backLabel={t('common:action.back')}
@@ -148,33 +155,11 @@ function RoutineEditor({
         />
       }
       footer={
-        <Button
-          fullWidth
-          onPress={onSave}
-          loading={save.isPending}
-          disabled={nameError || !plans.length}
-        >
+        <Button fullWidth onPress={() => setNaming(true)} disabled={!plans.length}>
           {routine ? t('common:action.save') : t('workouts:routines.save')}
         </Button>
       }
     >
-      <Card contentClassName="gap-4">
-        <TextField
-          label={t('workouts:finish.name')}
-          value={draft.name}
-          onChangeText={(name) => dispatch({ type: 'rename', name })}
-          placeholder={t('workouts:routines.namePlaceholder')}
-          maxLength={80}
-        />
-        <TextField
-          label={t('workouts:finish.notes')}
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-          maxLength={1000}
-        />
-      </Card>
-
       {routine ? (
         <Button
           variant="secondary"
@@ -228,6 +213,40 @@ function RoutineEditor({
           },
         ]}
       />
+      <Sheet
+        placement="center"
+        visible={naming}
+        onClose={() => setNaming(false)}
+        dismissible={!save.isPending}
+        onShow={() => nameField.current?.focus()}
+        closeLabel={t('common:action.cancel')}
+        title={routine ? t('workouts:routines.edit') : t('workouts:routines.newTitle')}
+        // Two fields and a button: a scroll view here jumped the field off the
+        // top on the keyboard's first open (see the README's sheet traps).
+        scrollable={false}
+        footer={
+          <Button fullWidth onPress={onSave} loading={save.isPending} disabled={nameError}>
+            {routine ? t('common:action.save') : t('workouts:routines.save')}
+          </Button>
+        }
+      >
+        <TextField
+          ref={nameField}
+          label={t('workouts:finish.name')}
+          value={draft.name}
+          onChangeText={(name) => dispatch({ type: 'rename', name })}
+          placeholder={t('workouts:routines.namePlaceholder')}
+          maxLength={80}
+          returnKeyType="done"
+        />
+        <TextField
+          label={t('workouts:finish.notes')}
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+          maxLength={1000}
+        />
+      </Sheet>
       {starter.dialog}
       {guard.dialog}
     </Screen>

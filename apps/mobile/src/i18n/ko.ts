@@ -97,10 +97,6 @@ export const ko = {
     emptyFollowing: '사람들을 팔로우하거나 일기에서 식사를 공유해 보세요.',
     emptyPeople: '사용자를 찾을 수 없습니다',
     emptyPosts: '게시물이 없습니다',
-    foodTab: '음식',
-    workoutsTab: '운동',
-    emptyMeals: '아직 공유한 음식이 없습니다',
-    emptyWorkouts: '아직 공유한 운동이 없습니다',
     newWorkoutPost: '운동 공유',
     captionWorkoutPlaceholder: '운동에 대해 한마디',
     shareWorkoutHint:
@@ -1849,7 +1845,6 @@ export const ko = {
       rest: '휴식 {{time}}',
       next: '다음',
       completeSet: '세트 완료',
-      plates: '원판',
       exerciseNotes: '메모 추가',
       kind: {
         normal: '본 세트',
@@ -1868,7 +1863,6 @@ export const ko = {
         reorder: '운동 순서 변경',
         unsuperset: '슈퍼세트에서 빼기',
         rest: '휴식 타이머',
-        plates: '원판 계산기',
         remove: '종목 삭제',
         details: '기록과 PR',
       },
@@ -2077,10 +2071,6 @@ export const ko = {
       title: '운동 가져오기',
       fromStrong: 'Strong에서 가져오기',
       fromHevy: 'Hevy에서 가져오기',
-      intro: 'Strong이나 Hevy에서 운동 기록을 CSV로 내보낸 뒤 여기서 파일을 선택하세요.',
-      introStrong: 'Strong에서 운동 기록을 CSV로 내보낸 뒤 여기서 파일을 선택하세요.',
-      introHevy: 'Hevy에서 운동 기록을 CSV로 내보낸 뒤 여기서 파일을 선택하세요.',
-      choose: 'CSV 파일 선택',
       another: '다른 파일 선택',
       unknown: 'Strong 또는 Hevy에서 내보낸 파일이 아니에요.',
       empty: '이 파일에 운동이 없어요.',
@@ -2105,17 +2095,6 @@ export const ko = {
       notSaved_other: '{{count}}개는 저장하지 못했어요',
       stopped: '가져오기가 멈췄어요. 연결을 확인하고 다시 시도하세요.',
       nothingNew: '이 파일에 새 운동이 없어요',
-    },
-
-    plates: {
-      title: '원판 계산기',
-      target: '목표 무게',
-      bar: '바',
-      perSide: '한쪽',
-      none: '바만',
-      unreachable: '일반 원판으로는 맞출 수 없습니다.',
-      closest: '가장 가까운 무게: {{weight}}',
-      closestOr: '가장 가까운 무게: {{weight}} 또는 {{other}}',
     },
 
     warmup: {

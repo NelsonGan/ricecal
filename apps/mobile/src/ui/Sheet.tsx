@@ -160,6 +160,14 @@ export type SheetProps = {
    * The cameras ask for it; nothing else should.
    */
   fillBody?: boolean
+  /**
+   * `center` floats the panel in the middle of the screen as a card that fades
+   * in, rather than rising from the bottom edge: within reach of either thumb,
+   * and how the workout screens present everything they open. It has no drag
+   * handle, so the scrim and Android's back close it. `fullHeight` there is
+   * most of the screen rather than all of it.
+   */
+  placement?: 'bottom' | 'center'
   // No `bodyClassName`. It capped the body of a sheet whose own field raises the
   // keyboard, and the cap was the wrong answer: a capped sheet is padded up off
   // the bottom edge, and the strip it leaves shows the scrim through the
@@ -280,11 +288,13 @@ export function SheetSurface({
   scrollResetKey,
   fullHeight = false,
   fillBody = false,
+  placement = 'bottom',
   children,
   className,
 }: SheetSurfaceProps) {
   const insets = useSafeAreaInsets()
   const { height } = useWindowDimensions()
+  const center = placement === 'center'
 
   /**
    * The panel rises; the scrim does not.
@@ -382,7 +392,13 @@ export function SheetSurface({
     )
   }, [dragAccepted, deliverExit, entered, fall, falling, finishRise, presented, rise])
 
-  const panel = useAnimatedStyle(() => ({ transform: [{ translateY: rise.value }] }))
+  // The same travel, read as a fade and a slight grow for a centred panel: a
+  // card that slid up from the bottom to the middle read as a sheet that stopped.
+  const panel = useAnimatedStyle(() => {
+    if (!center) return { transform: [{ translateY: rise.value }] }
+    const shown = 1 - rise.value / height
+    return { opacity: shown, transform: [{ scale: 0.94 + 0.06 * shown }] }
+  })
 
   /**
    * Drag the handle down to dismiss.
@@ -496,15 +512,18 @@ export function SheetSurface({
   )
 
   return (
-    <View className="flex-1 justify-end">
+    <View className={cn('flex-1', center ? 'justify-center px-6' : 'justify-end')}>
       {/* Keep the scrim behind the panel so its press handler cannot claim the
-          wheels' drags. It is not an accessibility element: a labelled scrim
-          would hide the sheet's own controls. */}
+          wheels' drags. Not an accessibility element under a bottom sheet,
+          whose handle is the way out: a labelled scrim would hide the sheet's
+          own controls. A centred panel has no handle, so there it is the way. */}
       <Pressable
         className="absolute inset-0 bg-black/40"
         onPress={dismiss}
-        accessible={false}
-        importantForAccessibility="no"
+        accessible={center && dismissible}
+        accessibilityRole={center ? 'button' : undefined}
+        accessibilityLabel={center ? closeLabel : undefined}
+        importantForAccessibility={center && dismissible ? 'yes' : 'no'}
       />
       {/* A host of its own, and this is why there is more than one. A sheet is a
           native modal WINDOW: nothing rendered in the app's tree below it can
@@ -524,19 +543,20 @@ export function SheetSurface({
           own content instead, so the field stays above the keys and the surface
           runs the whole way down. */}
         <KeyboardAvoidingView
-          behavior={fullHeight ? undefined : 'padding'}
+          behavior={fullHeight && !center ? undefined : 'padding'}
           // Styled rather than classed: this is the one element here that is not
           // a plain RN view, and whether NativeWind reaches it is not worth
           // depending on for the layout that decides the panel's height.
           //
           // The margin keeps the scrim visible above a full-height panel, which
           // flush to the top edge reads as a screen from the wrong direction.
-          style={fullHeight ? { flex: 1, marginTop: insets.top } : undefined}
+          style={fullHeight && !center ? { flex: 1, marginTop: insets.top } : undefined}
         >
           <Animated.View
             className={cn(
-              'gap-md rounded-t-card bg-surface px-gutter pt-md',
-              fullHeight && 'flex-1',
+              'gap-md bg-surface px-gutter pt-md',
+              center ? 'w-full max-w-[420px] self-center rounded-card' : 'rounded-t-card',
+              fullHeight && !center && 'flex-1',
               className,
             )}
             /* The home indicator's inset OR the gutter, not both added together.
@@ -552,9 +572,19 @@ export function SheetSurface({
              adding it here as well would count the pad twice. */
             style={[
               panel,
-              {
-                paddingBottom: sheetBottomPadding(insets.bottom) + (fullHeight ? 0 : numpad.height),
-              },
+              center
+                ? {
+                    paddingBottom: spacing.gutter,
+                    // Most of the screen, never all of it: the scrim around a
+                    // centred card is what says it floats.
+                    height: fullHeight
+                      ? Math.min(height - insets.top - insets.bottom - 96, 640)
+                      : undefined,
+                  }
+                : {
+                    paddingBottom:
+                      sheetBottomPadding(insets.bottom) + (fullHeight ? 0 : numpad.height),
+                  },
             ]}
             accessibilityViewIsModal
             accessible={false}
@@ -567,18 +597,23 @@ export function SheetSurface({
               Announced as a button too, so the handle is not a gesture with no
               keyboard or screen-reader equivalent. Tapping it closes, which is
               what dragging it does. */}
-            <GestureDetector gesture={dragHandle}>
-              <Pressable
-                className="-mt-md items-center py-md"
-                onPress={dismiss}
-                accessibilityRole="button"
-                accessibilityLabel={closeLabel}
-                accessibilityState={{ disabled: !dismissible }}
-                disabled={!dismissible}
-              >
-                <View className="h-1.5 w-[54px] rounded-full bg-line" />
-              </Pressable>
-            </GestureDetector>
+            {center ? (
+              // The handle's place, so the title does not sit hard on the edge.
+              <View className="h-1" />
+            ) : (
+              <GestureDetector gesture={dragHandle}>
+                <Pressable
+                  className="-mt-md items-center py-md"
+                  onPress={dismiss}
+                  accessibilityRole="button"
+                  accessibilityLabel={closeLabel}
+                  accessibilityState={{ disabled: !dismissible }}
+                  disabled={!dismissible}
+                >
+                  <View className="h-1.5 w-[54px] rounded-full bg-line" />
+                </Pressable>
+              </GestureDetector>
+            )}
 
             {title ? (
               <View className="flex-row items-center justify-between gap-md">

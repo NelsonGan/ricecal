@@ -250,10 +250,10 @@ export const socialFeedParams = (mode: 'following' | 'discover') => ({
 })
 export const useSocialFeed = (mode: 'following' | 'discover') =>
   useSocialPages<SocialPost>({ name: 'social_feed', params: socialFeedParams(mode) }, timeCursor)
-/** One profile's posts of one kind: its Food and Workouts tabs. */
-export const useSocialPosts = (userId: string, kind: SocialPostKind) =>
+/** One profile's posts, meals and workouts together, newest first. */
+export const useSocialPosts = (userId: string) =>
   useSocialPages<SocialPost>(
-    { name: 'social_profile_posts', params: { p_user_id: userId, p_kinds: [kind] } },
+    { name: 'social_profile_posts', params: { p_user_id: userId, p_kinds: ALL_KINDS } },
     timeCursor,
   )
 export const useSocialComments = (postId: string) =>

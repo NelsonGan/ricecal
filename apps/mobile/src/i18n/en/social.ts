@@ -90,10 +90,6 @@ export const social = {
   emptyFollowing: 'Follow people or share a meal from your diary.',
   emptyPeople: 'No people found',
   emptyPosts: 'No posts yet',
-  foodTab: 'Food',
-  workoutsTab: 'Workouts',
-  emptyMeals: 'No meals shared yet',
-  emptyWorkouts: 'No workouts shared yet',
   newWorkoutPost: 'Share workout',
   captionWorkoutPlaceholder: 'Say something about your workout',
   shareWorkoutHint:

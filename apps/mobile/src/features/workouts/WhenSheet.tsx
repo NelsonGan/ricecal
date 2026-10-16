@@ -40,6 +40,7 @@ export function WhenSheet({
   return (
     // Not scrollable: wheels inside a scroller lose every drag.
     <Sheet
+      placement="center"
       visible={visible}
       onClose={onClose}
       closeLabel={t('action.close')}

@@ -101,10 +101,6 @@ export const th = {
     emptyFollowing: 'ติดตามผู้คนหรือแชร์มื้ออาหารจากบันทึกของคุณ',
     emptyPeople: 'ไม่พบผู้คน',
     emptyPosts: 'ยังไม่มีโพสต์',
-    foodTab: 'อาหาร',
-    workoutsTab: 'การออกกำลังกาย',
-    emptyMeals: 'ยังไม่ได้แชร์อาหาร',
-    emptyWorkouts: 'ยังไม่ได้แชร์การออกกำลังกาย',
     newWorkoutPost: 'แชร์การออกกำลังกาย',
     captionWorkoutPlaceholder: 'เล่าอะไรสักหน่อยเกี่ยวกับการออกกำลังกาย',
     shareWorkoutHint:
@@ -1842,7 +1838,6 @@ export const th = {
       rest: 'พัก {{time}}',
       next: 'ถัดไป',
       completeSet: 'ทำเซ็ตเสร็จ',
-      plates: 'แผ่น',
       exerciseNotes: 'เพิ่มโน้ต',
       kind: {
         normal: 'เซ็ตหลัก',
@@ -1861,7 +1856,6 @@ export const th = {
         reorder: 'จัดลำดับท่าใหม่',
         unsuperset: 'เอาออกจากซูเปอร์เซ็ต',
         rest: 'ตัวจับเวลาพัก',
-        plates: 'คำนวณแผ่นน้ำหนัก',
         remove: 'ลบท่า',
         details: 'ประวัติและสถิติ',
       },
@@ -2069,10 +2063,6 @@ export const th = {
       title: 'นำเข้าการออกกำลังกาย',
       fromStrong: 'นำเข้าจาก Strong',
       fromHevy: 'นำเข้าจาก Hevy',
-      intro: 'ส่งออกการออกกำลังกายเป็น CSV ใน Strong หรือ Hevy แล้วเลือกไฟล์นั้นที่นี่',
-      introStrong: 'ส่งออกการออกกำลังกายเป็น CSV ใน Strong แล้วเลือกไฟล์นั้นที่นี่',
-      introHevy: 'ส่งออกการออกกำลังกายเป็น CSV ใน Hevy แล้วเลือกไฟล์นั้นที่นี่',
-      choose: 'เลือกไฟล์ CSV',
       another: 'เลือกไฟล์อื่น',
       unknown: 'ไฟล์นี้ไม่ได้ส่งออกจาก Strong หรือ Hevy',
       empty: 'ไม่มีการออกกำลังกายในไฟล์นี้',
@@ -2097,17 +2087,6 @@ export const th = {
       notSaved_other: 'บันทึกการออกกำลังกายไม่ได้ {{count}} ครั้ง',
       stopped: 'การนำเข้าหยุดลง ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง',
       nothingNew: 'ไม่มีอะไรใหม่ในไฟล์นี้',
-    },
-
-    plates: {
-      title: 'คำนวณแผ่นน้ำหนัก',
-      target: 'น้ำหนักเป้าหมาย',
-      bar: 'บาร์',
-      perSide: 'ข้างละ',
-      none: 'บาร์เปล่า',
-      unreachable: 'แผ่นมาตรฐานจัดน้ำหนักนี้ไม่ได้',
-      closest: 'ใกล้ที่สุด: {{weight}}',
-      closestOr: 'ใกล้ที่สุด: {{weight}} หรือ {{other}}',
     },
 
     warmup: {

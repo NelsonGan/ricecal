@@ -119,8 +119,6 @@ export type NumpadTools = {
   next?: NumpadKey
   /** Ticks the set the field belongs to: "✓ Set". */
   complete?: NumpadKey
-  /** A shortcut in the header, beside the label: the plate calculator for a barbell. */
-  accessory?: NumpadKey
 }
 
 export type NumpadKey = {
@@ -671,19 +669,6 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
             {heading.detail ?? heading.title}
           </Text>
         </View>
-        {tools?.accessory ? (
-          <Tappable
-            className="h-[34px] justify-center rounded-full bg-surface px-3"
-            hitSlop={5}
-            onPress={() => session.field.current.tools?.accessory?.onPress()}
-            accessibilityRole="button"
-            accessibilityLabel={tools.accessory.label}
-          >
-            <Text variant="label" className="text-pandan-ink">
-              {tools.accessory.label}
-            </Text>
-          </Tappable>
-        ) : null}
         {tools ? (
           // An icon rather than "Done": on the last field Next already says it.
           <Tappable

@@ -104,10 +104,6 @@ export const ms = {
     emptyFollowing: 'Ikuti orang atau kongsi makanan dari diari anda.',
     emptyPeople: 'Tiada orang ditemui',
     emptyPosts: 'Belum ada siaran',
-    foodTab: 'Makanan',
-    workoutsTab: 'Senaman',
-    emptyMeals: 'Belum ada makanan dikongsi',
-    emptyWorkouts: 'Belum ada senaman dikongsi',
     newWorkoutPost: 'Kongsi senaman',
     captionWorkoutPlaceholder: 'Katakan sesuatu tentang senaman anda',
     shareWorkoutHint:
@@ -1892,7 +1888,6 @@ export const ms = {
       rest: 'Rehat {{time}}',
       next: 'Seterusnya',
       completeSet: 'Selesaikan set',
-      plates: 'Plat',
       exerciseNotes: 'Tambah nota',
       kind: {
         normal: 'Set utama',
@@ -1911,7 +1906,6 @@ export const ms = {
         reorder: 'Susun semula senaman',
         unsuperset: 'Keluarkan daripada superset',
         rest: 'Pemasa rehat',
-        plates: 'Kalkulator plat',
         remove: 'Buang latihan',
         details: 'Sejarah dan rekod',
       },
@@ -2120,11 +2114,6 @@ export const ms = {
       title: 'Import senaman',
       fromStrong: 'Import dari Strong',
       fromHevy: 'Import dari Hevy',
-      intro:
-        'Eksport senaman anda sebagai CSV dalam Strong atau Hevy, kemudian pilih fail itu di sini.',
-      introStrong: 'Eksport senaman anda dari Strong sebagai CSV, kemudian pilih fail itu di sini.',
-      introHevy: 'Eksport senaman anda dari Hevy sebagai CSV, kemudian pilih fail itu di sini.',
-      choose: 'Pilih fail CSV',
       another: 'Pilih fail lain',
       unknown: 'Ini bukan eksport Strong atau Hevy.',
       empty: 'Tiada senaman dalam fail ini.',
@@ -2149,17 +2138,6 @@ export const ms = {
       notSaved_other: '{{count}} tidak dapat disimpan',
       stopped: 'Import terhenti. Semak sambungan anda dan cuba lagi.',
       nothingNew: 'Tiada yang baharu dalam fail ini',
-    },
-
-    plates: {
-      title: 'Kalkulator plat',
-      target: 'Beban sasaran',
-      bar: 'Bar',
-      perSide: 'Setiap sisi',
-      none: 'Bar sahaja',
-      unreachable: 'Tidak boleh dicapai dengan plat standard.',
-      closest: 'Paling hampir: {{weight}}',
-      closestOr: 'Paling hampir: {{weight}} atau {{other}}',
     },
 
     warmup: {

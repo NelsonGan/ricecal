@@ -1,6 +1,4 @@
 import { format } from 'date-fns'
-import { File } from 'expo-file-system'
-import { Image } from 'expo-image'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { usePreventRemove } from 'expo-router/react-navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -18,12 +16,14 @@ import {
 } from '@/data'
 import {
   buildImport,
+  clearHandedExport,
   defaultWorkoutName,
+  handedExport,
   IMPORT_APPS,
   type ImportPlan,
   type ImportUnits,
   type ParsedExport,
-  parseExport,
+  pickExport,
   Stat,
   StatGrid,
   whole,
@@ -45,10 +45,10 @@ import {
   useToast,
 } from '@/ui'
 
-type ReadError = 'unknown' | 'empty' | 'failed' | 'dates'
-
 type Phase =
-  | { step: 'pick'; error?: ReadError }
+  // The picker is up: only when the screen was opened without a file, by a
+  // link rather than from settings.
+  | { step: 'opening' }
   | { step: 'preview'; parsed: ParsedExport }
   | { step: 'importing'; progress: ImportProgress }
   | { step: 'done'; result: ImportResult }
@@ -59,7 +59,8 @@ const APP_NAME = { strong: 'Strong', hevy: 'Hevy' } as const
 /**
  * Bring a training history over from Strong or Hevy.
  *
- * Pick the CSV either app exports, see what is in it, import. The preview is
+ * The settings row picks the CSV either app exports (`pickExport`) and opens
+ * this on it: see what is in it, import. The preview is
  * there because the file decides more than it looks: Strong does not say
  * whether it wrote kilograms or pounds, and a name the catalogue does not
  * know becomes one of the person's own exercises, so both are shown before
@@ -78,7 +79,10 @@ export default function WorkoutImportScreen() {
   const { userId } = useSession()
   const { data: settings } = useSettings()
   const runImport = useWorkoutImport()
-  const [phase, setPhase] = useState<Phase>({ step: 'pick' })
+  const [phase, setPhase] = useState<Phase>(() => {
+    const parsed = handedExport()
+    return parsed ? { step: 'preview', parsed } : { step: 'opening' }
+  })
   const [picking, setPicking] = useState(false)
   // A second tap in the same frame, before the phase has changed, started a
   // second run beside the first.
@@ -128,42 +132,32 @@ export default function WorkoutImportScreen() {
   const pick = async () => {
     if (picking) return
     setPicking(true)
-    // A file that fails while a good one is previewed says so and keeps the
-    // preview, rather than throwing away the file that worked.
-    const fail = (error: ReadError) => {
-      if (phase.step === 'preview')
-        toast.show({ title: t(`workouts:import.${error}`), tone: 'error' })
-      else setPhase({ step: 'pick', error })
-    }
+    const opening = phase.step === 'opening'
     try {
-      // Every type a CSV turns up as: Android's file providers and anything
-      // that passed through Windows label one as Excel's, and a picker
-      // filtered to text/csv alone greys the file out.
-      const picked = await File.pickFileAsync({
-        mimeTypes: [
-          'text/csv',
-          'text/comma-separated-values',
-          'application/csv',
-          'application/vnd.ms-excel',
-          'text/plain',
-        ],
-      })
-      if (picked.canceled) return
-      const result = parseExport(await picked.result.text())
-      if ('error' in result) fail(result.error)
-      else if (!result.workouts.length) fail(result.skippedRows ? 'dates' : 'empty')
-      else {
+      const picked = await pickExport()
+      // A file that fails while a good one is previewed says so and keeps the
+      // preview, rather than throwing away the file that worked. With nothing
+      // to keep, it says so on the way back.
+      if (picked && 'error' in picked) {
+        toast.show({ title: t(`workouts:import.${picked.error}`), tone: 'error' })
+      } else if (picked) {
         setUnits(null)
-        setPhase({ step: 'preview', parsed: result })
+        setPhase({ step: 'preview', parsed: picked.parsed })
+        return
       }
-    } catch (failure) {
-      if ((failure as { code?: string }).code === 'ERR_PICKER_CANCELLED') return
-      console.warn('[workouts] import read failed', failure)
-      fail('failed')
+      if (opening) goBack()
     } finally {
       setPicking(false)
     }
   }
+
+  // Taken once it is on screen, so a later visit by a link does not open on
+  // an old file.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once, on opening
+  useEffect(() => {
+    clearHandedExport()
+    if (phase.step === 'opening') void pick()
+  }, [])
 
   const start = async (toImport: ImportPlan | null) => {
     if (!toImport?.workouts.length || running.current) return
@@ -245,35 +239,10 @@ export default function WorkoutImportScreen() {
               {t('workouts:import.another')}
             </Button>
           </View>
-        ) : phase.step === 'pick' ? (
-          <Button fullWidth onPress={pick} loading={picking}>
-            {t('workouts:import.choose')}
-          </Button>
         ) : null
       }
     >
       <Stack.Screen options={{ gestureEnabled: !importing }} />
-
-      {phase.step === 'pick' ? (
-        <>
-          <Card contentClassName="flex-row items-center gap-4">
-            {app ? (
-              <Image
-                source={app.logo}
-                style={{ width: 56, height: 56, borderRadius: 14 }}
-                contentFit="cover"
-                accessible={false}
-              />
-            ) : (
-              <Icon set="system" name="sync" size={56} />
-            )}
-            <Text variant="body" className="flex-1">
-              {t(app?.intro ?? 'workouts:import.intro')}
-            </Text>
-          </Card>
-          {phase.error ? <Alert tone="error" title={t(`workouts:import.${phase.error}`)} /> : null}
-        </>
-      ) : null}
 
       {phase.step === 'preview' && plan ? (
         <>

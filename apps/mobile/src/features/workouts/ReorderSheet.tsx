@@ -74,6 +74,7 @@ export function ReorderSheet({
   return (
     // Not scrollable itself: the list inside is, under its own gesture.
     <Sheet
+      placement="center"
       visible={visible}
       onClose={onClose}
       closeLabel={t('common:action.close')}

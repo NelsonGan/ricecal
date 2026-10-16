@@ -165,8 +165,6 @@ export const workouts = {
     /** The pad's key that moves to the next field: weight, reps, then the next set. */
     next: 'Next',
     completeSet: 'Complete set',
-    /** The plate calculator, from the pad on a barbell's weight. Short: it is a chip. */
-    plates: 'Plates',
     exerciseNotes: 'Add a note',
     /** A set's type, as the menu offers it. */
     kind: {
@@ -187,7 +185,6 @@ export const workouts = {
       reorder: 'Reorder exercises',
       unsuperset: 'Remove from superset',
       rest: 'Rest timer',
-      plates: 'Plate calculator',
       remove: 'Remove exercise',
       details: 'History and records',
     },
@@ -403,10 +400,6 @@ export const workouts = {
     title: 'Import workouts',
     fromStrong: 'Import from Strong',
     fromHevy: 'Import from Hevy',
-    intro: 'Export your workouts as a CSV in Strong or Hevy, then choose the file here.',
-    introStrong: 'Export your workouts from Strong as a CSV, then choose the file here.',
-    introHevy: 'Export your workouts from Hevy as a CSV, then choose the file here.',
-    choose: 'Choose CSV file',
     another: 'Choose another file',
     unknown: 'This is not a Strong or Hevy export.',
     empty: 'No workouts in this file.',
@@ -431,18 +424,6 @@ export const workouts = {
     notSaved_other: '{{count}} could not be saved',
     stopped: 'Import stopped. Check your connection and try again.',
     nothingNew: 'Nothing new in this file',
-  },
-
-  plates: {
-    title: 'Plate calculator',
-    target: 'Target weight',
-    bar: 'Bar',
-    perSide: 'Each side',
-    none: 'Just the bar',
-    unreachable: 'Not reachable with standard plates.',
-    /** A weight the plates cannot make: the nearest they can, nearer first. */
-    closest: 'Closest: {{weight}}',
-    closestOr: 'Closest: {{weight}} or {{other}}',
   },
 
   warmup: {

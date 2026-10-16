@@ -98,10 +98,6 @@ export const vi = {
     emptyFollowing: 'Theo dõi người khác hoặc chia sẻ bữa ăn từ nhật ký.',
     emptyPeople: 'Không tìm thấy ai',
     emptyPosts: 'Chưa có bài đăng',
-    foodTab: 'Món ăn',
-    workoutsTab: 'Buổi tập',
-    emptyMeals: 'Chưa chia sẻ món ăn nào',
-    emptyWorkouts: 'Chưa chia sẻ buổi tập nào',
     newWorkoutPost: 'Chia sẻ buổi tập',
     captionWorkoutPlaceholder: 'Nói đôi điều về buổi tập của bạn',
     shareWorkoutHint:
@@ -1864,7 +1860,6 @@ export const vi = {
       rest: 'Nghỉ {{time}}',
       next: 'Tiếp',
       completeSet: 'Hoàn thành hiệp',
-      plates: 'Bánh tạ',
       exerciseNotes: 'Thêm ghi chú',
       kind: {
         normal: 'Set chính',
@@ -1883,7 +1878,6 @@ export const vi = {
         reorder: 'Sắp xếp lại bài tập',
         unsuperset: 'Bỏ khỏi superset',
         rest: 'Hẹn giờ nghỉ',
-        plates: 'Tính bánh tạ',
         remove: 'Xoá bài tập',
         details: 'Lịch sử và kỷ lục',
       },
@@ -2092,10 +2086,6 @@ export const vi = {
       title: 'Nhập buổi tập',
       fromStrong: 'Nhập từ Strong',
       fromHevy: 'Nhập từ Hevy',
-      intro: 'Xuất buổi tập dưới dạng CSV trong Strong hoặc Hevy, rồi chọn tệp đó ở đây.',
-      introStrong: 'Xuất buổi tập dưới dạng CSV trong Strong, rồi chọn tệp đó ở đây.',
-      introHevy: 'Xuất buổi tập dưới dạng CSV trong Hevy, rồi chọn tệp đó ở đây.',
-      choose: 'Chọn tệp CSV',
       another: 'Chọn tệp khác',
       unknown: 'Đây không phải tệp xuất từ Strong hoặc Hevy.',
       empty: 'Tệp này không có buổi tập nào.',
@@ -2120,17 +2110,6 @@ export const vi = {
       notSaved_other: '{{count}} buổi không lưu được',
       stopped: 'Đã dừng nhập. Kiểm tra kết nối rồi thử lại.',
       nothingNew: 'Tệp này không có gì mới',
-    },
-
-    plates: {
-      title: 'Tính bánh tạ',
-      target: 'Mức tạ mục tiêu',
-      bar: 'Đòn',
-      perSide: 'Mỗi bên',
-      none: 'Chỉ có đòn',
-      unreachable: 'Không ghép được bằng bánh tạ tiêu chuẩn.',
-      closest: 'Gần nhất: {{weight}}',
-      closestOr: 'Gần nhất: {{weight}} hoặc {{other}}',
     },
 
     warmup: {

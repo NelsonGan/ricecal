@@ -10,13 +10,16 @@ import { fetchWorkoutExport, useSession, useSettings, useUpdateSettings } from '
 import { dateKey } from '@/data/client'
 import { ToggleRow } from '@/features/shared'
 import {
+  handExport,
   IMPORT_APPS,
+  pickExport,
   RestSheet,
   setWorkoutPrefs,
   shortClock,
   useWorkoutPrefs,
   workoutsCsv,
 } from '@/features/workouts'
+import type { ImportSource } from '@/features/workouts/import/parse'
 import { datePattern } from '@/lib/dates'
 import { requestWorkoutWrite } from '@/lib/health'
 import { parseTime } from '@/lib/meal-times'
@@ -58,6 +61,26 @@ export default function WorkoutSettingsScreen() {
   const prefs = useWorkoutPrefs()
   const [restOpen, setRestOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
+  // Which app's file is being read, between the picker closing and the import
+  // screen opening on it. A big history takes a moment to parse.
+  const [reading, setReading] = useState<ImportSource | null>(null)
+
+  const importFrom = async (app: ImportSource) => {
+    if (reading) return
+    setReading(app)
+    try {
+      const picked = await pickExport()
+      if (!picked) return
+      if ('error' in picked) {
+        toast.show({ title: t(`workouts:import.${picked.error}`), tone: 'error' })
+        return
+      }
+      handExport(picked.parsed)
+      router.push({ pathname: '/workout/import', params: { app } })
+    } finally {
+      setReading(null)
+    }
+  }
   const [timeOpen, setTimeOpen] = useState(false)
   const { userId } = useSession()
 
@@ -213,7 +236,8 @@ export default function WorkoutSettingsScreen() {
                 accessible={false}
               />
             }
-            onPress={() => router.push({ pathname: '/workout/import', params: { app: app.id } })}
+            trailing={reading === app.id ? <ActivityIndicator /> : undefined}
+            onPress={() => importFrom(app.id)}
           />
         ))}
         <ListRow
@@ -295,6 +319,7 @@ function TimeSheet({
 
   return (
     <Sheet
+      placement="center"
       visible={visible}
       onClose={onClose}
       closeLabel={t('common:action.close')}

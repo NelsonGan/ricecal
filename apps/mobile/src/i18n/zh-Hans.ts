@@ -102,10 +102,6 @@ export const zhHans = {
     emptyFollowing: '关注他人，或从日记中分享一餐。',
     emptyPeople: '未找到用户',
     emptyPosts: '还没有帖子',
-    foodTab: '食物',
-    workoutsTab: '训练',
-    emptyMeals: '还没有分享食物',
-    emptyWorkouts: '还没有分享训练',
     newWorkoutPost: '分享训练',
     captionWorkoutPlaceholder: '说说你的训练',
     shareWorkoutHint:
@@ -1843,7 +1839,6 @@ export const zhHans = {
       rest: '休息 {{time}}',
       next: '下一个',
       completeSet: '完成本组',
-      plates: '杠铃片',
       exerciseNotes: '添加备注',
       kind: {
         normal: '正式组',
@@ -1862,7 +1857,6 @@ export const zhHans = {
         reorder: '调整动作顺序',
         unsuperset: '移出超级组',
         rest: '休息计时',
-        plates: '杠铃片计算器',
         remove: '移除动作',
         details: '历史和纪录',
       },
@@ -2070,10 +2064,6 @@ export const zhHans = {
       title: '导入训练',
       fromStrong: '从 Strong 导入',
       fromHevy: '从 Hevy 导入',
-      intro: '在 Strong 或 Hevy 中将训练导出为 CSV，然后在这里选择该文件。',
-      introStrong: '在 Strong 中将训练导出为 CSV，然后在这里选择该文件。',
-      introHevy: '在 Hevy 中将训练导出为 CSV，然后在这里选择该文件。',
-      choose: '选择 CSV 文件',
       another: '选择其他文件',
       unknown: '这不是 Strong 或 Hevy 的导出文件。',
       empty: '此文件中没有训练。',
@@ -2098,17 +2088,6 @@ export const zhHans = {
       notSaved_other: '{{count}} 次无法保存',
       stopped: '导入已停止。请检查网络后重试。',
       nothingNew: '此文件中没有新训练',
-    },
-
-    plates: {
-      title: '杠铃片计算器',
-      target: '目标重量',
-      bar: '杠铃杆',
-      perSide: '每边',
-      none: '空杆即可',
-      unreachable: '用标准杠铃片配不出这个重量。',
-      closest: '最接近：{{weight}}',
-      closestOr: '最接近：{{weight}} 或 {{other}}',
     },
 
     warmup: {
