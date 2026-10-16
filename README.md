@@ -4168,9 +4168,30 @@ pairing. A set added with Add set is empty and offered a figure like any other,
 rather than copying the row above as typed values, which hid last time's
 100 × 5 under a third set of 100 × 10. Finishing
 counts these too: a set that shows numbers and was never ticked is asked about
-("Tick them and save" ticks it with what it shows) rather than left out, which
-is what happened while only typed numbers counted. A past workout is saved the
-same way, with last time's sets.
+("Complete unfinished sets" ticks it with what it shows, "Discard unfinished
+sets" saves without it) rather than left out, which is what happened while only
+typed numbers counted. A past workout is saved the same way, with last time's
+sets. The copy says "complete", as Strong and Hevy do; "tick" read oddly.
+
+**A workout that left its routine asks about the routine on Save**, as Strong
+asks about templates and Hevy about routines (`routineUpdate.ts`). Two kinds of
+change are told apart. The layout is exercises added, removed, swapped or
+moved, sets added or removed, and a set's kind, a rest or a superset; a set left
+unfinished is still in the logger, so running out of steam on the last set is
+not removing it. The numbers are a finished set that differs from a number the
+routine itself holds; a field the routine leaves blank means "last time", so
+filling it in is not a change, or a routine kept blank on purpose would ask
+after every workout. Exercise notes are not compared, since a note typed
+mid-workout is usually about that day. Only the answers that change something
+are offered: with both kinds, Strong's four ("Update routine and values",
+"Update routine", "Update values only", "Keep original routine"), otherwise
+one update and Keep. "Update routine" keeps the routine's numbers on the sets
+it already had and leaves new sets blank, which the logger then fills from
+last time, which is today. An update that deletes something is drawn red. The
+routine is saved after the workout, without holding it up, and a failure is a
+toast. Sheets dismissed are "not yet". Built-in templates started directly are
+not linked to a routine, so they are not asked about; "Save as routine" on the
+saved workout is the way to keep one changed.
 
 **Exercises reorder by dragging** in a sheet of short rows, opened from an
 exercise's menu or by long-pressing its name. Cards are too tall to drag past
@@ -5268,7 +5289,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Workout Started | ricecal_workout_started | source: WorkoutSource; exercises: number | `src/features/workouts/start.tsx`<br>`app/workout/edit/[id].tsx` | A workout is opened on the logger from empty, a routine, a template, a past workout repeated, or as a past workout being logged; once per start, including one that is later discarded. |
 | Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `app/workout/finish.tsx`<br>`app/workout/edit/[id].tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. A past workout logged after the fact sends it from its own save, so it closes the `Workout Started` its editor sent. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
 | Workout Discarded | ricecal_workout_discarded | sets: number; minutes: number | `src/features/workouts/start.tsx` | A running workout is thrown away from the logger, the "still training?" prompt, or by starting another over it; once per discard, with its ticked sets and minutes. |
-| Routine Saved | ricecal_routine_saved | is_new: boolean; exercises: number; from_template: boolean | `src/data/workouts.ts` | A routine insert or update succeeds, including a template added to the user's routines or a workout saved as one; each success, with counts only. |
+| Routine Saved | ricecal_routine_saved | is_new: boolean; exercises: number; from_template: boolean | `src/data/workouts.ts` | A routine insert or update succeeds, including a template added to the user's routines, a workout saved as one, or a finished workout updating the routine it started from; each success, with counts only. |
 | Workouts Imported | ricecal_workouts_imported | source: 'strong' &#124; 'hevy'; workouts: number; existing: number; failed: number; custom_exercises: number | `app/workout/import.tsx` | A Strong or Hevy CSV import finishes, whether every workout saved or some were refused; once per finished run, with counts only. `custom_exercises` is how many the run created. A run stopped by a lost connection sends nothing; a retry that finishes sends its own. |
 | Widget Added | ricecal_widget_added | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a widget kind absent from the previous stored set; one per newly observed kind. The first poll is a silent baseline. |
 | Widget Removed | ricecal_widget_removed | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a previously stored widget kind absent now; one per removed kind. Intermediate add/remove changes between polls can be missed. |
