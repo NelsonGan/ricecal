@@ -223,6 +223,21 @@ Deno.test('a shared dish with no weights logs the share when the band is the pla
     0.5,
     'half, band for the plate',
   )
+  // A measured or countable row is not the plate, so the band stays the share's
+  // and these size exactly as before: a third of a plate four rows big is
+  // about one row.
+  eq(
+    sizeDish({ byWeight: null, ratio: 1.3, count: 0.33, confidence: 0.8, servingLabel: '100 g' })
+      ?.quantity,
+    1,
+    'a third, against 100 g',
+  )
+  eq(
+    sizeDish({ byWeight: null, ratio: 2, count: 0.33, confidence: 0.8, servingLabel: '1 piece' })
+      ?.quantity,
+    1,
+    'a third, against a piece',
+  )
 })
 
 Deno.test('a whole dish is sized exactly as before', () => {
