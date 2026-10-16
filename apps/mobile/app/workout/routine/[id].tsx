@@ -3,7 +3,7 @@ import { useMemo, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TextInput } from 'react-native'
 
-import { type Routine, useDeleteRoutine, useRoutines, useSaveRoutine } from '@/data'
+import { isRoutineLimit, type Routine, useDeleteRoutine, useRoutines, useSaveRoutine } from '@/data'
 import {
   apply,
   newWorkout,
@@ -13,7 +13,7 @@ import {
   unavailableState,
   useDeleteConfirm,
   useLeaveGuard,
-  useWorkoutStarter,
+  useRoutineGate,
   WorkoutEditor,
   WorkoutUnavailable,
 } from '@/features/workouts'
@@ -27,7 +27,8 @@ import { AppBar, Button, Screen, Sheet, TextField, useToast } from '@/ui'
  *
  * The same exercise editor the logger uses, without the ticks: a routine says
  * what to do, and the PREVIOUS column shows what was done last time. The page
- * is only the plan; its name and note are asked for when it is saved.
+ * is only the plan; its name and note are asked for when it is saved. There is
+ * no Start here: the routine's row on the Workouts tab already has one.
  */
 export default function RoutineScreen() {
   const { t } = useTranslation(['workouts'])
@@ -69,7 +70,7 @@ function RoutineEditor({
   const save = useSaveRoutine()
   const remove = useDeleteRoutine()
   const online = useOnline()
-  const starter = useWorkoutStarter()
+  const routineGate = useRoutineGate()
   const [notes, setNotes] = useState(routine?.notes ?? '')
 
   // The editor's document, borrowed from the logger. Its clock and id mean
@@ -125,8 +126,14 @@ function RoutineEditor({
           router.replace({ pathname: '/workout/routine/[id]', params: { id: saved.id } })
         } else goBack()
       })
-    } catch {
-      toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+    } catch (error) {
+      // A fourth routine on a free account: the New button checks first, so
+      // this is one added on another phone while the page was open. The name
+      // card is a native modal, and the paywall would open behind it.
+      if (isRoutineLimit(error)) {
+        setNaming(false)
+        routineGate.refused(error)
+      } else toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
     } finally {
       saving.current = false
     }
@@ -151,25 +158,6 @@ function RoutineEditor({
         </Button>
       }
     >
-      {routine ? (
-        <Button
-          variant="secondary"
-          fullWidth
-          // What is on screen, unsaved edits included: starting from the
-          // stored copy dropped a change made a moment ago without a word.
-          onPress={() =>
-            starter.start({
-              name: draft.name.trim() || routine.name,
-              source: 'routine',
-              routineId: routine.id,
-              plans,
-            })
-          }
-        >
-          {t('workouts:start.routine')}
-        </Button>
-      ) : null}
-
       <WorkoutEditor workout={draft} dispatch={dispatch} mode="plan" />
 
       {confirmDelete.dialog}
@@ -207,7 +195,6 @@ function RoutineEditor({
           maxLength={1000}
         />
       </Sheet>
-      {starter.dialog}
       {guard.dialog}
     </Screen>
   )

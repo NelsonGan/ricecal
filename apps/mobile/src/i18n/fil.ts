@@ -1380,6 +1380,11 @@ export const fil = {
           free: '{{recipes}} pagkain',
           pro: 'Walang limitasyon',
         },
+        routines: {
+          label: 'Mga workout routine',
+          free: '{{routines}} routine',
+          pro: 'Walang limitasyon',
+        },
         recipeFill: {
           label: 'Punan ang pagkain mula sa litrato',
           free: '',
@@ -1440,6 +1445,9 @@ export const fil = {
         new_recipe:
           'Kailangan ng RiceCal Pro para magtago ng higit sa {{recipes}} sariling pagkain.',
         trend_range: 'Kailangan ng RiceCal Pro para tumingin nang lampas sa isang linggo.',
+        new_routine:
+          'Kailangan ng RiceCal Pro para magtabi ng higit sa {{routines}} workout routine.',
+        workout_range: 'Kailangan ng RiceCal Pro para makita ang progreso nang lampas sa 3 buwan.',
         review: 'Kailangan ng RiceCal Pro para magbasa ng mas lumang review.',
         nudge: 'Inaalis ng RiceCal Pro ang mga limitasyon.',
       },
@@ -1741,20 +1749,18 @@ export const fil = {
     title: 'Workout',
 
     overview: {
-      thisWeek_one: 'workout ngayong linggo',
-      thisWeek_other: 'workout ngayong linggo',
+      title: 'Ngayong linggo',
+      workouts: 'Mga workout',
       time: 'Oras',
       volume: 'Nabuhat',
       streak_one: '{{count}} linggong sunod-sunod',
       streak_other: '{{count}} linggong sunod-sunod',
-      noStreak: 'Mag-train ngayong linggo para magsimula ng streak',
     },
 
     start: {
       empty: 'Simulan ang blangkong workout',
       resume: 'Ituloy ang workout',
       routine: 'Simulan',
-      past: 'Mag-log ng nakaraang workout',
       replaceTitle: 'May workout pang tumatakbo',
       replaceBody: 'Itapon iyon at simulan ito?',
       replaceConfirm: 'Itapon at simulan',
@@ -1765,7 +1771,6 @@ export const fil = {
 
     routines: {
       title: 'Mga routine ko',
-      new: 'Bago',
       newTitle: 'Bagong routine',
       namePlaceholder: 'hal. Push day',
       save: 'I-save ang routine',
@@ -1837,6 +1842,11 @@ export const fil = {
       glutes: { name: 'Glutes', description: 'Hip thrust, split squat at kickback.' },
       hiit: { name: 'HIIT', description: 'Maikling set, maikling pahinga, hingal na hingal.' },
       mobility: { name: 'Mobility', description: 'Roll, stretch at flow.' },
+    },
+
+    calendar: {
+      showList: 'Ipakita ang listahan',
+      dayEmpty: 'Walang workout sa araw na ito',
     },
 
     history: {
@@ -1969,7 +1979,6 @@ export const fil = {
       routineFailed: 'Hindi ma-update ang routine',
       endBeforeStart: 'Dapat pagkatapos ng simula ang pagtatapos.',
       tooLong: 'Hanggang 24 oras lang ang isang workout.',
-      health: 'Na-save sa Apple Health',
       healthFailed: 'Hindi ma-save sa Apple Health.',
     },
 
@@ -2006,7 +2015,6 @@ export const fil = {
     edit: {
       title: 'I-edit ang workout',
       save: 'I-save ang pagbabago',
-      newTitle: 'Mag-log ng nakaraang workout',
       leaveTitle: 'Umalis nang hindi nagse-save?',
       leaveBody: 'Mawawala ang mga pagbabagong ginawa mo dito.',
     },
@@ -2081,7 +2089,15 @@ export const fil = {
     stats: {
       title: 'Progreso',
       entry: 'Progreso at record',
-      weeks: 'Huling 12 linggo',
+      weeks: 'Pagsasanay',
+      range: {
+        label: 'Saklaw ng panahon',
+        '3m': 'Huling 3 buwan',
+        '1y': 'Taon',
+        all: 'Lahat ng panahon',
+      },
+      thisMonth: 'Ngayong buwan',
+      thisYear: 'Ngayong taon',
       metric: {
         workouts: 'Mga workout',
         duration: 'Oras',

@@ -1,3 +1,4 @@
+import { format, parseISO } from 'date-fns'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,28 +9,34 @@ import {
   type IconRef,
   retryQueuedWorkout,
   summaryFromDocument,
+  today,
   useOutbox,
   useRoutines,
   useSession,
   useSettings,
   useWorkoutOverview,
   useWorkouts,
+  useWorkoutsOn,
   type WorkoutSummary,
 } from '@/data'
+import type { WorkoutDocument } from '@/data/workout-outbox'
 import { ScreenTitle } from '@/features/shared'
 import {
   ActionSheet,
   DiscardDialog,
   defaultWorkoutName,
   NOT_LOADED,
-  OverviewCard,
   openLogger,
   RoutineCard,
   routinePlans,
+  useRoutineGate,
   useWorkoutStarter,
+  WeekStreakBadge,
+  WorkoutCalendar,
   WorkoutCard,
 } from '@/features/workouts'
-import { unitFor } from '@/lib/units'
+import { datePattern } from '@/lib/dates'
+import { unitFor, type WeightUnit } from '@/lib/units'
 import { Button, Card, Icon, IconButton, ListRow, Screen, Skeleton, Text } from '@/ui'
 
 /** Whether this launch's Live Activity resume has been answered. */
@@ -41,10 +48,11 @@ let resumedThisLaunch = false
  * Starting is the top of the screen because it is what the tab is for, and the
  * routines sit right under it because "start my push day" is the commonest way
  * in. The history follows, newest first, with anything still waiting to sync
- * at the top of it.
+ * at the top of it. The week's figures are on the progress page; only the
+ * streak stays here, beside the title.
  */
 export default function WorkoutsScreen() {
-  const { t } = useTranslation(['workouts', 'common'])
+  const { t } = useTranslation(['workouts', 'common', 'logging'])
   const router = useRouter()
   const { userId } = useSession()
   const { data: settings } = useSettings()
@@ -54,6 +62,11 @@ export default function WorkoutsScreen() {
   const workouts = useWorkouts()
   const outbox = useOutbox(userId)
   const starter = useWorkoutStarter()
+  const routineGate = useRoutineGate()
+  // The month instead of the tab, as Today's toggle swaps its day for one, and
+  // the day picked in it. Today until another is tapped.
+  const [calendar, setCalendar] = useState(false)
+  const [day, setDay] = useState(today)
   // A workout still on the phone, tapped: it has no page yet, so a sheet
   // offers to send it again or to drop it.
   const [queued, setQueued] = useState<{ id: string; name: string } | null>(null)
@@ -91,141 +104,150 @@ export default function WorkoutsScreen() {
     <Screen>
       <ScreenTitle
         title={t('workouts:title')}
-        trailing={
+        leading={
+          // Today's toggle, in the same place and size: the icon is the view
+          // being offered, and the streak pill opposite sets the row's height.
           <IconButton
-            size="sm"
-            variant="neutral"
-            accessibilityLabel={t('workouts:settings.title')}
-            onPress={() => router.push('/workout/settings')}
+            size="xs"
+            hitSlop={3}
+            onPress={() => setCalendar(!calendar)}
+            accessibilityLabel={t(
+              calendar ? 'workouts:calendar.showList' : 'logging:calendar.showMonth',
+            )}
           >
-            <Icon set="system" name="settings" size={22} />
+            <Icon set="ui" name={calendar ? 'list-view' : 'calendar-view'} size={19} />
           </IconButton>
         }
+        trailing={<WeekStreakBadge weeks={overview.data?.weekStreak} />}
       />
 
-      <OverviewCard
-        overview={overview.data}
-        unit={unit}
-        loading={overview.isPending && !overview.isPaused}
-      />
-
-      {starter.running ? (
-        <Button fullWidth size="lg" onPress={() => openLogger(router)}>
-          {t('workouts:start.resume')}
-        </Button>
+      {calendar ? (
+        <CalendarView day={day} onDay={setDay} unit={unit} outbox={outbox} onOpen={openWorkout} />
       ) : (
-        <Button
-          fullWidth
-          size="lg"
-          onPress={() => starter.start({ name: defaultWorkoutName(t), source: 'empty' })}
-        >
-          {t('workouts:start.empty')}
-        </Button>
-      )}
-
-      <Button
-        fullWidth
-        variant="secondary"
-        leftIcon={<Icon set="system" name="calendar" size={22} />}
-        onPress={() => router.push({ pathname: '/workout/edit/[id]', params: { id: 'new' } })}
-      >
-        {t('workouts:start.past')}
-      </Button>
-
-      <View className="flex-row items-center justify-between pt-2">
-        <Text variant="subtitle">{t('workouts:routines.title')}</Text>
-        <Button
-          size="sm"
-          variant="kaya"
-          onPress={() => router.push({ pathname: '/workout/routine/[id]', params: { id: 'new' } })}
-        >
-          {t('workouts:routines.new')}
-        </Button>
-      </View>
-
-      {/* Paused is offline with nothing cached: the request is held rather than
-          failed, and a skeleton would wait for it forever. */}
-      {routines.isPending && !routines.isPaused ? (
-        <Skeleton className="h-[78px] w-full rounded-card" />
-      ) : routines.data?.length ? (
-        <View className="gap-stack">
-          {routines.data.map((routine) => (
-            <RoutineCard
-              key={routine.id}
-              routine={routine}
-              onOpen={() =>
-                router.push({ pathname: '/workout/routine/[id]', params: { id: routine.id } })
-              }
-              onStart={() =>
-                starter.start({
-                  name: routine.name,
-                  source: 'routine',
-                  routineId: routine.id,
-                  plans: routinePlans(routine),
-                })
-              }
-            />
-          ))}
-        </View>
-      ) : !routines.data && (routines.isPaused || routines.isError) ? (
-        <Unavailable offline={routines.isPaused} />
-      ) : (
-        <EmptyRow
-          icon={{ set: 'system', name: 'guide-book' }}
-          title={t('workouts:routines.emptyTitle')}
-        />
-      )}
-
-      <Card contentClassName="gap-0 px-5 py-1">
-        <ListRow
-          title={t('workouts:explore.title')}
-          leading={<Icon set="system" name="rocket" size={28} />}
-          onPress={() => router.push('/workout/templates')}
-        />
-        <ListRow
-          title={t('workouts:stats.entry')}
-          leading={<Icon set="system" name="trophy" size={28} />}
-          onPress={() => router.push('/workout/stats')}
-        />
-        <ListRow
-          title={t('workouts:library.title')}
-          leading={<Icon set="body" name="gym-bench" size={28} />}
-          onPress={() => router.push('/workout/exercises')}
-          divider={false}
-        />
-      </Card>
-
-      <Text variant="subtitle" className="pt-2">
-        {t('workouts:history.title')}
-      </Text>
-
-      {workouts.isPending && !workouts.isPaused && !history.length ? (
-        <Card>
-          <Skeleton className="h-[120px] w-full" />
-        </Card>
-      ) : history.length ? (
-        <View className="gap-stack">
-          {history.map((workout) => (
-            <WorkoutCard key={workout.id} workout={workout} unit={unit} onPress={openWorkout} />
-          ))}
-          {workouts.hasNextPage ? (
-            <Button
-              variant="neutral"
-              fullWidth
-              loading={workouts.isFetchingNextPage}
-              onPress={() => workouts.fetchNextPage()}
-            >
-              {t('workouts:history.more')}
+        <>
+          {/* Medium rather than large: it is the first thing on the tab, and the
+            routines under it start a workout just as well. */}
+          {starter.running ? (
+            <Button fullWidth onPress={() => openLogger(router)}>
+              {t('workouts:start.resume')}
             </Button>
-          ) : null}
-        </View>
-      ) : !workouts.data && (workouts.isPaused || workouts.isError) ? (
-        <Unavailable offline={workouts.isPaused} />
-      ) : (
-        <EmptyRow
-          icon={{ set: 'body', name: 'stopwatch' }}
-          title={t('workouts:history.emptyTitle')}
-        />
+          ) : (
+            <Button
+              fullWidth
+              onPress={() => starter.start({ name: defaultWorkoutName(t), source: 'empty' })}
+            >
+              {t('workouts:start.empty')}
+            </Button>
+          )}
+
+          <Text variant="subtitle" className="pt-2">
+            {t('workouts:routines.title')}
+          </Text>
+
+          {/* Paused is offline with nothing cached: the request is held rather than
+            failed, and a skeleton would wait for it forever. */}
+          {routines.isPending && !routines.isPaused ? (
+            <Skeleton className="h-[78px] w-full rounded-card" />
+          ) : routines.data?.length ? (
+            // Closer than the cards elsewhere: a list of routines is one list.
+            <View className="gap-2">
+              {routines.data.map((routine) => (
+                <RoutineCard
+                  key={routine.id}
+                  routine={routine}
+                  onOpen={() =>
+                    router.push({ pathname: '/workout/routine/[id]', params: { id: routine.id } })
+                  }
+                  onStart={() =>
+                    starter.start({
+                      name: routine.name,
+                      source: 'routine',
+                      routineId: routine.id,
+                      plans: routinePlans(routine),
+                    })
+                  }
+                />
+              ))}
+            </View>
+          ) : !routines.data && (routines.isPaused || routines.isError) ? (
+            <Unavailable offline={routines.isPaused} />
+          ) : (
+            <EmptyRow
+              icon={{ set: 'system', name: 'guide-book' }}
+              title={t('workouts:routines.emptyTitle')}
+            />
+          )}
+
+          {/* A new routine is one more way into the plans, so it heads the list
+            rather than riding opposite "My routines" as a second accent button. */}
+          <Card contentClassName="gap-0 px-5 py-1">
+            <ListRow
+              title={t('workouts:routines.newTitle')}
+              leading={<Icon set="system" name="guide-book" size={28} />}
+              onPress={() => {
+                if (!routineGate.allowNew()) return
+                router.push({ pathname: '/workout/routine/[id]', params: { id: 'new' } })
+              }}
+            />
+            <ListRow
+              title={t('workouts:explore.title')}
+              leading={<Icon set="system" name="rocket" size={28} />}
+              onPress={() => router.push('/workout/templates')}
+            />
+            <ListRow
+              title={t('workouts:stats.entry')}
+              leading={<Icon set="system" name="trophy" size={28} />}
+              onPress={() => router.push('/workout/stats')}
+            />
+            <ListRow
+              title={t('workouts:library.title')}
+              leading={<Icon set="body" name="gym-bench" size={28} />}
+              onPress={() => router.push('/workout/exercises')}
+            />
+            {/* A row rather than a gear beside the title, which left the streak
+              pill and a button competing for the title's line. Me's settings
+              list has the same row. */}
+            <ListRow
+              title={t('workouts:settings.title')}
+              leading={<Icon set="system" name="settings" size={28} />}
+              onPress={() => router.push('/workout/settings')}
+              divider={false}
+            />
+          </Card>
+
+          <Text variant="subtitle" className="pt-2">
+            {t('workouts:history.title')}
+          </Text>
+
+          {workouts.isPending && !workouts.isPaused && !history.length ? (
+            <Card>
+              <Skeleton className="h-[120px] w-full" />
+            </Card>
+          ) : history.length ? (
+            <View className="gap-stack">
+              {history.map((workout) => (
+                <WorkoutCard key={workout.id} workout={workout} unit={unit} onPress={openWorkout} />
+              ))}
+              {workouts.hasNextPage ? (
+                <Button
+                  variant="neutral"
+                  fullWidth
+                  loading={workouts.isFetchingNextPage}
+                  onPress={() => workouts.fetchNextPage()}
+                >
+                  {t('workouts:history.more')}
+                </Button>
+              ) : null}
+            </View>
+          ) : !workouts.data && (workouts.isPaused || workouts.isError) ? (
+            <Unavailable offline={workouts.isPaused} />
+          ) : (
+            <EmptyRow
+              icon={{ set: 'body', name: 'stopwatch' }}
+              title={t('workouts:history.emptyTitle')}
+            />
+          )}
+        </>
       )}
 
       {starter.dialog}
@@ -264,6 +286,66 @@ export default function WorkoutsScreen() {
         }}
       />
     </Screen>
+  )
+}
+
+/**
+ * The calendar view: the month with every trained day filled, and under it
+ * what was done on the day tapped. A workout opens its page as it does from the
+ * history.
+ */
+function CalendarView({
+  day,
+  onDay,
+  unit,
+  outbox,
+  onOpen,
+}: {
+  day: string
+  onDay: (date: string) => void
+  unit: WeightUnit
+  outbox: readonly WorkoutDocument[]
+  onOpen: (workout: WorkoutSummary) => void
+}) {
+  const { t } = useTranslation(['workouts'])
+  // With records, so a card here carries the same PR badge it has in History.
+  const saved = useWorkoutsOn(day, { records: true })
+  // And the day's workouts still on the phone, as History lists them, or one
+  // finished offline is missing from its own day.
+  const list = useMemo(() => {
+    const rows = saved.data ?? []
+    const ids = new Set(rows.map((workout) => workout.id))
+    const pending = outbox
+      .filter((document) => document.log_date === day && !ids.has(document.id))
+      .map(summaryFromDocument)
+    return [...pending, ...rows]
+  }, [saved.data, outbox, day])
+
+  return (
+    <>
+      <WorkoutCalendar selected={day} onSelect={onDay} />
+      <Text variant="subtitle" className="pt-2">
+        {format(parseISO(day), datePattern('weekdayDayMonthLong'))}
+      </Text>
+      {list.length ? (
+        <View className="gap-stack">
+          {list.map((workout) => (
+            <WorkoutCard key={workout.id} workout={workout} unit={unit} onPress={onOpen} />
+          ))}
+        </View>
+      ) : saved.isPending && !saved.isPaused ? (
+        <Card>
+          <Skeleton className="h-[120px] w-full" />
+        </Card>
+      ) : !saved.data ? (
+        <Unavailable offline={saved.isPaused} />
+      ) : (
+        <EmptyRow
+          icon={{ set: 'body', name: 'stopwatch' }}
+          title={t('workouts:calendar.dayEmpty')}
+        />
+      )}
+    </>
   )
 }
 

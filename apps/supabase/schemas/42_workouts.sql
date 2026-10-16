@@ -164,6 +164,61 @@ create policy "workout_routines: delete own"
   to authenticated
   using ((select auth.uid()) = user_id);
 
+-- How many routines a free account may keep, enforced here for the reason the
+-- recipe ceiling is (`free_recipe_limit` in 22_recipes.sql): the client writes
+-- `workout_routines` directly, so a limit in the app would only apply to people
+-- running the app. A template added to "My routines" and a workout saved as a
+-- routine are inserts like any other, so neither is a way past it.
+--
+-- The message is a token the app matches on (`isRoutineLimit`) and words in the
+-- user's language beside a paywall; `hint` is the readable half for a log.
+create or replace function public.free_routine_limit()
+returns integer
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select 3;
+$$;
+
+revoke execute on function public.free_routine_limit from public, anon;
+grant execute on function public.free_routine_limit to authenticated, service_role;
+
+create or replace function public.workout_routines_enforce_free_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if public.is_entitled(new.user_id) then
+    return new;
+  end if;
+
+  if (
+    select pg_catalog.count(*)
+      from public.workout_routines r
+     where r.user_id = new.user_id
+  ) >= public.free_routine_limit() then
+    raise exception 'routine_limit_reached'
+      using errcode = 'P0001',
+            hint = 'A free account may keep ' || public.free_routine_limit()
+                   || ' routines. Pro removes the limit.';
+  end if;
+
+  return new;
+end;
+$$;
+
+-- Stated here and applied by a hand-written line in the migration: `db diff`
+-- does not carry grants.
+revoke execute on function public.workout_routines_enforce_free_limit from public, anon, authenticated;
+
+create trigger workout_routines_enforce_free_limit
+  before insert on public.workout_routines
+  for each row execute function public.workout_routines_enforce_free_limit();
+
 
 -- ---------------------------------------------------------------------------
 -- 3. The workout.

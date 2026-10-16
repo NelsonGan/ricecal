@@ -1382,6 +1382,11 @@ export const ms = {
           free: '{{recipes}} makanan',
           pro: 'Tanpa had',
         },
+        routines: {
+          label: 'Rutin senaman',
+          free: '{{routines}} rutin',
+          pro: 'Tanpa had',
+        },
         recipeFill: {
           label: 'Isi makanan daripada gambar',
           free: '',
@@ -1441,6 +1446,9 @@ export const ms = {
         read_recipe: 'Mengisi makanan daripada gambar memerlukan RiceCal Pro.',
         new_recipe: 'Menyimpan lebih daripada {{recipes}} makanan sendiri memerlukan RiceCal Pro.',
         trend_range: 'Melihat lebih jauh daripada seminggu memerlukan RiceCal Pro.',
+        new_routine: 'Menyimpan lebih daripada {{routines}} rutin senaman memerlukan RiceCal Pro.',
+        workout_range:
+          'Melihat kemajuan senaman lebih jauh daripada 3 bulan memerlukan RiceCal Pro.',
         review: 'Membaca ulasan lama memerlukan RiceCal Pro.',
         nudge: 'RiceCal Pro membuang hadnya.',
       },
@@ -1741,20 +1749,18 @@ export const ms = {
     title: 'Senaman',
 
     overview: {
-      thisWeek_one: 'senaman minggu ini',
-      thisWeek_other: 'senaman minggu ini',
+      title: 'Minggu ini',
+      workouts: 'Senaman',
       time: 'Masa',
       volume: 'Diangkat',
       streak_one: 'Rentetan {{count}} minggu',
       streak_other: 'Rentetan {{count}} minggu',
-      noStreak: 'Bersenam minggu ini untuk mulakan rentetan',
     },
 
     start: {
       empty: 'Mula senaman kosong',
       resume: 'Sambung senaman',
       routine: 'Mula',
-      past: 'Log senaman lepas',
       replaceTitle: 'Ada senaman sedang berjalan',
       replaceBody: 'Buang yang itu dan mula yang ini?',
       replaceConfirm: 'Buang dan mula',
@@ -1765,7 +1771,6 @@ export const ms = {
 
     routines: {
       title: 'Rutin saya',
-      new: 'Baharu',
       newTitle: 'Rutin baharu',
       namePlaceholder: 'cth. Hari tolak',
       save: 'Simpan rutin',
@@ -1834,6 +1839,11 @@ export const ms = {
       glutes: { name: 'Punggung', description: 'Hip thrust, split squat dan kickback.' },
       hiit: { name: 'HIIT', description: 'Set pendek, rehat pendek, tercungap-cungap.' },
       mobility: { name: 'Mobiliti', description: 'Foam roll, regangan dan flow.' },
+    },
+
+    calendar: {
+      showList: 'Tunjuk senarai',
+      dayEmpty: 'Tiada senaman pada hari ini',
     },
 
     history: {
@@ -1966,7 +1976,6 @@ export const ms = {
       routineFailed: 'Rutin tidak dapat dikemas kini',
       endBeforeStart: 'Masa tamat mesti selepas masa mula.',
       tooLong: 'Senaman boleh berlangsung paling lama 24 jam.',
-      health: 'Disimpan ke Apple Health',
       healthFailed: 'Tidak dapat menyimpan ke Apple Health.',
     },
 
@@ -2003,7 +2012,6 @@ export const ms = {
     edit: {
       title: 'Sunting senaman',
       save: 'Simpan perubahan',
-      newTitle: 'Rekod senaman lepas',
       leaveTitle: 'Keluar tanpa menyimpan?',
       leaveBody: 'Perubahan yang anda buat di sini akan hilang.',
     },
@@ -2078,7 +2086,15 @@ export const ms = {
     stats: {
       title: 'Kemajuan',
       entry: 'Kemajuan dan rekod',
-      weeks: '12 minggu lepas',
+      weeks: 'Latihan',
+      range: {
+        label: 'Julat masa',
+        '3m': '3 bulan lepas',
+        '1y': 'Tahun',
+        all: 'Sepanjang masa',
+      },
+      thisMonth: 'Bulan ini',
+      thisYear: 'Tahun ini',
       metric: {
         workouts: 'Senaman',
         duration: 'Masa',

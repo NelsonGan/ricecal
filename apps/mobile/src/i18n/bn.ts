@@ -1339,6 +1339,11 @@ export const bn = {
           free: '{{recipes}} খাবার',
           pro: 'সীমাহীন',
         },
+        routines: {
+          label: 'ওয়ার্কআউট রুটিন',
+          free: '{{routines}}টি রুটিন',
+          pro: 'সীমাহীন',
+        },
         recipeFill: {
           label: 'ছবি থেকে খাবার ভরুন',
           free: '',
@@ -1397,6 +1402,8 @@ export const bn = {
         read_recipe: 'ছবি থেকে খাবার ভরতে RiceCal Pro লাগবে।',
         new_recipe: 'নিজের {{recipes}} এর বেশি খাবার রাখতে RiceCal Pro লাগবে।',
         trend_range: 'এক সপ্তাহের বেশি পিছনে দেখতে RiceCal Pro লাগবে।',
+        new_routine: '{{routines}}টির বেশি ওয়ার্কআউট রুটিন রাখতে RiceCal Pro লাগবে।',
+        workout_range: '৩ মাসের আগের ওয়ার্কআউট অগ্রগতি দেখতে RiceCal Pro লাগবে।',
         review: 'পুরোনো পর্যালোচনা পড়তে RiceCal Pro লাগবে।',
         nudge: 'RiceCal Pro সীমাগুলো সরিয়ে দেয়।',
       },
@@ -1693,13 +1700,12 @@ export const bn = {
     title: 'ওয়ার্কআউট',
 
     overview: {
-      thisWeek_one: 'এই সপ্তাহের ওয়ার্কআউট',
-      thisWeek_other: 'এই সপ্তাহের ওয়ার্কআউট',
+      title: 'এই সপ্তাহ',
+      workouts: 'ওয়ার্কআউট',
       time: 'সময়',
       volume: 'তোলা ওজন',
       streak_one: 'টানা {{count}} সপ্তাহ',
       streak_other: 'টানা {{count}} সপ্তাহ',
-      noStreak: 'টানা ধারা শুরু করতে এই সপ্তাহে ব্যায়াম করুন',
     },
 
     start: {
@@ -1707,7 +1713,6 @@ export const bn = {
       resume: 'ওয়ার্কআউট চালিয়ে যান',
       /** The minimised bar over the tabs while a workout runs. */
       routine: 'শুরু করুন',
-      past: 'আগের ওয়ার্কআউট লগ করুন',
       /** Starting another while one runs. */
       replaceTitle: 'একটি ওয়ার্কআউট আগে থেকেই চলছে',
       replaceBody: 'সেটি বাদ দিয়ে এটি শুরু করবেন?',
@@ -1720,7 +1725,6 @@ export const bn = {
 
     routines: {
       title: 'আমার রুটিন',
-      new: 'নতুন',
       newTitle: 'নতুন রুটিন',
       namePlaceholder: 'যেমন পুশ ডে',
       save: 'রুটিন সংরক্ষণ',
@@ -1786,6 +1790,11 @@ export const bn = {
       glutes: { name: 'গ্লুটস', description: 'হিপ থ্রাস্ট, স্প্লিট স্কোয়াট আর কিকব্যাক।' },
       hiit: { name: 'HIIT', description: 'ছোট সেট, ছোট বিশ্রাম, হাঁপিয়ে ওঠা।' },
       mobility: { name: 'নমনীয়তা', description: 'রোল, স্ট্রেচ আর সাবলীল নড়াচড়া।' },
+    },
+
+    calendar: {
+      showList: 'তালিকা দেখান',
+      dayEmpty: 'এই দিনে কোনো ওয়ার্কআউট নেই',
     },
 
     history: {
@@ -1923,7 +1932,6 @@ export const bn = {
       routineFailed: 'রুটিন আপডেট করা যায়নি',
       endBeforeStart: 'শেষের সময় শুরুর পরে হতে হবে।',
       tooLong: 'একটি ওয়ার্কআউট সর্বোচ্চ ২৪ ঘণ্টার হতে পারে।',
-      health: 'Apple Health-এ সেভ হয়েছে',
       healthFailed: 'Apple Health-এ সেভ করা যায়নি।',
     },
 
@@ -1961,7 +1969,6 @@ export const bn = {
     edit: {
       title: 'ওয়ার্কআউট সম্পাদনা',
       save: 'পরিবর্তন সেভ করুন',
-      newTitle: 'আগের ওয়ার্কআউট লিখুন',
       leaveTitle: 'সংরক্ষণ না করেই বেরোবেন?',
       leaveBody: 'এখানে করা পরিবর্তনগুলো হারিয়ে যাবে।',
     },
@@ -2036,7 +2043,15 @@ export const bn = {
     stats: {
       title: 'অগ্রগতি',
       entry: 'অগ্রগতি ও রেকর্ড',
-      weeks: 'গত ১২ সপ্তাহ',
+      weeks: 'প্রশিক্ষণ',
+      range: {
+        label: 'সময়সীমা',
+        '3m': 'গত ৩ মাস',
+        '1y': 'বছর',
+        all: 'সব সময়',
+      },
+      thisMonth: 'এই মাস',
+      thisYear: 'এই বছর',
       metric: {
         workouts: 'ওয়ার্কআউট',
         duration: 'সময়',

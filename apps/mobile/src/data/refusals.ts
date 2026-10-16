@@ -1,4 +1,4 @@
-import { FREE_DAILY_SCANS, FREE_RECIPES } from '@ricecal/shared'
+import { FREE_DAILY_SCANS, FREE_RECIPES, FREE_ROUTINES } from '@ricecal/shared'
 import { router } from 'expo-router'
 
 import i18n from '@/i18n'
@@ -202,7 +202,10 @@ export function scanLimitAhead(quota: ScanQuota | undefined): ScanLimitError | n
  * "{{recipes}}" in a toast.
  */
 export function proFeatureTitle(feature: ProFeature): string {
-  return i18n.t(`paywall:limit.feature.${feature}`, { recipes: FREE_RECIPES })
+  return i18n.t(`paywall:limit.feature.${feature}`, {
+    recipes: FREE_RECIPES,
+    routines: FREE_ROUTINES,
+  })
 }
 
 /**

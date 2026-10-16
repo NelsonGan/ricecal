@@ -14,6 +14,7 @@ import {
   templateNameKey,
   templatePlans,
   templateRoutine,
+  useRoutineGate,
   useWorkoutStarter,
   WorkoutUnavailable,
 } from '@/features/workouts'
@@ -37,6 +38,7 @@ export default function TemplateScreen() {
   const routines = useRoutines().data
   const save = useSaveRoutine()
   const starter = useWorkoutStarter()
+  const routineGate = useRoutineGate()
   const online = useOnline()
   // A second tap before `isPending` had rendered added the routine twice.
   const adding = useRef(false)
@@ -76,7 +78,7 @@ export default function TemplateScreen() {
                 router.push({ pathname: '/workout/routine/[id]', params: { id: existing.id } })
                 return
               }
-              if (adding.current) return
+              if (adding.current || !routineGate.allowNew()) return
               // Offline the save pauses rather than fails, and would spin.
               if (!online) {
                 toast.show({ title: t('common:offline.title'), tone: 'error' })
@@ -92,8 +94,10 @@ export default function TemplateScreen() {
                 })
                 toast.show({ title: t('workouts:explore.added'), tone: 'success' })
                 router.push({ pathname: '/workout/routine/[id]', params: { id: routine.id } })
-              } catch {
-                toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+              } catch (error) {
+                if (!routineGate.refused(error)) {
+                  toast.show({ title: t('workouts:finish.failed'), tone: 'error' })
+                }
               } finally {
                 adding.current = false
               }

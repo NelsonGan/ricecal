@@ -28,7 +28,7 @@ import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Te
 
 /** U1 PROFILE */
 export default function MeScreen() {
-  const { t } = useTranslation(['profile', 'activity', 'common', 'paywall', 'social'])
+  const { t } = useTranslation(['profile', 'activity', 'common', 'paywall', 'social', 'workouts'])
   const router = useRouter()
   const colors = useThemeColors()
   const { session } = useSession()
@@ -281,6 +281,13 @@ export default function MeScreen() {
           title={t('profile:home.units')}
           value={settings ? t(`profile:home.${settings.units}`) : undefined}
           onPress={() => router.push('/settings/preferences')}
+        />
+        {/* The Workouts tab has this row too, at the foot of its list. Here as
+            well because this is where every other setting is looked for. */}
+        <SettingRow
+          icon={{ set: 'system', name: 'settings' }}
+          title={t('workouts:settings.title')}
+          onPress={() => router.push('/workout/settings')}
         />
         {/* The tour's permanent home.
             It is offered once on Today, as a toast that dismisses itself — so

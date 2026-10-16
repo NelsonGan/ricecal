@@ -1343,6 +1343,11 @@ export const hi = {
           free: '{{recipes}} खाने',
           pro: 'असीमित',
         },
+        routines: {
+          label: 'वर्कआउट रूटीन',
+          free: '{{routines}} रूटीन',
+          pro: 'असीमित',
+        },
         recipeFill: {
           label: 'फ़ोटो से खाना भरें',
           free: '',
@@ -1401,6 +1406,8 @@ export const hi = {
         read_recipe: 'फ़ोटो से खाना भरने के लिए RiceCal Pro चाहिए।',
         new_recipe: 'अपने {{recipes}} से ज़्यादा खाने रखने के लिए RiceCal Pro चाहिए।',
         trend_range: 'एक हफ़्ते से पीछे देखने के लिए RiceCal Pro चाहिए।',
+        new_routine: '{{routines}} से ज़्यादा वर्कआउट रूटीन रखने के लिए RiceCal Pro चाहिए।',
+        workout_range: '3 महीने से पीछे की वर्कआउट प्रगति देखने के लिए RiceCal Pro चाहिए।',
         review: 'पुरानी समीक्षा पढ़ने के लिए RiceCal Pro चाहिए।',
         nudge: 'RiceCal Pro सीमाएं हटा देता है।',
       },
@@ -1699,20 +1706,18 @@ export const hi = {
     title: 'वर्कआउट',
 
     overview: {
-      thisWeek_one: 'इस हफ़्ते के वर्कआउट',
-      thisWeek_other: 'इस हफ़्ते के वर्कआउट',
+      title: 'इस हफ़्ते',
+      workouts: 'वर्कआउट',
       time: 'समय',
       volume: 'उठाया वज़न',
       streak_one: '{{count}} हफ़्ता लगातार',
       streak_other: '{{count}} हफ़्ते लगातार',
-      noStreak: 'सिलसिला शुरू करने के लिए इस हफ़्ते वर्कआउट करें',
     },
 
     start: {
       empty: 'खाली वर्कआउट शुरू करें',
       resume: 'वर्कआउट जारी रखें',
       routine: 'शुरू करें',
-      past: 'पिछला वर्कआउट लॉग करें',
       replaceTitle: 'एक वर्कआउट पहले से चल रहा है',
       replaceBody: 'उसे छोड़कर यह शुरू करें?',
       replaceConfirm: 'छोड़ें और शुरू करें',
@@ -1723,7 +1728,6 @@ export const hi = {
 
     routines: {
       title: 'मेरे रूटीन',
-      new: 'नया',
       newTitle: 'नई रूटीन',
       namePlaceholder: 'जैसे पुश डे',
       save: 'रूटीन सहेजें',
@@ -1789,6 +1793,11 @@ export const hi = {
       glutes: { name: 'ग्लूट्स', description: 'हिप थ्रस्ट, स्प्लिट स्क्वाट और किकबैक।' },
       hiit: { name: 'HIIT', description: 'छोटे सेट, कम आराम, सांस फूलने तक।' },
       mobility: { name: 'मोबिलिटी', description: 'रोल, स्ट्रेच और फ़्लो।' },
+    },
+
+    calendar: {
+      showList: 'सूची दिखाएँ',
+      dayEmpty: 'इस दिन कोई वर्कआउट नहीं',
     },
 
     history: {
@@ -1921,7 +1930,6 @@ export const hi = {
       routineFailed: 'रूटीन अपडेट नहीं हो सका',
       endBeforeStart: 'ख़त्म होने का समय शुरू के बाद होना चाहिए।',
       tooLong: 'वर्कआउट ज़्यादा से ज़्यादा 24 घंटे का हो सकता है।',
-      health: 'Apple Health में सहेजा गया',
       healthFailed: 'Apple Health में सहेजा नहीं जा सका।',
     },
 
@@ -1958,7 +1966,6 @@ export const hi = {
     edit: {
       title: 'वर्कआउट बदलें',
       save: 'बदलाव सहेजें',
-      newTitle: 'पिछला वर्कआउट दर्ज करें',
       leaveTitle: 'बिना सहेजे बाहर जाएं?',
       leaveBody: 'यहां किए गए बदलाव चले जाएंगे।',
     },
@@ -2033,7 +2040,15 @@ export const hi = {
     stats: {
       title: 'प्रगति',
       entry: 'प्रगति और रिकॉर्ड',
-      weeks: 'पिछले 12 हफ़्ते',
+      weeks: 'ट्रेनिंग',
+      range: {
+        label: 'समय सीमा',
+        '3m': 'पिछले 3 महीने',
+        '1y': 'साल',
+        all: 'अब तक',
+      },
+      thisMonth: 'इस महीने',
+      thisYear: 'इस साल',
       metric: {
         workouts: 'वर्कआउट',
         duration: 'समय',

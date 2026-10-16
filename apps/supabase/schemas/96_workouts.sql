@@ -655,6 +655,94 @@ grant execute on function public.workout_weeks(integer) to authenticated;
 
 
 -- ---------------------------------------------------------------------------
+-- Monthly bars, for the progress page's Year and All time: the same four
+-- totals per calendar month, empty months included, up to this one.
+--
+-- `p_months` is how many months back, this one included: 12 for Year, so only
+-- that year's sets are added up. Null is all time, from the month of the first
+-- workout (or eleven months back, whichever is earlier, so it is never fewer
+-- than twelve columns).
+--
+-- Months rather than more weeks: a year of weeks is 52 bars on a phone, too
+-- thin to tap, and an imported history goes back further than `workout_weeks`
+-- will count. Bucketed by `log_date`, the workout's own day, as the weeks are.
+-- ---------------------------------------------------------------------------
+create or replace function public.workout_months(p_months integer default null)
+returns table (
+  month       date,
+  workouts    integer,
+  duration_s  integer,
+  volume_kg   numeric,
+  sets        integer
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with this_month as (
+    select date_trunc('month', public.local_today((select auth.uid())))::date as first
+  ),
+  bounds as (
+    select
+      case
+        when p_months is null then least(
+          coalesce(
+            (select date_trunc('month', min(w.log_date))::date
+               from public.workouts w
+              where w.user_id = (select auth.uid())),
+            t.first
+          ),
+          (t.first - interval '11 months')::date
+        )
+        else (t.first - make_interval(months => least(greatest(p_months, 1), 1200) - 1))::date
+      end as first,
+      t.first as last
+    from this_month t
+  ),
+  calendar as (
+    select gs::date as month
+    from bounds b, generate_series(b.first, b.last, interval '1 month') as gs
+  ),
+  per_workout as (
+    select
+      date_trunc('month', w.log_date)::date as month,
+      w.duration_s,
+      coalesce(t.volume_kg, 0) as volume_kg,
+      coalesce(t.sets, 0) as sets
+    from public.workouts w
+    left join (
+      select v.workout_id, sum(v.volume_kg) as volume_kg, count(*) as sets
+      from public.workout_set_values v
+      where v.user_id = (select auth.uid())
+        and v.log_date >= (select b.first from bounds b)
+      group by v.workout_id
+    ) t on t.workout_id = w.id
+    where w.user_id = (select auth.uid())
+      and w.log_date >= (select b.first from bounds b)
+  )
+  select
+    c.month,
+    count(p.month)::integer,
+    coalesce(sum(p.duration_s), 0)::integer,
+    coalesce(sum(p.volume_kg), 0),
+    coalesce(sum(p.sets), 0)::integer
+  from calendar c
+  left join per_workout p on p.month = c.month
+  group by c.month
+  order by c.month;
+$$;
+
+comment on function public.workout_months(integer) is
+  'Workouts, seconds, volume and sets per calendar month for the last p_months '
+  'months (at most 1200), or with null from the first workout''s month (or '
+  'eleven months back, if earlier) to this one; oldest first, empty months included.';
+
+revoke all on function public.workout_months(integer) from public, anon;
+grant execute on function public.workout_months(integer) to authenticated;
+
+
+-- ---------------------------------------------------------------------------
 -- The tab's header: all-time count, this week so far, and the streak.
 --
 -- The streak is counted in WEEKS with at least one workout, ending this week or

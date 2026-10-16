@@ -1348,6 +1348,11 @@ export const ko = {
           free: '음식 {{recipes}}개',
           pro: '무제한',
         },
+        routines: {
+          label: '운동 루틴',
+          free: '{{routines}}개',
+          pro: '무제한',
+        },
         recipeFill: {
           label: '사진으로 음식 채우기',
           free: '',
@@ -1406,6 +1411,8 @@ export const ko = {
         read_recipe: '사진으로 음식을 채우려면 RiceCal Pro가 필요합니다.',
         new_recipe: '내 음식을 {{recipes}}개 넘게 두려면 RiceCal Pro가 필요합니다.',
         trend_range: '한 주보다 더 거슬러 보려면 RiceCal Pro가 필요합니다.',
+        new_routine: '운동 루틴을 {{routines}}개 넘게 두려면 RiceCal Pro가 필요합니다.',
+        workout_range: '3개월보다 더 거슬러 보려면 RiceCal Pro가 필요합니다.',
         review: '더 오래된 돌아보기를 읽으려면 RiceCal Pro가 필요합니다.',
         nudge: 'RiceCal Pro는 한도를 없앱니다.',
       },
@@ -1701,20 +1708,18 @@ export const ko = {
     title: '운동',
 
     overview: {
-      thisWeek_one: '이번 주 운동',
-      thisWeek_other: '이번 주 운동',
+      title: '이번 주',
+      workouts: '운동',
       time: '시간',
       volume: '총 중량',
       streak_one: '{{count}}주 연속',
       streak_other: '{{count}}주 연속',
-      noStreak: '이번 주에 운동하고 연속 기록을 시작하세요',
     },
 
     start: {
       empty: '빈 운동 시작',
       resume: '운동 이어서 하기',
       routine: '시작',
-      past: '지난 운동 기록하기',
       replaceTitle: '이미 진행 중인 운동이 있습니다',
       replaceBody: '그 운동을 버리고 이 운동을 시작할까요?',
       replaceConfirm: '버리고 시작',
@@ -1725,7 +1730,6 @@ export const ko = {
 
     routines: {
       title: '내 루틴',
-      new: '새 루틴',
       newTitle: '새 루틴',
       namePlaceholder: '예: 푸시 데이',
       save: '루틴 저장',
@@ -1791,6 +1795,11 @@ export const ko = {
       glutes: { name: '힙', description: '힙 쓰러스트, 스플릿 스쿼트, 킥백.' },
       hiit: { name: 'HIIT', description: '짧은 세트, 짧은 휴식, 숨이 차게.' },
       mobility: { name: '모빌리티', description: '롤링, 스트레칭, 플로우.' },
+    },
+
+    calendar: {
+      showList: '목록 보기',
+      dayEmpty: '이날은 운동 기록이 없습니다',
     },
 
     history: {
@@ -1923,7 +1932,6 @@ export const ko = {
       routineFailed: '루틴을 업데이트하지 못했습니다',
       endBeforeStart: '종료는 시작보다 뒤여야 합니다.',
       tooLong: '운동은 최대 24시간까지입니다.',
-      health: 'Apple 건강에 저장했습니다',
       healthFailed: 'Apple 건강에 저장하지 못했습니다.',
     },
 
@@ -1960,7 +1968,6 @@ export const ko = {
     edit: {
       title: '운동 편집',
       save: '변경사항 저장',
-      newTitle: '지난 운동 기록',
       leaveTitle: '저장하지 않고 나갈까요?',
       leaveBody: '여기서 만든 변경사항은 사라집니다.',
     },
@@ -2035,7 +2042,15 @@ export const ko = {
     stats: {
       title: '성장',
       entry: '성장과 개인 기록',
-      weeks: '최근 12주',
+      weeks: '트레이닝',
+      range: {
+        label: '기간',
+        '3m': '최근 3개월',
+        '1y': '1년',
+        all: '전체 기간',
+      },
+      thisMonth: '이번 달',
+      thisYear: '올해',
       metric: {
         workouts: '운동',
         duration: '시간',

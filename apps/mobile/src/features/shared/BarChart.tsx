@@ -1,6 +1,7 @@
-import { View } from 'react-native'
+import { StyleSheet, useWindowDimensions, View } from 'react-native'
 
 import { cn, Tappable, Text } from '@/ui'
+import { axisTicks, labelWidth } from './axis'
 
 export type Bar = {
   key: string
@@ -40,10 +41,22 @@ export type BarChartProps = {
    */
   selected?: number | null
   onSelect?: (index: number | null) => void
+  /**
+   * A scale down the right-hand side: about three round values, each with a
+   * faint rule across the bars, so a bar can be read without tapping it.
+   * `format` writes a value as its label; `unit` is what a round number is
+   * counted in (60 for minutes of a figure in seconds, a pound in kilograms),
+   * and the steps are whole units of it. Zero-based charts only, and bars
+   * without `label`s, since the rules are measured against the bars' height.
+   */
+  axis?: { format: (value: number) => string; unit?: number }
   /** Screen-reader summary. The bars themselves are decorative. */
   accessibilityLabel?: string
   className?: string
 }
+
+/** Half the `micro` line, to centre a label on its rule. */
+const HALF_LINE = 7
 
 const fills = {
   pandan: 'bg-pandan',
@@ -65,8 +78,8 @@ const COLUMN = 'h-full min-w-0 flex-1 items-center gap-1.5'
  * A plain column chart.
  *
  * Deliberately not victory-native: every use here is a fixed handful of bars
- * with no axes and at most a tap, and a flex row of rounded Views renders that
- * far more cheaply than a Skia canvas would.
+ * with at most a tap and a few rules, and a flex row of rounded Views renders
+ * that far more cheaply than a Skia canvas would.
  */
 export function BarChart({
   bars,
@@ -76,11 +89,16 @@ export function BarChart({
   height = 110,
   selected = null,
   onSelect,
+  axis,
   accessibilityLabel,
   className,
 }: BarChartProps) {
+  const { fontScale } = useWindowDimensions()
   const values = bars.map((bar) => bar.value)
-  const peak = Math.max(...values, 1)
+  const ticks = axis && scale === 'zero' ? axisTicks(Math.max(...values, 0), axis.unit) : []
+  // With a scale the top rule is the top of the chart, so the rules and the
+  // bars are measured against the same height.
+  const peak = ticks.length ? ticks[ticks.length - 1] : Math.max(...values, 1)
   const low = Math.min(...values)
 
   // A tenth of the spread below the smallest value, so the shortest bar is a
@@ -88,9 +106,15 @@ export function BarChart({
   const floor = scale === 'range' ? low - (peak - low) * 0.1 - 0.001 : 0
   const span = peak - floor || 1
 
-  return (
+  const columns = (
     <View
-      className={cn('flex-row items-end gap-1.5', className)}
+      className={cn(
+        'flex-row items-end',
+        // A year of months is two dozen bars; the usual gap would leave them
+        // thinner than the gaps between them.
+        bars.length > 16 ? 'gap-1' : 'gap-1.5',
+        ticks.length ? 'flex-1' : className,
+      )}
       style={{ height }}
       // One image to VoiceOver, unless its bars are buttons of their own.
       accessible={Boolean(accessibilityLabel) && !onSelect}
@@ -144,6 +168,49 @@ export function BarChart({
           </View>
         )
       })}
+    </View>
+  )
+
+  if (!ticks.length || !axis) return columns
+
+  const labels = ticks.map((tick) => axis.format(tick))
+  const gutter = Math.ceil(Math.max(...labels.map(labelWidth)) * fontScale) + 6
+
+  return (
+    <View className={cn('flex-row', className)} style={{ height }}>
+      <View className="flex-1">
+        {/* Behind the bars: the rules are a scale to read them against, not
+            something drawn over them. The zero rule is the baseline. */}
+        {ticks.map((tick) => (
+          <View
+            key={tick}
+            pointerEvents="none"
+            className="absolute left-0 right-0 bg-line"
+            style={{ bottom: `${(tick / span) * 100}%`, height: StyleSheet.hairlineWidth }}
+          />
+        ))}
+        {columns}
+      </View>
+      <View
+        style={{ width: gutter }}
+        // The bars' own labels already say each value.
+        importantForAccessibility="no-hide-descendants"
+        accessibilityElementsHidden
+      >
+        {/* No label on zero: it would sit on the dates under the chart, and
+            the baseline says it. */}
+        {ticks.slice(1).map((tick, index) => (
+          <Text
+            key={tick}
+            variant="micro"
+            numberOfLines={1}
+            className="absolute right-0"
+            style={{ bottom: `${(tick / span) * 100}%`, transform: [{ translateY: HALF_LINE }] }}
+          >
+            {labels[index + 1]}
+          </Text>
+        ))}
+      </View>
     </View>
   )
 }

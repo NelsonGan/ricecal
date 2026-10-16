@@ -2839,6 +2839,7 @@ export type Database = {
       free_daily_scans: { Args: never; Returns: number }
       free_photo_retention_days: { Args: never; Returns: number }
       free_recipe_limit: { Args: never; Returns: number }
+      free_routine_limit: { Args: never; Returns: number }
       get_shared_recipe: {
         Args: { p_share_slug: string }
         Returns: {
@@ -3605,6 +3606,16 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      workout_months: {
+        Args: { p_months?: number }
+        Returns: {
+          duration_s: number
+          month: string
+          sets: number
+          volume_kg: number
+          workouts: number
+        }[]
       }
       workout_overview: {
         Args: never
