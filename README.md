@@ -3688,9 +3688,11 @@ app/workout/routine/[id].tsx  edit a routine
 app/workout/templates.tsx     the built-in templates; template/[id] is one
 app/workout/stats.tsx         12 weeks of totals, 30 days of muscles, records
 app/workout/settings.tsx      rest timer, units, Apple Health, reminders, CSV export
+app/workout/import.tsx        import a Strong or Hevy CSV
 app/workout/custom.tsx        a custom exercise
 src/features/workouts         the document, catalogue, templates, logger parts
 src/data/workouts.ts          every read and write, and the outbox
+src/data/workout-import.ts    saving an import
 apps/supabase/schemas/42_workouts.sql  the tables and save_workout
 apps/supabase/schemas/96_workouts.sql  every number: volume, 1RM, records, streak
 ```
@@ -3704,11 +3706,12 @@ sets, and marks a record the moment a set beats one. A saved workout can be
 opened, edited, deleted, repeated, shared as text or saved as a routine. Every
 exercise has a page with its history, charts, bests, rep records and muscle
 split. Weekly bars, a 30-day muscle split, a calendar and the personal-records
-list are on the progress screen, and settings exports every set as CSV.
+list are on the progress screen. Settings exports every set as CSV and imports
+a history from Strong or Hevy.
 
 ### The catalogue is code, and every entry has a drawing
 
-`features/workouts/catalogue.ts` holds 159 exercises (gym lifts, bodyweight,
+`features/workouts/catalogue.ts` holds 278 exercises (gym lifts, bodyweight,
 cardio and mobility), each with an equipment, a body part, a level, a MET value
 and a muscle split that sums to 1. **There are no sports.** The tab is a
 training log, and a badminton game or a football match is not one: it has no
@@ -3724,6 +3727,12 @@ any other.
 - **Ids are permanent.** A saved workout stores the id. Renaming is changing
   `name`; removing an entry strands its history (the saved name still reads,
   the picture and the muscles go). Never reuse an id for another movement.
+- **Names are Strong's.** Every exercise Strong ships is in the catalogue under
+  Strong's own name ("Push Up", "Seated Row (Cable)", "Pec Deck (Machine)"),
+  and Hevy uses the same names for most of them, so someone arriving from
+  either app finds the movement they know. The name an entry had before is
+  kept as an alias, so a search for "push-up" still finds it. Only Strong's
+  four sports (climbing, skating, skiing, snowboarding) are left out.
 - **Names stay English in every language**, the way a dish name does. "Lat
   Pulldown" is what the machine is called in every gym the app is used in. The
   words around the names (muscles, equipment, categories) are translated.
@@ -3734,7 +3743,10 @@ any other.
 
 **The drawings** are 320 px WebPs in `apps/mobile/assets/exercises/`, one per
 id, registered in the generated `exerciseArt.generated.ts`. A test fails when an
-exercise has none. To add or redraw one:
+exercise has none, apart from the 48 entries added for parity with Strong while
+Codex image generation was at its usage limit: they are listed in that test
+(`awaitingArt` in `model.test.ts`), draw their category's icon until then, and
+**must be drawn before the tab ships**. To add or redraw one:
 
 ```sh
 node scripts/exercise-art/generate.mjs --only <id>[,<id>] [--force]
@@ -4215,8 +4227,8 @@ warm-up, drop and failure sets; RPE; supersets; per-exercise rest with ±15 s an
 skip; plate calculator and warm-up sets; live records; rep records and charts
 per exercise; muscle split; weekly bars, calendar and week streak; the Live
 Activity with its buttons; Apple Health; past workouts and late finishes;
-reminders; custom exercises; kg and lb; keeping the screen on; sharing a workout
-and CSV export.
+reminders; custom exercises; kg and lb; keeping the screen on; sharing a workout;
+CSV export; and importing a Strong or Hevy history.
 
 Left out on purpose:
 - **Routine folders.** The built-in templates are already grouped, and a user's
@@ -4226,8 +4238,7 @@ Left out on purpose:
   is a separate decision about what the feed is for.
 - **Body measurements.** Weight is already logged on Today; tape measurements
   belong there, not in a training log.
-- **A watch app and CSV import.** Each is a project of its own, not a gap in
-  this one.
+- **A watch app.** A project of its own, not a gap in this one.
 - **Sports.** A game has no sets, reps or weights, so logging one here was a
   timer with a picture; the health store already has it from a watch, and it
   reaches the budget from there.
@@ -4248,12 +4259,84 @@ in the system code page. iOS hands the file to the share sheet. React Native's
 intent's size limit, so Android asks for a folder (`Directory.pickDirectoryAsync`)
 and writes the file there.
 
+### Importing from Strong and Hevy
+
+Settings, then "Import from Strong or Hevy": pick the CSV either app exports,
+see what is in it, import. `features/workouts/import/` is pure and tested from
+strings; `data/workout-import.ts` does the saving.
+
+```
+csv.ts     a real CSV reader: quotes, commas and line breaks in notes, BOM, ';'
+parse.ts   both formats into workouts, numbers still in the file's units
+names.ts   every built-in Strong and Hevy name, and the catalogue entry it is
+match.ts   a name to a catalogue entry, or null for a custom exercise
+build.ts   the documents save_workout takes, plus the custom exercises to make
+```
+
+**The two formats.** Strong writes `Date, Workout Name, Duration, Exercise Name,
+Set Order, Weight, Reps, Distance, Seconds, Notes, Workout Notes, RPE`, one row
+a set. Set Order is the set's number, `W`, `D` or `F` for a warm-up, drop or
+failure set, or `Rest Timer` for the rest Strong timed after it; those rows are
+not sets, and the rest most used becomes the exercise's own rest. Duration is
+the whole workout's ("1h 5m") on every row. Hevy writes `title, start_time,
+end_time, description, exercise_title, superset_id, exercise_notes, set_index,
+set_type, weight_kg, reps, distance_km, duration_seconds, rpe`, with
+`weight_lbs` and `distance_miles` for an account in pounds, a date like
+"14 Oct 2026, 17:14" in whatever language the app is set to, and supersets
+numbered.
+
+- **Strong does not say its units.** Its Weight and Distance are in whatever the
+  app was set to, so the preview asks, defaulting to the account's own. Hevy
+  names the unit in the column.
+- **Both write wall-clock time with no zone**, so a workout is filed at the time
+  and on the day the file says, in the phone's zone. Hevy's own import of a
+  Strong file reads Strong's times as UTC: a Hevy export of a history that came
+  from Strong is shifted by the phone's offset, and is imported as Hevy wrote it.
+- **Importing twice adds nothing.** An imported workout's id is a hash of its
+  start and name in the file, and a workout already in the history is skipped
+  rather than written over, so an edit made since survives a second import.
+  Already there means that id, any workout starting within a minute of it, or
+  one with the same name and set count starting within 14 hours. The last is
+  for someone who moved from Strong to Hevy and imports both files: Hevy's
+  copies of the Strong workouts are shifted by up to the largest time-zone
+  offset (above), and without it every one of them came in twice.
+- **Not written to Apple Health.** The app that logged them already did.
+
+**Names are looked up, never guessed.** `names.ts` lists all 253 names Strong
+ships (published in Fitnotes2Hevy's `strong_exercises.txt`) and all 430 Hevy
+titles (the Hevy block of LiftShift's exercise dataset), each with the
+catalogue id it is, or null. Every mapping was checked against openGym's
+importer, which wins where the sources disagree: Strong's plain "Cable
+Kickback" is the triceps movement. The tables are per app because the apps
+disagree: Strong's plain "Hack Squat" and "Chest Fly" are the machines (Hevy's
+own Strong importer files them so), Hevy's plain "Hack Squat" is the barbell
+lift. A Hevy title mapped to null is a movement the catalogue does not have (a
+suspension, single-leg or kettlebell variant), listed so nothing looser can
+file it under another lift. A name in neither table matches only a catalogue
+name or alias with its words reordered ("Barbell Bench Press"); anything else
+becomes the person's own custom exercise, with equipment read from its
+brackets and tracking from its numbers. openGym and LiftShift are AGPL, so they
+were read for facts about the formats and names; none of their code is in here.
+
+**A saved exercise carries its own tracking**, so the file's numbers decide it
+where the catalogue's would lose one: a sit-up done holding a plate imports as
+a weighted sit-up, and a plank logged as reps keeps its reps. A number past the
+database's limits (a 2,000 kg set) is a broken cell and is dropped and counted,
+not kept as a record nobody can beat.
+
+To map a new name, add it to the app's table in `names.ts`; `import.test.ts`
+fails if it points at an id that does not exist.
+
 ### Releasing it
+
+**Not before the 48 drawings in `awaitingArt` exist** (see the catalogue
+section): run `generate.mjs` once Codex's image limit resets, look at every
+one, `process.py`, then empty the list.
 
 Additive end to end. Two migrations add two enums, five tables, three views,
 eight functions and three `user_settings` columns with defaults, and touch
 nothing an older binary reads; no edge function or Worker changes. Deploy the
-migrations before the app, as always. The four analytics events are in the
+migrations before the app, as always. The five analytics events are in the
 canonical table under Analytics; sharing and exporting send none.
 
 ---
@@ -5050,7 +5133,7 @@ events, 815 weekly users, 338 installs) ×4.3.
 | Source | Estimated events / month | Basis |
 | --- | --- | --- |
 | The 48 decision events | 230,000 | Mixpanel's week minus its SDK events, ×4.3. `Log Sheet Opened`, `Food Searched`, `Meal Logged` and `Food Picked` are three quarters of it |
-| Workout events (`Workout Started`, `Finished`, `Discarded`, `Routine Saved`) | 4,000 | New with the Workouts tab, so no history: about 60 workouts a day at launch, each a start and an end, plus routine saves |
+| Workout events (`Workout Started`, `Finished`, `Discarded`, `Routine Saved`, `Workouts Imported`) | 4,000 | New with the Workouts tab, so no history: about 60 workouts a day at launch, each a start and an end, plus routine saves. An import is one event however many workouts it brings |
 | `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
 | `First App Open` | 1,500 | ~340 installs a week |
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
@@ -5142,6 +5225,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `app/workout/finish.tsx`<br>`app/workout/edit/[id].tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. A past workout logged after the fact sends it from its own save, so it closes the `Workout Started` its editor sent. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
 | Workout Discarded | ricecal_workout_discarded | sets: number; minutes: number | `src/features/workouts/start.tsx` | A running workout is thrown away from the logger, the "still training?" prompt, or by starting another over it; once per discard, with its ticked sets and minutes. |
 | Routine Saved | ricecal_routine_saved | is_new: boolean; exercises: number; from_template: boolean | `src/data/workouts.ts` | A routine insert or update succeeds, including a template added to the user's routines or a workout saved as one; each success, with counts only. |
+| Workouts Imported | ricecal_workouts_imported | source: 'strong' &#124; 'hevy'; workouts: number; existing: number; failed: number; custom_exercises: number | `app/workout/import.tsx` | A Strong or Hevy CSV import finishes, whether every workout saved or some were refused; once per import, with counts only. An import stopped by a lost connection sends nothing. |
 | Widget Added | ricecal_widget_added | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a widget kind absent from the previous stored set; one per newly observed kind. The first poll is a silent baseline. |
 | Widget Removed | ricecal_widget_removed | widget: WidgetKind | `src/features/widgets/adoption.ts` | Foreground poll detects a previously stored widget kind absent now; one per removed kind. Intermediate add/remove changes between polls can be missed. |
 | Widget Opened | ricecal_widget_opened | widget: WidgetKind; target: WidgetTarget | `app/widget/[action].tsx` | Supported widget deep link is handled; once per handled widget route. Legacy recipes target remains a valid reported value. |
@@ -5166,7 +5250,7 @@ that instant.
 
 | Contract | PostHog | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 54 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 55 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
@@ -5552,7 +5636,7 @@ includes the optimistic camera/describe insert; it is not a persisted-meal total
 Investigate a new name, a sharp volume change, unexpected free-text properties,
 missing identity, or purchase events from a second producer.
 
-Automated checks: the inventory test (`inventory.test.ts`) checks all 50 names,
+Automated checks: the inventory test (`inventory.test.ts`) checks all 55 names,
 exact GA4 mappings, typed payloads, source-file existence and a nonempty
 trigger column, and forbids app-side settled revenue fields; `engagement.test.ts`
 covers install detection and the once-a-day claim; `posthog.test.ts` covers the

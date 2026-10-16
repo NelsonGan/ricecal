@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
 import { Directory, File, Paths } from 'expo-file-system'
+import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Platform, Share, View } from 'react-native'
@@ -48,6 +49,7 @@ const WEEK = [1, 2, 3, 4, 5, 6, 0] as const
 export default function WorkoutSettingsScreen() {
   const { t } = useTranslation(['workouts', 'common', 'profile'])
   const goBack = useBack('/workouts')
+  const router = useRouter()
   const toast = useToast()
   const { data: settings } = useSettings()
   const update = useUpdateSettings()
@@ -197,6 +199,10 @@ export default function WorkoutSettingsScreen() {
       </Card>
 
       <Card contentClassName="gap-0 px-5 py-1">
+        <ListRow
+          title={t('workouts:import.entry')}
+          onPress={() => router.push('/workout/import')}
+        />
         <ListRow
           title={t('workouts:settings.export')}
           trailing={exporting ? <ActivityIndicator /> : undefined}

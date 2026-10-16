@@ -342,4 +342,258 @@ export const POSES = {
     'lying with the back of the thighs on a foam roller on the floor, hands behind supporting the body, rolling the hamstrings. Side view.',
   'tai-chi':
     'performing a slow tai chi movement: knees softly bent, weight on one leg, both arms floating up in front with open palms. Front-3/4 view.',
+
+  // Chest, added for parity with Strong
+  'around-the-world':
+    'lying flat on its back on a FLAT, LEVEL bench, holding a light dumbbell in each hand with STRAIGHT arms swept all the way OVERHEAD past the top of the head, arms extended behind the head toward the floor, palms up: the far end of a half circle that started at the hips. Side view, so the arms reaching back beyond the head are what reads; NOT a chest fly with the arms out to the sides.',
+  'cable-bench-press':
+    'lying flat on its back on a flat bench placed between the two towers of a cable machine, gripping a cable handle in each hand and pressing both handles straight up above the chest; the two cables run from low pulleys at the sides of the bench up to the hands. 3/4 view showing the cables.',
+  'wide-grip-bench-press':
+    'lying flat on its back on a flat bench, pressing an olympic barbell with a VERY WIDE grip, hands near the plates far outside the shoulders, arms extended above the chest; plates on both ends. Front-3/4 view so the wide grip is obvious.',
+  'band-chest-fly':
+    'standing upright with a resistance band anchored behind at chest height, holding one band end in each hand, arms opened wide out to the sides with a slight elbow bend at the start of a fly; the colored band is clearly visible running behind. Front-3/4 view.',
+  'band-chest-press':
+    'standing in a split stance with a resistance band wrapped behind the upper back, holding one band end in each hand and pressing both hands straight forward at chest height, arms nearly extended; the colored band is clearly visible. Side view.',
+  'assisted-chest-dip':
+    'kneeling on the padded knee platform of an assisted dip machine, hands on the two parallel dip handles, body upright and lowered with elbows bent behind; the tall machine frame and weight stack behind. Side view.',
+  'decline-dumbbell-press':
+    'lying on a decline bench with the head lower than the hips and legs hooked under the foot pads, pressing a pair of dumbbells straight up above the lower chest with arms extended. Side view so the decline angle is obvious.',
+  'smith-decline-press':
+    'lying on a decline bench inside a Smith machine, head lower than hips, legs hooked under the foot pads, pressing the Smith machine bar fixed to two vertical guide rails up above the lower chest. 3/4 view showing the rails and the decline.',
+  'floor-press':
+    'lying flat on its back ON THE FLOOR (no bench), knees bent and feet flat, pressing an olympic barbell straight up above the chest with arms extended; upper arms resting near the floor at the bottom. Side view showing there is no bench.',
+  'cable-incline-press':
+    'lying on an incline bench set at about 30-45 degrees between two cable towers, pressing two cable handles up above the upper chest; cables run from low pulleys at the sides. Side-3/4 view showing the incline and the cables.',
+  'smith-incline-press':
+    'lying on an incline bench set at about 30-45 degrees inside a Smith machine, pressing the Smith bar fixed to two vertical guide rails up above the upper chest. 3/4 view showing the rails and the incline.',
+  'incline-machine-press':
+    'seated on an incline chest press machine with the backrest reclined, pushing two handles forward and UPWARD on an angled path above the upper chest, arms nearly extended; weight stack visible. Side view showing the upward pressing angle.',
+  'iso-lateral-chest-press':
+    'seated on a plate-loaded iso-lateral chest press machine (two independent lever arms with weight plates loaded on horn pegs), pushing both handles forward at chest height; the separate plate-loaded levers are clearly visible. Side-3/4 view.',
+  'banded-push-up':
+    'in a push-up position at the top with arms straight, a resistance band stretched across the upper back with each end held under the hands on the floor; the colored band clearly visible across the back. Side-3/4 view.',
+
+  // Back, added for parity with Strong
+  'machine-back-extension':
+    'seated upright in a back extension machine, upper back pressed against a padded roller, hips strapped in, leaning BACK against the pad with the torso extended; weight stack visible. Side view.',
+  'band-row':
+    'standing with both feet on the middle of a resistance band, hinged forward at the hips with a flat back, pulling the band ends up toward the lower ribs with elbows driven back; the colored band clearly visible. Side view.',
+  'dumbbell-bent-over-row':
+    'standing hinged forward at the hips about 45 degrees with a flat back and soft knees, a dumbbell in EACH hand, pulling both dumbbells up toward the lower ribs at the same time, elbows back. Side view.',
+  'underhand-barbell-row':
+    'standing hinged forward at the hips with a flat back, holding an olympic barbell with an UNDERHAND grip (palms facing forward/up), pulling the bar into the lower stomach with elbows close to the sides. Side view showing the palms-up grip.',
+  'assisted-chin-up':
+    'kneeling on the padded platform of an assisted pull-up machine, gripping the handles overhead with an UNDERHAND grip (palms facing toward the face), pulled up so the chin is near hand height; tall machine frame and weight stack. Front-3/4 view showing the palms-facing-in grip.',
+  'band-deadlift':
+    'standing upright at the top of a deadlift with both feet on a resistance band, holding the band ends in each hand at the hips with arms straight, the band stretched taut from the feet; the colored band clearly visible. Side view.',
+  'dumbbell-deadlift':
+    'hinged at the hips at the bottom of a deadlift with a flat back, knees bent, holding a dumbbell in each hand just in front of the shins, about to stand up. Side view.',
+  'smith-deadlift':
+    'standing at the top of a deadlift inside a Smith machine, holding the Smith bar (fixed to two vertical guide rails) at the thighs with straight arms, hips locked out. 3/4 view showing the rails.',
+  'deficit-deadlift':
+    'standing ON a low raised plate platform, bent over at the start of a deadlift gripping an olympic barbell with plates resting on the floor BELOW the level of its feet, back flat, hips low. Side view showing the feet elevated above the bar.',
+  'iso-lateral-row':
+    'seated facing a plate-loaded iso-lateral row machine, chest against the chest pad, pulling two independent lever handles back toward the torso with elbows behind; plates loaded on the lever horns. Side view.',
+  'band-kneeling-pulldown':
+    'kneeling upright on the floor below a resistance band anchored high overhead, pulling the band ends down to the shoulders with elbows driven down beside the ribs; the colored band clearly visible above. Side-3/4 view.',
+  'machine-lat-pulldown':
+    'seated in a plate-loaded or selectorized lat pulldown MACHINE with thigh pads, pulling two separate lever handles down from overhead to shoulder level (no cable bar, rigid lever arms). Front-3/4 view.',
+  'single-arm-pulldown':
+    'seated or half-kneeling below a high cable pulley, pulling a SINGLE D-handle down with ONE arm to the side of the chest, the other hand resting on the thigh; one cable visible. Front-3/4 view.',
+  'band-underhand-pulldown':
+    'kneeling upright below a resistance band anchored high overhead, holding the band ends with an UNDERHAND grip (palms facing the body) and pulling down to the shoulders. Front-3/4 view.',
+  'underhand-pulldown':
+    'seated at a lat pulldown cable station with thighs under the pads, pulling a straight bar down to the upper chest with an UNDERHAND shoulder-width grip (palms facing the face). Front-3/4 view showing the palms-facing grip.',
+  'wide-grip-pulldown':
+    'seated at a lat pulldown cable station with thighs under the pads, pulling a long lat bar down to the upper chest with a VERY WIDE overhand grip near the bent ends of the bar. Front view so the wide grip is obvious.',
+  'pendlay-row':
+    'bent over with the torso PARALLEL to the floor and a flat back, pulling an olympic barbell from a dead stop on the floor explosively up to the lower chest; plates near the floor. Side view showing the horizontal torso.',
+  'band-assisted-pull-up':
+    'hanging from a pull-up bar with an overhand grip, a thick resistance band looped over the bar and under one bent knee for assistance, pulled up near the top with chin approaching the bar. Front-3/4 view showing the band.',
+  'machine-pullover':
+    'seated in a pullover machine with the upper arms against curved pads, elbows pushing a lever arm down in an arc from overhead to in front of the torso; weight stack visible. Side view.',
+  'wide-grip-cable-row':
+    'seated at a low cable row station with feet on the platform and torso upright, pulling a WIDE straight bar to the lower chest with elbows flared out wide. Side-3/4 view showing the wide bar.',
+  'machine-shrug':
+    'standing in a shrug machine, holding the two machine handles at the sides with straight arms, shoulders raised up toward the ears at the top of a shrug; weight stack or plates visible. Front-3/4 view.',
+  'smith-shrug':
+    'standing upright inside a Smith machine holding the Smith bar (fixed to two vertical guide rails) at the thighs with straight arms, shoulders shrugged up toward the ears. Front-3/4 view showing the rails.',
+  'wide-pull-up':
+    'hanging from a pull-up bar with a VERY WIDE overhand grip far outside the shoulders, pulled up with chin above the bar and elbows flared out. Front view so the wide grip is obvious.',
+  'kipping-pull-up':
+    'on a pull-up bar mid-kip: body swinging in an arch with the legs driven forward and the hips snapping up, hands in an overhand grip, chin rising toward the bar. Side view showing the swinging kip.',
+  'muscle-up':
+    'on a pull-up bar at the transition of a bar muscle-up: torso already above the bar, leaning forward over it, elbows bent beside the bar about to press out to straight arms. Side view.',
+
+  // Shoulders, added for parity with Strong
+  'band-front-raise':
+    'standing upright on the middle of a resistance band, raising both band ends straight forward with straight arms to shoulder height; the colored band clearly visible running from the feet. Side view.',
+  'barbell-front-raise':
+    'standing upright raising an olympic barbell with an overhand grip straight forward with straight arms to shoulder height. Side view.',
+  'cable-front-raise':
+    'standing upright facing away from a low cable pulley, the cable running between the legs, raising a straight bar or handle forward with straight arms to shoulder height. Side view showing the cable.',
+  'plate-front-raise':
+    'standing upright holding a single round weight plate by its sides with both hands, raising it straight forward with straight arms to shoulder height. Side view.',
+  'band-lateral-raise':
+    'standing upright on a resistance band, raising both band ends out to the sides with nearly straight arms to shoulder height, forming a T; the colored band clearly visible. Front view.',
+  'machine-lateral-raise':
+    'seated in a lateral raise machine, upper arms against the side pads, raising both arms out to the sides to shoulder height; weight stack visible. Front-3/4 view.',
+  'cable-overhead-press':
+    'standing or seated between two cable towers, pressing two cable handles from shoulder height straight up overhead, cables running from low pulleys at the sides. Front-3/4 view showing the cables.',
+  'standing-dumbbell-press':
+    'STANDING upright (no bench), pressing a pair of dumbbells overhead with arms nearly extended, dumbbells above the shoulders. Front-3/4 view.',
+  'smith-overhead-press':
+    'seated on an upright bench inside a Smith machine, pressing the Smith bar (fixed to two vertical guide rails) from in front of the shoulders up overhead. 3/4 view showing the rails.',
+  'seated-barbell-press':
+    'seated upright on a bench with back support, pressing an olympic barbell from the front of the shoulders straight up overhead, arms nearly extended. Side-3/4 view.',
+  'cable-reverse-fly':
+    'standing between two high cable pulleys with the cables crossed in front, pulling the handles out and back to the sides with straight arms at shoulder height (reverse fly). Rear-3/4 view.',
+  'push-press':
+    'standing with an olympic barbell resting on the FRONT of the shoulders, caught in the DIP: knees clearly bent in a short quarter squat, torso upright, about to drive the legs up and push the bar overhead. Side view, so the bent knees and the bar at the shoulders are what reads, not a strict press.',
+  'cable-upright-row':
+    'standing upright facing a low cable pulley, pulling a straight bar attached to the cable up the front of the body to chest height with elbows high and out to the sides. Front-3/4 view.',
+  'dumbbell-upright-row':
+    'standing upright pulling a pair of dumbbells up the front of the body to chest height with elbows high and out to the sides. Front-3/4 view.',
+
+  // Arms, added for parity with Strong
+  'machine-curl':
+    'seated at a biceps curl machine with the upper arms on an angled pad, curling the machine handles up toward the shoulders; weight stack visible. Side view.',
+  'band-hammer-curl':
+    'standing on a resistance band, curling both band ends up toward the shoulders with a NEUTRAL grip (palms facing each other), elbows at the sides; the colored band clearly visible. Front-3/4 view.',
+  'cable-hammer-curl':
+    'standing facing a low cable pulley, curling a ROPE attachment up toward the shoulders with a neutral grip (palms facing each other), elbows at the sides. Side-3/4 view showing the rope.',
+  'dumbbell-preacher-curl':
+    'seated at a preacher curl bench, one upper arm resting flat on the angled pad, curling a single dumbbell up toward the shoulder. Side view showing the angled pad.',
+  'machine-preacher-curl':
+    'seated at a preacher curl machine, upper arms flat on the angled pad, curling the machine lever handles up toward the shoulders; weight stack visible. Side view.',
+  'band-reverse-curl':
+    'standing on a resistance band, curling both band ends up with an OVERHAND grip (knuckles up, palms down), elbows at the sides. Side view.',
+  'dumbbell-reverse-curl':
+    'standing upright curling a pair of dumbbells with an OVERHAND grip (knuckles up, palms facing down), elbows at the sides, forearms raised toward horizontal. Side view.',
+  'reverse-concentration-curl':
+    'seated on the end of a bench, elbow braced against the inside of the thigh, curling a single dumbbell with an OVERHAND grip (palm facing down). Front-3/4 view.',
+  'dumbbell-skullcrusher':
+    'lying flat on a bench holding a dumbbell in each hand above the forehead, upper arms vertical and elbows bent so the dumbbells are lowered beside the head. Side view.',
+  'assisted-dip':
+    'kneeling on the padded platform of an assisted dip machine, gripping the two parallel dip handles with the torso UPRIGHT and arms pressing down toward straight (triceps dip). Side view.',
+  'barbell-triceps-extension':
+    'seated upright holding an EZ or straight barbell overhead with both hands, elbows pointing to the ceiling, forearms bent down behind the head. Side view.',
+  'machine-triceps-extension':
+    'seated at a triceps extension machine with the upper arms resting on a pad, extending the forearms to push the handles down and out to straight arms; weight stack visible. Side view.',
+  'cable-triceps-kickback':
+    'hinged forward at the hips beside a low cable pulley, upper arm pinned parallel to the torso, extending ONE arm straight back holding the cable handle (triceps kickback). Side view showing the cable.',
+  'wrist-roller':
+    'standing upright with arms straight out in front at shoulder height, both hands gripping a short wrist roller bar with a rope hanging down to a small weight plate, wrists rolling the rope up. Side view.',
+
+  // Legs, added for parity with Strong
+  'box-squat':
+    'squatting with an olympic barbell on the upper back, sitting back onto a flat plyo box placed behind, shins vertical, about to stand up. Side view showing the box under the hips.',
+  'calf-press':
+    'seated reclined in a 45-degree leg press machine with the legs nearly straight, only the balls of the feet on the bottom edge of the sled platform, pointing the toes to push the platform. Side view focused on the calves and feet.',
+  'cable-pull-through':
+    'standing facing AWAY from a low cable pulley, the rope attachment held between the legs, hinged forward at the hips with a flat back, about to drive the hips forward. Side view showing the cable between the legs.',
+  'glute-ham-raise':
+    'on a glute-ham developer (GHD) machine, knees on the pad and ankles locked under the foot rollers, body straight and horizontal, curling up with the hamstrings. Side view showing the machine.',
+  'machine-glute-kickback':
+    'standing or kneeling in a glute kickback machine, chest on the pad, pushing the foot plate straight back and up with one leg extended behind; weight stack visible. Side view.',
+  'kettlebell-goblet-squat':
+    'in a deep squat holding ONE KETTLEBELL by its horns (handle) at the chest with both hands, elbows inside the knees, torso upright. Front-3/4 view showing the kettlebell.',
+  'barbell-hack-squat':
+    'standing up from the floor holding an olympic barbell BEHIND the legs with straight arms, bar at the back of the thighs, knees bent at the bottom of the lift. Side view showing the bar behind the legs.',
+  'bodyweight-hip-thrust':
+    'upper back resting across a flat bench, feet flat on the floor, hips driven up so the torso and thighs form a straight line, hands across the stomach, no weight. Side view.',
+  'lateral-box-jump':
+    'jumping SIDEWAYS onto a plyo box, captured mid-air beside the box with knees tucked, arms swinging, the box to the side of the body. Front view showing the sideways jump.',
+  'barbell-lunge':
+    'in a forward lunge with an olympic barbell across the upper back, front knee bent 90 degrees, back knee lowered toward the floor. Side view.',
+  'dumbbell-lunge':
+    'in a stationary forward lunge holding a dumbbell in each hand at the sides, front knee bent 90 degrees, back knee lowered toward the floor. Side view.',
+  'overhead-squat':
+    'in a deep squat holding an olympic barbell locked out overhead with a WIDE snatch grip and straight arms, torso upright. Front-3/4 view.',
+  'single-leg-bridge':
+    'lying on its back with one foot flat on the floor and the other leg extended straight in the air, hips lifted so the torso and thigh form a straight line. Side view.',
+  'band-squat':
+    'standing in a squat with feet on a resistance band, band ends looped over the shoulders, knees bent at the bottom of the squat; the colored band clearly visible. Front-3/4 view.',
+  'dumbbell-squat':
+    'in a squat holding a dumbbell in each hand at the sides with straight arms, thighs near parallel, torso upright. Side-3/4 view.',
+  'machine-squat':
+    'in a pendulum or V-squat machine: shoulders under the curved shoulder pads, back against the pad, feet on a flat foot platform, knees bent deep in a squat; plate-loaded lever arm visible. Side view.',
+  'barbell-calf-raise':
+    'standing upright with an olympic barbell across the upper back, raised high up on the toes at the top of a calf raise. Side view.',
+  'bodyweight-calf-raise':
+    'standing upright on the edge of a low step, hands lightly on a wall, raised high on the toes at the top of a calf raise, no weight. Side view.',
+  'dumbbell-calf-raise':
+    'standing upright holding a dumbbell in each hand at the sides, raised high on the toes at the top of a calf raise. Side view.',
+  'smith-calf-raise':
+    'standing inside a Smith machine with the Smith bar (fixed to two vertical guide rails) across the upper back, toes on a low block, raised high on the toes. 3/4 view showing the rails.',
+  'stiff-leg-deadlift':
+    'hinged forward at the hips with the LEGS STRAIGHT (knees locked or nearly locked) and a flat back, an olympic barbell lowered to the shins with straight arms. Side view showing the straight legs.',
+  'dumbbell-stiff-leg-deadlift':
+    'hinged forward at the hips with nearly straight legs and a flat back, a dumbbell in each hand lowered to the shins with straight arms. Side view.',
+  'band-straight-leg-deadlift':
+    'standing on a resistance band, hinged forward with straight legs and a flat back, holding the band ends at the shins; the colored band clearly visible. Side view.',
+  'zercher-squat':
+    'in a squat holding an olympic barbell in the CROOKS OF THE ELBOWS in front of the body (arms bent, bar cradled at the elbows), torso upright. Side-3/4 view showing the bar in the elbows.',
+
+  // Core, added for parity with Strong
+  'cable-twist':
+    'standing side-on to a cable tower, holding a single handle with both hands and straight arms, rotating the torso diagonally across the body in a woodchop from high to low. Front-3/4 view showing the cable.',
+  'cross-body-crunch':
+    'lying on its back with knees bent, one hand behind the head, crunching up and twisting to bring that elbow toward the opposite raised knee. 3/4 view.',
+  'machine-crunch':
+    'seated in an ab crunch machine, chest against the pad or holding the handles at the chest, curled forward in a crunch; weight stack visible. Side view.',
+  'stability-ball-crunch':
+    'lying with the lower back on a large inflatable stability ball, feet flat on the floor, hands behind the head, crunching the shoulders up. Side view showing the ball.',
+  'flat-knee-raise':
+    'lying flat on its back on a flat bench, hands holding the bench behind the head, knees bent and drawn up toward the chest. Side view.',
+  'jackknife-sit-up':
+    'lying on its back folding the body in half: straight legs and straight arms lifting to meet above the hips, hands reaching toward the toes. Side view.',
+  'captains-chair-knee-raise':
+    "supported upright in a captain's chair (vertical knee raise station): forearms on the padded armrests, back against the backrest, knees raised to hip height with the feet off the ground. Side view showing the station.",
+  'knees-to-elbows':
+    'hanging from a pull-up bar with straight arms, knees driven up high so they touch the elbows. Side view.',
+  'oblique-crunch':
+    'lying on its side with legs stacked and slightly bent, bottom arm on the floor, top hand behind the head, crunching the torso sideways toward the hip. Front view.',
+  'reverse-crunch':
+    'lying on its back with arms flat at the sides, knees bent, curling the hips up off the floor and bringing the knees toward the chest. Side view.',
+  'reverse-plank':
+    'facing UP, supported on straight arms with hands under the shoulders and heels on the floor, body in a straight line from shoulders to heels. Side view.',
+  'band-side-bend':
+    'standing upright with one foot on a resistance band, holding the other end in one hand at the side, bending the torso sideways away from the band. Front view.',
+  'cable-side-bend':
+    'standing side-on to a low cable pulley holding a handle in one hand at the side, bending the torso sideways away from the cable. Front view showing the cable.',
+  'dumbbell-side-bend':
+    'standing upright holding ONE dumbbell in one hand at the side, the other hand behind the head, bending the torso sideways toward the dumbbell. Front view.',
+  'torso-rotation':
+    'seated in a rotary torso machine, chest against the pad and arms on the handles, the torso rotated to one side against the machine; weight stack visible. Front-3/4 view.',
+
+  // Full body, added for parity with Strong
+  clean:
+    'catching an olympic barbell in the FRONT RACK (bar resting on the front of the shoulders, elbows high and forward) at the bottom of a DEEP front squat. Side view.',
+  'deadlift-high-pull':
+    'standing extended up on the toes, pulling an olympic barbell with a narrow overhand grip up to chest height with elbows high and out to the sides, at the top of a high pull from the floor. Side-3/4 view.',
+  'hang-clean':
+    'starting from the hang: standing tall having just pulled an olympic barbell from mid-thigh, receiving it in the front rack on the shoulders with elbows high, knees slightly bent. Side view.',
+  'hang-snatch':
+    'receiving an olympic barbell locked out OVERHEAD with a wide snatch grip, in a partial squat, after pulling it from the thighs. Front-3/4 view.',
+  'jump-shrug':
+    'jumping up off the toes with an olympic barbell held at the hips with straight arms, shoulders shrugged up toward the ears, feet just leaving the floor. Side view.',
+  'power-snatch':
+    'standing in a quarter squat (NOT a deep squat) with an olympic barbell locked out overhead with a WIDE snatch grip and straight arms. Front-3/4 view.',
+  'press-under':
+    'in a deep overhead squat position pressing an empty olympic barbell up from behind the neck with a wide snatch grip, arms bending as it moves overhead. Side-3/4 view.',
+  'snatch-pull':
+    'standing extended on the toes with an olympic barbell pulled to the hips with a WIDE snatch grip and STRAIGHT arms, shoulders shrugged, hips fully extended. Side view.',
+  'split-jerk':
+    'in a split stance (one foot forward, one foot back, knees bent) with an olympic barbell locked out overhead with straight arms. Side view showing the split legs.',
+  'sumo-high-pull':
+    'standing in a wide sumo stance pulling an olympic barbell with a NARROW grip up to chin height with elbows high above the hands. Front-3/4 view showing the wide stance.',
+  'kettlebell-thruster':
+    'standing up out of a squat pressing TWO kettlebells from the shoulders straight up overhead in one movement, knees extending. Front-3/4 view.',
+  'band-squat-row':
+    'in a half squat facing a resistance band anchored at chest height, pulling the band ends into the ribs with elbows back as the knees bend. Side view.',
+
+  // Cardio, added for parity with Strong
+  aerobics:
+    'in an aerobics class step: arms reaching up in a V overhead, one knee lifted in a high step, energetic and bouncy, wearing workout shoes. Front-3/4 view.',
 }
