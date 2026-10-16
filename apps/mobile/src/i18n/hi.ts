@@ -1954,6 +1954,10 @@ export const hi = {
       upNext: 'अगला',
       empty: 'अपने iPhone पर एक्सरसाइज़ जोड़ें।',
       syncing: 'iPhone पास होने पर सिंक होगा',
+      previousSet: 'पिछला सेट',
+      nextSet: 'अगला सेट',
+      startedTitle: 'आपकी घड़ी पर वर्कआउट शुरू हुआ',
+      startedBody: '{{name}}। यहाँ देखने के लिए टैप करें।',
     },
 
     stale: {

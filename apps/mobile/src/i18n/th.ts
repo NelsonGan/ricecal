@@ -1949,6 +1949,10 @@ export const th = {
       upNext: 'ถัดไป',
       empty: 'เพิ่มท่าใน iPhone',
       syncing: 'ซิงค์เมื่อ iPhone อยู่ใกล้',
+      previousSet: 'เซ็ตก่อนหน้า',
+      nextSet: 'เซ็ตถัดไป',
+      startedTitle: 'เริ่มออกกำลังกายบนนาฬิกาแล้ว',
+      startedBody: '{{name}} แตะเพื่อติดตามที่นี่',
     },
 
     stale: {

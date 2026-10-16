@@ -462,6 +462,16 @@ com.apple.CoreSimulator.SimRuntime.watchOS-27-0`, then `xcrun simctl pair <watch
 - `isWatchAppInstalled` stays false for a watch app installed directly, and
   `transferUserInfo` can take minutes or never arrive between simulators; both
   are handled in the app, and both make a simulator look more broken than it is.
+- **A second, smaller watch for layout** (the SE 40 mm is the narrowest) can be
+  paired with the same phone (`simctl pair`, then `simctl pair_activate`).
+  After any switch the phone's WatchConnectivity stalls at "informing daemon
+  ready for session state" and nothing crosses, even after relaunching the app;
+  shut down and boot both simulators, then give it a minute. Switch back the
+  same way and `simctl unpair` the extra pair.
+- The driver's `activate()` launches the watch app if it is not running, and
+  XCTest then ends that app with the test, so after a reinstall the watch shows
+  the launch screen once the steps finish. With a workout running, watchOS
+  relaunches it for the session, which is not a crash.
 - The watch app's logs: `xcrun simctl spawn <watch> log show --last 2m
   --predicate 'process == "RiceCalWatch"'`. Its own lines start `[RiceCalWatch]`.
 

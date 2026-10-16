@@ -20,8 +20,15 @@ import WatchKit
 final class WatchStore: ObservableObject {
   static let shared = WatchStore()
 
-  @Published private(set) var phone: WatchState?
-  @Published private(set) var pending: [WatchCommand] = []
+  @Published private(set) var phone: WatchState? {
+    didSet { refresh() }
+  }
+  @Published private(set) var pending: [WatchCommand] = [] {
+    didSet { refresh() }
+  }
+  /// The phone's workout with the presses it has not confirmed laid over it,
+  /// worked out when either changes rather than on every read from a view.
+  @Published private(set) var workout: WatchWorkout?
   @Published private(set) var reachable = false
   @Published private(set) var heartRate: Int?
   @Published private(set) var activeKcal: Double = 0
@@ -69,17 +76,19 @@ final class WatchStore: ObservableObject {
     if let text = defaults.string(forKey: "RiceCalUnsentTraces") {
       unsent = Wire.decode([HeartTrace].self, text) ?? []
     }
+    // Assignments in an initialiser do not run `didSet`.
+    refresh()
     link.onState = { [weak self] text in
       DispatchQueue.main.async { self?.receive(text) }
     }
     link.onReachability = { [weak self] reachable in
       DispatchQueue.main.async { self?.reachable = reachable }
     }
-    link.onActivated = { [weak self] in
+    link.onReady = { [weak self] in
       DispatchQueue.main.async { self?.resend(force: true) }
     }
     recorder.onRecovered = { [weak self] in self?.reconcile() }
-    recorder.onHeartRate = { [weak self] bpm in self?.heard(bpm) }
+    recorder.onHeartRate = { [weak self] bpm in self?.pulse(bpm) }
     recorder.onEnergy = { [weak self] kcal in self?.activeKcal = kcal }
   }
 
@@ -109,7 +118,10 @@ final class WatchStore: ObservableObject {
   var signedIn: Bool { phone?.signedIn ?? false }
   var routines: [WatchRoutine] { phone?.routines ?? [] }
 
-  var workout: WatchWorkout? { Self.project(phone?.workout, pending: pending) }
+  private func refresh() {
+    let projected = Self.project(phone?.workout, pending: pending)
+    if projected != workout { workout = projected }
+  }
 
   /// Whether presses are still on their way to the phone.
   var syncing: Bool { !pending.isEmpty }
@@ -122,6 +134,28 @@ final class WatchStore: ObservableObject {
       }
     }
     return Self.next(in: workout)
+  }
+
+  /// Whether this set is the first or the last in the order the workout is done.
+  func ends(of setId: String) -> (first: Bool, last: Bool) {
+    let order = workout.map(Self.walk) ?? []
+    guard let index = order.firstIndex(where: { $0.set.id == setId }) else { return (true, true) }
+    return (index == 0, index == order.count - 1)
+  }
+
+  /// Moves the set page to the set before or after the one it shows.
+  func step(from setId: String, by offset: Int) {
+    let order = workout.map(Self.walk) ?? []
+    guard let index = order.firstIndex(where: { $0.set.id == setId }),
+      order.indices.contains(index + offset)
+    else { return }
+    WKInterfaceDevice.current().play(.click)
+    picked = order[index + offset].set.id
+  }
+
+  /// The letter a warm-up, drop or failure set is marked with; nothing for a working set.
+  func badge(for kind: String) -> String? {
+    ["warmup", "drop", "failure"].contains(kind) ? label(kind) : nil
   }
 
   // MARK: From the phone
@@ -155,8 +189,9 @@ final class WatchStore: ObservableObject {
       // So the copy the system keeps for the phone is the shorter list.
       link.sendPending(pending)
     }
+    let unsentBefore = unsent.count
     unsent.removeAll { phone.heard.contains($0.workoutId) }
-    saveUnsent()
+    if unsent.count != unsentBefore { saveUnsent() }
   }
 
   /**
@@ -169,7 +204,7 @@ final class WatchStore: ObservableObject {
     guard force || now.timeIntervalSince(lastResend) > 3 else { return }
     lastResend = now
     if !pending.isEmpty { link.sendPending(pending) }
-    for trace in unsent { link.send(trace) }
+    for trace in unsent { link.send(trace, queueIfAway: false) }
   }
 
   /**
@@ -222,18 +257,12 @@ final class WatchStore: ObservableObject {
     summary = nil
     picked = nil
     page = .set
+    // The workout it makes is the one drawn at once, and `reconcile`, which
+    // runs on every press, starts its session.
     enqueue(
       WatchCommand(
         seq: nextSeq(), workoutId: workoutId, type: "start", routineId: routine.id, name: routine.name,
         exercises: exercises))
-    Task {
-      _ = await recorder.requestAuthorization()
-      if await recorder.start(workoutId: workoutId, startDate: Date()) {
-        reconcile()
-      } else {
-        couldNotRecord = workoutId
-      }
-    }
   }
 
   func complete(_ exercise: WatchExercise, _ set: WatchSet, figures: Figures) {
@@ -315,7 +344,14 @@ final class WatchStore: ObservableObject {
       let recording = recorder.workoutId
       // The phone says how its workout ended: saved, or thrown away.
       if let recording, let ended = phone?.ended.first(where: { $0.id == recording }) {
-        endRecording(saved: ended.saved, at: Date(timeIntervalSince1970: ended.at / 1000), workoutId: recording)
+        // A trace the phone already has came from another watch, the one
+        // worn for the rest of the workout, and that one is the recording.
+        // Saved here as well, it made a second Health copy and sent a trace
+        // with nothing in it that replaced the real one.
+        let recordedElsewhere = phone?.heard.contains(recording) == true
+        endRecording(
+          saved: ended.saved && !recordedElsewhere,
+          at: Date(timeIntervalSince1970: ended.at / 1000), workoutId: recording)
         return
       }
       guard let running else {
@@ -347,9 +383,10 @@ final class WatchStore: ObservableObject {
       return
     }
     guard let running, summary?.workoutId != running.id, couldNotRecord != running.id else { return }
-    // A session HealthKit kept may be on its way back; starting another now
-    // would make two. Recovery calls this again when it is done.
-    guard !recorder.isRecovering else { return }
+    // A session HealthKit kept may be on its way back, or one is already
+    // starting; starting another now would make two. Each calls this again
+    // when it is done.
+    guard !recorder.isRecovering, !recorder.isStarting else { return }
     // Only on the wrist, or when the phone launched this app for it: a
     // session cannot be started from the background otherwise.
     let active = WKApplication.shared().applicationState == .active
@@ -361,7 +398,7 @@ final class WatchStore: ObservableObject {
     let from = Date().timeIntervalSince(started) < 3 * 3600 ? started : Date()
     let id = running.id
     Task {
-      _ = await recorder.requestAuthorization()
+      await recorder.requestAuthorization()
       if await recorder.start(workoutId: id, startDate: from) {
         reconcile()
       } else {
@@ -394,7 +431,7 @@ final class WatchStore: ObservableObject {
         unsent.removeAll { $0.workoutId == trace.workoutId }
         unsent.append(trace)
         saveUnsent()
-        link.send(trace)
+        link.send(trace, queueIfAway: true)
         if summary?.workoutId == trace.workoutId {
           let heard = trace.bpm.compactMap { $0 }
           if !heard.isEmpty { summary?.avgBpm = heard.reduce(0, +) / heard.count }
@@ -410,7 +447,7 @@ final class WatchStore: ObservableObject {
     activeKcal = 0
   }
 
-  private func heard(_ bpm: Int) {
+  private func pulse(_ bpm: Int) {
     heartRate = bpm
     readings.append(bpm)
     guard let id = recorder.workoutId, Date().timeIntervalSince(lastPulse) >= 5 else { return }
@@ -430,7 +467,6 @@ final class WatchStore: ObservableObject {
         guard let self, self.workout?.rest?.endsAt == rest.endsAt else { return }
         self.restBuzzedFor = rest.endsAt
         WKInterfaceDevice.current().play(.stop)
-        self.objectWillChange.send()
       }
     }
   }
@@ -523,12 +559,12 @@ final class WatchStore: ObservableObject {
   }
 
   /**
-   The set to do next: the first not done, in the order a workout is done. A
-   superset is the run of neighbouring exercises sharing its number, done a
-   round at a time, so after A1 comes B1. The phone's Live Activity walks it
-   the same way.
+   Every set in the order a workout is done. A superset is the run of
+   neighbouring exercises sharing its number, done a round at a time, so after
+   A1 comes B1. The phone's Live Activity walks it the same way.
    */
-  static func next(in workout: WatchWorkout) -> (exercise: WatchExercise, set: WatchSet)? {
+  static func walk(_ workout: WatchWorkout) -> [(exercise: WatchExercise, set: WatchSet)] {
+    var order: [(exercise: WatchExercise, set: WatchSet)] = []
     var start = 0
     let exercises = workout.exercises
     while start < exercises.count {
@@ -539,13 +575,18 @@ final class WatchStore: ObservableObject {
       let run = exercises[start..<end]
       let rounds = run.map(\.sets.count).max() ?? 0
       for index in 0..<rounds {
-        for exercise in run where index < exercise.sets.count && !exercise.sets[index].done {
-          return (exercise, exercise.sets[index])
+        for exercise in run where index < exercise.sets.count {
+          order.append((exercise, exercise.sets[index]))
         }
       }
       start = end
     }
-    return nil
+    return order
+  }
+
+  /// The set to do next: the first not done, in that order.
+  static func next(in workout: WatchWorkout) -> (exercise: WatchExercise, set: WatchSet)? {
+    walk(workout).first { !$0.set.done }
   }
 
   static func doneSets(_ workout: WatchWorkout) -> Int {

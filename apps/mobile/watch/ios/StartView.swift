@@ -19,17 +19,13 @@ struct StartView: View {
         } else {
           Section(store.label("routines")) {
             ForEach(store.routines) { routine in
+              // The name alone: the exercises are one tap in, and a list of
+              // them under every name made three routines a screen of text.
               NavigationLink(value: routine.id) {
-                VStack(alignment: .leading, spacing: 2) {
-                  Text(routine.name)
-                    .font(.system(.headline, design: .rounded))
-                    .lineLimit(2)
-                  Text(routine.exercises.map(\.name).joined(separator: ", "))
-                    .font(.caption2)
-                    .foregroundStyle(Palette.muted)
-                    .lineLimit(2)
-                }
-                .padding(.vertical, 2)
+                Text(routine.name)
+                  .font(.system(.headline, design: .rounded))
+                  .lineLimit(2)
+                  .padding(.vertical, 6)
               }
             }
           }
@@ -74,7 +70,8 @@ struct RoutinePreview: View {
       .listRowBackground(Capsule().fill(Palette.pandan))
 
       ForEach(routine.exercises) { exercise in
-        HStack {
+        HStack(spacing: 8) {
+          ExerciseArt(exerciseId: exercise.exerciseId, size: 32)
           Text(exercise.name)
             .font(.footnote)
             .lineLimit(2)
@@ -86,5 +83,34 @@ struct RoutinePreview: View {
       }
     }
     .navigationTitle(routine.name)
+  }
+}
+
+/**
+ An exercise's drawing, the app's own, on a white disc as the phone shows it
+ on a light card. Made small for the watch at prebuild (`withWatch.js`); a
+ custom exercise has none and draws a dumbbell instead.
+ */
+struct ExerciseArt: View {
+  let exerciseId: String
+  var size: CGFloat = 36
+
+  var body: some View {
+    let name = "exercise-\(exerciseId)"
+    ZStack {
+      Circle().fill(Color.white)
+      if UIImage(named: name) != nil {
+        Image(name)
+          .resizable()
+          .scaledToFit()
+          .padding(size * 0.1)
+      } else {
+        Image(systemName: "dumbbell.fill")
+          .font(.system(size: size * 0.42))
+          .foregroundStyle(Palette.onPandan.opacity(0.55))
+      }
+    }
+    .frame(width: size, height: size)
+    .accessibilityHidden(true)
   }
 }

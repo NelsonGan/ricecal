@@ -26,6 +26,7 @@ import {
   useSettings,
 } from '@/data'
 import { track } from '@/lib/analytics'
+import { announceNotice } from '@/lib/notifications'
 import { UNIT_KEY, unitFor } from '@/lib/units'
 import { useToast } from '@/ui'
 import { distanceUnitFor } from './format'
@@ -113,32 +114,34 @@ function useWatchSync(): void {
     [workout, previous, defaultRestS],
   )
 
-  // Publish, a moment after the last change. The revision is stamped as it
-  // goes, so the watch can tell an older state from a newer one.
-  const body = useMemo(
-    () =>
-      watching
-        ? JSON.stringify({
-            signedIn: Boolean(userId),
-            unit,
-            distanceUnit: distanceUnitFor(unit),
-            workout: current,
-            ended,
-            heard,
-            routines: routineList,
-            labels,
-          })
-        : null,
-    [watching, userId, unit, current, ended, heard, routineList, labels],
+  // Publish, a moment after the last change, and only when what the watch
+  // would draw changed: a refetch that answers the same last sets rebuilds
+  // `current` without changing it. The revision is stamped as it goes, so the
+  // watch can tell an older state from a newer one.
+  const state = useMemo(
+    (): Omit<WatchState, 'v' | 'rev'> => ({
+      signedIn: Boolean(userId),
+      unit,
+      distanceUnit: distanceUnitFor(unit),
+      workout: current,
+      ended,
+      heard,
+      routines: routineList,
+      labels,
+    }),
+    [userId, unit, current, ended, heard, routineList, labels],
   )
+  const stateKey = useMemo(() => (watching ? JSON.stringify(state) : null), [watching, state])
+  const latestState = useRef(state)
+  latestState.current = state
   useEffect(() => {
-    if (!body) return
-    const timer = setTimeout(() => {
-      const state = { v: 1, rev: Date.now(), ...JSON.parse(body) } as WatchState
-      publishWatchState(state)
-    }, PUBLISH_SETTLE_MS)
+    if (!stateKey) return
+    const timer = setTimeout(
+      () => publishWatchState({ v: 1, rev: Date.now(), ...latestState.current }),
+      PUBLISH_SETTLE_MS,
+    )
     return () => clearTimeout(timer)
-  }, [body])
+  }, [stateKey])
 
   // Ask the watch to record a workout just started here. Once per workout per
   // launch, and not for one the watch started or is already recording.
@@ -196,13 +199,22 @@ function useWatchSync(): void {
         case 'actions':
           for (const action of outcome.actions) dispatchWorkout(userId, action)
           break
-        case 'start':
+        case 'start': {
           startActiveWorkout(userId, outcome.workout)
           track('Workout Started', {
             source: outcome.workout.routineId ? 'routine' : 'empty',
             exercises: outcome.workout.exercises.length,
           })
+          // Started on the wrist, with the phone in a pocket: say so, as the
+          // way to follow it here. With the app open the bar over the tabs
+          // says it, and the notice steps aside.
+          const { t } = latest.current
+          void announceNotice('started', {
+            title: t('workouts:watch.startedTitle'),
+            body: t('workouts:watch.startedBody', { name: outcome.workout.name }),
+          })
           break
+        }
         case 'finish':
           try {
             await finish(outcome.endedAt)
@@ -277,7 +289,8 @@ function useWatchStatus(): WatchStatus {
 
 /**
  * The watch's words, in the phone's language. The keys are the watch's
- * (`WatchLabels.swift`), which falls back to its own English for any missing.
+ * (`watch/ios/Labels.swift`), which falls back to its own English for any
+ * missing.
  */
 function watchLabels(
   t: TFunction<['workouts', 'activity', 'common']>,
@@ -308,8 +321,6 @@ function watchLabels(
     endTitle: t('workouts:watch.endTitle'),
     save: t('workouts:finish.save'),
     discard: t('workouts:logger.discard'),
-    discardTitle: t('workouts:logger.discardTitle'),
-    discardConfirm: t('workouts:logger.discardConfirm'),
     cancel: t('common:action.cancel'),
     nothingTitle: t('workouts:finish.nothingTitle'),
     saved: t('workouts:finish.saved'),
@@ -317,6 +328,8 @@ function watchLabels(
     upNext: t('workouts:watch.upNext'),
     empty: t('workouts:watch.empty'),
     syncing: t('workouts:watch.syncing'),
+    previousSet: t('workouts:watch.previousSet'),
+    nextSet: t('workouts:watch.nextSet'),
     heartRate: t('activity:workout.heartRate'),
     bpm: t('activity:workout.bpmUnit'),
     kcal: t('common:unit.kcal'),

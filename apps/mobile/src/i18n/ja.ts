@@ -1969,6 +1969,10 @@ export const ja = {
       upNext: '次',
       empty: 'iPhoneで種目を追加してください。',
       syncing: 'iPhoneが近くにあると同期します',
+      previousSet: '前のセット',
+      nextSet: '次のセット',
+      startedTitle: 'ウォッチでワークアウトを開始しました',
+      startedBody: '{{name}}。タップしてこちらで確認できます。',
     },
 
     stale: {

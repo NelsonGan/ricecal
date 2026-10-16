@@ -4175,7 +4175,8 @@ background if it has to.
 
 A watch app in the shape of Hevy's and Strong's: start a routine from the wrist,
 see the set to do with its figures already in it, change them with the Digital
-Crown, complete it with one tap, rest with a countdown that taps the wrist when it
+Crown, complete it with the tick between two arrows that step through the sets,
+rest with a countdown that taps the wrist when it
 ends, and finish or throw the workout away. All the while the watch records the
 heart rate, which the phone shows live in the logger and keeps with the saved
 workout, drawn as a line and four zones on its page.
@@ -4194,8 +4195,26 @@ apps/supabase/schemas/43_workout_heart_rates.sql
 On the watch a running workout is three pages side by side, as in the Workout
 app: the controls (end, and the session's figures) on the left, the set to do in
 the middle, where it opens, and every exercise on the right, where any set can be
-picked out of order or one added. With no workout running it lists the routines;
-an empty workout is started on the phone, where the exercise library is.
+picked out of order or one added. With no workout running it lists the routines
+by name alone, and one tap shows a routine's exercises before starting it; an
+empty workout is started on the phone, where the exercise library is.
+
+- **Each exercise is drawn, as on the phone.** The routine's exercises and the
+  running workout's list show the exercise's drawing on a white disc, a dumbbell
+  for a custom exercise. The phone's 320 px WebPs are 4.9 MB, too much for a
+  watch, so `withWatch.js` makes 80 px PNGs of them with `sips` into the watch's
+  asset catalog at prebuild (about 2 MB), as `exercise-<id>`, and skips any whose
+  source has not changed.
+- **The set page's last row is ‹ ✓ ›.** The arrows step to the previous and next
+  set in the order the workout is done (a superset's rounds included), and the
+  tick completes the set on screen; on a completed set it is an outline that
+  takes it back. A row of three keeps every button big enough for a wet thumb.
+- **A workout started on the watch announces itself on the phone**: the phone
+  posts "Workout started on your watch" when the start reaches it, and a tap opens
+  the logger. With the app in front the bar over every tab says the same, so the
+  banner is not shown there. iOS refuses to start a Live Activity from the
+  background, where a watch start lands, so the phone asks again each time the
+  app comes forward (`effects.ts`).
 
 **The phone is the record, and the watch is a remote for it.** The running
 workout stays the MMKV document the logger edits (see "A workout lives on the
@@ -4249,7 +4268,10 @@ twice in two languages.
   the last ten, in MMKV), and when: the end it was saved with, which the finish
   screen can have moved back hours, not the moment of saving. A workout gone
   from the phone could have been saved or thrown away, and the watch saves or
-  discards its session accordingly. The finish screen and `discardWorkout` are
+  discards its session accordingly, unless the phone already has a trace for
+  it: then another watch recorded the workout (the wearer changed watches part
+  way), and saving here too made a second Health copy and sent an empty trace
+  that replaced the real one. The finish screen and `discardWorkout` are
   the only two ways a workout leaves the phone, and both record it. Signing out
   tells the watch too (`WatchSignOut`, at the root): it stops showing the
   account's routines and throws away a recording in progress.
@@ -4339,7 +4361,7 @@ its button names (`watchLabels` in `WatchSync.tsx`, the strings under
 (`Labels.swift`) for any it has not been sent.
 
 **Left out, for now:** starting an empty workout or adding an exercise on the
-watch (the library is 278 drawings on the phone), changing a set's kind or RPE,
+watch (picking from a library of 278 is a phone job), changing a set's kind or RPE,
 complications, and a watch app that works with no iPhone app at all
 (`WKRunsIndependentlyOfCompanionApp` is false: it needs the phone's account and
 routines). Once a workout has started, the phone can be in a locker: presses

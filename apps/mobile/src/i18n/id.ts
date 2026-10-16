@@ -1980,6 +1980,10 @@ export const id = {
       upNext: 'Berikutnya',
       empty: 'Tambahkan gerakan di iPhone.',
       syncing: 'Disinkronkan saat iPhone ada di dekat',
+      previousSet: 'Set sebelumnya',
+      nextSet: 'Set berikutnya',
+      startedTitle: 'Latihan dimulai di jam tangan Anda',
+      startedBody: '{{name}}. Ketuk untuk mengikutinya di sini.',
     },
 
     stale: {

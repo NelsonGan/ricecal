@@ -32,7 +32,7 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
   private(set) var startDate: Date?
   private var readings: [(at: Date, bpm: Double)] = []
   /// A start in progress, so two callers cannot make two sessions.
-  private var starting = false
+  private(set) var isStarting = false
   private(set) var activeKcal: Double = 0
 
   var onHeartRate: ((Int) -> Void)?
@@ -54,18 +54,17 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
 
   // MARK: Permission
 
-  func requestAuthorization() async -> Bool {
-    guard HKHealthStore.isHealthDataAvailable() else { return false }
+  /// Asks once; HealthKit answers at once afterwards. A refusal is not an
+  /// error here: the session then fails to start, and the workout is logged
+  /// without a heart rate.
+  func requestAuthorization() async {
+    guard HKHealthStore.isHealthDataAvailable() else { return }
     do {
       try await healthStore.requestAuthorization(
         toShare: [HKObjectType.workoutType(), energy],
         read: [heartRate, energy, HKObjectType.workoutType()])
-      let status = healthStore.authorizationStatus(for: HKObjectType.workoutType())
-      NSLog("[RiceCalWatch] workout sharing authorization: \(status.rawValue)")
-      return status == .sharingAuthorized
     } catch {
       NSLog("[RiceCalWatch] Health permission failed: \(error.localizedDescription)")
-      return false
     }
   }
 
@@ -81,9 +80,9 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
       if let workoutId { attach(workoutId) }
       return true
     }
-    guard !starting else { return false }
-    starting = true
-    defer { starting = false }
+    guard !isStarting else { return false }
+    isStarting = true
+    defer { isStarting = false }
     let configuration = HKWorkoutConfiguration()
     configuration.activityType = .traditionalStrengthTraining
     configuration.locationType = .indoor
@@ -142,8 +141,9 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
 
   /**
    Ends the session at `endDate`, saves the workout to Apple Health and
-   answers the trace for the phone. Nil when there was no session, or nothing
-   was read.
+   answers the trace for the phone. Nil only when there was no session or no
+   workout to name. A trace with no reading in it is still sent: it is how the
+   phone learns the watch recorded the workout, its Health copy and energy.
    */
   func finish(endDate: Date) async -> HeartTrace? {
     guard let session, let builder else { return nil }
@@ -162,7 +162,8 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
     var healthId: String?
     do {
       try await builder.endCollection(at: end)
-      if let id { try await builder.addMetadata(["RiceCalWorkoutId": id]) }  // in case it was named late
+      // Already on it since it was named (`tag`); again in case it was named late.
+      if let id { try await builder.addMetadata(["RiceCalWorkoutId": id]) }
       let saved = try await builder.finishWorkout()
       healthId = saved?.uuid.uuidString
     } catch {
@@ -175,7 +176,6 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
     // has not caught up yet.
     let all = stored.count >= live.count ? stored : live
     let bpm = Self.buckets(all, from: startDate, to: end, intervalS: Self.intervalS)
-    guard bpm.contains(where: { $0 != nil }) else { return nil }
     return HeartTrace(
       workoutId: id,
       startedAt: startDate.timeIntervalSince1970 * 1000,
