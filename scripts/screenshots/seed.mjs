@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { mkdir, readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { dishesFor, LOCALES } from './fixtures.mjs'
+import { dishesFor, LOCALES, WORKOUT_WEEKS, workoutHistory } from './fixtures.mjs'
 import { sha256, writeJson } from './safety.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
@@ -130,6 +130,11 @@ for (const locale of locales) {
       activity_level: 'light',
       timezone: 'Asia/Kuala_Lumpur',
       onboarded_at: `${day(-90)}T00:00:00Z`,
+      // The news card would cover the first screen captured, and its feed page
+      // switches on posting every meal, which would fill the captured Feed.
+      seen_announcements: ['feed_auto_share_2026_10'],
+      auto_post_foods: false,
+      auto_post_workouts: false,
     },
   })
   await request(`/rest/v1/user_settings?user_id=eq.${account.id}`, {
@@ -210,6 +215,7 @@ for (const locale of locales) {
     'activity_hours',
     'activity_days',
     'health_connections',
+    'workouts',
   ]) {
     await request(
       `/rest/v1/${table}?${table === 'recipes' ? 'owner_id' : 'user_id'}=eq.${account.id}`,
@@ -392,6 +398,50 @@ for (const locale of locales) {
     p_bio: '',
     p_avatar_path: null,
   })
+  // Twice a week for eight weeks, so the logger has a PREVIOUS column to show.
+  // "post": false keeps the history off the feed, as an import does.
+  let workoutCount = 0
+  for (let week = 0; week < WORKOUT_WEEKS; week++)
+    for (const offset of [-(WORKOUT_WEEKS - week) * 7 + 1, -(WORKOUT_WEEKS - week) * 7 + 4]) {
+      const logDate = day(offset)
+      await rpc('save_workout', session.access_token, {
+        p_workout: {
+          id: randomUUID(),
+          name: 'Push day',
+          notes: null,
+          started_at: `${logDate}T01:00:00Z`,
+          ended_at: `${logDate}T01:52:00Z`,
+          log_date: logDate,
+          routine_id: null,
+          kcal: 260,
+          health_workout_id: null,
+          post: false,
+          exercises: workoutHistory(week).map((exercise) => ({
+            exercise_id: exercise.exerciseId,
+            exercise_name: exercise.name,
+            tracking: exercise.tracking,
+            superset: null,
+            rest_s: null,
+            notes: null,
+            sets: exercise.sets.map((set) => ({
+              kind: set.kind,
+              weight_kg: set.weightKg,
+              reps: set.reps,
+              duration_s: null,
+              distance_m: null,
+              rpe: null,
+            })),
+          })),
+        },
+      })
+      workoutCount++
+    }
+  const savedWorkouts = await request(`/rest/v1/workouts?user_id=eq.${account.id}&select=id`, {
+    key: stack.ANON_KEY,
+    token: session.access_token,
+  })
+  if (savedWorkouts.length !== workoutCount)
+    throw new Error(`Workout verification failed for ${locale}`)
   account.feedAuthors ??= []
   const postIds = []
   for (let index = 0; index < 2; index++) {
@@ -556,7 +606,7 @@ for (const locale of locales) {
   account.ready = true
   await save()
   console.log(
-    `${locale}: ${LOCALES[locale].market}, ${logs.length} meals, ${recipes.length} recipes, ${activity.length} activity days, ${postIds.length} feed posts`,
+    `${locale}: ${LOCALES[locale].market}, ${logs.length} meals, ${recipes.length} recipes, ${workoutCount} workouts, ${activity.length} activity days, ${postIds.length} feed posts`,
   )
 }
 console.log(`Ready for ${date}. Local credentials are saved in .secrets/screenshots.json.`)
