@@ -5302,8 +5302,10 @@ with the copy under the `news` namespace in all thirteen languages. Adding one
 is an entry there, its copy, and a picture for each new page in
 `AnnouncementCard`'s `PICTURES`.
 
-A card with several pages is swiped, or stepped with **Next**; the page's own
-button sits under Next, and the last page's Next is **Got it**. Each showing
+A card with several pages is swiped, or stepped with **Next**; a page's own
+button, where it has one, sits beside Next, and the last page's Next is
+**Got it**. Most pages need no button: give one only where there is a switch or
+a screen worth going to. Each showing
 starts on the first page. A release with several changes is one card of pages
 rather than several cards, since only the newest is ever put up (below). A page
 can have a different body on iOS (`IOS_BODIES`), which is how the workouts page
@@ -5352,8 +5354,8 @@ names the Apple Watch there and nowhere else: the watch app is iOS only.
 
 ### 1.1.0, the first announcement
 
-`feed_auto_share_2026_10` is three pages: workouts (its button opens the
-Workouts tab; on iOS the body adds the Apple Watch), meals posting to the feed,
+`feed_auto_share_2026_10` is three pages: workouts (no button; on iOS the body
+adds the Apple Watch), meals posting to the feed,
 and the full-size camera with its question after a photo (its button opens
 Personalisation, where that question's switch is). It is named for its first
 draft, the feed page alone, which reached TestFlight builds of 1.0.15 but no
@@ -5855,7 +5857,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Widget water `preset` | Home-screen action preset volume | Widget action choice; no daily water total or diary history |
 | `announcement` | An id from `features/news/announcements.ts`, lowercase letters, digits and underscores (checked by `see_announcements`); currently `feed_auto_share_2026_10` | Never free text; a renamed id is a new announcement |
 | `source` / `AnnouncementSource` | `launch`, `settings` | `launch` is the card the app puts over Today; `settings` is one opened from the News list under Me |
-| `cta` / `AnnouncementCta` | `workouts`, `edit_profile`, `personalisation` | Where a page's button leads, named for analytics; a tap, not a changed setting |
+| `cta` / `AnnouncementCta` | `edit_profile`, `personalisation` | Where a page's button leads, named for analytics; a tap, not a changed setting |
 | Announcement `via` | `done` ("Got it" on the last page), `close` (cross, scrim or back gesture) | Closing without a page's button |
 | Announcement `page` | The page, from 1, that the button was tapped or the card closed on | How far people read is `Dismissed` broken down by `page`; `done` is always the last page |
 | Auto post `kind`, `enabled` | `foods` or `workouts`; the new switch value | Edit profile switches only; onboarding's default and the announcement's switch-on send nothing |

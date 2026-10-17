@@ -114,10 +114,12 @@ it('counts the button, closes, and opens Edit profile once the card has gone', a
   }
 })
 
-it('steps through the pages with Next, each offering its own button, and ends on "Got it"', async () => {
+it('steps through the pages with Next, offering a page\'s button where it has one, and ends on "Got it"', async () => {
   await render(<AnnouncementCard announcement={feed} source="launch" onClose={jest.fn()} />)
   await presented()
-  expect(screen.getByText('common:nav.workouts')).toBeTruthy()
+  // The workouts page has no button of its own: Next and the cross only.
+  expect(screen.queryByText('social:editProfile')).toBeNull()
+  expect(screen.queryByText('profile:personalisation.title')).toBeNull()
   expect(screen.queryByText('news:done')).toBeNull()
   await toPage(2)
   expect(screen.getByText('social:editProfile')).toBeTruthy()
@@ -140,7 +142,7 @@ it('starts every showing on the first page', async () => {
     <AnnouncementCard announcement={feed} source="settings" onClose={jest.fn()} />,
   )
   expect(screen.getByText('news:next')).toBeTruthy()
-  expect(screen.getByText('common:nav.workouts')).toBeTruthy()
+  expect(screen.queryByText('news:done')).toBeNull()
 })
 
 it('names the Apple Watch on iOS only', async () => {
@@ -173,7 +175,8 @@ it('counts one answer per showing, however fast the taps', async () => {
   const onClose = jest.fn()
   await render(<AnnouncementCard announcement={feed} source="launch" onClose={onClose} />)
   await presented()
-  await fireEvent.press(screen.getByText('common:nav.workouts'))
+  await toPage(2)
+  await fireEvent.press(screen.getByText('social:editProfile'))
   await fireEvent.press(screen.getAllByLabelText('common:a11y.close')[0])
   expect(track).toHaveBeenCalledTimes(2)
   expect(track).toHaveBeenLastCalledWith('Announcement CTA Tapped', expect.anything())
