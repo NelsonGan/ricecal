@@ -828,10 +828,15 @@ export function useWorkoutOutbox(): void {
         // a deadline: a token refresh on a weak signal can wait forever.
         const session = await withDeadline(supabase.auth.getSession(), SAVE_TIMEOUT_MS)
         if (session === TIMED_OUT || !session.data.session) return
-        for (const document of queued) {
+        for (const { id } of queued) {
           if (!alive) break
           // A save or a delete of it is in flight, and answers for it.
-          if (sendingIds.has(document.id)) continue
+          if (sendingIds.has(id)) continue
+          // Read again rather than send the copy taken before the first await:
+          // a workout deleted or discarded behind the one in flight came back,
+          // and a newer edit saved meanwhile was overwritten by the older one.
+          const document = getOutbox(userId).find((current) => current.id === id)
+          if (!document) continue
           const answer = await withDeadline(
             inFlight(document.id, sendWorkout(document)),
             SAVE_TIMEOUT_MS,
