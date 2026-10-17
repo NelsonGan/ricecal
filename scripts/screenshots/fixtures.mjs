@@ -96,46 +96,41 @@ export const LOCALES = {
     market: 'MY',
     region: 'MY',
     portion: 'plate',
-    describe: 'Nasi lemak with an egg and sambal',
   },
   'zh-Hans': {
     market: 'MY',
     region: 'MY',
     portion: '盘',
     names: ['椰浆饭', '印度煎饼', '娘惹叻沙', '炒粿条', '鸡肉沙爹', '蓝花饭'],
-    describe: '一份椰浆饭，加鸡蛋和参巴',
   },
   'zh-Hant': {
     market: 'MY',
     region: 'MY',
     portion: '盤',
     names: ['椰漿飯', '印度煎餅', '娘惹叻沙', '炒粿條', '雞肉沙爹', '藍花飯'],
-    describe: '一份椰漿飯，加雞蛋和參巴',
   },
   ms: {
     market: 'MY',
     region: 'MY',
     portion: 'pinggan',
-    describe: 'Nasi lemak dengan telur dan sambal',
   },
   id: {
     market: 'ID',
     region: 'ID',
     portion: 'porsi',
-    describe: 'Nasi goreng dengan telur dan ayam',
   },
-  th: { market: 'TH', region: 'TH', portion: 'จาน', describe: 'ผัดไทยกุ้งหนึ่งจาน' },
-  vi: { market: 'VN', region: 'VN', portion: 'tô', describe: 'Một tô phở bò với rau thơm' },
-  fil: { market: 'PH', region: 'PH', portion: 'plato', describe: 'Chicken adobo na may kanin' },
-  ja: { market: 'JP', region: 'JP', portion: '人前', describe: '鮭おにぎりと味噌汁' },
-  ko: { market: 'KR', region: 'KR', portion: '인분', describe: '달걀을 올린 비빔밥 한 그릇' },
-  hi: { market: 'IN', region: 'IN', portion: 'प्लेट', describe: 'दाल चावल और सलाद की एक प्लेट' },
-  ta: { market: 'IN_TA', region: 'IN', portion: 'பரிமாறல்', describe: 'சாம்பாருடன் மூன்று இட்லி' },
-  bn: { market: 'BD', region: 'BD', portion: 'প্লেট', describe: 'এক প্লেট খিচুড়ি ও সবজি' },
+  th: { market: 'TH', region: 'TH', portion: 'จาน' },
+  vi: { market: 'VN', region: 'VN', portion: 'tô' },
+  fil: { market: 'PH', region: 'PH', portion: 'plato' },
+  ja: { market: 'JP', region: 'JP', portion: '人前' },
+  ko: { market: 'KR', region: 'KR', portion: '인분' },
+  hi: { market: 'IN', region: 'IN', portion: 'प्लेट' },
+  ta: { market: 'IN_TA', region: 'IN', portion: 'பரிமாறல்' },
+  bn: { market: 'BD', region: 'BD', portion: 'প্লেট' },
 }
 export const SHOTS = [
   ['01-today', '/today'],
-  ['02-describe', '/log?panel=describe'],
+  ['02-workout', '/workout/active'],
   ['03-dish', '/log/food/'],
   ['04-trends', '/trends'],
   ['05-feed', '/feed'],
@@ -151,3 +146,49 @@ export function dishesFor(locale) {
     portion: config.portion,
   }))
 }
+
+// One push day, the same in every language: exercise names stay English in the
+// app. History climbs to just under today's top sets, so the logger shows a
+// PREVIOUS column and marks today's heaviest sets as records.
+const lift = (exerciseId, name, sets) => ({ exerciseId, name, tracking: 'weight_reps', sets })
+export function workoutHistory(week) {
+  const bench = 32.5 + Math.floor(week / 2) * 2.5
+  return [
+    lift('barbell-bench-press', 'Bench Press (Barbell)', [
+      { kind: 'warmup', weightKg: 20, reps: 10 },
+      { kind: 'normal', weightKg: bench, reps: 8 },
+      { kind: 'normal', weightKg: bench, reps: 8 },
+      { kind: 'normal', weightKg: bench, reps: 7 },
+    ]),
+    lift('incline-dumbbell-press', 'Incline Bench Press (Dumbbell)', [
+      { kind: 'normal', weightKg: 12, reps: 10 },
+      { kind: 'normal', weightKg: 12, reps: 10 },
+      { kind: 'normal', weightKg: 12, reps: 9 },
+    ]),
+    lift('lateral-raise', 'Lateral Raise (Dumbbell)', [
+      { kind: 'normal', weightKg: 5, reps: 12 },
+      { kind: 'normal', weightKg: 5, reps: 12 },
+      { kind: 'normal', weightKg: 5, reps: 12 },
+    ]),
+  ]
+}
+export const WORKOUT_WEEKS = 8
+// Today's session, part way through: the bench is done, the incline is under way.
+export const LIVE_WORKOUT = [
+  lift('barbell-bench-press', 'Bench Press (Barbell)', [
+    { kind: 'warmup', weightKg: 20, reps: 10, done: true },
+    { kind: 'normal', weightKg: 42.5, reps: 8, done: true },
+    { kind: 'normal', weightKg: 42.5, reps: 8, done: true },
+    { kind: 'normal', weightKg: 42.5, reps: 7, done: true },
+  ]),
+  lift('incline-dumbbell-press', 'Incline Bench Press (Dumbbell)', [
+    { kind: 'normal', weightKg: 14, reps: 10, done: true },
+    { kind: 'normal', weightKg: 14, reps: 9, done: false },
+    { kind: 'normal', weightKg: null, reps: null, done: false },
+  ]),
+  lift('lateral-raise', 'Lateral Raise (Dumbbell)', [
+    { kind: 'normal', weightKg: null, reps: null, done: false },
+    { kind: 'normal', weightKg: null, reps: null, done: false },
+    { kind: 'normal', weightKg: null, reps: null, done: false },
+  ]),
+]

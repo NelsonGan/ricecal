@@ -6677,8 +6677,9 @@ version, or the job goes red on a change that is genuinely in the repo.
 
 The reusable `codex/localized-screenshot-seeder` branch is capture tooling only.
 Keep it separate from a release branch. The `codex/refresh-screenshot-fixtures`
-branch layers this tooling onto app 1.0.13 and replaces the retired activity
-capture with Feed. It contains six representative dishes
+branch layered this tooling onto app 1.0.13 and replaced the retired activity
+capture with Feed. `screenshots/refresh-1-1-0` carries it onto app 1.1.0 and
+replaces the describe capture with the workout logger. It contains six representative dishes
 per market, 60 generated food photographs, and fixtures for all 13 app languages.
 English, Malay and both Chinese scripts use Malaysian dishes. Indonesian, Thai,
 Vietnamese, Filipino, Japanese and Korean use their own cuisines; Hindi and
@@ -6708,7 +6709,10 @@ only accounts carrying its `screenshot_fixture` marker. A failed seed remains
 unready until a successful rerun, and cached photos are checked in object storage.
 Each gets six public food posts by two followed fictional cooks, in addition to 90 days of
 diary, water and activity history, weigh-ins, six saved recipes and a local Pro
-subscription. Nutrition figures are illustrative display data. Rerun before
+subscription. Sixteen push days over eight weeks are saved with `"post": false`,
+so the logger has a PREVIOUS column and today's heavier sets earn trophies
+without filling the Feed. The feed announcement is marked seen, since its card
+would cover Today and its feed page switches on posting every meal. Nutrition figures are illustrative display data. Rerun before
 capture so Today and the last seven days match the simulator's date. Pass app
 language codes to seed just a subset, for example `pnpm screenshots:seed ja ko`.
 After a local database reset, remove the stale gitignored credentials file
@@ -6731,8 +6735,10 @@ Metro instance and the local backend. It signs into each fixture account with
 the app's client, changes the app language, marks the installation's tour as
 already offered, dismisses transient notices, waits for data, and saves six
 1320 x 2868 PNGs per language. `--locale ja,ko` recaptures a subset while keeping
-other capture records. A describe screen contains a local draft; it never calls
-the model. The output records screen, market, date and device without account
+other capture records. The workout is captured last: it is written into the
+app's own workout store part way through, with a heart rate reading sent the
+way a paired Apple Watch streams one, and cleared once captured, so its bar
+never floats over another screen. The output records screen, market, date and device without account
 identifiers, and records checksums for each PNG and its food provenance. Capture
 requires a fully verified seed and stages the requested screenshots before
 replacing the existing set. Tab navigation is checked against the actual route,

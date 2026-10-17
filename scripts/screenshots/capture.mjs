@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import { mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { LOCALES, SHOTS } from './fixtures.mjs'
+import { LIVE_WORKOUT, LOCALES, SHOTS } from './fixtures.mjs'
 import { captureSet, pngInfo, requireReady, sha256 } from './safety.mjs'
 
 const args = process.argv.slice(2)
@@ -132,7 +133,48 @@ const captured = await captureSet(output, manifest, async (stage) => {
     if (evaluate(`shotFind('currentLanguage').currentLanguage()`) !== locale)
       throw new Error('The app language did not change.')
     await mkdir(resolve(stage, locale), { recursive: true })
-    for (const [name, route] of SHOTS) {
+    // The running workout floats over every tab, so its logger is captured last.
+    const order = [
+      ...SHOTS.filter(([n]) => n !== '02-workout'),
+      ...SHOTS.filter(([n]) => n === '02-workout'),
+    ]
+    const workoutId = randomUUID()
+    // The live heart a paired Apple Watch streams. A reading lasts 20 seconds,
+    // so it is sent again just before the capture.
+    const pulse = `shotFind('receivePulse').receivePulse({workoutId:${JSON.stringify(workoutId)},bpm:132}); 'Pulse sent'`
+    for (const [name, route] of order) {
+      if (name === '02-workout') {
+        // Written through the app's own store, as starting a workout does. The
+        // name is the app's own for a morning start, in this language.
+        const startedAt = Date.now() - 38 * 60 * 1000
+        let tick = startedAt
+        const exercises = LIVE_WORKOUT.map((exercise, e) => ({
+          key: `shot-${e}`,
+          exerciseId: exercise.exerciseId,
+          name: exercise.name,
+          tracking: exercise.tracking,
+          restS: null,
+          superset: null,
+          notes: '',
+          sets: exercise.sets.map((set, i) => {
+            if (set.done) tick += 4 * 60 * 1000
+            return {
+              id: `shot-${e}-${i}`,
+              kind: set.kind,
+              weightKg: set.weightKg,
+              reps: set.reps,
+              durationS: null,
+              distanceM: null,
+              rpe: null,
+              done: set.done,
+              doneAt: set.done ? tick : null,
+            }
+          }),
+        }))
+        evaluate(
+          `shotFind('startActiveWorkout').startActiveWorkout(${JSON.stringify(account.id)},{id:${JSON.stringify(workoutId)},name:shotFind('setLanguage').default.t('workouts:start.morning'),notes:'',startedAt:${startedAt},endedAt:null,routineId:null,exercises:${JSON.stringify(exercises)},rest:null,healthWorkoutId:null}); 'Workout started'`,
+        )
+      }
       const destination = name === '03-dish' ? `/log/food/entry?entryId=${account.heroId}` : route
       evaluate(
         `shotFind('router').router.${['01-today', '04-trends', '05-feed'].includes(name) ? 'navigate' : 'replace'}(${JSON.stringify(destination)}); 'Opening screen'`,
@@ -143,20 +185,12 @@ const captured = await captureSet(output, manifest, async (stage) => {
       )
       await new Promise((done) => setTimeout(done, 1500))
       await wait(() => evaluate(`shotFind('queryClient').queryClient.isFetching() === 0`))
-      if (name === '02-describe') {
-        // Use the screen's real input callback, then blur it for an uncluttered capture.
-        // This changes only the draft, never submits it to the model.
-        evaluate(
-          `globalThis.shotInput=false;const hook=globalThis.__REACT_DEVTOOLS_GLOBAL_HOOK__;for(const root of hook.getFiberRoots(1)){const visit=(f)=>{if(!f)return;if(f.memoizedProps?.maxLength===500&&f.memoizedProps?.onChangeText){f.memoizedProps.onChangeText(${JSON.stringify(LOCALES[locale].describe)});shotInput=true;}visit(f.child);visit(f.sibling)};visit(root.current)};shotFind('Keyboard').Keyboard.dismiss();shotInput`,
-        )
-        if (!evaluate('shotInput')) throw new Error('The describe input was not found.')
-        await new Promise((done) => setTimeout(done, 700))
-      }
       // Wait for images, card animations and native sheets after queries have finished.
       await new Promise((done) => setTimeout(done, 1500))
       evaluate(
         `const hook=globalThis.__REACT_DEVTOOLS_GLOBAL_HOOK__;for(const renderer of hook.renderers.keys()){for(const root of hook.getFiberRoots(renderer)){const visit=(f)=>{if(!f)return;const p=f.memoizedProps;if(p?.value?.toast&&typeof p.value.dismiss==='function')p.value.dismiss();visit(f.child);visit(f.sibling)};visit(root.current)}};'Transient notices dismissed'`,
       )
+      if (name === '02-workout') evaluate(pulse)
       await new Promise((done) => setTimeout(done, 400))
       if (evaluate(`shotFind('currentLanguage').currentLanguage()`) !== locale)
         throw new Error('The app language changed during capture.')
@@ -193,9 +227,17 @@ const captured = await captureSet(output, manifest, async (stage) => {
         photoManifestSha256: manifestHash,
       }
       records.push(record)
+      if (name === '02-workout') {
+        evaluate(
+          `shotFind('clearActiveWorkout').clearActiveWorkout(${JSON.stringify(account.id)}); 'Workout cleared'`,
+        )
+        // Leave the logger before the next account signs in.
+        evaluate(`shotFind('router').router.replace('/today'); 'Back to Today'`)
+        await new Promise((done) => setTimeout(done, 1000))
+      }
       console.log(`${locale}/${name}.png`)
     }
   }
-  return records
+  return records.sort((a, b) => `${a.locale}/${a.screen}`.localeCompare(`${b.locale}/${b.screen}`))
 })
 console.log(`Captured ${captured} screens in ${locales.length} app languages.`)
