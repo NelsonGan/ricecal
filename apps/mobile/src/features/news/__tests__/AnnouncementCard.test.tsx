@@ -39,9 +39,11 @@ async function presented() {
   await act(async () => screen.getByTestId('announcement-card').props.onShow())
 }
 
-/** On to the page numbered from 1, by Next, as the reader would. */
+/** On to the page numbered from 1, by Next, as the reader would, then a moment later. */
 async function toPage(page: number) {
   for (let at = 1; at < page; at++) await fireEvent.press(screen.getByText('news:next'))
+  const later = Date.now() + 1000
+  jest.spyOn(Date, 'now').mockReturnValue(later)
 }
 
 function withPlatform(os: 'ios' | 'android', run: () => Promise<void>) {
@@ -53,6 +55,7 @@ function withPlatform(os: 'ios' | 'android', run: () => Promise<void>) {
 }
 
 beforeEach(() => {
+  jest.restoreAllMocks()
   jest.clearAllMocks()
   mockProfile.seen_announcements = []
 })
@@ -169,6 +172,18 @@ it('counts "Got it" as a dismissal on the last page', async () => {
     via: 'done',
     page: 3,
   })
+})
+
+it('ignores a double tap on Next landing on "Got it" before the last page is in', async () => {
+  const onClose = jest.fn()
+  await render(<AnnouncementCard announcement={feed} source="launch" onClose={onClose} />)
+  await presented()
+  await toPage(2)
+  jest.restoreAllMocks()
+  await fireEvent.press(screen.getByText('news:next'))
+  await fireEvent.press(screen.getByText('news:done'))
+  expect(onClose).not.toHaveBeenCalled()
+  expect(track).not.toHaveBeenCalledWith('Announcement Dismissed', expect.anything())
 })
 
 it('counts one answer per showing, however fast the taps', async () => {

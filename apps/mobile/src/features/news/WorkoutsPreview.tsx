@@ -2,10 +2,12 @@ import { useTranslation } from 'react-i18next'
 import { Platform, View } from 'react-native'
 
 import { useSettings } from '@/data'
-import { ExerciseArt, LiveHeart } from '@/features/workouts'
+import { ExerciseArt, LiveHeart, useExerciseLibrary } from '@/features/workouts'
 import { UNIT_KEY, unitFor } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn, Icon, Text } from '@/ui'
+
+const EXERCISE = 'barbell-squat'
 
 /** Two sets done and one to go, in round numbers in either unit. */
 const SETS = [
@@ -25,6 +27,8 @@ export function WorkoutsPreview() {
   const colors = useThemeColors()
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
+  // The catalogue's own name, which the logger shows in every language.
+  const name = useExerciseLibrary().byId(EXERCISE)?.name ?? ''
 
   return (
     <View
@@ -35,10 +39,9 @@ export function WorkoutsPreview() {
     >
       <View className="w-[208px] gap-2 overflow-hidden rounded-[22px] bg-surface p-3">
         <View className="flex-row items-center gap-2.5">
-          <ExerciseArt exerciseId="barbell-squat" category="legs" size={40} />
-          {/* The catalogue's own name, which the logger shows in every language. */}
+          <ExerciseArt exerciseId={EXERCISE} category="legs" size={40} />
           <Text variant="label" numberOfLines={1} className="shrink">
-            Squat (Barbell)
+            {name}
           </Text>
         </View>
         {SETS.map((set, index) => (

@@ -57,6 +57,13 @@ const IOS_BODIES = {
 const SIDE = 12
 
 /**
+ * How long "Got it" ignores taps after Next put it there. Next becomes Got it
+ * as the last page starts scrolling in, so a quick double tap on Next would
+ * otherwise close the card before that page was seen.
+ */
+const SETTLE_MS = 400
+
+/**
  * One announcement: its picture on a tinted panel, then the words and the way
  * on. A card floating over the screen rather than a page, because it is news
  * about the app, read in passing on the way to something else.
@@ -110,7 +117,10 @@ export function AnnouncementCard({
   // and following that would flick the dots back for a frame.
   const heading = useRef<number | null>(null)
   const [page, setPage] = useState(0)
-  const [pictureHeight, setPictureHeight] = useState(0)
+  // Per announcement: the tallest picture of one says nothing about another's.
+  const [tallest, setTallest] = useState({ id: '', height: 0 })
+  // When Next last put "Got it" on the button. See `SETTLE_MS`.
+  const revealed = useRef(0)
   // Each showing starts on its first page, set during the render that shows
   // it rather than after, so the second page never flashes up first. The
   // count remounts the pager, whose scroll offset would otherwise outlive it.
@@ -168,7 +178,15 @@ export function AnnouncementCard({
     onClose()
   }
 
+  const pictureHeight = tallest.id === shown.id ? tallest.height : 0
+
+  const done = () => {
+    if (Date.now() - revealed.current < SETTLE_MS) return
+    close('done')
+  }
+
   const next = () => {
+    if (page + 1 === pages.length - 1) revealed.current = Date.now()
     heading.current = page + 1
     pager.current?.scrollTo({ x: (page + 1) * pageWidth, animated: true })
     setPage(page + 1)
@@ -252,7 +270,11 @@ export function AnnouncementCard({
                       style={{ minHeight: pictureHeight }}
                       onLayout={(event) => {
                         const measured = event.nativeEvent.layout.height
-                        setPictureHeight((tallest) => Math.max(tallest, measured))
+                        const id = shown.id
+                        setTallest((was) => {
+                          if (was.id !== id) return { id, height: measured }
+                          return measured > was.height ? { id, height: measured } : was
+                        })
                       }}
                     >
                       <Picture />
@@ -302,7 +324,7 @@ export function AnnouncementCard({
                   {t(CTAS[current.cta].label)}
                 </Button>
               ) : null}
-              <Button className="flex-1" onPress={last ? () => close('done') : next}>
+              <Button className="flex-1" onPress={last ? done : next}>
                 {last ? t('news:done') : t('news:next')}
               </Button>
             </View>
