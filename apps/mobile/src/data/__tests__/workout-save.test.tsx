@@ -2,8 +2,8 @@ import { onlineManager, QueryClient, QueryClientProvider } from '@tanstack/react
 import { act, renderHook } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 
-import { forgetOutbox, getOutbox, type WorkoutDocument } from '../workout-outbox'
-import { SAVE_TIMEOUT_MS, useDeleteWorkout, useSaveWorkout } from '../workouts'
+import { enqueueWorkout, forgetOutbox, getOutbox, type WorkoutDocument } from '../workout-outbox'
+import { SAVE_TIMEOUT_MS, useDeleteWorkout, useSaveWorkout, useWorkoutOutbox } from '../workouts'
 
 /**
  * The paths a finished workout takes to the server. Each one decides whether
@@ -13,16 +13,19 @@ import { SAVE_TIMEOUT_MS, useDeleteWorkout, useSaveWorkout } from '../workouts'
  */
 
 type Reply = { error: { code?: string; message: string } | null }
-let mockSave: () => Promise<Reply>
+let mockSave: (sent?: WorkoutDocument) => Promise<Reply>
+let mockSession: { user: { id: string } } | null = null
 const mockDelete = jest.fn()
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
-    rpc: () => ({ abortSignal: () => mockSave() }),
+    rpc: (_name: string, args: { p_workout: WorkoutDocument }) => ({
+      abortSignal: () => mockSave(args.p_workout),
+    }),
     from: () => ({
       delete: () => ({ eq: () => ({ eq: () => mockDelete() }) }),
     }),
-    auth: { getSession: async () => ({ data: { session: null } }) },
+    auth: { getSession: async () => ({ data: { session: mockSession } }) },
   },
 }))
 jest.mock('../session', () => ({ useUserId: () => 'lifter' }))
@@ -58,6 +61,7 @@ beforeEach(() => {
   jest.useRealTimers()
   onlineManager.setOnline(true)
   mockDelete.mockReset()
+  mockSession = null
   mockSave = async () => ({ error: null })
 })
 
@@ -165,4 +169,67 @@ it('takes a queued copy out before deleting, so a flush cannot bring it back', a
   expect(queued()).toEqual([])
   await save.unmount()
   await remove.unmount()
+})
+
+it('re-reads the outbox before each send, so a workout deleted mid-flush stays deleted', async () => {
+  const other: WorkoutDocument = { ...document, id: 'workout-0', name: 'Leg day' }
+  enqueueWorkout('lifter', other)
+  enqueueWorkout('lifter', document)
+  mockSession = { user: { id: 'lifter' } }
+  const sent: string[] = []
+  let release: ((value: Reply) => void) | undefined
+  mockSave = (workout) => {
+    sent.push(workout?.id ?? '')
+    if (workout?.id === other.id) {
+      return new Promise<Reply>((resolve) => {
+        release = resolve
+      })
+    }
+    return Promise.resolve({ error: null })
+  }
+  mockDelete.mockResolvedValue({ error: null })
+  const { wrapper } = setup()
+  // The flush starts on mount and blocks on the first queued workout.
+  const outbox = await renderHook(useWorkoutOutbox, { wrapper })
+  expect(sent).toEqual([other.id])
+
+  const remove = await renderHook(useDeleteWorkout, { wrapper })
+  await act(async () => {
+    await remove.result.current.mutateAsync(document.id)
+  })
+  await act(async () => {
+    release?.({ error: null })
+  })
+  expect(sent).toEqual([other.id])
+  expect(queued()).toEqual([])
+  await outbox.unmount()
+  await remove.unmount()
+})
+
+it('sends the newest queued copy when an edit lands mid-flush', async () => {
+  const other: WorkoutDocument = { ...document, id: 'workout-0', name: 'Leg day' }
+  enqueueWorkout('lifter', other)
+  enqueueWorkout('lifter', document)
+  mockSession = { user: { id: 'lifter' } }
+  const sent: WorkoutDocument[] = []
+  let release: ((value: Reply) => void) | undefined
+  mockSave = (workout) => {
+    if (workout) sent.push(workout)
+    if (workout?.id === other.id) {
+      return new Promise<Reply>((resolve) => {
+        release = resolve
+      })
+    }
+    return Promise.resolve({ error: null })
+  }
+  const { wrapper } = setup()
+  const outbox = await renderHook(useWorkoutOutbox, { wrapper })
+  const edited = { ...document, name: 'Push day, heavier' }
+  enqueueWorkout('lifter', edited)
+  await act(async () => {
+    release?.({ error: null })
+  })
+  expect(sent.map((workout) => workout.name)).toEqual(['Leg day', 'Push day, heavier'])
+  expect(queued()).toEqual([])
+  await outbox.unmount()
 })
