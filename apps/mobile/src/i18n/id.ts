@@ -1731,11 +1731,28 @@ export const id = {
   news: {
     title: 'Berita',
     done: 'Oke',
+    next: 'Lanjut',
+    pageOf: 'Halaman {{page}} dari {{count}}',
+    update110: {
+      title: 'Latihan, posting linimasa, dan kamera baru',
+    },
+    workouts: {
+      title: 'Catat latihanmu',
+      body: 'Lacak set, repetisi, dan istirahat di tab Latihan yang baru.',
+      bodyIos:
+        'Lacak set, repetisi, dan istirahat di tab Latihan yang baru. Di Apple Watch, detak jantungmu juga tercatat.',
+      previewLabel: 'Contoh latihan yang sedang dicatat',
+    },
     feedAutoShare: {
       title: 'Makananmu kini diposting ke linimasa',
       body: 'Latihan yang selesai juga diposting. Matikan salah satunya di Edit profil.',
       you: 'Kamu',
       previewLabel: 'Contoh makanan yang diposting ke linimasamu',
+    },
+    photoNote: {
+      title: 'Kamera kini layar penuh',
+      body: 'Setelah foto, kamera menanyakan sedikit detail agar perkiraan lebih akurat. Matikan di Personalisasi.',
+      previewLabel: 'Contoh pertanyaan setelah foto makanan',
     },
   },
   workouts: {

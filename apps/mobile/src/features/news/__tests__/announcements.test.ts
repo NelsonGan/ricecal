@@ -6,9 +6,10 @@ import {
   announcementsNewestFirst,
 } from '../announcements'
 
-const older: Announcement = { id: 'older', key: 'feedAutoShare', releaseDate: '2026-01-01' }
-const middle: Announcement = { id: 'middle', key: 'feedAutoShare', releaseDate: '2026-05-01' }
-const newest: Announcement = { id: 'newest', key: 'feedAutoShare', releaseDate: '2026-09-01' }
+const pages: Announcement['pages'] = [{ key: 'workouts' }]
+const older: Announcement = { id: 'older', key: 'update110', releaseDate: '2026-01-01', pages }
+const middle: Announcement = { id: 'middle', key: 'update110', releaseDate: '2026-05-01', pages }
+const newest: Announcement = { id: 'newest', key: 'update110', releaseDate: '2026-09-01', pages }
 const onboarded = (seen?: string[]) => ({
   onboarded_at: '2026-01-01T00:00:00Z',
   seen_announcements: seen,
@@ -47,8 +48,12 @@ it('ships ids the server accepts, each once', () => {
   for (const id of ids) expect(id).toMatch(/^[a-z0-9_]{1,64}$/)
 })
 
-it('switches auto post on with the feed announcement, and links to its switch', () => {
-  const feed = ANNOUNCEMENTS.find((a) => a.id === 'feed_auto_share_2026_10')
-  expect(feed?.enables).toEqual({ autoPostFoods: true })
-  expect(feed?.cta).toBe('edit_profile')
+it('switches auto post on with the 1.1.0 announcement, whose feed page links to its switch', () => {
+  const update = ANNOUNCEMENTS.find((a) => a.id === 'feed_auto_share_2026_10')
+  expect(update?.enables).toEqual({ autoPostFoods: true })
+  expect(update?.pages.map((page) => [page.key, page.cta])).toEqual([
+    ['workouts', 'workouts'],
+    ['feedAutoShare', 'edit_profile'],
+    ['photoNote', 'personalisation'],
+  ])
 })

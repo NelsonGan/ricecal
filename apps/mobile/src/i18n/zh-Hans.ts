@@ -1701,11 +1701,27 @@ export const zhHans = {
   news: {
     title: '公告',
     done: '知道了',
+    next: '下一步',
+    pageOf: '第 {{page}} 页，共 {{count}} 页',
+    update110: {
+      title: '训练、动态发布和新相机',
+    },
+    workouts: {
+      title: '记录你的训练',
+      body: '在新的“训练”标签中记录组数、次数和休息。',
+      bodyIos: '在新的“训练”标签中记录组数、次数和休息。用 Apple Watch 还能记录心率。',
+      previewLabel: '记录训练的示例',
+    },
     feedAutoShare: {
       title: '你的餐食现在会发布到动态',
       body: '完成的训练也会发布。可在“编辑个人资料”中分别关闭。',
       you: '你',
       previewLabel: '发布到你动态中的餐食示例',
+    },
+    photoNote: {
+      title: '相机现在是全屏的',
+      body: '拍照后会询问一些细节，让估算更准确。可在“个性化”中关闭。',
+      previewLabel: '拍餐食照片后提问的示例',
     },
   },
   workouts: {
