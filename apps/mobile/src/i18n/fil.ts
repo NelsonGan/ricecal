@@ -1748,11 +1748,28 @@ export const fil = {
   news: {
     title: 'Balita',
     done: 'Sige',
+    next: 'Susunod',
+    pageOf: 'Pahina {{page}} ng {{count}}',
+    update110: {
+      title: 'Workout, post sa feed at bagong camera',
+    },
+    workouts: {
+      title: 'I-log ang mga workout mo',
+      body: 'Subaybayan ang sets, reps at pahinga sa bagong Workout tab.',
+      bodyIos:
+        'Subaybayan ang sets, reps at pahinga sa bagong Workout tab. Sa Apple Watch, naitatala rin ang heart rate mo.',
+      previewLabel: 'Halimbawa ng workout na nilo-log',
+    },
     feedAutoShare: {
       title: 'Naka-post na sa feed mo ang mga kinakain mo',
       body: 'Naipo-post din ang mga natapos na workout. I-off ang alinman sa I-edit ang profile.',
       you: 'Ikaw',
       previewLabel: 'Halimbawa ng pagkaing naka-post sa feed mo',
+    },
+    photoNote: {
+      title: 'Full size na ang camera',
+      body: 'Pagkatapos ng litrato, nagtatanong ito ng ilang detalye para mas tumpak ang tantiya. I-off ito sa Personalisasyon.',
+      previewLabel: 'Halimbawa ng tanong pagkatapos ng litrato ng pagkain',
     },
   },
   workouts: {

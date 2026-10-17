@@ -11,6 +11,7 @@ import {
   doneSets,
   type FinishParams,
   getActiveWorkout,
+  LiveHeart,
   liveTotals,
   RestBar,
   StaleWorkoutDialog,
@@ -239,7 +240,7 @@ function WatchPulse({ workoutId }: { workoutId: string }) {
     <Stat
       label={t('activity:workout.bpmUnit')}
       value={String(bpm)}
-      icon={{ set: 'body', name: 'heart-rate' }}
+      leading={<LiveHeart bpm={bpm} />}
     />
   )
 }

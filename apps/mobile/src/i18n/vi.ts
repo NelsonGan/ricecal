@@ -1719,11 +1719,28 @@ export const vi = {
   news: {
     title: 'Tin tức',
     done: 'Đã hiểu',
+    next: 'Tiếp',
+    pageOf: 'Trang {{page}} / {{count}}',
+    update110: {
+      title: 'Tập luyện, đăng bảng tin và camera mới',
+    },
+    workouts: {
+      title: 'Ghi lại buổi tập',
+      body: 'Theo dõi hiệp, số lần và thời gian nghỉ trong thẻ Tập luyện mới.',
+      bodyIos:
+        'Theo dõi hiệp, số lần và thời gian nghỉ trong thẻ Tập luyện mới. Trên Apple Watch, nhịp tim cũng được ghi lại.',
+      previewLabel: 'Ví dụ về một buổi tập đang được ghi',
+    },
     feedAutoShare: {
       title: 'Bữa ăn của bạn giờ được đăng lên bảng tin',
       body: 'Buổi tập đã hoàn thành cũng được đăng. Tắt từng mục trong Sửa hồ sơ.',
       you: 'Bạn',
       previewLabel: 'Ví dụ về một bữa ăn được đăng lên bảng tin của bạn',
+    },
+    photoNote: {
+      title: 'Camera giờ toàn màn hình',
+      body: 'Sau khi chụp, ứng dụng hỏi thêm vài chi tiết để ước tính chính xác hơn. Tắt trong Cá nhân hoá.',
+      previewLabel: 'Ví dụ về câu hỏi sau khi chụp bữa ăn',
     },
   },
   workouts: {

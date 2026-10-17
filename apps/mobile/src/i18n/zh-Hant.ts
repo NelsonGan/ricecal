@@ -1701,11 +1701,27 @@ export const zhHant = {
   news: {
     title: '公告',
     done: '知道了',
+    next: '下一步',
+    pageOf: '第 {{page}} 頁，共 {{count}} 頁',
+    update110: {
+      title: '訓練、動態發布和新相機',
+    },
+    workouts: {
+      title: '記錄你的訓練',
+      body: '在新的「訓練」分頁中記錄組數、次數和休息。',
+      bodyIos: '在新的「訓練」分頁中記錄組數、次數和休息。用 Apple Watch 還能記錄心率。',
+      previewLabel: '記錄訓練的範例',
+    },
     feedAutoShare: {
       title: '你的餐點現在會發布到動態',
       body: '完成的訓練也會發布。可在「編輯個人資料」中分別關閉。',
       you: '你',
       previewLabel: '發布到你動態中的餐點範例',
+    },
+    photoNote: {
+      title: '相機現在是全螢幕的',
+      body: '拍照後會詢問一些細節，讓估算更準確。可在「個人化」中關閉。',
+      previewLabel: '拍餐點照片後提問的範例',
     },
   },
   workouts: {
