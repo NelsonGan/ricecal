@@ -52,7 +52,7 @@ it('switches auto post on with the 1.1.0 announcement, whose feed page links to 
   const update = ANNOUNCEMENTS.find((a) => a.id === 'feed_auto_share_2026_10')
   expect(update?.enables).toEqual({ autoPostFoods: true })
   expect(update?.pages.map((page) => [page.key, page.cta])).toEqual([
-    ['workouts', 'workouts'],
+    ['workouts', undefined],
     ['feedAutoShare', 'edit_profile'],
     ['photoNote', 'personalisation'],
   ])

@@ -12,12 +12,13 @@
 export type AnnouncementSource = 'launch' | 'settings'
 
 /** Where a page's button leads, named for analytics. */
-export type AnnouncementCta = 'edit_profile' | 'workouts' | 'personalisation'
+export type AnnouncementCta = 'edit_profile' | 'personalisation'
 
 /** One page of an announcement, swiped through in order. */
 export type AnnouncementPage = {
   /** `news:<key>` holds its title and body, and names its picture. */
   key: 'workouts' | 'feedAutoShare' | 'photoNote'
+  /** Only where there is a switch or a screen worth going to; most pages need none. */
   cta?: AnnouncementCta
 }
 
@@ -54,7 +55,7 @@ export const ANNOUNCEMENTS: readonly Announcement[] = [
     key: 'update110',
     releaseDate: '2026-10-16',
     pages: [
-      { key: 'workouts', cta: 'workouts' },
+      { key: 'workouts' },
       { key: 'feedAutoShare', cta: 'edit_profile' },
       { key: 'photoNote', cta: 'personalisation' },
     ],

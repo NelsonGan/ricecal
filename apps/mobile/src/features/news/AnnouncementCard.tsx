@@ -34,7 +34,6 @@ import { WorkoutsPreview } from './WorkoutsPreview'
  */
 const CTAS = {
   edit_profile: { route: '/settings/account', label: 'social:editProfile' },
-  workouts: { route: '/workouts', label: 'common:nav.workouts' },
   personalisation: { route: '/settings/personalisation', label: 'profile:personalisation.title' },
 } as const satisfies Record<AnnouncementCta, { route: Href; label: string }>
 
@@ -69,8 +68,8 @@ const SIDE = 12
  * list; later ones find it seen and change nothing.
  *
  * A release with several changes is one card of pages, swiped or stepped
- * through with Next, each with its own button under it and "Got it" on the
- * last. One card rather than several because only the newest is ever put up.
+ * through with Next, a page's own button (where it has one) beside it and
+ * "Got it" on the last. One card rather than several because only the newest is ever put up.
  *
  * Every way out is counted, with the page it happened on, since "did anyone
  * take the button" and "how far did they read" are the questions an
@@ -287,15 +286,25 @@ export function AnnouncementCard({
                 ))}
               </View>
             ) : null}
-            <View className="gap-1 px-5 pb-5 pt-5">
-              <Button fullWidth onPress={last ? () => close('done') : next}>
-                {last ? t('news:done') : t('news:next')}
-              </Button>
+            {/* A page's own button beside Next rather than under it, the way
+                the photo note puts Skip beside Log: the way on is the big
+                one, and the detour is there without a second row. */}
+            <View className="flex-row items-center gap-3 px-5 pb-5 pt-5">
               {current.cta ? (
-                <Button fullWidth variant="ghost" onPress={takeCta}>
+                // At most half the row: some languages name these screens at
+                // length, and Next keeps its width however long the name is.
+                <Button
+                  variant="ghost"
+                  onPress={takeCta}
+                  className="max-w-[50%] shrink"
+                  contentClassName="px-4"
+                >
                   {t(CTAS[current.cta].label)}
                 </Button>
               ) : null}
+              <Button className="flex-1" onPress={last ? () => close('done') : next}>
+                {last ? t('news:done') : t('news:next')}
+              </Button>
             </View>
           </ScrollView>
           <View className="absolute right-3 top-3">
