@@ -11,8 +11,16 @@
 /** Whether a card was put up by the app at launch, or opened from the list. */
 export type AnnouncementSource = 'launch' | 'settings'
 
-/** Where an announcement's button leads, named for analytics. */
-export type AnnouncementCta = 'edit_profile'
+/** Where a page's button leads, named for analytics. */
+export type AnnouncementCta = 'edit_profile' | 'personalisation'
+
+/** One page of an announcement, swiped through in order. */
+export type AnnouncementPage = {
+  /** `news:<key>` holds its title and body, and names its picture. */
+  key: 'workouts' | 'feedAutoShare' | 'photoNote'
+  /** Only where there is a switch or a screen worth going to; most pages need none. */
+  cta?: AnnouncementCta
+}
 
 export type Announcement = {
   /**
@@ -21,11 +29,12 @@ export type Announcement = {
    * again. Lowercase letters, digits and underscores, which the server checks.
    */
   id: string
-  /** `news:<key>` holds its title and body. */
-  key: 'feedAutoShare'
+  /** `news:<key>.title` names it in the list under Me. */
+  key: 'update110'
   /** YYYY-MM-DD, for the list and for ordering. */
   releaseDate: string
-  cta?: AnnouncementCta
+  /** At least one. A release with several changes is one card of pages, not several cards. */
+  pages: readonly [AnnouncementPage, ...AnnouncementPage[]]
   /**
    * Switched on in the same statement that marks the card seen, the first time
    * it is on screen, from the launch or the list. Never again after that, or
@@ -40,10 +49,16 @@ export type Announcement = {
 
 export const ANNOUNCEMENTS: readonly Announcement[] = [
   {
+    // Named for its first draft, the feed page alone, which reached TestFlight
+    // and no store release before the other pages joined it; so it kept the id.
     id: 'feed_auto_share_2026_10',
-    key: 'feedAutoShare',
+    key: 'update110',
     releaseDate: '2026-10-16',
-    cta: 'edit_profile',
+    pages: [
+      { key: 'workouts' },
+      { key: 'feedAutoShare', cta: 'edit_profile' },
+      { key: 'photoNote', cta: 'personalisation' },
+    ],
     enables: { autoPostFoods: true },
   },
 ]

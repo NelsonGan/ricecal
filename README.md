@@ -1251,7 +1251,7 @@ The same page has a Private profile switch. It hides the account from people
 search, suggestions and Discover while leaving direct links and existing follows
 available.
 The switch's explanation sits behind its info button. Auto post foods sits below
-it: on for an account made by a current build, and switched on by the feed
+it: on for an account made by a current build, and switched on by the 1.1.0
 announcement for an older one (see "News announcements"). On, it shares each
 new food for today or yesterday to the feed as the food is committed. A private profile shares those posts with followers only. Auto post
 workouts sits below that, on by default; see "Workouts on the feed".
@@ -2644,7 +2644,7 @@ widened to implement the feed.
 
 Auto post foods is a private profile preference. The column defaults to false,
 so an account made by an older build starts with it off; onboarding in a current
-build writes it on, and the feed announcement (see
+build writes it on, and the 1.1.0 announcement (see
 [News announcements](#news-announcements)) switches it on once for each account
 that existed before. Either way it stays the owner's switch on Edit profile. A deferred insert trigger publishes each new food after its transaction
 finishes, so a scan's components and any same-transaction correction are ready
@@ -2684,7 +2684,7 @@ does not say `"post": false`, which an import always does: years of history at
 once is not news, and an old workout logged today would top everyone's feed.
 It never joins anyone to the feed itself. Auto post foods does, and is now on
 by default (see "News announcements"), so for most accounts the first logged
-meal joins them and their workouts follow; the feed announcement says so. A
+meal joins them and their workouts follow; the announcement's feed page says so. A
 failed automatic post (budget spent, profile under review) never fails the save.
 A workout can also be shared by hand from its page, which opens the composer
 with the workout's preview, or edited there once posted.
@@ -4324,7 +4324,13 @@ the watch measured (`watch.kcal`) instead of replacing it with an estimate.
 
 - Live: while the phone is reachable the watch sends its latest reading every
   five seconds, and the logger shows it beside the clock (`useWatchPulse`), for
-  as long as readings keep coming. It is a glance and is not kept.
+  as long as readings keep coming. It is a glance and is not kept. Its heart
+  (`LiveHeart`) beats at the figure beside it, a double thump with a ring
+  spreading behind, so the number reads as live rather than typed in. A phase
+  advanced each frame on the UI thread drives it rather than a repeating
+  timing, so a new reading changes the tempo without restarting a beat midway.
+  It holds still under Reduce Motion and pauses while another screen covers the
+  logger.
 - At the end the watch sends a trace (`HeartTrace`): one figure every five
   seconds from the start, the mean of the readings inside each step, null where
   there were none (off the wrist, the sensor between readings). It reads Health's
@@ -5290,10 +5296,20 @@ too tight looks exactly like a feature nobody uses.
 A card over Today announces a change to the app, once per account, and a
 **News** row under Me lists every announcement since, newest first. The
 catalogue is code (`src/features/news/announcements.ts`): each entry has an id, a
-release date, a picture drawn from the app's own components, a title, a body
-and an optional button, with the copy under the `news` namespace in all thirteen
-languages. Adding one is an entry there, its copy, and a picture in
-`AnnouncementCard`.
+release date, a title for the list and one or more pages. A page has a picture
+drawn from the app's own components, a title, a body and an optional button,
+with the copy under the `news` namespace in all thirteen languages. Adding one
+is an entry there, its copy, and a picture for each new page in
+`AnnouncementCard`'s `PICTURES`.
+
+A card with several pages is swiped, or stepped with **Next**; a page's own
+button, where it has one, sits beside Next, and the last page's Next is
+**Got it**. Most pages need no button: give one only where there is a switch or
+a screen worth going to. Each showing
+starts on the first page. A release with several changes is one card of pages
+rather than several cards, since only the newest is ever put up (below). A page
+can have a different body on iOS (`IOS_BODIES`), which is how the workouts page
+names the Apple Watch there and nowhere else: the watch app is iOS only.
 
 ### The rules
 
@@ -5336,11 +5352,21 @@ languages. Adding one is an entry there, its copy, and a picture in
   profile within 30 seconds, so a card another phone has shown is not shown
   again from a persisted cache.
 
-### Auto post foods, the first announcement
+### 1.1.0, the first announcement
 
-`feed_auto_share_2026_10` tells an existing account that meals now post to the
-feed, and switches `auto_post_foods` on when it is first on screen. Its button
-opens Edit profile, where the switch is. New accounts get the same default
+`feed_auto_share_2026_10` is three pages: workouts (no button; on iOS the body
+adds the Apple Watch), meals posting to the feed,
+and the full-size camera with its question after a photo (its button opens
+Personalisation, where that question's switch is). It is named for its first
+draft, the feed page alone, which reached TestFlight builds of 1.0.15 but no
+store release before the other pages joined it, so it kept the id. A TestFlight
+account that saw the draft does not see the pages.
+
+### Auto post foods
+
+The announcement switches `auto_post_foods` on when it is first on screen,
+telling an existing account that meals now post to the feed. The feed page's
+button opens Edit profile, where the switch is. New accounts get the same default
 from onboarding instead (`autoPostFoods: true` in the profile write) and no
 card. Neither path touches the column default, which stays false: a binary
 already in the stores that onboards somebody has no announcement to tell them,
@@ -5762,8 +5788,8 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Rating Prompt Answered | ricecal_rating_prompt_answered | trigger: RatingTrigger; answer: 'liked' &#124; 'disliked' &#124; 'dismissed' | `src/lib/rating/prompt.ts` | App rating question receives liked/disliked/dismissed; each answer. It does not report a store rating. |
 | Rating Feedback Opened | ricecal_rating_feedback_opened | trigger: RatingTrigger | `src/lib/rating/prompt.ts` | Feedback link after disliking is requested; each request, without claiming a message was sent. |
 | Announcement Shown | ricecal_announcement_shown | announcement: string; source: AnnouncementSource | `src/features/news/AnnouncementCard.tsx` | The native modal reports the card on screen (`onShow`): `launch` at most once per account per run of the app, `settings` each time one is opened from the News list. A card iOS refuses to present is not counted. |
-| Announcement CTA Tapped | ricecal_announcement_cta_tapped | announcement: string; source: AnnouncementSource; cta: AnnouncementCta | `src/features/news/AnnouncementCard.tsx` | The card's button is tapped; each tap, before the destination screen opens. It does not prove anything was changed there. |
-| Announcement Dismissed | ricecal_announcement_dismissed | announcement: string; source: AnnouncementSource; via: 'done' &#124; 'close' | `src/features/news/AnnouncementCard.tsx` | The card closes without its button: "Got it" (`done`), or the cross, scrim or back gesture (`close`); once per close. |
+| Announcement CTA Tapped | ricecal_announcement_cta_tapped | announcement: string; source: AnnouncementSource; cta: AnnouncementCta; page: number | `src/features/news/AnnouncementCard.tsx` | A page's button is tapped; each tap, before the destination screen opens, with the page it was on. It does not prove anything was changed there. |
+| Announcement Dismissed | ricecal_announcement_dismissed | announcement: string; source: AnnouncementSource; via: 'done' &#124; 'close'; page: number | `src/features/news/AnnouncementCard.tsx` | The card closes without a page's button: "Got it" on the last page (`done`), or the cross, scrim or back gesture on any (`close`); once per close, with the page it closed on. Next and swiping between pages send nothing. |
 | Auto Post Toggled | ricecal_auto_post_toggled | kind: 'foods' &#124; 'workouts'; enabled: boolean | `app/settings/account.tsx` | An Auto post foods or workouts switch on Edit profile is saved; each successful write. Onboarding's default and an announcement switching it on send nothing. |
 <!-- analytics-app-events:end -->
 
@@ -5831,8 +5857,9 @@ user text. Extend the source type and these tables together when its domain chan
 | Widget water `preset` | Home-screen action preset volume | Widget action choice; no daily water total or diary history |
 | `announcement` | An id from `features/news/announcements.ts`, lowercase letters, digits and underscores (checked by `see_announcements`); currently `feed_auto_share_2026_10` | Never free text; a renamed id is a new announcement |
 | `source` / `AnnouncementSource` | `launch`, `settings` | `launch` is the card the app puts over Today; `settings` is one opened from the News list under Me |
-| `cta` / `AnnouncementCta` | `edit_profile` | Where the button leads, named for analytics; a tap, not a changed setting |
-| Announcement `via` | `done` ("Got it"), `close` (cross, scrim or back gesture) | Closing without the button |
+| `cta` / `AnnouncementCta` | `edit_profile`, `personalisation` | Where a page's button leads, named for analytics; a tap, not a changed setting |
+| Announcement `via` | `done` ("Got it" on the last page), `close` (cross, scrim or back gesture) | Closing without a page's button |
+| Announcement `page` | The page, from 1, that the button was tapped or the card closed on | How far people read is `Dismissed` broken down by `page`; `done` is always the last page |
 | Auto post `kind`, `enabled` | `foods` or `workouts`; the new switch value | Edit profile switches only; onboarding's default and the announcement's switch-on send nothing |
 
 ### Instrumented surfaces, paywalls and frequency gates
@@ -5874,7 +5901,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Are reports/reminders useful? | Notification Opened, Review Opened and Review Card Shared by kind | Notification taps exclude meal reminders; locked review opens count. Open/share does not prove the full report was read |
 | Why did they drop off or crash? | Session replays linked from a funnel step or an exception; `$exception` by issue | Replays are sampled; absence of a replay is not absence of the problem |
 | Does the public site drive demand? | Website `$pageview` → App Download Clicked, by placement/target/live and region | Clicks are acquisition intent; no browser-to-account installation or purchase join is implemented |
-| Do announcements land? | Announcement Shown (`source: launch`) → Announcement CTA Tapped or Dismissed, by announcement; Auto Post Toggled with `enabled: false` afterwards | A tap is intent, not a change. For the feed announcement, opting out after it is the toggle event; auto post was already on when the card appeared |
+| Do announcements land? | Announcement Shown (`source: launch`) → Announcement CTA Tapped or Dismissed, by announcement and `page`; Auto Post Toggled with `enabled: false` afterwards | A tap is intent, not a change. For the 1.1.0 announcement, opting out of auto post after it is the toggle event; auto post was already on when the card appeared |
 | Are rating prompts timely? | Rating Prompt Skipped/Shown/Answered, by trigger/reason | Skips are checkpoint results. Liked/disliked/dismissed is the app question; no star rating or store review completion is collected |
 
 Use unique users for adoption/conversion and event totals for operation volume.
