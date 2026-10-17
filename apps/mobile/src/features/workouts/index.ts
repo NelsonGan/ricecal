@@ -30,6 +30,7 @@ export { WorkoutEffects } from './effects'
 export { workoutsCsv } from './exportCsv'
 export * from './format'
 export { removeWorkoutFromHealth } from './health'
+export { LiveHeart } from './LiveHeart'
 export { useLeaveGuard } from './leaveGuard'
 export {
   groupSplit,

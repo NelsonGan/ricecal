@@ -1748,11 +1748,28 @@ export const ms = {
   news: {
     title: 'Berita',
     done: 'Faham',
+    next: 'Seterusnya',
+    pageOf: 'Halaman {{page}} daripada {{count}}',
+    update110: {
+      title: 'Senaman, siaran suapan dan kamera baharu',
+    },
+    workouts: {
+      title: 'Catat senaman anda',
+      body: 'Jejak set, ulangan dan rehat dalam tab Senaman yang baharu.',
+      bodyIos:
+        'Jejak set, ulangan dan rehat dalam tab Senaman yang baharu. Pada Apple Watch, kadar denyutan jantung turut direkodkan.',
+      previewLabel: 'Contoh senaman yang sedang dicatat',
+    },
     feedAutoShare: {
       title: 'Makanan anda kini disiarkan ke suapan',
       body: 'Senaman yang selesai turut disiarkan. Matikan mana-mana satu dalam Edit profil.',
       you: 'Anda',
       previewLabel: 'Contoh makanan yang disiarkan ke suapan anda',
+    },
+    photoNote: {
+      title: 'Kamera kini bersaiz penuh',
+      body: 'Selepas foto, ia bertanya sedikit butiran untuk anggaran yang lebih tepat. Matikannya dalam Pemperibadian.',
+      previewLabel: 'Contoh soalan selepas foto hidangan',
     },
   },
   workouts: {

@@ -17,6 +17,8 @@ jest.mock('@/data', () => ({
   useSeeAnnouncement: () => ({ mutate: mockSee }),
 }))
 jest.mock('../FeedAutoSharePreview', () => ({ FeedAutoSharePreview: () => null }))
+jest.mock('../WorkoutsPreview', () => ({ WorkoutsPreview: () => null }))
+jest.mock('../PhotoNotePreview', () => ({ PhotoNotePreview: () => null }))
 
 const METRICS = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -37,7 +39,23 @@ async function presented() {
   await act(async () => screen.getByTestId('announcement-card').props.onShow())
 }
 
+/** On to the page numbered from 1, by Next, as the reader would, then a moment later. */
+async function toPage(page: number) {
+  for (let at = 1; at < page; at++) await fireEvent.press(screen.getByText('news:next'))
+  const later = Date.now() + 1000
+  jest.spyOn(Date, 'now').mockReturnValue(later)
+}
+
+function withPlatform(os: 'ios' | 'android', run: () => Promise<void>) {
+  const original = Platform.OS
+  Object.defineProperty(Platform, 'OS', { configurable: true, value: os })
+  return run().finally(() =>
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: original }),
+  )
+}
+
 beforeEach(() => {
+  jest.restoreAllMocks()
   jest.clearAllMocks()
   mockProfile.seen_announcements = []
 })
@@ -75,11 +93,13 @@ it('counts the button, closes, and opens Edit profile once the card has gone', a
     <AnnouncementCard announcement={feed} source="settings" onClose={onClose} />,
   )
   await presented()
+  await toPage(2)
   await fireEvent.press(screen.getByText('social:editProfile'))
   expect(track).toHaveBeenCalledWith('Announcement CTA Tapped', {
     announcement: feed.id,
     source: 'settings',
     cta: 'edit_profile',
+    page: 2,
   })
   expect(onClose).toHaveBeenCalled()
   expect(mockPush).not.toHaveBeenCalled()
@@ -97,23 +117,82 @@ it('counts the button, closes, and opens Edit profile once the card has gone', a
   }
 })
 
-it('counts "Got it" as a dismissal', async () => {
+it('steps through the pages with Next, offering a page\'s button where it has one, and ends on "Got it"', async () => {
   await render(<AnnouncementCard announcement={feed} source="launch" onClose={jest.fn()} />)
   await presented()
+  // The workouts page has no button of its own: Next and the cross only.
+  expect(screen.queryByText('social:editProfile')).toBeNull()
+  expect(screen.queryByText('profile:personalisation.title')).toBeNull()
+  expect(screen.queryByText('news:done')).toBeNull()
+  await toPage(2)
+  expect(screen.getByText('social:editProfile')).toBeTruthy()
+  await toPage(2)
+  expect(screen.getByText('profile:personalisation.title')).toBeTruthy()
+  expect(screen.queryByText('news:next')).toBeNull()
+  expect(screen.getByText('news:done')).toBeTruthy()
+})
+
+it('starts every showing on the first page', async () => {
+  const view = await render(
+    <AnnouncementCard announcement={feed} source="settings" onClose={jest.fn()} />,
+  )
+  await presented()
+  await toPage(3)
+  await view.rerender(
+    <AnnouncementCard announcement={null} source="settings" onClose={jest.fn()} />,
+  )
+  await view.rerender(
+    <AnnouncementCard announcement={feed} source="settings" onClose={jest.fn()} />,
+  )
+  expect(screen.getByText('news:next')).toBeTruthy()
+  expect(screen.queryByText('news:done')).toBeNull()
+})
+
+it('names the Apple Watch on iOS only', async () => {
+  await withPlatform('ios', async () => {
+    await render(<AnnouncementCard announcement={feed} source="launch" onClose={jest.fn()} />)
+    expect(screen.getByText('news:workouts.bodyIos')).toBeTruthy()
+    expect(screen.queryByText('news:workouts.body')).toBeNull()
+  })
+  await withPlatform('android', async () => {
+    await render(<AnnouncementCard announcement={feed} source="launch" onClose={jest.fn()} />)
+    expect(screen.getByText('news:workouts.body')).toBeTruthy()
+    expect(screen.queryByText('news:workouts.bodyIos')).toBeNull()
+  })
+})
+
+it('counts "Got it" as a dismissal on the last page', async () => {
+  await render(<AnnouncementCard announcement={feed} source="launch" onClose={jest.fn()} />)
+  await presented()
+  await toPage(3)
   await fireEvent.press(screen.getByText('news:done'))
   expect(track).toHaveBeenCalledWith('Announcement Dismissed', {
     announcement: feed.id,
     source: 'launch',
     via: 'done',
+    page: 3,
   })
+})
+
+it('ignores a double tap on Next landing on "Got it" before the last page is in', async () => {
+  const onClose = jest.fn()
+  await render(<AnnouncementCard announcement={feed} source="launch" onClose={onClose} />)
+  await presented()
+  await toPage(2)
+  jest.restoreAllMocks()
+  await fireEvent.press(screen.getByText('news:next'))
+  await fireEvent.press(screen.getByText('news:done'))
+  expect(onClose).not.toHaveBeenCalled()
+  expect(track).not.toHaveBeenCalledWith('Announcement Dismissed', expect.anything())
 })
 
 it('counts one answer per showing, however fast the taps', async () => {
   const onClose = jest.fn()
   await render(<AnnouncementCard announcement={feed} source="launch" onClose={onClose} />)
   await presented()
+  await toPage(2)
   await fireEvent.press(screen.getByText('social:editProfile'))
-  await fireEvent.press(screen.getByText('news:done'))
+  await fireEvent.press(screen.getAllByLabelText('common:a11y.close')[0])
   expect(track).toHaveBeenCalledTimes(2)
   expect(track).toHaveBeenLastCalledWith('Announcement CTA Tapped', expect.anything())
   expect(onClose).toHaveBeenCalledTimes(1)
@@ -127,5 +206,6 @@ it('counts the cross as a close', async () => {
     announcement: feed.id,
     source: 'launch',
     via: 'close',
+    page: 1,
   })
 })

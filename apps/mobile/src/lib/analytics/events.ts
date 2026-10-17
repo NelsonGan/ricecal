@@ -496,23 +496,27 @@ export type Events = {
    */
   'Announcement Shown': { announcement: string; source: AnnouncementSource }
   /**
-   * Its button was taken. Counted as the tap, before the screen it opens has
-   * loaded, so it says the card worked and nothing about what was done there.
+   * A page's button was taken. Counted as the tap, before the screen it opens
+   * has loaded, so it says the card worked and nothing about what was done
+   * there. `page` is the page it was on, from 1.
    */
   'Announcement CTA Tapped': {
     announcement: string
     source: AnnouncementSource
     cta: AnnouncementCta
+    page: number
   }
   /**
-   * Closed without the button: `done` is "Got it", `close` is the cross, the
-   * scrim or the back gesture. Shown minus CTA minus this is a card the app
-   * was closed over.
+   * Closed without a page's button: `done` is "Got it" on the last page,
+   * `close` is the cross, the scrim or the back gesture on any. `page` is the
+   * page it was closed on, from 1, so how far people read is a breakdown of
+   * this. Shown minus CTA minus this is a card the app was closed over.
    */
   'Announcement Dismissed': {
     announcement: string
     source: AnnouncementSource
     via: 'done' | 'close'
+    page: number
   }
   /**
    * A switch on Edit profile that sends meals or workouts to the feed, after

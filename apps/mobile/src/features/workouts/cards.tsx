@@ -412,14 +412,25 @@ export function StatGrid({ children }: { children: ReactNode }) {
   )
 }
 
-export function Stat({ label, value, icon }: { label: string; value: string; icon?: IconRef }) {
+export function Stat({
+  label,
+  value,
+  icon,
+  leading,
+}: {
+  label: string
+  value: string
+  icon?: IconRef
+  /** Drawn where the icon goes, for one that moves (`LiveHeart`). */
+  leading?: ReactNode
+}) {
   return (
     <View className="gap-0.5">
       <Text variant="overlineSm" numberOfLines={1}>
         {label}
       </Text>
       <View className="flex-row items-center gap-1">
-        {icon ? <Icon {...icon} size={18} /> : null}
+        {leading ?? (icon ? <Icon {...icon} size={18} /> : null)}
         <Text variant="numeric" numberOfLines={1} adjustsFontSizeToFit className="shrink">
           {value}
         </Text>

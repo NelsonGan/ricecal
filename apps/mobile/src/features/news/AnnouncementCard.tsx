@@ -1,16 +1,32 @@
 import { type Href, useRouter } from 'expo-router'
-import { useEffect, useRef } from 'react'
+import { type ComponentType, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
+import {
+  Modal,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Platform,
+  Pressable,
+  ScrollView,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useProfile, useSeeAnnouncement } from '@/data'
 import { track } from '@/lib/analytics'
 import { reportError } from '@/lib/errors'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Icon, IconButton, Text, useHeld } from '@/ui'
-import type { Announcement, AnnouncementCta, AnnouncementSource } from './announcements'
+import { Button, cn, Icon, IconButton, Text, useHeld } from '@/ui'
+import type {
+  Announcement,
+  AnnouncementCta,
+  AnnouncementPage,
+  AnnouncementSource,
+} from './announcements'
 import { FeedAutoSharePreview } from './FeedAutoSharePreview'
+import { PhotoNotePreview } from './PhotoNotePreview'
+import { WorkoutsPreview } from './WorkoutsPreview'
 
 /**
  * Where each button goes and what it says. A route rather than a callback, so
@@ -18,7 +34,34 @@ import { FeedAutoSharePreview } from './FeedAutoSharePreview'
  */
 const CTAS = {
   edit_profile: { route: '/settings/account', label: 'social:editProfile' },
+  personalisation: { route: '/settings/personalisation', label: 'profile:personalisation.title' },
 } as const satisfies Record<AnnouncementCta, { route: Href; label: string }>
+
+/** Each page's picture, drawn from the app's own components. */
+const PICTURES = {
+  workouts: WorkoutsPreview,
+  feedAutoShare: FeedAutoSharePreview,
+  photoNote: PhotoNotePreview,
+} as const satisfies Record<AnnouncementPage['key'], ComponentType>
+
+/**
+ * Bodies that differ on iOS. The workouts page names the Apple Watch there and
+ * only there: the watch app is iOS only, and an Android reader is not told
+ * about something they cannot use.
+ */
+const IOS_BODIES = {
+  workouts: 'news:workouts.bodyIos',
+} as const satisfies Partial<Record<AnnouncementPage['key'], string>>
+
+/** The card's inset from the screen's edges (`px-3`), for a first guess at the page width. */
+const SIDE = 12
+
+/**
+ * How long "Got it" ignores taps after Next put it there. Next becomes Got it
+ * as the last page starts scrolling in, so a quick double tap on Next would
+ * otherwise close the card before that page was seen.
+ */
+const SETTLE_MS = 400
 
 /**
  * One announcement: its picture on a tinted panel, then the words and the way
@@ -31,8 +74,13 @@ const CTAS = {
  * behind a card nobody read. The first showing claims, from the launch or the
  * list; later ones find it seen and change nothing.
  *
- * Every way out is counted, since "did anyone take the button" is the question
- * an announcement exists to answer. The button's route is pushed once the
+ * A release with several changes is one card of pages, swiped or stepped
+ * through with Next, a page's own button (where it has one) beside it and
+ * "Got it" on the last. One card rather than several because only the newest is ever put up.
+ *
+ * Every way out is counted, with the page it happened on, since "did anyone
+ * take the button" and "how far did they read" are the questions an
+ * announcement exists to answer. The button's route is pushed once the
  * modal has gone, as `Dialog` does it: presenting a screen while this native
  * modal is still leaving is how iOS ends up presenting nothing.
  */
@@ -46,10 +94,14 @@ export function AnnouncementCard({
   source: AnnouncementSource
   onClose: () => void
 }) {
-  const { t } = useTranslation(['news', 'common', 'social'])
+  const { t } = useTranslation(['news', 'common', 'social', 'profile'])
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { height } = useWindowDimensions()
+  const { width, height } = useWindowDimensions()
+  // Measured from the pager once it is laid out: a page a point off its
+  // viewport drifts further off centre with every page it is swiped past.
+  const [measuredWidth, setMeasuredWidth] = useState(0)
+  const pageWidth = measuredWidth || width - SIDE * 2
   const colors = useThemeColors()
   const { data: profile } = useProfile()
   const see = useSeeAnnouncement()
@@ -60,10 +112,28 @@ export function AnnouncementCard({
   // One answer per showing. A double tap, or the scrim tapped after the
   // button, lands before the parent has hidden the card and would count twice.
   const answered = useRef(false)
+  const pager = useRef<ScrollView>(null)
+  // Where Next is scrolling to. Its animation passes through the page it left,
+  // and following that would flick the dots back for a frame.
+  const heading = useRef<number | null>(null)
+  const [page, setPage] = useState(0)
+  // Per announcement: the tallest picture of one says nothing about another's.
+  const [tallest, setTallest] = useState({ id: '', height: 0 })
+  // When Next last put "Got it" on the button. See `SETTLE_MS`.
+  const revealed = useRef(0)
+  // Each showing starts on its first page, set during the render that shows
+  // it rather than after, so the second page never flashes up first. The
+  // count remounts the pager, whose scroll offset would otherwise outlive it.
+  const [showing, setShowing] = useState({ visible, count: 0 })
+  if (showing.visible !== visible) {
+    setShowing({ visible, count: showing.count + (visible ? 1 : 0) })
+    if (visible) setPage(0)
+  }
 
   const onShow = () => {
     if (!announcement) return
     answered.current = false
+    heading.current = null
     track('Announcement Shown', { announcement: announcement.id, source })
     if (profile?.seen_announcements?.includes(announcement.id)) return
     see.mutate(
@@ -88,20 +158,54 @@ export function AnnouncementCard({
 
   if (!shown) return null
 
+  const pages = shown.pages
+  const current = pages[Math.min(page, pages.length - 1)]
+  const last = page >= pages.length - 1
+
   const close = (via: 'done' | 'close') => {
     if (!announcement || answered.current) return
     answered.current = true
-    track('Announcement Dismissed', { announcement: announcement.id, source, via })
+    track('Announcement Dismissed', { announcement: announcement.id, source, via, page: page + 1 })
     onClose()
   }
 
   const takeCta = () => {
-    const cta = announcement?.cta
+    const cta = current.cta
     if (!announcement || !cta || answered.current) return
     answered.current = true
-    track('Announcement CTA Tapped', { announcement: announcement.id, source, cta })
+    track('Announcement CTA Tapped', { announcement: announcement.id, source, cta, page: page + 1 })
     queued.current = CTAS[cta].route
     onClose()
+  }
+
+  const pictureHeight = tallest.id === shown.id ? tallest.height : 0
+
+  const done = () => {
+    if (Date.now() - revealed.current < SETTLE_MS) return
+    close('done')
+  }
+
+  const next = () => {
+    if (page + 1 === pages.length - 1) revealed.current = Date.now()
+    heading.current = page + 1
+    pager.current?.scrollTo({ x: (page + 1) * pageWidth, animated: true })
+    setPage(page + 1)
+  }
+
+  // The dots and buttons follow the page past halfway, not once the swipe
+  // has settled. Only a change re-renders.
+  const scrolled = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const at = Math.round(event.nativeEvent.contentOffset.x / pageWidth)
+    if (heading.current !== null) {
+      if (at !== heading.current) return
+      heading.current = null
+    }
+    if (at !== page) setPage(Math.max(0, Math.min(at, pages.length - 1)))
+  }
+
+  const body = (key: AnnouncementPage['key']) => {
+    const ios = Platform.OS === 'ios' ? IOS_BODIES[key as keyof typeof IOS_BODIES] : undefined
+    return ios ? t(ios) : t(`news:${key}.body`)
   }
 
   return (
@@ -131,32 +235,97 @@ export function AnnouncementCard({
           accessibilityViewIsModal
         >
           <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
-            {/* Solid brand green rather than the pale tint: the post's own
-                drawing sits on that tint, and on a panel of the same colour the
-                card's edges disappeared into it. */}
-            <View className="bg-pandan px-5 pb-8 pt-11">
-              {shown.key === 'feedAutoShare' ? <FeedAutoSharePreview /> : null}
-            </View>
-            <View className="gap-2 px-5 pt-5">
-              <Text variant="title" accessibilityRole="header">
-                {t(`news:${shown.key}.title`)}
-              </Text>
-              <Text variant="body" className="text-muted">
-                {t(`news:${shown.key}.body`)}
-              </Text>
-            </View>
-            <View className="gap-1 px-5 pb-5 pt-5">
-              {shown.cta ? (
-                <Button fullWidth onPress={takeCta}>
-                  {t(CTAS[shown.cta].label)}
+            <ScrollView
+              key={showing.count}
+              ref={pager}
+              horizontal
+              pagingEnabled
+              bounces={false}
+              showsHorizontalScrollIndicator={false}
+              scrollEnabled={pages.length > 1}
+              onScroll={scrolled}
+              onScrollBeginDrag={() => {
+                heading.current = null
+              }}
+              scrollEventThrottle={32}
+              onLayout={(event) => setMeasuredWidth(event.nativeEvent.layout.width)}
+            >
+              {pages.map((item, index) => {
+                const Picture = PICTURES[item.key]
+                return (
+                  <View
+                    key={item.key}
+                    style={{ width: pageWidth }}
+                    // Only the page on screen, or VoiceOver reads all three.
+                    accessibilityElementsHidden={index !== page}
+                    importantForAccessibility={index === page ? 'auto' : 'no-hide-descendants'}
+                  >
+                    {/* Solid brand green rather than the pale tint: the
+                        pictures sit on white cards, and on a panel of the pale
+                        tint their edges disappeared into it. As tall as the
+                        tallest picture on every page, so the words do not
+                        jump on a swipe and no picture is cut to fit. */}
+                    <View
+                      className="justify-center bg-pandan px-5 pb-8 pt-11"
+                      style={{ minHeight: pictureHeight }}
+                      onLayout={(event) => {
+                        const measured = event.nativeEvent.layout.height
+                        const id = shown.id
+                        setTallest((was) => {
+                          if (was.id !== id) return { id, height: measured }
+                          return measured > was.height ? { id, height: measured } : was
+                        })
+                      }}
+                    >
+                      <Picture />
+                    </View>
+                    <View className="gap-2 px-5 pt-5">
+                      <Text variant="title" accessibilityRole="header">
+                        {t(`news:${item.key}.title`)}
+                      </Text>
+                      <Text variant="body" className="text-muted">
+                        {body(item.key)}
+                      </Text>
+                    </View>
+                  </View>
+                )
+              })}
+            </ScrollView>
+            {pages.length > 1 ? (
+              <View
+                className="flex-row justify-center gap-1.5 pt-5"
+                accessible
+                accessibilityLabel={t('news:pageOf', { page: page + 1, count: pages.length })}
+              >
+                {pages.map((item, index) => (
+                  <View
+                    key={item.key}
+                    className={cn(
+                      'h-2 rounded-full',
+                      index === page ? 'w-5 bg-pandan' : 'w-2 bg-line-strong',
+                    )}
+                  />
+                ))}
+              </View>
+            ) : null}
+            {/* A page's own button beside Next rather than under it, the way
+                the photo note puts Skip beside Log: the way on is the big
+                one, and the detour is there without a second row. */}
+            <View className="flex-row items-center gap-3 px-5 pb-5 pt-5">
+              {current.cta ? (
+                // At most half the row: some languages name these screens at
+                // length, and Next keeps its width however long the name is.
+                <Button
+                  variant="ghost"
+                  onPress={takeCta}
+                  className="max-w-[50%] shrink"
+                  contentClassName="px-4"
+                >
+                  {t(CTAS[current.cta].label)}
                 </Button>
               ) : null}
-              <Button
-                fullWidth
-                variant={shown.cta ? 'ghost' : 'primary'}
-                onPress={() => close('done')}
-              >
-                {t('news:done')}
+              <Button className="flex-1" onPress={last ? done : next}>
+                {last ? t('news:done') : t('news:next')}
               </Button>
             </View>
           </ScrollView>

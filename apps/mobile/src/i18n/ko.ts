@@ -1707,11 +1707,27 @@ export const ko = {
   news: {
     title: '소식',
     done: '확인',
+    next: '다음',
+    pageOf: '{{count}}페이지 중 {{page}}페이지',
+    update110: {
+      title: '운동, 피드 게시, 새 카메라',
+    },
+    workouts: {
+      title: '운동을 기록하세요',
+      body: '새 운동 탭에서 세트, 횟수, 휴식을 기록해요.',
+      bodyIos: '새 운동 탭에서 세트, 횟수, 휴식을 기록해요. Apple Watch에서는 심박수도 기록돼요.',
+      previewLabel: '운동을 기록하는 예시',
+    },
     feedAutoShare: {
       title: '이제 식사가 피드에 게시돼요',
       body: '완료한 운동도 게시돼요. 프로필 수정에서 각각 끌 수 있어요.',
       you: '나',
       previewLabel: '피드에 게시된 식사 예시',
+    },
+    photoNote: {
+      title: '카메라가 전체 화면이 됐어요',
+      body: '사진을 찍은 뒤 더 정확한 추정을 위해 몇 가지를 물어봐요. 개인화에서 끌 수 있어요.',
+      previewLabel: '식사 사진을 찍은 뒤 나오는 질문 예시',
     },
   },
   workouts: {
