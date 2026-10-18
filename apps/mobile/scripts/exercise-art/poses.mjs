@@ -12,7 +12,7 @@
 export const POSES = {
   // Chest
   'barbell-bench-press':
-    'lying flat on its back on a flat weight bench, feet planted on the floor, both hands gripping an olympic barbell slightly wider than shoulder width, arms fully extended pressing the bar up above the chest; round plates on both ends of the bar. Side view.',
+    'lying flat on its back on a flat weight bench, head resting on the bench, BOTH legs visible with knees bent and BOTH feet planted flat on the floor beside the end of the bench, both hands gripping an olympic barbell slightly wider than shoulder width, arms fully extended pressing the bar up above the chest, each straight arm rising from its own shoulder; round plates on both ends of the bar. Side-3/4 view in which two arms and two legs are clearly visible.',
   'incline-bench-press':
     'lying on a bench inclined at about 30-45 degrees, feet on the floor, pressing an olympic barbell straight up above the upper chest with arms extended; plates on both ends. Side view so the incline angle is obvious.',
   'decline-bench-press':
@@ -36,7 +36,7 @@ export const POSES = {
   'low-cable-fly':
     'standing between two cable towers with the pulleys set low near the floor, sweeping two cable handles upward and together to meet in front of the upper chest at shoulder height, arms slightly bent. Front-3/4 view.',
   'dumbbell-pullover':
-    'lying FACE UP across a flat bench: only the upper back rests on the bench, hips lowered below it, feet flat on the floor, belly facing the ceiling; both hands hold ONE dumbbell together, arms almost straight, reaching back behind and above the head in the stretched position of a pullover. Side view where the face-up position is unmistakable.',
+    'lying FACE UP across a flat bench: only the upper back rests on the bench, hips lowered below it, feet flat on the floor, belly facing the ceiling; both hands hold ONE dumbbell together, arms almost straight, reaching back behind and above the head in the stretched position of a pullover. The back of the head rests on the bench edge, never hanging below it. Side view where the face-up position is unmistakable.',
   'push-up':
     'in a standard push-up: body in a straight plank line from head to heels, hands on the floor under the shoulders, arms bent lowering the chest close to the floor. Side view.',
   'knee-push-up':
@@ -473,7 +473,7 @@ export const POSES = {
   'reverse-concentration-curl':
     'seated on the end of a bench, elbow braced against the inside of the thigh, curling a single dumbbell with an OVERHAND grip (palm facing down). Front-3/4 view.',
   'dumbbell-skullcrusher':
-    'lying flat on a bench holding a dumbbell in each hand above the forehead, upper arms vertical and elbows bent so the dumbbells are lowered beside the head. Side view.',
+    'lying flat on its back on a flat bench, head on the bench, both feet flat on the floor, holding EXACTLY TWO dumbbells, one in each hand, both upper arms pointing straight up at the ceiling from the shoulders with the elbows bent about 90 degrees, so the forearms angle back and the dumbbells sit just above and beside the forehead. Side-3/4 view in which both arms and both dumbbells are clearly separate.',
   'assisted-dip':
     'kneeling on the padded platform of an assisted dip machine, gripping the two parallel dip handles with the torso UPRIGHT and arms pressing down toward straight (triceps dip). Side view.',
   'barbell-triceps-extension':
@@ -551,13 +551,13 @@ export const POSES = {
   'captains-chair-knee-raise':
     "supported upright in a captain's chair (vertical knee raise station): forearms on the padded armrests, back against the backrest, knees raised to hip height with the feet off the ground. Side view showing the station.",
   'knees-to-elbows':
-    'hanging from a pull-up bar with straight arms, knees driven up high so they touch the elbows. Side view.',
+    'hanging from a pull-up bar with both hands, arms of normal length and nearly straight, the head just below the bar between the upper arms, torso curled and knees driven up high so the knees touch the elbows just under the bar. Side view.',
   'oblique-crunch':
     'lying on its side with legs stacked and slightly bent, bottom arm on the floor, top hand behind the head, crunching the torso sideways toward the hip. Front view.',
   'reverse-crunch':
     'lying on its back with arms flat at the sides, knees bent, curling the hips up off the floor and bringing the knees toward the chest. Side view.',
   'reverse-plank':
-    'a REVERSE plank: the person sits with legs straight out in front, then lifts the hips, so the CHEST AND FACE POINT UP AT THE CEILING and the back faces the floor. Supported on straight arms with the hands on the floor BEHIND the hips, fingers toward the feet, and the HEELS on the floor, body a straight line from shoulders to heels. Side view. Not a push-up or a front plank: nobody faces the floor.',
+    'a REVERSE plank: the person sits with legs straight out in front, then lifts the hips, so the CHEST AND FACE POINT UP AT THE CEILING and the back faces the floor. Supported on straight arms with the hands on the floor BEHIND the hips, fingers toward the feet, and the HEELS on the floor, body a straight line from shoulders to heels; the toes of the sneakers point up at the ceiling. Seen from a high three-quarter angle beside the feet, looking down at the front of the body, so the chest, belly and the front of the shorts face the camera and the ceiling; from a plain side view it would look like a push-up. Not a push-up or a front plank: nobody faces the floor.',
   'band-side-bend':
     'standing upright with one foot on a resistance band, holding the other end in one hand at the side, bending the torso sideways away from the band. Front view.',
   'cable-side-bend':
