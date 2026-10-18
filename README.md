@@ -3832,6 +3832,14 @@ on, Zumba came back in team colours, which read as a different person in a
 library that is otherwise one figure; it was redrawn once the brief said brown
 tank top and charcoal shorts in words.
 
+Lying and hanging poses are where the anatomy goes wrong: a bench press came
+back with one leg and an arm growing out of the chest, a skullcrusher with a
+third dumbbell. Their briefs now spell out both legs visible, each arm rising
+from its own shoulder, exactly two dumbbells. Some poses also need the camera
+named. A reverse plank seen from the side has the same outline as a push-up,
+so the brief asks for a high three-quarter view that shows the chest facing
+up.
+
 **Templates** (`templates.ts`) are 19 standard programs in seven groups: two
 beginner full-body days, push/pull/legs, upper/lower, 5×5, one muscle a day,
 no-gym, and short focused sessions. They give reps and times, never weights: a
