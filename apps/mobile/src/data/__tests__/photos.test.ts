@@ -73,6 +73,61 @@ describe('avatar uploads', () => {
     expect(cache.writeToCacheAsync).toHaveBeenCalledWith('file:///small.jpg', KEY)
   })
 
+  /**
+   * iOS drops a request sent down a connection that went stale while the camera
+   * was open ("The network connection was lost.") and retries only a GET. Both
+   * steps of an upload are safe to send twice: the first only mints a key, the
+   * second puts the same bytes at the same signed URL.
+   */
+  describe('a connection lost on the way', () => {
+    const lost = () =>
+      new Error('fetch failed: UnexpectedException: The network connection was lost.')
+
+    beforeEach(() => {
+      getSize.mockImplementation((_uri, success) => success(100, 100))
+      supabase.functions.invoke.mockClear()
+    })
+
+    it('asks for the upload URL once more', async () => {
+      supabase.functions.invoke.mockResolvedValueOnce({
+        data: null,
+        error: Object.assign(new Error('Failed to send a request to the Edge Function'), {
+          name: 'FunctionsFetchError',
+          context: lost(),
+        }),
+      })
+      await expect(uploadAvatar('file:///a.jpg')).resolves.toBe(KEY)
+      expect(supabase.functions.invoke).toHaveBeenCalledTimes(2)
+    })
+
+    it('sends the photo once more', async () => {
+      jest.mocked(global.fetch).mockRejectedValueOnce(lost())
+      await expect(uploadAvatar('file:///a.jpg')).resolves.toBe(KEY)
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('gives up after the second try', async () => {
+      jest.mocked(global.fetch).mockRejectedValue(lost())
+      await expect(uploadAvatar('file:///a.jpg')).rejects.toThrow('connection was lost')
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not repeat an answer the server gave', async () => {
+      supabase.functions.invoke.mockResolvedValueOnce({
+        data: null,
+        error: Object.assign(new Error('Edge Function returned a non-2xx status code'), {
+          name: 'FunctionsHttpError',
+        }),
+      })
+      await expect(uploadAvatar('file:///a.jpg')).rejects.toThrow()
+      expect(supabase.functions.invoke).toHaveBeenCalledTimes(1)
+
+      jest.mocked(global.fetch).mockResolvedValueOnce({ ok: false, status: 403 } as Response)
+      await expect(uploadAvatar('file:///a.jpg')).rejects.toThrow('Upload failed (403)')
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
+  })
+
   it('does not enlarge a small avatar', async () => {
     getSize.mockImplementation((_uri, success) => success(120, 80))
     await uploadAvatar('file:///small-original.jpg')
