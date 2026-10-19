@@ -54,7 +54,12 @@ export type AiContext = {
 export type OpenRouterUsage = {
   prompt_tokens?: number
   completion_tokens?: number
+  /** What OpenRouter charged to credits. Under BYOK, only its fee. */
   cost?: number
+  /** True when our own provider key paid for the inference. */
+  is_byok?: boolean
+  /** Under BYOK, what the provider bills us directly. */
+  cost_details?: { upstream_inference_cost?: number }
   prompt_tokens_details?: { cached_tokens?: number }
 }
 
@@ -67,9 +72,17 @@ export type Generation = {
   usage?: OpenRouterUsage
   finishReason?: string
   maxTokens: number
-  temperature: number
-  /** 0 for the first request, 1 for the one retry. */
+  /** Absent for a model that takes none (Claude Haiku 5.5). */
+  temperature?: number
+  /** 0 for the first request, counting up through the fallback and its retry. */
   attempt: number
+  /**
+   * True when the fallback answers because the primary failed in this same
+   * call. False for the primary, and for the fallback when the primary was
+   * never asked (switched off, or the BYOK breaker tripped). With `attempt`, it
+   * tells a fallback from a retry.
+   */
+  isBackupModel?: boolean
   error?: string
 }
 
@@ -109,11 +122,11 @@ export function generationEvent(context: AiContext, traceId: string, generation:
       : [{ role: 'assistant', content: '[model answer withheld]' }],
     $ai_latency: (generation.endedAt - generation.startedAt) / 1000,
     $ai_max_tokens: generation.maxTokens,
-    $ai_temperature: generation.temperature,
     $ai_stream: false,
     $ai_is_error: Boolean(generation.error),
     feature: context.feature,
     attempt: generation.attempt,
+    is_backup_model: generation.isBackupModel ?? false,
     // Sent from Supabase's servers, so the request IP is a data centre's.
     // GeoIP would stamp that location on the event and on the person,
     // overwriting where the person actually is.
@@ -124,18 +137,24 @@ export function generationEvent(context: AiContext, traceId: string, generation:
     properties.$session_id = context.sessionId
     properties.$ai_session_id = context.sessionId
   }
+  if (generation.temperature !== undefined) properties.$ai_temperature = generation.temperature
   if (generation.httpStatus !== undefined) properties.$ai_http_status = generation.httpStatus
   if (generation.finishReason) properties.finish_reason = generation.finishReason
+  if (typeof usage.is_byok === 'boolean') properties.byok = usage.is_byok
   const input = finite(usage.prompt_tokens)
   const output = finite(usage.completion_tokens)
   const cached = finite(usage.prompt_tokens_details?.cached_tokens)
-  const cost = finite(usage.cost)
+  const charged = finite(usage.cost)
+  // Under BYOK, OpenRouter's `cost` is only its own fee (often 0), and the
+  // inference is billed to us by the provider. Without adding that back, every
+  // Haiku call would read as free.
+  const upstream = usage.is_byok ? finite(usage.cost_details?.upstream_inference_cost) : undefined
   if (input !== undefined) properties.$ai_input_tokens = input
   if (output !== undefined) properties.$ai_output_tokens = output
   if (cached !== undefined) properties.$ai_cache_read_input_tokens = cached
-  if (cost !== undefined) {
-    // OpenRouter reports what it charged, so PostHog should not re-price it.
-    properties.$ai_total_cost_usd = cost
+  if (charged !== undefined || upstream !== undefined) {
+    // OpenRouter reports what was charged, so PostHog should not re-price it.
+    properties.$ai_total_cost_usd = (charged ?? 0) + (upstream ?? 0)
     properties.$ai_cost_passthrough = true
   }
   if (generation.error) properties.$ai_error = generation.error.slice(0, 300)

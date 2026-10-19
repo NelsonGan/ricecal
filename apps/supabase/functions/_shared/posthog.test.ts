@@ -29,11 +29,52 @@ Deno.test('a generation carries model, tokens, real cost and the trace, never co
   assertEquals(p.$ai_input_tokens, 900)
   assertEquals(p.$ai_total_cost_usd, 0.0004)
   assertEquals(p.$ai_cost_passthrough, true)
+  assertEquals(p.is_backup_model, false)
   assertEquals(p.$session_id, '01a1-session')
   assertEquals(p.$ai_is_error, false)
   assertEquals(p.$ai_input, [{ role: 'user', content: '[meal input withheld]' }])
   assertFalse('$process_person_profile' in p)
   assertEquals(p.$geoip_disable, true)
+})
+
+Deno.test('a BYOK call costs what the provider billed, plus any OpenRouter fee', () => {
+  const event = generationEvent({ distinctId: 'user-1', feature: 'scan-meal' }, 'trace-3', {
+    ...generation,
+    model: 'anthropic/claude-haiku-5.5',
+    temperature: undefined,
+    usage: {
+      prompt_tokens: 900,
+      completion_tokens: 120,
+      cost: 0,
+      is_byok: true,
+      cost_details: { upstream_inference_cost: 0.00015 },
+    },
+  })
+  const p = event.properties
+  assertEquals(p.$ai_total_cost_usd, 0.00015)
+  assertEquals(p.byok, true)
+  assertFalse('$ai_temperature' in p)
+})
+
+Deno.test('a credits call costs what OpenRouter charged, once', () => {
+  const event = generationEvent({ distinctId: 'user-1', feature: 'scan-meal' }, 'trace-4', {
+    ...generation,
+    usage: {
+      cost: 0.0004,
+      is_byok: false,
+      cost_details: { upstream_inference_cost: 0.0004 },
+    },
+  })
+  assertEquals(event.properties.$ai_total_cost_usd, 0.0004)
+  assertEquals(event.properties.byok, false)
+  assertEquals(event.properties.$ai_temperature, 0.2)
+  assertEquals(
+    generationEvent({ distinctId: 'u', feature: 'scan-meal' }, 't', {
+      ...generation,
+      isBackupModel: true,
+    }).properties.is_backup_model,
+    true,
+  )
 })
 
 Deno.test('system work creates no person, and a failure is marked as one', () => {

@@ -191,6 +191,41 @@ the row itself as `service_role`. It has to, because a scan also writes
 `food_scan_items`, which is the pipeline's working notes and is granted to
 `service_role` alone.
 
+**Two models, and only the fallback is paid from OpenRouter credits.** Every
+call asks Claude Haiku 5.5 first (`PRIMARY_ROUTE` in `llm.ts`), which runs on
+our own Anthropic key through OpenRouter's BYOK. Anything that goes wrong there
+(an error, a 429, an answer that will not parse, or no answer within 15
+seconds) goes once to `qwen/qwen3.7-flash`, which OpenRouter bills to credits
+as before and which keeps its 25 seconds and its one retry. Haiku writes about
+250 tokens a second, so 15 seconds covers the largest ceiling any call asks for. Haiku must never run on credits, and three things hold
+that line:
+
+- Every request for an Anthropic model, on either route, names
+  `provider: { only: ['anthropic'], allow_fallbacks: false }` (`routeFor`).
+  OpenRouter also serves Claude from Bedrock, Vertex, Azure and Claude Platform
+  on AWS, on its own accounts, which it bills to credits.
+- The Anthropic key in OpenRouter (Settings, Integrations) must be set never to
+  use shared capacity. Without that, a key that is rate limited or failing runs
+  the call on OpenRouter's own Anthropic account instead of answering with an
+  error. No request field can say this; it lives only in that setting.
+- Every Anthropic answer's `usage.is_byok` is checked. A `false` logs an error and
+  sends the rest of that isolate's calls to Qwen, and PostHog records it as
+  `byok: false` on the event.
+
+**Haiku does not honour `response_format: json_object`.** With reasoning off it
+works things out in its answer: a paragraph before the JSON, or a nutrition
+estimate's arithmetic running out of tokens before any JSON arrives. Its route
+adds one line to every system prompt telling it to reply with the JSON object
+alone, and `parseAnswer` takes the JSON from after any paragraph that still
+comes. An answer that will not parse goes to Qwen like any other failure (about
+one text call in a hundred did, across the prompt evals). A generic
+`json_schema` response format is not the fix: Haiku answers it with `{}`.
+
+`OPENROUTER_BYOK_MODEL=off` as a function secret sends everything to Qwen
+without a deploy, which is the switch to reach for if Haiku's answers go wrong
+rather than failing. The Anthropic organisation's concurrency limit is low, so
+a burst of calls answers 429 and lands on Qwen rather than failing the scan.
+
 **Every call sends `reasoning: { enabled: false }`, and it is not an
 optimisation.** `qwen3.7-flash` reasons by default, reasoning tokens come out of
 `max_tokens`, and a model that thinks past the ceiling returns
@@ -5756,7 +5791,7 @@ events, 815 weekly users, 338 installs) ×4.3.
 | --- | --- | --- |
 | Error tracking (`$exception`) | 100,000 exceptions | Autocaptured crashes and errors, plus the app's caught `reportError` calls |
 | Session replay | 2,500 mobile + 5,000 web recordings | App ~2,200 (20% of first-day launches, 4% of later ones); website all sessions while it gets a few hundred visits a week |
-| AI observability (`$ai_generation`) | 100,000 events | One per OpenRouter request: a scan makes 1 to 4, a correction 1, a recipe 1 to 2. Roughly 15,000 to 25,000 |
+| AI observability (`$ai_generation`) | 100,000 events | One per OpenRouter request: a scan makes 1 to 4, a correction 1, a recipe 1 to 2, and a call Haiku fails adds one for the Qwen fallback. Roughly 15,000 to 25,000 |
 | Feature flags | 1,000,000 requests | Zero while no flag is active; then about one request per launch |
 
 Rules that keep it there: no `$screen` events, lifecycle events, autocapture or
@@ -6136,11 +6171,12 @@ scan's vision call, catalogue pick and nutrition estimate read as one trace.
 | Property | Value |
 | --- | --- |
 | `$ai_span_name` | What the call is for: `analyse_photo`, `describe_meal`, `pick_candidate`, `estimate_nutrition`, `interpret_instruction`, `read_recipe_photo`, `describe_recipe`, `review_recipe`, `suggest_meals`, `moderate_submission` |
-| `$ai_model`, `$ai_provider`, `$ai_base_url` | The OpenRouter model (`OPENROUTER_MODEL`), `openrouter` |
+| `$ai_model`, `$ai_provider`, `$ai_base_url` | The OpenRouter model the request named: `anthropic/claude-haiku-5.5` (`OPENROUTER_BYOK_MODEL`) or the Qwen fallback (`OPENROUTER_MODEL`), `openrouter` |
 | `$ai_input_tokens`, `$ai_output_tokens`, `$ai_cache_read_input_tokens` | From OpenRouter's `usage` |
-| `$ai_total_cost_usd`, `$ai_cost_passthrough` | OpenRouter's reported charge (`usage: { include: true }` on every call), not re-priced |
+| `$ai_total_cost_usd`, `$ai_cost_passthrough` | What the call cost us, not re-priced: OpenRouter's charge (`usage.cost`), plus, when our own key paid, what Anthropic bills directly (`usage.cost_details.upstream_inference_cost`), since under BYOK `cost` is only OpenRouter's fee |
+| `byok` | `usage.is_byok`: `true` when our Anthropic key paid. An `anthropic/` event with `false` means OpenRouter credits were spent on it, which the routing forbids |
 | `$ai_latency`, `$ai_http_status`, `$ai_is_error`, `$ai_error`, `finish_reason` | Seconds, status and a short error; a JSON parse failure is recorded as `model answer was not valid JSON` so the answer is never quoted |
-| `feature`, `attempt`, `$ai_max_tokens`, `$ai_temperature` | The edge function, first request or retry, and the call's settings |
+| `feature`, `attempt`, `is_backup_model`, `$ai_max_tokens`, `$ai_temperature` | The edge function, which request this was (0 is the first, Haiku unless it is switched off, then the fallback and its one retry), whether Qwen is answering because Haiku failed in the same call (`false` when Haiku was never asked), and the call's settings. Haiku takes no temperature, so its events carry none |
 | `$geoip_disable` | Always `true`: the request comes from Supabase's servers, whose location would otherwise overwrite the person's |
 | `distinct_id`, `$session_id`, `$ai_session_id` | The Supabase uuid the app identifies PostHog with, and the app's session from the `X-POSTHOG-SESSION-ID` header the SDK adds to Supabase requests (`addTracingHeaders`). Moderation runs as `ricecal-moderation` and creates no person |
 
@@ -7289,7 +7325,11 @@ returns hashes, not recoverable values. Local auth and database keys must stay
 local; only the AI provider credential is shared. Stop and start the local stack
 after changing the env file, and leave `MOCK_AI` unset. The prompt suite can read
 the same file with `deno run --env-file=apps/supabase/functions/.env -A
-apps/supabase/scripts/eval-prompts.ts refine 3`. `pnpm eval:refine --repeat=3`
+apps/supabase/scripts/eval-prompts.ts refine 3`. It grades Haiku, the model
+every call asks first; `EVAL_ROUTE=fallback` grades Qwen, which answers whenever
+Haiku fails, so a prompt change should pass both. The key in that file is a
+separate OpenRouter key on the same account, so Haiku still runs on the
+Anthropic key (BYOK). `pnpm eval:refine --repeat=3`
 seeds its own local Pro account, checks persisted ingredients and totals, then
 deletes the account. It refuses a hosted API URL.
 
