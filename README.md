@@ -6337,6 +6337,14 @@ src/ui/*.tsx               the components
 `app/gallery.tsx` renders every component in every state, in both modes, on a
 real device. Nothing links to it: open `/gallery` directly.
 
+`app/labs/groups/*` is the same idea for a feature not yet built: four ways a
+group of friends could keep each other accountable on food (and optionally
+workouts), as tap-through screens on made-up people. Nothing reaches the server
+and a store build redirects it home. Open `/labs/groups` on a development build.
+`?step=` opens a later step, `?track=both` makes the group food and workouts,
+and `?capture=<name>` saves the whole page at full length to the documents
+directory as `groups-lab-<name>.png`, which is how its mockups were made.
+
 ### Conventions
 
 **Import from `@/ui`**, never from a file inside it. The barrel is what lets a
