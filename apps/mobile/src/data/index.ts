@@ -94,6 +94,7 @@ export {
 } from './profile'
 export {
   isRecipeLimit,
+  isStorableAmount,
   type PublishResult,
   type RecipeIngredientInput,
   type RecipeInput,
