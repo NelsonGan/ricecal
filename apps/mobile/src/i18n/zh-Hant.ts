@@ -1866,7 +1866,6 @@ export const zhHant = {
       addSet: '新增一組',
       addWarmups: '新增熱身組',
       removeSet: '刪除這組',
-      setRemoved: '已刪除這組',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: '有多吃力？',

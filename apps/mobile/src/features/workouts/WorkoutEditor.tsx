@@ -183,10 +183,10 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
 
   // One handlers object for every card and row, keyed rather than closed over
   // each exercise, so it never changes and memoised cards skip the render
-  // when their own exercise did not change. The latest document, `toggle` and
-  // the toast are read through a ref at call time.
-  const latest = useRef({ workout, toggle, toast, t })
-  latest.current = { workout, toggle, toast, t }
+  // when their own exercise did not change. The latest document and `toggle`
+  // are read through a ref at call time.
+  const latest = useRef({ workout, toggle })
+  latest.current = { workout, toggle }
   const handlers = useMemo<CardHandlers>(() => {
     const find = (key: string) =>
       latest.current.workout.exercises.find((exercise) => exercise.key === key)
@@ -201,24 +201,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
         if (exercise) setSetMenu({ exercise, set, number })
       },
       addSet: (key) => dispatch({ type: 'addSet', key }),
-      removeSet: (key, setId) => {
-        const exercise = find(key)
-        const index = exercise?.sets.findIndex((set) => set.id === setId) ?? -1
-        const set = index >= 0 ? exercise?.sets[index] : undefined
-        dispatch({ type: 'removeSet', key, setId })
-        // A full swipe deletes without asking, so a set that held anything can
-        // be put back. An empty one had nothing to lose.
-        if (set && (set.done || hasFigures(set))) {
-          const { toast, t } = latest.current
-          toast.show({
-            title: t('workouts:logger.setRemoved'),
-            action: {
-              label: t('common:action.undo'),
-              onPress: () => dispatch({ type: 'restoreSet', key, set, index }),
-            },
-          })
-        }
-      },
+      removeSet: (key, setId) => dispatch({ type: 'removeSet', key, setId }),
       reorder: () => {
         if (latest.current.workout.exercises.length > 1) setReordering(true)
       },

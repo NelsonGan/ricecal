@@ -1870,7 +1870,6 @@ export const hi = {
       addSet: 'सेट जोड़ें',
       addWarmups: 'वॉर्म-अप सेट जोड़ें',
       removeSet: 'सेट हटाएं',
-      setRemoved: 'सेट हटाया गया',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: 'कितना कठिन था?',

@@ -161,7 +161,6 @@ export const workouts = {
     addSet: 'Add set',
     addWarmups: 'Add warm-up sets',
     removeSet: 'Remove set',
-    setRemoved: 'Set removed',
     rpe: 'RPE',
     rpeValue: 'RPE {{value}}',
     rpeTitle: 'How hard was it?',

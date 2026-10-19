@@ -1892,7 +1892,6 @@ export const ta = {
       addSet: 'செட் சேர்',
       addWarmups: 'வார்ம்-அப் செட்கள் சேர்',
       removeSet: 'செட்டை நீக்கு',
-      setRemoved: 'செட் நீக்கப்பட்டது',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: 'எவ்வளவு கடினம்?',

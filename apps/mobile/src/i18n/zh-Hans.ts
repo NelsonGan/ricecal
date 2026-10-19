@@ -1866,7 +1866,6 @@ export const zhHans = {
       addSet: '添加一组',
       addWarmups: '添加热身组',
       removeSet: '删除这组',
-      setRemoved: '已删除这组',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: '有多吃力？',

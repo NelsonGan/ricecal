@@ -1920,7 +1920,6 @@ export const fil = {
       addSet: 'Magdagdag ng set',
       addWarmups: 'Magdagdag ng warm-up set',
       removeSet: 'Alisin ang set',
-      setRemoved: 'Naalis ang set',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: 'Gaano kahirap?',

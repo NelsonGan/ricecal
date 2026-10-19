@@ -1897,7 +1897,6 @@ export const id = {
       addSet: 'Tambah set',
       addWarmups: 'Tambah set warm-up',
       removeSet: 'Hapus set',
-      setRemoved: 'Set dihapus',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: 'Seberapa berat?',

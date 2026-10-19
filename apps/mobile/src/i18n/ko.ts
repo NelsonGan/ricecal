@@ -1872,7 +1872,6 @@ export const ko = {
       addSet: '세트 추가',
       addWarmups: '워밍업 세트 추가',
       removeSet: '세트 삭제',
-      setRemoved: '세트를 삭제했어요',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: '얼마나 힘들었나요?',
