@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { Macros, RecipeIngredientInput, RecipeUnit } from '@/data'
-import { useFood, useFoodSearch } from '@/data'
+import { isStorableAmount, useFood, useFoodSearch } from '@/data'
 import { ItemRow } from '@/features/shared'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
@@ -208,7 +208,7 @@ function AmountForm({
   const [amount, setAmount] = useState<string | null>(null)
 
   const value = amount === null ? initial : Number(amount)
-  const usable = Number.isFinite(value) && value > 0
+  const usable = isStorableAmount(value)
   const line = ingredientTotal(perUnit, usable ? value : 0)
 
   return (
@@ -338,7 +338,8 @@ function CustomPanel({
 
   const amountValue = Number(amount)
   const kcalValue = Number(kcal)
-  const ready = name.trim().length > 0 && amountValue > 0 && Number.isFinite(kcalValue)
+  const ready =
+    name.trim().length > 0 && isStorableAmount(amountValue) && Number.isFinite(kcalValue)
 
   // The figures are typed for the amount beside them — "642 kcal per 100 g" —
   // and stored per unit, because that is what stays true when the amount is
