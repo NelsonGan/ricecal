@@ -56,6 +56,8 @@ final class WatchStore: ObservableObject {
   private var restBuzzedFor: Double?
   private var lastPulse = Date.distantPast
   private var lastHeartAt = Date.distantPast
+  /// A reading that came inside the five seconds, sent when they are up.
+  private var trailing: Timer?
   private var lastResend = Date.distantPast
   /// Heart rate traces the phone has not yet said it has.
   private var unsent: [HeartTrace] = []
@@ -462,7 +464,22 @@ final class WatchStore: ObservableObject {
   /// every five seconds. Energy comes either way: it is measured with heart
   /// rate refused, and the phone shows it rather than its own estimate.
   private func stream() {
-    guard let id = recorder.workoutId, Date().timeIntervalSince(lastPulse) >= 5 else { return }
+    guard let id = recorder.workoutId else { return }
+    let since = Date().timeIntervalSince(lastPulse)
+    guard since >= 5 else {
+      // Heart rate and energy arrive together, and the first took the slot:
+      // the other goes when it opens, or the phone's burn trails by a batch.
+      guard trailing == nil else { return }
+      trailing = Timer.scheduledTimer(withTimeInterval: 5 - since, repeats: false) { [weak self] _ in
+        Task { @MainActor in
+          self?.trailing = nil
+          self?.stream()
+        }
+      }
+      return
+    }
+    trailing?.invalidate()
+    trailing = nil
     lastPulse = Date()
     // A reading is resent only while it is recent, so a loose strap does not
     // keep its last figure looking live on the phone.

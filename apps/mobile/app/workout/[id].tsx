@@ -264,7 +264,7 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
           {workout.kcal ? (
             <Stat
               label={t('workouts:detail.kcalLabel')}
-              value={t('workouts:detail.kcal', { value: workout.kcal })}
+              value={t('workouts:detail.kcal', { value: workout.kcal.toLocaleString() })}
               info={note}
             />
           ) : null}

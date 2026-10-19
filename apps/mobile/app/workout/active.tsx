@@ -283,8 +283,13 @@ const TABULAR = { fontVariant: ['tabular-nums' as const] }
  * the two in full with where the burn came from. Which one is remembered.
  */
 function BodyFigures({ workout, pulsing }: { workout: LiveWorkout; pulsing: boolean }) {
+  const { t } = useTranslation(['workouts', 'activity'])
   const colors = useThemeColors()
   const open = useWorkoutPrefs().bodyFiguresOpen
+  // What the toggle shows or hides, for VoiceOver: the chevron has no words.
+  const label = [pulsing ? t('activity:workout.heartRate') : null, t('workouts:detail.kcalLabel')]
+    .filter(Boolean)
+    .join(', ')
   const toggle = () => setWorkoutPrefs({ bodyFiguresOpen: !open })
   // A thin drawn chevron: the icon set's is an illustration, and even tinted
   // grey it read as a sticker on a plain white card.
@@ -322,6 +327,7 @@ function BodyFigures({ workout, pulsing }: { workout: LiveWorkout; pulsing: bool
             onPress={toggle}
             hitSlop={14}
             accessibilityRole="button"
+            accessibilityLabel={label}
             accessibilityState={{ expanded: true }}
             className="pt-1 pl-2"
           >
@@ -332,6 +338,7 @@ function BodyFigures({ workout, pulsing }: { workout: LiveWorkout; pulsing: bool
         <Tappable
           onPress={toggle}
           accessibilityRole="button"
+          accessibilityHint={label}
           accessibilityState={{ expanded: false }}
           className="flex-row items-center gap-3 py-2.5"
         >
