@@ -1,7 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
-import { isStorableAmount, type RecipeInput, useSaveRecipe } from '../recipes'
+import {
+  isStorableAmount,
+  isStorablePerUnit,
+  type RecipeInput,
+  storedAmount,
+  useSaveRecipe,
+} from '../recipes'
 
 // Each call records the table and the verb, and resolves to what the test set
 // for that table and verb. Enough of the builder for `useSaveRecipe`.
@@ -110,4 +116,18 @@ it('accepts only an amount the column can hold', () => {
   expect(isStorableAmount(0)).toBe(false)
   expect(isStorableAmount(100_001)).toBe(false)
   expect(isStorableAmount(Number.NaN)).toBe(false)
+})
+
+it('accepts only a per-unit figure the column can hold', () => {
+  expect(isStorablePerUnit(0)).toBe(true)
+  expect(isStorablePerUnit(999_999.9999)).toBe(true)
+  expect(isStorablePerUnit(1_000_000)).toBe(false)
+  expect(isStorablePerUnit(-1)).toBe(false)
+  expect(isStorablePerUnit(Number.NaN)).toBe(false)
+})
+
+it('rounds an amount as the column does', () => {
+  expect(storedAmount(0.006)).toBe(0.01)
+  expect(storedAmount(2.345)).toBe(2.35)
+  expect(storedAmount(250)).toBe(250)
 })

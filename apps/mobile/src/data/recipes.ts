@@ -222,15 +222,23 @@ export type RecipeIngredientInput = {
   perUnit: Macros
 }
 
+/** An amount as `recipe_ingredients.amount` keeps it: `numeric(9, 2)`, two decimals. */
+export const storedAmount = (amount: number) => Math.round(amount * 100) / 100
+
 /**
- * Whether `recipe_ingredients.amount` can hold this: `numeric(9, 2)`, above zero
- * and at most 100,000. Rounded first, as Postgres rounds before the check, so
- * 0.004 counts as the zero it becomes.
+ * Whether `recipe_ingredients.amount` can hold this: above zero and at most
+ * 100,000 once rounded, as Postgres rounds before the check, so 0.004 counts
+ * as the zero it becomes.
  */
 export function isStorableAmount(amount: number): boolean {
   if (!Number.isFinite(amount)) return false
-  const stored = Math.round(amount * 100) / 100
+  const stored = storedAmount(amount)
   return stored > 0 && stored <= 100_000
+}
+
+/** Whether a per-unit figure fits its column: `numeric(10, 4)`, never negative. */
+export function isStorablePerUnit(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && Math.round(value * 10_000) / 10_000 < 1_000_000
 }
 
 export type RecipeInput = {
