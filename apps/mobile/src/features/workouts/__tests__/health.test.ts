@@ -9,6 +9,7 @@ import {
 import { syncWorkoutToHealth } from '../health'
 import { newWorkout } from '../model'
 import { getWorkoutPrefs, setWorkoutPrefs } from '../prefs'
+import { receivePulse } from '../pulse'
 
 jest.mock('@/lib/health', () => ({
   deleteWorkoutFromHealth: jest.fn(),
@@ -112,6 +113,20 @@ describe('saving a workout to Apple Health', () => {
     expect(requestWorkoutWrite).not.toHaveBeenCalled()
     expect(setWorkoutPrefs).not.toHaveBeenCalled()
     expect(saveWorkoutToHealth).not.toHaveBeenCalled()
+  })
+
+  it('writes no copy of its own once the watch has streamed energy for the workout', async () => {
+    // Before its `recording` command lands: the watch saves its own copy, and a
+    // second from here would put the session's energy in Health twice.
+    jest.useFakeTimers()
+    receivePulse({ workoutId: workout.id, bpm: null, kcal: 50, at: 1 })
+
+    await expect(syncWorkoutToHealth(workout, 2_000_000, 50)).resolves.toMatchObject({
+      replaced: false,
+    })
+    expect(saveWorkoutToHealth).not.toHaveBeenCalled()
+    expect(deleteWorkoutFromHealth).not.toHaveBeenCalled()
+    jest.useRealTimers()
   })
 
   it('skips the permission sheet when saving was turned off', async () => {
