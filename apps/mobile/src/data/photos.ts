@@ -264,26 +264,31 @@ async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
   if (!image.base64) throw new Error('Could not read the photo')
   const bytes = decodeBase64(image.base64)
 
-  const { key, url } = await photos({
-    action: 'upload',
-    kind,
-    contentType: 'image/jpeg',
-    size: bytes.length,
-  })
+  const { key, url } = await onceMoreIfLost(
+    () => photos({ action: 'upload', kind, contentType: 'image/jpeg', size: bytes.length }),
+    (error) => (error as { name?: unknown } | null)?.name === 'FunctionsFetchError',
+  )
   if (!key || !url) throw new Error('storage did not return an upload URL')
 
   // The content type is part of what was signed, so it has to be sent and it has
   // to match. A 403 here with a valid-looking URL is almost always this header
   // having been changed on one side and not the other.
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'image/jpeg' },
-    // The cast asserts what the platform accepts rather than what the DOM typings
-    // describe. React Native's `convertRequestBody` has a branch for
-    // `ArrayBuffer.isView(body)` and base64s it across to native; the lib.dom
-    // `BodyInit` it is being checked against never heard of React Native.
-    body: bytes as unknown as BodyInit,
-  })
+  //
+  // `fetch` only throws when there was no response at all; a refusal comes back
+  // as one, so every throw here is a lost request.
+  const response = await onceMoreIfLost(
+    () =>
+      fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'image/jpeg' },
+        // The cast asserts what the platform accepts rather than what the DOM
+        // typings describe. React Native's `convertRequestBody` has a branch for
+        // `ArrayBuffer.isView(body)` and base64s it across to native; the lib.dom
+        // `BodyInit` it is being checked against never heard of React Native.
+        body: bytes as unknown as BodyInit,
+      }),
+    () => true,
+  )
   if (!response.ok) throw new Error(`Upload failed (${response.status})`)
 
   /**
@@ -301,6 +306,36 @@ async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
   }
 
   return key
+}
+
+/** How soon a failure has to come for it to be a stale connection. */
+const QUICK_FAILURE_MS = 5_000
+
+/**
+ * Sends a request again, once, when the first never got an answer.
+ *
+ * The camera panel sits open while someone frames a plate, long enough for the
+ * pooled connection to go stale, and iOS then fails the next request with "The
+ * network connection was lost." without retrying it, because it retries only a
+ * GET. On 1.1.0 that was most of the failed camera scans: the photo never left
+ * the phone, so the scan never started. Both upload steps are safe to repeat.
+ *
+ * Only a quick failure is repeated. A dead pooled connection fails at once; a
+ * request that ran to the platform's timeout would only make the person wait
+ * that long a second time. Timed rather than matched on the message, because
+ * the message comes in the phone's language.
+ */
+async function onceMoreIfLost<T>(
+  send: () => Promise<T>,
+  lost: (error: unknown) => boolean,
+): Promise<T> {
+  const started = Date.now()
+  try {
+    return await send()
+  } catch (error) {
+    if (!lost(error) || Date.now() - started > QUICK_FAILURE_MS) throw error
+    return send()
+  }
 }
 
 /**
