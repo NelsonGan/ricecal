@@ -128,13 +128,18 @@ const queuedDuration = (document: WorkoutDocument) =>
  * until the server has it, which is the one place this file sums anything,
  * and it is said on the row: the card reads "Waiting to sync".
  */
-export function summaryFromDocument(document: WorkoutDocument): WorkoutSummary {
+export function summaryFromDocument(
+  document: WorkoutDocument,
+  /** The latest weigh-in, for a body weight movement's volume. */
+  bodyKg?: number | null,
+): WorkoutSummary {
   let volumeKg = 0
   let setCount = 0
   for (const exercise of document.exercises) {
     for (const set of exercise.sets) {
       setCount += 1
-      volumeKg += setVolume({ weightKg: set.weight_kg, reps: set.reps }, exercise.tracking) ?? 0
+      volumeKg +=
+        setVolume({ weightKg: set.weight_kg, reps: set.reps }, exercise.tracking, bodyKg) ?? 0
     }
   }
   return {

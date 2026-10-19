@@ -36,6 +36,10 @@ public struct WorkoutActivityAttributes: ActivityAttributes {
     public var restAfterS: Double?
     /// The buttons' names for VoiceOver, in the user's language.
     public var labels: ActionLabels?
+    /// The id of that exercise, whose drawing the activity shows. A custom
+    /// exercise's has no drawing in the extension, and nil comes from a build
+    /// before this field; both draw the dumbbell.
+    public var exerciseId: String?
   }
 
   /// What VoiceOver calls the activity's buttons. The extension has no strings of its own.

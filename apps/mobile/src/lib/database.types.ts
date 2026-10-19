@@ -2587,6 +2587,7 @@ export type Database = {
           exercise_position: number | null
           id: string | null
           kind: Database['public']['Enums']['workout_set_kind'] | null
+          load_kg: number | null
           log_date: string | null
           position: number | null
           reps: number | null

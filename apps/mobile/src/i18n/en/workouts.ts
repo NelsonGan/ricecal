@@ -216,6 +216,8 @@ export const workouts = {
     skip: 'Skip',
     over: 'Rest is over',
     overBody: 'Time for your next set of {{name}}.',
+    complete: 'Rest complete',
+    next: 'Next: {{name}}',
     min: 'min',
     sec: 's',
     minutes: 'Minutes',

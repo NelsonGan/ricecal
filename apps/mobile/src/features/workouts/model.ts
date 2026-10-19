@@ -671,7 +671,11 @@ export function isLoggable(
  * server computes the saved workout's own figures (`workout_summaries`); these
  * are the same definitions, applied to a document that has not been saved yet.
  */
-export function liveTotals(workout: LiveWorkout): { volumeKg: number; sets: number; done: number } {
+export function liveTotals(
+  workout: LiveWorkout,
+  /** The latest weigh-in, which prices a body weight movement's sets. */
+  bodyKg?: number | null,
+): { volumeKg: number; sets: number; done: number } {
   let volumeKg = 0
   let sets = 0
   let done = 0
@@ -680,7 +684,7 @@ export function liveTotals(workout: LiveWorkout): { volumeKg: number; sets: numb
       sets += 1
       if (!set.done) continue
       done += 1
-      volumeKg += setVolume(set, exercise.tracking) ?? 0
+      volumeKg += setVolume(set, exercise.tracking, bodyKg) ?? 0
     }
   }
   return { volumeKg, sets, done }
@@ -694,20 +698,60 @@ export function liveTotals(workout: LiveWorkout): { volumeKg: number; sets: numb
 export function showsVolume(trackings: readonly Tracking[]): boolean {
   return (
     trackings.length === 0 ||
-    trackings.some((tracking) => tracking === 'weight_reps' || tracking === 'weighted_reps')
+    trackings.some(
+      (tracking) =>
+        tracking === 'weight_reps' || tracking === 'weighted_reps' || tracking === 'assisted_reps',
+    )
   )
 }
 
-/** Weight x reps where the weight is load. Matches `workout_set_details`. */
+/**
+ * What a set lifted, in cents of a kilogram. A body weight movement lifts the
+ * body: plus what was added, or less what the machine took off, since an
+ * assisted pull-up's figure is the help and not the load. Without a weigh-in a
+ * weighted set counts what was added and an assisted one nothing. Matches
+ * `load_kg` in `workout_set_values`.
+ */
+function loadCents(
+  weightKg: number | null,
+  tracking: Tracking,
+  bodyKg: number | null | undefined,
+): number | null {
+  const added = Math.round((weightKg ?? 0) * 100)
+  const body = bodyKg && bodyKg > 0 ? Math.round(bodyKg * 100) : null
+  switch (tracking) {
+    case 'weight_reps':
+      return weightKg === null ? null : added
+    case 'weighted_reps':
+      return (body ?? 0) + added
+    case 'assisted_reps':
+      return body === null ? null : Math.max(0, body - added)
+    default:
+      return null
+  }
+}
+
+/** The load in kilograms, or null for a tracking where the weight is not one. */
+export function setLoad(
+  weightKg: number | null,
+  tracking: Tracking,
+  bodyKg?: number | null,
+): number | null {
+  const cents = loadCents(weightKg, tracking, bodyKg)
+  return cents === null ? null : cents / 100
+}
+
+/** Load x reps. Matches `workout_set_values`. */
 export function setVolume(
   set: Pick<LiveSet, 'weightKg' | 'reps'>,
   tracking: Tracking,
+  bodyKg?: number | null,
 ): number | null {
-  if (tracking !== 'weight_reps' && tracking !== 'weighted_reps') return null
-  if (!set.weightKg || !set.reps) return null
+  const cents = loadCents(set.weightKg, tracking, bodyKg)
+  if (!cents || !set.reps || set.reps <= 0) return null
   // In cents, as Postgres's numeric does it: 95 lb is 43.09 kg, and 43.09 x 5
   // in floating point is 215.45000000000002, a record over a stored 215.45.
-  return Math.round(Math.round(set.weightKg * 100) * set.reps) / 100
+  return (cents * set.reps) / 100
 }
 
 /** Epley, over 1 to 15 reps. Matches `workout_set_details`. */

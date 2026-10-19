@@ -1916,6 +1916,8 @@ export const zhHant = {
       skip: '跳過',
       over: '休息結束',
       overBody: '該做 {{name}} 的下一組了。',
+      complete: '休息結束',
+      next: '下一個：{{name}}',
       min: '分鐘',
       sec: '秒',
       minutes: '分鐘',

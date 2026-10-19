@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
+  useCurrentWeight,
   useExerciseBests,
   useRoutines,
   useSaveRoutine,
@@ -88,6 +89,7 @@ export default function FinishWorkoutScreen() {
   const library = useExerciseLibrary()
   const overview = useWorkoutOverview().data
   const bests = useExerciseBests(null).data
+  const bodyKg = useCurrentWeight()
   const routines = useRoutines().data
   const saveRoutine = useSaveRoutine()
 
@@ -127,6 +129,7 @@ export default function FinishWorkoutScreen() {
       const marked = recordSets(
         exercises.filter((card) => card.exerciseId === exercise.exerciseId),
         byId.get(exercise.exerciseId),
+        bodyKg,
       )
       for (const kind of RECORD_ORDER) {
         const set = exercise.sets.find((entry) => marked.get(entry.id)?.includes(kind))
@@ -134,11 +137,11 @@ export default function FinishWorkoutScreen() {
       }
       return []
     })
-  }, [exercises, bests])
+  }, [exercises, bests, bodyKg])
 
   if (!workout) return <WorkoutUnavailable />
 
-  const totals = liveTotals(workout)
+  const totals = liveTotals(workout, bodyKg)
 
   // The routine it was started from, if it still exists and the workout left it.
   const routine = workout.routineId
@@ -167,7 +170,7 @@ export default function FinishWorkoutScreen() {
       case 'e1rm':
         return weightText(t, estimatedOneRepMax(set.weightKg, set.reps), unit)
       case 'volume':
-        return volumeText(t, setVolume(set, exercise.tracking) ?? 0, unit)
+        return volumeText(t, setVolume(set, exercise.tracking, bodyKg) ?? 0, unit)
       case 'duration':
         return shortClock(set.durationS ?? 0)
       case 'distance':
