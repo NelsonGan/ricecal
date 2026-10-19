@@ -2,10 +2,12 @@ import { assertEquals, assertThrows } from 'jsr:@std/assert@1'
 import type { Meter } from './entitlement.ts'
 import {
   chatJSON,
+  completeJpeg,
   FALLBACK_ROUTE,
   type ModelRoute,
   PRIMARY_ROUTE,
   parseAnswer,
+  photoBase64,
   photoDataUrl,
   requestBody,
   routeFor,
@@ -181,4 +183,16 @@ Deno.test('an answer billed to credits is kept, and stops the primary being aske
   )
   // Qwen answering with the primary never asked is not a fallback.
   assertEquals(next.generations[0].isBackupModel, false)
+})
+
+Deno.test('a clipped JPEG gets its end marker back, and nothing else is touched', () => {
+  const jpeg = (...tail: number[]) => new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, ...tail])
+  // The app cut one byte (the D9) or two (FF D9) off the end.
+  assertEquals([...completeJpeg(jpeg(0xff))].slice(-2), [0xff, 0xd9])
+  assertEquals([...completeJpeg(jpeg(4))].slice(-3), [4, 0xff, 0xd9])
+  const whole = jpeg(0xff, 0xd9)
+  assertEquals(completeJpeg(whole), whole)
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+  assertEquals(completeJpeg(png), png)
+  assertEquals(atob(photoBase64(jpeg(0xff))).slice(-2), '\xff\xd9')
 })

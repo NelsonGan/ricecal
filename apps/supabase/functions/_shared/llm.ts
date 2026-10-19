@@ -303,6 +303,41 @@ export const FALLBACK_ROUTE: ModelRoute = routeFor(
 let byokBroken = false
 
 /**
+ * A JPEG with its closing `FF D9` put back when it is missing. The app's
+ * base64 decoder cut one or two bytes off the end of two iOS photos in three,
+ * which is exactly that marker, and every binary already in the stores keeps
+ * uploading them. Qwen decodes such a file; Anthropic answers "Could not
+ * process image", which sent half of all photo scans to the fallback. Anything
+ * that is not a JPEG, or ends in `FF D9`, comes back untouched. A whole JPEG
+ * with bytes after its end marker gets two more, which decoders never read.
+ * Exported for its test.
+ */
+export function completeJpeg(bytes: Uint8Array): Uint8Array {
+  const n = bytes.length
+  if (n < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return bytes
+  if (bytes[n - 2] === 0xff && bytes[n - 1] === 0xd9) return bytes
+  const end = bytes[n - 1] === 0xff ? [0xd9] : [0xff, 0xd9]
+  const whole = new Uint8Array(n + end.length)
+  whole.set(bytes)
+  whole.set(end, n)
+  return whole
+}
+
+/**
+ * A stored photo as base64 for a model call, with a clipped JPEG made whole
+ * (`completeJpeg`). Every path that reads a photo out of the bucket for a model
+ * goes through here, so none of them can send one Anthropic refuses.
+ */
+export function photoBase64(bytes: Uint8Array): string {
+  const whole = completeJpeg(bytes)
+  let binary = ''
+  for (let i = 0; i < whole.length; i += 0x8000) {
+    binary += String.fromCharCode(...whole.subarray(i, i + 0x8000))
+  }
+  return btoa(binary)
+}
+
+/**
  * A photo as a data URL, typed by its first bytes rather than assumed. The app
  * sends JPEG, but storage accepts PNG and WebP too, and Anthropic refuses an
  * image whose declared type is not what it is, where Qwen never minded. Anything
