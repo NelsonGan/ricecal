@@ -308,6 +308,9 @@ async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
   return key
 }
 
+/** How soon a failure has to come for it to be a stale connection. */
+const QUICK_FAILURE_MS = 5_000
+
 /**
  * Sends a request again, once, when the first never got an answer.
  *
@@ -316,15 +319,21 @@ async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
  * network connection was lost." without retrying it, because it retries only a
  * GET. On 1.1.0 that was most of the failed camera scans: the photo never left
  * the phone, so the scan never started. Both upload steps are safe to repeat.
+ *
+ * Only a quick failure is repeated. A dead pooled connection fails at once; a
+ * request that ran to the platform's timeout would only make the person wait
+ * that long a second time. Timed rather than matched on the message, because
+ * the message comes in the phone's language.
  */
 async function onceMoreIfLost<T>(
   send: () => Promise<T>,
   lost: (error: unknown) => boolean,
 ): Promise<T> {
+  const started = Date.now()
   try {
     return await send()
   } catch (error) {
-    if (!lost(error)) throw error
+    if (!lost(error) || Date.now() - started > QUICK_FAILURE_MS) throw error
     return send()
   }
 }

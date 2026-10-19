@@ -112,6 +112,22 @@ describe('avatar uploads', () => {
       expect(global.fetch).toHaveBeenCalledTimes(2)
     })
 
+    it('does not repeat a request that ran to a timeout', async () => {
+      const now = jest.spyOn(Date, 'now')
+      let clock = 0
+      now.mockImplementation(() => clock)
+      jest.mocked(global.fetch).mockImplementationOnce(async () => {
+        clock += 60_000
+        throw new Error('fetch failed: UnexpectedException: The request timed out.')
+      })
+      try {
+        await expect(uploadAvatar('file:///a.jpg')).rejects.toThrow('timed out')
+        expect(global.fetch).toHaveBeenCalledTimes(1)
+      } finally {
+        now.mockRestore()
+      }
+    })
+
     it('does not repeat an answer the server gave', async () => {
       supabase.functions.invoke.mockResolvedValueOnce({
         data: null,
