@@ -62,10 +62,10 @@ export function callerCancelled(error: unknown, signal?: AbortSignal | null): bo
  * When each host last lost a request, with nothing from it answered since.
  *
  * One lost request is not a host that cannot be reached. iOS keeps a connection
- * open between requests, and after a minute idle or a spell in the background
- * it sends the next request down one the other end has already dropped. That
- * request fails ("The network connection was lost.") and the next one, on a
- * fresh connection, is answered. A request the app was suspended in the middle
+ * open between requests, and after the app has sat idle or spent a while in the
+ * background it can send the next request down one the other end has dropped.
+ * That request fails ("The network connection was lost.") and the next one, on
+ * a fresh connection, is answered. A request the app was suspended in the middle
  * of fails the same way when it wakes. On 1.1.0 those were nearly every report,
  * from about one phone in six a day, with the app talking to Supabase again
  * straight after.
