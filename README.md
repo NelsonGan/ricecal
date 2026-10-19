@@ -6065,12 +6065,13 @@ TLS, a refused connection or a timeout; the warning keeps that answer.
 
 **Why one lost request is not enough.** Filed on the first lost request, the
 warning reached about one phone in six a day on 1.1.0, and in the sessions
-checked the app went on talking to Supabase straight after. iOS keeps connections open between requests, and after
-an idle minute or a spell in the background it sends the next one down a
-connection the other end has dropped (`The network connection was lost.`); a
-request the app was suspended in the middle of fails the same way when it wakes.
-Requests that shared the dead connection fail together and confirm nothing, so
-the confirming request has to be one sent after the first failure.
+checked the app went on talking to Supabase straight after. iOS keeps
+connections open between requests, and after the app has sat idle or spent a
+while in the background it can send the next one down a connection the other
+end has dropped (`The network connection was lost.`); a request the app was
+suspended in the middle of fails the same way when it wakes. Requests that
+shared the dead connection fail together and confirm nothing, so the confirming
+request has to be one sent after the first failure.
 
 **Readable stacks need uploaded symbols.** `metro.config.js` uses
 `getPostHogExpoConfig`, which injects debug IDs into every bundle. The
