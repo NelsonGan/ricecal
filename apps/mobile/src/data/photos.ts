@@ -52,8 +52,13 @@ const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
  */
 function decodeBase64(input: string): Uint8Array {
   const clean = input.replace(/[^A-Za-z0-9+/]/g, '')
-  const padding = input.endsWith('==') ? 2 : input.endsWith('=') ? 1 : 0
-  const bytes = new Uint8Array((clean.length * 3) / 4 - padding)
+  // Every four characters are three bytes and a short last group is one or two,
+  // so the length comes from the characters left. It once subtracted the `=`
+  // padding as well, after the line above had already stripped it: two iOS
+  // photos in three lost their last byte or two, which is a JPEG's closing
+  // `FF D9`, and Anthropic refuses such a file. Android hid it by ending its
+  // base64 with a newline, so the padding was never seen there.
+  const bytes = new Uint8Array(Math.floor((clean.length * 3) / 4))
 
   let byte = 0
   let bits = 0
