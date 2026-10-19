@@ -1,5 +1,6 @@
 import { Platform } from 'react-native'
 
+import { requestHealthSync } from '@/data/health-sync'
 import {
   deleteWorkoutFromHealth,
   requestWorkoutWrite,
@@ -9,6 +10,7 @@ import {
 import { healthActivityType, totalDistanceM } from './energy'
 import type { LiveWorkout } from './model'
 import { getWorkoutPrefs, setWorkoutPrefs } from './prefs'
+import { watchEnergy } from './pulse'
 
 /**
  * A workout's copy in Apple Health.
@@ -36,7 +38,9 @@ export async function syncWorkoutToHealth(
     // alone: turning a switch off is not asking for history to be erased.
     return { healthId: workout.healthWorkoutId, failed: false, replaced: false }
   }
-  if (workout.watch?.recorded) {
+  // A figure streamed from the watch says it is recording even when its
+  // `recording` command has not landed yet (they travel by different paths).
+  if (workout.watch?.recorded || watchEnergy(workout.id) !== null) {
     // The watch saved its own copy, with its measured heart rate and energy.
     // A second one from here would count the session's energy twice, and an
     // edit replacing it would throw away what the watch measured.
@@ -110,6 +114,10 @@ export async function removeWorkoutFromHealth(
   }
   try {
     await deleteWorkoutFromHealth(healthId, workoutId)
+    // Its energy left the day with it, and the budget should shrink to match.
+    // Without a copy on record (a workout discarded before saving) there was
+    // nothing in the day to take out.
+    if (healthId) requestHealthSync()
   } catch (error) {
     console.warn('[workouts] could not remove from Apple Health', error)
   }

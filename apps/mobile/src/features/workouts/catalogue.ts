@@ -470,16 +470,16 @@ const FULL_BODY = rows('fullBody', [
 
 // biome-ignore format: one exercise per line reads as a table
 const CARDIO = rows('cardio', [
-  ['running', 'Running', 'distance_duration', 'none', 'beginner', { quads: 0.35, calves: 0.25, hamstrings: 0.2, glutes: 0.2 }, 9.8, { health: 37, aliases: ['run', 'jogging', 'lari'] }],
+  ['running', 'Running', 'distance_duration', 'none', 'beginner', { quads: 0.35, calves: 0.25, hamstrings: 0.2, glutes: 0.2 }, 9.3, { health: 37, aliases: ['run', 'jogging', 'lari'] }],
   ['treadmill', 'Running (Treadmill)', 'distance_duration', 'machine', 'beginner', { quads: 0.35, calves: 0.25, hamstrings: 0.2, glutes: 0.2 }, 9, { health: 37, aliases: ['treadmill', 'treadmill run'] }],
-  ['walking', 'Walking', 'distance_duration', 'none', 'beginner', { quads: 0.35, calves: 0.35, glutes: 0.3 }, 3.5, { health: 52, aliases: ['walk', 'jalan'] }],
+  ['walking', 'Walking', 'distance_duration', 'none', 'beginner', { quads: 0.35, calves: 0.35, glutes: 0.3 }, 3.8, { health: 52, aliases: ['walk', 'jalan'] }],
   ['hiking', 'Hiking', 'distance_duration', 'none', 'beginner', { quads: 0.4, glutes: 0.3, calves: 0.3 }, 6, { health: 24, aliases: ['hike'] }],
   ['cycling', 'Cycling', 'distance_duration', 'other', 'beginner', { quads: 0.5, glutes: 0.2, hamstrings: 0.15, calves: 0.15 }, 7.5, { health: 13, aliases: ['bike', 'basikal'] }],
-  ['stationary-bike', 'Cycling (Indoor)', 'distance_duration', 'machine', 'beginner', { quads: 0.5, glutes: 0.2, hamstrings: 0.15, calves: 0.15 }, 7, { health: 13, aliases: ['stationary bike', 'spin', 'exercise bike'] }],
+  ['stationary-bike', 'Cycling (Indoor)', 'distance_duration', 'machine', 'beginner', { quads: 0.5, glutes: 0.2, hamstrings: 0.15, calves: 0.15 }, 6.8, { health: 13, aliases: ['stationary bike', 'spin', 'exercise bike'] }],
   ['air-bike', 'Air Bike', 'duration', 'machine', 'intermediate', { quads: 0.4, shoulders: 0.2, glutes: 0.2, hamstrings: 0.2 }, 9, { health: 13, aliases: ['assault bike', 'fan bike'] }],
   ['rowing-machine', 'Rowing (Machine)', 'distance_duration', 'machine', 'beginner', { lats: 0.3, quads: 0.3, upperBack: 0.15, biceps: 0.1, glutes: 0.15 }, 7, { health: 35, aliases: ['rowing machine', 'rower', 'erg'] }],
   ['elliptical', 'Elliptical Machine', 'distance_duration', 'machine', 'beginner', { quads: 0.4, glutes: 0.3, calves: 0.15, shoulders: 0.15 }, 5, { health: 16, aliases: ['elliptical', 'cross trainer'] }],
-  ['stair-climber', 'Stair Climber', 'duration', 'machine', 'beginner', { quads: 0.4, glutes: 0.4, calves: 0.2 }, 9, { health: 44, aliases: ['stairmaster'] }],
+  ['stair-climber', 'Stair Climber', 'duration', 'machine', 'beginner', { quads: 0.4, glutes: 0.4, calves: 0.2 }, 9.3, { health: 44, aliases: ['stairmaster'] }],
   ['jump-rope', 'Jump Rope', 'duration', 'other', 'beginner', { calves: 0.6, shoulders: 0.2, quads: 0.2 }, 11, { health: 64, aliases: ['skipping'] }],
   ['swimming', 'Swimming', 'distance_duration', 'none', 'beginner', { lats: 0.3, shoulders: 0.3, triceps: 0.1, quads: 0.15, abs: 0.15 }, 7, { health: 46, aliases: ['swim', 'renang'] }],
   ['hiit', 'HIIT', 'duration', 'none', 'intermediate', { quads: 0.3, glutes: 0.2, abs: 0.2, shoulders: 0.15, chest: 0.15 }, 8, { health: 63, aliases: ['circuit', 'interval'] }],
@@ -490,8 +490,8 @@ const CARDIO = rows('cardio', [
 
 // biome-ignore format: one exercise per line reads as a table
 const MOBILITY = rows('mobility', [
-  ['yoga', 'Yoga', 'duration', 'none', 'beginner', { abs: 0.25, hamstrings: 0.25, shoulders: 0.2, glutes: 0.15, lowerBack: 0.15 }, 2.5, { health: 57 }],
-  ['pilates', 'Pilates', 'duration', 'none', 'beginner', { abs: 0.45, obliques: 0.2, glutes: 0.2, lowerBack: 0.15 }, 3, { health: 66 }],
+  ['yoga', 'Yoga', 'duration', 'none', 'beginner', { abs: 0.25, hamstrings: 0.25, shoulders: 0.2, glutes: 0.15, lowerBack: 0.15 }, 2.3, { health: 57 }],
+  ['pilates', 'Pilates', 'duration', 'none', 'beginner', { abs: 0.45, obliques: 0.2, glutes: 0.2, lowerBack: 0.15 }, 2.8, { health: 66 }],
   ['stretching', 'Stretching', 'duration', 'none', 'beginner', { hamstrings: 0.3, quads: 0.2, lowerBack: 0.2, shoulders: 0.15, glutes: 0.15 }, 2.3, { health: 62, aliases: ['stretch', 'mobility', 'cooldown'] }],
   ['foam-rolling', 'Foam Rolling', 'duration', 'other', 'beginner', { quads: 0.3, hamstrings: 0.25, calves: 0.2, upperBack: 0.25 }, 2, { health: 33, aliases: ['recovery'] }],
   ['tai-chi', 'Tai Chi', 'duration', 'none', 'beginner', { quads: 0.35, glutes: 0.25, abs: 0.2, shoulders: 0.2 }, 3, { health: 72 }],

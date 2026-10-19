@@ -4,7 +4,7 @@ import type { TFunction } from 'i18next'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { type IconRef, useCurrentWeight, useSaveWorkout } from '@/data'
+import { type IconRef, requestHealthSync, useSaveWorkout } from '@/data'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
@@ -20,9 +20,11 @@ import {
   TextField,
   useHeld,
 } from '@/ui'
-import { estimateKcal } from './energy'
+import { workoutBurn } from './burn'
+import { useEnergyBody } from './energyBody'
 import { type HealthOutcome, removeWorkoutFromHealth, syncWorkoutToHealth } from './health'
 import { doneSets, type LiveWorkout, toPayload } from './model'
+import { watchEnergy } from './pulse'
 import { WhenSheet } from './WhenSheet'
 
 /**
@@ -144,18 +146,22 @@ type SavedVersion = { workout: LiveWorkout; endedAt: number; kcal: number | null
  */
 export function useWorkoutSave() {
   const save = useSaveWorkout()
-  const bodyKg = useCurrentWeight()
+  const body = useEnergyBody()
 
   const run = async (document: LiveWorkout, endedAt: number, previous?: SavedVersion) => {
     const durationS = Math.round((endedAt - document.startedAt) / 1000)
-    // What the watch measured, for a workout it recorded and the server has
-    // its trace for; an estimate otherwise.
-    const kcal = document.watch?.kcal ?? estimateKcal(document, durationS, bodyKg)
+    // What the watch measured, for a workout it recorded (the server replaces
+    // it with the trace's when that lands); an estimate otherwise. The same
+    // rule the logger and the finish screen show it by.
+    const watched = document.watch?.kcal ?? watchEnergy(document.id)
+    const kcal = workoutBurn(document, durationS, body, watched).kcal
     let health: HealthOutcome | null = null
     try {
       health = await syncWorkoutToHealth(document, endedAt, kcal)
       const payload = toPayload(document, endedAt, { kcal, healthWorkoutId: health.healthId })
       const result = await save.mutateAsync(payload)
+      // The copy's energy is in Health now, so the budget can count it.
+      if (health.replaced && health.healthId) requestHealthSync()
       return { payload, queued: result.queued, health, durationS }
     } catch (failure) {
       // Awaited: a retry tapped at once could otherwise have its own new copy

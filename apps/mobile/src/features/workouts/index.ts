@@ -1,4 +1,5 @@
 export { ActionSheet } from './ActionSheet'
+export { type Burn, burnNote, workoutBurn } from './burn'
 export {
   ActiveWorkoutBar,
   OverviewCard,
@@ -6,6 +7,7 @@ export {
   RowChevron,
   Stat,
   StatGrid,
+  StatNote,
   StatStrip,
   WeekStreakBadge,
   WorkoutCard,
@@ -27,6 +29,7 @@ export * from './copy'
 export { useDeleteConfirm } from './deleteConfirm'
 export { ExerciseArt } from './ExerciseArt'
 export { WorkoutEffects } from './effects'
+export { useEnergyBody } from './energyBody'
 export { workoutsCsv } from './exportCsv'
 export * from './format'
 export { removeWorkoutFromHealth } from './health'
@@ -50,7 +53,7 @@ export { PulseLine, traceZones } from './PulseLine'
 export { cancelPick, deliverPick, hasPick } from './pick'
 export { setWorkoutPrefs, useWorkoutPrefs } from './prefs'
 export * from './progress'
-export { useWatchPulse } from './pulse'
+export { useWatchEnergy, useWatchPulse, useWatchPulsing } from './pulse'
 export { RestBar } from './RestBar'
 export { RestSheet } from './RestSheet'
 export { type RecordKind, recordSets } from './records'

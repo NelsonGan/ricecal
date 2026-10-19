@@ -11,6 +11,7 @@ import {
   useWorkoutOverview,
 } from '@/data'
 import {
+  burnNote,
   describeSet,
   distanceText,
   distanceUnitFor,
@@ -27,6 +28,8 @@ import {
   recordSets,
   routineChanges,
   Stat,
+  StatGrid,
+  StatNote,
   setVolume,
   shortClock,
   showsVolume,
@@ -34,14 +37,17 @@ import {
   timesError,
   trackWorkoutFinished,
   updatedRoutine,
+  useEnergyBody,
   useExerciseLibrary,
   useLeaveGuard,
   useLiveWorkout,
+  useWatchEnergy,
   useWorkoutSave,
   volumeText,
   WorkoutFields,
   WorkoutUnavailable,
   weightText,
+  workoutBurn,
 } from '@/features/workouts'
 import { UNIT_KEY, unitFor } from '@/lib/units'
 import {
@@ -104,6 +110,9 @@ export default function FinishWorkoutScreen() {
   })
   const [saving, setSaving] = useState(false)
   const [askRoutine, setAskRoutine] = useState(false)
+  const [noteOpen, setNoteOpen] = useState(false)
+  const body = useEnergyBody()
+  const watchKcal = useWatchEnergy(workout?.id)
   // Left mid-save, the save's own navigation landed on whatever came next and
   // cleared a workout somebody had gone back to keep logging.
   const guard = useLeaveGuard({ busy: saving, dirty: false })
@@ -152,6 +161,8 @@ export default function FinishWorkoutScreen() {
 
   const durationS = Math.round((endedAt - startedAt) / 1000)
   const error = timesError(t, startedAt, endedAt)
+  // What the save will record, over the times as they now stand.
+  const burn = workoutBurn({ ...workout, startedAt }, Math.max(0, durationS), body, watchKcal)
   const unitLabel = t(UNIT_KEY[unit])
 
   const recordValue = (kind: RecordKind, set: LiveSet, exercise: LiveExercise): string => {
@@ -260,26 +271,37 @@ export default function FinishWorkoutScreen() {
           </View>
           <Icon set="system" name="trophy" size={64} />
         </View>
-        <View className="flex-row">
-          <View className="flex-1">
-            <Stat
-              label={t('workouts:finish.duration')}
-              value={durationText(t, Math.max(0, durationS))}
-            />
-          </View>
+        {/* Three to a row, the burn under the rest: four across ran the
+            volume into the sets. */}
+        <StatGrid>
+          <Stat
+            label={t('workouts:finish.duration')}
+            value={durationText(t, Math.max(0, durationS))}
+          />
           {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) &&
           totals.volumeKg > 0 ? (
-            <View className="flex-1">
-              <Stat
-                label={t('workouts:logger.volume')}
-                value={volumeText(t, totals.volumeKg, unit)}
-              />
-            </View>
+            <Stat
+              label={t('workouts:logger.volume')}
+              value={volumeText(t, totals.volumeKg, unit)}
+            />
           ) : null}
-          <View className="flex-1">
-            <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
-          </View>
-        </View>
+          <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
+          {burn.kcal !== null ? (
+            <Stat
+              label={t('workouts:detail.kcalLabel')}
+              value={t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })}
+              onPress={() => setNoteOpen((open) => !open)}
+              accessibilityHint={burnNote(t, burn.source, body !== undefined)}
+            />
+          ) : null}
+        </StatGrid>
+        {noteOpen && burn.kcal !== null ? (
+          <StatNote
+            text={burnNote(t, burn.source, body !== undefined)}
+            onClose={() => setNoteOpen(false)}
+            inCard
+          />
+        ) : null}
       </Card>
 
       {records.length ? (

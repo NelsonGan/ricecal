@@ -1,10 +1,11 @@
 import { useKeepAwake } from 'expo-keep-awake'
 import { useIsFocused, useRouter } from 'expo-router'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useLastSets, useSettings } from '@/data'
 import {
+  burnNote,
   completeAll,
   DiscardDialog,
   discardWorkout,
@@ -12,21 +13,27 @@ import {
   type FinishParams,
   getActiveWorkout,
   LiveHeart,
+  type LiveWorkout,
   liveTotals,
   RestBar,
   StaleWorkoutDialog,
   Stat,
+  StatNote,
   StatStrip,
   showsVolume,
   unfinishedSets,
+  useEnergyBody,
   useLiveWorkout,
   useLoggerOpen,
   useNow,
+  useWatchEnergy,
   useWatchPulse,
+  useWatchPulsing,
   useWorkoutPrefs,
   volumeText,
   WorkoutEditor,
   WorkoutUnavailable,
+  workoutBurn,
   clock as workoutClock,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
@@ -55,6 +62,13 @@ export default function ActiveWorkoutScreen() {
   const [discarding, setDiscarding] = useState<'discard' | 'nothing' | null>(null)
   const [unfinished, setUnfinished] = useState(0)
   const finishParams = useRef<FinishParams>({})
+  // What the burn is made of, opened by tapping it, until it is tapped again.
+  const [note, setNote] = useState<string | null>(null)
+  useEffect(() => {
+    if (!note) return
+    const timer = setTimeout(() => setNote(null), NOTE_MS)
+    return () => clearTimeout(timer)
+  }, [note])
   // Under the finish screen, the library or an exercise's page this stays
   // mounted, and "Still training?" asked from there over whatever was on top.
   const focused = useIsFocused()
@@ -64,6 +78,9 @@ export default function ActiveWorkoutScreen() {
   // screen re-renders with nothing; a <Redirect> there raced the navigation
   // and could mount the tabs a second time.
   const workout = useHeld(current, Boolean(current))
+  // Whether the heart rate takes a place in the figures, which decides how
+  // they are laid out (`StatStrip`).
+  const pulsing = useWatchPulsing(workout?.id)
   // Last time's sets, for what an unticked set offers. The editor asks for
   // the same key, so this reads its cache.
   const previous = useLastSets(workout?.exercises.map((exercise) => exercise.exerciseId) ?? []).data
@@ -160,8 +177,13 @@ export default function ActiveWorkoutScreen() {
           <Stat label={t('workouts:logger.volume')} value={volumeText(t, totals.volumeKg, unit)} />
         ) : null}
         <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
-        <WatchPulse workoutId={workout.id} />
+        {pulsing ? <WatchPulse workoutId={workout.id} /> : null}
+        <LiveBurn
+          workout={workout}
+          onExplain={(text) => setNote((open) => (open === text ? null : text))}
+        />
       </StatStrip>
+      {note ? <StatNote text={note} onClose={() => setNote(null)} /> : null}
 
       <WorkoutEditor workout={workout} dispatch={dispatch} mode="live" />
 
@@ -241,6 +263,37 @@ function WatchPulse({ workoutId }: { workoutId: string }) {
       label={t('activity:workout.bpmUnit')}
       value={String(bpm)}
       leading={<LiveHeart bpm={bpm} />}
+    />
+  )
+}
+
+/** How long the note under the figures stays open on its own. */
+const NOTE_MS = 6000
+
+/**
+ * The energy the workout has burned so far: the Apple Watch's while it is
+ * recording, our estimate otherwise (`workoutBurn`). Its own five second clock,
+ * since an estimate moves slowly and a watch streams no faster.
+ */
+function LiveBurn({
+  workout,
+  onExplain,
+}: {
+  workout: LiveWorkout
+  onExplain: (text: string) => void
+}) {
+  const { t } = useTranslation(['workouts', 'common'])
+  const now = useNow(5000)
+  const body = useEnergyBody()
+  const watchKcal = useWatchEnergy(workout.id)
+  const burn = workoutBurn(workout, (now - workout.startedAt) / 1000, body, watchKcal)
+  const note = burnNote(t, burn.source, body !== undefined)
+  return (
+    <Stat
+      label={t('common:unit.kcal')}
+      value={burn.kcal === null ? '—' : burn.kcal.toLocaleString()}
+      onPress={() => onExplain(note)}
+      accessibilityHint={note}
     />
   )
 }

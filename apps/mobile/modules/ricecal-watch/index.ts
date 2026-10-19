@@ -134,15 +134,17 @@ export function addWatchInboxListener(listener: () => void): () => void {
   return () => subscription?.remove()
 }
 
-/** A live heart rate reading, streamed while the watch can reach the phone. */
+/** A live heart rate and energy reading, streamed while the watch can reach the phone. */
 export function addWatchPulseListener(listener: (pulse: WatchPulse) => void): () => void {
   const subscription = native?.addListener?.('onPulse', (payload) => {
+    const bpm = typeof payload.bpm === 'number' ? payload.bpm : null
+    const kcal = typeof payload.kcal === 'number' && payload.kcal >= 0 ? payload.kcal : null
     if (
       typeof payload.workoutId === 'string' &&
-      typeof payload.bpm === 'number' &&
-      typeof payload.at === 'number'
+      typeof payload.at === 'number' &&
+      (bpm !== null || kcal !== null)
     ) {
-      listener({ workoutId: payload.workoutId, bpm: payload.bpm, at: payload.at })
+      listener({ workoutId: payload.workoutId, bpm, kcal, at: payload.at })
     }
   })
   return () => subscription?.remove()
