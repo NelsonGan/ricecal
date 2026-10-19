@@ -539,7 +539,7 @@ describe('energy and Apple Health', () => {
       1,
     )
     // (5 - 1) x 70 kg x 1 h
-    expect(estimateKcal(workout, 3600, 70)).toBe(280)
+    expect(estimateKcal(workout, 3600, { weightKg: 70, restingKcalPerDay: null })).toBe(280)
     expect(healthActivityType(workout)).toBe(78)
   })
 
@@ -556,7 +556,40 @@ describe('energy and Apple Health', () => {
       1,
     )
     // An hour typed into a workout that lasted a minute is priced as a minute.
-    expect(estimateKcal(workout, 60, 70)).toBe(5)
+    expect(estimateKcal(workout, 60, { weightKg: 70, restingKcalPerDay: null })).toBe(5)
+  })
+
+  it("takes off the person's own resting rate rather than one MET", () => {
+    const workout = completeAll(
+      workoutWith([
+        {
+          exerciseId: 'dance',
+          name: 'Dance',
+          tracking: 'duration',
+          sets: [{ durationS: 3600 }],
+        },
+      ]),
+      1,
+    )
+    // 5 x 70 kg x 1 h, less 1,440 kcal a day of resting energy for that hour.
+    expect(estimateKcal(workout, 3600, { weightKg: 70, restingKcalPerDay: 1440 })).toBe(290)
+  })
+
+  it('prices a session of sets no higher than vigorous resistance training', () => {
+    const workout = completeAll(
+      workoutWith([
+        {
+          exerciseId: 'pull-up',
+          name: 'Pull Up',
+          tracking: 'weighted_reps',
+          sets: [{ reps: 8 }, { reps: 8 }, { reps: 8 }],
+        },
+      ]),
+      1,
+    )
+    // Pull-ups are vigorous calisthenics (MET 8) done continuously; an hour
+    // of sets with rests between is priced at 6: (6 - 1) x 80 kg x 1 h.
+    expect(estimateKcal(workout, 3600, { weightKg: 80, restingKcalPerDay: null })).toBe(400)
   })
 
   it('refuses to guess without a body weight', () => {

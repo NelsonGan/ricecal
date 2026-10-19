@@ -55,6 +55,9 @@ final class WatchStore: ObservableObject {
   private var restTimer: Timer?
   private var restBuzzedFor: Double?
   private var lastPulse = Date.distantPast
+  private var lastHeartAt = Date.distantPast
+  /// A reading that came inside the five seconds, sent when they are up.
+  private var trailing: Timer?
   private var lastResend = Date.distantPast
   /// Heart rate traces the phone has not yet said it has.
   private var unsent: [HeartTrace] = []
@@ -89,7 +92,10 @@ final class WatchStore: ObservableObject {
     }
     recorder.onRecovered = { [weak self] in self?.reconcile() }
     recorder.onHeartRate = { [weak self] bpm in self?.pulse(bpm) }
-    recorder.onEnergy = { [weak self] kcal in self?.activeKcal = kcal }
+    recorder.onEnergy = { [weak self] kcal in
+      self?.activeKcal = kcal
+      self?.stream()
+    }
   }
 
   /// The app came to the wrist: a running workout can start recording now.
@@ -449,10 +455,36 @@ final class WatchStore: ObservableObject {
 
   private func pulse(_ bpm: Int) {
     heartRate = bpm
+    lastHeartAt = Date()
     readings.append(bpm)
-    guard let id = recorder.workoutId, Date().timeIntervalSince(lastPulse) >= 5 else { return }
+    stream()
+  }
+
+  /// The heart rate and the energy so far, for the phone's logger, at most
+  /// every five seconds. Energy comes either way: it is measured with heart
+  /// rate refused, and the phone shows it rather than its own estimate.
+  private func stream() {
+    guard let id = recorder.workoutId else { return }
+    let since = Date().timeIntervalSince(lastPulse)
+    guard since >= 5 else {
+      // Heart rate and energy arrive together, and the first took the slot:
+      // the other goes when it opens, or the phone's burn trails by a batch.
+      guard trailing == nil else { return }
+      trailing = Timer.scheduledTimer(withTimeInterval: 5 - since, repeats: false) { [weak self] _ in
+        Task { @MainActor in
+          self?.trailing = nil
+          self?.stream()
+        }
+      }
+      return
+    }
+    trailing?.invalidate()
+    trailing = nil
     lastPulse = Date()
-    link.sendPulse(workoutId: id, bpm: bpm)
+    // A reading is resent only while it is recent, so a loose strap does not
+    // keep its last figure looking live on the phone.
+    let bpm = Date().timeIntervalSince(lastHeartAt) < 15 ? heartRate : nil
+    link.sendPulse(workoutId: id, bpm: bpm, kcal: activeKcal > 0 ? activeKcal : nil)
   }
 
   /// A tap on the wrist when a rest ends, which is the whole point of a rest timer on a watch.

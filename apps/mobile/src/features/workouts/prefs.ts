@@ -12,11 +12,13 @@ import { createJsonStore } from '@/lib/jsonStore'
 type WorkoutPrefs = {
   keepAwake: boolean
   healthWrite: boolean
+  /** The logger's heart rate and burn, shown in full rather than as one line. */
+  bodyFiguresOpen: boolean
 }
 
 // Saving to Health is on from the start, and its permission is asked for at
 // the first save rather than behind a switch few people found. See `health.ts`.
-const DEFAULTS: WorkoutPrefs = { keepAwake: true, healthWrite: true }
+const DEFAULTS: WorkoutPrefs = { keepAwake: true, healthWrite: true, bodyFiguresOpen: false }
 
 const store = createJsonStore<WorkoutPrefs>('ricecal-workout-prefs', (stored) =>
   stored && typeof stored === 'object'

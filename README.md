@@ -4020,12 +4020,55 @@ id, as every save does.
 ### Workouts and the budget
 
 A saved workout carries a `kcal` estimate: each movement's MET from the
-Compendium of Physical Activities, **minus one**, times body weight, times time.
-Timed sets are priced at their own MET; the rest of the session at the average
-MET of the lifting. Minus one because Apple Health's active energy excludes what
-the body would have burned sitting still, and a figure that included it would
-be counted twice the moment it met the day's resting energy. No weight on file
-means no estimate rather than a guessed one.
+Compendium of Physical Activities times body weight times time, **less the
+person's own resting energy** over the same time. Timed sets are priced at their
+own MET; the rest of the session at the average MET of the lifting, capped at
+6 (vigorous resistance training, Compendium 02050). The rest comes off because
+Apple Health's active energy excludes what the body would have burned sitting
+still, and a figure that included it would be counted twice the moment it met
+the day's resting energy. It is the Mifflin-St Jeor rate the budget is built on,
+not one MET, because one MET overstates most adults' resting rate by about a
+third (Byrne et al. 2005) and took too much away; with no sex, height or birth
+date on the profile, one MET (1 kcal per kg per hour) stands in. The cap is
+there because the lifting is priced over the whole session, rests included,
+while a rep movement's own MET can be a continuous one: pull-ups and burpees
+are vigorous calisthenics at 7.5 to 8, and a pull-up day was priced as an hour
+of burpees. The cardio entries follow the 2024 Adult Compendium (Herrmann et al.)
+where it has a matching code. No weight on file means no estimate rather than a
+guessed one.
+
+**One figure, from one place** (`workoutBurn` in `features/workouts/burn.ts`).
+The logger shows the burn so far along the foot of its figures card, beside a
+watch's heart rate, under a hairline in the same white card (a tinted band read
+as a second card): one quiet line by default, since the sets are what the
+screen is for, and opened in full with a tap (the choice is kept per phone in
+`bodyFiguresOpen`). The history cards on the Workouts tab show the saved burn
+as a chip beside the duration, whether or not Health counted it, since that
+list is a record of training rather than the budget, the finish screen shows what
+will be saved, and the save records the same number. While the Apple Watch app
+records the workout that figure is the watch's, streamed with the heart rate;
+otherwise it is the estimate. Never both, and never the estimate while the
+watch records: the watch's copy is the one Health keeps, so an estimate on
+screen would change at the finish. Until the watch's first figure arrives the
+logger shows a dash and the finish screen leaves the burn out. A figure
+streamed from the watch also stops the phone writing a Health copy of its own,
+even before the watch's `recording` command has landed. An ⓘ beside the label
+says where it came from ("Estimated from your weight and sets, as there is no
+heart rate", or "Measured by your Apple Watch"), in a bubble that opens only
+when the ⓘ itself is tapped (`InfoTip` in `src/ui`). It floats in a transparent
+modal, so it moves nothing and no card clips it, and closes on any tap or after
+six seconds. The figure around it is not a button: opened by any touch, it was
+opened by thumbs on their way to the sets.
+
+**A save asks the budget to look again.** The automatic health sync runs on
+foreground, at most once a minute, so a workout saved to Health used to show its
+burn on Today beside a ring that had not moved until the app was next opened.
+`requestHealthSync` runs a pass straight away (bypassing the throttle, and once
+more after a pass already reading) whenever this phone writes or removes a
+workout's Health copy, and once when the watch's trace arrives, which it sends
+after saving its own copy. The watch's samples reach the phone's Health by
+Apple's own sync, separate from the trace, and most arrive during the session;
+any that lag are picked up by the next foreground pass.
 
 **Nothing in the budget reads that column.** The budget hears movement only
 from the health store (see "Activity and health"), so a workout reaches the day
@@ -4332,11 +4375,16 @@ the watch measured (`watch.kcal`) instead of replacing it with an estimate.
 
 - Live: while the phone is reachable the watch sends its latest reading every
   five seconds, and the logger shows it beside the clock (`useWatchPulse`), for
-  as long as readings keep coming. It is a glance and is not kept. Its heart
-  (`LiveHeart`) beats at the figure beside it, a double thump with a ring
-  spreading behind, so the number reads as live rather than typed in. A phase
-  advanced each frame on the UI thread drives it rather than a repeating
-  timing, so a new reading changes the tempo without restarting a beat midway.
+  as long as readings keep coming. The same message carries the active energy
+  the session has measured so far (`kcal`, a running total), which the logger
+  shows as the workout's burn (`useWatchEnergy`). Either can be missing: energy
+  is measured with heart rate refused, and a heart rate is only resent while it
+  is under fifteen seconds old, so a loose strap does not keep looking live.
+  It is a glance and is not kept. Its heart (`LiveHeart`) beats at the figure
+  beside it, a double thump with a ring spreading behind, so the number reads
+  as live rather than typed in. A phase advanced each frame on the UI thread
+  drives it rather than a repeating timing, so a new reading changes the tempo
+  without restarting a beat midway.
   It holds still under Reduce Motion and pauses while another screen covers the
   logger.
 - At the end the watch sends a trace (`HeartTrace`): one figure every five
@@ -4381,11 +4429,13 @@ complications, and a watch app that works with no iPhone app at all
 routines). Once a workout has started, the phone can be in a locker: presses
 queue and arrive when it is back.
 
-**The simulator.** The watchOS simulator measures energy for a strength session
-but no heart rate at all, so a simulator build feeds the session a made-up pulse
-(`simulatePulse` in `WorkoutRecorder.swift`, compiled out of device builds).
-Everything after the sensor (the reading on the wrist, the logger, the trace,
-the chart) can then be tried there. "Driving the Apple Watch app" in `AGENTS.md`
+**The simulator.** The watchOS simulator measures no heart rate at all, and the
+active energy it records for a strength session is always 0 (no motion; only
+resting energy comes through), so a simulator build feeds the session a made-up
+pulse and a steady burn of about 5 kcal a minute (`simulatePulse` in
+`WorkoutRecorder.swift`, compiled out of device builds). Everything after the
+sensor (the reading on the wrist, the logger and its burn, the trace, the
+chart) can then be tried there. "Driving the Apple Watch app" in `AGENTS.md`
 has the rest.
 
 **Releasing it.** Additive: one migration (`20261016130531_workout_heart_rates.sql`)

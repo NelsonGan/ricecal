@@ -154,5 +154,15 @@ export type WatchInboxItem =
 
 export type WatchStatus = { paired: boolean; installed: boolean; reachable: boolean }
 
-/** The latest reading the watch streamed while the phone could hear it. */
-export type WatchPulse = { workoutId: string; bpm: number; at: number }
+/**
+ * The latest reading the watch streamed while the phone could hear it. Either
+ * figure can be missing: energy is measured with heart rate refused, and a
+ * build from before energy was streamed sends the heart rate alone.
+ */
+export type WatchPulse = {
+  workoutId: string
+  bpm: number | null
+  /** Active energy since the session began, so the latest one is the total. */
+  kcal: number | null
+  at: number
+}

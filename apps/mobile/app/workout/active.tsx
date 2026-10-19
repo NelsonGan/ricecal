@@ -2,9 +2,11 @@ import { useKeepAwake } from 'expo-keep-awake'
 import { useIsFocused, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { View } from 'react-native'
 
 import { useLastSets, useSettings } from '@/data'
 import {
+  burnNote,
   completeAll,
   DiscardDialog,
   discardWorkout,
@@ -12,25 +14,31 @@ import {
   type FinishParams,
   getActiveWorkout,
   LiveHeart,
+  type LiveWorkout,
   liveTotals,
   RestBar,
   StaleWorkoutDialog,
   Stat,
-  StatStrip,
+  setWorkoutPrefs,
   showsVolume,
   unfinishedSets,
+  useEnergyBody,
   useLiveWorkout,
   useLoggerOpen,
   useNow,
+  useWatchEnergy,
   useWatchPulse,
+  useWatchPulsing,
   useWorkoutPrefs,
   volumeText,
   WorkoutEditor,
   WorkoutUnavailable,
+  workoutBurn,
   clock as workoutClock,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
-import { AppBar, Button, Dialog, Screen, useHeld } from '@/ui'
+import { useThemeColors } from '@/theme/useTheme'
+import { AppBar, Button, Dialog, Icon, Screen, Tappable, Text, useHeld } from '@/ui'
 
 /**
  * The logger: a workout being trained.
@@ -64,6 +72,8 @@ export default function ActiveWorkoutScreen() {
   // screen re-renders with nothing; a <Redirect> there raced the navigation
   // and could mount the tabs a second time.
   const workout = useHeld(current, Boolean(current))
+  // Whether the heart rate takes a place along the foot of the figures.
+  const pulsing = useWatchPulsing(workout?.id)
   // Last time's sets, for what an unticked set offers. The editor asks for
   // the same key, so this reads its cache.
   const previous = useLastSets(workout?.exercises.map((exercise) => exercise.exerciseId) ?? []).data
@@ -154,14 +164,31 @@ export default function ActiveWorkoutScreen() {
     >
       {prefs.keepAwake ? <KeepAwake /> : null}
 
-      <StatStrip>
-        <Elapsed label={t('workouts:logger.duration')} startedAt={workout.startedAt} />
-        {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
-          <Stat label={t('workouts:logger.volume')} value={volumeText(t, totals.volumeKg, unit)} />
-        ) : null}
-        <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
-        <WatchPulse workoutId={workout.id} />
-      </StatStrip>
+      {/* One white card for the figures: three even columns, the clock
+          first with a dot saying it is running, and what the body did (a
+          watch's heart rate, the burn) under a hairline, one quiet line until
+          it is opened.
+          Five figures in one strip cut every label off; all of them in full
+          took a third of the screen beside the sets. */}
+      <View className="overflow-hidden rounded-card bg-surface">
+        <View className="flex-row px-4 pt-3.5 pb-3">
+          <View className="pr-3" style={HALF}>
+            <Elapsed label={t('workouts:logger.duration')} startedAt={workout.startedAt} />
+          </View>
+          {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
+            <View className="border-line border-l px-3" style={HALF}>
+              <Stat
+                label={t('workouts:logger.volume')}
+                value={volumeText(t, totals.volumeKg, unit)}
+              />
+            </View>
+          ) : null}
+          <View className="border-line border-l pl-3" style={HALF}>
+            <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
+          </View>
+        </View>
+        <BodyFigures workout={workout} pulsing={pulsing} />
+      </View>
 
       <WorkoutEditor workout={workout} dispatch={dispatch} mode="live" />
 
@@ -228,19 +255,161 @@ export default function ActiveWorkoutScreen() {
  */
 function Elapsed({ label, startedAt }: { label: string; startedAt: number }) {
   const now = useNow(1000)
-  return <Stat label={label} value={workoutClock((now - startedAt) / 1000)} />
+  return (
+    <View className="gap-0.5">
+      <View className="flex-row items-center gap-1.5">
+        <Text variant="overlineSm" numberOfLines={1} className="shrink">
+          {label}
+        </Text>
+        {/* Running: the one figure on the card that is counting. */}
+        <View className="h-2 w-2 rounded-full bg-pandan" />
+      </View>
+      <Text variant="displayMd" numberOfLines={1} adjustsFontSizeToFit style={TABULAR}>
+        {workoutClock((now - startedAt) / 1000)}
+      </Text>
+    </View>
+  )
+}
+
+/** One of the equal columns in the figures card, so its rules line up. */
+const HALF = { flex: 1, flexBasis: 0 }
+
+/** Digits that keep their width, so the clock does not shuffle each second. */
+const TABULAR = { fontVariant: ['tabular-nums' as const] }
+
+/**
+ * The heart rate and the burn, along the foot of the figures card. One line of
+ * small figures by default, since the sets are what the screen is for; tapped,
+ * the two in full with where the burn came from. Which one is remembered.
+ */
+function BodyFigures({ workout, pulsing }: { workout: LiveWorkout; pulsing: boolean }) {
+  const { t } = useTranslation(['workouts', 'activity'])
+  const colors = useThemeColors()
+  const open = useWorkoutPrefs().bodyFiguresOpen
+  // What the toggle shows or hides, for VoiceOver: the chevron has no words.
+  const label = [pulsing ? t('activity:workout.heartRate') : null, t('workouts:detail.kcalLabel')]
+    .filter(Boolean)
+    .join(', ')
+  const toggle = () => setWorkoutPrefs({ bodyFiguresOpen: !open })
+  // A thin drawn chevron: the icon set's is an illustration, and even tinted
+  // grey it read as a sticker on a plain white card.
+  const chevron = (
+    <View className="h-5 w-5 items-center justify-center">
+      <View
+        style={{
+          width: 8,
+          height: 8,
+          borderColor: colors.muted,
+          borderRightWidth: 2,
+          borderBottomWidth: 2,
+          transform: [{ translateY: open ? 2 : -2 }, { rotate: open ? '-135deg' : '45deg' }],
+        }}
+      />
+    </View>
+  )
+
+  return (
+    // The card stays one white surface: a hairline inset to the content is
+    // the only thing between the rows. A tinted band under it read as a
+    // second card stuck to the first.
+    <View className="mx-4 border-line border-t">
+      {open ? (
+        <View className="flex-row items-start py-3">
+          {pulsing ? (
+            <View className="pr-3" style={HALF}>
+              <WatchPulse workoutId={workout.id} />
+            </View>
+          ) : null}
+          <View className={pulsing ? 'border-line border-l pl-3' : undefined} style={HALF}>
+            <LiveBurn workout={workout} />
+          </View>
+          <Tappable
+            onPress={toggle}
+            hitSlop={14}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityState={{ expanded: true }}
+            className="pt-1 pl-2"
+          >
+            {chevron}
+          </Tappable>
+        </View>
+      ) : (
+        <Tappable
+          onPress={toggle}
+          accessibilityRole="button"
+          accessibilityHint={label}
+          accessibilityState={{ expanded: false }}
+          className="flex-row items-center gap-3 py-2.5"
+        >
+          {pulsing ? (
+            <>
+              <WatchPulse workoutId={workout.id} compact />
+              <View className="h-4 border-line border-l" />
+            </>
+          ) : null}
+          <LiveBurn workout={workout} compact />
+          <View className="flex-1" />
+          {chevron}
+        </Tappable>
+      )}
+    </View>
+  )
 }
 
 /** The heart rate an Apple Watch recording this workout is streaming, while it is. */
-function WatchPulse({ workoutId }: { workoutId: string }) {
+function WatchPulse({ workoutId, compact = false }: { workoutId: string; compact?: boolean }) {
   const { t } = useTranslation(['activity'])
   const bpm = useWatchPulse(workoutId)
   if (bpm === null) return null
+  if (compact) {
+    return (
+      <View className="flex-row items-center gap-1">
+        <Icon set="body" name="heart-rate" size={18} />
+        <Text variant="label">{t('activity:workout.bpm', { value: bpm })}</Text>
+      </View>
+    )
+  }
   return (
     <Stat
-      label={t('activity:workout.bpmUnit')}
-      value={String(bpm)}
+      label={t('activity:workout.heartRate')}
+      value={t('activity:workout.bpm', { value: bpm })}
       leading={<LiveHeart bpm={bpm} />}
+    />
+  )
+}
+
+/**
+ * The energy the workout has burned so far: the Apple Watch's while it is
+ * recording, our estimate otherwise (`workoutBurn`). Its own five second clock,
+ * since an estimate moves slowly and a watch streams no faster.
+ */
+function LiveBurn({ workout, compact = false }: { workout: LiveWorkout; compact?: boolean }) {
+  const { t } = useTranslation(['workouts', 'common'])
+  const now = useNow(5000)
+  const body = useEnergyBody()
+  const watchKcal = useWatchEnergy(workout.id)
+  const burn = workoutBurn(workout, (now - workout.startedAt) / 1000, body, watchKcal)
+  const note = burnNote(t, burn.source, body !== undefined)
+  if (compact) {
+    return (
+      <View className="flex-row items-center gap-1">
+        <Icon set="body" name="flame-burn" size={18} />
+        <Text variant="label">
+          {burn.kcal === null
+            ? '—'
+            : t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })}
+        </Text>
+      </View>
+    )
+  }
+  return (
+    <Stat
+      label={t('workouts:detail.kcalLabel')}
+      value={
+        burn.kcal === null ? '—' : t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })
+      }
+      info={note}
     />
   )
 }
