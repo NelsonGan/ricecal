@@ -55,6 +55,10 @@ const ROUTE =
 const ENDPOINT = Deno.env.get('EVAL_ENDPOINT')
 const KEY = Deno.env.get('OPENROUTER_API_KEY')
 
+/** A system message's text, sent as a string or as a cached block. */
+const systemText = ({ content }: { content: unknown }): string =>
+  Array.isArray(content) ? (content[0] as { text: string }).text : String(content)
+
 async function call(system: string, user: string, maxTokens: number): Promise<unknown> {
   // The same body the pipeline sends. An eval that graded a prompt against
   // different settings would be grading something the app never runs.
@@ -72,7 +76,7 @@ async function call(system: string, user: string, maxTokens: number): Promise<un
   // drops it lets Haiku run on Bedrock or Vertex, on credits.
   const body = ENDPOINT
     ? {
-        system: (sent.messages[0] as { content: string }).content,
+        system: systemText(sent.messages[0] as { content: unknown }),
         user,
         max_tokens: maxTokens,
         model: ROUTE.model,

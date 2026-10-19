@@ -121,6 +121,7 @@ Deno.test('any Anthropic model is locked to our key, whichever route it is on', 
     model: 'anthropic/claude-sonnet-5.5',
     provider: { only: ['anthropic'], allow_fallbacks: false },
     instruction: PRIMARY_ROUTE?.instruction,
+    cacheSystem: true,
   })
   assertEquals(routeFor('qwen/qwen3.7-flash', 0.2), {
     model: 'qwen/qwen3.7-flash',
@@ -128,15 +129,24 @@ Deno.test('any Anthropic model is locked to our key, whichever route it is on', 
   })
 })
 
-Deno.test('only the primary is told to answer in JSON alone', () => {
+Deno.test('only the primary is told to answer in JSON alone, in a cached system prompt', () => {
   const messages = [
     { role: 'system', content: 'Prompt.' },
     { role: 'user', content: 'x' },
   ]
-  const primary = requestBody(PRIMARY_ROUTE as ModelRoute, messages, 100)
-    .messages as typeof messages
+  const primary = requestBody(PRIMARY_ROUTE as ModelRoute, messages, 100).messages as Array<{
+    content: unknown
+  }>
   const fallback = requestBody(FALLBACK_ROUTE, messages, 100).messages
-  assertEquals(primary[0].content, `Prompt.\n\n${PRIMARY_ROUTE?.instruction}`)
+  // The whole system prompt, instruction included, is the one cached block, so
+  // every call of a kind shares the prefix; the meal's own message follows it.
+  assertEquals(primary[0].content, [
+    {
+      type: 'text',
+      text: `Prompt.\n\n${PRIMARY_ROUTE?.instruction}`,
+      cache_control: { type: 'ephemeral', ttl: '1h' },
+    },
+  ])
   assertEquals(primary[1], messages[1])
   assertEquals(fallback, messages)
 })
