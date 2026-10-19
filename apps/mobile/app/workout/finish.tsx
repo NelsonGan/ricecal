@@ -27,8 +27,6 @@ import {
   type RoutineUpdate,
   recordSets,
   routineChanges,
-  Stat,
-  StatGrid,
   setVolume,
   shortClock,
   showsVolume,
@@ -57,6 +55,7 @@ import {
   type DialogAction,
   Divided,
   Icon,
+  InfoTip,
   Screen,
   Text,
   useHeld,
@@ -254,10 +253,13 @@ export default function FinishWorkoutScreen() {
         </Button>
       }
     >
-      {/* The session in one card: that it is done, then what it came to. */}
+      {/* The session in one card: that it is done, then what it came to, each
+          figure on a tile of its own. Left as a grid of bare labels it read as
+          gaps, and the trophy floated alone in the corner. */}
       <Card tone="kaya" contentClassName="gap-4">
         <View className="flex-row items-center gap-3">
-          <View className="min-w-0 flex-1 gap-1">
+          <Icon set="system" name="trophy" size={56} />
+          <View className="min-w-0 flex-1 gap-0.5">
             <Text variant="title" numberOfLines={2}>
               {t('workouts:finish.complete')}
             </Text>
@@ -267,31 +269,29 @@ export default function FinishWorkoutScreen() {
               </Text>
             ) : null}
           </View>
-          <Icon set="system" name="trophy" size={64} />
         </View>
-        {/* Time and burn, then the training: four across ran the volume
-            into the sets. */}
-        <StatGrid>
-          <Stat
+        <View className="flex-row flex-wrap gap-2">
+          <FigureTile
             label={t('workouts:finish.duration')}
             value={durationText(t, Math.max(0, durationS))}
           />
           {burn.kcal !== null ? (
-            <Stat
+            <FigureTile
               label={t('workouts:detail.kcalLabel')}
               value={t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })}
               info={burnNote(t, burn.source, body !== undefined)}
+              burned
             />
           ) : null}
           {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) &&
           totals.volumeKg > 0 ? (
-            <Stat
+            <FigureTile
               label={t('workouts:logger.volume')}
               value={volumeText(t, totals.volumeKg, unit)}
             />
           ) : null}
-          <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
-        </StatGrid>
+          <FigureTile label={t('workouts:logger.sets')} value={String(totals.done)} />
+        </View>
       </Card>
 
       {records.length ? (
@@ -435,4 +435,40 @@ function bestSet(exercise: LiveExercise): LiveSet | null {
     if (a > c || (a === c && b > d)) best = set
   }
   return best
+}
+
+/**
+ * One figure of the finished workout, on a tile of the card's own warmth. Two
+ * to a row, so four make a block and three leave the last one full width
+ * rather than a hole. The burn is in the colour of burned energy everywhere.
+ */
+function FigureTile({
+  label,
+  value,
+  info,
+  burned = false,
+}: {
+  label: string
+  value: string
+  info?: string
+  burned?: boolean
+}) {
+  return (
+    <View className="min-w-[45%] flex-1 gap-0.5 rounded-md bg-surface/70 px-3.5 py-3">
+      <View className="flex-row items-center gap-1">
+        <Text variant="overlineSm" numberOfLines={1} className="shrink">
+          {label}
+        </Text>
+        {info ? <InfoTip text={info} size={13} /> : null}
+      </View>
+      <Text
+        variant="numeric"
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        className={burned ? 'text-hibiscus-ink' : undefined}
+      >
+        {value}
+      </Text>
+    </View>
+  )
 }

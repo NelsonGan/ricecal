@@ -43,7 +43,13 @@ export default function TemplatesScreen() {
           {TEMPLATES.filter((template) => template.group === group).map((template) => {
             const first = exerciseById(template.exercises[0]?.id ?? '')
             return (
-              <Card key={template.id} contentClassName="p-0">
+              <Card
+                key={template.id}
+                // `flush`, not `p-0`: `cn` does not know the named `p-card` is a
+                // padding, so `p-0` sat beside it and the card kept 20px on
+                // top of the row's own.
+                flush
+              >
                 <Tappable
                   className="flex-row items-center gap-3 p-4"
                   onPress={() =>

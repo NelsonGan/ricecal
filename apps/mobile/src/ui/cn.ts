@@ -13,12 +13,6 @@ import { extendTailwindMerge } from 'tailwind-merge'
  */
 const twMerge = extendTailwindMerge({
   extend: {
-    // The spacing scale's named steps (`tailwind.config.js`). Unknown, `p-card`
-    // and a caller's `p-0` were both kept and `p-card` won: a card asking for
-    // no padding of its own got 20px on top of what its content added.
-    theme: {
-      spacing: ['xs', 'sm', 'md', 'lg', 'xl', 'gutter', 'card', 'stack'],
-    },
     classGroups: {
       'font-family': [{ font: ['display', 'display-bold', 'body', 'body-bold', 'body-black'] }],
       rounded: [{ rounded: ['sm', 'md', 'tile', 'sheet', 'card', 'full'] }],
