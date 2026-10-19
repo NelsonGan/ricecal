@@ -222,6 +222,25 @@ export type RecipeIngredientInput = {
   perUnit: Macros
 }
 
+/** An amount as `recipe_ingredients.amount` keeps it: `numeric(9, 2)`, two decimals. */
+export const storedAmount = (amount: number) => Math.round(amount * 100) / 100
+
+/**
+ * Whether `recipe_ingredients.amount` can hold this: above zero and at most
+ * 100,000 once rounded, as Postgres rounds before the check, so 0.004 counts
+ * as the zero it becomes.
+ */
+export function isStorableAmount(amount: number): boolean {
+  if (!Number.isFinite(amount)) return false
+  const stored = storedAmount(amount)
+  return stored > 0 && stored <= 100_000
+}
+
+/** Whether a per-unit figure fits its column: `numeric(10, 4)`, never negative. */
+export function isStorablePerUnit(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && Math.round(value * 10_000) / 10_000 < 1_000_000
+}
+
 export type RecipeInput = {
   /** Absent for a new recipe. */
   id?: string
@@ -316,12 +335,23 @@ export function useSaveRecipe() {
       }
 
       if (input.ingredients.length > 0) {
-        unwrap(
-          await supabase
-            .from('recipe_ingredients')
-            .insert(input.ingredients.map((item, index) => toIngredientRow(recipeId, item, index)))
-            .select('id'),
-        )
+        try {
+          unwrap(
+            await supabase
+              .from('recipe_ingredients')
+              .insert(
+                input.ingredients.map((item, index) => toIngredientRow(recipeId, item, index)),
+              )
+              .select('id'),
+          )
+        } catch (error) {
+          // A new recipe whose ingredients were refused is taken back out. The
+          // form has no id for it, so Save would insert a second recipe beside
+          // an empty one, and on the free tier the empty one takes the slot the
+          // retry needs.
+          if (!input.id) await supabase.from('recipes').delete().eq('id', recipeId)
+          throw error
+        }
       }
 
       // After the row, as everywhere else: an object deleted for a row that
