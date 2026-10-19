@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { Macros, RecipeIngredientInput, RecipeUnit } from '@/data'
-import { useFood, useFoodSearch } from '@/data'
+import { isStorableAmount, isStorablePerUnit, storedAmount, useFood, useFoodSearch } from '@/data'
 import { ItemRow } from '@/features/shared'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
@@ -43,6 +43,12 @@ export type IngredientSheetProps = {
 type Panel = 'search' | 'own' | 'amount'
 
 const UNITS: RecipeUnit[] = ['g', 'ml', 'piece']
+
+/**
+ * A typed number. The decimal pad shows a comma in comma locales, and
+ * `Number('1,5')` is NaN, so the comma is read as the point it means.
+ */
+const typedNumber = (text: string) => Number(text.replace(',', '.'))
 
 /**
  * Adding one thing to the pot.
@@ -207,9 +213,9 @@ function AmountForm({
   // prefill becoming a string the moment the component mounts.
   const [amount, setAmount] = useState<string | null>(null)
 
-  const value = amount === null ? initial : Number(amount)
-  const usable = Number.isFinite(value) && value > 0
-  const line = ingredientTotal(perUnit, usable ? value : 0)
+  const value = amount === null ? initial : typedNumber(amount)
+  const usable = isStorableAmount(value)
+  const line = ingredientTotal(perUnit, usable ? storedAmount(value) : 0)
 
   return (
     <>
@@ -240,7 +246,7 @@ function AmountForm({
         </View>
       </Card>
 
-      <Button fullWidth disabled={!usable} onPress={() => onSubmit(value)}>
+      <Button fullWidth disabled={!usable} onPress={() => onSubmit(storedAmount(value))}>
         {action}
       </Button>
     </>
@@ -336,16 +342,28 @@ function CustomPanel({
   const [protein, setProtein] = useState('')
   const [fat, setFat] = useState('')
 
-  const amountValue = Number(amount)
-  const kcalValue = Number(kcal)
-  const ready = name.trim().length > 0 && amountValue > 0 && Number.isFinite(kcalValue)
+  // Rounded as the column will round it, so the figures below are divided by
+  // the amount that is actually stored: 50 kcal over 0.006 g divided by 0.006
+  // and stored against 0.01 would come back as 83 kcal.
+  const amountValue = storedAmount(typedNumber(amount))
 
   // The figures are typed for the amount beside them — "642 kcal per 100 g" —
   // and stored per unit, because that is what stays true when the amount is
   // corrected later. One division, here, where the two numbers are both on
   // screen.
   const perUnit = (total: string): number =>
-    amountValue > 0 ? Math.round((Number(total || 0) / amountValue) * 10000) / 10000 : 0
+    amountValue > 0 ? Math.round((typedNumber(total || '0') / amountValue) * 10000) / 10000 : 0
+  const figures = {
+    kcal: perUnit(kcal),
+    carbs: perUnit(carbs),
+    protein: perUnit(protein),
+    fat: perUnit(fat),
+  }
+
+  const ready =
+    name.trim().length > 0 &&
+    isStorableAmount(amountValue) &&
+    Object.values(figures).every(isStorablePerUnit)
 
   return (
     <View className="gap-3">
@@ -442,13 +460,7 @@ function CustomPanel({
             name: name.trim(),
             amount: amountValue,
             unit,
-            perUnit: {
-              ...ZERO,
-              kcal: perUnit(kcal),
-              carbs: perUnit(carbs),
-              protein: perUnit(protein),
-              fat: perUnit(fat),
-            },
+            perUnit: { ...ZERO, ...figures },
           })
         }
       >
