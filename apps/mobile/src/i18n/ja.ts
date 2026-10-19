@@ -1886,7 +1886,6 @@ export const ja = {
       addSet: 'セットを追加',
       addWarmups: 'ウォームアップセットを追加',
       removeSet: 'セットを削除',
-      setRemoved: 'セットを削除しました',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: 'きつさは？',

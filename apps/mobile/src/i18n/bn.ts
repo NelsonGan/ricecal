@@ -1869,7 +1869,6 @@ export const bn = {
       addSet: 'সেট যোগ করুন',
       addWarmups: 'ওয়ার্ম-আপ সেট যোগ করুন',
       removeSet: 'সেট সরান',
-      setRemoved: 'সেট সরানো হয়েছে',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: 'কতটা কঠিন ছিল?',

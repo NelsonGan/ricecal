@@ -301,7 +301,7 @@ const SetRow = memo(function SetRow({
 
   return (
     // Swiped left, a set shows Delete, as every gym logger's sets do, and a
-    // swipe carried across deletes it outright: Undo is on the toast.
+    // swipe carried across deletes it outright.
     <SwipeRow
       square
       actions={[

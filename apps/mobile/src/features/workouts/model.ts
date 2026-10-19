@@ -210,8 +210,6 @@ export type Action =
   | { type: 'addSet'; key: string }
   | { type: 'addSets'; key: string; sets: SetPlan[]; atStart?: boolean }
   | { type: 'removeSet'; key: string; setId: string }
-  /** Puts back a set removed a moment ago, where it was: Undo on the toast. */
-  | { type: 'restoreSet'; key: string; set: LiveSet; index: number }
   | { type: 'updateSet'; key: string; setId: string; patch: SetPatch }
   | { type: 'completeSet'; key: string; setId: string; at: number; fill?: SetPatch }
   | { type: 'uncompleteSet'; key: string; setId: string }
@@ -355,13 +353,6 @@ export function apply(workout: LiveWorkout, action: Action): LiveWorkout {
         ...exercise,
         sets: exercise.sets.filter((set) => set.id !== action.setId),
       }))
-    case 'restoreSet':
-      return mapExercise(workout, action.key, (exercise) => {
-        if (exercise.sets.some((set) => set.id === action.set.id)) return exercise
-        const sets = [...exercise.sets]
-        sets.splice(Math.min(action.index, sets.length), 0, action.set)
-        return { ...exercise, sets }
-      })
     case 'updateSet':
       return mapExercise(workout, action.key, (exercise) =>
         mapSet(exercise, action.setId, (set) => ({ ...set, ...action.patch })),

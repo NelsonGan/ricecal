@@ -1888,7 +1888,6 @@ export const vi = {
       addSet: 'Thêm set',
       addWarmups: 'Thêm set khởi động',
       removeSet: 'Xoá set',
-      setRemoved: 'Đã xoá set',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: 'Nặng đến mức nào?',

@@ -498,29 +498,6 @@ describe('records while training', () => {
     expect(setVolume({ weightKg: 40, reps: 5 }, 'assisted_reps')).toBeNull()
   })
 
-  it('puts a removed set back where it was, once', () => {
-    const workout = workoutWith([
-      {
-        ...bench,
-        sets: [
-          { weightKg: 60, reps: 8 },
-          { weightKg: 70, reps: 6 },
-          { weightKg: 80, reps: 4 },
-        ],
-      },
-    ])
-    const exercise = workout.exercises[0]
-    const middle = exercise.sets[1]
-    const removed = apply(workout, { type: 'removeSet', key: exercise.key, setId: middle.id })
-    expect(removed.exercises[0].sets.map((set) => set.weightKg)).toEqual([60, 80])
-    const back = apply(removed, { type: 'restoreSet', key: exercise.key, set: middle, index: 1 })
-    expect(back.exercises[0].sets.map((set) => set.weightKg)).toEqual([60, 70, 80])
-    // A second Undo, or one racing the watch's own copy, adds nothing.
-    expect(apply(back, { type: 'restoreSet', key: exercise.key, set: middle, index: 1 })).toEqual(
-      back,
-    )
-  })
-
   it('prices a body weight movement with the body, as workout_set_values does', () => {
     // The body less the machine's help, and plus what hangs from the belt.
     expect(setLoad(30, 'assisted_reps', 80)).toBe(50)

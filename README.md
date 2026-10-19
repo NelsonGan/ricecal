@@ -4689,9 +4689,9 @@ carried past 55% of the row, and never less than the button and 64 points more
 (`fullSwipe`), deletes without the second tap, with a
 tick under the thumb where it commits. The red follows the finger across, the
 row slides out and then folds its height away before the set leaves the
-document, so the rows under it close up rather than jump. A set that held
-anything comes back with Undo on the toast (`restoreSet`, to the same place).
-Today's meals keep the two steps: they have no undo behind them.
+document, so the rows under it close up rather than jump. There is no Undo:
+a set is a few figures typed again in seconds. Today's meals keep the two
+steps, since a meal deleted by accident is not.
 
 **RPE is in the set's menu, not a column.** Most sets are never rated, and a
 column would take width from the weight and reps on every one. Tapping the set

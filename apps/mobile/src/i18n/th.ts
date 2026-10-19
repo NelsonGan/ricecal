@@ -1866,7 +1866,6 @@ export const th = {
       addSet: 'เพิ่มเซ็ต',
       addWarmups: 'เพิ่มเซ็ตวอร์มอัพ',
       removeSet: 'ลบเซ็ต',
-      setRemoved: 'ลบเซ็ตแล้ว',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: 'หนักแค่ไหน?',

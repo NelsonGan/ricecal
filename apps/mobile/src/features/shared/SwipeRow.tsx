@@ -64,9 +64,9 @@ export type SwipeAction = {
   /**
    * A swipe carried most of the way across runs this without the tap, and the
    * row folds its height away before it goes, so the rows under it close up
-   * rather than jump. Only for the outermost action, and only for something
-   * cheap to get back (a set in a running workout, with Undo on the toast): a
-   * meal on Today keeps the two steps described below.
+   * rather than jump. Only for the outermost action, and only for a row that
+   * is quick to put back by hand (a set in a running workout, typed again in
+   * seconds): a meal on Today keeps the two steps described below.
    */
   fullSwipe?: boolean
 }

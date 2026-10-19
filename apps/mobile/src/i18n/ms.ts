@@ -1917,7 +1917,6 @@ export const ms = {
       addSet: 'Tambah set',
       addWarmups: 'Tambah set warm-up',
       removeSet: 'Buang set',
-      setRemoved: 'Set dibuang',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
       rpeTitle: 'Betapa sukar?',
