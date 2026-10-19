@@ -4039,9 +4039,12 @@ guessed one.
 
 **One figure, from one place** (`workoutBurn` in `features/workouts/burn.ts`).
 The logger shows the burn so far along the foot of its figures card, beside a
-watch's heart rate: one slim line of small figures by default, since the sets
-are what the screen is for, and opened in full with a tap (the choice is kept
-per phone in `bodyFiguresOpen`), the finish screen shows what
+watch's heart rate, under a hairline in the same white card (a tinted band read
+as a second card): one quiet line by default, since the sets are what the
+screen is for, and opened in full with a tap (the choice is kept per phone in
+`bodyFiguresOpen`). The history cards on the Workouts tab show the saved burn
+as a chip beside the duration, whether or not Health counted it, since that
+list is a record of training rather than the budget, the finish screen shows what
 will be saved, and the save records the same number. While the Apple Watch app
 records the workout that figure is the watch's, streamed with the heart rate;
 otherwise it is the estimate. Never both, and never the estimate while the
