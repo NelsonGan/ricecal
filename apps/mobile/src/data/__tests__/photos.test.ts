@@ -74,6 +74,23 @@ describe('avatar uploads', () => {
   })
 
   /**
+   * Base64 pads a short last group with `=`. Counting the padding off after
+   * stripping it cut a photo's last byte or two, which is a JPEG's end marker,
+   * on iOS; Android's trailing newline hid the padding and so the bug.
+   */
+  it.each([
+    ['AQID', [1, 2, 3]],
+    ['AQI=', [1, 2]],
+    ['AQ==', [1]],
+    ['AQI=\n', [1, 2]],
+  ])('uploads every byte of %j', async (base64, want) => {
+    getSize.mockImplementation((_uri, success) => success(100, 100))
+    manipulate.mockResolvedValueOnce({ uri: 'file:///small.jpg', width: 100, height: 100, base64 })
+    await uploadAvatar('file:///a.jpg')
+    expect(jest.mocked(global.fetch).mock.calls[0][1]?.body).toEqual(new Uint8Array(want))
+  })
+
+  /**
    * iOS drops a request sent down a connection that went stale while the camera
    * was open ("The network connection was lost.") and retries only a GET. Both
    * steps of an upload are safe to send twice: the first only mints a key, the

@@ -7221,6 +7221,18 @@ photo afterwards crops in by the same amount. One constant, `PHOTO_CROP` in
 `lib/photo.ts`, because two of them is a diary framed differently from the
 viewfinder that took it.
 
+**A stored photo may be missing its last two bytes, and a model must never be
+sent one as it is.** The app's base64 decoder (`decodeBase64` in
+`data/photos.ts`) once subtracted the `=` padding after stripping it, so two iOS
+photos in three were uploaded without the `FF D9` that ends a JPEG. Every image
+viewer and Qwen shrug that off; Anthropic answers "Could not process image",
+which sent half of all photo scans to the fallback on the day Haiku went live.
+The decoder is fixed, but every binary already in a store keeps uploading
+clipped photos and the bucket already holds them, so every path that reads a
+photo for a model goes through `photoBase64` in `_shared/llm.ts`, which puts the
+marker back (`completeJpeg`). A new path that reads a photo for a model uses it
+too.
+
 **An image column holds a key, never a URL.** That is what made a change of
 storage provider a change of base URL rather than a migration over every row.
 
