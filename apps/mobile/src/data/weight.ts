@@ -84,6 +84,9 @@ export function useLogWeight() {
       queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
       queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+      // A pull-up's volume is priced with the weigh-in before its day (README,
+      // "A body weight movement lifts the body"), so a past day can move it.
+      queryClient.invalidateQueries({ queryKey: keys.workoutsAll(userId) })
     },
   })
 }
@@ -119,6 +122,7 @@ export function useDeleteWeighIn() {
       queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
       queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.workoutsAll(userId) })
     },
   })
 }

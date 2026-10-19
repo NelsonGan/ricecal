@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useExerciseBests, useLastSets, useSettings } from '@/data'
+import { useCurrentWeight, useExerciseBests, useLastSets, useSettings } from '@/data'
 import { unitFor } from '@/lib/units'
 import { Button, Dialog, EmptyState, useToast } from '@/ui'
 import { ActionSheet, type SheetAction } from './ActionSheet'
@@ -81,6 +81,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
   const lastSets = useLastSets(ids).data
   // All-time bests, which only the live logger measures ticks against.
   const bests = useExerciseBests(null, { enabled: live }).data
+  const bodyKg = useCurrentWeight()
   const bestsById = useMemo(
     () => new Map((bests ?? []).map((entry) => [entry.exerciseId, entry])),
     [bests],
@@ -154,11 +155,12 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
 
     const bests = bestsById.get(exercise.exerciseId)
     const cards = workout.exercises.filter((card) => card.exerciseId === exercise.exerciseId)
-    const before = recordSets(cards, bests)
+    const before = recordSets(cards, bests, bodyKg)
     dispatch({ type: 'completeSet', key: exercise.key, setId: set.id, at, fill })
     const after = recordSets(
       cards.map((card) => (card.key === exercise.key ? ticked : card)),
       bests,
+      bodyKg,
     )
     const fresh = after.get(set.id)?.filter((kind) => !before.get(set.id)?.includes(kind))
     if (fresh?.length) {
@@ -181,10 +183,10 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
 
   // One handlers object for every card and row, keyed rather than closed over
   // each exercise, so it never changes and memoised cards skip the render
-  // when their own exercise did not change. The latest document and `toggle`
-  // are read through a ref at call time.
-  const latest = useRef({ workout, toggle })
-  latest.current = { workout, toggle }
+  // when their own exercise did not change. The latest document, `toggle` and
+  // the toast are read through a ref at call time.
+  const latest = useRef({ workout, toggle, toast, t })
+  latest.current = { workout, toggle, toast, t }
   const handlers = useMemo<CardHandlers>(() => {
     const find = (key: string) =>
       latest.current.workout.exercises.find((exercise) => exercise.key === key)
@@ -199,7 +201,24 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
         if (exercise) setSetMenu({ exercise, set, number })
       },
       addSet: (key) => dispatch({ type: 'addSet', key }),
-      removeSet: (key, setId) => dispatch({ type: 'removeSet', key, setId }),
+      removeSet: (key, setId) => {
+        const exercise = find(key)
+        const index = exercise?.sets.findIndex((set) => set.id === setId) ?? -1
+        const set = index >= 0 ? exercise?.sets[index] : undefined
+        dispatch({ type: 'removeSet', key, setId })
+        // A full swipe deletes without asking, so a set that held anything can
+        // be put back. An empty one had nothing to lose.
+        if (set && (set.done || hasFigures(set))) {
+          const { toast, t } = latest.current
+          toast.show({
+            title: t('workouts:logger.setRemoved'),
+            action: {
+              label: t('common:action.undo'),
+              onPress: () => dispatch({ type: 'restoreSet', key, set, index }),
+            },
+          })
+        }
+      },
       reorder: () => {
         if (latest.current.workout.exercises.length > 1) setReordering(true)
       },

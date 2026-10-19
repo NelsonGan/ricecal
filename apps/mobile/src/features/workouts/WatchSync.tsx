@@ -322,6 +322,7 @@ function watchLabels(
     completeSet: t('workouts:logger.completeSet'),
     rest: t('workouts:rest.title'),
     skip: t('workouts:rest.skip'),
+    restDone: t('workouts:rest.complete'),
     restMinus: t('workouts:rest.minus'),
     restPlus: t('workouts:rest.plus'),
     exercises: t('workouts:watch.exercises'),

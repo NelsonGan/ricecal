@@ -1,9 +1,11 @@
 import * as Haptics from 'expo-haptics'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { View } from 'react-native'
+import { type LayoutChangeEvent, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
+  Easing,
   runOnJS,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -18,6 +20,16 @@ const ACTION_W = 96
 const OPEN_FRACTION = 0.5
 /** How long the row takes to settle either way. */
 const SETTLE_MS = 180
+/**
+ * A full swipe runs once the row has travelled this share of its width, and
+ * never short of the buttons plus this many points: a short row would
+ * otherwise commit the moment its button was uncovered.
+ */
+const FULL_FRACTION = 0.55
+const FULL_PAST_REVEAL = 64
+/** The row leaving, then the gap it leaves closing. */
+const EXIT_MS = 200
+const FOLD_MS = 220
 
 /**
  * One of the buttons a row uncovers.
@@ -49,6 +61,14 @@ export type SwipeAction = {
    * next delete did nothing.
    */
   onPress: (() => void) | (() => Promise<boolean>)
+  /**
+   * A swipe carried most of the way across runs this without the tap, and the
+   * row folds its height away before it goes, so the rows under it close up
+   * rather than jump. Only for the outermost action, and only for something
+   * cheap to get back (a set in a running workout, with Undo on the toast): a
+   * meal on Today keeps the two steps described below.
+   */
+  fullSwipe?: boolean
 }
 
 export type SwipeRowProps = {
@@ -94,10 +114,11 @@ export type SwipeRowProps = {
 /**
  * A row that slides left to reveal its actions.
  *
- * The swipe never runs one by itself. It uncovers the control and stops there,
- * because a gesture that removes a meal on release removes a meal by accident and
- * there is no undo behind it. That is truer with two buttons than it was with
- * one: a release cannot mean "delete" when it could equally mean "replace".
+ * The swipe never runs one by itself unless the action says so (`fullSwipe`).
+ * It uncovers the control and stops there, because a gesture that removes a meal
+ * on release removes a meal by accident and there is no undo behind it. That is
+ * truer with two buttons than it was with one: a release cannot mean "delete"
+ * when it could equally mean "replace".
  *
  * Settling is a timed slide rather than a spring: the button is parked at a fixed
  * offset, so overshooting means it moves after the finger has left.
@@ -121,6 +142,16 @@ export function SwipeRow({
   const openAt = reveal * OPEN_FRACTION
   const offset = useSharedValue(0)
   const parked = useSharedValue(false)
+  const full = actions.at(-1)?.fullSwipe ? actions.at(-1) : undefined
+  const fullSwipe = Boolean(full)
+  // The row's own size, measured, for how far a full swipe travels and the
+  // height it folds from. Zero until laid out, which a full swipe waits for.
+  const width = useSharedValue(0)
+  const height = useSharedValue(0)
+  // -1 while the row is its own height; from the fold, the height it is drawn at.
+  const folded = useSharedValue(-1)
+  // Whether a full swipe would run if the finger let go here.
+  const armed = useSharedValue(false)
   // Plain state, because what depends on it is `pointerEvents`: while closed
   // the button sits transparent over the end of the row, and an invisible
   // control still takes touches — including the start of the next swipe.
@@ -180,8 +211,9 @@ export function SwipeRow({
   const fired = useSharedValue(false)
   const restore = useCallback(() => {
     fired.value = false
+    folded.value = -1
     offset.value = withTiming(0, { duration: SETTLE_MS })
-  }, [fired, offset])
+  }, [fired, offset, folded])
   const run = useCallback(
     (action: SwipeAction) => {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
@@ -200,6 +232,53 @@ export function SwipeRow({
     onPress?.()
   }, [onPress])
 
+  const measure = useCallback(
+    (event: LayoutChangeEvent) => {
+      width.value = event.nativeEvent.layout.width
+      if (folded.value < 0) height.value = event.nativeEvent.layout.height
+    },
+    [width, height, folded],
+  )
+
+  // A tick under the thumb where a full swipe commits, and again if it backs off.
+  useAnimatedReaction(
+    () => armed.value,
+    (now, before) => {
+      if (before !== null && now !== before) runOnJS(armedHaptic)()
+    },
+  )
+
+  /** Slides the row out, folds the gap it leaves, then runs the action. */
+  const leaveThenRun = useCallback(
+    (item: SwipeAction) => {
+      'worklet'
+      const fold = item.fullSwipe
+      offset.value = withTiming(
+        -Math.max(600, width.value),
+        { duration: EXIT_MS, easing: Easing.out(Easing.cubic) },
+        () => {
+          if (fired.value) return
+          if (!fold) {
+            fired.value = true
+            runOnJS(run)(item)
+            return
+          }
+          folded.value = height.value
+          folded.value = withTiming(
+            0,
+            { duration: FOLD_MS, easing: Easing.inOut(Easing.quad) },
+            () => {
+              if (fired.value) return
+              fired.value = true
+              runOnJS(run)(item)
+            },
+          )
+        },
+      )
+    },
+    [offset, width, height, folded, fired, run],
+  )
+
   const pan = Gesture.Pan()
     // Horizontal only, and only after a clear sideways intent: the list under
     // this scrolls vertically, and a row that steals a scroll is worse than a
@@ -210,10 +289,25 @@ export function SwipeRow({
       const base = parked.value ? -reveal : 0
       // Never further than the buttons are wide, and never rightward past
       // closed: there is nothing on either side of those, and moving into
-      // empty space suggests there is.
-      offset.value = Math.max(-reveal, Math.min(0, base + event.translationX))
+      // empty space suggests there is. A full swipe may go on across the row.
+      const furthest = fullSwipe && width.value > 0 ? width.value : reveal
+      offset.value = Math.max(-furthest, Math.min(0, base + event.translationX))
+      armed.value =
+        fullSwipe &&
+        width.value > 0 &&
+        -offset.value >= Math.max(width.value * FULL_FRACTION, reveal + FULL_PAST_REVEAL)
     })
-    .onEnd((event) => {
+    .onEnd((event, success) => {
+      // Only a finger let go runs it: a pan the system cancels (a call coming
+      // in, the app leaving) is not a choice to delete.
+      if (success && full && armed.value) {
+        // Left armed: the row is leaving, and disarming would tick again.
+        parked.value = false
+        runOnJS(settle)(false)
+        leaveThenRun(full)
+        return
+      }
+      armed.value = false
       const willOpen = -offset.value >= openAt || event.velocityX < -700
       parked.value = willOpen
       runOnJS(settle)(willOpen)
@@ -249,14 +343,24 @@ export function SwipeRow({
     transform: [{ translateX: offset.value }],
     backgroundColor: colors.surface,
   }))
+  // A full swipe's button grows with the drag, so the colour follows the row
+  // edge across rather than a fixed block being left behind.
   const action = useAnimatedStyle(() => ({
     opacity: Math.min(1, -offset.value / openAt),
+    width: fullSwipe ? Math.max(reveal, -offset.value) : reveal,
   }))
+  const shell = useAnimatedStyle(() =>
+    folded.value < 0
+      ? {}
+      : { height: folded.value, opacity: folded.value / Math.max(1, height.value) },
+  )
 
   return (
-    <View className={cn('overflow-hidden', !square && 'rounded-tile')}>
+    <Animated.View style={shell} className={cn('overflow-hidden', !square && 'rounded-tile')}>
       <GestureDetector gesture={gesture}>
-        <View collapsable={false}>
+        {/* Measured here, on a plain view: on the styled one above, the
+            layout never reached `measure`, and a full swipe never armed. */}
+        <View collapsable={false} onLayout={measure}>
           <Animated.View style={sliding}>{children}</Animated.View>
         </View>
       </GestureDetector>
@@ -266,7 +370,7 @@ export function SwipeRow({
           loose from the row it belongs to. What the eye should see is the row
           sliding to uncover something underneath it. */}
       <Animated.View
-        style={[action, { width: reveal }]}
+        style={action}
         pointerEvents={open ? 'auto' : 'none'}
         className="absolute top-0 right-0 bottom-0 flex-row overflow-hidden"
       >
@@ -291,28 +395,39 @@ export function SwipeRow({
                 run(item)
                 return
               }
-              offset.value = withTiming(-600, { duration: 200 }, () => {
-                if (fired.value) return
-                fired.value = true
-                runOnJS(run)(item)
-              })
+              leaveThenRun(item)
             }}
           >
-            <Icon
-              set="ui"
-              name={item.icon}
-              size={20}
-              tintColor={item.tone === 'hibiscus' ? colors.onHibiscus : colors.onWater}
-            />
-            <Text
-              variant="caption"
-              style={{ color: item.tone === 'hibiscus' ? colors.onHibiscus : colors.onWater }}
+            {/* Held at the row's edge, a button's width wide, so the icon
+                travels with the finger on a full swipe instead of sliding
+                about the middle of a growing block. */}
+            <View
+              className={cn(
+                'items-center justify-center gap-1',
+                item.fullSwipe ? 'absolute top-0 bottom-0 left-0' : undefined,
+              )}
+              style={item.fullSwipe ? { width: ACTION_W } : undefined}
             >
-              {item.label}
-            </Text>
+              <Icon
+                set="ui"
+                name={item.icon}
+                size={20}
+                tintColor={item.tone === 'hibiscus' ? colors.onHibiscus : colors.onWater}
+              />
+              <Text
+                variant="caption"
+                style={{ color: item.tone === 'hibiscus' ? colors.onHibiscus : colors.onWater }}
+              >
+                {item.label}
+              </Text>
+            </View>
           </Tappable>
         ))}
       </Animated.View>
-    </View>
+    </Animated.View>
   )
+}
+
+function armedHaptic() {
+  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
 }

@@ -27,6 +27,7 @@ enum WorkoutActivityController {
     let setId: String?
     let canComplete: Bool?
     let restAfterS: Double?
+    let exerciseId: String?
     /// The "rest is over" notice for the next set, kept for the buttons. See `RiceCalWidgetStore.setRestNotice`.
     let restTitle: String?
     let restBody: String?
@@ -48,7 +49,8 @@ enum WorkoutActivityController {
         setId: setId,
         canComplete: canComplete,
         restAfterS: restAfterS,
-        labels: labels
+        labels: labels,
+        exerciseId: exerciseId
       )
     }
 

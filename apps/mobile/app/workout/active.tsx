@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useLastSets, useSettings } from '@/data'
+import { useCurrentWeight, useLastSets, useSettings } from '@/data'
 import {
   burnNote,
   completeAll,
@@ -16,7 +16,9 @@ import {
   LiveHeart,
   type LiveWorkout,
   liveTotals,
+  nextSet,
   RestBar,
+  RestCompleteCard,
   StaleWorkoutDialog,
   Stat,
   setWorkoutPrefs,
@@ -26,6 +28,7 @@ import {
   useLiveWorkout,
   useLoggerOpen,
   useNow,
+  useRestComplete,
   useWatchEnergy,
   useWatchPulse,
   useWatchPulsing,
@@ -77,11 +80,16 @@ export default function ActiveWorkoutScreen() {
   // Last time's sets, for what an unticked set offers. The editor asks for
   // the same key, so this reads its cache.
   const previous = useLastSets(workout?.exercises.map((exercise) => exercise.exerciseId) ?? []).data
+  const bodyKg = useCurrentWeight()
+  // Each rest that runs out while the logger is in front, and the last one
+  // whose card has already gone.
+  const restsEnded = useRestComplete(focused)
+  const [restSeen, setRestSeen] = useState(0)
 
   // A notice tapped after its workout was finished: say so, rather than redirect.
   if (!workout) return <WorkoutUnavailable />
 
-  const totals = liveTotals(workout)
+  const totals = liveTotals(workout, bodyKg)
 
   // Sets showing numbers but not ticked are asked about, even when none are
   // ticked: a workout logged by typing and never ticking is the commonest
@@ -116,136 +124,145 @@ export default function ActiveWorkoutScreen() {
   }
 
   return (
-    <Screen
-      // Set rows swipe to delete, so the scroll has to share the finger. See `gestureScroll`.
-      gestureScroll
-      header={
-        <AppBar
-          leading="minimise"
-          // Back to wherever it was opened from; with nothing under it (a
-          // notification that cold-launched straight here), to the tab.
-          onBack={() => (router.canGoBack() ? router.back() : router.replace('/workouts'))}
-          backLabel={t('workouts:logger.minimise')}
-          title={workout.name}
-          onPressTitle={() => {
-            setName(workout.name)
-            setRenaming(true)
-          }}
-          titleEdit={
-            renaming
-              ? {
-                  value: name,
-                  onChangeText: setName,
-                  onDone: commitName,
-                  label: t('workouts:logger.namePlaceholder'),
-                  maxLength: 80,
-                }
-              : undefined
-          }
-          action={
-            <Button size="sm" onPress={() => finish()}>
-              {t('workouts:logger.finish')}
-            </Button>
-          }
-        />
-      }
-      footer={
-        // The rest is cleared when it ends (by `useWorkoutEffects`), so this
-        // shows exactly while one runs; the countdown keeps its own clock.
-        workout.rest ? (
-          <RestCountdown
-            endsAt={workout.rest.endsAt}
-            totalS={workout.rest.totalS}
-            onAdjust={(byS) => dispatch({ type: 'adjustRest', byS, at: Date.now() })}
-            onSkip={() => dispatch({ type: 'stopRest' })}
+    <View className="flex-1">
+      <Screen
+        // Set rows swipe to delete, so the scroll has to share the finger. See `gestureScroll`.
+        gestureScroll
+        header={
+          <AppBar
+            leading="minimise"
+            // Back to wherever it was opened from; with nothing under it (a
+            // notification that cold-launched straight here), to the tab.
+            onBack={() => (router.canGoBack() ? router.back() : router.replace('/workouts'))}
+            backLabel={t('workouts:logger.minimise')}
+            title={workout.name}
+            onPressTitle={() => {
+              setName(workout.name)
+              setRenaming(true)
+            }}
+            titleEdit={
+              renaming
+                ? {
+                    value: name,
+                    onChangeText: setName,
+                    onDone: commitName,
+                    label: t('workouts:logger.namePlaceholder'),
+                    maxLength: 80,
+                  }
+                : undefined
+            }
+            action={
+              <Button size="sm" onPress={() => finish()}>
+                {t('workouts:logger.finish')}
+              </Button>
+            }
           />
-        ) : undefined
-      }
-    >
-      {prefs.keepAwake ? <KeepAwake /> : null}
+        }
+        footer={
+          // The rest is cleared when it ends (by `useWorkoutEffects`), so this
+          // shows exactly while one runs; the countdown keeps its own clock.
+          workout.rest ? (
+            <RestCountdown
+              endsAt={workout.rest.endsAt}
+              totalS={workout.rest.totalS}
+              onAdjust={(byS) => dispatch({ type: 'adjustRest', byS, at: Date.now() })}
+              onSkip={() => dispatch({ type: 'stopRest' })}
+            />
+          ) : undefined
+        }
+      >
+        {prefs.keepAwake ? <KeepAwake /> : null}
 
-      {/* One white card for the figures: three even columns, the clock
+        {/* One white card for the figures: three even columns, the clock
           first with a dot saying it is running, and what the body did (a
           watch's heart rate, the burn) under a hairline, one quiet line until
           it is opened.
           Five figures in one strip cut every label off; all of them in full
           took a third of the screen beside the sets. */}
-      <View className="overflow-hidden rounded-card bg-surface">
-        <View className="flex-row px-4 pt-3.5 pb-3">
-          <View className="pr-3" style={HALF}>
-            <Elapsed label={t('workouts:logger.duration')} startedAt={workout.startedAt} />
-          </View>
-          {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
-            <View className="border-line border-l px-3" style={HALF}>
-              <Stat
-                label={t('workouts:logger.volume')}
-                value={volumeText(t, totals.volumeKg, unit)}
-              />
+        <View className="overflow-hidden rounded-card bg-surface">
+          <View className="flex-row px-4 pt-3.5 pb-3">
+            <View className="pr-3" style={HALF}>
+              <Elapsed label={t('workouts:logger.duration')} startedAt={workout.startedAt} />
             </View>
-          ) : null}
-          <View className="border-line border-l pl-3" style={HALF}>
-            <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
+            {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
+              <View className="border-line border-l px-3" style={HALF}>
+                <Stat
+                  label={t('workouts:logger.volume')}
+                  value={volumeText(t, totals.volumeKg, unit)}
+                />
+              </View>
+            ) : null}
+            <View className="border-line border-l pl-3" style={HALF}>
+              <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
+            </View>
           </View>
+          <BodyFigures workout={workout} pulsing={pulsing} />
         </View>
-        <BodyFigures workout={workout} pulsing={pulsing} />
-      </View>
 
-      <WorkoutEditor workout={workout} dispatch={dispatch} mode="live" />
+        <WorkoutEditor workout={workout} dispatch={dispatch} mode="live" />
 
-      <Button variant="ghost" fullWidth onPress={() => setDiscarding('discard')}>
-        {t('workouts:logger.discard')}
-      </Button>
+        <Button variant="ghost" fullWidth onPress={() => setDiscarding('discard')}>
+          {t('workouts:logger.discard')}
+        </Button>
 
-      <DiscardDialog
-        visible={discarding !== null}
-        nothing={discarding === 'nothing'}
-        onClose={() => setDiscarding(null)}
-        onDiscard={discard}
-      />
+        <DiscardDialog
+          visible={discarding !== null}
+          nothing={discarding === 'nothing'}
+          onClose={() => setDiscarding(null)}
+          onDiscard={discard}
+        />
 
-      {/* Numbers typed into a set but never ticked: ask, rather than guess.
+        {/* Numbers typed into a set but never ticked: ask, rather than guess.
           Cancel is the third answer, "not yet". */}
-      <Dialog
-        visible={unfinished > 0}
-        onClose={() => setUnfinished(0)}
-        title={t('workouts:finish.unfinishedTitle')}
-        description={t('workouts:finish.unfinishedBody', { count: unfinished })}
-        cancelLabel={t('common:action.cancel')}
-        actions={[
-          {
-            key: 'complete',
-            label: t('workouts:finish.completeThem'),
-            onPress: () => {
-              // The stored document, not this render's: a lock-screen tick or a
-              // rest ending before the dialog closed would otherwise be undone.
-              const latest = userId ? getActiveWorkout(userId) : null
-              if (latest) replace(completeAll(latest, Date.now(), previous))
-              router.push({ pathname: '/workout/finish', params: finishParams.current })
+        <Dialog
+          visible={unfinished > 0}
+          onClose={() => setUnfinished(0)}
+          title={t('workouts:finish.unfinishedTitle')}
+          description={t('workouts:finish.unfinishedBody', { count: unfinished })}
+          cancelLabel={t('common:action.cancel')}
+          actions={[
+            {
+              key: 'complete',
+              label: t('workouts:finish.completeThem'),
+              onPress: () => {
+                // The stored document, not this render's: a lock-screen tick or a
+                // rest ending before the dialog closed would otherwise be undone.
+                const latest = userId ? getActiveWorkout(userId) : null
+                if (latest) replace(completeAll(latest, Date.now(), previous))
+                router.push({ pathname: '/workout/finish', params: finishParams.current })
+              },
             },
-          },
-          // Leaving them out of a workout with nothing ticked saves nothing.
-          ...(doneSets(workout) > 0
-            ? [
-                {
-                  key: 'drop',
-                  label: t('workouts:finish.dropThem'),
-                  onPress: () =>
-                    router.push({ pathname: '/workout/finish', params: finishParams.current }),
-                },
-              ]
-            : []),
-        ]}
-      />
+            // Leaving them out of a workout with nothing ticked saves nothing.
+            ...(doneSets(workout) > 0
+              ? [
+                  {
+                    key: 'drop',
+                    label: t('workouts:finish.dropThem'),
+                    onPress: () =>
+                      router.push({ pathname: '/workout/finish', params: finishParams.current }),
+                  },
+                ]
+              : []),
+          ]}
+        />
 
-      {current && focused ? (
-        <StaleWorkoutDialog
-          workout={current}
-          onKeepGoing={() => dispatch({ type: 'staleAnswered' })}
-          onFinish={finish}
-          onDiscard={() => setDiscarding('discard')}
+        {current && focused ? (
+          <StaleWorkoutDialog
+            workout={current}
+            onKeepGoing={() => dispatch({ type: 'staleAnswered' })}
+            onFinish={finish}
+            onDiscard={() => setDiscarding('discard')}
+          />
+        ) : null}
+      </Screen>
+      {restsEnded > restSeen ? (
+        <RestCompleteCard
+          key={restsEnded}
+          next={nextSet(workout)?.exercise.name ?? null}
+          onDone={() => setRestSeen(restsEnded)}
         />
       ) : null}
-    </Screen>
+    </View>
   )
 }
 

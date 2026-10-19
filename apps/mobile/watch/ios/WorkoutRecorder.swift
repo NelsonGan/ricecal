@@ -39,6 +39,10 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
   var onEnergy: ((Double) -> Void)?
   /// Recovery has finished, with or without a session to recover.
   var onRecovered: (() -> Void)?
+  /// HealthKit ended the session under the app (another workout app took the
+  /// sensor), naming the workout it was recording. The session is still held,
+  /// so `finish` can save what it measured.
+  var onLost: ((String?) -> Void)?
   /// Asked HealthKit for a session it kept, and not yet answered.
   private(set) var isRecovering = false
 
@@ -208,6 +212,13 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
         // recorder holding one already keeps it rather than a second object.
         guard self.session == nil else { return }
         let builder = session.associatedWorkoutBuilder()
+        // A recovered builder has no data source until it is given one again,
+        // and without it no reading arrives for the rest of the workout: the
+        // heart rate vanished halfway through whenever watchOS relaunched the
+        // app mid-session, on the wrist and on the phone. Its statistics cover
+        // the whole session, so the energy comes back whole with the next one.
+        builder.dataSource = HKLiveWorkoutDataSource(
+          healthStore: self.healthStore, workoutConfiguration: session.workoutConfiguration)
         session.delegate = self
         builder.delegate = self
         self.session = session
@@ -315,10 +326,25 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
   nonisolated func workoutSession(
     _ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState,
     from fromState: HKWorkoutSessionState, date: Date
-  ) {}
+  ) {
+    guard toState == .ended else { return }
+    Task { @MainActor in self.lost(workoutSession) }
+  }
 
   nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {
     NSLog("[RiceCalWatch] workout session failed: \(error.localizedDescription)")
+  }
+
+  /**
+   A session that ended without this app ending it. `finish` and `discard`
+   let go of theirs before ending it, so only HealthKit's own ending gets here.
+   Held on to as if nothing had happened, it read as recording for the rest of
+   the workout while measuring nothing.
+   */
+  private func lost(_ ended: HKWorkoutSession) {
+    guard ended === session else { return }
+    NSLog("[RiceCalWatch] workout session ended by the system")
+    onLost?(workoutId)
   }
 
   nonisolated func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {}
