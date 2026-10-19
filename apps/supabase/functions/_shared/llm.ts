@@ -217,10 +217,149 @@ export type Interpretation =
     }
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-// Qwen vision model: supports image input and JSON output. Overridable because
-// slugs shift as OpenRouter renames deployments.
-const DEFAULT_MODEL = Deno.env.get('OPENROUTER_MODEL') ?? 'qwen/qwen3.7-flash'
 const CALL_TIMEOUT_MS = 25_000
+
+/**
+ * One way to reach a model. Exported with `requestBody` for the prompt eval,
+ * which grades the request the pipeline sends rather than a copy of it.
+ */
+export type ModelRoute = {
+  /** The OpenRouter model id. */
+  model: string
+  /** OpenRouter provider routing, for this model alone. */
+  provider?: { only: string[]; allow_fallbacks: boolean }
+  /** Left out for a model that no longer takes one. */
+  temperature?: number
+  /** Added to the system prompt, for a model that has to be told what others do unasked. */
+  instruction?: string
+}
+
+/**
+ * An Anthropic model runs on our own Anthropic key (BYOK) and never on
+ * OpenRouter credits, whichever route it is on.
+ *
+ * OpenRouter also serves Claude from Bedrock, Vertex, Azure and Claude Platform
+ * on AWS, on its own accounts and so on our credits. The request names Anthropic
+ * alone and lets OpenRouter try no other provider. The Anthropic key in
+ * OpenRouter (Settings, Integrations) must be set never to use shared capacity,
+ * so a key that is rate limited or failing comes back as an error here rather
+ * than running on OpenRouter's own Anthropic account. `byokBroken` checks both.
+ */
+const ANTHROPIC_ONLY = { only: ['anthropic'], allow_fallbacks: false }
+
+/**
+ * Claude ignores `response_format: json_object`, and with reasoning off it
+ * works things out in its answer instead: a paragraph before the JSON, or for a
+ * nutrition estimate a page of arithmetic that ran out of tokens before any JSON
+ * came. A fifth of the vision and nutrition calls in the photo eval failed that
+ * way. With this line, and `parseAnswer` taking the JSON from after any
+ * paragraph that still comes, none of them did. (A generic `json_schema` looked
+ * like the fix and is not: Haiku answers it with `{}`.)
+ */
+const JSON_ALONE =
+  'Reply with the JSON object alone: no reasoning, explanation or markdown before or after it.'
+
+/** The route for `model`, with what an Anthropic model needs added to it. Exported for its test. */
+export function routeFor(model: string, temperature: number): ModelRoute {
+  return model.startsWith('anthropic/')
+    ? { model, provider: ANTHROPIC_ONLY, instruction: JSON_ALONE }
+    : { model, temperature }
+}
+
+/**
+ * The model every call asks first: Claude Haiku 5.5, on our Anthropic key.
+ * `OPENROUTER_BYOK_MODEL=off` sends every call to the fallback, with no deploy.
+ */
+const byokModel = Deno.env.get('OPENROUTER_BYOK_MODEL') ?? 'anthropic/claude-haiku-5.5'
+export const PRIMARY_ROUTE: ModelRoute | null =
+  byokModel === 'off' ? null : routeFor(byokModel, 0.2)
+
+/**
+ * What answers when the primary fails: the Qwen vision model that was the only
+ * model until Haiku, paid for from OpenRouter credits. Overridable because slugs
+ * shift as OpenRouter renames deployments.
+ */
+export const FALLBACK_ROUTE: ModelRoute = routeFor(
+  Deno.env.get('OPENROUTER_MODEL') ?? 'qwen/qwen3.7-flash',
+  0.2,
+)
+
+/**
+ * Set when an answer from an Anthropic model says our key did not pay for it,
+ * so OpenRouter charged it to credits. The rest of this isolate's calls skip the
+ * primary rather than risk another; a new isolate tries it again. The routing
+ * above rules this out, so it only fires if that routing stops holding.
+ */
+let byokBroken = false
+
+/**
+ * A photo as a data URL, typed by its first bytes rather than assumed. The app
+ * sends JPEG, but storage accepts PNG and WebP too, and Anthropic refuses an
+ * image whose declared type is not what it is, where Qwen never minded. Anything
+ * unrecognised (HEIC, which Haiku cannot read) stays JPEG and so goes to Qwen.
+ */
+export function photoDataUrl(photoBase64: string): string {
+  const type = photoBase64.startsWith('iVBOR')
+    ? 'image/png'
+    : photoBase64.startsWith('UklGR')
+      ? 'image/webp'
+      : photoBase64.startsWith('R0lGOD')
+        ? 'image/gif'
+        : 'image/jpeg'
+  return `data:${type};base64,${photoBase64}`
+}
+
+/**
+ * The JSON object in a model's answer. Usually the answer is nothing else, but
+ * models fence it in markdown despite `response_format`, and Haiku, which does
+ * not honour `json_object` at all, sometimes writes a paragraph first. A
+ * failure is still a SyntaxError, which `chatJSON` records without quoting.
+ */
+export function parseAnswer(text: string): unknown {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]
+  const braced = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)
+  let failure: unknown
+  for (const candidate of [text, fenced, braced]) {
+    if (!candidate) continue
+    try {
+      return JSON.parse(candidate)
+    } catch (error) {
+      failure ??= error
+    }
+  }
+  throw failure
+}
+
+/** `messages` with `instruction` at the end of their system prompt. */
+function withInstruction(messages: unknown[], instruction: string): unknown[] {
+  const [first, ...rest] = messages as Array<{ role?: string; content?: unknown }>
+  if (first?.role === 'system' && typeof first.content === 'string') {
+    return [{ ...first, content: `${first.content}\n\n${instruction}` }, ...rest]
+  }
+  return [{ role: 'system', content: instruction }, ...messages]
+}
+
+/** The body of one chat request. Exported for the prompt eval. */
+export function requestBody(route: ModelRoute, messages: unknown[], maxTokens: number) {
+  return {
+    model: route.model,
+    ...(route.provider ? { provider: route.provider } : {}),
+    messages: route.instruction ? withInstruction(messages, route.instruction) : messages,
+    max_tokens: maxTokens,
+    ...(route.temperature === undefined ? {} : { temperature: route.temperature }),
+    response_format: { type: 'json_object' },
+    // Off, not merely low. qwen3.7-flash reasons by default, which cost
+    // 20-30s per call and put three sequential calls past the client's 60s
+    // timeout. Worse, reasoning tokens come out of `max_tokens`, so a model
+    // that thinks past the ceiling returns `finish_reason: length` with an
+    // empty body: the vision call then wrote a guessed meal onto somebody's
+    // day, and the refine interpreter answered "could not apply that" to
+    // corrections that were fine.
+    //
+    // Models with no reasoning mode ignore the field.
+    reasoning: { enabled: false },
+  }
+}
 
 export function mockActive(): boolean {
   if (Deno.env.get('MOCK_AI') === 'true') return true
@@ -243,9 +382,12 @@ const DEFAULT_MAX_TOKENS = 2000
  * Exported for `recipe.ts`, which makes two calls of its own but has no second
  * way to talk to a model.
  *
- * One retry, only for failures a retry can fix: rate limits, provider hiccups,
- * timeouts. Everything below a model call is a cheaper tier, so a transient 429
- * costing a catalogue match is the expensive way to save 700ms.
+ * The primary is asked once, and any failure there goes to the fallback: a
+ * different model is worth asking whatever went wrong, an answer that would not
+ * parse included. The fallback keeps the one retry it always had, only for
+ * failures a retry can fix: rate limits, provider hiccups, timeouts. Everything
+ * below a model call is a cheaper tier, so a transient 429 costing a catalogue
+ * match is the expensive way to save 700ms.
  */
 export async function chatJSON(
   meter: Meter,
@@ -257,24 +399,25 @@ export async function chatJSON(
   if (!key) throw new Error('OPENROUTER_API_KEY not set')
 
   let attempts = 0
-  const attempt = async (): Promise<unknown> => {
+  let lastFailure = ''
+  const attempt = async (route: ModelRoute): Promise<unknown> => {
     // Counted before the request, so a call that times out still shows in the
-    // trace as something we paid for. The retry counts again, since OpenRouter
-    // bills it as a second request. Counting only: the ceiling is claimed once
-    // per scan at the top of the endpoint.
+    // trace as something we paid for. The fallback and the retry count again,
+    // since each is a request of its own. Counting only: the ceiling is claimed
+    // once per scan at the top of the endpoint.
     meter.record()
     const startedAt = Date.now()
     const generation: Generation = {
       span,
-      model: DEFAULT_MODEL,
+      model: route.model,
       startedAt,
       endedAt: startedAt,
       maxTokens,
-      temperature: 0.2,
+      temperature: route.temperature,
       attempt: attempts++,
     }
     try {
-      return await request(generation)
+      return await request(route, generation)
     } catch (error) {
       // A parse error quotes the model's answer back, which is diary content.
       generation.error ??=
@@ -283,6 +426,7 @@ export async function chatJSON(
           : error instanceof Error
             ? error.message
             : String(error)
+      lastFailure = generation.error
       throw error
     } finally {
       // One `$ai_generation` per request, retries included, whatever happened.
@@ -291,7 +435,7 @@ export async function chatJSON(
     }
   }
 
-  const request = async (generation: Generation): Promise<unknown> => {
+  const request = async (route: ModelRoute, generation: Generation): Promise<unknown> => {
     const res = await fetch(OPENROUTER_URL, {
       method: 'POST',
       signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
@@ -303,26 +447,7 @@ export async function chatJSON(
         'HTTP-Referer': 'https://ricecal.app',
         'X-Title': 'RiceCal',
       },
-      body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        messages,
-        max_tokens: maxTokens,
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-        // Off, not merely low. qwen3.7-flash reasons by default, which cost
-        // 20-30s per call and put three sequential calls past the client's 60s
-        // timeout. Worse, reasoning tokens come out of `max_tokens`, so a model
-        // that thinks past the ceiling returns `finish_reason: length` with an
-        // empty body: the vision call then wrote a guessed meal onto somebody's
-        // day, and the refine interpreter answered "could not apply that" to
-        // corrections that were fine.
-        //
-        // Models with no reasoning mode ignore the field.
-        reasoning: { enabled: false },
-        // Adds what OpenRouter charged to `usage`, which the PostHog
-        // generation records rather than re-pricing from token counts.
-        usage: { include: true },
-      }),
+      body: JSON.stringify(requestBody(route, messages, maxTokens)),
     })
     generation.httpStatus = res.status
     if (!res.ok) {
@@ -335,6 +460,13 @@ export async function chatJSON(
     }
     const body = await res.json()
     generation.usage = body?.usage
+    if (route.provider && body?.usage?.is_byok === false) {
+      byokBroken = true
+      console.error(
+        `[llm] ${route.model} was billed to OpenRouter credits, not our Anthropic key; ` +
+          `this isolate now sends every call to ${FALLBACK_ROUTE.model}`,
+      )
+    }
     const choice = body?.choices?.[0]
     const text: string = choice?.message?.content ?? ''
     generation.finishReason = choice?.finish_reason ?? undefined
@@ -350,13 +482,21 @@ export async function chatJSON(
         retryable: reason !== 'length',
       })
     }
-    // Some models fence JSON in markdown despite response_format.
-    const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '')
-    return JSON.parse(clean)
+    return parseAnswer(text)
+  }
+
+  if (PRIMARY_ROUTE && !byokBroken) {
+    try {
+      return await attempt(PRIMARY_ROUTE)
+    } catch {
+      console.warn(
+        `[llm] ${span}: ${PRIMARY_ROUTE.model} failed (${lastFailure}), asking ${FALLBACK_ROUTE.model}`,
+      )
+    }
   }
 
   try {
-    return await attempt()
+    return await attempt(FALLBACK_ROUTE)
   } catch (error) {
     // Timeouts abort as DOMException, so those are retryable too. A parse error
     // is not: the model answered badly, and asking again buys the same answer.
@@ -364,7 +504,7 @@ export async function chatJSON(
       (error as { retryable?: boolean }).retryable === true || error instanceof DOMException
     if (!retryable) throw error
     await new Promise((resolve) => setTimeout(resolve, 500))
-    return attempt()
+    return attempt(FALLBACK_ROUTE)
   }
 }
 
@@ -935,7 +1075,7 @@ export async function analysePhoto(
         role: 'user',
         content: [
           { type: 'text', text: photoUserMessage(note) },
-          { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${photoBase64}` } },
+          { type: 'image_url', image_url: { url: photoDataUrl(photoBase64) } },
         ],
       },
     ],
@@ -1463,7 +1603,11 @@ export const INTERPRET_INSTRUCTION_PROMPT =
   'accepted.\n\n' +
   '1. {"action":"none","reason":string}. Use this when the text is not a correction to this food, or ' +
   'it has no calorie consequence: "extra spicy", "more chilli", "no ice", "it was tasty", ' +
-  '"remind me to buy milk". Flavour, temperature and cooking style are not calories.\n\n' +
+  '"remind me to buy milk". Flavour and temperature are not calories. ' +
+  // "Cooking style" stood here, and Haiku took "the egg was boiled not fried"
+  // for one: a boiled egg is a different food from a fried one, oil and all.
+  'A part cooked another way IS a different food ("the egg was boiled not fried", ' +
+  '"grilled not fried"): that is a swap under case 3, never this case.\n\n' +
   '2. {"action":"quantity","factor":number}. The amount of the WHOLE entry changed and ' +
   'nothing else did. `factor` multiplies the amount CURRENTLY logged, which is the ' +
   'number the user is looking at.\n' +
@@ -1508,6 +1652,12 @@ export const INTERPRET_INSTRUCTION_PROMPT =
   'quantity Q means `total` Q/2, never rescale the whole meal.\n' +
   '   - `name`: the corrected dish name, still recognisably this meal. "Nasi lemak, no ' +
   'sambal", "Nasi lemak with rendang chicken". Not a new dish.\n' +
+  // Haiku read the Ingredients rule above as needing a list, and with none
+  // shown answered "no cockles" on a plain char kuey teow by redescribing it.
+  '   An entry with no Ingredients list is corrected the same way. A part the user names ' +
+  'that is not listed ("no cockles", "add an egg") is still ONE part removed or added: ' +
+  'adjust, with `part` the food named and `kcal_delta` what that part typically costs in ' +
+  'this dish. A missing breakdown is never a reason to redescribe.\n' +
   '   Less of an INGREDIENT is an adjustment even when the words sound like taste: ' +
   '"less sugar", "kurang manis", "no santan", "no oil", "skip the gravy" all take ' +
   'calories out and belong here: about -60 for the sugar in a sweet drink, -100 for ' +

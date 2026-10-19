@@ -31,10 +31,14 @@ import { resolveIcon } from '../functions/_shared/icons.ts'
 import {
   DESCRIBE_MEAL_PROMPT,
   describeUserMessage,
+  FALLBACK_ROUTE,
   INTERPRET_INSTRUCTION_PROMPT,
   INTERPRET_MAX_TOKENS,
+  PRIMARY_ROUTE,
+  parseAnswer,
   type RefineContext,
   refineUserMessage,
+  requestBody,
 } from '../functions/_shared/llm.ts'
 import { DESCRIBE_RECIPE_PROMPT, describeRecipeUserMessage } from '../functions/_shared/recipe.ts'
 import {
@@ -44,26 +48,26 @@ import {
   suggestUserMessage,
 } from '../functions/_shared/suggest.ts'
 
-const MODEL = Deno.env.get('OPENROUTER_MODEL') ?? 'qwen/qwen3.7-flash'
+// The model the pipeline asks first, or with `EVAL_ROUTE=fallback` the one that
+// answers when it fails. Both answer real scans, so a prompt change grades both.
+const ROUTE =
+  Deno.env.get('EVAL_ROUTE') === 'fallback' ? FALLBACK_ROUTE : (PRIMARY_ROUTE ?? FALLBACK_ROUTE)
 const ENDPOINT = Deno.env.get('EVAL_ENDPOINT')
 const KEY = Deno.env.get('OPENROUTER_API_KEY')
 
 async function call(system: string, user: string, maxTokens: number): Promise<unknown> {
+  // The same body the pipeline sends. An eval that graded a prompt against
+  // different settings would be grading something the app never runs.
   const body = ENDPOINT
-    ? { system, user, max_tokens: maxTokens, model: MODEL }
-    : {
-        model: MODEL,
-        messages: [
+    ? { system, user, max_tokens: maxTokens, model: ROUTE.model }
+    : requestBody(
+        ROUTE,
+        [
           { role: 'system', content: system },
           { role: 'user', content: user },
         ],
-        max_tokens: maxTokens,
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-        // The same as the pipeline sends. An eval that graded a prompt against
-        // a reasoning model would be grading something the app never runs.
-        reasoning: { enabled: false },
-      }
+        maxTokens,
+      )
 
   // Running a whole suite fires more requests a minute than a scan ever will,
   // so the provider throttles — and a 429 charged to the prompt would read as
@@ -82,9 +86,7 @@ async function call(system: string, user: string, maxTokens: number): Promise<un
     // The proxy wraps the completion; OpenRouter is the completion.
     const completion = ENDPOINT ? payload.body : payload
     const text: string = completion?.choices?.[0]?.message?.content ?? ''
-    if (text.trim()) {
-      return JSON.parse(text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, ''))
-    }
+    if (text.trim()) return parseAnswer(text)
     const status = Number(payload?.status ?? res.status ?? 0)
     const rateLimited = status === 429 || status >= 500 || completion?.error?.code === 429
     if (!rateLimited || attempt >= 4) {
@@ -893,7 +895,8 @@ const universalRecipe = (answer: RecipeAnswer): Check[] => {
       heavy.length === 0,
       heavy.map((p) => p.name),
     ),
-    check('three to six steps', lines.length >= 3 && lines.length <= 6, lines.length),
+    // The prompt's own range: four to eight in one pot, twelve at most in stages.
+    check('three to twelve steps', lines.length >= 3 && lines.length <= 12, lines.length),
     // One instruction a line, which is how the screen draws them. A paragraph
     // in this field renders as a paragraph.
     check(
@@ -1305,7 +1308,7 @@ async function run(name: string, runs: number) {
 
   const cases = suites[name] ?? []
 
-  console.log(`\n=== ${name} · ${cases.length} cases × ${runs} ===\n`)
+  console.log(`\n=== ${name} · ${ROUTE.model} · ${cases.length} cases × ${runs} ===\n`)
 
   for (const item of cases) {
     for (let attempt = 0; attempt < runs; attempt++) {
