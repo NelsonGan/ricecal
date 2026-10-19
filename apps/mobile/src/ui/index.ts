@@ -79,6 +79,7 @@ export {
   type IconButtonSize,
   type IconButtonVariant,
 } from './IconButton'
+export { InfoTip } from './InfoTip'
 export { ListRow, type ListRowProps } from './ListRow'
 export {
   NUMPAD_BODY_HEIGHT,

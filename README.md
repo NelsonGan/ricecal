@@ -4046,9 +4046,13 @@ watch records: the watch's copy is the one Health keeps, so an estimate on
 screen would change at the finish. Until the watch's first figure arrives the
 logger shows a dash and the finish screen leaves the burn out. A figure
 streamed from the watch also stops the phone writing a Health copy of its own,
-even before the watch's `recording` command has landed. Tapping the figure says where it came from ("Estimated from your
-weight and sets, as there is no heart rate", or "Measured by your Apple Watch"),
-in a note that opens under the figures, since there is no tooltip component.
+even before the watch's `recording` command has landed. An ⓘ beside the label
+says where it came from ("Estimated from your weight and sets, as there is no
+heart rate", or "Measured by your Apple Watch"), in a bubble that opens only
+when the ⓘ itself is tapped (`InfoTip` in `src/ui`). It floats in a transparent
+modal, so it moves nothing and no card clips it, and closes on any tap or after
+six seconds. The figure around it is not a button: opened by any touch, it was
+opened by thumbs on their way to the sets.
 
 **A save asks the budget to look again.** The automatic health sync runs on
 foreground, at most once a minute, so a workout saved to Health used to show its

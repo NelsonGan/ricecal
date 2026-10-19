@@ -29,7 +29,6 @@ import {
   routineChanges,
   Stat,
   StatGrid,
-  StatNote,
   setVolume,
   shortClock,
   showsVolume,
@@ -110,7 +109,6 @@ export default function FinishWorkoutScreen() {
   })
   const [saving, setSaving] = useState(false)
   const [askRoutine, setAskRoutine] = useState(false)
-  const [noteOpen, setNoteOpen] = useState(false)
   const body = useEnergyBody()
   const watchKcal = useWatchEnergy(workout?.id)
   // Left mid-save, the save's own navigation landed on whatever came next and
@@ -271,13 +269,20 @@ export default function FinishWorkoutScreen() {
           </View>
           <Icon set="system" name="trophy" size={64} />
         </View>
-        {/* Three to a row, the burn under the rest: four across ran the
-            volume into the sets. */}
+        {/* Time and burn, then the training: four across ran the volume
+            into the sets. */}
         <StatGrid>
           <Stat
             label={t('workouts:finish.duration')}
             value={durationText(t, Math.max(0, durationS))}
           />
+          {burn.kcal !== null ? (
+            <Stat
+              label={t('workouts:detail.kcalLabel')}
+              value={t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })}
+              info={burnNote(t, burn.source, body !== undefined)}
+            />
+          ) : null}
           {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) &&
           totals.volumeKg > 0 ? (
             <Stat
@@ -286,22 +291,7 @@ export default function FinishWorkoutScreen() {
             />
           ) : null}
           <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
-          {burn.kcal !== null ? (
-            <Stat
-              label={t('workouts:detail.kcalLabel')}
-              value={t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })}
-              onPress={() => setNoteOpen((open) => !open)}
-              accessibilityHint={burnNote(t, burn.source, body !== undefined)}
-            />
-          ) : null}
         </StatGrid>
-        {noteOpen && burn.kcal !== null ? (
-          <StatNote
-            text={burnNote(t, burn.source, body !== undefined)}
-            onClose={() => setNoteOpen(false)}
-            inCard
-          />
-        ) : null}
       </Card>
 
       {records.length ? (

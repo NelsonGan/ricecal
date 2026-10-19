@@ -1,7 +1,8 @@
 import { useKeepAwake } from 'expo-keep-awake'
 import { useIsFocused, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { View } from 'react-native'
 
 import { useLastSets, useSettings } from '@/data'
 import {
@@ -18,8 +19,6 @@ import {
   RestBar,
   StaleWorkoutDialog,
   Stat,
-  StatNote,
-  StatStrip,
   showsVolume,
   unfinishedSets,
   useEnergyBody,
@@ -37,7 +36,7 @@ import {
   clock as workoutClock,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
-import { AppBar, Button, Dialog, Screen, useHeld } from '@/ui'
+import { AppBar, Button, Dialog, Screen, Text, useHeld } from '@/ui'
 
 /**
  * The logger: a workout being trained.
@@ -62,13 +61,6 @@ export default function ActiveWorkoutScreen() {
   const [discarding, setDiscarding] = useState<'discard' | 'nothing' | null>(null)
   const [unfinished, setUnfinished] = useState(0)
   const finishParams = useRef<FinishParams>({})
-  // What the burn is made of, opened by tapping it, until it is tapped again.
-  const [note, setNote] = useState<string | null>(null)
-  useEffect(() => {
-    if (!note) return
-    const timer = setTimeout(() => setNote(null), NOTE_MS)
-    return () => clearTimeout(timer)
-  }, [note])
   // Under the finish screen, the library or an exercise's page this stays
   // mounted, and "Still training?" asked from there over whatever was on top.
   const focused = useIsFocused()
@@ -78,8 +70,7 @@ export default function ActiveWorkoutScreen() {
   // screen re-renders with nothing; a <Redirect> there raced the navigation
   // and could mount the tabs a second time.
   const workout = useHeld(current, Boolean(current))
-  // Whether the heart rate takes a place in the figures, which decides how
-  // they are laid out (`StatStrip`).
+  // Whether the heart rate takes a place along the foot of the figures.
   const pulsing = useWatchPulsing(workout?.id)
   // Last time's sets, for what an unticked set offers. The editor asks for
   // the same key, so this reads its cache.
@@ -171,19 +162,36 @@ export default function ActiveWorkoutScreen() {
     >
       {prefs.keepAwake ? <KeepAwake /> : null}
 
-      <StatStrip>
-        <Elapsed label={t('workouts:logger.duration')} startedAt={workout.startedAt} />
-        {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
-          <Stat label={t('workouts:logger.volume')} value={volumeText(t, totals.volumeKg, unit)} />
-        ) : null}
-        <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
-        {pulsing ? <WatchPulse workoutId={workout.id} /> : null}
-        <LiveBurn
-          workout={workout}
-          onExplain={(text) => setNote((open) => (open === text ? null : text))}
-        />
-      </StatStrip>
-      {note ? <StatNote text={note} onClose={() => setNote(null)} /> : null}
+      {/* The clock is what ticks, so it leads. The training figures sit beside
+          it, and what the body did (a watch's heart rate, the burn) runs along
+          the foot: five figures in one strip cut every label off. Both halves
+          are equal, so the foot's rule lines up with the one above it. */}
+      <View className="overflow-hidden rounded-card bg-surface">
+        <View className="flex-row px-4 py-4">
+          <View className="justify-center pr-4" style={HALF}>
+            <Elapsed label={t('workouts:logger.duration')} startedAt={workout.startedAt} />
+          </View>
+          <View className="justify-center gap-3 border-line border-l pl-4" style={HALF}>
+            {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
+              <Stat
+                label={t('workouts:logger.volume')}
+                value={volumeText(t, totals.volumeKg, unit)}
+              />
+            ) : null}
+            <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
+          </View>
+        </View>
+        <View className="flex-row bg-pandan-soft px-4 py-3">
+          {pulsing ? (
+            <View className="pr-4" style={HALF}>
+              <WatchPulse workoutId={workout.id} />
+            </View>
+          ) : null}
+          <View className={pulsing ? 'border-pandan/20 border-l pl-4' : undefined} style={HALF}>
+            <LiveBurn workout={workout} />
+          </View>
+        </View>
+      </View>
 
       <WorkoutEditor workout={workout} dispatch={dispatch} mode="live" />
 
@@ -250,8 +258,21 @@ export default function ActiveWorkoutScreen() {
  */
 function Elapsed({ label, startedAt }: { label: string; startedAt: number }) {
   const now = useNow(1000)
-  return <Stat label={label} value={workoutClock((now - startedAt) / 1000)} />
+  return (
+    <View className="gap-0.5">
+      <Text variant="overlineSm">{label}</Text>
+      <Text variant="display" numberOfLines={1} adjustsFontSizeToFit style={TABULAR}>
+        {workoutClock((now - startedAt) / 1000)}
+      </Text>
+    </View>
+  )
 }
+
+/** One of two equal columns, so the rules in the figures card line up. */
+const HALF = { flex: 1, flexBasis: 0 }
+
+/** Digits that keep their width, so the clock does not shuffle each second. */
+const TABULAR = { fontVariant: ['tabular-nums' as const] }
 
 /** The heart rate an Apple Watch recording this workout is streaming, while it is. */
 function WatchPulse({ workoutId }: { workoutId: string }) {
@@ -260,28 +281,19 @@ function WatchPulse({ workoutId }: { workoutId: string }) {
   if (bpm === null) return null
   return (
     <Stat
-      label={t('activity:workout.bpmUnit')}
-      value={String(bpm)}
+      label={t('activity:workout.heartRate')}
+      value={t('activity:workout.bpm', { value: bpm })}
       leading={<LiveHeart bpm={bpm} />}
     />
   )
 }
-
-/** How long the note under the figures stays open on its own. */
-const NOTE_MS = 6000
 
 /**
  * The energy the workout has burned so far: the Apple Watch's while it is
  * recording, our estimate otherwise (`workoutBurn`). Its own five second clock,
  * since an estimate moves slowly and a watch streams no faster.
  */
-function LiveBurn({
-  workout,
-  onExplain,
-}: {
-  workout: LiveWorkout
-  onExplain: (text: string) => void
-}) {
+function LiveBurn({ workout }: { workout: LiveWorkout }) {
   const { t } = useTranslation(['workouts', 'common'])
   const now = useNow(5000)
   const body = useEnergyBody()
@@ -290,10 +302,11 @@ function LiveBurn({
   const note = burnNote(t, burn.source, body !== undefined)
   return (
     <Stat
-      label={t('common:unit.kcal')}
-      value={burn.kcal === null ? '—' : burn.kcal.toLocaleString()}
-      onPress={() => onExplain(note)}
-      accessibilityHint={note}
+      label={t('workouts:detail.kcalLabel')}
+      value={
+        burn.kcal === null ? '—' : t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })
+      }
+      info={note}
     />
   )
 }
