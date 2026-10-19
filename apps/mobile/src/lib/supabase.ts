@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store'
 
 import type { Database } from './database.types'
 import { env } from './env'
-import { reportNetworkFailure } from './network'
+import { noteResponse, reportNetworkFailure } from './network'
 import { sessionIsGone, tokenWasRefused } from './revocation'
 
 /**
@@ -326,15 +326,19 @@ async function endSessionIfGone(): Promise<void> {
  * is caught here rather than in each query: this is the one place every request
  * passes, the token refresh included. An abort is a caller changing its mind,
  * and `reportNetworkFailure` tells the two apart from the request's signal.
+ * Every response is noted as well, since one lost request is only news when
+ * the host stays silent after it.
  */
 async function guardedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const sentAt = Date.now()
   let response: Response
   try {
     response = await fetch(input, init)
   } catch (error) {
-    void reportNetworkFailure(requestUrl(input), error, init?.signal)
+    void reportNetworkFailure(requestUrl(input), error, sentAt, init?.signal)
     throw error
   }
+  noteResponse(requestUrl(input))
   if (tokenWasRefused(requestUrl(input), response.status)) void endSessionIfGone()
   return response
 }

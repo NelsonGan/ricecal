@@ -38,8 +38,10 @@ jest.mock('@supabase/supabase-js', () => ({
 }))
 
 const mockReportNetworkFailure = jest.fn(async () => {})
+const mockNoteResponse = jest.fn()
 jest.mock('../network', () => ({
   reportNetworkFailure: (...args: unknown[]) => mockReportNetworkFailure(...(args as [])),
+  noteResponse: (...args: unknown[]) => mockNoteResponse(...(args as [])),
 }))
 
 const { onSessionEnded } = require('../supabase') as {
@@ -211,5 +213,22 @@ it('hands a failed request and its signal to the network reporter, then rethrows
     thrown,
   )
 
-  expect(mockReportNetworkFailure).toHaveBeenCalledWith(FUNCTION_URL, thrown, controller.signal)
+  expect(mockReportNetworkFailure).toHaveBeenCalledWith(
+    FUNCTION_URL,
+    thrown,
+    expect.any(Number),
+    controller.signal,
+  )
+  expect(mockNoteResponse).not.toHaveBeenCalled()
+})
+
+// The reporter waits for a second lost request before it files anything, and
+// any answer from the host in between means the first was a dropped connection.
+// So it has to hear about every answer, an error status included.
+it('tells the network reporter about every response, whatever its status', async () => {
+  respondWith(500)
+  await mockOptions.global.fetch(FUNCTION_URL)
+
+  expect(mockNoteResponse).toHaveBeenCalledWith(FUNCTION_URL)
+  expect(mockReportNetworkFailure).not.toHaveBeenCalled()
 })

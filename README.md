@@ -6043,7 +6043,7 @@ is recording.
 | Native crashes | `nativeCrashes` (iOS signals and Mach exceptions; Android Java/Kotlin), `androidNdkCrashes` | Through `@posthog/react-native-plugin`, reported on the next launch. These reports carry no `app_variant` (the native layer sends them before JavaScript registers it), so tell an internal build's native crash apart by `$app_version` and `$app_build` |
 | Caught errors | `reportError(error, context)` from `src/lib/errors.ts` | Analytics provider failures (`analytics_provider`, `analytics_operation`); context is short scalars only |
 | Warnings | `reportMessage(text)` | The captcha diagnostics in `features/auth/turnstile.tsx`, sent with `$exception_level: warning` |
-| Requests that never got a response while the phone said it was online | `reportNetworkFailure` in `src/lib/network.ts`, called from the Supabase client's `guardedFetch` | Warning `[network] could not reach <host>`, once per host per launch, never while offline. Context: `network_path` (first three segments, no query string), `network_reason` (the platform's own text from the error Expo's `fetch` threw, native frame removed), `network_type`, `network_reachable` |
+| A host that stays silent while the phone says it is online | `reportNetworkFailure` in `src/lib/network.ts`, called from the Supabase client's `guardedFetch` | Warning `[network] could not reach <host>`, filed when a request sent after a lost one is lost too, with no answer from that host in between (`noteResponse`) and within five minutes. Once per host per launch, never while offline. Context: `network_path` (first three segments, no query string), `network_reason` (the platform's own text from the error Expo's `fetch` threw, native frame removed), `network_type`, `network_reachable`, `network_down_ms` (since the first lost request) |
 | Edge functions | Their own logs | The functions are not instrumented for errors; their model calls are, as AI events |
 
 A `before_send` hook sends an identical exception once per five minutes and no
@@ -6062,6 +6062,15 @@ nothing on the phone recorded why. Expo's `fetch` puts the platform's reason in
 the error it throws (`fetch failed: UnexpectedException: Could not connect to the
 server.` on iOS for a refused connection), so the phone knew whether it was DNS,
 TLS, a refused connection or a timeout; the warning keeps that answer.
+
+**Why one lost request is not enough.** Filed on the first lost request, the
+warning reached about one phone in six a day on 1.1.0, and in the sessions
+checked the app went on talking to Supabase straight after. iOS keeps connections open between requests, and after
+an idle minute or a spell in the background it sends the next one down a
+connection the other end has dropped (`The network connection was lost.`); a
+request the app was suspended in the middle of fails the same way when it wakes.
+Requests that shared the dead connection fail together and confirm nothing, so
+the confirming request has to be one sent after the first failure.
 
 **Readable stacks need uploaded symbols.** `metro.config.js` uses
 `getPostHogExpoConfig`, which injects debug IDs into every bundle. The
