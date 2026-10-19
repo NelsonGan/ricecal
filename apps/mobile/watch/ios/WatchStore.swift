@@ -37,6 +37,9 @@ final class WatchStore: ObservableObject {
   /// A set picked from the list, drawn instead of the next one until done.
   @Published var picked: String?
   @Published var page: Page = .set
+  /// When a rest last ran out with the app running, for the moment "Rest
+  /// complete" is shown over the set it was for.
+  @Published var restDoneAt: Date?
 
   enum Page: Hashable { case controls, set, exercises }
 
@@ -55,7 +58,7 @@ final class WatchStore: ObservableObject {
   private var restTimer: Timer?
   private var restBuzzedFor: Double?
   private var lastPulse = Date.distantPast
-  private var lastHeartAt = Date.distantPast
+  private(set) var lastHeartAt = Date.distantPast
   /// A reading that came inside the five seconds, sent when they are up.
   private var trailing: Timer?
   private var lastResend = Date.distantPast
@@ -68,6 +71,10 @@ final class WatchStore: ObservableObject {
   /// A workout whose session would not start, not tried again until the app
   /// is next opened: every state from the phone would otherwise try again.
   private var couldNotRecord: String?
+  /// Workouts whose recording HealthKit ended part way and that were saved as
+  /// far as they got. Not recorded again: a second session would be a second
+  /// Health workout over the same hour, and its trace would replace the first.
+  private var closedEarly: Set<String> = []
 
   private init() {
     if let text = defaults.string(forKey: "RiceCalPhoneState") {
@@ -91,6 +98,14 @@ final class WatchStore: ObservableObject {
       DispatchQueue.main.async { self?.resend(force: true) }
     }
     recorder.onRecovered = { [weak self] in self?.reconcile() }
+    recorder.onLost = { [weak self] workoutId in
+      guard let self, let id = workoutId ?? self.workout?.id else { return }
+      // Saved as far as it got, with its trace, as a finish would: thrown
+      // away, the phone (told the watch was recording) wrote no copy either
+      // and the workout never reached Health or the budget.
+      self.closedEarly.insert(id)
+      self.endRecording(saved: true, at: Date(), workoutId: id)
+    }
     recorder.onHeartRate = { [weak self] bpm in self?.pulse(bpm) }
     recorder.onEnergy = { [weak self] kcal in
       self?.activeKcal = kcal
@@ -127,6 +142,12 @@ final class WatchStore: ObservableObject {
   private func refresh() {
     let projected = Self.project(phone?.workout, pending: pending)
     if projected != workout { workout = projected }
+  }
+
+  /// The heart rate while it is under fifteen seconds old, as the phone shows
+  /// it: a reading that stopped coming should not go on looking live.
+  func liveHeartRate(at date: Date) -> Int? {
+    date.timeIntervalSince(lastHeartAt) < 15 ? heartRate : nil
   }
 
   /// Whether presses are still on their way to the phone.
@@ -388,7 +409,9 @@ final class WatchStore: ObservableObject {
       announce(running)
       return
     }
-    guard let running, summary?.workoutId != running.id, couldNotRecord != running.id else { return }
+    guard let running, summary?.workoutId != running.id, couldNotRecord != running.id,
+      !closedEarly.contains(running.id)
+    else { return }
     // A session HealthKit kept may be on its way back, or one is already
     // starting; starting another now would make two. Each calls this again
     // when it is done.
@@ -482,8 +505,10 @@ final class WatchStore: ObservableObject {
     trailing = nil
     lastPulse = Date()
     // A reading is resent only while it is recent, so a loose strap does not
-    // keep its last figure looking live on the phone.
-    let bpm = Date().timeIntervalSince(lastHeartAt) < 15 ? heartRate : nil
+    // keep its last figure looking live on the phone, nor on the wrist.
+    let fresh = Date().timeIntervalSince(lastHeartAt) < 15
+    if !fresh, heartRate != nil { heartRate = nil }
+    let bpm = fresh ? heartRate : nil
     link.sendPulse(workoutId: id, bpm: bpm, kcal: activeKcal > 0 ? activeKcal : nil)
   }
 
@@ -499,6 +524,15 @@ final class WatchStore: ObservableObject {
         guard let self, self.workout?.rest?.endsAt == rest.endsAt else { return }
         self.restBuzzedFor = rest.endsAt
         WKInterfaceDevice.current().play(.stop)
+        // Shown for a moment and taken down here rather than by the view, so
+        // a rest that ends on another page, or with the wrist down, does not
+        // leave the card waiting to flash up later.
+        let stamp = Date()
+        self.restDoneAt = stamp
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { [weak self] in
+          guard let self, self.restDoneAt == stamp else { return }
+          withAnimation(.easeOut(duration: 0.2)) { self.restDoneAt = nil }
+        }
       }
     }
   }

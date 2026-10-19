@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(40);
+select plan(47);
 
 \set user_a '44444444-4444-4444-4444-444444444444'
 \set user_b '55555555-5555-5555-5555-555555555555'
@@ -396,6 +396,77 @@ select is(
   (select e1rm_kg from public.workout_set_values where workout_id = 'a0000000-0000-4000-8000-000000000009'),
   63.8::numeric,
   'an estimate is weight x (30 + reps) / 30, rounded half up, as the app has it'
+);
+
+-- Body weight movements are priced with the body: an assisted pull-up lifts
+-- the body less the machine's help, a weighted one the body plus the plate.
+-- The weigh-in is the one on or before the workout's day.
+insert into public.weight_logs (user_id, measured_on, weight_kg)
+values (:'user_a', '2026-10-01', 80), (:'user_a', '2026-10-25', 76);
+
+select public.save_workout(jsonb_build_object(
+  'id', 'a0000000-0000-4000-8000-00000000000a', 'name', 'Pull', 'started_at', '2026-10-21T10:00:00Z',
+  'ended_at', '2026-10-21T11:00:00Z', 'log_date', '2026-10-21',
+  'exercises', jsonb_build_array(
+    jsonb_build_object('exercise_id', 'assisted-pull-up', 'exercise_name', 'Pull Up (Assisted)',
+      'tracking', 'assisted_reps', 'sets', jsonb_build_array(
+        jsonb_build_object('weight_kg', 30, 'reps', 8),
+        jsonb_build_object('weight_kg', 90, 'reps', 5),
+        jsonb_build_object('reps', 3))),
+    jsonb_build_object('exercise_id', 'pull-up', 'exercise_name', 'Pull Up',
+      'tracking', 'weighted_reps', 'sets', jsonb_build_array(
+        jsonb_build_object('weight_kg', 10, 'reps', 5),
+        jsonb_build_object('reps', 6))))
+));
+select is(
+  (select array_agg(load_kg order by exercise_position, position) from public.workout_set_values
+    where workout_id = 'a0000000-0000-4000-8000-00000000000a'),
+  array[50, 0, 80, 90, 80]::numeric[],
+  'an assisted set lifts the body less its help, and a weighted one the body plus what was added'
+);
+select is(
+  (select array_agg(volume_kg order by exercise_position, position) from public.workout_set_values
+    where workout_id = 'a0000000-0000-4000-8000-00000000000a'),
+  array[400, null, 240, 450, 480]::numeric[],
+  'so their volume is that load times the reps, and help heavier than the body is no load'
+);
+select is(
+  (select volume_kg from public.workout_summaries where id = 'a0000000-0000-4000-8000-00000000000a'),
+  1570::numeric,
+  'and the workout''s volume counts them'
+);
+select is(
+  (select weight_kg from public.workout_set_values
+    where workout_id = 'a0000000-0000-4000-8000-00000000000a' and exercise_id = 'pull-up' and position = 0),
+  10.00::numeric,
+  'the set still keeps what was typed'
+);
+
+select public.save_workout(jsonb_build_object(
+  'id', 'a0000000-0000-4000-8000-00000000000b', 'name', 'Pull', 'started_at', '2026-10-26T10:00:00Z',
+  'ended_at', '2026-10-26T11:00:00Z', 'log_date', '2026-10-26',
+  'exercises', jsonb_build_array(
+    jsonb_build_object('exercise_id', 'assisted-pull-up', 'exercise_name', 'Pull Up (Assisted)',
+      'tracking', 'assisted_reps', 'sets', jsonb_build_array(jsonb_build_object('weight_kg', 30, 'reps', 8)))))
+);
+select is(
+  (select load_kg from public.workout_set_values where workout_id = 'a0000000-0000-4000-8000-00000000000b'),
+  46::numeric,
+  'a later workout is priced with the weigh-in before it'
+);
+
+delete from public.weight_logs where user_id = :'user_a';
+select is(
+  (select array_agg(volume_kg order by exercise_position, position) from public.workout_set_values
+    where workout_id = 'a0000000-0000-4000-8000-00000000000a'),
+  array[null, null, null, 50, null]::numeric[],
+  'with no weigh-in at all, an assisted set has no load and a weighted one counts what was added'
+);
+select is(
+  (select array_agg(load_kg order by exercise_position, position) from public.workout_set_values
+    where workout_id = 'a0000000-0000-4000-8000-00000000000a'),
+  array[null, null, null, 10, 0]::numeric[],
+  'and the assisted set''s load is unknown, not zero'
 );
 
 select * from finish();

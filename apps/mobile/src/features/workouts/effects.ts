@@ -25,6 +25,7 @@ import {
   supersetRuns,
   tickedSet,
 } from './model'
+import { announceRestComplete } from './RestComplete'
 import { getActiveWorkout } from './store'
 
 /** How late a rest's end can be noticed and still be news worth a buzz. */
@@ -108,6 +109,7 @@ function useWorkoutEffects(): void {
         // with the app in the background buzzed as it opened.
         if (Date.now() - rest.endsAt < OVERDUE_MS) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+          announceRestComplete()
         }
         dispatch({ type: 'stopRest' })
       },
@@ -281,7 +283,7 @@ function hintFor(
  * A superset is the run of exercises sharing its number, done a round at a
  * time, so after A1 comes B1 rather than A2.
  */
-function nextSet(workout: LiveWorkout): { exercise: LiveExercise; set: LiveSet } | null {
+export function nextSet(workout: LiveWorkout): { exercise: LiveExercise; set: LiveSet } | null {
   for (const round of supersetRuns(workout.exercises)) {
     const rounds = Math.max(...round.map((exercise) => exercise.sets.length))
     for (let index = 0; index < rounds; index++) {
@@ -341,5 +343,6 @@ function activityState(
       more: t('workouts:rest.plus'),
       skip: t('workouts:rest.skip'),
     },
+    exerciseId: (next?.exercise ?? last)?.exerciseId ?? null,
   }
 }

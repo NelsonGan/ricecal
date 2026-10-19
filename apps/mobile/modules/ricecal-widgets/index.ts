@@ -166,6 +166,8 @@ export type WorkoutActivityState = {
   tickRestBody: string
   /** The buttons' names for VoiceOver. The extension has no strings of its own. */
   labels: { complete: string; less: string; more: string; skip: string }
+  /** The exercise whose drawing the activity shows: the next set's, or the last one's. */
+  exerciseId: string | null
 }
 
 /** A button pressed on the workout's Live Activity, queued for the app. */

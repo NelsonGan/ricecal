@@ -10,10 +10,13 @@
 --
 -- Two definitions every function below shares:
 --
---   volume      weight x reps, for the two trackings where the weight is load
---               (`weight_reps`, `weighted_reps`). An assisted pull-up's weight
---               is the machine HELPING, and multiplying it by reps would make
---               the easiest set the biggest.
+--   load        what was lifted. The weight for `weight_reps`; for a body
+--               weight movement, the body weight that day plus what was added
+--               (`weighted_reps`) or less what the machine took off
+--               (`assisted_reps`). An assisted pull-up's figure is the machine
+--               HELPING, and multiplying it by reps would make the easiest set
+--               the biggest; the body weight less it is what the arms pulled.
+--   volume      load x reps, for those three trackings.
 --   est. 1RM    Epley, weight x (1 + reps / 30), written as
 --               weight x (30 + reps) / 30 (see `workout_set_values`), over 1 to
 --               15 reps of a `weight_reps` set. Past fifteen the formula stops
@@ -57,8 +60,7 @@ select
   w.started_at,
   w.log_date,
   case
-    when e.tracking in ('weight_reps', 'weighted_reps') and s.weight_kg > 0 and s.reps > 0
-      then s.weight_kg * s.reps
+    when s.reps > 0 and l.load_kg > 0 then l.load_kg * s.reps
   end as volume_kg,
   -- weight x (30 + reps) / 30 rather than weight x (1 + reps / 30): the
   -- second cut reps / 30 to twenty places, so 56.25 x 4 came to 63.7499... and
@@ -75,16 +77,43 @@ select
       or (e.tracking = 'weight_distance' and s.distance_m > 0)
     ),
     false
-  ) as weight_counts
+  ) as weight_counts,
+  -- Appended, so the columns before it keep their places.
+  l.load_kg
 from public.workout_sets s
 join public.workout_exercises e on e.id = s.workout_exercise_id
-join public.workouts w on w.id = e.workout_id;
+join public.workouts w on w.id = e.workout_id
+-- The body weight is looked up only for the two body weight trackings, so a
+-- barbell set never pays for it. It is the weigh-in on or before the workout's
+-- day, or the first one after for a workout logged before any (an import);
+-- every account that finished onboarding has one. With none, a weighted set
+-- falls back to what was added and an assisted one has no load.
+left join lateral (
+  select coalesce(
+    (select x.weight_kg from public.weight_logs x
+      where x.user_id = w.user_id and x.measured_on <= w.log_date
+      order by x.measured_on desc limit 1),
+    (select x.weight_kg from public.weight_logs x
+      where x.user_id = w.user_id and x.measured_on > w.log_date
+      order by x.measured_on limit 1)
+  ) as weight_kg
+  where e.tracking in ('weighted_reps', 'assisted_reps')
+) b on true
+cross join lateral (
+  select case e.tracking
+    when 'weight_reps' then s.weight_kg
+    when 'weighted_reps' then coalesce(b.weight_kg, 0) + coalesce(s.weight_kg, 0)
+    -- `greatest` skips a null, so without a weigh-in it would answer 0.
+    when 'assisted_reps' then
+      case when b.weight_kg is not null then greatest(b.weight_kg - coalesce(s.weight_kg, 0), 0) end
+  end as load_kg
+) l;
 
 grant select on public.workout_set_values to authenticated, service_role;
 
 comment on view public.workout_set_values is
-  'Every saved set with its volume and Epley estimated 1RM, and whether it can '
-  'hold a weight record. No records: those are workout_set_details.';
+  'Every saved set with its load, volume and Epley estimated 1RM, and whether it '
+  'can hold a weight record. No records: those are workout_set_details.';
 
 
 -- ---------------------------------------------------------------------------

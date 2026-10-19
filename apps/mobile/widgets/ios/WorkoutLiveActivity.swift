@@ -24,39 +24,56 @@ struct WorkoutLiveActivity: Widget {
         .widgetURL(WorkoutLink.logger)
     } dynamicIsland: { context in
       DynamicIsland {
+        // The island's corners are a quarter circle as tall as the region,
+        // so everything sits a corner's width in from the edges; at 4 points
+        // the drawing and the counts were clipped by the curve.
         DynamicIslandExpandedRegion(.leading) {
-          HStack(spacing: 8) {
-            WorkoutIcon(size: 30)
-            ElapsedClock(startedAt: context.attributes.startedAt)
-              .font(WidgetFont.display(20))
-              .foregroundStyle(Palette.dark.pandan)
-          }
-          .padding(.leading, 4)
+          ExerciseTile(exerciseId: context.state.exerciseId, size: 40)
+            .padding(.leading, 10)
+            .padding(.top, 4)
         }
         DynamicIslandExpandedRegion(.center) {
-          Text(context.state.name)
-            .font(WidgetFont.label(15))
-            .lineLimit(1)
+          VStack(spacing: 0) {
+            Text(context.state.name)
+              .font(WidgetFont.label(15))
+              .lineLimit(1)
+            Text("\(context.state.done)/\(context.state.total) ✓")
+              .font(WidgetFont.label(12))
+              .foregroundStyle(Palette.dark.muted)
+          }
+          .padding(.top, 4)
         }
         DynamicIslandExpandedRegion(.trailing) {
-          VStack(alignment: .trailing, spacing: 0) {
-            Text("\(context.state.done)/\(context.state.total)")
-              .font(WidgetFont.display(18))
-              .monospacedDigit()
-            Image(systemName: "checkmark.circle.fill")
-              .font(.system(size: 13, weight: .bold))
-              .foregroundStyle(Palette.dark.pandan)
-          }
-          .padding(.trailing, 4)
+          ElapsedClock(startedAt: context.attributes.startedAt)
+            .font(WidgetFont.display(20))
+            .foregroundStyle(Palette.dark.pandan)
+            .multilineTextAlignment(.trailing)
+            .frame(maxWidth: 80, alignment: .trailing)
+            .padding(.trailing, 10)
+            .padding(.top, 4)
         }
+        // One row: the island stops growing well short of the lock screen's
+        // height, and the next set over the rest pushed the rest off its foot.
+        // During a rest the rest is what is looked at.
         DynamicIslandExpandedRegion(.bottom) {
-          VStack(alignment: .leading, spacing: 6) {
-            NextSetAndRest(context: context, palette: .dark)
+          Group {
+            if let ends = context.state.restEndsAt, ends > Date() {
+              RestLine(
+                ends: ends, total: context.state.restTotalS,
+                workoutId: context.attributes.workoutId, labels: context.state.labels,
+                palette: .dark)
+            } else {
+              NextSetLine(
+                state: context.state, workoutId: context.attributes.workoutId, palette: .dark)
+            }
           }
-          .padding(.horizontal, 4)
+          .padding(.horizontal, 10)
+          .padding(.top, 6)
+          .padding(.bottom, 4)
         }
       } compactLeading: {
-        WorkoutIcon(size: 20)
+        ExerciseTile(exerciseId: context.state.exerciseId, size: 24, round: true)
+          .padding(.leading, 2)
       } compactTrailing: {
         CompactClock(state: context.state, startedAt: context.attributes.startedAt)
       } minimal: {
@@ -70,7 +87,7 @@ struct WorkoutLiveActivity: Widget {
             .foregroundStyle(Palette.dark.kaya)
             .frame(width: 36)
         } else {
-          WorkoutIcon(size: 18)
+          ExerciseTile(exerciseId: context.state.exerciseId, size: 22, round: true)
         }
       }
       .widgetURL(WorkoutLink.logger)
@@ -87,6 +104,12 @@ private enum WorkoutLink {
   }
 }
 
+/**
+ The lock screen card: the exercise's drawing, the workout and its clock, a
+ hairline, the next set with its tick, and the rest as a band of its own
+ while one runs. The system cuts a lock screen activity at 160 points, so
+ the rows are as tall as their type and no taller.
+ */
 private struct WorkoutLockScreen: View {
   let context: ActivityViewContext<WorkoutActivityAttributes>
   @Environment(\.colorScheme) private var colorScheme
@@ -94,44 +117,42 @@ private struct WorkoutLockScreen: View {
   var body: some View {
     let palette = colorScheme == .dark ? Palette.dark : Palette.light
     VStack(alignment: .leading, spacing: 10) {
-      HStack(spacing: 10) {
-        WorkoutIcon(size: 34)
-        VStack(alignment: .leading, spacing: 1) {
-          Text(context.state.name)
-            .font(WidgetFont.display(19))
-            .foregroundStyle(palette.heading)
-            .lineLimit(1)
-          Text("\(context.state.done)/\(context.state.total) ✓")
-            .font(WidgetFont.label(13))
-            .foregroundStyle(palette.muted)
+      HStack(alignment: .top, spacing: 12) {
+        ExerciseTile(exerciseId: context.state.exerciseId, size: 52)
+        VStack(alignment: .leading, spacing: 6) {
+          HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: -2) {
+              Text(context.state.name)
+                .font(WidgetFont.display(18))
+                .foregroundStyle(palette.heading)
+                .lineLimit(1)
+              Text("\(context.state.done)/\(context.state.total) ✓")
+                .font(WidgetFont.label(13))
+                .foregroundStyle(palette.muted)
+            }
+            Spacer(minLength: 6)
+            ElapsedClock(startedAt: context.attributes.startedAt)
+              .font(WidgetFont.display(24))
+              .multilineTextAlignment(.trailing)
+              .foregroundStyle(palette.pandanInk)
+              .frame(maxWidth: 104, alignment: .trailing)
+          }
+          Rectangle()
+            .fill(palette.line)
+            .frame(height: 1)
+          NextSetLine(state: context.state, workoutId: context.attributes.workoutId, palette: palette)
         }
-        Spacer(minLength: 8)
-        ElapsedClock(startedAt: context.attributes.startedAt)
-          .font(WidgetFont.display(26))
-          .multilineTextAlignment(.trailing)
-          .foregroundStyle(palette.pandanInk)
-          .frame(maxWidth: 110, alignment: .trailing)
       }
-      NextSetAndRest(context: context, palette: palette)
+      if let ends = context.state.restEndsAt, ends > Date() {
+        RestLine(
+          ends: ends, total: context.state.restTotalS, workoutId: context.attributes.workoutId,
+          labels: context.state.labels, palette: palette)
+      }
     }
-    .padding(16)
+    .padding(.horizontal, 16)
+    .padding(.vertical, 14)
     .activityBackgroundTint(palette.surface)
     .activitySystemActionForegroundColor(palette.heading)
-  }
-}
-
-/// The next set and, while one runs, the rest: two rows of whatever stack holds them.
-private struct NextSetAndRest: View {
-  let context: ActivityViewContext<WorkoutActivityAttributes>
-  let palette: Palette
-
-  var body: some View {
-    NextSetLine(state: context.state, workoutId: context.attributes.workoutId, palette: palette)
-    if let ends = context.state.restEndsAt, ends > Date() {
-      RestLine(
-        ends: ends, total: context.state.restTotalS, workoutId: context.attributes.workoutId,
-        labels: context.state.labels, palette: palette)
-    }
   }
 }
 
@@ -288,11 +309,33 @@ private struct ElapsedClock: View {
   }
 }
 
-private struct WorkoutIcon: View {
+/**
+ The exercise being done, in its own drawing on a light tile, as the logger
+ and the watch show it. The extension carries small copies of the drawings
+ (`withWidgets.js`); a custom exercise has none, and an activity from before
+ the drawings came gives no id, so both fall back to the dumbbell.
+ */
+private struct ExerciseTile: View {
+  let exerciseId: String?
   let size: CGFloat
+  var round = false
 
   var body: some View {
-    WidgetIcon(name: "wg-dumbbell", fallback: "dumbbell.fill", size: size)
+    let shape = RoundedRectangle(cornerRadius: round ? size / 2 : size * 0.28, style: .continuous)
+    if let exerciseId, let image = UIImage(named: "exercise-\(exerciseId)") {
+      Image(uiImage: image)
+        .resizable()
+        .scaledToFit()
+        .padding(size * (round ? 0.1 : 0.08))
+        .frame(width: size, height: size)
+        .background(shape.fill(Palette.light.canvas))
+        .clipShape(shape)
+        .accessibilityHidden(true)
+    } else {
+      WidgetIcon(name: "wg-dumbbell", fallback: "dumbbell.fill", size: size * 0.8)
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
   }
 }
 

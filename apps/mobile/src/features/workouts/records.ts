@@ -21,6 +21,8 @@ export type RecordKind = WorkoutEntry['sets'][number]['records'][number]
 export function recordSets(
   cards: LiveExercise | readonly LiveExercise[],
   bests: ExerciseBests | undefined,
+  /** The latest weigh-in, for a body weight movement's volume. */
+  bodyKg?: number | null,
 ): Map<string, RecordKind[]> {
   const out = new Map<string, RecordKind[]>()
   const all: readonly LiveExercise[] = Array.isArray(cards) ? cards : [cards as LiveExercise]
@@ -78,8 +80,8 @@ export function recordSets(
       mark(strongest.id, 'e1rm')
     }
   }
-  if (tracking === 'weight_reps' || tracking === 'weighted_reps') {
-    const biggest = best((set) => setVolume(set, tracking))
+  if (tracking === 'weight_reps' || tracking === 'weighted_reps' || tracking === 'assisted_reps') {
+    const biggest = best((set) => setVolume(set, tracking, bodyKg))
     if (biggest && bests.bestSetVolumeKg !== null && biggest.value > bests.bestSetVolumeKg) {
       mark(biggest.id, 'volume')
     }
