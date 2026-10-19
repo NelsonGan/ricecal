@@ -10,6 +10,7 @@ import {
   retryQueuedWorkout,
   summaryFromDocument,
   today,
+  useCurrentWeight,
   useOutbox,
   useRoutines,
   useSession,
@@ -61,6 +62,7 @@ export default function WorkoutsScreen() {
   const routines = useRoutines()
   const workouts = useWorkouts()
   const outbox = useOutbox(userId)
+  const bodyKg = useCurrentWeight()
   const starter = useWorkoutStarter()
   const routineGate = useRoutineGate()
   // The month instead of the tab, as Today's toggle swaps its day for one, and
@@ -96,9 +98,11 @@ export default function WorkoutsScreen() {
   const history = useMemo(() => {
     const saved = workouts.data?.pages.flat() ?? []
     const savedIds = new Set(saved.map((workout) => workout.id))
-    const pending = outbox.filter((document) => !savedIds.has(document.id)).map(summaryFromDocument)
+    const pending = outbox
+      .filter((document) => !savedIds.has(document.id))
+      .map((document) => summaryFromDocument(document, bodyKg))
     return [...pending, ...saved]
-  }, [workouts.data, outbox])
+  }, [workouts.data, outbox, bodyKg])
 
   return (
     <Screen>
@@ -308,6 +312,7 @@ function CalendarView({
   onOpen: (workout: WorkoutSummary) => void
 }) {
   const { t } = useTranslation(['workouts'])
+  const bodyKg = useCurrentWeight()
   // With records, so a card here carries the same PR badge it has in History.
   const saved = useWorkoutsOn(day, { records: true })
   // And the day's workouts still on the phone, as History lists them, or one
@@ -317,9 +322,9 @@ function CalendarView({
     const ids = new Set(rows.map((workout) => workout.id))
     const pending = outbox
       .filter((document) => document.log_date === day && !ids.has(document.id))
-      .map(summaryFromDocument)
+      .map((document) => summaryFromDocument(document, bodyKg))
     return [...pending, ...rows]
-  }, [saved.data, outbox, day])
+  }, [saved.data, outbox, day, bodyKg])
 
   return (
     <>

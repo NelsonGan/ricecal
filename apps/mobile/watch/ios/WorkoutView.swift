@@ -37,21 +37,25 @@ struct WorkoutView: View {
   }
 }
 
-/// The heart rate the session is reading, when it is reading one.
+/// The heart rate the session is reading, when it is reading one. Checked on
+/// a clock of its own, so a reading that stops coming goes after fifteen
+/// seconds even if nothing else is sent.
 struct HeartBadge: View {
   @EnvironmentObject private var store: WatchStore
 
   var body: some View {
-    if let bpm = store.heartRate {
-      HStack(spacing: 2) {
-        Image(systemName: "heart.fill")
-          .font(.system(size: 10))
-        Text("\(bpm)")
-          .font(.system(.footnote, design: .rounded).monospacedDigit().weight(.semibold))
+    TimelineView(.periodic(from: .now, by: 5)) { context in
+      if let bpm = store.liveHeartRate(at: context.date) {
+        HStack(spacing: 2) {
+          Image(systemName: "heart.fill")
+            .font(.system(size: 10))
+          Text("\(bpm)")
+            .font(.system(.footnote, design: .rounded).monospacedDigit().weight(.semibold))
+        }
+        .foregroundStyle(Palette.hibiscus)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(store.label("heartRate")) \(bpm) \(store.label("bpm"))")
       }
-      .foregroundStyle(Palette.hibiscus)
-      .accessibilityElement(children: .ignore)
-      .accessibilityLabel("\(store.label("heartRate")) \(bpm) \(store.label("bpm"))")
     }
   }
 }
@@ -70,17 +74,27 @@ struct SetPage: View {
   let workout: WatchWorkout
 
   var body: some View {
-    if let rest = workout.rest {
-      TimelineView(.periodic(from: .now, by: 1)) { context in
-        if rest.endsAt > context.date.timeIntervalSince1970 * 1000 {
-          RestView(rest: rest, workout: workout)
-        } else {
-          setOrDone
+    Group {
+      if let rest = workout.rest {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+          if rest.endsAt > context.date.timeIntervalSince1970 * 1000 {
+            RestView(rest: rest, workout: workout)
+          } else {
+            setOrDone
+          }
         }
+      } else {
+        setOrDone
       }
-    } else {
-      setOrDone
     }
+    .overlay {
+      if store.restDoneAt != nil {
+        RestDoneCard(next: WatchStore.next(in: workout)?.exercise.name)
+          .transition(.opacity.combined(with: .scale(scale: 0.9)))
+          .onTapGesture { withAnimation { store.restDoneAt = nil } }
+      }
+    }
+    .animation(.spring(duration: 0.3, bounce: 0.3), value: store.restDoneAt)
   }
 
   @ViewBuilder private var setOrDone: some View {
@@ -251,7 +265,11 @@ private struct SetEditor: View {
     }
   }
 
-  private func write(_ value: Double, to field: Field) {
+  private func write(_ raw: Double, to field: Field) {
+    // The crown reports every fraction of a turn, not only its detents, so
+    // the figure ran through 41.37 and 41.62 on its way to 42. Each turn
+    // lands on a step, which is also what the faded neighbours promise.
+    let value = snapped(raw, field)
     switch field {
     case .weight:
       let kg = store.unit == "lb" ? value / Format.lbPerKg : value
@@ -270,6 +288,23 @@ private struct SetEditor: View {
     case .reps: return 100
     case .duration: return 3 * 3600
     case .distance: return 100
+    }
+  }
+
+  private func snapped(_ value: Double, _ field: Field) -> Double {
+    let step = step(field)
+    return min(range(field), max(0, (value / step).rounded() * step))
+  }
+
+  /// The figure a step either side of the one shown, for the wheel's faded rows.
+  private func neighbour(_ field: Field, _ direction: Double) -> String? {
+    guard let shown = display(field) else { return nil }
+    let value = snapped(shown, field) + direction * step(field)
+    guard value >= 0, value <= range(field) else { return nil }
+    switch field {
+    case .weight, .distance: return Format.trim(value)
+    case .reps: return String(Int(value.rounded()))
+    case .duration: return Format.clock(value)
     }
   }
 
@@ -293,7 +328,7 @@ private struct SetEditor: View {
 
   private func unitLabel(_ field: Field) -> String {
     switch field {
-    case .weight: return store.label("weightUnit")
+    case .weight: return Format.weightSign(exercise.tracking) + store.label("weightUnit")
     case .reps: return store.label("reps")
     case .duration: return store.label("time")
     case .distance: return store.label("distanceUnit")
@@ -309,29 +344,114 @@ private struct SetEditor: View {
     }
   }
 
+  /**
+   A figure in a box. The one the crown is turning is a small wheel: the
+   figure, and a step either side of it faded and cut by the box's edge, so a
+   turn plainly moves to the next value rather than somewhere unknown.
+   */
   private func fieldBox(_ field: Field, selected: Bool) -> some View {
-    VStack(spacing: 0) {
-      Text(text(field))
-        .font(.system(size: 30, weight: .semibold, design: .rounded).monospacedDigit())
-        .lineLimit(1)
-        .minimumScaleFactor(0.5)
-      Text(unitLabel(field))
-        .font(.system(size: 11, weight: .medium, design: .rounded))
-        .foregroundStyle(Palette.muted)
-        .lineLimit(1)
+    ZStack {
+      if selected {
+        if let before = neighbour(field, -1) {
+          neighbourText(before).offset(y: -Self.wheelStep)
+        }
+        HStack(alignment: .firstTextBaseline, spacing: 3) {
+          figure(field)
+          Text(unitLabel(field))
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .foregroundStyle(Palette.muted)
+            .lineLimit(1)
+            .fixedSize()
+        }
+        .padding(.horizontal, 6)
+        if let after = neighbour(field, 1) {
+          neighbourText(after).offset(y: Self.wheelStep)
+        }
+      } else {
+        VStack(spacing: 0) {
+          figure(field)
+          Text(unitLabel(field))
+            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .foregroundStyle(Palette.muted)
+            .lineLimit(1)
+        }
+        .padding(.horizontal, 6)
+      }
     }
     .frame(maxWidth: .infinity)
-    .padding(.vertical, 6)
+    .frame(height: Self.boxHeight)
     .background(RoundedRectangle(cornerRadius: 12).fill(Palette.surface))
+    .clipShape(RoundedRectangle(cornerRadius: 12))
     .overlay(
       RoundedRectangle(cornerRadius: 12)
         .strokeBorder(selected ? Palette.pandan : Palette.line, lineWidth: selected ? 2 : 1)
     )
     .opacity(set.done ? 0.7 : 1)
+    .animation(.snappy(duration: 0.18), value: display(field))
+  }
+
+  /// Tall enough for the figure and half of each neighbour; the rest is cut off.
+  private static let boxHeight: CGFloat = 64
+  private static let wheelStep: CGFloat = 25
+
+  private func figure(_ field: Field) -> some View {
+    Text(text(field))
+      .font(.system(size: 30, weight: .semibold, design: .rounded).monospacedDigit())
+      .lineLimit(1)
+      .minimumScaleFactor(0.5)
+      .contentTransition(.numericText(value: display(field) ?? 0))
+  }
+
+  private func neighbourText(_ value: String) -> some View {
+    Text(value)
+      .font(.system(size: 17, weight: .semibold, design: .rounded).monospacedDigit())
+      .foregroundStyle(.white.opacity(0.32))
+      .lineLimit(1)
+      .minimumScaleFactor(0.6)
+      .accessibilityHidden(true)
   }
 }
 
 // MARK: The rest
+
+/// "Rest complete", over the set page for a moment once a rest runs out.
+private struct RestDoneCard: View {
+  @EnvironmentObject private var store: WatchStore
+  let next: String?
+  @State private var ring = false
+
+  var body: some View {
+    VStack(spacing: 6) {
+      ZStack {
+        Circle()
+          .stroke(Palette.pandan.opacity(ring ? 0 : 0.6), lineWidth: 2)
+          .scaleEffect(ring ? 1.5 : 0.9)
+        Circle().fill(Palette.pandan)
+        Image(systemName: "checkmark")
+          .font(.system(size: 24, weight: .heavy))
+          .foregroundStyle(Palette.onPandan)
+      }
+      .frame(width: 52, height: 52)
+      Text(store.label("restDone"))
+        .font(.system(.headline, design: .rounded))
+        .multilineTextAlignment(.center)
+      if let next {
+        Text(next)
+          .font(.system(.footnote, design: .rounded))
+          .foregroundStyle(Palette.muted)
+          .lineLimit(2)
+          .multilineTextAlignment(.center)
+      }
+    }
+    .padding(14)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color.black.opacity(0.92))
+    .onAppear {
+      withAnimation(.easeOut(duration: 0.7)) { ring = true }
+    }
+    .accessibilityElement(children: .combine)
+  }
+}
 
 private struct RestView: View {
   @EnvironmentObject private var store: WatchStore
@@ -355,7 +475,10 @@ private struct RestView: View {
               .rotationEffect(.degrees(-90))
           }
           VStack(spacing: 0) {
-            Text(timerInterval: Date()...end, countsDown: true)
+            // Never a backwards range, which traps: the page redraws as the
+            // rest ends ("Rest complete" goes up then), and a clock read a
+            // moment after `end` made `now...end` run backwards.
+            Text(timerInterval: min(Date(), end)...end, countsDown: true)
               .font(.system(size: 24, weight: .semibold, design: .rounded).monospacedDigit())
               .multilineTextAlignment(.center)
               .minimumScaleFactor(0.6)
@@ -511,7 +634,8 @@ struct ExerciseSetsView: View {
   }
 
   private func summary(_ set: WatchSet) -> String {
-    let weight = "\(Format.weight(set.weightKg, unit: store.unit)) \(store.label("weightUnit"))"
+    let weight =
+      "\(Format.weightSign(exercise.tracking))\(Format.weight(set.weightKg, unit: store.unit)) \(store.label("weightUnit"))"
     let reps = set.reps.map { String(Int($0)) } ?? "—"
     switch exercise.tracking {
     case "reps": return "× \(reps)"
@@ -521,6 +645,9 @@ struct ExerciseSetsView: View {
         "\(Format.distance(set.distanceM, unit: store.distanceUnit)) \(store.label("distanceUnit")) · \(set.durationS.map(Format.clock) ?? "—")"
     case "weight_distance":
       return "\(weight) · \(Format.distance(set.distanceM, unit: store.distanceUnit)) \(store.label("distanceUnit"))"
+    case "weighted_reps", "assisted_reps":
+      // A pull-up with nothing added or taken off is its reps alone, as on the phone.
+      return (set.weightKg ?? 0) > 0 ? "\(weight) × \(reps)" : "× \(reps)"
     default: return "\(weight) × \(reps)"
     }
   }
@@ -550,7 +677,9 @@ struct ControlsPage: View {
         Grid(horizontalSpacing: 8, verticalSpacing: 8) {
           GridRow {
             Metric(label: store.label("sets"), value: "\(done)")
-            Metric(label: store.label("heartRate"), value: store.heartRate.map(String.init) ?? "—")
+            Metric(
+              label: store.label("heartRate"),
+              value: store.liveHeartRate(at: Date()).map(String.init) ?? "—")
           }
           GridRow {
             Metric(

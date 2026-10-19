@@ -1947,6 +1947,8 @@ export const id = {
       skip: 'Lewati',
       over: 'Istirahat selesai',
       overBody: 'Saatnya set {{name}} berikutnya.',
+      complete: 'Istirahat selesai',
+      next: 'Berikutnya: {{name}}',
       min: 'mnt',
       sec: 'dtk',
       minutes: 'Menit',

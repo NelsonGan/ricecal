@@ -1967,6 +1967,8 @@ export const ms = {
       skip: 'Langkau',
       over: 'Rehat tamat',
       overBody: 'Masa untuk set {{name}} seterusnya.',
+      complete: 'Rehat selesai',
+      next: 'Seterusnya: {{name}}',
       min: 'min',
       sec: 's',
       minutes: 'Minit',

@@ -1938,6 +1938,8 @@ export const vi = {
       skip: 'Bỏ qua',
       over: 'Hết giờ nghỉ',
       overBody: 'Đến set tiếp theo của {{name}}.',
+      complete: 'Hết giờ nghỉ',
+      next: 'Tiếp theo: {{name}}',
       min: 'phút',
       sec: 'giây',
       minutes: 'Phút',

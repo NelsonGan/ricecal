@@ -1920,6 +1920,8 @@ export const hi = {
       skip: 'छोड़ें',
       over: 'आराम ख़त्म',
       overBody: '{{name}} के अगले सेट का समय।',
+      complete: 'आराम पूरा',
+      next: 'अगला: {{name}}',
       min: 'मिनट',
       sec: 'सेकंड',
       minutes: 'मिनट',

@@ -1916,6 +1916,8 @@ export const th = {
       skip: 'ข้าม',
       over: 'หมดเวลาพัก',
       overBody: 'ได้เวลาเซ็ตถัดไปของ {{name}}',
+      complete: 'พักเสร็จแล้ว',
+      next: 'ถัดไป: {{name}}',
       min: 'นาที',
       sec: 'วินาที',
       minutes: 'นาที',

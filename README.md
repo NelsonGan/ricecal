@@ -3838,9 +3838,10 @@ any other.
   Pulldown" is what the machine is called in every gym the app is used in. The
   words around the names (muscles, equipment, categories) are translated.
 - **The tracking decides the columns**: weight and reps, reps, added weight,
-  assistance, time, distance and time, weight and distance. Volume counts only
-  the two where the weight is load; an assisted pull-up's weight is the machine
-  helping, and multiplying it by reps would make the easiest set the biggest.
+  assistance, time, distance and time, weight and distance. Volume counts the
+  three where something is lifted, at what was lifted (the set's load, below):
+  an assisted pull-up's figure is the machine helping, and multiplying that by
+  reps would make the easiest set the biggest.
 
 **The drawings** are 320 px WebPs in `apps/mobile/assets/exercises/`, one per
 id, registered in the generated `exerciseArt.generated.ts`. A test fails when an
@@ -4026,6 +4027,30 @@ the same flag on every one of 5,000 sets as before.
   years of months is summed into years on the phone (`periodsFor`). The ranges
   past three months are Pro, gated in the client alone like the Trends ranges:
   they are reads of the user's own data.
+- **A body weight movement lifts the body.** A set's load (`load_kg` in
+  `workout_set_values`) is its weight for `weight_reps`, the body weight plus
+  what was added for `weighted_reps`, and the body weight less the help for
+  `assisted_reps`; volume is load times reps. An assisted pull-up used to count
+  nothing, and a weighted one only the plate on the belt, so a 70 kg lifter's
+  pull-ups weighed less than a 20 kg curl. The body weight is the weigh-in on or
+  before the workout's day, or the first after it for a workout logged before
+  any (an import), looked up only for those two trackings. Without one a
+  weighted set counts what was added and an assisted one has no load. The
+  typed figure (`weight_kg`) is unchanged, and so is the weight record, which
+  stays the plate on the belt: the body is in the volume, not in the heaviest.
+  The phone does the same sum with the latest weigh-in (`setLoad` in `model.ts`)
+  for the live total and the live volume record. Being a lookup rather than a
+  stored figure, it reprices the whole history the same way, so the first
+  workout after the change is not a volume record over every one before it;
+  the volume records already standing on these movements are scored again with
+  the body in them, and where the body weight moved, a few can land on another
+  workout. On a
+  synthetic three-year history (15,000 sets, three fifths of them pull-ups and
+  dips) the history page went from about 120 to 145 ms. A weigh-in, typed or
+  deleted, refetches the workout figures, since it can reprice a past day. A
+  workout post's volume on the feed now carries the author's body weight in
+  it; the feed shows no reps or sets' figures beside it, so the weight cannot
+  be worked back out of it.
 - **The muscle split** spreads working sets over muscles by each exercise's
   split. The counting is in the database (`workout_exercise_totals`); the split
   is in the app, with the catalogue it belongs to. It is shown as each body
@@ -4185,6 +4210,20 @@ opens the logger (by way of the Workouts tab, below), not through
   is compiled into both the module pod and the extension, because ActivityKit
   matches an activity to its view by the attributes type.
   `NSSupportsLiveActivities` is set by `plugins/withWidgets.js`.
+- **It shows the exercise being done, in its own drawing**, on a light tile at
+  the card's leading edge and in the island, rather than the app's dumbbell, which
+  read as an emoji standing in for the workout. The extension cannot read the
+  app's WebPs, so `withWidgets.js` makes 96 px PNGs of them into
+  `Exercises.xcassets` at prebuild (`plugins/exerciseArt.js`, which the watch's
+  80 px ones come from too), and adds the catalog to the target by name, so a
+  project made before it gets it without `--clean`. The content state names the
+  exercise (`exerciseId`); a custom exercise has no drawing and keeps the
+  dumbbell. A lock screen activity is cut at 160 points, so the card is one
+  row of drawing, name and clock, a hairline, the next set with its tick, and
+  the rest band only while one runs. The expanded island stops growing sooner,
+  so its lower row is the next set or, during a rest, the rest alone: both
+  stacked pushed the rest off its foot. Its regions sit 10 points in from the
+  edges, where at 4 the curve clipped them.
 - JS calls `startWorkoutActivity`, which updates the activity when one is
   already up, and `endWorkoutActivity` from `useWorkoutEffects`, mounted in the
   tabs layout and driven by the stored document, so it is right after the app
@@ -4290,7 +4329,18 @@ empty workout is started on the phone, where the exercise library is.
   for a custom exercise. The phone's 320 px WebPs are 4.9 MB, too much for a
   watch, so `withWatch.js` makes 80 px PNGs of them with `sips` into the watch's
   asset catalog at prebuild (about 2 MB), as `exercise-<id>`, and skips any whose
-  source has not changed.
+  source has not changed (`plugins/exerciseArt.js`).
+- **The crown turns a figure a step at a time, and shows the steps.** The box
+  being turned is a small wheel: the figure, with the step before it faded above
+  and the step after faded below, cut by the box's edge. The crown reports every
+  fraction of a turn and not only its detents, so the figure used to run through
+  41.37 and 41.62 on its way to 42; each value is now snapped to its step (half
+  a kilogram or a pound, a rep, five seconds, fifty metres). An assisted or
+  weighted set's unit reads `−kg` or `+kg`, as the phone's column does, and the
+  exercise's list writes its sets the same way.
+- **A rest that runs out says so** for a moment over the set page ("Rest
+  complete", a tick and the next exercise), beside the tap on the wrist, and
+  goes by itself.
 - **The set page's last row is ‹ ✓ ›.** The arrows step to the previous and next
   set in the order the workout is done (a superset's rounds included), and the
   tick completes the set on screen; on a completed set it is an outline that
@@ -4397,6 +4447,27 @@ the watch measured (`watch.kcal`) instead of replacing it with an estimate.
   from earlier put half an hour of another workout's pulse at the head of a
   two-minute one. Nothing starts a new session while recovery is still being
   asked about, since HealthKit allows one and the second start lost the first.
+- **A recovered session is given its data source again.** HealthKit hands back
+  the session and its builder but not the builder's live data source, and
+  Apple's own recovery code sets it again. Without it no reading arrived for
+  the rest of the workout: the heart rate vanished halfway through whenever
+  watchOS relaunched the app mid-session, from the wrist and from the phone's
+  logger, and the energy stopped counting. The simulator never showed it,
+  since its made-up pulse does not come through the builder.
+- **A session HealthKit ends under the app is saved as far as it got.**
+  Another workout app taking the sensor ends the session without this app's
+  say; held on to as if nothing had happened, it read as recording and
+  measured nothing. Now the watch finishes it there and then, as a finish
+  would: its Health copy up to that moment, and the trace to the phone. It is
+  not started again for that workout (`closedEarly`): a second session would
+  be a second Health workout over the same hour, and its trace would replace
+  the first. Thrown away instead, nobody saved the workout to Health at all,
+  since the phone, told the watch was recording, writes no copy of its own. A
+  `didFailWithError` alone is only logged; it is the `.ended` state that says
+  the session is over.
+- **The reading on the wrist goes once it is fifteen seconds old**, as the
+  phone's does, on a clock of its own (`liveHeartRate`), so a sensor that
+  falls silent does not leave its last figure looking live.
 - **Health access is asked for through the phone.** A watch app that is not
   independent of its iPhone app can have its request shown on the iPhone, and
   iOS then asks the phone app's delegate to hand it on
@@ -4494,6 +4565,14 @@ The rest is an end time in the document. `useWorkoutEffects` books a local
 notification for that moment, because a suspended app cannot post one when the
 time comes, and with the app open fires a haptic and clears the rest instead.
 Adjusting or skipping rebooks or cancels it.
+
+**With the logger in front, a rest that runs out shows "Rest complete"** for a
+moment (`RestComplete.tsx`): a tick, the words and the exercise next, over the
+sets, closing by itself after a second and a half with a hairline that runs
+down to say so. It takes no touches, so a thumb already on its way to the next
+tick lands on the set. `useWorkoutEffects` announces it at the haptic, so it
+appears exactly when the buzz does: not for a rest that ended in the background,
+and not with another screen over the logger.
 
 **On Android the rest notice needs two things iOS does by itself.** The sound
 belongs to the channel rather than to the notification, so "Rest is over" has a
@@ -4640,7 +4719,14 @@ Strong collapse them too. The rows are a fixed height so the arithmetic of
 where each lands runs on the UI thread, and the order is applied once, on
 Done. **A set swipes left to delete.** `SwipeRow`'s tap recogniser only runs
 while a row is open or has its own tap, because over a row of fields and
-buttons it took their touches.
+buttons it took their touches. A short swipe uncovers Delete as before; one
+carried past 55% of the row, and never less than the button and 64 points more
+(`fullSwipe`), deletes without the second tap, with a
+tick under the thumb where it commits. The red follows the finger across, the
+row slides out and then folds its height away before the set leaves the
+document, so the rows under it close up rather than jump. There is no Undo:
+a set is a few figures typed again in seconds. Today's meals keep the two
+steps, since a meal deleted by accident is not.
 
 **RPE is in the set's menu, not a column.** Most sets are never rated, and a
 column would take width from the weight and reps on every one. Tapping the set
@@ -4870,6 +4956,16 @@ only when it is about to post. If pages slow down past that, store each
 workout's record count at save rather than narrowing the view, and rescore the
 later workouts of the same exercises whenever an earlier one is saved, which an
 import always is.
+
+**The body weight load** (`20261019113048_workout_body_weight_load.sql`)
+replaces `workout_set_values` and `workout_set_details` in place, appending
+`load_kg`, so nothing that reads them is dropped and no column an older app
+reads moves. An older app reads the new volume like the new one does; its own
+live total, before the save, still counts an assisted set as nothing and a
+weighted one as the plate alone, and the saved workout then shows the bigger
+figure. `db diff` wanted to drop and recreate both views, `workout_summaries`
+and `workout_history`, whose grants it does not restate; the migration was cut
+back to the two replaces, and diffing again reports nothing.
 
 Additive end to end. One migration (`20261016025548_workouts.sql`) adds the
 workout enums, tables, views and functions, three `user_settings` columns with

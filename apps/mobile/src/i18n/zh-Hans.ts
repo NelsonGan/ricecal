@@ -1916,6 +1916,8 @@ export const zhHans = {
       skip: '跳过',
       over: '休息结束',
       overBody: '该做 {{name}} 的下一组了。',
+      complete: '休息结束',
+      next: '下一个：{{name}}',
       min: '分钟',
       sec: '秒',
       minutes: '分钟',
