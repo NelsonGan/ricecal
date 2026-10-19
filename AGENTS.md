@@ -143,15 +143,17 @@ every agent working in this checkout can read and no commit can carry.
 | project ref, anon key, catalogue URL | `apps/mobile/.env.local` |
 | test account addresses, passwords and uids | `.secrets/agent-notes.md` |
 | project and org refs, store and RevenueCat identifiers | `.secrets/agent-notes.md` |
-| `OPENROUTER_API_KEY` | the function secrets, and it cannot be read back |
+| `OPENROUTER_API_KEY` (production) | the function secrets, and it cannot be read back |
+| `OPENROUTER_API_KEY` (local testing, a separate key on the same OpenRouter account) | `apps/supabase/functions/.env` |
 
 **The secrets endpoint returns digests, not secrets.**
 `GET /v1/projects/<ref>/secrets` puts a 64-character hex hash in `value`. A
 script that reads that field and sends it as a bearer token gets a 401 from
 OpenRouter rather than an obvious "that is a hash", which is an expensive
-twenty minutes. It is why `pnpm eval:prompts` cannot run on a machine that has
-never held the key, and why a prompt change is graded by deploying and driving
-the function that does hold it.
+twenty minutes. That is why local testing uses its own key, kept in
+`apps/supabase/functions/.env`, rather than the production one. The same
+file sets `MOCK_AI=true` so the local stack spends nothing; override it for a
+script that should reach the model (`MOCK_AI=false deno run --env-file=…`).
 
 ## Which stack the app is pointing at
 
