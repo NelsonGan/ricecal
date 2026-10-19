@@ -162,32 +162,34 @@ export default function ActiveWorkoutScreen() {
     >
       {prefs.keepAwake ? <KeepAwake /> : null}
 
-      {/* The clock is what ticks, so it leads. The training figures sit beside
-          it, and what the body did (a watch's heart rate, the burn) runs along
-          the foot: five figures in one strip cut every label off. Both halves
-          are equal, so the foot's rule lines up with the one above it. */}
+      {/* One card for the figures: the clock leads because it ticks, the
+          training figures beside it, and what the body did (a watch's heart
+          rate, the burn) in a band along the foot. Five figures in one strip
+          cut every label off; stacked, they took a third of the screen. */}
       <View className="overflow-hidden rounded-card bg-surface">
-        <View className="flex-row px-4 py-4">
-          <View className="justify-center pr-4" style={HALF}>
+        <View className="flex-row px-4 py-3">
+          <View className="pr-4">
             <Elapsed label={t('workouts:logger.duration')} startedAt={workout.startedAt} />
           </View>
-          <View className="justify-center gap-3 border-line border-l pl-4" style={HALF}>
-            {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
+          {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
+            <View className="flex-1 border-line border-l px-3">
               <Stat
                 label={t('workouts:logger.volume')}
                 value={volumeText(t, totals.volumeKg, unit)}
               />
-            ) : null}
+            </View>
+          ) : null}
+          <View className="flex-1 border-line border-l pl-3">
             <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
           </View>
         </View>
-        <View className="flex-row bg-pandan-soft px-4 py-3">
+        <View className="flex-row bg-pandan-soft px-4 py-2.5">
           {pulsing ? (
-            <View className="pr-4" style={HALF}>
+            <View className="pr-3" style={HALF}>
               <WatchPulse workoutId={workout.id} />
             </View>
           ) : null}
-          <View className={pulsing ? 'border-pandan/20 border-l pl-4' : undefined} style={HALF}>
+          <View className={pulsing ? 'border-pandan/20 border-l pl-3' : undefined} style={HALF}>
             <LiveBurn workout={workout} />
           </View>
         </View>
@@ -261,14 +263,14 @@ function Elapsed({ label, startedAt }: { label: string; startedAt: number }) {
   return (
     <View className="gap-0.5">
       <Text variant="overlineSm">{label}</Text>
-      <Text variant="display" numberOfLines={1} adjustsFontSizeToFit style={TABULAR}>
+      <Text variant="displayMd" numberOfLines={1} style={TABULAR}>
         {workoutClock((now - startedAt) / 1000)}
       </Text>
     </View>
   )
 }
 
-/** One of two equal columns, so the rules in the figures card line up. */
+/** One of two equal columns along the foot of the figures card. */
 const HALF = { flex: 1, flexBasis: 0 }
 
 /** Digits that keep their width, so the clock does not shuffle each second. */
