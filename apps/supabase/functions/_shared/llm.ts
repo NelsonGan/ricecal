@@ -218,6 +218,13 @@ export type Interpretation =
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const CALL_TIMEOUT_MS = 25_000
+/**
+ * Shorter for the primary, so a Haiku that hangs leaves the fallback its full
+ * time. Haiku writes about 250 tokens a second: the longest recipe measured
+ * (1,425 tokens) took 6s, and the largest ceiling here (3,000) would take about
+ * 13s. One that has said nothing by 15s is not coming.
+ */
+const PRIMARY_TIMEOUT_MS = 15_000
 
 /**
  * One way to reach a model. Exported with `requestBody` for the prompt eval,
@@ -270,9 +277,12 @@ export function routeFor(model: string, temperature: number): ModelRoute {
  * The model every call asks first: Claude Haiku 5.5, on our Anthropic key.
  * `OPENROUTER_BYOK_MODEL=off` sends every call to the fallback, with no deploy.
  */
-const byokModel = Deno.env.get('OPENROUTER_BYOK_MODEL') ?? 'anthropic/claude-haiku-5.5'
+// Trimmed and case-folded for the switch, and an empty secret counts as off: a
+// secret saved as "" or "OFF" would otherwise name a model that does not exist,
+// and every call would pay a failed request before reaching the fallback.
+const byokModel = (Deno.env.get('OPENROUTER_BYOK_MODEL') ?? 'anthropic/claude-haiku-5.5').trim()
 export const PRIMARY_ROUTE: ModelRoute | null =
-  byokModel === 'off' ? null : routeFor(byokModel, 0.2)
+  !byokModel || byokModel.toLowerCase() === 'off' ? null : routeFor(byokModel, 0.2)
 
 /**
  * What answers when the primary fails: the Qwen vision model that was the only
@@ -296,16 +306,19 @@ let byokBroken = false
  * A photo as a data URL, typed by its first bytes rather than assumed. The app
  * sends JPEG, but storage accepts PNG and WebP too, and Anthropic refuses an
  * image whose declared type is not what it is, where Qwen never minded. Anything
- * unrecognised (HEIC, which Haiku cannot read) stays JPEG and so goes to Qwen.
+ * unrecognised (HEIC, which Haiku cannot read) keeps `declared` and so goes to
+ * Qwen.
  */
-export function photoDataUrl(photoBase64: string): string {
-  const type = photoBase64.startsWith('iVBOR')
-    ? 'image/png'
-    : photoBase64.startsWith('UklGR')
-      ? 'image/webp'
-      : photoBase64.startsWith('R0lGOD')
-        ? 'image/gif'
-        : 'image/jpeg'
+export function photoDataUrl(photoBase64: string, declared = 'image/jpeg'): string {
+  const type = photoBase64.startsWith('/9j/')
+    ? 'image/jpeg'
+    : photoBase64.startsWith('iVBOR')
+      ? 'image/png'
+      : photoBase64.startsWith('UklGR')
+        ? 'image/webp'
+        : photoBase64.startsWith('R0lGOD')
+          ? 'image/gif'
+          : declared
   return `data:${type};base64,${photoBase64}`
 }
 
@@ -358,6 +371,10 @@ export function requestBody(route: ModelRoute, messages: unknown[], maxTokens: n
     //
     // Models with no reasoning mode ignore the field.
     reasoning: { enabled: false },
+    // Asks for `usage` in full: the PostHog cost reads `cost` and
+    // `cost_details`, and the BYOK breaker reads `is_byok`, which only trips on
+    // an explicit false.
+    usage: { include: true },
   }
 }
 
@@ -399,6 +416,7 @@ export async function chatJSON(
   if (!key) throw new Error('OPENROUTER_API_KEY not set')
 
   let attempts = 0
+  let askedPrimary = false
   let lastFailure = ''
   const attempt = async (route: ModelRoute): Promise<unknown> => {
     // Counted before the request, so a call that times out still shows in the
@@ -415,6 +433,7 @@ export async function chatJSON(
       maxTokens,
       temperature: route.temperature,
       attempt: attempts++,
+      isBackupModel: route !== PRIMARY_ROUTE && askedPrimary,
     }
     try {
       return await request(route, generation)
@@ -438,7 +457,7 @@ export async function chatJSON(
   const request = async (route: ModelRoute, generation: Generation): Promise<unknown> => {
     const res = await fetch(OPENROUTER_URL, {
       method: 'POST',
-      signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
+      signal: AbortSignal.timeout(route === PRIMARY_ROUTE ? PRIMARY_TIMEOUT_MS : CALL_TIMEOUT_MS),
       headers: {
         Authorization: `Bearer ${key}`,
         'Content-Type': 'application/json',
@@ -486,6 +505,7 @@ export async function chatJSON(
   }
 
   if (PRIMARY_ROUTE && !byokBroken) {
+    askedPrimary = true
     try {
       return await attempt(PRIMARY_ROUTE)
     } catch {
@@ -1604,10 +1624,12 @@ export const INTERPRET_INSTRUCTION_PROMPT =
   '1. {"action":"none","reason":string}. Use this when the text is not a correction to this food, or ' +
   'it has no calorie consequence: "extra spicy", "more chilli", "no ice", "it was tasty", ' +
   '"remind me to buy milk". Flavour and temperature are not calories. ' +
-  // "Cooking style" stood here, and Haiku took "the egg was boiled not fried"
-  // for one: a boiled egg is a different food from a fried one, oil and all.
-  'A part cooked another way IS a different food ("the egg was boiled not fried", ' +
-  '"grilled not fried"): that is a swap under case 3, never this case.\n\n' +
+  // "Cooking style" stood here, and Haiku took "the egg was fried not boiled"
+  // for one: a fried egg is a different food from a boiled one, oil and all.
+  'A part cooked another way IS a different food ("the chicken was grilled not ' +
+  'fried", "the egg was fried, not boiled"): that is a swap under case 3, never ' +
+  'this case. Only when the Ingredients already list it cooked that way has ' +
+  'nothing changed.\n\n' +
   '2. {"action":"quantity","factor":number}. The amount of the WHOLE entry changed and ' +
   'nothing else did. `factor` multiplies the amount CURRENTLY logged, which is the ' +
   'number the user is looking at.\n' +

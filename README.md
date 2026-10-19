@@ -194,9 +194,10 @@ the row itself as `service_role`. It has to, because a scan also writes
 **Two models, and only the fallback is paid from OpenRouter credits.** Every
 call asks Claude Haiku 5.5 first (`PRIMARY_ROUTE` in `llm.ts`), which runs on
 our own Anthropic key through OpenRouter's BYOK. Anything that goes wrong there
-(an error, a 429, an answer that will not parse) goes once to
-`qwen/qwen3.7-flash`, which OpenRouter bills to credits as before and which
-keeps its one retry. Haiku must never run on credits, and three things hold
+(an error, a 429, an answer that will not parse, or no answer within 15
+seconds) goes once to `qwen/qwen3.7-flash`, which OpenRouter bills to credits
+as before and which keeps its 25 seconds and its one retry. Haiku writes about
+250 tokens a second, so 15 seconds covers the largest ceiling any call asks for. Haiku must never run on credits, and three things hold
 that line:
 
 - Every request for an Anthropic model, on either route, names
@@ -6175,7 +6176,7 @@ scan's vision call, catalogue pick and nutrition estimate read as one trace.
 | `$ai_total_cost_usd`, `$ai_cost_passthrough` | What the call cost us, not re-priced: OpenRouter's charge (`usage.cost`), plus, when our own key paid, what Anthropic bills directly (`usage.cost_details.upstream_inference_cost`), since under BYOK `cost` is only OpenRouter's fee |
 | `byok` | `usage.is_byok`: `true` when our Anthropic key paid. An `anthropic/` event with `false` means OpenRouter credits were spent on it, which the routing forbids |
 | `$ai_latency`, `$ai_http_status`, `$ai_is_error`, `$ai_error`, `finish_reason` | Seconds, status and a short error; a JSON parse failure is recorded as `model answer was not valid JSON` so the answer is never quoted |
-| `feature`, `attempt`, `$ai_max_tokens`, `$ai_temperature` | The edge function, which request this was (0 is the first, Haiku unless it is switched off, then the fallback and its one retry), and the call's settings. Haiku takes no temperature, so its events carry none |
+| `feature`, `attempt`, `is_backup_model`, `$ai_max_tokens`, `$ai_temperature` | The edge function, which request this was (0 is the first, Haiku unless it is switched off, then the fallback and its one retry), whether Qwen is answering because Haiku failed in the same call (`false` when Haiku was never asked), and the call's settings. Haiku takes no temperature, so its events carry none |
 | `$geoip_disable` | Always `true`: the request comes from Supabase's servers, whose location would otherwise overwrite the person's |
 | `distinct_id`, `$session_id`, `$ai_session_id` | The Supabase uuid the app identifies PostHog with, and the app's session from the `X-POSTHOG-SESSION-ID` header the SDK adds to Supabase requests (`addTracingHeaders`). Moderation runs as `ricecal-moderation` and creates no person |
 

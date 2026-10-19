@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from 'jsr:@std/assert@1'
-import { createMeter } from './entitlement.ts'
+import type { Meter } from './entitlement.ts'
 import {
   chatJSON,
   FALLBACK_ROUTE,
@@ -10,16 +10,19 @@ import {
   requestBody,
   routeFor,
 } from './llm.ts'
+import type { Generation } from './posthog.ts'
 
 type Sent = { model: string; provider?: unknown; temperature?: number }
 
 /**
  * Runs `chatJSON` against a stubbed OpenRouter that answers each request with
- * the next response in `answers`, and hands back every body that was sent.
+ * the next response in `answers`, and hands back every body that was sent and
+ * every generation the meter was told about.
  */
 async function withAnswers(answers: Array<() => Response>): Promise<{
   result: unknown
   sent: Sent[]
+  generations: Generation[]
 }> {
   const previousFetch = globalThis.fetch
   const previousKey = Deno.env.get('OPENROUTER_API_KEY')
@@ -31,9 +34,15 @@ async function withAnswers(answers: Array<() => Response>): Promise<{
     if (!next) throw new Error('more requests than answers')
     return Promise.resolve(next())
   }) as typeof fetch
+  const generations: Generation[] = []
+  const meter: Meter = {
+    record() {},
+    spent: () => generations.length,
+    observe: (generation) => void generations.push(generation),
+  }
   try {
-    const result = await chatJSON(createMeter(), 'describe_meal', [{ role: 'user', content: 'x' }])
-    return { result, sent }
+    const result = await chatJSON(meter, 'describe_meal', [{ role: 'user', content: 'x' }])
+    return { result, sent, generations }
   } finally {
     globalThis.fetch = previousFetch
     if (previousKey === undefined) Deno.env.delete('OPENROUTER_API_KEY')
@@ -68,8 +77,12 @@ for (const [label, first] of [
   ['an empty', answer('')],
 ] as const) {
   Deno.test(`${label} primary goes to the fallback, which is sent no provider lock`, async () => {
-    const { result, sent } = await withAnswers([first, answer('{"ok":2}')])
+    const { result, sent, generations } = await withAnswers([first, answer('{"ok":2}')])
     assertEquals(result, { ok: 2 })
+    assertEquals(
+      generations.map((g) => g.isBackupModel),
+      [false, true],
+    )
     assertEquals(
       sent.map((body) => body.model),
       [PRIMARY_ROUTE?.model, FALLBACK_ROUTE.model],
@@ -80,8 +93,21 @@ for (const [label, first] of [
 }
 
 Deno.test('the fallback keeps its one retry for a transient failure', async () => {
-  const { result, sent } = await withAnswers([failure(500), failure(503), answer('{"ok":3}')])
+  const { result, sent, generations } = await withAnswers([
+    failure(500),
+    failure(503),
+    answer('{"ok":3}'),
+  ])
   assertEquals(result, { ok: 3 })
+  // A fallback and its retry are both the backup, told apart by `attempt`.
+  assertEquals(
+    generations.map((g) => [g.attempt, g.isBackupModel]),
+    [
+      [0, false],
+      [1, true],
+      [2, true],
+    ],
+  )
   assertEquals(
     sent.map((body) => body.model),
     [PRIMARY_ROUTE?.model, FALLBACK_ROUTE.model, FALLBACK_ROUTE.model],
@@ -135,6 +161,12 @@ Deno.test('a photo is sent as what it is, not as whatever JPEG would be', () => 
     'image/webp',
   )
   assertEquals(type(head([0x47, 0x49, 0x46, 0x38, 0x39, 0x61])), 'image/gif')
+  // Bytes it cannot place keep the type they were stored with.
+  assertEquals(photoDataUrl('AAAA', 'image/heic'), 'data:image/heic;base64,AAAA')
+  assertEquals(
+    photoDataUrl(head([0xff, 0xd8, 0xff, 0xe0]), 'image/png').slice(0, 15),
+    'data:image/jpeg',
+  )
 })
 
 // Last in the file: tripping the breaker lasts for the rest of the isolate.
@@ -147,4 +179,6 @@ Deno.test('an answer billed to credits is kept, and stops the primary being aske
     next.sent.map((body) => body.model),
     [FALLBACK_ROUTE.model],
   )
+  // Qwen answering with the primary never asked is not a fallback.
+  assertEquals(next.generations[0].isBackupModel, false)
 })
