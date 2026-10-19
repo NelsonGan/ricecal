@@ -48,10 +48,13 @@ Deno.test('a BYOK call costs what the provider billed, plus any OpenRouter fee',
       cost: 0,
       is_byok: true,
       cost_details: { upstream_inference_cost: 0.00015 },
+      prompt_tokens_details: { cached_tokens: 3373, cache_write_tokens: 0 },
     },
   })
   const p = event.properties
   assertEquals(p.$ai_total_cost_usd, 0.00015)
+  assertEquals(p.$ai_cache_read_input_tokens, 3373)
+  assertEquals(p.$ai_cache_creation_input_tokens, 0)
   assertEquals(p.byok, true)
   assertFalse('$ai_temperature' in p)
 })
