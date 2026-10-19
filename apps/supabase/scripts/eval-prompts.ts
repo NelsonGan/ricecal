@@ -58,16 +58,27 @@ const KEY = Deno.env.get('OPENROUTER_API_KEY')
 async function call(system: string, user: string, maxTokens: number): Promise<unknown> {
   // The same body the pipeline sends. An eval that graded a prompt against
   // different settings would be grading something the app never runs.
+  const sent = requestBody(
+    ROUTE,
+    [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+    maxTokens,
+  )
+  // The proxy takes the system prompt as sent, the route's instruction
+  // included, so Haiku is graded on what it is asked in production. It is sent
+  // the provider lock too, which the proxy must pass on to OpenRouter: one that
+  // drops it lets Haiku run on Bedrock or Vertex, on credits.
   const body = ENDPOINT
-    ? { system, user, max_tokens: maxTokens, model: ROUTE.model }
-    : requestBody(
-        ROUTE,
-        [
-          { role: 'system', content: system },
-          { role: 'user', content: user },
-        ],
-        maxTokens,
-      )
+    ? {
+        system: (sent.messages[0] as { content: string }).content,
+        user,
+        max_tokens: maxTokens,
+        model: ROUTE.model,
+        ...(ROUTE.provider ? { provider: ROUTE.provider } : {}),
+      }
+    : sent
 
   // Running a whole suite fires more requests a minute than a scan ever will,
   // so the provider throttles — and a 429 charged to the prompt would read as
@@ -726,8 +737,10 @@ const REFINE_CASES: RefineCase[] = [
     ],
   },
   {
+    // PLATE lists a boiled egg, so this is the swap; "boiled not fried" against
+    // it would be the entry already being right.
     context: PLATE,
-    text: 'the egg was boiled not fried',
+    text: 'the egg was fried not boiled',
     checks: (a) => [
       action(a, 'adjust'),
       check('about the egg', /egg/i.test(`${a.part} ${a.replaces}`), {

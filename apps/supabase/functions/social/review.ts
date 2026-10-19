@@ -1,6 +1,6 @@
 import { createMeter } from '../_shared/entitlement.ts'
 import { readBoundedBytes } from '../_shared/http.ts'
-import { chatJSON } from '../_shared/llm.ts'
+import { chatJSON, photoDataUrl } from '../_shared/llm.ts'
 
 import { ownsKey, signGet } from '../_shared/r2.ts'
 
@@ -50,7 +50,9 @@ export function reviewPhotoBody(bytes: Uint8Array, contentType: string, etag: st
   for (let i = 0; i < bytes.length; i += 0x8000) {
     binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
   }
-  return { image: `data:${mime};base64,${btoa(binary)}`, etag }
+  // Typed by its bytes, falling back to the stored type: the upload's declared
+  // type is the client's word, and Anthropic refuses a mislabelled image.
+  return { image: photoDataUrl(btoa(binary), mime), etag }
 }
 
 export async function loadReviewPhoto(path: string, owner: string, kind: 'meal' | 'avatar') {

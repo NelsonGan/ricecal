@@ -29,6 +29,7 @@ Deno.test('a generation carries model, tokens, real cost and the trace, never co
   assertEquals(p.$ai_input_tokens, 900)
   assertEquals(p.$ai_total_cost_usd, 0.0004)
   assertEquals(p.$ai_cost_passthrough, true)
+  assertEquals(p.is_backup_model, false)
   assertEquals(p.$session_id, '01a1-session')
   assertEquals(p.$ai_is_error, false)
   assertEquals(p.$ai_input, [{ role: 'user', content: '[meal input withheld]' }])
@@ -67,6 +68,13 @@ Deno.test('a credits call costs what OpenRouter charged, once', () => {
   assertEquals(event.properties.$ai_total_cost_usd, 0.0004)
   assertEquals(event.properties.byok, false)
   assertEquals(event.properties.$ai_temperature, 0.2)
+  assertEquals(
+    generationEvent({ distinctId: 'u', feature: 'scan-meal' }, 't', {
+      ...generation,
+      isBackupModel: true,
+    }).properties.is_backup_model,
+    true,
+  )
 })
 
 Deno.test('system work creates no person, and a failure is marked as one', () => {

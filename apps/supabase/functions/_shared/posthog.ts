@@ -74,8 +74,15 @@ export type Generation = {
   maxTokens: number
   /** Absent for a model that takes none (Claude Haiku 5.5). */
   temperature?: number
-  /** 0 for the first request, then 1 and 2 for the fallback and its retry. */
+  /** 0 for the first request, counting up through the fallback and its retry. */
   attempt: number
+  /**
+   * True when the fallback answers because the primary failed in this same
+   * call. False for the primary, and for the fallback when the primary was
+   * never asked (switched off, or the BYOK breaker tripped). With `attempt`, it
+   * tells a fallback from a retry.
+   */
+  isBackupModel?: boolean
   error?: string
 }
 
@@ -119,6 +126,7 @@ export function generationEvent(context: AiContext, traceId: string, generation:
     $ai_is_error: Boolean(generation.error),
     feature: context.feature,
     attempt: generation.attempt,
+    is_backup_model: generation.isBackupModel ?? false,
     // Sent from Supabase's servers, so the request IP is a data centre's.
     // GeoIP would stamp that location on the event and on the person,
     // overwriting where the person actually is.
