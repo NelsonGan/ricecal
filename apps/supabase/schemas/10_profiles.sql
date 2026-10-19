@@ -92,6 +92,13 @@ create table public.profiles (
 -- `not null`, so blanking it is not available.
 --
 -- Not `immutable`, hence not a CHECK: `pg_timezone_names` is a catalog read.
+--
+-- And not a cheap one: it lists the whole zone directory, about 0.8 s on the
+-- hosted project. `handle_new_user` inserts the column default, so every sign-up
+-- paid that inside GoTrue's transaction, and a sign-up whose connection dropped
+-- during it rolled back after the confirmation mail had gone. Only a value that
+-- is new to the row is looked up: the default is known good, and an unchanged
+-- value on an update would fall back to itself anyway.
 -- ---------------------------------------------------------------------------
 create or replace function public.profiles_valid_timezone()
 returns trigger
@@ -100,6 +107,13 @@ security definer
 set search_path = ''
 as $$
 begin
+  if tg_op = 'INSERT' and new.timezone = 'Asia/Kuala_Lumpur' then
+    return new;
+  end if;
+  if tg_op = 'UPDATE' and new.timezone is not distinct from old.timezone then
+    return new;
+  end if;
+
   if new.timezone is not null
      and not exists (
        select 1 from pg_catalog.pg_timezone_names z where z.name = new.timezone
