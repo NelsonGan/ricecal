@@ -6390,6 +6390,15 @@ component be split or renamed without touching every screen.
 what the parent measures. `contentClassName` targets the inner surface and is
 rarely needed: appearance belongs to `variant` and `tone`.
 
+**A caller's class replaces the component's own only if `cn` knows they
+conflict.** `cn` is tailwind-merge, which knows Tailwind's stock scales and
+nothing else, so every named key in `tailwind.config.js` (the spacing steps,
+the radii, the fonts) has to be listed in `src/ui/cn.ts`. The spacing steps were
+missing until a card's `contentClassName="p-0"` turned out to sit beside the
+card's own `p-card` rather than replace it, and `p-card` won: the template cards,
+the routine cards and two more got 20px of padding nobody asked for. Add a key
+to the config, add it there too.
+
 **Everything interactive is controlled.** No component owns the value it
 displays. That is what lets an optimistic update be rolled back when the server
 rejects it.
