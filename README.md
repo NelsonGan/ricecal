@@ -4038,7 +4038,10 @@ where it has a matching code. No weight on file means no estimate rather than a
 guessed one.
 
 **One figure, from one place** (`workoutBurn` in `features/workouts/burn.ts`).
-The logger shows the burn so far beside the clock, the finish screen shows what
+The logger shows the burn so far along the foot of its figures card, beside a
+watch's heart rate: one slim line of small figures by default, since the sets
+are what the screen is for, and opened in full with a tap (the choice is kept
+per phone in `bodyFiguresOpen`), the finish screen shows what
 will be saved, and the save records the same number. While the Apple Watch app
 records the workout that figure is the watch's, streamed with the heart rate;
 otherwise it is the estimate. Never both, and never the estimate while the
@@ -6389,15 +6392,6 @@ component be split or renamed without touching every screen.
 **`className` targets the outer box** (layout, flex, margins) because that is
 what the parent measures. `contentClassName` targets the inner surface and is
 rarely needed: appearance belongs to `variant` and `tone`.
-
-**A caller's class replaces the component's own only if `cn` knows they
-conflict.** `cn` is tailwind-merge, which knows Tailwind's stock scales and
-nothing else, so every named key in `tailwind.config.js` (the spacing steps,
-the radii, the fonts) has to be listed in `src/ui/cn.ts`. The spacing steps were
-missing until a card's `contentClassName="p-0"` turned out to sit beside the
-card's own `p-card` rather than replace it, and `p-card` won: the template cards,
-the routine cards and two more got 20px of padding nobody asked for. Add a key
-to the config, add it there too.
 
 **Everything interactive is controlled.** No component owns the value it
 displays. That is what lets an optimistic update be rolled back when the server

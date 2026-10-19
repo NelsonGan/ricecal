@@ -19,6 +19,7 @@ import {
   RestBar,
   StaleWorkoutDialog,
   Stat,
+  setWorkoutPrefs,
   showsVolume,
   unfinishedSets,
   useEnergyBody,
@@ -36,7 +37,7 @@ import {
   clock as workoutClock,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
-import { AppBar, Button, Dialog, Screen, Text, useHeld } from '@/ui'
+import { AppBar, Button, Dialog, Icon, Screen, Tappable, Text, useHeld } from '@/ui'
 
 /**
  * The logger: a workout being trained.
@@ -164,8 +165,9 @@ export default function ActiveWorkoutScreen() {
 
       {/* One card for the figures: the clock leads because it ticks, the
           training figures beside it, and what the body did (a watch's heart
-          rate, the burn) in a band along the foot. Five figures in one strip
-          cut every label off; stacked, they took a third of the screen. */}
+          rate, the burn) along the foot, one slim line until it is opened.
+          Five figures in one strip cut every label off; all of them in full
+          took a third of the screen beside the sets. */}
       <View className="overflow-hidden rounded-card bg-surface">
         <View className="flex-row px-4 py-3">
           <View className="pr-4">
@@ -183,16 +185,7 @@ export default function ActiveWorkoutScreen() {
             <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
           </View>
         </View>
-        <View className="flex-row bg-pandan-soft px-4 py-2.5">
-          {pulsing ? (
-            <View className="pr-3" style={HALF}>
-              <WatchPulse workoutId={workout.id} />
-            </View>
-          ) : null}
-          <View className={pulsing ? 'border-pandan/20 border-l pl-3' : undefined} style={HALF}>
-            <LiveBurn workout={workout} />
-          </View>
-        </View>
+        <BodyFigures workout={workout} pulsing={pulsing} />
       </View>
 
       <WorkoutEditor workout={workout} dispatch={dispatch} mode="live" />
@@ -270,17 +263,77 @@ function Elapsed({ label, startedAt }: { label: string; startedAt: number }) {
   )
 }
 
+const FLIPPED = { transform: [{ rotate: '180deg' }] }
+
 /** One of two equal columns along the foot of the figures card. */
 const HALF = { flex: 1, flexBasis: 0 }
 
 /** Digits that keep their width, so the clock does not shuffle each second. */
 const TABULAR = { fontVariant: ['tabular-nums' as const] }
 
+/**
+ * The heart rate and the burn, along the foot of the figures card. One line of
+ * small figures by default, since the sets are what the screen is for; tapped,
+ * the two in full with where the burn came from. Which one is remembered.
+ */
+function BodyFigures({ workout, pulsing }: { workout: LiveWorkout; pulsing: boolean }) {
+  const open = useWorkoutPrefs().bodyFiguresOpen
+  const toggle = () => setWorkoutPrefs({ bodyFiguresOpen: !open })
+
+  if (!open) {
+    return (
+      <Tappable
+        onPress={toggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: false }}
+        className="flex-row items-center gap-3 bg-pandan-soft px-4 py-2"
+      >
+        {pulsing ? <WatchPulse workoutId={workout.id} compact /> : null}
+        <LiveBurn workout={workout} compact />
+        <View className="flex-1" />
+        <Icon set="ui" name="chevron-down" size={16} />
+      </Tappable>
+    )
+  }
+  return (
+    <View className="flex-row items-start bg-pandan-soft px-4 py-2.5">
+      {pulsing ? (
+        <View className="pr-3" style={HALF}>
+          <WatchPulse workoutId={workout.id} />
+        </View>
+      ) : null}
+      <View className={pulsing ? 'border-pandan/20 border-l pl-3' : undefined} style={HALF}>
+        <LiveBurn workout={workout} />
+      </View>
+      <Tappable
+        onPress={toggle}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: true }}
+        className="pl-2 pt-0.5"
+      >
+        {/* The same drawing turned over: the set's chevron-up is another colour. */}
+        <View style={FLIPPED}>
+          <Icon set="ui" name="chevron-down" size={16} />
+        </View>
+      </Tappable>
+    </View>
+  )
+}
+
 /** The heart rate an Apple Watch recording this workout is streaming, while it is. */
-function WatchPulse({ workoutId }: { workoutId: string }) {
+function WatchPulse({ workoutId, compact = false }: { workoutId: string; compact?: boolean }) {
   const { t } = useTranslation(['activity'])
   const bpm = useWatchPulse(workoutId)
   if (bpm === null) return null
+  if (compact) {
+    return (
+      <View className="flex-row items-center gap-1">
+        <Icon set="body" name="heart-rate" size={16} />
+        <Text variant="label">{t('activity:workout.bpm', { value: bpm })}</Text>
+      </View>
+    )
+  }
   return (
     <Stat
       label={t('activity:workout.heartRate')}
@@ -295,13 +348,25 @@ function WatchPulse({ workoutId }: { workoutId: string }) {
  * recording, our estimate otherwise (`workoutBurn`). Its own five second clock,
  * since an estimate moves slowly and a watch streams no faster.
  */
-function LiveBurn({ workout }: { workout: LiveWorkout }) {
+function LiveBurn({ workout, compact = false }: { workout: LiveWorkout; compact?: boolean }) {
   const { t } = useTranslation(['workouts', 'common'])
   const now = useNow(5000)
   const body = useEnergyBody()
   const watchKcal = useWatchEnergy(workout.id)
   const burn = workoutBurn(workout, (now - workout.startedAt) / 1000, body, watchKcal)
   const note = burnNote(t, burn.source, body !== undefined)
+  if (compact) {
+    return (
+      <View className="flex-row items-center gap-1">
+        <Icon set="body" name="flame-burn" size={16} />
+        <Text variant="label">
+          {burn.kcal === null
+            ? '—'
+            : t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })}
+        </Text>
+      </View>
+    )
+  }
   return (
     <Stat
       label={t('workouts:detail.kcalLabel')}

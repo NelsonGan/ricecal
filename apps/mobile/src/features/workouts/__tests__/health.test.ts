@@ -31,7 +31,9 @@ describe('saving a workout to Apple Health', () => {
     jest.resetAllMocks()
     jest.replaceProperty(Platform, 'OS', 'ios')
     warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
-    jest.mocked(getWorkoutPrefs).mockReturnValue({ keepAwake: true, healthWrite: true })
+    jest
+      .mocked(getWorkoutPrefs)
+      .mockReturnValue({ keepAwake: true, healthWrite: true, bodyFiguresOpen: false })
     jest.mocked(workoutWriteStatus).mockReturnValue('unasked')
     jest.mocked(deleteWorkoutFromHealth).mockResolvedValue(undefined)
     jest.mocked(saveWorkoutToHealth).mockResolvedValue('health-workout')
@@ -113,7 +115,9 @@ describe('saving a workout to Apple Health', () => {
   })
 
   it('skips the permission sheet when saving was turned off', async () => {
-    jest.mocked(getWorkoutPrefs).mockReturnValue({ keepAwake: true, healthWrite: false })
+    jest
+      .mocked(getWorkoutPrefs)
+      .mockReturnValue({ keepAwake: true, healthWrite: false, bodyFiguresOpen: false })
 
     await expect(syncWorkoutToHealth(workout, 2_000_000, 100)).resolves.toMatchObject({
       failed: false,
