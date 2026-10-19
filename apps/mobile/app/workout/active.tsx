@@ -37,6 +37,7 @@ import {
   clock as workoutClock,
 } from '@/features/workouts'
 import { unitFor } from '@/lib/units'
+import { useThemeColors } from '@/theme/useTheme'
 import { AppBar, Button, Dialog, Icon, Screen, Tappable, Text, useHeld } from '@/ui'
 
 /**
@@ -163,25 +164,26 @@ export default function ActiveWorkoutScreen() {
     >
       {prefs.keepAwake ? <KeepAwake /> : null}
 
-      {/* One card for the figures: the clock leads because it ticks, the
-          training figures beside it, and what the body did (a watch's heart
-          rate, the burn) along the foot, one slim line until it is opened.
+      {/* One white card for the figures: three even columns, the clock
+          first with a dot saying it is running, and what the body did (a
+          watch's heart rate, the burn) under a hairline, one quiet line until
+          it is opened.
           Five figures in one strip cut every label off; all of them in full
           took a third of the screen beside the sets. */}
       <View className="overflow-hidden rounded-card bg-surface">
-        <View className="flex-row px-4 py-3">
-          <View className="pr-4">
+        <View className="flex-row px-4 pt-3.5 pb-3">
+          <View className="pr-3" style={HALF}>
             <Elapsed label={t('workouts:logger.duration')} startedAt={workout.startedAt} />
           </View>
           {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) ? (
-            <View className="flex-1 border-line border-l px-3">
+            <View className="border-line border-l px-3" style={HALF}>
               <Stat
                 label={t('workouts:logger.volume')}
                 value={volumeText(t, totals.volumeKg, unit)}
               />
             </View>
           ) : null}
-          <View className="flex-1 border-line border-l pl-3">
+          <View className="border-line border-l pl-3" style={HALF}>
             <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
           </View>
         </View>
@@ -255,17 +257,21 @@ function Elapsed({ label, startedAt }: { label: string; startedAt: number }) {
   const now = useNow(1000)
   return (
     <View className="gap-0.5">
-      <Text variant="overlineSm">{label}</Text>
-      <Text variant="displayMd" numberOfLines={1} style={TABULAR}>
+      <View className="flex-row items-center gap-1.5">
+        <Text variant="overlineSm" numberOfLines={1} className="shrink">
+          {label}
+        </Text>
+        {/* Running: the one figure on the card that is counting. */}
+        <View className="h-2 w-2 rounded-full bg-pandan" />
+      </View>
+      <Text variant="displayMd" numberOfLines={1} adjustsFontSizeToFit style={TABULAR}>
         {workoutClock((now - startedAt) / 1000)}
       </Text>
     </View>
   )
 }
 
-const FLIPPED = { transform: [{ rotate: '180deg' }] }
-
-/** One of two equal columns along the foot of the figures card. */
+/** One of the equal columns in the figures card, so its rules line up. */
 const HALF = { flex: 1, flexBasis: 0 }
 
 /** Digits that keep their width, so the clock does not shuffle each second. */
@@ -277,46 +283,69 @@ const TABULAR = { fontVariant: ['tabular-nums' as const] }
  * the two in full with where the burn came from. Which one is remembered.
  */
 function BodyFigures({ workout, pulsing }: { workout: LiveWorkout; pulsing: boolean }) {
+  const colors = useThemeColors()
   const open = useWorkoutPrefs().bodyFiguresOpen
   const toggle = () => setWorkoutPrefs({ bodyFiguresOpen: !open })
+  // A thin drawn chevron: the icon set's is an illustration, and even tinted
+  // grey it read as a sticker on a plain white card.
+  const chevron = (
+    <View className="h-5 w-5 items-center justify-center">
+      <View
+        style={{
+          width: 8,
+          height: 8,
+          borderColor: colors.muted,
+          borderRightWidth: 2,
+          borderBottomWidth: 2,
+          transform: [{ translateY: open ? 2 : -2 }, { rotate: open ? '-135deg' : '45deg' }],
+        }}
+      />
+    </View>
+  )
 
-  if (!open) {
-    return (
-      <Tappable
-        onPress={toggle}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: false }}
-        className="flex-row items-center gap-3 bg-pandan-soft px-4 py-2"
-      >
-        {pulsing ? <WatchPulse workoutId={workout.id} compact /> : null}
-        <LiveBurn workout={workout} compact />
-        <View className="flex-1" />
-        <Icon set="ui" name="chevron-down" size={16} />
-      </Tappable>
-    )
-  }
   return (
-    <View className="flex-row items-start bg-pandan-soft px-4 py-2.5">
-      {pulsing ? (
-        <View className="pr-3" style={HALF}>
-          <WatchPulse workoutId={workout.id} />
+    // The card stays one white surface: a hairline inset to the content is
+    // the only thing between the rows. A tinted band under it read as a
+    // second card stuck to the first.
+    <View className="mx-4 border-line border-t">
+      {open ? (
+        <View className="flex-row items-start py-3">
+          {pulsing ? (
+            <View className="pr-3" style={HALF}>
+              <WatchPulse workoutId={workout.id} />
+            </View>
+          ) : null}
+          <View className={pulsing ? 'border-line border-l pl-3' : undefined} style={HALF}>
+            <LiveBurn workout={workout} />
+          </View>
+          <Tappable
+            onPress={toggle}
+            hitSlop={14}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: true }}
+            className="pt-1 pl-2"
+          >
+            {chevron}
+          </Tappable>
         </View>
-      ) : null}
-      <View className={pulsing ? 'border-pandan/20 border-l pl-3' : undefined} style={HALF}>
-        <LiveBurn workout={workout} />
-      </View>
-      <Tappable
-        onPress={toggle}
-        hitSlop={12}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: true }}
-        className="pl-2 pt-0.5"
-      >
-        {/* The same drawing turned over: the set's chevron-up is another colour. */}
-        <View style={FLIPPED}>
-          <Icon set="ui" name="chevron-down" size={16} />
-        </View>
-      </Tappable>
+      ) : (
+        <Tappable
+          onPress={toggle}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: false }}
+          className="flex-row items-center gap-3 py-2.5"
+        >
+          {pulsing ? (
+            <>
+              <WatchPulse workoutId={workout.id} compact />
+              <View className="h-4 border-line border-l" />
+            </>
+          ) : null}
+          <LiveBurn workout={workout} compact />
+          <View className="flex-1" />
+          {chevron}
+        </Tappable>
+      )}
     </View>
   )
 }
@@ -329,7 +358,7 @@ function WatchPulse({ workoutId, compact = false }: { workoutId: string; compact
   if (compact) {
     return (
       <View className="flex-row items-center gap-1">
-        <Icon set="body" name="heart-rate" size={16} />
+        <Icon set="body" name="heart-rate" size={18} />
         <Text variant="label">{t('activity:workout.bpm', { value: bpm })}</Text>
       </View>
     )
@@ -358,7 +387,7 @@ function LiveBurn({ workout, compact = false }: { workout: LiveWorkout; compact?
   if (compact) {
     return (
       <View className="flex-row items-center gap-1">
-        <Icon set="body" name="flame-burn" size={16} />
+        <Icon set="body" name="flame-burn" size={18} />
         <Text variant="label">
           {burn.kcal === null
             ? '—'

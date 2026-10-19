@@ -222,6 +222,15 @@ export const WorkoutCard = memo(function WorkoutCard({
           icon={<Icon set="system" name="clock" size={16} />}
           text={durationText(t, workout.durationS)}
         />
+        {/* What the workout burned as saved (the watch's, or the estimate).
+            A record of the session, not the budget: Today's row is where a
+            burn shows only once Health has counted it. */}
+        {workout.kcal ? (
+          <Metric
+            icon={<Icon set="body" name="flame-burn" size={16} />}
+            text={t('workouts:detail.kcal', { value: workout.kcal.toLocaleString() })}
+          />
+        ) : null}
         {workout.volumeKg > 0 ? (
           <Metric
             icon={<Icon set="body" name="dumbbell" size={16} />}
