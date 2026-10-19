@@ -30,7 +30,6 @@ import {
   removeWorkoutFromHealth,
   Stat,
   StatGrid,
-  StatNote,
   setBadges,
   showsVolume,
   toPlans,
@@ -233,7 +232,6 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
   const started = parseISO(workout.startedAt)
   const birthDate = useProfile().data?.birth_date ?? null
   const heart = workout.heartRate ?? null
-  const [noteOpen, setNoteOpen] = useState(false)
   // A trace means the watch recorded it, and the burn is what it measured (the
   // edit screen's rule too). Anything else is the estimate the phone saved.
   const burnSource = heart ? 'watch' : 'estimate'
@@ -263,6 +261,13 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
         </Text>
         <StatGrid>
           <Stat label={t('workouts:logger.duration')} value={durationText(t, workout.durationS)} />
+          {workout.kcal ? (
+            <Stat
+              label={t('workouts:detail.kcalLabel')}
+              value={t('workouts:detail.kcal', { value: workout.kcal })}
+              info={note}
+            />
+          ) : null}
           {/* A bodyweight session is a weighted exercise with nothing added. */}
           {showsVolume(workout.entries.map((entry) => entry.tracking)) && workout.volumeKg > 0 ? (
             <Stat
@@ -278,18 +283,7 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
               icon={{ set: 'system', name: 'trophy' }}
             />
           ) : null}
-          {workout.kcal ? (
-            <Stat
-              label={t('workouts:detail.kcalLabel')}
-              value={t('workouts:detail.kcal', { value: workout.kcal })}
-              onPress={() => setNoteOpen((open) => !open)}
-              accessibilityHint={note}
-            />
-          ) : null}
         </StatGrid>
-        {noteOpen && workout.kcal ? (
-          <StatNote text={note} onClose={() => setNoteOpen(false)} inCard />
-        ) : null}
         {workout.notes ? <Text variant="body">{workout.notes}</Text> : null}
       </Card>
 

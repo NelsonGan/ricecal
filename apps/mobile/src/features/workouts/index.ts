@@ -7,7 +7,6 @@ export {
   RowChevron,
   Stat,
   StatGrid,
-  StatNote,
   StatStrip,
   WeekStreakBadge,
   WorkoutCard,

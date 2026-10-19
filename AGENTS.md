@@ -666,7 +666,8 @@ something** — one pass is not a measurement.
 and confirmation dialogs run long — two sentences where one does, both sides of
 a toggle explained where naming one is enough — and they get cut. Write the
 shortest string that still says the thing, then cut again. Drop a hint entirely
-if the label already carries it. There is no tooltip component here, so a detail
-that will not fit is a detail to cut rather than to hide. Every string is also
+if the label already carries it. The one tooltip is `InfoTip` (an ⓘ that opens
+a bubble), for where a figure came from; it is not a place to park a detail
+that will not fit, which is a detail to cut rather than to hide. Every string is also
 carried into twelve other languages (`src/i18n/languages.ts` is the list), so
 length costs screen space and translation churn in all thirteen.
