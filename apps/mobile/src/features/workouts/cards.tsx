@@ -7,7 +7,18 @@ import type { IconRef, Routine, WorkoutOverview, WorkoutSummary } from '@/data'
 import { datePattern } from '@/lib/dates'
 import type { WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
-import { Badge, Button, Card, cn, FLOAT_SHADOW, Icon, Skeleton, Tappable, Text } from '@/ui'
+import {
+  Badge,
+  Button,
+  Card,
+  cn,
+  FLOAT_SHADOW,
+  Icon,
+  InfoTip,
+  Skeleton,
+  Tappable,
+  Text,
+} from '@/ui'
 import { ExerciseArt } from './ExerciseArt'
 import { durationText, volumeText } from './format'
 import { useExerciseLibrary } from './library'
@@ -211,6 +222,15 @@ export const WorkoutCard = memo(function WorkoutCard({
           icon={<Icon set="system" name="clock" size={16} />}
           text={durationText(t, workout.durationS)}
         />
+        {/* What the workout burned as saved (the watch's, or the estimate).
+            A record of the session, not the budget: Today's row is where a
+            burn shows only once Health has counted it. */}
+        {workout.kcal ? (
+          <Metric
+            icon={<Icon set="body" name="flame-burn" size={16} />}
+            text={t('workouts:detail.kcal', { value: workout.kcal.toLocaleString() })}
+          />
+        ) : null}
         {workout.volumeKg > 0 ? (
           <Metric
             icon={<Icon set="body" name="dumbbell" size={16} />}
@@ -398,13 +418,17 @@ export function StatStrip({ children }: { children: ReactNode }) {
   )
 }
 
-/** The same figures three to a row, for a summary with more than fit on one line. */
+/**
+ * The same figures three to a row, for a summary with more than fit on one
+ * line. Four go two by two instead, or the fourth sat alone on a row of its own.
+ */
 export function StatGrid({ children }: { children: ReactNode }) {
+  const items = Children.toArray(children)
   return (
     <View className="flex-row flex-wrap gap-y-3">
-      {Children.toArray(children).map((child, index) => (
+      {items.map((child, index) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: the grid's order is its layout
-        <View key={index} className="w-1/3 pr-2">
+        <View key={index} className={cn(items.length === 4 ? 'w-1/2' : 'w-1/3', 'pr-2')}>
           {child}
         </View>
       ))}
@@ -417,18 +441,24 @@ export function Stat({
   value,
   icon,
   leading,
+  info,
 }: {
   label: string
   value: string
   icon?: IconRef
   /** Drawn where the icon goes, for one that moves (`LiveHeart`). */
   leading?: ReactNode
+  /** Where the figure came from, behind an ⓘ beside the label (`InfoTip`). */
+  info?: string
 }) {
   return (
     <View className="gap-0.5">
-      <Text variant="overlineSm" numberOfLines={1}>
-        {label}
-      </Text>
+      <View className="flex-row items-center gap-1">
+        <Text variant="overlineSm" numberOfLines={1} className="shrink">
+          {label}
+        </Text>
+        {info ? <InfoTip text={info} size={13} /> : null}
+      </View>
       <View className="flex-row items-center gap-1">
         {leading ?? (icon ? <Icon {...icon} size={18} /> : null)}
         <Text variant="numeric" numberOfLines={1} adjustsFontSizeToFit className="shrink">

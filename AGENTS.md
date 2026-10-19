@@ -456,9 +456,10 @@ com.apple.CoreSimulator.SimRuntime.watchOS-27-0`, then `xcrun simctl pair <watch
   table `authorization`, one row per source and type: 101 is allowed, 102 not
   asked, 104 refused. With both simulators shut down, setting the watch app's
   rows (its source, not the phone app's) on both is the way back.
-- The watchOS simulator measures energy for a strength session and **no heart
-  rate**; a simulator build feeds the session a made-up pulse (README, "The
-  Apple Watch app"), so a heart rate on screen there is not the sensor's.
+- The watchOS simulator measures **no heart rate** and no active energy (every
+  `activeEnergyBurned` sample is 0; only resting energy is real); a simulator
+  build feeds the session a made-up pulse and burn (README, "The Apple Watch
+  app"), so a heart rate or kcal on screen there is not the sensor's.
 - `isWatchAppInstalled` stays false for a watch app installed directly, and
   `transferUserInfo` can take minutes or never arrive between simulators; both
   are handled in the app, and both make a simulator look more broken than it is.
@@ -665,7 +666,8 @@ something** — one pass is not a measurement.
 and confirmation dialogs run long — two sentences where one does, both sides of
 a toggle explained where naming one is enough — and they get cut. Write the
 shortest string that still says the thing, then cut again. Drop a hint entirely
-if the label already carries it. There is no tooltip component here, so a detail
-that will not fit is a detail to cut rather than to hide. Every string is also
+if the label already carries it. The one tooltip is `InfoTip` (an ⓘ that opens
+a bubble), for where a figure came from; it is not a place to park a detail
+that will not fit, which is a detail to cut rather than to hide. Every string is also
 carried into twelve other languages (`src/i18n/languages.ts` is the list), so
 length costs screen space and translation churn in all thirteen.

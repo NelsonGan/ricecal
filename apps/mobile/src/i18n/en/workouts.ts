@@ -142,6 +142,10 @@ export const workouts = {
     duration: 'Duration',
     volume: 'Volume',
     sets: 'Sets',
+    /** Behind the info button beside the burn, for each place it can come from. */
+    kcalEstimated: 'Estimated from your weight and sets, as there is no heart rate.',
+    kcalWatch: 'Measured by your Apple Watch.',
+    kcalNoWeight: 'Log your weight to estimate this.',
     namePlaceholder: 'Workout name',
     addExercise: 'Add exercise',
     emptyTitle: 'Add your first exercise',

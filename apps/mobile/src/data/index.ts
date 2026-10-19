@@ -48,6 +48,7 @@ export { foldToDishes, useFood, useFoodSearch, useRecentFoods } from './foods'
 export { type GoalsInput, useSetTargets, useTargets } from './goals'
 export {
   type ConnectResult,
+  requestHealthSync,
   type SyncProgress,
   useConnectHealth,
   useHealthAutoSync,
