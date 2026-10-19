@@ -83,11 +83,12 @@ final class PhoneLink: NSObject, WCSessionDelegate {
   }
 
   /// A live reading, which is only worth sending while the phone can hear it.
-  func sendPulse(workoutId: String, bpm: Int) {
-    guard isReachable else { return }
-    let pulse: [String: Any] = [
-      "workoutId": workoutId, "bpm": bpm, "at": Date().timeIntervalSince1970 * 1000,
-    ]
+  /// Either figure can be missing: energy is measured with heart rate refused.
+  func sendPulse(workoutId: String, bpm: Int?, kcal: Double?) {
+    guard isReachable, bpm != nil || kcal != nil else { return }
+    var pulse: [String: Any] = ["workoutId": workoutId, "at": Date().timeIntervalSince1970 * 1000]
+    if let bpm { pulse["bpm"] = bpm }
+    if let kcal { pulse["kcal"] = kcal }
     WCSession.default.sendMessage(["pulse": pulse], replyHandler: nil, errorHandler: nil)
   }
 

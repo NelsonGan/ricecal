@@ -456,9 +456,10 @@ com.apple.CoreSimulator.SimRuntime.watchOS-27-0`, then `xcrun simctl pair <watch
   table `authorization`, one row per source and type: 101 is allowed, 102 not
   asked, 104 refused. With both simulators shut down, setting the watch app's
   rows (its source, not the phone app's) on both is the way back.
-- The watchOS simulator measures energy for a strength session and **no heart
-  rate**; a simulator build feeds the session a made-up pulse (README, "The
-  Apple Watch app"), so a heart rate on screen there is not the sensor's.
+- The watchOS simulator measures **no heart rate** and no active energy (every
+  `activeEnergyBurned` sample is 0; only resting energy is real); a simulator
+  build feeds the session a made-up pulse and burn (README, "The Apple Watch
+  app"), so a heart rate or kcal on screen there is not the sensor's.
 - `isWatchAppInstalled` stays false for a watch app installed directly, and
   `transferUserInfo` can take minutes or never arrive between simulators; both
   are handled in the app, and both make a simulator look more broken than it is.

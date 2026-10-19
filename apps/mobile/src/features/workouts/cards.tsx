@@ -381,22 +381,48 @@ function Metric({ icon, text, tone }: { icon: ReactNode; text: string; tone?: 'k
  * and sets, and a shared workout's. Each child is one `Stat`, or a component
  * that renders one, so a clock can re-render its own figure each second and
  * nothing else.
+ *
+ * More than four do not fit a phone's width: with a watch's heart rate and
+ * burn beside the other three, every label cut off ("DUR…", "KC…"). Then the
+ * strip is two rows of three columns, the watch's figures underneath.
  */
 export function StatStrip({ children }: { children: ReactNode }) {
+  const items = Children.toArray(children).filter(Boolean)
+  const perRow = items.length > STRIP_MAX ? 3 : items.length
+  const rows: ReactNode[][] = []
+  for (let at = 0; at < items.length; at += perRow) rows.push(items.slice(at, at + perRow))
   return (
-    <View className="flex-row rounded-card bg-surface py-3">
-      {Children.toArray(children).map((child, index) => (
+    <View className="rounded-card bg-surface py-3">
+      {rows.map((row, rowIndex) => (
         <View
           // biome-ignore lint/suspicious/noArrayIndexKey: the strip's order is its layout
-          key={index}
-          className={cn('flex-1 px-4', index > 0 && 'border-line border-l')}
+          key={rowIndex}
+          className={cn('flex-row', rowIndex > 0 && 'mt-3 border-line border-t pt-3')}
         >
-          {child}
+          {row.map((child, index) => (
+            <View
+              // biome-ignore lint/suspicious/noArrayIndexKey: the strip's order is its layout
+              key={index}
+              className={cn(
+                // Four across, each column starts from its own width and shares
+                // what is left, so "DURATION" is not cut to fit "SETS"; it can
+                // still shrink, or a long language runs off the card.
+                rows.length > 1 ? 'w-1/3' : perRow > 3 ? 'shrink grow basis-auto' : 'flex-1',
+                perRow > 3 ? 'px-3' : 'px-4',
+                index > 0 && 'border-line border-l',
+              )}
+            >
+              {child}
+            </View>
+          ))}
         </View>
       ))}
     </View>
   )
 }
+
+/** The most figures one row of a `StatStrip` holds on a phone. */
+const STRIP_MAX = 4
 
 /** The same figures three to a row, for a summary with more than fit on one line. */
 export function StatGrid({ children }: { children: ReactNode }) {
@@ -417,18 +443,26 @@ export function Stat({
   value,
   icon,
   leading,
+  onPress,
+  accessibilityHint,
 }: {
   label: string
   value: string
   icon?: IconRef
   /** Drawn where the icon goes, for one that moves (`LiveHeart`). */
   leading?: ReactNode
+  /** A figure with something to say about where it came from (`StatNote`). */
+  onPress?: () => void
+  accessibilityHint?: string
 }) {
-  return (
+  const body = (
     <View className="gap-0.5">
-      <Text variant="overlineSm" numberOfLines={1}>
-        {label}
-      </Text>
+      <View className="flex-row items-center gap-1">
+        <Text variant="overlineSm" numberOfLines={1} className="shrink">
+          {label}
+        </Text>
+        {onPress ? <Icon set="ui" name="info" size={12} /> : null}
+      </View>
       <View className="flex-row items-center gap-1">
         {leading ?? (icon ? <Icon {...icon} size={18} /> : null)}
         <Text variant="numeric" numberOfLines={1} adjustsFontSizeToFit className="shrink">
@@ -436,6 +470,50 @@ export function Stat({
         </Text>
       </View>
     </View>
+  )
+  if (!onPress) return body
+  return (
+    <Tappable
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}, ${value}`}
+      accessibilityHint={accessibilityHint}
+    >
+      {body}
+    </Tappable>
+  )
+}
+
+/**
+ * What a figure in a `StatStrip` or `StatGrid` is made of, opened by tapping
+ * it: the app has no tooltip, so the note opens in the flow under the figures
+ * rather than floating over the sets.
+ */
+export function StatNote({
+  text,
+  onClose,
+  inCard = false,
+}: {
+  text: string
+  onClose: () => void
+  /** On a card's own surface, where the logger's fill would not show. */
+  inCard?: boolean
+}) {
+  return (
+    <Tappable onPress={onClose} haptics={false} accessibilityRole="text">
+      <View
+        className={cn(
+          'flex-row items-center gap-2 rounded-card px-4 py-2.5',
+          inCard ? 'bg-surface-alt' : 'bg-surface',
+        )}
+      >
+        <Icon set="ui" name="info" size={16} />
+        <Text variant="caption" className="flex-1">
+          {text}
+        </Text>
+      </View>
+    </Tappable>
   )
 }
 

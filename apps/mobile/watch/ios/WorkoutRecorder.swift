@@ -223,11 +223,13 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
   private var pulseTimer: Timer?
 
   /**
-   The watchOS simulator measures energy for a strength session but no heart
-   rate at all, so nothing after the sensor could be tried there: not the
-   reading on the wrist, the phone's logger, the trace or the chart. A
-   simulator build feeds the session a made-up pulse instead, rising and
-   falling the way sets and rests do. Compiled out of every device build.
+   The watchOS simulator measures no heart rate at all, and its active energy
+   for a strength session is always 0 (it has no motion; only resting energy
+   is recorded), so nothing after the sensor could be tried there: not the
+   reading on the wrist, the phone's logger and burn, the trace or the chart.
+   A simulator build feeds the session a made-up pulse instead, rising and
+   falling the way sets and rests do, and a steady burn beside it. Compiled
+   out of every device build.
    */
   private func simulatePulse() {
     #if targetEnvironment(simulator)
@@ -241,6 +243,11 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
           let bpm = 105 + 30 * sin(t / 45) + Double.random(in: -4...4)
           self.readings.append((at: Date(), bpm: bpm))
           self.onHeartRate?(Int(bpm.rounded()))
+          // Nor does it measure active energy (no motion, so every sample is
+          // 0), and the phone's burn would wait on it for ever: about 5 kcal
+          // a minute, a moderate strength session.
+          self.activeKcal += 5 * Double(Self.intervalS) / 60
+          self.onEnergy?(self.activeKcal)
         }
       }
     #endif
@@ -333,6 +340,10 @@ final class WorkoutRecorder: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBu
         }
       } else if quantityType == HKQuantityType(.activeEnergyBurned), let sum = statistics.sumQuantity() {
         let kcal = sum.doubleValue(for: .kilocalorie())
+        #if targetEnvironment(simulator)
+          // `simulatePulse` keeps the energy there; the simulator's own is 0.
+          if kcal == 0 { continue }
+        #endif
         Task { @MainActor in
           self.activeKcal = kcal
           self.onEnergy?(kcal)
