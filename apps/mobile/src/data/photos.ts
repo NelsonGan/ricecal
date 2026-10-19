@@ -43,6 +43,14 @@ const BATCH_WINDOW_MS = 24
 const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
 /**
+ * Each base64 character's value, by char code. A photo is a few hundred thousand
+ * characters, and an `indexOf` on the alphabet for each was a linear scan per
+ * character on the JS thread.
+ */
+const BASE64_VALUES = new Uint8Array(128)
+for (let i = 0; i < BASE64_ALPHABET.length; i++) BASE64_VALUES[BASE64_ALPHABET.charCodeAt(i)] = i
+
+/**
  * Base64 to bytes, by hand. `expo-file-system` is a native module and would
  * invalidate every installed dev client to save thirty lines, and `atob` is not
  * guaranteed on Hermes across the versions this app supports.
@@ -52,22 +60,18 @@ const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
  */
 function decodeBase64(input: string): Uint8Array {
   const clean = input.replace(/[^A-Za-z0-9+/]/g, '')
-  // Every four characters are three bytes and a short last group is one or two,
-  // so the length comes from the characters left. It once subtracted the `=`
-  // padding as well, after the line above had already stripped it: two iOS
-  // photos in three lost their last byte or two, which is a JPEG's closing
-  // `FF D9`, and Anthropic refuses such a file. Android hid it by ending its
-  // base64 with a newline, so the padding was never seen there.
+  // Sized from the characters left, not the `=` padding the line above strips:
+  // subtracting it again clipped the end off iOS photos (README, "A stored
+  // photo may be missing its last two bytes").
   const bytes = new Uint8Array(Math.floor((clean.length * 3) / 4))
 
   let byte = 0
   let bits = 0
   let out = 0
 
-  for (const character of clean) {
-    const value = BASE64_ALPHABET.indexOf(character)
-    if (value < 0) continue
-    byte = (byte << 6) | value
+  // `clean` holds only alphabet characters, so every lookup is a real value.
+  for (let i = 0; i < clean.length; i++) {
+    byte = (byte << 6) | BASE64_VALUES[clean.charCodeAt(i)]
     bits += 6
     if (bits >= 8) {
       bits -= 8

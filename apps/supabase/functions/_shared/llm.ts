@@ -308,8 +308,9 @@ let byokBroken = false
  * which is exactly that marker, and every binary already in the stores keeps
  * uploading them. Qwen decodes such a file; Anthropic answers "Could not
  * process image", which sent half of all photo scans to the fallback. Anything
- * that is not a JPEG, or is already whole, comes back untouched. Exported for
- * its test.
+ * that is not a JPEG, or ends in `FF D9`, comes back untouched. A whole JPEG
+ * with bytes after its end marker gets two more, which decoders never read.
+ * Exported for its test.
  */
 export function completeJpeg(bytes: Uint8Array): Uint8Array {
   const n = bytes.length
