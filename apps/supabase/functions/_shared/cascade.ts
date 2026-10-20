@@ -214,12 +214,15 @@ export type SearchRow = {
  * The catalogue search, shaped to what the cascade needs. It carries the macros
  * as well as the calories, so a tier that has chosen a row needs no second query
  * to price it.
+ *
+ * Null when the catalogue could not be reached. Every tier treats that like an
+ * empty answer, since there are tiers below either way, but only an empty answer
+ * is a miss: recording an unreachable catalogue put "steamed white rice",
+ * "shrimp" and "spaghetti" on the widening backlog during one bad minute.
  */
-async function search(q: string, limit: number): Promise<SearchRow[]> {
-  // An unreachable catalogue and an empty one are the same thing here, since
-  // there are tiers below this one either way. The distinction matters to the
-  // person typing in the search panel; `data/catalogue.ts` makes it.
-  const foods = (await searchFoods(q, limit)) ?? []
+async function search(q: string, limit: number): Promise<SearchRow[] | null> {
+  const foods = await searchFoods(q, limit)
+  if (foods === null) return null
 
   // The Worker already shapes a food the way `food_details` did, so this
   // renames rather than derives. Deriving it again is how the two ends of one
@@ -562,14 +565,15 @@ async function resolveByComponents(
     const q = usable(component.name)
     if (!q) continue
 
-    const rows = await search(q, 5).catch((error) => {
+    const found = await search(q, 5).catch((error) => {
       // A PostgREST error is a plain object, which `String()` renders as
       // "[object Object]".
       const message = `[cascade] components: search "${q}" failed: ${describe(error)}`
       console.error(message)
       trace?.push(message)
-      return [] as SearchRow[]
+      return null
     })
+    const rows = found ?? []
 
     // Which rows can be this part at all, before anything asks how big it is.
     // Rejected after `bestFit`, the part would keep whichever wrong row ranked
@@ -660,7 +664,8 @@ async function resolveByComponents(
     // A row turned down over its composition exists and is right about some
     // other food, and recording those filled the widening backlog with queries
     // the catalogue already answers well.
-    const noAnswer = !rows.length || rows.every((r) => isWholeMealServing(r.serving_label))
+    const noAnswer =
+      found !== null && (!rows.length || rows.every((r) => isWholeMealServing(r.serving_label)))
     if (noAnswer) await recordMisses(db, scanId, [q])
 
     // No catalogue answer at this size: the model's figures become an estimate.
@@ -779,9 +784,14 @@ async function resolveByCount(
 
   let rows: SearchRow[] = []
   let q = queries[0]
+  // Whether the catalogue answered the last query at all. Only an answer that
+  // came back empty is a miss.
+  let answered = false
   for (const candidate of queries) {
     q = candidate
-    rows = await search(candidate, 5).catch(() => [] as SearchRow[])
+    const found = await search(candidate, 5).catch(() => null)
+    answered = found !== null
+    rows = found ?? []
     if (rows.length) break
   }
 
@@ -818,7 +828,7 @@ async function resolveByCount(
     // model alone: the weakest answer this path can give.
     trace?.push(`[cascade] count: no catalogue row for "${item.name}", priced from the model`)
   }
-  if (!rows.length) await recordMisses(db, scanId, [q])
+  if (!rows.length && answered) await recordMisses(db, scanId, [q])
 
   return { tier: fit ? 3 : 4, food: unitRow, quantity: item.count, displayLabel: item.name }
 }
@@ -857,9 +867,10 @@ async function resolveByDish(
   // Ordered specific, generic, head noun, so the first that answers is the most
   // specific one the catalogue holds.
   for (const q of queries) {
-    candidates = await search(q, 5)
+    const found = await search(q, 5)
+    candidates = found ?? []
     if (candidates.length) break
-    missed.push(q)
+    if (found !== null) missed.push(q)
   }
   await recordMisses(db, scanId, missed)
 
