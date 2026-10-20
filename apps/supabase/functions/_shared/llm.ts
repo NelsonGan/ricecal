@@ -239,8 +239,6 @@ export type ModelRoute = {
   temperature?: number
   /** Added to the system prompt, for a model that has to be told what others do unasked. */
   instruction?: string
-  /** Sends the system prompt as a cached block (`cachedSystem`). */
-  cacheSystem?: boolean
 }
 
 /**
@@ -271,7 +269,7 @@ const JSON_ALONE =
 /** The route for `model`, with what an Anthropic model needs added to it. Exported for its test. */
 export function routeFor(model: string, temperature: number): ModelRoute {
   return model.startsWith('anthropic/')
-    ? { model, provider: ANTHROPIC_ONLY, instruction: JSON_ALONE, cacheSystem: true }
+    ? { model, provider: ANTHROPIC_ONLY, instruction: JSON_ALONE }
     : { model, temperature }
 }
 
@@ -390,14 +388,24 @@ function withInstruction(messages: unknown[], instruction: string): unknown[] {
 }
 
 /**
- * `messages` with their system prompt marked for Anthropic's prompt cache.
+ * The calls whose system prompt goes in Anthropic's one-hour prompt cache.
  *
- * Every system prompt here is a fixed string, 2,000 to 6,000 tokens, ahead of
- * the meal's own text or photo, so it is the prefix a cache can serve. A hit is
- * a tenth of the input price; the one-hour cache costs twice the price to write,
- * repaid by its first reuse, and nearly every photo scan arrives within an hour
- * of the last. Measured on a photo scan, input cost fell by half. A prompt
- * under Haiku's 512-token minimum is simply not cached, at no cost.
+ * Each system prompt is a fixed string ahead of the meal's own text or photo,
+ * so it is the prefix a cache can serve: 3,400 tokens for a photo, 6,100 for a
+ * typed meal, 2,500 for a correction. A hit is a tenth of the input price, but
+ * the write costs twice it, so a cached call pays one extra input's worth up
+ * front and earns 0.9 back per hit: a little over one hit an hour to come out
+ * ahead. These three arrive within an hour of the last one of their kind 82 to
+ * 100% of the time. The recipe calls and moderation come once a day or less, so
+ * caching would only ever pay the write, and the catalogue pick and nutrition
+ * estimate are under Haiku's 512-token minimum.
+ */
+const CACHED_SPANS = new Set<AiSpan>(['analyse_photo', 'describe_meal', 'interpret_instruction'])
+
+/**
+ * `messages` with their system prompt marked for Anthropic's prompt cache
+ * (`CACHED_SPANS` says which calls). Measured on a photo scan, input cost fell
+ * by half.
  */
 function cachedSystem(messages: unknown[]): unknown[] {
   const [first, ...rest] = messages as Array<{ role?: string; content?: unknown }>
@@ -411,12 +419,18 @@ function cachedSystem(messages: unknown[]): unknown[] {
 }
 
 /** The body of one chat request. Exported for the prompt eval. */
-export function requestBody(route: ModelRoute, messages: unknown[], maxTokens: number) {
+export function requestBody(
+  route: ModelRoute,
+  messages: unknown[],
+  maxTokens: number,
+  cache = false,
+) {
   const instructed = route.instruction ? withInstruction(messages, route.instruction) : messages
   return {
     model: route.model,
     ...(route.provider ? { provider: route.provider } : {}),
-    messages: route.cacheSystem ? cachedSystem(instructed) : instructed,
+    // Only Anthropic takes `cache_control`; the provider lock is what marks it.
+    messages: cache && route.provider ? cachedSystem(instructed) : instructed,
     max_tokens: maxTokens,
     ...(route.temperature === undefined ? {} : { temperature: route.temperature }),
     response_format: { type: 'json_object' },
@@ -525,7 +539,7 @@ export async function chatJSON(
         'HTTP-Referer': 'https://ricecal.app',
         'X-Title': 'RiceCal',
       },
-      body: JSON.stringify(requestBody(route, messages, maxTokens)),
+      body: JSON.stringify(requestBody(route, messages, maxTokens, CACHED_SPANS.has(span))),
     })
     generation.httpStatus = res.status
     if (!res.ok) {
