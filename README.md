@@ -1835,6 +1835,16 @@ Then, in order:
   on the entry. It used to write a shared catalogue row; a guess reused is still
   a guess.
 
+**A catalogue that does not answer costs two waits, not one per part.** Each
+search has four seconds (`_shared/catalogue.ts`), and the parts are searched in
+turn, so a Worker that hung for 90 seconds on 2026-10-20 held one five-part plate
+for 25 seconds while every part timed out and was priced from the model anyway.
+Two failed searches in a row now pause searching for 30 seconds in that isolate;
+any answer resets the count, so the occasional single slow search pauses
+nothing. A read whose connection broke (`TypeError`, back in milliseconds) is
+asked once more inside the same four seconds. A timeout is not, and a write is
+never sent twice.
+
 **There is no tier 5, and there was.** It classified the plate into one of sixty
 seeded generic rows and, failing that, wrote a terminal "Mixed meal" of 600 kcal
 at a hardcoded id that needed no model and no network. The argument for it was
@@ -7134,7 +7144,10 @@ It looked perfect at the small limits it was tested with.
 **An unreachable catalogue is not an empty one.** `data/catalogue.ts` throws for
 anything that is not a clean answer, so react-query reaches its error state.
 Answering `[]` for a Worker that is down tells somebody their dish does not
-exist.
+exist. The scan cascade keeps the same line: a search that got no answer is
+never written to `food_scan_misses`, which is the list of dishes the catalogue
+lacks. Before that, one bad minute put "spaghetti", "shrimp" and "steamed white
+rice" on it.
 
 **Anything a user can read that another user wrote needs a report and a block.**
 Guideline 1.2, and the community shelf is the only such surface here. Both are

@@ -17,9 +17,11 @@ import {
   priceRow,
   productFromLabel,
   type Resolved,
+  resolveItem,
   type SearchRow,
 } from './cascade.ts'
-import type { NutritionLabel } from './llm.ts'
+import type { Meter } from './entitlement.ts'
+import type { NutritionLabel, VisionItem } from './llm.ts'
 import { namesAPortion } from './portion.ts'
 
 const eq = (got: unknown, want: unknown, what: string) => {
@@ -520,4 +522,147 @@ Deno.test('productFromLabel refuses a panel that disagrees with itself', () => {
 Deno.test('productFromLabel tolerates ordinary label rounding', () => {
   eq(labelRow(labelPanel({ kcal: 140 })).kcal, 140, '11% under Atwater is still a label')
   eq(labelRow(labelPanel({ kcal: 195 })).kcal, 195, '24% over is too')
+})
+
+/**
+ * The widening backlog is for dishes the catalogue lacks, so a search that never
+ * got an answer must not land on it. During one bad minute on 2026-10-20 every
+ * timed-out search did, and "spaghetti", "shrimp" and "lettuce" went on the list
+ * of foods to go and find.
+ */
+async function missesFor(
+  answer: () => Response | Error,
+  overrides: Partial<VisionItem> = {},
+  tier = 4,
+): Promise<string[]> {
+  const saved = {
+    fetch: globalThis.fetch,
+    url: Deno.env.get('CATALOGUE_URL'),
+    token: Deno.env.get('CATALOGUE_TOKEN'),
+    mock: Deno.env.get('MOCK_AI'),
+  }
+  Deno.env.set('CATALOGUE_URL', 'https://catalogue.test')
+  Deno.env.set('CATALOGUE_TOKEN', 'token')
+  // Tier 4 answers from the mock, so the scan still resolves with no model.
+  Deno.env.set('MOCK_AI', 'true')
+  globalThis.fetch = (() => {
+    const outcome = answer()
+    return outcome instanceof Error ? Promise.reject(outcome) : Promise.resolve(outcome)
+  }) as typeof fetch
+
+  const misses: string[] = []
+  const db = {
+    from: (table: string) => ({
+      insert: (rows: Array<{ query: string }>) => {
+        if (table === 'food_scan_misses') misses.push(...rows.map((r) => r.query))
+        return Promise.resolve({ error: null })
+      },
+    }),
+  } as unknown as Parameters<typeof resolveItem>[0]
+  const meter: Meter = { record() {}, spent: () => 0, observe() {} }
+  const item: VisionItem = {
+    name: 'Spaghetti bolognese',
+    specific_query: 'spaghetti bolognese',
+    generic_query: 'spaghetti',
+    count: 1,
+    components: [],
+    grams: 300,
+    serving_hint: null,
+    kcal_low: 400,
+    kcal_high: 500,
+    confidence: 0.8,
+    suggested_edits: [],
+    icon: null,
+    ...overrides,
+  }
+
+  try {
+    const resolved = await resolveItem(db, 'scan', item, undefined, meter)
+    eq(resolved?.tier, tier, 'tier')
+    return misses
+  } finally {
+    globalThis.fetch = saved.fetch
+    for (const [key, value] of [
+      ['CATALOGUE_URL', saved.url],
+      ['CATALOGUE_TOKEN', saved.token],
+      ['MOCK_AI', saved.mock],
+    ] as const) {
+      if (value === undefined) Deno.env.delete(key)
+      else Deno.env.set(key, value)
+    }
+  }
+}
+
+const empty = () => Response.json({ ok: true, foods: [] })
+const timedOut = () => new DOMException('The signal has been aborted', 'AbortError')
+
+/** Plays its answers in order, then repeats the last. */
+const inTurn = (...answers: Array<() => Response | Error>) => {
+  let next = 0
+  return () => answers[Math.min(next++, answers.length - 1)]()
+}
+
+const plate: Partial<VisionItem> = {
+  components: [
+    {
+      name: 'Fried noodles',
+      count: 1,
+      grams: 250,
+      kcal: 300,
+      carbs_g: null,
+      protein_g: null,
+      fat_g: null,
+    },
+    {
+      name: 'Fried egg',
+      count: 1,
+      grams: 60,
+      kcal: 150,
+      carbs_g: null,
+      protein_g: null,
+      fat_g: null,
+    },
+  ],
+}
+
+const dumplings: Partial<VisionItem> = {
+  name: 'Har gow',
+  specific_query: 'har gow',
+  generic_query: 'shrimp dumplings',
+  count: 4,
+  grams: 30,
+}
+
+Deno.test('a search the catalogue answered empty is a miss', async () => {
+  const misses = await missesFor(empty)
+  eq(misses.join(', '), 'spaghetti bolognese, spaghetti', 'misses')
+})
+
+Deno.test('a part the catalogue answered empty is a miss', async () => {
+  const misses = await missesFor(empty, plate, 2)
+  eq(misses.join(', '), 'fried noodles, fried egg', 'misses')
+})
+
+Deno.test('a count the catalogue answered empty is a miss', async () => {
+  const misses = await missesFor(empty, dumplings)
+  eq(misses.join(', '), 'shrimp dumplings', 'misses')
+})
+
+// The count tier keeps one miss per item, and a timeout on the query after it
+// used to take back the empty answer before it.
+Deno.test('an empty answer stays a miss when the next query times out', async () => {
+  const misses = await missesFor(inTurn(empty, timedOut), dumplings)
+  eq(misses.join(', '), 'har gow', 'misses')
+})
+
+// Last in this file: two unreachable searches pause searching in this isolate,
+// so any search after these is not sent at all.
+Deno.test('a search that never got an answer is not a miss', async () => {
+  const misses = await missesFor(() => new TypeError('error sending request'))
+  eq(misses.length, 0, 'misses')
+})
+
+Deno.test('a part or a count that never got an answer is not a miss', async () => {
+  eq((await missesFor(timedOut, plate, 2)).length, 0, 'parts')
+  eq((await missesFor(timedOut, dumplings)).length, 0, 'count')
 })
