@@ -214,6 +214,9 @@ export async function searchFoods(q: string, limit = 50): Promise<CatalogueFood[
     `/search?q=${encodeURIComponent(q)}&limit=${limit}`,
   )
   searchGate.record(body !== null)
+  // Once per pause. The searches it skips log nothing, so without this line an
+  // outage reads as two failures and then silence.
+  if (!searchGate.open()) console.warn('catalogue: two searches failed in a row, pausing search')
   return body ? (body.foods ?? []) : null
 }
 

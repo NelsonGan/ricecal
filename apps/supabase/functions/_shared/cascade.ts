@@ -783,16 +783,15 @@ async function resolveByCount(
   if (!queries.length) return null
 
   let rows: SearchRow[] = []
-  let q = queries[0]
-  // Whether the catalogue answered the last query at all. Only an answer that
-  // came back empty is a miss.
-  let answered = false
+  // The last query the catalogue answered with nothing. Only an answer that came
+  // back empty is a miss, and a later query going unanswered (a timeout, or the
+  // pause that follows two) does not take back the one before it.
+  let missed: string | null = null
   for (const candidate of queries) {
-    q = candidate
     const found = await search(candidate, 5).catch(() => null)
-    answered = found !== null
     rows = found ?? []
     if (rows.length) break
+    if (found !== null) missed = candidate
   }
 
   // The same conversion the breakdown uses: "Durian, raw" is priced per cup and
@@ -828,7 +827,7 @@ async function resolveByCount(
     // model alone: the weakest answer this path can give.
     trace?.push(`[cascade] count: no catalogue row for "${item.name}", priced from the model`)
   }
-  if (!rows.length && answered) await recordMisses(db, scanId, [q])
+  if (!rows.length && missed) await recordMisses(db, scanId, [missed])
 
   return { tier: fit ? 3 : 4, food: unitRow, quantity: item.count, displayLabel: item.name }
 }
