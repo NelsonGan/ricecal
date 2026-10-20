@@ -60,7 +60,7 @@ export type OpenRouterUsage = {
   is_byok?: boolean
   /** Under BYOK, what the provider bills us directly. */
   cost_details?: { upstream_inference_cost?: number }
-  prompt_tokens_details?: { cached_tokens?: number }
+  prompt_tokens_details?: { cached_tokens?: number; cache_write_tokens?: number }
 }
 
 export type Generation = {
@@ -144,6 +144,7 @@ export function generationEvent(context: AiContext, traceId: string, generation:
   const input = finite(usage.prompt_tokens)
   const output = finite(usage.completion_tokens)
   const cached = finite(usage.prompt_tokens_details?.cached_tokens)
+  const written = finite(usage.prompt_tokens_details?.cache_write_tokens)
   const charged = finite(usage.cost)
   // Under BYOK, OpenRouter's `cost` is only its own fee (often 0), and the
   // inference is billed to us by the provider. Without adding that back, every
@@ -152,6 +153,7 @@ export function generationEvent(context: AiContext, traceId: string, generation:
   if (input !== undefined) properties.$ai_input_tokens = input
   if (output !== undefined) properties.$ai_output_tokens = output
   if (cached !== undefined) properties.$ai_cache_read_input_tokens = cached
+  if (written !== undefined) properties.$ai_cache_creation_input_tokens = written
   if (charged !== undefined || upstream !== undefined) {
     // OpenRouter reports what was charged, so PostHog should not re-price it.
     properties.$ai_total_cost_usd = (charged ?? 0) + (upstream ?? 0)

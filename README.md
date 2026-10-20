@@ -212,6 +212,24 @@ that line:
   sends the rest of that isolate's calls to Qwen, and PostHog records it as
   `byok: false` on the event.
 
+**Haiku's system prompts are cached for an hour, for the calls that repeat.**
+A photo scan, a typed meal and a correction each send a fixed system prompt
+(about 3,400, 6,100 and 2,500 tokens) ahead of the meal's own text or photo, so
+the Anthropic route sends it as one block marked `cache_control: { type:
+'ephemeral', ttl: '1h' }` (`CACHED_SPANS` and `cachedSystem` in `llm.ts`). A hit
+costs a tenth of the input price, but the one-hour write costs twice it, so a
+call comes out ahead only with a little over one hit an hour. Those three
+arrive within an hour of the last of their kind 82 to 100% of the time; the
+recipe calls and moderation come once a day or less, so they are left uncached
+rather than pay a write nobody reads, and the catalogue pick and nutrition
+estimate are under Haiku's 512-token minimum. A photo scan's input cost halved
+in testing, and a typed meal fell from about $0.0007 to $0.0002. Two things keep
+it working: a cached system prompt must stay byte-for-byte fixed (per-request
+text belongs in the user message, after the cached block), and the cache is per
+Anthropic workspace, which every call shares through the one BYOK key. A photo
+with a typed note uses its own variant of the prompt, and so its own cache
+entry.
+
 **Haiku does not honour `response_format: json_object`.** With reasoning off it
 works things out in its answer: a paragraph before the JSON, or a nutrition
 estimate's arithmetic running out of tokens before any JSON arrives. Its route
@@ -6268,7 +6286,7 @@ scan's vision call, catalogue pick and nutrition estimate read as one trace.
 | --- | --- |
 | `$ai_span_name` | What the call is for: `analyse_photo`, `describe_meal`, `pick_candidate`, `estimate_nutrition`, `interpret_instruction`, `read_recipe_photo`, `describe_recipe`, `review_recipe`, `suggest_meals`, `moderate_submission` |
 | `$ai_model`, `$ai_provider`, `$ai_base_url` | The OpenRouter model the request named: `anthropic/claude-haiku-5.5` (`OPENROUTER_BYOK_MODEL`) or the Qwen fallback (`OPENROUTER_MODEL`), `openrouter` |
-| `$ai_input_tokens`, `$ai_output_tokens`, `$ai_cache_read_input_tokens` | From OpenRouter's `usage` |
+| `$ai_input_tokens`, `$ai_output_tokens`, `$ai_cache_read_input_tokens`, `$ai_cache_creation_input_tokens` | From OpenRouter's `usage`: the cache pair is the system prompt read from or written to Anthropic's prompt cache (`prompt_tokens_details.cached_tokens` / `cache_write_tokens`) |
 | `$ai_total_cost_usd`, `$ai_cost_passthrough` | What the call cost us, not re-priced: OpenRouter's charge (`usage.cost`), plus, when our own key paid, what Anthropic bills directly (`usage.cost_details.upstream_inference_cost`), since under BYOK `cost` is only OpenRouter's fee |
 | `byok` | `usage.is_byok`: `true` when our Anthropic key paid. An `anthropic/` event with `false` means OpenRouter credits were spent on it, which the routing forbids |
 | `$ai_latency`, `$ai_http_status`, `$ai_is_error`, `$ai_error`, `finish_reason` | Seconds, status and a short error; a JSON parse failure is recorded as `model answer was not valid JSON` so the answer is never quoted |

@@ -387,12 +387,50 @@ function withInstruction(messages: unknown[], instruction: string): unknown[] {
   return [{ role: 'system', content: instruction }, ...messages]
 }
 
+/**
+ * The calls whose system prompt goes in Anthropic's one-hour prompt cache.
+ *
+ * Each system prompt is a fixed string ahead of the meal's own text or photo,
+ * so it is the prefix a cache can serve: 3,400 tokens for a photo, 6,100 for a
+ * typed meal, 2,500 for a correction. A hit is a tenth of the input price, but
+ * the write costs twice it, so a cached call pays one extra input's worth up
+ * front and earns 0.9 back per hit: a little over one hit an hour to come out
+ * ahead. These three arrive within an hour of the last one of their kind 82 to
+ * 100% of the time. The recipe calls and moderation come once a day or less, so
+ * caching would only ever pay the write, and the catalogue pick and nutrition
+ * estimate are under Haiku's 512-token minimum.
+ */
+const CACHED_SPANS = new Set<AiSpan>(['analyse_photo', 'describe_meal', 'interpret_instruction'])
+
+/**
+ * `messages` with their system prompt marked for Anthropic's prompt cache
+ * (`CACHED_SPANS` says which calls). Measured on a photo scan, input cost fell
+ * by half.
+ */
+function cachedSystem(messages: unknown[]): unknown[] {
+  const [first, ...rest] = messages as Array<{ role?: string; content?: unknown }>
+  if (first?.role !== 'system' || typeof first.content !== 'string') return messages
+  const block = {
+    type: 'text',
+    text: first.content,
+    cache_control: { type: 'ephemeral', ttl: '1h' },
+  }
+  return [{ ...first, content: [block] }, ...rest]
+}
+
 /** The body of one chat request. Exported for the prompt eval. */
-export function requestBody(route: ModelRoute, messages: unknown[], maxTokens: number) {
+export function requestBody(
+  route: ModelRoute,
+  messages: unknown[],
+  maxTokens: number,
+  cache = false,
+) {
+  const instructed = route.instruction ? withInstruction(messages, route.instruction) : messages
   return {
     model: route.model,
     ...(route.provider ? { provider: route.provider } : {}),
-    messages: route.instruction ? withInstruction(messages, route.instruction) : messages,
+    // Only Anthropic takes `cache_control`; the provider lock is what marks it.
+    messages: cache && route.provider ? cachedSystem(instructed) : instructed,
     max_tokens: maxTokens,
     ...(route.temperature === undefined ? {} : { temperature: route.temperature }),
     response_format: { type: 'json_object' },
@@ -501,7 +539,7 @@ export async function chatJSON(
         'HTTP-Referer': 'https://ricecal.app',
         'X-Title': 'RiceCal',
       },
-      body: JSON.stringify(requestBody(route, messages, maxTokens)),
+      body: JSON.stringify(requestBody(route, messages, maxTokens, CACHED_SPANS.has(span))),
     })
     generation.httpStatus = res.status
     if (!res.ok) {
