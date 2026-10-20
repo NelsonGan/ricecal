@@ -1,6 +1,6 @@
 import { FREE_RECIPES } from '@ricecal/shared'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -92,6 +92,10 @@ export default function RecipeDetailScreen() {
   const [menu, setMenu] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [reporting, setReporting] = useState(false)
+  // What the menu's button opens, held until the menu's own window is gone.
+  // iOS will not present a modal while another is still dismissing, so opening
+  // the delete or share sheet in the same tap left it unshown.
+  const afterMenu = useRef<(() => void) | null>(null)
 
   // Internal navigation carries the row id. A link carries the bearer slug,
   // which the photo signer needs as well as the recipe queries.
@@ -447,6 +451,11 @@ export default function RecipeDetailScreen() {
       <Sheet
         visible={menu}
         onClose={() => setMenu(false)}
+        onDismiss={() => {
+          const next = afterMenu.current
+          afterMenu.current = null
+          next?.()
+        }}
         title={recipe.name}
         closeLabel={t('common:action.close')}
         scrollable={false}
@@ -456,8 +465,9 @@ export default function RecipeDetailScreen() {
           fullWidth
           leftIcon={<Icon set="ui" name="edit" size={20} />}
           onPress={() => {
+            afterMenu.current = () =>
+              router.push({ pathname: '/recipe/edit', params: { id: recipe.id } })
             setMenu(false)
-            router.push({ pathname: '/recipe/edit', params: { id: recipe.id } })
           }}
         >
           {t('common:action.edit')}
@@ -467,8 +477,8 @@ export default function RecipeDetailScreen() {
           fullWidth
           leftIcon={<Icon set="ui" name="share" size={20} />}
           onPress={() => {
+            afterMenu.current = () => setSharing(true)
             setMenu(false)
-            setSharing(true)
           }}
         >
           {t('recipes:share.action')}
@@ -478,8 +488,8 @@ export default function RecipeDetailScreen() {
           fullWidth
           leftIcon={<Icon set="ui" name="delete" size={20} />}
           onPress={() => {
+            afterMenu.current = () => setDeleting(true)
             setMenu(false)
-            setDeleting(true)
           }}
         >
           {t('recipes:detail.delete')}
