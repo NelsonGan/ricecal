@@ -212,18 +212,23 @@ that line:
   sends the rest of that isolate's calls to Qwen, and PostHog records it as
   `byok: false` on the event.
 
-**Haiku's system prompts are cached for an hour.** Every system prompt is a
-fixed string of 2,000 to 6,000 tokens ahead of the meal's own text or photo, so
+**Haiku's system prompts are cached for an hour, for the calls that repeat.**
+A photo scan, a typed meal and a correction each send a fixed system prompt
+(about 3,400, 6,100 and 2,500 tokens) ahead of the meal's own text or photo, so
 the Anthropic route sends it as one block marked `cache_control: { type:
-'ephemeral', ttl: '1h' }` (`cachedSystem` in `llm.ts`). A hit costs a tenth of
-the input price; the write costs twice, repaid by the first reuse, and nearly
-every photo scan arrives within an hour of the last. A photo scan's input cost
-halved in testing, and a typed meal fell from about $0.0007 to $0.0002. Two
-things keep it working: the system prompt must stay byte-for-byte fixed (any
-per-request text belongs in the user message, after the cached block), and the
-cache is per Anthropic workspace, which every call shares through the one BYOK
-key. The catalogue pick and the nutrition estimate are under Haiku's 512-token
-minimum and are not cached, at no cost.
+'ephemeral', ttl: '1h' }` (`CACHED_SPANS` and `cachedSystem` in `llm.ts`). A hit
+costs a tenth of the input price, but the one-hour write costs twice it, so a
+call comes out ahead only with a little over one hit an hour. Those three
+arrive within an hour of the last of their kind 82 to 100% of the time; the
+recipe calls and moderation come once a day or less, so they are left uncached
+rather than pay a write nobody reads, and the catalogue pick and nutrition
+estimate are under Haiku's 512-token minimum. A photo scan's input cost halved
+in testing, and a typed meal fell from about $0.0007 to $0.0002. Two things keep
+it working: a cached system prompt must stay byte-for-byte fixed (per-request
+text belongs in the user message, after the cached block), and the cache is per
+Anthropic workspace, which every call shares through the one BYOK key. A photo
+with a typed note uses its own variant of the prompt, and so its own cache
+entry.
 
 **Haiku does not honour `response_format: json_object`.** With reasoning off it
 works things out in its answer: a paragraph before the JSON, or a nutrition

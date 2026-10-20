@@ -12,7 +12,7 @@ import {
   requestBody,
   routeFor,
 } from './llm.ts'
-import type { Generation } from './posthog.ts'
+import type { AiSpan, Generation } from './posthog.ts'
 
 type Sent = { model: string; provider?: unknown; temperature?: number }
 
@@ -21,7 +21,10 @@ type Sent = { model: string; provider?: unknown; temperature?: number }
  * the next response in `answers`, and hands back every body that was sent and
  * every generation the meter was told about.
  */
-async function withAnswers(answers: Array<() => Response>): Promise<{
+async function withAnswers(
+  answers: Array<() => Response>,
+  span: AiSpan = 'describe_meal',
+): Promise<{
   result: unknown
   sent: Sent[]
   generations: Generation[]
@@ -43,7 +46,7 @@ async function withAnswers(answers: Array<() => Response>): Promise<{
     observe: (generation) => void generations.push(generation),
   }
   try {
-    const result = await chatJSON(meter, 'describe_meal', [{ role: 'user', content: 'x' }])
+    const result = await chatJSON(meter, span, [{ role: 'user', content: 'x' }])
     return { result, sent, generations }
   } finally {
     globalThis.fetch = previousFetch
@@ -121,7 +124,6 @@ Deno.test('any Anthropic model is locked to our key, whichever route it is on', 
     model: 'anthropic/claude-sonnet-5.5',
     provider: { only: ['anthropic'], allow_fallbacks: false },
     instruction: PRIMARY_ROUTE?.instruction,
-    cacheSystem: true,
   })
   assertEquals(routeFor('qwen/qwen3.7-flash', 0.2), {
     model: 'qwen/qwen3.7-flash',
@@ -134,10 +136,13 @@ Deno.test('only the primary is told to answer in JSON alone, in a cached system 
     { role: 'system', content: 'Prompt.' },
     { role: 'user', content: 'x' },
   ]
-  const primary = requestBody(PRIMARY_ROUTE as ModelRoute, messages, 100).messages as Array<{
+  const before = structuredClone(messages)
+  const primary = requestBody(PRIMARY_ROUTE as ModelRoute, messages, 100, true).messages as Array<{
     content: unknown
   }>
-  const fallback = requestBody(FALLBACK_ROUTE, messages, 100).messages
+  const fallback = requestBody(FALLBACK_ROUTE, messages, 100, true).messages
+  // Building either body leaves the caller's messages as they were.
+  assertEquals(messages, before)
   // The whole system prompt, instruction included, is the one cached block, so
   // every call of a kind shares the prefix; the meal's own message follows it.
   assertEquals(primary[0].content, [
@@ -148,7 +153,13 @@ Deno.test('only the primary is told to answer in JSON alone, in a cached system 
     },
   ])
   assertEquals(primary[1], messages[1])
-  assertEquals(fallback, messages)
+  // Qwen takes no cache_control, so it is sent the messages as given.
+  assertEquals(fallback, before)
+  // A call not worth caching sends the system prompt as plain text.
+  const uncached = requestBody(PRIMARY_ROUTE as ModelRoute, messages, 100).messages as Array<{
+    content: unknown
+  }>
+  assertEquals(uncached[0].content, `Prompt.\n\n${PRIMARY_ROUTE?.instruction}`)
 })
 
 Deno.test('the JSON is found after a paragraph of working, or inside a fence', () => {
@@ -161,6 +172,15 @@ Deno.test('the JSON is found after a paragraph of working, or inside a fence', (
   assertEquals(parseAnswer('Working it out first.\n{"a":4}'), { a: 4 })
   assertThrows(() => parseAnswer('Estimating each component:\n- rice 200 g'), SyntaxError)
   assertThrows(() => parseAnswer('Totals:\n\n{"kc'), SyntaxError)
+})
+
+Deno.test('a frequent call caches its system prompt, a once-a-day one does not', async () => {
+  const system = (sent: Sent[]) =>
+    (sent[0] as unknown as { messages: Array<{ content: unknown }> }).messages[0].content
+  const frequent = await withAnswers([answer('{"ok":1}')], 'analyse_photo')
+  assertEquals(Array.isArray(system(frequent.sent)), true)
+  const rare = await withAnswers([answer('{"ok":1}')], 'describe_recipe')
+  assertEquals(typeof system(rare.sent), 'string')
 })
 
 Deno.test('a photo is sent as what it is, not as whatever JPEG would be', () => {
