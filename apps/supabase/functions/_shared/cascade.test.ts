@@ -530,7 +530,11 @@ Deno.test('productFromLabel tolerates ordinary label rounding', () => {
  * timed-out search did, and "spaghetti", "shrimp" and "lettuce" went on the list
  * of foods to go and find.
  */
-async function missesFor(answer: () => Response | Error): Promise<string[]> {
+async function missesFor(
+  answer: () => Response | Error,
+  overrides: Partial<VisionItem> = {},
+  tier = 4,
+): Promise<string[]> {
   const saved = {
     fetch: globalThis.fetch,
     url: Deno.env.get('CATALOGUE_URL'),
@@ -569,11 +573,12 @@ async function missesFor(answer: () => Response | Error): Promise<string[]> {
     confidence: 0.8,
     suggested_edits: [],
     icon: null,
+    ...overrides,
   }
 
   try {
     const resolved = await resolveItem(db, 'scan', item, undefined, meter)
-    eq(resolved?.tier, 4, 'falls through to the estimate')
+    eq(resolved?.tier, tier, 'tier')
     return misses
   } finally {
     globalThis.fetch = saved.fetch
@@ -588,13 +593,76 @@ async function missesFor(answer: () => Response | Error): Promise<string[]> {
   }
 }
 
+const empty = () => Response.json({ ok: true, foods: [] })
+const timedOut = () => new DOMException('The signal has been aborted', 'AbortError')
+
+/** Plays its answers in order, then repeats the last. */
+const inTurn = (...answers: Array<() => Response | Error>) => {
+  let next = 0
+  return () => answers[Math.min(next++, answers.length - 1)]()
+}
+
+const plate: Partial<VisionItem> = {
+  components: [
+    {
+      name: 'Fried noodles',
+      count: 1,
+      grams: 250,
+      kcal: 300,
+      carbs_g: null,
+      protein_g: null,
+      fat_g: null,
+    },
+    {
+      name: 'Fried egg',
+      count: 1,
+      grams: 60,
+      kcal: 150,
+      carbs_g: null,
+      protein_g: null,
+      fat_g: null,
+    },
+  ],
+}
+
+const dumplings: Partial<VisionItem> = {
+  name: 'Har gow',
+  specific_query: 'har gow',
+  generic_query: 'shrimp dumplings',
+  count: 4,
+  grams: 30,
+}
+
 Deno.test('a search the catalogue answered empty is a miss', async () => {
-  const misses = await missesFor(() => Response.json({ ok: true, foods: [] }))
+  const misses = await missesFor(empty)
   eq(misses.join(', '), 'spaghetti bolognese, spaghetti', 'misses')
 })
 
-// After the one above: two unreachable searches pause searching in this isolate.
+Deno.test('a part the catalogue answered empty is a miss', async () => {
+  const misses = await missesFor(empty, plate, 2)
+  eq(misses.join(', '), 'fried noodles, fried egg', 'misses')
+})
+
+Deno.test('a count the catalogue answered empty is a miss', async () => {
+  const misses = await missesFor(empty, dumplings)
+  eq(misses.join(', '), 'shrimp dumplings', 'misses')
+})
+
+// The count tier keeps one miss per item, and a timeout on the query after it
+// used to take back the empty answer before it.
+Deno.test('an empty answer stays a miss when the next query times out', async () => {
+  const misses = await missesFor(inTurn(empty, timedOut), dumplings)
+  eq(misses.join(', '), 'har gow', 'misses')
+})
+
+// Last in this file: two unreachable searches pause searching in this isolate,
+// so any search after these is not sent at all.
 Deno.test('a search that never got an answer is not a miss', async () => {
   const misses = await missesFor(() => new TypeError('error sending request'))
   eq(misses.length, 0, 'misses')
+})
+
+Deno.test('a part or a count that never got an answer is not a miss', async () => {
+  eq((await missesFor(timedOut, plate, 2)).length, 0, 'parts')
+  eq((await missesFor(timedOut, dumplings)).length, 0, 'count')
 })

@@ -1835,7 +1835,7 @@ Then, in order:
   on the entry. It used to write a shared catalogue row; a guess reused is still
   a guess.
 
-**A catalogue that does not answer costs one wait, not one per part.** Each
+**A catalogue that does not answer costs two waits, not one per part.** Each
 search has four seconds (`_shared/catalogue.ts`), and the parts are searched in
 turn, so a Worker that hung for 90 seconds on 2026-10-20 held one five-part plate
 for 25 seconds while every part timed out and was priced from the model anyway.
