@@ -85,3 +85,4 @@ export {
   WorkoutUnavailable,
 } from './WorkoutForm'
 export { WorkoutItem } from './WorkoutItem'
+export { WorkoutsTile } from './WorkoutsTile'

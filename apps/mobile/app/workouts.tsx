@@ -3,7 +3,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import {
   discardQueuedWorkout,
   type IconRef,
@@ -37,7 +36,9 @@ import {
   WorkoutCard,
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
+import { useBack } from '@/lib/navigation'
 import { unitFor, type WeightUnit } from '@/lib/units'
+import { useThemeColors } from '@/theme/useTheme'
 import { Button, Card, Icon, IconButton, ListRow, Screen, Skeleton, Text } from '@/ui'
 
 /** Whether this launch's Live Activity resume has been answered. */
@@ -55,6 +56,8 @@ let resumedThisLaunch = false
 export default function WorkoutsScreen() {
   const { t } = useTranslation(['workouts', 'common', 'logging'])
   const router = useRouter()
+  const back = useBack('/today')
+  const colors = useThemeColors()
   const { userId } = useSession()
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
@@ -109,18 +112,29 @@ export default function WorkoutsScreen() {
       <ScreenTitle
         title={t('workouts:title')}
         leading={
-          // Today's toggle, in the same place and size: the icon is the view
-          // being offered, and the streak pill opposite sets the row's height.
-          <IconButton
-            size="xs"
-            hitSlop={3}
-            onPress={() => setCalendar(!calendar)}
-            accessibilityLabel={t(
-              calendar ? 'workouts:calendar.showList' : 'logging:calendar.showMonth',
-            )}
-          >
-            <Icon set="ui" name={calendar ? 'list-view' : 'calendar-view'} size={19} />
-          </IconButton>
+          // A page now rather than a tab (Today and Me open it), so it starts
+          // with the way back, then the list/calendar toggle beside the title.
+          <View className="flex-row items-center gap-2">
+            <IconButton
+              size="xs"
+              hitSlop={3}
+              variant="ghost"
+              onPress={back}
+              accessibilityLabel={t('common:action.back')}
+            >
+              <Icon set="ui" name="chevron-left" size={20} tintColor={colors.muted} />
+            </IconButton>
+            <IconButton
+              size="xs"
+              hitSlop={3}
+              onPress={() => setCalendar(!calendar)}
+              accessibilityLabel={t(
+                calendar ? 'workouts:calendar.showList' : 'logging:calendar.showMonth',
+              )}
+            >
+              <Icon set="ui" name={calendar ? 'list-view' : 'calendar-view'} size={19} />
+            </IconButton>
+          </View>
         }
         trailing={<WeekStreakBadge weeks={overview.data?.weekStreak} />}
       />

@@ -900,7 +900,7 @@ same My foods results instead of Today or All foods. `openOwn` and `openCreate`
 sit beside `openPicked`, and the page does not focus its field when any of them
 sent it, since a keyboard would come up under the screen on top.
 
-Five tabs (Today, Workouts, Feed, Trends, Me) on the headless `expo-router/ui`
+Five tabs (Today, Feed, Groups, Trends, Me) on the headless `expo-router/ui`
 Tabs rather than a styled navigator, because `NavBar` and `NavItem` are the
 design system's and a native tab bar cannot be made to look like them.
 
@@ -3081,8 +3081,9 @@ capacity without measurements.
 ## Groups
 
 Up to ten friends see each other's day of food on one board, so the Groups tab
-is an accountability tool rather than a second feed. It is the sixth tab, and
-the tab's icon carries the count of pending invites.
+is an accountability tool rather than a second feed. It took the tab that
+Workouts had (see [Workouts](#workouts)), and the tab's icon carries the count
+of pending invites.
 
 ### The board reads the diary; it copies nothing
 
@@ -3916,13 +3917,17 @@ separate maintenance decision because it locks and rewrites the table.
 
 ## Workouts
 
-The second tab, between Today and the feed: gym sessions logged set by set,
-the way Hevy and Strong do it, plus the routines they start from and
-the records they set. Today is what went in; Workouts is what was done, which is
-why the two sit side by side.
+Gym sessions logged set by set, the way Hevy and Strong do it, plus the
+routines they start from and the records they set. Today is what went in;
+Workouts is what was done. It was the second tab until Groups needed the room;
+now it is a page, opened from a small tile beside the water card on Today and
+from the first row of Settings on Me. Its URL stays `/workouts`, so the Live
+Activity, the watch and old notification links still land on it. The minimised
+bar of a running workout floats over the tabs only; the page has its own Resume
+button.
 
 ```
-app/(tabs)/workouts.tsx       streak, start button, routines, history, and a
+app/workouts.tsx              streak, start button, routines, history, and a
                               month calendar view
 app/workout/active.tsx        the logger
 app/workout/finish.tsx        name, notes, start and end times, save
@@ -4261,7 +4266,7 @@ The logger shows the burn so far along the foot of its figures card, beside a
 watch's heart rate, under a hairline in the same white card (a tinted band read
 as a second card): one quiet line by default, since the sets are what the
 screen is for, and opened in full with a tap (the choice is kept per phone in
-`bodyFiguresOpen`). The history cards on the Workouts tab show the saved burn
+`bodyFiguresOpen`). The history cards on the Workouts page show the saved burn
 as a chip beside the duration, whether or not Health counted it, since that
 list is a record of training rather than the budget, the finish screen shows what
 will be saved, and the save records the same number. While the Apple Watch app
@@ -4349,12 +4354,12 @@ reason.
 
 While a workout runs, the lock screen and the Dynamic Island show its clock,
 its name, sets done, the next set, and the rest countdown with a bar. Tapping it
-opens the logger (by way of the Workouts tab, below), not through
+opens the logger (by way of the Workouts page, below), not through
 `ricecal://widget/...`, which is how a home-screen widget tap is counted.
 
 - **A tap opens `ricecal://workout/resume`**, which `app/+native-intent.tsx`
   rewrites: with the app running, to the logger; on a cold launch, to
-  `/workouts?resume=1`, and the Workouts tab pushes the logger once it has
+  `/workouts?resume=1`, and the Workouts page pushes the logger once it has
   mounted (once per launch). iOS often kills the app while the phone is locked
   between sets, and a cold launch straight at `/workout/active` built a stack
   with the logger and nothing under it: minimise went nowhere, and the tabs

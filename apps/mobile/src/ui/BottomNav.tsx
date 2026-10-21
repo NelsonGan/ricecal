@@ -54,7 +54,7 @@ export type NavTab<T extends string> = {
  * pill's direct children, which a controlled component cannot express.
  *
  * The app's tabs pass no action, so the pill spans the width of the screen and
- * six tabs get the room. The add button floats over Today instead, as
+ * five tabs get the room. The add button floats over Today instead, as
  * `Screen`'s `floatingTrailing`, which pads the day's last row clear of it.
  */
 export function NavBar({
