@@ -56,8 +56,6 @@ export const groups = {
   unread_other: '{{count}} unread',
   reportGroup: 'Report {{name}}?',
   reportedGroup: 'Reported',
-  previousDay: 'Previous day',
-  nextDay: 'Next day',
   you: 'You',
   showMore_one: 'Show {{count}} more',
   showMore_other: 'Show {{count}} more',

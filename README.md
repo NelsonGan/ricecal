@@ -3168,7 +3168,9 @@ and a deleted account hands its groups on through the same trigger.
 Most people are in one group, so the tab goes straight back to the board it was
 on after a relaunch (`features/groups/store.ts`, kept per account in MMKV) until
 they tap back to the list. A group left elsewhere falls back to the list once
-`my_groups` has loaded. Only the day on screen refreshes, every 30 seconds; the
+`my_groups` has loaded. Days change by swiping the board or with the week strip
+under the header, the same strip Today uses, limited to the board's sixty days;
+each follows the other. Only the day on screen refreshes, every 30 seconds; the
 days either side are fetched once so a swipe lands on a drawn board. The chat
 refreshes every 5 seconds while open, and the invite count every five minutes
 and whenever the tab is shown, since an invite also arrives as a push. There is

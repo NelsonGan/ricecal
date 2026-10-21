@@ -2295,8 +2295,6 @@ export const vi = {
     unread_other: '{{count}} chưa đọc',
     reportGroup: 'Báo cáo {{name}}?',
     reportedGroup: 'Đã báo cáo',
-    previousDay: 'Ngày trước',
-    nextDay: 'Ngày sau',
     you: 'Bạn',
     showMore_one: 'Xem thêm {{count}}',
     showMore_other: 'Xem thêm {{count}}',

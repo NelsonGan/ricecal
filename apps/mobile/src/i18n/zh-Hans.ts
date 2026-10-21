@@ -2272,8 +2272,6 @@ export const zhHans = {
     unread_other: '{{count}} 条未读',
     reportGroup: '举报 {{name}}？',
     reportedGroup: '已举报',
-    previousDay: '前一天',
-    nextDay: '后一天',
     you: '你',
     showMore_one: '再显示 {{count}} 人',
     showMore_other: '再显示 {{count}} 人',

@@ -1,4 +1,4 @@
-import { format, parseISO, subDays } from 'date-fns'
+import { parseISO, subDays } from 'date-fns'
 import { useIsFocused, useRouter } from 'expo-router'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -26,7 +26,6 @@ import {
 import { workoutIcon, workoutKindKey } from '@/features/activity/workoutKind'
 import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
-import { datePattern } from '@/lib/dates'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   Button,
@@ -46,6 +45,7 @@ import { InviteSheet } from './InviteSheet'
 import { MealSheet } from './MealSheet'
 import { EntryPicture, MEAL_TINT, PersonAvatar, shortDuration, useGroupTask } from './parts'
 import { takeOpenDay } from './store'
+import { GroupWeekStrip } from './WeekStrip'
 
 /** How far back the pager goes. The server answers no further, nor signs older photos. */
 const DAYS = 60
@@ -55,6 +55,8 @@ const GAP = 4
 /** The page's side margin. The grid has no card around it, so the tiles get the width. */
 const EDGE = 8
 const MEMBER_COLUMN = 46
+/** Each side of the header: room for its two buttons, so the title centres on the screen. */
+const HEADER_SIDE = 88
 /** Text in a tile is capped so a large Dynamic Type size cannot push it out of a fixed square. */
 const TILE_TEXT = 1.3
 const SKELETON_ROWS = ['a', 'b', 'c', 'd']
@@ -113,8 +115,8 @@ function shortNames(members: readonly BoardMember[]): Map<string, string> {
 }
 
 /**
- * One group, one page per day. Swiping sideways goes back a day; the chevrons
- * do the same for anyone who does not think to swipe. The chat for the day on
+ * One group, one page per day. Swiping sideways goes back a day, and the week
+ * strip under the header picks any day of the last sixty, the way Today's does. The chat for the day on
  * screen sits in a bar above the tabs and opens as a sheet.
  */
 export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack: () => void }) {
@@ -151,10 +153,6 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
     pager.current?.scrollToIndex({ index, animated: false })
   }, [index])
 
-  const go = (next: number) => {
-    const target = days[Math.max(0, Math.min(DAYS - 1, next))]
-    if (target) setDay(target)
-  }
   const onMomentumEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const target = days[Math.round(event.nativeEvent.contentOffset.x / grid.width)]
     if (target && target !== day) setDay(target)
@@ -162,12 +160,6 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
 
   const name = summary?.name ?? board.data?.group.name
   const memberCount = summary?.member_count ?? board.data?.group.member_count
-  const dayLabel =
-    index === 0
-      ? t('common:date.today')
-      : index === 1
-        ? t('common:date.yesterday')
-        : format(parseISO(day), datePattern('weekdayDayMonth'))
   const openInvite = useCallback(() => setInviteOpen(true), [])
 
   const renderItem = useCallback<ListRenderItem<string>>(
@@ -190,11 +182,15 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
 
   return (
     <View className="flex-1">
-      <View className="gap-2 px-gutter pb-2 pt-1">
-        <View className="flex-row items-center gap-2">
-          <IconButton size="sm" accessibilityLabel={t('back')} onPress={onBack}>
-            <Icon set="ui" name="chevron-left" size={20} tintColor={colors.muted} />
-          </IconButton>
+      <View className="gap-3 pb-3 pt-1" style={{ paddingHorizontal: EDGE }}>
+        {/* Equal sides, so the name sits in the middle of the screen rather
+            than in the middle of whatever the buttons leave. */}
+        <View className="flex-row items-center">
+          <View style={{ width: HEADER_SIDE }} className="flex-row">
+            <IconButton size="sm" variant="ghost" accessibilityLabel={t('back')} onPress={onBack}>
+              <Icon set="ui" name="chevron-left" size={22} tintColor={colors.muted} />
+            </IconButton>
+          </View>
           <View className="min-w-0 flex-1 items-center">
             <Text variant="subtitle" numberOfLines={1} maxFontSizeMultiplier={1.3}>
               {name ?? ' '}
@@ -203,48 +199,31 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
               <Text variant="micro">{t('members', { count: memberCount })}</Text>
             ) : null}
           </View>
-          <IconButton
-            size="sm"
-            variant="ghost"
-            accessibilityLabel={t('inviteFriends')}
-            onPress={openInvite}
-          >
-            <Icon set="system" name="user-add" size={22} />
-          </IconButton>
-          <IconButton
-            size="sm"
-            variant="ghost"
-            accessibilityLabel={t('settings')}
-            onPress={() => router.push({ pathname: '/group/[id]', params: { id: groupId } })}
-          >
-            <Icon set="system" name="settings" size={22} />
-          </IconButton>
+          <View style={{ width: HEADER_SIDE }} className="flex-row justify-end">
+            <IconButton
+              size="sm"
+              variant="ghost"
+              accessibilityLabel={t('inviteFriends')}
+              onPress={openInvite}
+            >
+              <Icon set="system" name="user-add" size={22} />
+            </IconButton>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              accessibilityLabel={t('settings')}
+              onPress={() => router.push({ pathname: '/group/[id]', params: { id: groupId } })}
+            >
+              <Icon set="system" name="settings" size={22} />
+            </IconButton>
+          </View>
         </View>
-        <View className="flex-row items-center justify-between">
-          <IconButton
-            size="xs"
-            variant="subtle"
-            hitSlop={8}
-            accessibilityLabel={t('previousDay')}
-            disabled={index >= DAYS - 1}
-            onPress={() => go(index + 1)}
-          >
-            <Icon set="ui" name="chevron-left" size={18} tintColor={colors.muted} />
-          </IconButton>
-          <Text variant="label" accessibilityLiveRegion="polite">
-            {dayLabel}
-          </Text>
-          <IconButton
-            size="xs"
-            variant="subtle"
-            hitSlop={8}
-            accessibilityLabel={t('nextDay')}
-            disabled={index === 0}
-            onPress={() => go(index - 1)}
-          >
-            <Icon set="ui" name="chevron-right" size={18} tintColor={colors.muted} />
-          </IconButton>
-        </View>
+        <GroupWeekStrip
+          day={day}
+          today={today}
+          oldest={days[DAYS - 1] ?? today}
+          onChange={setDay}
+        />
       </View>
 
       <FlatList
@@ -533,7 +512,7 @@ function MealTile({
         {/* Keyed on the foods, so one moved away or deleted starts the tile
             again at its first food rather than on a blank page. Several foods
             swipe here; on iOS the swipe stays in the tile, and the day changes
-            from any other part of the board or the chevrons. */}
+            from any other part of the board or the week strip. */}
         <ScrollView
           key={entries.map((entry) => entry.id).join()}
           horizontal

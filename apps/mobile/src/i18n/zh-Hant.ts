@@ -2272,8 +2272,6 @@ export const zhHant = {
     unread_other: '{{count}} 則未讀',
     reportGroup: '檢舉 {{name}}？',
     reportedGroup: '已檢舉',
-    previousDay: '前一天',
-    nextDay: '後一天',
     you: '你',
     showMore_one: '再顯示 {{count}} 人',
     showMore_other: '再顯示 {{count}} 人',

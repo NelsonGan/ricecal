@@ -2324,8 +2324,6 @@ export const ms = {
     unread_other: '{{count}} belum dibaca',
     reportGroup: 'Laporkan {{name}}?',
     reportedGroup: 'Dilaporkan',
-    previousDay: 'Hari sebelumnya',
-    nextDay: 'Hari seterusnya',
     you: 'Anda',
     showMore_one: 'Tunjuk {{count}} lagi',
     showMore_other: 'Tunjuk {{count}} lagi',

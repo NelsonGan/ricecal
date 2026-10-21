@@ -2304,8 +2304,6 @@ export const id = {
     unread_other: '{{count}} belum dibaca',
     reportGroup: 'Laporkan {{name}}?',
     reportedGroup: 'Dilaporkan',
-    previousDay: 'Hari sebelumnya',
-    nextDay: 'Hari berikutnya',
     you: 'Kamu',
     showMore_one: 'Tampilkan {{count}} lagi',
     showMore_other: 'Tampilkan {{count}} lagi',
