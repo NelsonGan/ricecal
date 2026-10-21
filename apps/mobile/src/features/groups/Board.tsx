@@ -713,25 +713,29 @@ function NudgeTile({
       // The task showed why.
     }
   }
+  // Drawn like a food tile with no photo: a clay picture on a soft fill and the
+  // label at the foot, so a row of them reads as part of the board rather than
+  // as buttons dropped on it. The whole tile is the target.
   return (
     <Tappable
-      className="items-center justify-center rounded-[14px] bg-surface-alt"
-      style={{ width: size, height: size }}
+      className="items-center justify-center rounded-[14px] bg-hibiscus-soft"
+      style={{ width: size, height: size, opacity: task.isPending ? 0.6 : 1 }}
       onPress={() => void nudge()}
       disabled={task.isPending}
       accessibilityRole="button"
       accessibilityLabel={t('nudgeLabel', { name, meal: t(`mealInSentence.${meal}`) })}
     >
-      <View className="min-h-[30px] flex-row items-center rounded-full bg-hibiscus-soft px-2">
-        <Text
-          variant="micro"
-          className="text-hibiscus-ink"
-          numberOfLines={1}
-          maxFontSizeMultiplier={TILE_TEXT}
-        >
-          👋 {t('nudge')}
-        </Text>
+      <View className="flex-1 items-center justify-center pt-1">
+        <Icon set="system" name="wave" size={Math.round(size * 0.42)} />
       </View>
+      <Text
+        variant="micro"
+        className="pb-1.5 text-hibiscus-ink"
+        numberOfLines={1}
+        maxFontSizeMultiplier={TILE_TEXT}
+      >
+        {t('nudge')}
+      </Text>
     </Tappable>
   )
 }
