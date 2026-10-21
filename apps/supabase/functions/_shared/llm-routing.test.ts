@@ -1,6 +1,7 @@
 import { assertEquals, assertThrows } from 'jsr:@std/assert@1'
 import type { Meter } from './entitlement.ts'
 import {
+  answerShape,
   chatJSON,
   completeJpeg,
   FALLBACK_ROUTE,
@@ -172,6 +173,44 @@ Deno.test('the JSON is found after a paragraph of working, or inside a fence', (
   assertEquals(parseAnswer('Working it out first.\n{"a":4}'), { a: 4 })
   assertThrows(() => parseAnswer('Estimating each component:\n- rice 200 g'), SyntaxError)
   assertThrows(() => parseAnswer('Totals:\n\n{"kc'), SyntaxError)
+})
+
+Deno.test('an unreadable answer is described by its shape, never by its words', () => {
+  // A second object after the first: what a parser fix would cover.
+  const twice = answerShape('{"name":"nasi lemak"}\n\nCorrected:\n{"name":"nasi lemak ayam"}')
+  assertEquals(twice.includes('objects=2'), true)
+  assertEquals(twice.includes('error=after-json'), true)
+  // A quote the model forgot to escape: what a prompt fix would cover.
+  const quote = answerShape('{"name":"teh "tarik"","kcal":120}')
+  assertEquals(quote.includes('objects=1'), true)
+  assertEquals(quote.includes('error=expected-comma'), true)
+  assertEquals(quote.includes('at-char=letter'), true)
+  // Cut off part way, with nothing closing it.
+  assertEquals(answerShape('{"items":[{"name":"roti').includes('unclosed=2'), true)
+  for (const shape of [twice, quote]) {
+    assertEquals(/nasi|lemak|teh|tarik|ayam|name|Corrected/i.test(shape), false)
+  }
+})
+
+Deno.test('an unparseable primary answer logs its shape before the fallback', async () => {
+  const warn = console.warn
+  const lines: string[] = []
+  console.warn = (...args: unknown[]) => void lines.push(args.map(String).join(' '))
+  try {
+    const { result } = await withAnswers([
+      answer('{"name":"char kuey teow"} {"name":"char kuey teow"}'),
+      answer('{"ok":5}'),
+    ])
+    assertEquals(result, { ok: 5 })
+  } finally {
+    console.warn = warn
+  }
+  const shape = lines.find((line) => line.includes('answer did not parse'))
+  assertEquals(shape?.includes('objects=2'), true)
+  assertEquals(
+    lines.some((line) => /kuey|teow/.test(line)),
+    false,
+  )
 })
 
 Deno.test('a frequent call caches its system prompt, a once-a-day one does not', async () => {
