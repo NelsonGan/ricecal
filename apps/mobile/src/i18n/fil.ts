@@ -2326,8 +2326,6 @@ export const fil = {
     unread_other: '{{count}} hindi pa nababasa',
     reportGroup: 'I-report ang {{name}}?',
     reportedGroup: 'Na-report',
-    previousDay: 'Nakaraang araw',
-    nextDay: 'Susunod na araw',
     you: 'Ikaw',
     showMore_one: 'Ipakita ang {{count}} pa',
     showMore_other: 'Ipakita ang {{count}} pa',

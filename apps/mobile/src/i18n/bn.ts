@@ -2281,8 +2281,6 @@ export const bn = {
     unread_other: '{{count}}টি অপঠিত',
     reportGroup: '{{name}} রিপোর্ট করবেন?',
     reportedGroup: 'রিপোর্ট করা হয়েছে',
-    previousDay: 'আগের দিন',
-    nextDay: 'পরের দিন',
     you: 'আপনি',
     showMore_one: 'আরও {{count}} জন দেখান',
     showMore_other: 'আরও {{count}} জন দেখান',

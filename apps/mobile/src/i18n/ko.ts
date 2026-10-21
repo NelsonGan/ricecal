@@ -2279,8 +2279,6 @@ export const ko = {
     unread_other: '읽지 않음 {{count}}',
     reportGroup: '{{name}} 신고할까요?',
     reportedGroup: '신고했어요',
-    previousDay: '이전 날',
-    nextDay: '다음 날',
     you: '나',
     showMore_one: '{{count}}명 더 보기',
     showMore_other: '{{count}}명 더 보기',

@@ -2293,8 +2293,6 @@ export const ja = {
     unread_other: '未読 {{count}} 件',
     reportGroup: '{{name}}を通報しますか？',
     reportedGroup: '通報しました',
-    previousDay: '前の日',
-    nextDay: '次の日',
     you: 'あなた',
     showMore_one: 'あと {{count}} 人を表示',
     showMore_other: 'あと {{count}} 人を表示',

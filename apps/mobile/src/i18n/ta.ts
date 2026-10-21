@@ -2304,8 +2304,6 @@ export const ta = {
     unread_other: '{{count}} படிக்கவில்லை',
     reportGroup: '{{name}} ஐ புகார் செய்யவா?',
     reportedGroup: 'புகார் செய்யப்பட்டது',
-    previousDay: 'முந்தைய நாள்',
-    nextDay: 'அடுத்த நாள்',
     you: 'நீங்கள்',
     showMore_one: 'மேலும் {{count}} காட்டு',
     showMore_other: 'மேலும் {{count}} காட்டு',

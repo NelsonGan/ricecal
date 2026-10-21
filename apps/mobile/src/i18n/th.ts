@@ -2272,8 +2272,6 @@ export const th = {
     unread_other: 'ยังไม่อ่าน {{count}}',
     reportGroup: 'รายงาน {{name}}?',
     reportedGroup: 'รายงานแล้ว',
-    previousDay: 'วันก่อนหน้า',
-    nextDay: 'วันถัดไป',
     you: 'คุณ',
     showMore_one: 'แสดงอีก {{count}} คน',
     showMore_other: 'แสดงอีก {{count}} คน',

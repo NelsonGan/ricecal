@@ -2276,8 +2276,6 @@ export const hi = {
     unread_other: '{{count}} अपठित',
     reportGroup: '{{name}} की रिपोर्ट करें?',
     reportedGroup: 'रिपोर्ट किया गया',
-    previousDay: 'पिछला दिन',
-    nextDay: 'अगला दिन',
     you: 'आप',
     showMore_one: '{{count}} और दिखाएँ',
     showMore_other: '{{count}} और दिखाएँ',
