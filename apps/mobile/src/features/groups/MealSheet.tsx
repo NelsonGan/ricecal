@@ -1,4 +1,5 @@
 import { format, parseISO } from 'date-fns'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useUserId } from '@/data'
@@ -16,34 +17,49 @@ import { EntryPicture, MEAL_TINT, useGroupTask } from './parts'
 export function MealSheet({
   groupId,
   day,
-  open,
+  meal,
   member,
+  name,
   onClose,
 }: {
   groupId: string
   day: string
-  open: { meal: GroupMeal; index: number } | null
+  meal: GroupMeal | null
   member: BoardMember | null
+  name: string
   onClose: () => void
 }) {
   const { t } = useTranslation(['groups', 'common'])
   const viewer = useUserId()
-  const isSelf = member?.person.id === viewer
-  const meal = open?.meal ?? 'breakfast'
-  const entries = member?.entries.filter((entry) => entry.meal === meal) ?? []
-  const kcal = entries.reduce((sum, entry) => sum + entry.kcal, 0)
-  const mealName = t(meal).toLowerCase()
-  const title = isSelf
-    ? t('yourMeal', { meal: mealName })
-    : t('mealOf', { name: member?.person.name.split(' ')[0] ?? '', meal: mealName })
+  const visible = meal !== null && member !== null
+  // What the sheet was showing, kept while it slides away so its title does not
+  // change to an empty breakfast on the way out.
+  const shown = useRef<{ meal: GroupMeal; member: BoardMember; name: string } | null>(null)
+  if (visible) shown.current = { meal, member, name }
+  const current = shown.current
+  const entries = current?.member.entries.filter((entry) => entry.meal === current.meal) ?? []
+  const isSelf = current?.member.person.id === viewer
 
+  // Moving the last food out of this meal, or it being deleted, leaves
+  // nothing to show: close rather than sit open and empty.
+  const empty = visible && entries.length === 0
+  useEffect(() => {
+    if (empty) onClose()
+  }, [empty, onClose])
+
+  const kcal = entries.reduce((sum, entry) => sum + entry.kcal, 0)
+  const inSentence = current ? t(`mealInSentence.${current.meal}`) : ''
   return (
     <Sheet
-      visible={open !== null && member !== null}
+      visible={visible}
       onClose={onClose}
       closeLabel={t('common:action.close')}
-      title={title}
-      description={`${kcal} kcal · ${t('foods', { count: entries.length })}`}
+      title={
+        isSelf
+          ? t('yourMeal', { meal: inSentence })
+          : t('mealOf', { name: current?.name ?? '', meal: inSentence })
+      }
+      description={`${kcal} ${t('common:unit.kcal')} · ${t('foods', { count: entries.length })}`}
     >
       <View className="gap-3">
         {entries.map((entry) => (
@@ -52,7 +68,7 @@ export function MealSheet({
             groupId={groupId}
             day={day}
             entry={entry}
-            ownerId={member?.person.id ?? ''}
+            ownerId={current?.member.person.id ?? ''}
             isSelf={isSelf}
           />
         ))}
@@ -74,13 +90,14 @@ function EntryRow({
   ownerId: string
   isSelf: boolean
 }) {
-  const { t } = useTranslation('groups')
+  const { t } = useTranslation(['groups', 'common'])
   const task = useGroupTask()
   const react = (value: -1 | 1) => {
     const next = entry.mine === value ? 0 : value
     task.press({ action: 'react', groupId, day, entryId: entry.id, value: next })
     if (next !== 0) track('Group Reaction Set', { reaction: next === 1 ? 'like' : 'dislike' })
   }
+  const grams = (value: number) => t('common:unit.grams', { value: Math.round(value) })
   return (
     <View className="gap-2.5 rounded-tile border border-line bg-surface p-2.5">
       <View className="flex-row gap-3">
@@ -102,11 +119,11 @@ function EntryRow({
               .join(' · ')}
           </Text>
           <Text variant="caption" className="text-ink">
-            {entry.kcal} kcal
-            <Text variant="caption">
-              {'  '}C {Math.round(entry.carbs_g)}g · P {Math.round(entry.protein_g)}g · F{' '}
-              {Math.round(entry.fat_g)}g
-            </Text>
+            {entry.kcal} {t('common:unit.kcal')}
+          </Text>
+          <Text variant="caption" numberOfLines={1}>
+            {t('common:macro.carbs')} {grams(entry.carbs_g)} · {t('common:macro.protein')}{' '}
+            {grams(entry.protein_g)} · {t('common:macro.fat')} {grams(entry.fat_g)}
           </Text>
         </View>
       </View>
@@ -129,7 +146,7 @@ function EntryRow({
                   entry.meal !== meal && task.press({ action: 'move', entryId: entry.id, meal })
                 }
               >
-                {t(meal)}
+                {t(`common:meal.${meal}`)}
               </Chip>
             ))}
           </View>
@@ -173,7 +190,7 @@ function Reaction({
     <Tappable
       haptics
       className={cn(
-        'min-h-[40px] flex-1 flex-row items-center justify-center gap-2 rounded-full border',
+        'min-h-[44px] flex-1 flex-row items-center justify-center gap-2 rounded-full border',
         selected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
       )}
       onPress={onPress}

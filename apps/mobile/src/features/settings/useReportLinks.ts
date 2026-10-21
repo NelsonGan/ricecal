@@ -70,7 +70,9 @@ export function useReportLinks(): void {
       if (kind === 'group') {
         const data = response?.notification.request.content.data
         const groupId = typeof data?.groupId === 'string' ? data.groupId : null
-        if (userId && groupId && !data?.invite) setOpenGroup(userId, groupId)
+        if (userId && groupId && !data?.invite) {
+          setOpenGroup(userId, groupId, typeof data?.day === 'string' ? data.day : undefined)
+        }
         if (userId && data?.invite) setOpenGroup(userId, null)
         track('Notification Opened', { kind: data?.invite ? 'group_invite' : 'group_nudge' })
         router.navigate('/groups')

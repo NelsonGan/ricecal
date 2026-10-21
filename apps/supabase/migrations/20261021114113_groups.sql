@@ -41,9 +41,12 @@ CREATE FUNCTION private.group_member_joined()
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
+declare v_count smallint;
 begin
+  update public.groups g set member_count = g.member_count + 1
+  where g.id = new.group_id returning g.member_count into v_count;
   delete from public.group_invites i where i.group_id = new.group_id and i.invitee_id = new.user_id;
-  if (select count(*) from public.group_members m where m.group_id = new.group_id) >= 10 then
+  if v_count >= 10 then
     delete from public.group_invites i where i.group_id = new.group_id;
   end if;
   return null;
@@ -56,9 +59,11 @@ CREATE FUNCTION private.group_member_joining()
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
+declare v_count smallint;
 begin
-  perform 1 from public.groups g where g.id = new.group_id for update;
-  if (select count(*) from public.group_members m where m.group_id = new.group_id) >= 10 then
+  perform pg_advisory_xact_lock(hashtextextended('group-joining:' || new.user_id::text, 0));
+  select g.member_count into v_count from public.groups g where g.id = new.group_id for update;
+  if v_count >= 10 then
     raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
   end if;
   if (select count(*) from public.group_members m where m.user_id = new.user_id) >= 20 then
@@ -82,8 +87,9 @@ begin
   if v_next is null then
     delete from public.groups g where g.id = old.group_id;
   else
-    update public.groups g set leader_id = v_next, updated_at = now()
-    where g.id = old.group_id and (g.leader_id is null or g.leader_id = old.user_id);
+    update public.groups g set member_count = greatest(g.member_count - 1, 0),
+      leader_id = case when g.leader_id is null or g.leader_id = old.user_id then v_next else g.leader_id end
+    where g.id = old.group_id;
   end if;
   return null;
 end;
@@ -122,13 +128,20 @@ CREATE FUNCTION private.group_photo_claims (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-  select f.user_id, f.photo_path
-  from unnest(p_keys) k(key)
-  join public.food_logs f on f.photo_path = k.key
-  where f.user_id <> (select auth.uid())
-    and f.log_date >= public.local_today((select auth.uid())) - 60
-    and private.group_share((select auth.uid()), f.user_id)
-    and not private.social_pair_blocked(f.user_id);
+  with keys as materialized (
+    select distinct k.key, split_part(k.key, '/', 2)::uuid as owner
+    from unnest(p_keys) k(key)
+    where k.key ~ '^meals/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/'
+  )
+  select k.owner, k.key
+  from keys k
+  where k.owner <> (select auth.uid())
+    and private.group_share((select auth.uid()), k.owner)
+    and exists (
+      select 1 from public.food_logs f
+      where f.user_id = k.owner and f.photo_path = k.key
+        and f.log_date >= public.local_today((select auth.uid())) - 60
+    );
 $function$;
 
 GRANT ALL ON FUNCTION private.group_photo_claims(text[]) TO authenticated;
@@ -171,6 +184,9 @@ CREATE FUNCTION private.group_share (
     select 1 from public.group_members a
     join public.group_members b on b.group_id = a.group_id
     where a.user_id = p_a and b.user_id = p_b
+  ) and not exists (
+    select 1 from public.blocked_authors x
+    where (x.user_id = p_a and x.author_id = p_b) or (x.user_id = p_b and x.author_id = p_a)
   );
 $function$;
 
@@ -214,30 +230,41 @@ begin
 end;
 $function$;
 
-CREATE FUNCTION private.group_nudge_state (
+CREATE FUNCTION private.group_meal_due (
+  p_local_now timestamp without time zone,
+  p_day       date,
+  p_meal      public.group_meal,
+  p_at        time without time zone
+)
+  RETURNS boolean
+  LANGUAGE sql
+  IMMUTABLE
+  SET search_path TO ''
+  AS $function$
+  select p_local_now::date = p_day
+    and extract(hour from p_local_now) * 60 + extract(minute from p_local_now)
+      >= extract(epoch from coalesce(p_at, case p_meal when 'breakfast' then time '08:00'
+           when 'lunch' then time '13:00' else time '19:30' end)) / 60 + 30;
+$function$;
+
+CREATE FUNCTION private.group_nudge_open (
   p_group  uuid,
   p_target uuid,
   p_day    date,
   p_meal   public.group_meal
 )
-  RETURNS text
+  RETURNS boolean
   LANGUAGE plpgsql
   STABLE
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-declare
-  v_tz text;
-  v_now timestamp;
-  v_at time;
+declare v_tz text;
 begin
   select p.timezone into v_tz from public.profiles p where p.id = p_target;
-  v_now := now() at time zone coalesce(v_tz, 'Asia/Kuala_Lumpur');
-  if v_now::date <> p_day then return 'closed'; end if;
-  select mt.at into v_at from public.meal_times mt where mt.user_id = p_target and mt.meal::text = p_meal::text;
-  if v_now::time < coalesce(v_at, case p_meal when 'breakfast' then time '08:00'
-       when 'lunch' then time '13:00' else time '19:30' end) + interval '30 minutes' then
-    return 'early';
+  if not private.group_meal_due(now() at time zone coalesce(v_tz, 'Asia/Kuala_Lumpur'), p_day, p_meal,
+    (select mt.at from public.meal_times mt where mt.user_id = p_target and mt.meal::text = p_meal::text)) then
+    return false;
   end if;
   if exists (
     select 1 from public.food_logs f
@@ -247,16 +274,13 @@ begin
     where f.user_id = p_target and f.log_date = p_day
       and private.group_entry_meal(f.logged_at, f.log_date, v_tz, f.board_meal, b.at, l.at, d.at) = p_meal
   ) then
-    return 'logged';
+    return false;
   end if;
-  if exists (
+  return not exists (
     select 1 from public.group_nudges n
     where n.group_id = p_group and n.target_id = p_target and n.day = p_day and n.meal = p_meal
       and n.created_at > now() - interval '1 hour'
-  ) then
-    return 'cooling';
-  end if;
-  return 'open';
+  );
 end;
 $function$;
 
@@ -335,27 +359,34 @@ declare
   v_member public.group_members;
   v_result jsonb;
 begin
-  if p_day is null then raise exception 'Day required' using errcode = '22023'; end if;
+  if p_day is null or p_day not between public.local_today(v_user) - 60 and public.local_today(v_user) + 1 then
+    raise exception 'Day unavailable' using errcode = '22023';
+  end if;
   select * into v_member from public.group_members m where m.group_id = p_group_id and m.user_id = v_user;
 
   with members as materialized (
-    select m.user_id, m.joined_at, p.timezone,
+    select m.user_id, m.joined_at,
+      now() at time zone coalesce(p.timezone, 'Asia/Kuala_Lumpur') as local_now,
+      p.timezone,
       case when m.user_id = v_user then 0
-           else coalesce(array_position(v_member.board_order, m.user_id), 100) end as rank
-    from public.group_members m join public.profiles p on p.id = m.user_id
+           else coalesce(array_position(v_member.board_order, m.user_id), 100) end as rank,
+      b.at as breakfast_at, l.at as lunch_at, d.at as dinner_at
+    from public.group_members m
+    join public.profiles p on p.id = m.user_id
+    left join public.meal_times b on b.user_id = m.user_id and b.meal = 'breakfast'
+    left join public.meal_times l on l.user_id = m.user_id and l.meal = 'lunch'
+    left join public.meal_times d on d.user_id = m.user_id and d.meal = 'dinner'
     where m.group_id = p_group_id
+      and (m.user_id = v_user or not private.social_pair_blocked(m.user_id))
   ),
   entries as materialized (
-    select d.user_id, d.id, d.food_name, d.kcal, d.carbs_g, d.protein_g, d.fat_g,
-      d.photo_path, d.icon_set, d.icon_name, d.logged_at, d.serving_label, d.quantity,
-      f.board_meal is not null as moved,
-      private.group_entry_meal(d.logged_at, d.log_date, mb.timezone, f.board_meal, b.at, l.at, dn.at) as meal
+    select fd.user_id, fd.id, fd.food_name, fd.kcal, fd.carbs_g, fd.protein_g, fd.fat_g,
+      fd.photo_path, fd.icon_set, fd.icon_name, fd.logged_at, fd.serving_label,
+      private.group_entry_meal(fd.logged_at, fd.log_date, mb.timezone, f.board_meal,
+        mb.breakfast_at, mb.lunch_at, mb.dinner_at) as meal
     from members mb
-    join public.food_log_details d on d.user_id = mb.user_id and d.log_date = p_day
-    join public.food_logs f on f.id = d.id
-    left join public.meal_times b on b.user_id = mb.user_id and b.meal = 'breakfast'
-    left join public.meal_times l on l.user_id = mb.user_id and l.meal = 'lunch'
-    left join public.meal_times dn on dn.user_id = mb.user_id and dn.meal = 'dinner'
+    join public.food_log_details fd on fd.user_id = mb.user_id and fd.log_date = p_day
+    join public.food_logs f on f.id = fd.id
   ),
   reactions as materialized (
     select r.entry_id,
@@ -366,55 +397,64 @@ begin
     join entries e on e.id = r.entry_id
     join members mb on mb.user_id = r.user_id
     group by r.entry_id
+  ),
+  nudges as materialized (
+    select distinct on (n.target_id, n.meal) n.target_id, n.meal, n.nudger_id
+    from public.group_nudges n
+    where n.group_id = p_group_id and n.day = p_day and n.created_at > now() - interval '1 hour'
+    order by n.target_id, n.meal, n.created_at desc
+  ),
+  chat as materialized (
+    select m.id, m.author_id, m.body, m.created_at, m.day
+    from public.group_messages m
+    where m.group_id = p_group_id and not m.quarantined
+      and (m.day = p_day or m.created_at > v_member.chat_read_at)
+      and not private.social_pair_blocked(m.author_id)
+      and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
   )
   select jsonb_build_object(
     'group', (select jsonb_build_object('id', g.id, 'name', g.name, 'icon_name', g.icon_name,
-        'is_public', g.is_public, 'leader_id', g.leader_id, 'member_count', (select count(*) from members))
+        'is_public', g.is_public, 'leader_id', g.leader_id, 'member_count', g.member_count)
       from public.groups g where g.id = p_group_id),
-    'day', p_day,
     'members', coalesce((
       select jsonb_agg(jsonb_build_object(
         'person', private.group_person(mb.user_id),
-        'today', (now() at time zone coalesce(mb.timezone, 'Asia/Kuala_Lumpur'))::date,
         'entries', coalesce((
           select jsonb_agg(jsonb_build_object(
             'id', e.id, 'meal', e.meal, 'name', e.food_name, 'kcal', e.kcal,
             'carbs_g', e.carbs_g, 'protein_g', e.protein_g, 'fat_g', e.fat_g,
             'photo_path', e.photo_path, 'icon_set', e.icon_set, 'icon_name', e.icon_name,
-            'logged_at', e.logged_at, 'serving_label', e.serving_label, 'quantity', e.quantity,
-            'moved', e.moved,
+            'logged_at', e.logged_at, 'serving_label', e.serving_label,
             'likes', coalesce(r.likes, 0), 'dislikes', coalesce(r.dislikes, 0), 'mine', coalesce(r.mine, 0)
           ) order by e.logged_at, e.id)
           from entries e left join reactions r on r.entry_id = e.id
           where e.user_id = mb.user_id
         ), '[]'::jsonb),
         'nudges', coalesce((
-          select jsonb_object_agg(meal, jsonb_build_object(
-            'by', private.group_person(n.nudger_id), 'at', n.created_at))
-          from (
-            select distinct on (n.meal) n.meal, n.nudger_id, n.created_at
-            from public.group_nudges n
-            where n.group_id = p_group_id and n.target_id = mb.user_id and n.day = p_day
-              and n.created_at > now() - interval '1 hour'
-            order by n.meal, n.created_at desc
-          ) n
+          select jsonb_object_agg(n.meal, jsonb_build_object('by', private.group_person(n.nudger_id)))
+          from nudges n where n.target_id = mb.user_id
         ), '{}'::jsonb),
+        -- The same rule as nudge_group_member, read from what this query
+        -- already holds instead of three lookups per member and meal.
         'nudgeable', case when mb.user_id = v_user then '[]'::jsonb else coalesce((
-          select jsonb_agg(m.meal) from unnest(enum_range(null::public.group_meal)) m(meal)
-          where private.group_nudge_state(p_group_id, mb.user_id, p_day, m.meal) = 'open'
+          select jsonb_agg(m.meal order by m.meal) from unnest(enum_range(null::public.group_meal)) m(meal)
+          where private.group_meal_due(mb.local_now, p_day, m.meal,
+              case m.meal when 'breakfast' then mb.breakfast_at when 'lunch' then mb.lunch_at else mb.dinner_at end)
+            and not exists (select 1 from entries e where e.user_id = mb.user_id and e.meal = m.meal)
+            and not exists (select 1 from nudges n where n.target_id = mb.user_id and n.meal = m.meal)
         ), '[]'::jsonb) end,
         'workout', (
-          select jsonb_build_object('name', w.name, 'kind', w.kind, 'duration_s', w.duration_s,
-            'distance_m', w.distance_m, 'count', w.total)
+          select jsonb_build_object('name', w.name, 'kind', w.kind, 'duration_s', w.duration_s, 'count', w.total)
           from (
-            select x.name, x.kind, x.duration_s, x.distance_m, count(*) over () as total
+            select x.name, x.kind, x.duration_s, count(*) over () as total
             from (
-              select wo.name, 'strength'::text as kind, wo.duration_s, null::integer as distance_m, wo.started_at
+              select wo.name, 'strength'::text as kind, wo.duration_s, wo.started_at
               from public.workouts wo where wo.user_id = mb.user_id and wo.log_date = p_day
               union all
               -- A workout saved to Apple Health comes back as a session; the
-              -- in-app one already stands for it.
-              select coalesce(s.kind_label, s.kind), s.kind, s.duration_s, s.distance_m, s.started_at
+              -- in-app one already stands for it. Apple writes no label, so the
+              -- name is null there and the app names the kind itself.
+              select nullif(btrim(s.kind_label), ''), s.kind, s.duration_s, s.started_at
               from public.activity_sessions s
               where s.user_id = mb.user_id and s.log_date = p_day
                 and not exists (select 1 from public.workouts wo where wo.user_id = mb.user_id
@@ -427,23 +467,14 @@ begin
       ) order by mb.rank, mb.joined_at, mb.user_id)
       from members mb
     ), '[]'::jsonb),
-    'chat', (
-      select jsonb_build_object(
-        'count', count(*),
-        'unread', count(*) filter (where m.author_id <> v_user and m.created_at > v_member.chat_read_at),
-        'last', (
-          select jsonb_build_object('author', private.group_person(l.author_id), 'body', l.body, 'at', l.created_at)
-          from public.group_messages l
-          where l.group_id = p_group_id and l.day = p_day and not l.quarantined
-            and not private.social_pair_blocked(l.author_id)
-            and not exists (select 1 from public.group_message_reports r where r.message_id = l.id and r.reporter_id = v_user)
-          order by l.created_at desc limit 1
-        )
+    -- Unread counts the whole group since the caller last read it, since that
+    -- is what reading clears; the preview is this day's latest message.
+    'chat', jsonb_build_object(
+      'unread', (select count(*) from chat c where c.author_id <> v_user and c.created_at > v_member.chat_read_at),
+      'last', (
+        select jsonb_build_object('author', private.group_person(c.author_id), 'body', c.body)
+        from chat c where c.day = p_day order by c.created_at desc limit 1
       )
-      from public.group_messages m
-      where m.group_id = p_group_id and m.day = p_day and not m.quarantined
-        and not private.social_pair_blocked(m.author_id)
-        and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
     )
   ) into v_result;
   return v_result;
@@ -473,12 +504,12 @@ begin
       'members', (
         select jsonb_agg(private.group_person(m.user_id) order by
           m.user_id <> v_user, coalesce(array_position(v_member.board_order, m.user_id), 100), m.joined_at, m.user_id)
-        from public.group_members m where m.group_id = p_group_id
+        from public.group_members m
+        where m.group_id = p_group_id and (m.user_id = v_user or not private.social_pair_blocked(m.user_id))
       ),
       'invites', coalesce((
-        select jsonb_agg(jsonb_build_object('person', private.group_person(i.invitee_id), 'created_at', i.created_at)
-          order by i.created_at desc)
-        from public.group_invites i where i.group_id = p_group_id
+        select jsonb_agg(private.group_person(i.invitee_id) order by i.created_at desc)
+        from public.group_invites i where i.group_id = p_group_id and i.inviter_id = v_user
       ), '[]'::jsonb)
     )
     from public.groups g where g.id = p_group_id
@@ -572,6 +603,14 @@ begin
     raise exception 'Unknown kind' using errcode = '22023';
   end if;
   if v_recipient is null then return; end if;
+  -- A block made since the nudge or invite still silences it.
+  if exists (
+    select 1 from public.blocked_authors x
+    where (x.user_id = p_caller and x.author_id = v_recipient)
+       or (x.user_id = v_recipient and x.author_id = p_caller)
+  ) then
+    return;
+  end if;
   -- A member who muted the group hears no nudges from it. Invites always
   -- arrive, since the invitee is not a member yet.
   if p_kind = 'nudge' and not exists (
@@ -604,8 +643,10 @@ CREATE FUNCTION public.invite_to_group (
 declare
   v_user uuid := private.group_require_member(p_group_id);
   v_target text := lower(btrim(coalesce(p_target, '')));
+  v_email boolean := position('@' in ltrim(lower(btrim(coalesce(p_target, ''))), '@')) > 0;
   v_invitee uuid;
   v_id uuid;
+  v_count smallint;
 begin
   if v_target = '' or char_length(v_target) > 254 then
     raise exception 'Enter a username or email' using errcode = '22023';
@@ -613,7 +654,13 @@ begin
   if not private.social_claim(v_user, 'group_invite', 60) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
-  if position('@' in ltrim(v_target, '@')) > 0 then
+  -- Locked with the joins, so an invite cannot slip into a group that a
+  -- concurrent join has just filled.
+  select g.member_count into v_count from public.groups g where g.id = p_group_id for update;
+  if v_count >= 10 then
+    raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
+  end if;
+  if v_email then
     select u.id into v_invitee from auth.users u where lower(u.email) = v_target limit 1;
   else
     select p.id into v_invitee from public.profiles p where p.handle = ltrim(v_target, '@');
@@ -622,13 +669,12 @@ begin
   -- used to learn who blocked whom.
   if v_invitee is null or v_invitee = v_user or private.social_pair_blocked(v_invitee)
      or exists (select 1 from public.profiles p where p.id = v_invitee and p.quarantined) then
+    if v_email then return null; end if;
     raise exception 'No account found' using errcode = 'P0001', hint = 'not_found';
   end if;
   if private.group_is_member(p_group_id, v_invitee) then
+    if v_email then return null; end if;
     raise exception 'Already in this group' using errcode = 'P0001', hint = 'already_member';
-  end if;
-  if (select count(*) from public.group_members m where m.group_id = p_group_id) >= 10 then
-    raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
   end if;
   insert into public.group_invites(group_id, invitee_id, inviter_id)
   values (p_group_id, v_invitee, v_user)
@@ -637,6 +683,10 @@ begin
     -- A pending invite is renewed at most hourly, which also caps its pushes.
     where public.group_invites.created_at < now() - interval '1 hour'
   returning id into v_id;
+  if v_id is null then
+    select i.id into v_id from public.group_invites i
+    where i.group_id = p_group_id and i.invitee_id = v_invitee;
+  end if;
   return v_id;
 end;
 $function$;
@@ -655,12 +705,12 @@ CREATE FUNCTION public.join_group (
   AS $function$
 declare v_user uuid := private.social_require_user(false);
 begin
+  if private.group_is_member(p_group_id, v_user) then return; end if;
   if not exists (select 1 from public.groups g where g.id = p_group_id and g.is_public)
      and not exists (select 1 from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user) then
     raise exception 'This group is invite only' using errcode = '42501';
   end if;
-  insert into public.group_members(group_id, user_id) values (p_group_id, v_user)
-  on conflict do nothing;
+  insert into public.group_members(group_id, user_id) values (p_group_id, v_user);
 end;
 $function$;
 
@@ -685,7 +735,7 @@ begin
     if p_new_leader is null or p_new_leader = v_user or not private.group_is_member(p_group_id, p_new_leader) then
       raise exception 'Choose a new leader' using errcode = 'P0001', hint = 'choose_leader';
     end if;
-    update public.groups g set leader_id = p_new_leader, updated_at = now() where g.id = p_group_id;
+    update public.groups g set leader_id = p_new_leader where g.id = p_group_id;
   end if;
   delete from public.group_members m where m.group_id = p_group_id and m.user_id = v_user;
 end;
@@ -725,9 +775,8 @@ begin
   if v_user is null then raise exception 'Sign in to continue' using errcode = '42501'; end if;
   return coalesce((
     select jsonb_agg(jsonb_build_object(
-      'group_id', g.id, 'name', g.name, 'icon_name', g.icon_name, 'is_public', g.is_public,
-      'member_count', (select count(*) from public.group_members x where x.group_id = g.id),
-      'inviter', private.group_person(i.inviter_id), 'created_at', i.created_at
+      'group_id', g.id, 'name', g.name, 'icon_name', g.icon_name,
+      'member_count', g.member_count, 'inviter', private.group_person(i.inviter_id)
     ) order by i.created_at desc)
     from public.group_invites i join public.groups g on g.id = i.group_id
     where i.invitee_id = v_user and not private.social_pair_blocked(i.inviter_id)
@@ -753,12 +802,14 @@ begin
     select jsonb_agg(jsonb_build_object(
       'id', g.id, 'name', g.name, 'icon_name', g.icon_name, 'is_public', g.is_public,
       'is_leader', g.leader_id = v_user,
-      'member_count', (select count(*) from public.group_members x where x.group_id = g.id),
+      'member_count', g.member_count,
       'logged_today', (
         select count(*) from public.group_members x
+        join public.profiles p on p.id = x.user_id
         where x.group_id = g.id and exists (
           select 1 from public.food_logs f
-          where f.user_id = x.user_id and f.log_date = public.local_today(x.user_id))
+          where f.user_id = x.user_id
+            and f.log_date = (now() at time zone coalesce(p.timezone, 'Asia/Kuala_Lumpur'))::date)
       ),
       'members', (
         select coalesce(jsonb_agg(private.group_person(x.user_id) order by x.user_id = v_user desc, x.joined_at), '[]')
@@ -788,19 +839,21 @@ CREATE FUNCTION public.nudge_group_member (
   AS $function$
 declare v_user uuid := private.group_require_member(p_group_id); v_id uuid;
 begin
-  if p_target_id = v_user or not private.group_is_member(p_group_id, p_target_id) then
+  if p_target_id = v_user or not private.group_is_member(p_group_id, p_target_id)
+     or private.social_pair_blocked(p_target_id) then
     raise exception 'Member unavailable' using errcode = '42501';
   end if;
   -- Serialise nudges at one person's meal, so two friends tapping together
   -- send one.
   perform pg_advisory_xact_lock(hashtextextended(
     'group-nudge:' || p_group_id::text || p_target_id::text || p_day::text || p_meal::text, 0));
-  if private.group_nudge_state(p_group_id, p_target_id, p_day, p_meal) <> 'open' then
+  if not private.group_nudge_open(p_group_id, p_target_id, p_day, p_meal) then
     raise exception 'Nudged recently' using errcode = 'P0001', hint = 'nudge_closed';
   end if;
   if not private.social_claim(v_user, 'group_nudge', 30) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
+  delete from public.group_nudges n where n.group_id = p_group_id and n.created_at < now() - interval '2 days';
   insert into public.group_nudges(group_id, target_id, nudger_id, day, meal)
   values (p_group_id, p_target_id, v_user, p_day, p_meal) returning id into v_id;
   return v_id;
@@ -830,15 +883,16 @@ begin
     raise exception 'Limit must be between 1 and 50' using errcode = '22023';
   end if;
   return coalesce((
-    select jsonb_agg(row_to_json(r)::jsonb order by r.member_count desc, r.created_at desc)
+    select jsonb_agg(jsonb_build_object('id', r.id, 'name', r.name, 'icon_name', r.icon_name,
+      'member_count', r.member_count) order by r.member_count desc, r.created_at desc)
     from (
-      select g.id, g.name, g.icon_name, g.created_at,
-        (select count(*) from public.group_members x where x.group_id = g.id) as member_count
+      select g.id, g.name, g.icon_name, g.member_count, g.created_at
       from public.groups g
-      where g.is_public
-        and not private.group_is_member(g.id, v_user)
+      where g.is_public and not g.quarantined
         and (v_query is null or g.name ilike '%' || replace(replace(v_query, '%', ''), '_', '') || '%')
-      order by member_count desc, g.created_at desc
+        and not exists (select 1 from public.group_members m where m.group_id = g.id and m.user_id = v_user)
+        and not exists (select 1 from public.group_reports r where r.group_id = g.id and r.reporter_id = v_user)
+      order by g.member_count desc, g.created_at desc
       limit p_limit
     ) r
   ), '[]'::jsonb);
@@ -927,9 +981,8 @@ GRANT ALL ON FUNCTION public.report_group_message(uuid) TO authenticated;
 
 GRANT ALL ON FUNCTION public.report_group_message(uuid) TO service_role;
 
-CREATE FUNCTION public.respond_to_group_invite (
-  p_group_id uuid,
-  p_accept   boolean
+CREATE FUNCTION public.report_group (
+  p_group_id uuid
 )
   RETURNS void
   LANGUAGE plpgsql
@@ -938,14 +991,55 @@ CREATE FUNCTION public.respond_to_group_invite (
   AS $function$
 declare v_user uuid := private.social_require_user(false);
 begin
+  if not exists (select 1 from public.groups g where g.id = p_group_id and (g.is_public
+       or private.group_is_member(p_group_id, v_user)
+       or exists (select 1 from public.group_invites i where i.group_id = g.id and i.invitee_id = v_user))) then
+    raise exception 'Group unavailable' using errcode = '42501';
+  end if;
+  if not private.social_claim(v_user, 'report', 30) then
+    raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
+  end if;
+  insert into public.group_reports(group_id, reporter_id) values (p_group_id, v_user)
+  on conflict do nothing;
+  update public.groups g set quarantined = true
+  where g.id = p_group_id
+    and (select count(*) from public.group_reports r where r.group_id = p_group_id) >= 3;
+end;
+$function$;
+
+GRANT ALL ON FUNCTION public.report_group(uuid) TO authenticated;
+
+GRANT ALL ON FUNCTION public.report_group(uuid) TO service_role;
+
+CREATE FUNCTION public.respond_to_group_invite (
+  p_group_id uuid,
+  p_accept   boolean
+)
+  RETURNS text
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare v_user uuid := private.social_require_user(false); v_count smallint;
+begin
   if not exists (select 1 from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user) then
     raise exception 'This invite is no longer available' using errcode = 'P0001', hint = 'invite_gone';
   end if;
-  if p_accept then
-    insert into public.group_members(group_id, user_id) values (p_group_id, v_user)
-    on conflict do nothing;
+  if not coalesce(p_accept, false) then
+    delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
+    return 'declined';
   end if;
-  delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
+  if private.group_is_member(p_group_id, v_user) then
+    delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
+    return 'joined';
+  end if;
+  select g.member_count into v_count from public.groups g where g.id = p_group_id for update;
+  if v_count >= 10 then
+    delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
+    return 'full';
+  end if;
+  insert into public.group_members(group_id, user_id) values (p_group_id, v_user);
+  return 'joined';
 end;
 $function$;
 
@@ -1066,7 +1160,7 @@ begin
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
   insert into public.group_reactions(entry_id, user_id, value) values (p_entry_id, v_user, p_value)
-  on conflict (entry_id, user_id) do update set value = excluded.value, created_at = now();
+  on conflict (entry_id, user_id) do update set value = excluded.value;
 end;
 $function$;
 
@@ -1144,10 +1238,14 @@ begin
     name = coalesce(btrim(p_name), g.name),
     icon_name = coalesce(nullif(p_icon_name, ''), g.icon_name),
     is_public = coalesce(p_is_public, g.is_public),
-    updated_at = now()
+    -- A new name has not been reported.
+    quarantined = g.quarantined and p_name is null
   where g.id = p_group_id and g.leader_id = v_user;
   if not found then
     raise exception 'Only the leader can change the group' using errcode = '42501';
+  end if;
+  if p_name is not null then
+    delete from public.group_reports r where r.group_id = p_group_id;
   end if;
 end;
 $function$;
@@ -1192,6 +1290,8 @@ ALTER TABLE public.group_invites
   ADD CONSTRAINT group_invites_pkey PRIMARY KEY (group_id, invitee_id);
 
 GRANT ALL ON public.group_invites TO service_role;
+
+CREATE INDEX group_invites_inviter_idx ON public.group_invites (inviter_id);
 
 CREATE INDEX group_invites_invitee_idx ON public.group_invites (invitee_id, created_at DESC);
 
@@ -1252,6 +1352,8 @@ ALTER TABLE public.group_message_reports
 
 GRANT ALL ON public.group_message_reports TO service_role;
 
+CREATE INDEX group_message_reports_reporter_idx ON public.group_message_reports (reporter_id);
+
 CREATE TABLE public.group_messages (
   id          uuid                     DEFAULT gen_random_uuid() NOT NULL,
   group_id    uuid                     NOT NULL,
@@ -1285,6 +1387,8 @@ GRANT ALL ON public.group_messages TO service_role;
 
 CREATE INDEX group_messages_day_idx ON public.group_messages (group_id, day, created_at);
 
+CREATE INDEX group_messages_recent_idx ON public.group_messages (group_id, created_at);
+
 CREATE TABLE public.group_nudges (
   id         uuid                     DEFAULT gen_random_uuid() NOT NULL,
   group_id   uuid                     NOT NULL,
@@ -1313,13 +1417,16 @@ ALTER TABLE public.group_nudges
 
 GRANT ALL ON public.group_nudges TO service_role;
 
+CREATE INDEX group_nudges_target_id_idx ON public.group_nudges (target_id);
+
 CREATE INDEX group_nudges_target_idx ON public.group_nudges (group_id, target_id, day, meal, created_at DESC);
 
+CREATE INDEX group_nudges_nudger_idx ON public.group_nudges (nudger_id);
+
 CREATE TABLE public.group_reactions (
-  entry_id   uuid                     NOT NULL,
-  user_id    uuid                     NOT NULL,
-  value      smallint                 NOT NULL,
-  created_at timestamp with time zone DEFAULT now() NOT NULL
+  entry_id uuid     NOT NULL,
+  user_id  uuid     NOT NULL,
+  value    smallint NOT NULL
 );
 
 ALTER TABLE public.group_reactions
@@ -1341,14 +1448,34 @@ GRANT ALL ON public.group_reactions TO service_role;
 
 CREATE INDEX group_reactions_user_idx ON public.group_reactions (user_id);
 
+CREATE TABLE public.group_reports (
+  group_id    uuid                     NOT NULL,
+  reporter_id uuid                     NOT NULL,
+  created_at  timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.group_reports
+  ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE public.group_reports
+  ADD CONSTRAINT group_reports_pkey PRIMARY KEY (group_id, reporter_id);
+
+ALTER TABLE public.group_reports
+  ADD CONSTRAINT group_reports_reporter_id_fkey FOREIGN KEY (reporter_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+
+GRANT ALL ON public.group_reports TO service_role;
+
+CREATE INDEX group_reports_reporter_idx ON public.group_reports (reporter_id);
+
 CREATE TABLE public.groups (
-  id         uuid                     DEFAULT gen_random_uuid() NOT NULL,
-  name       text                     NOT NULL,
-  icon_name  text                     DEFAULT 'rice-bowl'::text NOT NULL,
-  is_public  boolean                  DEFAULT false NOT NULL,
-  leader_id  uuid,
-  created_at timestamp with time zone DEFAULT now() NOT NULL,
-  updated_at timestamp with time zone DEFAULT now() NOT NULL
+  id           uuid                     DEFAULT gen_random_uuid() NOT NULL,
+  name         text                     NOT NULL,
+  icon_name    text                     DEFAULT 'rice-bowl'::text NOT NULL,
+  is_public    boolean                  DEFAULT false NOT NULL,
+  leader_id    uuid,
+  member_count smallint                 DEFAULT 0 NOT NULL,
+  quarantined  boolean                  DEFAULT false NOT NULL,
+  created_at   timestamp with time zone DEFAULT now() NOT NULL
 );
 
 ALTER TABLE public.groups
@@ -1359,6 +1486,9 @@ ALTER TABLE public.groups
 
 ALTER TABLE public.groups
   ADD CONSTRAINT groups_leader_id_fkey FOREIGN KEY (leader_id) REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+ALTER TABLE public.groups
+  ADD CONSTRAINT groups_member_count_check CHECK (member_count >= 0 AND member_count <= 10);
 
 ALTER TABLE public.groups
   ADD CONSTRAINT groups_name_check CHECK (char_length(btrim(name)) >= 1 AND char_length(btrim(name)) <= 40);
@@ -1378,10 +1508,16 @@ ALTER TABLE public.group_messages
 ALTER TABLE public.group_nudges
   ADD CONSTRAINT group_nudges_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id) ON DELETE CASCADE;
 
+ALTER TABLE public.group_reports
+  ADD CONSTRAINT group_reports_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id) ON DELETE CASCADE;
+
 GRANT ALL ON public.groups TO service_role;
 
-CREATE INDEX groups_public_idx ON public.groups (created_at DESC)
-  WHERE is_public;
+CREATE INDEX groups_public_idx ON public.groups (member_count DESC, created_at DESC)
+  WHERE is_public AND NOT quarantined;
+
+CREATE INDEX groups_public_name_idx ON public.groups USING gin (name extensions.gin_trgm_ops)
+  WHERE is_public AND NOT quarantined;
 
 CREATE TABLE public.push_tokens (
   token      text                     NOT NULL,
@@ -1408,27 +1544,31 @@ ALTER TABLE public.push_tokens
 GRANT ALL ON public.push_tokens TO service_role;
 
 CREATE INDEX push_tokens_user_idx ON public.push_tokens (user_id);
--- db diff does not preserve function grants.
-revoke execute on function private.group_entry_meal, private.group_member_left,
+-- db diff does not preserve grants: the tables stay closed to clients, and
+-- every function is revoked from PUBLIC.
+revoke all on public.groups, public.group_members, public.group_invites, public.group_reactions,
+  public.group_nudges, public.group_messages, public.group_message_reports, public.group_reports,
+  public.push_tokens from anon, authenticated;
+revoke execute on function private.group_entry_meal, private.group_meal_due, private.group_member_left,
   private.group_member_joining, private.group_member_joined, private.group_block_after
   from public, anon, authenticated;
 revoke execute on function private.group_is_member, private.group_share,
   private.group_require_member from public, anon;
 grant execute on function private.group_is_member, private.group_share,
   private.group_require_member to authenticated, service_role;
-revoke execute on function private.group_nudge_state from public, anon, authenticated;
+revoke execute on function private.group_nudge_open from public, anon, authenticated;
 revoke execute on function public.create_group, public.update_group, public.invite_to_group,
   public.respond_to_group_invite, public.join_group, public.leave_group, public.remove_group_member,
   public.set_group_preferences, public.set_entry_board_meal, public.set_group_reaction,
   public.nudge_group_member, public.send_group_message, public.delete_group_message,
-  public.report_group_message, public.mark_group_chat_read, public.register_push_token,
-  public.unregister_push_token from public, anon;
+  public.report_group_message, public.report_group, public.mark_group_chat_read,
+  public.register_push_token, public.unregister_push_token from public, anon;
 grant execute on function public.create_group, public.update_group, public.invite_to_group,
   public.respond_to_group_invite, public.join_group, public.leave_group, public.remove_group_member,
   public.set_group_preferences, public.set_entry_board_meal, public.set_group_reaction,
   public.nudge_group_member, public.send_group_message, public.delete_group_message,
-  public.report_group_message, public.mark_group_chat_read, public.register_push_token,
-  public.unregister_push_token to authenticated, service_role;
+  public.report_group_message, public.report_group, public.mark_group_chat_read,
+  public.register_push_token, public.unregister_push_token to authenticated, service_role;
 revoke execute on function public.group_push_targets, public.forget_push_tokens
   from public, anon, authenticated;
 grant execute on function public.group_push_targets, public.forget_push_tokens to service_role;

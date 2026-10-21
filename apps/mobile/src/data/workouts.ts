@@ -14,7 +14,7 @@ import { track } from '@/lib/analytics'
 import type { Enums, Json, Tables } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 import { everyRow, TIMED_OUT, unwrap, unwrapMaybe, withDeadline } from './client'
-import { keys } from './keys'
+import { invalidateGroupBoards, keys } from './keys'
 import { useUserId } from './session'
 import { HEART_RATE_COLUMNS, toHeartRate, type WorkoutHeartRate } from './workout-heart'
 import { dequeueWorkout, enqueueWorkout, getOutbox, type WorkoutDocument } from './workout-outbox'
@@ -671,6 +671,7 @@ function invalidateWorkouts(
   { social = false }: { social?: boolean } = {},
 ): void {
   queryClient.invalidateQueries({ queryKey: keys.workoutsAll(userId) })
+  invalidateGroupBoards(queryClient, userId)
   // `save_workout` moves a routine's "last done".
   queryClient.invalidateQueries({ queryKey: keys.routines(userId) })
   // Only when the server took a workout, which may have posted it, and only

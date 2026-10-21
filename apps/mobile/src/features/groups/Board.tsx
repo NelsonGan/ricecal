@@ -1,9 +1,11 @@
 import { format, parseISO, subDays } from 'date-fns'
 import { useIsFocused, useRouter } from 'expo-router'
-import { memo, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  AppState,
   FlatList,
+  type ListRenderItem,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   ScrollView,
@@ -13,13 +15,16 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { dateKey, useUserId } from '@/data'
 import {
-  type GroupBoard as Board,
   type BoardEntry,
   type BoardMember,
   GROUP_MEALS,
+  type GroupBoard,
   type GroupMeal,
   useGroupBoard,
+  useMyGroups,
 } from '@/data/groups'
+import { workoutIcon, workoutKindKey } from '@/features/activity/workoutKind'
+import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { useThemeColors } from '@/theme/useTheme'
@@ -27,7 +32,7 @@ import {
   Button,
   CountBadge,
   cn,
-  EmptyState,
+  FLOAT_SHADOW,
   Icon,
   IconButton,
   Skeleton,
@@ -39,28 +44,73 @@ import {
 import { ChatSheet } from './Chat'
 import { InviteSheet } from './InviteSheet'
 import { MealSheet } from './MealSheet'
-import {
-  EntryPicture,
-  MEAL_TINT,
-  PersonAvatar,
-  shortDuration,
-  useGroupTask,
-  workoutIcon,
-} from './parts'
+import { EntryPicture, MEAL_TINT, PersonAvatar, shortDuration, useGroupTask } from './parts'
+import { takeOpenDay } from './store'
 
-/** How far back the pager goes. Matches what the photo signer will authorize. */
+/** How far back the pager goes. The server answers no further, nor signs older photos. */
 const DAYS = 60
 /** Rows before "Show more": you and four friends. */
 const FOLDED_ROWS = 5
 const GAP = 4
-/** Gutter and card padding around the grid, each side. */
+/** The page's side margin. The grid has no card around it, so the tiles get the width. */
 const EDGE = 8
 const MEMBER_COLUMN = 46
-const WORKOUT_COLUMN = 54
-
+/** Text in a tile is capped so a large Dynamic Type size cannot push it out of a fixed square. */
+const TILE_TEXT = 1.3
 const SKELETON_ROWS = ['a', 'b', 'c', 'd']
 
-type Open = { member: BoardMember; meal: GroupMeal; index: number } | null
+/**
+ * The phone's calendar date, which moves at midnight and when the app comes
+ * back from the background. Read once per render, a date that changed under a
+ * mounted board shifted every page by a day.
+ */
+function useToday(): string {
+  const [today, setToday] = useState(() => dateKey(new Date()))
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-armed for the next midnight each time the date moves
+  useEffect(() => {
+    const check = () => setToday(dateKey(new Date()))
+    const now = new Date()
+    const midnight =
+      new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime()
+    const timer = setTimeout(check, midnight + 1000)
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') check()
+    })
+    return () => {
+      clearTimeout(timer)
+      subscription.remove()
+    }
+  }, [today])
+  return today
+}
+
+/** The widths the grid works to: narrow phones give up a little of the workout column. */
+function useGrid() {
+  const { width } = useWindowDimensions()
+  const workout = width < 360 ? 44 : 54
+  const tile = Math.floor((width - EDGE * 2 - MEMBER_COLUMN - workout - GAP * 4) / 3)
+  return useMemo(() => ({ width, workout, tile, compact: tile < 70 }), [width, workout, tile])
+}
+type Grid = ReturnType<typeof useGrid>
+
+/**
+ * First names, unless two people in the group share one: a board of three
+ * Muhammads tells nobody apart, so those get their full name.
+ */
+function shortNames(members: readonly BoardMember[]): Map<string, string> {
+  const first = (name: string) => name.trim().split(/\s+/)[0] ?? name
+  const counts = new Map<string, number>()
+  for (const member of members) {
+    const name = first(member.person.name)
+    counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
+  return new Map(
+    members.map((member) => {
+      const name = first(member.person.name)
+      return [member.person.id, (counts.get(name) ?? 0) > 1 ? member.person.name : name]
+    }),
+  )
+}
 
 /**
  * One group, one page per day. Swiping sideways goes back a day; the chevrons
@@ -68,62 +118,96 @@ type Open = { member: BoardMember; meal: GroupMeal; index: number } | null
  * screen sits in a bar above the tabs and opens as a sheet.
  */
 export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack: () => void }) {
-  const { t } = useTranslation('groups')
+  const { t } = useTranslation(['groups', 'common'])
   const colors = useThemeColors()
   const router = useRouter()
-  const { width } = useWindowDimensions()
+  const viewer = useUserId()
+  const grid = useGrid()
   const navInset = useNavInset()
   const focused = useIsFocused()
-  const todayKey = dateKey(new Date())
+  const today = useToday()
   const days = useMemo(
-    () => Array.from({ length: DAYS }, (_, index) => dateKey(subDays(parseISO(todayKey), index))),
-    [todayKey],
+    () => Array.from({ length: DAYS }, (_, index) => dateKey(subDays(parseISO(today), index))),
+    [today],
   )
-  const [index, setIndex] = useState(0)
+  // The day on screen, rather than its position: positions move at midnight.
+  const [day, setDay] = useState(() => takeOpenDay(viewer, groupId) ?? today)
+  const index = Math.max(0, days.indexOf(day))
   const pager = useRef<FlatList<string>>(null)
-  const day = days[index] ?? todayKey
-  const board = useGroupBoard(groupId, day, focused)
+  const summary = useMyGroups().data?.find((group) => group.id === groupId)
+  // The same query as the page on screen, which is the one that polls.
+  const board = useGroupBoard(groupId, day, focused, false)
   const [chatOpen, setChatOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
 
+  // A notification tapped while this board is already open names its day too.
+  useEffect(() => {
+    if (!focused) return
+    const asked = takeOpenDay(viewer, groupId)
+    if (asked && days.includes(asked)) setDay(asked)
+  }, [focused, viewer, groupId, days])
+  // Keep the pager on the chosen day when the list under it shifts.
+  useEffect(() => {
+    pager.current?.scrollToIndex({ index, animated: false })
+  }, [index])
+
   const go = (next: number) => {
-    const clamped = Math.max(0, Math.min(DAYS - 1, next))
-    setIndex(clamped)
-    pager.current?.scrollToIndex({ index: clamped, animated: true })
+    const target = days[Math.max(0, Math.min(DAYS - 1, next))]
+    if (target) setDay(target)
   }
   const onMomentumEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const next = Math.round(event.nativeEvent.contentOffset.x / width)
-    if (next !== index) setIndex(next)
+    const target = days[Math.round(event.nativeEvent.contentOffset.x / grid.width)]
+    if (target && target !== day) setDay(target)
   }
 
-  const header = board.data?.group
+  const name = summary?.name ?? board.data?.group.name
+  const memberCount = summary?.member_count ?? board.data?.group.member_count
   const dayLabel =
     index === 0
-      ? t('today')
+      ? t('common:date.today')
       : index === 1
-        ? t('yesterday')
+        ? t('common:date.yesterday')
         : format(parseISO(day), datePattern('weekdayDayMonth'))
+  const openInvite = useCallback(() => setInviteOpen(true), [])
+
+  const renderItem = useCallback<ListRenderItem<string>>(
+    ({ item, index: page }) => (
+      <View style={{ width: grid.width }}>
+        <BoardPage
+          groupId={groupId}
+          day={item}
+          isToday={page === 0}
+          enabled={focused && Math.abs(page - index) <= 1}
+          live={focused && page === index}
+          bottomInset={navInset + 76}
+          grid={grid}
+          onInvite={openInvite}
+        />
+      </View>
+    ),
+    [groupId, focused, index, navInset, grid, openInvite],
+  )
 
   return (
     <View className="flex-1">
       <View className="gap-2 px-gutter pb-2 pt-1">
         <View className="flex-row items-center gap-2">
           <IconButton size="sm" accessibilityLabel={t('back')} onPress={onBack}>
-            <Icon set="ui" name="chevron-left" size={22} tintColor={colors.muted} />
+            <Icon set="ui" name="chevron-left" size={20} tintColor={colors.muted} />
           </IconButton>
           <View className="min-w-0 flex-1 items-center">
-            <Text variant="subtitle" numberOfLines={1}>
-              {header?.name ?? ' '}
+            <Text variant="subtitle" numberOfLines={1} maxFontSizeMultiplier={1.3}>
+              {name ?? ' '}
             </Text>
-            {header ? (
-              <Text variant="micro">{t('members', { count: header.member_count })}</Text>
+            {memberCount !== undefined ? (
+              <Text variant="micro">{t('members', { count: memberCount })}</Text>
             ) : null}
           </View>
           <IconButton
             size="sm"
             variant="ghost"
             accessibilityLabel={t('inviteFriends')}
-            onPress={() => setInviteOpen(true)}
+            onPress={openInvite}
           >
             <Icon set="system" name="user-add" size={22} />
           </IconButton>
@@ -140,6 +224,7 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
           <IconButton
             size="xs"
             variant="subtle"
+            hitSlop={8}
             accessibilityLabel={t('previousDay')}
             disabled={index >= DAYS - 1}
             onPress={() => go(index + 1)}
@@ -152,6 +237,7 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
           <IconButton
             size="xs"
             variant="subtle"
+            hitSlop={8}
             accessibilityLabel={t('nextDay')}
             disabled={index === 0}
             onPress={() => go(index - 1)}
@@ -164,34 +250,29 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
       <FlatList
         ref={pager}
         data={days}
+        extraData={index}
         keyExtractor={(item) => item}
         horizontal
         inverted
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onMomentumEnd}
-        getItemLayout={(_, item) => ({ length: width, offset: width * item, index: item })}
+        initialScrollIndex={index}
+        getItemLayout={(_, item) => ({
+          length: grid.width,
+          offset: grid.width * item,
+          index: item,
+        })}
         initialNumToRender={1}
         windowSize={3}
         maxToRenderPerBatch={1}
-        renderItem={({ item, index: page }) => (
-          <View style={{ width }}>
-            <BoardPage
-              groupId={groupId}
-              day={item}
-              isToday={page === 0}
-              active={focused && Math.abs(page - index) <= 1}
-              bottomInset={navInset + 76}
-              onInvite={() => setInviteOpen(true)}
-            />
-          </View>
-        )}
+        renderItem={renderItem}
       />
 
       <ChatBar board={board.data} bottom={navInset + 8} onPress={() => setChatOpen(true)} />
       <ChatSheet
         groupId={groupId}
-        groupName={header?.name ?? ''}
+        groupName={name ?? ''}
         day={day}
         visible={chatOpen}
         onClose={() => setChatOpen(false)}
@@ -201,47 +282,50 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
   )
 }
 
-function BoardPage({
+type Open = { memberId: string; meal: GroupMeal }
+
+const BoardPage = memo(function BoardPage({
   groupId,
   day,
   isToday,
-  active,
+  enabled,
+  live,
   bottomInset,
+  grid,
   onInvite,
 }: {
   groupId: string
   day: string
   isToday: boolean
-  active: boolean
+  enabled: boolean
+  live: boolean
   bottomInset: number
+  grid: Grid
   onInvite: () => void
 }) {
   const { t } = useTranslation('groups')
   const colors = useThemeColors()
-  const board = useGroupBoard(groupId, day, active)
+  const board = useGroupBoard(groupId, day, enabled, live)
   const [expanded, setExpanded] = useState(false)
-  const [open, setOpen] = useState<Open>(null)
-  const { width } = useWindowDimensions()
-  // The grid runs nearly edge to edge on the page itself, with no card around
-  // it, so the tiles get the width rather than margins and frames.
-  const tile = Math.floor((width - EDGE * 2 - MEMBER_COLUMN - WORKOUT_COLUMN - GAP * 4) / 3)
+  const [open, setOpen] = useState<Open | null>(null)
+  const onOpen = useCallback((memberId: string, meal: GroupMeal) => setOpen({ memberId, meal }), [])
+  const onClose = useCallback(() => setOpen(null), [])
+  const members = board.data?.members
+  const names = useMemo(() => shortNames(members ?? []), [members])
 
   if (!board.data) {
     return (
       <ScrollView contentContainerStyle={{ paddingBottom: bottomInset, paddingHorizontal: EDGE }}>
-        {board.isError ? (
-          <EmptyState
-            title={t('loadFailed')}
-            action={
-              <Button variant="secondary" onPress={() => void board.refetch()}>
-                {t('retry')}
-              </Button>
-            }
+        {board.isError || board.fetchStatus === 'paused' ? (
+          <QueryNotice
+            error={board.isError}
+            paused={board.fetchStatus === 'paused'}
+            retry={() => board.refetch()}
           />
         ) : (
-          <View className="gap-2 rounded-card bg-surface p-2">
+          <View style={{ gap: GAP }}>
             {SKELETON_ROWS.map((row) => (
-              <View key={row} style={{ height: tile }}>
+              <View key={row} style={{ height: grid.tile }}>
                 <Skeleton className="h-full w-full rounded-tile" />
               </View>
             ))}
@@ -251,9 +335,9 @@ function BoardPage({
     )
   }
 
-  const members = board.data.members
-  const shown = expanded ? members : members.slice(0, FOLDED_ROWS)
-  const hidden = members.length - FOLDED_ROWS
+  const all = board.data.members
+  const shown = expanded ? all : all.slice(0, FOLDED_ROWS)
+  const hidden = all.length - FOLDED_ROWS
 
   return (
     <ScrollView
@@ -261,7 +345,7 @@ function BoardPage({
       showsVerticalScrollIndicator={false}
     >
       <View style={{ gap: GAP }}>
-        <ColumnHeaders tile={tile} />
+        <ColumnHeaders grid={grid} />
         {shown.map((member) => (
           <MemberRow
             key={member.person.id}
@@ -269,8 +353,9 @@ function BoardPage({
             day={day}
             isToday={isToday}
             member={member}
-            tile={tile}
-            onOpen={(meal, index) => setOpen({ member, meal, index })}
+            name={names.get(member.person.id) ?? member.person.name}
+            grid={grid}
+            onOpen={onOpen}
           />
         ))}
         {hidden > 0 ? (
@@ -291,7 +376,7 @@ function BoardPage({
           </Tappable>
         ) : null}
       </View>
-      {members.length === 1 ? (
+      {all.length === 1 ? (
         <View className="items-center gap-md py-lg">
           <Text variant="meta" className="text-center">
             {t('inviteFirst')}
@@ -304,18 +389,17 @@ function BoardPage({
       <MealSheet
         groupId={groupId}
         day={day}
-        open={open}
+        meal={open?.meal ?? null}
         // The sheet follows the board's latest copy, so a reaction redraws it.
-        member={
-          open ? (members.find((m) => m.person.id === open.member.person.id) ?? open.member) : null
-        }
-        onClose={() => setOpen(null)}
+        member={open ? (all.find((m) => m.person.id === open.memberId) ?? null) : null}
+        name={open ? (names.get(open.memberId) ?? '') : ''}
+        onClose={onClose}
       />
     </ScrollView>
   )
-}
+})
 
-function ColumnHeaders({ tile }: { tile: number }) {
+function ColumnHeaders({ grid }: { grid: Grid }) {
   const { t } = useTranslation('groups')
   const label = (text: string, width: number) => (
     <Text
@@ -324,18 +408,19 @@ function ColumnHeaders({ tile }: { tile: number }) {
       style={{ width }}
       numberOfLines={1}
       adjustsFontSizeToFit
-      minimumFontScale={0.8}
+      minimumFontScale={0.7}
+      maxFontSizeMultiplier={TILE_TEXT}
     >
       {text}
     </Text>
   )
   return (
-    <View className="flex-row items-center pt-1" style={{ gap: GAP }}>
+    <View className="flex-row items-center pt-1" style={{ gap: GAP }} accessibilityElementsHidden>
       <View style={{ width: MEMBER_COLUMN }} />
       {GROUP_MEALS.map((meal) => (
-        <View key={meal}>{label(t(meal), tile)}</View>
+        <View key={meal}>{label(t(`column.${meal}`), grid.tile)}</View>
       ))}
-      {label(t('workout'), WORKOUT_COLUMN)}
+      {label(t('column.workout'), grid.workout)}
     </View>
   )
 }
@@ -345,15 +430,17 @@ const MemberRow = memo(function MemberRow({
   day,
   isToday,
   member,
-  tile,
+  name,
+  grid,
   onOpen,
 }: {
   groupId: string
   day: string
   isToday: boolean
   member: BoardMember
-  tile: number
-  onOpen: (meal: GroupMeal, index: number) => void
+  name: string
+  grid: Grid
+  onOpen: (memberId: string, meal: GroupMeal) => void
 }) {
   const { t } = useTranslation('groups')
   const viewer = useUserId()
@@ -371,8 +458,13 @@ const MemberRow = memo(function MemberRow({
     >
       <View className="items-center gap-0.5" style={{ width: MEMBER_COLUMN }}>
         <PersonAvatar person={member.person} />
-        <Text variant="micro" className="text-ink" numberOfLines={1}>
-          {isSelf ? t('you') : member.person.name.split(' ')[0]}
+        <Text
+          variant="micro"
+          className="text-ink"
+          numberOfLines={1}
+          maxFontSizeMultiplier={TILE_TEXT}
+        >
+          {isSelf ? t('you') : name}
         </Text>
       </View>
       {GROUP_MEALS.map((meal) => (
@@ -382,14 +474,15 @@ const MemberRow = memo(function MemberRow({
           day={day}
           meal={meal}
           member={member}
+          name={name}
           entries={byMeal[meal]}
-          size={tile}
+          grid={grid}
           isSelf={isSelf}
           isToday={isToday}
-          onOpen={(index) => onOpen(meal, index)}
+          onOpen={onOpen}
         />
       ))}
-      <WorkoutCell workout={member.workout} height={tile} />
+      <WorkoutCell workout={member.workout} height={grid.tile} width={grid.workout} />
     </View>
   )
 })
@@ -399,8 +492,9 @@ function MealTile({
   day,
   meal,
   member,
+  name,
   entries,
-  size,
+  grid,
   isSelf,
   isToday,
   onOpen,
@@ -409,22 +503,39 @@ function MealTile({
   day: string
   meal: GroupMeal
   member: BoardMember
+  name: string
   entries: BoardEntry[]
-  size: number
+  grid: Grid
   isSelf: boolean
   isToday: boolean
-  onOpen: (index: number) => void
+  onOpen: (memberId: string, meal: GroupMeal) => void
 }) {
-  const { t } = useTranslation('groups')
+  const { t } = useTranslation(['groups', 'common'])
   const router = useRouter()
   const viewer = useUserId()
   const [page, setPage] = useState(0)
+  const size = grid.tile
   const box = { width: size, height: size }
+  const shownPage = Math.min(page, Math.max(0, entries.length - 1))
 
   if (entries.length > 0) {
+    const label = (entry: BoardEntry, index: number) =>
+      [
+        `${entry.name}, ${entry.kcal} ${t('common:unit.kcal')}`,
+        entries.length > 1 ? t('position', { index: index + 1, count: entries.length }) : null,
+        entry.likes > 0 ? `👍 ${entry.likes}` : null,
+        entry.dislikes > 0 ? `👎 ${entry.dislikes}` : null,
+      ]
+        .filter(Boolean)
+        .join(', ')
     return (
       <View className="overflow-hidden rounded-[14px] bg-surface-alt" style={box}>
+        {/* Keyed on the foods, so one moved away or deleted starts the tile
+            again at its first food rather than on a blank page. Several foods
+            swipe here; on iOS the swipe stays in the tile, and the day changes
+            from any other part of the board or the chevrons. */}
         <ScrollView
+          key={entries.map((entry) => entry.id).join()}
           horizontal
           pagingEnabled
           nestedScrollEnabled
@@ -438,11 +549,11 @@ function MealTile({
             <Tappable
               key={entry.id}
               style={box}
-              onPress={() => onOpen(index)}
+              onPress={() => onOpen(member.person.id, meal)}
               accessibilityRole="button"
-              accessibilityLabel={`${entry.name}, ${entry.kcal} kcal`}
+              accessibilityLabel={label(entry, index)}
             >
-              <EntryFace entry={entry} meal={meal} ownerId={member.person.id} size={size} />
+              <EntryFace entry={entry} meal={meal} ownerId={member.person.id} grid={grid} />
             </Tappable>
           ))}
         </ScrollView>
@@ -456,7 +567,7 @@ function MealTile({
                 key={entry.id}
                 className={cn(
                   'h-1.5 rounded-full',
-                  index === page ? 'w-3 bg-white' : 'w-1.5 bg-white/50',
+                  index === shownPage ? 'w-3 bg-white' : 'w-1.5 bg-white/50',
                 )}
               />
             ))}
@@ -478,59 +589,85 @@ function MealTile({
         <Icon set="ui" name="plus" size={22} />
       </Tappable>
     ) : (
-      <EmptyTile size={size} />
+      <EmptyTile width={size} height={size} />
     )
   }
 
   const nudge = member.nudges[meal]
   if (nudge) {
+    const by =
+      nudge.by.id === viewer
+        ? t('nudgedByYou')
+        : t('nudgedBy', { name: nudge.by.name.split(' ')[0] })
     return (
       <View
         className="items-center justify-center gap-0.5 rounded-[14px] bg-surface-alt px-1"
         style={box}
+        accessible
+        accessibilityLabel={by}
       >
         <Icon set="system" name="bell" size={18} />
-        <Text variant="micro" className="text-center" numberOfLines={2}>
-          {nudge.by.id === viewer
-            ? t('nudgedByYou')
-            : t('nudgedBy', { name: nudge.by.name.split(' ')[0] })}
+        <Text
+          variant="micro"
+          className="text-center"
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+          maxFontSizeMultiplier={TILE_TEXT}
+        >
+          {by}
         </Text>
       </View>
     )
   }
   if (member.nudgeable.includes(meal)) {
-    return <NudgeTile groupId={groupId} day={day} meal={meal} member={member} size={size} />
+    return (
+      <NudgeTile groupId={groupId} day={day} meal={meal} member={member} name={name} size={size} />
+    )
   }
-  return <EmptyTile size={size} />
+  return <EmptyTile width={size} height={size} />
 }
+
+const PHOTO_FADE = {
+  experimental_backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.62))',
+} as const
+const TEXT_SHADOW = {
+  textShadowColor: 'rgba(0,0,0,0.35)',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 2,
+} as const
 
 function EntryFace({
   entry,
   meal,
   ownerId,
-  size,
+  grid,
 }: {
   entry: BoardEntry
   meal: GroupMeal
   ownerId: string
-  size: number
+  grid: Grid
 }) {
+  const { t } = useTranslation('common')
   const reacted = entry.likes > 0 || entry.dislikes > 0
   const photo = Boolean(entry.photo_path)
   return (
     <View className={cn('flex-1', !photo && MEAL_TINT[meal])}>
-      <View className="absolute inset-0" style={photo ? undefined : { paddingBottom: 22 }}>
-        <EntryPicture entry={entry} ownerId={ownerId} iconSize={Math.round(size * 0.48)} />
+      <View
+        className="absolute inset-0"
+        style={photo ? undefined : { paddingBottom: grid.compact ? 14 : 22 }}
+      >
+        <EntryPicture entry={entry} ownerId={ownerId} iconSize={Math.round(grid.tile * 0.48)} />
       </View>
       {reacted ? (
         <View className="absolute right-1 top-1 flex-row items-center gap-1 rounded-full bg-surface/85 px-1.5 py-0.5">
           {entry.likes > 0 ? (
-            <Text variant="micro" className="text-ink">
+            <Text variant="micro" className="text-ink" maxFontSizeMultiplier={TILE_TEXT}>
               👍{entry.likes}
             </Text>
           ) : null}
           {entry.dislikes > 0 ? (
-            <Text variant="micro" className="text-ink">
+            <Text variant="micro" className="text-ink" maxFontSizeMultiplier={TILE_TEXT}>
               👎{entry.dislikes}
             </Text>
           ) : null}
@@ -548,42 +685,41 @@ function EntryFace({
           className={photo ? 'text-white' : 'text-ink'}
           numberOfLines={1}
           style={photo ? TEXT_SHADOW : undefined}
+          maxFontSizeMultiplier={TILE_TEXT}
         >
           {entry.name}
         </Text>
-        <Text
-          variant="micro"
-          className={cn('text-[10px] leading-[12px]', photo ? 'text-white/85' : 'text-muted')}
-          numberOfLines={1}
-          style={photo ? TEXT_SHADOW : undefined}
-        >
-          {entry.kcal} kcal
-        </Text>
+        {/* A narrow phone's tile keeps the name and drops the number. */}
+        {grid.compact ? null : (
+          <Text
+            variant="micro"
+            className={cn('text-[10px] leading-[12px]', photo ? 'text-white/85' : 'text-muted')}
+            numberOfLines={1}
+            style={photo ? TEXT_SHADOW : undefined}
+            maxFontSizeMultiplier={TILE_TEXT}
+          >
+            {entry.kcal} {t('unit.kcal')}
+          </Text>
+        )}
       </View>
     </View>
   )
 }
 
-const PHOTO_FADE = {
-  experimental_backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.62))',
-} as const
-const TEXT_SHADOW = {
-  textShadowColor: 'rgba(0,0,0,0.35)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 2,
-} as const
-
+/** The whole empty tile is the button, not just the pill drawn in it. */
 function NudgeTile({
   groupId,
   day,
   meal,
   member,
+  name,
   size,
 }: {
   groupId: string
   day: string
   meal: GroupMeal
   member: BoardMember
+  name: string
   size: number
 }) {
   const { t } = useTranslation('groups')
@@ -599,60 +735,75 @@ function NudgeTile({
     }
   }
   return (
-    <View
+    <Tappable
       className="items-center justify-center rounded-[14px] bg-surface-alt"
       style={{ width: size, height: size }}
+      onPress={() => void nudge()}
+      disabled={task.isPending}
+      accessibilityRole="button"
+      accessibilityLabel={t('nudgeLabel', { name, meal: t(`mealInSentence.${meal}`) })}
     >
-      <Tappable
-        className="min-h-[32px] flex-row items-center rounded-full bg-hibiscus-soft px-2"
-        onPress={() => void nudge()}
-        disabled={task.isPending}
-        accessibilityRole="button"
-        accessibilityLabel={t('nudgeLabel', { name: member.person.name, meal: t(meal) })}
-      >
-        <Text variant="micro" className="text-hibiscus-ink">
+      <View className="min-h-[30px] flex-row items-center rounded-full bg-hibiscus-soft px-2">
+        <Text
+          variant="micro"
+          className="text-hibiscus-ink"
+          numberOfLines={1}
+          maxFontSizeMultiplier={TILE_TEXT}
+        >
           👋 {t('nudge')}
         </Text>
-      </Tappable>
-    </View>
+      </View>
+    </Tappable>
   )
 }
 
-function EmptyTile({ size }: { size: number }) {
+function EmptyTile({ width, height }: { width: number; height: number }) {
   return (
     <View
       className="items-center justify-center rounded-[14px] bg-surface-alt"
-      style={{ width: size, height: size }}
+      style={{ width, height }}
     >
       <View className="h-0.5 w-4 rounded-full bg-line-strong" />
     </View>
   )
 }
 
-function WorkoutCell({ workout, height }: { workout: BoardMember['workout']; height: number }) {
-  if (!workout) {
-    return (
-      <View
-        className="items-center justify-center rounded-[14px] bg-surface-alt"
-        style={{ width: WORKOUT_COLUMN, height }}
-      >
-        <View className="h-0.5 w-4 rounded-full bg-line-strong" />
-      </View>
-    )
-  }
+function WorkoutCell({
+  workout,
+  height,
+  width,
+}: {
+  workout: BoardMember['workout']
+  height: number
+  width: number
+}) {
+  const { t } = useTranslation(['activity'])
+  if (!workout) return <EmptyTile width={width} height={height} />
+  const name = workout.name ?? t(workoutKindKey(workout.kind))
+  const duration = shortDuration(workout.duration_s)
   return (
     <View
       className="items-center justify-center gap-0.5 rounded-[14px] bg-hibiscus-soft px-1"
-      style={{ width: WORKOUT_COLUMN, height }}
+      style={{ width, height }}
       accessible
-      accessibilityLabel={`${workout.name}, ${shortDuration(workout.duration_s)}`}
+      accessibilityLabel={`${name}, ${duration}`}
     >
       <Icon {...workoutIcon(workout.kind)} size={26} />
-      <Text variant="micro" className="text-ink" numberOfLines={1}>
-        {workout.name}
+      <Text
+        variant="micro"
+        className="text-ink"
+        numberOfLines={1}
+        maxFontSizeMultiplier={TILE_TEXT}
+      >
+        {name}
       </Text>
-      <Text variant="micro" className="text-[10px] leading-[12px]" numberOfLines={1}>
-        {shortDuration(workout.duration_s)}
+      <Text
+        variant="micro"
+        className="text-[10px] leading-[12px]"
+        numberOfLines={1}
+        maxFontSizeMultiplier={TILE_TEXT}
+      >
+        {duration}
         {workout.count > 1 ? ` +${workout.count - 1}` : ''}
       </Text>
     </View>
@@ -664,7 +815,7 @@ function ChatBar({
   bottom,
   onPress,
 }: {
-  board: Board | undefined
+  board: GroupBoard | undefined
   bottom: number
   onPress: () => void
 }) {
@@ -673,6 +824,7 @@ function ChatBar({
   const last = board?.chat.last
   const unread = board?.chat.unread ?? 0
   const insets = useSafeAreaInsets()
+  const preview = last ? `${last.author.name.split(' ')[0]}: ${last.body}` : t('chatEmpty')
   return (
     <View
       className="absolute inset-x-0"
@@ -681,16 +833,12 @@ function ChatBar({
     >
       <Tappable
         className="min-h-[52px] flex-row items-center gap-3 rounded-tile border border-line bg-surface px-3"
-        style={{
-          shadowColor: '#000',
-          shadowOpacity: 0.08,
-          shadowRadius: 10,
-          shadowOffset: { width: 0, height: 3 },
-          elevation: 4,
-        }}
+        style={FLOAT_SHADOW}
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={t('chat')}
+        accessibilityLabel={[t('chat'), unread > 0 ? t('unread', { count: unread }) : null, preview]
+          .filter(Boolean)
+          .join(', ')}
       >
         <View>
           <Icon set="system" name="chat" size={26} />
@@ -701,7 +849,7 @@ function ChatBar({
           className={cn('min-w-0 flex-1', unread > 0 && 'text-ink')}
           numberOfLines={1}
         >
-          {last ? `${last.author.name.split(' ')[0]}: ${last.body}` : t('chatEmpty')}
+          {preview}
         </Text>
         <Icon set="ui" name="chevron-up" size={18} tintColor={colors.muted} />
       </Tappable>

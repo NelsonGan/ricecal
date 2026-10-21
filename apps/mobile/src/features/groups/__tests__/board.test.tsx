@@ -17,6 +17,7 @@ let mockBoard: GroupBoard
 jest.mock('@/data/groups', () => ({
   ...jest.requireActual('@/data/groups'),
   useGroupBoard: () => ({ data: mockBoard, isError: false, refetch: jest.fn() }),
+  useMyGroups: () => ({ data: undefined }),
   useGroupMessages: () => ({ data: [], isLoading: false }),
   useGroupAction: () => ({ mutate: jest.fn(), mutateAsync: jest.fn(), isPending: false }),
 }))
@@ -51,15 +52,12 @@ const entry = (id: string, meal: BoardEntry['meal'], name: string): BoardEntry =
   icon_name: 'nasi-lemak',
   logged_at: '2026-10-21T04:00:00Z',
   serving_label: '1 plate',
-  quantity: 1,
-  moved: false,
   likes: 0,
   dislikes: 0,
   mine: 0,
 })
 const member = (id: string, name: string, patch: Partial<BoardMember> = {}): BoardMember => ({
   person: { id, name, handle: id, avatar_path: null },
-  today: '2026-10-21',
   entries: [],
   nudges: {},
   nudgeable: [],
@@ -71,25 +69,39 @@ beforeEach(() => {
   mockPress.mockClear()
   mockRun.mockClear()
   mockBoard = {
-    group: { id: 'g1', name: 'Makan Buddies', icon_name: 'rice-bowl', is_public: false, leader_id: 'me', member_count: 7 },
-    day: '2026-10-21',
+    group: {
+      id: 'g1',
+      name: 'Makan Buddies',
+      icon_name: 'rice-bowl',
+      is_public: false,
+      leader_id: 'me',
+      member_count: 7,
+    },
     members: [
       member('me', 'Pro Tester', { entries: [entry('e1', 'breakfast', 'Nasi lemak')] }),
       member('aisha', 'Aisha Rahman', {
         entries: [entry('e2', 'lunch', 'Yong tau foo'), entry('e3', 'lunch', 'Iced lime tea')],
-        workout: { name: 'Yoga', kind: 'yoga', duration_s: 1800, distance_m: null, count: 1 },
+        workout: { name: 'Yoga', kind: 'yoga', duration_s: 1800, count: 1 },
       }),
       member('weijie', 'Wei Jie Tan', { nudgeable: ['lunch'] }),
       member('hafiz', 'Hafiz Ismail', {
         nudges: {
-          breakfast: { by: { id: 'aisha', name: 'Aisha Rahman', handle: 'aisha', avatar_path: null }, at: '2026-10-21T11:00:00Z' },
+          breakfast: {
+            by: { id: 'aisha', name: 'Aisha Rahman', handle: 'aisha', avatar_path: null },
+          },
         },
       }),
       member('priya', 'Priya Nair'),
       member('meiling', 'Mei Ling Wong'),
       member('daniel', 'Daniel Lim'),
     ],
-    chat: { count: 1, unread: 1, last: { author: { id: 'hafiz', name: 'Hafiz Ismail', handle: 'hafiz', avatar_path: null }, body: 'cheat day lah', at: '2026-10-21T11:00:00Z' } },
+    chat: {
+      unread: 1,
+      last: {
+        author: { id: 'hafiz', name: 'Hafiz Ismail', handle: 'hafiz', avatar_path: null },
+        body: 'cheat day lah',
+      },
+    },
   }
 })
 
@@ -107,8 +119,8 @@ it('puts the viewer first and draws each meal in its column', async () => {
   expect(screen.getByText('You')).toBeOnTheScreen()
   expect(screen.getByLabelText('Nasi lemak, 500 kcal')).toBeOnTheScreen()
   // Two foods in one meal share a tile; both are there to swipe through.
-  expect(screen.getByLabelText('Yong tau foo, 500 kcal')).toBeOnTheScreen()
-  expect(screen.getByLabelText('Iced lime tea, 500 kcal')).toBeOnTheScreen()
+  expect(screen.getByLabelText('Yong tau foo, 500 kcal, 1 of 2')).toBeOnTheScreen()
+  expect(screen.getByLabelText('Iced lime tea, 500 kcal, 2 of 2')).toBeOnTheScreen()
   expect(screen.getByLabelText('Yoga, 30m')).toBeOnTheScreen()
 })
 
@@ -120,7 +132,7 @@ it('offers to log only the viewer’s own empty meals today', async () => {
 it('nudges an empty meal that is open, and says who nudged one that is not', async () => {
   await render(board)
   expect(screen.getByText('Aisha nudged')).toBeOnTheScreen()
-  await fireEvent.press(screen.getByLabelText('Nudge Wei Jie Tan about Lunch'))
+  await fireEvent.press(screen.getByLabelText('Nudge Wei about lunch'))
   expect(mockRun).toHaveBeenCalledWith({
     action: 'nudge',
     groupId: 'g1',
@@ -128,6 +140,13 @@ it('nudges an empty meal that is open, and says who nudged one that is not', asy
     targetId: 'weijie',
     meal: 'lunch',
   })
+})
+
+it('gives two people with one first name their full names', async () => {
+  mockBoard.members[4] = member('priya', 'Wei Ming Lee')
+  await render(board)
+  expect(screen.getByText('Wei Jie Tan')).toBeOnTheScreen()
+  expect(screen.getByText('Wei Ming Lee')).toBeOnTheScreen()
 })
 
 it('folds the board after five rows and unfolds on request', async () => {
