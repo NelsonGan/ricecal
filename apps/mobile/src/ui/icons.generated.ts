@@ -538,6 +538,7 @@ export const icons = {
     'verified-shield': require('../../assets/icons/system/verified-shield.png'),
     wallet: require('../../assets/icons/system/wallet.png'),
     watch: require('../../assets/icons/system/watch.png'),
+    wave: require('../../assets/icons/system/wave.png'),
   },
   ui: {
     archive: require('../../assets/icons/ui/archive.png'),
