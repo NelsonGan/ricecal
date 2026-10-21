@@ -2276,7 +2276,6 @@ export const th = {
     showMore_one: 'แสดงอีก {{count}} คน',
     showMore_other: 'แสดงอีก {{count}} คน',
     showLess: 'แสดงน้อยลง',
-    logMeal: 'บันทึกมื้ออาหาร',
     nudge: 'สะกิด',
     nudgeLabel: 'สะกิด {{name}} เรื่อง{{meal}}',
     nudgedBy: '{{name}} สะกิดแล้ว',

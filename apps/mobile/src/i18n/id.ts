@@ -2308,7 +2308,6 @@ export const id = {
     showMore_one: 'Tampilkan {{count}} lagi',
     showMore_other: 'Tampilkan {{count}} lagi',
     showLess: 'Tampilkan lebih sedikit',
-    logMeal: 'Catat makanan',
     nudge: 'Colek',
     nudgeLabel: 'Colek {{name}} soal {{meal}}',
     nudgedBy: '{{name}} mencolek',

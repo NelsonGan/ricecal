@@ -120,6 +120,38 @@ function SocialSkeleton({
       </View>
     )
   }
+  if (variant === 'feed') {
+    // A post's own shape: edge to edge, a header row, the square picture with
+    // its facts card over the foot, then the actions. A padded card here made
+    // the feed jump when the real posts replaced it.
+    return (
+      <View accessibilityRole="progressbar" accessibilityLabel={t('loading')}>
+        {slots.slice(0, Math.min(count, 2)).map((slot) => (
+          <View key={slot} className="border-b-2 border-track bg-surface">
+            <View className="min-h-[64px] flex-row items-center gap-3 px-5 py-3">
+              <Skeleton width={40} height={40} rounded={false} className="rounded-[14px]" />
+              <View className="min-w-0 flex-1 gap-2">
+                <Skeleton width={112} height={13} />
+                <Skeleton width={84} height={10} />
+              </View>
+              <Skeleton width={22} height={6} />
+            </View>
+            <View className="aspect-square bg-track">
+              <View className="absolute inset-x-3 bottom-3 gap-2.5 rounded-tile bg-surface p-3">
+                <Skeleton width="45%" height={15} />
+                <Skeleton height={6} />
+                <Skeleton width="70%" height={12} />
+              </View>
+            </View>
+            <View className="flex-row items-center gap-5 px-5 pb-4 pt-3">
+              <Skeleton width={42} height={18} />
+              <Skeleton width={42} height={18} />
+            </View>
+          </View>
+        ))}
+      </View>
+    )
+  }
   return (
     <View accessibilityRole="progressbar" accessibilityLabel={t('loading')} className="gap-4 p-5">
       {slots.slice(0, count).map((slot) => (

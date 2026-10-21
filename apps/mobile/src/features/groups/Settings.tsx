@@ -20,13 +20,13 @@ import {
   Screen,
   SegmentedControl,
   Sheet,
-  SkeletonRow,
   Switch,
   Text,
   TextField,
 } from '@/ui'
 import { InviteSheet } from './InviteSheet'
 import { GroupIcon, PersonAvatar, useGroupTask } from './parts'
+import { SettingsSkeleton } from './Skeletons'
 import { setOpenGroup } from './store'
 
 export function GroupSettingsScreen({ groupId }: { groupId: string }) {
@@ -78,10 +78,7 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
             }
           />
         ) : (
-          <View className="gap-3">
-            <SkeletonRow />
-            <SkeletonRow />
-          </View>
+          <SettingsSkeleton />
         )
       ) : (
         <View className="gap-lg pb-xl">

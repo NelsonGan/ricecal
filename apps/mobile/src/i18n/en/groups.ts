@@ -60,7 +60,6 @@ export const groups = {
   showMore_one: 'Show {{count}} more',
   showMore_other: 'Show {{count}} more',
   showLess: 'Show less',
-  logMeal: 'Log a meal',
   nudge: 'Nudge',
   nudgeLabel: 'Nudge {{name}} about {{meal}}',
   nudgedBy: '{{name}} nudged',

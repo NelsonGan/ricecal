@@ -12,6 +12,13 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native'
+import Animated, {
+  type SharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { dateKey, useUserId } from '@/data'
 import {
@@ -40,7 +47,6 @@ import {
   useNavInset,
   useToast,
 } from '@/ui'
-import { ChatSheet } from './Chat'
 import { InviteSheet } from './InviteSheet'
 import { MealSheet } from './MealSheet'
 import { EntryPicture, MEAL_TINT, PersonAvatar, shortDuration, useGroupTask } from './parts'
@@ -59,7 +65,7 @@ const MEMBER_COLUMN = 46
 const HEADER_SIDE = 88
 /** Text in a tile is capped so a large Dynamic Type size cannot push it out of a fixed square. */
 const TILE_TEXT = 1.3
-const SKELETON_ROWS = ['a', 'b', 'c', 'd']
+const SKELETON_ROWS = ['a', 'b', 'c', 'd', 'e']
 
 /**
  * The phone's calendar date, which moves at midnight and when the app comes
@@ -139,7 +145,6 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
   const summary = useMyGroups().data?.find((group) => group.id === groupId)
   // The same query as the page on screen, which is the one that polls.
   const board = useGroupBoard(groupId, day, focused, false)
-  const [chatOpen, setChatOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
 
   // A notification tapped while this board is already open names its day too.
@@ -161,6 +166,17 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
   const name = summary?.name ?? board.data?.group.name
   const memberCount = summary?.member_count ?? board.data?.group.member_count
   const openInvite = useCallback(() => setInviteOpen(true), [])
+  const [stripHeight, setStripHeight] = useState(0)
+  // How far the page on screen has scrolled, which is how far the strip goes.
+  const scrollY = useSharedValue(0)
+  // A day's page opens at its top, so the strip comes back with it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on each new day
+  useEffect(() => {
+    scrollY.value = withTiming(0, { duration: 150 })
+  }, [day, scrollY])
+  const stripStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -Math.min(Math.max(scrollY.value, 0), stripHeight) }],
+  }))
 
   const renderItem = useCallback<ListRenderItem<string>>(
     ({ item, index: page }) => (
@@ -168,21 +184,22 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
         <BoardPage
           groupId={groupId}
           day={item}
-          isToday={page === 0}
           enabled={focused && Math.abs(page - index) <= 1}
           live={focused && page === index}
           bottomInset={navInset + 76}
+          topInset={stripHeight}
+          scrollY={scrollY}
           grid={grid}
           onInvite={openInvite}
         />
       </View>
     ),
-    [groupId, focused, index, navInset, grid, openInvite],
+    [groupId, focused, index, navInset, grid, openInvite, stripHeight, scrollY],
   )
 
   return (
     <View className="flex-1">
-      <View className="gap-3 pb-3 pt-1" style={{ paddingHorizontal: EDGE }}>
+      <View className="pb-2 pt-1" style={{ paddingHorizontal: EDGE }}>
         {/* Equal sides, so the name sits in the middle of the screen rather
             than in the middle of whatever the buttons leave. */}
         <View className="flex-row items-center">
@@ -218,43 +235,51 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
             </IconButton>
           </View>
         </View>
-        <GroupWeekStrip
-          day={day}
-          today={today}
-          oldest={days[DAYS - 1] ?? today}
-          onChange={setDay}
-        />
       </View>
 
-      <FlatList
-        ref={pager}
-        data={days}
-        extraData={index}
-        keyExtractor={(item) => item}
-        horizontal
-        inverted
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onMomentumEnd}
-        initialScrollIndex={index}
-        getItemLayout={(_, item) => ({
-          length: grid.width,
-          offset: grid.width * item,
-          index: item,
-        })}
-        initialNumToRender={1}
-        windowSize={3}
-        maxToRenderPerBatch={1}
-        renderItem={renderItem}
-      />
+      {/* The strip sits over the board rather than above it, and slides away
+          as the board scrolls, so a long board gets the whole screen. Every
+          page starts below it. */}
+      <View className="flex-1 overflow-hidden">
+        <FlatList
+          ref={pager}
+          data={days}
+          extraData={index}
+          keyExtractor={(item) => item}
+          horizontal
+          inverted
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={onMomentumEnd}
+          initialScrollIndex={index}
+          getItemLayout={(_, item) => ({
+            length: grid.width,
+            offset: grid.width * item,
+            index: item,
+          })}
+          initialNumToRender={1}
+          windowSize={3}
+          maxToRenderPerBatch={1}
+          renderItem={renderItem}
+        />
+        <Animated.View
+          className="absolute inset-x-0 top-0 bg-canvas pb-3"
+          style={[{ paddingHorizontal: EDGE }, stripStyle]}
+          onLayout={(event) => setStripHeight(event.nativeEvent.layout.height)}
+        >
+          <GroupWeekStrip
+            day={day}
+            today={today}
+            oldest={days[DAYS - 1] ?? today}
+            onChange={setDay}
+          />
+        </Animated.View>
+      </View>
 
-      <ChatBar board={board.data} bottom={navInset + 8} onPress={() => setChatOpen(true)} />
-      <ChatSheet
-        groupId={groupId}
-        groupName={name ?? ''}
-        day={day}
-        visible={chatOpen}
-        onClose={() => setChatOpen(false)}
+      <ChatBar
+        board={board.data}
+        bottom={navInset + 8}
+        onPress={() => router.push({ pathname: '/group/chat', params: { id: groupId, day } })}
       />
       <InviteSheet groupId={groupId} visible={inviteOpen} onClose={() => setInviteOpen(false)} />
     </View>
@@ -266,19 +291,21 @@ type Open = { memberId: string; meal: GroupMeal }
 const BoardPage = memo(function BoardPage({
   groupId,
   day,
-  isToday,
   enabled,
   live,
   bottomInset,
+  topInset,
+  scrollY,
   grid,
   onInvite,
 }: {
   groupId: string
   day: string
-  isToday: boolean
   enabled: boolean
   live: boolean
   bottomInset: number
+  topInset: number
+  scrollY: SharedValue<number>
   grid: Grid
   onInvite: () => void
 }) {
@@ -291,10 +318,20 @@ const BoardPage = memo(function BoardPage({
   const onClose = useCallback(() => setOpen(null), [])
   const members = board.data?.members
   const names = useMemo(() => shortNames(members ?? []), [members])
+  // Only the page on screen moves the strip; its neighbours scroll unseen.
+  const onScroll = useAnimatedScrollHandler(
+    {
+      onScroll: (event) => {
+        if (live) scrollY.value = event.contentOffset.y
+      },
+    },
+    [live],
+  )
+  const padding = { paddingTop: topInset, paddingBottom: bottomInset, paddingHorizontal: EDGE }
 
   if (!board.data) {
     return (
-      <ScrollView contentContainerStyle={{ paddingBottom: bottomInset, paddingHorizontal: EDGE }}>
+      <ScrollView contentContainerStyle={padding} scrollEnabled={false}>
         {board.isError || board.fetchStatus === 'paused' ? (
           <QueryNotice
             error={board.isError}
@@ -302,13 +339,7 @@ const BoardPage = memo(function BoardPage({
             retry={() => board.refetch()}
           />
         ) : (
-          <View style={{ gap: GAP }}>
-            {SKELETON_ROWS.map((row) => (
-              <View key={row} style={{ height: grid.tile }}>
-                <Skeleton className="h-full w-full rounded-tile" />
-              </View>
-            ))}
-          </View>
+          <BoardSkeleton grid={grid} />
         )}
       </ScrollView>
     )
@@ -319,9 +350,11 @@ const BoardPage = memo(function BoardPage({
   const hidden = all.length - FOLDED_ROWS
 
   return (
-    <ScrollView
-      contentContainerStyle={{ paddingBottom: bottomInset, paddingHorizontal: EDGE }}
+    <Animated.ScrollView
+      contentContainerStyle={padding}
       showsVerticalScrollIndicator={false}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
     >
       <View style={{ gap: GAP }}>
         <ColumnHeaders grid={grid} />
@@ -330,7 +363,6 @@ const BoardPage = memo(function BoardPage({
             key={member.person.id}
             groupId={groupId}
             day={day}
-            isToday={isToday}
             member={member}
             name={names.get(member.person.id) ?? member.person.name}
             grid={grid}
@@ -374,9 +406,41 @@ const BoardPage = memo(function BoardPage({
         name={open ? (names.get(open.memberId) ?? '') : ''}
         onClose={onClose}
       />
-    </ScrollView>
+    </Animated.ScrollView>
   )
 })
+
+/** The board's own shape while it loads: a name and four tiles per row. */
+function BoardSkeleton({ grid }: { grid: Grid }) {
+  return (
+    <View style={{ gap: GAP }}>
+      <View style={{ height: 22 }} />
+      {SKELETON_ROWS.map((row) => (
+        <View key={row} className="flex-row items-center" style={{ gap: GAP }}>
+          <View className="items-center gap-1" style={{ width: MEMBER_COLUMN }}>
+            <Skeleton rounded={false} width={40} height={40} className="rounded-[14px]" />
+            <Skeleton width={30} height={9} />
+          </View>
+          {GROUP_MEALS.map((meal) => (
+            <Skeleton
+              key={meal}
+              rounded={false}
+              width={grid.tile}
+              height={grid.tile}
+              className="rounded-[14px]"
+            />
+          ))}
+          <Skeleton
+            rounded={false}
+            width={grid.workout}
+            height={grid.tile}
+            className="rounded-[14px]"
+          />
+        </View>
+      ))}
+    </View>
+  )
+}
 
 function ColumnHeaders({ grid }: { grid: Grid }) {
   const { t } = useTranslation('groups')
@@ -407,7 +471,6 @@ function ColumnHeaders({ grid }: { grid: Grid }) {
 const MemberRow = memo(function MemberRow({
   groupId,
   day,
-  isToday,
   member,
   name,
   grid,
@@ -415,7 +478,6 @@ const MemberRow = memo(function MemberRow({
 }: {
   groupId: string
   day: string
-  isToday: boolean
   member: BoardMember
   name: string
   grid: Grid
@@ -457,7 +519,6 @@ const MemberRow = memo(function MemberRow({
           entries={byMeal[meal]}
           grid={grid}
           isSelf={isSelf}
-          isToday={isToday}
           onOpen={onOpen}
         />
       ))}
@@ -475,7 +536,6 @@ function MealTile({
   entries,
   grid,
   isSelf,
-  isToday,
   onOpen,
 }: {
   groupId: string
@@ -486,11 +546,9 @@ function MealTile({
   entries: BoardEntry[]
   grid: Grid
   isSelf: boolean
-  isToday: boolean
   onOpen: (memberId: string, meal: GroupMeal) => void
 }) {
   const { t } = useTranslation(['groups', 'common'])
-  const router = useRouter()
   const viewer = useUserId()
   const [page, setPage] = useState(0)
   const size = grid.tile
@@ -556,21 +614,9 @@ function MealTile({
     )
   }
 
-  if (isSelf) {
-    return isToday ? (
-      <Tappable
-        className="items-center justify-center rounded-[14px] bg-surface"
-        style={box}
-        onPress={() => router.push('/log')}
-        accessibilityRole="button"
-        accessibilityLabel={t('logMeal')}
-      >
-        <Icon set="ui" name="plus" size={22} />
-      </Tappable>
-    ) : (
-      <EmptyTile width={size} height={size} />
-    )
-  }
+  // Your own empty meal is the same plain dash as anyone's; logging is the
+  // diary's job, and a plus here read as a second place to do it.
+  if (isSelf) return <EmptyTile width={size} height={size} />
 
   const nudge = member.nudges[meal]
   if (nudge) {

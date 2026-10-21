@@ -2328,7 +2328,6 @@ export const ms = {
     showMore_one: 'Tunjuk {{count}} lagi',
     showMore_other: 'Tunjuk {{count}} lagi',
     showLess: 'Tunjuk kurang',
-    logMeal: 'Catat makanan',
     nudge: 'Cuit',
     nudgeLabel: 'Cuit {{name}} tentang {{meal}}',
     nudgedBy: '{{name}} mencuit',

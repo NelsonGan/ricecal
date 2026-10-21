@@ -2299,7 +2299,6 @@ export const vi = {
     showMore_one: 'Xem thêm {{count}}',
     showMore_other: 'Xem thêm {{count}}',
     showLess: 'Thu gọn',
-    logMeal: 'Ghi bữa ăn',
     nudge: 'Nhắc',
     nudgeLabel: 'Nhắc {{name}} về {{meal}}',
     nudgedBy: '{{name}} đã nhắc',

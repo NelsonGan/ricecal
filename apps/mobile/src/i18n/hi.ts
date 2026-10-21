@@ -2280,7 +2280,6 @@ export const hi = {
     showMore_one: '{{count}} और दिखाएँ',
     showMore_other: '{{count}} और दिखाएँ',
     showLess: 'कम दिखाएँ',
-    logMeal: 'भोजन दर्ज करें',
     nudge: 'याद दिलाएँ',
     nudgeLabel: '{{name}} को {{meal}} याद दिलाएँ',
     nudgedBy: '{{name}} ने याद दिलाया',

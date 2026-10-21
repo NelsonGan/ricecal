@@ -2276,7 +2276,6 @@ export const zhHant = {
     showMore_one: '再顯示 {{count}} 人',
     showMore_other: '再顯示 {{count}} 人',
     showLess: '收起',
-    logMeal: '記錄一餐',
     nudge: '提醒',
     nudgeLabel: '提醒 {{name}} 記錄{{meal}}',
     nudgedBy: '{{name}} 已提醒',

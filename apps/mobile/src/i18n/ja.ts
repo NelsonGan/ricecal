@@ -2297,7 +2297,6 @@ export const ja = {
     showMore_one: 'あと {{count}} 人を表示',
     showMore_other: 'あと {{count}} 人を表示',
     showLess: '閉じる',
-    logMeal: '食事を記録',
     nudge: 'つつく',
     nudgeLabel: '{{name}}さんに{{meal}}の記録をつつく',
     nudgedBy: '{{name}}さんがつつきました',

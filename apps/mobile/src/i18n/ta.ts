@@ -2308,7 +2308,6 @@ export const ta = {
     showMore_one: 'மேலும் {{count}} காட்டு',
     showMore_other: 'மேலும் {{count}} காட்டு',
     showLess: 'குறைவாகக் காட்டு',
-    logMeal: 'உணவைப் பதிவு செய்',
     nudge: 'நினைவூட்டு',
     nudgeLabel: '{{name}} க்கு {{meal}} பற்றி நினைவூட்டு',
     nudgedBy: '{{name}} நினைவூட்டினார்',

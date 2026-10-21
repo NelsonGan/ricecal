@@ -124,9 +124,9 @@ it('puts the viewer first and draws each meal in its column', async () => {
   expect(screen.getByLabelText('Yoga, 30m')).toBeOnTheScreen()
 })
 
-it('offers to log only the viewer’s own empty meals today', async () => {
+it('draws the viewer’s own empty meals as plain empty tiles', async () => {
   await render(board)
-  expect(screen.getAllByLabelText('Log a meal')).toHaveLength(2)
+  expect(screen.queryByLabelText('Log a meal')).toBeNull()
 })
 
 it('nudges an empty meal that is open, and says who nudged one that is not', async () => {

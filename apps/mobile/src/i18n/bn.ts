@@ -2285,7 +2285,6 @@ export const bn = {
     showMore_one: 'আরও {{count}} জন দেখান',
     showMore_other: 'আরও {{count}} জন দেখান',
     showLess: 'কম দেখান',
-    logMeal: 'খাবার লিখুন',
     nudge: 'মনে করান',
     nudgeLabel: '{{name}} কে {{meal}} মনে করান',
     nudgedBy: '{{name}} মনে করিয়েছেন',
