@@ -33,7 +33,6 @@ import {
   SearchField,
   SegmentedControl,
   Sheet,
-  SkeletonRow,
   Tappable,
   Text,
   TextField,
@@ -41,6 +40,7 @@ import {
   useToast,
 } from '@/ui'
 import { GROUP_ICONS, GroupIcon, useGroupTask } from './parts'
+import { GroupCardSkeleton, InviteSkeleton, PublicGroupsSkeleton } from './Skeletons'
 
 /** Ask once a group exists, when a nudge has somewhere to come from. */
 async function askForPush(userId: string) {
@@ -104,10 +104,7 @@ export function GroupsHome({ onOpen }: { onOpen: (groupId: string) => void }) {
       />
 
       {groups.isLoading ? (
-        <View className="gap-3">
-          <SkeletonRow />
-          <SkeletonRow />
-        </View>
+        <GroupCardSkeleton />
       ) : !groups.data && (groups.isError || groups.fetchStatus === 'paused') ? (
         <QueryNotice
           error={groups.isError}
@@ -231,7 +228,7 @@ function PublicGroups({ onJoined }: { onJoined: (groupId: string) => void }) {
         clearLabel={t('logging:search.clear')}
       />
       {groups.isLoading ? (
-        <SkeletonRow />
+        <PublicGroupsSkeleton />
       ) : !groups.data && (groups.isError || groups.fetchStatus === 'paused') ? (
         <QueryNotice
           error={groups.isError}
@@ -410,7 +407,7 @@ function InvitesSheet({
       title={t('invites')}
     >
       {invites.isLoading ? (
-        <SkeletonRow />
+        <InviteSkeleton />
       ) : !invites.data && (invites.isError || invites.fetchStatus === 'paused') ? (
         <QueryNotice
           error={invites.isError}

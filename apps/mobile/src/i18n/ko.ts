@@ -2283,7 +2283,6 @@ export const ko = {
     showMore_one: '{{count}}명 더 보기',
     showMore_other: '{{count}}명 더 보기',
     showLess: '접기',
-    logMeal: '식사 기록',
     nudge: '콕 찌르기',
     nudgeLabel: '{{name}}님에게 {{meal}} 기록 알림',
     nudgedBy: '{{name}}님이 콕 찔렀어요',

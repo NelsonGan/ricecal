@@ -2330,7 +2330,6 @@ export const fil = {
     showMore_one: 'Ipakita ang {{count}} pa',
     showMore_other: 'Ipakita ang {{count}} pa',
     showLess: 'Ipakita nang mas kaunti',
-    logMeal: 'Mag-log ng pagkain',
     nudge: 'Kalabit',
     nudgeLabel: 'Kalabitin si {{name}} tungkol sa {{meal}}',
     nudgedBy: 'Kinalabit ni {{name}}',
