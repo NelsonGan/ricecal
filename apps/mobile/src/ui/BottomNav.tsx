@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { radius, slab } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
+import { CountBadge } from './Badge'
 import { cn } from './cn'
 import { Icon, type IconProps } from './Icon'
 import { Squish } from './Squish'
@@ -53,7 +54,7 @@ export type NavTab<T extends string> = {
  * pill's direct children, which a controlled component cannot express.
  *
  * The app's tabs pass no action, so the pill spans the width of the screen and
- * five tabs get the room. The add button floats over Today instead, as
+ * six tabs get the room. The add button floats over Today instead, as
  * `Screen`'s `floatingTrailing`, which pads the day's last row clear of it.
  */
 export function NavBar({
@@ -108,6 +109,8 @@ export const FLOAT_SHADOW = {
 export type NavItemProps = Omit<TappableProps, 'children' | 'style'> & {
   label: string
   icon: IconProps
+  /** A red count over the icon, for something waiting on this tab. */
+  badge?: number
   /**
    * Whether this tab is the active one. Named to match what expo-router's
    * `TabTrigger` injects when used with `asChild`, so no adapter is needed.
@@ -125,7 +128,15 @@ export type NavItemProps = Omit<TappableProps, 'children' | 'style'> & {
 }
 
 /** One tab in the bar. Sized to fill its share of the row. */
-export function NavItem({ label, icon, isFocused = false, href, style, ...rest }: NavItemProps) {
+export function NavItem({
+  label,
+  icon,
+  badge = 0,
+  isFocused = false,
+  href,
+  style,
+  ...rest
+}: NavItemProps) {
   const colors = useThemeColors()
 
   return (
@@ -139,19 +150,27 @@ export function NavItem({ label, icon, isFocused = false, href, style, ...rest }
       className="h-[71px] min-w-0 flex-1 items-center justify-center gap-1.5"
       accessibilityRole="tab"
       accessibilityState={{ selected: isFocused }}
-      accessibilityLabel={label}
+      accessibilityLabel={badge > 0 ? `${label}, ${badge}` : label}
     >
       {/* An inactive tab is grey, and the tint goes through `style` rather than
           through `tintColor`. `expo-image` documents both, but only the style
           reliably reaches the view here — sizing arrives the same way and
           demonstrably works, while the prop left these illustrations in full
           colour when unfocused. */}
-      <Icon
-        {...icon}
-        size={26}
-        style={isFocused ? undefined : { tintColor: colors.faint }}
-        tintColor={isFocused ? undefined : colors.faint}
-      />
+      <View>
+        <Icon
+          {...icon}
+          size={26}
+          style={isFocused ? undefined : { tintColor: colors.faint }}
+          tintColor={isFocused ? undefined : colors.faint}
+        />
+        <CountBadge
+          count={badge}
+          className="absolute -right-2.5 -top-1.5 h-5 min-w-5 px-1"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        />
+      </View>
       <Text
         variant="caption"
         className={cn('max-w-full', isFocused ? 'text-pandan-ink' : 'text-faint')}

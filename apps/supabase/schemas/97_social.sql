@@ -517,7 +517,11 @@ begin
     select p.user_id, p.avatar_path, p.photo_etag, 'avatar'::text from keys k cross join lateral (
       select sp.user_id, sp.avatar_path, sp.photo_etag from public.social_profiles sp
       where sp.avatar_path = k.key and sp.review_status = 'approved' and not sp.quarantined limit 1
-    ) p;
+    ) p
+    union all
+    -- Diary photos of people the caller shares a group with (97_groups.sql).
+    select c.owner_id, c.photo_path, null::text, 'meal'::text
+    from private.group_photo_claims(p_keys) c;
 end;
 $$;
 

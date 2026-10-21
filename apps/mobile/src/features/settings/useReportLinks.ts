@@ -3,6 +3,7 @@ import { router } from 'expo-router'
 import { useEffect } from 'react'
 
 import { useSession } from '@/data/session'
+import { setOpenGroup } from '@/features/groups/store'
 import { openLogger } from '@/features/workouts/loggerOpen'
 import { getActiveWorkout } from '@/features/workouts/store'
 import { track } from '@/lib/analytics'
@@ -61,6 +62,18 @@ export function useReportLinks(): void {
       }
       if (kind === 'workout-reminder') {
         router.push('/workouts')
+        return
+      }
+      // A nudge or an invite from a group, the one push that comes from a
+      // server. It opens the Groups tab on that group's board, or on the list
+      // for an invite, which waits behind the envelope there.
+      if (kind === 'group') {
+        const data = response?.notification.request.content.data
+        const groupId = typeof data?.groupId === 'string' ? data.groupId : null
+        if (userId && groupId && !data?.invite) setOpenGroup(userId, groupId)
+        if (userId && data?.invite) setOpenGroup(userId, null)
+        track('Notification Opened', { kind: data?.invite ? 'group_invite' : 'group_nudge' })
+        router.navigate('/groups')
         return
       }
       if (!isReport(kind)) return

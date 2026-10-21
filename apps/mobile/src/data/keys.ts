@@ -14,6 +14,10 @@ export const keys = {
   social: (userId: string) => ['social', userId] as const,
   socialRead: (userId: string, name: string, params: object = {}) =>
     ['social', userId, name, params] as const,
+  /** Everything under the Groups tab, so a membership change can refresh it all at once. */
+  groups: (userId: string) => ['groups', userId] as const,
+  groupsRead: (userId: string, name: string, params: object = {}) =>
+    ['groups', userId, name, params] as const,
   profile: (userId: string) => ['profile', userId] as const,
   settings: (userId: string) => ['settings', userId] as const,
   mealTimes: (userId: string) => ['meal-times', userId] as const,
