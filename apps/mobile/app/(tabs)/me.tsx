@@ -229,6 +229,11 @@ export default function MeScreen() {
 
       <Card title={t('profile:home.settings')} contentClassName="gap-0">
         <SettingRow
+          icon={{ set: 'body', name: 'dumbbell' }}
+          title={t('common:nav.workouts')}
+          onPress={() => router.push('/workouts')}
+        />
+        <SettingRow
           icon={{ set: 'food', name: 'cooking-pot' }}
           title={t('social:myFoods')}
           onPress={() => router.push('/settings/foods')}

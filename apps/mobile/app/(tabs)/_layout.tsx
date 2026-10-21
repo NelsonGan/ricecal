@@ -50,8 +50,9 @@ import {
 export const unstable_settings = { anchor: 'today' }
 
 /**
- * Six tabs across the full width of a floating bar. Workouts sits beside Today
- * because the two are the daily pair: what went in, and what was done. The add
+ * Five tabs across the full width of a floating bar. Workouts is not one of
+ * them: it is a page, opened from a tile beside the water on Today and from
+ * Me, which gave its place to Groups without crowding the bar to six. The add
  * button floats over Today alone, where logging happens. See `NavBar`.
  *
  * Still the headless `expo-router/ui` tabs rather than a styled navigator,
@@ -118,10 +119,6 @@ function SignedInTabs() {
           <NavBar>
             <TabTrigger name="today" href="/today" asChild>
               <NavItem label={t('nav.today')} icon={{ set: 'ui', name: 'home' }} />
-            </TabTrigger>
-
-            <TabTrigger name="workouts" href="/workouts" asChild>
-              <NavItem label={t('nav.workouts')} icon={{ set: 'body', name: 'dumbbell' }} />
             </TabTrigger>
 
             <TabTrigger name="feed" href="/feed" asChild>
