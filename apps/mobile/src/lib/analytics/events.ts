@@ -329,7 +329,7 @@ export type Events = {
   'Health Disconnected': { provider: string }
   'Reminder Toggled': { meal: string; enabled: boolean }
   /** The only re-engagement surface in the app, so the taps are worth counting. */
-  'Notification Opened': { kind: 'weekly' | 'monthly' }
+  'Notification Opened': { kind: 'weekly' | 'monthly' | 'group_nudge' | 'group_invite' }
   /** Typed by the user. A reading synced from a health store is not an action. */
   'Weight Logged': NoProps
   'Recipe Saved': { is_new: boolean; ingredients: number; servings: number }
@@ -373,6 +373,17 @@ export type Events = {
    * Android, which cannot report what became of a share intent.
    */
   'Meal Shared': { picture: 'photo' | 'drawing' }
+
+  // ── Groups ───────────────────────────────────────────────────────────────
+  'Group Created': { visibility: 'private' | 'public' }
+  /** Accepting an invite, or joining a public group from the list. */
+  'Group Joined': { via: 'invite' | 'public' }
+  'Group Invite Sent': { by: 'handle' | 'email' }
+  /** Accepted by the server, so a nudge refused for its cooldown is not counted. */
+  'Group Nudge Sent': { meal: 'breakfast' | 'lunch' | 'dinner' }
+  /** Setting a like or a dislike; clearing one is not counted. */
+  'Group Reaction Set': { reaction: 'like' | 'dislike' }
+  'Group Message Sent': NoProps
 
   // ── Workouts ─────────────────────────────────────────────────────────────
   /**

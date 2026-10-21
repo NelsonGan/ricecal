@@ -91,6 +91,8 @@ export function useBlockAuthor() {
       await queryClient.cancelQueries({ queryKey: keys.social(userId) })
       await queryClient.resetQueries({ queryKey: keys.social(userId) })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
+      // A block also hides the author's group messages and pending invites.
+      queryClient.invalidateQueries({ queryKey: keys.groups(userId) })
     },
   })
 }

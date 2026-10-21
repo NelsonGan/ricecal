@@ -151,6 +151,8 @@ export function Avatar({
 
 export type AvatarGroupProps = {
   names: readonly string[]
+  /** Everyone in the group, when `names` is only the first few of them. */
+  total?: number
   /** How many to draw before collapsing the rest into a "+N" tile. */
   max?: number
   size?: AvatarSize
@@ -158,15 +160,15 @@ export type AvatarGroupProps = {
 }
 
 /** Overlapping avatars with a "+N" overflow tile. */
-export function AvatarGroup({ names, max = 3, size = 'sm', className }: AvatarGroupProps) {
+export function AvatarGroup({ names, total, max = 3, size = 'sm', className }: AvatarGroupProps) {
   const shown = names.slice(0, max)
-  const overflow = names.length - shown.length
+  const overflow = (total ?? names.length) - shown.length
   const box = sizes[size].box
 
   return (
     <View
       className={cn('flex-row items-center', className)}
-      accessibilityLabel={`${names.length} members`}
+      accessibilityLabel={`${total ?? names.length} members`}
     >
       {shown.map((name, index) => (
         <View key={name} style={index > 0 ? { marginLeft: -10 } : undefined}>
