@@ -34,12 +34,17 @@ update public.meal_times set at = case meal when 'breakfast' then time '06:00'
   when 'lunch' then time '09:00' when 'dinner' then time '23:00' else at end
 where user_id in (:'ana', :'ben', :'cai', :'dee');
 
+-- Ben's calendar day, read once here: under a client role his profile, and so
+-- his timezone, is hidden, and local_today would fall back to the default zone.
+create temp table bday as select public.local_today(:'ben') as d;
+grant select on bday to authenticated;
+
 -- Ben ate breakfast at 06:30 and a second plate at 06:45 that he will move.
 insert into public.food_logs
   (id, user_id, log_date, logged_at, item_name, item_icon_set, item_icon_name,
    base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor, note, photo_path)
-select v.id, :'ben', public.local_today(:'ben'),
-  (public.local_today(:'ben') + v.at) at time zone (select tz from fixture),
+select v.id, :'ben', (select d from bday),
+  ((select d from bday) + v.at) at time zone (select tz from fixture),
   v.name, 'dishes', 'nasi-lemak', 600, 60, 25, 28, '1 plate', 1, 'Private note', v.photo
 from (values
   (:'breakfast_entry'::uuid, time '06:30', 'Roti canai', 'meals/' || :'ben' || '/groups-fixture.jpg'),
@@ -61,9 +66,9 @@ select ok(not exists (
 select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select throws_ok($$select count(*) from public.groups$$, '42501', null, 'group tables are closed to clients');
-select lives_ok($$select public.create_group('Makan Buddies', 'rice-bowl', false)$$, 'a group can be made');
+select lives_ok($$select public.create_group('Groups fixture table', 'rice-bowl', false)$$, 'a group can be made');
 reset role;
-create temp table g as select id from public.groups where name = 'Makan Buddies';
+create temp table g as select id from public.groups where name = 'Groups fixture table';
 grant select on g to authenticated;
 select is((select leader_id from public.groups where id = (select id from g)), :'ana'::uuid,
   'the maker leads');
@@ -102,14 +107,14 @@ select throws_ok(format('select public.group_board(%L, %L)', (select id from g),
 -- The board puts Ben's entries in breakfast by his own meal times, and shows
 -- the viewer first.
 select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
-select is(public.group_board((select id from g), public.local_today(:'ben'))->'members'->0->'person'->>'id',
+select is(public.group_board((select id from g), (select d from bday))->'members'->0->'person'->>'id',
   :'ana', 'the viewer is the first row');
 select is((
-  select count(*)::int from jsonb_array_elements(public.group_board((select id from g), public.local_today(:'ben'))->'members') m,
+  select count(*)::int from jsonb_array_elements(public.group_board((select id from g), (select d from bday))->'members') m,
     jsonb_array_elements(m->'entries') e
   where m->'person'->>'id' = :'ben' and e->>'meal' = 'breakfast'), 2,
   'both of Ben''s morning plates are breakfast');
-select ok(not (public.group_board((select id from g), public.local_today(:'ben'))::text like '%Private note%'),
+select ok(not (public.group_board((select id from g), (select d from bday))::text like '%Private note%'),
   'the board never carries a diary note');
 
 -- Moving an entry is Ben's alone, and moves it everywhere.
@@ -118,7 +123,7 @@ select throws_ok(format('select public.set_entry_board_meal(%L, %L)', :'moved_en
 select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
 select lives_ok(format('select public.set_entry_board_meal(%L, %L)', :'moved_entry', 'lunch'), 'the owner moves it');
 select is((
-  select e->>'meal' from jsonb_array_elements(public.group_board((select id from g), public.local_today(:'ben'))->'members') m,
+  select e->>'meal' from jsonb_array_elements(public.group_board((select id from g), (select d from bday))->'members') m,
     jsonb_array_elements(m->'entries') e where e->>'id' = :'moved_entry'), 'lunch', 'the board follows the move');
 
 -- Reactions: never your own, counted on the board, cleared by 0.
@@ -130,7 +135,7 @@ select set_config('request.jwt.claims', json_build_object('sub', :'cai', 'role',
 select lives_ok(format('select public.set_group_reaction(%L, -1::smallint)', :'breakfast_entry'), 'Cai dislikes it');
 select is((
   select (e->>'likes') || '/' || (e->>'dislikes') || '/' || (e->>'mine')
-  from jsonb_array_elements(public.group_board((select id from g), public.local_today(:'ben'))->'members') m,
+  from jsonb_array_elements(public.group_board((select id from g), (select d from bday))->'members') m,
     jsonb_array_elements(m->'entries') e where e->>'id' = :'breakfast_entry'), '1/1/-1',
   'counts and the viewer''s own reaction');
 
@@ -147,27 +152,27 @@ select is((select owner_id from public.social_photo_claims(array['meals/' || :'b
 -- Nudges: lunch is open for Ben, breakfast is logged, and the first nudge
 -- closes it for everyone for an hour.
 select is((
-  select m->'nudgeable' from jsonb_array_elements(public.group_board((select id from g), public.local_today(:'ben'))->'members') m
+  select m->'nudgeable' from jsonb_array_elements(public.group_board((select id from g), (select d from bday))->'members') m
   where m->'person'->>'id' = :'ana'), '["breakfast", "lunch"]'::jsonb,
   'an empty meal past its time can be nudged; a future one cannot');
 select is((
-  select m->'nudgeable' from jsonb_array_elements(public.group_board((select id from g), public.local_today(:'ben'))->'members') m
+  select m->'nudgeable' from jsonb_array_elements(public.group_board((select id from g), (select d from bday))->'members') m
   where m->'person'->>'id' = :'ben'), '[]'::jsonb, 'Ben''s breakfast is logged, and the moved plate fills his lunch');
 reset role;
 delete from public.food_logs where id = :'moved_entry';
 select set_config('request.jwt.claims', json_build_object('sub', :'cai', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select ok(public.nudge_group_member((select id from g), :'ben', public.local_today(:'ben'), 'lunch') is not null,
+select ok(public.nudge_group_member((select id from g), :'ben', (select d from bday), 'lunch') is not null,
   'Cai nudges Ben for lunch');
 select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
 select throws_ok(format('select public.nudge_group_member(%L, %L, %L, %L)',
-  (select id from g), :'ben', public.local_today(:'ben'), 'lunch'), 'P0001', 'Nudged recently',
+  (select id from g), :'ben', (select d from bday), 'lunch'), 'P0001', 'Nudged recently',
   'a second member cannot nudge within the hour');
 select is((
-  select m->'nudges'->'lunch'->'by'->>'id' from jsonb_array_elements(public.group_board((select id from g), public.local_today(:'ben'))->'members') m
+  select m->'nudges'->'lunch'->'by'->>'id' from jsonb_array_elements(public.group_board((select id from g), (select d from bday))->'members') m
   where m->'person'->>'id' = :'ben'), :'cai', 'the board says who nudged');
 select throws_ok(format('select public.nudge_group_member(%L, %L, %L, %L)',
-  (select id from g), :'ben', public.local_today(:'ben') - 1, 'dinner'), 'P0001', null,
+  (select id from g), :'ben', (select d from bday) - 1, 'dinner'), 'P0001', null,
   'a past day cannot be nudged');
 reset role;
 select is((select count(*)::int from public.group_push_targets(:'cai', 'nudge',
@@ -181,12 +186,12 @@ insert into public.blocked_authors(user_id, author_id) values (:'ben', :'cai');
 select set_config('request.jwt.claims', json_build_object('sub', :'cai', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select is((
-  select count(*)::int from jsonb_array_elements(public.group_board((select id from g), public.local_today(:'ben'))->'members') m
+  select count(*)::int from jsonb_array_elements(public.group_board((select id from g), (select d from bday))->'members') m
   where m->'person'->>'id' = :'ben'), 0, 'a blocked member is left off the board');
 select throws_ok(format('select public.set_group_reaction(%L, 1::smallint)', :'breakfast_entry'), '42501', null,
   'a blocked member cannot react');
 select throws_ok(format('select public.nudge_group_member(%L, %L, %L, %L)',
-  (select id from g), :'ben', public.local_today(:'ben'), 'dinner'), '42501', null, 'a blocked member cannot nudge');
+  (select id from g), :'ben', (select d from bday), 'dinner'), '42501', null, 'a blocked member cannot nudge');
 select is((select count(*)::int from public.social_photo_claims(array['meals/' || :'ben' || '/groups-fixture.jpg'])), 0,
   'a blocked member cannot claim the photo');
 reset role;
@@ -197,20 +202,20 @@ set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select lives_ok(format('select public.send_group_message(%L, %L, %L, %L)', (select id from g),
-  public.local_today(:'ben'), 'eating now!!', 'a3620000-0000-4000-8000-000000000001'), 'Ben writes');
+  (select d from bday), 'eating now!!', 'a3620000-0000-4000-8000-000000000001'), 'Ben writes');
 select lives_ok(format('select public.send_group_message(%L, %L, %L, %L)', (select id from g),
-  public.local_today(:'ben'), 'eating now!!', 'a3620000-0000-4000-8000-000000000001'), 'a retry is the same message');
+  (select d from bday), 'eating now!!', 'a3620000-0000-4000-8000-000000000001'), 'a retry is the same message');
 reset role;
 -- now() is fixed inside the test's transaction, so Ana's read mark is put
 -- before the message.
 update public.group_members set chat_read_at = now() - interval '1 minute' where user_id = :'ana';
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
-select is(jsonb_array_length(public.group_messages((select id from g), public.local_today(:'ben'))), 1, 'one message');
-select is((public.group_board((select id from g), public.local_today(:'ben'))->'chat'->>'unread')::int, 1, 'and it is unread');
+select is(jsonb_array_length(public.group_messages((select id from g), (select d from bday))), 1, 'one message');
+select is((public.group_board((select id from g), (select d from bday))->'chat'->>'unread')::int, 1, 'and it is unread');
 select lives_ok(format('select public.report_group_message(%L)',
-  public.group_messages((select id from g), public.local_today(:'ben'))->0->>'id'), 'Ana reports it');
-select is(jsonb_array_length(public.group_messages((select id from g), public.local_today(:'ben'))), 0,
+  public.group_messages((select id from g), (select d from bday))->0->>'id'), 'Ana reports it');
+select is(jsonb_array_length(public.group_messages((select id from g), (select d from bday))), 0,
   'a reported message disappears for the reporter');
 
 -- Leaving: the leader must hand over; the last one out deletes the group.
@@ -246,9 +251,9 @@ reset role;
 -- Ten is the cap.
 select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select public.create_group('Big table', null, true);
+select public.create_group('Groups fixture big', null, true);
 reset role;
-create temp table big as select id from public.groups where name = 'Big table';
+create temp table big as select id from public.groups where name = 'Groups fixture big';
 grant select on big to authenticated;
 insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
 select ('a3630000-0000-4000-8000-0000000000' || lpad(n::text, 2, '0'))::uuid,
