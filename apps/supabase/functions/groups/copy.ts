@@ -94,14 +94,14 @@ const COPY: Record<string, Copy> = {
     nudge: (n) => `${n} உங்களை நினைவூட்டினார் 👋`,
     nudgeBody: (m, g) => `${g} க்காக உங்கள் ${m} பதிவு செய்யுங்கள்.`,
     invite: (n) => `${n} உங்களை குழுவுக்கு அழைத்தார்`,
-    inviteBody: (g) => `RiceCal இல் ${g} இல் சேருங்கள்.`,
+    inviteBody: (g) => `${g} குழுவில் சேருங்கள்.`,
     meals: { breakfast: 'காலை உணவு', lunch: 'மதிய உணவு', dinner: 'இரவு உணவு' },
   },
   bn: {
     nudge: (n) => `${n} আপনাকে মনে করিয়ে দিলেন 👋`,
     nudgeBody: (m, g) => `${g} এর জন্য আপনার ${m} লিখুন।`,
     invite: (n) => `${n} আপনাকে একটি গ্রুপে আমন্ত্রণ জানিয়েছেন`,
-    inviteBody: (g) => `RiceCal এ ${g} এ যোগ দিন।`,
+    inviteBody: (g) => `${g} গ্রুপে যোগ দিন।`,
     meals: { breakfast: 'সকালের খাবার', lunch: 'দুপুরের খাবার', dinner: 'রাতের খাবার' },
   },
 }
@@ -121,10 +121,14 @@ export function pushMessage(kind: 'nudge' | 'invite', target: PushTarget) {
   // A missing name gets a word rather than a blank.
   const name = target.actor_name?.trim() || 'RiceCal'
   const title = kind === 'nudge' ? copy.nudge(name) : copy.invite(name)
+  // A nudge always names its meal; without one the push says only who it is
+  // from and where, rather than guess a meal.
   const body =
-    kind === 'nudge'
-      ? copy.nudgeBody(copy.meals[target.meal ?? 'lunch'], target.group_name)
-      : copy.inviteBody(target.group_name)
+    kind === 'invite'
+      ? copy.inviteBody(target.group_name)
+      : target.meal
+        ? copy.nudgeBody(copy.meals[target.meal], target.group_name)
+        : target.group_name
   return {
     to: target.token,
     title,

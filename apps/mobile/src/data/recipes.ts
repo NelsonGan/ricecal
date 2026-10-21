@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
 import { unwrap, unwrapMaybe, unwrapOne } from './client'
-import { keys } from './keys'
+import { invalidateGroupBoards, keys } from './keys'
 import { toIcon, toRecipe, toRecipeIngredient } from './mappers'
 import { removeMealPhoto } from './photos'
 import { refusalFrom, ScanLimitError } from './refusals'
@@ -390,6 +390,7 @@ export function useSaveRecipe() {
       queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
+      invalidateGroupBoards(queryClient, userId)
     },
   })
 }

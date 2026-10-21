@@ -81,15 +81,23 @@ select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role',
 select ok(public.invite_to_group((select id from g), '@ben.groups') is not null, 'invite by handle');
 select ok(public.invite_to_group((select id from g), :'cai' || '@GROUPS.example.test') is not null,
   'invite by email, ignoring case');
-select throws_ok($$select public.invite_to_group((select id from g), 'nobody@example.test')$$,
-  'P0001', 'No account found', 'an unknown email finds nobody');
+select is(public.invite_to_group((select id from g), 'nobody@example.test'), null,
+  'an unknown email answers like any other, so it cannot be used to test addresses');
+select throws_ok($$select public.invite_to_group((select id from g), '@nobody.here')$$,
+  'P0001', 'No account found', 'an unknown handle says so, since handles are public');
 
 select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
 select is(public.group_invite_count(), 1, 'the invitee sees one invite');
-select lives_ok($$select public.respond_to_group_invite((select id from g), true)$$, 'Ben accepts');
+select is(public.respond_to_group_invite((select id from g), true), 'joined', 'Ben accepts');
 select is(public.group_invite_count(), 0, 'accepting clears the invite');
 select set_config('request.jwt.claims', json_build_object('sub', :'cai', 'role', 'authenticated')::text, true);
-select lives_ok($$select public.respond_to_group_invite((select id from g), true)$$, 'Cai accepts');
+select is(public.respond_to_group_invite((select id from g), true), 'joined', 'Cai accepts');
+reset role;
+select is((select member_count::int from public.groups where id = (select id from g)), 3,
+  'the member count follows joins');
+set local role authenticated;
+select throws_ok(format('select public.group_board(%L, %L)', (select id from g), public.local_today(:'cai') - 61),
+  '22023', null, 'the board does not reach past sixty days');
 
 -- The board puts Ben's entries in breakfast by his own meal times, and shows
 -- the viewer first.
@@ -166,6 +174,25 @@ select is((select count(*)::int from public.group_push_targets(:'cai', 'nudge',
   (select id from public.group_nudges where nudger_id = :'cai'))), 0,
   'a nudge to someone with no device sends nothing');
 
+-- A block holds inside the group: Ben blocks Cai, and Cai loses Ben's food,
+-- his photo and the ability to react to or nudge him.
+reset role;
+insert into public.blocked_authors(user_id, author_id) values (:'ben', :'cai');
+select set_config('request.jwt.claims', json_build_object('sub', :'cai', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is((
+  select count(*)::int from jsonb_array_elements(public.group_board((select id from g), public.local_today(:'ben'))->'members') m
+  where m->'person'->>'id' = :'ben'), 0, 'a blocked member is left off the board');
+select throws_ok(format('select public.set_group_reaction(%L, 1::smallint)', :'breakfast_entry'), '42501', null,
+  'a blocked member cannot react');
+select throws_ok(format('select public.nudge_group_member(%L, %L, %L, %L)',
+  (select id from g), :'ben', public.local_today(:'ben'), 'dinner'), '42501', null, 'a blocked member cannot nudge');
+select is((select count(*)::int from public.social_photo_claims(array['meals/' || :'ben' || '/groups-fixture.jpg'])), 0,
+  'a blocked member cannot claim the photo');
+reset role;
+delete from public.blocked_authors where user_id = :'ben' and author_id = :'cai';
+set local role authenticated;
+
 -- Chat: a message per day, hidden from a reporter, idempotent by request id.
 select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -200,6 +227,21 @@ set local role authenticated;
 select lives_ok($$select public.leave_group((select id from g))$$, 'the last member leaves');
 reset role;
 select is((select count(*)::int from public.groups where id = (select id from g)), 0, 'and the group is gone');
+
+-- A public group's name can be reported; it leaves the reporter's list.
+select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.create_group('Hawker fixture', null, true);
+select set_config('request.jwt.claims', json_build_object('sub', :'dee', 'role', 'authenticated')::text, true);
+select ok(public.public_groups('Hawker fixture', 5)::text like '%Hawker fixture%', 'a public group is listed');
+reset role;
+create temp table hawker as select id from public.groups where name = 'Hawker fixture';
+grant select on hawker to authenticated;
+set local role authenticated;
+select lives_ok($$select public.report_group((select id from hawker))$$, 'a stranger reports its name');
+select ok(not (public.public_groups('Hawker fixture', 5)::text like '%Hawker fixture%'),
+  'a reported group leaves the reporter''s list');
+reset role;
 
 -- Ten is the cap.
 select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);

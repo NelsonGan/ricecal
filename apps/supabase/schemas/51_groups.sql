@@ -10,6 +10,11 @@
 -- Every table is closed to clients. Reads and writes go through functions that
 -- check membership themselves, because the diary's RLS is owner-only and must
 -- stay that way: widening it for groups would widen it for everything.
+--
+-- A block between two people holds inside a group too: neither sees the
+-- other's food or messages, nudges or reacts to the other, or is pushed by the
+-- other. Joining a group the other is in stays allowed, so a block is not
+-- revealed by a refusal.
 -- ---------------------------------------------------------------------------
 
 -- The three columns of the board. Snacks are not a column: they join the
@@ -22,18 +27,26 @@ create type public.group_meal as enum ('breakfast', 'lunch', 'dinner');
 alter table public.food_logs add column board_meal public.group_meal;
 
 create table public.groups (
-  id          uuid primary key default gen_random_uuid(),
-  name        text not null check (char_length(btrim(name)) between 1 and 40),
+  id           uuid primary key default gen_random_uuid(),
+  name         text not null check (char_length(btrim(name)) between 1 and 40),
   -- A drawing from the app's food set, named like an entry's icon.
-  icon_name   text not null default 'rice-bowl' check (icon_name ~ '^[a-z0-9-]{1,60}$'),
-  is_public   boolean not null default false,
+  icon_name    text not null default 'rice-bowl' check (icon_name ~ '^[a-z0-9-]{1,60}$'),
+  is_public    boolean not null default false,
   -- Null only for the moment between a leader's account being deleted and the
   -- trigger below handing the group on.
-  leader_id   uuid references public.profiles(id) on delete set null,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+  leader_id    uuid references public.profiles(id) on delete set null,
+  -- Kept by the membership triggers, so the cap, the lists and the public
+  -- ranking read one column instead of counting rows for every group.
+  member_count smallint not null default 0 check (member_count between 0 and 10),
+  -- Hidden from the public list after three reports of its name. Members keep
+  -- using it; a report is about strangers seeing it.
+  quarantined  boolean not null default false,
+  created_at   timestamptz not null default now()
 );
-create index groups_public_idx on public.groups(created_at desc) where is_public;
+create index groups_public_idx on public.groups(member_count desc, created_at desc)
+  where is_public and not quarantined;
+create index groups_public_name_idx on public.groups using gin (name extensions.gin_trgm_ops)
+  where is_public and not quarantined;
 
 create table public.group_members (
   group_id      uuid not null references public.groups(id) on delete cascade,
@@ -42,7 +55,7 @@ create table public.group_members (
   -- This member's own row order for the board. Ids that have left are ignored
   -- when read and anyone not listed goes after, by join date.
   board_order   uuid[] not null default '{}' check (cardinality(board_order) <= 10),
-  -- Chat messages after this are unread for this member.
+  -- Chat messages after this, on any day, are unread for this member.
   chat_read_at  timestamptz not null default now(),
   notify        boolean not null default true,
   primary key (group_id, user_id)
@@ -61,6 +74,7 @@ create table public.group_invites (
   constraint group_invites_not_self check (invitee_id <> inviter_id)
 );
 create index group_invites_invitee_idx on public.group_invites(invitee_id, created_at desc);
+create index group_invites_inviter_idx on public.group_invites(inviter_id);
 
 -- A like or a dislike of an entry, by a person rather than in a group: the
 -- same friend in two groups has one opinion of a plate. A board counts only
@@ -69,11 +83,12 @@ create table public.group_reactions (
   entry_id    uuid not null references public.food_logs(id) on delete cascade,
   user_id     uuid not null references public.profiles(id) on delete cascade,
   value       smallint not null check (value in (-1, 1)),
-  created_at  timestamptz not null default now(),
   primary key (entry_id, user_id)
 );
 create index group_reactions_user_idx on public.group_reactions(user_id);
 
+-- Only the last hour of nudges matters to anything; older rows are swept as
+-- new ones arrive (nudge_group_member).
 create table public.group_nudges (
   id          uuid primary key default gen_random_uuid(),
   group_id    uuid not null references public.groups(id) on delete cascade,
@@ -86,6 +101,8 @@ create table public.group_nudges (
   constraint group_nudges_not_self check (target_id <> nudger_id)
 );
 create index group_nudges_target_idx on public.group_nudges(group_id, target_id, day, meal, created_at desc);
+create index group_nudges_target_id_idx on public.group_nudges(target_id);
+create index group_nudges_nudger_idx on public.group_nudges(nudger_id);
 
 create table public.group_messages (
   id          uuid primary key default gen_random_uuid(),
@@ -100,6 +117,7 @@ create table public.group_messages (
   unique (author_id, request_id)
 );
 create index group_messages_day_idx on public.group_messages(group_id, day, created_at);
+create index group_messages_recent_idx on public.group_messages(group_id, created_at);
 
 create table public.group_message_reports (
   message_id  uuid not null references public.group_messages(id) on delete cascade,
@@ -107,6 +125,15 @@ create table public.group_message_reports (
   created_at  timestamptz not null default now(),
   primary key (message_id, reporter_id)
 );
+create index group_message_reports_reporter_idx on public.group_message_reports(reporter_id);
+
+create table public.group_reports (
+  group_id    uuid not null references public.groups(id) on delete cascade,
+  reporter_id uuid not null references public.profiles(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  primary key (group_id, reporter_id)
+);
+create index group_reports_reporter_idx on public.group_reports(reporter_id);
 
 -- Expo push tokens, one row per device. A token moves to whoever signed in on
 -- that phone last.
@@ -125,13 +152,14 @@ alter table public.group_reactions enable row level security;
 alter table public.group_nudges enable row level security;
 alter table public.group_messages enable row level security;
 alter table public.group_message_reports enable row level security;
+alter table public.group_reports enable row level security;
 alter table public.push_tokens enable row level security;
 revoke all on public.groups, public.group_members, public.group_invites, public.group_reactions,
-  public.group_nudges, public.group_messages, public.group_message_reports, public.push_tokens
-  from anon, authenticated;
+  public.group_nudges, public.group_messages, public.group_message_reports, public.group_reports,
+  public.push_tokens from anon, authenticated;
 grant all on public.groups, public.group_members, public.group_invites, public.group_reactions,
-  public.group_nudges, public.group_messages, public.group_message_reports, public.push_tokens
-  to service_role;
+  public.group_nudges, public.group_messages, public.group_message_reports, public.group_reports,
+  public.push_tokens to service_role;
 
 -- ---------------------------------------------------------------------------
 -- Helpers
@@ -143,13 +171,16 @@ returns boolean language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Whether two people share any group, which is what lets one see the other's
--- entries and react to them.
+-- entries and react to them. A block in either direction cancels it.
 create or replace function private.group_share(p_a uuid, p_b uuid)
 returns boolean language sql stable security definer set search_path = '' as $$
   select exists (
     select 1 from public.group_members a
     join public.group_members b on b.group_id = a.group_id
     where a.user_id = p_a and b.user_id = p_b
+  ) and not exists (
+    select 1 from public.blocked_authors x
+    where (x.user_id = p_a and x.author_id = p_b) or (x.user_id = p_b and x.author_id = p_a)
   );
 $$;
 
@@ -189,6 +220,20 @@ begin
 end;
 $$;
 
+-- Whether a meal is overdue: it is the member's own `p_day`, and half an hour
+-- has passed since their time for it. In minutes of the day rather than time
+-- arithmetic, which wraps: 23:45 plus half an hour is 00:15, and a dinner at
+-- 23:45 would have read as overdue from just after midnight.
+create or replace function private.group_meal_due(
+  p_local_now timestamp, p_day date, p_meal public.group_meal, p_at time
+)
+returns boolean language sql immutable set search_path = '' as $$
+  select p_local_now::date = p_day
+    and extract(hour from p_local_now) * 60 + extract(minute from p_local_now)
+      >= extract(epoch from coalesce(p_at, case p_meal when 'breakfast' then time '08:00'
+           when 'lunch' then time '13:00' else time '19:30' end)) / 60 + 30;
+$$;
+
 -- A leaver hands the group to the longest-standing member, and the last one
 -- out deletes it. A trigger rather than only the leave function, because a
 -- deleted account leaves every group by cascade.
@@ -202,8 +247,9 @@ begin
   if v_next is null then
     delete from public.groups g where g.id = old.group_id;
   else
-    update public.groups g set leader_id = v_next, updated_at = now()
-    where g.id = old.group_id and (g.leader_id is null or g.leader_id = old.user_id);
+    update public.groups g set member_count = greatest(g.member_count - 1, 0),
+      leader_id = case when g.leader_id is null or g.leader_id = old.user_id then v_next else g.leader_id end
+    where g.id = old.group_id;
   end if;
   return null;
 end;
@@ -212,12 +258,15 @@ create trigger group_member_left after delete on public.group_members
   for each row execute function private.group_member_left();
 
 -- Ten members, and a person in at most twenty groups. The group row is locked
--- so two people joining at once cannot both take the tenth seat.
+-- so two people joining at once cannot both take the tenth seat, and the person
+-- is locked so two joins at once cannot both take their twentieth.
 create or replace function private.group_member_joining()
 returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_count smallint;
 begin
-  perform 1 from public.groups g where g.id = new.group_id for update;
-  if (select count(*) from public.group_members m where m.group_id = new.group_id) >= 10 then
+  perform pg_advisory_xact_lock(hashtextextended('group-joining:' || new.user_id::text, 0));
+  select g.member_count into v_count from public.groups g where g.id = new.group_id for update;
+  if v_count >= 10 then
     raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
   end if;
   if (select count(*) from public.group_members m where m.user_id = new.user_id) >= 20 then
@@ -233,9 +282,12 @@ create trigger group_member_joining before insert on public.group_members
 -- rather than left in someone's list to fail.
 create or replace function private.group_member_joined()
 returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_count smallint;
 begin
+  update public.groups g set member_count = g.member_count + 1
+  where g.id = new.group_id returning g.member_count into v_count;
   delete from public.group_invites i where i.group_id = new.group_id and i.invitee_id = new.user_id;
-  if (select count(*) from public.group_members m where m.group_id = new.group_id) >= 10 then
+  if v_count >= 10 then
     delete from public.group_invites i where i.group_id = new.group_id;
   end if;
   return null;
@@ -257,7 +309,7 @@ $$;
 create trigger group_block_after after insert on public.blocked_authors
   for each row execute function private.group_block_after();
 
-revoke execute on function private.group_entry_meal, private.group_member_left,
+revoke execute on function private.group_entry_meal, private.group_meal_due, private.group_member_left,
   private.group_member_joining, private.group_member_joined, private.group_block_after
   from public, anon, authenticated;
 revoke execute on function private.group_is_member, private.group_share,
@@ -287,6 +339,7 @@ begin
 end;
 $$;
 
+-- Null leaves a field as it is.
 create or replace function public.update_group(p_group_id uuid, p_name text, p_icon_name text, p_is_public boolean)
 returns void language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id);
@@ -298,24 +351,35 @@ begin
     name = coalesce(btrim(p_name), g.name),
     icon_name = coalesce(nullif(p_icon_name, ''), g.icon_name),
     is_public = coalesce(p_is_public, g.is_public),
-    updated_at = now()
+    -- A new name has not been reported.
+    quarantined = g.quarantined and p_name is null
   where g.id = p_group_id and g.leader_id = v_user;
   if not found then
     raise exception 'Only the leader can change the group' using errcode = '42501';
   end if;
+  if p_name is not null then
+    delete from public.group_reports r where r.group_id = p_group_id;
+  end if;
 end;
 $$;
 
--- `p_target` is a handle, with or without its @, or an email address. An email
+-- `p_target` is a handle, with or without its @, or an email address, which
 -- only finds an account that already exists. Returns the invite's id, which the
 -- groups function uses to send the push.
+--
+-- An email answers the same whatever is behind it: the invite goes to an
+-- account that can take it, and otherwise nothing happens and nothing says
+-- so, so the field cannot be used to learn whether an address has an account.
+-- A handle is public already, so a handle that finds nobody says so.
 create or replace function public.invite_to_group(p_group_id uuid, p_target text)
 returns uuid language plpgsql security definer set search_path = '' as $$
 declare
   v_user uuid := private.group_require_member(p_group_id);
   v_target text := lower(btrim(coalesce(p_target, '')));
+  v_email boolean := position('@' in ltrim(lower(btrim(coalesce(p_target, ''))), '@')) > 0;
   v_invitee uuid;
   v_id uuid;
+  v_count smallint;
 begin
   if v_target = '' or char_length(v_target) > 254 then
     raise exception 'Enter a username or email' using errcode = '22023';
@@ -323,7 +387,13 @@ begin
   if not private.social_claim(v_user, 'group_invite', 60) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
-  if position('@' in ltrim(v_target, '@')) > 0 then
+  -- Locked with the joins, so an invite cannot slip into a group that a
+  -- concurrent join has just filled.
+  select g.member_count into v_count from public.groups g where g.id = p_group_id for update;
+  if v_count >= 10 then
+    raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
+  end if;
+  if v_email then
     select u.id into v_invitee from auth.users u where lower(u.email) = v_target limit 1;
   else
     select p.id into v_invitee from public.profiles p where p.handle = ltrim(v_target, '@');
@@ -332,13 +402,12 @@ begin
   -- used to learn who blocked whom.
   if v_invitee is null or v_invitee = v_user or private.social_pair_blocked(v_invitee)
      or exists (select 1 from public.profiles p where p.id = v_invitee and p.quarantined) then
+    if v_email then return null; end if;
     raise exception 'No account found' using errcode = 'P0001', hint = 'not_found';
   end if;
   if private.group_is_member(p_group_id, v_invitee) then
+    if v_email then return null; end if;
     raise exception 'Already in this group' using errcode = 'P0001', hint = 'already_member';
-  end if;
-  if (select count(*) from public.group_members m where m.group_id = p_group_id) >= 10 then
-    raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
   end if;
   insert into public.group_invites(group_id, invitee_id, inviter_id)
   values (p_group_id, v_invitee, v_user)
@@ -347,22 +416,38 @@ begin
     -- A pending invite is renewed at most hourly, which also caps its pushes.
     where public.group_invites.created_at < now() - interval '1 hour'
   returning id into v_id;
+  if v_id is null then
+    select i.id into v_id from public.group_invites i
+    where i.group_id = p_group_id and i.invitee_id = v_invitee;
+  end if;
   return v_id;
 end;
 $$;
 
+-- 'joined', 'declined', or 'full' when the group filled before the answer;
+-- the invite is withdrawn then rather than left to fail again.
 create or replace function public.respond_to_group_invite(p_group_id uuid, p_accept boolean)
-returns void language plpgsql security definer set search_path = '' as $$
-declare v_user uuid := private.social_require_user(false);
+returns text language plpgsql security definer set search_path = '' as $$
+declare v_user uuid := private.social_require_user(false); v_count smallint;
 begin
   if not exists (select 1 from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user) then
     raise exception 'This invite is no longer available' using errcode = 'P0001', hint = 'invite_gone';
   end if;
-  if p_accept then
-    insert into public.group_members(group_id, user_id) values (p_group_id, v_user)
-    on conflict do nothing;
+  if not coalesce(p_accept, false) then
+    delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
+    return 'declined';
   end if;
-  delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
+  if private.group_is_member(p_group_id, v_user) then
+    delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
+    return 'joined';
+  end if;
+  select g.member_count into v_count from public.groups g where g.id = p_group_id for update;
+  if v_count >= 10 then
+    delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
+    return 'full';
+  end if;
+  insert into public.group_members(group_id, user_id) values (p_group_id, v_user);
+  return 'joined';
 end;
 $$;
 
@@ -371,12 +456,12 @@ create or replace function public.join_group(p_group_id uuid)
 returns void language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.social_require_user(false);
 begin
+  if private.group_is_member(p_group_id, v_user) then return; end if;
   if not exists (select 1 from public.groups g where g.id = p_group_id and g.is_public)
      and not exists (select 1 from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user) then
     raise exception 'This group is invite only' using errcode = '42501';
   end if;
-  insert into public.group_members(group_id, user_id) values (p_group_id, v_user)
-  on conflict do nothing;
+  insert into public.group_members(group_id, user_id) values (p_group_id, v_user);
 end;
 $$;
 
@@ -392,7 +477,7 @@ begin
     if p_new_leader is null or p_new_leader = v_user or not private.group_is_member(p_group_id, p_new_leader) then
       raise exception 'Choose a new leader' using errcode = 'P0001', hint = 'choose_leader';
     end if;
-    update public.groups g set leader_id = p_new_leader, updated_at = now() where g.id = p_group_id;
+    update public.groups g set leader_id = p_new_leader where g.id = p_group_id;
   end if;
   delete from public.group_members m where m.group_id = p_group_id and m.user_id = v_user;
 end;
@@ -461,29 +546,23 @@ begin
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
   insert into public.group_reactions(entry_id, user_id, value) values (p_entry_id, v_user, p_value)
-  on conflict (entry_id, user_id) do update set value = excluded.value, created_at = now();
+  on conflict (entry_id, user_id) do update set value = excluded.value;
 end;
 $$;
 
--- Whether a member can be nudged for a meal: it is their today, the meal is
--- empty, half an hour has passed since their own time for it, and nobody in
--- the group has nudged them for it within the hour.
-create or replace function private.group_nudge_state(
+-- Whether a member can be nudged for a meal: it is overdue on their own today,
+-- it is empty, and nobody in the group has nudged them for it within the hour.
+-- group_board answers the same question for a whole board from its own CTEs.
+create or replace function private.group_nudge_open(
   p_group uuid, p_target uuid, p_day date, p_meal public.group_meal
 )
-returns text language plpgsql stable security definer set search_path = '' as $$
-declare
-  v_tz text;
-  v_now timestamp;
-  v_at time;
+returns boolean language plpgsql stable security definer set search_path = '' as $$
+declare v_tz text;
 begin
   select p.timezone into v_tz from public.profiles p where p.id = p_target;
-  v_now := now() at time zone coalesce(v_tz, 'Asia/Kuala_Lumpur');
-  if v_now::date <> p_day then return 'closed'; end if;
-  select mt.at into v_at from public.meal_times mt where mt.user_id = p_target and mt.meal::text = p_meal::text;
-  if v_now::time < coalesce(v_at, case p_meal when 'breakfast' then time '08:00'
-       when 'lunch' then time '13:00' else time '19:30' end) + interval '30 minutes' then
-    return 'early';
+  if not private.group_meal_due(now() at time zone coalesce(v_tz, 'Asia/Kuala_Lumpur'), p_day, p_meal,
+    (select mt.at from public.meal_times mt where mt.user_id = p_target and mt.meal::text = p_meal::text)) then
+    return false;
   end if;
   if exists (
     select 1 from public.food_logs f
@@ -493,19 +572,16 @@ begin
     where f.user_id = p_target and f.log_date = p_day
       and private.group_entry_meal(f.logged_at, f.log_date, v_tz, f.board_meal, b.at, l.at, d.at) = p_meal
   ) then
-    return 'logged';
+    return false;
   end if;
-  if exists (
+  return not exists (
     select 1 from public.group_nudges n
     where n.group_id = p_group and n.target_id = p_target and n.day = p_day and n.meal = p_meal
       and n.created_at > now() - interval '1 hour'
-  ) then
-    return 'cooling';
-  end if;
-  return 'open';
+  );
 end;
 $$;
-revoke execute on function private.group_nudge_state from public, anon, authenticated;
+revoke execute on function private.group_nudge_open from public, anon, authenticated;
 
 create or replace function public.nudge_group_member(
   p_group_id uuid, p_target_id uuid, p_day date, p_meal public.group_meal
@@ -513,19 +589,21 @@ create or replace function public.nudge_group_member(
 returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id); v_id uuid;
 begin
-  if p_target_id = v_user or not private.group_is_member(p_group_id, p_target_id) then
+  if p_target_id = v_user or not private.group_is_member(p_group_id, p_target_id)
+     or private.social_pair_blocked(p_target_id) then
     raise exception 'Member unavailable' using errcode = '42501';
   end if;
   -- Serialise nudges at one person's meal, so two friends tapping together
   -- send one.
   perform pg_advisory_xact_lock(hashtextextended(
     'group-nudge:' || p_group_id::text || p_target_id::text || p_day::text || p_meal::text, 0));
-  if private.group_nudge_state(p_group_id, p_target_id, p_day, p_meal) <> 'open' then
+  if not private.group_nudge_open(p_group_id, p_target_id, p_day, p_meal) then
     raise exception 'Nudged recently' using errcode = 'P0001', hint = 'nudge_closed';
   end if;
   if not private.social_claim(v_user, 'group_nudge', 30) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
+  delete from public.group_nudges n where n.group_id = p_group_id and n.created_at < now() - interval '2 days';
   insert into public.group_nudges(group_id, target_id, nudger_id, day, meal)
   values (p_group_id, p_target_id, v_user, p_day, p_meal) returning id into v_id;
   return v_id;
@@ -588,6 +666,29 @@ begin
 end;
 $$;
 
+-- A group's name is written by its leader and read by strangers in the public
+-- list, so it can be reported like anything else one person writes for others.
+-- It leaves the reporter's list at once and everyone's at three reports.
+create or replace function public.report_group(p_group_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_user uuid := private.social_require_user(false);
+begin
+  if not exists (select 1 from public.groups g where g.id = p_group_id and (g.is_public
+       or private.group_is_member(p_group_id, v_user)
+       or exists (select 1 from public.group_invites i where i.group_id = g.id and i.invitee_id = v_user))) then
+    raise exception 'Group unavailable' using errcode = '42501';
+  end if;
+  if not private.social_claim(v_user, 'report', 30) then
+    raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
+  end if;
+  insert into public.group_reports(group_id, reporter_id) values (p_group_id, v_user)
+  on conflict do nothing;
+  update public.groups g set quarantined = true
+  where g.id = p_group_id
+    and (select count(*) from public.group_reports r where r.group_id = p_group_id) >= 3;
+end;
+$$;
+
 create or replace function public.mark_group_chat_read(p_group_id uuid)
 returns void language plpgsql security definer set search_path = '' as $$
 begin
@@ -637,6 +738,14 @@ begin
     raise exception 'Unknown kind' using errcode = '22023';
   end if;
   if v_recipient is null then return; end if;
+  -- A block made since the nudge or invite still silences it.
+  if exists (
+    select 1 from public.blocked_authors x
+    where (x.user_id = p_caller and x.author_id = v_recipient)
+       or (x.user_id = v_recipient and x.author_id = p_caller)
+  ) then
+    return;
+  end if;
   -- A member who muted the group hears no nudges from it. Invites always
   -- arrive, since the invitee is not a member yet.
   if p_kind = 'nudge' and not exists (
@@ -664,14 +773,14 @@ revoke execute on function public.create_group, public.update_group, public.invi
   public.respond_to_group_invite, public.join_group, public.leave_group, public.remove_group_member,
   public.set_group_preferences, public.set_entry_board_meal, public.set_group_reaction,
   public.nudge_group_member, public.send_group_message, public.delete_group_message,
-  public.report_group_message, public.mark_group_chat_read, public.register_push_token,
-  public.unregister_push_token from public, anon;
+  public.report_group_message, public.report_group, public.mark_group_chat_read,
+  public.register_push_token, public.unregister_push_token from public, anon;
 grant execute on function public.create_group, public.update_group, public.invite_to_group,
   public.respond_to_group_invite, public.join_group, public.leave_group, public.remove_group_member,
   public.set_group_preferences, public.set_entry_board_meal, public.set_group_reaction,
   public.nudge_group_member, public.send_group_message, public.delete_group_message,
-  public.report_group_message, public.mark_group_chat_read, public.register_push_token,
-  public.unregister_push_token to authenticated, service_role;
+  public.report_group_message, public.report_group, public.mark_group_chat_read,
+  public.register_push_token, public.unregister_push_token to authenticated, service_role;
 revoke execute on function public.group_push_targets, public.forget_push_tokens
   from public, anon, authenticated;
 grant execute on function public.group_push_targets, public.forget_push_tokens to service_role;

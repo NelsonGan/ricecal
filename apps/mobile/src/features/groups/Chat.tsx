@@ -1,9 +1,10 @@
 import { format, parseISO } from 'date-fns'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, View } from 'react-native'
 import { type GroupMessage, useGroupAction, useGroupMessages } from '@/data/groups'
 import { useBlockAuthor } from '@/data/moderation'
+import { QueryNotice } from '@/features/social/components'
 import { socialRequestId } from '@/features/social/request-id'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
@@ -32,31 +33,42 @@ export function ChatSheet({
   const messages = useGroupMessages(groupId, day, visible)
   const task = useGroupTask()
   const [draft, setDraft] = useState('')
-  // One id per draft, so a retried send is the same message on the server.
-  const [requestId, setRequestId] = useState(socialRequestId)
+  // A failed send keeps its id with its words, so sending the same words again
+  // is the same message on the server. Anything else gets a new id: reusing one
+  // for different words, or for a second message sent while the first was in
+  // flight, made the server answer with the first and drop the second.
+  const [retry, setRetry] = useState<{ body: string; id: string } | null>(null)
   const [selected, setSelected] = useState<GroupMessage | null>(null)
   const block = useBlockAuthor()
   const colors = useThemeColors()
 
-  // Opening the chat reads it, which clears the bar's count, and so does
-  // closing it, for whatever arrived while it was open.
+  // Opening the chat reads it, which clears the bar's count. Closing reads it
+  // again only if something arrived while it was open.
   const markRead = useGroupAction().mutate
+  const count = messages.data?.length ?? 0
+  const seen = useRef(0)
+  seen.current = count
   useEffect(() => {
     if (!visible) return
     markRead({ action: 'read', groupId })
-    return () => markRead({ action: 'read', groupId })
+    const opened = seen.current
+    return () => {
+      if (seen.current > opened) markRead({ action: 'read', groupId })
+    }
   }, [visible, groupId, markRead])
 
   const send = async () => {
     const body = draft.trim()
     if (!body) return
+    const requestId = retry?.body === body ? retry.id : socialRequestId()
     setDraft('')
+    setRetry(null)
     try {
       await task.run({ action: 'message', groupId, day, body, requestId })
       track('Group Message Sent', {})
-      setRequestId(socialRequestId())
     } catch {
       setDraft(body)
+      setRetry({ body, id: requestId })
     }
   }
 
@@ -109,6 +121,12 @@ export function ChatSheet({
         <View className="flex-1 items-center justify-center">
           <Spinner />
         </View>
+      ) : !messages.data && (messages.isError || messages.fetchStatus === 'paused') ? (
+        <QueryNotice
+          error={messages.isError}
+          paused={messages.fetchStatus === 'paused'}
+          retry={() => messages.refetch()}
+        />
       ) : rows.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <Text variant="meta">{t('chatEmpty')}</Text>
@@ -178,7 +196,17 @@ function MessageRow({
   showAuthor: boolean
   onLongPress: () => void
 }) {
+  const { t } = useTranslation('groups')
   const time = format(parseISO(message.created_at), datePattern('time'))
+  // Report, block and delete live behind a long press, which a screen reader
+  // reaches as a named action.
+  const a11y = {
+    accessibilityLabel: [message.mine ? t('you') : message.author.name, message.body, time].join(
+      ', ',
+    ),
+    accessibilityActions: [{ name: 'longpress', label: t('messageActions') }],
+    onAccessibilityAction: () => onLongPress(),
+  }
   if (message.mine) {
     return (
       <Tappable
@@ -186,7 +214,7 @@ function MessageRow({
         onLongPress={onLongPress}
         delayLongPress={300}
         haptics={false}
-        accessibilityHint={time}
+        {...a11y}
       >
         <View
           className={cn(
@@ -212,6 +240,7 @@ function MessageRow({
         onLongPress={onLongPress}
         delayLongPress={300}
         haptics={false}
+        {...a11y}
       >
         {showAuthor ? (
           <Text variant="micro" className="mb-0.5 text-ink">

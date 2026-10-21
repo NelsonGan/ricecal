@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useFocusEffect } from 'expo-router'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RefreshControl, ScrollView, View } from 'react-native'
+import { useUserId } from '@/data'
 import {
+  GROUP_CAPACITY,
   type GroupInvite,
   type GroupSummary,
   useGroupInviteCount,
@@ -10,8 +13,10 @@ import {
   usePublicGroups,
 } from '@/data/groups'
 import { ScreenTitle } from '@/features/shared'
+import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
 import { ensureNotificationPermission } from '@/lib/notifications'
+import { registerPushToken } from '@/lib/push'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -19,6 +24,7 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmSheet,
   CountBadge,
   EmptyState,
   Icon,
@@ -32,19 +38,26 @@ import {
   Text,
   TextField,
   useNavInset,
+  useToast,
 } from '@/ui'
 import { GROUP_ICONS, GroupIcon, useGroupTask } from './parts'
-import { registerPushToken } from './push'
 
 /** Ask once a group exists, when a nudge has somewhere to come from. */
-async function askForPush() {
-  if (await ensureNotificationPermission()) await registerPushToken()
+async function askForPush(userId: string) {
+  if (await ensureNotificationPermission()) await registerPushToken(userId)
 }
 
 export function GroupsHome({ onOpen }: { onOpen: (groupId: string) => void }) {
   const { t } = useTranslation('groups')
   const groups = useMyGroups()
-  const inviteCount = useGroupInviteCount().data ?? 0
+  const invites = useGroupInviteCount()
+  const inviteCount = invites.data ?? 0
+  // The count polls slowly; landing on the tab is a good moment to ask again.
+  useFocusEffect(
+    useCallback(() => {
+      void invites.refetch()
+    }, [invites.refetch]),
+  )
   const [creating, setCreating] = useState(false)
   const [invitesOpen, setInvitesOpen] = useState(false)
   const navInset = useNavInset()
@@ -95,6 +108,12 @@ export function GroupsHome({ onOpen }: { onOpen: (groupId: string) => void }) {
           <SkeletonRow />
           <SkeletonRow />
         </View>
+      ) : !groups.data && (groups.isError || groups.fetchStatus === 'paused') ? (
+        <QueryNotice
+          error={groups.isError}
+          paused={groups.fetchStatus === 'paused'}
+          retry={() => groups.refetch()}
+        />
       ) : list.length === 0 ? (
         <Card>
           <EmptyState
@@ -132,7 +151,16 @@ function GroupCard({ group, onPress }: { group: GroupSummary; onPress: () => voi
   const { t } = useTranslation('groups')
   const colors = useThemeColors()
   return (
-    <Card onPress={onPress} accessibilityRole="button" accessibilityLabel={group.name}>
+    <Card
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={[
+        group.name,
+        t('members', { count: group.member_count }),
+        group.is_public ? t('public') : t('private'),
+        t('loggedToday', { logged: group.logged_today, count: group.member_count }),
+      ].join(', ')}
+    >
       <View className="flex-row items-center gap-md">
         <View className="h-14 w-14 items-center justify-center rounded-tile bg-pandan-soft">
           <GroupIcon name={group.icon_name} size={40} />
@@ -173,16 +201,19 @@ function GroupCard({ group, onPress }: { group: GroupSummary; onPress: () => voi
 }
 
 function PublicGroups({ onJoined }: { onJoined: (groupId: string) => void }) {
-  const { t } = useTranslation('groups')
+  const { t } = useTranslation(['groups', 'common', 'logging'])
   const [query, setQuery] = useState('')
   const debounced = useDebouncedValue(query, 300)
-  const groups = usePublicGroups(debounced, true)
+  const groups = usePublicGroups(debounced)
+  const userId = useUserId()
   const task = useGroupTask()
+  const toast = useToast()
+  const [reporting, setReporting] = useState<{ id: string; name: string } | null>(null)
   const join = async (groupId: string) => {
     try {
       await task.run({ action: 'join', groupId })
       track('Group Joined', { via: 'public' })
-      void askForPush()
+      void askForPush(userId)
       onJoined(groupId)
     } catch {
       // The task showed why.
@@ -197,16 +228,33 @@ function PublicGroups({ onJoined }: { onJoined: (groupId: string) => void }) {
         onChangeText={setQuery}
         placeholder={t('searchPublic')}
         onClear={() => setQuery('')}
-        clearLabel={t('searchPublic')}
+        clearLabel={t('logging:search.clear')}
       />
-      {rows.length === 0 && !groups.isLoading ? (
+      {groups.isLoading ? (
+        <SkeletonRow />
+      ) : !groups.data && (groups.isError || groups.fetchStatus === 'paused') ? (
+        <QueryNotice
+          error={groups.isError}
+          paused={groups.fetchStatus === 'paused'}
+          retry={() => groups.refetch()}
+        />
+      ) : rows.length === 0 ? (
         <Text variant="meta" className="py-2 text-center">
           {t('noPublic')}
         </Text>
       ) : (
         <Card flush>
           {rows.map((group, index) => (
-            <View key={group.id} className={index > 0 ? 'border-t border-line' : undefined}>
+            // A name is written by its leader and read by strangers, so it can
+            // be reported: a long press, or the screen reader's action.
+            <Tappable
+              key={group.id}
+              haptics={false}
+              onLongPress={() => setReporting({ id: group.id, name: group.name })}
+              accessibilityActions={[{ name: 'longpress', label: t('report') }]}
+              onAccessibilityAction={() => setReporting({ id: group.id, name: group.name })}
+              className={index > 0 ? 'border-t border-line' : undefined}
+            >
               <View className="flex-row items-center gap-md px-card py-3">
                 <GroupIcon name={group.icon_name} size={36} />
                 <View className="min-w-0 flex-1">
@@ -215,7 +263,7 @@ function PublicGroups({ onJoined }: { onJoined: (groupId: string) => void }) {
                   </Text>
                   <Text variant="caption">{t('members', { count: group.member_count })}</Text>
                 </View>
-                {group.member_count >= 10 ? (
+                {group.member_count >= GROUP_CAPACITY ? (
                   <Badge tone="neutral" size="sm">
                     {t('full')}
                   </Badge>
@@ -225,10 +273,25 @@ function PublicGroups({ onJoined }: { onJoined: (groupId: string) => void }) {
                   </Button>
                 )}
               </View>
-            </View>
+            </Tappable>
           ))}
         </Card>
       )}
+      <ConfirmSheet
+        visible={reporting !== null}
+        onClose={() => setReporting(null)}
+        onConfirm={() => {
+          if (reporting) {
+            task.press({ action: 'reportGroup', groupId: reporting.id })
+            toast.show({ title: t('reportedGroup'), tone: 'success' })
+          }
+          setReporting(null)
+        }}
+        title={t('reportGroup', { name: reporting?.name ?? '' })}
+        confirmLabel={t('report')}
+        cancelLabel={t('common:action.cancel')}
+        tone="danger"
+      />
     </View>
   )
 }
@@ -246,6 +309,7 @@ function CreateGroupSheet({
   const [name, setName] = useState('')
   const [icon, setIcon] = useState<string>(GROUP_ICONS[0])
   const [privacy, setPrivacy] = useState<'private' | 'public'>('private')
+  const userId = useUserId()
   const task = useGroupTask()
   const create = async () => {
     try {
@@ -257,7 +321,7 @@ function CreateGroupSheet({
       })
       track('Group Created', { visibility: privacy })
       setName('')
-      void askForPush()
+      void askForPush(userId)
       if (typeof id === 'string') onCreated(id)
     } catch {
       // The task showed why; the sheet keeps the draft.
@@ -298,7 +362,7 @@ function CreateGroupSheet({
                 onPress={() => setIcon(option)}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: icon === option }}
-                accessibilityLabel={option}
+                accessibilityLabel={`${t('icon')} ${GROUP_ICONS.indexOf(option) + 1}`}
                 className={
                   icon === option
                     ? 'h-14 w-14 items-center justify-center rounded-tile border-2 border-pandan bg-pandan-soft'
@@ -347,6 +411,12 @@ function InvitesSheet({
     >
       {invites.isLoading ? (
         <SkeletonRow />
+      ) : !invites.data && (invites.isError || invites.fetchStatus === 'paused') ? (
+        <QueryNotice
+          error={invites.isError}
+          paused={invites.fetchStatus === 'paused'}
+          retry={() => invites.refetch()}
+        />
       ) : rows.length === 0 ? (
         <Text variant="meta" className="py-lg text-center">
           {t('noInvites')}
@@ -377,20 +447,21 @@ function InviteRow({
   onJoined: (groupId: string) => void
 }) {
   const { t } = useTranslation('groups')
+  const userId = useUserId()
   const task = useGroupTask()
   const respond = async (accept: boolean) => {
     try {
       await task.run({ action: 'respond', groupId: invite.group_id, accept })
       if (accept) {
         track('Group Joined', { via: 'invite' })
-        void askForPush()
+        void askForPush(userId)
         onJoined(invite.group_id)
       }
     } catch {
       // The task showed why.
     }
   }
-  const full = invite.member_count >= 10
+  const full = invite.member_count >= GROUP_CAPACITY
   return (
     <View className="gap-3 rounded-tile border border-line bg-surface p-3">
       <View className="flex-row items-center gap-md">

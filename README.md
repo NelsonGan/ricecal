@@ -3099,7 +3099,19 @@ Every group table is closed to clients (`revoke all`, RLS on). Reads and writes
 are RPCs: `my_groups`, `my_group_invites`, `group_invite_count`,
 `public_groups`, `group_board`, `group_messages`, `group_details`, and the write
 functions beside them in `51_groups.sql`. Each answers jsonb shaped for one
-screen; `src/data/groups.ts` types it by hand.
+screen; `src/data/groups.ts` types it by hand. The board answers for the last
+sixty days and no further, so joining a public group does not open a stranger's
+whole diary history.
+
+A block holds inside a group. The two people are left off each other's board,
+food and all, and neither can react to, nudge or push the other. Their messages
+are hidden from each other. Joining a group the other is in stays allowed, so a
+refusal cannot reveal the block.
+
+Only the list of groups and the invite count are written to the persisted query
+cache (`lib/query.ts`). Boards, chats and settings are other people's meals and
+words, which leaving a group or a block must take away, so they stay in memory
+and are dropped a few minutes after leaving the screen.
 
 ### Breakfast, lunch and dinner come from the person's own clock
 
@@ -3127,15 +3139,26 @@ meal share a tile and swipe sideways inside it.
   message can be deleted by its author, reported (hidden from the reporter at
   once, from everyone at three reports) or its author blocked, which follows the
   rule that anything one user writes for another needs a report and a block.
+  The unread count on the chat bar covers the whole group since the member last
+  opened its chat, since opening it is what clears it.
+- **A public group's name** is read by strangers, so it can be reported too, by a
+  long press in the public list: it leaves the reporter's list at once and
+  everyone's at three reports. Renaming the group clears the reports.
 
 ### Membership
 
 Ten members, at most twenty groups a person, enforced by a trigger that locks
-the group row so two people cannot take the tenth seat together. A full group
+the group row so two people cannot take the tenth seat together.
+`groups.member_count` is kept by the same triggers, so the cap, the lists and the
+public ranking read one column instead of counting rows. A full group
 withdraws its pending invites. Private groups are invite only; public groups are
 listed (fullest first) and anyone can join. An invite takes a handle, with or
 without its `@`, or an email address, which only finds an account that already
-exists; someone blocked in either direction reads as nobody. The leader renames
+exists. A handle that finds nobody says so, since handles are public; an email
+answers the same whatever is behind it, so the field cannot be used to learn
+whether an address has an account. Someone blocked in either direction reads as
+nobody. Members see only the pending invites they sent themselves, because an
+email invite names whoever owns the address. The leader renames
 the group, switches it public or private, and removes members. A leader with
 company must name a successor to leave; the last member out deletes the group,
 and a deleted account hands its groups on through the same trigger.
@@ -3145,9 +3168,12 @@ and a deleted account hands its groups on through the same trigger.
 Most people are in one group, so the tab goes straight back to the board it was
 on after a relaunch (`features/groups/store.ts`, kept per account in MMKV) until
 they tap back to the list. A group left elsewhere falls back to the list once
-`my_groups` has loaded. The board refreshes every 30 seconds while on screen, the
-chat every 5 seconds while open, and the invite count every minute; there is no
-realtime channel in this app.
+`my_groups` has loaded. Only the day on screen refreshes, every 30 seconds; the
+days either side are fetched once so a swipe lands on a drawn board. The chat
+refreshes every 5 seconds while open, and the invite count every five minutes
+and whenever the tab is shown, since an invite also arrives as a push. There is
+no realtime channel in this app. The pager follows the selected date rather than
+a position, so midnight passing under an open board does not move it a day.
 
 ### Push: the app's first
 
@@ -3173,7 +3199,9 @@ carries `{"kind":"group","groupId":…}` exercises the banner and the tap.
 A member's meal photo is signed for a fellow member through the social read
 path: `social_photo_claims` also returns diary photos of anyone the caller shares
 a group with, from the last sixty days (the pager's reach), unless either has
-blocked the other. Those photos have no recorded ETag, so each signature costs
+blocked the other. The owner is read from the key (`meals/<owner>/…`, which the
+photos function checks again), so the lookup goes through the diary's owner index
+instead of scanning `food_logs` for the key on every feed photo. Those photos have no recorded ETag, so each signature costs
 the signer a HEAD on R2. The viewer's own photos are signed as their own.
 
 ---

@@ -56,29 +56,33 @@ const entry = (patch: Partial<BoardEntry> = {}): BoardEntry => ({
   icon_name: 'chicken-rice',
   logged_at: '2026-10-21T04:45:00Z',
   serving_label: '1 plate',
-  quantity: 1,
-  moved: false,
   likes: 2,
   dislikes: 0,
   mine: 0,
   ...patch,
 })
 const board = (entries: BoardEntry[]): GroupBoard => ({
-  group: { id: 'g1', name: 'Makan', icon_name: 'rice-bowl', is_public: false, leader_id: 'a', member_count: 2 },
-  day: '2026-10-21',
+  group: {
+    id: 'g1',
+    name: 'Makan',
+    icon_name: 'rice-bowl',
+    is_public: false,
+    leader_id: 'a',
+    member_count: 2,
+  },
   members: [
     {
       person: { id: 'friend', name: 'Aisha', handle: 'aisha', avatar_path: null },
-      today: '2026-10-21',
       entries,
       nudges: {},
       nudgeable: [],
       workout: null,
     },
   ],
-  chat: { count: 0, unread: 0, last: null },
+  chat: { unread: 0, last: null },
 })
-const boardKey = (groupId: string) => keys.groupsRead('viewer', 'group_board', { groupId, day: '2026-10-21' })
+const boardKey = (groupId: string) =>
+  keys.groupsRead('viewer', 'group_board', { groupId, day: '2026-10-21' })
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -155,7 +159,13 @@ it('draws a reaction on every cached board at once, and puts it back when refuse
   )
   const { result } = await renderHook(() => useGroupAction(), { wrapper })
   await act(async () => {
-    result.current.mutate({ action: 'react', groupId: 'g1', day: '2026-10-21', entryId: 'e1', value: 1 })
+    result.current.mutate({
+      action: 'react',
+      groupId: 'g1',
+      day: '2026-10-21',
+      entryId: 'e1',
+      value: 1,
+    })
   })
   await waitFor(() =>
     expect(client.getQueryData<GroupBoard>(boardKey('g2'))?.members[0].entries[0]).toMatchObject({
@@ -179,7 +189,13 @@ it('swaps a like for a dislike without double counting', async () => {
   mockRpc.mockReturnValueOnce(write.request).mockReturnValue(response(null))
   const { result } = await renderHook(() => useGroupAction(), { wrapper })
   await act(async () => {
-    result.current.mutate({ action: 'react', groupId: 'g1', day: '2026-10-21', entryId: 'e1', value: -1 })
+    result.current.mutate({
+      action: 'react',
+      groupId: 'g1',
+      day: '2026-10-21',
+      entryId: 'e1',
+      value: -1,
+    })
   })
   await waitFor(() =>
     expect(client.getQueryData<GroupBoard>(boardKey('g1'))?.members[0].entries[0]).toMatchObject({
@@ -203,7 +219,6 @@ it('moves an entry to another column on the board straight away', async () => {
   await waitFor(() =>
     expect(client.getQueryData<GroupBoard>(boardKey('g1'))?.members[0].entries[0]).toMatchObject({
       meal: 'dinner',
-      moved: true,
     }),
   )
   await act(async () => write.settle({ data: null, error: null }))
@@ -211,7 +226,10 @@ it('moves an entry to another column on the board straight away', async () => {
 
 it('shows a sent message at once and takes it back if it fails', async () => {
   const { client, wrapper } = setup()
-  const messagesKey = keys.groupsRead('viewer', 'group_messages', { groupId: 'g1', day: '2026-10-21' })
+  const messagesKey = keys.groupsRead('viewer', 'group_messages', {
+    groupId: 'g1',
+    day: '2026-10-21',
+  })
   client.setQueryData(messagesKey, [])
   let settle!: (value: unknown) => void
   mockRpc.mockReturnValueOnce(

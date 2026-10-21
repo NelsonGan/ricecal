@@ -13,7 +13,6 @@ import {
 } from '@/data'
 import { useGroupInviteCount } from '@/data/groups'
 import { useAnalyticsIdentity } from '@/features/analytics'
-import { usePushRegistration } from '@/features/groups/push'
 import { useReminderSync, useReportLinks } from '@/features/settings'
 import {
   ActiveWorkoutBar,
@@ -26,6 +25,7 @@ import {
   WatchSync,
   WorkoutEffects,
 } from '@/features/workouts'
+import { usePushRegistration } from '@/lib/push'
 import {
   NAV_BAR_HEIGHT,
   NavBar,

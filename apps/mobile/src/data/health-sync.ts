@@ -19,7 +19,7 @@ import { ageFrom, basalRate } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
 import { daysAgo } from './activity'
 import { dateKey } from './client'
-import { keys } from './keys'
+import { invalidateGroupBoards, keys } from './keys'
 import { fetchProfile } from './profile'
 import { useUserId } from './session'
 import { fetchWeighIns } from './weight'
@@ -486,6 +486,7 @@ function invalidateAfterSync(queryClient: QueryClient, userId: string, changed =
   queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
   if (!changed) return
   queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+  invalidateGroupBoards(queryClient, userId)
   // The budget on Today is goal plus burned, so a connect that did not move it
   // would look like it had not worked.
   queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })

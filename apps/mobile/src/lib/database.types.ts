@@ -994,19 +994,16 @@ export type Database = {
       }
       group_reactions: {
         Row: {
-          created_at: string
           entry_id: string
           user_id: string
           value: number
         }
         Insert: {
-          created_at?: string
           entry_id: string
           user_id: string
           value: number
         }
         Update: {
-          created_at?: string
           entry_id?: string
           user_id?: string
           value?: number
@@ -1049,6 +1046,53 @@ export type Database = {
           },
         ]
       }
+      group_reports: {
+        Row: {
+          created_at: string
+          group_id: string
+          reporter_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          reporter_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          reporter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'group_reports_group_id_fkey'
+            columns: ['group_id']
+            isOneToOne: false
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_reports_reporter_id_fkey'
+            columns: ['reporter_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_reports_reporter_id_fkey'
+            columns: ['reporter_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_reports_reporter_id_fkey'
+            columns: ['reporter_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
       groups: {
         Row: {
           created_at: string
@@ -1056,8 +1100,9 @@ export type Database = {
           id: string
           is_public: boolean
           leader_id: string | null
+          member_count: number
           name: string
-          updated_at: string
+          quarantined: boolean
         }
         Insert: {
           created_at?: string
@@ -1065,8 +1110,9 @@ export type Database = {
           id?: string
           is_public?: boolean
           leader_id?: string | null
+          member_count?: number
           name: string
-          updated_at?: string
+          quarantined?: boolean
         }
         Update: {
           created_at?: string
@@ -1074,8 +1120,9 @@ export type Database = {
           id?: string
           is_public?: boolean
           leader_id?: string | null
+          member_count?: number
           name?: string
-          updated_at?: string
+          quarantined?: boolean
         }
         Relationships: [
           {
@@ -3578,6 +3625,7 @@ export type Database = {
         }
         Returns: number
       }
+      report_group: { Args: { p_group_id: string }; Returns: undefined }
       report_group_message: {
         Args: { p_message_id: string }
         Returns: undefined
@@ -3604,7 +3652,7 @@ export type Database = {
       }
       respond_to_group_invite: {
         Args: { p_accept: boolean; p_group_id: string }
-        Returns: undefined
+        Returns: string
       }
       review_days: {
         Args: { p_from: string; p_to: string; p_user_id?: string }

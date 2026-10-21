@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useUserId } from '@/data'
-import { type GroupPerson, useGroupDetails } from '@/data/groups'
+import { GROUP_CAPACITY, type GroupPerson, useGroupDetails } from '@/data/groups'
 import { ReorderSheet } from '@/features/workouts/ReorderSheet'
 import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
@@ -176,27 +176,28 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
                 {isLeader && member.id !== viewer ? (
                   <IconButton
                     size="xs"
+                    hitSlop={8}
                     variant="ghost"
                     onPress={() => setRemoving(member)}
                     accessibilityLabel={`${t('remove')} ${member.name}`}
                   >
-                    <Icon set="ui" name="more-horizontal" size={18} tintColor={colors.muted} />
+                    <Icon set="ui" name="close" size={16} tintColor={colors.muted} />
                   </IconButton>
                 ) : null}
               </View>
             ))}
-            {group.invites.map((invite) => (
-              <View key={invite.person.id} className="flex-row items-center gap-md opacity-60">
-                <PersonAvatar person={invite.person} />
+            {group.invites.map((person) => (
+              <View key={person.id} className="flex-row items-center gap-md opacity-60">
+                <PersonAvatar person={person} />
                 <View className="min-w-0 flex-1">
                   <Text variant="label" numberOfLines={1}>
-                    {invite.person.name}
+                    {person.name}
                   </Text>
                   <Text variant="caption">{t('invited')}</Text>
                 </View>
               </View>
             ))}
-            {group.members.length < 10 ? (
+            {group.members.length < GROUP_CAPACITY ? (
               <Button
                 fullWidth
                 variant="secondary"
@@ -285,7 +286,6 @@ function PassLeaderSheet({
       onClose={onClose}
       closeLabel={t('common:action.close')}
       title={t('pickLeader')}
-      description={t('pickLeaderBody')}
       footer={
         <Button
           fullWidth

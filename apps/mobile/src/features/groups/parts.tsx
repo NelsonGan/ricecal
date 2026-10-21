@@ -33,17 +33,9 @@ function foodIcon(name: string): IconProps {
 }
 
 /** A person's picture, or their initial on a coloured tile. */
-export function PersonAvatar({
-  person,
-  visible = true,
-}: {
-  person: GroupPerson
-  visible?: boolean
-}) {
+export function PersonAvatar({ person }: { person: GroupPerson }) {
   if (!person.avatar_path) return <Avatar name={person.name} size="sm" fallback="initial" />
-  return (
-    <SocialPhoto path={person.avatar_path} avatar size="sm" label={person.name} visible={visible} />
-  )
+  return <SocialPhoto path={person.avatar_path} avatar size="sm" label={person.name} />
 }
 
 /**
@@ -54,19 +46,17 @@ export function PersonAvatar({
 export function EntryPicture({
   entry,
   ownerId,
-  visible = true,
   iconSize = 40,
 }: {
   entry: BoardEntry
   ownerId: string
-  visible?: boolean
   iconSize?: number
 }) {
   const viewer = useUserId()
   if (entry.photo_path && ownerId === viewer)
     return <OwnPhoto path={entry.photo_path} label={entry.name} />
   if (entry.photo_path) {
-    return <SocialPhoto path={entry.photo_path} label={entry.name} visible={visible} />
+    return <SocialPhoto path={entry.photo_path} label={entry.name} />
   }
   return (
     <View className="h-full w-full items-center justify-center">
@@ -100,30 +90,6 @@ export function shortDuration(seconds: number): string {
   if (minutes < 60) return `${minutes}m`
   const rest = minutes % 60
   return rest ? `${Math.floor(minutes / 60)}h ${rest}m` : `${Math.floor(minutes / 60)}h`
-}
-
-const WORKOUT_ICONS: Record<string, string> = {
-  running: 'running',
-  walking: 'walking',
-  hiking: 'hiking',
-  cycling: 'cycling',
-  swimming: 'swimming',
-  yoga: 'yoga-mat',
-  dance: 'dancing',
-  dancing: 'dancing',
-  rowing: 'rowing',
-  boxing: 'boxing-glove',
-  badminton: 'badminton',
-  basketball: 'basketball',
-  football: 'football',
-  soccer: 'football',
-  tennis: 'tennis',
-  stretching: 'stretching',
-  climbing: 'climbing-wall',
-}
-
-export function workoutIcon(kind: string): IconProps {
-  return { set: 'body', name: WORKOUT_ICONS[kind] ?? 'dumbbell' } as IconProps
 }
 
 /**
