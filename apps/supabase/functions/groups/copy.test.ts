@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from 'jsr:@std/assert@1'
-import { pushMessage } from './copy.ts'
+import { messagePush, pushMessage } from './copy.ts'
 
 const target = {
   token: 'ExponentPushToken[x]',
@@ -29,4 +29,18 @@ Deno.test('a missing name still says who, and a missing meal is not guessed', ()
   const message = pushMessage('nudge', { ...target, language: 'en', actor_name: null, meal: null })
   assertStringIncludes(message.title, 'RiceCal')
   assertEquals(message.body, 'Makan Buddies')
+})
+
+Deno.test('a chat message is titled by the group and opens the thread', () => {
+  const message = messagePush({
+    token: 'ExponentPushToken[x]',
+    actor_name: 'Aisha',
+    group_name: 'Makan Buddies',
+    group_id: 'g1',
+    day: '2026-10-21',
+    body: 'Laksa tonight?',
+  })
+  assertEquals(message.title, 'Makan Buddies')
+  assertEquals(message.body, 'Aisha: Laksa tonight?')
+  assertEquals(message.data, { kind: 'group', groupId: 'g1', day: '2026-10-21', chat: true })
 })

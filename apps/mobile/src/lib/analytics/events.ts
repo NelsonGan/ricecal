@@ -329,7 +329,9 @@ export type Events = {
   'Health Disconnected': { provider: string }
   'Reminder Toggled': { meal: string; enabled: boolean }
   /** The only re-engagement surface in the app, so the taps are worth counting. */
-  'Notification Opened': { kind: 'weekly' | 'monthly' | 'group_nudge' | 'group_invite' }
+  'Notification Opened': {
+    kind: 'weekly' | 'monthly' | 'group_nudge' | 'group_invite' | 'group_message'
+  }
   /** Typed by the user. A reading synced from a health store is not an action. */
   'Weight Logged': NoProps
   'Recipe Saved': { is_new: boolean; ingredients: number; servings: number }

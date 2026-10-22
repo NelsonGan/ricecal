@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications'
 import { AppState, Platform } from 'react-native'
-
 import type { MealTime, Settings } from '@/data/types'
+import { announceGroupChatPush } from './groupChatPushes'
 import { parseTime } from './meal-times'
 
 /**
@@ -60,6 +60,20 @@ export function whenWorkoutPromptShown(check: () => boolean): void {
   workoutPromptShown = check
 }
 
+/**
+ * The group chat on screen, as `<group>:<day>`, so its own pushes do not drop a
+ * banner over the thread that is already showing the message. The release only
+ * clears its own chat: when one thread replaces another, the old one's blur can
+ * land after the new one's focus.
+ */
+let openChat: string | null = null
+export function showingGroupChat(chat: string): () => void {
+  openChat = chat
+  return () => {
+    if (openChat === chat) openChat = null
+  }
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     /**
@@ -72,7 +86,8 @@ Notifications.setNotificationHandler({
      * a plate that is not counted yet. The row in front of them is the better
      * answer, so the banner steps aside.
      */
-    const kind = notification.request.content.data?.kind
+    const data = notification.request.content.data
+    const kind = data?.kind
     // The same goes for a workout's rest timer, whose countdown is on every
     // screen, a workout started on the watch, which the bar over every tab
     // already shows, and its "still training?", but only where the logger can
@@ -81,8 +96,13 @@ Notifications.setNotificationHandler({
       kind === 'scan' ||
       kind === 'rest' ||
       kind === 'started' ||
-      (kind === 'workout' && workoutPromptShown())
+      (kind === 'workout' && workoutPromptShown()) ||
+      (kind === 'group' && data?.chat === true && openChat === `${data.groupId}:${data.day}`)
     const watching = transient && AppState.currentState === 'active'
+    // A chat message, heard while the app is open: the board's count catches up.
+    if (kind === 'group' && data?.chat === true && typeof data.groupId === 'string') {
+      announceGroupChatPush(data.groupId)
+    }
 
     return {
       shouldShowBanner: !watching,

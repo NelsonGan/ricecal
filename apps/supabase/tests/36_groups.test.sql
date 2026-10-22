@@ -230,6 +230,34 @@ select is(jsonb_array_length(public.group_messages((select id from g), (select d
   'a reported message disappears for the reporter');
 reset role;
 
+-- Chat push: every other member with the group's notifications on hears the
+-- message once, and a block either way keeps it from them.
+insert into public.push_tokens(token, user_id, platform) values
+  ('ExponentPushToken[groups-ana]', :'ana', 'ios'),
+  ('ExponentPushToken[groups-ben]', :'ben', 'ios'),
+  ('ExponentPushToken[groups-cai]', :'cai', 'ios');
+update public.group_members set notify = true where group_id = (select id from g);
+update public.group_members set notify = false where group_id = (select id from g) and user_id = :'cai';
+create temp table sent as
+  select id from public.group_messages where author_id = :'ben' and request_id = 'a3620000-0000-4000-8000-000000000001';
+select is((select array_agg(t.token order by t.token) from public.group_message_push_targets(:'ben', (select id from sent)) t),
+  array['ExponentPushToken[groups-ana]'], 'a message rings the members with notifications on, not its author');
+select is((select count(*)::int from public.group_message_push_targets(:'ben', (select id from sent))), 0,
+  'and only once');
+select is((select count(*)::int from public.group_message_push_targets(:'ana', (select id from sent))), 0,
+  'nobody can push someone else''s message');
+insert into public.group_messages(id, group_id, day, author_id, body, request_id)
+values ('a3620000-0000-4000-8000-0000000000aa', (select id from g), (select d from bday), :'ben', 'blocked?',
+  'a3620000-0000-4000-8000-000000000002');
+insert into public.blocked_authors(user_id, author_id) values (:'ana', :'ben');
+select is((select count(*)::int from public.group_message_push_targets(:'ben', 'a3620000-0000-4000-8000-0000000000aa')), 0,
+  'a member who blocked the author is not pushed');
+delete from public.blocked_authors where user_id = :'ana' and author_id = :'ben';
+delete from public.group_messages where id = 'a3620000-0000-4000-8000-0000000000aa';
+delete from public.push_tokens where token like 'ExponentPushToken[groups-%';
+-- Its own broadcasts are not what the live chat checks below count.
+delete from broadcasts where ids @> '["a3620000-0000-4000-8000-0000000000aa"]';
+
 -- Live chat: each write is announced on the day's private topic by id alone,
 -- and only a member may listen there.
 create temp table topic as

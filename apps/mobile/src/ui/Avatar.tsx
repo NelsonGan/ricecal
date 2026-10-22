@@ -1,4 +1,5 @@
 import { Image } from 'expo-image'
+import type { ReactNode } from 'react'
 import { View } from 'react-native'
 
 import { radius as radiusScale, slab } from '@/theme/tokens'
@@ -158,11 +159,24 @@ export type AvatarGroupProps = {
   /** How many to draw before collapsing the rest into a "+N" tile. */
   max?: number
   size?: AvatarSize
+  /**
+   * Draws one person's tile instead of their initial, for a caller that can
+   * show their picture. Signing a picture is a feature's business, not this
+   * component's.
+   */
+  renderAvatar?: (name: string, index: number) => ReactNode
   className?: string
 }
 
 /** Overlapping avatars with a "+N" overflow tile. */
-export function AvatarGroup({ names, total, max = 3, size = 'sm', className }: AvatarGroupProps) {
+export function AvatarGroup({
+  names,
+  total,
+  max = 3,
+  size = 'sm',
+  renderAvatar,
+  className,
+}: AvatarGroupProps) {
   const shown = names.slice(0, max)
   const overflow = (total ?? names.length) - shown.length
   const box = sizes[size].box
@@ -179,7 +193,7 @@ export function AvatarGroup({ names, total, max = 3, size = 'sm', className }: A
         <View key={index} style={index > 0 ? { marginLeft: -10 } : undefined}>
           {/* Letters here, not silhouettes: these are named people, and the
               initial is the only thing telling one tile from the next. */}
-          <Avatar name={name} fallback="initial" size={size} />
+          {renderAvatar?.(name, index) ?? <Avatar name={name} fallback="initial" size={size} />}
         </View>
       ))}
       {overflow > 0 ? (

@@ -3193,8 +3193,17 @@ under an open board does not move it a day.
 
 An open chat is the app's one Realtime channel: private, named
 `group-chat:<group>:<day>`, and joined only while that chat is on screen and the
-app is in front. Everything else, the board's preview and unread count
-included, still polls.
+app is in front. Everything else still polls.
+
+The board's chat bar does not listen on it. Its count and preview catch up when
+a chat push for the group reaches the open app: the notification handler
+announces it (`lib/groupChatPushes.ts`) and the board rereads every cached day
+of that group, since the count is the whole group's. That push is sent anyway
+(see Push below), so the live count costs no Realtime connection, which the
+free plan caps. A member who muted the group or never allowed notifications
+gets no push and waits for the board's half-minute poll. The board stops
+listening while the chat covers it, since the count is being read away there
+and a refetch would draw it back.
 
 - **Broadcast from the database, not Postgres Changes.** Triggers on
   `group_messages` call `realtime.send` when a message is written, deleted
@@ -3254,7 +3263,7 @@ included, still polls.
 
 ### Push: the app's first
 
-Nudges and invites are the only notifications a server sends. The phone hands
+Nudges, invites and chat messages are the only notifications a server sends. The phone hands
 its Expo push token to `register_push_token` on each launch where notifications
 are already allowed, and asks for permission when someone creates or joins a
 group, never at launch. The nudge or invite RPC writes first and returns an id;
@@ -3262,9 +3271,23 @@ the app then calls the `groups` edge function with it, which asks Postgres for
 the recipient's devices (`group_push_targets`, service role only), marks the row
 sent so a retried call sends nothing, and posts to Expo in the recipient's
 language. A failed push costs the push and nothing else. Tokens Expo reports as
-`DeviceNotRegistered` are forgotten. Muting nudges is per group, in its settings;
-invites always arrive. A tap opens the Groups tab, on the group's board for a
-nudge and on the list for an invite.
+`DeviceNotRegistered` are forgotten. A tap opens the Groups tab, on the group's
+board for a nudge and on the list for an invite.
+
+A chat message goes the same way: `send_group_message` returns its id and the
+app sends it as kind `message`. `group_message_push_targets` marks the message
+`pushed_at`, refuses one that is quarantined or older than ten minutes, and
+answers every other member's devices, leaving out anyone blocked either way.
+The push carries the body, so this is where blocks are applied to it, as
+`group_messages` does for the thread. It needs no translated copy: the group is
+the title and "Name: message" the body, as messengers write it. Its `data.chat`
+makes the tap open the thread over that day's board with the keyboard up
+(`reply=1`; a chat opened by hand leaves it down), and no banner shows while
+that same thread is on screen (`showingGroupChat`).
+
+Muting is per group, one switch (`group_members.notify`) for nudges and chat
+together, in the group's settings and as the bell at the top right of the chat.
+Invites always arrive, since the invitee is not a member yet.
 
 A simulator debug build gets a sandbox APNs token, which Expo's production
 credentials reject (`BadDeviceToken` in the receipt). Delivery is tested on a
@@ -5589,7 +5612,7 @@ sides can see them.
 
 ### Reminders
 
-**All local.** (Group nudges and invites are pushed by a server; see
+**All local.** (Group nudges, invites and chat messages are pushed by a server; see
 [Groups](#groups).) A meal reminder is "every day at 08:00 in the user's own
 timezone", using Expo's `DAILY` trigger on both platforms. `CALENDAR` is
 iOS-only: Android rejects it and stops scheduling the remaining reminders. No
@@ -6114,14 +6137,14 @@ events, 815 weekly users, 338 installs) ×4.3.
 | --- | --- | --- |
 | The 48 decision events | 230,000 | Mixpanel's week minus its SDK events, ×4.3. `Log Sheet Opened`, `Food Searched`, `Meal Logged` and `Food Picked` are three quarters of it |
 | Workout events (`Workout Started`, `Finished`, `Discarded`, `Routine Saved`, `Workouts Imported`) | 4,000 | New with the Workouts tab, so no history: about 60 workouts a day at launch, each a start and an end, plus routine saves. An import is one event however many workouts it brings |
-| Groups (`Group Created`, `Joined`, `Invite Sent`, `Nudge Sent`, `Reaction Set`, `Message Sent`) | 9,000 | New with the Groups tab, so no history: assumes 300 people in groups, each reacting or chatting about once a day, plus rare creates, joins, invites and nudges (a nudge is capped by its hourly cooldown per meal) |
+| Groups (`Group Created`, `Joined`, `Invite Sent`, `Nudge Sent`, `Reaction Set`, `Message Sent`, and `Notification Opened` for a group push) | 15,000 | New with the Groups tab, so no history: assumes 300 people in groups, each reacting or chatting about once a day, plus rare creates, joins, invites and nudges (a nudge is capped by its hourly cooldown per meal). Chat messages push every other member with notifications on, so allow about one tapped chat push per member per day on top |
 | News (`Announcement Shown`, `CTA Tapped`, `Dismissed`, `Auto Post Toggled`) | 3,000 | One launch card per account per announcement (~1,500 monthly accounts, a shown and a close each), plus the News list and the rare switch on Edit profile |
 | `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
 | `First App Open` | 1,500 | ~340 installs a week |
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
-| **Total** | **~266,000 (27%)** | Room for three and a half times today's audience |
+| **Total** | **~272,000 (27%)** | Room for three and a half times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -6192,7 +6215,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Health Connected | ricecal_health_connected | provider: string; granted: boolean; days: number | `src/data/health-sync.ts` | Connection/permission flow returns; each successful flow result, including granted false. Background health sync is excluded. |
 | Health Disconnected | ricecal_health_disconnected | provider: string | `src/data/activity.ts` | Health disconnect mutation succeeds; each success. |
 | Reminder Toggled | ricecal_reminder_toggled | meal: string; enabled: boolean | `src/data/settings.ts` | Meal reminder setting mutation succeeds; each successful write. |
-| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' &#124; 'group_nudge' &#124; 'group_invite' | `src/features/settings/useReportLinks.ts` | Recognized weekly/monthly report or group push response is handled; each tap. Cold-launch response is cleared after reading; meal reminders are excluded. |
+| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' &#124; 'group_nudge' &#124; 'group_invite' &#124; 'group_message' | `src/features/settings/useReportLinks.ts` | Recognized weekly/monthly report or group push response is handled; each tap. A chat push (`data.chat`) is `group_message`. Cold-launch response is cleared after reading; meal reminders are excluded. |
 | Weight Logged | ricecal_weight_logged | none | `src/data/weight.ts` | Manual weight-log write succeeds; each success, without its value. Health-imported readings are excluded. |
 | Recipe Saved | ricecal_recipe_saved | is_new: boolean; ingredients: number; servings: number | `src/data/recipes.ts` | Recipe save succeeds; each new/edit save, with ingredient/serving counts only. |
 | Recipe Drafted | ricecal_recipe_drafted | source: 'photo' &#124; 'text'; outcome: 'drafted' &#124; 'empty' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled' | `src/data/recipes.ts` | Photo/text drafting reaches its outcome; each attempt, including refusals, empty and failure. It does not prove a recipe was saved. |
