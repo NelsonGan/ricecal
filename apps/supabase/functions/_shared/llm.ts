@@ -378,6 +378,96 @@ export function parseAnswer(text: string): unknown {
   throw failure
 }
 
+/** What V8 says went wrong, as one of a fixed set of words. Never the message, which quotes the answer. */
+const PARSE_KINDS: Array<[RegExp, string]> = [
+  [/non-whitespace character after JSON/i, 'after-json'],
+  [/Unterminated string/i, 'unterminated-string'],
+  [/Bad control character/i, 'control-character'],
+  [/Expected ',' or '[}\]]'/i, 'expected-comma'],
+  [/Expected property name/i, 'expected-name'],
+  [/Expected double-quoted/i, 'expected-name'],
+  [/Unexpected end of JSON/i, 'unexpected-end'],
+  [/Unexpected token/i, 'unexpected-token'],
+]
+
+const charClass = (c: string | undefined): string =>
+  c === undefined
+    ? 'end'
+    : '{}[]",:'.includes(c)
+      ? c
+      : /\s/.test(c)
+        ? 'space'
+        : /[0-9.-]/.test(c)
+          ? 'digit'
+          : /\p{L}/u.test(c)
+            ? 'letter'
+            : 'other'
+
+/**
+ * A description of an answer `parseAnswer` could not read, with nothing of the
+ * answer in it: lengths, counts and fixed labels only, since the text is diary
+ * content. Haiku answers about 2% of photos with JSON nobody can parse, and
+ * without this there is no telling a second object after the first (a fix in
+ * the parser) from a broken string (a fix in the prompt). Exported for its test.
+ */
+export function answerShape(text: string): string {
+  // Top-level `{…}` runs, skipping braces inside strings.
+  let objects = 0
+  let depth = 0
+  let inString = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inString) {
+      if (c === '\\') i++
+      else if (c === '"') inString = false
+    } else if (c === '"' && depth > 0) inString = true
+    else if (c === '{') {
+      if (depth === 0) objects++
+      depth++
+    } else if (c === '}' && depth > 0) depth--
+  }
+
+  const first = text.indexOf('{')
+  const last = text.lastIndexOf('}')
+  const braced = first >= 0 && last > first ? text.slice(first, last + 1) : ''
+  let kind = 'none'
+  // From the start of the answer, so it reads against `before` and `length`.
+  let at = -1
+  let atChar = 'n/a'
+  if (braced) {
+    try {
+      JSON.parse(braced)
+      kind = 'parses'
+    } catch (error) {
+      const message = error instanceof Error ? error.message : ''
+      kind = PARSE_KINDS.find(([pattern]) => pattern.test(message))?.[1] ?? 'other'
+      const position = message.match(/position (\d+)/)?.[1]
+      if (position !== undefined) {
+        at = first + Number(position)
+        atChar = charClass(text[at])
+      } else {
+        // V8 gives "Unexpected token" no position, only the character, so a
+        // trailing comma (`]` or `}`) would read the same as a bare `NaN`.
+        // The character is reported by its class, never as itself.
+        const token = message.match(/Unexpected token '(.+?)'/u)?.[1]
+        if (token) atChar = charClass([...token][0])
+      }
+    }
+  }
+
+  return [
+    `length=${text.length}`,
+    `objects=${objects}`,
+    `unclosed=${depth}`,
+    `fences=${text.split('```').length - 1}`,
+    `before=${first < 0 ? -1 : first}`,
+    `after=${last < 0 ? -1 : text.length - last - 1}`,
+    `error=${kind}`,
+    `at=${at}`,
+    `at-char=${atChar}`,
+  ].join(' ')
+}
+
 /** `messages` with `instruction` at the end of their system prompt. */
 function withInstruction(messages: unknown[], instruction: string): unknown[] {
   const [first, ...rest] = messages as Array<{ role?: string; content?: unknown }>
@@ -574,7 +664,12 @@ export async function chatJSON(
         retryable: reason !== 'length',
       })
     }
-    return parseAnswer(text)
+    try {
+      return parseAnswer(text)
+    } catch (error) {
+      console.warn(`[llm] ${span}: ${route.model} answer did not parse (${answerShape(text)})`)
+      throw error
+    }
   }
 
   if (PRIMARY_ROUTE && !byokBroken) {
