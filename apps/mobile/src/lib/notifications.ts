@@ -60,6 +60,15 @@ export function whenWorkoutPromptShown(check: () => boolean): void {
   workoutPromptShown = check
 }
 
+/**
+ * The group chat on screen, as `<group>:<day>`, so its own pushes do not drop a
+ * banner over the thread that is already showing the message.
+ */
+let openChat: string | null = null
+export function setOpenGroupChat(chat: string | null): void {
+  openChat = chat
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     /**
@@ -72,7 +81,8 @@ Notifications.setNotificationHandler({
      * a plate that is not counted yet. The row in front of them is the better
      * answer, so the banner steps aside.
      */
-    const kind = notification.request.content.data?.kind
+    const data = notification.request.content.data
+    const kind = data?.kind
     // The same goes for a workout's rest timer, whose countdown is on every
     // screen, a workout started on the watch, which the bar over every tab
     // already shows, and its "still training?", but only where the logger can
@@ -81,7 +91,8 @@ Notifications.setNotificationHandler({
       kind === 'scan' ||
       kind === 'rest' ||
       kind === 'started' ||
-      (kind === 'workout' && workoutPromptShown())
+      (kind === 'workout' && workoutPromptShown()) ||
+      (kind === 'group' && data?.chat === true && openChat === `${data.groupId}:${data.day}`)
     const watching = transient && AppState.currentState === 'active'
 
     return {

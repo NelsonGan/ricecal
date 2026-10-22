@@ -28,6 +28,7 @@ import {
   type GroupBoard,
   type GroupMeal,
   useGroupBoard,
+  useGroupBoardLive,
   useMyGroups,
 } from '@/data/groups'
 import { workoutIcon, workoutKindKey } from '@/features/activity/workoutKind'
@@ -151,6 +152,7 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
   const summary = useMyGroups().data?.find((group) => group.id === groupId)
   // The same query as the page on screen, which is the one that polls.
   const board = useGroupBoard(groupId, day, focused, false)
+  useGroupBoardLive(groupId, day, focused)
   const [inviteOpen, setInviteOpen] = useState(false)
 
   // A notification tapped while this board is already open names its day too.
