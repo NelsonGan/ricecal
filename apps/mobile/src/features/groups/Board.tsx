@@ -416,7 +416,6 @@ const BoardPage = memo(function BoardPage({
         meal={open?.meal ?? null}
         // The sheet follows the board's latest copy, so a reaction redraws it.
         member={open ? (all.find((m) => m.person.id === open.memberId) ?? null) : null}
-        name={open ? (names.get(open.memberId) ?? '') : ''}
         onClose={onClose}
       />
     </Animated.ScrollView>
@@ -575,8 +574,8 @@ function MealTile({
       [
         `${entry.name}, ${entry.kcal} ${t('common:unit.kcal')}`,
         entries.length > 1 ? t('position', { index: index + 1, count: entries.length }) : null,
-        entry.likes > 0 ? `👍 ${entry.likes}` : null,
-        entry.dislikes > 0 ? `👎 ${entry.dislikes}` : null,
+        entry.likes > 0 ? `${t('like')} ${entry.likes}` : null,
+        entry.dislikes > 0 ? `${t('dislike')} ${entry.dislikes}` : null,
       ]
         .filter(Boolean)
         .join(', ')
@@ -699,14 +698,20 @@ function EntryFace({
       {reacted ? (
         <View className="absolute right-1 top-1 flex-row items-center gap-1 rounded-full bg-surface/85 px-1.5 py-0.5">
           {entry.likes > 0 ? (
-            <Text variant="micro" className="text-ink" maxFontSizeMultiplier={TILE_TEXT}>
-              👍{entry.likes}
-            </Text>
+            <View className="flex-row items-center gap-0.5">
+              <Icon set="system" name="thumbs-up" size={14} />
+              <Text variant="micro" className="text-ink" maxFontSizeMultiplier={TILE_TEXT}>
+                {entry.likes}
+              </Text>
+            </View>
           ) : null}
           {entry.dislikes > 0 ? (
-            <Text variant="micro" className="text-ink" maxFontSizeMultiplier={TILE_TEXT}>
-              👎{entry.dislikes}
-            </Text>
+            <View className="flex-row items-center gap-0.5">
+              <Icon set="system" name="thumbs-down" size={14} />
+              <Text variant="micro" className="text-ink" maxFontSizeMultiplier={TILE_TEXT}>
+                {entry.dislikes}
+              </Text>
+            </View>
           ) : null}
         </View>
       ) : null}
