@@ -1,7 +1,15 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, QueryObserver } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
-import { type BoardEntry, type GroupBoard, groupError, useGroupAction } from '../groups'
+import type { Listener } from '@/lib/realtime'
+import {
+  type BoardEntry,
+  type GroupBoard,
+  type GroupMessage,
+  groupError,
+  useGroupAction,
+  useGroupChatLive,
+} from '../groups'
 import { keys } from '../keys'
 
 const mockRpc = jest.fn()
@@ -13,6 +21,17 @@ jest.mock('@/lib/supabase', () => ({
   },
 }))
 jest.mock('../session', () => ({ useUserId: () => 'viewer' }))
+const mockListeners = new Map<string, Listener>()
+const mockStops: string[] = []
+jest.mock('@/lib/realtime', () => ({
+  listen: (topic: string, listener: Listener) => {
+    mockListeners.set(topic, listener)
+    return () => {
+      mockStops.push(topic)
+      mockListeners.delete(topic)
+    }
+  },
+}))
 
 function response(data: unknown, error: unknown = null) {
   const promise = Promise.resolve({ data, error })
@@ -86,6 +105,8 @@ const boardKey = (groupId: string) =>
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockListeners.clear()
+  mockStops.length = 0
   mockInvoke.mockResolvedValue({ data: { ok: true }, error: null })
 })
 
@@ -225,4 +246,129 @@ it('moves an entry to another column on the board straight away', async () => {
     }),
   )
   await act(async () => write.settle({ data: null, error: null }))
+})
+
+const DAY = '2026-10-21'
+const TOPIC = `group-chat:g1:${DAY}`
+const messagesKey = keys.groupsRead('viewer', 'group_messages', { groupId: 'g1', day: DAY })
+const message = (id: string, mine = false): GroupMessage => ({
+  id,
+  author: { id: mine ? 'viewer' : 'friend', name: 'Aisha', handle: 'aisha', avatar_path: null },
+  body: `message ${id}`,
+  created_at: '2026-10-21T04:45:00Z',
+  mine,
+})
+
+/** A messages query with an observer, so an invalidation refetches it. */
+function watchMessages(client: QueryClient) {
+  return new QueryObserver(client, {
+    queryKey: messagesKey,
+    queryFn: () => mockRpc('group_messages').then((answer: { data: unknown }) => answer.data),
+    staleTime: Number.POSITIVE_INFINITY,
+  })
+}
+
+describe('live chat', () => {
+  it("listens on the day's topic while mounted, and says when it is live", async () => {
+    const { wrapper } = setup()
+    const { result, unmount } = await renderHook(() => useGroupChatLive('g1', DAY), { wrapper })
+    expect(result.current).toBe(false)
+    expect(mockListeners.has(TOPIC)).toBe(true)
+
+    mockRpc.mockReturnValue(response([]))
+    await act(async () => mockListeners.get(TOPIC)?.onLive(true))
+    expect(result.current).toBe(true)
+    await act(async () => mockListeners.get(TOPIC)?.onLive(false))
+    expect(result.current).toBe(false)
+
+    await unmount()
+    expect(mockStops).toEqual([TOPIC])
+  })
+
+  it('catches up once each time the channel joins', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, [message('m1')])
+    const query = watchMessages(client)
+    const unsubscribe = query.subscribe(() => undefined)
+    mockRpc.mockReturnValue(response([message('m1'), message('m2')]))
+    await renderHook(() => useGroupChatLive('g1', DAY), { wrapper })
+
+    await act(async () => mockListeners.get(TOPIC)?.onLive(true))
+    await waitFor(() => expect(client.getQueryData<GroupMessage[]>(messagesKey)).toHaveLength(2))
+    unsubscribe()
+  })
+
+  it('refetches for a message it has not got, and not for one it has', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, [message('m1', true)])
+    const query = watchMessages(client)
+    const unsubscribe = query.subscribe(() => undefined)
+    await renderHook(() => useGroupChatLive('g1', DAY), { wrapper })
+
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('message', { ids: ['m1'] }))
+    expect(mockRpc).not.toHaveBeenCalled()
+
+    mockRpc.mockReturnValue(response([message('m1', true), message('m2')]))
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('message', { ids: ['m2'] }))
+    await waitFor(() => expect(client.getQueryData<GroupMessage[]>(messagesKey)).toHaveLength(2))
+    expect(mockRpc).toHaveBeenCalledTimes(1)
+    unsubscribe()
+  })
+
+  it('takes a removed message out in place, without asking the server', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, [message('m1'), message('m2')])
+    await renderHook(() => useGroupChatLive('g1', DAY), { wrapper })
+
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('removed', { ids: ['m1'] }))
+    expect(client.getQueryData<GroupMessage[]>(messagesKey)?.map((row) => row.id)).toEqual(['m2'])
+    expect(mockRpc).not.toHaveBeenCalled()
+
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('removed', { nonsense: true }))
+    expect(client.getQueryData<GroupMessage[]>(messagesKey)?.map((row) => row.id)).toEqual(['m2'])
+  })
+
+  it('puts a sent message in the thread as soon as the server answers', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, [message('m1')])
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    const sent = pending()
+    mockRpc.mockReturnValueOnce(sent.request)
+    let done!: Promise<unknown>
+    await act(async () => {
+      done = result.current.mutateAsync({
+        action: 'message',
+        groupId: 'g1',
+        day: DAY,
+        body: 'on my way',
+        requestId: 'r1',
+      })
+    })
+    expect(client.getQueryData<GroupMessage[]>(messagesKey)).toHaveLength(1)
+    await act(async () => {
+      sent.settle({ data: 'm2', error: null })
+      await done
+    })
+    const rows = client.getQueryData<GroupMessage[]>(messagesKey)
+    expect(rows?.map((row) => [row.id, row.body, row.mine])).toEqual([
+      ['m1', 'message m1', false],
+      ['m2', 'on my way', true],
+    ])
+  })
+
+  it('takes a deleted message out once the delete lands', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, [message('m1', true), message('m2')])
+    mockRpc.mockReturnValue(response(null))
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    await act(async () => {
+      await result.current.mutateAsync({
+        action: 'deleteMessage',
+        groupId: 'g1',
+        day: DAY,
+        messageId: 'm1',
+      })
+    })
+    expect(client.getQueryData<GroupMessage[]>(messagesKey)?.map((row) => row.id)).toEqual(['m2'])
+  })
 })

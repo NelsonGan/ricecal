@@ -1,0 +1,121 @@
+import type { RealtimeChannel } from '@supabase/supabase-js'
+import { AppState, type NativeEventSubscription } from 'react-native'
+import { supabase } from './supabase'
+
+/**
+ * Private Realtime channels, at most one per topic however many screens ask
+ * for it, and only while something is listening and the app is in front.
+ *
+ * Realtime is billed and capped by concurrent connections, and supabase-js
+ * opens its one socket with the first channel and closes it with the last. So
+ * a channel that outlives its screen, or a second one on the same topic, is a
+ * connection held for nothing. Backgrounding closes every channel rather than
+ * leaving iOS to kill the socket at some later point; coming back reopens
+ * them, and a listener catches up when it hears `live` again.
+ */
+export type Listener = {
+  onEvent: (event: string, payload: Record<string, unknown>) => void
+  /** True once joined; false while joining, after an error, or in the background. */
+  onLive: (live: boolean) => void
+}
+
+type Topic = {
+  listeners: Set<Listener>
+  channel: RealtimeChannel | null
+  /** The previous channel's leave, which has to finish before the topic can be joined again. */
+  closing: Promise<unknown> | null
+  live: boolean
+}
+
+const topics = new Map<string, Topic>()
+let foreground = AppState.currentState !== 'background'
+let appState: NativeEventSubscription | null = null
+
+function setLive(entry: Topic, live: boolean) {
+  if (entry.live === live) return
+  entry.live = live
+  for (const listener of entry.listeners) listener.onLive(live)
+}
+
+function open(topic: string, entry: Topic) {
+  if (entry.channel || entry.closing || !foreground || entry.listeners.size === 0) return
+  // supabase-js hands back an existing channel of the same name, bindings and
+  // all, and one whose leave failed is still listed. Joining that would add a
+  // second binding to a channel that never rejoins; polling covers instead.
+  if (supabase.getChannels().some((channel) => channel.topic === `realtime:${topic}`)) return
+  const channel = supabase.channel(topic, { config: { private: true } })
+  entry.channel = channel
+  channel
+    .on('broadcast', { event: '*' }, ({ event, payload }) => {
+      for (const listener of entry.listeners) listener.onEvent(event, payload ?? {})
+    })
+    .subscribe((status) => {
+      // A closed channel still reports its own closing.
+      if (entry.channel === channel) setLive(entry, status === 'SUBSCRIBED')
+    })
+}
+
+function close(topic: string, entry: Topic) {
+  const channel = entry.channel
+  if (channel) {
+    entry.channel = null
+    setLive(entry, false)
+    entry.closing = supabase
+      .removeChannel(channel)
+      .catch(() => undefined)
+      .finally(() => {
+        entry.closing = null
+        // Asked for again, or brought back to the front, while it was leaving.
+        open(topic, entry)
+        forget(topic, entry)
+        // supabase-js keeps an empty socket for a few seconds in case another
+        // channel follows. In the background none will, and iOS would only
+        // suspend the app with it open, so it goes now.
+        if (!foreground && supabase.getChannels().length === 0) void supabase.realtime.disconnect()
+      })
+  }
+  forget(topic, entry)
+}
+
+function forget(topic: string, entry: Topic) {
+  if (entry.listeners.size || entry.channel || entry.closing) return
+  topics.delete(topic)
+  if (topics.size === 0) {
+    appState?.remove()
+    appState = null
+  }
+}
+
+function watchAppState() {
+  if (appState) return
+  foreground = AppState.currentState !== 'background'
+  appState = AppState.addEventListener('change', (state) => {
+    // `inactive` is the notification shade or the app switcher passing over,
+    // not leaving; dropping the channel for it would cost a rejoin and a refetch.
+    const next = state !== 'background'
+    if (next === foreground) return
+    foreground = next
+    for (const [topic, entry] of topics) {
+      if (next) open(topic, entry)
+      else close(topic, entry)
+    }
+  })
+}
+
+/** Listens on a private topic until the returned function is called. */
+export function listen(topic: string, listener: Listener): () => void {
+  watchAppState()
+  let entry = topics.get(topic)
+  if (!entry) {
+    entry = { listeners: new Set(), channel: null, closing: null, live: false }
+    topics.set(topic, entry)
+  }
+  const current = entry
+  current.listeners.add(listener)
+  if (current.live) listener.onLive(true)
+  open(topic, current)
+  return () => {
+    if (!current.listeners.delete(listener)) return
+    if (current.listeners.size === 0) close(topic, current)
+  }
+}

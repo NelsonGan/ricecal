@@ -3183,10 +3183,58 @@ they tap back to the list. A group left elsewhere falls back to the list once
 under the header, the same strip Today uses, limited to the board's sixty days;
 each follows the other. Only the day on screen refreshes, every 30 seconds; the
 days either side are fetched once so a swipe lands on a drawn board. The chat
-refreshes every 5 seconds while open, and the invite count every five minutes
-and whenever the tab is shown, since an invite also arrives as a push. There is
-no realtime channel in this app. The pager follows the selected date rather than
-a position, so midnight passing under an open board does not move it a day.
+is live while open (below), and the invite count refreshes every five minutes
+and whenever the tab is shown, since an invite also arrives as a push. The
+pager follows the selected date rather than a position, so midnight passing
+under an open board does not move it a day.
+
+### Live chat
+
+An open chat is the app's one Realtime channel: private, named
+`group-chat:<group>:<day>`, and joined only while that chat is on screen and the
+app is in front. Everything else, the board's preview and unread count
+included, still polls.
+
+- **Broadcast from the database, not Postgres Changes.** Triggers on
+  `group_messages` call `realtime.send` when a message is written, deleted
+  (once per statement and thread, so a deleted account's months of messages are
+  a handful of broadcasts) or quarantined by its third report. Changes would
+  need `group_messages` opened to clients through RLS, which every groups table
+  deliberately is not, and would check that policy per listener per row; a
+  broadcast is authorised once, when the channel is joined.
+- **A broadcast carries message ids and nothing else.** The phone refetches
+  `group_messages`, which is where blocks, reports and quarantine are applied,
+  so a body never reaches a device that must not read it, and a member removed
+  while the chat is open hears ids it can no longer turn into anything. A
+  removed id is taken out of the thread in place, with no request.
+- **Who may listen** is one policy on `realtime.messages`:
+  `private.group_chat_listener(realtime.topic())`, true only for a member of the
+  topic's group, and false rather than an error for anything malformed. There is
+  no insert policy, so a client cannot broadcast on the topic. `db diff` does not
+  see policies on `realtime.messages`, so the migration restates it by hand.
+- **One channel and as little socket as possible** (`lib/realtime.ts`). Screens
+  share a channel per topic; the last one out leaves it, and a topic asked for
+  again while its leave is in flight waits for it, since supabase-js would hand
+  back the leaving channel. Backgrounding (not `inactive`, which is only the
+  notification shade passing over) leaves every channel and closes the socket at
+  once; coming back rejoins. supabase-js otherwise keeps an empty socket for 50
+  seconds, which `lib/supabase.ts` cuts to 5.
+- **Catching up.** Each join, first or after a drop, refetches the thread once,
+  since nothing sent while the channel was down will be heard. While it is not
+  joined the chat polls every 5 seconds as it did before Realtime, which is
+  also what an app from before this change keeps doing, untouched. Measured on
+  a simulator against the local stack: no requests at all while a joined chat
+  sat idle for 20 seconds, and one per message from someone else.
+- **The sender's own message** joins the cached thread the moment
+  `send_group_message` answers, so "Sending" clears without waiting for a
+  refetch, and its broadcast then finds the id already there and asks for
+  nothing.
+- **pgTAP cannot watch `realtime.messages`.** It is partitioned by day, the
+  Realtime server makes the partitions, and CI runs Postgres alone, where
+  `realtime.send` would swallow the failure as a warning. `36_groups` replaces
+  `private.group_chat_broadcast` inside its transaction to record what would
+  have been sent. Locally, a stale Realtime container has stale partitions too:
+  `docker restart supabase_realtime_ricecal` makes today's.
 
 ### Push: the app's first
 
