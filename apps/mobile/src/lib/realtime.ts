@@ -24,8 +24,15 @@ type Topic = {
   channel: RealtimeChannel | null
   /** The previous channel's leave, which has to finish before the topic can be joined again. */
   closing: Promise<unknown> | null
+  /** A rejoin after the server closed the channel, waiting out its delay. */
+  retry: ReturnType<typeof setTimeout> | null
+  /** Refused by the policy, so not tried again until everyone listening has left. */
+  refused: boolean
   live: boolean
 }
+
+/** How long after the server closes a channel it is joined again. */
+const REJOIN_MS = 3_000
 
 const topics = new Map<string, Topic>()
 let foreground = AppState.currentState !== 'background'
@@ -38,10 +45,11 @@ function setLive(entry: Topic, live: boolean) {
 }
 
 function open(topic: string, entry: Topic) {
-  if (entry.channel || entry.closing || !foreground || entry.listeners.size === 0) return
+  if (entry.channel || entry.closing || entry.retry || entry.refused) return
+  if (!foreground || entry.listeners.size === 0) return
   // supabase-js hands back an existing channel of the same name, bindings and
-  // all, and one whose leave failed is still listed. Joining that would add a
-  // second binding to a channel that never rejoins; polling covers instead.
+  // all. `close` makes sure none is left behind, so this is a last guard
+  // against joining twice; polling covers instead.
   if (supabase.getChannels().some((channel) => channel.topic === `realtime:${topic}`)) return
   const channel = supabase.channel(topic, { config: { private: true } })
   entry.channel = channel
@@ -49,20 +57,55 @@ function open(topic: string, entry: Topic) {
     .on('broadcast', { event: '*' }, ({ event, payload }) => {
       for (const listener of entry.listeners) listener.onEvent(event, payload ?? {})
     })
-    .subscribe((status) => {
-      // A closed channel still reports its own closing.
-      if (entry.channel === channel) setLive(entry, status === 'SUBSCRIBED')
+    .subscribe((status, error) => {
+      // A channel `close` let go of still reports its own closing.
+      if (entry.channel !== channel) return
+      if (status === 'CHANNEL_ERROR' && /unauthori[sz]ed/i.test(error?.message ?? '')) {
+        // The realtime.messages policy said no: no longer a member. Phoenix
+        // would retry the join for as long as the screen stays open, holding
+        // the socket; the thread's own fetch already says what happened.
+        entry.refused = true
+        close(topic, entry)
+        return
+      }
+      if (status === 'CLOSED') {
+        // Closed from the server's side (an expired token, a restart), so it is
+        // already gone from supabase-js and there is nothing to leave.
+        entry.channel = null
+        setLive(entry, false)
+        entry.retry = setTimeout(() => {
+          entry.retry = null
+          open(topic, entry)
+        }, REJOIN_MS)
+        return
+      }
+      setLive(entry, status === 'SUBSCRIBED')
     })
 }
 
 function close(topic: string, entry: Topic) {
+  if (entry.retry) {
+    clearTimeout(entry.retry)
+    entry.retry = null
+  }
   const channel = entry.channel
   if (channel) {
     entry.channel = null
     setLive(entry, false)
     entry.closing = supabase
       .removeChannel(channel)
-      .catch(() => undefined)
+      .catch(() => 'error' as const)
+      .then((answer) => {
+        // A leave the server answered with an error leaves the channel listed,
+        // which would keep the socket open for good and stop the topic being
+        // joined again.
+        if (answer === 'error' && supabase.realtime.channels.includes(channel)) {
+          channel.teardown()
+          supabase.realtime.channels = supabase.realtime.channels.filter((c) => c !== channel)
+          // Taken out by hand, so the library's own empty-socket timer never starts.
+          if (supabase.getChannels().length === 0) void supabase.realtime.disconnect()
+        }
+      })
       .finally(() => {
         entry.closing = null
         // Asked for again, or brought back to the front, while it was leaving.
@@ -107,7 +150,14 @@ export function listen(topic: string, listener: Listener): () => void {
   watchAppState()
   let entry = topics.get(topic)
   if (!entry) {
-    entry = { listeners: new Set(), channel: null, closing: null, live: false }
+    entry = {
+      listeners: new Set(),
+      channel: null,
+      closing: null,
+      retry: null,
+      refused: false,
+      live: false,
+    }
     topics.set(topic, entry)
   }
   const current = entry

@@ -369,6 +369,64 @@ describe('live chat', () => {
         messageId: 'm1',
       })
     })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(client.getQueryData<GroupMessage[]>(messagesKey)?.map((row) => row.id)).toEqual(['m2'])
   })
+})
+
+it("leaves a broadcast to the viewer's own send while it is on its way", async () => {
+  const { client, wrapper } = setup()
+  client.setQueryData(messagesKey, [message('m1')])
+  const query = watchMessages(client)
+  const unsubscribe = query.subscribe(() => undefined)
+  const { result } = await renderHook(
+    () => ({ action: useGroupAction(), live: useGroupChatLive('g1', DAY) }),
+    { wrapper },
+  )
+  const sent = pending()
+  mockRpc.mockReturnValueOnce(sent.request)
+  let done!: Promise<unknown>
+  await act(async () => {
+    done = result.current.action.mutateAsync({
+      action: 'message',
+      groupId: 'g1',
+      day: DAY,
+      body: 'on my way',
+      requestId: 'r1',
+    })
+    // react-query tells the hook on a timer; let that land inside act.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  })
+  // Its own broadcast, ahead of the answer.
+  await act(async () => mockListeners.get(TOPIC)?.onEvent('message', { ids: ['m2'] }))
+  expect(mockRpc).toHaveBeenCalledTimes(1)
+
+  mockRpc.mockReturnValue(response([message('m1'), message('m2', true)]))
+  await act(async () => {
+    sent.settle({ data: 'm2', error: null })
+    await done
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  })
+  await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2))
+  expect(mockRpc).toHaveBeenLastCalledWith('group_messages')
+  unsubscribe()
+})
+
+it('lets a fetch already on its way land before catching up, rather than restarting it', async () => {
+  const { client, wrapper } = setup()
+  const first = pending()
+  mockRpc.mockReturnValueOnce(first.request)
+  const query = watchMessages(client)
+  const unsubscribe = query.subscribe(() => undefined)
+  await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1))
+  await renderHook(() => useGroupChatLive('g1', DAY), { wrapper })
+
+  mockRpc.mockReturnValue(response([message('m1'), message('m2')]))
+  await act(async () => mockListeners.get(TOPIC)?.onLive(true))
+  expect(mockRpc).toHaveBeenCalledTimes(1)
+
+  await act(async () => first.settle({ data: [message('m1')], error: null }))
+  await waitFor(() => expect(client.getQueryData<GroupMessage[]>(messagesKey)).toHaveLength(2))
+  expect(mockRpc).toHaveBeenCalledTimes(2)
+  unsubscribe()
 })
