@@ -67,9 +67,11 @@ create index food_scan_items_user_idx on public.food_scan_items (user_id);
 
 alter table public.food_scan_items enable row level security;
 
--- service_role only. RLS stays enabled with no policies, so a grant added by
--- mistake still exposes nothing.
+-- service_role only. A restrictive policy denies every client, so a grant or a
+-- permissive policy added by mistake still exposes nothing.
 revoke all on public.food_scan_items from public, anon, authenticated;
+create policy "Server only" on public.food_scan_items as restrictive for all to anon, authenticated
+  using (false) with check (false);
 grant select, insert, update, delete on public.food_scan_items to service_role;
 
 
@@ -87,6 +89,10 @@ alter table public.food_scan_misses enable row level security;
 
 revoke all on public.food_scan_misses from public, anon, authenticated;
 grant select, insert, delete on public.food_scan_misses to service_role;
+-- Server only. Beside having no client grant, a restrictive policy means a
+-- permissive one added by mistake still admits no client row.
+create policy "Server only" on public.food_scan_misses as restrictive for all to anon, authenticated
+  using (false) with check (false);
 
 
 -- ---------------------------------------------------------------------------
@@ -118,6 +124,10 @@ alter table public.barcode_misses enable row level security;
 
 revoke all on public.barcode_misses from public, anon, authenticated;
 grant select, insert, delete on public.barcode_misses to service_role;
+-- Server only. Beside having no client grant, a restrictive policy means a
+-- permissive one added by mistake still admits no client row.
+create policy "Server only" on public.barcode_misses as restrictive for all to anon, authenticated
+  using (false) with check (false);
 
 
 -- ---------------------------------------------------------------------------

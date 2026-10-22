@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(28);
+select plan(31);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -370,17 +370,23 @@ select is(
   'job_runs has row level security enabled'
 );
 
--- These are service-only working tables. No client grant plus default-deny RLS
--- keeps them closed even if one of those two defenses changes by mistake.
+-- These are service-only working tables. No client grant, no permissive policy
+-- and a restrictive deny keep them closed even if one defense changes by mistake.
 select is(
   (select count(*)::integer
    from (values ('barcode_misses'), ('food_scan_items'), ('food_scan_misses'),
                 ('job_runs'), ('recipe_saves'), ('social_counters'),
-                ('social_rate_limits')) expected(table_name)
+                ('social_rate_limits'), ('groups'), ('group_members'), ('group_invites'),
+                ('group_reactions'), ('group_nudges'), ('group_messages'),
+                ('group_message_reports'), ('group_reports'), ('push_tokens')) expected(table_name)
    join pg_catalog.pg_class c on c.relname = expected.table_name
    join pg_catalog.pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
    where c.relrowsecurity
-     and not exists (select 1 from pg_catalog.pg_policy p where p.polrelid = c.oid)
+     and not exists (select 1 from pg_catalog.pg_policy p where p.polrelid = c.oid and p.polpermissive)
+     and exists (select 1 from pg_catalog.pg_policy p where p.polrelid = c.oid
+       and not p.polpermissive and p.polcmd = '*'
+       and pg_catalog.pg_get_expr(p.polqual, p.polrelid) = 'false'
+       and pg_catalog.pg_get_expr(p.polwithcheck, p.polrelid) = 'false')
      and not exists (
        select 1
        from (values ('anon'), ('authenticated')) roles(role_name)
@@ -389,8 +395,8 @@ select is(
                           ('MAINTAIN')) privileges(privilege_name)
        where pg_catalog.has_table_privilege(roles.role_name, c.oid, privileges.privilege_name)
      )),
-  7,
-  'all seven service-only tables deny every client table privilege and have default-deny RLS'
+  16,
+  'all sixteen service-only tables deny every client privilege and every client row'
 );
 
 select is(
@@ -404,6 +410,47 @@ select is(
      and pg_catalog.has_table_privilege(roles.role_name, c.oid, privileges.privilege_name)),
   0,
   'client roles cannot bypass or change RLS through table-wide privileges'
+);
+
+-- The Security Advisor lists every definer function a signed-in user can call.
+-- Those are the RPC API on purpose, so what is asserted instead is the part
+-- that would make one unsafe: a caller-controlled search_path, or a door open
+-- to signed-out callers. Each still decides inside what its caller may do.
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname in ('public', 'private')
+     and p.prosecdef
+     and not ('search_path=""' = any(coalesce(p.proconfig, '{}')))),
+  0,
+  'every definer function pins an empty search_path'
+);
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname in ('public', 'private')
+     and p.prosecdef
+     and (pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE')
+       or pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE'))),
+  0,
+  'no definer function is callable by a signed-out client'
+);
+
+-- A table with RLS and no policy denies every client, which is the intent for
+-- server-only tables, but it reads the same as a policy someone forgot. Those
+-- say so with a restrictive "Server only" policy.
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_class c
+   join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+   where n.nspname = 'public' and c.relkind in ('r', 'p')
+     and (not c.relrowsecurity
+       or not exists (select 1 from pg_catalog.pg_policy p where p.polrelid = c.oid))),
+  0,
+  'every public table has RLS and at least one policy'
 );
 
 select * from finish();

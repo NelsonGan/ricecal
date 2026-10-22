@@ -135,6 +135,8 @@ alter table public.recipe_saves enable row level security;
 
 revoke all on public.recipe_saves from public, anon, authenticated;
 grant select, insert, delete on public.recipe_saves to service_role;
+create policy "Server only" on public.recipe_saves as restrictive for all to anon, authenticated
+  using (false) with check (false);
 
 
 -- ---------------------------------------------------------------------------

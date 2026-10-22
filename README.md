@@ -363,8 +363,10 @@ The `auth` schema is **not** one of these. The diff tracks triggers on
 made the next diff emit `DROP TRIGGER` for it. It stays declarative, in
 `16_new_user.sql`.
 
-Seven service-only tables have RLS enabled with no policies. That denies all
-row reads and writes by default; their client table grants are revoked too.
+Sixteen service-only tables (scan items and misses, groups and their chat,
+push tokens, recipe saves, social counters and rate limits, job runs) have no
+client grant, no permissive policy and a restrictive `"Server only"` policy that
+denies every client row.
 `98_client_table_privileges.sql` also removes `TRUNCATE`, `REFERENCES`, `TRIGGER`
 and `MAINTAIN` from client roles on every public table. These operations do not
 need an RLS policy to run. `02_rls.test.sql` checks both boundaries.
@@ -512,19 +514,28 @@ copy.
 - **Every view in `public` is `security_invoker`.** A view that must read past
   RLS lives in `private` and is read through an invoker view of the same
   name; `18_social.test.sql` fails on any other.
+- **A server-only table still gets a policy:** `"Server only"`, restrictive,
+  `using (false) with check (false)` for `anon` and `authenticated`. With no
+  client grant it changes nothing today, but a permissive policy added by
+  mistake still admits no row, and `02_rls.test.sql` fails on a public table
+  with RLS and no policy at all. Edge functions use the service role and
+  definer functions run as their owner, so both pass by it.
 
 **What the Security and Performance Advisors still report, on purpose.** Each
 was checked against the code (October 2026) and is not a finding:
 
-- *RLS enabled, no policy*: server-only tables (scan items and misses, groups,
-  push tokens, recipe saves, social counters and rate limits, job runs). No
-  policy means no client row, and their only writers are definer functions.
 - *Signed-in users can execute a security definer function*: those are the
-  app's RPC API, each deciding inside what its caller may do (most through
-  `private.social_require_user` or `private.group_require_member`), and none is
-  executable by `anon`.
-- *Unindexed foreign key* on a composite `(id, user_id)` ownership key: an index
-  leading with the first column already serves the cascade.
+  app's RPC API. Each decides inside what its caller may do (most through
+  `private.social_require_user` or `private.group_require_member`).
+  `02_rls.test.sql` asserts the parts that would make one unsafe: every
+  definer function pins `search_path = ''`, and none is executable by `anon` or
+  `PUBLIC`. The advisor's alternative, an invoker wrapper in `public` over a
+  definer copy in `private`, reaches the same code with the same rights and
+  doubles every function, so it is not done.
+- *Unindexed foreign key* on four composite `(id, user_id)` ownership keys
+  (`social_posts`, `workout_exercises`, `workout_sets`, `workout_heart_rates`):
+  each is already served by a unique index leading with its first column, so a
+  second index would only cost writes.
 - *Unused index* on the group tables: they cover foreign keys on tables still
   small enough to scan.
 - *Leaked password protection*: needs the Pro plan.
