@@ -160,4 +160,13 @@ export const common = {
     backspace: 'Delete the last digit',
     decimalPoint: 'Decimal point',
   },
+
+  /**
+   * A message or comment shown before the server has it. Quiet on purpose: it
+   * replaces a spinner on the send button, and most sends finish in a blink.
+   */
+  delivery: {
+    sending: 'Sending…',
+    failed: 'Not sent. Tap to retry.',
+  },
 } as const

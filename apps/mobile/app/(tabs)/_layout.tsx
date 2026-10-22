@@ -4,7 +4,14 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useHealthAutoSync, useHealthConnection, useSession, useWorkoutOutbox } from '@/data'
+import {
+  useHealthAutoSync,
+  useHealthConnection,
+  useSession,
+  useUserId,
+  useWorkoutOutbox,
+} from '@/data'
+import { useGroupInviteCount } from '@/data/groups'
 import { useAnalyticsIdentity } from '@/features/analytics'
 import { useReminderSync, useReportLinks } from '@/features/settings'
 import {
@@ -18,6 +25,7 @@ import {
   WatchSync,
   WorkoutEffects,
 } from '@/features/workouts'
+import { usePushRegistration } from '@/lib/push'
 import {
   NAV_BAR_HEIGHT,
   NavBar,
@@ -42,8 +50,9 @@ import {
 export const unstable_settings = { anchor: 'today' }
 
 /**
- * Five tabs across the full width of a floating bar. Workouts sits beside Today
- * because the two are the daily pair: what went in, and what was done. The add
+ * Five tabs across the full width of a floating bar. Workouts is not one of
+ * them: it is a page, opened from a tile beside the water on Today and from
+ * Me, which gave its place to Groups without crowding the bar to six. The add
  * button floats over Today alone, where logging happens. See `NavBar`.
  *
  * Still the headless `expo-router/ui` tabs rather than a styled navigator,
@@ -73,8 +82,9 @@ export default function TabsLayout() {
 }
 
 function SignedInTabs() {
-  const { t } = useTranslation(['common', 'social'])
+  const { t } = useTranslation(['common', 'social', 'groups'])
   const navFootprint = useNavBarFootprint()
+  const userId = useUserId()
 
   // Here rather than in the root layout: they need a session, and this is the
   // first thing that only renders with one. One rewrites the phone's scheduled
@@ -96,6 +106,10 @@ function SignedInTabs() {
   // Activity of one that is running (`<WorkoutEffects />` below), which matter
   // most when its screen is not the one on top.
   useWorkoutOutbox()
+  // Groups: this phone's push token for nudges and invites, and the invite
+  // count the tab carries.
+  usePushRegistration(userId)
+  const inviteCount = useGroupInviteCount().data ?? 0
 
   return (
     <WithRunningWorkout navFootprint={navFootprint}>
@@ -107,12 +121,17 @@ function SignedInTabs() {
               <NavItem label={t('nav.today')} icon={{ set: 'ui', name: 'home' }} />
             </TabTrigger>
 
-            <TabTrigger name="workouts" href="/workouts" asChild>
-              <NavItem label={t('nav.workouts')} icon={{ set: 'body', name: 'dumbbell' }} />
-            </TabTrigger>
-
             <TabTrigger name="feed" href="/feed" asChild>
               <NavItem label={t('social:feed')} icon={{ set: 'system', name: 'users-group' }} />
+            </TabTrigger>
+
+            <TabTrigger name="groups" href="/groups" asChild>
+              <NavItem
+                label={t('groups:title')}
+                icon={{ set: 'system', name: 'groups' }}
+                badge={inviteCount}
+                badgeLabel={t('groups:invites')}
+              />
             </TabTrigger>
 
             <TabTrigger name="trends" href="/trends" asChild>

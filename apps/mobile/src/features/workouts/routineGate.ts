@@ -7,7 +7,7 @@ import { useToast } from '@/ui'
 
 /**
  * The free tier's routine ceiling, at the three places a routine is made: New
- * on the Workouts tab, "Add to my routines" on a template, and "Save as
+ * on the Workouts page, "Add to my routines" on a template, and "Save as
  * routine" on a saved workout.
  *
  * `allowNew` is the button's check, from the list already on screen, so a free

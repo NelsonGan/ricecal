@@ -113,6 +113,12 @@ export const persistOptions = {
       // Social visibility can be revoked between launches. Never rehydrate it.
       query.queryKey[0] !== 'social' &&
       query.queryKey[0] !== 'photo' &&
+      // Nor other people's meals and messages in a group, which leaving it or
+      // a block takes away. The list of groups and the invite count are the
+      // viewer's own, and are what the tab draws first.
+      (query.queryKey[0] !== 'groups' ||
+        query.queryKey[2] === 'my_groups' ||
+        query.queryKey[2] === 'group_invite_count') &&
       defaultShouldDehydrateQuery(query),
   },
 }

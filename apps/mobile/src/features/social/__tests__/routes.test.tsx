@@ -16,6 +16,7 @@ jest.mock('expo-router', () => ({
 }))
 jest.mock('@/data', () => ({
   useUserId: () => 'viewer',
+  useAvatarUrl: () => ({ data: undefined }),
   useMealPhotoUrl: (path?: string) => mockMealPhotoUrl(path),
   useSettings: () => ({ data: undefined }),
   // No workout is being shared in these meal tests.
@@ -63,7 +64,8 @@ jest.mock('@/data/social', () => ({
 }))
 jest.mock('@/features/social/components', () => {
   return {
-    useSocialTask: () => ({ run: mockRun, isPending: false }),
+    useSocialTask: () => ({ run: mockRun, mutateAsync: mockRun, isPending: false }),
+    SocialPhoto: () => null,
     SocialBar: ({ action }: { action?: React.ReactNode }) =>
       require('react').createElement(require('react-native').View, {}, action),
     // What the composer previews: the name and the figures that will be shared.
@@ -197,25 +199,31 @@ it('retains a failed meal draft only while editing the same source', async () =>
   )
 })
 
-it('starts a new comment draft and request id when the post route changes', async () => {
+it('shows a sent comment at once, keeps a failed one to retry, and starts fresh on another post', async () => {
   mockRun.mockRejectedValue(new Error('offline'))
   mockParams = { id: 'first-post' }
   const view = await render(<PostScreen />)
   const user = userEvent.setup()
   await user.type(screen.getByLabelText('Comment'), 'For the first meal')
   await user.press(screen.getByRole('button', { name: 'Send' }))
+  // The field is free straight away; the comment waits in the thread.
+  expect(screen.getByLabelText('Comment')).toHaveProp('value', '')
+  expect(await screen.findByText('Not sent. Tap to retry.')).toBeOnTheScreen()
   const firstRequest = mockRun.mock.calls[0][0].requestId
-  expect(screen.getByLabelText('Comment')).toHaveProp('value', 'For the first meal')
+
+  // A retry is the same request, so a send that did land is not posted twice.
+  await user.press(screen.getByText('For the first meal'))
+  expect(mockRun.mock.calls[1][0].requestId).toBe(firstRequest)
 
   mockParams = { id: 'second-post' }
   await view.rerender(<PostScreen />)
-  expect(screen.getByLabelText('Comment')).toHaveProp('value', '')
+  expect(screen.queryByText('For the first meal')).toBeNull()
   await user.type(screen.getByLabelText('Comment'), 'For the second meal')
   await user.press(screen.getByRole('button', { name: 'Send' }))
-  expect(mockRun.mock.calls[1][0]).toEqual(
+  expect(mockRun.mock.calls[2][0]).toEqual(
     expect.objectContaining({ postId: 'second-post', body: 'For the second meal' }),
   )
-  expect(mockRun.mock.calls[1][0].requestId).not.toBe(firstRequest)
+  expect(mockRun.mock.calls[2][0].requestId).not.toBe(firstRequest)
 })
 
 it('does not navigate back to a previous source when its pending publication finishes', async () => {

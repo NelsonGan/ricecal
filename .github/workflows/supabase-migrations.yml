@@ -177,3 +177,6 @@ jobs:
 
       - name: Test social moderation and photo authorization
         run: deno test --no-lock --allow-env --config social/deno.json social/ photos/
+
+      - name: Test group push copy
+        run: deno test --no-lock --config groups/deno.json groups/

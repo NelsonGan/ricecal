@@ -55,6 +55,9 @@ const GestureScrollView = Reanimated.createAnimatedComponent(
   RawGestureScrollView,
 ) as unknown as KeyboardAwareScrollViewProps['ScrollViewComponent']
 
+/** Extra room kept between a non-scrolling screen's footer and the keyboard. */
+const KEYBOARD_GAP = 6
+
 /**
  * How far above the footer a focused field is brought to rest: a gap plus the
  * parts of the field nobody measures.
@@ -263,6 +266,21 @@ export function Screen({
   }))
 
   /**
+   * The footer's bottom padding. On a screen that does not scroll the shell
+   * pads the keyboard's full height, which already covers the home indicator,
+   * so the footer's inset padding became a band of canvas between a composer
+   * and the keys. It gives that inset back as the keyboard rises, less a few
+   * points so the field does not touch the keys. Padding rather than a slide
+   * down: a transform left the same band empty above the footer instead.
+   */
+  const restPad = Math.max(insets.bottom + spacing.xs, spacing.md)
+  const footerPad = useAnimatedStyle(() => ({
+    paddingBottom: scroll
+      ? restPad
+      : restPad - Math.max(insets.bottom - KEYBOARD_GAP, 0) * keyboard.progress.value,
+  }))
+
+  /**
    * Bringing the focused field back above the pad, which
    * `KeyboardAwareScrollView` cannot do for a keyboard it is not told about.
    * Minimal rather than centred: a field already in view does not move, and one
@@ -454,13 +472,16 @@ export function Screen({
                 `max` is the floor for a device with NO inset (an older phone,
                 most Android gesture-off bars): the CTA still wants `spacing.md`
                 of real gap under it, which is what the old value always gave. */}
-            <View
-              onLayout={measureFooter}
+            {/* Measured only where it is read (`bottomOffset`, scrolling screens).
+                Elsewhere the padding animates with the keyboard, and measuring
+                it re-rendered the whole screen on every frame. */}
+            <Reanimated.View
+              onLayout={scroll ? measureFooter : undefined}
               className="gap-md bg-canvas px-gutter pt-md"
-              style={{ paddingBottom: Math.max(insets.bottom + spacing.xs, spacing.md) }}
+              style={footerPad}
             >
               {footer}
-            </View>
+            </Reanimated.View>
 
             {/* Canvas continuing below the footer, all the way down the screen.
 

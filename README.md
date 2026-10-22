@@ -23,6 +23,7 @@ project works is here.
 - [What to eat next](#what-to-eat-next)
 - [Food people write](#food-people-write)
 - [The social food feed](#the-social-food-feed)
+- [Groups](#groups)
 - [The diary screen](#the-diary-screen)
 - [Water](#water)
 - [Home screen widgets](#home-screen-widgets)
@@ -899,7 +900,7 @@ same My foods results instead of Today or All foods. `openOwn` and `openCreate`
 sit beside `openPicked`, and the page does not focus its field when any of them
 sent it, since a keyboard would come up under the screen on top.
 
-Five tabs (Today, Workouts, Feed, Trends, Me) on the headless `expo-router/ui`
+Five tabs (Today, Feed, Groups, Trends, Me) on the headless `expo-router/ui`
 Tabs rather than a styled navigator, because `NavBar` and `NavItem` are the
 design system's and a native tab bar cannot be made to look like them.
 
@@ -3077,6 +3078,142 @@ capacity without measurements.
 
 ---
 
+## Groups
+
+Up to ten friends see each other's day of food on one board, so the Groups tab
+is an accountability tool rather than a second feed. It took the tab that
+Workouts had (see [Workouts](#workouts)), and the tab's icon carries the count
+of pending invites.
+
+### The board reads the diary; it copies nothing
+
+A group stores membership, invites, reactions, nudges and chat. It never stores a
+meal. `group_board` (in `schemas/97_groups.sql`) reads each member's entries for the
+day from `food_log_details` by owner and date, so an edited portion, a deleted
+entry or a new photo shows on every board at once, and leaving a group takes
+nothing with it. The function is a definer function that checks membership
+itself: `food_logs` RLS stays owner-only, because widening it for groups would
+widen it for everything. What it returns is the board's narrow set of fields,
+never a note, a goal or a body measurement.
+
+Every group table is closed to clients (`revoke all`, RLS on). Reads and writes
+are RPCs: `my_groups`, `my_group_invites`, `group_invite_count`,
+`public_groups`, `group_board`, `group_messages`, `group_details`, and the write
+functions beside them in `51_groups.sql`. Each answers jsonb shaped for one
+screen; `src/data/groups.ts` types it by hand. The board answers for the last
+sixty days and no further, so joining a public group does not open a stranger's
+whole diary history.
+
+A block holds inside a group. The two people are left off each other's board,
+food and all, and neither can react to, nudge or push the other. Their messages
+are hidden from each other. Joining a group the other is in stays allowed, so a
+refusal cannot reveal the block.
+
+Only the list of groups and the invite count are written to the persisted query
+cache (`lib/query.ts`). Boards, chats and settings are other people's meals and
+words, which leaving a group or a block must take away, so they stay in memory
+and are dropped a few minutes after leaving the screen.
+
+### Breakfast, lunch and dinner come from the person's own clock
+
+The diary has no meal column (it was removed, see `30_food_logs.sql`), so the
+board places an entry by when it was eaten, against that member's own
+`meal_times`: the midpoints between their breakfast, lunch and dinner times split
+the day, so someone who lunches at 14:30 is not told their 11:00 plate was
+breakfast. Anything before 04:00, or logged back onto the day before, is dinner.
+Snacks join the nearest meal. When the time is wrong for what the food was, the
+owner moves it from the meal sheet; that sets `food_logs.board_meal`, which is on
+the entry, so the move holds in every group they are in. Several foods in one
+meal share a tile and swipe sideways inside it.
+
+### Reactions, nudges and chat
+
+- **Likes and dislikes** belong to an entry and a person (`group_reactions`), not
+  to a group: a friend in two groups has one opinion of a plate. A board counts
+  only its own members' reactions. Deleting the entry deletes them. Nobody
+  reacts to their own food.
+- **A nudge** is for an empty meal of a member whose own time for that meal
+  passed half an hour ago, on their today. The first nudge closes that meal for
+  everyone in the group for an hour (`group_nudges`), and the tile says who
+  nudged. Past days cannot be nudged.
+- **Chat** is one thread per day page, so it stays about that day's food. A
+  message can be deleted by its author, reported (hidden from the reporter at
+  once, from everyone at three reports) or its author blocked, which follows the
+  rule that anything one user writes for another needs a report and a block.
+  The unread count on the chat bar covers the whole group since the member last
+  opened its chat, since opening it is what clears it. It is counted to 100
+  and no further, so a member who never opens the chat does not have the whole
+  history read on every board poll.
+- **A public group's name** is read by strangers, so it can be reported too, by a
+  long press in the public list: it leaves the reporter's list at once and
+  everyone's at three reports. Renaming the group clears the reports; saving
+  the same name again does not.
+
+### Membership
+
+Ten members, at most twenty groups a person, enforced by a trigger that locks
+the group row so two people cannot take the tenth seat together.
+`groups.member_count` is kept by the same triggers, so the cap, the lists and the
+public ranking read one column instead of counting rows. A full group
+withdraws its pending invites. Private groups are invite only; public groups are
+listed (fullest first) and anyone can join. An invite takes a handle, with or
+without its `@`, or an email address, which only finds an account that already
+exists. A handle that finds nobody says so, since handles are public; an email
+answers the same whatever is behind it, down to the id it returns (a made-up
+one when nobody was found), so the field cannot be used to learn whether an
+address has an account. Someone blocked in either direction reads as nobody.
+Members see only the pending invites they sent themselves, and of those only
+the ones sent by handle (`group_invites.by_email`): an email invite listed would
+name whoever owns the address. The leader renames
+the group, switches it public or private, and removes members. A leader with
+company must name a successor to leave; the last member out deletes the group,
+and a deleted account hands its groups on through the same trigger.
+
+### The tab reopens on the last board
+
+Most people are in one group, so the tab goes straight back to the board it was
+on after a relaunch (`features/groups/store.ts`, kept per account in MMKV) until
+they tap back to the list. A group left elsewhere falls back to the list once
+`my_groups` has loaded. Days change by swiping the board or with the week strip
+under the header, the same strip Today uses, limited to the board's sixty days;
+each follows the other. Only the day on screen refreshes, every 30 seconds; the
+days either side are fetched once so a swipe lands on a drawn board. The chat
+refreshes every 5 seconds while open, and the invite count every five minutes
+and whenever the tab is shown, since an invite also arrives as a push. There is
+no realtime channel in this app. The pager follows the selected date rather than
+a position, so midnight passing under an open board does not move it a day.
+
+### Push: the app's first
+
+Nudges and invites are the only notifications a server sends. The phone hands
+its Expo push token to `register_push_token` on each launch where notifications
+are already allowed, and asks for permission when someone creates or joins a
+group, never at launch. The nudge or invite RPC writes first and returns an id;
+the app then calls the `groups` edge function with it, which asks Postgres for
+the recipient's devices (`group_push_targets`, service role only), marks the row
+sent so a retried call sends nothing, and posts to Expo in the recipient's
+language. A failed push costs the push and nothing else. Tokens Expo reports as
+`DeviceNotRegistered` are forgotten. Muting nudges is per group, in its settings;
+invites always arrive. A tap opens the Groups tab, on the group's board for a
+nudge and on the list for an invite.
+
+A simulator debug build gets a sandbox APNs token, which Expo's production
+credentials reject (`BadDeviceToken` in the receipt). Delivery is tested on a
+device build; on a simulator, `xcrun simctl push` with a payload whose `body`
+carries `{"kind":"group","groupId":…}` exercises the banner and the tap.
+
+### Photos
+
+A member's meal photo is signed for a fellow member through the social read
+path: `social_photo_claims` also returns diary photos of anyone the caller shares
+a group with, from the last sixty days (the pager's reach), unless either has
+blocked the other. The owner is read from the key (`meals/<owner>/…`, which the
+photos function checks again), so the lookup goes through the diary's owner index
+instead of scanning `food_logs` for the key on every feed photo. Those photos have no recorded ETag, so each signature costs
+the signer a HEAD on R2. The viewer's own photos are signed as their own.
+
+---
+
 ## The diary screen
 
 A week strip above the ring, Monday to Sunday, paged back a year, one page per
@@ -3785,13 +3922,17 @@ separate maintenance decision because it locks and rewrites the table.
 
 ## Workouts
 
-The second tab, between Today and the feed: gym sessions logged set by set,
-the way Hevy and Strong do it, plus the routines they start from and
-the records they set. Today is what went in; Workouts is what was done, which is
-why the two sit side by side.
+Gym sessions logged set by set, the way Hevy and Strong do it, plus the
+routines they start from and the records they set. Today is what went in;
+Workouts is what was done. It was the second tab until Groups needed the room;
+now it is a page, opened from a small tile beside the water card on Today and
+from the first row of Settings on Me. Its URL stays `/workouts`, so the Live
+Activity, the watch and old notification links still land on it. The minimised
+bar of a running workout floats over the tabs only; the page has its own Resume
+button.
 
 ```
-app/(tabs)/workouts.tsx       streak, start button, routines, history, and a
+app/workouts.tsx              streak, start button, routines, history, and a
                               month calendar view
 app/workout/active.tsx        the logger
 app/workout/finish.tsx        name, notes, start and end times, save
@@ -4130,7 +4271,7 @@ The logger shows the burn so far along the foot of its figures card, beside a
 watch's heart rate, under a hairline in the same white card (a tinted band read
 as a second card): one quiet line by default, since the sets are what the
 screen is for, and opened in full with a tap (the choice is kept per phone in
-`bodyFiguresOpen`). The history cards on the Workouts tab show the saved burn
+`bodyFiguresOpen`). The history cards on the Workouts page show the saved burn
 as a chip beside the duration, whether or not Health counted it, since that
 list is a record of training rather than the budget, the finish screen shows what
 will be saved, and the save records the same number. While the Apple Watch app
@@ -4218,12 +4359,12 @@ reason.
 
 While a workout runs, the lock screen and the Dynamic Island show its clock,
 its name, sets done, the next set, and the rest countdown with a bar. Tapping it
-opens the logger (by way of the Workouts tab, below), not through
+opens the logger (by way of the Workouts page, below), not through
 `ricecal://widget/...`, which is how a home-screen widget tap is counted.
 
 - **A tap opens `ricecal://workout/resume`**, which `app/+native-intent.tsx`
   rewrites: with the app running, to the logger; on a cold launch, to
-  `/workouts?resume=1`, and the Workouts tab pushes the logger once it has
+  `/workouts?resume=1`, and the Workouts page pushes the logger once it has
   mounted (once per launch). iOS often kills the app while the phone is locked
   between sets, and a cold launch straight at `/workout/active` built a stack
   with the logger and nothing under it: minimise went nowhere, and the tabs
@@ -5379,7 +5520,8 @@ sides can see them.
 
 ### Reminders
 
-**All local.** A meal reminder is "every day at 08:00 in the user's own
+**All local.** (Group nudges and invites are pushed by a server; see
+[Groups](#groups).) A meal reminder is "every day at 08:00 in the user's own
 timezone", using Expo's `DAILY` trigger on both platforms. `CALENDAR` is
 iOS-only: Android rejects it and stops scheduling the remaining reminders. No
 server, no push token, nothing to deliver if the phone is offline at breakfast.
@@ -5903,13 +6045,14 @@ events, 815 weekly users, 338 installs) ×4.3.
 | --- | --- | --- |
 | The 48 decision events | 230,000 | Mixpanel's week minus its SDK events, ×4.3. `Log Sheet Opened`, `Food Searched`, `Meal Logged` and `Food Picked` are three quarters of it |
 | Workout events (`Workout Started`, `Finished`, `Discarded`, `Routine Saved`, `Workouts Imported`) | 4,000 | New with the Workouts tab, so no history: about 60 workouts a day at launch, each a start and an end, plus routine saves. An import is one event however many workouts it brings |
+| Groups (`Group Created`, `Joined`, `Invite Sent`, `Nudge Sent`, `Reaction Set`, `Message Sent`) | 9,000 | New with the Groups tab, so no history: assumes 300 people in groups, each reacting or chatting about once a day, plus rare creates, joins, invites and nudges (a nudge is capped by its hourly cooldown per meal) |
 | News (`Announcement Shown`, `CTA Tapped`, `Dismissed`, `Auto Post Toggled`) | 3,000 | One launch card per account per announcement (~1,500 monthly accounts, a shown and a close each), plus the News list and the rare switch on Edit profile |
 | `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
 | `First App Open` | 1,500 | ~340 installs a week |
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
-| **Total** | **~257,000 (26%)** | Room for four times today's audience |
+| **Total** | **~266,000 (27%)** | Room for three and a half times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -5934,10 +6077,10 @@ eligible for delivery; its presence here is not proof of ingestion or billing.
 
 | Surface / operation | Definitions | Destinations / counting rule |
 | --- | --- | --- |
-| Native app custom events | 59 | All 59 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
+| Native app custom events | 65 | All 65 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
 | Website decisions | 6 | Same PostHog project (page views as `$pageview`); five namespaced GA4 events plus manually managed `page_view` in the shared property |
 | Native screen views | 0 | No `$screen` or `screen_view` emitter; Firebase automatic screen reporting is disabled. Session replay shows navigation |
-| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 59 custom app definitions |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 65 custom app definitions |
 | Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
 | Per-install engagement events | 2 | `First App Open` once per install and `Daily App Open` once per local day; every other event is repeatable product use |
 
@@ -5980,7 +6123,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Health Connected | ricecal_health_connected | provider: string; granted: boolean; days: number | `src/data/health-sync.ts` | Connection/permission flow returns; each successful flow result, including granted false. Background health sync is excluded. |
 | Health Disconnected | ricecal_health_disconnected | provider: string | `src/data/activity.ts` | Health disconnect mutation succeeds; each success. |
 | Reminder Toggled | ricecal_reminder_toggled | meal: string; enabled: boolean | `src/data/settings.ts` | Meal reminder setting mutation succeeds; each successful write. |
-| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' | `src/features/settings/useReportLinks.ts` | Recognized weekly/monthly report notification response is handled; each tap. Cold-launch response is cleared after reading; meal reminders are excluded. |
+| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' &#124; 'group_nudge' &#124; 'group_invite' | `src/features/settings/useReportLinks.ts` | Recognized weekly/monthly report or group push response is handled; each tap. Cold-launch response is cleared after reading; meal reminders are excluded. |
 | Weight Logged | ricecal_weight_logged | none | `src/data/weight.ts` | Manual weight-log write succeeds; each success, without its value. Health-imported readings are excluded. |
 | Recipe Saved | ricecal_recipe_saved | is_new: boolean; ingredients: number; servings: number | `src/data/recipes.ts` | Recipe save succeeds; each new/edit save, with ingredient/serving counts only. |
 | Recipe Drafted | ricecal_recipe_drafted | source: 'photo' &#124; 'text'; outcome: 'drafted' &#124; 'empty' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled' | `src/data/recipes.ts` | Photo/text drafting reaches its outcome; each attempt, including refusals, empty and failure. It does not prove a recipe was saved. |
@@ -5990,6 +6133,12 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Author Blocked | ricecal_author_blocked | none | `src/data/moderation.ts` | Blocking an author succeeds; each success, without the author identity. |
 | Review Opened | ricecal_review_opened | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Review period resolves; once per resolved period in a mounted route. Locked reviews count before redirecting; this is not a read-completion event. |
 | Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Card share helper reports sent; each card send. Android share intent cannot confirm completion. |
+| Group Created | ricecal_group_created | visibility: 'private' &#124; 'public' | `src/features/groups/Home.tsx` | `create_group` returned a group id; each group made. |
+| Group Joined | ricecal_group_joined | via: 'invite' &#124; 'public' | `src/features/groups/Home.tsx` | `respond_to_group_invite` with accept, or `join_group` from the public list, returned; each join. Declines send nothing. |
+| Group Invite Sent | ricecal_group_invite_sent | by: 'handle' &#124; 'email' | `src/features/groups/InviteSheet.tsx` | `invite_to_group` answered; each invite. An email counts whether or not it found an account, since the app cannot tell; a handle that finds nobody sends nothing; the push is separate and best effort. |
+| Group Nudge Sent | ricecal_group_nudge_sent | meal: 'breakfast' &#124; 'lunch' &#124; 'dinner' | `src/features/groups/Board.tsx` | `nudge_group_member` accepted the nudge; each nudge. A nudge refused for the hourly cooldown sends nothing. |
+| Group Reaction Set | ricecal_group_reaction_set | reaction: 'like' &#124; 'dislike' | `src/features/groups/MealSheet.tsx` | A like or dislike tapped on a member's food; each set, before the write settles. Clearing a reaction sends nothing. |
+| Group Message Sent | ricecal_group_message_sent | none | `src/features/groups/Chat.tsx` | `send_group_message` returned; each message. Never carries the text. |
 | Meal Shared | ricecal_meal_shared | picture: 'photo' &#124; 'drawing' | `app/log/food/[id].tsx` | Meal picture share helper reports sent; each send. Android share intent cannot confirm completion. |
 | Workout Started | ricecal_workout_started | source: WorkoutSource; exercises: number | `src/features/workouts/start.tsx` | A workout is opened on the logger from empty, a routine, a template, or a past workout repeated; once per start, including one that is later discarded. `source: past` appears only in data from builds that still had "Log a past workout". |
 | Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `src/features/workouts/WorkoutForm.tsx`<br>`app/workout/finish.tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
@@ -6024,7 +6173,7 @@ that instant.
 
 | Contract | PostHog | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 59 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 65 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
@@ -6077,6 +6226,7 @@ user text. Extend the source type and these tables together when its domain chan
 | `cta` / `AnnouncementCta` | `edit_profile`, `personalisation` | Where a page's button leads, named for analytics; a tap, not a changed setting |
 | Announcement `via` | `done` ("Got it" on the last page), `close` (cross, scrim or back gesture) | Closing without a page's button |
 | Announcement `page` | The page, from 1, that the button was tapped or the card closed on | How far people read is `Dismissed` broken down by `page`; `done` is always the last page |
+| Group `visibility`, `via`, `by`, `meal`, `reaction` | `private`/`public`; `invite`/`public`; `handle`/`email` (an email address typed into the invite field); `breakfast`/`lunch`/`dinner` (the board column, not the diary's `Meal`); `like`/`dislike` | `src/lib/analytics/events.ts`; never a group name, a handle, an address, a food or a message |
 | Auto post `kind`, `enabled` | `foods` or `workouts`; the new switch value | Edit profile switches only; onboarding's default and the announcement's switch-on send nothing |
 
 ### Instrumented surfaces, paywalls and frequency gates
@@ -6100,6 +6250,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Automatic rating checkpoints | Crossing each 15-meal boundary; second unlocked review read, then each fifth read | Gates require five days since install, two since version change, at least 15 meals, three active days, 60 days since last ask and no ask on this version |
 | Manual rating request | App rating question requested manually | Bypasses automatic gates. Answers still update the cooldown; shown/answered is not a published store rating |
 | News announcements | `Announcement Shown`, then `CTA Tapped` or `Dismissed`, by `source` | Counted from `onShow`. `launch` is the newest card, once per account unless its seen write fails (then it is shown again on a later launch); `settings` repeats per open. The launch card skips the launch the tour is offered on, and the Pro nudge skips any launch with one due |
+| Groups | Created, joined, invite sent, nudge sent, reaction set, message sent | Each fires after the server accepted the write, except Reaction Set, which fires on the tap. Board views, day swipes and chat reads are not tracked |
 | Auto post switches | `Auto Post Toggled` by `kind` and `enabled` | Only the Edit profile switches. The onboarding default and the announcement's switch-on are writes, not events |
 
 ### Product reports and funnel definitions
@@ -6430,7 +6581,7 @@ includes the optimistic camera/describe insert; it is not a persisted-meal total
 Investigate a new name, a sharp volume change, unexpected free-text properties,
 missing identity, or purchase events from a second producer.
 
-Automated checks: the inventory test (`inventory.test.ts`) checks all 59 names,
+Automated checks: the inventory test (`inventory.test.ts`) checks all 65 names,
 exact GA4 mappings, typed payloads, source-file existence and a nonempty
 trigger column, and forbids app-side settled revenue fields; `engagement.test.ts`
 covers install detection and the once-a-day claim; `posthog.test.ts` covers the

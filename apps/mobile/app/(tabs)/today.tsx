@@ -1,6 +1,6 @@
 import { onlineManager } from '@tanstack/react-query'
 import { format, parseISO, subDays } from 'date-fns'
-import { useIsFocused, useRouter } from 'expo-router'
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWindowDimensions, View } from 'react-native'
@@ -14,6 +14,7 @@ import {
   usePendingSnaps,
   useRemoveEntry,
   useSelectedDate,
+  useSession,
   useSettings,
   useStreak,
   useTargets,
@@ -32,7 +33,7 @@ import { AnnouncementCard, useAnnouncementOffer } from '@/features/news'
 import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
-import { WorkoutItem } from '@/features/workouts'
+import { openLogger, useHasActiveWorkout, WorkoutItem, WorkoutsTile } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
 import { useOnline } from '@/lib/online'
@@ -79,8 +80,31 @@ export default function TodayScreen() {
     <>
       <TodayContent />
       <LaunchOffers />
+      <ResumeWorkout />
     </>
   )
+}
+
+/** Whether this launch's Live Activity resume has been answered. */
+let resumedThisLaunch = false
+
+/**
+ * `?resume=1` is a cold launch from the Live Activity (see
+ * `app/+native-intent.tsx`): the logger is pushed from here, once the tabs have
+ * mounted, so they are under it. Once per launch, because the param stays on
+ * the route and coming back to Today must not push it again.
+ */
+function ResumeWorkout() {
+  const router = useRouter()
+  const { userId } = useSession()
+  const running = useHasActiveWorkout(userId)
+  const { resume } = useLocalSearchParams<{ resume?: string }>()
+  useEffect(() => {
+    if (!resume || resumedThisLaunch) return
+    resumedThisLaunch = true
+    if (running) openLogger(router)
+  }, [resume, running, router])
+  return null
 }
 
 /**
@@ -616,13 +640,21 @@ function TodayContent() {
           throughout and only the level waits. That is why the placeholder is
           inside the card: nothing changes height, and the figure beside the
           heading is simply absent until there is one. */}
-          <WaterCard
-            date={selectedDate}
-            ml={day.waterMl}
-            goalMl={waterGoal}
-            loading={loading}
-            paused={!focused}
-          />
+          {/* Workouts left the tab bar for Groups, and comes back here as a
+          small tile sharing the water's row: on the screen opened every day,
+          beside the other thing done through the day, without a row of its
+          own. Me has a row for it too. */}
+          <View className="flex-row items-stretch gap-3">
+            <WaterCard
+              className="flex-1"
+              date={selectedDate}
+              ml={day.waterMl}
+              goalMl={waterGoal}
+              loading={loading}
+              paused={!focused}
+            />
+            <WorkoutsTile />
+          </View>
 
           {/* Two rows of placeholder rather than one, because one reads as a card
           with a single meal in it and the point of the block is that nobody yet

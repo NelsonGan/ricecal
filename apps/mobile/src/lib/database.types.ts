@@ -442,6 +442,7 @@ export type Database = {
           base_protein_g: number
           base_sodium_mg: number | null
           base_sugar_g: number | null
+          board_meal: Database['public']['Enums']['group_meal'] | null
           created_at: string
           display_label: string | null
           food_id: string | null
@@ -482,6 +483,7 @@ export type Database = {
           base_protein_g: number
           base_sodium_mg?: number | null
           base_sugar_g?: number | null
+          board_meal?: Database['public']['Enums']['group_meal'] | null
           created_at?: string
           display_label?: string | null
           food_id?: string | null
@@ -522,6 +524,7 @@ export type Database = {
           base_protein_g?: number
           base_sodium_mg?: number | null
           base_sugar_g?: number | null
+          board_meal?: Database['public']['Enums']['group_meal'] | null
           created_at?: string
           display_label?: string | null
           food_id?: string | null
@@ -663,6 +666,487 @@ export type Database = {
           scan_id?: string | null
         }
         Relationships: []
+      }
+      group_invites: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          invitee_id: string
+          inviter_id: string
+          pushed_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          invitee_id: string
+          inviter_id: string
+          pushed_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          invitee_id?: string
+          inviter_id?: string
+          pushed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'group_invites_group_id_fkey'
+            columns: ['group_id']
+            isOneToOne: false
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_invites_invitee_id_fkey'
+            columns: ['invitee_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_invites_invitee_id_fkey'
+            columns: ['invitee_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_invites_invitee_id_fkey'
+            columns: ['invitee_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_invites_inviter_id_fkey'
+            columns: ['inviter_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_invites_inviter_id_fkey'
+            columns: ['inviter_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_invites_inviter_id_fkey'
+            columns: ['inviter_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          board_order: string[]
+          chat_read_at: string
+          group_id: string
+          joined_at: string
+          notify: boolean
+          user_id: string
+        }
+        Insert: {
+          board_order?: string[]
+          chat_read_at?: string
+          group_id: string
+          joined_at?: string
+          notify?: boolean
+          user_id: string
+        }
+        Update: {
+          board_order?: string[]
+          chat_read_at?: string
+          group_id?: string
+          joined_at?: string
+          notify?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'group_members_group_id_fkey'
+            columns: ['group_id']
+            isOneToOne: false
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_members_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_members_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_members_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
+      group_message_reports: {
+        Row: {
+          created_at: string
+          message_id: string
+          reporter_id: string
+        }
+        Insert: {
+          created_at?: string
+          message_id: string
+          reporter_id: string
+        }
+        Update: {
+          created_at?: string
+          message_id?: string
+          reporter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'group_message_reports_message_id_fkey'
+            columns: ['message_id']
+            isOneToOne: false
+            referencedRelation: 'group_messages'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_message_reports_reporter_id_fkey'
+            columns: ['reporter_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_message_reports_reporter_id_fkey'
+            columns: ['reporter_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_message_reports_reporter_id_fkey'
+            columns: ['reporter_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
+      group_messages: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          day: string
+          group_id: string
+          id: string
+          quarantined: boolean
+          request_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          day: string
+          group_id: string
+          id?: string
+          quarantined?: boolean
+          request_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          day?: string
+          group_id?: string
+          id?: string
+          quarantined?: boolean
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'group_messages_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_messages_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_messages_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_messages_group_id_fkey'
+            columns: ['group_id']
+            isOneToOne: false
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      group_nudges: {
+        Row: {
+          created_at: string
+          day: string
+          group_id: string
+          id: string
+          meal: Database['public']['Enums']['group_meal']
+          nudger_id: string
+          pushed_at: string | null
+          target_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          group_id: string
+          id?: string
+          meal: Database['public']['Enums']['group_meal']
+          nudger_id: string
+          pushed_at?: string | null
+          target_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          group_id?: string
+          id?: string
+          meal?: Database['public']['Enums']['group_meal']
+          nudger_id?: string
+          pushed_at?: string | null
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'group_nudges_group_id_fkey'
+            columns: ['group_id']
+            isOneToOne: false
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_nudges_nudger_id_fkey'
+            columns: ['nudger_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_nudges_nudger_id_fkey'
+            columns: ['nudger_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_nudges_nudger_id_fkey'
+            columns: ['nudger_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_nudges_target_id_fkey'
+            columns: ['target_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_nudges_target_id_fkey'
+            columns: ['target_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_nudges_target_id_fkey'
+            columns: ['target_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
+      group_reactions: {
+        Row: {
+          entry_id: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          entry_id: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          entry_id?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'group_reactions_entry_id_fkey'
+            columns: ['entry_id']
+            isOneToOne: false
+            referencedRelation: 'food_log_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_reactions_entry_id_fkey'
+            columns: ['entry_id']
+            isOneToOne: false
+            referencedRelation: 'food_logs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_reactions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_reactions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_reactions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
+      group_reports: {
+        Row: {
+          created_at: string
+          group_id: string
+          reporter_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          reporter_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          reporter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'group_reports_group_id_fkey'
+            columns: ['group_id']
+            isOneToOne: false
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_reports_reporter_id_fkey'
+            columns: ['reporter_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_reports_reporter_id_fkey'
+            columns: ['reporter_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_reports_reporter_id_fkey'
+            columns: ['reporter_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          icon_name: string
+          id: string
+          is_public: boolean
+          leader_id: string | null
+          member_count: number
+          name: string
+          quarantined: boolean
+        }
+        Insert: {
+          created_at?: string
+          icon_name?: string
+          id?: string
+          is_public?: boolean
+          leader_id?: string | null
+          member_count?: number
+          name: string
+          quarantined?: boolean
+        }
+        Update: {
+          created_at?: string
+          icon_name?: string
+          id?: string
+          is_public?: boolean
+          leader_id?: string | null
+          member_count?: number
+          name?: string
+          quarantined?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'groups_leader_id_fkey'
+            columns: ['leader_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'groups_leader_id_fkey'
+            columns: ['leader_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'groups_leader_id_fkey'
+            columns: ['leader_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
       }
       health_connections: {
         Row: {
@@ -843,6 +1327,49 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      push_tokens: {
+        Row: {
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          platform: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'push_tokens_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'push_tokens_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'push_tokens_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
       }
       recipe_ingredients: {
         Row: {
@@ -2789,6 +3316,10 @@ export type Database = {
           protein_g: number
         }[]
       }
+      create_group: {
+        Args: { p_icon_name: string; p_is_public: boolean; p_name: string }
+        Returns: string
+      }
       create_social_comment: {
         Args: { p_body: string; p_post_id: string; p_request_id: string }
         Returns: string
@@ -2829,6 +3360,10 @@ export type Database = {
           icon_set: Database['public']['Enums']['icon_set']
           photo_path: string
         }[]
+      }
+      delete_group_message: {
+        Args: { p_message_id: string }
+        Returns: undefined
       }
       delete_social_comment: { Args: { p_id: string }; Returns: undefined }
       delete_social_post: { Args: { p_id: string }; Returns: undefined }
@@ -2900,6 +3435,7 @@ export type Database = {
         Args: { p_food_log_id: string }
         Returns: undefined
       }
+      forget_push_tokens: { Args: { p_tokens: string[] }; Returns: undefined }
       free_daily_scans: { Args: never; Returns: number }
       free_photo_retention_days: { Args: never; Returns: number }
       free_recipe_limit: { Args: never; Returns: number }
@@ -2990,10 +3526,41 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      group_board: {
+        Args: { p_day: string; p_group_id: string }
+        Returns: Json
+      }
+      group_details: { Args: { p_group_id: string }; Returns: Json }
+      group_invite_count: { Args: never; Returns: number }
+      group_messages: {
+        Args: { p_day: string; p_group_id: string }
+        Returns: Json
+      }
+      group_push_targets: {
+        Args: { p_caller: string; p_id: string; p_kind: string }
+        Returns: {
+          actor_name: string
+          day: string
+          group_id: string
+          group_name: string
+          language: string
+          meal: Database['public']['Enums']['group_meal']
+          token: string
+        }[]
+      }
       gtin14: { Args: { code: string }; Returns: string }
       has_account_password: { Args: never; Returns: boolean }
+      invite_to_group: {
+        Args: { p_group_id: string; p_target: string }
+        Returns: string
+      }
       is_entitled: { Args: { p_user: string }; Returns: boolean }
+      join_group: { Args: { p_group_id: string }; Returns: undefined }
       lapsed_photo_grace_days: { Args: never; Returns: number }
+      leave_group: {
+        Args: { p_group_id: string; p_new_leader?: string }
+        Returns: undefined
+      }
       local_today: { Args: { p_user_id?: string }; Returns: string }
       logging_streak: {
         Args: { p_user_id?: string }
@@ -3002,13 +3569,29 @@ export type Database = {
           current_days: number
         }[]
       }
+      mark_group_chat_read: { Args: { p_group_id: string }; Returns: undefined }
       mark_social_notifications_read: {
         Args: { p_ids: string[] }
         Returns: undefined
       }
+      my_group_invites: { Args: never; Returns: Json }
+      my_groups: { Args: never; Returns: Json }
+      nudge_group_member: {
+        Args: {
+          p_day: string
+          p_group_id: string
+          p_meal: Database['public']['Enums']['group_meal']
+          p_target_id: string
+        }
+        Returns: string
+      }
       pro_daily_scans: { Args: never; Returns: number }
       prune_activity_hours: {
         Args: { p_asof?: string; p_limit?: number }
+        Returns: Json
+      }
+      public_groups: {
+        Args: { p_limit?: number; p_query?: string }
         Returns: Json
       }
       recipe_mark_for_review: {
@@ -3017,6 +3600,14 @@ export type Database = {
       }
       recipe_review_hourly_limit: { Args: never; Returns: number }
       record_social_photo_etags: { Args: { p_etags: Json }; Returns: number }
+      register_push_token: {
+        Args: { p_platform: string; p_token: string }
+        Returns: undefined
+      }
+      remove_group_member: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: undefined
+      }
       remove_ingredient: {
         Args: { p_ingredient_id: string }
         Returns: undefined
@@ -3033,6 +3624,11 @@ export type Database = {
           p_user_id?: string
         }
         Returns: number
+      }
+      report_group: { Args: { p_group_id: string }; Returns: undefined }
+      report_group_message: {
+        Args: { p_message_id: string }
+        Returns: undefined
       }
       report_social_content: {
         Args: {
@@ -3053,6 +3649,10 @@ export type Database = {
           p_status: Database['public']['Enums']['recipe_review']
         }
         Returns: boolean
+      }
+      respond_to_group_invite: {
+        Args: { p_accept: boolean; p_group_id: string }
+        Returns: string
       }
       review_days: {
         Args: { p_from: string; p_to: string; p_user_id?: string }
@@ -3223,6 +3823,30 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      send_group_message: {
+        Args: {
+          p_body: string
+          p_day: string
+          p_group_id: string
+          p_request_id: string
+        }
+        Returns: string
+      }
+      set_entry_board_meal: {
+        Args: {
+          p_entry_id: string
+          p_meal: Database['public']['Enums']['group_meal']
+        }
+        Returns: undefined
+      }
+      set_group_preferences: {
+        Args: { p_board_order: string[]; p_group_id: string; p_notify: boolean }
+        Returns: undefined
+      }
+      set_group_reaction: {
+        Args: { p_entry_id: string; p_value: number }
+        Returns: undefined
       }
       set_ingredient_quantity: {
         Args: { p_ingredient_id: string; p_quantity: number }
@@ -3662,6 +4286,16 @@ export type Database = {
           weight_peak_on: string
         }[]
       }
+      unregister_push_token: { Args: { p_token: string }; Returns: undefined }
+      update_group: {
+        Args: {
+          p_group_id: string
+          p_icon_name: string
+          p_is_public: boolean
+          p_name: string
+        }
+        Returns: undefined
+      }
       update_social_comment: {
         Args: { p_body: string; p_id: string }
         Returns: string
@@ -3753,6 +4387,7 @@ export type Database = {
         | 'distance_duration'
         | 'weight_distance'
       food_place: 'mamak' | 'kopitiam' | 'hawker' | 'packaged' | 'home'
+      group_meal: 'breakfast' | 'lunch' | 'dinner'
       health_provider: 'apple_health' | 'health_connect' | 'demo'
       icon_set: 'body' | 'dishes' | 'food' | 'system' | 'ui'
       meal: 'breakfast' | 'lunch' | 'dinner' | 'snack'
@@ -3910,6 +4545,7 @@ export const Constants = {
         'weight_distance',
       ],
       food_place: ['mamak', 'kopitiam', 'hawker', 'packaged', 'home'],
+      group_meal: ['breakfast', 'lunch', 'dinner'],
       health_provider: ['apple_health', 'health_connect', 'demo'],
       icon_set: ['body', 'dishes', 'food', 'system', 'ui'],
       meal: ['breakfast', 'lunch', 'dinner', 'snack'],
