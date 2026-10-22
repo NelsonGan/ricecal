@@ -99,7 +99,6 @@ export function Card({
         !flush && 'p-card',
         contentClassName,
       )}
-      haptics={false}
       {...rest}
     >
       {hasHeader ? (
