@@ -248,8 +248,26 @@ export function useGroupMessages(groupId: string, day: string, open: boolean, li
       )) as unknown as GroupMessage[],
     enabled: open,
     refetchInterval: open && !live ? 5_000 : false,
+    // Coming back to the app or the network rejoins the channel, and the join
+    // refetches; doing it here as well read the thread twice.
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     ...SHORT,
   })
+}
+
+/**
+ * The viewer's own message as drawn before the server's list has it. Only the
+ * author's id is read for a row of one's own, to run bubbles together.
+ */
+export function ownMessage(userId: string, id: string, body: string, createdAt: string) {
+  return {
+    id,
+    author: { id: userId, name: '', handle: '', avatar_path: null },
+    body,
+    created_at: createdAt,
+    mine: true,
+  } satisfies GroupMessage
 }
 
 /** The ids a chat broadcast names. The database sends nothing else. */
@@ -263,11 +281,12 @@ function broadcastIds(payload: Record<string, unknown>): string[] {
  * answers whether it is joined, which is what turns the poll off.
  *
  * A broadcast names message ids and nothing more, so a new one is drawn by
- * refetching `group_messages`, where blocks and reports are applied; one
- * already in the thread (the viewer's own, put there when the send answered)
- * costs nothing. A removed one is taken out in place. Each time the channel
- * joins, first or after a drop, the thread is refetched once, since anything
- * sent while it was not listening was never going to be heard.
+ * refetching `group_messages`, where blocks and reports are applied. Nothing
+ * is asked for an id already in the thread, nor while the viewer's own send to
+ * it is on its way, since that send refetches the thread when it lands. A
+ * removed one is taken out in place. Each time the channel joins, first or
+ * after a drop, the thread is read once more, since anything sent while it
+ * was not listening was never going to be heard.
  */
 export function useGroupChatLive(groupId: string, day: string): boolean {
   const userId = useUserId()
@@ -276,10 +295,24 @@ export function useGroupChatLive(groupId: string, day: string): boolean {
   useEffect(() => {
     const key = messagesKey(userId, groupId, day)
     const refetch = () => void client.invalidateQueries({ queryKey: key })
+    const sending = () =>
+      client
+        .getMutationCache()
+        .findAll({ status: 'pending' })
+        .some((mutation) => {
+          const input = mutation.state.variables as GroupAction | undefined
+          return input?.action === 'message' && input.groupId === groupId && input.day === day
+        })
     const stop = listen(`group-chat:${groupId}:${day}`, {
       onLive: (next) => {
         setLive(next)
-        if (next) refetch()
+        if (!next) return
+        // A fetch already on its way may have read the thread before the join.
+        // Restarting it would hold back the first paint, so it lands first.
+        const query = client.getQueryCache().find({ queryKey: key, exact: true })
+        const pending = query?.state.fetchStatus === 'fetching' ? query.promise : undefined
+        if (pending) void pending.then(refetch, refetch)
+        else refetch()
       },
       onEvent: (event, payload) => {
         const ids = broadcastIds(payload)
@@ -292,7 +325,9 @@ export function useGroupChatLive(groupId: string, day: string): boolean {
           )
         } else if (event === 'message') {
           const rows = client.getQueryData<GroupMessage[]>(key)
-          if (!rows || ids.some((id) => !rows.some((row) => row.id === id))) refetch()
+          if (rows && ids.every((id) => rows.some((row) => row.id === id))) return
+          if (sending()) return
+          refetch()
         }
       },
     })
@@ -582,16 +617,7 @@ export function useGroupAction() {
           if (input.action === 'message' && !error && typeof data === 'string') {
             client.setQueryData<GroupMessage[]>(key, (rows) =>
               rows && !rows.some((row) => row.id === data)
-                ? [
-                    ...rows,
-                    {
-                      id: data,
-                      author: { id: userId, name: '', handle: '', avatar_path: null },
-                      body: input.body,
-                      created_at: new Date().toISOString(),
-                      mine: true,
-                    },
-                  ]
+                ? [...rows, ownMessage(userId, data, input.body, new Date().toISOString())]
                 : rows,
             )
           }

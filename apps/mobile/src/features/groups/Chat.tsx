@@ -5,6 +5,7 @@ import { FlatList, Platform, TextInput, View } from 'react-native'
 import { useUserId } from '@/data'
 import {
   type GroupMessage,
+  ownMessage,
   useGroupAction,
   useGroupChatLive,
   useGroupMessages,
@@ -87,11 +88,7 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
   const rows = useMemo<ChatRow[]>(
     () => [
       ...[...outbox.pending].reverse().map((item) => ({
-        id: item.requestId,
-        author: { id: viewer, name: '', handle: '', avatar_path: null },
-        body: item.body,
-        created_at: item.createdAt,
-        mine: true,
+        ...ownMessage(viewer, item.requestId, item.body, item.createdAt),
         outgoing: item,
       })),
       ...[...(messages.data ?? [])].reverse(),

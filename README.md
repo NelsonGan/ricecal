@@ -348,6 +348,7 @@ only emits structure:
 | seed data of any kind | the rows are data, and a diff only emits structure |
 | `create extension` / `drop extension` | the diff engine does not track extensions at all |
 | `cron.schedule(…)` calls | a schedule is a row in `cron.job`, so it is data too |
+| a policy on `realtime.messages` | the table belongs to the Realtime service's schema, which the diff does not compare at all, so it emits neither the policy nor a drop for it; `20261022031315_group_chat_live.sql` restates it from `51_groups.sql` |
 | `ROWS n` on an existing function | the diff compares bodies and arguments, not the planner's row estimate, so changing only the hint emits nothing; a function the migration creates carries it |
 
 Nothing schedules anything here any more, and there is no seed function left
@@ -3220,15 +3221,22 @@ included, still polls.
   once; coming back rejoins. supabase-js otherwise keeps an empty socket for 50
   seconds, which `lib/supabase.ts` cuts to 5.
 - **Catching up.** Each join, first or after a drop, refetches the thread once,
-  since nothing sent while the channel was down will be heard. While it is not
+  since nothing sent while the channel was down will be heard. A fetch already
+  on its way lands first rather than being restarted, which would hold back the
+  first paint, and the query's own refetch on focus and reconnect is off, since
+  both rejoin the channel anyway. A join the policy refuses (a member removed
+  mid-chat) is not retried, and a channel the server closes is rejoined after
+  three seconds. While it is not
   joined the chat polls every 5 seconds as it did before Realtime, which is
   also what an app from before this change keeps doing, untouched. Measured on
   a simulator against the local stack: no requests at all while a joined chat
   sat idle for 20 seconds, and one per message from someone else.
 - **The sender's own message** joins the cached thread the moment
   `send_group_message` answers, so "Sending" clears without waiting for a
-  refetch, and its broadcast then finds the id already there and asks for
-  nothing.
+  refetch. Its broadcast can beat that answer, so a broadcast is ignored while
+  one of the viewer's own sends to the thread is still on its way: the send
+  refetches the thread when it lands, which picks up anything else too. One
+  read per message sent, either way.
 - **pgTAP cannot watch `realtime.messages`.** It is partitioned by day, the
   Realtime server makes the partitions, and CI runs Postgres alone, where
   `realtime.send` would swallow the failure as a warning. `36_groups` replaces

@@ -4,11 +4,12 @@ type FakeChannel = {
   topic: string
   config: unknown
   emit: (event: string, payload: Record<string, unknown>) => void
-  status: (status: string) => void
+  status: (status: string, error?: Error) => void
+  teardown: jest.Mock
 }
 
 const channels: FakeChannel[] = []
-const removals: Array<{ channel: FakeChannel; finish: () => void }> = []
+const removals: Array<{ channel: FakeChannel; finish: () => void; fail: () => void }> = []
 let appStateHandler: ((state: AppStateStatus) => void) | null = null
 const mockDisconnect = jest.fn()
 
@@ -16,12 +17,13 @@ jest.mock('../supabase', () => ({
   supabase: {
     channel: (topic: string, options: { config: unknown }) => {
       let onBroadcast: (message: { event: string; payload: Record<string, unknown> }) => void
-      let onStatus: (status: string) => void
+      let onStatus: (status: string, error?: Error) => void
       const fake = {
         topic: `realtime:${topic}`,
         config: options.config,
         emit: (event: string, payload: Record<string, unknown>) => onBroadcast({ event, payload }),
-        status: (status: string) => onStatus(status),
+        status: (status: string, error?: Error) => onStatus(status, error),
+        teardown: jest.fn(),
         on: (_type: string, _filter: unknown, callback: typeof onBroadcast) => {
           onBroadcast = callback
           return fake
@@ -43,10 +45,20 @@ jest.mock('../supabase', () => ({
             channel.status('CLOSED')
             resolve('ok')
           },
+          // The server answered the leave with an error: still listed.
+          fail: () => resolve('error'),
         })
       }),
     getChannels: () => channels,
-    realtime: { disconnect: () => mockDisconnect() },
+    realtime: {
+      disconnect: () => mockDisconnect(),
+      get channels() {
+        return channels
+      },
+      set channels(next: FakeChannel[]) {
+        channels.splice(0, channels.length, ...next)
+      },
+    },
   },
 }))
 
@@ -158,4 +170,53 @@ it('reports a dropped channel as not live, so the caller can poll', () => {
   channels[0]?.status('SUBSCRIBED')
   channels[0]?.status('CHANNEL_ERROR')
   expect(each.onLive).toHaveBeenLastCalledWith(false)
+})
+
+it('stops trying a topic the policy refuses, until everyone has left it', async () => {
+  const each = listener()
+  const stop = listen('t', each)
+  channels[0]?.status('CHANNEL_ERROR', new Error('Unauthorized: You do not have permissions'))
+  expect(removals).toHaveLength(1)
+  removals[0]?.finish()
+  await settle()
+  expect(channels).toHaveLength(0)
+  expect(each.onLive).not.toHaveBeenCalledWith(true)
+
+  stop()
+  listen('t', listener())
+  expect(channels).toHaveLength(1)
+})
+
+it('rejoins a channel the server closed, after a pause', async () => {
+  jest.useFakeTimers()
+  try {
+    const each = listener()
+    listen('t', each)
+    const first = channels[0]
+    first?.status('SUBSCRIBED')
+    channels.splice(0, 1)
+    first?.status('CLOSED')
+    expect(each.onLive).toHaveBeenLastCalledWith(false)
+    expect(removals).toHaveLength(0)
+    expect(channels).toHaveLength(0)
+    jest.advanceTimersByTime(3_000)
+    expect(channels).toHaveLength(1)
+    channels[0]?.status('SUBSCRIBED')
+    expect(each.onLive).toHaveBeenLastCalledWith(true)
+  } finally {
+    jest.useRealTimers()
+  }
+})
+
+it('does not leave a channel behind when the server refuses the leave', async () => {
+  const stop = listen('t', listener())
+  const first = channels[0]
+  stop()
+  removals[0]?.fail()
+  await settle()
+  expect(first?.teardown).toHaveBeenCalled()
+  expect(channels).toHaveLength(0)
+  expect(mockDisconnect).toHaveBeenCalledTimes(1)
+  listen('t', listener())
+  expect(channels).toHaveLength(1)
 })
