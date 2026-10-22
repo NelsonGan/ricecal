@@ -141,7 +141,7 @@ it("opens a chat push on its thread, over that group's board", async () => {
 
   expect(mockPush.mock.calls.map(([href]) => href)).toEqual([
     'navigate /groups',
-    `navigate ${JSON.stringify({ pathname: '/group/chat', params: { id: 'g1', day: '2026-10-21' } })}`,
+    `navigate ${JSON.stringify({ pathname: '/group/chat', params: { id: 'g1', day: '2026-10-21', reply: '1' } })}`,
   ])
   unmount()
 })

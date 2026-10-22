@@ -6,7 +6,7 @@ import {
   type ReminderCopy,
   rescheduleReminders,
   scheduleNoticeAt,
-  setOpenGroupChat,
+  showingGroupChat,
   whenWorkoutPromptShown,
 } from '@/lib/notifications'
 
@@ -186,11 +186,16 @@ describe('with the app open', () => {
       handler.handleNotification({
         request: { content: { data: { kind: 'group', groupId: 'g1', day, chat: true } } },
       })
-    setOpenGroupChat('g1:2026-10-21')
+    const release = showingGroupChat('g1:2026-10-21')
     expect((await chat('2026-10-21')).shouldShowBanner).toBe(false)
     expect((await chat('2026-10-20')).shouldShowBanner).toBe(true)
-    setOpenGroupChat(null)
-    expect((await chat('2026-10-21')).shouldShowBanner).toBe(true)
+    // Another thread took over before the first let go: the late release
+    // leaves the new one alone.
+    const next = showingGroupChat('g1:2026-10-20')
+    release()
+    expect((await chat('2026-10-20')).shouldShowBanner).toBe(false)
+    next()
+    expect((await chat('2026-10-20')).shouldShowBanner).toBe(true)
   })
 
   it('shows "still training?" unless a logger is open to ask it', async () => {

@@ -3192,14 +3192,18 @@ under an open board does not move it a day.
 ### Live chat
 
 An open chat is the app's one Realtime channel: private, named
-`group-chat:<group>:<day>`, and joined only while that chat, or the board for
-that day, is on screen and the app is in front. The board listens so its chat
-bar's preview and unread count change as a message is sent rather than at the
-next half-minute poll; it rereads `group_board` on each broadcast and on each
-rejoin after the first. The count is the whole group's and the channel is the
-day's, so a message on another day's thread still waits for the poll. The
-board stops listening while the chat covers it, since the count is being read
-away there and a refetch would draw it back. Everything else still polls.
+`group-chat:<group>:<day>`, and joined only while that chat is on screen and the
+app is in front. Everything else still polls.
+
+The board's chat bar does not listen on it. Its count and preview catch up when
+a chat push for the group reaches the open app: the notification handler
+announces it (`lib/groupChatPushes.ts`) and the board rereads every cached day
+of that group, since the count is the whole group's. That push is sent anyway
+(see Push below), so the live count costs no Realtime connection, which the
+free plan caps. A member who muted the group or never allowed notifications
+gets no push and waits for the board's half-minute poll. The board stops
+listening while the chat covers it, since the count is being read away there
+and a refetch would draw it back.
 
 - **Broadcast from the database, not Postgres Changes.** Triggers on
   `group_messages` call `realtime.send` when a message is written, deleted
@@ -3277,8 +3281,9 @@ answers every other member's devices, leaving out anyone blocked either way.
 The push carries the body, so this is where blocks are applied to it, as
 `group_messages` does for the thread. It needs no translated copy: the group is
 the title and "Name: message" the body, as messengers write it. Its `data.chat`
-makes the tap open the thread over that day's board, and no banner shows while
-that same thread is on screen (`setOpenGroupChat`).
+makes the tap open the thread over that day's board with the keyboard up
+(`reply=1`; a chat opened by hand leaves it down), and no banner shows while
+that same thread is on screen (`showingGroupChat`).
 
 Muting is per group, one switch (`group_members.notify`) for nudges and chat
 together, in the group's settings and as the bell at the top right of the chat.

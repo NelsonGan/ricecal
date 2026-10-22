@@ -17,7 +17,7 @@ let mockBoard: GroupBoard
 jest.mock('@/data/groups', () => ({
   ...jest.requireActual('@/data/groups'),
   useGroupBoard: () => ({ data: mockBoard, isError: false, refetch: jest.fn() }),
-  useGroupBoardLive: () => undefined,
+  useGroupBoardPushRefresh: () => undefined,
   useMyGroups: () => ({ data: undefined }),
   useGroupMessages: () => ({ data: [], isLoading: false }),
   useGroupAction: () => ({ mutate: jest.fn(), mutateAsync: jest.fn(), isPending: false }),
