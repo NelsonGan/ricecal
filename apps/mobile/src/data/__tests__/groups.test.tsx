@@ -327,6 +327,49 @@ describe('one thread, a page at a time', () => {
     expect(mergeNewest(held, far)).toEqual({ messages: far, more: true })
   })
 
+  it("keeps one copy of the viewer's own message drawn with a slow clock", () => {
+    const newest = run(100, THREAD_PAGE)
+    // Drawn at send with a clock an hour behind, then fetched with the server's time.
+    const mine = { ...message('m149', true, 40), id: 'mine' }
+    const held = { messages: [...run(90, 10), ...newest.slice(0, -1), mine], more: true }
+    const merged = mergeNewest(held, [
+      ...newest.slice(1),
+      { ...mine, created_at: newest[49]!.created_at },
+    ])
+    expect(merged.messages.filter((row) => row.id === 'mine')).toHaveLength(1)
+  })
+
+  it('orders messages from the same millisecond by the microseconds the server keeps', () => {
+    const at = (id: string, createdAt: string) => ({ ...message(id), created_at: createdAt })
+    const newest = [at('b', '2026-10-21T04:00:00.000900+00:00'), ...run(1, THREAD_PAGE - 1)]
+    // Same millisecond, earlier microsecond, and an id that sorts after: older.
+    const held = { messages: [at('z', '2026-10-21T04:00:00.000100+00:00'), ...newest], more: true }
+    expect(
+      mergeNewest(held, newest)
+        .messages.map((row) => row.id)
+        .slice(0, 2),
+    ).toEqual(['z', 'b'])
+  })
+
+  it('keeps a page that loaded while a refetch was on its way', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, { messages: run(100, THREAD_PAGE), more: true })
+    const { result } = await renderHook(() => useGroupThread('g1', true), { wrapper })
+    const newest = pending()
+    mockRpc.mockReturnValueOnce(newest.request)
+    await act(async () => {
+      void client.refetchQueries({ queryKey: messagesKey })
+    })
+    mockRpc.mockReturnValueOnce(response(run(50, THREAD_PAGE)))
+    await act(async () => {
+      await result.current.loadOlder()
+    })
+    expect(ids(client)?.[0]).toBe('m50')
+    await act(async () => newest.settle({ data: run(101, THREAD_PAGE), error: null }))
+    await waitFor(() => expect(ids(client)?.at(-1)).toBe('m150'))
+    expect(ids(client)?.[0]).toBe('m50')
+  })
+
   it('reads the page before the oldest message held, once, as the viewer scrolls up', async () => {
     const { client, wrapper } = setup()
     client.setQueryData(messagesKey, { messages: run(100, THREAD_PAGE), more: true })

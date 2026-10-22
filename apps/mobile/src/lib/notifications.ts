@@ -82,8 +82,7 @@ export function showingGroupChat(chat: string): () => void {
 
 /**
  * Clears a group's chat notifications from Notification Center once its chat is
- * on screen, as a messenger clears a conversation's when it is opened: opening
- * any day's chat reads the whole group's. Best effort.
+ * on screen, as a messenger clears a conversation's when it is opened. Best effort.
  */
 export async function dismissGroupChatNotifications(groupId: string): Promise<void> {
   try {
