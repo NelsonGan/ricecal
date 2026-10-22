@@ -236,7 +236,7 @@ export function useGroupBoard(groupId: string, day: string, enabled: boolean, li
  * Realtime says something changed, and not otherwise; without a channel it
  * falls back to asking every five seconds.
  */
-export function useGroupMessages(groupId: string, day: string, open: boolean, live = false) {
+export function useGroupMessages(groupId: string, day: string, open: boolean, live: boolean) {
   const userId = useUserId()
   return useQuery({
     queryKey: messagesKey(userId, groupId, day),

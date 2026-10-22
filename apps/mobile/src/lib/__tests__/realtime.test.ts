@@ -76,7 +76,7 @@ beforeEach(() => {
       .spyOn(AppState, 'addEventListener')
       .mockImplementation((_type: unknown, handler: unknown) => {
         appStateHandler = handler as (state: AppStateStatus) => void
-        return { remove: () => (appStateHandler = null) }
+        return { remove: jest.fn() }
       })
     listen = require('../realtime').listen
   })
@@ -116,7 +116,6 @@ it('leaves when the last listener does, and joins again only once the leave is d
   expect(removals).toHaveLength(0)
   stopSecond()
   expect(removals).toHaveLength(1)
-  expect(appStateHandler).not.toBeNull()
 
   // Back before the leave finished: supabase would hand back the leaving channel.
   const again = listener()
@@ -130,7 +129,7 @@ it('leaves when the last listener does, and joins again only once the leave is d
   expect(again.onLive).toHaveBeenLastCalledWith(true)
 })
 
-it('forgets the topic, and stops watching the app, once nothing listens', async () => {
+it('forgets the topic once nothing listens, leaving the socket to linger in front', async () => {
   const stop = listen('t', listener())
   stop()
   stop()
@@ -138,9 +137,12 @@ it('forgets the topic, and stops watching the app, once nothing listens', async 
   removals[0]?.finish()
   await settle()
   expect(channels).toHaveLength(0)
-  expect(appStateHandler).toBeNull()
   // In front, the library's own short linger closes the socket.
   expect(mockDisconnect).not.toHaveBeenCalled()
+
+  // Backgrounded during that linger, it goes at once.
+  appStateHandler?.('background')
+  expect(mockDisconnect).toHaveBeenCalledTimes(1)
 })
 
 it('closes in the background and rejoins in front, but not for the notification shade', async () => {
