@@ -450,11 +450,17 @@ begin
   insert into public.group_invites(group_id, invitee_id, inviter_id, by_email)
   values (p_group_id, v_invitee, v_user, v_email)
   on conflict (group_id, invitee_id) do update
-    set inviter_id = excluded.inviter_id, by_email = excluded.by_email, created_at = now(), pushed_at = null
+    -- A renewal takes a new id, so the same address asked an hour apart does
+    -- not answer with the same id twice, which an unknown address never does.
+    set id = gen_random_uuid(), inviter_id = excluded.inviter_id, by_email = excluded.by_email,
+      created_at = now(), pushed_at = null
     -- A pending invite is renewed at most hourly, which also caps its pushes.
     where public.group_invites.created_at < now() - interval '1 hour'
   returning id into v_id;
   if v_id is null then
+    -- Not renewed, so there is nothing to push. An email answers as an unknown
+    -- address does; returning the stored id would match the previous answer.
+    if v_email then return gen_random_uuid(); end if;
     select i.id into v_id from public.group_invites i
     where i.group_id = p_group_id and i.invitee_id = v_invitee;
   end if;

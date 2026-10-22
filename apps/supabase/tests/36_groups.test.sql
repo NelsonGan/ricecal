@@ -88,6 +88,23 @@ select ok(public.invite_to_group((select id from g), :'cai' || '@GROUPS.example.
   'invite by email, ignoring case');
 select ok(public.invite_to_group((select id from g), 'nobody@example.test') is not null,
   'an unknown email answers like any other, so it cannot be used to test addresses');
+-- Asking twice must not tell them apart either: a repeat for a real account
+-- once returned the same invite id, while an unknown address got a new one.
+select isnt(public.invite_to_group((select id from g), :'cai' || '@groups.example.test'),
+  public.invite_to_group((select id from g), :'cai' || '@groups.example.test'),
+  'a repeated email invite to an account answers with a new id each time');
+select isnt(public.invite_to_group((select id from g), 'nobody@example.test'),
+  public.invite_to_group((select id from g), 'nobody@example.test'),
+  'a repeated email invite to nobody answers with a new id each time');
+-- An hour later the invite is renewed and pushed again, under a new id.
+reset role;
+create temp table cai_invite as
+  select i.id from public.group_invites i where i.invitee_id = :'cai';
+grant select on cai_invite to authenticated;
+update public.group_invites set created_at = now() - interval '2 hours' where invitee_id = :'cai';
+set local role authenticated;
+select isnt(public.invite_to_group((select id from g), :'cai' || '@groups.example.test'),
+  (select id from cai_invite), 'a renewed invite does not answer with its old id');
 select is(jsonb_array_length(public.group_details((select id from g))->'invites'), 1,
   'settings lists the handle invite and not who an address found');
 select throws_ok($$select public.invite_to_group((select id from g), '@nobody.here')$$,
