@@ -810,3 +810,93 @@ grant execute on function public.create_group, public.update_group, public.invit
 revoke execute on function public.group_push_targets, public.forget_push_tokens
   from public, anon, authenticated;
 grant execute on function public.group_push_targets, public.forget_push_tokens to service_role;
+
+-- ---------------------------------------------------------------------------
+-- Live chat
+--
+-- An open chat listens on one private Realtime channel, `group-chat:<group>:<day>`,
+-- instead of asking every five seconds. What goes down it is message ids and
+-- nothing else. The phone refetches through group_messages, which is where
+-- blocks, reports and quarantine are applied, so a broadcast never hands a body
+-- to someone who must not read it, and a member removed mid-chat hears ids it
+-- can no longer turn into anything.
+--
+-- Broadcast rather than Postgres Changes: changes would need group_messages
+-- opened to clients through RLS and would check that policy once per listener
+-- for every row. A broadcast is checked once, when the channel is joined.
+-- ---------------------------------------------------------------------------
+
+-- Whether the caller may listen on a Realtime topic. Only a chat topic of a
+-- group they are in passes; anything malformed is refused rather than cast.
+create or replace function private.group_chat_listener(p_topic text)
+returns boolean language plpgsql stable security definer set search_path = '' as $$
+declare v_parts text[] := string_to_array(p_topic, ':');
+begin
+  if cardinality(v_parts) <> 3 or v_parts[1] <> 'group-chat'
+     or v_parts[2] !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+     or v_parts[3] !~ '^\d{4}-\d{2}-\d{2}$' then
+    return false;
+  end if;
+  return private.group_is_member(v_parts[2]::uuid, (select auth.uid()));
+end;
+$$;
+
+-- Listening only. With no insert policy a client cannot broadcast on the topic
+-- itself, so every message on it came from the triggers below.
+create policy "Group members hear their chat" on realtime.messages
+  for select to authenticated
+  using (
+    realtime.messages.extension = 'broadcast'
+    and private.group_chat_listener((select realtime.topic()))
+  );
+
+-- Announces message ids on a thread's topic. realtime.send swallows its own
+-- errors as a warning, so a Realtime outage cannot refuse the write that
+-- called it; the open chat falls back to polling when its channel drops.
+create or replace function private.group_chat_broadcast(p_group uuid, p_day date, p_event text, p_ids jsonb)
+returns void language sql security definer set search_path = '' as $$
+  select realtime.send(jsonb_build_object('ids', p_ids), p_event,
+    'group-chat:' || p_group::text || ':' || p_day::text, true);
+$$;
+
+create or replace function private.group_message_sent()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  perform private.group_chat_broadcast(new.group_id, new.day, 'message', jsonb_build_array(new.id));
+  return null;
+end;
+$$;
+create trigger group_message_sent after insert on public.group_messages
+  for each row execute function private.group_message_sent();
+
+-- Deleted by its author, or cascaded away with a group or an account. Once per
+-- statement and per thread, so deleting an account with months of messages
+-- sends a handful of broadcasts rather than one per row.
+create or replace function private.group_messages_removed()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  perform private.group_chat_broadcast(g.group_id, g.day, 'removed', jsonb_agg(g.id))
+  from gone g group by g.group_id, g.day;
+  return null;
+end;
+$$;
+create trigger group_messages_removed after delete on public.group_messages
+  referencing old table as gone
+  for each statement execute function private.group_messages_removed();
+
+-- The third report hides a message from everyone, so it leaves open chats too.
+create or replace function private.group_message_quarantined()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  perform private.group_chat_broadcast(new.group_id, new.day, 'removed', jsonb_build_array(new.id));
+  return null;
+end;
+$$;
+create trigger group_message_quarantined after update of quarantined on public.group_messages
+  for each row when (new.quarantined and not old.quarantined)
+  execute function private.group_message_quarantined();
+
+revoke execute on function private.group_chat_broadcast, private.group_message_sent,
+  private.group_messages_removed, private.group_message_quarantined from public, anon, authenticated;
+revoke execute on function private.group_chat_listener from public, anon;
+grant execute on function private.group_chat_listener to authenticated, service_role;

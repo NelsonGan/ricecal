@@ -348,6 +348,7 @@ only emits structure:
 | seed data of any kind | the rows are data, and a diff only emits structure |
 | `create extension` / `drop extension` | the diff engine does not track extensions at all |
 | `cron.schedule(…)` calls | a schedule is a row in `cron.job`, so it is data too |
+| a policy on `realtime.messages` | the table belongs to the Realtime service's schema, which the diff does not compare at all, so it emits neither the policy nor a drop for it; `20261022031315_group_chat_live.sql` restates it from `51_groups.sql` |
 | `ROWS n` on an existing function | the diff compares bodies and arguments, not the planner's row estimate, so changing only the hint emits nothing; a function the migration creates carries it |
 
 Nothing schedules anything here any more, and there is no seed function left
@@ -3183,10 +3184,73 @@ they tap back to the list. A group left elsewhere falls back to the list once
 under the header, the same strip Today uses, limited to the board's sixty days;
 each follows the other. Only the day on screen refreshes, every 30 seconds; the
 days either side are fetched once so a swipe lands on a drawn board. The chat
-refreshes every 5 seconds while open, and the invite count every five minutes
-and whenever the tab is shown, since an invite also arrives as a push. There is
-no realtime channel in this app. The pager follows the selected date rather than
-a position, so midnight passing under an open board does not move it a day.
+is live while open (below), and the invite count refreshes every five minutes
+and whenever the tab is shown, since an invite also arrives as a push. The
+pager follows the selected date rather than a position, so midnight passing
+under an open board does not move it a day.
+
+### Live chat
+
+An open chat is the app's one Realtime channel: private, named
+`group-chat:<group>:<day>`, and joined only while that chat is on screen and the
+app is in front. Everything else, the board's preview and unread count
+included, still polls.
+
+- **Broadcast from the database, not Postgres Changes.** Triggers on
+  `group_messages` call `realtime.send` when a message is written, deleted
+  (once per statement and thread, so a deleted account's months of messages are
+  a handful of broadcasts) or quarantined by its third report. Changes would
+  need `group_messages` opened to clients through RLS, which every groups table
+  deliberately is not, and would check that policy per listener per row; a
+  broadcast is authorised once, when the channel is joined.
+- **A broadcast carries message ids and nothing else.** The phone refetches
+  `group_messages`, which is where blocks, reports and quarantine are applied,
+  so a body never reaches a device that must not read it, and a member removed
+  while the chat is open hears ids it can no longer turn into anything. A
+  removed id is taken out of the thread in place, with no request.
+- **Who may listen** is one policy on `realtime.messages`:
+  `private.group_chat_listener(realtime.topic())`, true only for a member of the
+  topic's group, and false rather than an error for anything malformed. There is
+  no insert policy, so a client cannot broadcast on the topic. `db diff` does not
+  see policies on `realtime.messages`, so the migration restates it by hand.
+- **One channel and as little socket as possible** (`lib/realtime.ts`). Screens
+  share a channel per topic; the last one out leaves it, and a topic asked for
+  again while its leave is in flight waits for it, since supabase-js would hand
+  back the leaving channel. A leave the server answers with an error leaves its
+  channel listed for good, so that topic polls instead of joining it again.
+  Backgrounding (not `inactive`, which is only the notification shade passing
+  over) leaves every channel and then closes the socket, including one still
+  lingering after the last chat closed; coming back rejoins. supabase-js
+  otherwise keeps an empty socket for 50 seconds, which `lib/supabase.ts` cuts
+  to 5.
+- **Catching up.** Each join, first or after a drop, refetches the thread once,
+  since nothing sent while the channel was down will be heard. That is a second
+  read on opening a chat, kept on purpose: the first one may have been taken
+  before the join. A fetch already on its way lands first rather than being
+  restarted, which would hold back the first paint. Refetch on focus is off,
+  since coming back rejoins and the join reads. A join the policy refuses (a
+  member removed mid-chat) is not retried, and a channel the server closes is
+  rejoined after three seconds.
+- **Polling is the net, not the mechanism.** Joined, the thread is still read
+  once a minute, for what no message write announces (another member blocking
+  the viewer, a renamed author) and for a socket that died without saying so.
+  Not joined, it is read every 5 seconds as before Realtime, which is also what
+  an app from before this change keeps doing, untouched. Measured on a simulator
+  against the local stack: no requests while a joined chat sat idle for 20
+  seconds, and one per message from someone else.
+- **The sender's own message** joins the cached thread the moment
+  `send_group_message` answers, so "Sending" clears without waiting for a
+  refetch. Its broadcast can beat that answer, so a broadcast is ignored while
+  one of the viewer's own sends to the thread is still on its way: the send
+  refetches the thread when it lands, which picks up anything else too. One
+  read per message sent, either way. Deleting or reporting takes the message out
+  in place and rereads only the board, whose preview it may have been.
+- **pgTAP cannot watch `realtime.messages`.** It is partitioned by day, the
+  Realtime server makes the partitions, and CI runs Postgres alone, where
+  `realtime.send` would swallow the failure as a warning. `36_groups` replaces
+  `private.group_chat_broadcast` inside its transaction to record what would
+  have been sent. Locally, a stale Realtime container has stale partitions too:
+  `docker restart supabase_realtime_ricecal` makes today's.
 
 ### Push: the app's first
 
