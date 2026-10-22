@@ -59,6 +59,16 @@ const GestureScrollView = Reanimated.createAnimatedComponent(
 const KEYBOARD_GAP = 6
 
 /**
+ * How much of the keyboard a riding footer (`keyboardAvoid="footer"`) does not
+ * rise by: the home indicator's inset, which the keys cover, less the gap it
+ * keeps off them. A chat list under that footer is offset by this so the two
+ * move together.
+ */
+export function footerKeyboardOffset(bottomInset: number): number {
+  return Math.max(bottomInset - KEYBOARD_GAP, 0)
+}
+
+/**
  * How far above the footer a focused field is brought to rest: a gap plus the
  * parts of the field nobody measures.
  *
@@ -138,6 +148,21 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   /** Render children in a plain View instead of a ScrollView. */
   scroll?: boolean
   /**
+   * How a screen that does not scroll makes way for the keyboard. A scrolling
+   * screen ignores it.
+   *
+   * - `padding`, the default: the whole shell shrinks by the keyboard.
+   * - `footer`: only the footer moves, as a transform in the keyboard's own
+   *   animation, and the body insets itself (a chat's `KeyboardChatScrollView`,
+   *   offset by `footerKeyboardOffset`). Padding is a layout pass every
+   *   frame, and in a chat the composer visibly trailed the keys.
+   * - `none`: nothing moves. For a screen whose fields all live in sheets: a tab
+   *   stays mounted under the screens pushed over it, and padding for their
+   *   keyboard slid its floating bar up behind them, then down again on the way
+   *   back.
+   */
+  keyboardAvoid?: 'padding' | 'footer' | 'none'
+  /**
    * Scroll with gesture-handler's ScrollView instead of the platform one, for a
    * screen whose rows carry pan gestures. Swipe-to-delete needs it: inside the
    * platform ScrollView the pan never activates, because the two arbitrate
@@ -199,6 +224,7 @@ export function Screen({
   flush = false,
   safeAreaTop = true,
   scroll = true,
+  keyboardAvoid = 'padding',
   gestureScroll = false,
   className,
   contentClassName,
@@ -237,7 +263,7 @@ export function Screen({
    * a floating IME on Android does.
    *
    * Not on a screen with nothing to scroll, where the shell below already pads
-   * the whole thing out of the way.
+   * the whole thing out of the way, unless it asks for the footer to ride.
    */
   const keyboard = useReanimatedKeyboardAnimation()
 
@@ -249,16 +275,27 @@ export function Screen({
    */
   const numpad = useNumpadZone()
 
+  const footerRides = !scroll && keyboardAvoid === 'footer'
+  const shellPads = !scroll && keyboardAvoid === 'padding'
+
   const lift = useAnimatedStyle(() => ({
     transform: [
       {
-        // The keyboard's share is the scrolling screen's only — see above, the
-        // shell pads for it otherwise. The PAD's share is always this view's,
-        // on both, because the shell pads for a keyboard and the pad is not
-        // one: without it, a footer on a screen that does not scroll would sit
-        // under our own keys.
+        // The keyboard's share is the scrolling screen's, and the riding
+        // footer's (`keyboardAvoid`), which keeps the same few points off the
+        // keys the padded shell gives it; the shell pads for it otherwise. The
+        // PAD's share is always this view's, on both, because the shell pads
+        // for a keyboard and the pad is not one: without it, a footer on a
+        // screen that does not scroll would sit under our own keys.
         translateY: Math.min(
-          (scroll ? keyboard.height.value : 0) - numpad.offset.value + insets.bottom,
+          (scroll
+            ? keyboard.height.value
+            : footerRides
+              ? keyboard.height.value -
+                Math.min(KEYBOARD_GAP, insets.bottom) * keyboard.progress.value
+              : 0) -
+            numpad.offset.value +
+            insets.bottom,
           0,
         ),
       },
@@ -275,7 +312,7 @@ export function Screen({
    */
   const restPad = Math.max(insets.bottom + spacing.xs, spacing.md)
   const footerPad = useAnimatedStyle(() => ({
-    paddingBottom: scroll
+    paddingBottom: !shellPads
       ? restPad
       : restPad - Math.max(insets.bottom - KEYBOARD_GAP, 0) * keyboard.progress.value,
   }))
@@ -421,7 +458,7 @@ export function Screen({
          screen this padding would shrink the frame the scroller is measuring
          the keyboard against, and two things insetting for one keyboard is how
          a tapped field ends up scrolled up and then straight back down. */
-      behavior={!scroll ? 'padding' : undefined}
+      behavior={shellPads ? 'padding' : undefined}
     >
       {/* Inside the shell rather than around it, so the pad it draws is
           absolutely positioned against a box that reaches the bottom of the

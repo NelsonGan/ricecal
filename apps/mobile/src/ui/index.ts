@@ -100,7 +100,7 @@ export {
   type ProgressTone,
 } from './ProgressBar'
 // Layout
-export { Screen, type ScreenProps } from './Screen'
+export { footerKeyboardOffset, Screen, type ScreenProps } from './Screen'
 export { SearchField, type SearchFieldProps } from './SearchField'
 export {
   SegmentedControl,

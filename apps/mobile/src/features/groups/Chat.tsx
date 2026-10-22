@@ -2,7 +2,9 @@ import { format, isToday, isYesterday, parseISO } from 'date-fns'
 import { useFocusEffect } from 'expo-router'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FlatList, Platform, TextInput, View } from 'react-native'
+import { FlatList, Platform, type ScrollViewProps, TextInput, View } from 'react-native'
+import { KeyboardChatScrollView } from 'react-native-keyboard-controller'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useUserId } from '@/data'
 import {
   type GroupMessage,
@@ -21,15 +23,26 @@ import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
 import { showingGroupChat } from '@/lib/notifications'
 import { useThemeColors } from '@/theme/useTheme'
-import { AppBar, cn, Dialog, Icon, IconButton, Screen, Spinner, Tappable, Text } from '@/ui'
+import {
+  AppBar,
+  cn,
+  Dialog,
+  footerKeyboardOffset,
+  Icon,
+  IconButton,
+  Screen,
+  Spinner,
+  Tappable,
+  Text,
+} from '@/ui'
 import { PersonAvatar, useGroupTask } from './parts'
 
 /**
  * A day's chat, as a screen of its own laid out the way every messenger is:
  * the thread fills the page from the bottom and the composer sits on the
  * keyboard. A sheet put the composer under the keyboard, since a sheet's body
- * does not move for it; `Screen` lifts its footer with the keyboard and pads
- * the thread out of the way.
+ * does not move for it; `Screen` lifts its footer with the keyboard and the
+ * thread scrolls itself out of the way in the same frames.
  *
  * One thread per day page keeps it about that day's food; older days stay
  * readable by paging back on the board.
@@ -127,6 +140,16 @@ export function ChatScreen({
     ),
     [rows, retry],
   )
+  // The thread rises with the composer as a scroll offset rather than a smaller
+  // frame. The shell's padding relaid the screen out every frame, and the
+  // composer followed the keys a beat behind them.
+  const bottomInset = useSafeAreaInsets().bottom
+  const renderScrollComponent = useCallback(
+    (props: ScrollViewProps) => (
+      <KeyboardChatScrollView {...props} inverted offset={footerKeyboardOffset(bottomInset)} />
+    ),
+    [bottomInset],
+  )
   const at = parseISO(day)
   const dayLabel = isToday(at)
     ? t('common:date.today')
@@ -137,6 +160,7 @@ export function ChatScreen({
   return (
     <Screen
       scroll={false}
+      keyboardAvoid="footer"
       flush
       header={
         <AppBar
@@ -182,6 +206,7 @@ export function ChatScreen({
         <FlatList
           className="flex-1"
           inverted
+          renderScrollComponent={renderScrollComponent}
           data={rows}
           keyExtractor={(message) => message.id}
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
