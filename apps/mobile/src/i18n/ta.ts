@@ -227,6 +227,10 @@ export const ta = {
       backspace: 'கடைசி இலக்கத்தை அழி',
       decimalPoint: 'தசமப் புள்ளி',
     },
+    delivery: {
+      sending: 'அனுப்புகிறது…',
+      failed: 'அனுப்பப்படவில்லை. மீண்டும் முயல தட்டவும்.',
+    },
   },
 
   activity: {

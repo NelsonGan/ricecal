@@ -223,38 +223,3 @@ it('moves an entry to another column on the board straight away', async () => {
   )
   await act(async () => write.settle({ data: null, error: null }))
 })
-
-it('shows a sent message at once and takes it back if it fails', async () => {
-  const { client, wrapper } = setup()
-  const messagesKey = keys.groupsRead('viewer', 'group_messages', {
-    groupId: 'g1',
-    day: '2026-10-21',
-  })
-  client.setQueryData(messagesKey, [])
-  let settle!: (value: unknown) => void
-  mockRpc.mockReturnValueOnce(
-    Object.assign(
-      new Promise((resolve) => {
-        settle = resolve
-      }),
-      { abortSignal: () => undefined },
-    ),
-  )
-  const { result } = await renderHook(() => useGroupAction(), { wrapper })
-  await act(async () => {
-    result.current.mutate({
-      action: 'message',
-      groupId: 'g1',
-      day: '2026-10-21',
-      body: 'hello',
-      requestId: 'r1',
-    })
-  })
-  await waitFor(() =>
-    expect(client.getQueryData<{ body: string; pending?: boolean }[]>(messagesKey)).toEqual([
-      expect.objectContaining({ body: 'hello', pending: true }),
-    ]),
-  )
-  await act(async () => settle({ data: null, error: { message: 'no' } }))
-  await waitFor(() => expect(client.getQueryData(messagesKey)).toEqual([]))
-})

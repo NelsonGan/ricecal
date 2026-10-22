@@ -232,6 +232,10 @@ export const id = {
       backspace: 'Hapus digit terakhir',
       decimalPoint: 'Titik desimal',
     },
+    delivery: {
+      sending: 'Mengirim…',
+      failed: 'Tidak terkirim. Ketuk untuk coba lagi.',
+    },
   },
 
   activity: {

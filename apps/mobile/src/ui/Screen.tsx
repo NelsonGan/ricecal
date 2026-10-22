@@ -254,10 +254,13 @@ export function Screen({
         // on both, because the shell pads for a keyboard and the pad is not
         // one: without it, a footer on a screen that does not scroll would sit
         // under our own keys.
-        translateY: Math.min(
-          (scroll ? keyboard.height.value : 0) - numpad.offset.value + insets.bottom,
-          0,
-        ),
+        translateY:
+          Math.min((scroll ? keyboard.height.value : 0) - numpad.offset.value + insets.bottom, 0) +
+          // On a screen that does not scroll the shell pads the keyboard's full
+          // height, which already covers the home indicator, so the footer's
+          // inset padding became a band of canvas between a chat composer and
+          // the keys. It slides down by that inset as the keyboard rises.
+          (scroll ? 0 : insets.bottom * keyboard.progress.value),
       },
     ],
   }))

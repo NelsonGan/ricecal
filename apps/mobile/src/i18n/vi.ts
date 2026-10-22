@@ -227,6 +227,10 @@ export const vi = {
       backspace: 'Xoá chữ số cuối',
       decimalPoint: 'Dấu thập phân',
     },
+    delivery: {
+      sending: 'Đang gửi…',
+      failed: 'Chưa gửi được. Chạm để thử lại.',
+    },
   },
 
   activity: {

@@ -105,8 +105,6 @@ export type GroupMessage = {
   body: string
   created_at: string
   mine: boolean
-  /** Not yet confirmed by the server. */
-  pending?: boolean
 }
 
 type GroupDetails = {
@@ -447,25 +445,6 @@ export function useGroupAction() {
               input.action === 'move'
                 ? { ...entry, meal: before.meal }
                 : { ...entry, likes: before.likes, dislikes: before.dislikes, mine: before.mine },
-            )
-        }
-        case 'message': {
-          const key = messagesKey(userId, input.groupId, input.day)
-          await client.cancelQueries({ queryKey: key })
-          client.setQueryData<GroupMessage[]>(key, (messages) => [
-            ...(messages ?? []),
-            {
-              id: input.requestId,
-              author: { id: userId, name: '', handle: '', avatar_path: null },
-              body: input.body,
-              created_at: new Date().toISOString(),
-              mine: true,
-              pending: true,
-            },
-          ])
-          return () =>
-            client.setQueryData<GroupMessage[]>(key, (messages) =>
-              messages?.filter((message) => message.id !== input.requestId),
             )
         }
         case 'read':

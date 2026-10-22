@@ -230,6 +230,10 @@ export const zhHans = {
       backspace: '删除最后一位',
       decimalPoint: '小数点',
     },
+    delivery: {
+      sending: '发送中…',
+      failed: '未发送，点按重试。',
+    },
   },
 
   activity: {

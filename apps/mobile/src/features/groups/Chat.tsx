@@ -1,11 +1,12 @@
 import { format, isToday, isYesterday, parseISO } from 'date-fns'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, TextInput, View } from 'react-native'
+import { useUserId } from '@/data'
 import { type GroupMessage, useGroupAction, useGroupMessages, useMyGroups } from '@/data/groups'
 import { useBlockAuthor } from '@/data/moderation'
+import { type Outgoing, useOutbox } from '@/features/shared'
 import { QueryNotice } from '@/features/social/components'
-import { socialRequestId } from '@/features/social/request-id'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
@@ -26,21 +27,18 @@ import { PersonAvatar, useGroupTask } from './parts'
 export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
   const { t } = useTranslation(['groups', 'common', 'social'])
   const back = useBack('/groups')
+  const viewer = useUserId()
   const name = useMyGroups().data?.find((group) => group.id === groupId)?.name ?? ''
   const messages = useGroupMessages(groupId, day, true)
   const task = useGroupTask()
   const [draft, setDraft] = useState('')
-  // A failed send keeps its id with its words, so sending the same words again
-  // is the same message on the server. Anything else gets a new id: reusing one
-  // for different words, or for a second message sent while the first was in
-  // flight, made the server answer with the first and drop the second.
-  const [retry, setRetry] = useState<{ body: string; id: string } | null>(null)
   const [selected, setSelected] = useState<GroupMessage | null>(null)
   const block = useBlockAuthor()
 
   // Opening the chat reads it, which clears the bar's count. Leaving reads it
   // again only if something arrived while it was open.
-  const markRead = useGroupAction().mutate
+  const action = useGroupAction()
+  const markRead = action.mutate
   const seen = useRef(0)
   seen.current = messages.data?.length ?? 0
   useEffect(() => {
@@ -51,22 +49,39 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
     }
   }, [groupId, markRead])
 
-  const send = async () => {
+  // Sent messages are drawn at once from the outbox and swapped for the
+  // server's rows as they arrive; the field never waits.
+  const serverIds = useMemo(() => new Set((messages.data ?? []).map((m) => m.id)), [messages.data])
+  const outbox = useOutbox(async (item) => {
+    const id = await action.mutateAsync({
+      action: 'message',
+      groupId,
+      day,
+      body: item.body,
+      requestId: item.requestId,
+    })
+    track('Group Message Sent', {})
+    return typeof id === 'string' ? id : null
+  }, serverIds)
+  const send = () => {
     const body = draft.trim()
     if (!body) return
-    const requestId = retry?.body === body ? retry.id : socialRequestId()
     setDraft('')
-    setRetry(null)
-    try {
-      await task.run({ action: 'message', groupId, day, body, requestId })
-      track('Group Message Sent', {})
-    } catch {
-      setDraft(body)
-      setRetry({ body, id: requestId })
-    }
+    outbox.send(body)
   }
 
-  const rows = [...(messages.data ?? [])].reverse()
+  // Newest first, for the inverted list: the outbox is newer than anything sent.
+  const rows: ChatRow[] = [
+    ...[...outbox.pending].reverse().map((item) => ({
+      id: item.requestId,
+      author: { id: viewer, name: '', handle: '', avatar_path: null },
+      body: item.body,
+      created_at: item.createdAt,
+      mine: true,
+      outgoing: item,
+    })),
+    ...[...(messages.data ?? [])].reverse(),
+  ]
   const at = parseISO(day)
   const dayLabel = isToday(at)
     ? t('common:date.today')
@@ -92,9 +107,7 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
           }
         />
       }
-      footer={
-        <Composer value={draft} onChange={setDraft} groupName={name} onSend={() => void send()} />
-      }
+      footer={<Composer value={draft} onChange={setDraft} groupName={name} onSend={send} />}
     >
       {messages.isLoading ? (
         <View className="flex-1 items-center justify-center">
@@ -134,7 +147,8 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
                 message={item}
                 first={above?.author.id !== item.author.id}
                 last={below?.author.id !== item.author.id}
-                onLongPress={() => setSelected(item)}
+                onLongPress={() => (item.outgoing ? undefined : setSelected(item))}
+                onRetry={() => item.outgoing && outbox.retry(item.outgoing.requestId)}
               />
             )
           }}
@@ -206,7 +220,7 @@ function Composer({
   const ready = value.trim().length > 0
   const placeholder = groupName ? t('message', { name: groupName }) : t('send')
   return (
-    <View className="flex-row items-end gap-2 border-t border-line bg-canvas px-gutter py-2">
+    <View className="flex-row items-end gap-2">
       <View className="min-h-[44px] min-w-0 flex-1 justify-center rounded-[22px] border border-line bg-surface px-4">
         <TextInput
           value={value}
@@ -246,19 +260,25 @@ function Composer({
  * of their messages, and the time once at its end, as messengers do, so a
  * burst of short messages reads as one thought rather than a column of stamps.
  */
+type ChatRow = GroupMessage & { outgoing?: Outgoing }
+
 function MessageRow({
   message,
   first,
   last,
   onLongPress,
+  onRetry,
 }: {
-  message: GroupMessage
+  message: ChatRow
   first: boolean
   last: boolean
   onLongPress: () => void
+  onRetry: () => void
 }) {
-  const { t } = useTranslation('groups')
+  const { t } = useTranslation(['groups', 'common'])
+  const colors = useThemeColors()
   const time = format(parseISO(message.created_at), datePattern('time'))
+  const state = message.outgoing?.state
   // Report, block and delete live behind a long press, which a screen reader
   // reaches as a named action.
   const a11y = {
@@ -274,16 +294,19 @@ function MessageRow({
       <View className={cn('items-end', gap)}>
         <Tappable
           className="max-w-[78%]"
+          onPress={state === 'failed' ? onRetry : undefined}
           onLongPress={onLongPress}
           delayLongPress={300}
           haptics={false}
           {...a11y}
+          accessibilityHint={state === 'failed' ? t('common:delivery.failed') : undefined}
         >
           <View
             className={cn(
               'rounded-[18px] bg-pandan px-3.5 py-2',
               last && 'rounded-br-[6px]',
-              message.pending && 'opacity-60',
+              state === 'sending' && 'opacity-70',
+              state === 'failed' && 'opacity-50',
             )}
           >
             <Text variant="body" className="text-[16px] leading-[22px] text-on-pandan">
@@ -291,7 +314,18 @@ function MessageRow({
             </Text>
           </View>
         </Tappable>
-        {last ? (
+        {state === 'failed' ? (
+          <View className="mr-1 mt-1 flex-row items-center gap-1">
+            <Icon set="ui" name="warning" size={12} tintColor={colors.hibiscusInk} />
+            <Text variant="micro" className="text-hibiscus-ink">
+              {t('common:delivery.failed')}
+            </Text>
+          </View>
+        ) : state === 'sending' ? (
+          <Text variant="micro" className="mr-1 mt-1">
+            {t('common:delivery.sending')}
+          </Text>
+        ) : last ? (
           <Text variant="micro" className="mr-1 mt-1">
             {time}
           </Text>
