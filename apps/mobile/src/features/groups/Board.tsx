@@ -149,6 +149,15 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
     const asked = takeOpenDay(viewer, groupId)
     return asked && days.includes(asked) ? asked : today
   })
+  // At midnight, a board that was showing today moves on to the new today.
+  // Without this it stayed on yesterday, polling it, until someone tapped today.
+  const shownToday = useRef(today)
+  useEffect(() => {
+    if (shownToday.current === today) return
+    const previous = shownToday.current
+    shownToday.current = today
+    setDay((current) => (current === previous ? today : current))
+  }, [today])
   const index = Math.max(0, days.indexOf(day))
   const pager = useRef<FlatList<string>>(null)
   const summary = useMyGroups().data?.find((group) => group.id === groupId)
