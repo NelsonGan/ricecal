@@ -198,6 +198,15 @@ select is((select count(*)::int from public.social_photo_claims(array['meals/' |
   'a blocked member cannot claim the photo');
 reset role;
 delete from public.blocked_authors where user_id = :'ben' and author_id = :'cai';
+-- realtime.messages is partitioned by day and the Realtime server makes the
+-- partitions; CI runs Postgres alone, where there are none and realtime.send
+-- would swallow the failure. So the broadcasts are caught one step earlier.
+create temp table broadcasts (topic text, event text, ids jsonb);
+grant select on broadcasts to authenticated;
+create or replace function private.group_chat_broadcast(p_group uuid, p_day date, p_event text, p_ids jsonb)
+returns void language sql security definer set search_path = '' as $$
+  insert into pg_temp.broadcasts values ('group-chat:' || p_group::text || ':' || p_day::text, p_event, p_ids);
+$$;
 set local role authenticated;
 
 -- Chat: a message per day, hidden from a reporter, idempotent by request id.
@@ -219,6 +228,37 @@ select lives_ok(format('select public.report_group_message(%L)',
   public.group_messages((select id from g), (select d from bday))->0->>'id'), 'Ana reports it');
 select is(jsonb_array_length(public.group_messages((select id from g), (select d from bday))), 0,
   'a reported message disappears for the reporter');
+reset role;
+
+-- Live chat: each write is announced on the day's private topic by id alone,
+-- and only a member may listen there.
+create temp table topic as
+  select 'group-chat:' || (select id from g)::text || ':' || (select d from bday)::text as t;
+grant select on topic to authenticated;
+select is((select array_agg(b.event) from broadcasts b where b.topic = (select t from topic)),
+  array['message'], 'a sent message is broadcast on its day''s topic');
+select is((select b.ids from broadcasts b where b.event = 'message'),
+  jsonb_build_array((select id from public.group_messages where group_id = (select id from g))),
+  'the broadcast carries the id and nothing else');
+select policies_are('realtime', 'messages', array['Group members hear their chat'],
+  'the only way onto realtime.messages here is listening');
+select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select ok(private.group_chat_listener((select t from topic)), 'a member may listen on the chat topic');
+select set_config('request.jwt.claims', json_build_object('sub', :'dee', 'role', 'authenticated')::text, true);
+select ok(not private.group_chat_listener((select t from topic)), 'someone outside the group cannot');
+select ok(not private.group_chat_listener('group-chat:not-a-uuid:2026-01-01'),
+  'a malformed topic is refused, not cast');
+select ok(not private.group_chat_listener(replace((select t from topic), 'group-chat:', 'group-board:')),
+  'and so is another kind of topic on the same group');
+select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
+select lives_ok(format('select public.delete_group_message(%L)',
+  (select b.ids->>0 from broadcasts b where b.event = 'message')), 'Ben deletes his message');
+reset role;
+select is((select b.ids from broadcasts b where b.event = 'removed'),
+  (select b.ids from broadcasts b where b.event = 'message'), 'a deleted message is broadcast as removed');
+select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
+set local role authenticated;
 
 -- Leaving: the leader must hand over; the last one out deletes the group.
 select throws_ok($$select public.leave_group((select id from g))$$, 'P0001', 'Choose a new leader',

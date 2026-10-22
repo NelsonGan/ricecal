@@ -1,5 +1,7 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import type { Database } from '@/lib/database.types'
+import { listen } from '@/lib/realtime'
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
 import { useUserId } from './session'
@@ -229,7 +231,14 @@ export function useGroupBoard(groupId: string, day: string, enabled: boolean, li
   })
 }
 
-export function useGroupMessages(groupId: string, day: string, open: boolean) {
+/**
+ * A day's chat, refetched when Realtime says something changed (see
+ * `useGroupChatLive`). Without a channel it asks every five seconds, as it
+ * always did. With one, a slow minute's poll stays as a net for what no
+ * message write announces (someone blocking the viewer, a renamed author) and
+ * for a socket that died without saying so.
+ */
+export function useGroupMessages(groupId: string, day: string, live: boolean) {
   const userId = useUserId()
   return useQuery({
     queryKey: messagesKey(userId, groupId, day),
@@ -239,10 +248,98 @@ export function useGroupMessages(groupId: string, day: string, open: boolean) {
         { p_group_id: groupId, p_day: day },
         signal,
       )) as unknown as GroupMessage[],
-    enabled: open,
-    refetchInterval: open ? 5_000 : false,
+    refetchInterval: live ? 60_000 : 5_000,
+    // Coming back to the app rejoins the channel, and the join refetches;
+    // refetching on focus as well read the thread twice.
+    refetchOnWindowFocus: false,
     ...SHORT,
   })
+}
+
+/**
+ * The viewer's own message as drawn before the server's list has it. Only the
+ * author's id is read for a row of one's own, to run bubbles together.
+ */
+export function ownMessage(userId: string, id: string, body: string, createdAt: string) {
+  return {
+    id,
+    author: { id: userId, name: '', handle: '', avatar_path: null },
+    body,
+    created_at: createdAt,
+    mine: true,
+  } satisfies GroupMessage
+}
+
+/** The ids a chat broadcast names. The database sends nothing else. */
+function broadcastIds(payload: Record<string, unknown>): string[] {
+  const ids = payload.ids
+  return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : []
+}
+
+/**
+ * Keeps an open chat current over the day's private Realtime channel, and
+ * answers whether it is joined, which is what slows the poll to a minute.
+ *
+ * A broadcast names message ids and nothing more, so a new one is drawn by
+ * refetching `group_messages`, where blocks and reports are applied. Nothing
+ * is asked for an id already in the thread, nor while the viewer's own send to
+ * it is on its way, since that send refetches the thread when it lands. A
+ * removed one is taken out in place. Each time the channel joins, first or
+ * after a drop, the thread is read once more, since anything sent while it
+ * was not listening was never going to be heard.
+ */
+export function useGroupChatLive(groupId: string, day: string): boolean {
+  const userId = useUserId()
+  const client = useQueryClient()
+  const [live, setLive] = useState(false)
+  useEffect(() => {
+    const key = messagesKey(userId, groupId, day)
+    // A fetch already on its way may have read the thread before the news.
+    // Restarting it would hold back the first paint, so it lands first and the
+    // thread is read once more after it.
+    const refetch = () => {
+      const query = client.getQueryCache().find({ queryKey: key, exact: true })
+      const pending = query?.state.fetchStatus === 'fetching' ? query.promise : undefined
+      const again = () => void client.invalidateQueries({ queryKey: key })
+      if (pending) void pending.then(again, again)
+      else again()
+    }
+    const sending = () =>
+      client
+        .getMutationCache()
+        .findAll({ status: 'pending' })
+        .some((mutation) => {
+          const input = mutation.state.variables as GroupAction | undefined
+          return input?.action === 'message' && input.groupId === groupId && input.day === day
+        })
+    const stop = listen(`group-chat:${groupId}:${day}`, {
+      onLive: (next) => {
+        setLive(next)
+        if (next) refetch()
+      },
+      onEvent: (event, payload) => {
+        const ids = broadcastIds(payload)
+        if (!ids.length) return
+        if (event === 'removed') {
+          client.setQueryData<GroupMessage[]>(key, (rows) =>
+            rows?.some((row) => ids.includes(row.id))
+              ? rows.filter((row) => !ids.includes(row.id))
+              : rows,
+          )
+        } else if (event === 'message') {
+          const rows = client.getQueryData<GroupMessage[]>(key)
+          if (rows && ids.every((id) => rows.some((row) => row.id === id))) return
+          if (sending()) return
+          refetch()
+        }
+      },
+    })
+    return () => {
+      stop()
+      setLive(false)
+    }
+  }, [client, userId, groupId, day])
+  return live
 }
 
 export function useGroupDetails(groupId: string) {
@@ -271,7 +368,8 @@ type GroupAction =
   | { action: 'deleteMessage'; groupId: string; day: string; messageId: string }
   | { action: 'reportMessage'; groupId: string; day: string; messageId: string }
   | { action: 'reportGroup'; groupId: string }
-  | { action: 'read'; groupId: string }
+  /** `day` refetches that board once the read lands: the chat on it was just open. */
+  | { action: 'read'; groupId: string; day?: string }
 
 /**
  * Asks the groups function to push a nudge or an invite. Fire and forget: the
@@ -498,23 +596,48 @@ export function useGroupAction() {
     },
     onError: (_error, _input, rollback) => rollback?.(),
     // Not awaited, so a sheet or a toast does not wait on the refetch.
-    onSettled: (_data, error, input) => {
+    onSettled: (data, error, input) => {
       switch (input.action) {
         case 'react':
         case 'move':
+          return
         case 'read':
+          if (input.day) {
+            void client.invalidateQueries({ queryKey: boardKey(userId, input.groupId, input.day) })
+          }
           return
         case 'nudge':
           void client.invalidateQueries({ queryKey: boardKey(userId, input.groupId, input.day) })
           return
         case 'message':
         case 'deleteMessage':
-        case 'reportMessage':
-          void client.invalidateQueries({ queryKey: messagesKey(userId, input.groupId, input.day) })
-          if (input.action !== 'message') {
-            void client.invalidateQueries({ queryKey: boardKey(userId, input.groupId, input.day) })
+        case 'reportMessage': {
+          const key = messagesKey(userId, input.groupId, input.day)
+          // The sent message joins the thread the moment the server answers,
+          // rather than after the refetch, so its "Sending" clears at once and
+          // its own broadcast finds it already there. The refetch puts the
+          // server's time on it.
+          if (input.action === 'message' && !error && typeof data === 'string') {
+            client.setQueryData<GroupMessage[]>(key, (rows) =>
+              rows && !rows.some((row) => row.id === data)
+                ? [...rows, ownMessage(userId, data, input.body, new Date().toISOString())]
+                : rows,
+            )
           }
+          if (input.action === 'message') {
+            void client.invalidateQueries({ queryKey: key })
+            return
+          }
+          // Deleted or reported, it leaves the thread here and needs no reread;
+          // only the board's preview may have been that message.
+          if (!error) {
+            client.setQueryData<GroupMessage[]>(key, (rows) =>
+              rows?.filter((row) => row.id !== input.messageId),
+            )
+          }
+          void client.invalidateQueries({ queryKey: boardKey(userId, input.groupId, input.day) })
           return
+        }
         case 'invite':
           refresh(input.groupId, 'group_details')
           return
