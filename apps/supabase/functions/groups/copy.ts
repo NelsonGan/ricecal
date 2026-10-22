@@ -137,3 +137,29 @@ export function pushMessage(kind: 'nudge' | 'invite', target: PushTarget) {
     data: { kind: 'group', groupId: target.group_id, day: target.day, invite: kind === 'invite' },
   }
 }
+
+export type MessageTarget = {
+  token: string
+  actor_name: string | null
+  group_name: string
+  group_id: string
+  day: string
+  body: string
+}
+
+/**
+ * A chat message reads the way a messenger's group notification does: the
+ * group as the title and "Name: what they said" under it, so it needs no copy
+ * of its own in any language. `chat` sends the tap to the thread rather than
+ * the board.
+ */
+export function messagePush(target: MessageTarget) {
+  const name = target.actor_name?.trim() || 'RiceCal'
+  return {
+    to: target.token,
+    title: target.group_name,
+    body: `${name}: ${target.body}`,
+    sound: 'default',
+    data: { kind: 'group', groupId: target.group_id, day: target.day, chat: true },
+  }
+}

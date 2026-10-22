@@ -18,6 +18,7 @@ import { track } from '@/lib/analytics'
 import { ensureNotificationPermission } from '@/lib/notifications'
 import { registerPushToken } from '@/lib/push'
 import { useDebouncedValue } from '@/lib/use-debounce'
+import { slab } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AvatarGroup,
@@ -39,7 +40,7 @@ import {
   useNavInset,
   useToast,
 } from '@/ui'
-import { GROUP_ICONS, GroupIcon, useGroupTask } from './parts'
+import { GROUP_ICONS, GroupIcon, PersonAvatar, useGroupTask } from './parts'
 import { GroupCardSkeleton, InviteSkeleton, PublicGroupsSkeleton } from './Skeletons'
 
 /** Ask once a group exists, when a nudge has somewhere to come from. */
@@ -181,6 +182,16 @@ function GroupCard({ group, onPress }: { group: GroupSummary; onPress: () => voi
             names={group.members.map((person) => person.name)}
             total={group.member_count}
             max={4}
+            renderAvatar={(_, index) => {
+              const person = group.members[index]
+              // A picture has no slab under it, so it is lifted to sit level
+              // with the initials beside it, as the "+N" tile is.
+              return person?.avatar_path ? (
+                <View style={{ marginBottom: slab.md }}>
+                  <PersonAvatar person={person} />
+                </View>
+              ) : undefined
+            }}
             className="py-1"
           />
           <Text variant="micro">

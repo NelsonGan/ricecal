@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider, QueryObserver } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
+import { announceGroupChatPush } from '@/lib/groupChatPushes'
 import type { Listener } from '@/lib/realtime'
 import {
   type BoardEntry,
@@ -8,6 +9,7 @@ import {
   type GroupMessage,
   groupError,
   useGroupAction,
+  useGroupBoardPushRefresh,
   useGroupChatLive,
 } from '../groups'
 import { keys } from '../keys'
@@ -147,6 +149,24 @@ it('asks the groups function to push a nudge once the nudge is written', async (
   expect(mockInvoke).toHaveBeenCalledWith('groups', { body: { kind: 'nudge', id: 'nudge-id' } })
 })
 
+it('asks the groups function to push a chat message once it is written', async () => {
+  const { wrapper } = setup()
+  mockRpc.mockReturnValue(response('message-id'))
+  const { result } = await renderHook(() => useGroupAction(), { wrapper })
+  await act(async () => {
+    await result.current.mutateAsync({
+      action: 'message',
+      groupId: 'g1',
+      day: '2026-10-21',
+      body: 'Laksa tonight?',
+      requestId: 'r1',
+    })
+  })
+  expect(mockInvoke).toHaveBeenCalledWith('groups', {
+    body: { kind: 'message', id: 'message-id' },
+  })
+})
+
 it('does not push when the database refused the nudge', async () => {
   const { wrapper } = setup()
   mockRpc.mockReturnValue(response(null, { message: 'Nudged recently', hint: 'nudge_closed' }))
@@ -267,6 +287,54 @@ function watchMessages(client: QueryClient) {
     staleTime: Number.POSITIVE_INFINITY,
   })
 }
+
+describe("the board's chat bar", () => {
+  const unread = (count: number) => ({ ...board([]), chat: { unread: count, last: null } })
+  const push = (data: Record<string, unknown>) =>
+    act(async () => {
+      if (data.kind === 'group' && data.chat === true) announceGroupChatPush(String(data.groupId))
+    })
+  function watchBoard(client: QueryClient) {
+    return new QueryObserver(client, {
+      queryKey: boardKey('g1'),
+      queryFn: () => mockRpc('group_board').then((answer: { data: unknown }) => answer.data),
+      staleTime: Number.POSITIVE_INFINITY,
+    })
+  }
+
+  it("rereads the board when that group's chat push arrives, so the count shows without a refresh", async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(boardKey('g1'), unread(0))
+    const unsubscribe = watchBoard(client).subscribe(() => undefined)
+    await renderHook(() => useGroupBoardPushRefresh('g1', true), { wrapper })
+
+    // A nudge, or another group's message, is not this chat's news.
+    await push({ kind: 'group', groupId: 'g1', day: DAY })
+    await push({ kind: 'group', groupId: 'g2', day: DAY, chat: true })
+    expect(mockRpc).not.toHaveBeenCalled()
+
+    mockRpc.mockReturnValue(response(unread(1)))
+    await push({ kind: 'group', groupId: 'g1', day: DAY, chat: true })
+    await waitFor(() =>
+      expect(client.getQueryData<GroupBoard>(boardKey('g1'))?.chat.unread).toBe(1),
+    )
+    unsubscribe()
+  })
+
+  it('does not listen while the board is covered', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(boardKey('g1'), unread(0))
+    const unsubscribe = watchBoard(client).subscribe(() => undefined)
+    const { rerender } = await renderHook(
+      ({ on }: { on: boolean }) => useGroupBoardPushRefresh('g1', on),
+      { wrapper, initialProps: { on: true } },
+    )
+    await rerender({ on: false })
+    await push({ kind: 'group', groupId: 'g1', day: DAY, chat: true })
+    expect(mockRpc).not.toHaveBeenCalled()
+    unsubscribe()
+  })
+})
 
 describe('live chat', () => {
   it("listens on the day's topic while mounted, and says when it is live", async () => {

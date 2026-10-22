@@ -1,6 +1,7 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { Database } from '@/lib/database.types'
+import { onGroupChatPush } from '@/lib/groupChatPushes'
 import { listen } from '@/lib/realtime'
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
@@ -342,6 +343,32 @@ export function useGroupChatLive(groupId: string, day: string): boolean {
   return live
 }
 
+/**
+ * Rereads a group's boards when a chat push for it arrives while the app is
+ * open, so a friend's message lights the chat bar's count as it is sent rather
+ * than at the board's next half-minute poll. The push is sent anyway, so this
+ * costs no Realtime connection; a member who muted the group, or never allowed
+ * notifications, gets no push and waits for the poll.
+ *
+ * Only while the board is on top: under the chat the count is being read away,
+ * and a refetch then would draw it back. Every cached day of the group is
+ * reread, since the count is the whole group's.
+ */
+export function useGroupBoardPushRefresh(groupId: string, enabled: boolean) {
+  const userId = useUserId()
+  const client = useQueryClient()
+  useEffect(() => {
+    if (!enabled) return
+    return onGroupChatPush((pushed) => {
+      if (pushed !== groupId) return
+      void client.invalidateQueries({
+        queryKey: keys.groups(userId),
+        predicate: (query) => named('group_board')(query) && ofGroup(groupId)(query),
+      })
+    })
+  }, [client, userId, groupId, enabled])
+}
+
 export function useGroupDetails(groupId: string) {
   const userId = useUserId()
   return useQuery({
@@ -372,10 +399,11 @@ type GroupAction =
   | { action: 'read'; groupId: string; day?: string }
 
 /**
- * Asks the groups function to push a nudge or an invite. Fire and forget: the
- * write has landed, and a missing push is not worth an error on screen.
+ * Asks the groups function to push a nudge, an invite or a chat message. Fire
+ * and forget: the write has landed, and a missing push is not worth an error on
+ * screen. The server marks each one pushed, so a resent message rings nobody twice.
  */
-function notify(kind: 'nudge' | 'invite', id: unknown) {
+function notify(kind: 'nudge' | 'invite' | 'message', id: unknown) {
   if (typeof id !== 'string') return
   void supabase.functions.invoke('groups', { body: { kind, id } }).catch(() => undefined)
 }
@@ -445,13 +473,16 @@ async function perform(input: GroupAction): Promise<unknown> {
       notify('nudge', id)
       return id
     }
-    case 'message':
-      return await rpc('send_group_message', {
+    case 'message': {
+      const id = await rpc('send_group_message', {
         p_group_id: input.groupId,
         p_day: input.day,
         p_body: input.body,
         p_request_id: input.requestId,
       })
+      notify('message', id)
+      return id
+    }
     case 'deleteMessage':
       return await rpc('delete_group_message', { p_message_id: input.messageId })
     case 'reportMessage':

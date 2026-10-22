@@ -64,18 +64,24 @@ export function useReportLinks(): void {
         router.push('/workouts')
         return
       }
-      // A nudge or an invite from a group, the one push that comes from a
-      // server. It opens the Groups tab on that group's board, or on the list
-      // for an invite, which waits behind the envelope there.
+      // A nudge, an invite or a chat message from a group, the pushes that come
+      // from a server. It opens the Groups tab on that group's board, or on the
+      // list for an invite, which waits behind the envelope there. A message
+      // opens its thread over the board, so going back lands on that day, with
+      // the keyboard up: a tapped message is one to answer.
       if (kind === 'group') {
         const data = response?.notification.request.content.data
         const groupId = typeof data?.groupId === 'string' ? data.groupId : null
-        if (userId && groupId && !data?.invite) {
-          setOpenGroup(userId, groupId, typeof data?.day === 'string' ? data.day : undefined)
-        }
+        const day = typeof data?.day === 'string' ? data.day : undefined
+        if (userId && groupId && !data?.invite) setOpenGroup(userId, groupId, day)
         if (userId && data?.invite) setOpenGroup(userId, null)
-        track('Notification Opened', { kind: data?.invite ? 'group_invite' : 'group_nudge' })
+        track('Notification Opened', {
+          kind: data?.invite ? 'group_invite' : data?.chat ? 'group_message' : 'group_nudge',
+        })
         router.navigate('/groups')
+        if (data?.chat && groupId && day) {
+          router.navigate({ pathname: '/group/chat', params: { id: groupId, day, reply: '1' } })
+        }
         return
       }
       if (!isReport(kind)) return
