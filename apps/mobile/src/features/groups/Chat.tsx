@@ -318,7 +318,8 @@ const MessageRow = memo(function MessageRow({
           onPress={state === 'failed' && outgoing ? () => onRetry(outgoing.requestId) : undefined}
           onLongPress={onLongPress}
           delayLongPress={300}
-          haptics={false}
+          // A failed message is a retry button; otherwise only the hold does anything.
+          haptics={state === 'failed'}
           {...a11y}
           accessibilityRole={state === 'failed' ? 'button' : undefined}
           accessibilityHint={state === 'failed' ? t('common:delivery.failed') : undefined}

@@ -357,7 +357,6 @@ function HistoryViewToggle({
               'h-[30px] w-[38px] items-center justify-center rounded-full',
               selected && 'bg-surface',
             )}
-            haptics={false}
             hitSlop={4}
             onPress={() => onChange(option.value)}
             accessibilityRole="tab"
