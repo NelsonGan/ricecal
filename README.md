@@ -7909,6 +7909,14 @@ if the content is short (a field, some chips, a button, rather than a list) pass
 responder when the keyboard opens, and on the first open, before the keyboard's
 real height is known, it overshoots and carries the field clean off the top.
 
+**Any other sheet is as tall as its content, up to just below the status bar.**
+The wrapper, the panel and the scroll view all shrink, so a panel that would
+pass the top of the screen (keyboard and number pad included) gives the
+difference to its body, which scrolls. Do not cap the body at a fixed height.
+It was a flat 440pt, and on a tall phone that cut the third card of the group
+meal sheet in half above the home indicator with a third of the screen unused,
+which reads as a sheet running off the bottom rather than one that scrolls.
+
 **A toast fired over a sheet needs a host inside the sheet.** A native modal
 window is above the app's root view, so the toast the provider draws in the tree
 renders *underneath* it: it mounts, joins the accessibility tree, runs its timer
