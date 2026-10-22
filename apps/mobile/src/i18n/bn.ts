@@ -1839,6 +1839,8 @@ export const bn = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: 'আরও {{count}}টি',
       moreExercises_other: 'আরও {{count}}টি',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: 'কম দেখান',
       /** The unit under a workout's length on Today, where a calorie figure would be. */
       minutes: 'মিনিট',
     },
@@ -2329,8 +2331,6 @@ export const bn = {
     pickLeader: 'নতুন লিডার বাছুন',
     leaveAndPass: '{{name}} কে লিডার করে ছাড়ুন',
     save: 'সেভ করুন',
-    loadFailed: 'লোড করা যায়নি',
-    retry: 'আবার চেষ্টা করুন',
     errors: {
       not_found: 'ওই ইউজারনেম বা ইমেলের কোনো অ্যাকাউন্ট নেই।',
       already_member: 'ইতিমধ্যে এই গ্রুপে আছেন।',

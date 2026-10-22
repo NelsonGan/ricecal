@@ -311,6 +311,8 @@ function OutgoingComment({ item, onRetry }: { item: Outgoing; onRetry: () => voi
       disabled={!failed}
       onPress={onRetry}
       haptics={failed}
+      accessibilityRole={failed ? 'button' : undefined}
+      accessibilityHint={failed ? t('common:delivery.failed') : undefined}
       accessibilityLabel={[
         name,
         item.body,
@@ -367,15 +369,19 @@ function Post({ id }: { id: string }) {
     () => new Set((comments.data?.pages ?? []).flatMap((page) => page.rows.map((row) => row.id))),
     [comments.data],
   )
-  const outbox = useOutbox(async (item) => {
-    const result = await action.mutateAsync({
-      action: 'comment',
-      postId: id,
-      body: item.body,
-      requestId: item.requestId,
-    })
-    return (result as { id?: string } | undefined)?.id ?? null
-  }, serverIds)
+  const outbox = useOutbox(
+    `post:${id}`,
+    async (item) => {
+      const result = await action.mutateAsync({
+        action: 'comment',
+        postId: id,
+        body: item.body,
+        requestId: item.requestId,
+      })
+      return (result as { id?: string } | undefined)?.id ?? null
+    },
+    serverIds,
+  )
   const send = () => {
     if (!canSend) return
     outbox.send(body.trim())
@@ -413,6 +419,7 @@ function Post({ id }: { id: string }) {
         <SocialList
           query={comments}
           variant="feed"
+          skeleton="comments"
           rowKey={(comment) => comment.id}
           renderRow={(comment, visible) => (
             <CommentRow comment={comment} owner={post.data?.author_id ?? ''} visible={visible} />

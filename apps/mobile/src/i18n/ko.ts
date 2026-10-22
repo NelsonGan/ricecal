@@ -1844,6 +1844,8 @@ export const ko = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: '외 {{count}}종목',
       moreExercises_other: '외 {{count}}종목',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: '접기',
       minutes: '분',
     },
 
@@ -2327,8 +2329,6 @@ export const ko = {
     pickLeader: '새 리더 선택',
     leaveAndPass: '{{name}}님을 리더로 정하고 나가기',
     save: '저장',
-    loadFailed: '불러오지 못했어요',
-    retry: '다시 시도',
     errors: {
       not_found: '해당 사용자 이름이나 이메일의 계정이 없어요.',
       already_member: '이미 이 그룹에 있어요.',

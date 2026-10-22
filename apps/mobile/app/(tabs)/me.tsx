@@ -295,7 +295,7 @@ export default function MeScreen() {
           value={settings ? t(`profile:home.${settings.units}`) : undefined}
           onPress={() => router.push('/settings/preferences')}
         />
-        {/* The Workouts tab has this row too, at the foot of its list. Here as
+        {/* The Workouts page has this row too, at the foot of its list. Here as
             well because this is where every other setting is looked for. */}
         <SettingRow
           icon={{ set: 'system', name: 'settings' }}

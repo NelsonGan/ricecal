@@ -472,8 +472,11 @@ export function Screen({
                 `max` is the floor for a device with NO inset (an older phone,
                 most Android gesture-off bars): the CTA still wants `spacing.md`
                 of real gap under it, which is what the old value always gave. */}
+            {/* Measured only where it is read (`bottomOffset`, scrolling screens).
+                Elsewhere the padding animates with the keyboard, and measuring
+                it re-rendered the whole screen on every frame. */}
             <Reanimated.View
-              onLayout={measureFooter}
+              onLayout={scroll ? measureFooter : undefined}
               className="gap-md bg-canvas px-gutter pt-md"
               style={footerPad}
             >

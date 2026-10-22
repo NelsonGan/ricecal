@@ -1,6 +1,6 @@
 import { format, parseISO } from 'date-fns'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'expo-router'
+import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import {
@@ -39,13 +39,10 @@ import { useBack } from '@/lib/navigation'
 import { unitFor, type WeightUnit } from '@/lib/units'
 import { AppBar, Button, Card, cn, Icon, ListRow, Screen, Skeleton, Tappable, Text } from '@/ui'
 
-/** Whether this launch's Live Activity resume has been answered. */
-let resumedThisLaunch = false
-
 /**
- * The Workouts tab: start one, start from a routine, and look back.
+ * The Workouts page: start one, start from a routine, and look back.
  *
- * Starting is the top of the screen because it is what the tab is for, and the
+ * Starting is the top of the screen because it is what the page is for, and the
  * routines sit right under it because "start my push day" is the commonest way
  * in. The history follows, newest first, with anything still waiting to sync
  * at the top of it. The week's figures are on the progress page; only the
@@ -65,7 +62,7 @@ export default function WorkoutsScreen() {
   const bodyKg = useCurrentWeight()
   const starter = useWorkoutStarter()
   const routineGate = useRoutineGate()
-  // The month instead of the tab, as Today's toggle swaps its day for one, and
+  // The month instead of the list, as Today's toggle swaps its day for one, and
   // the day picked in it. Today until another is tapped.
   const [calendar, setCalendar] = useState(false)
   const [day, setDay] = useState(today)
@@ -73,18 +70,6 @@ export default function WorkoutsScreen() {
   // offers to send it again or to drop it.
   const [queued, setQueued] = useState<{ id: string; name: string } | null>(null)
   const [discarding, setDiscarding] = useState<{ id: string; name: string } | null>(null)
-
-  // `?resume=1` is a cold launch from the Live Activity (see
-  // `app/+native-intent.tsx`): the logger is pushed from here, once this tab
-  // has mounted, so the tabs are under it. Once per launch, because the param
-  // stays on the route and coming back to the tab must not push it again.
-  const { resume } = useLocalSearchParams<{ resume?: string }>()
-  const running = starter.running
-  useEffect(() => {
-    if (!resume || resumedThisLaunch) return
-    resumedThisLaunch = true
-    if (running) openLogger(router)
-  }, [resume, running, router])
 
   // Stable, so the memoised cards only re-render when their own workout does.
   const openWorkout = useCallback(
@@ -117,7 +102,7 @@ export default function WorkoutsScreen() {
         />
       }
     >
-      {/* Medium rather than large: it is the first thing on the tab, and the
+      {/* Medium rather than large: it is the first thing on the page, and the
             routines under it start a workout just as well. */}
       {starter.running ? (
         <Button fullWidth onPress={() => openLogger(router)}>

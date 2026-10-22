@@ -173,7 +173,10 @@ export function AvatarGroup({ names, total, max = 3, size = 'sm', className }: A
       accessibilityLabel={`${total ?? names.length} members`}
     >
       {shown.map((name, index) => (
-        <View key={name} style={index > 0 ? { marginLeft: -10 } : undefined}>
+        // Names repeat (two Alexes in one group), and a short fixed list never
+        // reorders, so the place is the key.
+        // biome-ignore lint/suspicious/noArrayIndexKey: see above
+        <View key={index} style={index > 0 ? { marginLeft: -10 } : undefined}>
           {/* Letters here, not silhouettes: these are named people, and the
               initial is the only thing telling one tile from the next. */}
           <Avatar name={name} fallback="initial" size={size} />

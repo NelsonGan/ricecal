@@ -100,8 +100,6 @@ export const groups = {
   pickLeader: 'Pick a new leader',
   leaveAndPass: 'Make {{name}} leader and leave',
   save: 'Save',
-  loadFailed: 'Could not load',
-  retry: 'Try again',
   errors: {
     not_found: 'No account with that username or email.',
     already_member: 'Already in this group.',

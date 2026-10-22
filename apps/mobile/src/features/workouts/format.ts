@@ -6,7 +6,7 @@ import type { Tracking } from './catalogue'
 import { roundKg, roundMetres } from './model'
 
 /**
- * How the Workouts tab writes its numbers.
+ * How the Workouts page writes its numbers.
  *
  * Every weight is stored in kilograms and shown in the user's unit; every
  * distance in metres and shown in kilometres or miles. A typed figure is

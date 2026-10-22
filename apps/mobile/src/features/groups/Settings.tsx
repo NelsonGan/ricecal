@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useUserId } from '@/data'
 import { GROUP_CAPACITY, type GroupPerson, useGroupDetails } from '@/data/groups'
+import { QueryNotice } from '@/features/social/components'
 import { ReorderSheet } from '@/features/workouts/ReorderSheet'
 import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
@@ -13,7 +14,6 @@ import {
   Button,
   Card,
   ConfirmSheet,
-  EmptyState,
   Icon,
   IconButton,
   RadioGroup,
@@ -68,14 +68,12 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
       header={<AppBar title={t('settings')} onBack={back} backLabel={t('common:action.back')} />}
     >
       {!group ? (
-        details.isError ? (
-          <EmptyState
-            title={t('loadFailed')}
-            action={
-              <Button variant="secondary" onPress={() => void details.refetch()}>
-                {t('retry')}
-              </Button>
-            }
+        details.isError || details.fetchStatus === 'paused' ? (
+          // Paused is offline with nothing cached, which would wait for ever.
+          <QueryNotice
+            error={details.isError}
+            paused={details.fetchStatus === 'paused'}
+            retry={() => details.refetch()}
           />
         ) : (
           <SettingsSkeleton />

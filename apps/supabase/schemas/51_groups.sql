@@ -43,6 +43,8 @@ create table public.groups (
   quarantined  boolean not null default false,
   created_at   timestamptz not null default now()
 );
+-- Deleting a profile sets its groups' leader to null, which scans without this.
+create index groups_leader_idx on public.groups(leader_id);
 create index groups_public_idx on public.groups(member_count desc, created_at desc)
   where is_public and not quarantined;
 create index groups_public_name_idx on public.groups using gin (name extensions.gin_trgm_ops)
@@ -70,6 +72,9 @@ create table public.group_invites (
   created_at  timestamptz not null default now(),
   -- Set once a push has gone out, so a retried call cannot send it twice.
   pushed_at   timestamptz,
+  -- Sent to an address rather than a handle. Its sender never sees who it
+  -- found, or the field would say whether an address has an account.
+  by_email    boolean not null default false,
   primary key (group_id, invitee_id),
   constraint group_invites_not_self check (invitee_id <> inviter_id)
 );
@@ -87,8 +92,8 @@ create table public.group_reactions (
 );
 create index group_reactions_user_idx on public.group_reactions(user_id);
 
--- Only the last hour of nudges matters to anything; older rows are swept as
--- new ones arrive (nudge_group_member).
+-- Only the last hour of nudges matters to anything; rows older than two days
+-- are swept from a group as it nudges again (nudge_group_member).
 create table public.group_nudges (
   id          uuid primary key default gen_random_uuid(),
   group_id    uuid not null references public.groups(id) on delete cascade,
@@ -241,13 +246,17 @@ create or replace function private.group_member_left()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare v_next uuid;
 begin
-  if not exists (select 1 from public.groups g where g.id = old.group_id) then return null; end if;
+  -- Locked before the next leader is picked: a leave and an account deletion
+  -- at once otherwise each saw the other's row, and the group was left with
+  -- no members and a leader who had gone.
+  perform 1 from public.groups g where g.id = old.group_id for update;
+  if not found then return null; end if;
   select m.user_id into v_next from public.group_members m
   where m.group_id = old.group_id order by m.joined_at, m.user_id limit 1;
   if v_next is null then
     delete from public.groups g where g.id = old.group_id;
   else
-    update public.groups g set member_count = greatest(g.member_count - 1, 0),
+    update public.groups g set member_count = g.member_count - 1,
       leader_id = case when g.leader_id is null or g.leader_id = old.user_id then v_next else g.leader_id end
     where g.id = old.group_id;
   end if;
@@ -342,22 +351,27 @@ $$;
 -- Null leaves a field as it is.
 create or replace function public.update_group(p_group_id uuid, p_name text, p_icon_name text, p_is_public boolean)
 returns void language plpgsql security definer set search_path = '' as $$
-declare v_user uuid := private.group_require_member(p_group_id);
+declare
+  v_user uuid := private.group_require_member(p_group_id);
+  v_old text;
 begin
   if p_name is not null and char_length(btrim(p_name)) not between 1 and 40 then
     raise exception 'Name the group' using errcode = '22023';
+  end if;
+  select g.name into v_old from public.groups g
+  where g.id = p_group_id and g.leader_id = v_user for update;
+  if not found then
+    raise exception 'Only the leader can change the group' using errcode = '42501';
   end if;
   update public.groups g set
     name = coalesce(btrim(p_name), g.name),
     icon_name = coalesce(nullif(p_icon_name, ''), g.icon_name),
     is_public = coalesce(p_is_public, g.is_public),
-    -- A new name has not been reported.
-    quarantined = g.quarantined and p_name is null
-  where g.id = p_group_id and g.leader_id = v_user;
-  if not found then
-    raise exception 'Only the leader can change the group' using errcode = '42501';
-  end if;
-  if p_name is not null then
+    -- A new name has not been reported. The same name saved again is not new,
+    -- or saving it would clear its reports.
+    quarantined = g.quarantined and btrim(coalesce(p_name, v_old)) = v_old
+  where g.id = p_group_id;
+  if btrim(coalesce(p_name, v_old)) <> v_old then
     delete from public.group_reports r where r.group_id = p_group_id;
   end if;
 end;
@@ -370,6 +384,8 @@ $$;
 -- An email answers the same whatever is behind it: the invite goes to an
 -- account that can take it, and otherwise nothing happens and nothing says
 -- so, so the field cannot be used to learn whether an address has an account.
+-- Even the id is one: a made-up one, which the groups function finds nothing
+-- for, rather than a null that would tell the two apart.
 -- A handle is public already, so a handle that finds nobody says so.
 create or replace function public.invite_to_group(p_group_id uuid, p_target text)
 returns uuid language plpgsql security definer set search_path = '' as $$
@@ -387,32 +403,34 @@ begin
   if not private.social_claim(v_user, 'group_invite', 60) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
+  -- Before the lock, so the lookup does not hold up joins. GoTrue stores
+  -- addresses lowercased, and comparing the column itself uses its index.
+  if v_email then
+    select u.id into v_invitee from auth.users u where u.email = v_target and not u.is_sso_user limit 1;
+  else
+    select p.id into v_invitee from public.profiles p where p.handle = ltrim(v_target, '@');
+  end if;
   -- Locked with the joins, so an invite cannot slip into a group that a
   -- concurrent join has just filled.
   select g.member_count into v_count from public.groups g where g.id = p_group_id for update;
   if v_count >= 10 then
     raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
   end if;
-  if v_email then
-    select u.id into v_invitee from auth.users u where lower(u.email) = v_target limit 1;
-  else
-    select p.id into v_invitee from public.profiles p where p.handle = ltrim(v_target, '@');
-  end if;
   -- Someone blocked in either direction reads as nobody, so an invite cannot be
   -- used to learn who blocked whom.
   if v_invitee is null or v_invitee = v_user or private.social_pair_blocked(v_invitee)
      or exists (select 1 from public.profiles p where p.id = v_invitee and p.quarantined) then
-    if v_email then return null; end if;
+    if v_email then return gen_random_uuid(); end if;
     raise exception 'No account found' using errcode = 'P0001', hint = 'not_found';
   end if;
   if private.group_is_member(p_group_id, v_invitee) then
-    if v_email then return null; end if;
+    if v_email then return gen_random_uuid(); end if;
     raise exception 'Already in this group' using errcode = 'P0001', hint = 'already_member';
   end if;
-  insert into public.group_invites(group_id, invitee_id, inviter_id)
-  values (p_group_id, v_invitee, v_user)
+  insert into public.group_invites(group_id, invitee_id, inviter_id, by_email)
+  values (p_group_id, v_invitee, v_user, v_email)
   on conflict (group_id, invitee_id) do update
-    set inviter_id = excluded.inviter_id, created_at = now(), pushed_at = null
+    set inviter_id = excluded.inviter_id, by_email = excluded.by_email, created_at = now(), pushed_at = null
     -- A pending invite is renewed at most hourly, which also caps its pushes.
     where public.group_invites.created_at < now() - interval '1 hour'
   returning id into v_id;
@@ -701,11 +719,19 @@ create or replace function public.register_push_token(p_token text, p_platform t
 returns void language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.social_require_user(false);
 begin
-  if p_token is null or char_length(p_token) not between 10 and 200 or p_platform not in ('ios', 'android') then
+  if p_token is null or p_token !~ '^Expo(nent)?PushToken\[[A-Za-z0-9_-]{1,180}\]$'
+     or p_platform not in ('ios', 'android') then
     raise exception 'Invalid push token' using errcode = '22023';
+  end if;
+  if not private.social_claim(v_user, 'push_token', 20) then
+    raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
   insert into public.push_tokens(token, user_id, platform) values (p_token, v_user, p_platform)
   on conflict (token) do update set user_id = excluded.user_id, platform = excluded.platform, updated_at = now();
+  -- Ten phones is plenty; a reinstall mints a new token and the old one lingers
+  -- until a push finds it gone, so the oldest go first.
+  delete from public.push_tokens t where t.user_id = v_user and t.token not in (
+    select k.token from public.push_tokens k where k.user_id = v_user order by k.updated_at desc limit 10);
 end;
 $$;
 

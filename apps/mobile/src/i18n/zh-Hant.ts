@@ -1838,6 +1838,8 @@ export const zhHant = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: '還有 {{count}} 個',
       moreExercises_other: '還有 {{count}} 個',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: '收起',
       minutes: '分鐘',
     },
 
@@ -2320,8 +2322,6 @@ export const zhHant = {
     pickLeader: '選擇新組長',
     leaveAndPass: '讓 {{name}} 當組長並退出',
     save: '儲存',
-    loadFailed: '無法載入',
-    retry: '重試',
     errors: {
       not_found: '沒有使用該使用者名稱或電子郵件的帳號。',
       already_member: '已經在這個小組裡了。',

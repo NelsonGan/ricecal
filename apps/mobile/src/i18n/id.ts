@@ -1869,6 +1869,8 @@ export const id = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: 'dan {{count}} lainnya',
       moreExercises_other: 'dan {{count}} lainnya',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: 'Tampilkan lebih sedikit',
       minutes: 'mnt',
     },
 
@@ -2352,8 +2354,6 @@ export const id = {
     pickLeader: 'Pilih ketua baru',
     leaveAndPass: 'Jadikan {{name}} ketua lalu keluar',
     save: 'Simpan',
-    loadFailed: 'Gagal memuat',
-    retry: 'Coba lagi',
     errors: {
       not_found: 'Tidak ada akun dengan nama pengguna atau email itu.',
       already_member: 'Sudah ada di grup ini.',

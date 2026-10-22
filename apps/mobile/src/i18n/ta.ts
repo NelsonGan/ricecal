@@ -1862,6 +1862,8 @@ export const ta = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: 'மேலும் {{count}}',
       moreExercises_other: 'மேலும் {{count}}',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: 'குறைவாகக் காட்டு',
       /** The unit under a workout's length on Today, where a calorie figure would be. */
       minutes: 'நிமி',
     },
@@ -2352,8 +2354,6 @@ export const ta = {
     pickLeader: 'புதிய தலைவரைத் தேர்ந்தெடு',
     leaveAndPass: '{{name}} ஐ தலைவராக்கி வெளியேறு',
     save: 'சேமி',
-    loadFailed: 'ஏற்ற முடியவில்லை',
-    retry: 'மீண்டும் முயல்க',
     errors: {
       not_found: 'அந்த பயனர்பெயர் அல்லது மின்னஞ்சலுடன் கணக்கு இல்லை.',
       already_member: 'ஏற்கனவே இந்தக் குழுவில் உள்ளனர்.',

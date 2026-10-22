@@ -81,13 +81,17 @@ CREATE FUNCTION private.group_member_left()
   AS $function$
 declare v_next uuid;
 begin
-  if not exists (select 1 from public.groups g where g.id = old.group_id) then return null; end if;
+  -- Locked before the next leader is picked: a leave and an account deletion
+  -- at once otherwise each saw the other's row, and the group was left with
+  -- no members and a leader who had gone.
+  perform 1 from public.groups g where g.id = old.group_id for update;
+  if not found then return null; end if;
   select m.user_id into v_next from public.group_members m
   where m.group_id = old.group_id order by m.joined_at, m.user_id limit 1;
   if v_next is null then
     delete from public.groups g where g.id = old.group_id;
   else
-    update public.groups g set member_count = greatest(g.member_count - 1, 0),
+    update public.groups g set member_count = g.member_count - 1,
       leader_id = case when g.leader_id is null or g.leader_id = old.user_id then v_next else g.leader_id end
     where g.id = old.group_id;
   end if;
@@ -404,11 +408,13 @@ begin
     where n.group_id = p_group_id and n.day = p_day and n.created_at > now() - interval '1 hour'
     order by n.target_id, n.meal, n.created_at desc
   ),
+  -- This day's thread only, for its preview. The unread count is its own
+  -- capped query below: a member who never opens the chat would otherwise have
+  -- every message since they joined read on each poll.
   chat as materialized (
-    select m.id, m.author_id, m.body, m.created_at, m.day
+    select m.author_id, m.body, m.created_at
     from public.group_messages m
-    where m.group_id = p_group_id and not m.quarantined
-      and (m.day = p_day or m.created_at > v_member.chat_read_at)
+    where m.group_id = p_group_id and m.day = p_day and not m.quarantined
       and not private.social_pair_blocked(m.author_id)
       and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
   )
@@ -431,8 +437,10 @@ begin
           where e.user_id = mb.user_id
         ), '[]'::jsonb),
         'nudges', coalesce((
+          -- A nudge by someone blocked still holds the cooldown (nudgeable
+          -- reads every one), but is not drawn with their face.
           select jsonb_object_agg(n.meal, jsonb_build_object('by', private.group_person(n.nudger_id)))
-          from nudges n where n.target_id = mb.user_id
+          from nudges n where n.target_id = mb.user_id and not private.social_pair_blocked(n.nudger_id)
         ), '{}'::jsonb),
         -- The same rule as nudge_group_member, read from what this query
         -- already holds instead of three lookups per member and meal.
@@ -470,10 +478,16 @@ begin
     -- Unread counts the whole group since the caller last read it, since that
     -- is what reading clears; the preview is this day's latest message.
     'chat', jsonb_build_object(
-      'unread', (select count(*) from chat c where c.author_id <> v_user and c.created_at > v_member.chat_read_at),
+      'unread', (select count(*) from (
+        select 1 from public.group_messages m
+        where m.group_id = p_group_id and m.created_at > v_member.chat_read_at
+          and m.author_id <> v_user and not m.quarantined
+          and not private.social_pair_blocked(m.author_id)
+          and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
+        limit 100) u),
       'last', (
         select jsonb_build_object('author', private.group_person(c.author_id), 'body', c.body)
-        from chat c where c.day = p_day order by c.created_at desc limit 1
+        from chat c order by c.created_at desc limit 1
       )
     )
   ) into v_result;
@@ -509,7 +523,8 @@ begin
       ),
       'invites', coalesce((
         select jsonb_agg(private.group_person(i.invitee_id) order by i.created_at desc)
-        from public.group_invites i where i.group_id = p_group_id and i.inviter_id = v_user
+        from public.group_invites i
+        where i.group_id = p_group_id and i.inviter_id = v_user and not i.by_email
       ), '[]'::jsonb)
     )
     from public.groups g where g.id = p_group_id
@@ -654,32 +669,34 @@ begin
   if not private.social_claim(v_user, 'group_invite', 60) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
+  -- Before the lock, so the lookup does not hold up joins. GoTrue stores
+  -- addresses lowercased, and comparing the column itself uses its index.
+  if v_email then
+    select u.id into v_invitee from auth.users u where u.email = v_target and not u.is_sso_user limit 1;
+  else
+    select p.id into v_invitee from public.profiles p where p.handle = ltrim(v_target, '@');
+  end if;
   -- Locked with the joins, so an invite cannot slip into a group that a
   -- concurrent join has just filled.
   select g.member_count into v_count from public.groups g where g.id = p_group_id for update;
   if v_count >= 10 then
     raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
   end if;
-  if v_email then
-    select u.id into v_invitee from auth.users u where lower(u.email) = v_target limit 1;
-  else
-    select p.id into v_invitee from public.profiles p where p.handle = ltrim(v_target, '@');
-  end if;
   -- Someone blocked in either direction reads as nobody, so an invite cannot be
   -- used to learn who blocked whom.
   if v_invitee is null or v_invitee = v_user or private.social_pair_blocked(v_invitee)
      or exists (select 1 from public.profiles p where p.id = v_invitee and p.quarantined) then
-    if v_email then return null; end if;
+    if v_email then return gen_random_uuid(); end if;
     raise exception 'No account found' using errcode = 'P0001', hint = 'not_found';
   end if;
   if private.group_is_member(p_group_id, v_invitee) then
-    if v_email then return null; end if;
+    if v_email then return gen_random_uuid(); end if;
     raise exception 'Already in this group' using errcode = 'P0001', hint = 'already_member';
   end if;
-  insert into public.group_invites(group_id, invitee_id, inviter_id)
-  values (p_group_id, v_invitee, v_user)
+  insert into public.group_invites(group_id, invitee_id, inviter_id, by_email)
+  values (p_group_id, v_invitee, v_user, v_email)
   on conflict (group_id, invitee_id) do update
-    set inviter_id = excluded.inviter_id, created_at = now(), pushed_at = null
+    set inviter_id = excluded.inviter_id, by_email = excluded.by_email, created_at = now(), pushed_at = null
     -- A pending invite is renewed at most hourly, which also caps its pushes.
     where public.group_invites.created_at < now() - interval '1 hour'
   returning id into v_id;
@@ -806,14 +823,22 @@ begin
       'logged_today', (
         select count(*) from public.group_members x
         join public.profiles p on p.id = x.user_id
-        where x.group_id = g.id and exists (
+        where x.group_id = g.id
+          and (x.user_id = v_user or not private.social_pair_blocked(x.user_id))
+          and exists (
           select 1 from public.food_logs f
           where f.user_id = x.user_id
             and f.log_date = (now() at time zone coalesce(p.timezone, 'Asia/Kuala_Lumpur'))::date)
       ),
       'members', (
-        select coalesce(jsonb_agg(private.group_person(x.user_id) order by x.user_id = v_user desc, x.joined_at), '[]')
-        from (select * from public.group_members x where x.group_id = g.id order by x.joined_at limit 5) x
+        -- The caller first, then whoever joined first, and nobody blocked: the
+        -- list is kept on the phone.
+        select coalesce(jsonb_agg(private.group_person(x.user_id) order by x.mine desc, x.joined_at), '[]')
+        from (
+          select x.user_id, x.joined_at, x.user_id = v_user as mine from public.group_members x
+          where x.group_id = g.id and (x.user_id = v_user or not private.social_pair_blocked(x.user_id))
+          order by x.user_id = v_user desc, x.joined_at limit 5
+        ) x
       )
     ) order by m.joined_at desc)
     from public.group_members m join public.groups g on g.id = m.group_id
@@ -914,11 +939,19 @@ CREATE FUNCTION public.register_push_token (
   AS $function$
 declare v_user uuid := private.social_require_user(false);
 begin
-  if p_token is null or char_length(p_token) not between 10 and 200 or p_platform not in ('ios', 'android') then
+  if p_token is null or p_token !~ '^Expo(nent)?PushToken\[[A-Za-z0-9_-]{1,180}\]$'
+     or p_platform not in ('ios', 'android') then
     raise exception 'Invalid push token' using errcode = '22023';
+  end if;
+  if not private.social_claim(v_user, 'push_token', 20) then
+    raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
   insert into public.push_tokens(token, user_id, platform) values (p_token, v_user, p_platform)
   on conflict (token) do update set user_id = excluded.user_id, platform = excluded.platform, updated_at = now();
+  -- Ten phones is plenty; a reinstall mints a new token and the old one lingers
+  -- until a push finds it gone, so the oldest go first.
+  delete from public.push_tokens t where t.user_id = v_user and t.token not in (
+    select k.token from public.push_tokens k where k.user_id = v_user order by k.updated_at desc limit 10);
 end;
 $function$;
 
@@ -1229,22 +1262,27 @@ CREATE FUNCTION public.update_group (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-declare v_user uuid := private.group_require_member(p_group_id);
+declare
+  v_user uuid := private.group_require_member(p_group_id);
+  v_old text;
 begin
   if p_name is not null and char_length(btrim(p_name)) not between 1 and 40 then
     raise exception 'Name the group' using errcode = '22023';
+  end if;
+  select g.name into v_old from public.groups g
+  where g.id = p_group_id and g.leader_id = v_user for update;
+  if not found then
+    raise exception 'Only the leader can change the group' using errcode = '42501';
   end if;
   update public.groups g set
     name = coalesce(btrim(p_name), g.name),
     icon_name = coalesce(nullif(p_icon_name, ''), g.icon_name),
     is_public = coalesce(p_is_public, g.is_public),
-    -- A new name has not been reported.
-    quarantined = g.quarantined and p_name is null
-  where g.id = p_group_id and g.leader_id = v_user;
-  if not found then
-    raise exception 'Only the leader can change the group' using errcode = '42501';
-  end if;
-  if p_name is not null then
+    -- A new name has not been reported. The same name saved again is not new,
+    -- or saving it would clear its reports.
+    quarantined = g.quarantined and btrim(coalesce(p_name, v_old)) = v_old
+  where g.id = p_group_id;
+  if btrim(coalesce(p_name, v_old)) <> v_old then
     delete from public.group_reports r where r.group_id = p_group_id;
   end if;
 end;
@@ -1268,7 +1306,8 @@ CREATE TABLE public.group_invites (
   invitee_id uuid                     NOT NULL,
   inviter_id uuid                     NOT NULL,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
-  pushed_at  timestamp with time zone
+  pushed_at  timestamp with time zone,
+  by_email   boolean                  DEFAULT false NOT NULL
 );
 
 ALTER TABLE public.group_invites
@@ -1291,9 +1330,9 @@ ALTER TABLE public.group_invites
 
 GRANT ALL ON public.group_invites TO service_role;
 
-CREATE INDEX group_invites_inviter_idx ON public.group_invites (inviter_id);
-
 CREATE INDEX group_invites_invitee_idx ON public.group_invites (invitee_id, created_at DESC);
+
+CREATE INDEX group_invites_inviter_idx ON public.group_invites (inviter_id);
 
 CREATE TABLE public.group_members (
   group_id     uuid                     NOT NULL,
@@ -1385,9 +1424,9 @@ ALTER TABLE public.group_message_reports
 
 GRANT ALL ON public.group_messages TO service_role;
 
-CREATE INDEX group_messages_day_idx ON public.group_messages (group_id, day, created_at);
-
 CREATE INDEX group_messages_recent_idx ON public.group_messages (group_id, created_at);
+
+CREATE INDEX group_messages_day_idx ON public.group_messages (group_id, day, created_at);
 
 CREATE TABLE public.group_nudges (
   id         uuid                     DEFAULT gen_random_uuid() NOT NULL,
@@ -1417,11 +1456,11 @@ ALTER TABLE public.group_nudges
 
 GRANT ALL ON public.group_nudges TO service_role;
 
-CREATE INDEX group_nudges_target_id_idx ON public.group_nudges (target_id);
+CREATE INDEX group_nudges_nudger_idx ON public.group_nudges (nudger_id);
 
 CREATE INDEX group_nudges_target_idx ON public.group_nudges (group_id, target_id, day, meal, created_at DESC);
 
-CREATE INDEX group_nudges_nudger_idx ON public.group_nudges (nudger_id);
+CREATE INDEX group_nudges_target_id_idx ON public.group_nudges (target_id);
 
 CREATE TABLE public.group_reactions (
   entry_id uuid     NOT NULL,
@@ -1513,11 +1552,13 @@ ALTER TABLE public.group_reports
 
 GRANT ALL ON public.groups TO service_role;
 
+CREATE INDEX groups_public_name_idx ON public.groups USING gin (name extensions.gin_trgm_ops)
+  WHERE is_public AND NOT quarantined;
+
 CREATE INDEX groups_public_idx ON public.groups (member_count DESC, created_at DESC)
   WHERE is_public AND NOT quarantined;
 
-CREATE INDEX groups_public_name_idx ON public.groups USING gin (name extensions.gin_trgm_ops)
-  WHERE is_public AND NOT quarantined;
+CREATE INDEX groups_leader_idx ON public.groups (leader_id);
 
 CREATE TABLE public.push_tokens (
   token      text                     NOT NULL,

@@ -180,7 +180,7 @@ export function useGroupInvites(enabled: boolean) {
 /**
  * The red number on the tab. An invite also arrives as a push, which is what
  * makes it timely; this only has to catch up, so it asks every five minutes
- * while the app is in front, and the Groups tab refreshes it on focus.
+ * while the app is in front.
  */
 export function useGroupInviteCount() {
   const userId = useUserId()
@@ -264,7 +264,7 @@ type GroupAction =
   | { action: 'leave'; groupId: string; newLeader?: string }
   | { action: 'remove'; groupId: string; userId: string }
   | { action: 'preferences'; groupId: string; order?: string[]; notify?: boolean }
-  | { action: 'react'; groupId: string; day: string; entryId: string; value: -1 | 0 | 1 }
+  | { action: 'react'; entryId: string; value: -1 | 0 | 1 }
   | { action: 'move'; entryId: string; meal: GroupMeal }
   | { action: 'nudge'; groupId: string; day: string; targetId: string; meal: GroupMeal }
   | { action: 'message'; groupId: string; day: string; body: string; requestId: string }
@@ -283,7 +283,7 @@ function notify(kind: 'nudge' | 'invite', id: unknown) {
 }
 
 /** An invite answered after its group filled. The invite is withdrawn. */
-export class GroupFullError extends Error {
+class GroupFullError extends Error {
   hint = 'group_full'
 }
 
@@ -416,10 +416,12 @@ export function useGroupAction() {
   const userId = useUserId()
   const client = useQueryClient()
   const root = keys.groups(userId)
-  const refresh = (...names: string[]) => {
+  /** Refetches the named reads, of one group when `groupId` is given. */
+  const refresh = (groupId: string | null, ...names: string[]) => {
     void client.invalidateQueries({
       queryKey: root,
-      predicate: (query) => names.includes(String(query.queryKey[2])),
+      predicate: (query) =>
+        names.includes(String(query.queryKey[2])) && (!groupId || ofGroup(groupId)(query)),
     })
   }
   return useMutation<unknown, unknown, GroupAction, Rollback | undefined>({
@@ -431,20 +433,34 @@ export function useGroupAction() {
           // Drawn at once and reconciled by the board's own poll, so a quick
           // like then unlike never redraws the first tap's answer over the
           // second. A refusal restores this one entry, not whole boards.
+          // A poll already on its way read the entry before this write, and
+          // would draw the old answer over it.
+          await client.cancelQueries({ queryKey: root, predicate: named('group_board') })
           const before = findEntry(client, userId, input.entryId)
           if (!before) return undefined
-          patchEntry(client, userId, input.entryId, (entry) => {
-            if (input.action === 'move') return { ...entry, meal: input.meal }
-            const likes = entry.likes - (entry.mine === 1 ? 1 : 0) + (input.value === 1 ? 1 : 0)
-            const dislikes =
-              entry.dislikes - (entry.mine === -1 ? 1 : 0) + (input.value === -1 ? 1 : 0)
-            return { ...entry, likes, dislikes, mine: input.value }
+          if (input.action === 'move') {
+            patchEntry(client, userId, input.entryId, (entry) => ({ ...entry, meal: input.meal }))
+            return () =>
+              patchEntry(client, userId, input.entryId, (entry) => ({
+                ...entry,
+                meal: before.meal,
+              }))
+          }
+          // The viewer's own vote moved from one answer to another. Each board
+          // counts only its own members, so the counts differ by group and are
+          // shifted, never copied from one board to the rest.
+          const shift = (entry: BoardEntry, from: BoardEntry['mine'], to: BoardEntry['mine']) => ({
+            ...entry,
+            likes: entry.likes - (from === 1 ? 1 : 0) + (to === 1 ? 1 : 0),
+            dislikes: entry.dislikes - (from === -1 ? 1 : 0) + (to === -1 ? 1 : 0),
+            mine: to,
           })
+          patchEntry(client, userId, input.entryId, (entry) =>
+            shift(entry, entry.mine, input.value),
+          )
           return () =>
             patchEntry(client, userId, input.entryId, (entry) =>
-              input.action === 'move'
-                ? { ...entry, meal: before.meal }
-                : { ...entry, likes: before.likes, dislikes: before.dislikes, mine: before.mine },
+              shift(entry, entry.mine, before.mine),
             )
         }
         case 'read':
@@ -500,21 +516,22 @@ export function useGroupAction() {
           }
           return
         case 'invite':
-          refresh('group_details')
+          refresh(input.groupId, 'group_details')
           return
         case 'preferences':
-          refresh('group_details', ...(input.order ? ['group_board'] : []))
+          refresh(input.groupId, 'group_details', ...(input.order ? ['group_board'] : []))
           return
         case 'update':
-          refresh('group_details', 'group_board', 'my_groups')
+          refresh(input.groupId, 'group_details', 'group_board')
+          refresh(null, 'my_groups')
           return
         case 'reportGroup':
-          refresh('public_groups')
+          refresh(null, 'public_groups')
           return
         case 'leave':
           // Its boards and chats are no longer this person's to read.
           if (!error) client.removeQueries({ queryKey: root, predicate: ofGroup(input.groupId) })
-          refresh('my_groups')
+          refresh(null, 'my_groups')
           return
         default:
           // Membership changed: lists, boards and the invite count may all differ.

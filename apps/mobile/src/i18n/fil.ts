@@ -1892,6 +1892,8 @@ export const fil = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: 'at {{count}} pa',
       moreExercises_other: 'at {{count}} pa',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: 'Ipakita nang mas kaunti',
       minutes: 'min',
     },
 
@@ -2374,8 +2376,6 @@ export const fil = {
     pickLeader: 'Pumili ng bagong lider',
     leaveAndPass: 'Gawing lider si {{name}} at umalis',
     save: 'I-save',
-    loadFailed: 'Hindi ma-load',
-    retry: 'Subukan ulit',
     errors: {
       not_found: 'Walang account na may ganyang username o email.',
       already_member: 'Nasa grupong ito na.',

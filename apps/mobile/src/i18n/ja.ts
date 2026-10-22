@@ -1858,6 +1858,8 @@ export const ja = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: 'ほか {{count}} 種目',
       moreExercises_other: 'ほか {{count}} 種目',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: '閉じる',
       minutes: '分',
     },
 
@@ -2341,8 +2343,6 @@ export const ja = {
     pickLeader: '新しいリーダーを選ぶ',
     leaveAndPass: '{{name}}さんをリーダーにして抜ける',
     save: '保存',
-    loadFailed: '読み込めませんでした',
-    retry: '再試行',
     errors: {
       not_found: 'そのユーザー名またはメールのアカウントはありません。',
       already_member: 'すでにこのグループにいます。',

@@ -28,7 +28,7 @@ import { AppBar, Button, Screen, Sheet, TextField, useToast } from '@/ui'
  * The same exercise editor the logger uses, without the ticks: a routine says
  * what to do, and the PREVIOUS column shows what was done last time. The page
  * is only the plan; its name and note are asked for when it is saved. There is
- * no Start here: the routine's row on the Workouts tab already has one.
+ * no Start here: the routine's row on the Workouts page already has one.
  */
 export default function RoutineScreen() {
   const { t } = useTranslation(['workouts'])

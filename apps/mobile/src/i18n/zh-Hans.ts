@@ -1838,6 +1838,8 @@ export const zhHans = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: '还有 {{count}} 个',
       moreExercises_other: '还有 {{count}} 个',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: '收起',
       minutes: '分钟',
     },
 
@@ -2320,8 +2322,6 @@ export const zhHans = {
     pickLeader: '选择新组长',
     leaveAndPass: '让 {{name}} 当组长并退出',
     save: '保存',
-    loadFailed: '无法加载',
-    retry: '重试',
     errors: {
       not_found: '没有使用该用户名或邮箱的账号。',
       already_member: '已经在这个小组里了。',

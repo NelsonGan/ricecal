@@ -86,8 +86,10 @@ select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role',
 select ok(public.invite_to_group((select id from g), '@ben.groups') is not null, 'invite by handle');
 select ok(public.invite_to_group((select id from g), :'cai' || '@GROUPS.example.test') is not null,
   'invite by email, ignoring case');
-select is(public.invite_to_group((select id from g), 'nobody@example.test'), null,
+select ok(public.invite_to_group((select id from g), 'nobody@example.test') is not null,
   'an unknown email answers like any other, so it cannot be used to test addresses');
+select is(jsonb_array_length(public.group_details((select id from g))->'invites'), 1,
+  'settings lists the handle invite and not who an address found');
 select throws_ok($$select public.invite_to_group((select id from g), '@nobody.here')$$,
   'P0001', 'No account found', 'an unknown handle says so, since handles are public');
 
