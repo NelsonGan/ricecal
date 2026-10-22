@@ -110,7 +110,7 @@ $$;
 -- The board for one day, within the sixty days the pager reaches. Every
 -- visible member's entries for that day in the column they belong to,
 -- reactions counted among this group's members, what the caller may nudge,
--- the day's first workout and the chat. Members blocked either way are left
+-- and the day's first workout. Members blocked either way are left
 -- out for the caller, food and all.
 create or replace function public.group_board(p_group_id uuid, p_day date)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
@@ -163,16 +163,6 @@ begin
     from public.group_nudges n
     where n.group_id = p_group_id and n.day = p_day and n.created_at > now() - interval '1 hour'
     order by n.target_id, n.meal, n.created_at desc
-  ),
-  -- This day's thread only, for its preview. The unread count is its own
-  -- capped query below: a member who never opens the chat would otherwise have
-  -- every message since they joined read on each poll.
-  chat as materialized (
-    select m.author_id, m.body, m.created_at
-    from public.group_messages m
-    where m.group_id = p_group_id and m.day = p_day and not m.quarantined
-      and not private.social_pair_blocked(m.author_id)
-      and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
   )
   select jsonb_build_object(
     'group', (select jsonb_build_object('id', g.id, 'name', g.name, 'icon_name', g.icon_name,
@@ -230,29 +220,50 @@ begin
         )
       ) order by mb.rank, mb.joined_at, mb.user_id)
       from members mb
-    ), '[]'::jsonb),
-    -- Unread counts the whole group since the caller last read it, since that
-    -- is what reading clears; the preview is this day's latest message.
-    'chat', jsonb_build_object(
-      'unread', (select count(*) from (
-        select 1 from public.group_messages m
-        where m.group_id = p_group_id and m.created_at > v_member.chat_read_at
-          and m.author_id <> v_user and not m.quarantined
-          and not private.social_pair_blocked(m.author_id)
-          and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
-        limit 100) u),
-      'last', (
-        select jsonb_build_object('author', private.group_person(c.author_id), 'body', c.body)
-        from chat c order by c.created_at desc limit 1
-      )
-    )
+    ), '[]'::jsonb)
   ) into v_result;
   return v_result;
 end;
 $$;
 
--- A day's chat, oldest first, the latest 200.
-create or replace function public.group_messages(p_group_id uuid, p_day date)
+-- The board's chat bar: the unread count since the caller last read the
+-- chat, which is what reading clears, and the latest message for the preview.
+-- Read on its own, and again when the group's Realtime topic announces a
+-- message, rather than with the board and its every member's day of food. The
+-- count stops at 100, so a member who never opens the chat does not have every
+-- message since they joined read on each poll. Both leave out what
+-- group_messages leaves out.
+create or replace function public.group_chat_summary(p_group_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare v_user uuid := private.group_require_member(p_group_id); v_read_at timestamptz;
+begin
+  select m.chat_read_at into v_read_at from public.group_members m
+  where m.group_id = p_group_id and m.user_id = v_user;
+  return jsonb_build_object(
+    'unread', (select count(*) from (
+      select 1 from public.group_messages m
+      where m.group_id = p_group_id and m.created_at > v_read_at
+        and m.author_id <> v_user and not m.quarantined
+        and not private.social_pair_blocked(m.author_id)
+        and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
+      limit 100) u),
+    'last', (
+      select jsonb_build_object('author', private.group_person(m.author_id), 'body', m.body)
+      from public.group_messages m
+      where m.group_id = p_group_id and not m.quarantined
+        and not private.social_pair_blocked(m.author_id)
+        and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
+      order by m.created_at desc limit 1
+    )
+  );
+end;
+$$;
+
+-- The group's one thread, a page at a time: the latest `p_limit` messages, or
+-- those before the (`p_before_at`, `p_before_id`) cursor when scrolling up,
+-- read newest first and returned oldest first as the screen draws them.
+create or replace function public.group_messages(p_group_id uuid, p_before_at timestamptz default null,
+  p_before_id uuid default null, p_limit integer default 50)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id);
 begin
@@ -263,10 +274,11 @@ begin
     ) order by m.created_at, m.id)
     from (
       select * from public.group_messages m
-      where m.group_id = p_group_id and m.day = p_day and not m.quarantined
+      where m.group_id = p_group_id and not m.quarantined
+        and (p_before_at is null or (m.created_at, m.id) < (p_before_at, coalesce(p_before_id, m.id)))
         and not private.social_pair_blocked(m.author_id)
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
-      order by m.created_at desc limit 200
+      order by m.created_at desc, m.id desc limit greatest(1, least(coalesce(p_limit, 50), 100))
     ) m
   ), '[]'::jsonb);
 end;
@@ -328,7 +340,8 @@ revoke execute on function private.group_photo_claims, private.group_person from
 grant execute on function private.group_photo_claims, private.group_person to authenticated, service_role;
 
 revoke execute on function public.my_groups, public.my_group_invites, public.group_invite_count,
-  public.public_groups, public.group_board, public.group_messages, public.group_details from public, anon;
+  public.public_groups, public.group_board, public.group_messages, public.group_chat_summary,
+  public.group_details from public, anon;
 grant execute on function public.my_groups, public.my_group_invites, public.group_invite_count,
-  public.public_groups, public.group_board, public.group_messages, public.group_details
-  to authenticated, service_role;
+  public.public_groups, public.group_board, public.group_messages, public.group_chat_summary,
+  public.group_details to authenticated, service_role;

@@ -17,9 +17,17 @@ let mockBoard: GroupBoard
 jest.mock('@/data/groups', () => ({
   ...jest.requireActual('@/data/groups'),
   useGroupBoard: () => ({ data: mockBoard, isError: false, refetch: jest.fn() }),
-  useGroupBoardPushRefresh: () => undefined,
+  useGroupBoardChatLive: () => true,
+  useGroupChatSummary: () => ({
+    data: {
+      unread: 1,
+      last: {
+        author: { id: 'hafiz', name: 'Hafiz Ismail', handle: 'hafiz', avatar_path: null },
+        body: 'cheat day lah',
+      },
+    },
+  }),
   useMyGroups: () => ({ data: undefined }),
-  useGroupMessages: () => ({ data: [], isLoading: false }),
   useGroupAction: () => ({ mutate: jest.fn(), mutateAsync: jest.fn(), isPending: false }),
 }))
 jest.mock('../parts', () => ({
@@ -98,13 +106,6 @@ beforeEach(() => {
       member('meiling', 'Mei Ling Wong'),
       member('daniel', 'Daniel Lim'),
     ],
-    chat: {
-      unread: 1,
-      last: {
-        author: { id: 'hafiz', name: 'Hafiz Ismail', handle: 'hafiz', avatar_path: null },
-        body: 'cheat day lah',
-      },
-    },
   }
 })
 
@@ -160,7 +161,7 @@ it('folds the board after five rows and unfolds on request', async () => {
   expect(screen.getByText('Show less')).toBeOnTheScreen()
 })
 
-it('shows the day’s last message and its unread count in the chat bar', async () => {
+it('shows the group’s last message and its unread count in the chat bar', async () => {
   await render(board)
   expect(screen.getByText('Hafiz: cheat day lah')).toBeOnTheScreen()
 })

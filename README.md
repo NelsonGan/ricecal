@@ -3184,14 +3184,17 @@ meal share a tile and swipe sideways inside it.
   passed half an hour ago, on their today. The first nudge closes that meal for
   everyone in the group for an hour (`group_nudges`), and the tile says who
   nudged. Past days cannot be nudged.
-- **Chat** is one thread per day page, so it stays about that day's food. A
+- **Chat** is one thread per group, as in any group chat, opened from the chat
+  bar under every day of the board. It opens on the newest 50 messages and
+  reads the 50 before as the member scrolls up (`group_messages` takes a
+  `created_at, id` cursor), with a chip where each day starts. A
   message can be deleted by its author, reported (hidden from the reporter at
   once, from everyone at three reports) or its author blocked, which follows the
   rule that anything one user writes for another needs a report and a block.
-  The unread count on the chat bar covers the whole group since the member last
-  opened its chat, since opening it is what clears it. It is counted to 100
-  and no further, so a member who never opens the chat does not have the whole
-  history read on every board poll.
+  The chat bar shows the unread count since the member last read the chat and
+  the latest message (`group_chat_summary`, read on its own rather than with
+  the board). The count stops at 100, so a member who never opens the chat
+  does not have the whole history read on every poll.
 - **A public group's name** is read by strangers, so it can be reported too, by a
   long press in the public list: it leaves the reporter's list at once and
   everyone's at three reports. Renaming the group clears the reports; saving
@@ -3233,23 +3236,25 @@ under an open board does not move it a day.
 
 ### Live chat
 
-An open chat is the app's one Realtime channel: private, named
-`group-chat:<group>:<day>`, and joined only while that chat is on screen and the
-app is in front. Everything else still polls.
+A group's chat has one private Realtime channel, `group-chat:<group>`, joined
+while its chat or its board is on screen and the app is in front. The two share
+it (`lib/realtime.ts` holds one channel per topic), so opening the chat from the
+board does not leave and rejoin. Everything else still polls.
 
-The board's chat bar does not listen on it. Its count and preview catch up when
-a chat push for the group reaches the open app: the notification handler
-announces it (`lib/groupChatPushes.ts`) and the board rereads every cached day
-of that group, since the count is the whole group's. That push is sent anyway
-(see Push below), so the live count costs no Realtime connection, which the
-free plan caps. A member who muted the group or never allowed notifications
-gets no push and waits for the board's half-minute poll. The board stops
-listening while the chat covers it, since the count is being read away there
-and a refetch would draw it back.
+- **The chat** refetches the thread's newest page when a broadcast names a
+  message it does not have.
+- **The board's chat bar** rereads `group_chat_summary` on every broadcast: one
+  small read instead of the board with every member's day of food, one in
+  flight at a time with a burst ending in one more. Measured on a simulator
+  against the local stack, it redraws within a second of the message being
+  written. While the channel is not joined, a chat push reaching the open app
+  rereads it instead (`lib/groupChatPushes.ts`), and failing that it polls every
+  half minute. The board stops listening while the chat covers it, since the
+  count is being read away there and a reread would draw it back.
 
 - **Broadcast from the database, not Postgres Changes.** Triggers on
   `group_messages` call `realtime.send` when a message is written, deleted
-  (once per statement and thread, so a deleted account's months of messages are
+  (once per statement and group, so a deleted account's months of messages are
   a handful of broadcasts) or quarantined by its third report. Changes would
   need `group_messages` opened to clients through RLS, which every groups table
   deliberately is not, and would check that policy per listener per row; a
@@ -3285,8 +3290,10 @@ and a refetch would draw it back.
 - **Polling is the net, not the mechanism.** Joined, the thread is still read
   once a minute, for what no message write announces (another member blocking
   the viewer, a renamed author) and for a socket that died without saying so.
-  Not joined, it is read every 5 seconds as before Realtime, which is also what
-  an app from before this change keeps doing, untouched. Measured on a simulator
+  Not joined, it is read every 5 seconds. Each read is the newest page laid
+  over what has been scrolled through (`mergeNewest`), so a long scroll back
+  costs nothing on the next refetch; a newest page that does not reach anything
+  held means a gap, and the thread starts again from that page. Measured on a simulator
   against the local stack: no requests while a joined chat sat idle for 20
   seconds, and one per message from someone else.
 - **The sender's own message** joins the cached thread the moment
@@ -3295,7 +3302,7 @@ and a refetch would draw it back.
   one of the viewer's own sends to the thread is still on its way: the send
   refetches the thread when it lands, which picks up anything else too. One
   read per message sent, either way. Deleting or reporting takes the message out
-  in place and rereads only the board, whose preview it may have been.
+  in place and rereads only the chat bar, whose preview it may have been.
 - **pgTAP cannot watch `realtime.messages`.** It is partitioned by day, the
   Realtime server makes the partitions, and CI runs Postgres alone, where
   `realtime.send` would swallow the failure as a warning. `36_groups` replaces
@@ -3323,9 +3330,21 @@ answers every other member's devices, leaving out anyone blocked either way.
 The push carries the body, so this is where blocks are applied to it, as
 `group_messages` does for the thread. It needs no translated copy: the group is
 the title and "Name: message" the body, as messengers write it. Its `data.chat`
-makes the tap open the thread over that day's board with the keyboard up
+makes the tap open the group's thread over its board with the keyboard up
 (`reply=1`; a chat opened by hand leaves it down), and no banner shows while
-that same thread is on screen (`showingGroupChat`).
+that group's chat or board is on screen (`showingGroupChat`).
+
+**Nobody is pushed a message they watched arrive.** The groups function answers
+a chat message at once and sends its push three seconds later, in the
+background (`EdgeRuntime.waitUntil`), and `group_message_push_targets` leaves
+out any member whose `chat_read_at` is at or after the message. An open chat,
+on top and with the app in front, marks the chat read as each message from
+someone else lands (`useReadAsItArrives`), which measured under 100 ms after the
+write against the local stack, so a member reading along, or one who leaves the
+app right after, is not buzzed; one who was away is, three seconds late. Opening
+a group's chat also clears that group's chat notifications from Notification
+Center (`dismissGroupChatNotifications`), as a messenger does. The delay costs a
+few seconds of an idle edge worker per message and no CPU.
 
 Muting is per group, one switch (`group_members.notify`) for nudges and chat
 together, in the group's settings and as the bell at the top right of the chat.
