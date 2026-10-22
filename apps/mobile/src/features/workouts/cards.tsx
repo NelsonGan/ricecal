@@ -91,7 +91,7 @@ function Tile({ icon, label, value }: { icon: React.ReactNode; label: string; va
 }
 
 /**
- * The week streak as a pill, for beside the Workouts title: the same pill
+ * The week streak as a pill, for the Workouts bar: the same pill
  * Today puts beside its date for the day streak. Nothing until the count is
  * known, because "0 week streak" is the wrong sentence about somebody whose
  * request is still out.
@@ -100,12 +100,16 @@ export function WeekStreakBadge({ weeks }: { weeks: number | undefined }) {
   const { t } = useTranslation(['workouts'])
   if (weeks === undefined) return null
   return (
-    <Badge tone="kaya">
-      <Icon set="body" name="flame-burn" size={18} />
-      <Text variant="caption" className="text-kaya-ink">
-        {t('workouts:overview.streak', { count: weeks })}
-      </Text>
-    </Badge>
+    // Flame and count only: it rides in the app bar, whose two sides are kept
+    // equal, and the full "7 week streak" there squeezed the title to a letter.
+    <View accessible accessibilityLabel={t('workouts:overview.streak', { count: weeks })}>
+      <Badge tone="kaya">
+        <Icon set="body" name="flame-burn" size={18} />
+        <Text variant="caption" className="text-kaya-ink">
+          {weeks}
+        </Text>
+      </Badge>
+    </View>
   )
 }
 

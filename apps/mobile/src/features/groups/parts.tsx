@@ -33,9 +33,9 @@ function foodIcon(name: string): IconProps {
 }
 
 /** A person's picture, or their initial on a coloured tile. */
-export function PersonAvatar({ person }: { person: GroupPerson }) {
-  if (!person.avatar_path) return <Avatar name={person.name} size="sm" fallback="initial" />
-  return <SocialPhoto path={person.avatar_path} avatar size="sm" label={person.name} />
+export function PersonAvatar({ person, size = 'sm' }: { person: GroupPerson; size?: 'xs' | 'sm' }) {
+  if (!person.avatar_path) return <Avatar name={person.name} size={size} fallback="initial" />
+  return <SocialPhoto path={person.avatar_path} avatar size={size} label={person.name} />
 }
 
 /**

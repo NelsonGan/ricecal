@@ -9,6 +9,8 @@ import { Squish } from './Squish'
 import { Text } from './Text'
 
 const sizes = {
+  /** Beside a chat bubble, where a 40pt face outweighs one line of text. */
+  xs: { box: 30, radius: 11, font: 'text-[12px] leading-[15px]' },
   sm: { box: 40, radius: 14, font: 'text-[15px] leading-[18px]' },
   md: { box: 52, radius: 18, font: 'text-[20px] leading-[24px]' },
   lg: { box: 64, radius: radiusScale.sheet, font: 'text-[26px] leading-[30px]' },

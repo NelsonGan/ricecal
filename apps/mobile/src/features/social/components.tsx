@@ -233,7 +233,7 @@ export function SocialPhoto({
   /** Near the viewport, so worth authorizing. A drawn picture stays drawn either way. */
   visible?: boolean
   avatar?: boolean
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
   label: string
   /** Whether the picture is on screen, so what sits over it can match. */
   onShown?: (shown: boolean) => void
@@ -267,7 +267,7 @@ export function SocialPhoto({
   useEffect(() => {
     if (photo.isError) callbacks.current.onFailed?.()
   }, [photo.isError])
-  const box = { sm: 40, md: 52, lg: 64 }[size]
+  const box = { xs: 30, sm: 40, md: 52, lg: 64 }[size]
   const style = avatar
     ? { width: box, height: box, borderRadius: box / 2.8 }
     : { width: '100%' as const, height: '100%' as const }

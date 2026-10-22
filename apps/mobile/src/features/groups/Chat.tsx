@@ -262,6 +262,10 @@ function Composer({
  */
 type ChatRow = GroupMessage & { outgoing?: Outgoing }
 
+/** The small face beside a bubble, and where the bubble starts after it. */
+const AVATAR = 30
+const BUBBLE_INDENT = AVATAR + 8
+
 function MessageRow({
   message,
   first,
@@ -333,28 +337,39 @@ function MessageRow({
       </View>
     )
   }
+  // The face sits level with the bottom of its bubble, as messengers draw it,
+  // so the name above and the time below are set off the row rather than
+  // inside it; inside, the time pushed the face below the bubble it belongs to.
   return (
-    <View className={cn('flex-row items-end gap-2', gap)}>
-      <View className="w-9">{last ? <PersonAvatar person={message.author} /> : null}</View>
-      <View className="max-w-[78%] items-start">
-        {first ? (
-          <Text variant="micro" className="mb-1 ml-3 text-ink">
-            {message.author.name}
-          </Text>
-        ) : null}
-        <Tappable onLongPress={onLongPress} delayLongPress={300} haptics={false} {...a11y}>
+    <View className={gap}>
+      {first ? (
+        <Text variant="micro" className="mb-1 text-ink" style={{ marginLeft: BUBBLE_INDENT + 6 }}>
+          {message.author.name}
+        </Text>
+      ) : null}
+      <View className="flex-row items-end gap-2">
+        <View style={{ width: AVATAR }}>
+          {last ? <PersonAvatar person={message.author} size="xs" /> : null}
+        </View>
+        <Tappable
+          className="max-w-[78%]"
+          onLongPress={onLongPress}
+          delayLongPress={300}
+          haptics={false}
+          {...a11y}
+        >
           <View className={cn('rounded-[18px] bg-surface px-3.5 py-2', last && 'rounded-bl-[6px]')}>
             <Text variant="body" className="text-[16px] leading-[22px] text-ink">
               {message.body}
             </Text>
           </View>
         </Tappable>
-        {last ? (
-          <Text variant="micro" className="ml-3 mt-1">
-            {time}
-          </Text>
-        ) : null}
       </View>
+      {last ? (
+        <Text variant="micro" className="mt-1" style={{ marginLeft: BUBBLE_INDENT + 6 }}>
+          {time}
+        </Text>
+      ) : null}
     </View>
   )
 }

@@ -20,7 +20,6 @@ import {
   type WorkoutSummary,
 } from '@/data'
 import type { WorkoutDocument } from '@/data/workout-outbox'
-import { ScreenTitle } from '@/features/shared'
 import {
   ActionSheet,
   DiscardDialog,
@@ -38,8 +37,7 @@ import {
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
 import { unitFor, type WeightUnit } from '@/lib/units'
-import { useThemeColors } from '@/theme/useTheme'
-import { Button, Card, Icon, IconButton, ListRow, Screen, Skeleton, Text } from '@/ui'
+import { AppBar, Button, Card, cn, Icon, ListRow, Screen, Skeleton, Tappable, Text } from '@/ui'
 
 /** Whether this launch's Live Activity resume has been answered. */
 let resumedThisLaunch = false
@@ -57,7 +55,6 @@ export default function WorkoutsScreen() {
   const { t } = useTranslation(['workouts', 'common', 'logging'])
   const router = useRouter()
   const back = useBack('/today')
-  const colors = useThemeColors()
   const { userId } = useSession()
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
@@ -108,164 +105,144 @@ export default function WorkoutsScreen() {
   }, [workouts.data, outbox, bodyKg])
 
   return (
-    <Screen>
-      <ScreenTitle
-        title={t('workouts:title')}
-        leading={
-          // A page now rather than a tab (Today and Me open it), so it starts
-          // with the way back, then the list/calendar toggle beside the title.
-          <View className="flex-row items-center gap-2">
-            <IconButton
-              size="xs"
-              hitSlop={3}
-              variant="ghost"
-              onPress={back}
-              accessibilityLabel={t('common:action.back')}
-            >
-              <Icon set="ui" name="chevron-left" size={20} tintColor={colors.muted} />
-            </IconButton>
-            <IconButton
-              size="xs"
-              hitSlop={3}
-              onPress={() => setCalendar(!calendar)}
-              accessibilityLabel={t(
-                calendar ? 'workouts:calendar.showList' : 'logging:calendar.showMonth',
-              )}
-            >
-              <Icon set="ui" name={calendar ? 'list-view' : 'calendar-view'} size={19} />
-            </IconButton>
-          </View>
-        }
-        trailing={<WeekStreakBadge weeks={overview.data?.weekStreak} />}
-      />
+    <Screen
+      header={
+        // A page now rather than a tab (Today and Me open it), so it has the
+        // standard bar and its way back; the streak rides opposite.
+        <AppBar
+          title={t('workouts:title')}
+          onBack={back}
+          backLabel={t('common:action.back')}
+          action={<WeekStreakBadge weeks={overview.data?.weekStreak} />}
+        />
+      }
+    >
+      {/* Medium rather than large: it is the first thing on the tab, and the
+            routines under it start a workout just as well. */}
+      {starter.running ? (
+        <Button fullWidth onPress={() => openLogger(router)}>
+          {t('workouts:start.resume')}
+        </Button>
+      ) : (
+        <Button
+          fullWidth
+          onPress={() => starter.start({ name: defaultWorkoutName(t), source: 'empty' })}
+        >
+          {t('workouts:start.empty')}
+        </Button>
+      )}
+
+      <Text variant="subtitle" className="pt-2">
+        {t('workouts:routines.title')}
+      </Text>
+
+      {/* Paused is offline with nothing cached: the request is held rather than
+            failed, and a skeleton would wait for it forever. */}
+      {routines.isPending && !routines.isPaused ? (
+        <Skeleton className="h-[78px] w-full rounded-card" />
+      ) : routines.data?.length ? (
+        // Closer than the cards elsewhere: a list of routines is one list.
+        <View className="gap-2">
+          {routines.data.map((routine) => (
+            <RoutineCard
+              key={routine.id}
+              routine={routine}
+              onOpen={() =>
+                router.push({ pathname: '/workout/routine/[id]', params: { id: routine.id } })
+              }
+              onStart={() =>
+                starter.start({
+                  name: routine.name,
+                  source: 'routine',
+                  routineId: routine.id,
+                  plans: routinePlans(routine),
+                })
+              }
+            />
+          ))}
+        </View>
+      ) : !routines.data && (routines.isPaused || routines.isError) ? (
+        <Unavailable offline={routines.isPaused} />
+      ) : (
+        <EmptyRow
+          icon={{ set: 'system', name: 'guide-book' }}
+          title={t('workouts:routines.emptyTitle')}
+        />
+      )}
+
+      {/* A new routine is one more way into the plans, so it heads the list
+            rather than riding opposite "My routines" as a second accent button. */}
+      <Card contentClassName="gap-0 px-5 py-1">
+        <ListRow
+          title={t('workouts:routines.newTitle')}
+          leading={<Icon set="system" name="guide-book" size={28} />}
+          onPress={() => {
+            if (!routineGate.allowNew()) return
+            router.push({ pathname: '/workout/routine/[id]', params: { id: 'new' } })
+          }}
+        />
+        <ListRow
+          title={t('workouts:explore.title')}
+          leading={<Icon set="system" name="rocket" size={28} />}
+          onPress={() => router.push('/workout/templates')}
+        />
+        <ListRow
+          title={t('workouts:stats.entry')}
+          leading={<Icon set="system" name="trophy" size={28} />}
+          onPress={() => router.push('/workout/stats')}
+        />
+        <ListRow
+          title={t('workouts:library.title')}
+          leading={<Icon set="body" name="gym-bench" size={28} />}
+          onPress={() => router.push('/workout/exercises')}
+        />
+        {/* A row rather than a gear beside the title, which left the streak
+              pill and a button competing for the title's line. Me's settings
+              list has the same row. */}
+        <ListRow
+          title={t('workouts:settings.title')}
+          leading={<Icon set="system" name="settings" size={28} />}
+          onPress={() => router.push('/workout/settings')}
+          divider={false}
+        />
+      </Card>
+
+      {/* The month is another way to read the history, so its toggle sits on
+            the history's heading and swaps only that section. */}
+      <View className="flex-row items-center justify-between pt-2">
+        <Text variant="subtitle">{t('workouts:history.title')}</Text>
+        <HistoryViewToggle calendar={calendar} onChange={setCalendar} />
+      </View>
 
       {calendar ? (
         <CalendarView day={day} onDay={setDay} unit={unit} outbox={outbox} onOpen={openWorkout} />
-      ) : (
-        <>
-          {/* Medium rather than large: it is the first thing on the tab, and the
-            routines under it start a workout just as well. */}
-          {starter.running ? (
-            <Button fullWidth onPress={() => openLogger(router)}>
-              {t('workouts:start.resume')}
-            </Button>
-          ) : (
+      ) : workouts.isPending && !workouts.isPaused && !history.length ? (
+        <Card>
+          <Skeleton className="h-[120px] w-full" />
+        </Card>
+      ) : history.length ? (
+        <View className="gap-stack">
+          {history.map((workout) => (
+            <WorkoutCard key={workout.id} workout={workout} unit={unit} onPress={openWorkout} />
+          ))}
+          {workouts.hasNextPage ? (
             <Button
+              variant="neutral"
               fullWidth
-              onPress={() => starter.start({ name: defaultWorkoutName(t), source: 'empty' })}
+              loading={workouts.isFetchingNextPage}
+              onPress={() => workouts.fetchNextPage()}
             >
-              {t('workouts:start.empty')}
+              {t('workouts:history.more')}
             </Button>
-          )}
-
-          <Text variant="subtitle" className="pt-2">
-            {t('workouts:routines.title')}
-          </Text>
-
-          {/* Paused is offline with nothing cached: the request is held rather than
-            failed, and a skeleton would wait for it forever. */}
-          {routines.isPending && !routines.isPaused ? (
-            <Skeleton className="h-[78px] w-full rounded-card" />
-          ) : routines.data?.length ? (
-            // Closer than the cards elsewhere: a list of routines is one list.
-            <View className="gap-2">
-              {routines.data.map((routine) => (
-                <RoutineCard
-                  key={routine.id}
-                  routine={routine}
-                  onOpen={() =>
-                    router.push({ pathname: '/workout/routine/[id]', params: { id: routine.id } })
-                  }
-                  onStart={() =>
-                    starter.start({
-                      name: routine.name,
-                      source: 'routine',
-                      routineId: routine.id,
-                      plans: routinePlans(routine),
-                    })
-                  }
-                />
-              ))}
-            </View>
-          ) : !routines.data && (routines.isPaused || routines.isError) ? (
-            <Unavailable offline={routines.isPaused} />
-          ) : (
-            <EmptyRow
-              icon={{ set: 'system', name: 'guide-book' }}
-              title={t('workouts:routines.emptyTitle')}
-            />
-          )}
-
-          {/* A new routine is one more way into the plans, so it heads the list
-            rather than riding opposite "My routines" as a second accent button. */}
-          <Card contentClassName="gap-0 px-5 py-1">
-            <ListRow
-              title={t('workouts:routines.newTitle')}
-              leading={<Icon set="system" name="guide-book" size={28} />}
-              onPress={() => {
-                if (!routineGate.allowNew()) return
-                router.push({ pathname: '/workout/routine/[id]', params: { id: 'new' } })
-              }}
-            />
-            <ListRow
-              title={t('workouts:explore.title')}
-              leading={<Icon set="system" name="rocket" size={28} />}
-              onPress={() => router.push('/workout/templates')}
-            />
-            <ListRow
-              title={t('workouts:stats.entry')}
-              leading={<Icon set="system" name="trophy" size={28} />}
-              onPress={() => router.push('/workout/stats')}
-            />
-            <ListRow
-              title={t('workouts:library.title')}
-              leading={<Icon set="body" name="gym-bench" size={28} />}
-              onPress={() => router.push('/workout/exercises')}
-            />
-            {/* A row rather than a gear beside the title, which left the streak
-              pill and a button competing for the title's line. Me's settings
-              list has the same row. */}
-            <ListRow
-              title={t('workouts:settings.title')}
-              leading={<Icon set="system" name="settings" size={28} />}
-              onPress={() => router.push('/workout/settings')}
-              divider={false}
-            />
-          </Card>
-
-          <Text variant="subtitle" className="pt-2">
-            {t('workouts:history.title')}
-          </Text>
-
-          {workouts.isPending && !workouts.isPaused && !history.length ? (
-            <Card>
-              <Skeleton className="h-[120px] w-full" />
-            </Card>
-          ) : history.length ? (
-            <View className="gap-stack">
-              {history.map((workout) => (
-                <WorkoutCard key={workout.id} workout={workout} unit={unit} onPress={openWorkout} />
-              ))}
-              {workouts.hasNextPage ? (
-                <Button
-                  variant="neutral"
-                  fullWidth
-                  loading={workouts.isFetchingNextPage}
-                  onPress={() => workouts.fetchNextPage()}
-                >
-                  {t('workouts:history.more')}
-                </Button>
-              ) : null}
-            </View>
-          ) : !workouts.data && (workouts.isPaused || workouts.isError) ? (
-            <Unavailable offline={workouts.isPaused} />
-          ) : (
-            <EmptyRow
-              icon={{ set: 'body', name: 'stopwatch' }}
-              title={t('workouts:history.emptyTitle')}
-            />
-          )}
-        </>
+          ) : null}
+        </View>
+      ) : !workouts.data && (workouts.isPaused || workouts.isError) ? (
+        <Unavailable offline={workouts.isPaused} />
+      ) : (
+        <EmptyRow
+          icon={{ set: 'body', name: 'stopwatch' }}
+          title={t('workouts:history.emptyTitle')}
+        />
       )}
 
       {starter.dialog}
@@ -365,6 +342,50 @@ function CalendarView({
         />
       )}
     </>
+  )
+}
+
+/**
+ * List or month, as two icons in one small track with the current one raised.
+ * Icons rather than words: the heading beside it already says what is listed.
+ */
+function HistoryViewToggle({
+  calendar,
+  onChange,
+}: {
+  calendar: boolean
+  onChange: (calendar: boolean) => void
+}) {
+  const { t } = useTranslation(['workouts', 'logging'])
+  const options = [
+    { value: false, icon: 'list-view', label: t('workouts:calendar.showList') },
+    { value: true, icon: 'calendar-view', label: t('logging:calendar.showMonth') },
+  ] as const
+  return (
+    <View className="flex-row gap-1 rounded-full bg-track p-1" accessibilityRole="tablist">
+      {options.map((option) => {
+        const selected = option.value === calendar
+        return (
+          <Tappable
+            key={option.icon}
+            className={cn(
+              'h-[30px] w-[38px] items-center justify-center rounded-full',
+              selected && 'bg-surface',
+            )}
+            haptics={false}
+            hitSlop={4}
+            onPress={() => onChange(option.value)}
+            accessibilityRole="tab"
+            accessibilityLabel={option.label}
+            accessibilityState={{ selected }}
+          >
+            {/* Untinted, as the icons are drawn: a tint flattens them to a blob
+              at this size. The one not showing is faded instead. */}
+            <Icon set="ui" name={option.icon} size={18} style={{ opacity: selected ? 1 : 0.45 }} />
+          </Tappable>
+        )
+      })}
+    </View>
   )
 }
 
