@@ -669,6 +669,7 @@ export type Database = {
       }
       group_invites: {
         Row: {
+          by_email: boolean
           created_at: string
           group_id: string
           id: string
@@ -677,6 +678,7 @@ export type Database = {
           pushed_at: string | null
         }
         Insert: {
+          by_email?: boolean
           created_at?: string
           group_id: string
           id?: string
@@ -685,6 +687,7 @@ export type Database = {
           pushed_at?: string | null
         }
         Update: {
+          by_email?: boolean
           created_at?: string
           group_id?: string
           id?: string
@@ -852,9 +855,9 @@ export type Database = {
           author_id: string
           body: string
           created_at: string
-          day: string
           group_id: string
           id: string
+          pushed_at: string | null
           quarantined: boolean
           request_id: string
         }
@@ -862,9 +865,9 @@ export type Database = {
           author_id: string
           body: string
           created_at?: string
-          day: string
           group_id: string
           id?: string
+          pushed_at?: string | null
           quarantined?: boolean
           request_id: string
         }
@@ -872,9 +875,9 @@ export type Database = {
           author_id?: string
           body?: string
           created_at?: string
-          day?: string
           group_id?: string
           id?: string
+          pushed_at?: string | null
           quarantined?: boolean
           request_id?: string
         }
@@ -3530,10 +3533,27 @@ export type Database = {
         Args: { p_day: string; p_group_id: string }
         Returns: Json
       }
+      group_chat_summary: { Args: { p_group_id: string }; Returns: Json }
       group_details: { Args: { p_group_id: string }; Returns: Json }
       group_invite_count: { Args: never; Returns: number }
+      group_message_push_targets: {
+        Args: { p_caller: string; p_id: string }
+        Returns: {
+          actor_name: string
+          body: string
+          group_id: string
+          group_name: string
+          language: string
+          token: string
+        }[]
+      }
       group_messages: {
-        Args: { p_day: string; p_group_id: string }
+        Args: {
+          p_before_at?: string
+          p_before_id?: string
+          p_group_id: string
+          p_limit?: number
+        }
         Returns: Json
       }
       group_push_targets: {
@@ -3825,12 +3845,7 @@ export type Database = {
         }
       }
       send_group_message: {
-        Args: {
-          p_body: string
-          p_day: string
-          p_group_id: string
-          p_request_id: string
-        }
+        Args: { p_body: string; p_group_id: string; p_request_id: string }
         Returns: string
       }
       set_entry_board_meal: {

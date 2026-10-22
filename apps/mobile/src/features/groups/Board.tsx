@@ -24,11 +24,12 @@ import { dateKey, useUserId } from '@/data'
 import {
   type BoardEntry,
   type BoardMember,
+  type ChatSummary,
   GROUP_MEALS,
-  type GroupBoard,
   type GroupMeal,
   useGroupBoard,
-  useGroupBoardPushRefresh,
+  useGroupBoardChatLive,
+  useGroupChatSummary,
   useMyGroups,
 } from '@/data/groups'
 import { workoutIcon, workoutKindKey } from '@/features/activity/workoutKind'
@@ -153,9 +154,10 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
   const summary = useMyGroups().data?.find((group) => group.id === groupId)
   // The same query as the page on screen, which is the one that polls.
   const board = useGroupBoard(groupId, day, focused, false)
-  useGroupBoardPushRefresh(groupId, focused)
-  // The chat bar shows this day's latest message, so its pushes stay quiet here.
-  useFocusEffect(useCallback(() => showingGroupChat(`${groupId}:${day}`), [groupId, day]))
+  const chatLive = useGroupBoardChatLive(groupId, focused)
+  const chat = useGroupChatSummary(groupId, focused, chatLive)
+  // The chat bar shows the latest message, so the group's chat pushes stay quiet here.
+  useFocusEffect(useCallback(() => showingGroupChat(groupId), [groupId]))
   const [inviteOpen, setInviteOpen] = useState(false)
 
   // A notification tapped while this board is already open names its day too.
@@ -290,9 +292,9 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
       </View>
 
       <ChatBar
-        board={board.data}
+        summary={chat.data}
         bottom={navInset + 8}
-        onPress={() => router.push({ pathname: '/group/chat', params: { id: groupId, day } })}
+        onPress={() => router.push({ pathname: '/group/chat', params: { id: groupId } })}
       />
       <InviteSheet groupId={groupId} visible={inviteOpen} onClose={() => setInviteOpen(false)} />
     </View>
@@ -857,18 +859,18 @@ function WorkoutCell({
 }
 
 function ChatBar({
-  board,
+  summary,
   bottom,
   onPress,
 }: {
-  board: GroupBoard | undefined
+  summary: ChatSummary | undefined
   bottom: number
   onPress: () => void
 }) {
   const { t } = useTranslation('groups')
   const colors = useThemeColors()
-  const last = board?.chat.last
-  const unread = board?.chat.unread ?? 0
+  const last = summary?.last
+  const unread = summary?.unread ?? 0
   const insets = useSafeAreaInsets()
   const preview = last ? `${last.author.name.split(' ')[0]}: ${last.body}` : t('chatEmpty')
   return (

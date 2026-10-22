@@ -61,11 +61,11 @@ export function whenWorkoutPromptShown(check: () => boolean): void {
 }
 
 /**
- * The group chats on screen, as `<group>:<day>`, so their own pushes do not drop
- * a banner over a thread or a board's chat bar that is already showing the
- * message. Counted rather than one slot: the board and the chat it opens show the
- * same thread, and when one screen replaces another the old one's blur can land
- * after the new one's focus.
+ * The groups whose chat is on screen, in the thread or the board's chat bar, so
+ * their own pushes do not drop a banner over a message already showing. Counted
+ * rather than one slot: the board and the chat it opens show the same thread,
+ * and when one screen replaces another the old one's blur can land after the
+ * new one's focus.
  */
 const openChats = new Map<string, number>()
 export function showingGroupChat(chat: string): () => void {
@@ -77,6 +77,27 @@ export function showingGroupChat(chat: string): () => void {
     const count = (openChats.get(chat) ?? 0) - 1
     if (count > 0) openChats.set(chat, count)
     else openChats.delete(chat)
+  }
+}
+
+/**
+ * Clears a group's chat notifications from Notification Center once its chat is
+ * on screen, as a messenger clears a conversation's when it is opened: opening
+ * any day's chat reads the whole group's. Best effort.
+ */
+export async function dismissGroupChatNotifications(groupId: string): Promise<void> {
+  try {
+    const presented = await Notifications.getPresentedNotificationsAsync()
+    await Promise.allSettled(
+      presented
+        .filter(({ request }) => {
+          const data = request.content.data
+          return data?.kind === 'group' && data.chat === true && data.groupId === groupId
+        })
+        .map(({ request }) => Notifications.dismissNotificationAsync(request.identifier)),
+    )
+  } catch {
+    // Nothing presented to read, or a platform without Notification Center.
   }
 }
 
@@ -103,7 +124,7 @@ Notifications.setNotificationHandler({
       kind === 'rest' ||
       kind === 'started' ||
       (kind === 'workout' && workoutPromptShown()) ||
-      (kind === 'group' && data?.chat === true && openChats.has(`${data.groupId}:${data.day}`))
+      (kind === 'group' && data?.chat === true && openChats.has(String(data.groupId)))
     const watching = transient && AppState.currentState === 'active'
     // A chat message, heard while the app is open: the board's count catches up.
     if (kind === 'group' && data?.chat === true && typeof data.groupId === 'string') {
