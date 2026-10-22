@@ -3218,8 +3218,9 @@ included, still polls.
   again while its leave is in flight waits for it, since supabase-js would hand
   back the leaving channel. Backgrounding (not `inactive`, which is only the
   notification shade passing over) leaves every channel and closes the socket at
-  once; coming back rejoins. supabase-js otherwise keeps an empty socket for 50
-  seconds, which `lib/supabase.ts` cuts to 5.
+  once, including one still lingering after the last chat closed; coming back
+  rejoins. supabase-js otherwise keeps an empty socket for 50 seconds, which
+  `lib/supabase.ts` cuts to 5.
 - **Catching up.** Each join, first or after a drop, refetches the thread once,
   since nothing sent while the channel was down will be heard. A fetch already
   on its way lands first rather than being restarted, which would hold back the

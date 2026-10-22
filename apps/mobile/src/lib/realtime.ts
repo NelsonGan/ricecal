@@ -1,5 +1,5 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
-import { AppState, type NativeEventSubscription } from 'react-native'
+import { AppState } from 'react-native'
 import { supabase } from './supabase'
 
 /**
@@ -35,8 +35,8 @@ type Topic = {
 const REJOIN_MS = 3_000
 
 const topics = new Map<string, Topic>()
-let foreground = AppState.currentState !== 'background'
-let appState: NativeEventSubscription | null = null
+let foreground = true
+let watching = false
 
 function setLive(entry: Topic, live: boolean) {
   if (entry.live === live) return
@@ -47,10 +47,6 @@ function setLive(entry: Topic, live: boolean) {
 function open(topic: string, entry: Topic) {
   if (entry.channel || entry.closing || entry.retry || entry.refused) return
   if (!foreground || entry.listeners.size === 0) return
-  // supabase-js hands back an existing channel of the same name, bindings and
-  // all. `close` makes sure none is left behind, so this is a last guard
-  // against joining twice; polling covers instead.
-  if (supabase.getChannels().some((channel) => channel.topic === `realtime:${topic}`)) return
   const channel = supabase.channel(topic, { config: { private: true } })
   entry.channel = channel
   channel
@@ -96,43 +92,46 @@ function close(topic: string, entry: Topic) {
       .removeChannel(channel)
       .catch(() => 'error' as const)
       .then((answer) => {
-        // A leave the server answered with an error leaves the channel listed,
-        // which would keep the socket open for good and stop the topic being
-        // joined again.
-        if (answer === 'error' && supabase.realtime.channels.includes(channel)) {
+        // A leave the server answered with an error leaves the channel listed:
+        // supabase-js would hand it back for the next join of this topic, and
+        // the socket would never count as empty.
+        const stuck = answer === 'error' && supabase.realtime.channels.includes(channel)
+        if (stuck) {
           channel.teardown()
           supabase.realtime.channels = supabase.realtime.channels.filter((c) => c !== channel)
-          // Taken out by hand, so the library's own empty-socket timer never starts.
-          if (supabase.getChannels().length === 0) void supabase.realtime.disconnect()
         }
-      })
-      .finally(() => {
         entry.closing = null
         // Asked for again, or brought back to the front, while it was leaving.
         open(topic, entry)
         forget(topic, entry)
-        // supabase-js keeps an empty socket for a few seconds in case another
-        // channel follows. In the background none will, and iOS would only
-        // suspend the app with it open, so it goes now.
-        if (!foreground && supabase.getChannels().length === 0) void supabase.realtime.disconnect()
+        // The library's own empty-socket timer never starts for a channel taken
+        // out by hand, and in the background nothing would follow it anyway.
+        if (stuck || !foreground) disconnectIfIdle()
       })
   }
   forget(topic, entry)
 }
 
+function disconnectIfIdle() {
+  if (supabase.getChannels().length === 0) void supabase.realtime.disconnect()
+}
+
 function forget(topic: string, entry: Topic) {
   if (entry.listeners.size || entry.channel || entry.closing) return
   topics.delete(topic)
-  if (topics.size === 0) {
-    appState?.remove()
-    appState = null
-  }
 }
 
+/**
+ * One listener for the app's life, from the first chat opened. It outlives the
+ * topics so a socket still lingering after the last chat closed (see
+ * `lib/supabase.ts`) is shut when the app goes to the background too, rather
+ * than being left for iOS to suspend.
+ */
 function watchAppState() {
-  if (appState) return
+  if (watching) return
+  watching = true
   foreground = AppState.currentState !== 'background'
-  appState = AppState.addEventListener('change', (state) => {
+  AppState.addEventListener('change', (state) => {
     // `inactive` is the notification shade or the app switcher passing over,
     // not leaving; dropping the channel for it would cost a rejoin and a refetch.
     const next = state !== 'background'
@@ -142,6 +141,7 @@ function watchAppState() {
       if (next) open(topic, entry)
       else close(topic, entry)
     }
+    if (!next) disconnectIfIdle()
   })
 }
 
