@@ -19,7 +19,7 @@ import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
-import { setOpenGroupChat } from '@/lib/notifications'
+import { showingGroupChat } from '@/lib/notifications'
 import { useThemeColors } from '@/theme/useTheme'
 import { AppBar, cn, Dialog, Icon, IconButton, Screen, Spinner, Tappable, Text } from '@/ui'
 import { PersonAvatar, useGroupTask } from './parts'
@@ -34,7 +34,16 @@ import { PersonAvatar, useGroupTask } from './parts'
  * One thread per day page keeps it about that day's food; older days stay
  * readable by paging back on the board.
  */
-export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
+export function ChatScreen({
+  groupId,
+  day,
+  reply = false,
+}: {
+  groupId: string
+  day: string
+  /** Opened from its notification, so the keyboard comes up to answer it. */
+  reply?: boolean
+}) {
   const { t } = useTranslation(['groups', 'common', 'social'])
   const back = useBack('/groups')
   const viewer = useUserId()
@@ -50,12 +59,7 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
   const notify = useGroupDetails(groupId).data?.notify
 
   // Pushes for this thread stay quiet while it is on screen.
-  useFocusEffect(
-    useCallback(() => {
-      setOpenGroupChat(`${groupId}:${day}`)
-      return () => setOpenGroupChat(null)
-    }, [groupId, day]),
-  )
+  useFocusEffect(useCallback(() => showingGroupChat(`${groupId}:${day}`), [groupId, day]))
 
   // Opening the chat reads it, which clears the bar's count. Leaving reads it
   // again only if the thread changed while it was open, judged from the thread
@@ -160,7 +164,7 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
           }
         />
       }
-      footer={<Composer groupName={name} onSend={send} />}
+      footer={<Composer groupName={name} onSend={send} autoFocus={reply} />}
     >
       {messages.isLoading ? (
         <View className="flex-1 items-center justify-center">
@@ -249,7 +253,15 @@ function DayChip({ label }: { label: string }) {
  * its last line. It holds its own draft, so typing redraws the field and not
  * the thread above it.
  */
-function Composer({ groupName, onSend }: { groupName: string; onSend: (body: string) => void }) {
+function Composer({
+  groupName,
+  onSend,
+  autoFocus,
+}: {
+  groupName: string
+  onSend: (body: string) => void
+  autoFocus: boolean
+}) {
   const { t } = useTranslation('groups')
   const colors = useThemeColors()
   const [value, onChange] = useState('')
@@ -271,6 +283,7 @@ function Composer({ groupName, onSend }: { groupName: string; onSend: (body: str
           placeholderTextColor={colors.faint}
           multiline
           maxLength={500}
+          autoFocus={autoFocus}
           accessibilityLabel={placeholder}
           className="max-h-[120px] py-2.5 font-body text-[16px] leading-[21px] text-ink"
         />

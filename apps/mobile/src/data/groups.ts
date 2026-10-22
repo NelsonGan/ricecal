@@ -1,6 +1,7 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { Database } from '@/lib/database.types'
+import { onGroupChatPush } from '@/lib/groupChatPushes'
 import { listen } from '@/lib/realtime'
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
@@ -343,35 +344,29 @@ export function useGroupChatLive(groupId: string, day: string): boolean {
 }
 
 /**
- * Keeps the board's chat bar current over the same channel an open chat
- * listens on, so a friend's message lights its count as it is sent rather than
- * at the board's next half-minute poll. Only while the board is on top: under
- * the chat the count is being read away, and a refetch then would draw it back.
+ * Rereads a group's boards when a chat push for it arrives while the app is
+ * open, so a friend's message lights the chat bar's count as it is sent rather
+ * than at the board's next half-minute poll. The push is sent anyway, so this
+ * costs no Realtime connection; a member who muted the group, or never allowed
+ * notifications, gets no push and waits for the poll.
  *
- * The count is the whole group's and the channel is the day's, so a message on
- * another day's page still waits for the poll. The first join refetches
- * nothing, since the board was just read; a rejoin does, because anything sent
- * while the channel was down was never heard.
+ * Only while the board is on top: under the chat the count is being read away,
+ * and a refetch then would draw it back. Every cached day of the group is
+ * reread, since the count is the whole group's.
  */
-export function useGroupBoardLive(groupId: string, day: string, enabled: boolean) {
+export function useGroupBoardPushRefresh(groupId: string, enabled: boolean) {
   const userId = useUserId()
   const client = useQueryClient()
   useEffect(() => {
     if (!enabled) return
-    const refetch = () =>
-      void client.invalidateQueries({ queryKey: boardKey(userId, groupId, day) })
-    let joined = false
-    return listen(`group-chat:${groupId}:${day}`, {
-      onLive: (live) => {
-        if (!live) return
-        if (joined) refetch()
-        joined = true
-      },
-      onEvent: (event, payload) => {
-        if ((event === 'message' || event === 'removed') && broadcastIds(payload).length) refetch()
-      },
+    return onGroupChatPush((pushed) => {
+      if (pushed !== groupId) return
+      void client.invalidateQueries({
+        queryKey: keys.groups(userId),
+        predicate: (query) => named('group_board')(query) && ofGroup(groupId)(query),
+      })
     })
-  }, [client, userId, groupId, day, enabled])
+  }, [client, userId, groupId, enabled])
 }
 
 export function useGroupDetails(groupId: string) {

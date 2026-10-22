@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications'
 import { AppState, Platform } from 'react-native'
-
 import type { MealTime, Settings } from '@/data/types'
+import { announceGroupChatPush } from './groupChatPushes'
 import { parseTime } from './meal-times'
 
 /**
@@ -62,11 +62,16 @@ export function whenWorkoutPromptShown(check: () => boolean): void {
 
 /**
  * The group chat on screen, as `<group>:<day>`, so its own pushes do not drop a
- * banner over the thread that is already showing the message.
+ * banner over the thread that is already showing the message. The release only
+ * clears its own chat: when one thread replaces another, the old one's blur can
+ * land after the new one's focus.
  */
 let openChat: string | null = null
-export function setOpenGroupChat(chat: string | null): void {
+export function showingGroupChat(chat: string): () => void {
   openChat = chat
+  return () => {
+    if (openChat === chat) openChat = null
+  }
 }
 
 Notifications.setNotificationHandler({
@@ -94,6 +99,10 @@ Notifications.setNotificationHandler({
       (kind === 'workout' && workoutPromptShown()) ||
       (kind === 'group' && data?.chat === true && openChat === `${data.groupId}:${data.day}`)
     const watching = transient && AppState.currentState === 'active'
+    // A chat message, heard while the app is open: the board's count catches up.
+    if (kind === 'group' && data?.chat === true && typeof data.groupId === 'string') {
+      announceGroupChatPush(data.groupId)
+    }
 
     return {
       shouldShowBanner: !watching,

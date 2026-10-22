@@ -67,7 +67,8 @@ export function useReportLinks(): void {
       // A nudge, an invite or a chat message from a group, the pushes that come
       // from a server. It opens the Groups tab on that group's board, or on the
       // list for an invite, which waits behind the envelope there. A message
-      // opens its thread over the board, so going back lands on that day.
+      // opens its thread over the board, so going back lands on that day, with
+      // the keyboard up: a tapped message is one to answer.
       if (kind === 'group') {
         const data = response?.notification.request.content.data
         const groupId = typeof data?.groupId === 'string' ? data.groupId : null
@@ -79,7 +80,7 @@ export function useReportLinks(): void {
         })
         router.navigate('/groups')
         if (data?.chat && groupId && day) {
-          router.navigate({ pathname: '/group/chat', params: { id: groupId, day } })
+          router.navigate({ pathname: '/group/chat', params: { id: groupId, day, reply: '1' } })
         }
         return
       }
