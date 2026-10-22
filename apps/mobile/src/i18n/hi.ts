@@ -225,6 +225,10 @@ export const hi = {
       backspace: 'आख़िरी अंक मिटाएं',
       decimalPoint: 'दशमलव बिंदु',
     },
+    delivery: {
+      sending: 'भेजा जा रहा है…',
+      failed: 'नहीं भेजा गया। फिर से भेजने के लिए टैप करें।',
+    },
   },
 
   activity: {

@@ -233,6 +233,10 @@ export const ms = {
       backspace: 'Padam digit terakhir',
       decimalPoint: 'Titik perpuluhan',
     },
+    delivery: {
+      sending: 'Menghantar…',
+      failed: 'Tidak dihantar. Ketik untuk cuba lagi.',
+    },
   },
 
   activity: {

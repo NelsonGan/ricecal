@@ -230,6 +230,10 @@ export const zhHant = {
       backspace: '刪除最後一位',
       decimalPoint: '小數點',
     },
+    delivery: {
+      sending: '傳送中…',
+      failed: '未傳送，點按重試。',
+    },
   },
 
   activity: {

@@ -234,6 +234,10 @@ export const fil = {
       backspace: 'Burahin ang huling numero',
       decimalPoint: 'Tuldok desimal',
     },
+    delivery: {
+      sending: 'Ipinapadala…',
+      failed: 'Hindi naipadala. I-tap para subukan ulit.',
+    },
   },
 
   activity: {

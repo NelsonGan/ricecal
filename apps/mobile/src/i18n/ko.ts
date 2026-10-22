@@ -225,6 +225,10 @@ export const ko = {
       backspace: '마지막 숫자 지우기',
       decimalPoint: '소수점',
     },
+    delivery: {
+      sending: '보내는 중…',
+      failed: '보내지 못했어요. 탭해서 다시 시도하세요.',
+    },
   },
 
   activity: {

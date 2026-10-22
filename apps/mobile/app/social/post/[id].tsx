@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, View } from 'react-native'
+import { View } from 'react-native'
 import { useAvatarUrl, useUserId } from '@/data'
 import {
   type SocialComment,
@@ -10,6 +10,7 @@ import {
   useSocialPost,
   useSocialProfile,
 } from '@/data/social'
+import { type Outgoing, useOutbox } from '@/features/shared'
 import {
   ContentSafety,
   PostCard,
@@ -21,7 +22,6 @@ import {
   useSocialTask,
   useSocialTime,
 } from '@/features/social/components'
-import { socialRequestId } from '@/features/social/request-id'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, cn, Icon, IconButton, Screen, Sheet, Tappable, Text, TextField } from '@/ui'
 
@@ -31,23 +31,15 @@ const COMMENT_LIMIT = 500
  * Round and flat. An `IconButton` keeps its slab under the face, which pushed
  * the face above the middle of the comment field.
  */
-function SendButton({
-  ready,
-  pending,
-  onPress,
-}: {
-  ready: boolean
-  pending: boolean
-  onPress: () => void
-}) {
+function SendButton({ ready, onPress }: { ready: boolean; onPress: () => void }) {
   const { t } = useTranslation('social')
   const colors = useThemeColors()
   return (
     <Tappable
       accessibilityRole="button"
       accessibilityLabel={t('send')}
-      accessibilityState={{ disabled: !ready || pending, busy: pending }}
-      disabled={!ready || pending}
+      accessibilityState={{ disabled: !ready }}
+      disabled={!ready}
       hitSlop={8}
       onPress={onPress}
       style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
@@ -58,16 +50,12 @@ function SendButton({
           ready ? 'bg-pandan' : 'bg-disabled',
         )}
       >
-        {pending ? (
-          <ActivityIndicator size="small" color={colors.onPandan} />
-        ) : (
-          <Icon
-            set="ui"
-            name="arrow-up"
-            size={18}
-            tintColor={ready ? colors.onPandan : colors.onDisabled}
-          />
-        )}
+        <Icon
+          set="ui"
+          name="arrow-up"
+          size={18}
+          tintColor={ready ? colors.onPandan : colors.onDisabled}
+        />
       </View>
     </Tappable>
   )
@@ -305,6 +293,57 @@ function CommentRow({
   )
 }
 
+/**
+ * A comment on its way: the viewer's own name and words, drawn like any
+ * comment, with "Sending…" where the time goes. A failure stays, in hibiscus,
+ * and a tap sends it again under the same request id.
+ */
+function OutgoingComment({ item, onRetry }: { item: Outgoing; onRetry: () => void }) {
+  const { t } = useTranslation(['social', 'common'])
+  const colors = useThemeColors()
+  const own = useSocialProfile()
+  const avatar = useAvatarUrl(own.data?.avatar_path ?? undefined)
+  const failed = item.state === 'failed'
+  const name = own.data?.display_name ?? ''
+  return (
+    <Tappable
+      className="border-b-2 border-track px-5 py-3"
+      disabled={!failed}
+      onPress={onRetry}
+      haptics={failed}
+      accessibilityLabel={[
+        name,
+        item.body,
+        t(failed ? 'common:delivery.failed' : 'common:delivery.sending'),
+      ].join(', ')}
+    >
+      <View className="flex-row items-start gap-3">
+        <View className="h-[44px] w-[44px] items-center justify-center">
+          <SocialPhoto path={null} privateUri={avatar.data} avatar label={name} />
+        </View>
+        <View className={cn('min-w-0 flex-1 gap-1.5', failed ? 'opacity-70' : 'opacity-60')}>
+          <View className="flex-row flex-wrap items-baseline gap-2">
+            <Text variant="label" numberOfLines={1}>
+              {name}
+            </Text>
+            {failed ? (
+              <View className="flex-row items-center gap-1">
+                <Icon set="ui" name="warning" size={12} tintColor={colors.hibiscusInk} />
+                <Text variant="meta" className="text-hibiscus-ink">
+                  {t('common:delivery.failed')}
+                </Text>
+              </View>
+            ) : (
+              <Text variant="meta">{t('common:delivery.sending')}</Text>
+            )}
+          </View>
+          <Text variant="body">{item.body}</Text>
+        </View>
+      </View>
+    </Tappable>
+  )
+}
+
 export default function PostScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   return <Post key={id} id={id} />
@@ -321,21 +360,26 @@ function Post({ id }: { id: string }) {
   const [body, setBody] = useState('')
   const bodyLength = body.length
   const canSend = Boolean(body.trim()) && bodyLength <= COMMENT_LIMIT
-  const requestId = useRef(socialRequestId())
-  const send = async () => {
-    if (!canSend || action.isPending) return
-    try {
-      await action.run({
-        action: 'comment',
-        postId: id,
-        body: body.trim(),
-        requestId: requestId.current,
-      })
-      setBody('')
-      requestId.current = socialRequestId()
-    } catch {
-      /* Retain the comment and request id for retry. */
-    }
+  // A sent comment is drawn at once, above the others (newest first), and
+  // replaced by the server's row when the list next comes back with it. The
+  // field clears straight away rather than waiting behind a spinner.
+  const serverIds = useMemo(
+    () => new Set((comments.data?.pages ?? []).flatMap((page) => page.rows.map((row) => row.id))),
+    [comments.data],
+  )
+  const outbox = useOutbox(async (item) => {
+    const result = await action.mutateAsync({
+      action: 'comment',
+      postId: id,
+      body: item.body,
+      requestId: item.requestId,
+    })
+    return (result as { id?: string } | undefined)?.id ?? null
+  }, serverIds)
+  const send = () => {
+    if (!canSend) return
+    outbox.send(body.trim())
+    setBody('')
   }
   return (
     <Screen
@@ -356,20 +400,11 @@ function Post({ id }: { id: string }) {
             placeholder={t('commentPlaceholder')}
             value={body}
             onChangeText={setBody}
-            editable={!action.isPending}
             multiline
             maxLength={COMMENT_LIMIT}
             className="pr-2.5"
             inputClassName="max-h-[100px] py-2"
-            rightSlot={
-              <SendButton
-                ready={online && canSend}
-                pending={action.isPending}
-                onPress={() => {
-                  void send()
-                }}
-              />
-            }
+            rightSlot={<SendButton ready={online && canSend} onPress={send} />}
           />
         ) : undefined
       }
@@ -382,10 +417,17 @@ function Post({ id }: { id: string }) {
           renderRow={(comment, visible) => (
             <CommentRow comment={comment} owner={post.data?.author_id ?? ''} visible={visible} />
           )}
-          empty={t('emptyComments')}
+          empty={outbox.pending.length > 0 ? null : t('emptyComments')}
           header={
             <View>
               <PostCard post={post.data} detail />
+              {[...outbox.pending].reverse().map((item) => (
+                <OutgoingComment
+                  key={item.requestId}
+                  item={item}
+                  onRetry={() => outbox.retry(item.requestId)}
+                />
+              ))}
               {/* Only when there is something to say: empty, its padding sat
                   between the post and its first comment as a blank band. */}
               {own.data?.quarantined ? (

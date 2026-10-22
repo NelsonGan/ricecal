@@ -227,6 +227,10 @@ export const ja = {
       backspace: '最後の桁を削除',
       decimalPoint: '小数点',
     },
+    delivery: {
+      sending: '送信中…',
+      failed: '送信できませんでした。タップして再試行。',
+    },
   },
 
   activity: {

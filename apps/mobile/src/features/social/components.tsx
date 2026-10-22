@@ -1433,7 +1433,8 @@ export function SocialList<T>({
   query: PageQuery<T>
   rowKey: (row: T) => string
   renderRow: (row: T, visible: boolean) => ReactElement
-  empty: string
+  /** What an empty list says; null says nothing, for a list with rows drawn above it. */
+  empty: string | null
   /** Said under the last row once there are no more pages. */
   end?: string
   header?: ReactElement
@@ -1533,13 +1534,17 @@ export function SocialList<T>({
       ListEmptyComponent={
         query.isPending && query.fetchStatus !== 'paused' ? (
           <SocialSkeleton variant={variant} />
-        ) : (
+        ) : query.fetchStatus === 'paused' || query.isError || empty !== null ? (
           <EmptyState
             title={
-              query.fetchStatus === 'paused' ? t('offline') : query.isError ? t('failed') : empty
+              query.fetchStatus === 'paused'
+                ? t('offline')
+                : query.isError
+                  ? t('failed')
+                  : (empty ?? '')
             }
           />
-        )
+        ) : null
       }
       ListFooterComponent={
         query.isFetchNextPageError && rows.length > 0 ? (

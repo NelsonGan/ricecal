@@ -224,6 +224,10 @@ export const bn = {
       backspace: 'শেষ সংখ্যাটি মুছুন',
       decimalPoint: 'দশমিক বিন্দু',
     },
+    delivery: {
+      sending: 'পাঠানো হচ্ছে…',
+      failed: 'পাঠানো যায়নি। আবার চেষ্টা করতে ট্যাপ করুন।',
+    },
   },
 
   activity: {

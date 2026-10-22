@@ -229,6 +229,10 @@ export const th = {
       backspace: 'ลบตัวเลขตัวสุดท้าย',
       decimalPoint: 'จุดทศนิยม',
     },
+    delivery: {
+      sending: 'กำลังส่ง…',
+      failed: 'ส่งไม่สำเร็จ แตะเพื่อลองใหม่',
+    },
   },
 
   activity: {
