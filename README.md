@@ -509,6 +509,25 @@ copy.
   literal unions, which keeps `Meal` in SQL and `Meal` in TypeScript the same
   set.
 - **`updated_at` by trigger**, so no write path has to remember.
+- **Every view in `public` is `security_invoker`.** A view that must read past
+  RLS lives in `private` and is read through an invoker view of the same
+  name; `18_social.test.sql` fails on any other.
+
+**What the Security and Performance Advisors still report, on purpose.** Each
+was checked against the code (October 2026) and is not a finding:
+
+- *RLS enabled, no policy*: server-only tables (scan items and misses, groups,
+  push tokens, recipe saves, social counters and rate limits, job runs). No
+  policy means no client row, and their only writers are definer functions.
+- *Signed-in users can execute a security definer function*: those are the
+  app's RPC API, each deciding inside what its caller may do (most through
+  `private.social_require_user` or `private.group_require_member`), and none is
+  executable by `anon`.
+- *Unindexed foreign key* on a composite `(id, user_id)` ownership key: an index
+  leading with the first column already serves the cascade.
+- *Unused index* on the group tables: they cover foreign keys on tables still
+  small enough to scan.
+- *Leaked password protection*: needs the Pro plan.
 
 ### Function secrets
 
@@ -2690,9 +2709,13 @@ short account ID instead. Accounts are discoverable unless the owner turns on
 Private profile in Edit profile. The `social_joined_at` field still records a
 social action, but it does not govern discovery.
 Posting, following, liking and commenting need no manual handle setup or bio.
-The Security Advisor flags this one view as a definer view. That is deliberate:
-an invoker view would apply the owner-only `profiles` policy and hide every
-other person's public identity. Its selected columns exclude email, body
+Reading another person's identity has to bypass the owner-only `profiles`
+policy, so the filtered select is `private.social_profiles`, a view with its
+owner's rights in a schema the API does not expose. `public.social_profiles`
+reads it with `security_invoker`, as every view in `public` does. It stays a
+view rather than a set-returning function so the planner inlines it: a join on
+`user_id` stays an index lookup instead of checking visibility for every
+profile on every feed read. Its selected columns exclude email, body
 measurements, goals and diary fields. `social_can_view_profile` enforces the
 viewer's block and report rules. The social RLS tests exercise those boundaries
 as client roles.
