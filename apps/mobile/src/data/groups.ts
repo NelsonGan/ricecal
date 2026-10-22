@@ -232,11 +232,13 @@ export function useGroupBoard(groupId: string, day: string, enabled: boolean, li
 }
 
 /**
- * A day's chat. While `live` (see `useGroupChatLive`) it is refetched when
- * Realtime says something changed, and not otherwise; without a channel it
- * falls back to asking every five seconds.
+ * A day's chat, refetched when Realtime says something changed (see
+ * `useGroupChatLive`). Without a channel it asks every five seconds, as it
+ * always did. With one, a slow minute's poll stays as a net for what no
+ * message write announces (someone blocking the viewer, a renamed author) and
+ * for a socket that died without saying so.
  */
-export function useGroupMessages(groupId: string, day: string, open: boolean, live: boolean) {
+export function useGroupMessages(groupId: string, day: string, live: boolean) {
   const userId = useUserId()
   return useQuery({
     queryKey: messagesKey(userId, groupId, day),
@@ -246,12 +248,10 @@ export function useGroupMessages(groupId: string, day: string, open: boolean, li
         { p_group_id: groupId, p_day: day },
         signal,
       )) as unknown as GroupMessage[],
-    enabled: open,
-    refetchInterval: open && !live ? 5_000 : false,
-    // Coming back to the app or the network rejoins the channel, and the join
-    // refetches; doing it here as well read the thread twice.
+    refetchInterval: live ? 60_000 : 5_000,
+    // Coming back to the app rejoins the channel, and the join refetches;
+    // refetching on focus as well read the thread twice.
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
     ...SHORT,
   })
 }
@@ -278,7 +278,7 @@ function broadcastIds(payload: Record<string, unknown>): string[] {
 
 /**
  * Keeps an open chat current over the day's private Realtime channel, and
- * answers whether it is joined, which is what turns the poll off.
+ * answers whether it is joined, which is what slows the poll to a minute.
  *
  * A broadcast names message ids and nothing more, so a new one is drawn by
  * refetching `group_messages`, where blocks and reports are applied. Nothing
@@ -294,7 +294,16 @@ export function useGroupChatLive(groupId: string, day: string): boolean {
   const [live, setLive] = useState(false)
   useEffect(() => {
     const key = messagesKey(userId, groupId, day)
-    const refetch = () => void client.invalidateQueries({ queryKey: key })
+    // A fetch already on its way may have read the thread before the news.
+    // Restarting it would hold back the first paint, so it lands first and the
+    // thread is read once more after it.
+    const refetch = () => {
+      const query = client.getQueryCache().find({ queryKey: key, exact: true })
+      const pending = query?.state.fetchStatus === 'fetching' ? query.promise : undefined
+      const again = () => void client.invalidateQueries({ queryKey: key })
+      if (pending) void pending.then(again, again)
+      else again()
+    }
     const sending = () =>
       client
         .getMutationCache()
@@ -306,13 +315,7 @@ export function useGroupChatLive(groupId: string, day: string): boolean {
     const stop = listen(`group-chat:${groupId}:${day}`, {
       onLive: (next) => {
         setLive(next)
-        if (!next) return
-        // A fetch already on its way may have read the thread before the join.
-        // Restarting it would hold back the first paint, so it lands first.
-        const query = client.getQueryCache().find({ queryKey: key, exact: true })
-        const pending = query?.state.fetchStatus === 'fetching' ? query.promise : undefined
-        if (pending) void pending.then(refetch, refetch)
-        else refetch()
+        if (next) refetch()
       },
       onEvent: (event, payload) => {
         const ids = broadcastIds(payload)
@@ -621,16 +624,18 @@ export function useGroupAction() {
                 : rows,
             )
           }
-          // Deleted or reported, it leaves the thread now rather than on the refetch.
-          if (input.action !== 'message' && !error) {
+          if (input.action === 'message') {
+            void client.invalidateQueries({ queryKey: key })
+            return
+          }
+          // Deleted or reported, it leaves the thread here and needs no reread;
+          // only the board's preview may have been that message.
+          if (!error) {
             client.setQueryData<GroupMessage[]>(key, (rows) =>
               rows?.filter((row) => row.id !== input.messageId),
             )
           }
-          void client.invalidateQueries({ queryKey: key })
-          if (input.action !== 'message') {
-            void client.invalidateQueries({ queryKey: boardKey(userId, input.groupId, input.day) })
-          }
+          void client.invalidateQueries({ queryKey: boardKey(userId, input.groupId, input.day) })
           return
         }
         case 'invite':
