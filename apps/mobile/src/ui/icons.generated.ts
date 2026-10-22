@@ -531,6 +531,8 @@ export const icons = {
     sync: require('../../assets/icons/system/sync.png'),
     'theme-dark': require('../../assets/icons/system/theme-dark.png'),
     'theme-light': require('../../assets/icons/system/theme-light.png'),
+    'thumbs-down': require('../../assets/icons/system/thumbs-down.png'),
+    'thumbs-up': require('../../assets/icons/system/thumbs-up.png'),
     ticket: require('../../assets/icons/system/ticket.png'),
     trophy: require('../../assets/icons/system/trophy.png'),
     'user-add': require('../../assets/icons/system/user-add.png'),
