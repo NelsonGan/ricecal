@@ -8,6 +8,7 @@ import {
   type GroupMessage,
   groupError,
   useGroupAction,
+  useGroupBoardLive,
   useGroupChatLive,
 } from '../groups'
 import { keys } from '../keys'
@@ -147,6 +148,24 @@ it('asks the groups function to push a nudge once the nudge is written', async (
   expect(mockInvoke).toHaveBeenCalledWith('groups', { body: { kind: 'nudge', id: 'nudge-id' } })
 })
 
+it('asks the groups function to push a chat message once it is written', async () => {
+  const { wrapper } = setup()
+  mockRpc.mockReturnValue(response('message-id'))
+  const { result } = await renderHook(() => useGroupAction(), { wrapper })
+  await act(async () => {
+    await result.current.mutateAsync({
+      action: 'message',
+      groupId: 'g1',
+      day: '2026-10-21',
+      body: 'Laksa tonight?',
+      requestId: 'r1',
+    })
+  })
+  expect(mockInvoke).toHaveBeenCalledWith('groups', {
+    body: { kind: 'message', id: 'message-id' },
+  })
+})
+
 it('does not push when the database refused the nudge', async () => {
   const { wrapper } = setup()
   mockRpc.mockReturnValue(response(null, { message: 'Nudged recently', hint: 'nudge_closed' }))
@@ -267,6 +286,53 @@ function watchMessages(client: QueryClient) {
     staleTime: Number.POSITIVE_INFINITY,
   })
 }
+
+describe("the board's chat bar", () => {
+  const unread = (count: number) => ({ ...board([]), chat: { unread: count, last: null } })
+  function watchBoard(client: QueryClient) {
+    return new QueryObserver(client, {
+      queryKey: boardKey('g1'),
+      queryFn: () => mockRpc('group_board').then((answer: { data: unknown }) => answer.data),
+      staleTime: Number.POSITIVE_INFINITY,
+    })
+  }
+
+  it('rereads the board as a message is sent, so the count shows without a refresh', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(boardKey('g1'), unread(0))
+    const unsubscribe = watchBoard(client).subscribe(() => undefined)
+    await renderHook(() => useGroupBoardLive('g1', DAY, true), { wrapper })
+
+    // The first join follows the board's own read, so it asks for nothing.
+    await act(async () => mockListeners.get(TOPIC)?.onLive(true))
+    expect(mockRpc).not.toHaveBeenCalled()
+
+    mockRpc.mockReturnValue(response(unread(1)))
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('message', { ids: ['m1'] }))
+    await waitFor(() =>
+      expect(client.getQueryData<GroupBoard>(boardKey('g1'))?.chat.unread).toBe(1),
+    )
+
+    // A rejoin catches up on whatever was sent while the channel was down.
+    mockRpc.mockClear()
+    await act(async () => mockListeners.get(TOPIC)?.onLive(false))
+    await act(async () => mockListeners.get(TOPIC)?.onLive(true))
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1))
+    unsubscribe()
+  })
+
+  it('does not listen while the board is covered', async () => {
+    const { wrapper } = setup()
+    const { rerender } = await renderHook(
+      ({ on }: { on: boolean }) => useGroupBoardLive('g1', DAY, on),
+      { wrapper, initialProps: { on: true } },
+    )
+    expect(mockListeners.has(TOPIC)).toBe(true)
+    await rerender({ on: false })
+    expect(mockListeners.has(TOPIC)).toBe(false)
+    expect(mockStops).toEqual([TOPIC])
+  })
+})
 
 describe('live chat', () => {
   it("listens on the day's topic while mounted, and says when it is live", async () => {

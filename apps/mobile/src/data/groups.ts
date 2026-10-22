@@ -342,6 +342,38 @@ export function useGroupChatLive(groupId: string, day: string): boolean {
   return live
 }
 
+/**
+ * Keeps the board's chat bar current over the same channel an open chat
+ * listens on, so a friend's message lights its count as it is sent rather than
+ * at the board's next half-minute poll. Only while the board is on top: under
+ * the chat the count is being read away, and a refetch then would draw it back.
+ *
+ * The count is the whole group's and the channel is the day's, so a message on
+ * another day's page still waits for the poll. The first join refetches
+ * nothing, since the board was just read; a rejoin does, because anything sent
+ * while the channel was down was never heard.
+ */
+export function useGroupBoardLive(groupId: string, day: string, enabled: boolean) {
+  const userId = useUserId()
+  const client = useQueryClient()
+  useEffect(() => {
+    if (!enabled) return
+    const refetch = () =>
+      void client.invalidateQueries({ queryKey: boardKey(userId, groupId, day) })
+    let joined = false
+    return listen(`group-chat:${groupId}:${day}`, {
+      onLive: (live) => {
+        if (!live) return
+        if (joined) refetch()
+        joined = true
+      },
+      onEvent: (event, payload) => {
+        if ((event === 'message' || event === 'removed') && broadcastIds(payload).length) refetch()
+      },
+    })
+  }, [client, userId, groupId, day, enabled])
+}
+
 export function useGroupDetails(groupId: string) {
   const userId = useUserId()
   return useQuery({
@@ -372,10 +404,11 @@ type GroupAction =
   | { action: 'read'; groupId: string; day?: string }
 
 /**
- * Asks the groups function to push a nudge or an invite. Fire and forget: the
- * write has landed, and a missing push is not worth an error on screen.
+ * Asks the groups function to push a nudge, an invite or a chat message. Fire
+ * and forget: the write has landed, and a missing push is not worth an error on
+ * screen. The server marks each one pushed, so a resent message rings nobody twice.
  */
-function notify(kind: 'nudge' | 'invite', id: unknown) {
+function notify(kind: 'nudge' | 'invite' | 'message', id: unknown) {
   if (typeof id !== 'string') return
   void supabase.functions.invoke('groups', { body: { kind, id } }).catch(() => undefined)
 }
@@ -445,13 +478,16 @@ async function perform(input: GroupAction): Promise<unknown> {
       notify('nudge', id)
       return id
     }
-    case 'message':
-      return await rpc('send_group_message', {
+    case 'message': {
+      const id = await rpc('send_group_message', {
         p_group_id: input.groupId,
         p_day: input.day,
         p_body: input.body,
         p_request_id: input.requestId,
       })
+      notify('message', id)
+      return id
+    }
     case 'deleteMessage':
       return await rpc('delete_group_message', { p_message_id: input.messageId })
     case 'reportMessage':

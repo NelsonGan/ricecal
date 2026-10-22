@@ -1,4 +1,5 @@
 import { format, isToday, isYesterday, parseISO } from 'date-fns'
+import { useFocusEffect } from 'expo-router'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, Platform, TextInput, View } from 'react-native'
@@ -8,6 +9,7 @@ import {
   ownMessage,
   useGroupAction,
   useGroupChatLive,
+  useGroupDetails,
   useGroupMessages,
   useMyGroups,
 } from '@/data/groups'
@@ -17,8 +19,9 @@ import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
+import { setOpenGroupChat } from '@/lib/notifications'
 import { useThemeColors } from '@/theme/useTheme'
-import { AppBar, cn, Dialog, Icon, Screen, Spinner, Tappable, Text } from '@/ui'
+import { AppBar, cn, Dialog, Icon, IconButton, Screen, Spinner, Tappable, Text } from '@/ui'
 import { PersonAvatar, useGroupTask } from './parts'
 
 /**
@@ -41,6 +44,18 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
   const task = useGroupTask()
   const [selected, setSelected] = useState<GroupMessage | null>(null)
   const block = useBlockAuthor()
+  // The same switch as the group's settings: off, neither this chat's
+  // messages nor nudges ring the phone. Unknown until the details load, and
+  // the bell waits for them rather than guess.
+  const notify = useGroupDetails(groupId).data?.notify
+
+  // Pushes for this thread stay quiet while it is on screen.
+  useFocusEffect(
+    useCallback(() => {
+      setOpenGroupChat(`${groupId}:${day}`)
+      return () => setOpenGroupChat(null)
+    }, [groupId, day]),
+  )
 
   // Opening the chat reads it, which clears the bar's count. Leaving reads it
   // again only if the thread changed while it was open, judged from the thread
@@ -123,6 +138,18 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
         <AppBar
           onBack={back}
           backLabel={t('common:action.back')}
+          action={
+            notify === undefined ? undefined : (
+              <IconButton
+                size="sm"
+                variant="ghost"
+                accessibilityLabel={notify ? t('muteChat') : t('unmuteChat')}
+                onPress={() => task.press({ action: 'preferences', groupId, notify: !notify })}
+              >
+                <Icon set="system" name={notify ? 'bell' : 'bell-off'} size={22} />
+              </IconButton>
+            )
+          }
           titleContent={
             <View className="items-center">
               <Text variant="label" numberOfLines={1}>

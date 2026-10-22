@@ -119,6 +119,8 @@ create table public.group_messages (
   request_id  uuid not null,
   quarantined boolean not null default false,
   created_at  timestamptz not null default now(),
+  -- When its push went out, so a retried send rings nobody twice.
+  pushed_at   timestamptz,
   unique (author_id, request_id)
 );
 create index group_messages_day_idx on public.group_messages(group_id, day, created_at);
@@ -790,6 +792,39 @@ begin
 end;
 $$;
 
+-- What the groups function sends for a chat message the caller just wrote: one
+-- row per device of every other member who has the group's notifications on
+-- and is not blocked either way. Each message pushes once, within ten minutes
+-- of being sent, and never once three reports have quarantined it. The body
+-- goes in the push itself, so this is where blocks are applied to it.
+create or replace function public.group_message_push_targets(p_caller uuid, p_id uuid)
+returns table (token text, language text, actor_name text, group_name text, group_id uuid,
+  day date, body text)
+language plpgsql security definer set search_path = '' as $$
+declare v_group uuid; v_day date; v_body text;
+begin
+  update public.group_messages m set pushed_at = now()
+  where m.id = p_id and m.author_id = p_caller and m.pushed_at is null and not m.quarantined
+    and m.created_at > now() - interval '10 minutes'
+  returning m.group_id, m.day, m.body into v_group, v_day, v_body;
+  if v_group is null then return; end if;
+  return query
+    select t.token, coalesce(s.language, 'en'), coalesce(nullif(btrim(a.display_name), ''), a.handle),
+      g.name, g.id, v_day, v_body
+    from public.group_members m
+    join public.push_tokens t on t.user_id = m.user_id
+    join public.groups g on g.id = m.group_id
+    join public.profiles a on a.id = p_caller
+    left join public.user_settings s on s.user_id = m.user_id
+    where m.group_id = v_group and m.user_id <> p_caller and m.notify
+      and not exists (
+        select 1 from public.blocked_authors x
+        where (x.user_id = p_caller and x.author_id = m.user_id)
+           or (x.user_id = m.user_id and x.author_id = p_caller)
+      );
+end;
+$$;
+
 create or replace function public.forget_push_tokens(p_tokens text[])
 returns void language sql security definer set search_path = '' as $$
   delete from public.push_tokens t where t.token = any(p_tokens);
@@ -807,9 +842,10 @@ grant execute on function public.create_group, public.update_group, public.invit
   public.nudge_group_member, public.send_group_message, public.delete_group_message,
   public.report_group_message, public.report_group, public.mark_group_chat_read,
   public.register_push_token, public.unregister_push_token to authenticated, service_role;
-revoke execute on function public.group_push_targets, public.forget_push_tokens
-  from public, anon, authenticated;
-grant execute on function public.group_push_targets, public.forget_push_tokens to service_role;
+revoke execute on function public.group_push_targets, public.group_message_push_targets,
+  public.forget_push_tokens from public, anon, authenticated;
+grant execute on function public.group_push_targets, public.group_message_push_targets,
+  public.forget_push_tokens to service_role;
 
 -- ---------------------------------------------------------------------------
 -- Live chat
