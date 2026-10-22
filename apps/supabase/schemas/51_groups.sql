@@ -167,7 +167,7 @@ revoke all on public.groups, public.group_members, public.group_invites, public.
 grant all on public.groups, public.group_members, public.group_invites, public.group_reactions,
   public.group_nudges, public.group_messages, public.group_message_reports, public.group_reports,
   public.push_tokens to service_role;
--- Server only. Beside having no client grant, a restrictive policy means a
+-- Server only. Besides having no client grant, a restrictive policy means a
 -- permissive one added by mistake still admits no client row.
 create policy "Server only" on public.groups as restrictive for all to anon, authenticated
   using (false) with check (false);

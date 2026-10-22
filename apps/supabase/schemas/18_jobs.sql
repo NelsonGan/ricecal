@@ -57,7 +57,7 @@ alter table public.job_runs enable row level security;
 
 revoke all on public.job_runs from public, anon, authenticated;
 grant select, insert, update, delete on public.job_runs to service_role;
--- Server only. Beside having no client grant, a restrictive policy means a
+-- Server only. Besides having no client grant, a restrictive policy means a
 -- permissive one added by mistake still admits no client row.
 create policy "Server only" on public.job_runs as restrictive for all to anon, authenticated
   using (false) with check (false);

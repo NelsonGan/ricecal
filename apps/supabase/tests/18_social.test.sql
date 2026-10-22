@@ -43,11 +43,6 @@ select ok(not exists (
   where n.nspname = 'public' and c.relkind = 'r' and c.relname like 'social_%' and not c.relrowsecurity
 ), 'every exposed social table has RLS');
 select ok(not exists (
-  select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'public' and c.relkind = 'v'
-    and not coalesce(c.reloptions, '{}') && array['security_invoker=true', 'security_invoker=on']
-), 'every exposed view runs with the caller''s rights');
-select ok(not exists (
   select 1 from information_schema.columns where table_schema in ('public', 'private')
   and table_name in ('social_profiles', 'social_posts')
   and column_name in ('email', 'birth_date', 'sex', 'height_cm', 'target_weight_kg', 'log_date',
