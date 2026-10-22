@@ -39,6 +39,7 @@ export function InviteSheet({
       onClose={onClose}
       closeLabel={t('common:action.close')}
       title={t('inviteFriends')}
+      fullHeight
       scrollable={false}
     >
       <View className="gap-md">
