@@ -89,7 +89,7 @@ alter table public.food_scan_misses enable row level security;
 
 revoke all on public.food_scan_misses from public, anon, authenticated;
 grant select, insert, delete on public.food_scan_misses to service_role;
--- Server only. Beside having no client grant, a restrictive policy means a
+-- Server only. Besides having no client grant, a restrictive policy means a
 -- permissive one added by mistake still admits no client row.
 create policy "Server only" on public.food_scan_misses as restrictive for all to anon, authenticated
   using (false) with check (false);
@@ -124,7 +124,7 @@ alter table public.barcode_misses enable row level security;
 
 revoke all on public.barcode_misses from public, anon, authenticated;
 grant select, insert, delete on public.barcode_misses to service_role;
--- Server only. Beside having no client grant, a restrictive policy means a
+-- Server only. Besides having no client grant, a restrictive policy means a
 -- permissive one added by mistake still admits no client row.
 create policy "Server only" on public.barcode_misses as restrictive for all to anon, authenticated
   using (false) with check (false);

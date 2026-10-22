@@ -113,7 +113,11 @@ CASE
     WHEN avatar_path ~~ (('avatars/'::text || id::text) || '/%'::text) THEN avatar_path
     ELSE NULL::text
 END))
-  WHERE review_status = 'approved'::public.recipe_review AND NOT quarantined;
+  WHERE 
+CASE
+    WHEN avatar_path ~~ (('avatars/'::text || id::text) || '/%'::text) THEN avatar_path
+    ELSE NULL::text
+END IS NOT NULL AND review_status = 'approved'::public.recipe_review AND NOT quarantined;
 
 CREATE POLICY "Server only" ON public.push_tokens
   AS RESTRICTIVE

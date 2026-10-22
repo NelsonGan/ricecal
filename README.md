@@ -513,7 +513,7 @@ copy.
 - **`updated_at` by trigger**, so no write path has to remember.
 - **Every view in `public` is `security_invoker`.** A view that must read past
   RLS lives in `private` and is read through an invoker view of the same
-  name; `18_social.test.sql` fails on any other.
+  name; `02_rls.test.sql` fails on any other.
 - **A server-only table still gets a policy:** `"Server only"`, restrictive,
   `using (false) with check (false)` for `anon` and `authenticated`. With no
   client grant it changes nothing today, but a permissive policy added by
@@ -534,8 +534,10 @@ was checked against the code (October 2026) and is not a finding:
   doubles every function, so it is not done.
 - *Unindexed foreign key* on four composite `(id, user_id)` ownership keys
   (`social_posts`, `workout_exercises`, `workout_sets`, `workout_heart_rates`):
-  each is already served by a unique index leading with its first column, so a
-  second index would only cost writes.
+  each is already served by a unique index leading with its first column. That
+  index enforces something else and cannot be widened, so covering both
+  columns would mean a second index that only costs writes. The routine key's
+  index was a plain one and is widened instead.
 - *Unused index* on the group tables: they cover foreign keys on tables still
   small enough to scan.
 - *Leaked password protection*: needs the Pro plan.
@@ -2722,7 +2724,13 @@ social action, but it does not govern discovery.
 Posting, following, liking and commenting need no manual handle setup or bio.
 Reading another person's identity has to bypass the owner-only `profiles`
 policy, so the filtered select is `private.social_profiles`, a view with its
-owner's rights in a schema the API does not expose. `public.social_profiles`
+owner's rights in a schema the API does not expose. It is not a
+`security_barrier`: a barrier keeps joins on `user_id` off the primary key, and
+checking visibility for every profile took 720 ms on production. A barrier
+guards against a caller's own predicate raising an error on a hidden row; the
+only predicates a client can send are PostgREST's fixed filters, whose errors
+depend on the value sent and never on a row. So an RPC must not filter this
+view with an expression that can fail on a row's value, such as a cast. `public.social_profiles`
 reads it with `security_invoker`, as every view in `public` does. It stays a
 view rather than a set-returning function so the planner inlines it: a join on
 `user_id` stays an index lookup instead of checking visibility for every

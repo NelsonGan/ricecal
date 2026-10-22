@@ -502,7 +502,8 @@ create index social_posts_photo_idx on public.social_posts(photo_path)
 -- so it indexes the same expression the view selects.
 create index social_profiles_avatar_idx on public.profiles
   ((case when avatar_path like 'avatars/' || id::text || '/%' then avatar_path end))
-  where review_status = 'approved' and not quarantined;
+  where (case when avatar_path like 'avatars/' || id::text || '/%' then avatar_path end) is not null
+    and review_status = 'approved' and not quarantined;
 
 create or replace function public.social_photo_claims(p_keys text[])
 returns table (owner_id uuid, photo_path text, photo_etag text, kind text)

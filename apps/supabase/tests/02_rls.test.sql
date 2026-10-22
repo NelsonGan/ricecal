@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(31);
+select plan(32);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -385,6 +385,7 @@ select is(
      and not exists (select 1 from pg_catalog.pg_policy p where p.polrelid = c.oid and p.polpermissive)
      and exists (select 1 from pg_catalog.pg_policy p where p.polrelid = c.oid
        and not p.polpermissive and p.polcmd = '*'
+       and p.polroles @> array['anon'::regrole::oid, 'authenticated'::regrole::oid]
        and pg_catalog.pg_get_expr(p.polqual, p.polrelid) = 'false'
        and pg_catalog.pg_get_expr(p.polwithcheck, p.polrelid) = 'false')
      and not exists (
@@ -451,6 +452,21 @@ select is(
        or not exists (select 1 from pg_catalog.pg_policy p where p.polrelid = c.oid))),
   0,
   'every public table has RLS and at least one policy'
+);
+
+-- An exposed view runs with its owner's rights unless it says otherwise, which
+-- would read past every policy. One that must do so lives in `private` and is
+-- read through an invoker view of the same name.
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_class c
+   join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+   where n.nspname = 'public' and c.relkind = 'v'
+     and not exists (select 1 from unnest(coalesce(c.reloptions, '{}')) o
+       where lower(o) in ('security_invoker=true', 'security_invoker=on',
+                          'security_invoker=1', 'security_invoker=yes'))),
+  0,
+  'every public view runs with the caller''s rights'
 );
 
 select * from finish();
