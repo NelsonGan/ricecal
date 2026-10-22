@@ -259,6 +259,12 @@ grant select (id, author_id, food_name, icon_set, icon_name, photo_path, kcal, c
   on public.social_posts to authenticated;
 grant select (id, post_id, author_id, body, review_status, review_reason, revision,
   quarantined, created_at, updated_at) on public.social_comments to authenticated;
+-- Server only. Besides having no client grant, a restrictive policy means a
+-- permissive one added by mistake still admits no client row.
+create policy "Server only" on public.social_counters as restrictive for all to anon, authenticated
+  using (false) with check (false);
+create policy "Server only" on public.social_rate_limits as restrictive for all to anon, authenticated
+  using (false) with check (false);
 
 create or replace function private.social_pair_blocked(p_other uuid)
 returns boolean language sql stable security definer set search_path = '' as $$
@@ -285,8 +291,12 @@ returns boolean language sql stable security definer set search_path = '' as $$
 $$;
 
 -- This view exposes only social fields. The underlying profiles row stays
--- owner-only, including all body measurements and goals.
-create or replace view public.social_profiles as
+-- owner-only, including all body measurements and goals, so reading other
+-- people's identity has to run with the owner's rights. It lives in `private`,
+-- which the API does not expose, and is not a set-returning function because a
+-- view is inlined: a join on user_id stays an index lookup instead of checking
+-- visibility for every profile on every feed read.
+create or replace view private.social_profiles as
 select p.id as user_id, coalesce(p.handle, '') as handle, p.display_name, p.bio,
   case when p.avatar_path like 'avatars/' || p.id::text || '/%' then p.avatar_path end as avatar_path,
   case when p.avatar_path like 'avatars/' || p.id::text || '/%' then p.photo_etag end as photo_etag,
@@ -294,6 +304,21 @@ select p.id as user_id, coalesce(p.handle, '') as handle, p.display_name, p.bio,
   p.created_at, p.updated_at, p.is_private
 from public.profiles p
 where private.social_can_view_profile(p.id);
+revoke all on private.social_profiles from public, anon, authenticated;
+grant select on private.social_profiles to authenticated, service_role;
+
+-- The API-facing name runs with the caller's rights, so the only bypass is the
+-- private view above, which applies block, report and review visibility. It is
+-- deliberately not a security_barrier: a barrier stops joins on user_id from
+-- using the primary key, and checking visibility for every profile took 720 ms
+-- on production. What a barrier guards against is a caller's own predicate
+-- raising an error on a hidden row, and the only predicates a client can send
+-- are PostgREST's fixed filters, which cannot.
+create or replace view public.social_profiles with (security_invoker = true) as
+select s.user_id, s.handle, s.display_name, s.bio, s.avatar_path, s.photo_etag,
+  s.review_status, s.review_reason, s.revision, s.quarantined,
+  s.created_at, s.updated_at, s.is_private
+from private.social_profiles s;
 revoke all on public.social_profiles from public, anon, authenticated;
 grant select on public.social_profiles to authenticated, service_role;
 

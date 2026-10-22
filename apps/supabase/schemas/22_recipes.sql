@@ -128,10 +128,15 @@ create table public.recipe_saves (
   primary key (recipe_id, user_id)
 );
 
+-- The primary key leads with the recipe, so deleting an account needs its own.
+create index recipe_saves_user_idx on public.recipe_saves (user_id);
+
 alter table public.recipe_saves enable row level security;
 
 revoke all on public.recipe_saves from public, anon, authenticated;
 grant select, insert, delete on public.recipe_saves to service_role;
+create policy "Server only" on public.recipe_saves as restrictive for all to anon, authenticated
+  using (false) with check (false);
 
 
 -- ---------------------------------------------------------------------------

@@ -497,8 +497,13 @@ $$;
 
 create index social_posts_photo_idx on public.social_posts(photo_path)
   where photo_path is not null and review_status = 'approved' and not quarantined;
-create index social_profiles_avatar_idx on public.profiles(avatar_path)
-  where avatar_path is not null and review_status = 'approved' and not quarantined;
+-- Photo claims match on the view's avatar_path, which hides a path the profile
+-- does not own. An index on the raw column could never serve that comparison,
+-- so it indexes the same expression the view selects.
+create index social_profiles_avatar_idx on public.profiles
+  ((case when avatar_path like 'avatars/' || id::text || '/%' then avatar_path end))
+  where (case when avatar_path like 'avatars/' || id::text || '/%' then avatar_path end) is not null
+    and review_status = 'approved' and not quarantined;
 
 create or replace function public.social_photo_claims(p_keys text[])
 returns table (owner_id uuid, photo_path text, photo_etag text, kind text)

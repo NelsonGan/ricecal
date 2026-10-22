@@ -277,7 +277,8 @@ create table public.workouts (
 -- History, newest first, and a day's workouts on Today.
 create index workouts_user_started_idx on public.workouts (user_id, started_at desc);
 create index workouts_user_date_idx on public.workouts (user_id, log_date);
-create index workouts_routine_idx on public.workouts (routine_id) where routine_id is not null;
+-- Both columns of the routine foreign key, which is what deleting a routine looks up.
+create index workouts_routine_idx on public.workouts (routine_id, user_id) where routine_id is not null;
 
 create trigger workouts_set_updated_at
   before update on public.workouts
