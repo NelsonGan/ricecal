@@ -3216,28 +3216,35 @@ included, still polls.
 - **One channel and as little socket as possible** (`lib/realtime.ts`). Screens
   share a channel per topic; the last one out leaves it, and a topic asked for
   again while its leave is in flight waits for it, since supabase-js would hand
-  back the leaving channel. Backgrounding (not `inactive`, which is only the
-  notification shade passing over) leaves every channel and closes the socket at
-  once, including one still lingering after the last chat closed; coming back
-  rejoins. supabase-js otherwise keeps an empty socket for 50 seconds, which
-  `lib/supabase.ts` cuts to 5.
+  back the leaving channel. A leave the server answers with an error leaves its
+  channel listed for good, so that topic polls instead of joining it again.
+  Backgrounding (not `inactive`, which is only the notification shade passing
+  over) leaves every channel and then closes the socket, including one still
+  lingering after the last chat closed; coming back rejoins. supabase-js
+  otherwise keeps an empty socket for 50 seconds, which `lib/supabase.ts` cuts
+  to 5.
 - **Catching up.** Each join, first or after a drop, refetches the thread once,
-  since nothing sent while the channel was down will be heard. A fetch already
-  on its way lands first rather than being restarted, which would hold back the
-  first paint, and the query's own refetch on focus and reconnect is off, since
-  both rejoin the channel anyway. A join the policy refuses (a member removed
-  mid-chat) is not retried, and a channel the server closes is rejoined after
-  three seconds. While it is not
-  joined the chat polls every 5 seconds as it did before Realtime, which is
-  also what an app from before this change keeps doing, untouched. Measured on
-  a simulator against the local stack: no requests at all while a joined chat
-  sat idle for 20 seconds, and one per message from someone else.
+  since nothing sent while the channel was down will be heard. That is a second
+  read on opening a chat, kept on purpose: the first one may have been taken
+  before the join. A fetch already on its way lands first rather than being
+  restarted, which would hold back the first paint. Refetch on focus is off,
+  since coming back rejoins and the join reads. A join the policy refuses (a
+  member removed mid-chat) is not retried, and a channel the server closes is
+  rejoined after three seconds.
+- **Polling is the net, not the mechanism.** Joined, the thread is still read
+  once a minute, for what no message write announces (another member blocking
+  the viewer, a renamed author) and for a socket that died without saying so.
+  Not joined, it is read every 5 seconds as before Realtime, which is also what
+  an app from before this change keeps doing, untouched. Measured on a simulator
+  against the local stack: no requests while a joined chat sat idle for 20
+  seconds, and one per message from someone else.
 - **The sender's own message** joins the cached thread the moment
   `send_group_message` answers, so "Sending" clears without waiting for a
   refetch. Its broadcast can beat that answer, so a broadcast is ignored while
   one of the viewer's own sends to the thread is still on its way: the send
   refetches the thread when it lands, which picks up anything else too. One
-  read per message sent, either way.
+  read per message sent, either way. Deleting or reporting takes the message out
+  in place and rereads only the board, whose preview it may have been.
 - **pgTAP cannot watch `realtime.messages`.** It is partitioned by day, the
   Realtime server makes the partitions, and CI runs Postgres alone, where
   `realtime.send` would swallow the failure as a warning. `36_groups` replaces

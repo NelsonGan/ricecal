@@ -5,7 +5,6 @@ type FakeChannel = {
   config: unknown
   emit: (event: string, payload: Record<string, unknown>) => void
   status: (status: string, error?: Error) => void
-  teardown: jest.Mock
 }
 
 const channels: FakeChannel[] = []
@@ -23,7 +22,6 @@ jest.mock('../supabase', () => ({
         config: options.config,
         emit: (event: string, payload: Record<string, unknown>) => onBroadcast({ event, payload }),
         status: (status: string, error?: Error) => onStatus(status, error),
-        teardown: jest.fn(),
         on: (_type: string, _filter: unknown, callback: typeof onBroadcast) => {
           onBroadcast = callback
           return fake
@@ -50,15 +48,7 @@ jest.mock('../supabase', () => ({
         })
       }),
     getChannels: () => channels,
-    realtime: {
-      disconnect: () => mockDisconnect(),
-      get channels() {
-        return channels
-      },
-      set channels(next: FakeChannel[]) {
-        channels.splice(0, channels.length, ...next)
-      },
-    },
+    realtime: { disconnect: () => mockDisconnect() },
   },
 }))
 
@@ -210,15 +200,18 @@ it('rejoins a channel the server closed, after a pause', async () => {
   }
 })
 
-it('does not leave a channel behind when the server refuses the leave', async () => {
+it('leaves a topic whose leave the server refused to polling, and still sleeps in the background', async () => {
   const stop = listen('t', listener())
-  const first = channels[0]
   stop()
   removals[0]?.fail()
   await settle()
-  expect(first?.teardown).toHaveBeenCalled()
-  expect(channels).toHaveLength(0)
-  expect(mockDisconnect).toHaveBeenCalledTimes(1)
-  listen('t', listener())
+  // Still listed, so joining again would get that same channel back.
   expect(channels).toHaveLength(1)
+  const again = listener()
+  listen('t', again)
+  expect(channels).toHaveLength(1)
+  expect(again.onLive).not.toHaveBeenCalled()
+
+  appStateHandler?.('background')
+  expect(mockDisconnect).toHaveBeenCalledTimes(1)
 })

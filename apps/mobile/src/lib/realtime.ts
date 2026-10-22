@@ -47,6 +47,10 @@ function setLive(entry: Topic, live: boolean) {
 function open(topic: string, entry: Topic) {
   if (entry.channel || entry.closing || entry.retry || entry.refused) return
   if (!foreground || entry.listeners.size === 0) return
+  // A leave the server answered with an error leaves its channel listed, and
+  // supabase-js would hand that same channel back, bindings and all. Polling
+  // covers this chat instead.
+  if (supabase.getChannels().some((channel) => channel.topic === `realtime:${topic}`)) return
   const channel = supabase.channel(topic, { config: { private: true } })
   entry.channel = channel
   channel
@@ -90,30 +94,28 @@ function close(topic: string, entry: Topic) {
     setLive(entry, false)
     entry.closing = supabase
       .removeChannel(channel)
-      .catch(() => 'error' as const)
-      .then((answer) => {
-        // A leave the server answered with an error leaves the channel listed:
-        // supabase-js would hand it back for the next join of this topic, and
-        // the socket would never count as empty.
-        const stuck = answer === 'error' && supabase.realtime.channels.includes(channel)
-        if (stuck) {
-          channel.teardown()
-          supabase.realtime.channels = supabase.realtime.channels.filter((c) => c !== channel)
-        }
+      .catch(() => undefined)
+      .finally(() => {
         entry.closing = null
         // Asked for again, or brought back to the front, while it was leaving.
         open(topic, entry)
         forget(topic, entry)
-        // The library's own empty-socket timer never starts for a channel taken
-        // out by hand, and in the background nothing would follow it anyway.
-        if (stuck || !foreground) disconnectIfIdle()
+        sleepInBackground()
       })
   }
   forget(topic, entry)
 }
 
-function disconnectIfIdle() {
-  if (supabase.getChannels().length === 0) void supabase.realtime.disconnect()
+/**
+ * Closes the socket once the app is in the background and every leave has
+ * finished. supabase-js would keep an empty one for a few seconds and one
+ * still holding a channel whose leave failed for good; in the background
+ * nothing should hold it, and iOS would only suspend the app with it open.
+ */
+function sleepInBackground() {
+  if (foreground) return
+  for (const entry of topics.values()) if (entry.channel || entry.closing) return
+  void supabase.realtime.disconnect()
 }
 
 function forget(topic: string, entry: Topic) {
@@ -141,7 +143,7 @@ function watchAppState() {
       if (next) open(topic, entry)
       else close(topic, entry)
     }
-    if (!next) disconnectIfIdle()
+    sleepInBackground()
   })
 }
 

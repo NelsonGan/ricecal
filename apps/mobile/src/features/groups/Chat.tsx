@@ -37,7 +37,7 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
   const viewer = useUserId()
   const name = useMyGroups().data?.find((group) => group.id === groupId)?.name ?? ''
   const live = useGroupChatLive(groupId, day)
-  const messages = useGroupMessages(groupId, day, true, live)
+  const messages = useGroupMessages(groupId, day, live)
   const task = useGroupTask()
   const [selected, setSelected] = useState<GroupMessage | null>(null)
   const block = useBlockAuthor()
