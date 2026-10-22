@@ -13,7 +13,7 @@
 export const workouts = {
   title: 'Workouts',
 
-  /** The week so far, on the progress page; the streak beside the tab's title. */
+  /** The week so far, on the progress page; the streak in the page's bar. */
   overview: {
     title: 'This week',
     workouts: 'Workouts',
