@@ -55,6 +55,9 @@ const GestureScrollView = Reanimated.createAnimatedComponent(
   RawGestureScrollView,
 ) as unknown as KeyboardAwareScrollViewProps['ScrollViewComponent']
 
+/** Extra room kept between a non-scrolling screen's footer and the keyboard. */
+const KEYBOARD_GAP = 6
+
 /**
  * How far above the footer a focused field is brought to rest: a gap plus the
  * parts of the field nobody measures.
@@ -259,8 +262,9 @@ export function Screen({
           // On a screen that does not scroll the shell pads the keyboard's full
           // height, which already covers the home indicator, so the footer's
           // inset padding became a band of canvas between a chat composer and
-          // the keys. It slides down by that inset as the keyboard rises.
-          (scroll ? 0 : insets.bottom * keyboard.progress.value),
+          // the keys. It slides down by that inset as the keyboard rises, less
+          // a few points: all the way left the field all but touching the keys.
+          (scroll ? 0 : Math.max(insets.bottom - KEYBOARD_GAP, 0) * keyboard.progress.value),
       },
     ],
   }))
