@@ -6786,6 +6786,16 @@ component be split or renamed without touching every screen.
 what the parent measures. `contentClassName` targets the inner surface and is
 rarely needed: appearance belongs to `variant` and `tone`.
 
+**Everything that does something is felt.** Every press goes through
+`Tappable`, which gives a light impact on press-in, and a long press a medium
+one when it lands, even on a row that keeps its press-in quiet so a scroll over
+it stays silent. That covers cards with an `onPress` and segmented controls,
+which both used to opt out and left the groups list, the workout cards, the
+Workouts tile on Today and every segmented choice dead in the hand. A `Wheel`
+ticks once per row while it is being turned, as the platform's own do, and not
+when it parks itself on a value. `haptics={false}` is for a scrim or a surface
+that only swallows a press, and for a row that answers nothing but a long press.
+
 **Everything interactive is controlled.** No component owns the value it
 displays. That is what lets an optimistic update be rolled back when the server
 rejects it.

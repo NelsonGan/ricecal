@@ -60,7 +60,6 @@ export function SegmentedControl<T extends string>({
             containerClassName="flex-1"
             slabClassName={selected ? 'bg-line-strong' : 'bg-transparent'}
             className={cn('items-center px-1 py-3', selected ? 'bg-surface' : 'bg-transparent')}
-            haptics={false}
             onPress={() => onChange(option.value)}
             accessibilityRole="tab"
             accessibilityState={{ selected }}

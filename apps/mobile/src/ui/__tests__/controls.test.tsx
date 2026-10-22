@@ -1,4 +1,4 @@
-import { impactAsync } from 'expo-haptics'
+import { impactAsync, selectionAsync } from 'expo-haptics'
 import { StyleSheet, Text } from 'react-native'
 
 import { fireEvent, render, screen, userEvent } from '../../test-utils'
@@ -6,12 +6,15 @@ import { AppBar } from '../AppBar'
 import { CountBadge } from '../Badge'
 import { NavItem } from '../BottomNav'
 import { Button } from '../Button'
+import { Card } from '../Card'
 import { Chip } from '../Chip'
 import { cn } from '../cn'
 import { IconButton } from '../IconButton'
 import { StatTile } from '../StatTile'
 import { Stepper } from '../Stepper'
 import { Switch } from '../Switch'
+import { Tappable } from '../Tappable'
+import { Wheel } from '../Wheel'
 
 /**
  * Behaviour, not appearance. Styling is verified on a device through the gallery
@@ -450,5 +453,60 @@ describe('cn', () => {
 
   it('keeps classes from different groups', () => {
     expect(cn('bg-pandan', 'text-on-pandan')).toBe('bg-pandan text-on-pandan')
+  })
+})
+
+describe('haptics', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it('gives a card that does something the same tap as any control', async () => {
+    await render(
+      <Card onPress={() => {}} accessibilityRole="button" accessibilityLabel="Workouts">
+        <Text>Workouts</Text>
+      </Card>,
+    )
+    await user.press(screen.getByRole('button'))
+    expect(impactAsync).toHaveBeenCalledWith('light')
+  })
+
+  it('feels a long press when it lands, even on a row quiet to the touch', async () => {
+    const onLongPress = jest.fn()
+    await render(
+      <Tappable haptics={false} onLongPress={onLongPress} accessibilityRole="button">
+        <Text>Hawker Hunters</Text>
+      </Tappable>,
+    )
+    await user.longPress(screen.getByRole('button'))
+    expect(onLongPress).toHaveBeenCalledTimes(1)
+    expect(impactAsync).toHaveBeenCalledTimes(1)
+    expect(impactAsync).toHaveBeenCalledWith('medium')
+  })
+
+  it('ticks once per row while the wheel is turned, and not while it parks itself', async () => {
+    const options = Array.from({ length: 10 }, (_, n) => ({ value: String(n), label: String(n) }))
+    await render(
+      <Wheel options={options} value="0" onChange={() => {}} accessibilityLabel="Rest" />,
+    )
+    // The wheel's scroll view is hidden from the accessibility tree, so it is
+    // found under the adjustable control by its handler.
+    type Node = { props?: { onScroll?: unknown }; children?: unknown[] }
+    const find = (node: Node): Node | undefined =>
+      node.props?.onScroll
+        ? node
+        : (node.children ?? []).map((child) => find(child as Node)).find(Boolean)
+    const scroller = find(screen.getByLabelText('Rest') as unknown as Node) as never
+    const scroll = (y: number) =>
+      fireEvent.scroll(scroller, { nativeEvent: { contentOffset: { y } } })
+
+    await scroll(120)
+    expect(selectionAsync).not.toHaveBeenCalled()
+
+    await fireEvent(scroller, 'scrollBeginDrag')
+    await scroll(130)
+    await scroll(150)
+    await scroll(165)
+    await scroll(200)
+    // Rows 3, 4 and 5 passed the band; 165 is still row 4.
+    expect(selectionAsync).toHaveBeenCalledTimes(3)
   })
 })
