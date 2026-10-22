@@ -5,7 +5,7 @@
 -- through definer functions in 97_groups.sql, so an edit, a deleted entry or a
 -- new photo shows in every group at once, and leaving a group takes nothing
 -- with it. What a group adds of its own is membership, invites, reactions to
--- an entry, nudges and a chat for each day.
+-- an entry, nudges and one chat per group.
 --
 -- Every table is closed to clients. Reads and writes go through functions that
 -- check membership themselves, because the diary's RLS is owner-only and must
@@ -57,7 +57,7 @@ create table public.group_members (
   -- This member's own row order for the board. Ids that have left are ignored
   -- when read and anyone not listed goes after, by join date.
   board_order   uuid[] not null default '{}' check (cardinality(board_order) <= 10),
-  -- Chat messages after this, on any day, are unread for this member.
+  -- Chat messages after this are unread for this member.
   chat_read_at  timestamptz not null default now(),
   notify        boolean not null default true,
   primary key (group_id, user_id)
@@ -112,8 +112,6 @@ create index group_nudges_nudger_idx on public.group_nudges(nudger_id);
 create table public.group_messages (
   id          uuid primary key default gen_random_uuid(),
   group_id    uuid not null references public.groups(id) on delete cascade,
-  -- The board page the message was written on, not when it was sent.
-  day         date not null,
   author_id   uuid not null references public.profiles(id) on delete cascade,
   body        text not null check (char_length(btrim(body)) between 1 and 500),
   request_id  uuid not null,
@@ -123,8 +121,8 @@ create table public.group_messages (
   pushed_at   timestamptz,
   unique (author_id, request_id)
 );
-create index group_messages_day_idx on public.group_messages(group_id, day, created_at);
-create index group_messages_recent_idx on public.group_messages(group_id, created_at);
+-- The thread's order, which group_messages pages through by (created_at, id).
+create index group_messages_recent_idx on public.group_messages(group_id, created_at, id);
 
 create table public.group_message_reports (
   message_id  uuid not null references public.group_messages(id) on delete cascade,
@@ -650,26 +648,24 @@ begin
 end;
 $$;
 
-create or replace function public.send_group_message(
-  p_group_id uuid, p_day date, p_body text, p_request_id uuid
-)
+-- A message in the group's one thread.
+create or replace function public.send_group_message(p_group_id uuid, p_body text, p_request_id uuid)
 returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id); v_id uuid;
 begin
   if p_body is null or char_length(btrim(p_body)) not between 1 and 500 then
     raise exception 'Messages are 1 to 500 characters' using errcode = '22023';
   end if;
-  if p_request_id is null or p_day is null
-     or p_day not between public.local_today(v_user) - 60 and public.local_today(v_user) + 1 then
-    raise exception 'Day unavailable' using errcode = '22023';
+  if p_request_id is null then
+    raise exception 'Request id required' using errcode = '22023';
   end if;
   select m.id into v_id from public.group_messages m where m.author_id = v_user and m.request_id = p_request_id;
   if v_id is not null then return v_id; end if;
   if not private.social_claim(v_user, 'group_message', 120) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
-  insert into public.group_messages(group_id, day, author_id, body, request_id)
-  values (p_group_id, p_day, v_user, btrim(p_body), p_request_id)
+  insert into public.group_messages(group_id, author_id, body, request_id)
+  values (p_group_id, v_user, btrim(p_body), p_request_id)
   returning id into v_id;
   update public.group_members m set chat_read_at = now()
   where m.group_id = p_group_id and m.user_id = v_user;
@@ -817,26 +813,31 @@ $$;
 -- and is not blocked either way. Each message pushes once, within ten minutes
 -- of being sent, and never once three reports have quarantined it. The body
 -- goes in the push itself, so this is where blocks are applied to it.
+--
+-- A member who has read the chat since the message was written already saw it
+-- in an open thread, which marks the chat read as messages arrive, so they are
+-- left out the way any messenger leaves out someone who is looking. The groups
+-- function asks a few seconds after the send to give that read time to land.
 create or replace function public.group_message_push_targets(p_caller uuid, p_id uuid)
-returns table (token text, language text, actor_name text, group_name text, group_id uuid,
-  day date, body text)
+returns table (token text, language text, actor_name text, group_name text, group_id uuid, body text)
 language plpgsql security definer set search_path = '' as $$
-declare v_group uuid; v_day date; v_body text;
+declare v_group uuid; v_body text; v_sent_at timestamptz;
 begin
   update public.group_messages m set pushed_at = now()
   where m.id = p_id and m.author_id = p_caller and m.pushed_at is null and not m.quarantined
     and m.created_at > now() - interval '10 minutes'
-  returning m.group_id, m.day, m.body into v_group, v_day, v_body;
+  returning m.group_id, m.body, m.created_at into v_group, v_body, v_sent_at;
   if v_group is null then return; end if;
   return query
     select t.token, coalesce(s.language, 'en'), coalesce(nullif(btrim(a.display_name), ''), a.handle),
-      g.name, g.id, v_day, v_body
+      g.name, g.id, v_body
     from public.group_members m
     join public.push_tokens t on t.user_id = m.user_id
     join public.groups g on g.id = m.group_id
     join public.profiles a on a.id = p_caller
     left join public.user_settings s on s.user_id = m.user_id
     where m.group_id = v_group and m.user_id <> p_caller and m.notify
+      and m.chat_read_at < v_sent_at
       and not exists (
         select 1 from public.blocked_authors x
         where (x.user_id = p_caller and x.author_id = m.user_id)
@@ -870,8 +871,8 @@ grant execute on function public.group_push_targets, public.group_message_push_t
 -- ---------------------------------------------------------------------------
 -- Live chat
 --
--- An open chat listens on one private Realtime channel, `group-chat:<group>:<day>`,
--- instead of asking every five seconds. What goes down it is message ids and
+-- An open chat or board listens on the group's private Realtime channel,
+-- `group-chat:<group>`, instead of asking every few seconds. What goes down it is message ids and
 -- nothing else. The phone refetches through group_messages, which is where
 -- blocks, reports and quarantine are applied, so a broadcast never hands a body
 -- to someone who must not read it, and a member removed mid-chat hears ids it
@@ -882,15 +883,14 @@ grant execute on function public.group_push_targets, public.group_message_push_t
 -- for every row. A broadcast is checked once, when the channel is joined.
 -- ---------------------------------------------------------------------------
 
--- Whether the caller may listen on a Realtime topic. Only a chat topic of a
+-- Whether the caller may listen on a Realtime topic. Only the chat topic of a
 -- group they are in passes; anything malformed is refused rather than cast.
 create or replace function private.group_chat_listener(p_topic text)
 returns boolean language plpgsql stable security definer set search_path = '' as $$
 declare v_parts text[] := string_to_array(p_topic, ':');
 begin
-  if cardinality(v_parts) <> 3 or v_parts[1] <> 'group-chat'
-     or v_parts[2] !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-     or v_parts[3] !~ '^\d{4}-\d{2}-\d{2}$' then
+  if cardinality(v_parts) <> 2 or v_parts[1] <> 'group-chat'
+     or v_parts[2] !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
     return false;
   end if;
   return private.group_is_member(v_parts[2]::uuid, (select auth.uid()));
@@ -906,19 +906,19 @@ create policy "Group members hear their chat" on realtime.messages
     and private.group_chat_listener((select realtime.topic()))
   );
 
--- Announces message ids on a thread's topic. realtime.send swallows its own
--- errors as a warning, so a Realtime outage cannot refuse the write that
--- called it; the open chat falls back to polling when its channel drops.
-create or replace function private.group_chat_broadcast(p_group uuid, p_day date, p_event text, p_ids jsonb)
+-- Announces message ids on the group's topic, heard by an open chat and an
+-- open board's chat bar. realtime.send swallows its own errors as a warning,
+-- so a Realtime outage cannot refuse the write that called it; the open chat
+-- and board fall back to polling when their channel drops.
+create or replace function private.group_chat_broadcast(p_group uuid, p_event text, p_ids jsonb)
 returns void language sql security definer set search_path = '' as $$
-  select realtime.send(jsonb_build_object('ids', p_ids), p_event,
-    'group-chat:' || p_group::text || ':' || p_day::text, true);
+  select realtime.send(jsonb_build_object('ids', p_ids), p_event, 'group-chat:' || p_group::text, true);
 $$;
 
 create or replace function private.group_message_sent()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  perform private.group_chat_broadcast(new.group_id, new.day, 'message', jsonb_build_array(new.id));
+  perform private.group_chat_broadcast(new.group_id, 'message', jsonb_build_array(new.id));
   return null;
 end;
 $$;
@@ -926,13 +926,13 @@ create trigger group_message_sent after insert on public.group_messages
   for each row execute function private.group_message_sent();
 
 -- Deleted by its author, or cascaded away with a group or an account. Once per
--- statement and per thread, so deleting an account with months of messages
+-- statement and per group, so deleting an account with months of messages
 -- sends a handful of broadcasts rather than one per row.
 create or replace function private.group_messages_removed()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  perform private.group_chat_broadcast(g.group_id, g.day, 'removed', jsonb_agg(g.id))
-  from gone g group by g.group_id, g.day;
+  perform private.group_chat_broadcast(g.group_id, 'removed', jsonb_agg(g.id))
+  from gone g group by g.group_id;
   return null;
 end;
 $$;
@@ -944,7 +944,7 @@ create trigger group_messages_removed after delete on public.group_messages
 create or replace function private.group_message_quarantined()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  perform private.group_chat_broadcast(new.group_id, new.day, 'removed', jsonb_build_array(new.id));
+  perform private.group_chat_broadcast(new.group_id, 'removed', jsonb_build_array(new.id));
   return null;
 end;
 $$;

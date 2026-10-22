@@ -3,6 +3,7 @@ import { AppState, Platform } from 'react-native'
 
 import type { MealTime, Settings } from '@/data/types'
 import {
+  dismissGroupChatNotifications,
   type ReminderCopy,
   rescheduleReminders,
   scheduleNoticeAt,
@@ -26,6 +27,8 @@ jest.mock('expo-notifications', () => ({
   cancelScheduledNotificationAsync: jest.fn(),
   getPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn(),
+  getPresentedNotificationsAsync: jest.fn(),
+  dismissNotificationAsync: jest.fn(),
 }))
 
 // Taken at import, before any test clears the mocks.
@@ -181,32 +184,30 @@ describe('with the app open', () => {
     expect(await shown('rest')).toBe(false)
   })
 
-  it('keeps a chat push quiet over its own thread, and only there', async () => {
-    const chat = (day: string) =>
+  it("keeps a chat push quiet while that group's chat is on screen, and only there", async () => {
+    const chat = (groupId: string) =>
       handler.handleNotification({
-        request: { content: { data: { kind: 'group', groupId: 'g1', day, chat: true } } },
+        request: { content: { data: { kind: 'group', groupId, chat: true } } },
       })
-    const release = showingGroupChat('g1:2026-10-21')
-    expect((await chat('2026-10-21')).shouldShowBanner).toBe(false)
-    expect((await chat('2026-10-20')).shouldShowBanner).toBe(true)
-    // Another thread took over before the first let go: the late release
+    const release = showingGroupChat('g1')
+    expect((await chat('g1')).shouldShowBanner).toBe(false)
+    expect((await chat('g2')).shouldShowBanner).toBe(true)
+    // Another group took over before the first let go: the late release
     // leaves the new one alone.
-    const next = showingGroupChat('g1:2026-10-20')
+    const next = showingGroupChat('g2')
     release()
-    expect((await chat('2026-10-20')).shouldShowBanner).toBe(false)
+    expect((await chat('g2')).shouldShowBanner).toBe(false)
     next()
-    expect((await chat('2026-10-20')).shouldShowBanner).toBe(true)
+    expect((await chat('g2')).shouldShowBanner).toBe(true)
   })
 
   it('keeps a chat push quiet while the board and its chat both show the thread', async () => {
     const chat = () =>
       handler.handleNotification({
-        request: {
-          content: { data: { kind: 'group', groupId: 'g1', day: '2026-10-21', chat: true } },
-        },
+        request: { content: { data: { kind: 'group', groupId: 'g1', chat: true } } },
       })
-    const board = showingGroupChat('g1:2026-10-21')
-    const thread = showingGroupChat('g1:2026-10-21')
+    const board = showingGroupChat('g1')
+    const thread = showingGroupChat('g1')
     // The board's blur lands after the chat's focus, and a second release is a no-op.
     board()
     board()
@@ -224,5 +225,30 @@ describe('with the app open', () => {
 
   it('shows reminders', async () => {
     expect(await shown('meal')).toBe(true)
+  })
+})
+
+describe("clearing a group's chat notifications", () => {
+  const presented = (identifier: string, data: Record<string, unknown>) => ({
+    request: { identifier, content: { data } },
+  })
+
+  it("takes away only that group's chat messages", async () => {
+    ;(Notifications.getPresentedNotificationsAsync as jest.Mock).mockResolvedValue([
+      presented('a', { kind: 'group', groupId: 'g1', day: '2026-10-21', chat: true }),
+      presented('b', { kind: 'group', groupId: 'g1', day: '2026-10-20', chat: true }),
+      presented('c', { kind: 'group', groupId: 'g1' }),
+      presented('d', { kind: 'group', groupId: 'g2', chat: true }),
+      presented('e', { kind: 'meal' }),
+    ])
+    await dismissGroupChatNotifications('g1')
+    expect(
+      (Notifications.dismissNotificationAsync as jest.Mock).mock.calls.map(([id]) => id),
+    ).toEqual(['a', 'b'])
+  })
+
+  it('says nothing when the list cannot be read', async () => {
+    ;(Notifications.getPresentedNotificationsAsync as jest.Mock).mockRejectedValue(new Error('no'))
+    await expect(dismissGroupChatNotifications('g1')).resolves.toBeUndefined()
   })
 })

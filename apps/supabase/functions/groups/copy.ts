@@ -143,15 +143,14 @@ export type MessageTarget = {
   actor_name: string | null
   group_name: string
   group_id: string
-  day: string
   body: string
 }
 
 /**
  * A chat message reads the way a messenger's group notification does: the
  * group as the title and "Name: what they said" under it, so it needs no copy
- * of its own in any language. `chat` sends the tap to the thread rather than
- * the board.
+ * of its own in any language. `chat` sends the tap to the group's thread
+ * rather than its board.
  */
 export function messagePush(target: MessageTarget) {
   const name = target.actor_name?.trim() || 'RiceCal'
@@ -160,6 +159,6 @@ export function messagePush(target: MessageTarget) {
     title: target.group_name,
     body: `${name}: ${target.body}`,
     sound: 'default',
-    data: { kind: 'group', groupId: target.group_id, day: target.day, chat: true },
+    data: { kind: 'group', groupId: target.group_id, chat: true },
   }
 }

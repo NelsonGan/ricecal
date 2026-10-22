@@ -95,7 +95,9 @@ export function useBlockAuthor() {
       // and chats are cleared rather than marked stale, or going back to one
       // drew the blocked person again until its refetch landed.
       const live = (query: { queryKey: readonly unknown[] }) =>
-        query.queryKey[2] === 'group_board' || query.queryKey[2] === 'group_messages'
+        query.queryKey[2] === 'group_board' ||
+        query.queryKey[2] === 'group_messages' ||
+        query.queryKey[2] === 'group_chat_summary'
       await queryClient.cancelQueries({ queryKey: keys.groups(userId), predicate: live })
       await queryClient.resetQueries({ queryKey: keys.groups(userId), predicate: live })
       queryClient.invalidateQueries({

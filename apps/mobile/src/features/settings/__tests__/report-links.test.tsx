@@ -129,19 +129,17 @@ it('answers the launching tap, and answers it once', async () => {
   await second.unmount()
 })
 
-it("opens a chat push on its thread, over that group's board", async () => {
+it("opens a chat push on its group's thread, over that group's board", async () => {
   const { unmount } = await mount()
   mockListeners[0]?.({
     notification: {
-      request: {
-        content: { data: { kind: 'group', groupId: 'g1', day: '2026-10-21', chat: true } },
-      },
+      request: { content: { data: { kind: 'group', groupId: 'g1', chat: true } } },
     },
   })
 
   expect(mockPush.mock.calls.map(([href]) => href)).toEqual([
     'navigate /groups',
-    `navigate ${JSON.stringify({ pathname: '/group/chat', params: { id: 'g1', day: '2026-10-21', reply: '1' } })}`,
+    `navigate ${JSON.stringify({ pathname: '/group/chat', params: { id: 'g1', reply: '1' } })}`,
   ])
   unmount()
 })

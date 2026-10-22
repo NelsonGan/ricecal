@@ -37,10 +37,9 @@ Deno.test('a chat message is titled by the group and opens the thread', () => {
     actor_name: 'Aisha',
     group_name: 'Makan Buddies',
     group_id: 'g1',
-    day: '2026-10-21',
     body: 'Laksa tonight?',
   })
   assertEquals(message.title, 'Makan Buddies')
   assertEquals(message.body, 'Aisha: Laksa tonight?')
-  assertEquals(message.data, { kind: 'group', groupId: 'g1', day: '2026-10-21', chat: true })
+  assertEquals(message.data, { kind: 'group', groupId: 'g1', chat: true })
 })
