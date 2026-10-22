@@ -115,7 +115,7 @@ function EntryRow({
           <View className="flex-row items-center justify-between gap-2">
             <View className="flex-row items-baseline gap-1">
               <Text className="font-display text-[20px] leading-[26px] text-heading">
-                {entry.kcal.toLocaleString()}
+                {Math.round(entry.kcal).toLocaleString()}
               </Text>
               <Text variant="caption">{t('common:unit.kcal')}</Text>
             </View>
