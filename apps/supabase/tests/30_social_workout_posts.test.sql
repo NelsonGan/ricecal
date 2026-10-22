@@ -24,6 +24,11 @@ from unnest(array[:'owner'::uuid, :'reader'::uuid, :'stranger'::uuid, :'lurker':
 update public.profiles set social_joined_at = now(), review_status = 'approved'
 where id in (:'owner', :'reader', :'stranger');
 insert into public.social_follows (follower_id, followed_id) values (:'reader', :'owner');
+-- Isolate the readers from simulator accounts, whose posts would fill the feed.
+insert into public.blocked_authors (user_id, author_id)
+select viewer, p.id from unnest(array[:'owner'::uuid, :'reader'::uuid, :'stranger'::uuid, :'lurker'::uuid]) viewer
+cross join public.profiles p
+where p.id not in (:'owner', :'reader', :'stranger', :'lurker');
 
 select is((select auto_post_workouts from public.profiles where id = :'owner'), true,
   'sharing workouts is on by default');

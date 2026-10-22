@@ -259,6 +259,12 @@ grant select (id, author_id, food_name, icon_set, icon_name, photo_path, kcal, c
   on public.social_posts to authenticated;
 grant select (id, post_id, author_id, body, review_status, review_reason, revision,
   quarantined, created_at, updated_at) on public.social_comments to authenticated;
+-- Server only. Beside having no client grant, a restrictive policy means a
+-- permissive one added by mistake still admits no client row.
+create policy "Server only" on public.social_counters as restrictive for all to anon, authenticated
+  using (false) with check (false);
+create policy "Server only" on public.social_rate_limits as restrictive for all to anon, authenticated
+  using (false) with check (false);
 
 create or replace function private.social_pair_blocked(p_other uuid)
 returns boolean language sql stable security definer set search_path = '' as $$
