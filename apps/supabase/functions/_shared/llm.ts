@@ -431,7 +431,9 @@ export function answerShape(text: string): string {
   const last = text.lastIndexOf('}')
   const braced = first >= 0 && last > first ? text.slice(first, last + 1) : ''
   let kind = 'none'
+  // From the start of the answer, so it reads against `before` and `length`.
   let at = -1
+  let atChar = 'n/a'
   if (braced) {
     try {
       JSON.parse(braced)
@@ -439,7 +441,17 @@ export function answerShape(text: string): string {
     } catch (error) {
       const message = error instanceof Error ? error.message : ''
       kind = PARSE_KINDS.find(([pattern]) => pattern.test(message))?.[1] ?? 'other'
-      at = Number(message.match(/position (\d+)/)?.[1] ?? -1)
+      const position = message.match(/position (\d+)/)?.[1]
+      if (position !== undefined) {
+        at = first + Number(position)
+        atChar = charClass(text[at])
+      } else {
+        // V8 gives "Unexpected token" no position, only the character, so a
+        // trailing comma (`]` or `}`) would read the same as a bare `NaN`.
+        // The character is reported by its class, never as itself.
+        const token = message.match(/Unexpected token '(.+?)'/u)?.[1]
+        if (token) atChar = charClass([...token][0])
+      }
     }
   }
 
@@ -452,7 +464,7 @@ export function answerShape(text: string): string {
     `after=${last < 0 ? -1 : text.length - last - 1}`,
     `error=${kind}`,
     `at=${at}`,
-    `at-char=${at >= 0 ? charClass(braced[at]) : 'n/a'}`,
+    `at-char=${atChar}`,
   ].join(' ')
 }
 

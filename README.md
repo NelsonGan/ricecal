@@ -240,7 +240,8 @@ one text call in a hundred did, across the prompt evals). In production it is
 about 2% of photos. Each one logs `answer did not parse (…)` with a shape built
 only from lengths, counts and fixed labels (`objects=2 error=after-json` is a
 second object after the first; `error=expected-comma at-char=letter` is a quote
-left unescaped), since the answer itself is diary content. A generic
+left unescaped; `error=unexpected-token at-char=]` is a trailing comma), since
+the answer itself is diary content. A generic
 `json_schema` response format is not the fix: Haiku answers it with `{}`.
 
 `OPENROUTER_BYOK_MODEL=off` as a function secret sends everything to Qwen

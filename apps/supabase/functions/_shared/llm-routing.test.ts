@@ -185,10 +185,19 @@ Deno.test('an unreadable answer is described by its shape, never by its words', 
   assertEquals(quote.includes('objects=1'), true)
   assertEquals(quote.includes('error=expected-comma'), true)
   assertEquals(quote.includes('at-char=letter'), true)
+  // The position counts from the start of the answer, past any paragraph.
+  const late = answerShape('Here:\n{"name":"teh "tarik"","kcal":120}')
+  assertEquals(late.includes('before=6'), true)
+  assertEquals(late.includes('at=20 at-char=letter'), true)
+  // V8 gives these no position, so the character's class tells them apart.
+  const comma = answerShape('{"items":["roti canai",],"kcal":300}')
+  assertEquals(comma.includes('error=unexpected-token at=-1 at-char=]'), true)
+  const bare = answerShape('{"name":"roti canai","kcal":NaN}')
+  assertEquals(bare.includes('error=unexpected-token at=-1 at-char=letter'), true)
   // Cut off part way, with nothing closing it.
   assertEquals(answerShape('{"items":[{"name":"roti').includes('unclosed=2'), true)
-  for (const shape of [twice, quote]) {
-    assertEquals(/nasi|lemak|teh|tarik|ayam|name|Corrected/i.test(shape), false)
+  for (const shape of [twice, quote, late, comma, bare]) {
+    assertEquals(/nasi|lemak|teh|tarik|ayam|roti|canai|kcal|name|Corrected|NaN/i.test(shape), false)
   }
 })
 
