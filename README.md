@@ -363,8 +363,10 @@ The `auth` schema is **not** one of these. The diff tracks triggers on
 made the next diff emit `DROP TRIGGER` for it. It stays declarative, in
 `16_new_user.sql`.
 
-Seven service-only tables have RLS enabled with no policies. That denies all
-row reads and writes by default; their client table grants are revoked too.
+Sixteen service-only tables (scan items and misses, groups and their chat,
+push tokens, recipe saves, social counters and rate limits, job runs) have no
+client grant, no permissive policy and a restrictive `"Server only"` policy that
+denies every client row.
 `98_client_table_privileges.sql` also removes `TRUNCATE`, `REFERENCES`, `TRIGGER`
 and `MAINTAIN` from client roles on every public table. These operations do not
 need an RLS policy to run. `02_rls.test.sql` checks both boundaries.
@@ -509,6 +511,36 @@ copy.
   literal unions, which keeps `Meal` in SQL and `Meal` in TypeScript the same
   set.
 - **`updated_at` by trigger**, so no write path has to remember.
+- **Every view in `public` is `security_invoker`.** A view that must read past
+  RLS lives in `private` and is read through an invoker view of the same
+  name; `02_rls.test.sql` fails on any other.
+- **A server-only table still gets a policy:** `"Server only"`, restrictive,
+  `using (false) with check (false)` for `anon` and `authenticated`. With no
+  client grant it changes nothing today, but a permissive policy added by
+  mistake still admits no row, and `02_rls.test.sql` fails on a public table
+  with RLS and no policy at all. Edge functions use the service role and
+  definer functions run as their owner, so both pass by it.
+
+**What the Security and Performance Advisors still report, on purpose.** Each
+was checked against the code (October 2026) and is not a finding:
+
+- *Signed-in users can execute a security definer function*: those are the
+  app's RPC API. Each decides inside what its caller may do (most through
+  `private.social_require_user` or `private.group_require_member`).
+  `02_rls.test.sql` asserts the parts that would make one unsafe: every
+  definer function pins `search_path = ''`, and none is executable by `anon` or
+  `PUBLIC`. The advisor's alternative, an invoker wrapper in `public` over a
+  definer copy in `private`, reaches the same code with the same rights and
+  doubles every function, so it is not done.
+- *Unindexed foreign key* on four composite `(id, user_id)` ownership keys
+  (`social_posts`, `workout_exercises`, `workout_sets`, `workout_heart_rates`):
+  each is already served by a unique index leading with its first column. That
+  index enforces something else and cannot be widened, so covering both
+  columns would mean a second index that only costs writes. The routine key's
+  index was a plain one and is widened instead.
+- *Unused index* on the group tables: they cover foreign keys on tables still
+  small enough to scan.
+- *Leaked password protection*: needs the Pro plan.
 
 ### Function secrets
 
@@ -2690,9 +2722,19 @@ short account ID instead. Accounts are discoverable unless the owner turns on
 Private profile in Edit profile. The `social_joined_at` field still records a
 social action, but it does not govern discovery.
 Posting, following, liking and commenting need no manual handle setup or bio.
-The Security Advisor flags this one view as a definer view. That is deliberate:
-an invoker view would apply the owner-only `profiles` policy and hide every
-other person's public identity. Its selected columns exclude email, body
+Reading another person's identity has to bypass the owner-only `profiles`
+policy, so the filtered select is `private.social_profiles`, a view with its
+owner's rights in a schema the API does not expose. It is not a
+`security_barrier`: a barrier keeps joins on `user_id` off the primary key, and
+checking visibility for every profile took 720 ms on production. A barrier
+guards against a caller's own predicate raising an error on a hidden row; the
+only predicates a client can send are PostgREST's fixed filters, whose errors
+depend on the value sent and never on a row. So an RPC must not filter this
+view with an expression that can fail on a row's value, such as a cast. `public.social_profiles`
+reads it with `security_invoker`, as every view in `public` does. It stays a
+view rather than a set-returning function so the planner inlines it: a join on
+`user_id` stays an index lookup instead of checking visibility for every
+profile on every feed read. Its selected columns exclude email, body
 measurements, goals and diary fields. `social_can_view_profile` enforces the
 viewer's block and report rules. The social RLS tests exercise those boundaries
 as client roles.
