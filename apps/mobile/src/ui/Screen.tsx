@@ -257,16 +257,27 @@ export function Screen({
         // on both, because the shell pads for a keyboard and the pad is not
         // one: without it, a footer on a screen that does not scroll would sit
         // under our own keys.
-        translateY:
-          Math.min((scroll ? keyboard.height.value : 0) - numpad.offset.value + insets.bottom, 0) +
-          // On a screen that does not scroll the shell pads the keyboard's full
-          // height, which already covers the home indicator, so the footer's
-          // inset padding became a band of canvas between a chat composer and
-          // the keys. It slides down by that inset as the keyboard rises, less
-          // a few points: all the way left the field all but touching the keys.
-          (scroll ? 0 : Math.max(insets.bottom - KEYBOARD_GAP, 0) * keyboard.progress.value),
+        translateY: Math.min(
+          (scroll ? keyboard.height.value : 0) - numpad.offset.value + insets.bottom,
+          0,
+        ),
       },
     ],
+  }))
+
+  /**
+   * The footer's bottom padding. On a screen that does not scroll the shell
+   * pads the keyboard's full height, which already covers the home indicator,
+   * so the footer's inset padding became a band of canvas between a composer
+   * and the keys. It gives that inset back as the keyboard rises, less a few
+   * points so the field does not touch the keys. Padding rather than a slide
+   * down: a transform left the same band empty above the footer instead.
+   */
+  const restPad = Math.max(insets.bottom + spacing.xs, spacing.md)
+  const footerPad = useAnimatedStyle(() => ({
+    paddingBottom: scroll
+      ? restPad
+      : restPad - Math.max(insets.bottom - KEYBOARD_GAP, 0) * keyboard.progress.value,
   }))
 
   /**
@@ -461,13 +472,13 @@ export function Screen({
                 `max` is the floor for a device with NO inset (an older phone,
                 most Android gesture-off bars): the CTA still wants `spacing.md`
                 of real gap under it, which is what the old value always gave. */}
-            <View
+            <Reanimated.View
               onLayout={measureFooter}
               className="gap-md bg-canvas px-gutter pt-md"
-              style={{ paddingBottom: Math.max(insets.bottom + spacing.xs, spacing.md) }}
+              style={footerPad}
             >
               {footer}
-            </View>
+            </Reanimated.View>
 
             {/* Canvas continuing below the footer, all the way down the screen.
 
