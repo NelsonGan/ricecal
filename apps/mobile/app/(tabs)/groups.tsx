@@ -26,8 +26,11 @@ export default function GroupsTab() {
   useEffect(() => {
     if (open && !stillIn && !fetching) setOpenGroup(userId, null)
   }, [open, stillIn, fetching, userId])
+  // The board's only field is in a sheet, so it never makes way for a keyboard:
+  // the chat's, opened over it, slid the chat bar up behind the chat and then
+  // down again on the way back. The list's search field still needs it.
   return (
-    <Screen scroll={false} flush>
+    <Screen scroll={false} flush keyboardAvoid={groupId ? 'none' : 'padding'}>
       {groupId ? (
         <GroupBoardScreen
           key={groupId}
