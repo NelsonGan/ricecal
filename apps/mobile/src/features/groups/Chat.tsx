@@ -3,7 +3,13 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, Platform, TextInput, View } from 'react-native'
 import { useUserId } from '@/data'
-import { type GroupMessage, useGroupAction, useGroupMessages, useMyGroups } from '@/data/groups'
+import {
+  type GroupMessage,
+  useGroupAction,
+  useGroupChatLive,
+  useGroupMessages,
+  useMyGroups,
+} from '@/data/groups'
 import { useBlockAuthor } from '@/data/moderation'
 import { type Outgoing, useOutbox } from '@/features/shared'
 import { QueryNotice } from '@/features/social/components'
@@ -29,29 +35,33 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
   const back = useBack('/groups')
   const viewer = useUserId()
   const name = useMyGroups().data?.find((group) => group.id === groupId)?.name ?? ''
-  const messages = useGroupMessages(groupId, day, true)
+  const live = useGroupChatLive(groupId, day)
+  const messages = useGroupMessages(groupId, day, true, live)
   const task = useGroupTask()
   const [selected, setSelected] = useState<GroupMessage | null>(null)
   const block = useBlockAuthor()
 
   // Opening the chat reads it, which clears the bar's count. Leaving reads it
-  // again only if something arrived while it was open, counted from the
-  // thread as it first loaded rather than the empty one at mount.
+  // again only if the thread changed while it was open, judged from the thread
+  // as it first loaded rather than the empty one at mount, and then refetches
+  // the board so its preview is the latest message rather than the one before.
   const action = useGroupAction()
   const markRead = action.mutate
-  const count = messages.data?.length
-  const seen = useRef<{ first?: number; now: number }>({ now: 0 })
-  if (count !== undefined) {
-    seen.current.first ??= count
-    seen.current.now = count
+  const latest = messages.data?.at(-1)?.id ?? null
+  const seen = useRef<{ first?: string | null; now: string | null }>({ now: null })
+  if (messages.data) {
+    if (seen.current.first === undefined) seen.current.first = latest
+    seen.current.now = latest
   }
   useEffect(() => {
     markRead({ action: 'read', groupId })
     const thread = seen.current
     return () => {
-      if (thread.now > (thread.first ?? 0)) markRead({ action: 'read', groupId })
+      if (thread.first !== undefined && thread.now !== thread.first) {
+        markRead({ action: 'read', groupId, day })
+      }
     }
-  }, [groupId, markRead])
+  }, [groupId, day, markRead])
 
   // Sent messages are drawn at once from the outbox and swapped for the
   // server's rows as they arrive; the field never waits.

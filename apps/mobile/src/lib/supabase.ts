@@ -233,6 +233,11 @@ export const supabase = createClient<Database>(
       // make a stranger's crafted `ricecal://` link a login.
       flowType: 'pkce',
     },
+    // The socket closes this long after its last channel (see `lib/realtime.ts`).
+    // The library's 50 seconds held a billed connection open for most of a
+    // minute after every chat; a few seconds still carries a hop from one
+    // day's chat to the next over the same socket.
+    realtime: { disconnectOnEmptyChannelsAfterMs: 5_000 },
   },
 )
 
