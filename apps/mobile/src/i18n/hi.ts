@@ -1842,6 +1842,8 @@ export const hi = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: 'और {{count}}',
       moreExercises_other: 'और {{count}}',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: 'कम दिखाएँ',
       minutes: 'मिनट',
     },
 
@@ -2324,8 +2326,6 @@ export const hi = {
     pickLeader: 'नया लीडर चुनें',
     leaveAndPass: '{{name}} को लीडर बनाकर छोड़ें',
     save: 'सेव करें',
-    loadFailed: 'लोड नहीं हो सका',
-    retry: 'फिर कोशिश करें',
     errors: {
       not_found: 'उस यूज़रनेम या ईमेल वाला कोई खाता नहीं है।',
       already_member: 'पहले से इस समूह में हैं।',

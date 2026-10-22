@@ -1838,6 +1838,8 @@ export const th = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: 'และอีก {{count}} ท่า',
       moreExercises_other: 'และอีก {{count}} ท่า',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: 'แสดงน้อยลง',
       minutes: 'นาที',
     },
 
@@ -2320,8 +2322,6 @@ export const th = {
     pickLeader: 'เลือกหัวหน้าใหม่',
     leaveAndPass: 'ให้ {{name}} เป็นหัวหน้าแล้วออก',
     save: 'บันทึก',
-    loadFailed: 'โหลดไม่สำเร็จ',
-    retry: 'ลองอีกครั้ง',
     errors: {
       not_found: 'ไม่พบบัญชีที่ใช้ชื่อผู้ใช้หรืออีเมลนี้',
       already_member: 'อยู่ในกลุ่มนี้แล้ว',

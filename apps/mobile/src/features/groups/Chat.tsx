@@ -1,7 +1,7 @@
 import { format, isToday, isYesterday, parseISO } from 'date-fns'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FlatList, TextInput, View } from 'react-native'
+import { FlatList, Platform, TextInput, View } from 'react-native'
 import { useUserId } from '@/data'
 import { type GroupMessage, useGroupAction, useGroupMessages, useMyGroups } from '@/data/groups'
 import { useBlockAuthor } from '@/data/moderation'
@@ -31,57 +31,76 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
   const name = useMyGroups().data?.find((group) => group.id === groupId)?.name ?? ''
   const messages = useGroupMessages(groupId, day, true)
   const task = useGroupTask()
-  const [draft, setDraft] = useState('')
   const [selected, setSelected] = useState<GroupMessage | null>(null)
   const block = useBlockAuthor()
 
   // Opening the chat reads it, which clears the bar's count. Leaving reads it
-  // again only if something arrived while it was open.
+  // again only if something arrived while it was open, counted from the
+  // thread as it first loaded rather than the empty one at mount.
   const action = useGroupAction()
   const markRead = action.mutate
-  const seen = useRef(0)
-  seen.current = messages.data?.length ?? 0
+  const count = messages.data?.length
+  const seen = useRef<{ first?: number; now: number }>({ now: 0 })
+  if (count !== undefined) {
+    seen.current.first ??= count
+    seen.current.now = count
+  }
   useEffect(() => {
     markRead({ action: 'read', groupId })
-    const opened = seen.current
+    const thread = seen.current
     return () => {
-      if (seen.current > opened) markRead({ action: 'read', groupId })
+      if (thread.now > (thread.first ?? 0)) markRead({ action: 'read', groupId })
     }
   }, [groupId, markRead])
 
   // Sent messages are drawn at once from the outbox and swapped for the
   // server's rows as they arrive; the field never waits.
   const serverIds = useMemo(() => new Set((messages.data ?? []).map((m) => m.id)), [messages.data])
-  const outbox = useOutbox(async (item) => {
-    const id = await action.mutateAsync({
-      action: 'message',
-      groupId,
-      day,
-      body: item.body,
-      requestId: item.requestId,
-    })
-    track('Group Message Sent', {})
-    return typeof id === 'string' ? id : null
-  }, serverIds)
-  const send = () => {
-    const body = draft.trim()
-    if (!body) return
-    setDraft('')
-    outbox.send(body)
-  }
+  const outbox = useOutbox(
+    `group:${groupId}:${day}`,
+    async (item) => {
+      const id = await action.mutateAsync({
+        action: 'message',
+        groupId,
+        day,
+        body: item.body,
+        requestId: item.requestId,
+      })
+      track('Group Message Sent', {})
+      return typeof id === 'string' ? id : null
+    },
+    serverIds,
+  )
+  const { send, retry } = outbox
 
   // Newest first, for the inverted list: the outbox is newer than anything sent.
-  const rows: ChatRow[] = [
-    ...[...outbox.pending].reverse().map((item) => ({
-      id: item.requestId,
-      author: { id: viewer, name: '', handle: '', avatar_path: null },
-      body: item.body,
-      created_at: item.createdAt,
-      mine: true,
-      outgoing: item,
-    })),
-    ...[...(messages.data ?? [])].reverse(),
-  ]
+  const rows = useMemo<ChatRow[]>(
+    () => [
+      ...[...outbox.pending].reverse().map((item) => ({
+        id: item.requestId,
+        author: { id: viewer, name: '', handle: '', avatar_path: null },
+        body: item.body,
+        created_at: item.createdAt,
+        mine: true,
+        outgoing: item,
+      })),
+      ...[...(messages.data ?? [])].reverse(),
+    ],
+    [outbox.pending, messages.data, viewer],
+  )
+  const renderItem = useCallback(
+    ({ item, index }: { item: ChatRow; index: number }) => (
+      // Inverted: the row above is the next one in the array.
+      <MessageRow
+        message={item}
+        first={rows[index + 1]?.author.id !== item.author.id}
+        last={rows[index - 1]?.author.id !== item.author.id}
+        onSelect={setSelected}
+        onRetry={retry}
+      />
+    ),
+    [rows, retry],
+  )
   const at = parseISO(day)
   const dayLabel = isToday(at)
     ? t('common:date.today')
@@ -107,7 +126,7 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
           }
         />
       }
-      footer={<Composer value={draft} onChange={setDraft} groupName={name} onSend={send} />}
+      footer={<Composer groupName={name} onSend={send} />}
     >
       {messages.isLoading ? (
         <View className="flex-1 items-center justify-center">
@@ -127,31 +146,19 @@ export function ChatScreen({ groupId, day }: { groupId: string; day: string }) {
           inverted
           data={rows}
           keyExtractor={(message) => message.id}
-          keyboardDismissMode="interactive"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           keyboardShouldPersistTaps="handled"
           contentContainerClassName="px-gutter py-3"
           // Inverted, so the "footer" is drawn at the top of the thread: the
           // day, as a chip, where a messenger puts it.
           ListFooterComponent={<DayChip label={dayLabel} />}
           ListEmptyComponent={
-            <View className="items-center py-xl" style={{ transform: [{ scaleY: -1 }] }}>
+            // The list flips this itself, on both platforms.
+            <View className="items-center py-xl">
               <Text variant="meta">{t('chatEmpty')}</Text>
             </View>
           }
-          renderItem={({ item, index }) => {
-            // Inverted: the row above is the next one in the array.
-            const above = rows[index + 1]
-            const below = rows[index - 1]
-            return (
-              <MessageRow
-                message={item}
-                first={above?.author.id !== item.author.id}
-                last={below?.author.id !== item.author.id}
-                onLongPress={() => (item.outgoing ? undefined : setSelected(item))}
-                onRetry={() => item.outgoing && outbox.retry(item.outgoing.requestId)}
-              />
-            )
-          }}
+          renderItem={renderItem}
         />
       )}
       <Dialog
@@ -203,21 +210,22 @@ function DayChip({ label }: { label: string }) {
   )
 }
 
-/** A pill field that grows to a few lines, and a round send button level with its last line. */
-function Composer({
-  value,
-  onChange,
-  groupName,
-  onSend,
-}: {
-  value: string
-  onChange: (value: string) => void
-  groupName: string
-  onSend: () => void
-}) {
+/**
+ * A pill field that grows to a few lines, and a round send button level with
+ * its last line. It holds its own draft, so typing redraws the field and not
+ * the thread above it.
+ */
+function Composer({ groupName, onSend }: { groupName: string; onSend: (body: string) => void }) {
   const { t } = useTranslation('groups')
   const colors = useThemeColors()
+  const [value, onChange] = useState('')
   const ready = value.trim().length > 0
+  const send = () => {
+    const body = value.trim()
+    if (!body) return
+    onChange('')
+    onSend(body)
+  }
   const placeholder = groupName ? t('message', { name: groupName }) : t('send')
   return (
     <View className="flex-row items-end gap-2">
@@ -239,7 +247,7 @@ function Composer({
           ready ? 'bg-pandan' : 'bg-disabled',
         )}
         disabled={!ready}
-        onPress={onSend}
+        onPress={send}
         accessibilityRole="button"
         accessibilityLabel={t('send')}
         accessibilityState={{ disabled: !ready }}
@@ -266,31 +274,33 @@ type ChatRow = GroupMessage & { outgoing?: Outgoing }
 const AVATAR = 30
 const BUBBLE_INDENT = AVATAR + 8
 
-function MessageRow({
+const MessageRow = memo(function MessageRow({
   message,
   first,
   last,
-  onLongPress,
+  onSelect,
   onRetry,
 }: {
   message: ChatRow
   first: boolean
   last: boolean
-  onLongPress: () => void
-  onRetry: () => void
+  onSelect: (message: GroupMessage) => void
+  onRetry: (requestId: string) => void
 }) {
   const { t } = useTranslation(['groups', 'common'])
   const colors = useThemeColors()
   const time = format(parseISO(message.created_at), datePattern('time'))
-  const state = message.outgoing?.state
+  const outgoing = message.outgoing
+  const state = outgoing?.state
   // Report, block and delete live behind a long press, which a screen reader
-  // reaches as a named action.
+  // reaches as a named action. A message still on its way has none of them.
+  const onLongPress = outgoing ? undefined : () => onSelect(message)
   const a11y = {
     accessibilityLabel: [message.mine ? t('you') : message.author.name, message.body, time].join(
       ', ',
     ),
-    accessibilityActions: [{ name: 'longpress', label: t('messageActions') }],
-    onAccessibilityAction: () => onLongPress(),
+    accessibilityActions: onLongPress ? [{ name: 'longpress', label: t('messageActions') }] : [],
+    onAccessibilityAction: onLongPress,
   }
   const gap = first ? 'mt-3' : 'mt-1'
   if (message.mine) {
@@ -298,11 +308,12 @@ function MessageRow({
       <View className={cn('items-end', gap)}>
         <Tappable
           className="max-w-[78%]"
-          onPress={state === 'failed' ? onRetry : undefined}
+          onPress={state === 'failed' && outgoing ? () => onRetry(outgoing.requestId) : undefined}
           onLongPress={onLongPress}
           delayLongPress={300}
           haptics={false}
           {...a11y}
+          accessibilityRole={state === 'failed' ? 'button' : undefined}
           accessibilityHint={state === 'failed' ? t('common:delivery.failed') : undefined}
         >
           <View
@@ -372,4 +383,4 @@ function MessageRow({
       ) : null}
     </View>
   )
-}
+})

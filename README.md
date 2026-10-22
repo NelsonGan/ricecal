@@ -3134,17 +3134,20 @@ meal share a tile and swipe sideways inside it.
   reacts to their own food.
 - **A nudge** is for an empty meal of a member whose own time for that meal
   passed half an hour ago, on their today. The first nudge closes that meal for
-  everyone in the group for an hour (`group_nudge_state`), and the tile says who
+  everyone in the group for an hour (`group_nudges`), and the tile says who
   nudged. Past days cannot be nudged.
 - **Chat** is one thread per day page, so it stays about that day's food. A
   message can be deleted by its author, reported (hidden from the reporter at
   once, from everyone at three reports) or its author blocked, which follows the
   rule that anything one user writes for another needs a report and a block.
   The unread count on the chat bar covers the whole group since the member last
-  opened its chat, since opening it is what clears it.
+  opened its chat, since opening it is what clears it. It is counted to 100
+  and no further, so a member who never opens the chat does not have the whole
+  history read on every board poll.
 - **A public group's name** is read by strangers, so it can be reported too, by a
   long press in the public list: it leaves the reporter's list at once and
-  everyone's at three reports. Renaming the group clears the reports.
+  everyone's at three reports. Renaming the group clears the reports; saving
+  the same name again does not.
 
 ### Membership
 
@@ -3156,10 +3159,12 @@ withdraws its pending invites. Private groups are invite only; public groups are
 listed (fullest first) and anyone can join. An invite takes a handle, with or
 without its `@`, or an email address, which only finds an account that already
 exists. A handle that finds nobody says so, since handles are public; an email
-answers the same whatever is behind it, so the field cannot be used to learn
-whether an address has an account. Someone blocked in either direction reads as
-nobody. Members see only the pending invites they sent themselves, because an
-email invite names whoever owns the address. The leader renames
+answers the same whatever is behind it, down to the id it returns (a made-up
+one when nobody was found), so the field cannot be used to learn whether an
+address has an account. Someone blocked in either direction reads as nobody.
+Members see only the pending invites they sent themselves, and of those only
+the ones sent by handle (`group_invites.by_email`): an email invite listed would
+name whoever owns the address. The leader renames
 the group, switches it public or private, and removes members. A leader with
 company must name a successor to leave; the last member out deletes the group,
 and a deleted account hands its groups on through the same trigger.
@@ -6130,7 +6135,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Card share helper reports sent; each card send. Android share intent cannot confirm completion. |
 | Group Created | ricecal_group_created | visibility: 'private' &#124; 'public' | `src/features/groups/Home.tsx` | `create_group` returned a group id; each group made. |
 | Group Joined | ricecal_group_joined | via: 'invite' &#124; 'public' | `src/features/groups/Home.tsx` | `respond_to_group_invite` with accept, or `join_group` from the public list, returned; each join. Declines send nothing. |
-| Group Invite Sent | ricecal_group_invite_sent | by: 'handle' &#124; 'email' | `src/features/groups/InviteSheet.tsx` | `invite_to_group` found the account and wrote the invite; each invite. A refused lookup sends nothing; the push is separate and best effort. |
+| Group Invite Sent | ricecal_group_invite_sent | by: 'handle' &#124; 'email' | `src/features/groups/InviteSheet.tsx` | `invite_to_group` answered; each invite. An email counts whether or not it found an account, since the app cannot tell; a handle that finds nobody sends nothing; the push is separate and best effort. |
 | Group Nudge Sent | ricecal_group_nudge_sent | meal: 'breakfast' &#124; 'lunch' &#124; 'dinner' | `src/features/groups/Board.tsx` | `nudge_group_member` accepted the nudge; each nudge. A nudge refused for the hourly cooldown sends nothing. |
 | Group Reaction Set | ricecal_group_reaction_set | reaction: 'like' &#124; 'dislike' | `src/features/groups/MealSheet.tsx` | A like or dislike tapped on a member's food; each set, before the write settles. Clearing a reaction sends nothing. |
 | Group Message Sent | ricecal_group_message_sent | none | `src/features/groups/Chat.tsx` | `send_group_message` returned; each message. Never carries the text. |

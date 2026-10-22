@@ -1860,6 +1860,8 @@ export const vi = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: 'và {{count}} bài khác',
       moreExercises_other: 'và {{count}} bài khác',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: 'Thu gọn',
       minutes: 'phút',
     },
 
@@ -2343,8 +2345,6 @@ export const vi = {
     pickLeader: 'Chọn trưởng nhóm mới',
     leaveAndPass: 'Để {{name}} làm trưởng nhóm và rời đi',
     save: 'Lưu',
-    loadFailed: 'Không tải được',
-    retry: 'Thử lại',
     errors: {
       not_found: 'Không có tài khoản nào với tên người dùng hoặc email đó.',
       already_member: 'Đã ở trong nhóm này.',

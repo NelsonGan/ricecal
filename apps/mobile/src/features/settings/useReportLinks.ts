@@ -47,10 +47,10 @@ export function useReportLinks(): void {
       const kind = response?.notification.request.content.data?.kind
       if (!alive) return
       // A running workout's notices open its logger, and a training-day
-      // reminder the tab it is about. Not counted: they are the workout
+      // reminder the Workouts page. Not counted: they are the workout
       // talking, not a way back into the app. A notice can outlive its
       // workout in Notification Center, so with none running it lands on the
-      // tab rather than on an empty logger.
+      // page rather than on an empty logger.
       //
       // Back to a logger that is already open, wherever it is in the stack:
       // with the library or an exercise's page on top of it, `navigate` pushed

@@ -224,18 +224,25 @@ export function invalidateEatenTotals(queryClient: QueryClient, userId: string):
   queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
   queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
   queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
-  invalidateGroupBoards(queryClient, userId)
+  // Food also moves the lists' "logged today" count.
+  invalidateGroupBoards(queryClient, userId, { lists: true })
 }
 
 /**
  * A group board reads the diary and the workouts live, so a meal or a workout
  * logged, edited or deleted, a synced health workout or a repriced recipe
  * shows on the viewer's own row without waiting for the board's next poll.
- * Only the boards on screen refetch; the rest are marked stale.
+ * Only the boards on screen refetch; the rest are marked stale. `lists` also
+ * refreshes the group list, whose "logged today" counts food and nothing else.
  */
-export function invalidateGroupBoards(queryClient: QueryClient, userId: string): void {
+export function invalidateGroupBoards(
+  queryClient: QueryClient,
+  userId: string,
+  { lists = false }: { lists?: boolean } = {},
+): void {
   queryClient.invalidateQueries({
     queryKey: keys.groups(userId),
-    predicate: (query) => query.queryKey[2] === 'group_board' || query.queryKey[2] === 'my_groups',
+    predicate: (query) =>
+      query.queryKey[2] === 'group_board' || (lists && query.queryKey[2] === 'my_groups'),
   })
 }

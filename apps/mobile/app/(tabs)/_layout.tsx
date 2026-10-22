@@ -130,6 +130,7 @@ function SignedInTabs() {
                 label={t('groups:title')}
                 icon={{ set: 'system', name: 'groups' }}
                 badge={inviteCount}
+                badgeLabel={t('groups:invites')}
               />
             </TabTrigger>
 

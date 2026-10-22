@@ -15,15 +15,11 @@ import { EntryPicture, MEAL_TINT, useGroupTask } from './parts'
  * every group you are in.
  */
 export function MealSheet({
-  groupId,
-  day,
   meal,
   member,
   name,
   onClose,
 }: {
-  groupId: string
-  day: string
   meal: GroupMeal | null
   member: BoardMember | null
   name: string
@@ -65,8 +61,6 @@ export function MealSheet({
         {entries.map((entry) => (
           <EntryRow
             key={entry.id}
-            groupId={groupId}
-            day={day}
             entry={entry}
             ownerId={current?.member.person.id ?? ''}
             isSelf={isSelf}
@@ -78,14 +72,10 @@ export function MealSheet({
 }
 
 function EntryRow({
-  groupId,
-  day,
   entry,
   ownerId,
   isSelf,
 }: {
-  groupId: string
-  day: string
   entry: BoardEntry
   ownerId: string
   isSelf: boolean
@@ -94,7 +84,7 @@ function EntryRow({
   const task = useGroupTask()
   const react = (value: -1 | 1) => {
     const next = entry.mine === value ? 0 : value
-    task.press({ action: 'react', groupId, day, entryId: entry.id, value: next })
+    task.press({ action: 'react', entryId: entry.id, value: next })
     if (next !== 0) track('Group Reaction Set', { reaction: next === 1 ? 'like' : 'dislike' })
   }
   const grams = (value: number) => t('common:unit.grams', { value: Math.round(value) })

@@ -1889,6 +1889,8 @@ export const ms = {
       exerciseLine: '{{sets}} × {{name}}',
       moreExercises_one: 'dan {{count}} lagi',
       moreExercises_other: 'dan {{count}} lagi',
+      /** Folds the exercises listed under "and N more" back up. */
+      showFewer: 'Tunjuk kurang',
       minutes: 'min',
     },
 
@@ -2372,8 +2374,6 @@ export const ms = {
     pickLeader: 'Pilih ketua baharu',
     leaveAndPass: 'Jadikan {{name}} ketua dan keluar',
     save: 'Simpan',
-    loadFailed: 'Tidak dapat dimuatkan',
-    retry: 'Cuba lagi',
     errors: {
       not_found: 'Tiada akaun dengan nama pengguna atau e-mel itu.',
       already_member: 'Sudah dalam kumpulan ini.',

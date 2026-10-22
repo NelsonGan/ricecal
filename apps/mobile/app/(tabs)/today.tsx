@@ -1,6 +1,6 @@
 import { onlineManager } from '@tanstack/react-query'
 import { format, parseISO, subDays } from 'date-fns'
-import { useIsFocused, useRouter } from 'expo-router'
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWindowDimensions, View } from 'react-native'
@@ -14,6 +14,7 @@ import {
   usePendingSnaps,
   useRemoveEntry,
   useSelectedDate,
+  useSession,
   useSettings,
   useStreak,
   useTargets,
@@ -32,7 +33,7 @@ import { AnnouncementCard, useAnnouncementOffer } from '@/features/news'
 import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
-import { WorkoutItem, WorkoutsTile } from '@/features/workouts'
+import { openLogger, useHasActiveWorkout, WorkoutItem, WorkoutsTile } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
 import { useOnline } from '@/lib/online'
@@ -79,8 +80,31 @@ export default function TodayScreen() {
     <>
       <TodayContent />
       <LaunchOffers />
+      <ResumeWorkout />
     </>
   )
+}
+
+/** Whether this launch's Live Activity resume has been answered. */
+let resumedThisLaunch = false
+
+/**
+ * `?resume=1` is a cold launch from the Live Activity (see
+ * `app/+native-intent.tsx`): the logger is pushed from here, once the tabs have
+ * mounted, so they are under it. Once per launch, because the param stays on
+ * the route and coming back to Today must not push it again.
+ */
+function ResumeWorkout() {
+  const router = useRouter()
+  const { userId } = useSession()
+  const running = useHasActiveWorkout(userId)
+  const { resume } = useLocalSearchParams<{ resume?: string }>()
+  useEffect(() => {
+    if (!resume || resumedThisLaunch) return
+    resumedThisLaunch = true
+    if (running) openLogger(router)
+  }, [resume, running, router])
+  return null
 }
 
 /**

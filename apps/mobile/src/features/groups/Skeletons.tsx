@@ -20,29 +20,27 @@ function Loading({ children, className }: { children: React.ReactNode; className
 }
 
 /** A group card: icon tile, name, member line, faces, today's progress. */
-export function GroupCardSkeleton({ count = 1 }: { count?: number }) {
+export function GroupCardSkeleton() {
   return (
     <Loading className="gap-3">
-      {slots(count).map((slot) => (
-        <Card key={slot}>
-          <View className="flex-row items-center gap-md">
-            <Skeleton width={56} height={56} rounded={false} className="rounded-tile" />
-            <View className="min-w-0 flex-1 gap-2">
-              <Skeleton width="55%" height={15} />
-              <Skeleton width="40%" height={11} />
-              <View className="flex-row py-1">
-                {['a', 'b', 'c', 'd'].map((face, index) => (
-                  <View key={face} style={{ marginLeft: index ? -10 : 0 }}>
-                    <Skeleton width={40} height={40} rounded={false} className="rounded-[14px]" />
-                  </View>
-                ))}
-              </View>
-              <Skeleton width="45%" height={10} />
-              <Skeleton height={6} />
+      <Card>
+        <View className="flex-row items-center gap-md">
+          <Skeleton width={56} height={56} rounded={false} className="rounded-tile" />
+          <View className="min-w-0 flex-1 gap-2">
+            <Skeleton width="55%" height={15} />
+            <Skeleton width="40%" height={11} />
+            <View className="flex-row py-1">
+              {['a', 'b', 'c', 'd'].map((face, index) => (
+                <View key={face} style={{ marginLeft: index ? -10 : 0 }}>
+                  <Skeleton width={40} height={40} rounded={false} className="rounded-[14px]" />
+                </View>
+              ))}
             </View>
+            <Skeleton width="45%" height={10} />
+            <Skeleton height={6} />
           </View>
-        </Card>
-      ))}
+        </View>
+      </Card>
     </Loading>
   )
 }

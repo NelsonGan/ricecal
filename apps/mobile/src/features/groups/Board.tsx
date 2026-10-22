@@ -50,7 +50,7 @@ import {
 import { InviteSheet } from './InviteSheet'
 import { MealSheet } from './MealSheet'
 import { EntryPicture, MEAL_TINT, PersonAvatar, shortDuration, useGroupTask } from './parts'
-import { takeOpenDay } from './store'
+import { takeOpenDay, useOpenDay } from './store'
 import { GroupWeekStrip } from './WeekStrip'
 
 /** How far back the pager goes. The server answers no further, nor signs older photos. */
@@ -122,8 +122,9 @@ function shortNames(members: readonly BoardMember[]): Map<string, string> {
 
 /**
  * One group, one page per day. Swiping sideways goes back a day, and the week
- * strip under the header picks any day of the last sixty, the way Today's does. The chat for the day on
- * screen sits in a bar above the tabs and opens as a sheet.
+ * strip under the header picks any day of the last sixty, the way Today's does.
+ * The chat for the day on screen sits in a bar above the tabs and opens its
+ * own screen.
  */
 export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack: () => void }) {
   const { t } = useTranslation(['groups', 'common'])
@@ -139,7 +140,12 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
     [today],
   )
   // The day on screen, rather than its position: positions move at midnight.
-  const [day, setDay] = useState(() => takeOpenDay(viewer, groupId) ?? today)
+  // A notification's day only if the pager has it: a phone whose clock is
+  // behind could be asked for a day the pager does not hold.
+  const [day, setDay] = useState(() => {
+    const asked = takeOpenDay(viewer, groupId)
+    return asked && days.includes(asked) ? asked : today
+  })
   const index = Math.max(0, days.indexOf(day))
   const pager = useRef<FlatList<string>>(null)
   const summary = useMyGroups().data?.find((group) => group.id === groupId)
@@ -148,11 +154,13 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
   const [inviteOpen, setInviteOpen] = useState(false)
 
   // A notification tapped while this board is already open names its day too.
+  // Watched in the store, since neither the group nor focus changes then.
+  const pendingDay = useOpenDay(viewer)
   useEffect(() => {
-    if (!focused) return
+    if (!pendingDay) return
     const asked = takeOpenDay(viewer, groupId)
     if (asked && days.includes(asked)) setDay(asked)
-  }, [focused, viewer, groupId, days])
+  }, [pendingDay, viewer, groupId, days])
   // Keep the pager on the chosen day when the list under it shifts.
   useEffect(() => {
     pager.current?.scrollToIndex({ index, animated: false })
@@ -387,7 +395,9 @@ const BoardPage = memo(function BoardPage({
           </Tappable>
         ) : null}
       </View>
-      {all.length === 1 ? (
+      {/* The group's count, not the rows: blocked members are not drawn, and a
+          group of two with one blocked is not waiting for its first friend. */}
+      {board.data.group.member_count === 1 ? (
         <View className="items-center gap-md py-lg">
           <Text variant="meta" className="text-center">
             {t('inviteFirst')}
@@ -398,8 +408,6 @@ const BoardPage = memo(function BoardPage({
         </View>
       ) : null}
       <MealSheet
-        groupId={groupId}
-        day={day}
         meal={open?.meal ?? null}
         // The sheet follows the board's latest copy, so a reaction redraws it.
         member={open ? (all.find((m) => m.person.id === open.memberId) ?? null) : null}
@@ -510,7 +518,9 @@ const MemberRow = memo(function MemberRow({
       </View>
       {GROUP_MEALS.map((meal) => (
         <MealTile
-          key={meal}
+          // Keyed on its foods too, so one moved away or deleted starts the
+          // tile again at its first food, its dots with it.
+          key={`${meal}:${byMeal[meal].map((entry) => entry.id).join()}`}
           groupId={groupId}
           day={day}
           meal={meal}
@@ -567,12 +577,9 @@ function MealTile({
         .join(', ')
     return (
       <View className="overflow-hidden rounded-[14px] bg-surface-alt" style={box}>
-        {/* Keyed on the foods, so one moved away or deleted starts the tile
-            again at its first food rather than on a blank page. Several foods
-            swipe here; on iOS the swipe stays in the tile, and the day changes
-            from any other part of the board or the week strip. */}
+        {/* Several foods swipe here; on iOS the swipe stays in the tile, and
+            the day changes from any other part of the board or the week strip. */}
         <ScrollView
-          key={entries.map((entry) => entry.id).join()}
           horizontal
           pagingEnabled
           nestedScrollEnabled

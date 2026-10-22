@@ -31,14 +31,22 @@ begin
       'logged_today', (
         select count(*) from public.group_members x
         join public.profiles p on p.id = x.user_id
-        where x.group_id = g.id and exists (
+        where x.group_id = g.id
+          and (x.user_id = v_user or not private.social_pair_blocked(x.user_id))
+          and exists (
           select 1 from public.food_logs f
           where f.user_id = x.user_id
             and f.log_date = (now() at time zone coalesce(p.timezone, 'Asia/Kuala_Lumpur'))::date)
       ),
       'members', (
-        select coalesce(jsonb_agg(private.group_person(x.user_id) order by x.user_id = v_user desc, x.joined_at), '[]')
-        from (select * from public.group_members x where x.group_id = g.id order by x.joined_at limit 5) x
+        -- The caller first, then whoever joined first, and nobody blocked: the
+        -- list is kept on the phone.
+        select coalesce(jsonb_agg(private.group_person(x.user_id) order by x.mine desc, x.joined_at), '[]')
+        from (
+          select x.user_id, x.joined_at, x.user_id = v_user as mine from public.group_members x
+          where x.group_id = g.id and (x.user_id = v_user or not private.social_pair_blocked(x.user_id))
+          order by x.user_id = v_user desc, x.joined_at limit 5
+        ) x
       )
     ) order by m.joined_at desc)
     from public.group_members m join public.groups g on g.id = m.group_id
@@ -156,11 +164,13 @@ begin
     where n.group_id = p_group_id and n.day = p_day and n.created_at > now() - interval '1 hour'
     order by n.target_id, n.meal, n.created_at desc
   ),
+  -- This day's thread only, for its preview. The unread count is its own
+  -- capped query below: a member who never opens the chat would otherwise have
+  -- every message since they joined read on each poll.
   chat as materialized (
-    select m.id, m.author_id, m.body, m.created_at, m.day
+    select m.author_id, m.body, m.created_at
     from public.group_messages m
-    where m.group_id = p_group_id and not m.quarantined
-      and (m.day = p_day or m.created_at > v_member.chat_read_at)
+    where m.group_id = p_group_id and m.day = p_day and not m.quarantined
       and not private.social_pair_blocked(m.author_id)
       and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
   )
@@ -183,8 +193,10 @@ begin
           where e.user_id = mb.user_id
         ), '[]'::jsonb),
         'nudges', coalesce((
+          -- A nudge by someone blocked still holds the cooldown (nudgeable
+          -- reads every one), but is not drawn with their face.
           select jsonb_object_agg(n.meal, jsonb_build_object('by', private.group_person(n.nudger_id)))
-          from nudges n where n.target_id = mb.user_id
+          from nudges n where n.target_id = mb.user_id and not private.social_pair_blocked(n.nudger_id)
         ), '{}'::jsonb),
         -- The same rule as nudge_group_member, read from what this query
         -- already holds instead of three lookups per member and meal.
@@ -222,10 +234,16 @@ begin
     -- Unread counts the whole group since the caller last read it, since that
     -- is what reading clears; the preview is this day's latest message.
     'chat', jsonb_build_object(
-      'unread', (select count(*) from chat c where c.author_id <> v_user and c.created_at > v_member.chat_read_at),
+      'unread', (select count(*) from (
+        select 1 from public.group_messages m
+        where m.group_id = p_group_id and m.created_at > v_member.chat_read_at
+          and m.author_id <> v_user and not m.quarantined
+          and not private.social_pair_blocked(m.author_id)
+          and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
+        limit 100) u),
       'last', (
         select jsonb_build_object('author', private.group_person(c.author_id), 'body', c.body)
-        from chat c where c.day = p_day order by c.created_at desc limit 1
+        from chat c order by c.created_at desc limit 1
       )
     )
   ) into v_result;
@@ -255,8 +273,8 @@ end;
 $$;
 
 -- Settings: members in the caller's board order, the invites the caller sent
--- (an email invite names who owns the address, so only its sender sees it),
--- and the caller's own switches.
+-- by handle (one sent to an address would name who owns it, so those are not
+-- listed), and the caller's own switches.
 create or replace function public.group_details(p_group_id uuid)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id); v_member public.group_members;
@@ -274,7 +292,8 @@ begin
       ),
       'invites', coalesce((
         select jsonb_agg(private.group_person(i.invitee_id) order by i.created_at desc)
-        from public.group_invites i where i.group_id = p_group_id and i.inviter_id = v_user
+        from public.group_invites i
+        where i.group_id = p_group_id and i.inviter_id = v_user and not i.by_email
       ), '[]'::jsonb)
     )
     from public.groups g where g.id = p_group_id

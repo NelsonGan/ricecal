@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useUserId } from '@/data'
 import { useMyGroups } from '@/data/groups'
 import { GroupBoardScreen } from '@/features/groups/Board'
@@ -18,6 +19,13 @@ export default function GroupsTab() {
   // says so; until it has loaded, the remembered board is trusted.
   const stillIn = !groups.data || groups.data.some((group) => group.id === open)
   const groupId = open && stillIn ? open : null
+  // And is forgotten then, so rejoining later does not reopen a stale day.
+  // Not while the list is refetching: a list read before a join (the one kept
+  // on disk, at launch) would forget a group the person has just joined.
+  const fetching = groups.isFetching
+  useEffect(() => {
+    if (open && !stillIn && !fetching) setOpenGroup(userId, null)
+  }, [open, stillIn, fetching, userId])
   return (
     <Screen scroll={false} flush>
       {groupId ? (

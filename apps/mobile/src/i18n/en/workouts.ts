@@ -125,6 +125,8 @@ export const workouts = {
     exerciseLine: '{{sets}} × {{name}}',
     moreExercises_one: 'and {{count}} more',
     moreExercises_other: 'and {{count}} more',
+    /** Folds the exercises listed under "and N more" back up. */
+    showFewer: 'Show less',
     /** The unit under a workout's length on Today, where a calorie figure would be. */
     minutes: 'min',
   },

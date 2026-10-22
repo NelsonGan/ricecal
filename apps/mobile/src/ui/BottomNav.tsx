@@ -111,6 +111,8 @@ export type NavItemProps = Omit<TappableProps, 'children' | 'style'> & {
   icon: IconProps
   /** A red count over the icon, for something waiting on this tab. */
   badge?: number
+  /** What the count is of, read out with it: "Groups, Invites 2" rather than "Groups, 2". */
+  badgeLabel?: string
   /**
    * Whether this tab is the active one. Named to match what expo-router's
    * `TabTrigger` injects when used with `asChild`, so no adapter is needed.
@@ -132,6 +134,7 @@ export function NavItem({
   label,
   icon,
   badge = 0,
+  badgeLabel,
   isFocused = false,
   href,
   style,
@@ -150,7 +153,9 @@ export function NavItem({
       className="h-[71px] min-w-0 flex-1 items-center justify-center gap-1.5"
       accessibilityRole="tab"
       accessibilityState={{ selected: isFocused }}
-      accessibilityLabel={badge > 0 ? `${label}, ${badge}` : label}
+      accessibilityLabel={
+        badge > 0 ? [label, [badgeLabel, badge].filter(Boolean).join(' ')].join(', ') : label
+      }
     >
       {/* An inactive tab is grey, and the tint goes through `style` rather than
           through `tintColor`. `expo-image` documents both, but only the style

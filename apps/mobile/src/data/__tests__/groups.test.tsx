@@ -146,8 +146,9 @@ it('does not push when the database refused the nudge', async () => {
 
 it('draws a reaction on every cached board at once, and puts it back when refused', async () => {
   const { client, wrapper } = setup()
+  // The same plate, counted by each group's own members.
   client.setQueryData(boardKey('g1'), board([entry()]))
-  client.setQueryData(boardKey('g2'), board([entry()]))
+  client.setQueryData(boardKey('g2'), board([entry({ likes: 0 })]))
   let refuse!: (value: unknown) => void
   mockRpc.mockReturnValueOnce(
     Object.assign(
@@ -161,25 +162,29 @@ it('draws a reaction on every cached board at once, and puts it back when refuse
   await act(async () => {
     result.current.mutate({
       action: 'react',
-      groupId: 'g1',
-      day: '2026-10-21',
       entryId: 'e1',
       value: 1,
     })
   })
   await waitFor(() =>
     expect(client.getQueryData<GroupBoard>(boardKey('g2'))?.members[0].entries[0]).toMatchObject({
-      likes: 3,
+      likes: 1,
       mine: 1,
     }),
   )
+  expect(client.getQueryData<GroupBoard>(boardKey('g1'))?.members[0].entries[0].likes).toBe(3)
   await act(async () => refuse({ data: null, error: { message: 'no' } }))
+  // Each board gets its own count back, not the first one's.
   await waitFor(() =>
     expect(client.getQueryData<GroupBoard>(boardKey('g1'))?.members[0].entries[0]).toMatchObject({
       likes: 2,
       mine: 0,
     }),
   )
+  expect(client.getQueryData<GroupBoard>(boardKey('g2'))?.members[0].entries[0]).toMatchObject({
+    likes: 0,
+    mine: 0,
+  })
 })
 
 it('swaps a like for a dislike without double counting', async () => {
@@ -191,8 +196,6 @@ it('swaps a like for a dislike without double counting', async () => {
   await act(async () => {
     result.current.mutate({
       action: 'react',
-      groupId: 'g1',
-      day: '2026-10-21',
       entryId: 'e1',
       value: -1,
     })

@@ -78,11 +78,27 @@ function SocialSkeleton({
   variant = 'cards',
   count = 3,
 }: {
-  variant?: 'cards' | 'feed' | 'rows' | 'grid'
+  variant?: 'cards' | 'feed' | 'rows' | 'grid' | 'comments'
   count?: number
 }) {
   const { t } = useTranslation('social')
   const slots = ['first', 'second', 'third', 'fourth']
+  if (variant === 'comments') {
+    // A post's comments: face, name, a line of text, as `CommentRow` draws them.
+    return (
+      <View accessibilityRole="progressbar" accessibilityLabel={t('loading')}>
+        {slots.slice(0, count).map((slot) => (
+          <View key={slot} className="flex-row items-start gap-3 border-b-2 border-track px-5 py-3">
+            <Skeleton width={44} height={44} rounded={false} className="rounded-[14px]" />
+            <View className="min-w-0 flex-1 gap-2 pt-1">
+              <Skeleton width={96} height={12} />
+              <Skeleton width="70%" height={12} />
+            </View>
+          </View>
+        ))}
+      </View>
+    )
+  }
   if (variant === 'grid') {
     return (
       <View
@@ -1428,6 +1444,7 @@ export function SocialList<T>({
   end,
   header,
   variant = 'cards',
+  skeleton,
   columns = 1,
 }: {
   query: PageQuery<T>
@@ -1439,6 +1456,8 @@ export function SocialList<T>({
   end?: string
   header?: ReactElement
   variant?: 'cards' | 'feed' | 'rows' | 'grid'
+  /** The loading shape, when the rows are not the variant's usual ones. */
+  skeleton?: 'comments'
   columns?: number
 }) {
   const { t } = useTranslation('social')
@@ -1533,7 +1552,7 @@ export function SocialList<T>({
       onEndReachedThreshold={variant === 'feed' || variant === 'grid' ? 2 : 0.6}
       ListEmptyComponent={
         query.isPending && query.fetchStatus !== 'paused' ? (
-          <SocialSkeleton variant={variant} />
+          <SocialSkeleton variant={skeleton ?? variant} />
         ) : query.fetchStatus === 'paused' || query.isError || empty !== null ? (
           <EmptyState
             title={
@@ -1567,7 +1586,7 @@ export function SocialList<T>({
             {t('retry')}
           </Button>
         ) : query.isFetchingNextPage ? (
-          <SocialSkeleton variant={variant} count={1} />
+          <SocialSkeleton variant={skeleton ?? variant} count={1} />
         ) : query.hasNextPage ? (
           <Button
             size="sm"

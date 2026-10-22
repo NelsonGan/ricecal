@@ -24,6 +24,11 @@ export function useOpenGroup(userId: string): string | null {
   return store.useValue(key(userId), (value) => value?.groupId ?? null)
 }
 
+/** A notification's day still waiting for the board to take it. */
+export function useOpenDay(userId: string): string | null {
+  return store.useValue(key(userId), (value) => value?.day ?? null)
+}
+
 export function setOpenGroup(userId: string, groupId: string | null, day?: string): void {
   store.set(key(userId), groupId ? { groupId, day } : null)
 }
