@@ -61,16 +61,22 @@ export function whenWorkoutPromptShown(check: () => boolean): void {
 }
 
 /**
- * The group chat on screen, as `<group>:<day>`, so its own pushes do not drop a
- * banner over the thread that is already showing the message. The release only
- * clears its own chat: when one thread replaces another, the old one's blur can
- * land after the new one's focus.
+ * The group chats on screen, as `<group>:<day>`, so their own pushes do not drop
+ * a banner over a thread or a board's chat bar that is already showing the
+ * message. Counted rather than one slot: the board and the chat it opens show the
+ * same thread, and when one screen replaces another the old one's blur can land
+ * after the new one's focus.
  */
-let openChat: string | null = null
+const openChats = new Map<string, number>()
 export function showingGroupChat(chat: string): () => void {
-  openChat = chat
+  openChats.set(chat, (openChats.get(chat) ?? 0) + 1)
+  let released = false
   return () => {
-    if (openChat === chat) openChat = null
+    if (released) return
+    released = true
+    const count = (openChats.get(chat) ?? 0) - 1
+    if (count > 0) openChats.set(chat, count)
+    else openChats.delete(chat)
   }
 }
 
@@ -97,7 +103,7 @@ Notifications.setNotificationHandler({
       kind === 'rest' ||
       kind === 'started' ||
       (kind === 'workout' && workoutPromptShown()) ||
-      (kind === 'group' && data?.chat === true && openChat === `${data.groupId}:${data.day}`)
+      (kind === 'group' && data?.chat === true && openChats.has(`${data.groupId}:${data.day}`))
     const watching = transient && AppState.currentState === 'active'
     // A chat message, heard while the app is open: the board's count catches up.
     if (kind === 'group' && data?.chat === true && typeof data.groupId === 'string') {

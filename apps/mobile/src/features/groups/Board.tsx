@@ -1,5 +1,5 @@
 import { parseISO, subDays } from 'date-fns'
-import { useIsFocused, useRouter } from 'expo-router'
+import { useFocusEffect, useIsFocused, useRouter } from 'expo-router'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -34,6 +34,7 @@ import {
 import { workoutIcon, workoutKindKey } from '@/features/activity/workoutKind'
 import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
+import { showingGroupChat } from '@/lib/notifications'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   Button,
@@ -153,6 +154,8 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
   // The same query as the page on screen, which is the one that polls.
   const board = useGroupBoard(groupId, day, focused, false)
   useGroupBoardPushRefresh(groupId, focused)
+  // The chat bar shows this day's latest message, so its pushes stay quiet here.
+  useFocusEffect(useCallback(() => showingGroupChat(`${groupId}:${day}`), [groupId, day]))
   const [inviteOpen, setInviteOpen] = useState(false)
 
   // A notification tapped while this board is already open names its day too.

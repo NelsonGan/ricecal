@@ -34,8 +34,10 @@ jest.mock('@/data', () => ({
   storedImageSource: () => undefined,
   useMealPhotoUrl: () => ({ data: undefined }),
 }))
+jest.mock('@/lib/notifications', () => ({ showingGroupChat: () => () => {} }))
 jest.mock('@/data/moderation', () => ({ useBlockAuthor: () => ({ mutate: jest.fn() }) }))
 jest.mock('expo-router', () => ({
+  useFocusEffect: jest.fn(),
   useIsFocused: () => true,
   useRouter: () => ({ push: jest.fn() }),
 }))

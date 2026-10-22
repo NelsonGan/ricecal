@@ -198,6 +198,23 @@ describe('with the app open', () => {
     expect((await chat('2026-10-20')).shouldShowBanner).toBe(true)
   })
 
+  it('keeps a chat push quiet while the board and its chat both show the thread', async () => {
+    const chat = () =>
+      handler.handleNotification({
+        request: {
+          content: { data: { kind: 'group', groupId: 'g1', day: '2026-10-21', chat: true } },
+        },
+      })
+    const board = showingGroupChat('g1:2026-10-21')
+    const thread = showingGroupChat('g1:2026-10-21')
+    // The board's blur lands after the chat's focus, and a second release is a no-op.
+    board()
+    board()
+    expect((await chat()).shouldShowBanner).toBe(false)
+    thread()
+    expect((await chat()).shouldShowBanner).toBe(true)
+  })
+
   it('shows "still training?" unless a logger is open to ask it', async () => {
     whenWorkoutPromptShown(() => false)
     expect(await shown('workout')).toBe(true)
