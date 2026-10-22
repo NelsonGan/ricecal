@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns'
-import { Children, memo, type ReactNode } from 'react'
+import { Children, memo, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -91,7 +91,7 @@ function Tile({ icon, label, value }: { icon: React.ReactNode; label: string; va
 }
 
 /**
- * The week streak as a pill, for beside the Workouts title: the same pill
+ * The week streak as a pill, for the Workouts bar: the same pill
  * Today puts beside its date for the day streak. Nothing until the count is
  * known, because "0 week streak" is the wrong sentence about somebody whose
  * request is still out.
@@ -100,12 +100,16 @@ export function WeekStreakBadge({ weeks }: { weeks: number | undefined }) {
   const { t } = useTranslation(['workouts'])
   if (weeks === undefined) return null
   return (
-    <Badge tone="kaya">
-      <Icon set="body" name="flame-burn" size={18} />
-      <Text variant="caption" className="text-kaya-ink">
-        {t('workouts:overview.streak', { count: weeks })}
-      </Text>
-    </Badge>
+    // Flame and count only: it rides in the app bar, whose two sides are kept
+    // equal, and the full "7 week streak" there squeezed the title to a letter.
+    <View accessible accessibilityLabel={t('workouts:overview.streak', { count: weeks })}>
+      <Badge tone="kaya">
+        <Icon set="body" name="flame-burn" size={18} />
+        <Text variant="caption" className="text-kaya-ink">
+          {weeks}
+        </Text>
+      </Badge>
+    </View>
   )
 }
 
@@ -291,8 +295,13 @@ export function WorkoutPreview({
   unit: WeightUnit
 }) {
   const { t } = useTranslation(['workouts', 'common'])
+  const colors = useThemeColors()
   const library = useExerciseLibrary()
-  const shown = exercises.slice(0, 4)
+  // Four, then the rest a tap away: a long session would otherwise push the
+  // post's likes and comments a screen down the feed.
+  const [expanded, setExpanded] = useState(false)
+  const hidden = exercises.length - 4
+  const shown = expanded ? exercises : exercises.slice(0, 4)
 
   return (
     <View className="gap-4 bg-surface-alt px-5 py-5">
@@ -334,10 +343,28 @@ export function WorkoutPreview({
               </Text>
             </View>
           ))}
-          {exercises.length > shown.length ? (
-            <Text variant="caption">
-              {t('workouts:history.moreExercises', { count: exercises.length - shown.length })}
-            </Text>
+          {hidden > 0 ? (
+            // A pill with a chevron, so it reads as something to open rather
+            // than a footnote.
+            <Tappable
+              className="mt-1 flex-row items-center gap-1 self-start rounded-full bg-surface px-3 py-1.5"
+              hitSlop={8}
+              onPress={() => setExpanded(!expanded)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded }}
+            >
+              <Text variant="label" className="text-[13px] leading-[18px] text-pandan-ink">
+                {expanded
+                  ? t('workouts:history.showFewer')
+                  : t('workouts:history.moreExercises', { count: hidden })}
+              </Text>
+              <Icon
+                set="ui"
+                name={expanded ? 'chevron-up' : 'chevron-down'}
+                size={14}
+                tintColor={colors.pandanInk}
+              />
+            </Tappable>
           ) : null}
         </View>
       ) : null}

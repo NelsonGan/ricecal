@@ -15,8 +15,8 @@ import { Card, cn, Tappable, Text } from '@/ui'
  * and weekday row, and a row per week. Only the paging differs: workouts go
  * back further than the diary's twelve months.
  *
- * On the progress page it only reports. The Workouts tab's calendar view
- * passes `onSelect`, and a tapped day is ringed and handed back so the tab can
+ * On the progress page it only reports. The Workouts page's calendar view
+ * passes `onSelect`, and a tapped day is ringed and handed back so the page can
  * list what was done on it.
  */
 export function WorkoutCalendar({

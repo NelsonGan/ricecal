@@ -9,6 +9,8 @@ import { Squish } from './Squish'
 import { Text } from './Text'
 
 const sizes = {
+  /** Beside a chat bubble, where a 40pt face outweighs one line of text. */
+  xs: { box: 30, radius: 11, font: 'text-[12px] leading-[15px]' },
   sm: { box: 40, radius: 14, font: 'text-[15px] leading-[18px]' },
   md: { box: 52, radius: 18, font: 'text-[20px] leading-[24px]' },
   lg: { box: 64, radius: radiusScale.sheet, font: 'text-[26px] leading-[30px]' },
@@ -151,6 +153,8 @@ export function Avatar({
 
 export type AvatarGroupProps = {
   names: readonly string[]
+  /** Everyone in the group, when `names` is only the first few of them. */
+  total?: number
   /** How many to draw before collapsing the rest into a "+N" tile. */
   max?: number
   size?: AvatarSize
@@ -158,18 +162,21 @@ export type AvatarGroupProps = {
 }
 
 /** Overlapping avatars with a "+N" overflow tile. */
-export function AvatarGroup({ names, max = 3, size = 'sm', className }: AvatarGroupProps) {
+export function AvatarGroup({ names, total, max = 3, size = 'sm', className }: AvatarGroupProps) {
   const shown = names.slice(0, max)
-  const overflow = names.length - shown.length
+  const overflow = (total ?? names.length) - shown.length
   const box = sizes[size].box
 
   return (
     <View
       className={cn('flex-row items-center', className)}
-      accessibilityLabel={`${names.length} members`}
+      accessibilityLabel={`${total ?? names.length} members`}
     >
       {shown.map((name, index) => (
-        <View key={name} style={index > 0 ? { marginLeft: -10 } : undefined}>
+        // Names repeat (two Alexes in one group), and a short fixed list never
+        // reorders, so the place is the key.
+        // biome-ignore lint/suspicious/noArrayIndexKey: see above
+        <View key={index} style={index > 0 ? { marginLeft: -10 } : undefined}>
           {/* Letters here, not silhouettes: these are named people, and the
               initial is the only thing telling one tile from the next. */}
           <Avatar name={name} fallback="initial" size={size} />

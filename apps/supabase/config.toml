@@ -607,6 +607,12 @@ verify_jwt = false
 import_map = "./functions/social/deno.json"
 entrypoint = "./functions/social/index.ts"
 
+[functions.groups]
+enabled = true
+verify_jwt = false
+import_map = "./functions/groups/deno.json"
+entrypoint = "./functions/groups/index.ts"
+
 # RevenueCat's webhook, and the only writer of `subscriptions`. NOT the same
 # auth pattern as the others: there is no user and no Supabase JWT, so it
 # checks a shared secret instead — REVENUECAT_WEBHOOK_TOKEN, matching the value

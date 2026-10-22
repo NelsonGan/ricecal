@@ -229,6 +229,11 @@ export default function MeScreen() {
 
       <Card title={t('profile:home.settings')} contentClassName="gap-0">
         <SettingRow
+          icon={{ set: 'body', name: 'dumbbell' }}
+          title={t('common:nav.workouts')}
+          onPress={() => router.push('/workouts')}
+        />
+        <SettingRow
           icon={{ set: 'food', name: 'cooking-pot' }}
           title={t('social:myFoods')}
           onPress={() => router.push('/settings/foods')}
@@ -290,7 +295,7 @@ export default function MeScreen() {
           value={settings ? t(`profile:home.${settings.units}`) : undefined}
           onPress={() => router.push('/settings/preferences')}
         />
-        {/* The Workouts tab has this row too, at the foot of its list. Here as
+        {/* The Workouts page has this row too, at the foot of its list. Here as
             well because this is where every other setting is looked for. */}
         <SettingRow
           icon={{ set: 'system', name: 'settings' }}

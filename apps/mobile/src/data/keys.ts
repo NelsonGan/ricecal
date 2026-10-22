@@ -14,6 +14,10 @@ export const keys = {
   social: (userId: string) => ['social', userId] as const,
   socialRead: (userId: string, name: string, params: object = {}) =>
     ['social', userId, name, params] as const,
+  /** Everything under the Groups tab, so a membership change can refresh it all at once. */
+  groups: (userId: string) => ['groups', userId] as const,
+  groupsRead: (userId: string, name: string, params: object = {}) =>
+    ['groups', userId, name, params] as const,
   profile: (userId: string) => ['profile', userId] as const,
   settings: (userId: string) => ['settings', userId] as const,
   mealTimes: (userId: string) => ['meal-times', userId] as const,
@@ -220,4 +224,25 @@ export function invalidateEatenTotals(queryClient: QueryClient, userId: string):
   queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
   queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
   queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+  // Food also moves the lists' "logged today" count.
+  invalidateGroupBoards(queryClient, userId, { lists: true })
+}
+
+/**
+ * A group board reads the diary and the workouts live, so a meal or a workout
+ * logged, edited or deleted, a synced health workout or a repriced recipe
+ * shows on the viewer's own row without waiting for the board's next poll.
+ * Only the boards on screen refetch; the rest are marked stale. `lists` also
+ * refreshes the group list, whose "logged today" counts food and nothing else.
+ */
+export function invalidateGroupBoards(
+  queryClient: QueryClient,
+  userId: string,
+  { lists = false }: { lists?: boolean } = {},
+): void {
+  queryClient.invalidateQueries({
+    queryKey: keys.groups(userId),
+    predicate: (query) =>
+      query.queryKey[2] === 'group_board' || (lists && query.queryKey[2] === 'my_groups'),
+  })
 }

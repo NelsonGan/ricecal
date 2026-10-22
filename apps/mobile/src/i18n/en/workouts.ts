@@ -13,7 +13,7 @@
 export const workouts = {
   title: 'Workouts',
 
-  /** The week so far, on the progress page; the streak beside the tab's title. */
+  /** The week so far, on the progress page; the streak in the page's bar. */
   overview: {
     title: 'This week',
     workouts: 'Workouts',
@@ -125,6 +125,8 @@ export const workouts = {
     exerciseLine: '{{sets}} × {{name}}',
     moreExercises_one: 'and {{count}} more',
     moreExercises_other: 'and {{count}} more',
+    /** Folds the exercises listed under "and N more" back up. */
+    showFewer: 'Show less',
     /** The unit under a workout's length on Today, where a calorie figure would be. */
     minutes: 'min',
   },

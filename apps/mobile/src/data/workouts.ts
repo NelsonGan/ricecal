@@ -14,14 +14,14 @@ import { track } from '@/lib/analytics'
 import type { Enums, Json, Tables } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 import { everyRow, TIMED_OUT, unwrap, unwrapMaybe, withDeadline } from './client'
-import { keys } from './keys'
+import { invalidateGroupBoards, keys } from './keys'
 import { useUserId } from './session'
 import { HEART_RATE_COLUMNS, toHeartRate, type WorkoutHeartRate } from './workout-heart'
 import { dequeueWorkout, enqueueWorkout, getOutbox, type WorkoutDocument } from './workout-outbox'
 
 /**
  * Workouts the user logged, routines and custom exercises: the read and write
- * side of the Workouts tab.
+ * side of the Workouts page.
  *
  * Every number here comes from Postgres (`96_workouts.sql`): a workout's
  * volume, its records, an exercise's bests and history, the weekly bars and
@@ -208,7 +208,7 @@ export function useWorkouts() {
 /**
  * One day's workouts. Today's row shows no records, and leaving the count out
  * lets the planner skip scoring them: 0.3 ms rather than 270 on a long
- * history. The Workouts tab's calendar draws history cards, which show them,
+ * history. The Workouts page's calendar draws history cards, which show them,
  * so it asks with `records` and pays for one day.
  */
 export function useWorkoutsOn(date: string, { records = false }: { records?: boolean } = {}) {
@@ -671,6 +671,7 @@ function invalidateWorkouts(
   { social = false }: { social?: boolean } = {},
 ): void {
   queryClient.invalidateQueries({ queryKey: keys.workoutsAll(userId) })
+  invalidateGroupBoards(queryClient, userId)
   // `save_workout` moves a routine's "last done".
   queryClient.invalidateQueries({ queryKey: keys.routines(userId) })
   // Only when the server took a workout, which may have posted it, and only

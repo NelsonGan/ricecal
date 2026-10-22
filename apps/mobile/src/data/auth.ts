@@ -776,6 +776,10 @@ export async function signInWithGoogle(): Promise<void> {
 }
 
 export async function signOut(): Promise<void> {
+  // Imported here so the data layer does not load the notifications module
+  // for every screen and test that only reads the session.
+  const { forgetPushToken } = await import('@/lib/push')
+  await forgetPushToken()
   const { error } = await supabase.auth.signOut()
   if (error) throw error
   // Before the provider's own `reset`, which the `SIGNED_OUT` event triggers a
