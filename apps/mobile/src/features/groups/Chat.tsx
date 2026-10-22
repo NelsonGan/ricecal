@@ -1,8 +1,8 @@
 import { format, isToday, isYesterday, parseISO } from 'date-fns'
-import { useFocusEffect } from 'expo-router'
+import { useFocusEffect, useIsFocused } from 'expo-router'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FlatList, Platform, type ScrollViewProps, TextInput, View } from 'react-native'
+import { AppState, FlatList, Platform, type ScrollViewProps, TextInput, View } from 'react-native'
 import { KeyboardChatScrollView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useUserId } from '@/data'
@@ -12,8 +12,9 @@ import {
   useGroupAction,
   useGroupChatLive,
   useGroupDetails,
-  useGroupMessages,
+  useGroupThread,
   useMyGroups,
+  useReadAsItArrives,
 } from '@/data/groups'
 import { useBlockAuthor } from '@/data/moderation'
 import { type Outgoing, useOutbox } from '@/features/shared'
@@ -21,7 +22,7 @@ import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
-import { showingGroupChat } from '@/lib/notifications'
+import { dismissGroupChatNotifications, showingGroupChat } from '@/lib/notifications'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -37,23 +38,34 @@ import {
 } from '@/ui'
 import { PersonAvatar, useGroupTask } from './parts'
 
+/** Whether the app is in front, rather than behind the notification shade or in the background. */
+function useAppActive(): boolean {
+  const [active, setActive] = useState(() => AppState.currentState === 'active')
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) =>
+      setActive(state === 'active'),
+    )
+    return () => subscription.remove()
+  }, [])
+  return active
+}
+
 /**
- * A day's chat, as a screen of its own laid out the way every messenger is:
+ * A group's chat, as a screen of its own laid out the way every messenger is:
  * the thread fills the page from the bottom and the composer sits on the
  * keyboard. A sheet put the composer under the keyboard, since a sheet's body
  * does not move for it; `Screen` lifts its footer with the keyboard and the
  * thread scrolls itself out of the way in the same frames.
  *
- * One thread per day page keeps it about that day's food; older days stay
- * readable by paging back on the board.
+ * One thread for the group, as any group chat is. It opens on the newest page
+ * and reads the one before as the viewer scrolls up; a chip marks where each
+ * day starts.
  */
 export function ChatScreen({
   groupId,
-  day,
   reply = false,
 }: {
   groupId: string
-  day: string
   /** Opened from its notification, so the keyboard comes up to answer it. */
   reply?: boolean
 }) {
@@ -61,8 +73,9 @@ export function ChatScreen({
   const back = useBack('/groups')
   const viewer = useUserId()
   const name = useMyGroups().data?.find((group) => group.id === groupId)?.name ?? ''
-  const live = useGroupChatLive(groupId, day)
-  const messages = useGroupMessages(groupId, day, live)
+  const live = useGroupChatLive(groupId)
+  const { thread, loadOlder, loadingOlder } = useGroupThread(groupId, live)
+  const messages = thread.data?.messages
   const task = useGroupTask()
   const [selected, setSelected] = useState<GroupMessage | null>(null)
   const block = useBlockAuthor()
@@ -72,40 +85,61 @@ export function ChatScreen({
   const notify = useGroupDetails(groupId).data?.notify
 
   // Pushes for this thread stay quiet while it is on screen.
-  useFocusEffect(useCallback(() => showingGroupChat(`${groupId}:${day}`), [groupId, day]))
+  useFocusEffect(useCallback(() => showingGroupChat(groupId), [groupId]))
 
-  // Opening the chat reads it, which clears the bar's count. Leaving reads it
+  // Opening the chat reads it once the thread is on screen, which clears the
+  // bar's count: read before the first page landed, a message written in
+  // between would be shown and still be pushed. Leaving reads it
   // again only if the thread changed while it was open, judged from the thread
-  // as it first loaded rather than the empty one at mount, and then refetches
-  // the board so its preview is the latest message rather than the one before.
+  // as it first loaded rather than the empty one at mount, and then rereads the
+  // board's chat bar so its preview is the latest message rather than the one before.
   const action = useGroupAction()
   const markRead = action.mutate
-  const latest = messages.data?.at(-1)?.id ?? null
+  const latest = messages?.at(-1)?.id ?? null
   const seen = useRef<{ first?: string | null; now: string | null }>({ now: null })
-  if (messages.data) {
+  if (messages) {
     if (seen.current.first === undefined) seen.current.first = latest
     seen.current.now = latest
   }
+  const loaded = messages !== undefined
   useEffect(() => {
-    markRead({ action: 'read', groupId })
-    const thread = seen.current
+    if (loaded) markRead({ action: 'read', groupId })
+  }, [loaded, groupId, markRead])
+  useEffect(() => {
+    void dismissGroupChatNotifications(groupId)
+    const opened = seen.current
     return () => {
-      if (thread.first !== undefined && thread.now !== thread.first) {
-        markRead({ action: 'read', groupId, day })
+      if (opened.first !== undefined && opened.now !== opened.first) {
+        markRead({ action: 'read', groupId, refresh: true })
       }
     }
-  }, [groupId, day, markRead])
+  }, [groupId, markRead])
+
+  // A message from someone else that lands while the thread is in front of the
+  // viewer is read there and then, so its push, sent a few seconds later, does
+  // not ring this phone about what its owner just watched arrive.
+  const focused = useIsFocused()
+  const active = useAppActive()
+  useReadAsItArrives(
+    groupId,
+    messages?.at(-1)?.mine === false ? latest : null,
+    seen.current.first,
+    focused && active,
+  )
+  // Back in front with this chat open, anything it rang for meanwhile has been read.
+  useEffect(() => {
+    if (focused && active) void dismissGroupChatNotifications(groupId)
+  }, [focused, active, groupId])
 
   // Sent messages are drawn at once from the outbox and swapped for the
   // server's rows as they arrive; the field never waits.
-  const serverIds = useMemo(() => new Set((messages.data ?? []).map((m) => m.id)), [messages.data])
+  const serverIds = useMemo(() => new Set((messages ?? []).map((m) => m.id)), [messages])
   const outbox = useOutbox(
-    `group:${groupId}:${day}`,
+    `group:${groupId}`,
     async (item) => {
       const id = await action.mutateAsync({
         action: 'message',
         groupId,
-        day,
         body: item.body,
         requestId: item.requestId,
       })
@@ -117,27 +151,43 @@ export function ChatScreen({
   const { send, retry } = outbox
 
   // Newest first, for the inverted list: the outbox is newer than anything sent.
-  const rows = useMemo<ChatRow[]>(
-    () => [
+  // A chip goes above the first message of each day; above the oldest one held
+  // only once there is nothing older, since the page before may continue its day.
+  const more = thread.data?.more ?? false
+  const rows = useMemo<ChatItem[]>(() => {
+    const newestFirst: ChatRow[] = [
       ...[...outbox.pending].reverse().map((item) => ({
         ...ownMessage(viewer, item.requestId, item.body, item.createdAt),
         outgoing: item,
       })),
-      ...[...(messages.data ?? [])].reverse(),
-    ],
-    [outbox.pending, messages.data, viewer],
-  )
+      ...[...(messages ?? [])].reverse(),
+    ]
+    const items: ChatItem[] = []
+    newestFirst.forEach((message, index) => {
+      items.push(message)
+      const day = localDay(message.created_at)
+      const older = newestFirst[index + 1]
+      if (older ? localDay(older.created_at) !== day : !more) {
+        items.push({ id: `day:${day}`, day })
+      }
+    })
+    return items
+  }, [outbox.pending, messages, viewer, more])
   const renderItem = useCallback(
-    ({ item, index }: { item: ChatRow; index: number }) => (
-      // Inverted: the row above is the next one in the array.
-      <MessageRow
-        message={item}
-        first={rows[index + 1]?.author.id !== item.author.id}
-        last={rows[index - 1]?.author.id !== item.author.id}
-        onSelect={setSelected}
-        onRetry={retry}
-      />
-    ),
+    ({ item, index }: { item: ChatItem; index: number }) =>
+      'day' in item ? (
+        <DayChip day={item.day} />
+      ) : (
+        // Inverted: the row above is the next one in the array. A day chip
+        // between two messages starts a new run, as it has no author.
+        <MessageRow
+          message={item}
+          first={authorOf(rows[index + 1]) !== item.author.id}
+          last={authorOf(rows[index - 1]) !== item.author.id}
+          onSelect={setSelected}
+          onRetry={retry}
+        />
+      ),
     [rows, retry],
   )
   // The thread rises with the composer as a scroll offset rather than a smaller
@@ -150,13 +200,6 @@ export function ChatScreen({
     ),
     [bottomInset],
   )
-  const at = parseISO(day)
-  const dayLabel = isToday(at)
-    ? t('common:date.today')
-    : isYesterday(at)
-      ? t('common:date.yesterday')
-      : format(at, datePattern('weekdayDayMonth'))
-
   return (
     <Screen
       scroll={false}
@@ -190,16 +233,16 @@ export function ChatScreen({
       }
       footer={<Composer groupName={name} onSend={send} autoFocus={reply} />}
     >
-      {messages.isLoading ? (
+      {thread.isLoading ? (
         <View className="flex-1 items-center justify-center">
           <Spinner />
         </View>
-      ) : !messages.data && (messages.isError || messages.fetchStatus === 'paused') ? (
+      ) : !messages && (thread.isError || thread.fetchStatus === 'paused') ? (
         <View className="flex-1 justify-center px-gutter">
           <QueryNotice
-            error={messages.isError}
-            paused={messages.fetchStatus === 'paused'}
-            retry={() => messages.refetch()}
+            error={thread.isError}
+            paused={thread.fetchStatus === 'paused'}
+            retry={() => thread.refetch()}
           />
         </View>
       ) : (
@@ -208,13 +251,21 @@ export function ChatScreen({
           inverted
           renderScrollComponent={renderScrollComponent}
           data={rows}
-          keyExtractor={(message) => message.id}
+          keyExtractor={(item) => item.id}
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           keyboardShouldPersistTaps="handled"
           contentContainerClassName="px-gutter py-3"
-          // Inverted, so the "footer" is drawn at the top of the thread: the
-          // day, as a chip, where a messenger puts it.
-          ListFooterComponent={<DayChip label={dayLabel} />}
+          // Inverted, so the end is the top of the thread: scrolling up reads
+          // the page before, with a spinner while it comes.
+          onEndReached={more ? loadOlder : undefined}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loadingOlder ? (
+              <View className="items-center py-3">
+                <Spinner />
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             // The list flips this itself, on both platforms.
             <View className="items-center py-xl">
@@ -238,7 +289,7 @@ export function ChatScreen({
                   label: t('deleteMessage'),
                   tone: 'danger',
                   onPress: () =>
-                    task.press({ action: 'deleteMessage', groupId, day, messageId: selected.id }),
+                    task.press({ action: 'deleteMessage', groupId, messageId: selected.id }),
                 },
               ]
             : selected
@@ -247,7 +298,7 @@ export function ChatScreen({
                     key: 'report',
                     label: t('report'),
                     onPress: () =>
-                      task.press({ action: 'reportMessage', groupId, day, messageId: selected.id }),
+                      task.press({ action: 'reportMessage', groupId, messageId: selected.id }),
                   },
                   {
                     key: 'block',
@@ -263,7 +314,19 @@ export function ChatScreen({
   )
 }
 
-function DayChip({ label }: { label: string }) {
+/** The phone's own calendar day a message was written on, as `yyyy-MM-dd`. */
+function localDay(createdAt: string): string {
+  return format(parseISO(createdAt), 'yyyy-MM-dd')
+}
+
+function DayChip({ day }: { day: string }) {
+  const { t } = useTranslation('common')
+  const at = parseISO(day)
+  const label = isToday(at)
+    ? t('date.today')
+    : isYesterday(at)
+      ? t('date.yesterday')
+      : format(at, datePattern('weekdayDayMonth'))
   return (
     <View className="items-center pb-3 pt-1">
       <View className="rounded-full bg-surface-alt px-3 py-1">
@@ -341,6 +404,9 @@ function Composer({
  * burst of short messages reads as one thought rather than a column of stamps.
  */
 type ChatRow = GroupMessage & { outgoing?: Outgoing }
+/** A message, or the chip that starts a day. */
+type ChatItem = ChatRow | { id: string; day: string }
+const authorOf = (item: ChatItem | undefined) => (item && 'author' in item ? item.author.id : null)
 
 /** The small face beside a bubble, and where the bubble starts after it. */
 const AVATAR = 30

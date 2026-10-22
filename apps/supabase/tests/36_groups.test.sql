@@ -203,32 +203,60 @@ delete from public.blocked_authors where user_id = :'ben' and author_id = :'cai'
 -- would swallow the failure. So the broadcasts are caught one step earlier.
 create temp table broadcasts (topic text, event text, ids jsonb);
 grant select on broadcasts to authenticated;
-create or replace function private.group_chat_broadcast(p_group uuid, p_day date, p_event text, p_ids jsonb)
+create or replace function private.group_chat_broadcast(p_group uuid, p_event text, p_ids jsonb)
 returns void language sql security definer set search_path = '' as $$
-  insert into pg_temp.broadcasts values ('group-chat:' || p_group::text || ':' || p_day::text, p_event, p_ids);
+  insert into pg_temp.broadcasts values ('group-chat:' || p_group::text, p_event, p_ids);
 $$;
 set local role authenticated;
 
--- Chat: a message per day, hidden from a reporter, idempotent by request id.
+-- Chat: one thread for the group, hidden from a reporter, idempotent by request id.
 select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select lives_ok(format('select public.send_group_message(%L, %L, %L, %L)', (select id from g),
-  (select d from bday), 'eating now!!', 'a3620000-0000-4000-8000-000000000001'), 'Ben writes');
-select lives_ok(format('select public.send_group_message(%L, %L, %L, %L)', (select id from g),
-  (select d from bday), 'eating now!!', 'a3620000-0000-4000-8000-000000000001'), 'a retry is the same message');
+select lives_ok(format('select public.send_group_message(%L, %L, %L)', (select id from g),
+  'eating now!!', 'a3620000-0000-4000-8000-000000000001'), 'Ben writes');
+select lives_ok(format('select public.send_group_message(%L, %L, %L)', (select id from g),
+  'eating now!!', 'a3620000-0000-4000-8000-000000000001'), 'a retry is the same message');
 reset role;
 -- now() is fixed inside the test's transaction, so Ana's read mark is put
 -- before the message.
 update public.group_members set chat_read_at = now() - interval '1 minute' where user_id = :'ana';
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
-select is(jsonb_array_length(public.group_messages((select id from g), (select d from bday))), 1, 'one message');
-select is((public.group_board((select id from g), (select d from bday))->'chat'->>'unread')::int, 1, 'and it is unread');
+select is(jsonb_array_length(public.group_messages((select id from g))), 1, 'one message');
+select is(public.group_chat_summary((select id from g)),
+  jsonb_build_object('unread', 1, 'last', jsonb_build_object(
+    'author', public.group_messages((select id from g))->0->'author', 'body', 'eating now!!')),
+  'and the chat bar counts it unread and shows it');
+select ok(not public.group_board((select id from g), (select d from bday)) ? 'chat',
+  'the board itself carries no chat');
 select lives_ok(format('select public.report_group_message(%L)',
-  public.group_messages((select id from g), (select d from bday))->0->>'id'), 'Ana reports it');
-select is(jsonb_array_length(public.group_messages((select id from g), (select d from bday))), 0,
+  public.group_messages((select id from g))->0->>'id'), 'Ana reports it');
+select is(jsonb_array_length(public.group_messages((select id from g))), 0,
   'a reported message disappears for the reporter');
+select is(public.group_chat_summary((select id from g)), '{"unread": 0, "last": null}'::jsonb,
+  'and from the chat bar');
 reset role;
+
+-- The thread is read a page at a time from the newest back.
+insert into public.group_messages(id, group_id, author_id, body, request_id, created_at)
+select ('a3620000-0000-4000-8000-1000000000' || lpad(n::text, 2, '0'))::uuid, (select id from g), :'ben',
+  'page ' || n, ('a3620000-0000-4000-8000-2000000000' || lpad(n::text, 2, '0'))::uuid,
+  now() - interval '1 hour' + n * interval '1 minute'
+from generate_series(1, 5) n;
+select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
+set local role authenticated;
+create temp table page1 as select public.group_messages((select id from g), null, null, 3) as p;
+select is((select array_agg(e->>'body' order by o) from page1, jsonb_array_elements(p) with ordinality x(e, o)),
+  array['page 3', 'page 4', 'page 5'], 'the newest page, oldest first, without what Ana reported');
+select is((select array_agg(e->>'body' order by o) from page1,
+    jsonb_array_elements(public.group_messages((select id from g), (p->0->>'created_at')::timestamptz,
+      (p->0->>'id')::uuid, 3)) with ordinality x(e, o)),
+  array['page 1', 'page 2'], 'and the page before it from the cursor');
+select is(jsonb_array_length(public.group_messages((select id from g), now() - interval '2 hours', null, 3)), 0,
+  'nothing before the first message');
+reset role;
+delete from public.group_messages where body like 'page %';
+delete from broadcasts where ids::text like '%a3620000-0000-4000-8000-1000000000%';
 
 -- Chat push: every other member with the group's notifications on hears the
 -- message once, and a block either way keeps it from them.
@@ -246,25 +274,39 @@ select is((select count(*)::int from public.group_message_push_targets(:'ben', (
   'and only once');
 select is((select count(*)::int from public.group_message_push_targets(:'ana', (select id from sent))), 0,
   'nobody can push someone else''s message');
-insert into public.group_messages(id, group_id, day, author_id, body, request_id)
-values ('a3620000-0000-4000-8000-0000000000aa', (select id from g), (select d from bday), :'ben', 'blocked?',
+insert into public.group_messages(id, group_id, author_id, body, request_id)
+values ('a3620000-0000-4000-8000-0000000000aa', (select id from g), :'ben', 'blocked?',
   'a3620000-0000-4000-8000-000000000002');
 insert into public.blocked_authors(user_id, author_id) values (:'ana', :'ben');
 select is((select count(*)::int from public.group_message_push_targets(:'ben', 'a3620000-0000-4000-8000-0000000000aa')), 0,
   'a member who blocked the author is not pushed');
 delete from public.blocked_authors where user_id = :'ana' and author_id = :'ben';
 delete from public.group_messages where id = 'a3620000-0000-4000-8000-0000000000aa';
+-- Someone looking at the open thread marks it read as the message arrives,
+-- before the groups function asks, and is not pushed what they just saw.
+-- now() is the message's time inside this transaction.
+insert into public.group_messages(id, group_id, author_id, body, request_id)
+values ('a3620000-0000-4000-8000-0000000000ab', (select id from g), :'ben', 'seen?',
+  'a3620000-0000-4000-8000-000000000003');
+update public.group_members set chat_read_at = now() where user_id = :'ana';
+select is((select count(*)::int from public.group_message_push_targets(:'ben', 'a3620000-0000-4000-8000-0000000000ab')), 0,
+  'a member who read the chat since the message is not pushed');
+update public.group_messages set pushed_at = null where id = 'a3620000-0000-4000-8000-0000000000ab';
+update public.group_members set chat_read_at = now() - interval '1 second' where user_id = :'ana';
+select is((select array_agg(t.token) from public.group_message_push_targets(:'ben', 'a3620000-0000-4000-8000-0000000000ab') t),
+  array['ExponentPushToken[groups-ana]'], 'one who last read it before the message is');
+delete from public.group_messages where id = 'a3620000-0000-4000-8000-0000000000ab';
 delete from public.push_tokens where token like 'ExponentPushToken[groups-%';
--- Its own broadcasts are not what the live chat checks below count.
-delete from broadcasts where ids @> '["a3620000-0000-4000-8000-0000000000aa"]';
+-- Their own broadcasts are not what the live chat checks below count.
+delete from broadcasts where ids @> '["a3620000-0000-4000-8000-0000000000aa"]'
+  or ids @> '["a3620000-0000-4000-8000-0000000000ab"]';
 
--- Live chat: each write is announced on the day's private topic by id alone,
+-- Live chat: each write is announced on the group's private topic by id alone,
 -- and only a member may listen there.
-create temp table topic as
-  select 'group-chat:' || (select id from g)::text || ':' || (select d from bday)::text as t;
+create temp table topic as select 'group-chat:' || (select id from g)::text as t;
 grant select on topic to authenticated;
 select is((select array_agg(b.event) from broadcasts b where b.topic = (select t from topic)),
-  array['message'], 'a sent message is broadcast on its day''s topic');
+  array['message'], 'a sent message is broadcast on the group''s topic');
 select is((select b.ids from broadcasts b where b.event = 'message'),
   jsonb_build_array((select id from public.group_messages where group_id = (select id from g))),
   'the broadcast carries the id and nothing else');
@@ -273,9 +315,10 @@ select policies_are('realtime', 'messages', array['Group members hear their chat
 select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select ok(private.group_chat_listener((select t from topic)), 'a member may listen on the chat topic');
+select ok(not private.group_chat_listener((select t from topic) || ':2026-01-01'), 'but on nothing longer');
 select set_config('request.jwt.claims', json_build_object('sub', :'dee', 'role', 'authenticated')::text, true);
 select ok(not private.group_chat_listener((select t from topic)), 'someone outside the group cannot');
-select ok(not private.group_chat_listener('group-chat:not-a-uuid:2026-01-01'),
+select ok(not private.group_chat_listener('group-chat:not-a-uuid'),
   'a malformed topic is refused, not cast');
 select ok(not private.group_chat_listener(replace((select t from topic), 'group-chat:', 'group-board:')),
   'and so is another kind of topic on the same group');
