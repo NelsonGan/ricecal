@@ -275,7 +275,9 @@ begin
     from (
       select * from public.group_messages m
       where m.group_id = p_group_id and not m.quarantined
-        and (p_before_at is null or (m.created_at, m.id) < (p_before_at, coalesce(p_before_id, m.id)))
+        -- Constants on the right, so the index walks straight to the cursor.
+        and (m.created_at, m.id) < (coalesce(p_before_at, 'infinity'),
+          coalesce(p_before_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff'))
         and not private.social_pair_blocked(m.author_id)
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
       order by m.created_at desc, m.id desc limit greatest(1, least(coalesce(p_limit, 50), 100))

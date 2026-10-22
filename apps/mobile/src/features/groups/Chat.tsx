@@ -51,7 +51,7 @@ function useAppActive(): boolean {
 }
 
 /**
- * A day's chat, as a screen of its own laid out the way every messenger is:
+ * A group's chat, as a screen of its own laid out the way every messenger is:
  * the thread fills the page from the bottom and the composer sits on the
  * keyboard. A sheet put the composer under the keyboard, since a sheet's body
  * does not move for it; `Screen` lifts its footer with the keyboard and the
@@ -74,7 +74,7 @@ export function ChatScreen({
   const viewer = useUserId()
   const name = useMyGroups().data?.find((group) => group.id === groupId)?.name ?? ''
   const live = useGroupChatLive(groupId)
-  const thread = useGroupThread(groupId, live)
+  const { thread, loadOlder, loadingOlder } = useGroupThread(groupId, live)
   const messages = thread.data?.messages
   const task = useGroupTask()
   const [selected, setSelected] = useState<GroupMessage | null>(null)
@@ -87,7 +87,9 @@ export function ChatScreen({
   // Pushes for this thread stay quiet while it is on screen.
   useFocusEffect(useCallback(() => showingGroupChat(groupId), [groupId]))
 
-  // Opening the chat reads it, which clears the bar's count. Leaving reads it
+  // Opening the chat reads it once the thread is on screen, which clears the
+  // bar's count: read before the first page landed, a message written in
+  // between would be shown and still be pushed. Leaving reads it
   // again only if the thread changed while it was open, judged from the thread
   // as it first loaded rather than the empty one at mount, and then rereads the
   // board's chat bar so its preview is the latest message rather than the one before.
@@ -99,12 +101,15 @@ export function ChatScreen({
     if (seen.current.first === undefined) seen.current.first = latest
     seen.current.now = latest
   }
+  const loaded = messages !== undefined
   useEffect(() => {
-    markRead({ action: 'read', groupId })
+    if (loaded) markRead({ action: 'read', groupId })
+  }, [loaded, groupId, markRead])
+  useEffect(() => {
     void dismissGroupChatNotifications(groupId)
-    const thread = seen.current
+    const opened = seen.current
     return () => {
-      if (thread.first !== undefined && thread.now !== thread.first) {
+      if (opened.first !== undefined && opened.now !== opened.first) {
         markRead({ action: 'read', groupId, refresh: true })
       }
     }
@@ -252,10 +257,10 @@ export function ChatScreen({
           contentContainerClassName="px-gutter py-3"
           // Inverted, so the end is the top of the thread: scrolling up reads
           // the page before, with a spinner while it comes.
-          onEndReached={more ? thread.loadOlder : undefined}
+          onEndReached={more ? loadOlder : undefined}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
-            thread.loadingOlder ? (
+            loadingOlder ? (
               <View className="items-center py-3">
                 <Spinner />
               </View>

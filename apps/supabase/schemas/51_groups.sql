@@ -5,7 +5,7 @@
 -- through definer functions in 97_groups.sql, so an edit, a deleted entry or a
 -- new photo shows in every group at once, and leaving a group takes nothing
 -- with it. What a group adds of its own is membership, invites, reactions to
--- an entry, nudges and a chat for each day.
+-- an entry, nudges and one chat per group.
 --
 -- Every table is closed to clients. Reads and writes go through functions that
 -- check membership themselves, because the diary's RLS is owner-only and must
@@ -57,7 +57,7 @@ create table public.group_members (
   -- This member's own row order for the board. Ids that have left are ignored
   -- when read and anyone not listed goes after, by join date.
   board_order   uuid[] not null default '{}' check (cardinality(board_order) <= 10),
-  -- Chat messages after this, on any day, are unread for this member.
+  -- Chat messages after this are unread for this member.
   chat_read_at  timestamptz not null default now(),
   notify        boolean not null default true,
   primary key (group_id, user_id)
@@ -121,7 +121,8 @@ create table public.group_messages (
   pushed_at   timestamptz,
   unique (author_id, request_id)
 );
-create index group_messages_recent_idx on public.group_messages(group_id, created_at);
+-- The thread's order, which group_messages pages through by (created_at, id).
+create index group_messages_recent_idx on public.group_messages(group_id, created_at, id);
 
 create table public.group_message_reports (
   message_id  uuid not null references public.group_messages(id) on delete cascade,

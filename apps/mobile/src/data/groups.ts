@@ -245,10 +245,22 @@ export function useGroupBoard(groupId: string, day: string, enabled: boolean, li
 /** How many messages a page of the thread holds. */
 export const THREAD_PAGE = 50
 
-const at = (message: GroupMessage) => Date.parse(message.created_at)
+/**
+ * A message's time in microseconds, as Postgres keeps it. `Date.parse` stops at
+ * milliseconds, which would order two messages from the same millisecond by id
+ * here and by time on the server.
+ */
+function micros(createdAt: string): number {
+  const fraction = /\.(\d+)/.exec(createdAt)?.[1] ?? ''
+  const whole = Date.parse(createdAt.replace(/\.\d+/, ''))
+  return whole * 1000 + Number(fraction.padEnd(6, '0').slice(0, 6))
+}
 /** Whether `a` comes before `b` in the thread, as the server orders it. */
-const before = (a: GroupMessage, b: GroupMessage) =>
-  at(a) < at(b) || (at(a) === at(b) && a.id < b.id)
+const before = (a: GroupMessage, b: GroupMessage) => {
+  const x = micros(a.created_at)
+  const y = micros(b.created_at)
+  return x < y || (x === y && a.id < b.id)
+}
 
 /**
  * Lays the newest page over the thread as already scrolled, so a refetch reads
@@ -263,8 +275,15 @@ export function mergeNewest(held: GroupThread | undefined, newest: GroupMessage[
   if (!held || !oldest || !held.messages.some((message) => !before(message, oldest))) {
     return { messages: newest, more: true }
   }
+  // By id as well as by time: the viewer's own message is drawn with the
+  // phone's clock until a refetch brings the server's, and a phone running
+  // slow would otherwise keep both.
+  const fresh = new Set(newest.map((message) => message.id))
   return {
-    messages: [...held.messages.filter((message) => before(message, oldest)), ...newest],
+    messages: [
+      ...held.messages.filter((message) => !fresh.has(message.id) && before(message, oldest)),
+      ...newest,
+    ],
     more: held.more,
   }
 }
@@ -283,15 +302,16 @@ export function useGroupThread(groupId: string, live: boolean) {
   const key = messagesKey(userId, groupId)
   const thread = useQuery({
     queryKey: key,
-    queryFn: async ({ signal }) =>
-      mergeNewest(
-        client.getQueryData<GroupThread>(key),
-        (await rpc(
-          'group_messages',
-          { p_group_id: groupId, p_limit: THREAD_PAGE },
-          signal,
-        )) as unknown as GroupMessage[],
-      ),
+    queryFn: async ({ signal }) => {
+      const newest = (await rpc(
+        'group_messages',
+        { p_group_id: groupId, p_limit: THREAD_PAGE },
+        signal,
+      )) as unknown as GroupMessage[]
+      // The thread as it is now, not as it was when the read started: an older
+      // page or a removal may have landed meanwhile.
+      return mergeNewest(client.getQueryData<GroupThread>(key), newest)
+    },
     refetchInterval: live ? 60_000 : 5_000,
     // Coming back to the app rejoins the channel, and the join refetches;
     // refetching on focus as well read the thread twice.
@@ -327,7 +347,9 @@ export function useGroupThread(groupId: string, live: boolean) {
       setLoadingOlder(false)
     }
   }, [client, userId, groupId])
-  return { ...thread, loadOlder, loadingOlder }
+  // The query result is passed through whole rather than spread, which would
+  // read every field and rerender on each refetch's fetching flag.
+  return { thread, loadOlder, loadingOlder }
 }
 
 /** Every message held for a group's thread, changed in place. */
@@ -435,8 +457,9 @@ export function useGroupChatLive(groupId: string): boolean {
 
 /**
  * The board's chat bar: the unread count and the thread's latest message.
- * Polled every half minute only while the board has no channel; with one,
- * `useGroupBoardChatLive` rereads it as messages are written.
+ * Polled every half minute while the board has no channel; with one,
+ * `useGroupBoardChatLive` rereads it as messages are written and a minute's
+ * poll is the net.
  */
 export function useGroupChatSummary(groupId: string, enabled: boolean, live: boolean) {
   const userId = useUserId()
@@ -445,7 +468,8 @@ export function useGroupChatSummary(groupId: string, enabled: boolean, live: boo
     queryFn: async ({ signal }) =>
       (await rpc('group_chat_summary', { p_group_id: groupId }, signal)) as unknown as ChatSummary,
     enabled,
-    refetchInterval: enabled && !live ? 30_000 : false,
+    // Joined, a slow poll stays as the net for a socket that died silently.
+    refetchInterval: enabled ? (live ? 60_000 : 30_000) : false,
     ...SHORT,
   })
 }
@@ -486,7 +510,11 @@ export function useGroupBoardChatLive(groupId: string, enabled: boolean): boolea
         const summary = (await rpc('group_chat_summary', {
           p_group_id: groupId,
         })) as unknown as ChatSummary
-        if (!stopped) client.setQueryData(key, summary)
+        if (stopped) return
+        // A fetch of the bar still on its way read it before this message, and
+        // would land over this answer.
+        await client.cancelQueries({ queryKey: key })
+        client.setQueryData(key, summary)
       } catch {
         // The bar's own poll is the net.
       } finally {
@@ -558,7 +586,10 @@ export function useReadAsItArrives(
       }
       current.busy = true
       void read({ action: 'read', groupId })
-        .catch(() => undefined)
+        .catch(() => {
+          // Not read, so the next message, or coming back, tries again.
+          current.through = null
+        })
         .finally(() => {
           current.busy = false
           if (current.again) {
