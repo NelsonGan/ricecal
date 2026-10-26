@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Keyboard, type TextInput, View } from 'react-native'
+import { Keyboard, type TextInputInstance, View } from 'react-native'
 
 import { type RecipeShelf, useRecipeQuota, useRecipes } from '@/data'
 import { useRequirePro } from '@/features/paywall'
@@ -49,7 +49,7 @@ export default function RecipesScreen() {
   const [shelf, setShelf] = useState<RecipeShelf>('mine')
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const searchField = useRef<TextInput>(null)
+  const searchField = useRef<TextInputInstance>(null)
   const debounced = useDebouncedValue(query)
   // Closing search restores the whole shelf immediately, without waiting for
   // the debounced value to catch up while the field is no longer visible.

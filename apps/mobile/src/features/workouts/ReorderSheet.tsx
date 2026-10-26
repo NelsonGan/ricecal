@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWindowDimensions, View } from 'react-native'
 import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler'
@@ -32,16 +32,26 @@ import { ExerciseArt } from './ExerciseArt'
 
 const ROW = 64
 
-type ReorderItem = { key: string; exerciseId: string; name: string; category?: Category }
+/** An exercise draws its own art; anything else brings its own `leading`. */
+type ReorderItem = {
+  key: string
+  name: string
+  exerciseId?: string
+  category?: Category
+  leading?: ReactNode
+}
 
 export function ReorderSheet({
   visible,
   items,
+  title,
   onClose,
   onDone,
 }: {
   visible: boolean
   items: readonly ReorderItem[]
+  /** Defaults to the workout's "Reorder". */
+  title?: string
   onClose: () => void
   onDone: (keys: string[]) => void
 }) {
@@ -78,7 +88,7 @@ export function ReorderSheet({
       visible={visible}
       onClose={onClose}
       closeLabel={t('common:action.close')}
-      title={t('workouts:logger.menu.reorder')}
+      title={title ?? t('workouts:logger.menu.reorder')}
       scrollable={false}
     >
       <View className="gap-5">
@@ -209,7 +219,10 @@ function SortableRow({
       ]}
     >
       <View className="h-[56px] flex-row items-center gap-3 rounded-md bg-surface-alt pl-2">
-        <ExerciseArt exerciseId={item.exerciseId} category={item.category} size={40} />
+        {item.leading ??
+          (item.exerciseId ? (
+            <ExerciseArt exerciseId={item.exerciseId} category={item.category} size={40} />
+          ) : null)}
         <Text variant="label" numberOfLines={1} className="min-w-0 flex-1">
           {item.name}
         </Text>

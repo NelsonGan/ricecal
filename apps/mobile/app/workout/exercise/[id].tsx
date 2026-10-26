@@ -51,6 +51,7 @@ import { useBack } from '@/lib/navigation'
 import { fromKg, UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
 import {
   AppBar,
+  Aside,
   Badge,
   Button,
   Card,
@@ -76,8 +77,9 @@ function metricsFor(exercise: LibraryExercise): Metric[] {
     case 'weighted_reps':
       return ['reps', 'heaviest', 'volume']
     case 'reps':
-    case 'assisted_reps':
       return ['reps']
+    case 'assisted_reps':
+      return ['reps', 'volume']
     case 'duration':
       return ['duration']
     case 'distance_duration':
@@ -238,7 +240,11 @@ function ExercisePage({ id }: { id: string }) {
             <Records bests={bests.data[0]} exercise={exercise} unit={unit} />
           ) : null}
           {repBests.data ? <RepRecords rows={repBests.data} unit={unit} /> : null}
-          <History exercise={exercise} sessions={history.data} unit={unit} />
+          {/* With two panes the exercise, its line and its bests are the first,
+              and every session of it the second. See `Aside`. */}
+          <Aside>
+            <History exercise={exercise} sessions={history.data} unit={unit} />
+          </Aside>
         </>
       ) : (
         <Card>

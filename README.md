@@ -23,6 +23,7 @@ project works is here.
 - [What to eat next](#what-to-eat-next)
 - [Food people write](#food-people-write)
 - [The social food feed](#the-social-food-feed)
+- [Groups](#groups)
 - [The diary screen](#the-diary-screen)
 - [Water](#water)
 - [Home screen widgets](#home-screen-widgets)
@@ -103,6 +104,15 @@ Useful commands:
 | `pnpm eval:prompts` | grade the model prompts |
 | `pnpm eval:scan` | drive the deployed scan pipeline end to end |
 | `pnpm eval:refine --repeat=3` | test real AI ingredient corrections against local Supabase |
+
+Expo Device Hub (`expo-device-hub`, a dev dependency that adds nothing to the
+app) gives every `npx expo start` a live device dashboard: stream, tap and type
+into simulators and emulators, and boot, shut down or create them, at
+`http://127.0.0.1:8082/_expo/plugins/expo-device-hub`. Test on the "RiceCal
+iPhone 18 Pro" simulator and the `RiceCal_Pixel_10` emulator (Pixel 10, Android
+16). The Hub and `pnpm android` need `ANDROID_HOME` (the Android SDK, e.g.
+`~/Library/Android/sdk`) and `JAVA_HOME` (JDK 17) in the shell that starts
+Metro; without them the Hub lists only iOS simulators.
 
 Run one simulator at a time. This machine does not have room for the iOS
 simulator and the Android emulator together, and the result is not just
@@ -190,6 +200,64 @@ The client never talks to OpenRouter and never sees the key. It uploads a photo
 the row itself as `service_role`. It has to, because a scan also writes
 `food_scan_items`, which is the pipeline's working notes and is granted to
 `service_role` alone.
+
+**Two models, and only the fallback is paid from OpenRouter credits.** Every
+call asks Claude Haiku 5.5 first (`PRIMARY_ROUTE` in `llm.ts`), which runs on
+our own Anthropic key through OpenRouter's BYOK. Anything that goes wrong there
+(an error, a 429, an answer that will not parse, or no answer within 15
+seconds) goes once to `qwen/qwen3.7-flash`, which OpenRouter bills to credits
+as before and which keeps its 25 seconds and its one retry. Haiku writes about
+250 tokens a second, so 15 seconds covers the largest ceiling any call asks for. Haiku must never run on credits, and three things hold
+that line:
+
+- Every request for an Anthropic model, on either route, names
+  `provider: { only: ['anthropic'], allow_fallbacks: false }` (`routeFor`).
+  OpenRouter also serves Claude from Bedrock, Vertex, Azure and Claude Platform
+  on AWS, on its own accounts, which it bills to credits.
+- The Anthropic key in OpenRouter (Settings, Integrations) must be set never to
+  use shared capacity. Without that, a key that is rate limited or failing runs
+  the call on OpenRouter's own Anthropic account instead of answering with an
+  error. No request field can say this; it lives only in that setting.
+- Every Anthropic answer's `usage.is_byok` is checked. A `false` logs an error and
+  sends the rest of that isolate's calls to Qwen, and PostHog records it as
+  `byok: false` on the event.
+
+**Haiku's system prompts are cached for an hour, for the calls that repeat.**
+A photo scan, a typed meal and a correction each send a fixed system prompt
+(about 3,400, 6,100 and 2,500 tokens) ahead of the meal's own text or photo, so
+the Anthropic route sends it as one block marked `cache_control: { type:
+'ephemeral', ttl: '1h' }` (`CACHED_SPANS` and `cachedSystem` in `llm.ts`). A hit
+costs a tenth of the input price, but the one-hour write costs twice it, so a
+call comes out ahead only with a little over one hit an hour. Those three
+arrive within an hour of the last of their kind 82 to 100% of the time; the
+recipe calls and moderation come once a day or less, so they are left uncached
+rather than pay a write nobody reads, and the catalogue pick and nutrition
+estimate are under Haiku's 512-token minimum. A photo scan's input cost halved
+in testing, and a typed meal fell from about $0.0007 to $0.0002. Two things keep
+it working: a cached system prompt must stay byte-for-byte fixed (per-request
+text belongs in the user message, after the cached block), and the cache is per
+Anthropic workspace, which every call shares through the one BYOK key. A photo
+with a typed note uses its own variant of the prompt, and so its own cache
+entry.
+
+**Haiku does not honour `response_format: json_object`.** With reasoning off it
+works things out in its answer: a paragraph before the JSON, or a nutrition
+estimate's arithmetic running out of tokens before any JSON arrives. Its route
+adds one line to every system prompt telling it to reply with the JSON object
+alone, and `parseAnswer` takes the JSON from after any paragraph that still
+comes. An answer that will not parse goes to Qwen like any other failure (about
+one text call in a hundred did, across the prompt evals). In production it is
+about 2% of photos. Each one logs `answer did not parse (…)` with a shape built
+only from lengths, counts and fixed labels (`objects=2 error=after-json` is a
+second object after the first; `error=expected-comma at-char=letter` is a quote
+left unescaped; `error=unexpected-token at-char=]` is a trailing comma), since
+the answer itself is diary content. A generic
+`json_schema` response format is not the fix: Haiku answers it with `{}`.
+
+`OPENROUTER_BYOK_MODEL=off` as a function secret sends everything to Qwen
+without a deploy, which is the switch to reach for if Haiku's answers go wrong
+rather than failing. The Anthropic organisation's concurrency limit is low, so
+a burst of calls answers 429 and lands on Qwen rather than failing the scan.
 
 **Every call sends `reasoning: { enabled: false }`, and it is not an
 optimisation.** `qwen3.7-flash` reasons by default, reasoning tokens come out of
@@ -289,6 +357,7 @@ only emits structure:
 | seed data of any kind | the rows are data, and a diff only emits structure |
 | `create extension` / `drop extension` | the diff engine does not track extensions at all |
 | `cron.schedule(…)` calls | a schedule is a row in `cron.job`, so it is data too |
+| a policy on `realtime.messages` | the table belongs to the Realtime service's schema, which the diff does not compare at all, so it emits neither the policy nor a drop for it; `20261022031315_group_chat_live.sql` restates it from `51_groups.sql` |
 | `ROWS n` on an existing function | the diff compares bodies and arguments, not the planner's row estimate, so changing only the hint emits nothing; a function the migration creates carries it |
 
 Nothing schedules anything here any more, and there is no seed function left
@@ -303,8 +372,10 @@ The `auth` schema is **not** one of these. The diff tracks triggers on
 made the next diff emit `DROP TRIGGER` for it. It stays declarative, in
 `16_new_user.sql`.
 
-Seven service-only tables have RLS enabled with no policies. That denies all
-row reads and writes by default; their client table grants are revoked too.
+Sixteen service-only tables (scan items and misses, groups and their chat,
+push tokens, recipe saves, social counters and rate limits, job runs) have no
+client grant, no permissive policy and a restrictive `"Server only"` policy that
+denies every client row.
 `98_client_table_privileges.sql` also removes `TRUNCATE`, `REFERENCES`, `TRIGGER`
 and `MAINTAIN` from client roles on every public table. These operations do not
 need an RLS policy to run. `02_rls.test.sql` checks both boundaries.
@@ -449,6 +520,36 @@ copy.
   literal unions, which keeps `Meal` in SQL and `Meal` in TypeScript the same
   set.
 - **`updated_at` by trigger**, so no write path has to remember.
+- **Every view in `public` is `security_invoker`.** A view that must read past
+  RLS lives in `private` and is read through an invoker view of the same
+  name; `02_rls.test.sql` fails on any other.
+- **A server-only table still gets a policy:** `"Server only"`, restrictive,
+  `using (false) with check (false)` for `anon` and `authenticated`. With no
+  client grant it changes nothing today, but a permissive policy added by
+  mistake still admits no row, and `02_rls.test.sql` fails on a public table
+  with RLS and no policy at all. Edge functions use the service role and
+  definer functions run as their owner, so both pass by it.
+
+**What the Security and Performance Advisors still report, on purpose.** Each
+was checked against the code (October 2026) and is not a finding:
+
+- *Signed-in users can execute a security definer function*: those are the
+  app's RPC API. Each decides inside what its caller may do (most through
+  `private.social_require_user` or `private.group_require_member`).
+  `02_rls.test.sql` asserts the parts that would make one unsafe: every
+  definer function pins `search_path = ''`, and none is executable by `anon` or
+  `PUBLIC`. The advisor's alternative, an invoker wrapper in `public` over a
+  definer copy in `private`, reaches the same code with the same rights and
+  doubles every function, so it is not done.
+- *Unindexed foreign key* on four composite `(id, user_id)` ownership keys
+  (`social_posts`, `workout_exercises`, `workout_sets`, `workout_heart_rates`):
+  each is already served by a unique index leading with its first column. That
+  index enforces something else and cannot be widened, so covering both
+  columns would mean a second index that only costs writes. The routine key's
+  index was a plain one and is widened instead.
+- *Unused index* on the group tables: they cover foreign keys on tables still
+  small enough to scan.
+- *Leaked password protection*: needs the Pro plan.
 
 ### Function secrets
 
@@ -846,7 +947,7 @@ same My foods results instead of Today or All foods. `openOwn` and `openCreate`
 sit beside `openPicked`, and the page does not focus its field when any of them
 sent it, since a keyboard would come up under the screen on top.
 
-Five tabs (Today, Workouts, Feed, Trends, Me) on the headless `expo-router/ui`
+Five tabs (Today, Feed, Groups, Trends, Me) on the headless `expo-router/ui`
 Tabs rather than a styled navigator, because `NavBar` and `NavItem` are the
 design system's and a native tab bar cannot be made to look like them.
 
@@ -1782,6 +1883,16 @@ Then, in order:
   on the entry. It used to write a shared catalogue row; a guess reused is still
   a guess.
 
+**A catalogue that does not answer costs two waits, not one per part.** Each
+search has four seconds (`_shared/catalogue.ts`), and the parts are searched in
+turn, so a Worker that hung for 90 seconds on 2026-10-20 held one five-part plate
+for 25 seconds while every part timed out and was priced from the model anyway.
+Two failed searches in a row now pause searching for 30 seconds in that isolate;
+any answer resets the count, so the occasional single slow search pauses
+nothing. A read whose connection broke (`TypeError`, back in milliseconds) is
+asked once more inside the same four seconds. A timeout is not, and a write is
+never sent twice.
+
 **There is no tier 5, and there was.** It classified the plate into one of sixty
 seeded generic rows and, failing that, wrote a terminal "Mixed meal" of 600 kcal
 at a hardcoded id that needed no model and no network. The argument for it was
@@ -2620,9 +2731,19 @@ short account ID instead. Accounts are discoverable unless the owner turns on
 Private profile in Edit profile. The `social_joined_at` field still records a
 social action, but it does not govern discovery.
 Posting, following, liking and commenting need no manual handle setup or bio.
-The Security Advisor flags this one view as a definer view. That is deliberate:
-an invoker view would apply the owner-only `profiles` policy and hide every
-other person's public identity. Its selected columns exclude email, body
+Reading another person's identity has to bypass the owner-only `profiles`
+policy, so the filtered select is `private.social_profiles`, a view with its
+owner's rights in a schema the API does not expose. It is not a
+`security_barrier`: a barrier keeps joins on `user_id` off the primary key, and
+checking visibility for every profile took 720 ms on production. A barrier
+guards against a caller's own predicate raising an error on a hidden row; the
+only predicates a client can send are PostgREST's fixed filters, whose errors
+depend on the value sent and never on a row. So an RPC must not filter this
+view with an expression that can fail on a row's value, such as a cast. `public.social_profiles`
+reads it with `security_invoker`, as every view in `public` does. It stays a
+view rather than a set-returning function so the planner inlines it: a join on
+`user_id` stays an index lookup instead of checking visibility for every
+profile on every feed read. Its selected columns exclude email, body
 measurements, goals and diary fields. `social_can_view_profile` enforces the
 viewer's block and report rules. The social RLS tests exercise those boundaries
 as client roles.
@@ -2686,7 +2807,10 @@ It never joins anyone to the feed itself. Auto post foods does, and is now on
 by default (see "News announcements"), so for most accounts the first logged
 meal joins them and their workouts follow; the announcement's feed page says so. A
 failed automatic post (budget spent, profile under review) never fails the save.
-A workout can also be shared by hand from its page, which opens the composer
+An account with no name is skipped rather than joined: Sign in with Apple that
+shares neither a name nor an email leaves `display_name` empty, the feed refuses
+such a profile (`social_profiles_name_present`), and joining it from the
+`food_logs` trigger refused every meal it tried to save. A workout can also be shared by hand from its page, which opens the composer
 with the workout's preview, or edited there once posted.
 
 A profile is one grid, meals and workouts together and newest first. A whole
@@ -3011,6 +3135,255 @@ explain why the equality key precedes chronological range keys. Supabase's
 covers indexed policy predicates, auth helpers and explicit privileges. These
 support the query and access-control choices; they do not establish this app's
 capacity without measurements.
+
+---
+
+## Groups
+
+Up to ten friends see each other's day of food on one board, so the Groups tab
+is an accountability tool rather than a second feed. It took the tab that
+Workouts had (see [Workouts](#workouts)), and the tab's icon carries the count
+of pending invites.
+
+### The board reads the diary; it copies nothing
+
+A group stores membership, invites, reactions, nudges and chat. It never stores a
+meal. `group_board` (in `schemas/97_groups.sql`) reads each member's entries for the
+day from `food_log_details` by owner and date, so an edited portion, a deleted
+entry or a new photo shows on every board at once, and leaving a group takes
+nothing with it. The function is a definer function that checks membership
+itself: `food_logs` RLS stays owner-only, because widening it for groups would
+widen it for everything. What it returns is the board's narrow set of fields,
+never a note, a goal or a body measurement.
+
+Every group table is closed to clients (`revoke all`, RLS on). Reads and writes
+are RPCs: `my_groups`, `my_group_invites`, `group_invite_count`,
+`public_groups`, `group_board`, `group_messages`, `group_details`, and the write
+functions beside them in `51_groups.sql`. Each answers jsonb shaped for one
+screen; `src/data/groups.ts` types it by hand. The board answers for the last
+sixty days and no further, so joining a public group does not open a stranger's
+whole diary history.
+
+A block holds inside a group. The two people are left off each other's board,
+food and all, and neither can react to, nudge or push the other. Their messages
+are hidden from each other. Joining a group the other is in stays allowed, so a
+refusal cannot reveal the block.
+
+Only the list of groups and the invite count are written to the persisted query
+cache (`lib/query.ts`). Boards, chats and settings are other people's meals and
+words, which leaving a group or a block must take away, so they stay in memory
+and are dropped a few minutes after leaving the screen.
+
+### Breakfast, lunch and dinner come from the person's own clock
+
+The diary has no meal column (it was removed, see `30_food_logs.sql`), so the
+board places an entry by when it was eaten, against that member's own
+`meal_times`: the midpoints between their breakfast, lunch and dinner times split
+the day, so someone who lunches at 14:30 is not told their 11:00 plate was
+breakfast. Anything before 04:00, or logged back onto the day before, is dinner.
+Snacks join the nearest meal. When the time is wrong for what the food was, the
+owner moves it from the meal sheet; that sets `food_logs.board_meal`, which is on
+the entry, so the move holds in every group they are in. Several foods in one
+meal share a tile and swipe sideways inside it.
+
+### Reactions, nudges and chat
+
+- **Likes and dislikes** belong to an entry and a person (`group_reactions`), not
+  to a group: a friend in two groups has one opinion of a plate. A board counts
+  only its own members' reactions. Deleting the entry deletes them. Nobody
+  reacts to their own food.
+- **A nudge** is for an empty meal of a member whose own time for that meal
+  passed half an hour ago, on their today. The first nudge closes that meal for
+  everyone in the group for an hour (`group_nudges`), and the tile says who
+  nudged. Past days cannot be nudged.
+- **Chat** is one thread per group, as in any group chat, opened from the chat
+  bar under every day of the board. It opens on the newest 50 messages and
+  reads the 50 before as the member scrolls up (`group_messages` takes a
+  `created_at, id` cursor), with a chip where each day starts. A
+  message can be deleted by its author, reported (hidden from the reporter at
+  once, from everyone at three reports) or its author blocked, which follows the
+  rule that anything one user writes for another needs a report and a block.
+  The chat bar shows the unread count since the member last read the chat and
+  the latest message (`group_chat_summary`, read on its own rather than with
+  the board). The count stops at 100, so a member who never opens the chat
+  does not have the whole history read on every poll.
+- **A public group's name** is read by strangers, so it can be reported too, by a
+  long press in the public list: it leaves the reporter's list at once and
+  everyone's at three reports. Renaming the group clears the reports; saving
+  the same name again does not.
+
+### Membership
+
+Ten members, at most twenty groups a person, enforced by a trigger that locks
+the group row so two people cannot take the tenth seat together.
+`groups.member_count` is kept by the same triggers, so the cap, the lists and the
+public ranking read one column instead of counting rows. A full group
+withdraws its pending invites. Private groups are invite only; public groups are
+listed (fullest first) and anyone can join. An invite takes a handle, with or
+without its `@`, or an email address, which only finds an account that already
+exists. A handle that finds nobody says so, since handles are public; an email
+answers the same whatever is behind it, down to the id it returns (a made-up
+one when nobody was found), so the field cannot be used to learn whether an
+address has an account. That includes asking twice: an address that finds an
+invite already there changes nothing and answers with a made-up id too, since
+the stored id coming back a second time is exactly what a made-up one never
+does. It also includes an address followed by a handle: a handle takes over an
+invite sent to an address (its own id, on the sender's list, pushed), so the
+pair looks exactly like the handle alone and cannot tie the address to it. A
+handle invite is renewed at most hourly, and a renewal takes a new id. The push for an invite is sent after the answer, which carries no
+count, so neither how many phones it reached nor how long it took gives the
+account away. Someone blocked in either direction reads as nobody.
+Members see only the pending invites they sent themselves, and of those only
+the ones sent by handle (`group_invites.by_email`): an email invite listed would
+name whoever owns the address. The leader renames
+the group, switches it public or private, and removes members. A leader with
+company must name a successor to leave; the last member out deletes the group,
+and a deleted account hands its groups on through the same trigger.
+
+### The tab reopens on the last board
+
+Most people are in one group, so the tab goes straight back to the board it was
+on after a relaunch (`features/groups/store.ts`, kept per account in MMKV) until
+they tap back to the list. A group left elsewhere falls back to the list once
+`my_groups` has loaded. Days change by swiping the board or with the week strip
+under the header, the same strip Today uses, limited to the board's sixty days;
+each follows the other. Only the day on screen refreshes, every 30 seconds; the
+days either side are fetched once so a swipe lands on a drawn board. The chat
+is live while open (below), and the invite count refreshes every five minutes
+and whenever the tab is shown, since an invite also arrives as a push. The
+pager follows the selected date rather than a position, so midnight passing
+under an open board does not move it a day.
+
+### Live chat
+
+A group's chat has one private Realtime channel, `group-chat:<group>`, joined
+while its chat or its board is on screen and the app is in front. The two share
+it (`lib/realtime.ts` holds one channel per topic), so opening the chat from the
+board does not leave and rejoin. Everything else still polls.
+
+- **The chat** refetches the thread's newest page when a broadcast names a
+  message it does not have.
+- **The board's chat bar** rereads `group_chat_summary` on every broadcast: one
+  small read instead of the board with every member's day of food, one in
+  flight at a time with a burst ending in one more. Measured on a simulator
+  against the local stack, it redraws within a second of the message being
+  written. While the channel is not joined, a chat push reaching the open app
+  rereads it instead (`lib/groupChatPushes.ts`), and failing that it polls every
+  half minute. The board stops listening while the chat covers it, since the
+  count is being read away there and a reread would draw it back.
+
+- **Broadcast from the database, not Postgres Changes.** Triggers on
+  `group_messages` call `realtime.send` when a message is written, deleted
+  (once per statement and group, so a deleted account's months of messages are
+  a handful of broadcasts) or quarantined by its third report. Changes would
+  need `group_messages` opened to clients through RLS, which every groups table
+  deliberately is not, and would check that policy per listener per row; a
+  broadcast is authorised once, when the channel is joined.
+- **A broadcast carries message ids and nothing else.** The phone refetches
+  `group_messages`, which is where blocks, reports and quarantine are applied,
+  so a body never reaches a device that must not read it, and a member removed
+  while the chat is open hears ids it can no longer turn into anything. A
+  removed id is taken out of the thread in place, with no request.
+- **Who may listen** is one policy on `realtime.messages`:
+  `private.group_chat_listener(realtime.topic())`, true only for a member of the
+  topic's group, and false rather than an error for anything malformed. There is
+  no insert policy, so a client cannot broadcast on the topic. `db diff` does not
+  see policies on `realtime.messages`, so the migration restates it by hand.
+- **One channel and as little socket as possible** (`lib/realtime.ts`). Screens
+  share a channel per topic; the last one out leaves it, and a topic asked for
+  again while its leave is in flight waits for it, since supabase-js would hand
+  back the leaving channel. A leave the server answers with an error leaves its
+  channel listed for good, so that topic polls instead of joining it again.
+  Backgrounding (not `inactive`, which is only the notification shade passing
+  over) leaves every channel and then closes the socket, including one still
+  lingering after the last chat closed; coming back rejoins. supabase-js
+  otherwise keeps an empty socket for 50 seconds, which `lib/supabase.ts` cuts
+  to 5.
+- **Catching up.** Each join, first or after a drop, refetches the thread once,
+  since nothing sent while the channel was down will be heard. That is a second
+  read on opening a chat, kept on purpose: the first one may have been taken
+  before the join. A fetch already on its way lands first rather than being
+  restarted, which would hold back the first paint. Refetch on focus is off,
+  since coming back rejoins and the join reads. A join the policy refuses (a
+  member removed mid-chat) is not retried, and a channel the server closes is
+  rejoined after three seconds.
+- **Polling is the net, not the mechanism.** Joined, the thread is still read
+  once a minute, for what no message write announces (another member blocking
+  the viewer, a renamed author) and for a socket that died without saying so.
+  Not joined, it is read every 5 seconds. Each read is the newest page laid
+  over what has been scrolled through (`mergeNewest`), so a long scroll back
+  costs nothing on the next refetch; a newest page that does not reach anything
+  held means a gap, and the thread starts again from that page. Measured on a simulator
+  against the local stack: no requests while a joined chat sat idle for 20
+  seconds, and one per message from someone else.
+- **The sender's own message** joins the cached thread the moment
+  `send_group_message` answers, so "Sending" clears without waiting for a
+  refetch. Its broadcast can beat that answer, so a broadcast is ignored while
+  one of the viewer's own sends to the thread is still on its way: the send
+  refetches the thread when it lands, which picks up anything else too. One
+  read per message sent, either way. Deleting or reporting takes the message out
+  in place and rereads only the chat bar, whose preview it may have been.
+- **pgTAP cannot watch `realtime.messages`.** It is partitioned by day, the
+  Realtime server makes the partitions, and CI runs Postgres alone, where
+  `realtime.send` would swallow the failure as a warning. `36_groups` replaces
+  `private.group_chat_broadcast` inside its transaction to record what would
+  have been sent. Locally, a stale Realtime container has stale partitions too:
+  `docker restart supabase_realtime_ricecal` makes today's.
+
+### Push: the app's first
+
+Nudges, invites and chat messages are the only notifications a server sends. The phone hands
+its Expo push token to `register_push_token` on each launch where notifications
+are already allowed, and asks for permission when someone creates or joins a
+group, never at launch. The nudge or invite RPC writes first and returns an id;
+the app then calls the `groups` edge function with it, which asks Postgres for
+the recipient's devices (`group_push_targets`, service role only), marks the row
+sent so a retried call sends nothing, and posts to Expo in the recipient's
+language. A failed push costs the push and nothing else. Tokens Expo reports as
+`DeviceNotRegistered` are forgotten. A tap opens the Groups tab, on the group's
+board for a nudge and on the list for an invite.
+
+A chat message goes the same way: `send_group_message` returns its id and the
+app sends it as kind `message`. `group_message_push_targets` marks the message
+`pushed_at`, refuses one that is quarantined or older than ten minutes, and
+answers every other member's devices, leaving out anyone blocked either way.
+The push carries the body, so this is where blocks are applied to it, as
+`group_messages` does for the thread. It needs no translated copy: the group is
+the title and "Name: message" the body, as messengers write it. Its `data.chat`
+makes the tap open the group's thread over its board with the keyboard up
+(`reply=1`; a chat opened by hand leaves it down), and no banner shows while
+that group's chat or board is on screen (`showingGroupChat`).
+
+**Nobody is pushed a message they watched arrive.** The groups function answers
+a chat message at once and sends its push three seconds later, in the
+background (`EdgeRuntime.waitUntil`), and `group_message_push_targets` leaves
+out any member whose `chat_read_at` is at or after the message. An open chat,
+on top and with the app in front, marks the chat read as each message from
+someone else lands (`useReadAsItArrives`), which measured under 100 ms after the
+write against the local stack, so a member reading along, or one who leaves the
+app right after, is not buzzed; one who was away is, three seconds late. Opening
+a group's chat also clears that group's chat notifications from Notification
+Center (`dismissGroupChatNotifications`), as a messenger does. The delay costs a
+few seconds of an idle edge worker per message and no CPU.
+
+Muting is per group, one switch (`group_members.notify`) for nudges and chat
+together, in the group's settings and as the bell at the top right of the chat.
+Invites always arrive, since the invitee is not a member yet.
+
+A simulator debug build gets a sandbox APNs token, which Expo's production
+credentials reject (`BadDeviceToken` in the receipt). Delivery is tested on a
+device build; on a simulator, `xcrun simctl push` with a payload whose `body`
+carries `{"kind":"group","groupId":…}` exercises the banner and the tap.
+
+### Photos
+
+A member's meal photo is signed for a fellow member through the social read
+path: `social_photo_claims` also returns diary photos of anyone the caller shares
+a group with, from the last sixty days (the pager's reach), unless either has
+blocked the other. The owner is read from the key (`meals/<owner>/…`, which the
+photos function checks again), so the lookup goes through the diary's owner index
+instead of scanning `food_logs` for the key on every feed photo. Those photos have no recorded ETag, so each signature costs
+the signer a HEAD on R2. The viewer's own photos are signed as their own.
 
 ---
 
@@ -3722,13 +4095,17 @@ separate maintenance decision because it locks and rewrites the table.
 
 ## Workouts
 
-The second tab, between Today and the feed: gym sessions logged set by set,
-the way Hevy and Strong do it, plus the routines they start from and
-the records they set. Today is what went in; Workouts is what was done, which is
-why the two sit side by side.
+Gym sessions logged set by set, the way Hevy and Strong do it, plus the
+routines they start from and the records they set. Today is what went in;
+Workouts is what was done. It was the second tab until Groups needed the room;
+now it is a page, opened from a small tile beside the water card on Today and
+from the first row of Settings on Me. Its URL stays `/workouts`, so the Live
+Activity, the watch and old notification links still land on it. The minimised
+bar of a running workout floats over the tabs only; the page has its own Resume
+button.
 
 ```
-app/(tabs)/workouts.tsx       streak, start button, routines, history, and a
+app/workouts.tsx              streak, start button, routines, history, and a
                               month calendar view
 app/workout/active.tsx        the logger
 app/workout/finish.tsx        name, notes, start and end times, save
@@ -3803,9 +4180,10 @@ any other.
   Pulldown" is what the machine is called in every gym the app is used in. The
   words around the names (muscles, equipment, categories) are translated.
 - **The tracking decides the columns**: weight and reps, reps, added weight,
-  assistance, time, distance and time, weight and distance. Volume counts only
-  the two where the weight is load; an assisted pull-up's weight is the machine
-  helping, and multiplying it by reps would make the easiest set the biggest.
+  assistance, time, distance and time, weight and distance. Volume counts the
+  three where something is lifted, at what was lifted (the set's load, below):
+  an assisted pull-up's figure is the machine helping, and multiplying that by
+  reps would make the easiest set the biggest.
 
 **The drawings** are 320 px WebPs in `apps/mobile/assets/exercises/`, one per
 id, registered in the generated `exerciseArt.generated.ts`. A test fails when an
@@ -3831,6 +4209,14 @@ The brief pins the outfit as well as the style. With only the reference to go
 on, Zumba came back in team colours, which read as a different person in a
 library that is otherwise one figure; it was redrawn once the brief said brown
 tank top and charcoal shorts in words.
+
+Lying and hanging poses are where the anatomy goes wrong: a bench press came
+back with one leg and an arm growing out of the chest, a skullcrusher with a
+third dumbbell. Their briefs now spell out both legs visible, each arm rising
+from its own shoulder, exactly two dumbbells. Some poses also need the camera
+named. A reverse plank seen from the side has the same outline as a push-up,
+so the brief asks for a high three-quarter view that shows the chest facing
+up.
 
 **Templates** (`templates.ts`) are 19 standard programs in seven groups: two
 beginner full-body days, push/pull/legs, upper/lower, 5×5, one muscle a day,
@@ -3983,6 +4369,30 @@ the same flag on every one of 5,000 sets as before.
   years of months is summed into years on the phone (`periodsFor`). The ranges
   past three months are Pro, gated in the client alone like the Trends ranges:
   they are reads of the user's own data.
+- **A body weight movement lifts the body.** A set's load (`load_kg` in
+  `workout_set_values`) is its weight for `weight_reps`, the body weight plus
+  what was added for `weighted_reps`, and the body weight less the help for
+  `assisted_reps`; volume is load times reps. An assisted pull-up used to count
+  nothing, and a weighted one only the plate on the belt, so a 70 kg lifter's
+  pull-ups weighed less than a 20 kg curl. The body weight is the weigh-in on or
+  before the workout's day, or the first after it for a workout logged before
+  any (an import), looked up only for those two trackings. Without one a
+  weighted set counts what was added and an assisted one has no load. The
+  typed figure (`weight_kg`) is unchanged, and so is the weight record, which
+  stays the plate on the belt: the body is in the volume, not in the heaviest.
+  The phone does the same sum with the latest weigh-in (`setLoad` in `model.ts`)
+  for the live total and the live volume record. Being a lookup rather than a
+  stored figure, it reprices the whole history the same way, so the first
+  workout after the change is not a volume record over every one before it;
+  the volume records already standing on these movements are scored again with
+  the body in them, and where the body weight moved, a few can land on another
+  workout. On a
+  synthetic three-year history (15,000 sets, three fifths of them pull-ups and
+  dips) the history page went from about 120 to 145 ms. A weigh-in, typed or
+  deleted, refetches the workout figures, since it can reprice a past day. A
+  workout post's volume on the feed now carries the author's body weight in
+  it; the feed shows no reps or sets' figures beside it, so the weight cannot
+  be worked back out of it.
 - **The muscle split** spreads working sets over muscles by each exercise's
   split. The counting is in the database (`workout_exercise_totals`); the split
   is in the app, with the catalogue it belongs to. It is shown as each body
@@ -4012,12 +4422,55 @@ id, as every save does.
 ### Workouts and the budget
 
 A saved workout carries a `kcal` estimate: each movement's MET from the
-Compendium of Physical Activities, **minus one**, times body weight, times time.
-Timed sets are priced at their own MET; the rest of the session at the average
-MET of the lifting. Minus one because Apple Health's active energy excludes what
-the body would have burned sitting still, and a figure that included it would
-be counted twice the moment it met the day's resting energy. No weight on file
-means no estimate rather than a guessed one.
+Compendium of Physical Activities times body weight times time, **less the
+person's own resting energy** over the same time. Timed sets are priced at their
+own MET; the rest of the session at the average MET of the lifting, capped at
+6 (vigorous resistance training, Compendium 02050). The rest comes off because
+Apple Health's active energy excludes what the body would have burned sitting
+still, and a figure that included it would be counted twice the moment it met
+the day's resting energy. It is the Mifflin-St Jeor rate the budget is built on,
+not one MET, because one MET overstates most adults' resting rate by about a
+third (Byrne et al. 2005) and took too much away; with no sex, height or birth
+date on the profile, one MET (1 kcal per kg per hour) stands in. The cap is
+there because the lifting is priced over the whole session, rests included,
+while a rep movement's own MET can be a continuous one: pull-ups and burpees
+are vigorous calisthenics at 7.5 to 8, and a pull-up day was priced as an hour
+of burpees. The cardio entries follow the 2024 Adult Compendium (Herrmann et al.)
+where it has a matching code. No weight on file means no estimate rather than a
+guessed one.
+
+**One figure, from one place** (`workoutBurn` in `features/workouts/burn.ts`).
+The logger shows the burn so far along the foot of its figures card, beside a
+watch's heart rate, under a hairline in the same white card (a tinted band read
+as a second card): one quiet line by default, since the sets are what the
+screen is for, and opened in full with a tap (the choice is kept per phone in
+`bodyFiguresOpen`). The history cards on the Workouts page show the saved burn
+as a chip beside the duration, whether or not Health counted it, since that
+list is a record of training rather than the budget, the finish screen shows what
+will be saved, and the save records the same number. While the Apple Watch app
+records the workout that figure is the watch's, streamed with the heart rate;
+otherwise it is the estimate. Never both, and never the estimate while the
+watch records: the watch's copy is the one Health keeps, so an estimate on
+screen would change at the finish. Until the watch's first figure arrives the
+logger shows a dash and the finish screen leaves the burn out. A figure
+streamed from the watch also stops the phone writing a Health copy of its own,
+even before the watch's `recording` command has landed. An ⓘ beside the label
+says where it came from ("Estimated from your weight and sets, as there is no
+heart rate", or "Measured by your Apple Watch"), in a bubble that opens only
+when the ⓘ itself is tapped (`InfoTip` in `src/ui`). It floats in a transparent
+modal, so it moves nothing and no card clips it, and closes on any tap or after
+six seconds. The figure around it is not a button: opened by any touch, it was
+opened by thumbs on their way to the sets.
+
+**A save asks the budget to look again.** The automatic health sync runs on
+foreground, at most once a minute, so a workout saved to Health used to show its
+burn on Today beside a ring that had not moved until the app was next opened.
+`requestHealthSync` runs a pass straight away (bypassing the throttle, and once
+more after a pass already reading) whenever this phone writes or removes a
+workout's Health copy, and once when the watch's trace arrives, which it sends
+after saving its own copy. The watch's samples reach the phone's Health by
+Apple's own sync, separate from the trace, and most arrive during the session;
+any that lag are picked up by the next foreground pass.
 
 **Nothing in the budget reads that column.** The budget hears movement only
 from the health store (see "Activity and health"), so a workout reaches the day
@@ -4079,12 +4532,12 @@ reason.
 
 While a workout runs, the lock screen and the Dynamic Island show its clock,
 its name, sets done, the next set, and the rest countdown with a bar. Tapping it
-opens the logger (by way of the Workouts tab, below), not through
+opens the logger (by way of the Workouts page, below), not through
 `ricecal://widget/...`, which is how a home-screen widget tap is counted.
 
 - **A tap opens `ricecal://workout/resume`**, which `app/+native-intent.tsx`
   rewrites: with the app running, to the logger; on a cold launch, to
-  `/workouts?resume=1`, and the Workouts tab pushes the logger once it has
+  `/workouts?resume=1`, and the Workouts page pushes the logger once it has
   mounted (once per launch). iOS often kills the app while the phone is locked
   between sets, and a cold launch straight at `/workout/active` built a stack
   with the logger and nothing under it: minimise went nowhere, and the tabs
@@ -4099,6 +4552,20 @@ opens the logger (by way of the Workouts tab, below), not through
   is compiled into both the module pod and the extension, because ActivityKit
   matches an activity to its view by the attributes type.
   `NSSupportsLiveActivities` is set by `plugins/withWidgets.js`.
+- **It shows the exercise being done, in its own drawing**, on a light tile at
+  the card's leading edge and in the island, rather than the app's dumbbell, which
+  read as an emoji standing in for the workout. The extension cannot read the
+  app's WebPs, so `withWidgets.js` makes 96 px PNGs of them into
+  `Exercises.xcassets` at prebuild (`plugins/exerciseArt.js`, which the watch's
+  80 px ones come from too), and adds the catalog to the target by name, so a
+  project made before it gets it without `--clean`. The content state names the
+  exercise (`exerciseId`); a custom exercise has no drawing and keeps the
+  dumbbell. A lock screen activity is cut at 160 points, so the card is one
+  row of drawing, name and clock, a hairline, the next set with its tick, and
+  the rest band only while one runs. The expanded island stops growing sooner,
+  so its lower row is the next set or, during a rest, the rest alone: both
+  stacked pushed the rest off its foot. Its regions sit 10 points in from the
+  edges, where at 4 the curve clipped them.
 - JS calls `startWorkoutActivity`, which updates the activity when one is
   already up, and `endWorkoutActivity` from `useWorkoutEffects`, mounted in the
   tabs layout and driven by the stored document, so it is right after the app
@@ -4204,7 +4671,18 @@ empty workout is started on the phone, where the exercise library is.
   for a custom exercise. The phone's 320 px WebPs are 4.9 MB, too much for a
   watch, so `withWatch.js` makes 80 px PNGs of them with `sips` into the watch's
   asset catalog at prebuild (about 2 MB), as `exercise-<id>`, and skips any whose
-  source has not changed.
+  source has not changed (`plugins/exerciseArt.js`).
+- **The crown turns a figure a step at a time, and shows the steps.** The box
+  being turned is a small wheel: the figure, with the step before it faded above
+  and the step after faded below, cut by the box's edge. The crown reports every
+  fraction of a turn and not only its detents, so the figure used to run through
+  41.37 and 41.62 on its way to 42; each value is now snapped to its step (half
+  a kilogram or a pound, a rep, five seconds, fifty metres). An assisted or
+  weighted set's unit reads `−kg` or `+kg`, as the phone's column does, and the
+  exercise's list writes its sets the same way.
+- **A rest that runs out says so** for a moment over the set page ("Rest
+  complete", a tick and the next exercise), beside the tap on the wrist, and
+  goes by itself.
 - **The set page's last row is ‹ ✓ ›.** The arrows step to the previous and next
   set in the order the workout is done (a superset's rounds included), and the
   tick completes the set on screen; on a completed set it is an outline that
@@ -4311,6 +4789,27 @@ the watch measured (`watch.kcal`) instead of replacing it with an estimate.
   from earlier put half an hour of another workout's pulse at the head of a
   two-minute one. Nothing starts a new session while recovery is still being
   asked about, since HealthKit allows one and the second start lost the first.
+- **A recovered session is given its data source again.** HealthKit hands back
+  the session and its builder but not the builder's live data source, and
+  Apple's own recovery code sets it again. Without it no reading arrived for
+  the rest of the workout: the heart rate vanished halfway through whenever
+  watchOS relaunched the app mid-session, from the wrist and from the phone's
+  logger, and the energy stopped counting. The simulator never showed it,
+  since its made-up pulse does not come through the builder.
+- **A session HealthKit ends under the app is saved as far as it got.**
+  Another workout app taking the sensor ends the session without this app's
+  say; held on to as if nothing had happened, it read as recording and
+  measured nothing. Now the watch finishes it there and then, as a finish
+  would: its Health copy up to that moment, and the trace to the phone. It is
+  not started again for that workout (`closedEarly`): a second session would
+  be a second Health workout over the same hour, and its trace would replace
+  the first. Thrown away instead, nobody saved the workout to Health at all,
+  since the phone, told the watch was recording, writes no copy of its own. A
+  `didFailWithError` alone is only logged; it is the `.ended` state that says
+  the session is over.
+- **The reading on the wrist goes once it is fifteen seconds old**, as the
+  phone's does, on a clock of its own (`liveHeartRate`), so a sensor that
+  falls silent does not leave its last figure looking live.
 - **Health access is asked for through the phone.** A watch app that is not
   independent of its iPhone app can have its request shown on the iPhone, and
   iOS then asks the phone app's delegate to hand it on
@@ -4324,11 +4823,16 @@ the watch measured (`watch.kcal`) instead of replacing it with an estimate.
 
 - Live: while the phone is reachable the watch sends its latest reading every
   five seconds, and the logger shows it beside the clock (`useWatchPulse`), for
-  as long as readings keep coming. It is a glance and is not kept. Its heart
-  (`LiveHeart`) beats at the figure beside it, a double thump with a ring
-  spreading behind, so the number reads as live rather than typed in. A phase
-  advanced each frame on the UI thread drives it rather than a repeating
-  timing, so a new reading changes the tempo without restarting a beat midway.
+  as long as readings keep coming. The same message carries the active energy
+  the session has measured so far (`kcal`, a running total), which the logger
+  shows as the workout's burn (`useWatchEnergy`). Either can be missing: energy
+  is measured with heart rate refused, and a heart rate is only resent while it
+  is under fifteen seconds old, so a loose strap does not keep looking live.
+  It is a glance and is not kept. Its heart (`LiveHeart`) beats at the figure
+  beside it, a double thump with a ring spreading behind, so the number reads
+  as live rather than typed in. A phase advanced each frame on the UI thread
+  drives it rather than a repeating timing, so a new reading changes the tempo
+  without restarting a beat midway.
   It holds still under Reduce Motion and pauses while another screen covers the
   logger.
 - At the end the watch sends a trace (`HeartTrace`): one figure every five
@@ -4373,11 +4877,13 @@ complications, and a watch app that works with no iPhone app at all
 routines). Once a workout has started, the phone can be in a locker: presses
 queue and arrive when it is back.
 
-**The simulator.** The watchOS simulator measures energy for a strength session
-but no heart rate at all, so a simulator build feeds the session a made-up pulse
-(`simulatePulse` in `WorkoutRecorder.swift`, compiled out of device builds).
-Everything after the sensor (the reading on the wrist, the logger, the trace,
-the chart) can then be tried there. "Driving the Apple Watch app" in `AGENTS.md`
+**The simulator.** The watchOS simulator measures no heart rate at all, and the
+active energy it records for a strength session is always 0 (no motion; only
+resting energy comes through), so a simulator build feeds the session a made-up
+pulse and a steady burn of about 5 kcal a minute (`simulatePulse` in
+`WorkoutRecorder.swift`, compiled out of device builds). Everything after the
+sensor (the reading on the wrist, the logger and its burn, the trace, the
+chart) can then be tried there. "Driving the Apple Watch app" in `AGENTS.md`
 has the rest.
 
 **Releasing it.** Additive: one migration (`20261016130531_workout_heart_rates.sql`)
@@ -4401,6 +4907,14 @@ The rest is an end time in the document. `useWorkoutEffects` books a local
 notification for that moment, because a suspended app cannot post one when the
 time comes, and with the app open fires a haptic and clears the rest instead.
 Adjusting or skipping rebooks or cancels it.
+
+**With the logger in front, a rest that runs out shows "Rest complete"** for a
+moment (`RestComplete.tsx`): a tick, the words and the exercise next, over the
+sets, closing by itself after a second and a half with a hairline that runs
+down to say so. It takes no touches, so a thumb already on its way to the next
+tick lands on the set. `useWorkoutEffects` announces it at the haptic, so it
+appears exactly when the buzz does: not for a rest that ended in the background,
+and not with another screen over the logger.
 
 **On Android the rest notice needs two things iOS does by itself.** The sound
 belongs to the channel rather than to the notification, so "Rest is over" has a
@@ -4547,7 +5061,14 @@ Strong collapse them too. The rows are a fixed height so the arithmetic of
 where each lands runs on the UI thread, and the order is applied once, on
 Done. **A set swipes left to delete.** `SwipeRow`'s tap recogniser only runs
 while a row is open or has its own tap, because over a row of fields and
-buttons it took their touches.
+buttons it took their touches. A short swipe uncovers Delete as before; one
+carried past 55% of the row, and never less than the button and 64 points more
+(`fullSwipe`), deletes without the second tap, with a
+tick under the thumb where it commits. The red follows the finger across, the
+row slides out and then folds its height away before the set leaves the
+document, so the rows under it close up rather than jump. There is no Undo:
+a set is a few figures typed again in seconds. Today's meals keep the two
+steps, since a meal deleted by accident is not.
 
 **RPE is in the set's menu, not a column.** Most sets are never rated, and a
 column would take width from the weight and reps on every one. Tapping the set
@@ -4777,6 +5298,16 @@ only when it is about to post. If pages slow down past that, store each
 workout's record count at save rather than narrowing the view, and rescore the
 later workouts of the same exercises whenever an earlier one is saved, which an
 import always is.
+
+**The body weight load** (`20261019113048_workout_body_weight_load.sql`)
+replaces `workout_set_values` and `workout_set_details` in place, appending
+`load_kg`, so nothing that reads them is dropped and no column an older app
+reads moves. An older app reads the new volume like the new one does; its own
+live total, before the save, still counts an assisted set as nothing and a
+weighted one as the plate alone, and the saved workout then shows the bigger
+figure. `db diff` wanted to drop and recreate both views, `workout_summaries`
+and `workout_history`, whose grants it does not restate; the migration was cut
+back to the two replaces, and diffing again reports nothing.
 
 Additive end to end. One migration (`20261016025548_workouts.sql`) adds the
 workout enums, tables, views and functions, three `user_settings` columns with
@@ -5162,7 +5693,8 @@ sides can see them.
 
 ### Reminders
 
-**All local.** A meal reminder is "every day at 08:00 in the user's own
+**All local.** (Group nudges, invites and chat messages are pushed by a server; see
+[Groups](#groups).) A meal reminder is "every day at 08:00 in the user's own
 timezone", using Expo's `DAILY` trigger on both platforms. `CALENDAR` is
 iOS-only: Android rejects it and stops scheduling the remaining reminders. No
 server, no push token, nothing to deliver if the phone is offline at breakfast.
@@ -5686,19 +6218,20 @@ events, 815 weekly users, 338 installs) ×4.3.
 | --- | --- | --- |
 | The 48 decision events | 230,000 | Mixpanel's week minus its SDK events, ×4.3. `Log Sheet Opened`, `Food Searched`, `Meal Logged` and `Food Picked` are three quarters of it |
 | Workout events (`Workout Started`, `Finished`, `Discarded`, `Routine Saved`, `Workouts Imported`) | 4,000 | New with the Workouts tab, so no history: about 60 workouts a day at launch, each a start and an end, plus routine saves. An import is one event however many workouts it brings |
+| Groups (`Group Created`, `Joined`, `Invite Sent`, `Nudge Sent`, `Reaction Set`, `Message Sent`, and `Notification Opened` for a group push) | 15,000 | New with the Groups tab, so no history: assumes 300 people in groups, each reacting or chatting about once a day, plus rare creates, joins, invites and nudges (a nudge is capped by its hourly cooldown per meal). Chat messages push every other member with notifications on, so allow about one tapped chat push per member per day on top |
 | News (`Announcement Shown`, `CTA Tapped`, `Dismissed`, `Auto Post Toggled`) | 3,000 | One launch card per account per announcement (~1,500 monthly accounts, a shown and a close each), plus the News list and the rare switch on Edit profile |
 | `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
 | `First App Open` | 1,500 | ~340 installs a week |
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
-| **Total** | **~257,000 (26%)** | Room for four times today's audience |
+| **Total** | **~272,000 (27%)** | Room for three and a half times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
 | Error tracking (`$exception`) | 100,000 exceptions | Autocaptured crashes and errors, plus the app's caught `reportError` calls |
 | Session replay | 2,500 mobile + 5,000 web recordings | App ~2,200 (20% of first-day launches, 4% of later ones); website all sessions while it gets a few hundred visits a week |
-| AI observability (`$ai_generation`) | 100,000 events | One per OpenRouter request: a scan makes 1 to 4, a correction 1, a recipe 1 to 2. Roughly 15,000 to 25,000 |
+| AI observability (`$ai_generation`) | 100,000 events | One per OpenRouter request: a scan makes 1 to 4, a correction 1, a recipe 1 to 2, and a call Haiku fails adds one for the Qwen fallback. Roughly 15,000 to 25,000 |
 | Feature flags | 1,000,000 requests | Zero while no flag is active; then about one request per launch |
 
 Rules that keep it there: no `$screen` events, lifecycle events, autocapture or
@@ -5717,10 +6250,10 @@ eligible for delivery; its presence here is not proof of ingestion or billing.
 
 | Surface / operation | Definitions | Destinations / counting rule |
 | --- | --- | --- |
-| Native app custom events | 59 | All 59 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
+| Native app custom events | 65 | All 65 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
 | Website decisions | 6 | Same PostHog project (page views as `$pageview`); five namespaced GA4 events plus manually managed `page_view` in the shared property |
 | Native screen views | 0 | No `$screen` or `screen_view` emitter; Firebase automatic screen reporting is disabled. Session replay shows navigation |
-| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 59 custom app definitions |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 65 custom app definitions |
 | Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
 | Per-install engagement events | 2 | `First App Open` once per install and `Daily App Open` once per local day; every other event is repeatable product use |
 
@@ -5763,7 +6296,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Health Connected | ricecal_health_connected | provider: string; granted: boolean; days: number | `src/data/health-sync.ts` | Connection/permission flow returns; each successful flow result, including granted false. Background health sync is excluded. |
 | Health Disconnected | ricecal_health_disconnected | provider: string | `src/data/activity.ts` | Health disconnect mutation succeeds; each success. |
 | Reminder Toggled | ricecal_reminder_toggled | meal: string; enabled: boolean | `src/data/settings.ts` | Meal reminder setting mutation succeeds; each successful write. |
-| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' | `src/features/settings/useReportLinks.ts` | Recognized weekly/monthly report notification response is handled; each tap. Cold-launch response is cleared after reading; meal reminders are excluded. |
+| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' &#124; 'group_nudge' &#124; 'group_invite' &#124; 'group_message' | `src/features/settings/useReportLinks.ts` | Recognized weekly/monthly report or group push response is handled; each tap. A chat push (`data.chat`) is `group_message`. Cold-launch response is cleared after reading; meal reminders are excluded. |
 | Weight Logged | ricecal_weight_logged | none | `src/data/weight.ts` | Manual weight-log write succeeds; each success, without its value. Health-imported readings are excluded. |
 | Recipe Saved | ricecal_recipe_saved | is_new: boolean; ingredients: number; servings: number | `src/data/recipes.ts` | Recipe save succeeds; each new/edit save, with ingredient/serving counts only. |
 | Recipe Drafted | ricecal_recipe_drafted | source: 'photo' &#124; 'text'; outcome: 'drafted' &#124; 'empty' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled' | `src/data/recipes.ts` | Photo/text drafting reaches its outcome; each attempt, including refusals, empty and failure. It does not prove a recipe was saved. |
@@ -5773,6 +6306,12 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Author Blocked | ricecal_author_blocked | none | `src/data/moderation.ts` | Blocking an author succeeds; each success, without the author identity. |
 | Review Opened | ricecal_review_opened | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Review period resolves; once per resolved period in a mounted route. Locked reviews count before redirecting; this is not a read-completion event. |
 | Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Card share helper reports sent; each card send. Android share intent cannot confirm completion. |
+| Group Created | ricecal_group_created | visibility: 'private' &#124; 'public' | `src/features/groups/Home.tsx` | `create_group` returned a group id; each group made. |
+| Group Joined | ricecal_group_joined | via: 'invite' &#124; 'public' | `src/features/groups/Home.tsx` | `respond_to_group_invite` with accept, or `join_group` from the public list, returned; each join. Declines send nothing. |
+| Group Invite Sent | ricecal_group_invite_sent | by: 'handle' &#124; 'email' | `src/features/groups/InviteSheet.tsx` | `invite_to_group` answered; each invite. An email counts whether or not it found an account, since the app cannot tell; a handle that finds nobody sends nothing; the push is separate and best effort. |
+| Group Nudge Sent | ricecal_group_nudge_sent | meal: 'breakfast' &#124; 'lunch' &#124; 'dinner' | `src/features/groups/Board.tsx` | `nudge_group_member` accepted the nudge; each nudge. A nudge refused for the hourly cooldown sends nothing. |
+| Group Reaction Set | ricecal_group_reaction_set | reaction: 'like' &#124; 'dislike' | `src/features/groups/MealSheet.tsx` | A like or dislike tapped on a member's food; each set, before the write settles. Clearing a reaction sends nothing. |
+| Group Message Sent | ricecal_group_message_sent | none | `src/features/groups/Chat.tsx` | `send_group_message` returned; each message. Never carries the text. |
 | Meal Shared | ricecal_meal_shared | picture: 'photo' &#124; 'drawing' | `app/log/food/[id].tsx` | Meal picture share helper reports sent; each send. Android share intent cannot confirm completion. |
 | Workout Started | ricecal_workout_started | source: WorkoutSource; exercises: number | `src/features/workouts/start.tsx` | A workout is opened on the logger from empty, a routine, a template, or a past workout repeated; once per start, including one that is later discarded. `source: past` appears only in data from builds that still had "Log a past workout". |
 | Workout Finished | ricecal_workout_finished | exercises: number; sets: number; duration_min: number; from_routine: boolean; saved_to_health: boolean; queued: boolean | `src/features/workouts/WorkoutForm.tsx`<br>`app/workout/finish.tsx` | Save of a finished workout returns, either from the server or into the phone's outbox (`queued: true`); once per save. Editing a saved workout later emits nothing, and a queued save landing later is not a second event. |
@@ -5807,7 +6346,7 @@ that instant.
 
 | Contract | PostHog | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 59 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 65 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
@@ -5860,6 +6399,7 @@ user text. Extend the source type and these tables together when its domain chan
 | `cta` / `AnnouncementCta` | `edit_profile`, `personalisation` | Where a page's button leads, named for analytics; a tap, not a changed setting |
 | Announcement `via` | `done` ("Got it" on the last page), `close` (cross, scrim or back gesture) | Closing without a page's button |
 | Announcement `page` | The page, from 1, that the button was tapped or the card closed on | How far people read is `Dismissed` broken down by `page`; `done` is always the last page |
+| Group `visibility`, `via`, `by`, `meal`, `reaction` | `private`/`public`; `invite`/`public`; `handle`/`email` (an email address typed into the invite field); `breakfast`/`lunch`/`dinner` (the board column, not the diary's `Meal`); `like`/`dislike` | `src/lib/analytics/events.ts`; never a group name, a handle, an address, a food or a message |
 | Auto post `kind`, `enabled` | `foods` or `workouts`; the new switch value | Edit profile switches only; onboarding's default and the announcement's switch-on send nothing |
 
 ### Instrumented surfaces, paywalls and frequency gates
@@ -5883,6 +6423,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Automatic rating checkpoints | Crossing each 15-meal boundary; second unlocked review read, then each fifth read | Gates require five days since install, two since version change, at least 15 meals, three active days, 60 days since last ask and no ask on this version |
 | Manual rating request | App rating question requested manually | Bypasses automatic gates. Answers still update the cooldown; shown/answered is not a published store rating |
 | News announcements | `Announcement Shown`, then `CTA Tapped` or `Dismissed`, by `source` | Counted from `onShow`. `launch` is the newest card, once per account unless its seen write fails (then it is shown again on a later launch); `settings` repeats per open. The launch card skips the launch the tour is offered on, and the Pro nudge skips any launch with one due |
+| Groups | Created, joined, invite sent, nudge sent, reaction set, message sent | Each fires after the server accepted the write, except Reaction Set, which fires on the tap. Board views, day swipes and chat reads are not tracked |
 | Auto post switches | `Auto Post Toggled` by `kind` and `enabled` | Only the Edit profile switches. The onboarding default and the announcement's switch-on are writes, not events |
 
 ### Product reports and funnel definitions
@@ -5985,7 +6526,7 @@ is recording.
 | Native crashes | `nativeCrashes` (iOS signals and Mach exceptions; Android Java/Kotlin), `androidNdkCrashes` | Through `@posthog/react-native-plugin`, reported on the next launch. These reports carry no `app_variant` (the native layer sends them before JavaScript registers it), so tell an internal build's native crash apart by `$app_version` and `$app_build` |
 | Caught errors | `reportError(error, context)` from `src/lib/errors.ts` | Analytics provider failures (`analytics_provider`, `analytics_operation`); context is short scalars only |
 | Warnings | `reportMessage(text)` | The captcha diagnostics in `features/auth/turnstile.tsx`, sent with `$exception_level: warning` |
-| Requests that never got a response while the phone said it was online | `reportNetworkFailure` in `src/lib/network.ts`, called from the Supabase client's `guardedFetch` | Warning `[network] could not reach <host>`, once per host per launch, never while offline. Context: `network_path` (first three segments, no query string), `network_reason` (the platform's own text from the error Expo's `fetch` threw, native frame removed), `network_type`, `network_reachable` |
+| A host that stays silent while the phone says it is online | `reportNetworkFailure` in `src/lib/network.ts`, called from the Supabase client's `guardedFetch` | Warning `[network] could not reach <host>`, filed when a request sent after a lost one is lost too, with no answer from that host in between (`noteResponse`) and within five minutes. Once per host per launch, never while offline. Context: `network_path` (first three segments, no query string), `network_reason` (the platform's own text from the error Expo's `fetch` threw, native frame removed), `network_type`, `network_reachable`, `network_down_ms` (since the first lost request) |
 | Edge functions | Their own logs | The functions are not instrumented for errors; their model calls are, as AI events |
 
 A `before_send` hook sends an identical exception once per five minutes and no
@@ -6004,6 +6545,16 @@ nothing on the phone recorded why. Expo's `fetch` puts the platform's reason in
 the error it throws (`fetch failed: UnexpectedException: Could not connect to the
 server.` on iOS for a refused connection), so the phone knew whether it was DNS,
 TLS, a refused connection or a timeout; the warning keeps that answer.
+
+**Why one lost request is not enough.** Filed on the first lost request, the
+warning reached about one phone in six a day on 1.1.0, and in the sessions
+checked the app went on talking to Supabase straight after. iOS keeps
+connections open between requests, and after the app has sat idle or spent a
+while in the background it can send the next one down a connection the other
+end has dropped (`The network connection was lost.`); a request the app was
+suspended in the middle of fails the same way when it wakes. Requests that
+shared the dead connection fail together and confirm nothing, so the confirming
+request has to be one sent after the first failure.
 
 **Readable stacks need uploaded symbols.** `metro.config.js` uses
 `getPostHogExpoConfig`, which injects debug IDs into every bundle. The
@@ -6068,11 +6619,12 @@ scan's vision call, catalogue pick and nutrition estimate read as one trace.
 | Property | Value |
 | --- | --- |
 | `$ai_span_name` | What the call is for: `analyse_photo`, `describe_meal`, `pick_candidate`, `estimate_nutrition`, `interpret_instruction`, `read_recipe_photo`, `describe_recipe`, `review_recipe`, `suggest_meals`, `moderate_submission` |
-| `$ai_model`, `$ai_provider`, `$ai_base_url` | The OpenRouter model (`OPENROUTER_MODEL`), `openrouter` |
-| `$ai_input_tokens`, `$ai_output_tokens`, `$ai_cache_read_input_tokens` | From OpenRouter's `usage` |
-| `$ai_total_cost_usd`, `$ai_cost_passthrough` | OpenRouter's reported charge (`usage: { include: true }` on every call), not re-priced |
+| `$ai_model`, `$ai_provider`, `$ai_base_url` | The OpenRouter model the request named: `anthropic/claude-haiku-5.5` (`OPENROUTER_BYOK_MODEL`) or the Qwen fallback (`OPENROUTER_MODEL`), `openrouter` |
+| `$ai_input_tokens`, `$ai_output_tokens`, `$ai_cache_read_input_tokens`, `$ai_cache_creation_input_tokens` | From OpenRouter's `usage`: the cache pair is the system prompt read from or written to Anthropic's prompt cache (`prompt_tokens_details.cached_tokens` / `cache_write_tokens`) |
+| `$ai_total_cost_usd`, `$ai_cost_passthrough` | What the call cost us, not re-priced: OpenRouter's charge (`usage.cost`), plus, when our own key paid, what Anthropic bills directly (`usage.cost_details.upstream_inference_cost`), since under BYOK `cost` is only OpenRouter's fee |
+| `byok` | `usage.is_byok`: `true` when our Anthropic key paid. An `anthropic/` event with `false` means OpenRouter credits were spent on it, which the routing forbids |
 | `$ai_latency`, `$ai_http_status`, `$ai_is_error`, `$ai_error`, `finish_reason` | Seconds, status and a short error; a JSON parse failure is recorded as `model answer was not valid JSON` so the answer is never quoted |
-| `feature`, `attempt`, `$ai_max_tokens`, `$ai_temperature` | The edge function, first request or retry, and the call's settings |
+| `feature`, `attempt`, `is_backup_model`, `$ai_max_tokens`, `$ai_temperature` | The edge function, which request this was (0 is the first, Haiku unless it is switched off, then the fallback and its one retry), whether Qwen is answering because Haiku failed in the same call (`false` when Haiku was never asked), and the call's settings. Haiku takes no temperature, so its events carry none |
 | `$geoip_disable` | Always `true`: the request comes from Supabase's servers, whose location would otherwise overwrite the person's |
 | `distinct_id`, `$session_id`, `$ai_session_id` | The Supabase uuid the app identifies PostHog with, and the app's session from the `X-POSTHOG-SESSION-ID` header the SDK adds to Supabase requests (`addTracingHeaders`). Moderation runs as `ricecal-moderation` and creates no person |
 
@@ -6202,7 +6754,7 @@ includes the optimistic camera/describe insert; it is not a persisted-meal total
 Investigate a new name, a sharp volume change, unexpected free-text properties,
 missing identity, or purchase events from a second producer.
 
-Automated checks: the inventory test (`inventory.test.ts`) checks all 59 names,
+Automated checks: the inventory test (`inventory.test.ts`) checks all 65 names,
 exact GA4 mappings, typed payloads, source-file existence and a nonempty
 trigger column, and forbids app-side settled revenue fields; `engagement.test.ts`
 covers install detection and the once-a-day claim; `posthog.test.ts` covers the
@@ -6338,6 +6890,16 @@ component be split or renamed without touching every screen.
 what the parent measures. `contentClassName` targets the inner surface and is
 rarely needed: appearance belongs to `variant` and `tone`.
 
+**Everything that does something is felt.** Every press goes through
+`Tappable`, which gives a light impact on press-in, and a long press a medium
+one when it lands, even on a row that keeps its press-in quiet so a scroll over
+it stays silent. That covers cards with an `onPress` and segmented controls,
+which both used to opt out and left the groups list, the workout cards, the
+Workouts tile on Today and every segmented choice dead in the hand. A `Wheel`
+ticks once per row while it is being turned, as the platform's own do, and not
+when it parks itself on a value. `haptics={false}` is for a scrim or a surface
+that only swallows a press, and for a row that answers nothing but a long press.
+
 **Everything interactive is controlled.** No component owns the value it
 displays. That is what lets an optimistic update be rolled back when the server
 rejects it.
@@ -6371,6 +6933,55 @@ after it, which under the field would compete with the primary button.
 **A secure field draws its own placeholder.** `TextField` does it whenever
 `secureTextEntry` is set and the value is empty, because iOS restyles the native
 placeholder of an AutoFill target and there is no prop that stops it.
+
+### iPhone Duo: the side column and two panes
+
+Every layout decision that depends on the shape of the device is made in
+`src/ui/adaptive.ts`, and nowhere else. Every iPhone but one gets the answer it
+always got: the floating tab bar along the bottom and one column. The exception
+is iPhone Duo, Apple's foldable, recognised by the space iOS gives the app and
+never by its model name.
+
+| Pose | Window (pt) | What iOS reserves | Tab bar | Panes |
+|---|---|---|---|---|
+| Closed (outer display) | 466 × 678 | 84pt column on the right | rail in that column | one |
+| Open on its side, flat or book | 951 × 669 | 84pt column on the right | rail in that column | two, meeting at the fold |
+| Open and upright | 669 × 951 | nothing at the sides | bottom | one |
+| Any iPhone, an iPad, Android | | nothing at the sides | bottom | one |
+
+- **The side column** is the clock and the camera's, and Apple's own tab bars
+  stand in it. `NavBar` turns into a vertical rail there (`NavRail`), same items,
+  same order. `Screen` keeps every page inside the side insets, which are zero on
+  every other phone, so the camera never covers a header action.
+- **Two panes.** A screen wraps the part that can stand beside the rest in
+  `<Aside>`. On a phone the marker renders its children where they stand, so the
+  phone layout is the code as written. With room for two (content 760pt or
+  wider), `Screen` moves the marked parts into a second pane that scrolls on its
+  own. The panes meet at the window's centre, which is the fold, so nothing
+  tappable sits in the crease. A `footer` CTA stands under the second pane, with
+  the content it acts on. The tabs use it: Today (summary | diary, or month |
+  the chosen day's diary), Trends (figures | reviews and history), Me (account |
+  settings), Feed (Following | Discover) and Groups (list | open board). So do
+  the pushed pages with more than one card, reflowed into two phone-width
+  columns: the paywall (what Pro adds | plans over Subscribe), the meal page
+  (picture and portion | nutrition), the settings pages and the workout pages.
+  A page that is one card or one list keeps one pane.
+- **Overlays** (sheets, dialogs, toasts, the running workout's bar) take
+  `useOverlayInsets()`: clear of the column, and in the trailing pane when there
+  are two, even over a one-pane page, because centred they would rest in the
+  fold. The number pad spans the page, or the sheet it types into.
+- **Anything sized by arithmetic** rather than flex (a pager, a grid of tiles)
+  reads `usePaneWidth()`, not the window. A pager keyed to its width must also
+  survive the width changing under it: opening the device kept the closed
+  display's offset and showed a week two weeks back (`WeekPicker`, the board).
+
+Rules: an `Aside` counts only among `Screen`'s own children (fragments and
+arrays are looked through, components are not), so a page whose body is a
+component splits that component in two. Fields work in either pane; the number
+pad scrolls whichever one holds the field. React Native gets no hinge or fold
+signal, so nothing here moves when the device is half-folded: the pane split is
+what keeps controls off the crease. The Duo simulator is iOS 27.1 only, and
+Argent's `fold` tool moves its hinge.
 
 ### Icons
 
@@ -7000,7 +7611,10 @@ It looked perfect at the small limits it was tested with.
 **An unreachable catalogue is not an empty one.** `data/catalogue.ts` throws for
 anything that is not a clean answer, so react-query reaches its error state.
 Answering `[]` for a Worker that is down tells somebody their dish does not
-exist.
+exist. The scan cascade keeps the same line: a search that got no answer is
+never written to `food_scan_misses`, which is the list of dishes the catalogue
+lacks. Before that, one bad minute put "spaghetti", "shrimp" and "steamed white
+rice" on it.
 
 **Anything a user can read that another user wrote needs a report and a block.**
 Guideline 1.2, and the community shelf is the only such surface here. Both are
@@ -7201,6 +7815,18 @@ photo afterwards crops in by the same amount. One constant, `PHOTO_CROP` in
 `lib/photo.ts`, because two of them is a diary framed differently from the
 viewfinder that took it.
 
+**A stored photo may be missing its last two bytes, and a model must never be
+sent one as it is.** The app's base64 decoder (`decodeBase64` in
+`data/photos.ts`) once subtracted the `=` padding after stripping it, so two iOS
+photos in three were uploaded without the `FF D9` that ends a JPEG. Every image
+viewer and Qwen shrug that off; Anthropic answers "Could not process image",
+which sent half of all photo scans to the fallback on the day Haiku went live.
+The decoder is fixed, but every binary already in a store keeps uploading
+clipped photos and the bucket already holds them, so every path that reads a
+photo for a model goes through `photoBase64` in `_shared/llm.ts`, which puts the
+marker back (`completeJpeg`). A new path that reads a photo for a model uses it
+too.
+
 **An image column holds a key, never a URL.** That is what made a change of
 storage provider a change of base URL rather than a migration over every row.
 
@@ -7305,7 +7931,11 @@ returns hashes, not recoverable values. Local auth and database keys must stay
 local; only the AI provider credential is shared. Stop and start the local stack
 after changing the env file, and leave `MOCK_AI` unset. The prompt suite can read
 the same file with `deno run --env-file=apps/supabase/functions/.env -A
-apps/supabase/scripts/eval-prompts.ts refine 3`. `pnpm eval:refine --repeat=3`
+apps/supabase/scripts/eval-prompts.ts refine 3`. It grades Haiku, the model
+every call asks first; `EVAL_ROUTE=fallback` grades Qwen, which answers whenever
+Haiku fails, so a prompt change should pass both. The key in that file is a
+separate OpenRouter key on the same account, so Haiku still runs on the
+Anthropic key (BYOK). `pnpm eval:refine --repeat=3`
 seeds its own local Pro account, checks persisted ingredients and totals, then
 deletes the account. It refuses a hosted API URL.
 
@@ -7343,7 +7973,7 @@ as bad answers.
 **`instanceof` against a platform class is a test about the runtime, not about
 the value.** `refusalFrom` in `data/refusals.ts` read a refusal off a failed
 `functions.invoke` by checking `error.context instanceof Response`, and that was
-**always false** in the app: Expo 57 ships its own fetch, so what hangs off a
+**always false** in the app: Expo ships its own fetch, so what hangs off a
 `FunctionsHttpError` is a `FetchResponse` that does not subclass the global
 `Response`.
 
@@ -7369,6 +7999,19 @@ means changing tab. `canGoBack()` asks the same chain and says yes for the same
 reason, which is why a fallback guarded by it never ran. `useBack` pops instead:
 POP is a stack's action, and a dismissal that arrives twice finds nothing to pop
 rather than taking a bite out of the screen behind.
+
+**A ref is an instance type, not the component.** Since React Native 0.88 the
+strict types are the default: `useRef<TextInput>` no longer has `focus`, and a
+`useRef<View>` will not go on a `View`. Write `TextInputInstance`,
+`ViewInstance` or `ScrollViewInstance` (all exported by `react-native`), and
+`ListViewToken` where `ViewToken` was. A list's `ListHeaderComponent` and
+friends take `undefined`, not `null`, for "nothing".
+
+**Gesture handler 3 still runs the `Gesture.Pan()` builder API, deprecated.**
+Every gesture in the app uses it (`grep -rn "Gesture\." src app` in
+`apps/mobile`), and v3's `GestureDetector` accepts it alongside the new hook
+gestures (`usePanGesture` and friends). Move them before the next major drops
+it.
 
 **NativeWind only styles React Native's own components.** A third-party one takes
 `className` as an ordinary prop and drops it silently. `Screen.tsx` registers
@@ -7408,18 +8051,21 @@ else's Swift.
 
 Nothing catches it: the peer range is `expo: *`, the SDK's own
 `bundledNativeModules` asks for `~57.0.1`, and `~` lets 57.0.2 through.
-`expo-store-review` is therefore pinned **exactly**, at `57.0.1`, and it costs
-nothing: the two versions differ only in that one function, and the JS build is
-byte for byte the same. Anything that widens the range back to `~`, a helpful
-`expo install --check` included, brings the build failure back.
+`expo-store-review` is therefore pinned **exactly**, at the version the SDK
+bundles (`58.0.2` on SDK 58). Anything that widens the range back to `~` lets
+the next patch in ahead of the core it was built for. The SDK itself lists it
+as `~58.0.2`, so `expo install --fix` on the next upgrade can write a `~` range;
+check `package.json` afterwards and put the exact pin back by hand.
 
-**React Native Firebase makes Skia 2.6.2's missing iOS header paths visible.**
-Firebase requires static frameworks, while Expo 57 asks Skia to build from source.
+**React Native Firebase makes Skia's missing iOS header paths visible.**
+Firebase requires static frameworks, while Expo asks Skia to build from source.
 Under that combination CocoaPods does not expand Skia's recursive header glob, so
 the production archive fails on `third_party/base64.h` and then the Skia headers.
-The pnpm patch adds the explicit `cpp/api`, `cpp/api/third_party` and `cpp/skia`
-roots to Skia's podspec. Keep it until Expo's supported Skia version contains the
-upstream static-framework fixes.
+The pnpm patch adds the explicit `cpp/api` and `cpp/api/third_party` roots to
+Skia's podspec. Skia 2.14.0 (SDK 58) still lists only `cpp`, `cpp/skia` and
+`cpp/dawn/include`, so the patch moved to it; the patch file is named for the
+version and pnpm refuses to install when it names one that is not in the tree.
+Keep it until Expo's supported Skia version lists those roots itself.
 
 **A screen that holds its own back cannot navigate while it holds it.**
 `usePreventRemove` refuses every removal of the screen, its own included: a
@@ -7450,6 +8096,14 @@ if the content is short (a field, some chips, a button, rather than a list) pass
 `scrollable={false}` as well: a scroll view scrolls itself to reveal the first
 responder when the keyboard opens, and on the first open, before the keyboard's
 real height is known, it overshoots and carries the field clean off the top.
+
+**Any other sheet is as tall as its content, up to just below the status bar.**
+The wrapper, the panel and the scroll view all shrink, so a panel that would
+pass the top of the screen (keyboard and number pad included) gives the
+difference to its body, which scrolls. Do not cap the body at a fixed height.
+It was a flat 440pt, and on a tall phone that cut the third card of the group
+meal sheet in half above the home indicator with a third of the screen unused,
+which reads as a sheet running off the bottom rather than one that scrolls.
 
 **A toast fired over a sheet needs a host inside the sheet.** A native modal
 window is above the app's root view, so the toast the provider draws in the tree
@@ -7556,12 +8210,34 @@ out to have no days in it.
 **Built with Xcode 27, the app must adopt the UIScene lifecycle or iOS 27 kills
 it at launch** (`EXC_BREAKPOINT` in
 `UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`, before any JS
-runs). On SDK 57 that is `ios.enableSceneSupport` in expo-build-properties, which
-starts React Native from Expo's `EXExpoAppSceneDelegate` instead of the app
-delegate. Its mod only accepts the stock AppDelegate, and Firebase writes
-`FirebaseApp.configure()` into the middle of the block it removes, so
-`plugins/withFirebaseOutsideStartup.js` moves that line out first. It must stay
-listed after expo-build-properties. SDK 58 does this by itself; drop both then.
+runs). SDK 58's template does it: prebuild writes a `SceneDelegate.swift` and a
+scene manifest, and React Native starts from the scene delegate rather than the
+app delegate. SDK 57 needed `ios.enableSceneSupport` and a plugin to move
+Firebase's line out of its way; both are gone.
+
+**SDK 58's AppDelegate loses `FirebaseApp.configure()` without saying so.**
+@react-native-firebase/app 26.x anchors that line on `factory.startReactNative(`,
+which the scene template no longer has, so prebuild prints "Unable to determine
+correct Firebase insertion point" and the app starts with no Firebase at all.
+`plugins/withFirebaseConfigure.js` writes it above `return super.application(…)`,
+the anchor v27 adopted, and stands aside once Firebase's plugin writes it. v27
+also drops the CocoaPods build (`disableSPM`), which is why this is a plugin and
+not an upgrade. The warning still prints; the line in the generated
+`AppDelegate.swift` is what to check. `plugins/withWatch.js` puts the watch's
+Health handoff at the end of the same class, since the template's
+`// Linking API` section is gone too.
+
+**SDK 58 turns on R8 for Android release builds; this app turns it back off.**
+`android.enableMinifyInReleaseBuilds: false` in expo-build-properties keeps
+release builds as they were on SDK 57. R8 strips classes that are only reached
+by reflection, and Firebase, RevenueCat and Health Connect all do some of that,
+so turning it on needs keep rules and a tested release build on a device, not a
+config flip in an SDK upgrade.
+
+**`platforms` in app.json keeps web out.** SDK 58's router needs `react-dom`,
+and Expo reads an installed `react-dom` as "this app has a web build". The PR
+preview's `eas update` exports every platform, so it then failed on a missing
+`react-native-web`. `"platforms": ["ios", "android"]` says what the app is.
 
 **A purchase cannot be tested with the real store, and the flow that could not be
 run is the one that was broken.** Apple's sandbox wants a sandbox Apple ID on a

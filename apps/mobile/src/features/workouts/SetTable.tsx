@@ -1,6 +1,6 @@
 import { memo, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Platform, Pressable, TextInput, View } from 'react-native'
+import { Platform, Pressable, TextInput, type TextInputInstance, View } from 'react-native'
 
 import type { LastSet } from '@/data'
 import { SwipeRow } from '@/features/shared/SwipeRow'
@@ -300,7 +300,8 @@ const SetRow = memo(function SetRow({
   }
 
   return (
-    // Swiped left, a set shows Delete, as every gym logger's sets do.
+    // Swiped left, a set shows Delete, as every gym logger's sets do, and a
+    // swipe carried across deletes it outright.
     <SwipeRow
       square
       actions={[
@@ -310,6 +311,7 @@ const SetRow = memo(function SetRow({
           icon: 'delete',
           tone: 'hibiscus',
           exits: true,
+          fullSwipe: true,
           onPress: () => handlers.removeSet(exerciseKey, set.id),
         },
       ]}
@@ -446,7 +448,7 @@ const SetRow = memo(function SetRow({
 function useCellTools(
   fieldKey: string,
   complete: (() => boolean) | undefined,
-  input: () => TextInput | null,
+  input: () => TextInputInstance | null,
 ): NumpadTools {
   const { t } = useTranslation(['workouts', 'common'])
   const order = useFieldOrder(fieldKey, () => input()?.focus())
@@ -549,7 +551,7 @@ function NumberCell({
   onCommit: (text: string) => void
 }) {
   const colors = useThemeColors()
-  const input = useRef<() => TextInput | null>(() => null)
+  const input = useRef<() => TextInputInstance | null>(() => null)
   const tools = useCellTools(fieldKey, complete, () => input.current())
   const [typed, setTyped] = useState<string | null>(null)
   const change = (next: string) => {
@@ -624,7 +626,7 @@ function DurationCell({
   onCommit: (seconds: number | null) => void
 }) {
   const colors = useThemeColors()
-  const input = useRef<() => TextInput | null>(() => null)
+  const input = useRef<() => TextInputInstance | null>(() => null)
   const tools = useCellTools(fieldKey, complete, () => input.current())
   const [digits, setDigits] = useState<string | null>(null)
   const change = (next: string) => {

@@ -9,13 +9,13 @@ import {
   useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pressable, View } from 'react-native'
+import { Pressable, View, type ViewInstance } from 'react-native'
 
 import { captureView, type Shot, sharePicture } from '@/lib/share'
 import { spacing } from '@/theme/tokens'
 import { Button, cn, Sheet, Text } from '@/ui'
 
-type Capture = (view: RefObject<View | null>) => Promise<void>
+type Capture = (view: RefObject<ViewInstance | null>) => Promise<void>
 
 const CaptureContext = createContext<Capture | null>(null)
 
@@ -58,7 +58,7 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
   const [shotIsBranded, setShotIsBranded] = useState(false)
   const [previewReady, setPreviewReady] = useState(false)
   const [sending, setSending] = useState(false)
-  const preview = useRef<View>(null)
+  const preview = useRef<ViewInstance>(null)
 
   const capture = useCallback<Capture>(async (view) => {
     const taken = await captureView(view)
@@ -171,7 +171,7 @@ export type ShareableProps = {
 export function Shareable({ title, children, className }: ShareableProps) {
   const { t } = useTranslation('reviews')
   const capture = useContext(CaptureContext)
-  const view = useRef<View>(null)
+  const view = useRef<ViewInstance>(null)
 
   return (
     <Pressable

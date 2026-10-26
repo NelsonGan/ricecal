@@ -24,7 +24,8 @@ const mockLaunch: { response: unknown } = { response: null }
 jest.mock('expo-router', () => ({
   router: {
     push: (href: string) => mockPush(href),
-    navigate: (href: string) => mockPush(`navigate ${href}`),
+    navigate: (href: unknown) =>
+      mockPush(`navigate ${typeof href === 'string' ? href : JSON.stringify(href)}`),
     dismissTo: (href: string) => mockPush(`dismissTo ${href}`),
   },
 }))
@@ -117,7 +118,7 @@ it('answers the launching tap, and answers it once', async () => {
 
   const first = await mount()
   await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/reviews/week-latest'))
-  first.unmount()
+  await first.unmount()
 
   // A second mount — a Fast Refresh, a re-render of the tabs — must not reopen
   // the review the user has since navigated away from.
@@ -125,5 +126,20 @@ it('answers the launching tap, and answers it once', async () => {
   const second = await mount()
   await waitFor(() => expect(mockListeners.length).toBe(1))
   expect(mockPush).not.toHaveBeenCalled()
-  second.unmount()
+  await second.unmount()
+})
+
+it("opens a chat push on its group's thread, over that group's board", async () => {
+  const { unmount } = await mount()
+  mockListeners[0]?.({
+    notification: {
+      request: { content: { data: { kind: 'group', groupId: 'g1', chat: true } } },
+    },
+  })
+
+  expect(mockPush.mock.calls.map(([href]) => href)).toEqual([
+    'navigate /groups',
+    `navigate ${JSON.stringify({ pathname: '/group/chat', params: { id: 'g1', reply: '1' } })}`,
+  ])
+  unmount()
 })

@@ -99,7 +99,10 @@ select is((select array_agg(handle) from public.social_search_profiles('visibili
   array['visibility_carol','visibility_dan'], 'handle search continues after the supplied handle');
 select throws_ok($q$select * from public.social_search_profiles('%')$q$, '22023', null,
   'a wildcard cannot turn a handle lookup into an unbounded substring query');
-insert into public.blocked_authors (user_id, author_id) values (:'bob', :'fresh');
+-- Newer than the isolation blocks, which share this transaction's now(), so it
+-- lands on the first page however many simulator accounts a local stack holds.
+insert into public.blocked_authors (user_id, author_id, created_at)
+values (:'bob', :'fresh', now() + interval '1 second');
 select is((select count(*)::int from public.social_blocked_profiles() where user_id = :'fresh'), 1,
   'a legacy recipe block remains manageable when its author has no public social profile');
 select ok((select handle ~ '^[a-z0-9_.]{3,24}$' from public.social_blocked_profiles()

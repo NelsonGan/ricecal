@@ -1,6 +1,16 @@
 import '@/i18n'
 import { render, screen, userEvent } from '@/test-utils'
-import { ProPitch } from '../ProPitch'
+import { ProDetails, type ProPitchProps, ProPlanChoice } from '../ProPitch'
+
+/** The offer as the paywall draws it on a phone: the plans, then the details. */
+function ProPitch({ plan, onPlanChange, onRestore, disabled }: ProPitchProps) {
+  return (
+    <>
+      <ProPlanChoice plan={plan} onPlanChange={onPlanChange} disabled={disabled} />
+      <ProDetails onRestore={onRestore} disabled={disabled} />
+    </>
+  )
+}
 
 const mockOpenLegal = jest.fn()
 const mockPlanPrices = {

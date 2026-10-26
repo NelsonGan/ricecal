@@ -59,7 +59,42 @@ export function callerCancelled(error: unknown, signal?: AbortSignal | null): bo
 }
 
 /**
- * Reports that a request to `url` did not go through, once per host per launch.
+ * When each host last lost a request, with nothing from it answered since.
+ *
+ * One lost request is not a host that cannot be reached. iOS keeps a connection
+ * open between requests, and after the app has sat idle or spent a while in the
+ * background it can send the next request down one the other end has dropped.
+ * That request fails ("The network connection was lost.") and the next one, on
+ * a fresh connection, is answered. A request the app was suspended in the middle
+ * of fails the same way when it wakes. On 1.1.0 those were nearly every report,
+ * from about one phone in six a day, with the app talking to Supabase again
+ * straight after.
+ */
+const lostSince = new Map<string, number>()
+
+/**
+ * How long a lost request waits for a second to confirm it. Longer than the
+ * platform's own 60-second timeout plus react-query's retries, so a host that
+ * swallows requests whole can still be confirmed. Short enough that a blip
+ * before a spell in the background and another after it are not one outage.
+ */
+const CONFIRM_WITHIN_MS = 5 * 60_000
+
+/** Something came back from `url`'s host, whatever the status, so it can be reached. */
+export function noteResponse(url: string): void {
+  const target = requestTarget(url)
+  if (target) lostSince.delete(target.host)
+}
+
+/**
+ * Reports that requests to `url`'s host are not going through, once per host per
+ * launch.
+ *
+ * Not on the first lost request but on the next, and only when that one was
+ * sent after the first had failed: it had a connection of its own and still got
+ * nothing back. Requests that went out together on one dead connection fail
+ * together and confirm nothing. An answer in between (`noteResponse`) starts it
+ * over.
  *
  * Skipped while the phone is offline: supabase-js sends its token refresh with
  * no connection too, and a phone in a tunnel is not news. What is worth hearing
@@ -71,6 +106,7 @@ export function callerCancelled(error: unknown, signal?: AbortSignal | null): bo
 export async function reportNetworkFailure(
   url: string,
   error: unknown,
+  sentAt: number,
   signal?: AbortSignal | null,
 ): Promise<void> {
   try {
@@ -78,6 +114,14 @@ export async function reportNetworkFailure(
     if (!onlineManager.isOnline()) return
     const target = requestTarget(url)
     if (!target || reported.has(target.host)) return
+
+    const failedAt = Date.now()
+    const since = lostSince.get(target.host)
+    if (since === undefined || failedAt - since > CONFIRM_WITHIN_MS) {
+      lostSince.set(target.host, failedAt)
+      return
+    }
+    if (sentAt <= since) return
     reported.add(target.host)
 
     const state = await NetInfo.fetch()
@@ -86,13 +130,15 @@ export async function reportNetworkFailure(
       network_reason: failureReason(error),
       network_type: state.type,
       network_reachable: String(state.isInternetReachable),
+      network_down_ms: failedAt - since,
     })
   } catch {
     // Reporting must never be the second failure.
   }
 }
 
-/** For tests: forget which hosts have been reported. */
+/** For tests: forget which hosts have been reported or have lost a request. */
 export function resetNetworkReports(): void {
   reported.clear()
+  lostSince.clear()
 }

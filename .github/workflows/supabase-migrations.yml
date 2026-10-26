@@ -169,10 +169,14 @@ jobs:
       # whose mistakes are silent — a serving label read wrong does not throw,
       # it prices the wrong amount of food and writes it to a diary.
       #
-      # `--allow-env` because `llm.ts` reads OPENROUTER_MODEL at module load and
-      # `cascade.ts` imports it; nothing under test touches the network.
+      # `--allow-env` because `llm.ts` reads OPENROUTER_BYOK_MODEL and
+      # OPENROUTER_MODEL at module load and `cascade.ts` imports it; nothing under
+      # test touches the network.
       - name: Test the shared edge-function code
         run: deno test --no-lock --allow-env --config scan-meal/deno.json _shared/
 
       - name: Test social moderation and photo authorization
         run: deno test --no-lock --allow-env --config social/deno.json social/ photos/
+
+      - name: Test group push copy
+        run: deno test --no-lock --config groups/deno.json groups/

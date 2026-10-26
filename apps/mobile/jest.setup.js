@@ -35,6 +35,28 @@ jest.mock('react-native-webview', () => {
   return { __esModule: true, default: View, WebView: View }
 })
 
+// Gesture handler 3 asks Worklets for the UI runtime on a microtask after
+// import, and under Jest Worklets is its web fallback, which throws
+// "`getUIRuntimeHolder` is not supported on web" from a timer, failing whatever
+// test happens to be running. There is no UI runtime to bind here.
+jest.mock(
+  'react-native-gesture-handler/lib/module/handlers/gestures/installUIRuntimeBindings',
+  () => ({
+    installUIRuntimeBindings: () => {},
+  }),
+)
+// Gesture handler 3 also throws in dev when a `GestureDetector` has no
+// `GestureHandlerRootView` above it. The app has one at the root
+// (`app/_layout.tsx`) and `Sheet` adds its own inside the modal; a component
+// test renders the component alone, and which root it sits under is not what
+// it tests.
+jest.mock(
+  'react-native-gesture-handler/lib/module/v3/detectors/useEnsureGestureHandlerRootView',
+  () => ({
+    useEnsureGestureHandlerRootView: () => {},
+  }),
+)
+
 // Two Expo modules reach for native views or a native module the moment they
 // are imported, which fails under Jest with "not available on ios, are you sure
 // you've linked all the native dependencies". Neither is what the UI tests are
@@ -75,6 +97,7 @@ jest.mock('expo-store-review', () => ({
 
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
+  selectionAsync: jest.fn(() => Promise.resolve()),
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
 }))
 

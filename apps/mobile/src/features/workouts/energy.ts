@@ -6,10 +6,12 @@ import type { LiveWorkout } from './model'
  *
  * The estimate is the only honest one available without a heart rate: the
  * Compendium of Physical Activities' MET for each movement, times body weight,
- * times time. It uses MET minus one, because Apple Health's active energy
- * excludes what the body would have burned sitting still, and a figure that
- * included it would be counted twice the moment it met the day's resting
- * energy.
+ * times time, less what the body would have spent at rest over the same time.
+ * Less the rest because Apple Health's active energy excludes it, and a figure
+ * that included it would be counted twice the moment it met the day's resting
+ * energy. The rest taken off is the person's own (the budget's Mifflin-St
+ * Jeor) rather than one MET, which overstates most adults' resting rate by
+ * about a third (Byrne et al. 2005) and so took too much away.
  *
  * Nothing in the calorie budget reads this number directly. It travels to
  * Apple Health with the workout, and comes back into the day through the
@@ -42,8 +44,28 @@ function catalogued(
 const DEFAULT_MET = 4
 
 /**
+ * The most a session of sets is priced at: vigorous resistance training
+ * (Compendium 02050). A rep-based movement's own MET can be a continuous one
+ * (pull-ups and burpees are vigorous calisthenics, 7.5 to 8), and the lifting
+ * is priced over the whole session, rests between sets included, which the
+ * Compendium's values leave out. A pull-up day was priced as an hour of burpees.
+ */
+const LIFTING_MET_MAX = 6
+
+/** Who the estimate is for. */
+export type EnergyBody = {
+  weightKg: number
+  /**
+   * This person's resting energy for a day (Mifflin-St Jeor, as the budget
+   * uses), or null without the profile to work it out, when one MET stands in.
+   */
+  restingKcalPerDay: number | null
+}
+
+/**
  * Active kilocalories for the workout, or null when the body weight is not
- * known (a figure computed against a made-up weight is a made-up figure).
+ * known (a figure computed against a made-up weight is a made-up figure), or
+ * when nothing has been done yet.
  *
  * Time logged against a timed exercise (a 30-minute run) is priced
  * at that exercise's MET. Whatever is left of the workout's duration is the
@@ -53,11 +75,18 @@ const DEFAULT_MET = 4
 export function estimateKcal(
   workout: LiveWorkout,
   durationS: number,
-  bodyKg: number | undefined,
+  body: EnergyBody | undefined,
 ): number | null {
-  if (!bodyKg || bodyKg <= 0 || durationS <= 0) return null
+  if (!body || body.weightKg <= 0 || durationS <= 0) return null
   const rows = catalogued(workout)
   if (!rows.length) return null
+
+  const kg = body.weightKg
+  // Each MET is 1 kcal per kg per hour; what the body spends at rest comes off
+  // each hour, since Apple Health's resting energy already holds it.
+  const resting =
+    body.restingKcalPerDay && body.restingKcalPerDay > 0 ? body.restingKcalPerDay / 24 : kg
+  const perHour = (met: number) => Math.max(0, met * kg - resting)
 
   // Timed sets cannot add up to more than the workout lasted: an hour on the
   // treadmill typed into a workout finished a minute after it started is
@@ -74,17 +103,15 @@ export function estimateKcal(
     if (row.seconds > 0) {
       const seconds = row.seconds * squeeze
       timed += seconds
-      kcal += Math.max(0, met - 1) * bodyKg * (seconds / 3600)
+      kcal += perHour(met) * (seconds / 3600)
     } else {
       repSets += row.doneSets
-      repMet += met * row.doneSets
+      repMet += Math.min(met, LIFTING_MET_MAX) * row.doneSets
     }
   }
 
   const remaining = Math.max(0, durationS - timed)
-  if (repSets > 0 && remaining > 0) {
-    kcal += Math.max(0, repMet / repSets - 1) * bodyKg * (remaining / 3600)
-  }
+  if (repSets > 0 && remaining > 0) kcal += perHour(repMet / repSets) * (remaining / 3600)
   return Math.round(Math.min(kcal, 10000))
 }
 

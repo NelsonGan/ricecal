@@ -18,6 +18,7 @@ import { AppState, Platform } from 'react-native'
 
 import {
   queueHeartTrace,
+  requestHealthSync,
   useHeardTraces,
   useHeartRateOutbox,
   useLastSets,
@@ -236,11 +237,20 @@ function useWatchSync(): void {
       }
     }
 
+    // Workouts whose trace has asked the budget to look again. The watch sends
+    // a trace until the phone says it has it, and a sync each time is waste.
+    const synced = new Set<string>()
     const drain = async () => {
       for (const item of takeWatchInbox()) {
         if (!alive) return
         if (item.kind === 'heart') {
           queueHeartTrace(userId, item.trace)
+          // The watch sends this once it has saved its workout to Health, so
+          // the energy it measured can reach the budget now.
+          if (!synced.has(item.trace.workoutId)) {
+            synced.add(item.trace.workoutId)
+            requestHealthSync()
+          }
           continue
         }
         for (const command of [...item.commands].sort((a, b) => a.seq - b.seq)) {
@@ -312,6 +322,7 @@ function watchLabels(
     completeSet: t('workouts:logger.completeSet'),
     rest: t('workouts:rest.title'),
     skip: t('workouts:rest.skip'),
+    restDone: t('workouts:rest.complete'),
     restMinus: t('workouts:rest.minus'),
     restPlus: t('workouts:rest.plus'),
     exercises: t('workouts:watch.exercises'),

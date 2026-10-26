@@ -43,6 +43,7 @@ import { useBack } from '@/lib/navigation'
 import { unitFor, type WeightUnit } from '@/lib/units'
 import {
   AppBar,
+  Aside,
   Badge,
   Button,
   Card,
@@ -95,8 +96,12 @@ export default function WorkoutStatsScreen() {
       />
       <Totals unit={unit} />
       <WorkoutCalendar />
-      <Split />
-      <Records unit={unit} />
+      {/* With two panes the totals over time are the first, and where the sets
+          went and the bests they set are the second. See `Aside`. */}
+      <Aside>
+        <Split />
+        <Records unit={unit} />
+      </Aside>
     </Screen>
   )
 }

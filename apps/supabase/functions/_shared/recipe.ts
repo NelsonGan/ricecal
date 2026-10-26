@@ -13,7 +13,7 @@
 
 import type { Meter } from './entitlement.ts'
 import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
-import { chatJSON, KITCHEN, mockActive } from './llm.ts'
+import { chatJSON, KITCHEN, mockActive, photoDataUrl } from './llm.ts'
 
 /** 'g' | 'ml' | 'piece' — the units `recipe_ingredients.unit` accepts. */
 export type RecipeUnit = 'g' | 'ml' | 'piece'
@@ -498,7 +498,7 @@ export async function readRecipePhoto(
         role: 'user',
         content: [
           { type: 'text', text: 'What is being cooked here, and what went into it?' },
-          { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${photoBase64}` } },
+          { type: 'image_url', image_url: { url: photoDataUrl(photoBase64) } },
         ],
       },
     ],

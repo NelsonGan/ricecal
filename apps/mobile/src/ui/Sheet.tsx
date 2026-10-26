@@ -25,6 +25,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
+import { useOverlayInsets } from './adaptive'
 import { cn } from './cn'
 import { NumpadHost, useNumpadZone } from './Numpad'
 import { Text } from './Text'
@@ -148,8 +149,8 @@ export type SheetProps = {
   scrollResetKey?: string | number
   /**
    * Grows the panel to the full height of the screen, less the status bar, for a
-   * sheet whose content is a list worth scrolling: the 440pt cap shows four rows
-   * and a keyboard. It stays a sheet, dismissed the same way.
+   * sheet whose content is a list worth scrolling, so it opens at the same
+   * height however much is in it. It stays a sheet, dismissed the same way.
    */
   fullHeight?: boolean
   /**
@@ -293,6 +294,7 @@ export function SheetSurface({
   className,
 }: SheetSurfaceProps) {
   const insets = useSafeAreaInsets()
+  const overlay = useOverlayInsets()
   const { height } = useWindowDimensions()
   const center = placement === 'center'
 
@@ -491,10 +493,12 @@ export function SheetSurface({
       ref={scroller}
       onScroll={trackScroll}
       scrollEventThrottle={16}
-      // Capped by default, and told to fill when the panel is full height —
-      // without the second half the list keeps its 440pt and the panel grows a
-      // field of empty surface under it.
-      className={fullHeight ? 'flex-1' : 'max-h-[440px]'}
+      // Fills a full-height panel. Otherwise it is as tall as its content and
+      // gives way when the panel meets the top of the screen (see the wrapper
+      // below). It used to stop at a flat 440pt, which on a tall phone cut the
+      // third card of a short list in half with a third of the screen unused,
+      // and read as a sheet running off the bottom rather than one that scrolls.
+      className={fullHeight ? 'flex-1' : 'shrink'}
       contentContainerStyle={{ gap: spacing.md, paddingBottom: numpad.height }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
@@ -530,7 +534,7 @@ export function SheetSurface({
           draw over it, so the pad a field in here opens has to be drawn in
           here. `NumpadHost` picks the nearest one above the field, which is
           this one whenever a sheet is up and `Screen`'s the rest of the time. */}
-      <NumpadHost id={numpad.id} onOpen={revealForNumpad}>
+      <NumpadHost id={numpad.id} onOpen={revealForNumpad} edges={overlay}>
         {/* Both platforms, now that `KeyboardProvider` reports the keyboard rather
           than Android's window resizing under us. It used to be iOS only, for
           exactly the reason that has gone away.
@@ -550,13 +554,31 @@ export function SheetSurface({
           //
           // The margin keeps the scrim visible above a full-height panel, which
           // flush to the top edge reads as a screen from the wrong direction.
-          style={fullHeight && !center ? { flex: 1, marginTop: insets.top } : undefined}
+          //
+          // Any other panel shrinks rather than growing past the top of the
+          // screen, keyboard included, since the padding above is part of this
+          // view's height: the body inside gives way and scrolls.
+          style={[
+            fullHeight && !center
+              ? { flex: 1, marginTop: insets.top }
+              : center
+                ? // Equal margins, so a centred card stays centred.
+                  {
+                    flexShrink: 1,
+                    marginVertical: Math.max(insets.top, insets.bottom) + spacing.md,
+                  }
+                : { flexShrink: 1, marginTop: insets.top + spacing.md },
+            // Clear of iOS's side column on iPhone Duo, and in the trailing
+            // pane when the window has two, so a sheet never rests in the fold.
+            // Both zero on a phone.
+            { marginLeft: overlay.left, marginRight: overlay.right },
+          ]}
         >
           <Animated.View
             className={cn(
               'gap-md bg-surface px-gutter pt-md',
               center ? 'w-full max-w-[420px] self-center rounded-card' : 'rounded-t-card',
-              fullHeight && !center && 'flex-1',
+              fullHeight && !center ? 'flex-1' : 'shrink',
               className,
             )}
             /* The home indicator's inset OR the gutter, not both added together.

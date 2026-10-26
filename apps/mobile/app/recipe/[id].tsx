@@ -1,6 +1,6 @@
 import { FREE_RECIPES } from '@ricecal/shared'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -29,6 +29,7 @@ import { energyShare } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
+  Aside,
   Button,
   Card,
   Chip,
@@ -92,6 +93,10 @@ export default function RecipeDetailScreen() {
   const [menu, setMenu] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [reporting, setReporting] = useState(false)
+  // What the menu's button opens, held until the menu's own window is gone.
+  // iOS will not present a modal while another is still dismissing, so opening
+  // the delete or share sheet in the same tap left it unshown.
+  const afterMenu = useRef<(() => void) | null>(null)
 
   // Internal navigation carries the row id. A link carries the bearer slug,
   // which the photo signer needs as well as the recipe queries.
@@ -403,50 +408,61 @@ export default function RecipeDetailScreen() {
         </View>
       </Card>
 
-      {ingredients.length > 0 ? (
-        <Card title={t('recipes:detail.ingredients')}>
-          {ingredients.map((item, index) => (
-            <View key={item.id}>
-              {index > 0 ? <Divider /> : null}
-              <View className="flex-row items-center gap-2.5 py-2.5">
-                <Text variant="bodyStrong" className="min-w-0 flex-1" numberOfLines={1}>
-                  {item.name}
-                </Text>
-                <Text variant="meta">
-                  {item.amount} {t(`recipes:ingredient.unit.${item.unit}`, { count: item.amount })}
-                </Text>
-                <View className="flex-row items-baseline gap-1">
-                  <Text variant="numeric" className="text-[15px] leading-[20px]">
-                    {item.macros.kcal.toLocaleString()}
+      {/* With two panes, the picture, the portion and what it adds up to stay
+          together on the left, and the cooking (ingredients and method) goes on
+          the right. */}
+      <Aside>
+        {ingredients.length > 0 ? (
+          <Card title={t('recipes:detail.ingredients')}>
+            {ingredients.map((item, index) => (
+              <View key={item.id}>
+                {index > 0 ? <Divider /> : null}
+                <View className="flex-row items-center gap-2.5 py-2.5">
+                  <Text variant="bodyStrong" className="min-w-0 flex-1" numberOfLines={1}>
+                    {item.name}
                   </Text>
+                  <Text variant="meta">
+                    {item.amount}{' '}
+                    {t(`recipes:ingredient.unit.${item.unit}`, { count: item.amount })}
+                  </Text>
+                  <View className="flex-row items-baseline gap-1">
+                    <Text variant="numeric" className="text-[15px] leading-[20px]">
+                      {item.macros.kcal.toLocaleString()}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          ))}
-        </Card>
-      ) : null}
+            ))}
+          </Card>
+        ) : null}
 
-      <Card
-        title={
-          recipe.isMine
-            ? t('recipes:detail.steps')
-            : t('recipes:detail.stepsFrom', { name: recipe.authorName || t('recipes:someCook') })
-        }
-      >
-        {recipe.steps ? (
-          <RecipeSteps steps={recipe.steps} />
-        ) : (
-          <Text variant="body" className="text-muted">
-            {t('recipes:detail.noSteps')}
-          </Text>
-        )}
-      </Card>
+        <Card
+          title={
+            recipe.isMine
+              ? t('recipes:detail.steps')
+              : t('recipes:detail.stepsFrom', { name: recipe.authorName || t('recipes:someCook') })
+          }
+        >
+          {recipe.steps ? (
+            <RecipeSteps steps={recipe.steps} />
+          ) : (
+            <Text variant="body" className="text-muted">
+              {t('recipes:detail.noSteps')}
+            </Text>
+          )}
+        </Card>
+      </Aside>
 
       <ShareSheet visible={sharing} onClose={() => setSharing(false)} recipe={recipe} />
 
       <Sheet
         visible={menu}
         onClose={() => setMenu(false)}
+        onDismiss={() => {
+          const next = afterMenu.current
+          afterMenu.current = null
+          next?.()
+        }}
         title={recipe.name}
         closeLabel={t('common:action.close')}
         scrollable={false}
@@ -456,8 +472,9 @@ export default function RecipeDetailScreen() {
           fullWidth
           leftIcon={<Icon set="ui" name="edit" size={20} />}
           onPress={() => {
+            afterMenu.current = () =>
+              router.push({ pathname: '/recipe/edit', params: { id: recipe.id } })
             setMenu(false)
-            router.push({ pathname: '/recipe/edit', params: { id: recipe.id } })
           }}
         >
           {t('common:action.edit')}
@@ -467,8 +484,8 @@ export default function RecipeDetailScreen() {
           fullWidth
           leftIcon={<Icon set="ui" name="share" size={20} />}
           onPress={() => {
+            afterMenu.current = () => setSharing(true)
             setMenu(false)
-            setSharing(true)
           }}
         >
           {t('recipes:share.action')}
@@ -478,8 +495,8 @@ export default function RecipeDetailScreen() {
           fullWidth
           leftIcon={<Icon set="ui" name="delete" size={20} />}
           onPress={() => {
+            afterMenu.current = () => setDeleting(true)
             setMenu(false)
-            setDeleting(true)
           }}
         >
           {t('recipes:detail.delete')}

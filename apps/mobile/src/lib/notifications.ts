@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications'
 import { AppState, Platform } from 'react-native'
-
 import type { MealTime, Settings } from '@/data/types'
+import { announceGroupChatPush } from './groupChatPushes'
 import { parseTime } from './meal-times'
 
 /**
@@ -60,6 +60,46 @@ export function whenWorkoutPromptShown(check: () => boolean): void {
   workoutPromptShown = check
 }
 
+/**
+ * The groups whose chat is on screen, in the thread or the board's chat bar, so
+ * their own pushes do not drop a banner over a message already showing. Counted
+ * rather than one slot: the board and the chat it opens show the same thread,
+ * and when one screen replaces another the old one's blur can land after the
+ * new one's focus.
+ */
+const openChats = new Map<string, number>()
+export function showingGroupChat(chat: string): () => void {
+  openChats.set(chat, (openChats.get(chat) ?? 0) + 1)
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    const count = (openChats.get(chat) ?? 0) - 1
+    if (count > 0) openChats.set(chat, count)
+    else openChats.delete(chat)
+  }
+}
+
+/**
+ * Clears a group's chat notifications from Notification Center once its chat is
+ * on screen, as a messenger clears a conversation's when it is opened. Best effort.
+ */
+export async function dismissGroupChatNotifications(groupId: string): Promise<void> {
+  try {
+    const presented = await Notifications.getPresentedNotificationsAsync()
+    await Promise.allSettled(
+      presented
+        .filter(({ request }) => {
+          const data = request.content.data
+          return data?.kind === 'group' && data.chat === true && data.groupId === groupId
+        })
+        .map(({ request }) => Notifications.dismissNotificationAsync(request.identifier)),
+    )
+  } catch {
+    // Nothing presented to read, or a platform without Notification Center.
+  }
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     /**
@@ -72,7 +112,8 @@ Notifications.setNotificationHandler({
      * a plate that is not counted yet. The row in front of them is the better
      * answer, so the banner steps aside.
      */
-    const kind = notification.request.content.data?.kind
+    const data = notification.request.content.data
+    const kind = data?.kind
     // The same goes for a workout's rest timer, whose countdown is on every
     // screen, a workout started on the watch, which the bar over every tab
     // already shows, and its "still training?", but only where the logger can
@@ -81,8 +122,13 @@ Notifications.setNotificationHandler({
       kind === 'scan' ||
       kind === 'rest' ||
       kind === 'started' ||
-      (kind === 'workout' && workoutPromptShown())
+      (kind === 'workout' && workoutPromptShown()) ||
+      (kind === 'group' && data?.chat === true && openChats.has(String(data.groupId)))
     const watching = transient && AppState.currentState === 'active'
+    // A chat message, heard while the app is open: the board's count catches up.
+    if (kind === 'group' && data?.chat === true && typeof data.groupId === 'string') {
+      announceGroupChatPush(data.groupId)
+    }
 
     return {
       shouldShowBanner: !watching,

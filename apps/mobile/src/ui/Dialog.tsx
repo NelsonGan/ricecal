@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Modal, Platform, Pressable, View } from 'react-native'
 
+import { useOverlayInsets } from './adaptive'
 import { Button } from './Button'
 import { Text } from './Text'
 import { useHeld } from './useHeld'
@@ -49,6 +50,7 @@ export function Dialog({
   actions,
   cancelLabel,
 }: DialogProps) {
+  const overlay = useOverlayInsets()
   const [working, setWorking] = useState<string | null>(null)
   const queued = useRef<DialogAction['onPress'] | null>(null)
   // What it showed while open, kept while it fades. Callers clear the thing a
@@ -97,7 +99,12 @@ export function Dialog({
       onRequestClose={dismiss}
       onDismiss={runQueued}
     >
-      <View className="flex-1 items-center justify-center px-6">
+      <View
+        className="flex-1 items-center justify-center"
+        // In the strip of the window an overlay belongs in, which is the whole
+        // window on a phone. See `overlayInsets`.
+        style={{ paddingLeft: overlay.left + 24, paddingRight: overlay.right + 24 }}
+      >
         <Pressable
           className="absolute inset-0 bg-black/45"
           onPress={dismiss}

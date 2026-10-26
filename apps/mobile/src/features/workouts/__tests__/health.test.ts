@@ -9,6 +9,7 @@ import {
 import { syncWorkoutToHealth } from '../health'
 import { newWorkout } from '../model'
 import { getWorkoutPrefs, setWorkoutPrefs } from '../prefs'
+import { receivePulse } from '../pulse'
 
 jest.mock('@/lib/health', () => ({
   deleteWorkoutFromHealth: jest.fn(),
@@ -31,7 +32,9 @@ describe('saving a workout to Apple Health', () => {
     jest.resetAllMocks()
     jest.replaceProperty(Platform, 'OS', 'ios')
     warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
-    jest.mocked(getWorkoutPrefs).mockReturnValue({ keepAwake: true, healthWrite: true })
+    jest
+      .mocked(getWorkoutPrefs)
+      .mockReturnValue({ keepAwake: true, healthWrite: true, bodyFiguresOpen: false })
     jest.mocked(workoutWriteStatus).mockReturnValue('unasked')
     jest.mocked(deleteWorkoutFromHealth).mockResolvedValue(undefined)
     jest.mocked(saveWorkoutToHealth).mockResolvedValue('health-workout')
@@ -112,8 +115,24 @@ describe('saving a workout to Apple Health', () => {
     expect(saveWorkoutToHealth).not.toHaveBeenCalled()
   })
 
+  it('writes no copy of its own once the watch has streamed energy for the workout', async () => {
+    // Before its `recording` command lands: the watch saves its own copy, and a
+    // second from here would put the session's energy in Health twice.
+    jest.useFakeTimers()
+    receivePulse({ workoutId: workout.id, bpm: null, kcal: 50, at: 1 })
+
+    await expect(syncWorkoutToHealth(workout, 2_000_000, 50)).resolves.toMatchObject({
+      replaced: false,
+    })
+    expect(saveWorkoutToHealth).not.toHaveBeenCalled()
+    expect(deleteWorkoutFromHealth).not.toHaveBeenCalled()
+    jest.useRealTimers()
+  })
+
   it('skips the permission sheet when saving was turned off', async () => {
-    jest.mocked(getWorkoutPrefs).mockReturnValue({ keepAwake: true, healthWrite: false })
+    jest
+      .mocked(getWorkoutPrefs)
+      .mockReturnValue({ keepAwake: true, healthWrite: false, bodyFiguresOpen: false })
 
     await expect(syncWorkoutToHealth(workout, 2_000_000, 100)).resolves.toMatchObject({
       failed: false,
