@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { type TextInput, View } from 'react-native'
+import { type TextInputInstance, View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, cn, Icon, Sheet, Tappable, Text, TextField } from '@/ui'
@@ -64,7 +64,7 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
   const [ready, setReady] = useState(false)
   const [focusKey, setFocusKey] = useState<string | null>(null)
   const [activeKey, setActiveKey] = useState<string | null>(null)
-  const inputs = useRef(new Map<string, TextInput>())
+  const inputs = useRef(new Map<string, TextInputInstance>())
 
   useEffect(() => {
     if (!ready || !focusKey) return

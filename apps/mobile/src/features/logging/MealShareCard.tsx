@@ -1,7 +1,7 @@
 import { Image } from 'expo-image'
 import { type Ref, type RefObject, useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { View, type ViewInstance } from 'react-native'
 
 import type { IconRef, Macros, StoredImageSource } from '@/data'
 import { MealPhoto } from '@/features/shared'
@@ -74,7 +74,7 @@ export type MealShareCardProps = {
   photo: StoredImageSource | null
   /** The drawing, when there is no photograph. */
   icon?: IconRef
-  ref?: Ref<View>
+  ref?: Ref<ViewInstance>
 }
 
 /**
@@ -261,7 +261,7 @@ export type ShareOutcome = 'sent' | 'dismissed' | 'failed'
 
 export type MealShare = {
   /** Goes on the card. What gets captured is whatever this points at. */
-  card: RefObject<View | null>
+  card: RefObject<ViewInstance | null>
   /**
    * Capture and hand it to the OS. The picture goes out alone; the sentence is
    * the Android fallback, because the share intent there cannot carry a file, and
@@ -282,7 +282,7 @@ export type MealShare = {
  * file at all.
  */
 export function useMealShare(): MealShare {
-  const card = useRef<View>(null)
+  const card = useRef<ViewInstance>(null)
   const [sharing, setSharing] = useState(false)
 
   const share = useCallback(async (androidText: string): Promise<ShareOutcome> => {

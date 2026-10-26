@@ -11,7 +11,12 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
-import { type TextInput, type TextInputProps, useWindowDimensions, View } from 'react-native'
+import {
+  type TextInputInstance,
+  type TextInputProps,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import Animated, {
   Easing,
   type SharedValue,
@@ -401,7 +406,7 @@ export function useNumpadField({
 }: NumpadFieldOptions) {
   const actions = useContext(ActionsContext)
   const hostId = useContext(HostContext)
-  const input = useRef<TextInput>(null)
+  const input = useRef<TextInputInstance>(null)
 
   // Written on every render, read on every key. See `NumpadFieldSpec`.
   const field = useRef<NumpadFieldSpec>({

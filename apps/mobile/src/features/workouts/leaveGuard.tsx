@@ -1,12 +1,8 @@
-import { type NativeStackNavigationProp, useNavigation } from 'expo-router'
 import { usePreventRemove } from 'expo-router/react-navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Dialog } from '@/ui'
-
-type Navigation = NativeStackNavigationProp<Record<string, object | undefined>>
-type Action = Parameters<Navigation['dispatch']>[0]
 
 /**
  * What a workout editor does about being left: the back button, the swipe,
@@ -24,22 +20,26 @@ type Action = Parameters<Navigation['dispatch']>[0]
  * guard is switched off first and the navigation runs once that has rendered.
  * Run straight away it was refused, and re-sent from the refusal it was
  * dropped, so the finish screen stayed in the stack under the saved workout.
+ * Since SDK 58 the refused action is resumed with the hook's `repeat`, and
+ * `disablePrevention` is called before any other way out, as the hook asks.
  * Render `dialog`.
  */
 export function useLeaveGuard({ busy, dirty }: { busy: boolean; dirty: boolean }) {
   const { t } = useTranslation(['workouts', 'common'])
-  const navigation = useNavigation<Navigation>()
   const [leaving, setLeaving] = useState<{ go: () => void } | null>(null)
-  const [held, setHeld] = useState<Action | null>(null)
+  // The refused removal, kept as the function that resumes it.
+  const [held, setHeld] = useState<{ repeat: () => void } | null>(null)
 
-  usePreventRemove((busy || dirty) && !leaving, ({ data }) => {
+  const disablePrevention = usePreventRemove((busy || dirty) && !leaving, ({ repeat }) => {
     // Held while saving; with changes, asked about.
-    if (!busy) setHeld(data.action)
+    if (!busy) setHeld({ repeat })
   })
   // Declared after the guard, so it runs once the guard has stood down.
   useEffect(() => {
-    leaving?.go()
-  }, [leaving])
+    if (!leaving) return
+    disablePrevention()
+    leaving.go()
+  }, [leaving, disablePrevention])
 
   const leave = useCallback((go: () => void) => setLeaving({ go }), [])
 
@@ -56,7 +56,7 @@ export function useLeaveGuard({ busy, dirty }: { busy: boolean; dirty: boolean }
           label: t('workouts:logger.discardConfirm'),
           tone: 'danger',
           onPress: () => {
-            if (held) leave(() => navigation.dispatch(held))
+            if (held) leave(held.repeat)
           },
         },
       ]}

@@ -1,7 +1,7 @@
 import { makeImageFromView } from '@shopify/react-native-skia'
 import { File, Paths } from 'expo-file-system'
 import type { RefObject } from 'react'
-import { Platform, Share, type View } from 'react-native'
+import { Platform, Share, type ViewInstance } from 'react-native'
 
 /** What a captured view is, once it is a file the OS can be handed. */
 export type Shot = {
@@ -46,13 +46,13 @@ let written: string | null = null
  * Null when the view has not been laid out, or when the platform declines to
  * render it. Callers say so rather than sending nothing.
  */
-export async function captureView(view: RefObject<View | null>): Promise<Shot | null> {
+export async function captureView(view: RefObject<ViewInstance | null>): Promise<Shot | null> {
   const image = await makeImageFromView(view as RefObject<never>)
   if (!image) return null
 
   const file = new File(Paths.cache, shotName())
   file.create({ overwrite: true })
-  file.write(image.encodeToBase64(), { encoding: 'base64' })
+  await file.write(image.encodeToBase64(), { encoding: 'base64' })
 
   // Only once the replacement exists. A delete before the write leaves nothing
   // at all behind if the write throws.

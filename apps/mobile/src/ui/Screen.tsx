@@ -325,13 +325,10 @@ export function Screen({
    */
   const scroller = useRef<KeyboardAwareScrollViewRef>(null)
   const scrolled = useSharedValue(0)
-  const trackAnimatedScroll = useAnimatedScrollHandler(
-    (event) => {
-      scrolled.value = event.contentOffset.y
-      if (scrollOffset) scrollOffset.value = event.contentOffset.y
-    },
-    [scrollOffset],
-  )
+  const trackAnimatedScroll = useAnimatedScrollHandler((event) => {
+    scrolled.value = event.contentOffset.y
+    if (scrollOffset) scrollOffset.value = event.contentOffset.y
+  })
 
   const revealForNumpad = useCallback(
     (measure: (report: (top: number, height: number) => void) => void) => {

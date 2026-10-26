@@ -1,8 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { TextInput } from 'react-native'
-import { View } from 'react-native'
+import { type TextInputInstance, View } from 'react-native'
 
 import { useSession } from '@/data'
 import {
@@ -98,8 +97,8 @@ export default function NewPasswordScreen() {
     return () => clearInterval(ticker)
   }, [])
 
-  const passwordRef = useRef<TextInput>(null)
-  const confirmRef = useRef<TextInput>(null)
+  const passwordRef = useRef<TextInputInstance>(null)
+  const confirmRef = useRef<TextInputInstance>(null)
 
   const back = useBack('/(auth)/sign-in')
 
