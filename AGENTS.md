@@ -350,12 +350,26 @@ first.
 
 ## Driving the iOS app
 
-**Keep Simulator visible while testing.** Argent and `xcrun simctl` control the
-device, but booting it does not open the macOS Simulator window. Before testing,
-run `open -a Simulator --args -CurrentDeviceUDID <udid>`, then
-`osascript -e 'tell application "Simulator" to activate'`. Verify that the
-device window is visible, and leave it open on the tested screen so the user
-can follow along and inspect the result.
+**Show the device in Expo Device Hub while testing.** `expo-device-hub` is a
+dev dependency, so every `npx expo start` serves a live, interactive view of the
+running simulators and emulators at
+<http://127.0.0.1:8082/_expo/plugins/expo-device-hub> (the address Metro prints
+is the LAN one). Open it in the browser pane, select the device you are testing,
+and leave it on the tested screen so the user can follow along and inspect the
+result. The Hub only starts listing devices once a page is open, and a page
+opened right after Metro starts can stay on "Connecting to the Expo dev
+server": reload it. Use these devices and no others, one at a time (see "One
+simulator at a time"):
+
+| Platform | Device                                                                     | Boot with Argent             |
+| -------- | -------------------------------------------------------------------------- | ---------------------------- |
+| iOS      | RiceCal iPhone 18 Pro simulator, `EF3C5D3C-1A3A-4AE0-886A-A033551C78ED`    | `boot-device` with `udid`    |
+| Android  | `RiceCal_Pixel_10` emulator (Pixel 10, Android 16)                         | `boot-device` with `avdName` |
+
+The Hub and `expo run:android` need the Android SDK and a JDK: start Metro with
+`ANDROID_HOME` and `JAVA_HOME` (JDK 17) set, or the Hub shows only iOS
+simulators. It streams over WebSocket; pnpm skips `node-datachannel`'s build
+script, which only adds an optional WebRTC mode.
 
 **An edit under `widgets/ios/` needs a prebuild, or a copy.** `withWidgets.js`
 copies those files into `ios/RiceCalWidgets/` at prebuild time, so
@@ -487,8 +501,9 @@ com.apple.CoreSimulator.SimRuntime.watchOS-27-0`, then `xcrun simctl pair <watch
   Run it detached and watch for the package with `adb shell pm list packages`,
   or it gets killed mid-compile. Kill the daemons afterwards — left running they
   starve the emulator until `system_server` ANRs and taps stop landing.
-- The dev client cannot find Metro on its own: `adb reverse tcp:8081 tcp:8081`,
-  then
+- The dev client cannot find Metro on its own: `adb reverse tcp:8081 tcp:8081`
+  (and `adb reverse tcp:54421 tcp:54421` when `.env.local` points at the local
+  stack, or every auth and diary call fails to connect), then
   `adb shell am start -a android.intent.action.VIEW -d "ricecal://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"`.
 - **No soft keyboard appears when you tap a field.** Gboard ships with "Write in
   text fields" (stylus handwriting) on, which replaces the keyboard with a
