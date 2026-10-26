@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store'
 
 import type { Database } from './database.types'
 import { env } from './env'
-import { reportNetworkFailure } from './network'
+import { noteResponse, reportNetworkFailure } from './network'
 import { sessionIsGone, tokenWasRefused } from './revocation'
 
 /**
@@ -233,6 +233,11 @@ export const supabase = createClient<Database>(
       // make a stranger's crafted `ricecal://` link a login.
       flowType: 'pkce',
     },
+    // The socket closes this long after its last channel (see `lib/realtime.ts`).
+    // The library's 50 seconds held a billed connection open for most of a
+    // minute after every chat; a few seconds still carries a hop from one
+    // day's chat to the next over the same socket.
+    realtime: { disconnectOnEmptyChannelsAfterMs: 5_000 },
   },
 )
 
@@ -326,15 +331,19 @@ async function endSessionIfGone(): Promise<void> {
  * is caught here rather than in each query: this is the one place every request
  * passes, the token refresh included. An abort is a caller changing its mind,
  * and `reportNetworkFailure` tells the two apart from the request's signal.
+ * Every response is noted as well, since one lost request is only news when
+ * the host stays silent after it.
  */
 async function guardedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const sentAt = Date.now()
   let response: Response
   try {
     response = await fetch(input, init)
   } catch (error) {
-    void reportNetworkFailure(requestUrl(input), error, init?.signal)
+    void reportNetworkFailure(requestUrl(input), error, sentAt, init?.signal)
     throw error
   }
+  noteResponse(requestUrl(input))
   if (tokenWasRefused(requestUrl(input), response.status)) void endSessionIfGone()
   return response
 }

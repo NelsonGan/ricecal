@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMemo, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { TextInput } from 'react-native'
+import type { TextInputInstance } from 'react-native'
 
 import { isRoutineLimit, type Routine, useDeleteRoutine, useRoutines, useSaveRoutine } from '@/data'
 import {
@@ -28,7 +28,7 @@ import { AppBar, Button, Screen, Sheet, TextField, useToast } from '@/ui'
  * The same exercise editor the logger uses, without the ticks: a routine says
  * what to do, and the PREVIOUS column shows what was done last time. The page
  * is only the plan; its name and note are asked for when it is saved. There is
- * no Start here: the routine's row on the Workouts tab already has one.
+ * no Start here: the routine's row on the Workouts page already has one.
  */
 export default function RoutineScreen() {
   const { t } = useTranslation(['workouts'])
@@ -92,7 +92,7 @@ function RoutineEditor({
   // The name and note are asked for on Save, in a card over the exercises,
   // so the page itself is only the plan.
   const [naming, setNaming] = useState(false)
-  const nameField = useRef<TextInput>(null)
+  const nameField = useRef<TextInputInstance>(null)
   const confirmDelete = useDeleteConfirm({
     item: routine,
     title: t('workouts:routines.deleteTitle'),

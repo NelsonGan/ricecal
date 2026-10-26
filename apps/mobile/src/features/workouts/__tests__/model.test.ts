@@ -25,6 +25,7 @@ import {
   newWorkout,
   restAfter,
   setHints,
+  setLoad,
   setVolume,
   showsVolume,
   timedSeconds,
@@ -493,7 +494,46 @@ describe('records while training', () => {
 
   it('totals a set in cents, as the database does', () => {
     expect(setVolume({ weightKg: 43.09, reps: 5 }, 'weight_reps')).toBe(215.45)
+    // With no weigh-in an assisted set has no load to count.
     expect(setVolume({ weightKg: 40, reps: 5 }, 'assisted_reps')).toBeNull()
+  })
+
+  it('prices a body weight movement with the body, as workout_set_values does', () => {
+    // The body less the machine's help, and plus what hangs from the belt.
+    expect(setLoad(30, 'assisted_reps', 80)).toBe(50)
+    expect(setVolume({ weightKg: 30, reps: 8 }, 'assisted_reps', 80)).toBe(400)
+    expect(setVolume({ weightKg: 10, reps: 5 }, 'weighted_reps', 80)).toBe(450)
+    expect(setVolume({ weightKg: null, reps: 6 }, 'weighted_reps', 80)).toBe(480)
+    // Help heavier than the body lifts nothing.
+    expect(setVolume({ weightKg: 90, reps: 5 }, 'assisted_reps', 80)).toBeNull()
+    // Without a weigh-in a weighted set counts what was added.
+    expect(setVolume({ weightKg: 10, reps: 5 }, 'weighted_reps')).toBe(50)
+    expect(setVolume({ weightKg: 12.5, reps: 3 }, 'assisted_reps', 72.35)).toBe(179.55)
+    expect(showsVolume(['assisted_reps'])).toBe(true)
+  })
+
+  it('counts the body in the live total and in an assisted volume record', () => {
+    const pull = {
+      exerciseId: 'assisted-pull-up',
+      name: 'Pull Up (Assisted)',
+      tracking: 'assisted_reps' as const,
+    }
+    const workout = completeAll(
+      workoutWith([
+        {
+          ...pull,
+          sets: [
+            { weightKg: 30, reps: 8 },
+            { weightKg: 20, reps: 8 },
+          ],
+        },
+      ]),
+      2,
+    )
+    expect(liveTotals(workout, 80).volumeKg).toBe(400 + 480)
+    const records = recordSets(workout.exercises[0], { ...bests, bestSetVolumeKg: 450 }, 80)
+    expect(records.get(workout.exercises[0].sets[1].id)).toContain('volume')
+    expect(records.get(workout.exercises[0].sets[0].id) ?? []).not.toContain('volume')
   })
 
   it('gives a tie on weight to the set with more reps', () => {
@@ -539,7 +579,7 @@ describe('energy and Apple Health', () => {
       1,
     )
     // (5 - 1) x 70 kg x 1 h
-    expect(estimateKcal(workout, 3600, 70)).toBe(280)
+    expect(estimateKcal(workout, 3600, { weightKg: 70, restingKcalPerDay: null })).toBe(280)
     expect(healthActivityType(workout)).toBe(78)
   })
 
@@ -556,7 +596,40 @@ describe('energy and Apple Health', () => {
       1,
     )
     // An hour typed into a workout that lasted a minute is priced as a minute.
-    expect(estimateKcal(workout, 60, 70)).toBe(5)
+    expect(estimateKcal(workout, 60, { weightKg: 70, restingKcalPerDay: null })).toBe(5)
+  })
+
+  it("takes off the person's own resting rate rather than one MET", () => {
+    const workout = completeAll(
+      workoutWith([
+        {
+          exerciseId: 'dance',
+          name: 'Dance',
+          tracking: 'duration',
+          sets: [{ durationS: 3600 }],
+        },
+      ]),
+      1,
+    )
+    // 5 x 70 kg x 1 h, less 1,440 kcal a day of resting energy for that hour.
+    expect(estimateKcal(workout, 3600, { weightKg: 70, restingKcalPerDay: 1440 })).toBe(290)
+  })
+
+  it('prices a session of sets no higher than vigorous resistance training', () => {
+    const workout = completeAll(
+      workoutWith([
+        {
+          exerciseId: 'pull-up',
+          name: 'Pull Up',
+          tracking: 'weighted_reps',
+          sets: [{ reps: 8 }, { reps: 8 }, { reps: 8 }],
+        },
+      ]),
+      1,
+    )
+    // Pull-ups are vigorous calisthenics (MET 8) done continuously; an hour
+    // of sets with rests between is priced at 6: (6 - 1) x 80 kg x 1 h.
+    expect(estimateKcal(workout, 3600, { weightKg: 80, restingKcalPerDay: null })).toBe(400)
   })
 
   it('refuses to guess without a body weight', () => {

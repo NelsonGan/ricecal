@@ -1,6 +1,8 @@
 import {
+  type ComponentType,
   createContext,
   type ReactNode,
+  type Ref,
   useCallback,
   useContext,
   useEffect,
@@ -10,8 +12,7 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import type WebView from 'react-native-webview'
-import type { WebViewMessageEvent } from 'react-native-webview'
+import type { WebViewMessageEvent, WebViewProps } from 'react-native-webview'
 
 import { env, isConfigured } from '@/lib/env'
 import { reportMessage } from '@/lib/errors'
@@ -46,12 +47,16 @@ export function captchaConfigured(): boolean {
  * landed, and a top-level import puts that throw in the module graph of every
  * `(auth)` screen. Absent, this file behaves as it does with no site key.
  */
-function loadWebView(): typeof WebView | null {
+/** The one method used through the ref. webview 14's types no longer type the ref. */
+type WebViewHandle = { injectJavaScript: (script: string) => void }
+type WebViewComponent = ComponentType<WebViewProps & { ref?: Ref<WebViewHandle> }>
+
+function loadWebView(): WebViewComponent | null {
   try {
     // `require`, not `import`: a static one throws at module scope on a binary
     // without the native side, which is the case this whole function exists to
     // survive.
-    return require('react-native-webview').default as typeof WebView
+    return require('react-native-webview').default as WebViewComponent
   } catch (error) {
     console.warn('[captcha] no WebView in this build, sending no captcha token', error)
     return null
@@ -232,7 +237,7 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
 
   const { t } = useTranslation(['auth', 'common'])
 
-  const web = useRef<WebView>(null)
+  const web = useRef<WebViewHandle>(null)
   const ready = useRef(false)
   /** Requests that arrived before the widget finished loading. */
   const queued = useRef<(() => void)[]>([])

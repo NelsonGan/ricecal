@@ -8,6 +8,7 @@ const {
   withInfoPlist,
   withXcodeProject,
 } = require('expo/config-plugins')
+const { writeExerciseArt } = require('./exerciseArt')
 
 /**
  * Puts the WidgetKit extension into the generated Xcode project.
@@ -19,6 +20,7 @@ const {
  *   widgets/ios/*.swift                 the extension itself
  *   modules/ricecal-widgets/ios/…Store  the file the app and the widget share
  *   assets/icons/**                     the four icons the widgets draw
+ *   assets/exercises/                   each exercise's drawing, for the Live Activity
  *   node_modules/@expo-google-fonts     Baloo 2 and Nunito
  *
  * Android needs none of this: its widgets are an `AppWidgetProvider` and some
@@ -49,6 +51,15 @@ const ICONS = [
   ['food/rice-bowl.png', 'wg-mark.png'],
   ['body/dumbbell.png', 'wg-dumbbell.png'],
 ]
+
+/**
+ * The exercise drawings, for the Live Activity's tile. The lock screen draws
+ * one at about 44 pt, which a 3x screen would fill at 132 px; these soft
+ * drawings take 96 px without looking it, and 278 of them stay at about 2 MB
+ * rather than four.
+ */
+const ART_CATALOG = 'Exercises.xcassets'
+const ART_PX = 96
 
 /**
  * The three faces, by the PostScript names `WidgetTheme.swift` asks for. Copied
@@ -160,6 +171,8 @@ function withWidgetFiles(config, { appGroup, scheme }) {
         fs.copyFileSync(resolveFont(projectRoot, from), path.join(targetDir, to))
       }
 
+      writeExerciseArt(projectRoot, path.join(targetDir, ART_CATALOG), ART_PX)
+
       fs.writeFileSync(
         path.join(targetDir, 'Info.plist'),
         infoPlist({
@@ -249,7 +262,10 @@ function withAppInfoPlist(config, appGroup) {
 function withWidgetTarget(config, { bundleId, appGroup }) {
   return withXcodeProject(config, (cfg) => {
     const project = cfg.modResults
-    if (project.pbxTargetByName(TARGET)) return cfg
+    if (project.pbxTargetByName(TARGET)) {
+      addWidgetArt(project)
+      return cfg
+    }
 
     const sources = fs
       .readdirSync(path.join(cfg.modRequest.platformProjectRoot, TARGET))
@@ -301,9 +317,33 @@ function withWidgetTarget(config, { bundleId, appGroup }) {
     }
 
     applyBuildSettings(project, target, { bundleId, appGroup, version: cfg.version })
+    addWidgetArt(project)
 
     return cfg
   })
+}
+
+/**
+ * The drawings' catalog in the extension's Resources. Apart from the rest of
+ * the target, and checked by name, so a project made before it existed gets
+ * it on its next prebuild without `--clean`, and only once.
+ */
+function addWidgetArt(project) {
+  // Names are stored quoted, which `findTargetKey` compares against as they are.
+  const targets = project.pbxNativeTargetSection()
+  const targetUuid = Object.keys(targets).find(
+    (key) => !key.endsWith('_comment') && String(targets[key].name).replace(/"/g, '') === TARGET,
+  )
+  // In the extension's own group, whose path is the folder, so the reference
+  // is the catalog's name alone.
+  const group = project.findPBXGroupKey({ path: TARGET })
+  if (!targetUuid || !group || project.hasFile(ART_CATALOG)) return
+  const file = project.addFile(ART_CATALOG, group, { lastKnownFileType: 'folder.assetcatalog' })
+  if (!file) return
+  file.uuid = project.generateUuid()
+  file.target = targetUuid
+  project.addToPbxBuildFileSection(file)
+  project.addToPbxResourcesBuildPhase(file)
 }
 
 /** Whether `appUuid` already lists a dependency on `targetUuid`. */

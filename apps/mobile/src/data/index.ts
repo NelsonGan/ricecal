@@ -48,6 +48,7 @@ export { foldToDishes, useFood, useFoodSearch, useRecentFoods } from './foods'
 export { type GoalsInput, useSetTargets, useTargets } from './goals'
 export {
   type ConnectResult,
+  requestHealthSync,
   type SyncProgress,
   useConnectHealth,
   useHealthAutoSync,
@@ -93,6 +94,8 @@ export {
 } from './profile'
 export {
   isRecipeLimit,
+  isStorableAmount,
+  isStorablePerUnit,
   type PublishResult,
   type RecipeIngredientInput,
   type RecipeInput,
@@ -101,6 +104,7 @@ export {
   type RecipeSource,
   type SaveResult,
   type ScannedRecipe,
+  storedAmount,
   useDeleteRecipe,
   usePublishRecipe,
   useReadRecipe,

@@ -20,7 +20,7 @@ import { screenshotMode } from '@/lib/screenshot-mode'
 import { supabase } from '@/lib/supabase'
 import { daysAgo } from './activity'
 import { dateKey } from './client'
-import { keys } from './keys'
+import { invalidateGroupBoards, keys } from './keys'
 import { fetchProfile } from './profile'
 import { useUserId } from './session'
 import { fetchWeighIns } from './weight'
@@ -487,6 +487,7 @@ function invalidateAfterSync(queryClient: QueryClient, userId: string, changed =
   queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
   if (!changed) return
   queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+  invalidateGroupBoards(queryClient, userId)
   // The budget on Today is goal plus burned, so a connect that did not move it
   // would look like it had not worked.
   queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
@@ -656,6 +657,18 @@ export function useSyncHealth() {
   })
 }
 
+const wanted = new Set<() => void>()
+
+/**
+ * Something on this phone just wrote energy into the health store (a workout
+ * saved to Apple Health), so the budget hears it now rather than at the next
+ * foreground: a workout's burn on Today beside a ring that has not moved reads
+ * as a bug. Does nothing while health is not connected.
+ */
+export function requestHealthSync(): void {
+  for (const listener of wanted) listener()
+}
+
 /**
  * Keeps a connected account in step, without anybody asking. Mounted once, high
  * in the tree, because it is a background rule about the account rather than
@@ -686,6 +699,10 @@ export function useHealthAutoSync(provider: ProviderId | null): {
   // where a foreground event and a pull-to-refresh can both start the same
   // delete-and-replace pass before React has rendered that pending state.
   const running = useRef(false)
+  // A pass asked for by `requestHealthSync` while one was already reading: that
+  // one may have read before the write it was asked about, so one more follows.
+  const again = useRef(false)
+  const runRef = useRef<(force: boolean, urgent?: boolean) => void>(() => {})
 
   // Whether the pass in flight was asked for. State rather than a ref: the refresh
   // control has to re-render when it changes.
@@ -698,11 +715,14 @@ export function useHealthAutoSync(provider: ProviderId | null): {
   syncRef.current = sync
 
   const run = useCallback(
-    (force: boolean) => {
+    (force: boolean, urgent = false) => {
       if (!provider || screenshotMode) return
-      if (running.current) return
+      if (running.current) {
+        if (urgent) again.current = true
+        return
+      }
       const now = Date.now()
-      if (!force && now - lastRun.current < MIN_INTERVAL_MS) return
+      if (!force && !urgent && now - lastRun.current < MIN_INTERVAL_MS) return
       lastRun.current = now
       running.current = true
       // After the guards, so a pull that was thrown away for want of a provider does
@@ -717,11 +737,16 @@ export function useHealthAutoSync(provider: ProviderId | null): {
         onSettled: () => {
           running.current = false
           if (force) setForced(false)
+          if (again.current) {
+            again.current = false
+            runRef.current(false, true)
+          }
         },
       })
     },
     [provider],
   )
+  runRef.current = run
 
   useEffect(() => {
     if (!provider) return
@@ -730,7 +755,12 @@ export function useHealthAutoSync(provider: ProviderId | null): {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') run(false)
     })
-    return () => subscription.remove()
+    const urgent = () => run(false, true)
+    wanted.add(urgent)
+    return () => {
+      subscription.remove()
+      wanted.delete(urgent)
+    }
   }, [provider, run])
 
   // `forced` alone, not `forced && sync.isPending`. Both are set in the same event

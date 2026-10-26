@@ -3,6 +3,7 @@ import { router } from 'expo-router'
 import { useEffect } from 'react'
 
 import { useSession } from '@/data/session'
+import { setOpenGroup } from '@/features/groups/store'
 import { openLogger } from '@/features/workouts/loggerOpen'
 import { getActiveWorkout } from '@/features/workouts/store'
 import { track } from '@/lib/analytics'
@@ -46,10 +47,10 @@ export function useReportLinks(): void {
       const kind = response?.notification.request.content.data?.kind
       if (!alive) return
       // A running workout's notices open its logger, and a training-day
-      // reminder the tab it is about. Not counted: they are the workout
+      // reminder the Workouts page. Not counted: they are the workout
       // talking, not a way back into the app. A notice can outlive its
       // workout in Notification Center, so with none running it lands on the
-      // tab rather than on an empty logger.
+      // page rather than on an empty logger.
       //
       // Back to a logger that is already open, wherever it is in the stack:
       // with the library or an exercise's page on top of it, `navigate` pushed
@@ -61,6 +62,26 @@ export function useReportLinks(): void {
       }
       if (kind === 'workout-reminder') {
         router.push('/workouts')
+        return
+      }
+      // A nudge, an invite or a chat message from a group, the pushes that come
+      // from a server. It opens the Groups tab on that group's board, or on the
+      // list for an invite, which waits behind the envelope there. A message
+      // opens the group's thread over the board, so going back lands on the
+      // board, with the keyboard up: a tapped message is one to answer.
+      if (kind === 'group') {
+        const data = response?.notification.request.content.data
+        const groupId = typeof data?.groupId === 'string' ? data.groupId : null
+        const day = typeof data?.day === 'string' ? data.day : undefined
+        if (userId && groupId && !data?.invite) setOpenGroup(userId, groupId, day)
+        if (userId && data?.invite) setOpenGroup(userId, null)
+        track('Notification Opened', {
+          kind: data?.invite ? 'group_invite' : data?.chat ? 'group_message' : 'group_nudge',
+        })
+        router.navigate('/groups')
+        if (data?.chat && groupId) {
+          router.navigate({ pathname: '/group/chat', params: { id: groupId, reply: '1' } })
+        }
         return
       }
       if (!isReport(kind)) return

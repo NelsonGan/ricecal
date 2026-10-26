@@ -545,7 +545,8 @@ entrypoint = "./functions/healthcheck/index.ts"
 # The photo-scan cascade. verify_jwt = false for the same reason as
 # healthcheck: the function inspects the Authorization header itself. Secrets
 # it reads: OPENROUTER_API_KEY (absent locally, which switches it into mock
-# mode), optional OPENROUTER_MODEL and MOCK_AI.
+# mode), optional OPENROUTER_BYOK_MODEL (`off` skips Haiku), OPENROUTER_MODEL
+# (the fallback) and MOCK_AI.
 [functions.scan-meal]
 enabled = true
 verify_jwt = false
@@ -590,8 +591,9 @@ entrypoint = "./functions/delete-account/index.ts"
 
 # Recipes: fill a form in from a photograph of the pot, and review one somebody
 # asked to publish. Same auth pattern as the others. Secrets it reads:
-# OPENROUTER_API_KEY (absent locally, which switches it into mock mode) and the
-# R2 four, for the photograph — the review needs neither.
+# OPENROUTER_API_KEY (absent locally, which switches it into mock mode), the
+# same optional model secrets as scan-meal, and the R2 four, for the
+# photograph — the review needs neither.
 [functions.recipes]
 enabled = true
 verify_jwt = false
@@ -604,6 +606,12 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/social/deno.json"
 entrypoint = "./functions/social/index.ts"
+
+[functions.groups]
+enabled = true
+verify_jwt = false
+import_map = "./functions/groups/deno.json"
+entrypoint = "./functions/groups/index.ts"
 
 # RevenueCat's webhook, and the only writer of `subscriptions`. NOT the same
 # auth pattern as the others: there is no user and no Supabase JWT, so it

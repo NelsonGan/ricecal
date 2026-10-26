@@ -55,6 +55,8 @@ type CellProps = {
   /** A day that has not happened: dimmed, and not selectable. */
   ahead: boolean
   onSelect: (date: string) => void
+  /** The day shown beside the grid, where there is room for both. */
+  selected?: boolean
   label?: string
 }
 
@@ -69,7 +71,7 @@ type CellProps = {
  * before breakfast, a day still ahead and a day the account had no budget on get
  * none: a day nobody has had yet has not been missed.
  */
-function Cell({ date, plate, mark, ahead, onSelect, label }: CellProps) {
+function Cell({ date, plate, mark, ahead, onSelect, selected = false, label }: CellProps) {
   // Called unconditionally, on `undefined` for a day with no photograph, which
   // is what the hook takes: a cell is a component so that the rule about hooks
   // holds for the empty ones as well as for the full ones.
@@ -106,19 +108,23 @@ function Cell({ date, plate, mark, ahead, onSelect, label }: CellProps) {
         'h-[66px] flex-1 items-center justify-center gap-0.5 rounded-[14px] px-0.5 py-1',
         BORDER,
         logged && 'bg-track',
+        selected && 'bg-pandan-soft',
         mark && outlines[mark],
         ahead && 'opacity-40',
       )}
       onPress={ahead ? undefined : () => onSelect(date)}
       disabled={ahead}
       accessibilityRole="button"
-      accessibilityState={{ disabled: ahead }}
+      accessibilityState={{ disabled: ahead, selected }}
       accessibilityLabel={label}
     >
       {/* Fixed calendar cells keep dates on one line; the button announces
           the full translated date and verdict. */}
       <Text
-        className="font-display text-[11px] leading-[13px] text-faint"
+        className={cn(
+          'font-display text-[11px] leading-[13px]',
+          selected ? 'text-pandan-ink' : 'text-faint',
+        )}
         numberOfLines={1}
         maxFontSizeMultiplier={1.3}
       >
@@ -207,6 +213,11 @@ export type MonthCalendarProps = {
   onMonthChange: (start: string) => void
   onSelect: (date: string) => void
   today: string
+  /**
+   * The day to mark as chosen. Only passed where the day's diary is on screen
+   * beside the grid (iPhone Duo open); alone, a tap leaves the grid instead.
+   */
+  selected?: string
   className?: string
 }
 
@@ -227,6 +238,7 @@ export function MonthCalendar({
   onMonthChange,
   onSelect,
   today,
+  selected,
   className,
 }: MonthCalendarProps) {
   const { t } = useTranslation('logging')
@@ -286,6 +298,7 @@ export function MonthCalendar({
                   mark={mark}
                   ahead={ahead}
                   onSelect={onSelect}
+                  selected={date !== null && date === selected}
                   label={
                     at
                       ? t(`week.a11y.${mark ?? (ahead ? 'ahead' : 'plain')}`, {

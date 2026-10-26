@@ -15,9 +15,9 @@ import {
 import { track } from '@/lib/analytics'
 import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Icon, IconButton, Screen, useToast } from '@/ui'
+import { Aside, Button, Icon, IconButton, Screen, useToast, useWindowLayout } from '@/ui'
 import { PlanTerms } from './PlanTerms'
-import { ProPitch } from './ProPitch'
+import { ProDetails, ProPlanChoice } from './ProPitch'
 import { ProWordmark } from './ProWordmark'
 import { trackPurchaseAbandoned, trackPurchaseStarted } from './tracking'
 
@@ -126,13 +126,23 @@ export function PaywallOffer(props: PaywallOfferProps) {
   const lifetime = plan === 'lifetime'
   const freeTrialEligible = prices?.[plan]?.freeTrialEligible === true
   const busy = storeAction !== null
+  const layout = useWindowLayout()
 
   return (
     <View className="flex-1 bg-canvas">
       {/* One fixed header for both routes. The close control is positioned
           outside the centring calculation, so the wordmark stays at the
           screen's true midpoint while the offer below it scrolls. */}
-      <View className="bg-canvas px-gutter" style={{ paddingTop: insets.top + spacing.sm }}>
+      {/* Outside `Screen`, so it keeps clear of iOS's side column itself: the
+          close button sat under iPhone Duo's camera. Zero on other phones. */}
+      <View
+        className="bg-canvas"
+        style={{
+          paddingTop: insets.top + spacing.sm,
+          paddingLeft: spacing.gutter + layout.left,
+          paddingRight: spacing.gutter + layout.right,
+        }}
+      >
         <View className="relative min-h-[44px] flex-row items-center justify-center">
           <ProWordmark />
           <IconButton
@@ -166,7 +176,12 @@ export function PaywallOffer(props: PaywallOfferProps) {
           </View>
         }
       >
-        <ProPitch plan={plan} onPlanChange={selectPlan} onRestore={restore} disabled={busy} />
+        {/* With two panes what Pro adds is the first and the plan choice the
+            second, so the plans sit over the Subscribe button they feed. */}
+        <Aside>
+          <ProPlanChoice plan={plan} onPlanChange={selectPlan} disabled={busy} />
+        </Aside>
+        <ProDetails onRestore={restore} disabled={busy} />
       </Screen>
     </View>
   )

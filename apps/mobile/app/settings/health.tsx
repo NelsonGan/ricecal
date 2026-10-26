@@ -17,6 +17,7 @@ import { type Availability, canOfferDemo, offeredProviders, type ProviderId } fr
 import { useBack } from '@/lib/navigation'
 import {
   AppBar,
+  Aside,
   Badge,
   Button,
   Card,
@@ -170,37 +171,42 @@ export default function HealthSettingsScreen() {
             </View>
           </Card>
 
-          <Card title={t('activity:settings.sourceTitle')} flush>
-            <View className="px-7">
-              {READS.map((read, index) => (
-                <ListRow
-                  key={read.key}
-                  title={t(read.label)}
-                  leading={<Icon {...read.icon} size={30} />}
-                  chevron={false}
-                  divider={index < READS.length - 1}
-                  trailing={
-                    // Only Health Connect can answer this per type. On iOS every
-                    // row says "On", which is what we asked for rather than what
-                    // was granted — and the screen says so in its header comment
-                    // because there is no honest way to say it in a row.
-                    <Text
-                      variant="meta"
-                      className={
-                        provider !== 'health_connect' || granted.has(read.connectType)
-                          ? 'text-pandan-ink'
-                          : 'text-muted'
-                      }
-                    >
-                      {provider !== 'health_connect' || granted.has(read.connectType)
-                        ? t('activity:settings.granted')
-                        : t('activity:settings.notGranted')}
-                    </Text>
-                  }
-                />
-              ))}
-            </View>
-          </Card>
+          {/* With two panes, the connection and its way out (the disconnect
+              card below) are the first, and what is read and how it counts the
+              second. */}
+          <Aside>
+            <Card title={t('activity:settings.sourceTitle')} flush>
+              <View className="px-7">
+                {READS.map((read, index) => (
+                  <ListRow
+                    key={read.key}
+                    title={t(read.label)}
+                    leading={<Icon {...read.icon} size={30} />}
+                    chevron={false}
+                    divider={index < READS.length - 1}
+                    trailing={
+                      // Only Health Connect can answer this per type. On iOS every
+                      // row says "On", which is what we asked for rather than what
+                      // was granted — and the screen says so in its header comment
+                      // because there is no honest way to say it in a row.
+                      <Text
+                        variant="meta"
+                        className={
+                          provider !== 'health_connect' || granted.has(read.connectType)
+                            ? 'text-pandan-ink'
+                            : 'text-muted'
+                        }
+                      >
+                        {provider !== 'health_connect' || granted.has(read.connectType)
+                          ? t('activity:settings.granted')
+                          : t('activity:settings.notGranted')}
+                      </Text>
+                    }
+                  />
+                ))}
+              </View>
+            </Card>
+          </Aside>
         </>
       ) : (
         <ConnectPanel
@@ -214,40 +220,42 @@ export default function HealthSettingsScreen() {
         />
       )}
 
-      <Card flush>
-        <View className="px-7">
-          <ToggleRow
-            title={t('activity:settings.extendBudget')}
-            description={t('activity:settings.extendBudgetBody')}
-            value={settings?.activity_extends_budget ?? true}
-            onValueChange={(value) => updateSettings.mutate({ activity_extends_budget: value })}
-          />
-
-          <View className="flex-row items-center gap-md py-3.5">
-            <View className="min-w-0 flex-1">
-              <Text variant="bodyStrong">{t('activity:settings.stepGoal')}</Text>
-            </View>
-            {/* A stepper rather than a slider: a step goal is a round number
-                people name — 8,000, 10,000 — not a value swept to. */}
-            <Stepper
-              decrementLabel={t('common:a11y.decrease')}
-              incrementLabel={t('common:a11y.increase')}
-              value={settings?.step_goal ?? 8000}
-              onChange={(value) => updateSettings.mutate({ step_goal: value })}
-              min={1000}
-              max={30000}
-              step={500}
-              // Separated, like the same number everywhere else it appears —
-              // "Goal 8,000 steps" on the steps screen is this figure. The
-              // default format is fraction-aware for portions and left this one
-              // reading "8000". Display only: this stepper is not `editable`,
-              // so no separator ever reaches the parser.
-              format={count}
-              accessibilityLabel={t('activity:settings.stepGoal')}
+      <Aside>
+        <Card flush>
+          <View className="px-7">
+            <ToggleRow
+              title={t('activity:settings.extendBudget')}
+              description={t('activity:settings.extendBudgetBody')}
+              value={settings?.activity_extends_budget ?? true}
+              onValueChange={(value) => updateSettings.mutate({ activity_extends_budget: value })}
             />
+
+            <View className="flex-row items-center gap-md py-3.5">
+              <View className="min-w-0 flex-1">
+                <Text variant="bodyStrong">{t('activity:settings.stepGoal')}</Text>
+              </View>
+              {/* A stepper rather than a slider: a step goal is a round number
+                  people name — 8,000, 10,000 — not a value swept to. */}
+              <Stepper
+                decrementLabel={t('common:a11y.decrease')}
+                incrementLabel={t('common:a11y.increase')}
+                value={settings?.step_goal ?? 8000}
+                onChange={(value) => updateSettings.mutate({ step_goal: value })}
+                min={1000}
+                max={30000}
+                step={500}
+                // Separated, like the same number everywhere else it appears —
+                // "Goal 8,000 steps" on the steps screen is this figure. The
+                // default format is fraction-aware for portions and left this one
+                // reading "8000". Display only: this stepper is not `editable`,
+                // so no separator ever reaches the parser.
+                format={count}
+                accessibilityLabel={t('activity:settings.stepGoal')}
+              />
+            </View>
           </View>
-        </View>
-      </Card>
+        </Card>
+      </Aside>
 
       {provider === 'demo' ? (
         // Generated rows are not history, so this is a real delete rather than a

@@ -21,6 +21,7 @@
 export { Alert, type AlertProps, type AlertTone } from './Alert'
 // Navigation chrome
 export { AppBar, type AppBarProps } from './AppBar'
+export { Aside } from './Aside'
 // Data display
 export {
   Avatar,
@@ -29,6 +30,8 @@ export {
   type AvatarProps,
   type AvatarSize,
 } from './Avatar'
+// Layout for the window the app has: iPhone Duo's side column and two panes
+export { useOverlayInsets, usePaneWidth, useWindowLayout } from './adaptive'
 // Primitives
 export { Badge, type BadgeProps, type BadgeTone, CountBadge, type CountBadgeProps } from './Badge'
 export {
@@ -44,6 +47,7 @@ export {
   type NavItemProps,
   type NavTab,
   useNavBarFootprint,
+  useNavBarHeight,
   useNavInset,
 } from './BottomNav'
 export { BrandMark, type BrandMarkProps } from './BrandMark'
@@ -79,6 +83,7 @@ export {
   type IconButtonSize,
   type IconButtonVariant,
 } from './IconButton'
+export { InfoTip } from './InfoTip'
 export { ListRow, type ListRowProps } from './ListRow'
 export {
   NUMPAD_BODY_HEIGHT,
@@ -99,7 +104,7 @@ export {
   type ProgressTone,
 } from './ProgressBar'
 // Layout
-export { Screen, type ScreenProps } from './Screen'
+export { footerKeyboardOffset, Screen, type ScreenProps } from './Screen'
 export { SearchField, type SearchFieldProps } from './SearchField'
 export {
   SegmentedControl,

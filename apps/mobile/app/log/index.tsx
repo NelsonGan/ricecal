@@ -2,7 +2,7 @@ import { format, parseISO } from 'date-fns'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { type TextInput, View } from 'react-native'
+import { type TextInputInstance, View } from 'react-native'
 
 import {
   type LogSnapshot,
@@ -169,7 +169,7 @@ function LogSheet() {
     if (panel) storeLogPanel(userId, panel)
   }, [panel, userId])
   const [entered, setEntered] = useState(false)
-  const field = useRef<TextInput>(null)
+  const field = useRef<TextInputInstance>(null)
   useEffect(() => {
     // Focusing during the rise measures the field below the screen and scrolls
     // a long food list past its search box before the sheet has settled.

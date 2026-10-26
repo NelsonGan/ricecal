@@ -121,6 +121,15 @@ export function WeekPicker({ className }: { className?: string }) {
     return found === -1 ? weeks.length - 1 : found
   }, [weeks, initial])
 
+  /**
+   * The page on screen, kept for when the strip changes width. Pages are as wide
+   * as the strip, so a scroll offset means a different week at a different
+   * width: opening iPhone Duo kept the closed display's offset and landed two
+   * weeks back. The list is keyed by its width and reopens here instead. A
+   * phone's strip never changes width, so there it is only ever `page`.
+   */
+  const showing = useRef<number | null>(null)
+
   return (
     <View className={className} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
       {width > 0 ? (
@@ -138,7 +147,11 @@ export function WeekPicker({ className }: { className?: string }) {
           // Opens on the current week. Every page is exactly one list wide, so
           // the offset is arithmetic and the list never has to measure to find
           // it — which is what `initialScrollIndex` needs to land first try.
-          initialScrollIndex={page}
+          key={width}
+          initialScrollIndex={showing.current ?? page}
+          onMomentumScrollEnd={(event) => {
+            showing.current = Math.round(event.nativeEvent.contentOffset.x / width)
+          }}
           getItemLayout={(_data, index) => ({ length: width, offset: width * index, index })}
           onScrollToIndexFailed={({ index }) =>
             list.current?.scrollToOffset({ offset: width * index, animated: false })

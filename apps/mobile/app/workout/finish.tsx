@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
+  useCurrentWeight,
   useExerciseBests,
   useRoutines,
   useSaveRoutine,
@@ -11,6 +12,7 @@ import {
   useWorkoutOverview,
 } from '@/data'
 import {
+  burnNote,
   describeSet,
   distanceText,
   distanceUnitFor,
@@ -26,7 +28,6 @@ import {
   type RoutineUpdate,
   recordSets,
   routineChanges,
-  Stat,
   setVolume,
   shortClock,
   showsVolume,
@@ -34,24 +35,29 @@ import {
   timesError,
   trackWorkoutFinished,
   updatedRoutine,
+  useEnergyBody,
   useExerciseLibrary,
   useLeaveGuard,
   useLiveWorkout,
+  useWatchEnergy,
   useWorkoutSave,
   volumeText,
   WorkoutFields,
   WorkoutUnavailable,
   weightText,
+  workoutBurn,
 } from '@/features/workouts'
 import { UNIT_KEY, unitFor } from '@/lib/units'
 import {
   AppBar,
+  Aside,
   Button,
   Card,
   Dialog,
   type DialogAction,
   Divided,
   Icon,
+  InfoTip,
   Screen,
   Text,
   useHeld,
@@ -84,6 +90,7 @@ export default function FinishWorkoutScreen() {
   const library = useExerciseLibrary()
   const overview = useWorkoutOverview().data
   const bests = useExerciseBests(null).data
+  const bodyKg = useCurrentWeight()
   const routines = useRoutines().data
   const saveRoutine = useSaveRoutine()
 
@@ -104,6 +111,8 @@ export default function FinishWorkoutScreen() {
   })
   const [saving, setSaving] = useState(false)
   const [askRoutine, setAskRoutine] = useState(false)
+  const body = useEnergyBody()
+  const watchKcal = useWatchEnergy(workout?.id)
   // Left mid-save, the save's own navigation landed on whatever came next and
   // cleared a workout somebody had gone back to keep logging.
   const guard = useLeaveGuard({ busy: saving, dirty: false })
@@ -121,6 +130,7 @@ export default function FinishWorkoutScreen() {
       const marked = recordSets(
         exercises.filter((card) => card.exerciseId === exercise.exerciseId),
         byId.get(exercise.exerciseId),
+        bodyKg,
       )
       for (const kind of RECORD_ORDER) {
         const set = exercise.sets.find((entry) => marked.get(entry.id)?.includes(kind))
@@ -128,11 +138,11 @@ export default function FinishWorkoutScreen() {
       }
       return []
     })
-  }, [exercises, bests])
+  }, [exercises, bests, bodyKg])
 
   if (!workout) return <WorkoutUnavailable />
 
-  const totals = liveTotals(workout)
+  const totals = liveTotals(workout, bodyKg)
 
   // The routine it was started from, if it still exists and the workout left it.
   const routine = workout.routineId
@@ -152,6 +162,8 @@ export default function FinishWorkoutScreen() {
 
   const durationS = Math.round((endedAt - startedAt) / 1000)
   const error = timesError(t, startedAt, endedAt)
+  // What the save will record, over the times as they now stand.
+  const burn = workoutBurn({ ...workout, startedAt }, Math.max(0, durationS), body, watchKcal)
   const unitLabel = t(UNIT_KEY[unit])
 
   const recordValue = (kind: RecordKind, set: LiveSet, exercise: LiveExercise): string => {
@@ -159,7 +171,7 @@ export default function FinishWorkoutScreen() {
       case 'e1rm':
         return weightText(t, estimatedOneRepMax(set.weightKg, set.reps), unit)
       case 'volume':
-        return volumeText(t, setVolume(set, exercise.tracking) ?? 0, unit)
+        return volumeText(t, setVolume(set, exercise.tracking, bodyKg) ?? 0, unit)
       case 'duration':
         return shortClock(set.durationS ?? 0)
       case 'distance':
@@ -245,10 +257,13 @@ export default function FinishWorkoutScreen() {
         </Button>
       }
     >
-      {/* The session in one card: that it is done, then what it came to. */}
+      {/* The session in one card: that it is done, then what it came to, each
+          figure on a tile of its own. Left as a grid of bare labels it read as
+          gaps, and the trophy floated alone in the corner. */}
       <Card tone="kaya" contentClassName="gap-4">
         <View className="flex-row items-center gap-3">
-          <View className="min-w-0 flex-1 gap-1">
+          <Icon set="system" name="trophy" size={56} />
+          <View className="min-w-0 flex-1 gap-0.5">
             <Text variant="title" numberOfLines={2}>
               {t('workouts:finish.complete')}
             </Text>
@@ -258,27 +273,28 @@ export default function FinishWorkoutScreen() {
               </Text>
             ) : null}
           </View>
-          <Icon set="system" name="trophy" size={64} />
         </View>
-        <View className="flex-row">
-          <View className="flex-1">
-            <Stat
-              label={t('workouts:finish.duration')}
-              value={durationText(t, Math.max(0, durationS))}
+        <View className="flex-row flex-wrap gap-2">
+          <FigureTile
+            label={t('workouts:finish.duration')}
+            value={durationText(t, Math.max(0, durationS))}
+          />
+          {burn.kcal !== null ? (
+            <FigureTile
+              label={t('workouts:detail.kcalLabel')}
+              value={t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })}
+              info={burnNote(t, burn.source, body !== undefined)}
+              burned
             />
-          </View>
+          ) : null}
           {showsVolume(workout.exercises.map((exercise) => exercise.tracking)) &&
           totals.volumeKg > 0 ? (
-            <View className="flex-1">
-              <Stat
-                label={t('workouts:logger.volume')}
-                value={volumeText(t, totals.volumeKg, unit)}
-              />
-            </View>
+            <FigureTile
+              label={t('workouts:logger.volume')}
+              value={volumeText(t, totals.volumeKg, unit)}
+            />
           ) : null}
-          <View className="flex-1">
-            <Stat label={t('workouts:logger.sets')} value={String(totals.done)} />
-          </View>
+          <FigureTile label={t('workouts:logger.sets')} value={String(totals.done)} />
         </View>
       </Card>
 
@@ -319,40 +335,44 @@ export default function FinishWorkoutScreen() {
         onEnded={setEndedAt}
       />
 
-      <Card title={t('workouts:detail.exercises')} contentClassName="gap-0">
-        <Divided>
-          {exercises.map((exercise) => {
-            const best = bestSet(exercise)
-            return (
-              <View key={exercise.key} className="flex-row items-center gap-3 py-2.5">
-                <ExerciseArt
-                  exerciseId={exercise.exerciseId}
-                  category={library.byId(exercise.exerciseId)?.category}
-                  size={44}
-                />
-                <View className="min-w-0 flex-1">
-                  <Text variant="label" numberOfLines={2}>
-                    {exercise.name}
-                  </Text>
-                  <Text variant="caption">
-                    {t('workouts:history.sets', {
-                      count: exercise.sets.filter((set) => set.done).length,
-                    })}
-                  </Text>
-                </View>
-                {best ? (
-                  <View className="items-end">
-                    <Text variant="micro">{t('workouts:finish.best')}</Text>
-                    <Text variant="label" className="text-pandan-ink">
-                      {describeSet(best, exercise.tracking, unit, distanceUnit, unitLabel)}
+      {/* With two panes what it came to and the fields being saved are the
+          first, and the exercises done the second. See `Aside`. */}
+      <Aside>
+        <Card title={t('workouts:detail.exercises')} contentClassName="gap-0">
+          <Divided>
+            {exercises.map((exercise) => {
+              const best = bestSet(exercise)
+              return (
+                <View key={exercise.key} className="flex-row items-center gap-3 py-2.5">
+                  <ExerciseArt
+                    exerciseId={exercise.exerciseId}
+                    category={library.byId(exercise.exerciseId)?.category}
+                    size={44}
+                  />
+                  <View className="min-w-0 flex-1">
+                    <Text variant="label" numberOfLines={2}>
+                      {exercise.name}
+                    </Text>
+                    <Text variant="caption">
+                      {t('workouts:history.sets', {
+                        count: exercise.sets.filter((set) => set.done).length,
+                      })}
                     </Text>
                   </View>
-                ) : null}
-              </View>
-            )
-          })}
-        </Divided>
-      </Card>
+                  {best ? (
+                    <View className="items-end">
+                      <Text variant="micro">{t('workouts:finish.best')}</Text>
+                      <Text variant="label" className="text-pandan-ink">
+                        {describeSet(best, exercise.tracking, unit, distanceUnit, unitLabel)}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              )
+            })}
+          </Divided>
+        </Card>
+      </Aside>
 
       {/* Only the answers that would change something: Strong's four when both
           the layout and the numbers moved, two otherwise. Cancel is "not
@@ -423,4 +443,40 @@ function bestSet(exercise: LiveExercise): LiveSet | null {
     if (a > c || (a === c && b > d)) best = set
   }
   return best
+}
+
+/**
+ * One figure of the finished workout, on a tile of the card's own warmth. Two
+ * to a row, so four make a block and three leave the last one full width
+ * rather than a hole. The burn is in the colour of burned energy everywhere.
+ */
+function FigureTile({
+  label,
+  value,
+  info,
+  burned = false,
+}: {
+  label: string
+  value: string
+  info?: string
+  burned?: boolean
+}) {
+  return (
+    <View className="min-w-[45%] flex-1 gap-0.5 rounded-md bg-surface/70 px-3.5 py-3">
+      <View className="flex-row items-center gap-1">
+        <Text variant="overlineSm" numberOfLines={1} className="shrink">
+          {label}
+        </Text>
+        {info ? <InfoTip text={info} size={13} /> : null}
+      </View>
+      <Text
+        variant="numeric"
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        className={burned ? 'text-hibiscus-ink' : undefined}
+      >
+        {value}
+      </Text>
+    </View>
+  )
 }

@@ -24,6 +24,11 @@ export type SegmentedControlProps<T extends string> = {
   onChange: (value: T) => void
   /** Read out before the segment labels. */
   accessibilityLabel?: string
+  /**
+   * `sm` for a control repeated inside a list of cards, where the full height
+   * of each one stacked up into a column of tracks.
+   */
+  size?: 'md' | 'sm'
   className?: string
 }
 
@@ -42,11 +47,13 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   accessibilityLabel,
+  size = 'md',
   className,
 }: SegmentedControlProps<T>) {
+  const small = size === 'sm'
   return (
     <View
-      className={cn('flex-row gap-1.5 rounded-md bg-track p-1.5', className)}
+      className={cn('flex-row gap-1.5 rounded-md bg-track', small ? 'p-1' : 'p-1.5', className)}
       accessibilityRole="tablist"
       accessibilityLabel={accessibilityLabel}
     >
@@ -59,8 +66,11 @@ export function SegmentedControl<T extends string>({
             radius={radius.sm + 1}
             containerClassName="flex-1"
             slabClassName={selected ? 'bg-line-strong' : 'bg-transparent'}
-            className={cn('items-center px-1 py-3', selected ? 'bg-surface' : 'bg-transparent')}
-            haptics={false}
+            className={cn(
+              'items-center px-1',
+              small ? 'py-2' : 'py-3',
+              selected ? 'bg-surface' : 'bg-transparent',
+            )}
             onPress={() => onChange(option.value)}
             accessibilityRole="tab"
             accessibilityState={{ selected }}

@@ -1,6 +1,6 @@
 import { forwardRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { TextInput } from 'react-native'
+import type { TextInputInstance } from 'react-native'
 
 import { Icon, IconButton, TextField, type TextFieldProps } from '@/ui'
 
@@ -18,7 +18,7 @@ export type PasswordFieldProps = Omit<TextFieldProps, 'secureTextEntry' | 'right
  * the difference between the keychain offering to save a new password and
  * offering to fill an existing one.
  */
-export const PasswordField = forwardRef<TextInput, PasswordFieldProps>(
+export const PasswordField = forwardRef<TextInputInstance, PasswordFieldProps>(
   function PasswordField(props, ref) {
     const { t } = useTranslation('auth')
     const [shown, setShown] = useState(false)

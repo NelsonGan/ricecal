@@ -24,7 +24,18 @@ import { datePattern } from '@/lib/dates'
 import { askForRating } from '@/lib/rating'
 import { showWeight, UNIT_KEY, unitFor } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
-import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Text } from '@/ui'
+import {
+  Aside,
+  Avatar,
+  Button,
+  Card,
+  ConfirmSheet,
+  Icon,
+  ListRow,
+  Screen,
+  StatTile,
+  Text,
+} from '@/ui'
 
 /** U1 PROFILE */
 export default function MeScreen() {
@@ -227,25 +238,33 @@ export default function MeScreen() {
         />
       </Card>
 
-      <Card title={t('profile:home.settings')} contentClassName="gap-0">
-        <SettingRow
-          icon={{ set: 'food', name: 'cooking-pot' }}
-          title={t('social:myFoods')}
-          onPress={() => router.push('/settings/foods')}
-        />
-        <SettingRow
-          icon={{ set: 'body', name: 'target' }}
-          title={t('profile:home.goals')}
-          value={
-            targetsPending
-              ? undefined
-              : targets
-                ? t('profile:home.goalsValue', { kcal: targets.kcal.toLocaleString() })
-                : '—'
-          }
-          onPress={() => router.push('/settings/goals')}
-        />
-        {/* Above the reminders rather than below them: the times set here are
+      {/* With two panes the account is the first and its settings the second.
+          See `Aside`. */}
+      <Aside>
+        <Card title={t('profile:home.settings')} contentClassName="gap-0">
+          <SettingRow
+            icon={{ set: 'body', name: 'dumbbell' }}
+            title={t('common:nav.workouts')}
+            onPress={() => router.push('/workouts')}
+          />
+          <SettingRow
+            icon={{ set: 'food', name: 'cooking-pot' }}
+            title={t('social:myFoods')}
+            onPress={() => router.push('/settings/foods')}
+          />
+          <SettingRow
+            icon={{ set: 'body', name: 'target' }}
+            title={t('profile:home.goals')}
+            value={
+              targetsPending
+                ? undefined
+                : targets
+                  ? t('profile:home.goalsValue', { kcal: targets.kcal.toLocaleString() })
+                  : '—'
+            }
+            onPress={() => router.push('/settings/goals')}
+          />
+          {/* Above the reminders rather than below them: the times set here are
             the hours a reminder fires at, so this is the row that decides what
             the next one means.
 
@@ -253,76 +272,76 @@ export default function MeScreen() {
             a budget, a count, a pair of units — and four meal times do not fit
             in that space; naming only breakfast would be picking one at
             random. */}
-        <SettingRow
-          icon={{ set: 'system', name: 'clock' }}
-          title={t('profile:home.personalisation')}
-          onPress={() => router.push('/settings/personalisation')}
-        />
-        {/* Under personalisation and above reminders: it is a thing about this
+          <SettingRow
+            icon={{ set: 'system', name: 'clock' }}
+            title={t('profile:home.personalisation')}
+            onPress={() => router.push('/settings/personalisation')}
+          />
+          {/* Under personalisation and above reminders: it is a thing about this
             body rather than a notification preference, and the row it sits next
             to — meal times — is the other place the app is told about a daily
             rhythm. */}
-        {/* With a value, like every row around it. This one had none, on the
+          {/* With a value, like every row around it. This one had none, on the
             screen where the answer — is anything connected at all? — is the
             whole reason to open it. The other rows summarise themselves in a
             word and so can this: the store's name, or that there isn't one. */}
-        <SettingRow
-          icon={{ set: 'system', name: 'watch' }}
-          title={t('activity:settings.title')}
-          value={
-            health.isPending
-              ? undefined
-              : health.data?.connected
-                ? t(`activity:provider.${health.data.provider}`)
-                : t('profile:home.healthOff')
-          }
-          onPress={() => router.push('/settings/health')}
-        />
-        <SettingRow
-          icon={{ set: 'system', name: 'bell' }}
-          title={t('profile:home.reminders')}
-          value={remindersValue}
-          onPress={() => router.push('/settings/reminders')}
-        />
-        <SettingRow
-          icon={{ set: 'system', name: 'contrast' }}
-          title={t('profile:home.units')}
-          value={settings ? t(`profile:home.${settings.units}`) : undefined}
-          onPress={() => router.push('/settings/preferences')}
-        />
-        {/* The Workouts tab has this row too, at the foot of its list. Here as
+          <SettingRow
+            icon={{ set: 'system', name: 'watch' }}
+            title={t('activity:settings.title')}
+            value={
+              health.isPending
+                ? undefined
+                : health.data?.connected
+                  ? t(`activity:provider.${health.data.provider}`)
+                  : t('profile:home.healthOff')
+            }
+            onPress={() => router.push('/settings/health')}
+          />
+          <SettingRow
+            icon={{ set: 'system', name: 'bell' }}
+            title={t('profile:home.reminders')}
+            value={remindersValue}
+            onPress={() => router.push('/settings/reminders')}
+          />
+          <SettingRow
+            icon={{ set: 'system', name: 'contrast' }}
+            title={t('profile:home.units')}
+            value={settings ? t(`profile:home.${settings.units}`) : undefined}
+            onPress={() => router.push('/settings/preferences')}
+          />
+          {/* The Workouts page has this row too, at the foot of its list. Here as
             well because this is where every other setting is looked for. */}
-        <SettingRow
-          icon={{ set: 'system', name: 'settings' }}
-          title={t('workouts:settings.title')}
-          onPress={() => router.push('/workout/settings')}
-        />
-        {/* The tour's permanent home.
+          <SettingRow
+            icon={{ set: 'system', name: 'settings' }}
+            title={t('workouts:settings.title')}
+            onPress={() => router.push('/workout/settings')}
+          />
+          {/* The tour's permanent home.
             It is offered once on Today, as a toast that dismisses itself — so
             somebody who looked away has no other way back to it, and "once" is
             only an acceptable rule because this row exists. */}
-        <SettingRow
-          icon={{ set: 'system', name: 'lightbulb' }}
-          title={t('profile:home.tutorial')}
-          onPress={() => router.push('/tutorial')}
-        />
-        {/* The announcements' permanent home, for the tour's reason: the card
+          <SettingRow
+            icon={{ set: 'system', name: 'lightbulb' }}
+            title={t('profile:home.tutorial')}
+            onPress={() => router.push('/tutorial')}
+          />
+          {/* The announcements' permanent home, for the tour's reason: the card
             over Today is shown once and only for the newest. */}
-        <SettingRow
-          icon={{ set: 'system', name: 'megaphone' }}
-          title={t('news:title')}
-          onPress={() => router.push('/settings/news')}
-        />
-        {/* A sheet rather than a route, because there is no help centre in the
+          <SettingRow
+            icon={{ set: 'system', name: 'megaphone' }}
+            title={t('news:title')}
+            onPress={() => router.push('/settings/news')}
+          />
+          {/* A sheet rather than a route, because there is no help centre in the
             app: the row explains where support actually happens and opens
             Discord. It pointed at the preferences screen, which is the row
             above it wearing a different name. */}
-        <SettingRow
-          icon={{ set: 'system', name: 'help' }}
-          title={t('profile:home.help')}
-          onPress={() => setHelpOpen(true)}
-        />
-        {/* The rating sheet's permanent home, for the reason the tour's row
+          <SettingRow
+            icon={{ set: 'system', name: 'help' }}
+            title={t('profile:home.help')}
+            onPress={() => setHelpOpen(true)}
+          />
+          {/* The rating sheet's permanent home, for the reason the tour's row
             above it exists: the automatic ask is gated to about once a release
             and dismissing it stamps a sixty-day silence, so without this a
             change of mind has nowhere to go.
@@ -331,15 +350,15 @@ export default function MeScreen() {
             Somebody who came here to say the app is not working should reach
             Discord, not a five-star field. `askForRating` skips every threshold
             and stamps the cooldown all the same. */}
-        <SettingRow
-          icon={{ set: 'system', name: 'star' }}
-          title={t('profile:home.rate')}
-          divider={false}
-          onPress={() => askForRating(userId)}
-        />
-      </Card>
+          <SettingRow
+            icon={{ set: 'system', name: 'star' }}
+            title={t('profile:home.rate')}
+            divider={false}
+            onPress={() => askForRating(userId)}
+          />
+        </Card>
 
-      {/* Small and centred rather than a full-width control at the foot of the
+        {/* Small and centred rather than a full-width control at the foot of the
           screen. Signing out is the least likely thing anyone came here to do,
           and at button size it read as the page's main action.
 
@@ -347,16 +366,17 @@ export default function MeScreen() {
           `Button` sets `self-start` on its own container, and align-self beats
           a parent's align-items — so this sat against the left gutter for as
           long as the sentence above claimed it was centred. */}
-      <View>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="self-center"
-          onPress={() => setConfirmSignOut(true)}
-        >
-          {t('profile:home.signOut')}
-        </Button>
-      </View>
+        <View>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-center"
+            onPress={() => setConfirmSignOut(true)}
+          >
+            {t('profile:home.signOut')}
+          </Button>
+        </View>
+      </Aside>
 
       <HelpSheet visible={helpOpen} onClose={() => setHelpOpen(false)} />
 

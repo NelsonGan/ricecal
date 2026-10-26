@@ -1,9 +1,11 @@
 import { createContext, type ReactNode, type Ref, useContext } from 'react'
-import { View } from 'react-native'
+import { View, type ViewInstance } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { radius, slab } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
+import { type TabBarPlacement, useWindowLayout } from './adaptive'
+import { CountBadge } from './Badge'
 import { cn } from './cn'
 import { Icon, type IconProps } from './Icon'
 import { Squish } from './Squish'
@@ -34,11 +36,23 @@ const NavInsetContext = createContext(0)
 export const NavInsetProvider = NavInsetContext.Provider
 export const useNavInset = () => useContext(NavInsetContext)
 
+/**
+ * How much of the bottom the bar itself takes: `NAV_BAR_HEIGHT`, or nothing
+ * where the tabs stand in iOS's side column instead (see `NavRail`). For
+ * whatever floats above the bar, the toast and the running workout.
+ */
+export function useNavBarHeight(): number {
+  return useWindowLayout().tabBar === 'bottom' ? NAV_BAR_HEIGHT : 0
+}
+
 /** The bar's height including its bottom padding, for `NavInsetProvider`. */
 export function useNavBarFootprint(): number {
   const insets = useSafeAreaInsets()
-  return NAV_BAR_HEIGHT + (insets.bottom || 12)
+  return useNavBarHeight() + (insets.bottom || 12)
 }
+
+/** Whether a `NavItem` is standing in the side rail rather than the bottom bar. */
+const RailContext = createContext(false)
 
 export type NavTab<T extends string> = {
   value: T
@@ -67,6 +81,15 @@ export function NavBar({
   className?: string
 }) {
   const insets = useSafeAreaInsets()
+  const { tabBar } = useWindowLayout()
+
+  if (tabBar !== 'bottom') {
+    return (
+      <NavRail side={tabBar} action={action}>
+        {children}
+      </NavRail>
+    )
+  }
 
   return (
     // FLOATING: over the bottom of the screen with no background of its own, so
@@ -96,6 +119,51 @@ export function NavBar({
   )
 }
 
+/**
+ * The same tabs, stood on end in the column iOS keeps down the side of iPhone
+ * Duo for the clock and the camera. Apple's own apps put their tab bar there,
+ * below the status bar and against the bottom, and a bar across the bottom as
+ * well would take a sixth of a screen that is already short.
+ *
+ * The same pill, the same items and the same order, top to bottom for left to
+ * right, so the app reads as one app open or closed. Centred in the column,
+ * which is the side safe-area inset, so nothing in it overlaps the page.
+ */
+function NavRail({
+  side,
+  action,
+  children,
+}: {
+  side: Exclude<TabBarPlacement, 'bottom'>
+  action?: ReactNode
+  children: ReactNode
+}) {
+  const insets = useSafeAreaInsets()
+  const column = side === 'right' ? insets.right : insets.left
+
+  return (
+    <View
+      className="absolute bottom-0 items-center gap-2.5"
+      style={{ [side]: 0, width: column, paddingBottom: insets.bottom || 12 }}
+      pointerEvents="box-none"
+    >
+      <RailContext.Provider value>
+        <View
+          className="items-stretch gap-1 rounded-card border border-line bg-surface py-1.5"
+          style={[FLOAT_SHADOW, { width: column - RAIL_MARGIN * 2 }]}
+          accessibilityRole="tablist"
+        >
+          {children}
+        </View>
+      </RailContext.Provider>
+      {action}
+    </View>
+  )
+}
+
+/** The space either side of the rail inside its column. */
+const RAIL_MARGIN = 8
+
 /** The lift of anything floating over the screen with the bar, so the two read as one layer. */
 export const FLOAT_SHADOW = {
   shadowColor: '#000',
@@ -108,6 +176,10 @@ export const FLOAT_SHADOW = {
 export type NavItemProps = Omit<TappableProps, 'children' | 'style'> & {
   label: string
   icon: IconProps
+  /** A red count over the icon, for something waiting on this tab. */
+  badge?: number
+  /** What the count is of, read out with it: "Groups, Invites 2" rather than "Groups, 2". */
+  badgeLabel?: string
   /**
    * Whether this tab is the active one. Named to match what expo-router's
    * `TabTrigger` injects when used with `asChild`, so no adapter is needed.
@@ -121,12 +193,22 @@ export type NavItemProps = Omit<TappableProps, 'children' | 'style'> & {
    * would flip this column back to a row.
    */
   style?: unknown
-  ref?: Ref<View>
+  ref?: Ref<ViewInstance>
 }
 
 /** One tab in the bar. Sized to fill its share of the row. */
-export function NavItem({ label, icon, isFocused = false, href, style, ...rest }: NavItemProps) {
+export function NavItem({
+  label,
+  icon,
+  badge = 0,
+  badgeLabel,
+  isFocused = false,
+  href,
+  style,
+  ...rest
+}: NavItemProps) {
   const colors = useThemeColors()
+  const rail = useContext(RailContext)
 
   return (
     // `Tappable`, so a tab answers a tap in the hand like every other control.
@@ -136,22 +218,38 @@ export function NavItem({ label, icon, isFocused = false, href, style, ...rest }
       {...rest}
       // Keep the measured footprint stable. Captions can grow within it, while
       // the full label remains available to a screen reader.
-      className="h-[71px] min-w-0 flex-1 items-center justify-center gap-1.5"
+      // In the rail the items stack, so each takes a fixed height rather than
+      // a share of the row, and a little less of it: five fit under the clock
+      // on the closed display.
+      className={cn(
+        'items-center justify-center',
+        rail ? 'h-[62px] gap-1 px-0.5' : 'h-[71px] min-w-0 flex-1 gap-1.5',
+      )}
       accessibilityRole="tab"
       accessibilityState={{ selected: isFocused }}
-      accessibilityLabel={label}
+      accessibilityLabel={
+        badge > 0 ? [label, [badgeLabel, badge].filter(Boolean).join(' ')].join(', ') : label
+      }
     >
       {/* An inactive tab is grey, and the tint goes through `style` rather than
           through `tintColor`. `expo-image` documents both, but only the style
           reliably reaches the view here — sizing arrives the same way and
           demonstrably works, while the prop left these illustrations in full
           colour when unfocused. */}
-      <Icon
-        {...icon}
-        size={26}
-        style={isFocused ? undefined : { tintColor: colors.faint }}
-        tintColor={isFocused ? undefined : colors.faint}
-      />
+      <View>
+        <Icon
+          {...icon}
+          size={26}
+          style={isFocused ? undefined : { tintColor: colors.faint }}
+          tintColor={isFocused ? undefined : colors.faint}
+        />
+        <CountBadge
+          count={badge}
+          className="absolute -right-2.5 -top-1.5 h-5 min-w-5 px-1"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        />
+      </View>
       <Text
         variant="caption"
         className={cn('max-w-full', isFocused ? 'text-pandan-ink' : 'text-faint')}

@@ -19,15 +19,57 @@ const resolve = require(reactNativeResolver)
  * properties of undefined (reading 'loadUnpackers')". Dropping the `.native`
  * extension for requests inside that package picks its JS fallback instead.
  *
- * This mirrors `react-native-worklets/jest/resolver.js`, which cannot be used
- * as-is because it delegates to Jest's default resolver and so would lose the
- * React Native behaviour above.
+ * Reanimated 4.7 needs the same for a handful of its own modules, and only
+ * those: on its web path elsewhere it asks for react-native-web, which is not
+ * installed. `WEB_ONLY_IN_JEST` is copied from
+ * `react-native-reanimated/jest/resolver.js`; check it against that file when
+ * Reanimated moves.
+ *
+ * Both mirror the libraries' own Jest resolvers, which cannot be used as-is:
+ * they delegate to Jest's default resolver and would lose the React Native
+ * behaviour above. They also match by substring, and pnpm names a store folder
+ * after its peers (`react-native-css-interop@…_react-native-worklets@0.13…`),
+ * so a substring match strips `.native` from NativeWind too and loads its web
+ * runtime, which dies on `document`. Match the package folder instead.
  */
-module.exports = (request, options) => {
-  const insideWorklets =
-    options.basedir.includes('react-native-worklets') || request.includes('react-native-worklets')
+const inside = (name) => new RegExp(`(^|[\\\\/])node_modules[\\\\/]${name}([\\\\/]|$)`)
+const IN_WORKLETS = inside('react-native-worklets')
+const IN_REANIMATED = inside('react-native-reanimated')
 
-  if (!insideWorklets) return resolve(request, options)
+const WEB_ONLY_IN_JEST = [
+  'initializers',
+  'mutables',
+  'mappers',
+  'ConfigHelper',
+  'UpdateLayoutAnimations',
+  'useAnimatedRef',
+  'useAnimatedStyle',
+  'WorkletEventHandler',
+  'JSPropsUpdater',
+  'updateProps',
+  'util',
+  'css/component/AnimatedComponent',
+]
+
+function reanimatedWebOnly(request, basedir) {
+  if (!request.startsWith('.') || !IN_REANIMATED.test(basedir)) return false
+  const basename = request.split('/').pop()
+  return WEB_ONLY_IN_JEST.some((entry) =>
+    entry.includes('/') ? request.endsWith(entry) : basename === entry,
+  )
+}
+
+function workletsRequest(request, basedir) {
+  return (
+    IN_WORKLETS.test(basedir) ||
+    request === 'react-native-worklets' ||
+    request.startsWith('react-native-worklets/')
+  )
+}
+
+module.exports = (request, options) => {
+  if (!reanimatedWebOnly(request, options.basedir) && !workletsRequest(request, options.basedir))
+    return resolve(request, options)
 
   return resolve(request, {
     ...options,

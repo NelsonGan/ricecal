@@ -2,7 +2,7 @@ import { memo, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
-import type { ExerciseBests, LastSet } from '@/data'
+import { type ExerciseBests, type LastSet, useCurrentWeight } from '@/data'
 import type { WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Card, Icon, IconButton, Tappable, Text } from '@/ui'
@@ -78,10 +78,13 @@ export const ExerciseCard = memo(function ExerciseCard({
   // Records only while training. Editing compares a saved workout with bests
   // that already include it, and every later one, so its trophies are the
   // saved page's to show.
+  const bodyKg = useCurrentWeight()
   const recordIds = useMemo(
     () =>
-      checkable && bests ? new Set(recordSets(sameExercise ?? exercise, bests).keys()) : NO_RECORDS,
-    [checkable, exercise, sameExercise, bests],
+      checkable && bests
+        ? new Set(recordSets(sameExercise ?? exercise, bests, bodyKg).keys())
+        : NO_RECORDS,
+    [checkable, exercise, sameExercise, bests, bodyKg],
   )
 
   return (

@@ -57,6 +57,7 @@ import {
   foldMealItems,
   type MockSteer,
   mockActive,
+  photoBase64,
   photoNote,
   type Vision,
   type VisionItem,
@@ -211,14 +212,7 @@ Deno.serve(async (req: Request) => {
   if (note) trace.push(`[vision] photo with a note: "${note}"`)
 
   /** Read the photo out of the bucket, as base64 for the vision call. */
-  const fetchPhoto = async (path: string): Promise<string> => {
-    const bytes = await readObject(path)
-    let binary = ''
-    for (let i = 0; i < bytes.length; i += 0x8000) {
-      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
-    }
-    return btoa(binary)
-  }
+  const fetchPhoto = async (path: string): Promise<string> => photoBase64(await readObject(path))
 
   try {
     // The first model call. A failure here ends the scan: there is no item to

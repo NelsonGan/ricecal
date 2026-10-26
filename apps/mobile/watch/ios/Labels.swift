@@ -22,6 +22,7 @@ enum Labels {
     "completeSet": "Complete set",
     "rest": "Rest",
     "skip": "Skip",
+    "restDone": "Rest complete",
     "restMinus": "−15 s",
     "restPlus": "+15 s",
     "exercises": "Exercises",
@@ -86,6 +87,16 @@ enum Format {
     return hours > 0
       ? String(format: "%d:%02d:%02d", hours, minutes, secs)
       : String(format: "%d:%02d", minutes, secs)
+  }
+
+  /// Added to the body (a weighted pull-up) or taken off it (an assisted
+  /// one), as the phone's column headings say: "+kg" and "−kg".
+  static func weightSign(_ tracking: String) -> String {
+    switch tracking {
+    case "weighted_reps": return "+"
+    case "assisted_reps": return "−"
+    default: return ""
+    }
   }
 
   /// At most two places, and none that are zero: 60, 62.5, 61.23.

@@ -30,7 +30,7 @@ import {
   ScanLimitReached,
 } from '../_shared/entitlement.ts'
 import { json } from '../_shared/http.ts'
-import { mockActive } from '../_shared/llm.ts'
+import { mockActive, photoBase64 } from '../_shared/llm.ts'
 import { readSessionId } from '../_shared/posthog.ts'
 import { ownsKey, readObject } from '../_shared/r2.ts'
 import {
@@ -59,12 +59,7 @@ type RecipeRequest = ReadRequest | ReviewRequest
 
 /** The photo, base64'd for the vision call. Same shape as scan-meal's. */
 async function fetchPhoto(path: string): Promise<string> {
-  const bytes = await readObject(path)
-  let binary = ''
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
-  }
-  return btoa(binary)
+  return photoBase64(await readObject(path))
 }
 
 /**

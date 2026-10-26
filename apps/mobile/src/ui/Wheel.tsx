@@ -1,5 +1,6 @@
+import * as Haptics from 'expo-haptics'
 import { useLayoutEffect, useRef } from 'react'
-import { ScrollView, View } from 'react-native'
+import { ScrollView, type ScrollViewInstance, View } from 'react-native'
 
 import { radius } from '@/theme/tokens'
 import { cn } from './cn'
@@ -53,7 +54,7 @@ export const WHEEL_BAND = { top: PAD, height: ROW } as const
  * VoiceOver's swipe up and down send.
  */
 export function Wheel({ options, value, onChange, accessibilityLabel, className }: WheelProps) {
-  const scroller = useRef<ScrollView>(null)
+  const scroller = useRef<ScrollViewInstance>(null)
 
   const found = options.findIndex((option) => option.value === value)
   const index = found === -1 ? 0 : found
@@ -69,12 +70,22 @@ export function Wheel({ options, value, onChange, accessibilityLabel, className 
    */
   const settled = useRef(index)
 
+  /**
+   * The row last felt passing the band, and whether a finger or its flick is
+   * turning the wheel. A notch is felt per row, as the platform's own wheels
+   * do, and only while it is being turned: the wheel parking itself on a value
+   * set from outside is not something the hand did.
+   */
+  const felt = useRef(index)
+  const turning = useRef(false)
+
   // A LAYOUT effect: passive effects flush after the frame is painted, so the
   // first frame of every wheel would be the list parked at its top row and the
   // jump to the selection would be visible.
   useLayoutEffect(() => {
     if (settled.current === index) return
     settled.current = index
+    felt.current = index
     scroller.current?.scrollTo({ y: index * ROW, animated: false })
   }, [index])
 
@@ -96,9 +107,13 @@ export function Wheel({ options, value, onChange, accessibilityLabel, className 
    * passed over, and committing mid-coast re-rendered the list under a
    * decelerating scroll view, which on iOS kills the deceleration where it is.
    */
+  const rowAt = (offset: number) =>
+    Math.min(options.length - 1, Math.max(0, Math.round(offset / ROW)))
+
   const commit = (offset: number) => {
-    const row = Math.round(offset / ROW)
-    const clamped = Math.min(options.length - 1, Math.max(0, row))
+    const clamped = rowAt(offset)
+    turning.current = false
+    felt.current = clamped
     settled.current = clamped
     const option = options[clamped]
     if (option && option.value !== value) onChange(option.value)
@@ -156,6 +171,17 @@ export function Wheel({ options, value, onChange, accessibilityLabel, className 
         // dial with notches in it.
         decelerationRate="fast"
         contentContainerStyle={{ paddingVertical: PAD }}
+        onScrollBeginDrag={() => {
+          turning.current = true
+        }}
+        scrollEventThrottle={16}
+        onScroll={(event) => {
+          if (!turning.current) return
+          const row = rowAt(event.nativeEvent.contentOffset.y)
+          if (row === felt.current) return
+          felt.current = row
+          void Haptics.selectionAsync().catch(() => {})
+        }}
         onMomentumScrollEnd={(event) => commit(event.nativeEvent.contentOffset.y)}
         /* Only when the release leaves nothing to coast. `velocity` is points per
            MILLISECOND, so a deliberate nudge reads in hundredths and the threshold

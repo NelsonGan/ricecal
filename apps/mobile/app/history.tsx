@@ -201,7 +201,7 @@ function HistoryScreen() {
             >
               {t('common:action.retry')}
             </Button>
-          ) : null
+          ) : undefined
         }
         // Not after a failure: the end is reached again on every bounce, and the
         // retry button under the list is the way to ask again.

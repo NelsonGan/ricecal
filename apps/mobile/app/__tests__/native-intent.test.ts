@@ -7,9 +7,9 @@ describe('links rewritten before the router sees them', () => {
     )
   })
 
-  it('goes through the Workouts tab on a cold launch, so the tabs are under the logger', () => {
+  it('goes through Today on a cold launch, so the tabs are under the logger', () => {
     expect(redirectSystemPath({ path: 'ricecal://workout/resume', initial: true })).toBe(
-      '/workouts?resume=1',
+      '/today?resume=1',
     )
   })
 

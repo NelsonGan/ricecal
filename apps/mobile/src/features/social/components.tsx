@@ -13,7 +13,7 @@ import {
   useSyncExternalStore,
 } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FlatList, View, type ViewToken } from 'react-native'
+import { FlatList, type ListViewToken, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   useAnimatedStyle,
@@ -78,11 +78,27 @@ function SocialSkeleton({
   variant = 'cards',
   count = 3,
 }: {
-  variant?: 'cards' | 'feed' | 'rows' | 'grid'
+  variant?: 'cards' | 'feed' | 'rows' | 'grid' | 'comments'
   count?: number
 }) {
   const { t } = useTranslation('social')
   const slots = ['first', 'second', 'third', 'fourth']
+  if (variant === 'comments') {
+    // A post's comments: face, name, a line of text, as `CommentRow` draws them.
+    return (
+      <View accessibilityRole="progressbar" accessibilityLabel={t('loading')}>
+        {slots.slice(0, count).map((slot) => (
+          <View key={slot} className="flex-row items-start gap-3 border-b-2 border-track px-5 py-3">
+            <Skeleton width={44} height={44} rounded={false} className="rounded-[14px]" />
+            <View className="min-w-0 flex-1 gap-2 pt-1">
+              <Skeleton width={96} height={12} />
+              <Skeleton width="70%" height={12} />
+            </View>
+          </View>
+        ))}
+      </View>
+    )
+  }
   if (variant === 'grid') {
     return (
       <View
@@ -115,6 +131,38 @@ function SocialSkeleton({
               <Skeleton width={78} height={10} />
             </View>
             <Skeleton width={88} height={44} rounded={false} />
+          </View>
+        ))}
+      </View>
+    )
+  }
+  if (variant === 'feed') {
+    // A post's own shape: edge to edge, a header row, the square picture with
+    // its facts card over the foot, then the actions. A padded card here made
+    // the feed jump when the real posts replaced it.
+    return (
+      <View accessibilityRole="progressbar" accessibilityLabel={t('loading')}>
+        {slots.slice(0, Math.min(count, 2)).map((slot) => (
+          <View key={slot} className="border-b-2 border-track bg-surface">
+            <View className="min-h-[64px] flex-row items-center gap-3 px-5 py-3">
+              <Skeleton width={40} height={40} rounded={false} className="rounded-[14px]" />
+              <View className="min-w-0 flex-1 gap-2">
+                <Skeleton width={112} height={13} />
+                <Skeleton width={84} height={10} />
+              </View>
+              <Skeleton width={22} height={6} />
+            </View>
+            <View className="aspect-square bg-track">
+              <View className="absolute inset-x-3 bottom-3 gap-2.5 rounded-tile bg-surface p-3">
+                <Skeleton width="45%" height={15} />
+                <Skeleton height={6} />
+                <Skeleton width="70%" height={12} />
+              </View>
+            </View>
+            <View className="flex-row items-center gap-5 px-5 pb-4 pt-3">
+              <Skeleton width={42} height={18} />
+              <Skeleton width={42} height={18} />
+            </View>
           </View>
         ))}
       </View>
@@ -201,7 +249,7 @@ export function SocialPhoto({
   /** Near the viewport, so worth authorizing. A drawn picture stays drawn either way. */
   visible?: boolean
   avatar?: boolean
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
   label: string
   /** Whether the picture is on screen, so what sits over it can match. */
   onShown?: (shown: boolean) => void
@@ -235,7 +283,7 @@ export function SocialPhoto({
   useEffect(() => {
     if (photo.isError) callbacks.current.onFailed?.()
   }, [photo.isError])
-  const box = { sm: 40, md: 52, lg: 64 }[size]
+  const box = { xs: 30, sm: 40, md: 52, lg: 64 }[size]
   const style = avatar
     ? { width: box, height: box, borderRadius: box / 2.8 }
     : { width: '100%' as const, height: '100%' as const }
@@ -1396,24 +1444,30 @@ export function SocialList<T>({
   end,
   header,
   variant = 'cards',
+  skeleton,
   columns = 1,
 }: {
   query: PageQuery<T>
   rowKey: (row: T) => string
   renderRow: (row: T, visible: boolean) => ReactElement
-  empty: string
+  /** What an empty list says; null says nothing, for a list with rows drawn above it. */
+  empty: string | null
   /** Said under the last row once there are no more pages. */
   end?: string
   header?: ReactElement
   variant?: 'cards' | 'feed' | 'rows' | 'grid'
+  /** The loading shape, when the rows are not the variant's usual ones. */
+  skeleton?: 'comments'
   columns?: number
 }) {
   const { t } = useTranslation('social')
   const [viewport, setViewport] = useState({ first: 0, last: columns - 1 })
   const [refreshing, setRefreshing] = useState(false)
   const navInset = useNavInset()
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<T>[] }) => {
-    const indices = viewableItems.flatMap((item) => (item.index === null ? [] : [item.index]))
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ListViewToken[] }) => {
+    const indices = viewableItems.flatMap((item) =>
+      typeof item.index === 'number' ? [item.index] : [],
+    )
     const first = indices.length ? Math.min(...indices) : -1
     const last = indices.length ? Math.max(...indices) : -1
     setViewport((previous) =>
@@ -1500,14 +1554,18 @@ export function SocialList<T>({
       onEndReachedThreshold={variant === 'feed' || variant === 'grid' ? 2 : 0.6}
       ListEmptyComponent={
         query.isPending && query.fetchStatus !== 'paused' ? (
-          <SocialSkeleton variant={variant} />
-        ) : (
+          <SocialSkeleton variant={skeleton ?? variant} />
+        ) : query.fetchStatus === 'paused' || query.isError || empty !== null ? (
           <EmptyState
             title={
-              query.fetchStatus === 'paused' ? t('offline') : query.isError ? t('failed') : empty
+              query.fetchStatus === 'paused'
+                ? t('offline')
+                : query.isError
+                  ? t('failed')
+                  : (empty ?? '')
             }
           />
-        )
+        ) : undefined
       }
       ListFooterComponent={
         query.isFetchNextPageError && rows.length > 0 ? (
@@ -1530,7 +1588,7 @@ export function SocialList<T>({
             {t('retry')}
           </Button>
         ) : query.isFetchingNextPage ? (
-          <SocialSkeleton variant={variant} count={1} />
+          <SocialSkeleton variant={skeleton ?? variant} count={1} />
         ) : query.hasNextPage ? (
           <Button
             size="sm"
@@ -1545,7 +1603,7 @@ export function SocialList<T>({
           <Text variant="meta" className="text-center">
             {end}
           </Text>
-        ) : null
+        ) : undefined
       }
       ListFooterComponentStyle={{ padding: 16 }}
     />

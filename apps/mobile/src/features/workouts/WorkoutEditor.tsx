@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useExerciseBests, useLastSets, useSettings } from '@/data'
+import { useCurrentWeight, useExerciseBests, useLastSets, useSettings } from '@/data'
 import { unitFor } from '@/lib/units'
 import { Button, Dialog, EmptyState, useToast } from '@/ui'
 import { ActionSheet, type SheetAction } from './ActionSheet'
@@ -81,6 +81,7 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
   const lastSets = useLastSets(ids).data
   // All-time bests, which only the live logger measures ticks against.
   const bests = useExerciseBests(null, { enabled: live }).data
+  const bodyKg = useCurrentWeight()
   const bestsById = useMemo(
     () => new Map((bests ?? []).map((entry) => [entry.exerciseId, entry])),
     [bests],
@@ -154,11 +155,12 @@ export function WorkoutEditor({ workout, dispatch, mode }: WorkoutEditorProps) {
 
     const bests = bestsById.get(exercise.exerciseId)
     const cards = workout.exercises.filter((card) => card.exerciseId === exercise.exerciseId)
-    const before = recordSets(cards, bests)
+    const before = recordSets(cards, bests, bodyKg)
     dispatch({ type: 'completeSet', key: exercise.key, setId: set.id, at, fill })
     const after = recordSets(
       cards.map((card) => (card.key === exercise.key ? ticked : card)),
       bests,
+      bodyKg,
     )
     const fresh = after.get(set.id)?.filter((kind) => !before.get(set.id)?.includes(kind))
     if (fresh?.length) {

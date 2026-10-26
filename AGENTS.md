@@ -28,7 +28,7 @@ them with a `raw.githubusercontent.com` URL pinned to the commit SHA, so they
 still render after the branch is deleted.
 
 **Expo has changed.** Read the versioned docs at
-<https://docs.expo.dev/versions/v57.0.0/> before writing any Expo code. Do not
+<https://docs.expo.dev/versions/v58.0.0/> before writing any Expo code. Do not
 work from memory of an older version.
 
 ## Rules for changes
@@ -143,15 +143,17 @@ every agent working in this checkout can read and no commit can carry.
 | project ref, anon key, catalogue URL | `apps/mobile/.env.local` |
 | test account addresses, passwords and uids | `.secrets/agent-notes.md` |
 | project and org refs, store and RevenueCat identifiers | `.secrets/agent-notes.md` |
-| `OPENROUTER_API_KEY` | the function secrets, and it cannot be read back |
+| `OPENROUTER_API_KEY` (production) | the function secrets, and it cannot be read back |
+| `OPENROUTER_API_KEY` (local testing, a separate key on the same OpenRouter account) | `apps/supabase/functions/.env` |
 
 **The secrets endpoint returns digests, not secrets.**
 `GET /v1/projects/<ref>/secrets` puts a 64-character hex hash in `value`. A
 script that reads that field and sends it as a bearer token gets a 401 from
 OpenRouter rather than an obvious "that is a hash", which is an expensive
-twenty minutes. It is why `pnpm eval:prompts` cannot run on a machine that has
-never held the key, and why a prompt change is graded by deploying and driving
-the function that does hold it.
+twenty minutes. That is why local testing uses its own key, kept in
+`apps/supabase/functions/.env`, rather than the production one. The same
+file sets `MOCK_AI=true` so the local stack spends nothing; override it for a
+script that should reach the model (`MOCK_AI=false deno run --env-file=…`).
 
 ## Which stack the app is pointing at
 
@@ -348,12 +350,26 @@ first.
 
 ## Driving the iOS app
 
-**Keep Simulator visible while testing.** Argent and `xcrun simctl` control the
-device, but booting it does not open the macOS Simulator window. Before testing,
-run `open -a Simulator --args -CurrentDeviceUDID <udid>`, then
-`osascript -e 'tell application "Simulator" to activate'`. Verify that the
-device window is visible, and leave it open on the tested screen so the user
-can follow along and inspect the result.
+**Show the device in Expo Device Hub while testing.** `expo-device-hub` is a
+dev dependency, so every `npx expo start` serves a live, interactive view of the
+running simulators and emulators at
+<http://127.0.0.1:8082/_expo/plugins/expo-device-hub> (the address Metro prints
+is the LAN one). Open it in the browser pane, select the device you are testing,
+and leave it on the tested screen so the user can follow along and inspect the
+result. The Hub only starts listing devices once a page is open, and a page
+opened right after Metro starts can stay on "Connecting to the Expo dev
+server": reload it. Use these devices and no others, one at a time (see "One
+simulator at a time"):
+
+| Platform | Device                                                                     | Boot with Argent             |
+| -------- | -------------------------------------------------------------------------- | ---------------------------- |
+| iOS      | RiceCal iPhone 18 Pro simulator, `EF3C5D3C-1A3A-4AE0-886A-A033551C78ED`    | `boot-device` with `udid`    |
+| Android  | `RiceCal_Pixel_10` emulator (Pixel 10, Android 16)                         | `boot-device` with `avdName` |
+
+The Hub and `expo run:android` need the Android SDK and a JDK: start Metro with
+`ANDROID_HOME` and `JAVA_HOME` (JDK 17) set, or the Hub shows only iOS
+simulators. It streams over WebSocket; pnpm skips `node-datachannel`'s build
+script, which only adds an optional WebRTC mode.
 
 **An edit under `widgets/ios/` needs a prebuild, or a copy.** `withWidgets.js`
 copies those files into `ios/RiceCalWidgets/` at prebuild time, so
@@ -456,9 +472,10 @@ com.apple.CoreSimulator.SimRuntime.watchOS-27-0`, then `xcrun simctl pair <watch
   table `authorization`, one row per source and type: 101 is allowed, 102 not
   asked, 104 refused. With both simulators shut down, setting the watch app's
   rows (its source, not the phone app's) on both is the way back.
-- The watchOS simulator measures energy for a strength session and **no heart
-  rate**; a simulator build feeds the session a made-up pulse (README, "The
-  Apple Watch app"), so a heart rate on screen there is not the sensor's.
+- The watchOS simulator measures **no heart rate** and no active energy (every
+  `activeEnergyBurned` sample is 0; only resting energy is real); a simulator
+  build feeds the session a made-up pulse and burn (README, "The Apple Watch
+  app"), so a heart rate or kcal on screen there is not the sensor's.
 - `isWatchAppInstalled` stays false for a watch app installed directly, and
   `transferUserInfo` can take minutes or never arrive between simulators; both
   are handled in the app, and both make a simulator look more broken than it is.
@@ -484,8 +501,9 @@ com.apple.CoreSimulator.SimRuntime.watchOS-27-0`, then `xcrun simctl pair <watch
   Run it detached and watch for the package with `adb shell pm list packages`,
   or it gets killed mid-compile. Kill the daemons afterwards — left running they
   starve the emulator until `system_server` ANRs and taps stop landing.
-- The dev client cannot find Metro on its own: `adb reverse tcp:8081 tcp:8081`,
-  then
+- The dev client cannot find Metro on its own: `adb reverse tcp:8081 tcp:8081`
+  (and `adb reverse tcp:54421 tcp:54421` when `.env.local` points at the local
+  stack, or every auth and diary call fails to connect), then
   `adb shell am start -a android.intent.action.VIEW -d "ricecal://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"`.
 - **No soft keyboard appears when you tap a field.** Gboard ships with "Write in
   text fields" (stylus handwriting) on, which replaces the keyboard with a
@@ -665,7 +683,8 @@ something** — one pass is not a measurement.
 and confirmation dialogs run long — two sentences where one does, both sides of
 a toggle explained where naming one is enough — and they get cut. Write the
 shortest string that still says the thing, then cut again. Drop a hint entirely
-if the label already carries it. There is no tooltip component here, so a detail
-that will not fit is a detail to cut rather than to hide. Every string is also
+if the label already carries it. The one tooltip is `InfoTip` (an ⓘ that opens
+a bubble), for where a figure came from; it is not a place to park a detail
+that will not fit, which is a detail to cut rather than to hide. Every string is also
 carried into twelve other languages (`src/i18n/languages.ts` is the list), so
 length costs screen space and translation churn in all thirteen.

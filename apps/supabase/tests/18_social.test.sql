@@ -43,7 +43,7 @@ select ok(not exists (
   where n.nspname = 'public' and c.relkind = 'r' and c.relname like 'social_%' and not c.relrowsecurity
 ), 'every exposed social table has RLS');
 select ok(not exists (
-  select 1 from information_schema.columns where table_schema = 'public'
+  select 1 from information_schema.columns where table_schema in ('public', 'private')
   and table_name in ('social_profiles', 'social_posts')
   and column_name in ('email', 'birth_date', 'sex', 'height_cm', 'target_weight_kg', 'log_date',
     'logged_at', 'note', 'base_kcal', 'base_carbs_g', 'base_protein_g', 'base_fat_g')

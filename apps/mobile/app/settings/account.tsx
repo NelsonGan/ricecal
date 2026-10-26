@@ -4,7 +4,14 @@ import * as Clipboard from 'expo-clipboard'
 import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, Keyboard, Modal, ScrollView, type TextInput, View } from 'react-native'
+import {
+  ActivityIndicator,
+  Keyboard,
+  Modal,
+  ScrollView,
+  type TextInputInstance,
+  View,
+} from 'react-native'
 
 import {
   storedImageSource,
@@ -580,8 +587,8 @@ function ChangePasswordForm({
   /** Where the code went: the address the send used, once there has been one. */
   const [sentTo, setSentTo] = useState<string>()
   const email = sentTo ?? session?.user.email ?? ''
-  const codeRef = useRef<TextInput>(null)
-  const newPasswordRef = useRef<TextInput>(null)
+  const codeRef = useRef<TextInputInstance>(null)
+  const newPasswordRef = useRef<TextInputInstance>(null)
   useEffect(() => {
     if (loadFailed) return
     let active = true
@@ -601,7 +608,7 @@ function ChangePasswordForm({
   const [confirm, setConfirm] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const running = useRef(false)
-  const confirmRef = useRef<TextInput>(null)
+  const confirmRef = useRef<TextInputInstance>(null)
   const tooShort = password.length < 8
   const mismatched = password !== confirm
   const byCode = hasPassword === true && proof === 'code'

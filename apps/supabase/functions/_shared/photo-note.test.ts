@@ -15,6 +15,7 @@ import {
   estimateNutrition,
   foldMealItems,
   PHOTO_NOTE_RULES,
+  PRIMARY_ROUTE,
   photoNote,
   photoUserMessage,
   type VisionItem,
@@ -58,6 +59,16 @@ async function withModel<T>(
   }
 }
 
+/** A system prompt as Haiku is sent it, with its route's instruction after it. */
+const asSent = (prompt: string) =>
+  PRIMARY_ROUTE?.instruction ? `${prompt}\n\n${PRIMARY_ROUTE.instruction}` : prompt
+
+/** The system prompt's text, whether sent as a string or as a cached block. */
+const systemText = (sent: Sent): unknown => {
+  const content = sent.messages[0].content
+  return Array.isArray(content) ? (content[0] as { text?: string }).text : content
+}
+
 const userText = (sent: Sent): string => {
   const content = sent.messages[1].content as Array<{ type: string; text?: string }>
   return content.find((part) => part.type === 'text')?.text ?? ''
@@ -94,7 +105,7 @@ Deno.test('a photo with no note is read by the prompt it always was', async () =
   const { sent } = await withModel(plate(1, 900, 1100), () =>
     analysePhoto('aGVsbG8=', undefined, createMeter()),
   )
-  eq(sent.messages[0].content, ANALYSE_PHOTO_PROMPT, 'system prompt')
+  eq(systemText(sent), asSent(ANALYSE_PHOTO_PROMPT), 'system prompt')
   eq(userText(sent), 'What food is in this photo?', 'user text')
 })
 
@@ -102,7 +113,7 @@ Deno.test('a note travels with the photo, quoted, under the rules for it', async
   const { sent } = await withModel(plate(1, 900, 1100), () =>
     analysePhoto('aGVsbG8=', undefined, createMeter(), 'beef rendang, not chicken'),
   )
-  eq(sent.messages[0].content, ANALYSE_PHOTO_PROMPT + PHOTO_NOTE_RULES, 'system prompt')
+  eq(systemText(sent), asSent(ANALYSE_PHOTO_PROMPT + PHOTO_NOTE_RULES), 'system prompt')
   eq(
     userText(sent),
     'What food is in this photo? The person who ate it added: "beef rendang, not chicken"',
