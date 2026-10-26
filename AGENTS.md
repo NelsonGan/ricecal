@@ -356,8 +356,10 @@ running simulators and emulators at
 <http://127.0.0.1:8082/_expo/plugins/expo-device-hub> (the address Metro prints
 is the LAN one). Open it in the browser pane, select the device you are testing,
 and leave it on the tested screen so the user can follow along and inspect the
-result. The Hub only starts listing devices once a page is open. Use these
-devices and no others, one at a time (see "One simulator at a time"):
+result. The Hub only starts listing devices once a page is open, and a page
+opened right after Metro starts can stay on "Connecting to the Expo dev
+server": reload it. Use these devices and no others, one at a time (see "One
+simulator at a time"):
 
 | Platform | Device                                                                     | Boot with Argent             |
 | -------- | -------------------------------------------------------------------------- | ---------------------------- |
@@ -499,8 +501,9 @@ com.apple.CoreSimulator.SimRuntime.watchOS-27-0`, then `xcrun simctl pair <watch
   Run it detached and watch for the package with `adb shell pm list packages`,
   or it gets killed mid-compile. Kill the daemons afterwards — left running they
   starve the emulator until `system_server` ANRs and taps stop landing.
-- The dev client cannot find Metro on its own: `adb reverse tcp:8081 tcp:8081`,
-  then
+- The dev client cannot find Metro on its own: `adb reverse tcp:8081 tcp:8081`
+  (and `adb reverse tcp:54421 tcp:54421` when `.env.local` points at the local
+  stack, or every auth and diary call fails to connect), then
   `adb shell am start -a android.intent.action.VIEW -d "ricecal://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"`.
 - **No soft keyboard appears when you tap a field.** Gboard ships with "Write in
   text fields" (stylus handwriting) on, which replaces the keyboard with a
