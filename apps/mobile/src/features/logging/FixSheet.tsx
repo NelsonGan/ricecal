@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ScrollView, type TextInput, View } from 'react-native'
+import { ScrollView, type TextInputInstance, View } from 'react-native'
 
 import { Button, Chip, Icon, Sheet, Text, TextField } from '@/ui'
 
@@ -42,7 +42,7 @@ export function FixSheet({
   submitting = false,
 }: FixSheetProps) {
   const { t } = useTranslation(['logging', 'common'])
-  const field = useRef<TextInput>(null)
+  const field = useRef<TextInputInstance>(null)
   const ready = Boolean(value.trim()) && !submitting
 
   return (

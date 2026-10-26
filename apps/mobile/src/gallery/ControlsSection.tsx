@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
-import type { TextInput } from 'react-native'
-import { View } from 'react-native'
+import { type TextInputInstance, View } from 'react-native'
 
 import {
   Card,
@@ -64,7 +63,7 @@ export function ControlsSection() {
   const [dailyGoal, setDailyGoal] = useState(2100)
   const [kcal, setKcal] = useState('240')
 
-  const portionRef = useRef<TextInput>(null)
+  const portionRef = useRef<TextInputInstance>(null)
 
   return (
     <>

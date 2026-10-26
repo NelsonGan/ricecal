@@ -8,6 +8,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  type ScrollViewInstance,
   useWindowDimensions,
   View,
 } from 'react-native'
@@ -112,7 +113,7 @@ export function AnnouncementCard({
   // One answer per showing. A double tap, or the scrim tapped after the
   // button, lands before the parent has hidden the card and would count twice.
   const answered = useRef(false)
-  const pager = useRef<ScrollView>(null)
+  const pager = useRef<ScrollViewInstance>(null)
   // Where Next is scrolling to. Its animation passes through the page it left,
   // and following that would flick the dots back for a frame.
   const heading = useRef<number | null>(null)

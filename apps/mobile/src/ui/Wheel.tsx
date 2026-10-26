@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics'
 import { useLayoutEffect, useRef } from 'react'
-import { ScrollView, View } from 'react-native'
+import { ScrollView, type ScrollViewInstance, View } from 'react-native'
 
 import { radius } from '@/theme/tokens'
 import { cn } from './cn'
@@ -54,7 +54,7 @@ export const WHEEL_BAND = { top: PAD, height: ROW } as const
  * VoiceOver's swipe up and down send.
  */
 export function Wheel({ options, value, onChange, accessibilityLabel, className }: WheelProps) {
-  const scroller = useRef<ScrollView>(null)
+  const scroller = useRef<ScrollViewInstance>(null)
 
   const found = options.findIndex((option) => option.value === value)
   const index = found === -1 ? 0 : found

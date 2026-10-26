@@ -334,14 +334,11 @@ const BoardPage = memo(function BoardPage({
   const members = board.data?.members
   const names = useMemo(() => shortNames(members ?? []), [members])
   // Only the page on screen moves the strip; its neighbours scroll unseen.
-  const onScroll = useAnimatedScrollHandler(
-    {
-      onScroll: (event) => {
-        if (live) scrollY.value = event.contentOffset.y
-      },
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      if (live) scrollY.value = event.contentOffset.y
     },
-    [live],
-  )
+  })
   const padding = { paddingTop: topInset, paddingBottom: bottomInset, paddingHorizontal: EDGE }
 
   if (!board.data) {

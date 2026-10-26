@@ -1,8 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { TextInput } from 'react-native'
-import { View } from 'react-native'
+import { type TextInputInstance, View } from 'react-native'
 
 import {
   asAuthProblem,
@@ -76,7 +75,7 @@ export default function PasswordScreen() {
    */
   const [maybeExisting, setMaybeExisting] = useState(false)
 
-  const confirmRef = useRef<TextInput>(null)
+  const confirmRef = useRef<TextInputInstance>(null)
 
   const step = Number(params.step)
   const total = Number(params.total)

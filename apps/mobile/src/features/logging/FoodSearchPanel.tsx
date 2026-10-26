@@ -1,6 +1,6 @@
 import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { type TextInput, View } from 'react-native'
+import { type TextInputInstance, View } from 'react-native'
 
 import {
   type Entry,
@@ -166,7 +166,7 @@ export type FoodSearchPanelProps = {
    * routinely dropped, so a sheet has to call `focus()` from `onShow`. The two
    * hosts that are not sheets pass `autoFocus` and nothing else.
    */
-  fieldRef?: RefObject<TextInput | null>
+  fieldRef?: RefObject<TextInputInstance | null>
 }
 
 /**

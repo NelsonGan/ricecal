@@ -13,7 +13,7 @@ import {
   useSyncExternalStore,
 } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FlatList, View, type ViewToken } from 'react-native'
+import { FlatList, type ListViewToken, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   useAnimatedStyle,
@@ -1464,8 +1464,10 @@ export function SocialList<T>({
   const [viewport, setViewport] = useState({ first: 0, last: columns - 1 })
   const [refreshing, setRefreshing] = useState(false)
   const navInset = useNavInset()
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<T>[] }) => {
-    const indices = viewableItems.flatMap((item) => (item.index === null ? [] : [item.index]))
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ListViewToken[] }) => {
+    const indices = viewableItems.flatMap((item) =>
+      typeof item.index === 'number' ? [item.index] : [],
+    )
     const first = indices.length ? Math.min(...indices) : -1
     const last = indices.length ? Math.max(...indices) : -1
     setViewport((previous) =>
@@ -1563,7 +1565,7 @@ export function SocialList<T>({
                   : (empty ?? '')
             }
           />
-        ) : null
+        ) : undefined
       }
       ListFooterComponent={
         query.isFetchNextPageError && rows.length > 0 ? (
@@ -1601,7 +1603,7 @@ export function SocialList<T>({
           <Text variant="meta" className="text-center">
             {end}
           </Text>
-        ) : null
+        ) : undefined
       }
       ListFooterComponentStyle={{ padding: 16 }}
     />

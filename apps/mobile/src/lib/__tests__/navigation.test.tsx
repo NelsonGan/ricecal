@@ -23,7 +23,21 @@ const mockRouter = {
   navigate: jest.fn(),
   replace: jest.fn(),
 }
-const mockNavigation = { reset: jest.fn() }
+const ROOT_STATE = {
+  key: 'stack-root',
+  index: 1,
+  routeNames: ['(onboarding)', '(tabs)', 'paywall/welcome'],
+  routes: [
+    { key: '(onboarding)-1', name: '(onboarding)' },
+    { key: 'paywall/welcome-2', name: 'paywall/welcome' },
+  ],
+  routeKeySeq: 2,
+  type: 'stack',
+  stale: false,
+  // Names a route the reset drops, so it must not be copied across.
+  history: [{ type: 'route', key: 'paywall/welcome-2' }],
+}
+const mockNavigation = { reset: jest.fn(), getState: jest.fn(() => ROOT_STATE) }
 const mockUseNavigation = jest.fn((_path: string) => mockNavigation)
 
 jest.mock('expo-router', () => ({
@@ -111,9 +125,15 @@ describe('useEnterApp', () => {
     result.current()
 
     expect(mockUseNavigation).toHaveBeenCalledWith('/')
+    // A complete state: SDK 58's router ignores a partial reset.
     expect(mockNavigation.reset).toHaveBeenCalledWith({
+      key: 'stack-root',
+      routeNames: ROOT_STATE.routeNames,
+      routeKeySeq: 2,
+      type: 'stack',
       index: 0,
       routes: [{ name: '(tabs)' }],
+      stale: false,
     })
     expect(mockRouter.dismissAll).not.toHaveBeenCalled()
     expect(mockRouter.replace).not.toHaveBeenCalled()

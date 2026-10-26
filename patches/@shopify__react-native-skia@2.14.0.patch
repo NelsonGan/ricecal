@@ -1,0 +1,7 @@
+diff --git a/react-native-skia.podspec b/react-native-skia.podspec
+index 0000000..0000000 100644
+--- a/react-native-skia.podspec
++++ b/react-native-skia.podspec
+@@ -162 +162 @@ Pod::Spec.new do |s|
+-    "HEADER_SEARCH_PATHS" => '"$(PODS_TARGET_SRCROOT)/cpp"/** "$(PODS_TARGET_SRCROOT)/cpp" "$(PODS_TARGET_SRCROOT)/cpp/skia" "$(PODS_TARGET_SRCROOT)/cpp/dawn/include"'
++    "HEADER_SEARCH_PATHS" => '"$(PODS_TARGET_SRCROOT)/cpp"/** "$(PODS_TARGET_SRCROOT)/cpp" "$(PODS_TARGET_SRCROOT)/cpp/api" "$(PODS_TARGET_SRCROOT)/cpp/api/third_party" "$(PODS_TARGET_SRCROOT)/cpp/skia" "$(PODS_TARGET_SRCROOT)/cpp/dawn/include"'

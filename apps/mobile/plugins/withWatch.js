@@ -126,7 +126,16 @@ function withHealthAuthorizationHandoff(config) {
       '  }',
       '',
     ].join('\n')
-    contents = contents.replace(/\n {2}\/\/ Linking API\n/, `${method}\n  // Linking API\n`)
+    // SDK 57's template had a `// Linking API` section to sit above; SDK 58's
+    // AppDelegate is only `didFinishLaunching`, so the method closes the class.
+    if (/\n {2}\/\/ Linking API\n/.test(contents)) {
+      contents = contents.replace(/\n {2}\/\/ Linking API\n/, `${method}\n  // Linking API\n`)
+    } else {
+      contents = contents.replace(
+        /(class AppDelegate: [^\n]*\{[\s\S]*?\n {2}\}\n)(\}\n)/,
+        (_, body, close) => `${body}${method}${close}`,
+      )
+    }
     if (!contents.includes(HANDOFF_MARK)) {
       throw new Error(
         'withWatch: could not find where to add the Health handoff in AppDelegate.swift',
