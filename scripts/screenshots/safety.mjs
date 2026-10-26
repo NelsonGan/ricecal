@@ -27,20 +27,28 @@ export function requireReady(account, date, fixtureHash, photos, manifestHash) {
   }
 }
 
-export function pngInfo(bytes) {
+// The store sizes each simulator captures at. iPhone Duo is open, on its side:
+// its inner panel's framebuffer is portrait and is turned upright after capture.
+export const FORMS = {
+  iphone: { width: 1320, height: 2868, label: 'iPhone' },
+  duo: { width: 2853, height: 2007, label: 'open iPhone Duo' },
+}
+
+export function pngInfo(bytes, form = FORMS.iphone) {
+  const { width, height } = form
   if (
     bytes.length < 24 ||
     bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a' ||
-    bytes.readUInt32BE(16) !== 1320 ||
-    bytes.readUInt32BE(20) !== 2868
+    bytes.readUInt32BE(16) !== width ||
+    bytes.readUInt32BE(20) !== height
   )
-    throw new Error('Capture requires a 1320 x 2868 iPhone screenshot.')
-  return { width: 1320, height: 2868, sha256: sha256(bytes) }
+    throw new Error(`Capture requires a ${width} x ${height} ${form.label} screenshot.`)
+  return { width, height, sha256: sha256(bytes) }
 }
 
 // A failed capture never overwrites a previously reviewed set. File checksums
 // also detect an interrupted publication before it can pass the creator's check.
-export async function captureSet(output, manifest, capture) {
+export async function captureSet(output, manifest, capture, form = FORMS.iphone) {
   await mkdir(output, { recursive: true })
   const stage = await mkdtemp(resolve(output, '.capture-'))
   try {
@@ -69,7 +77,10 @@ export async function captureSet(output, manifest, capture) {
     }
     for (const record of records) {
       const bytes = await readFile(resolve(stage, record.locale, `${record.screen}.png`))
-      if (pngInfo(bytes).sha256 !== record.sha256 || record.photoManifestSha256 !== manifestHash)
+      if (
+        pngInfo(bytes, form).sha256 !== record.sha256 ||
+        record.photoManifestSha256 !== manifestHash
+      )
         throw new Error('Staged screenshot metadata does not match its files.')
     }
     for (const record of records) {

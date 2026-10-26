@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import test from 'node:test'
-import { captureSet, pngInfo, requireReady, sha256, writeJson } from './safety.mjs'
+import { captureSet, FORMS, pngInfo, requireReady, sha256, writeJson } from './safety.mjs'
 
 const png = (value = 0) => {
   const bytes = Buffer.alloc(25)
@@ -125,3 +125,16 @@ test('duplicate screen pixels cannot replace a reviewed set', () =>
     assert.deepEqual(await readFile(resolve(output, 'capture.json')), before)
     assert.deepEqual(await readFile(resolve(output, 'en/01-today.png')), png(1))
   }))
+
+test('an iPhone Duo capture must be the open display on its side', () => {
+  const duo = Buffer.alloc(24)
+  duo.set(Buffer.from('89504e470d0a1a0a', 'hex'))
+  duo.writeUInt32BE(2853, 16)
+  duo.writeUInt32BE(2007, 20)
+  assert.equal(pngInfo(duo, FORMS.duo).width, 2853)
+  assert.throws(() => pngInfo(duo), /1320 x 2868/)
+  // The framebuffer before it is turned upright.
+  duo.writeUInt32BE(2007, 16)
+  duo.writeUInt32BE(2853, 20)
+  assert.throws(() => pngInfo(duo, FORMS.duo), /2853 x 2007/)
+})
