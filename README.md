@@ -8092,6 +8092,11 @@ by reflection, and Firebase, RevenueCat and Health Connect all do some of that,
 so turning it on needs keep rules and a tested release build on a device, not a
 config flip in an SDK upgrade.
 
+**`platforms` in app.json keeps web out.** SDK 58's router needs `react-dom`,
+and Expo reads an installed `react-dom` as "this app has a web build". The PR
+preview's `eas update` exports every platform, so it then failed on a missing
+`react-native-web`. `"platforms": ["ios", "android"]` says what the app is.
+
 **A purchase cannot be tested with the real store, and the flow that could not be
 run is the one that was broken.** Apple's sandbox wants a sandbox Apple ID on a
 device, Play's wants a licensed tester on a phone, and an Xcode StoreKit
