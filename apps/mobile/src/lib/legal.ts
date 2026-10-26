@@ -6,8 +6,9 @@ import { Linking } from 'react-native'
  *
  * Guideline 3.1.2: a screen selling an auto-renewable subscription states the
  * title, length and price and carries functional links to the terms of use and
- * the privacy policy. The first three were already on `ProPitch`, and the missing
- * pair is one of the commonest reasons a paywall is rejected.
+ * the privacy policy. The first three were already on the paywall's
+ * `ProDetails`, and the missing pair is one of the commonest reasons a paywall
+ * is rejected.
  *
  * Our own documents rather than Apple's standard EULA. `ricecal-web` serves both,
  * and the deletion page beside them is what guideline 5.1.1(v) points at.

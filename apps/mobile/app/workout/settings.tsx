@@ -25,6 +25,7 @@ import { useBack } from '@/lib/navigation'
 import { ensureNotificationPermission } from '@/lib/notifications'
 import {
   AppBar,
+  Aside,
   Card,
   Chip,
   cn,
@@ -196,53 +197,57 @@ export default function WorkoutSettingsScreen() {
         ) : null}
       </Card>
 
-      <Card title={t('workouts:settings.reminders')} contentClassName="gap-4">
-        <View className="flex-row flex-wrap gap-2">
-          {WEEK.map((day) => (
-            <Chip key={day} selected={days.includes(day)} onPress={() => toggleDay(day)}>
-              {dayLabel(day)}
-            </Chip>
-          ))}
-        </View>
-        <Tappable
-          className={cn(
-            'flex-row items-center justify-between rounded-md bg-surface-alt px-4 py-3',
-            days.length ? undefined : 'opacity-50',
-          )}
-          onPress={() => setTimeOpen(true)}
-          disabled={!days.length}
-          accessibilityRole="button"
-          accessibilityLabel={t('workouts:settings.reminderTime')}
-        >
-          <Text variant="bodyStrong">{t('workouts:settings.reminderTime')}</Text>
-          <Text variant="label">{atLabel}</Text>
-        </Tappable>
-      </Card>
+      {/* With two panes, the session settings are the first, and reminders and
+          import and export the second, so no row runs across the fold. */}
+      <Aside>
+        <Card title={t('workouts:settings.reminders')} contentClassName="gap-4">
+          <View className="flex-row flex-wrap gap-2">
+            {WEEK.map((day) => (
+              <Chip key={day} selected={days.includes(day)} onPress={() => toggleDay(day)}>
+                {dayLabel(day)}
+              </Chip>
+            ))}
+          </View>
+          <Tappable
+            className={cn(
+              'flex-row items-center justify-between rounded-md bg-surface-alt px-4 py-3',
+              days.length ? undefined : 'opacity-50',
+            )}
+            onPress={() => setTimeOpen(true)}
+            disabled={!days.length}
+            accessibilityRole="button"
+            accessibilityLabel={t('workouts:settings.reminderTime')}
+          >
+            <Text variant="bodyStrong">{t('workouts:settings.reminderTime')}</Text>
+            <Text variant="label">{atLabel}</Text>
+          </Tappable>
+        </Card>
 
-      <Card contentClassName="gap-0 px-5 py-1">
-        {IMPORT_APPS.map((app) => (
+        <Card contentClassName="gap-0 px-5 py-1">
+          {IMPORT_APPS.map((app) => (
+            <ListRow
+              key={app.id}
+              title={t(app.entry)}
+              leading={
+                <Image
+                  source={app.logo}
+                  style={{ width: 32, height: 32, borderRadius: 8 }}
+                  contentFit="cover"
+                  accessible={false}
+                />
+              }
+              trailing={reading === app.id ? <ActivityIndicator /> : undefined}
+              onPress={() => importFrom(app.id)}
+            />
+          ))}
           <ListRow
-            key={app.id}
-            title={t(app.entry)}
-            leading={
-              <Image
-                source={app.logo}
-                style={{ width: 32, height: 32, borderRadius: 8 }}
-                contentFit="cover"
-                accessible={false}
-              />
-            }
-            trailing={reading === app.id ? <ActivityIndicator /> : undefined}
-            onPress={() => importFrom(app.id)}
+            title={t('workouts:settings.export')}
+            trailing={exporting ? <ActivityIndicator /> : undefined}
+            onPress={exportAll}
+            divider={false}
           />
-        ))}
-        <ListRow
-          title={t('workouts:settings.export')}
-          trailing={exporting ? <ActivityIndicator /> : undefined}
-          onPress={exportAll}
-          divider={false}
-        />
-      </Card>
+        </Card>
+      </Aside>
 
       <RestSheet
         visible={restOpen}

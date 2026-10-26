@@ -7,6 +7,7 @@ import { ToggleRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import {
   AppBar,
+  Aside,
   Button,
   Card,
   Divider,
@@ -127,20 +128,24 @@ export default function PersonalisationScreen() {
         )}
       </Card>
 
-      <Card contentClassName="gap-0">
-        {/* A switch shows a position whatever it is given, so it waits for the
-            row rather than claiming "on" for a beat and then flipping. */}
-        {settingsPending ? (
-          <Skeleton className="h-[56px] w-full" />
-        ) : (
-          <ToggleRow
-            title={t('profile:personalisation.photoNote')}
-            value={settings?.photo_note_prompt ?? true}
-            onValueChange={(value) => updateSettings.mutate({ photo_note_prompt: value })}
-            divider={false}
-          />
-        )}
-      </Card>
+      {/* With two panes, the meal times are the first and the photo note the
+          second, so no row runs across the fold. */}
+      <Aside>
+        <Card contentClassName="gap-0">
+          {/* A switch shows a position whatever it is given, so it waits for the
+              row rather than claiming "on" for a beat and then flipping. */}
+          {settingsPending ? (
+            <Skeleton className="h-[56px] w-full" />
+          ) : (
+            <ToggleRow
+              title={t('profile:personalisation.photoNote')}
+              value={settings?.photo_note_prompt ?? true}
+              onValueChange={(value) => updateSettings.mutate({ photo_note_prompt: value })}
+              divider={false}
+            />
+          )}
+        </Card>
+      </Aside>
 
       <Sheet
         closeLabel={t('common:action.close')}

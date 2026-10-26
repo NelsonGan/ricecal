@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import { View } from 'react-native'
 import { useUserId } from '@/data'
 import { useMyGroups } from '@/data/groups'
 import { GroupBoardScreen } from '@/features/groups/Board'
 import { GroupsHome } from '@/features/groups/Home'
 import { setOpenGroup, useOpenGroup } from '@/features/groups/store'
-import { Screen } from '@/ui'
+import { Aside, EmptyState, Screen, useWindowLayout } from '@/ui'
 
 /**
  * The list of groups, or the board of the one last opened. Reopening on the
@@ -26,19 +28,35 @@ export default function GroupsTab() {
   useEffect(() => {
     if (open && !stillIn && !fetching) setOpenGroup(userId, null)
   }, [open, stillIn, fetching, userId])
+  const { split } = useWindowLayout()
+  const { t } = useTranslation('groups')
+
+  const board = groupId ? (
+    <GroupBoardScreen key={groupId} groupId={groupId} onBack={() => setOpenGroup(userId, null)} />
+  ) : null
+  const home = <GroupsHome onOpen={(id) => setOpenGroup(userId, id)} />
   // The board's only field is in a sheet, so it never makes way for a keyboard:
   // the chat's, opened over it, slid the chat bar up behind the chat and then
   // down again on the way back. The list's search field still needs it.
   return (
-    <Screen scroll={false} flush keyboardAvoid={groupId ? 'none' : 'padding'}>
-      {groupId ? (
-        <GroupBoardScreen
-          key={groupId}
-          groupId={groupId}
-          onBack={() => setOpenGroup(userId, null)}
-        />
+    // Beside an open board the list's search field is on screen too, and it
+    // needs the shell to make way for the keyboard as it does on its own.
+    <Screen scroll={false} flush keyboardAvoid={groupId && !split ? 'none' : 'padding'}>
+      {split ? (
+        // With two panes the list stays, and the group opens beside it: the
+        // same two levels, both on screen. Its back button closes it.
+        <>
+          {home}
+          <Aside>
+            {board ?? (
+              <View className="flex-1 justify-center p-gutter">
+                <EmptyState icon={{ set: 'food', name: 'rice-bowl' }} title={t('pickGroup')} />
+              </View>
+            )}
+          </Aside>
+        </>
       ) : (
-        <GroupsHome onOpen={(id) => setOpenGroup(userId, id)} />
+        (board ?? home)
       )}
     </Screen>
   )

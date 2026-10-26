@@ -50,6 +50,7 @@ import {
 import { UNIT_KEY, unitFor } from '@/lib/units'
 import {
   AppBar,
+  Aside,
   Button,
   Card,
   Dialog,
@@ -334,40 +335,44 @@ export default function FinishWorkoutScreen() {
         onEnded={setEndedAt}
       />
 
-      <Card title={t('workouts:detail.exercises')} contentClassName="gap-0">
-        <Divided>
-          {exercises.map((exercise) => {
-            const best = bestSet(exercise)
-            return (
-              <View key={exercise.key} className="flex-row items-center gap-3 py-2.5">
-                <ExerciseArt
-                  exerciseId={exercise.exerciseId}
-                  category={library.byId(exercise.exerciseId)?.category}
-                  size={44}
-                />
-                <View className="min-w-0 flex-1">
-                  <Text variant="label" numberOfLines={2}>
-                    {exercise.name}
-                  </Text>
-                  <Text variant="caption">
-                    {t('workouts:history.sets', {
-                      count: exercise.sets.filter((set) => set.done).length,
-                    })}
-                  </Text>
-                </View>
-                {best ? (
-                  <View className="items-end">
-                    <Text variant="micro">{t('workouts:finish.best')}</Text>
-                    <Text variant="label" className="text-pandan-ink">
-                      {describeSet(best, exercise.tracking, unit, distanceUnit, unitLabel)}
+      {/* With two panes what it came to and the fields being saved are the
+          first, and the exercises done the second. See `Aside`. */}
+      <Aside>
+        <Card title={t('workouts:detail.exercises')} contentClassName="gap-0">
+          <Divided>
+            {exercises.map((exercise) => {
+              const best = bestSet(exercise)
+              return (
+                <View key={exercise.key} className="flex-row items-center gap-3 py-2.5">
+                  <ExerciseArt
+                    exerciseId={exercise.exerciseId}
+                    category={library.byId(exercise.exerciseId)?.category}
+                    size={44}
+                  />
+                  <View className="min-w-0 flex-1">
+                    <Text variant="label" numberOfLines={2}>
+                      {exercise.name}
+                    </Text>
+                    <Text variant="caption">
+                      {t('workouts:history.sets', {
+                        count: exercise.sets.filter((set) => set.done).length,
+                      })}
                     </Text>
                   </View>
-                ) : null}
-              </View>
-            )
-          })}
-        </Divided>
-      </Card>
+                  {best ? (
+                    <View className="items-end">
+                      <Text variant="micro">{t('workouts:finish.best')}</Text>
+                      <Text variant="label" className="text-pandan-ink">
+                        {describeSet(best, exercise.tracking, unit, distanceUnit, unitLabel)}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              )
+            })}
+          </Divided>
+        </Card>
+      </Aside>
 
       {/* Only the answers that would change something: Strong's four when both
           the layout and the numbers moved, two otherwise. Cancel is "not

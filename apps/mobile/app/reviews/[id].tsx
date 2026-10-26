@@ -29,7 +29,7 @@ import { useBack } from '@/lib/navigation'
 import { recordReviewOpened } from '@/lib/rating'
 import { unitFor } from '@/lib/units'
 import { spacing } from '@/theme/tokens'
-import { AppBar, Card, EmptyState, Screen, Skeleton } from '@/ui'
+import { AppBar, Aside, Card, EmptyState, Screen, Skeleton } from '@/ui'
 
 /**
  * One review, read as a column of cards.
@@ -212,11 +212,21 @@ export default function ReviewScreen() {
             between food and calories is a change of subject — but a column of
             cards is read by the cards, and a second gap size would be the page
             claiming a structure the reader has no use for. */}
-        {steps.map((step) => (
-          <View key={step} style={{ gap: spacing.stack }}>
-            {draw[step]}
-          </View>
-        ))}
+        {/* With two panes, the period's card and what was eaten stay on the left,
+            and the calorie and body sections go on the right, so the page reads
+            as two columns of phone-width cards. */}
+        {steps.map((step) => {
+          const section = (
+            <View key={step} style={{ gap: spacing.stack }}>
+              {draw[step]}
+            </View>
+          )
+          return step === 'calories' || step === 'body' ? (
+            <Aside key={step}>{section}</Aside>
+          ) : (
+            section
+          )
+        })}
       </Screen>
     </ShareableCards>
   )

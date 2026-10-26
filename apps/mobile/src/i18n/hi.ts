@@ -2264,6 +2264,7 @@ export const hi = {
     emptyTitle: 'साथ खाएँ, लक्ष्य पर टिकें',
     emptyBody: 'देखें दोस्त हर दिन क्या खाते हैं।',
     startGroup: 'समूह बनाएँ',
+    pickGroup: 'उसका दिन देखने के लिए कोई समूह चुनें',
     back: 'समूह',
     settings: 'समूह सेटिंग',
     column: {

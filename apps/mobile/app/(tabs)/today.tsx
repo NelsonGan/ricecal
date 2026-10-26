@@ -39,6 +39,7 @@ import { sumMacros } from '@/lib/nutrition'
 import { useOnline } from '@/lib/online'
 import { DEFAULT_WATER_ML } from '@/lib/water'
 import {
+  Aside,
   Badge,
   Button,
   CalorieRing,
@@ -53,7 +54,9 @@ import {
   SkeletonRow,
   Tappable,
   Text,
+  usePaneWidth,
   useToast,
+  useWindowLayout,
 } from '@/ui'
 
 /**
@@ -130,8 +133,14 @@ function TodayContent() {
   const router = useRouter()
   const focused = useIsFocused()
   const toast = useToast()
-  const { width, fontScale } = useWindowDimensions()
-  const stackedSummary = width < 380 || fontScale > 1.3
+  const { fontScale } = useWindowDimensions()
+  // The pane's width, which is the window's on every iPhone but iPhone Duo.
+  const width = usePaneWidth()
+  const { split } = useWindowLayout()
+  // Stacked on a narrow phone for room, and in iPhone Duo's two panes for the
+  // opposite reason: the summary has a pane's full height there, and the
+  // larger ring over its macros fills it rather than leaving half of it empty.
+  const stackedSummary = width < 380 || fontScale > 1.3 || split
 
   /**
    * The tour, offered once and never again.
@@ -550,10 +559,13 @@ function TodayContent() {
         <MonthCalendar
           month={month}
           onMonthChange={setMonth}
+          // With two panes the day's list stays beside the grid, so a tap shows
+          // that day there and the month stays open: list and detail.
           onSelect={(date) => {
             setSelectedDate(date)
-            setCalendar(false)
+            if (!split) setCalendar(false)
           }}
+          selected={split ? selectedDate : undefined}
           today={todayKey}
         />
       ) : (
@@ -655,10 +667,17 @@ function TodayContent() {
             />
             <WorkoutsTile />
           </View>
+        </>
+      )}
 
-          {/* Two rows of placeholder rather than one, because one reads as a card
+      {/* Two rows of placeholder rather than one, because one reads as a card
           with a single meal in it and the point of the block is that nobody yet
           knows how many there are. */}
+      {/* The day's list is the second pane when there are two, beside the
+          ring and the water: one pane says how the day is going, the other
+          what it was. The add button floats in its corner. See `Aside`. */}
+      {calendar && !split ? null : (
+        <Aside>
           {loading ? (
             <Card>
               <SkeletonRow />
@@ -751,8 +770,9 @@ function TodayContent() {
               onDeleteEntry={requestDelete}
             />
           )}
-        </>
+        </Aside>
       )}
+
       <ConfirmSheet
         visible={Boolean(sharedDelete)}
         onClose={() => {

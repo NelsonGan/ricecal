@@ -9,7 +9,6 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   ScrollView,
-  useWindowDimensions,
   View,
 } from 'react-native'
 import Animated, {
@@ -48,6 +47,7 @@ import {
   Tappable,
   Text,
   useNavInset,
+  usePaneWidth,
   useToast,
 } from '@/ui'
 import { InviteSheet } from './InviteSheet'
@@ -97,7 +97,9 @@ function useToday(): string {
 
 /** The widths the grid works to: narrow phones give up a little of the workout column. */
 function useGrid() {
-  const { width } = useWindowDimensions()
+  // The pane's width rather than the window's, which on iPhone Duo open is two
+  // panes and a side column. The window's on every other iPhone.
+  const width = usePaneWidth()
   const workout = width < 360 ? 44 : 54
   const tile = Math.floor((width - EDGE * 2 - MEMBER_COLUMN - workout - GAP * 4) / 3)
   return useMemo(() => ({ width, workout, tile, compact: tile < 70 }), [width, workout, tile])
@@ -177,10 +179,13 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
     const asked = takeOpenDay(viewer, groupId)
     if (asked && days.includes(asked)) setDay(asked)
   }, [pendingDay, viewer, groupId, days])
-  // Keep the pager on the chosen day when the list under it shifts.
+  // Keep the pager on the chosen day when the list under it shifts, and when
+  // its pages change width: opening or closing iPhone Duo resizes them, and
+  // the old offset is a different day at the new width.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the width is the trigger
   useEffect(() => {
     pager.current?.scrollToIndex({ index, animated: false })
-  }, [index])
+  }, [index, grid.width])
 
   const onMomentumEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const target = days[Math.round(event.nativeEvent.contentOffset.x / grid.width)]
