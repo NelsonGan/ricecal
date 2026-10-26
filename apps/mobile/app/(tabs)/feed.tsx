@@ -8,26 +8,16 @@ import { keys } from '@/data/keys'
 import { socialFeedParams, useSocialFeed, useSocialUnread } from '@/data/social'
 import { ScreenTitle } from '@/features/shared'
 import { PostCard, SocialList } from '@/features/social/components'
-import { CountBadge, Icon, IconButton, Screen, Tabs } from '@/ui'
+import { Aside, CountBadge, Icon, IconButton, Screen, Tabs, Text, useWindowLayout } from '@/ui'
 
 export default function FeedScreen() {
   const { t } = useTranslation('social')
   const router = useRouter()
   const viewer = useUserId()
   const [mode, setMode] = useState<'following' | 'discover'>('following')
-  const feed = useSocialFeed(mode)
-  const queryClient = useQueryClient()
-  useFocusEffect(
-    useCallback(() => {
-      // A food can publish while this tab is mounted behind the diary. Only when
-      // stale: coming straight back from a post refetched every loaded page.
-      void queryClient.refetchQueries({
-        queryKey: keys.socialRead(viewer, 'social_feed', socialFeedParams(mode)),
-        exact: true,
-        stale: true,
-      })
-    }, [mode, queryClient, viewer]),
-  )
+  // With two panes both feeds are on screen, one in each, and the tabs that
+  // switch between them have nothing to do. See `Aside`.
+  const { split } = useWindowLayout()
   const unread = useSocialUnread(useIsFocused())
   const unreadCount = unread.data ?? 0
   const unreadLabel =
@@ -83,29 +73,82 @@ export default function FeedScreen() {
               </View>
             }
           />
-          <Tabs
-            value={mode}
-            align="center"
-            scrollable
-            accessibilityLabel={t('feed')}
-            options={[
-              { value: 'following', label: t('following') },
-              { value: 'discover', label: t('discover') },
-            ]}
-            onChange={setMode}
-          />
+          {split ? null : (
+            <Tabs
+              value={mode}
+              align="center"
+              scrollable
+              accessibilityLabel={t('feed')}
+              options={[
+                { value: 'following', label: t('following') },
+                { value: 'discover', label: t('discover') },
+              ]}
+              onChange={setMode}
+            />
+          )}
         </View>
       }
     >
-      <SocialList
-        key={mode}
-        query={feed}
-        variant="feed"
-        rowKey={(post) => post.id}
-        renderRow={(post, visible) => <PostCard post={post} visible={visible} />}
-        empty={t(mode === 'following' ? 'emptyFollowing' : 'end')}
-        end={t('end')}
-      />
+      {split ? (
+        <>
+          <FeedColumn mode="following" titled />
+          <Aside>
+            <FeedColumn mode="discover" titled />
+          </Aside>
+        </>
+      ) : (
+        <FeedColumn key={mode} mode={mode} />
+      )}
     </Screen>
+  )
+}
+
+/**
+ * One feed. Keyed by its mode where the tabs switch it, so a switch starts the
+ * new feed at its top. `titled` names it, for when the two stand side by side
+ * and there are no tabs to say which is which.
+ */
+function FeedColumn({
+  mode,
+  titled = false,
+}: {
+  mode: 'following' | 'discover'
+  titled?: boolean
+}) {
+  const { t } = useTranslation('social')
+  const viewer = useUserId()
+  const feed = useSocialFeed(mode)
+  const queryClient = useQueryClient()
+  useFocusEffect(
+    useCallback(() => {
+      // A food can publish while this tab is mounted behind the diary. Only when
+      // stale: coming straight back from a post refetched every loaded page.
+      void queryClient.refetchQueries({
+        queryKey: keys.socialRead(viewer, 'social_feed', socialFeedParams(mode)),
+        exact: true,
+        stale: true,
+      })
+    }, [mode, queryClient, viewer]),
+  )
+
+  const list = (
+    <SocialList
+      query={feed}
+      variant="feed"
+      rowKey={(post) => post.id}
+      renderRow={(post, visible) => <PostCard post={post} visible={visible} />}
+      empty={t(mode === 'following' ? 'emptyFollowing' : 'end')}
+      end={t('end')}
+    />
+  )
+  if (!titled) return list
+
+  return (
+    <View className="flex-1 gap-2">
+      <Text variant="overlineSm" className="px-gutter">
+        {t(mode)}
+      </Text>
+      {list}
+    </View>
   )
 }

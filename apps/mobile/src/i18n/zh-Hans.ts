@@ -2260,6 +2260,7 @@ export const zhHans = {
     emptyTitle: '一起吃，一起坚持',
     emptyBody: '看看朋友们每天吃了什么。',
     startGroup: '创建小组',
+    pickGroup: '选择一个小组，看看当天的情况',
     back: '小组',
     settings: '小组设置',
     column: {

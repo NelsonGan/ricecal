@@ -2292,6 +2292,7 @@ export const id = {
     emptyTitle: 'Makan bareng, tetap di jalur',
     emptyBody: 'Lihat apa yang dimakan teman setiap hari.',
     startGroup: 'Buat grup',
+    pickGroup: 'Pilih grup untuk melihat harinya',
     back: 'Grup',
     settings: 'Pengaturan grup',
     column: {

@@ -39,6 +39,7 @@ import { sumMacros } from '@/lib/nutrition'
 import { useOnline } from '@/lib/online'
 import { DEFAULT_WATER_ML } from '@/lib/water'
 import {
+  Aside,
   Badge,
   Button,
   CalorieRing,
@@ -53,7 +54,9 @@ import {
   SkeletonRow,
   Tappable,
   Text,
+  usePaneWidth,
   useToast,
+  useWindowLayout,
 } from '@/ui'
 
 /**
@@ -130,8 +133,14 @@ function TodayContent() {
   const router = useRouter()
   const focused = useIsFocused()
   const toast = useToast()
-  const { width, fontScale } = useWindowDimensions()
-  const stackedSummary = width < 380 || fontScale > 1.3
+  const { fontScale } = useWindowDimensions()
+  // The pane's width, which is the window's on every iPhone but iPhone Duo.
+  const width = usePaneWidth()
+  const { split } = useWindowLayout()
+  // Stacked on a narrow phone for room, and in iPhone Duo's two panes for the
+  // opposite reason: the summary has a pane's full height there, and the
+  // larger ring over its macros fills it rather than leaving half of it empty.
+  const stackedSummary = width < 380 || fontScale > 1.3 || split
 
   /**
    * The tour, offered once and never again.
@@ -659,98 +668,103 @@ function TodayContent() {
           {/* Two rows of placeholder rather than one, because one reads as a card
           with a single meal in it and the point of the block is that nobody yet
           knows how many there are. */}
-          {loading ? (
-            <Card>
-              <SkeletonRow />
-              <SkeletonRow />
-            </Card>
-          ) : day.entries.length === 0 &&
-            sessions.length === 0 &&
-            workouts.length === 0 &&
-            !activity ? /* No "Nothing logged yet" block. A day
+          {/* The day's list is the second pane when there are two, beside the
+          ring and the water: one pane says how the day is going, the other
+          what it was. The add button floats in its corner. See `Aside`. */}
+          <Aside>
+            {loading ? (
+              <Card>
+                <SkeletonRow />
+                <SkeletonRow />
+              </Card>
+            ) : day.entries.length === 0 &&
+              sessions.length === 0 &&
+              workouts.length === 0 &&
+              !activity ? /* No "Nothing logged yet" block. A day
           before its first meal is the state this screen is in every morning,
           and a card announcing it pushed the water tracker and the ring apart
           to say something the empty list already said. The FAB is the answer to
           "what now", and it is on screen either way. */
-          null : (
-            /* One list, in the order the day happened. It was a card per meal, and
+            null : (
+              /* One list, in the order the day happened. It was a card per meal, and
            three of the four were usually empty — each still taking a heading and
            an add button, so two entries filled a screen with furniture. */
-            <EntryList
-              day={day}
-              onRowOpenChange={openRows.change}
-              title={t('logging:today.dayHeading')}
-              action={
-                // Only when a health store reported the day. Zero steps on an
-                // account with no store would be a claim about the user rather
-                // than about the phone.
-                activity ? (
-                  <View className="flex-row items-center gap-1">
-                    <Icon set="scenes" name="sneakers" size={18} />
-                    <Text variant="caption" className="shrink">
-                      {t('logging:today.steps', {
-                        count: activity.steps,
-                        steps: count(activity.steps),
-                      })}
-                    </Text>
-                  </View>
-                ) : undefined
-              }
-              extras={[
-                ...workouts.map((workout) => ({
-                  key: `workout-${workout.id}`,
-                  at: workout.startedAt,
-                  node: (
-                    <WorkoutItem
-                      workout={workout}
-                      onPress={() =>
-                        router.push({ pathname: '/workout/[id]', params: { id: workout.id } })
-                      }
-                    />
-                  ),
-                })),
-                ...sessions.map((session) => ({
-                  key: session.id,
-                  at: session.startedAt,
-                  node: (
-                    <SessionItem
-                      session={session}
-                      onPress={() =>
-                        router.push({
-                          pathname: '/activity/workout/[id]',
-                          params: { id: session.id },
-                        })
-                      }
-                    />
-                  ),
-                })),
-              ]}
-              onPressEntry={(entry) =>
-                router.push({
-                  pathname: '/log/food/[id]',
-                  // A `[id]` segment cannot be filled with `undefined`, and an
-                  // entry's `food_id` is null whenever the scan did not land on a
-                  // catalogue row, so every estimate and typed meal went to
-                  // `+not-found`. The placeholder says "read it off the entry".
-                  params: { id: entry.foodId ?? ENTRY_FOOD_ID, entryId: entry.id },
-                })
-              }
-              // A snap that could not be read is dropped as it is handed over:
-              // leaving it behind would double the meal once search adds the real
-              // dish, and the row has nothing in it worth keeping.
-              onFixEntry={(entry) => {
-                pending.remove(entry.id)
-                router.push({ pathname: '/log/search' })
-              }}
-              // Nothing was logged for a photo with no food in it, so there is no
-              // entry to delete — dismissing drops the row the shutter put there.
-              onDismissEntry={(entry) => pending.remove(entry.id)}
-              // Swipe left, tap the bin. A wrong scan is the common case and it took
-              // two screens to undo; this is the shortcut, and the detail screen's
-              // delete is still there for anyone who wants to look first.
-              onDeleteEntry={requestDelete}
-            />
-          )}
+              <EntryList
+                day={day}
+                onRowOpenChange={openRows.change}
+                title={t('logging:today.dayHeading')}
+                action={
+                  // Only when a health store reported the day. Zero steps on an
+                  // account with no store would be a claim about the user rather
+                  // than about the phone.
+                  activity ? (
+                    <View className="flex-row items-center gap-1">
+                      <Icon set="scenes" name="sneakers" size={18} />
+                      <Text variant="caption" className="shrink">
+                        {t('logging:today.steps', {
+                          count: activity.steps,
+                          steps: count(activity.steps),
+                        })}
+                      </Text>
+                    </View>
+                  ) : undefined
+                }
+                extras={[
+                  ...workouts.map((workout) => ({
+                    key: `workout-${workout.id}`,
+                    at: workout.startedAt,
+                    node: (
+                      <WorkoutItem
+                        workout={workout}
+                        onPress={() =>
+                          router.push({ pathname: '/workout/[id]', params: { id: workout.id } })
+                        }
+                      />
+                    ),
+                  })),
+                  ...sessions.map((session) => ({
+                    key: session.id,
+                    at: session.startedAt,
+                    node: (
+                      <SessionItem
+                        session={session}
+                        onPress={() =>
+                          router.push({
+                            pathname: '/activity/workout/[id]',
+                            params: { id: session.id },
+                          })
+                        }
+                      />
+                    ),
+                  })),
+                ]}
+                onPressEntry={(entry) =>
+                  router.push({
+                    pathname: '/log/food/[id]',
+                    // A `[id]` segment cannot be filled with `undefined`, and an
+                    // entry's `food_id` is null whenever the scan did not land on a
+                    // catalogue row, so every estimate and typed meal went to
+                    // `+not-found`. The placeholder says "read it off the entry".
+                    params: { id: entry.foodId ?? ENTRY_FOOD_ID, entryId: entry.id },
+                  })
+                }
+                // A snap that could not be read is dropped as it is handed over:
+                // leaving it behind would double the meal once search adds the real
+                // dish, and the row has nothing in it worth keeping.
+                onFixEntry={(entry) => {
+                  pending.remove(entry.id)
+                  router.push({ pathname: '/log/search' })
+                }}
+                // Nothing was logged for a photo with no food in it, so there is no
+                // entry to delete — dismissing drops the row the shutter put there.
+                onDismissEntry={(entry) => pending.remove(entry.id)}
+                // Swipe left, tap the bin. A wrong scan is the common case and it took
+                // two screens to undo; this is the shortcut, and the detail screen's
+                // delete is still there for anyone who wants to look first.
+                onDeleteEntry={requestDelete}
+              />
+            )}
+          </Aside>
         </>
       )}
       <ConfirmSheet
