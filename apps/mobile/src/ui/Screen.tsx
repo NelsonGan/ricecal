@@ -96,6 +96,9 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * The page. Wrap the part that can stand beside the rest in `<Aside>`, and on
    * a window with room for two panes it becomes the second pane, scrolling on
    * its own. On a phone the markers do nothing.
+   *
+   * Keep fields that open the keyboard or the number pad out of an `Aside`: the
+   * first pane is the one this scrolls to reveal them.
    */
   children: ReactNode
   /**

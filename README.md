@@ -6934,6 +6934,49 @@ after it, which under the field would compete with the primary button.
 `secureTextEntry` is set and the value is empty, because iOS restyles the native
 placeholder of an AutoFill target and there is no prop that stops it.
 
+### iPhone Duo: the side column and two panes
+
+Every layout decision that depends on the shape of the device is made in
+`src/ui/adaptive.ts`, and nowhere else. Every iPhone but one gets the answer it
+always got: the floating tab bar along the bottom and one column. The exception
+is iPhone Duo, Apple's foldable, recognised by the space iOS gives the app and
+never by its model name.
+
+| Pose | Window (pt) | What iOS reserves | Tab bar | Panes |
+|---|---|---|---|---|
+| Closed (outer display) | 466 × 678 | 84pt column on the right | rail in that column | one |
+| Open on its side, flat or book | 951 × 669 | 84pt column on the right | rail in that column | two, meeting at the fold |
+| Open and upright | 669 × 951 | nothing at the sides | bottom | one |
+| Any iPhone, an iPad, Android | | nothing at the sides | bottom | one |
+
+- **The side column** is the clock and the camera's, and Apple's own tab bars
+  stand in it. `NavBar` turns into a vertical rail there (`NavRail`), same items,
+  same order. `Screen` keeps every page inside the side insets, which are zero on
+  every other phone, so the camera never covers a header action.
+- **Two panes.** A screen wraps the part that can stand beside the rest in
+  `<Aside>`. On a phone the marker renders its children where they stand, so the
+  phone layout is the code as written. With room for two (content 760pt or
+  wider), `Screen` moves the marked parts into a second pane that scrolls on its
+  own. The panes meet at the window's centre, which is the fold, so nothing
+  tappable sits in the crease. Today (summary | diary), Trends (figures | reviews
+  and history), Me (account | settings), Feed (Following | Discover) and Groups
+  (list | open board) use it.
+- **Overlays** (sheets, dialogs, toasts, the running workout's bar) take
+  `useOverlayInsets()`: clear of the column, and in the trailing pane when there
+  are two, even over a one-pane page, because centred they would rest in the
+  fold. The number pad spans the page, or the sheet it types into.
+- **Anything sized by arithmetic** rather than flex (a pager, a grid of tiles)
+  reads `usePaneWidth()`, not the window. A pager keyed to its width must also
+  survive the width changing under it: opening the device kept the closed
+  display's offset and showed a week two weeks back (`WeekPicker`, the board).
+
+Rules: put fields that open the keyboard or the number pad in the first pane,
+which is the one `Screen` reveals them in. Pushed pages have no `Aside` yet and
+span both halves, like system stack pages. React Native gets no hinge or
+fold signal, so nothing here moves when the device is half-folded: the pane
+split is what keeps controls off the crease. The Duo simulator is iOS 27.1
+only, and Argent's `fold` tool moves its hinge.
+
 ### Icons
 
 593 illustrated icons across six sets (`ui`, `system`, `body`, `food`, `dishes`,
