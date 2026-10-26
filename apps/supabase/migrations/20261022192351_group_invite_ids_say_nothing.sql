@@ -51,20 +51,29 @@ begin
     if v_email then return gen_random_uuid(); end if;
     raise exception 'Already in this group' using errcode = 'P0001', hint = 'already_member';
   end if;
+  -- An address must leave nothing behind that a later invite could read: a
+  -- repeat finds the invite already there, changes nothing and answers with a
+  -- made-up id, as an address with no account does. That costs a renewed push
+  -- for an address invite; the invite itself stays in the invitee's list.
+  if v_email then
+    insert into public.group_invites(group_id, invitee_id, inviter_id, by_email)
+    values (p_group_id, v_invitee, v_user, true)
+    on conflict (group_id, invitee_id) do nothing
+    returning id into v_id;
+    return coalesce(v_id, gen_random_uuid());
+  end if;
+  -- A handle takes over an invite sent to an address, so a handle after an
+  -- address looks exactly like the handle alone: its own id, on the sender's
+  -- list, pushed. Otherwise a pending invite is renewed at most hourly, which
+  -- also caps its pushes, and a renewal takes a new id.
   insert into public.group_invites(group_id, invitee_id, inviter_id, by_email)
-  values (p_group_id, v_invitee, v_user, v_email)
+  values (p_group_id, v_invitee, v_user, false)
   on conflict (group_id, invitee_id) do update
-    -- A renewal takes a new id, so the same address asked an hour apart does
-    -- not answer with the same id twice, which an unknown address never does.
-    set id = gen_random_uuid(), inviter_id = excluded.inviter_id, by_email = excluded.by_email,
+    set id = gen_random_uuid(), inviter_id = excluded.inviter_id, by_email = false,
       created_at = now(), pushed_at = null
-    -- A pending invite is renewed at most hourly, which also caps its pushes.
-    where public.group_invites.created_at < now() - interval '1 hour'
+    where public.group_invites.by_email or public.group_invites.created_at < now() - interval '1 hour'
   returning id into v_id;
   if v_id is null then
-    -- Not renewed, so there is nothing to push. An email answers as an unknown
-    -- address does; returning the stored id would match the previous answer.
-    if v_email then return gen_random_uuid(); end if;
     select i.id into v_id from public.group_invites i
     where i.group_id = p_group_id and i.invitee_id = v_invitee;
   end if;

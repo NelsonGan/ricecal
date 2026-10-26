@@ -3212,10 +3212,13 @@ without its `@`, or an email address, which only finds an account that already
 exists. A handle that finds nobody says so, since handles are public; an email
 answers the same whatever is behind it, down to the id it returns (a made-up
 one when nobody was found), so the field cannot be used to learn whether an
-address has an account. That includes asking twice: an invite that was not
-renewed answers an email with a made-up id too, and a renewal takes a new id,
-because the stored id coming back a second time is exactly what a made-up one
-never does. The push for an invite is sent after the answer, which carries no
+address has an account. That includes asking twice: an address that finds an
+invite already there changes nothing and answers with a made-up id too, since
+the stored id coming back a second time is exactly what a made-up one never
+does. It also includes an address followed by a handle: a handle takes over an
+invite sent to an address (its own id, on the sender's list, pushed), so the
+pair looks exactly like the handle alone and cannot tie the address to it. A
+handle invite is renewed at most hourly, and a renewal takes a new id. The push for an invite is sent after the answer, which carries no
 count, so neither how many phones it reached nor how long it took gives the
 account away. Someone blocked in either direction reads as nobody.
 Members see only the pending invites they sent themselves, and of those only

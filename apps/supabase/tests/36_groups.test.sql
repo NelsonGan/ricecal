@@ -109,6 +109,25 @@ select is(jsonb_array_length(public.group_details((select id from g))->'invites'
   'settings lists the handle invite and not who an address found');
 select throws_ok($$select public.invite_to_group((select id from g), '@nobody.here')$$,
   'P0001', 'No account found', 'an unknown handle says so, since handles are public');
+-- An address then a handle for the same person must look exactly like the
+-- handle alone. Otherwise the pair says whose address it was: the handle once
+-- answered with the id the address had, and stayed off the sender's list.
+reset role;
+create temp table dee_by_email as
+  select public.invite_to_group((select id from g), :'dee' || '@groups.example.test') as id;
+create temp table dee_by_handle as
+  select public.invite_to_group((select id from g), '@dee.groups') as id;
+grant select on dee_by_email, dee_by_handle to authenticated;
+set local role authenticated;
+select isnt((select id from dee_by_handle), (select id from dee_by_email),
+  'a handle invite after an address invite answers with its own id');
+select is(jsonb_array_length(public.group_details((select id from g))->'invites'), 2,
+  'a handle invite after an address invite is listed like any handle invite');
+reset role;
+select is((select by_email from public.group_invites where invitee_id = :'dee'), false,
+  'the invite now counts as sent by handle');
+delete from public.group_invites where invitee_id = :'dee';
+set local role authenticated;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
 select is(public.group_invite_count(), 1, 'the invitee sees one invite');
