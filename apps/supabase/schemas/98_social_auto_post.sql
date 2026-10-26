@@ -15,10 +15,14 @@ declare
   v_entry public.food_logs;
   v_totals record;
 begin
-  -- Lock the profile before the rate row, as manual sharing does.
+  -- Lock the profile before the rate row, as manual sharing does. An account
+  -- that has not joined the feed and has no name cannot join it
+  -- (social_profiles_name_present), and joining here would fail the meal.
+  -- Apple sign-in that shares no name and no email leaves the name empty.
   select p.is_private into v_private
   from public.profiles p
   where p.id = new.user_id and p.auto_post_foods and not p.quarantined
+    and (p.social_joined_at is not null or btrim(p.display_name) <> '')
   for update;
   if not found then return null; end if;
   select * into v_entry from public.food_logs f where f.id = new.id;

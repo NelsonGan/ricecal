@@ -2798,7 +2798,10 @@ It never joins anyone to the feed itself. Auto post foods does, and is now on
 by default (see "News announcements"), so for most accounts the first logged
 meal joins them and their workouts follow; the announcement's feed page says so. A
 failed automatic post (budget spent, profile under review) never fails the save.
-A workout can also be shared by hand from its page, which opens the composer
+An account with no name is skipped rather than joined: Sign in with Apple that
+shares neither a name nor an email leaves `display_name` empty, the feed refuses
+such a profile (`social_profiles_name_present`), and joining it from the
+`food_logs` trigger refused every meal it tried to save. A workout can also be shared by hand from its page, which opens the composer
 with the workout's preview, or edited there once posted.
 
 A profile is one grid, meals and workouts together and newest first. A whole
