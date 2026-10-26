@@ -44,6 +44,9 @@ function afterResponse(work: Promise<unknown>) {
  * decides who hears it and marks it sent, so a retried or replayed call
  * delivers nothing twice.
  *
+ * An invite is answered at once too and pushed in the background, so neither
+ * the answer nor its timing says whether an invited address has an account.
+ *
  * A chat message is answered at once and pushed after `MESSAGE_PUSH_DELAY_MS`
  * in the background, so the sender's app never waits on the delay and a phone
  * locked straight after sending cannot cut it short.
@@ -74,6 +77,12 @@ Deno.serve(async (req: Request) => {
         .then(() => deliver(service, kind, signed.userId, id))
         .catch(unavailable),
     )
+    return json({ ok: true, queued: true }, 202)
+  }
+  // How many phones an invite reached says whether its address has an
+  // account, and so would how long the answer took. Answered before sending.
+  if (kind === 'invite') {
+    afterResponse(deliver(service, kind, signed.userId, id).catch(unavailable))
     return json({ ok: true, queued: true }, 202)
   }
   try {
