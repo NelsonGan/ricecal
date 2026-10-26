@@ -142,6 +142,31 @@ describe('Screen with an Aside', () => {
     expect(pane.getByText('Your day')).toBeOnTheScreen()
   })
 
+  it('stands the footer under the second pane with two', async () => {
+    const window = { width: 951, height: 669, scale: 3, fontScale: 1 }
+    ReactNative.Dimensions.set({ window, screen: window })
+    const metrics = {
+      frame: { x: 0, y: 0, width: 951, height: 669 },
+      insets: { top: 0, left: 0, right: 84, bottom: 20 },
+    }
+    await render(
+      <SafeAreaProvider initialMetrics={metrics}>
+        <Screen footer={<Text>Subscribe</Text>}>
+          <Text>What Pro adds</Text>
+          <Aside>
+            <Text>Plans</Text>
+          </Aside>
+        </Screen>
+      </SafeAreaProvider>,
+    )
+    // The nearest box holding both the footer and the plans is the second
+    // pane, and it does not hold the first pane's content.
+    let box = screen.getByText('Subscribe').parent
+    while (box && within(box).queryByText('Plans') === null) box = box.parent
+    expect(box).not.toBeNull()
+    expect(within(box as never).queryByText('What Pro adds')).toBeNull()
+  })
+
   it('gives the aside a pane of its own on iPhone Duo open', async () => {
     await show(951, 84)
     const pane = within(screen.getByTestId('first-pane'))

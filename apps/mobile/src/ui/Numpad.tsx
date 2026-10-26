@@ -141,7 +141,8 @@ type Session = {
   /** Ends the edit the way tapping away from a keyboard does: through blur. */
   blur: () => void
   /** Where the field is on screen, so a host can scroll it clear of the pad. */
-  measure: (report: (top: number, height: number) => void) => void
+  /** Reports the field's top, height and left edge, in window points. */
+  measure: (report: (top: number, height: number, left: number) => void) => void
   /**
    * True from a focus until the first key: the next key replaces the value
    * rather than appending, for a field that asked for `replaceFirst`. Kept on
@@ -430,7 +431,7 @@ export function useNumpadField({
       hostId,
       field,
       blur: () => input.current?.blur(),
-      measure: (report) => input.current?.measureInWindow((_x, y, _w, h) => report(y, h)),
+      measure: (report) => input.current?.measureInWindow((x, y, _w, h) => report(y, h, x)),
       pristine: true,
       setFresh,
     }

@@ -49,6 +49,7 @@ import { ageFrom } from '@/lib/nutrition'
 import { UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
 import {
   AppBar,
+  Aside,
   Badge,
   Card,
   cn,
@@ -137,7 +138,12 @@ function WorkoutPage({ id }: { id: string }) {
         />
       }
     >
-      <WorkoutBody workout={workout} unit={unit} />
+      <SessionFigures workout={workout} unit={unit} />
+      {/* With two panes the session's figures are the first, and the exercises
+          set by set the second. See `Aside`. */}
+      <Aside>
+        <SessionExercises workout={workout} unit={unit} />
+      </Aside>
 
       <ActionSheet
         visible={menu}
@@ -224,11 +230,9 @@ function WorkoutPage({ id }: { id: string }) {
   )
 }
 
-function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUnit }) {
+function SessionFigures({ workout, unit }: { workout: WorkoutDetail; unit: WeightUnit }) {
   const { t } = useTranslation(['workouts', 'common'])
-  const router = useRouter()
   const library = useExerciseLibrary()
-  const distanceUnit = distanceUnitFor(unit)
   const started = parseISO(workout.startedAt)
   const birthDate = useProfile().data?.birth_date ?? null
   const heart = workout.heartRate ?? null
@@ -301,7 +305,17 @@ function WorkoutBody({ workout, unit }: { workout: WorkoutDetail; unit: WeightUn
           <MuscleSplitBars rows={split} />
         </Card>
       ) : null}
+    </>
+  )
+}
 
+function SessionExercises({ workout, unit }: { workout: WorkoutDetail; unit: WeightUnit }) {
+  const router = useRouter()
+  const library = useExerciseLibrary()
+  const distanceUnit = distanceUnitFor(unit)
+
+  return (
+    <>
       {workout.entries.map((entry) => (
         <EntryCard
           key={entry.id}

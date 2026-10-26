@@ -60,6 +60,7 @@ import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
+  Aside,
   Button,
   Card,
   Chip,
@@ -74,6 +75,7 @@ import {
   Tappable,
   Text,
   useToast,
+  useWindowLayout,
 } from '@/ui'
 
 /**
@@ -88,6 +90,12 @@ const QUICK_FIXES = ['halfPortion', 'noSambal', 'addEgg', 'extraRice'] as const
 
 /** The four figures a user can type over, in the order the card reads them. */
 const FIGURES = ['kcal', 'carbs', 'protein', 'fat'] as const
+
+/**
+ * The pinned bar's height under the status bar: its padding and a 44pt control.
+ * The picture hands over to it here, and the second pane starts below it.
+ */
+const PINNED_BAR = spacing.sm * 2 + 44
 
 /**
  * How far the content rides up over the photograph. Read twice, and it has to
@@ -191,6 +199,7 @@ function FoodDetail() {
   // The full-bleed hero and its collapsing header share this measurement: one
   // reaches behind the status bar, and the other keeps its controls below it.
   const insets = useSafeAreaInsets()
+  const { split } = useWindowLayout()
   const headerScrollY = useSharedValue(0)
   const toast = useToast()
   const logFood = useLogFood()
@@ -1125,7 +1134,7 @@ function FoodDetail() {
            body; four controls leave no honest room for it in this row. */
         <CollapsingAppBar
           scrollY={headerScrollY}
-          revealAt={heroHeight - (insets.top + spacing.sm * 2 + 44)}
+          revealAt={heroHeight - (insets.top + PINNED_BAR)}
           onBack={() => goBack()}
           backLabel={t('common:a11y.back')}
           /* Whole-entry actions, least to most destructive. They are absent
@@ -1395,71 +1404,82 @@ function FoodDetail() {
             </View>
           )}
         </Card>
+      </View>
 
-        {/* THE FIGURES, read here and edited in a sheet. The title is the card's
+      {/* With two panes, the dish and its portion stay under the picture and
+          what the portion adds up to goes beside them. On a phone this is the
+          next stretch of the same column: the scroll view's own gap matches the
+          wrapper's. The second pane has no picture to sit on, so it starts
+          below the pinned bar, less the inset the pane already pads. */}
+      <Aside>
+        <View
+          className="gap-stack bg-canvas px-gutter"
+          style={split ? { paddingTop: PINNED_BAR } : undefined}
+        >
+          {/* THE FIGURES, read here and edited in a sheet. The title is the card's
           own now rather than a caption beside the number, because the header row
           is what carries the way in — see `CardEdit`. */}
-        <Card
-          title={t('logging:detail.total')}
-          action={
-            existing ? (
-              <CardEdit
-                label={t('logging:detail.editFigures')}
-                onPress={() => setEditingFigures(true)}
-              />
-            ) : undefined
-          }
-        >
-          {/* The figure alone. The card's own title already says KCAL TOTAL, and a
+          <Card
+            title={t('logging:detail.total')}
+            action={
+              existing ? (
+                <CardEdit
+                  label={t('logging:detail.editFigures')}
+                  onPress={() => setEditingFigures(true)}
+                />
+              ) : undefined
+            }
+          >
+            {/* The figure alone. The card's own title already says KCAL TOTAL, and a
             "kcal" caption beside the number said it a second time. */}
-          <Text variant="displayMd">{macros.kcal.toLocaleString()}</Text>
+            <Text variant="displayMd">{macros.kcal.toLocaleString()}</Text>
 
-          {targets ? <MacroBars eaten={macros} targets={targets} /> : null}
+            {targets ? <MacroBars eaten={macros} targets={targets} /> : null}
 
-          {/* Whose numbers these are, which the reset link used to say by being
+            {/* Whose numbers these are, which the reset link used to say by being
             there. Without it a typed figure and the app's own answer look the
             same on the card, and the only way to find out was to open the sheet. */}
-          {existing && FIGURES.some((key) => typed[key].trim()) ? (
-            <Text variant="meta">{t('logging:detail.yourFigures')}</Text>
-          ) : null}
+            {existing && FIGURES.some((key) => typed[key].trim()) ? (
+              <Text variant="meta">{t('logging:detail.yourFigures')}</Text>
+            ) : null}
 
-          {/* The rule goes with the section it introduces. See `hasExtras`. */}
-          {hasExtras ? <Divider /> : null}
+            {/* The rule goes with the section it introduces. See `hasExtras`. */}
+            {hasExtras ? <Divider /> : null}
 
-          {/* Only when there is something under it. This used to be shown for
+            {/* Only when there is something under it. This used to be shown for
             every dish so that "nobody recorded it" was still an answer — but
             most of the catalogue has none of these columns, so most rows grew
             a control that opened three dashes. */}
-          {hasExtras ? (
-            <Tappable
-              className="flex-row items-center justify-between"
-              onPress={() => setShowNutrients((open) => !open)}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: showNutrients }}
-              accessibilityLabel={t('logging:detail.moreNutrients')}
-            >
-              <Text variant="label">{t('logging:detail.moreNutrients')}</Text>
-              <Icon set="ui" name={showNutrients ? 'chevron-up' : 'chevron-down'} size={20} />
-            </Tappable>
-          ) : null}
+            {hasExtras ? (
+              <Tappable
+                className="flex-row items-center justify-between"
+                onPress={() => setShowNutrients((open) => !open)}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showNutrients }}
+                accessibilityLabel={t('logging:detail.moreNutrients')}
+              >
+                <Text variant="label">{t('logging:detail.moreNutrients')}</Text>
+                <Icon set="ui" name={showNutrients ? 'chevron-up' : 'chevron-down'} size={20} />
+              </Tappable>
+            ) : null}
 
-          {showNutrients ? (
-            <View className="gap-2">
-              {extras.map((row) => (
-                <View key={row.key} className="flex-row items-baseline justify-between gap-3">
-                  <Text variant="body">{row.label}</Text>
-                  <Text variant="label" className={row.value ? undefined : 'text-faint'}>
-                    {/* An em dash rather than "0 g". Null in these columns means
+            {showNutrients ? (
+              <View className="gap-2">
+                {extras.map((row) => (
+                  <View key={row.key} className="flex-row items-baseline justify-between gap-3">
+                    <Text variant="body">{row.label}</Text>
+                    <Text variant="label" className={row.value ? undefined : 'text-faint'}>
+                      {/* An em dash rather than "0 g". Null in these columns means
                       nobody recorded the number, and zero is a claim. */}
-                    {row.value ?? '—'}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
-        </Card>
+                      {row.value ?? '—'}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </Card>
 
-        {/* What the plate is made of. Read here, edited on `log/ingredients`,
+          {/* What the plate is made of. Read here, edited on `log/ingredients`,
           and each part written through `set_ingredient_quantity`.
 
           That function deliberately does NOT touch the parent row — see the note in
@@ -1480,11 +1500,11 @@ function FoodDetail() {
 
           Not while the parts are still being fetched, though. An empty card that
           fills in a moment later reads as a plate that lost its ingredients. */}
-        {existing && !partsLoading ? (
-          <Card
-            title={t('logging:detail.plateTitle')}
-            action={
-              /* One glyph, for both halves of the job. The plus used to sit
+          {existing && !partsLoading ? (
+            <Card
+              title={t('logging:detail.plateTitle')}
+              action={
+                /* One glyph, for both halves of the job. The plus used to sit
                  beside this pencil, which made the header ask two questions
                  about one thing — resizing a part and putting one on are the
                  same edit, and both are behind here now. It is offered on an
@@ -1497,20 +1517,20 @@ function FoodDetail() {
                  sheet cannot host a second sheet without one of them having to
                  close, which is what dropped the user two panels back when they
                  dismissed the search. See `log/ingredients`. */
-              <CardEdit
-                label={t('logging:detail.editPlate')}
-                onPress={() =>
-                  router.push({
-                    pathname: '/log/ingredients',
-                    params: { entryId: existing.id, logDate: existing.logDate },
-                  })
-                }
-              />
-            }
-          >
-            {parts.map((ingredient) => (
-              <View key={ingredient.id} className="flex-row items-start justify-between gap-3">
-                {/* HOW MANY, THEN WHAT, THEN WHAT IT WEIGHS — a cart line, of
+                <CardEdit
+                  label={t('logging:detail.editPlate')}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/log/ingredients',
+                      params: { entryId: existing.id, logDate: existing.logDate },
+                    })
+                  }
+                />
+              }
+            >
+              {parts.map((ingredient) => (
+                <View key={ingredient.id} className="flex-row items-start justify-between gap-3">
+                  {/* HOW MANY, THEN WHAT, THEN WHAT IT WEIGHS — a cart line, of
                     which `PartLine` is the first two thirds.
 
                     The weight used to sit on a second line behind a multiplier —
@@ -1531,65 +1551,65 @@ function FoodDetail() {
                     peppers" came out as three words and an ellipsis on the one
                     screen somebody opens to check exactly that. The bracket wraps
                     with it, being part of the same run of text. */}
-                <PartLine
-                  quantity={ingredient.quantity}
-                  name={ingredient.name}
-                  className="min-w-0 flex-1"
-                >
-                  {ingredient.grams ? (
-                    <Text variant="meta">
-                      {` ${t('logging:detail.grams', {
-                        grams: Math.round(ingredient.grams).toLocaleString(),
-                      })}`}
-                    </Text>
-                  ) : null}
-                </PartLine>
-                <View className="flex-row items-baseline gap-1">
-                  <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
-                  <Text variant="caption">{t('common:unit.kcal')}</Text>
-                </View>
-              </View>
-            ))}
-            {/* One line and the plus above it, for an entry nothing has broken
-                down. Said rather than left blank, because an INGREDIENTS card
-                with nothing under it reads as a plate whose parts went missing
-                rather than as one that never had any. */}
-            {parts.length ? (
-              <>
-                <Divider />
-                <View className="flex-row items-baseline justify-between gap-3">
-                  <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
+                  <PartLine
+                    quantity={ingredient.quantity}
+                    name={ingredient.name}
+                    className="min-w-0 flex-1"
+                  >
+                    {ingredient.grams ? (
+                      <Text variant="meta">
+                        {` ${t('logging:detail.grams', {
+                          grams: Math.round(ingredient.grams).toLocaleString(),
+                        })}`}
+                      </Text>
+                    ) : null}
+                  </PartLine>
                   <View className="flex-row items-baseline gap-1">
-                    <Text variant="numeric">{plateKcal.toLocaleString()}</Text>
+                    <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
                     <Text variant="caption">{t('common:unit.kcal')}</Text>
                   </View>
                 </View>
-                {/* HOW MUCH OF IT WAS EATEN, under the plate it scales, once the
+              ))}
+              {/* One line and the plus above it, for an entry nothing has broken
+                down. Said rather than left blank, because an INGREDIENTS card
+                with nothing under it reads as a plate whose parts went missing
+                rather than as one that never had any. */}
+              {parts.length ? (
+                <>
+                  <Divider />
+                  <View className="flex-row items-baseline justify-between gap-3">
+                    <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
+                    <View className="flex-row items-baseline gap-1">
+                      <Text variant="numeric">{plateKcal.toLocaleString()}</Text>
+                      <Text variant="caption">{t('common:unit.kcal')}</Text>
+                    </View>
+                  </View>
+                  {/* HOW MUCH OF IT WAS EATEN, under the plate it scales, once the
                     stepper above says it was not all of it. The rows and their
                     total stay the plate as it was served, so without this line
                     the card would read 915 under a total of 458 with nothing to
                     say why. */}
-                {plateQuantity === 1 ? null : (
-                  <View className="flex-row items-baseline justify-between gap-3">
-                    <Text variant="bodyStrong">
-                      {t('logging:detail.times', { amount: formatPortion(plateQuantity) })}
-                    </Text>
-                    <View className="flex-row items-baseline gap-1">
-                      <Text variant="numeric">
-                        {roundHalfUp(plateKcal * plateQuantity).toLocaleString()}
+                  {plateQuantity === 1 ? null : (
+                    <View className="flex-row items-baseline justify-between gap-3">
+                      <Text variant="bodyStrong">
+                        {t('logging:detail.times', { amount: formatPortion(plateQuantity) })}
                       </Text>
-                      <Text variant="caption">{t('common:unit.kcal')}</Text>
+                      <View className="flex-row items-baseline gap-1">
+                        <Text variant="numeric">
+                          {roundHalfUp(plateKcal * plateQuantity).toLocaleString()}
+                        </Text>
+                        <Text variant="caption">{t('common:unit.kcal')}</Text>
+                      </View>
                     </View>
-                  </View>
-                )}
-              </>
-            ) : (
-              <Text variant="meta">{t('logging:detail.plateNone')}</Text>
-            )}
-          </Card>
-        ) : null}
+                  )}
+                </>
+              ) : (
+                <Text variant="meta">{t('logging:detail.plateNone')}</Text>
+              )}
+            </Card>
+          ) : null}
 
-        {/* Correcting a dish by describing it belongs to an entry that already
+          {/* Correcting a dish by describing it belongs to an entry that already
           exists: "no sambal" is a fix to something logged, and on the way IN the
           serving chips and the stepper above say the same thing more precisely.
 
@@ -1599,72 +1619,72 @@ function FoodDetail() {
           the app acts on: "Half portion" reaches scan-refine's quantity rung,
           which rescales the entry and every part under it, and does it better
           than the serving swap this screen used to do by hand. */}
-        {existing ? (
-          <FixSheet
-            visible={fixing}
-            onClose={() => setFixing(false)}
-            value={instruction}
-            onChangeText={setInstruction}
-            placeholder={t('logging:detail.fixPlaceholder')}
-            suggestions={fixSuggestions}
-            onSubmit={() => void sendFix()}
-            submitting={sending}
-          />
-        ) : null}
+          {existing ? (
+            <FixSheet
+              visible={fixing}
+              onClose={() => setFixing(false)}
+              value={instruction}
+              onChangeText={setInstruction}
+              placeholder={t('logging:detail.fixPlaceholder')}
+              suggestions={fixSuggestions}
+              onSubmit={() => void sendFix()}
+              submitting={sending}
+            />
+          ) : null}
 
-        {/* The three sheets the cards above open. Each one drafts and hands the
+          {/* The three sheets the cards above open. Each one drafts and hands the
           draft back; the footer's Save is still the only thing that writes.
 
           `computed` rather than `macros` for the placeholders: what a field
           shows through is the app's OWN answer for this portion, and `macros`
           already has the typed figures folded into it — so an entry with 400
           typed over it would offer 400 as the number to go back to. */}
-        {existing ? (
-          <NutritionSheet
-            visible={editingFigures}
-            onClose={() => setEditingFigures(false)}
-            value={typed}
-            computed={appFigures}
-            onSave={saveFigures}
-            onError={saveFailed}
+          {existing ? (
+            <NutritionSheet
+              visible={editingFigures}
+              onClose={() => setEditingFigures(false)}
+              value={typed}
+              computed={appFigures}
+              onSave={saveFigures}
+              onError={saveFailed}
+            />
+          ) : null}
+
+          {existing && clock ? (
+            <DetailsSheet
+              visible={editingDetails}
+              onClose={() => {
+                setEditingDetails(false)
+                // The entry has been filed on another day, so it is no longer in the
+                // day query this screen reads — see `saveDetails` for what the page
+                // turns into if it stays.
+                if (movedAway.current) {
+                  movedAway.current = false
+                  goBack()
+                }
+              }}
+              details={{ name: name.trim(), date: whenDate, clock }}
+              // What the name falls back to when the field is emptied, and what the
+              // sheet hands back in that case: the row's own name, never blank.
+              namePlaceholder={existing.foodName}
+              today={todayKey}
+              onSave={saveDetails}
+              onError={saveFailed}
+            />
+          ) : null}
+
+          <ConfirmSheet
+            visible={confirmDelete}
+            onClose={() => setConfirmDelete(false)}
+            onConfirm={remove}
+            title={t('logging:detail.deleteTitle')}
+            description={t(deleteShared ? 'social:sourceDelete' : 'logging:detail.deleteBody')}
+            confirmLabel={t('common:action.delete')}
+            cancelLabel={t('common:action.keep')}
+            tone="danger"
           />
-        ) : null}
 
-        {existing && clock ? (
-          <DetailsSheet
-            visible={editingDetails}
-            onClose={() => {
-              setEditingDetails(false)
-              // The entry has been filed on another day, so it is no longer in the
-              // day query this screen reads — see `saveDetails` for what the page
-              // turns into if it stays.
-              if (movedAway.current) {
-                movedAway.current = false
-                goBack()
-              }
-            }}
-            details={{ name: name.trim(), date: whenDate, clock }}
-            // What the name falls back to when the field is emptied, and what the
-            // sheet hands back in that case: the row's own name, never blank.
-            namePlaceholder={existing.foodName}
-            today={todayKey}
-            onSave={saveDetails}
-            onError={saveFailed}
-          />
-        ) : null}
-
-        <ConfirmSheet
-          visible={confirmDelete}
-          onClose={() => setConfirmDelete(false)}
-          onConfirm={remove}
-          title={t('logging:detail.deleteTitle')}
-          description={t(deleteShared ? 'social:sourceDelete' : 'logging:detail.deleteBody')}
-          confirmLabel={t('common:action.delete')}
-          cancelLabel={t('common:action.keep')}
-          tone="danger"
-        />
-
-        {/* WHAT THE SHARE BUTTON SENDS. It draws itself where nobody can see it
+          {/* WHAT THE SHARE BUTTON SENDS. It draws itself where nobody can see it
             — see the root view in `MealShareCard` — and is mounted for as long
             as the entry is, so a tap is a capture rather than a mount, a layout,
             a photograph and a share sheet in sequence.
@@ -1672,16 +1692,17 @@ function FoodDetail() {
             It reads the same values this screen reads, from the same variables,
             so a portion stepped or a macro typed a moment ago is on the picture,
             and the plate somebody is looking at is the plate that gets sent. */}
-        {existing ? (
-          <MealShareCard
-            ref={shareMeal.card}
-            name={dishName}
-            macros={macros}
-            photo={sharePhoto}
-            icon={shownIcon}
-          />
-        ) : null}
-      </View>
+          {existing ? (
+            <MealShareCard
+              ref={shareMeal.card}
+              name={dishName}
+              macros={macros}
+              photo={sharePhoto}
+              icon={shownIcon}
+            />
+          ) : null}
+        </View>
+      </Aside>
     </Screen>
   )
 }

@@ -96,9 +96,7 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * The page. Wrap the part that can stand beside the rest in `<Aside>`, and on
    * a window with room for two panes it becomes the second pane, scrolling on
    * its own. On a phone the markers do nothing.
-   *
-   * Keep fields that open the keyboard or the number pad out of an `Aside`: the
-   * first pane is the one this scrolls to reveal them.
+   * Only `Screen`'s own children count, looking through fragments and arrays.
    */
   children: ReactNode
   /**
@@ -344,27 +342,45 @@ export function Screen({
     scrolled.value = event.contentOffset.y
     if (scrollOffset) scrollOffset.value = event.contentOffset.y
   })
+  // The second pane's own, for a field in an `Aside`. See `revealForNumpad`.
+  const asideScroller = useRef<KeyboardAwareScrollViewRef>(null)
+  const asideScrolled = useSharedValue(0)
+  const trackAsideScroll = useAnimatedScrollHandler((event) => {
+    asideScrolled.value = event.contentOffset.y
+  })
+
+  /** Where the panes sit across the window. Null for the second on a phone. */
+  const frames = paneFrames(layout)
+  const asideFrame = panes ? frames.aside : null
+  // A number rather than the frame, which is a new object every render: the
+  // pad's host reruns its reveal whenever `revealForNumpad` changes.
+  const asideLeft = asideFrame?.left
 
   const revealForNumpad = useCallback(
-    (measure: (report: (top: number, height: number) => void) => void) => {
-      measure((top, fieldHeight) => {
+    (measure: (report: (top: number, height: number, left: number) => void) => void) => {
+      measure((top, fieldHeight, left) => {
         const clear = windowHeight - numpad.height - bottomOffset
         const overlap = top + fieldHeight - clear
-        if (overlap > 1) scroller.current?.scrollTo({ y: scrolled.value + overlap, animated: true })
+        if (overlap <= 1) return
+        // The pane the field is in is the one to scroll: with two, a field
+        // right of the fold is in the `Aside`.
+        const inAside = asideLeft !== undefined && left >= asideLeft
+        const [view, offset] = inAside ? [asideScroller, asideScrolled] : [scroller, scrolled]
+        view.current?.scrollTo({ y: offset.value + overlap, animated: true })
       })
     },
-    [windowHeight, numpad.height, bottomOffset, scrolled],
+    [windowHeight, numpad.height, bottomOffset, scrolled, asideScrolled, asideLeft],
   )
 
   /**
-   * The content box, once per pane. The first pane is the one the keyboard,
-   * the number pad and the caller's scroll props belong to. A second pane only
-   * exists on a window with room for two, and holds the page's `Aside`.
+   * The content box, once per pane. The caller's scroll props belong to the
+   * first pane. A second pane only exists on a window with room for two, and
+   * holds the page's `Aside`.
    */
   const renderBody = (content: ReactNode, primary: boolean) =>
     scroll ? (
       <AwareScrollView
-        ref={primary ? scroller : undefined}
+        ref={primary ? scroller : asideScroller}
         className="flex-1"
         // The caller's alignment goes on the CONTENT CONTAINER, not here. See
         // `contentClassName`.
@@ -387,7 +403,8 @@ export function Screen({
           // past the end of the content and the scroll view declines.
           paddingBottom:
             (flush ? 0 : spacing.gutter) +
-            (footer ? 0 : navInset || insets.bottom) +
+            // With two panes the footer stands under the second only.
+            (footer && !(primary && asideFrame) ? 0 : navInset || insets.bottom) +
             (floatingTrailing || toastsAboveFloating ? FLOATING_CLEARANCE : 0) +
             numpad.height,
           gap: spacing.stack,
@@ -411,7 +428,7 @@ export function Screen({
               }
             : primary
               ? trackAnimatedScroll
-              : undefined
+              : trackAsideScroll
         }
         scrollEventThrottle={rest.scrollEventThrottle ?? 16}
         // What `keyboardDismissMode` does for the system keyboard, done by hand
@@ -444,26 +461,92 @@ export function Screen({
     )
 
   /**
+   * The footer CTA. Under the page, or with two panes under the second, beside
+   * the content it acts on rather than lying across the fold.
+   */
+  const footerBlock = footer ? (
+    /* A transform, so the scroll view above keeps the frame the keyboard is
+    measured against and the footer's own height stays out of the layout
+    pass entirely. See `lift` for how far it goes. */
+    <Reanimated.View style={lift}>
+      {/* No rule above the footer. The design separates it with space and
+       the canvas colour alone, and a hairline under a full-width CTA
+       reads as a seam rather than a divider. */}
+      {/* On a device with a home indicator the inset is already a
+         finger's worth of clearance, so the full `spacing.md` the top
+         uses stacked on top of it reads as a band of dead canvas under
+         the last button — most visible where the footer ends in a ghost
+         button (the intro paywall's "Maybe later", the welcome screen's
+         "I already have an account"), which floated a long way off the
+         bottom edge. So `spacing.xs` on top of the inset there. The
+         `max` is the floor for a device with NO inset (an older phone,
+         most Android gesture-off bars): the CTA still wants `spacing.md`
+         of real gap under it, which is what the old value always gave. */}
+      {/* Measured only where it is read (`bottomOffset`, scrolling screens).
+         Elsewhere the padding animates with the keyboard, and measuring
+         it re-rendered the whole screen on every frame. */}
+      <Reanimated.View
+        onLayout={scroll ? measureFooter : undefined}
+        className="gap-md bg-canvas px-gutter pt-md"
+        style={footerPad}
+      >
+        {footer}
+      </Reanimated.View>
+
+      {/* Canvas continuing below the footer, all the way down the screen.
+
+       The footer is a fixed-height block moved up by however much the
+       keyboard says it occupies, so anything the keyboard occupies but
+       does not COVER is a band of diary showing between the buttons and
+       the keys. iOS 26's number pad is where that stopped being
+       theoretical: the "Done" pill it floats above the keys is inside
+       the frame the app is told about while the keys are not, so the
+       footer cleared a control it could not see and left a strip of the
+       entry on show underneath it.
+
+       The pad is the app's own now, and its height is a constant this
+       app owns, so that particular gap is gone at the source. This stays
+       for every other keyboard, where the frame is still somebody else's
+       to report: a floating IME on Android, an autofill panel, whatever
+       a platform decides to attach next. Skirting rather than capping,
+       because a frame taller than its keys is usually taller for a
+       reason and covering the difference puts our buttons under
+       somebody else's.
+
+       Absolute, so it stays out of the layout the footer is measured
+       by — `bottomOffset` is that measurement, and a skirt inside it
+       would push every focused field a screen height up. Off the bottom
+       of the screen whenever nothing is open, so it costs a view and
+       nothing else. */}
+      <View
+        pointerEvents="none"
+        className="absolute inset-x-0 bg-canvas"
+        style={{ top: '100%', height: windowHeight }}
+      />
+    </Reanimated.View>
+  ) : null
+
+  /**
    * Two panes side by side, meeting at the fold. See `adaptive.ts`; on a phone
    * `panes` is null and this is the one content box it always was.
    */
-  const frames = paneFrames(layout)
   // A gutter's worth of canvas already separates two padded panes at the fold.
   // Flush ones would run edge to edge into each other, two rows reading as
   // one, so each gives up half of a narrow seam.
   const seam = flush ? FOLD_SEAM / 2 : 0
   const body =
-    panes && frames.aside ? (
+    panes && asideFrame ? (
       <View className="flex-1 flex-row">
         <View style={{ width: frames.main.width, paddingRight: seam }}>
           <PaneWidthProvider value={frames.main.width - seam}>
             {renderBody(panes.main, true)}
           </PaneWidthProvider>
         </View>
-        <View style={{ width: frames.aside.width, paddingLeft: seam }}>
-          <PaneWidthProvider value={frames.aside.width - seam}>
+        <View style={{ width: asideFrame.width, paddingLeft: seam }}>
+          <PaneWidthProvider value={asideFrame.width - seam}>
             {renderBody(panes.aside, false)}
           </PaneWidthProvider>
+          {footerBlock}
         </View>
       </View>
     ) : (
@@ -539,67 +622,7 @@ export function Screen({
 
           {corner('left', floatingLeading)}
 
-          {footer ? (
-            /* A transform, so the scroll view above keeps the frame the keyboard is
-           measured against and the footer's own height stays out of the layout
-           pass entirely. See `lift` for how far it goes. */
-            <Reanimated.View style={lift}>
-              {/* No rule above the footer. The design separates it with space and
-              the canvas colour alone, and a hairline under a full-width CTA
-              reads as a seam rather than a divider. */}
-              {/* On a device with a home indicator the inset is already a
-                finger's worth of clearance, so the full `spacing.md` the top
-                uses stacked on top of it reads as a band of dead canvas under
-                the last button — most visible where the footer ends in a ghost
-                button (the intro paywall's "Maybe later", the welcome screen's
-                "I already have an account"), which floated a long way off the
-                bottom edge. So `spacing.xs` on top of the inset there. The
-                `max` is the floor for a device with NO inset (an older phone,
-                most Android gesture-off bars): the CTA still wants `spacing.md`
-                of real gap under it, which is what the old value always gave. */}
-              {/* Measured only where it is read (`bottomOffset`, scrolling screens).
-                Elsewhere the padding animates with the keyboard, and measuring
-                it re-rendered the whole screen on every frame. */}
-              <Reanimated.View
-                onLayout={scroll ? measureFooter : undefined}
-                className="gap-md bg-canvas px-gutter pt-md"
-                style={footerPad}
-              >
-                {footer}
-              </Reanimated.View>
-
-              {/* Canvas continuing below the footer, all the way down the screen.
-
-              The footer is a fixed-height block moved up by however much the
-              keyboard says it occupies, so anything the keyboard occupies but
-              does not COVER is a band of diary showing between the buttons and
-              the keys. iOS 26's number pad is where that stopped being
-              theoretical: the "Done" pill it floats above the keys is inside
-              the frame the app is told about while the keys are not, so the
-              footer cleared a control it could not see and left a strip of the
-              entry on show underneath it.
-
-              The pad is the app's own now, and its height is a constant this
-              app owns, so that particular gap is gone at the source. This stays
-              for every other keyboard, where the frame is still somebody else's
-              to report: a floating IME on Android, an autofill panel, whatever
-              a platform decides to attach next. Skirting rather than capping,
-              because a frame taller than its keys is usually taller for a
-              reason and covering the difference puts our buttons under
-              somebody else's.
-
-              Absolute, so it stays out of the layout the footer is measured
-              by — `bottomOffset` is that measurement, and a skirt inside it
-              would push every focused field a screen height up. Off the bottom
-              of the screen whenever nothing is open, so it costs a view and
-              nothing else. */}
-              <View
-                pointerEvents="none"
-                className="absolute inset-x-0 bg-canvas"
-                style={{ top: '100%', height: windowHeight }}
-              />
-            </Reanimated.View>
-          ) : null}
+          {asideFrame ? null : footerBlock}
         </View>
 
         {toastsAboveFloating ? (
