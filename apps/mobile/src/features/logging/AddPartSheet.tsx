@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { TextInput } from 'react-native'
+import type { TextInputInstance } from 'react-native'
 
 import type { Food } from '@/data'
 import { Sheet, Text } from '@/ui'
@@ -40,7 +40,7 @@ export type AddPartSheetProps = {
  */
 export function AddPartSheet({ visible, onClose, onPick, replacing }: AddPartSheetProps) {
   const { t } = useTranslation(['logging', 'common'])
-  const field = useRef<TextInput>(null)
+  const field = useRef<TextInputInstance>(null)
 
   return (
     <Sheet

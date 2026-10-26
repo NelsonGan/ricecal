@@ -1,6 +1,6 @@
 import { type RefObject, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { type TextInput, View } from 'react-native'
+import { type TextInputInstance, View } from 'react-native'
 
 import { Button, TextField } from '@/ui'
 
@@ -8,7 +8,7 @@ export type DescribePanelProps = {
   /** The meal, as typed. Trimmed and non-empty; the host does the logging. */
   onSubmit: (text: string) => void
   autoFocus?: boolean
-  fieldRef?: RefObject<TextInput | null>
+  fieldRef?: RefObject<TextInputInstance | null>
 }
 
 /**

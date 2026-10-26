@@ -82,14 +82,27 @@ export function useDismissTo(fallback: Href): () => void {
  * replacement. At the end of onboarding that put Today on the stack and then
  * popped it straight back off, revealing the target question under the
  * paywall. One reset has no intermediate history for another action to expose.
+ *
+ * Since SDK 58 the router ignores a partial reset ("RESET … was not handled by
+ * any navigator"), so signing in left the user on a spinner. It wants a
+ * complete state: the root stack's own key, route names and key sequence, with
+ * `stale: false`. Only those are copied, not the whole state, so nothing that
+ * names the routes being dropped (the stack's `history`) comes along. The new
+ * route may go without a key; the router mints one.
  */
 export function useEnterApp(): () => void {
   const navigation = useNavigation<NativeStackNavigationProp<{ '(tabs)': undefined }>>('/')
 
   return useCallback(() => {
+    const root = navigation.getState()
     navigation.reset({
+      key: root.key,
+      type: root.type,
+      routeNames: root.routeNames,
+      routeKeySeq: root.routeKeySeq,
       index: 0,
       routes: [{ name: '(tabs)' }],
-    })
+      stale: false,
+    } as typeof root)
   }, [navigation])
 }

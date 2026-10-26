@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics'
 import { forwardRef, useCallback } from 'react'
-import { Pressable, type PressableProps, type View } from 'react-native'
+import { Pressable, type PressableProps, type ViewInstance } from 'react-native'
 
 export type TappableProps = PressableProps & {
   /**
@@ -30,7 +30,7 @@ export type TappableProps = PressableProps & {
  * A haptics failure never takes down a tap: the engine is absent on a simulator
  * and switched off on plenty of real phones.
  */
-export const Tappable = forwardRef<View, TappableProps>(function Tappable(
+export const Tappable = forwardRef<ViewInstance, TappableProps>(function Tappable(
   { haptics = true, onPressIn, onLongPress, disabled, ...rest },
   ref,
 ) {

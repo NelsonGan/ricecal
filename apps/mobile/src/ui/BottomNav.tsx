@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, type Ref, useContext } from 'react'
-import { View } from 'react-native'
+import { View, type ViewInstance } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { radius, slab } from '@/theme/tokens'
@@ -126,7 +126,7 @@ export type NavItemProps = Omit<TappableProps, 'children' | 'style'> & {
    * would flip this column back to a row.
    */
   style?: unknown
-  ref?: Ref<View>
+  ref?: Ref<ViewInstance>
 }
 
 /** One tab in the bar. Sized to fill its share of the row. */

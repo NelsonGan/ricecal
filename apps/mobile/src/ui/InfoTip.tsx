@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Modal, Pressable, useWindowDimensions, View } from 'react-native'
+import { Modal, Pressable, useWindowDimensions, View, type ViewInstance } from 'react-native'
 
 import { FLOAT_SHADOW } from './BottomNav'
 import { Icon } from './Icon'
@@ -26,7 +26,7 @@ const OPEN_MS = 6000
 type Anchor = { x: number; y: number; w: number; h: number }
 
 export function InfoTip({ text, size = 14 }: { text: string; size?: number }) {
-  const anchor = useRef<View>(null)
+  const anchor = useRef<ViewInstance>(null)
   const [at, setAt] = useState<Anchor | null>(null)
   // Where it last opened, so the bubble fades out with the modal rather than
   // vanishing the moment it is closed.

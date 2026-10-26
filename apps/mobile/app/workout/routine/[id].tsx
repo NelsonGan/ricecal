@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMemo, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { TextInput } from 'react-native'
+import type { TextInputInstance } from 'react-native'
 
 import { isRoutineLimit, type Routine, useDeleteRoutine, useRoutines, useSaveRoutine } from '@/data'
 import {
@@ -92,7 +92,7 @@ function RoutineEditor({
   // The name and note are asked for on Save, in a card over the exercises,
   // so the page itself is only the plan.
   const [naming, setNaming] = useState(false)
-  const nameField = useRef<TextInput>(null)
+  const nameField = useRef<TextInputInstance>(null)
   const confirmDelete = useDeleteConfirm({
     item: routine,
     title: t('workouts:routines.deleteTitle'),
