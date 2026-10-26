@@ -105,6 +105,15 @@ Useful commands:
 | `pnpm eval:scan` | drive the deployed scan pipeline end to end |
 | `pnpm eval:refine --repeat=3` | test real AI ingredient corrections against local Supabase |
 
+Expo Device Hub (`expo-device-hub`, a dev dependency that adds nothing to the
+app) gives every `npx expo start` a live device dashboard: stream, tap and type
+into simulators and emulators, and boot, shut down or create them, at
+`http://127.0.0.1:8082/_expo/plugins/expo-device-hub`. Test on the "RiceCal
+iPhone 18 Pro" simulator and the `RiceCal_Pixel_10` emulator (Pixel 10, Android
+16). The Hub and `pnpm android` need `ANDROID_HOME` (the Android SDK, e.g.
+`~/Library/Android/sdk`) and `JAVA_HOME` (JDK 17) in the shell that starts
+Metro; without them the Hub lists only iOS simulators.
+
 Run one simulator at a time. This machine does not have room for the iOS
 simulator and the Android emulator together, and the result is not just
 slowness: a Gradle build running beside a test run pushed 18 tests past their
