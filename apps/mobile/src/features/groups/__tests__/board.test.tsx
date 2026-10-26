@@ -1,5 +1,5 @@
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { fireEvent, render, screen } from '@/test-utils'
+import { act, fireEvent, render, screen } from '@/test-utils'
 import '@/i18n'
 import type { BoardEntry, BoardMember, GroupBoard } from '@/data/groups'
 import { ToastProvider } from '@/ui'
@@ -13,10 +13,16 @@ const METRICS = {
 const mockPress = jest.fn()
 const mockRun = jest.fn(() => Promise.resolve('nudge-id'))
 let mockBoard: GroupBoard
+let mockToday = '2026-10-21'
+const mockBoardDays: string[] = []
 
 jest.mock('@/data/groups', () => ({
   ...jest.requireActual('@/data/groups'),
-  useGroupBoard: () => ({ data: mockBoard, isError: false, refetch: jest.fn() }),
+  useGroupBoard: (_group: string, day: string, _enabled: boolean, live: boolean) => {
+    // The screen's own query is the one that is not live; pages pass true.
+    if (!live) mockBoardDays.push(day)
+    return { data: mockBoard, isError: false, refetch: jest.fn() }
+  },
   useGroupBoardChatLive: () => true,
   useGroupChatSummary: () => ({
     data: {
@@ -38,7 +44,7 @@ jest.mock('../parts', () => ({
 }))
 jest.mock('@/data', () => ({
   useUserId: () => 'me',
-  dateKey: () => '2026-10-21',
+  dateKey: () => mockToday,
   storedImageSource: () => undefined,
   useMealPhotoUrl: () => ({ data: undefined }),
 }))
@@ -77,6 +83,8 @@ const member = (id: string, name: string, patch: Partial<BoardMember> = {}): Boa
 })
 
 beforeEach(() => {
+  mockToday = '2026-10-21'
+  mockBoardDays.length = 0
   mockPress.mockClear()
   mockRun.mockClear()
   mockBoard = {
@@ -164,4 +172,19 @@ it('folds the board after five rows and unfolds on request', async () => {
 it('shows the group’s last message and its unread count in the chat bar', async () => {
   await render(board)
   expect(screen.getByText('Hafiz: cheat day lah')).toBeOnTheScreen()
+})
+
+it('moves to the new day at midnight when it was showing today', async () => {
+  jest.useFakeTimers({ now: new Date(2026, 9, 21, 23, 59, 30) })
+  try {
+    await render(board)
+    expect(mockBoardDays.at(-1)).toBe('2026-10-21')
+    mockToday = '2026-10-22'
+    await act(async () => {
+      jest.advanceTimersByTime(61_000)
+    })
+    expect(mockBoardDays.at(-1)).toBe('2026-10-22')
+  } finally {
+    jest.useRealTimers()
+  }
 })

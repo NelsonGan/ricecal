@@ -2798,7 +2798,10 @@ It never joins anyone to the feed itself. Auto post foods does, and is now on
 by default (see "News announcements"), so for most accounts the first logged
 meal joins them and their workouts follow; the announcement's feed page says so. A
 failed automatic post (budget spent, profile under review) never fails the save.
-A workout can also be shared by hand from its page, which opens the composer
+An account with no name is skipped rather than joined: Sign in with Apple that
+shares neither a name nor an email leaves `display_name` empty, the feed refuses
+such a profile (`social_profiles_name_present`), and joining it from the
+`food_logs` trigger refused every meal it tried to save. A workout can also be shared by hand from its page, which opens the composer
 with the workout's preview, or edited there once posted.
 
 A profile is one grid, meals and workouts together and newest first. A whole
@@ -3212,7 +3215,15 @@ without its `@`, or an email address, which only finds an account that already
 exists. A handle that finds nobody says so, since handles are public; an email
 answers the same whatever is behind it, down to the id it returns (a made-up
 one when nobody was found), so the field cannot be used to learn whether an
-address has an account. Someone blocked in either direction reads as nobody.
+address has an account. That includes asking twice: an address that finds an
+invite already there changes nothing and answers with a made-up id too, since
+the stored id coming back a second time is exactly what a made-up one never
+does. It also includes an address followed by a handle: a handle takes over an
+invite sent to an address (its own id, on the sender's list, pushed), so the
+pair looks exactly like the handle alone and cannot tie the address to it. A
+handle invite is renewed at most hourly, and a renewal takes a new id. The push for an invite is sent after the answer, which carries no
+count, so neither how many phones it reached nor how long it took gives the
+account away. Someone blocked in either direction reads as nobody.
 Members see only the pending invites they sent themselves, and of those only
 the ones sent by handle (`group_invites.by_email`): an email invite listed would
 name whoever owns the address. The leader renames
