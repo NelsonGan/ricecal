@@ -8,6 +8,7 @@ import { setPersonProps, track } from '@/lib/analytics'
 import type { TablesInsert } from '@/lib/database.types'
 import type {
   AccessResult,
+  ActivityDayReading,
   HealthProvider,
   HealthReading,
   HourReading,
@@ -98,6 +99,60 @@ export type SyncProgress = {
 }
 
 type SessionRow = TablesInsert<'activity_sessions'>
+type DayRow = TablesInsert<'activity_days'>
+
+/**
+ * A figure the table's own check would accept, or null.
+ *
+ * Every reading goes out in one upsert, so a single value outside a column's
+ * range fails the whole request, and `persist` stops there. One Health Connect
+ * day above 20,000 kcal kept an account from saving any day for three weeks; one
+ * workout longer than a day kept an iPhone from saving any workout, hour or
+ * weigh-in after it. A store can hold a figure no body produced (a duplicate
+ * source summed, a session nobody stopped), so the bounds here are the ones in
+ * `41_activity.sql` and must move with them.
+ */
+function within(value: number | null, min: number, max: number): number | null {
+  return value != null && Number.isFinite(value) && value >= min && value <= max ? value : null
+}
+
+const clip = (text: string | null) => (text == null ? null : text.slice(0, 120))
+
+/**
+ * Days as rows. An impossible figure is blanked rather than clamped, because a
+ * clamped one would be written as if the watch had measured it, and the rest of
+ * the day is kept. Steps cannot be blank, so a day whose steps are impossible
+ * is left out.
+ */
+export function dayRows(
+  userId: string,
+  provider: ProviderId,
+  days: readonly ActivityDayReading[],
+): DayRow[] {
+  const syncedAt = new Date().toISOString()
+  return days.flatMap((day) => {
+    const steps = within(day.steps, 0, 200_000)
+    if (steps == null) return []
+    return [
+      {
+        user_id: userId,
+        log_date: day.date,
+        provider,
+        active_kcal: within(day.activeKcal, 0, 20_000),
+        resting_kcal: within(day.restingKcal, 0, 20_000),
+        steps,
+        distance_m: within(day.distanceM, 0, 1_000_000),
+        exercise_minutes: within(day.exerciseMinutes, 0, 1440),
+        stand_hours: within(day.standHours, 0, 24),
+        flights: within(day.flights, 0, 2000),
+        move_goal_kcal: within(day.moveGoalKcal, 0, 20_000),
+        exercise_goal_min: within(day.exerciseGoalMin, 0, 1440),
+        stand_goal_hr: within(day.standGoalHr, 0, 24),
+        synced_at: syncedAt,
+      },
+    ]
+  })
+}
 
 /**
  * Sessions as rows, grouped into the batches PostgREST will accept.
@@ -124,11 +179,21 @@ export function sessionBatches(
   const batches = new Map<string, SessionRow[]>()
 
   for (const workout of workouts) {
+    // Duration and energy cannot be blank, so a session with an impossible one
+    // is left out (see `within`), not written as something it was not.
+    const durationS = within(workout.durationS, 0, 86_400)
+    const activeKcal = within(workout.activeKcal, 0, 20_000)
+    if (durationS == null || activeKcal == null) continue
+
     // Avg and max go together because they are one reading: all three ways
     // `apple.ts` asks return both or neither. Zones are their own question,
-    // since a writer that sent a single average has nothing to band.
+    // since a writer that sent a single average has nothing to band. A pulse
+    // outside what the column holds is treated as no reading.
+    const pulse =
+      within(workout.avgHr, 20, 260) != null &&
+      (workout.maxHr == null || within(workout.maxHr, 20, 260) != null)
     const heart = {
-      ...(workout.avgHr == null ? {} : { avg_hr: workout.avgHr, max_hr: workout.maxHr }),
+      ...(!pulse ? {} : { avg_hr: workout.avgHr, max_hr: workout.maxHr }),
       ...(workout.hrZones == null ? {} : { hr_zones: workout.hrZones }),
     }
 
@@ -138,14 +203,14 @@ export function sessionBatches(
       external_id: workout.externalId,
       log_date: workout.date,
       kind: workout.kind,
-      kind_label: workout.kindLabel,
+      kind_label: clip(workout.kindLabel),
       started_at: workout.startedAt,
       ended_at: workout.endedAt,
-      duration_s: workout.durationS,
-      active_kcal: workout.activeKcal,
-      distance_m: workout.distanceM,
-      elevation_m: workout.elevationM,
-      source_name: workout.sourceName,
+      duration_s: durationS,
+      active_kcal: activeKcal,
+      distance_m: within(workout.distanceM, 0, 1_000_000),
+      elevation_m: within(workout.elevationM, -500, 20_000),
+      source_name: clip(workout.sourceName),
       ...heart,
     }
 
@@ -169,26 +234,11 @@ async function persist(
   reading: HealthReading,
   window: { from: string; to: string; withHours: boolean },
 ): Promise<void> {
-  if (reading.days.length > 0) {
-    const { error } = await supabase.from('activity_days').upsert(
-      reading.days.map((day) => ({
-        user_id: userId,
-        log_date: day.date,
-        provider,
-        active_kcal: day.activeKcal,
-        resting_kcal: day.restingKcal,
-        steps: day.steps,
-        distance_m: day.distanceM,
-        exercise_minutes: day.exerciseMinutes,
-        stand_hours: day.standHours,
-        flights: day.flights,
-        move_goal_kcal: day.moveGoalKcal,
-        exercise_goal_min: day.exerciseGoalMin,
-        stand_goal_hr: day.standGoalHr,
-        synced_at: new Date().toISOString(),
-      })),
-      { onConflict: 'user_id,log_date' },
-    )
+  const days = dayRows(userId, provider, reading.days)
+  if (days.length > 0) {
+    const { error } = await supabase
+      .from('activity_days')
+      .upsert(days, { onConflict: 'user_id,log_date' })
     if (error) throw error
   }
 
