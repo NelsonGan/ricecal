@@ -7329,8 +7329,8 @@ language codes to seed just a subset, for example `pnpm screenshots:seed ja ko`.
 After a local database reset, remove the stale gitignored credentials file
 before seeding again.
 
-Create a separate iPhone 18 Pro Max simulator named `RiceCal Screenshots`, set
-its time zone to Malaysia, and install the RiceCal development client. Keep its
+Capture on one of RiceCal's own simulators (its name starts with `RiceCal `),
+set to Malaysia's time zone, with the RiceCal development client installed. Keep its
 window visible in Device Hub (Xcode 27). Use a separate Metro port when another
 app is being tested.
 Open the installed client's `ricecal://expo-development-client/` URL with its
@@ -7345,7 +7345,13 @@ Capture requires the Argent CLI, a booted dedicated simulator, this checkout's
 Metro instance and the local backend. It signs into each fixture account with
 the app's client, changes the app language, marks the installation's tour as
 already offered, dismisses transient notices, waits for data, and saves six
-1320 x 2868 PNGs per language. `--locale ja,ko` recaptures a subset while keeping
+1320 x 2868 PNGs per language. On the `RiceCal iPhone Duo` simulator it unfolds
+the device and saves 2853 x 2007 PNGs of the open display on its side instead,
+for the creator's `public/assets/screenshots-iphone-duo`: `simctl` reads the
+Duo's display as black, so those go through Argent and are turned upright.
+Feed shows Discover beside Following there, and Discover is everyone's newest
+posts, so each language also seeds an unfollowed cook whose posts are moved to
+the top of Discover just before that language's Feed is captured. `--locale ja,ko` recaptures a subset while keeping
 other capture records. The workout is captured last: it is written into the
 app's own workout store part way through, with a heart rate reading sent the
 way a paired Apple Watch streams one, and cleared once captured, so its bar

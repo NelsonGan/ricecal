@@ -444,9 +444,14 @@ for (const locale of locales) {
     throw new Error(`Workout verification failed for ${locale}`)
   account.feedAuthors ??= []
   const postIds = []
-  for (let index = 0; index < 2; index++) {
+  const discoverPostIds = []
+  // Lina and Sami are followed and fill Following. Mira is not: iPhone Duo shows
+  // Discover beside Following, and Discover is everyone's newest public posts,
+  // so capture brings her posts to the top of it for her own language only.
+  for (let index = 0; index < 3; index++) {
+    const discover = index === 2
     let author = account.feedAuthors[index]
-    const name = ['Lina', 'Sami'][index]
+    const name = ['Lina', 'Sami', 'Mira'][index]
     if (!author) {
       const email = `screenshots-feed-${randomBytes(6).toString('hex')}@example.invalid`
       const password = randomBytes(24).toString('base64url')
@@ -497,7 +502,9 @@ for (const locale of locales) {
     })
     await request(`/rest/v1/food_logs?user_id=eq.${author.id}`, { method: 'DELETE' })
     for (let foodIndex = 0; foodIndex < 3; foodIndex++) {
-      const food = foods[index * 3 + foodIndex]
+      // Mira posts the market's other dishes, so Discover does not lead with
+      // the dish at the top of Following.
+      const food = discover ? foods[[3, 1, 5][foodIndex]] : foods[index * 3 + foodIndex]
       const bytes = await readFile(new URL(`./photos/${food.photo}`, import.meta.url))
       const digest = sha256(bytes)
       let photoKey = author.photos[food.photo]
@@ -564,19 +571,22 @@ for (const locale of locales) {
         p_audience: 'public',
       })
       // Keep the hero market dish first without depending on the speed of upload.
+      // Discover posts wait a week back, out of other languages' captures.
       const rank = index * 3 + foodIndex
-      const createdAt = new Date(Date.now() - (rank + 1) * 60 * 60 * 1000).toISOString()
+      const createdAt = new Date(
+        Date.now() - (discover ? 7 * 24 + foodIndex : rank + 1) * 60 * 60 * 1000,
+      ).toISOString()
       await request(`/rest/v1/social_posts?id=eq.${postId}&author_id=eq.${author.id}`, {
         method: 'PATCH',
         body: { created_at: createdAt, published_at: createdAt },
       })
-      postIds.push(postId)
+      ;(discover ? discoverPostIds : postIds).push(postId)
     }
     await rpc('set_social_follow', session.access_token, {
       p_target_id: author.id,
-      p_following: true,
+      p_following: !discover,
     })
-    await rpc('set_social_like', token, { p_post_id: postIds[0], p_liked: true })
+    if (!discover) await rpc('set_social_like', token, { p_post_id: postIds[0], p_liked: true })
   }
   const feed = await rpc('social_feed', session.access_token, { p_mode: 'following' })
   if (
@@ -599,6 +609,7 @@ for (const locale of locales) {
     if (!image.ok) throw new Error(`Feed image read failed: ${image.status}`)
   }
   account.feedPostIds = postIds
+  account.discoverPostIds = discoverPostIds
   account.feedReady = true
   account.date = date
   account.fixtureSha256 = fixtureHash
