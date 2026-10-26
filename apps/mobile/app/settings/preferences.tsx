@@ -5,7 +5,7 @@ import { LanguageAiNote, LanguageHelpButton } from '@/features/shared'
 import { currentLanguage, LANGUAGES, type Language, setLanguage } from '@/i18n'
 import { useBack } from '@/lib/navigation'
 import { useTheme } from '@/theme/useTheme'
-import { AppBar, Card, Screen, SegmentedControl, Select, Skeleton, Text } from '@/ui'
+import { AppBar, Aside, Card, Screen, SegmentedControl, Select, Skeleton, Text } from '@/ui'
 
 /** U5 PREFERENCES */
 export default function PreferencesScreen() {
@@ -65,33 +65,37 @@ export default function PreferencesScreen() {
         <LanguageAiNote />
       </Card>
 
-      <Card title={t('preferences.units')}>
-        <Text variant="label">{t('preferences.weight')}</Text>
-        {segment(
-          <SegmentedControl
-            options={[
-              { value: 'metric', label: t('preferences.kg') },
-              { value: 'imperial', label: t('preferences.lb') },
-            ]}
-            value={settings?.units ?? 'metric'}
-            onChange={(units) => updateSettings.mutate({ units: units as 'metric' | 'imperial' })}
-            accessibilityLabel={t('preferences.weight')}
-          />,
-        )}
+      {/* With two panes, language and appearance are the first and units the
+          second, so no segmented control stretches across the fold. */}
+      <Aside>
+        <Card title={t('preferences.units')}>
+          <Text variant="label">{t('preferences.weight')}</Text>
+          {segment(
+            <SegmentedControl
+              options={[
+                { value: 'metric', label: t('preferences.kg') },
+                { value: 'imperial', label: t('preferences.lb') },
+              ]}
+              value={settings?.units ?? 'metric'}
+              onChange={(units) => updateSettings.mutate({ units: units as 'metric' | 'imperial' })}
+              accessibilityLabel={t('preferences.weight')}
+            />,
+          )}
 
-        <Text variant="label">{t('preferences.energy')}</Text>
-        {segment(
-          <SegmentedControl
-            options={[
-              { value: 'kcal', label: t('preferences.kcal') },
-              { value: 'kj', label: t('preferences.kj') },
-            ]}
-            value={settings?.energy ?? 'kcal'}
-            onChange={(energy) => updateSettings.mutate({ energy: energy as 'kcal' | 'kj' })}
-            accessibilityLabel={t('preferences.energy')}
-          />,
-        )}
-      </Card>
+          <Text variant="label">{t('preferences.energy')}</Text>
+          {segment(
+            <SegmentedControl
+              options={[
+                { value: 'kcal', label: t('preferences.kcal') },
+                { value: 'kj', label: t('preferences.kj') },
+              ]}
+              value={settings?.energy ?? 'kcal'}
+              onChange={(energy) => updateSettings.mutate({ energy: energy as 'kcal' | 'kj' })}
+              accessibilityLabel={t('preferences.energy')}
+            />,
+          )}
+        </Card>
+      </Aside>
 
       <Card title={t('preferences.appearance')}>
         <SegmentedControl

@@ -2260,6 +2260,7 @@ export const zhHant = {
     emptyTitle: '一起吃，一起堅持',
     emptyBody: '看看朋友們每天吃了什麼。',
     startGroup: '建立小組',
+    pickGroup: '選擇一個小組，看看當天的情況',
     back: '小組',
     settings: '小組設定',
     column: {

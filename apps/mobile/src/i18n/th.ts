@@ -2260,6 +2260,7 @@ export const th = {
     emptyTitle: 'กินด้วยกัน ไปถึงเป้าด้วยกัน',
     emptyBody: 'ดูว่าเพื่อนกินอะไรในแต่ละวัน',
     startGroup: 'สร้างกลุ่ม',
+    pickGroup: 'เลือกกลุ่มเพื่อดูวันของกลุ่ม',
     back: 'กลุ่ม',
     settings: 'ตั้งค่ากลุ่ม',
     column: {

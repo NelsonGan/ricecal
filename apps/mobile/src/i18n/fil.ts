@@ -2314,6 +2314,7 @@ export const fil = {
     emptyTitle: 'Sabay kumain, sabay sa target',
     emptyBody: 'Tingnan ang kinakain ng mga kaibigan araw-araw.',
     startGroup: 'Gumawa ng grupo',
+    pickGroup: 'Pumili ng grupo para makita ang araw nito',
     back: 'Mga grupo',
     settings: 'Settings ng grupo',
     column: {

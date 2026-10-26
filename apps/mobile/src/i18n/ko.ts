@@ -2267,6 +2267,7 @@ export const ko = {
     emptyTitle: '함께 먹고, 함께 꾸준히',
     emptyBody: '친구들이 매일 무엇을 먹는지 확인하세요.',
     startGroup: '그룹 만들기',
+    pickGroup: '그룹을 고르면 그날의 기록을 볼 수 있어요',
     back: '그룹',
     settings: '그룹 설정',
     column: {

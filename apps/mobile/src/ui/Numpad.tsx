@@ -27,6 +27,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { motion, radius, slab, spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
+import { useWindowLayout } from './adaptive'
 import { cn } from './cn'
 import { Icon } from './Icon'
 import { Squish } from './Squish'
@@ -140,7 +141,8 @@ type Session = {
   /** Ends the edit the way tapping away from a keyboard does: through blur. */
   blur: () => void
   /** Where the field is on screen, so a host can scroll it clear of the pad. */
-  measure: (report: (top: number, height: number) => void) => void
+  /** Reports the field's top, height and left edge, in window points. */
+  measure: (report: (top: number, height: number, left: number) => void) => void
   /**
    * True from a focus until the first key: the next key replaces the value
    * rather than appending, for a field that asked for `replaceFirst`. Kept on
@@ -429,7 +431,7 @@ export function useNumpadField({
       hostId,
       field,
       blur: () => input.current?.blur(),
-      measure: (report) => input.current?.measureInWindow((_x, y, _w, h) => report(y, h)),
+      measure: (report) => input.current?.measureInWindow((x, y, _w, h) => report(y, h, x)),
       pristine: true,
       setFresh,
     }
@@ -532,6 +534,12 @@ export type NumpadHostProps = {
    * A host that scrolls uses it to bring the field back above the pad.
    */
   onOpen?: (measure: Session['measure']) => void
+  /**
+   * The space the pad leaves at each side of the window. By default the side
+   * insets, which are zero on a phone; a sheet passes its own, so the pad
+   * lines up under the sheet it is typing into.
+   */
+  edges?: { left: number; right: number }
 }
 
 /**
@@ -539,7 +547,7 @@ export type NumpadHostProps = {
  * somebody else. No box of its own: the pad is absolutely positioned, so it
  * lands against the bottom of whatever view the host was placed in.
  */
-export function NumpadHost({ children, id: given, onOpen }: NumpadHostProps) {
+export function NumpadHost({ children, id: given, onOpen, edges }: NumpadHostProps) {
   const own = useId()
   const id = given ?? own
   const context = useNumpad()
@@ -558,7 +566,7 @@ export function NumpadHost({ children, id: given, onOpen }: NumpadHostProps) {
   return (
     <HostContext.Provider value={id}>
       {children}
-      {shown && context ? <NumpadSurface session={shown} context={context} /> : null}
+      {shown && context ? <NumpadSurface session={shown} context={context} edges={edges} /> : null}
     </HostContext.Provider>
   )
 }
@@ -595,8 +603,18 @@ export function useNumpadZone() {
   }
 }
 
-function NumpadSurface({ session, context }: { session: Session; context: NumpadValue }) {
+function NumpadSurface({
+  session,
+  context,
+  edges,
+}: {
+  session: Session
+  context: NumpadValue
+  edges?: { left: number; right: number }
+}) {
   const insets = useSafeAreaInsets()
+  const layout = useWindowLayout()
+  const side = edges ?? layout
   const colors = useThemeColors()
   const spec = session.field.current
   const tools = spec.tools
@@ -647,8 +665,12 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
 
   return (
     <Animated.View
-      className="absolute inset-x-0 bottom-0 border-line border-t bg-surface-alt px-gutter"
+      className="absolute bottom-0 border-line border-t bg-surface-alt px-gutter"
       style={[
+        // Clear of the side column iOS keeps on iPhone Duo, as the page is,
+        // and across both panes when there are two, like a keyboard. Zero on
+        // a phone. See `NumpadHostProps.edges`.
+        { left: side.left, right: side.right },
         { paddingTop: PANEL_PAD, paddingBottom: PANEL_PAD + insets.bottom },
         { borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet },
         slide,

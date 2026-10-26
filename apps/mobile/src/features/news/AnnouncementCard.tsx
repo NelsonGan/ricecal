@@ -18,7 +18,7 @@ import { useProfile, useSeeAnnouncement } from '@/data'
 import { track } from '@/lib/analytics'
 import { reportError } from '@/lib/errors'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, cn, Icon, IconButton, Text, useHeld } from '@/ui'
+import { Button, cn, Icon, IconButton, Text, useHeld, useOverlayInsets } from '@/ui'
 import type {
   Announcement,
   AnnouncementCta,
@@ -98,11 +98,12 @@ export function AnnouncementCard({
   const { t } = useTranslation(['news', 'common', 'social', 'profile'])
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const overlay = useOverlayInsets()
   const { width, height } = useWindowDimensions()
   // Measured from the pager once it is laid out: a page a point off its
   // viewport drifts further off centre with every page it is swiped past.
   const [measuredWidth, setMeasuredWidth] = useState(0)
-  const pageWidth = measuredWidth || width - SIDE * 2
+  const pageWidth = measuredWidth || width - overlay.left - overlay.right - SIDE * 2
   const colors = useThemeColors()
   const { data: profile } = useProfile()
   const see = useSeeAnnouncement()
@@ -221,8 +222,15 @@ export function AnnouncementCard({
       testID="announcement-card"
     >
       <View
-        className="flex-1 justify-end px-3"
-        style={{ paddingTop: insets.top + 12, paddingBottom: Math.max(insets.bottom, 12) }}
+        className="flex-1 justify-end"
+        style={{
+          paddingTop: insets.top + 12,
+          paddingBottom: Math.max(insets.bottom, 12),
+          // `px-3` inside the strip an overlay belongs in, which is the whole
+          // window on a phone. See `overlayInsets`.
+          paddingLeft: overlay.left + SIDE,
+          paddingRight: overlay.right + SIDE,
+        }}
       >
         <Pressable
           className="absolute inset-0 bg-black/45"

@@ -2283,6 +2283,7 @@ export const vi = {
     emptyTitle: 'Cùng ăn, cùng giữ nhịp',
     emptyBody: 'Xem bạn bè ăn gì mỗi ngày.',
     startGroup: 'Lập nhóm',
+    pickGroup: 'Chọn một nhóm để xem ngày của nhóm',
     back: 'Nhóm',
     settings: 'Cài đặt nhóm',
     column: {

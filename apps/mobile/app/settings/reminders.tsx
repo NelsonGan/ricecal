@@ -5,7 +5,7 @@ import { type Meal, useMealTimes, useSettings, useUpdateMealTime, useUpdateSetti
 import { ToggleRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { ensureNotificationPermission } from '@/lib/notifications'
-import { Alert, AppBar, Card, Screen, Skeleton, Text, useToast } from '@/ui'
+import { Alert, AppBar, Aside, Card, Screen, Skeleton, Text, useToast } from '@/ui'
 
 const REMINDER_MEALS: Meal[] = ['breakfast', 'lunch', 'dinner']
 
@@ -122,43 +122,51 @@ export default function RemindersScreen() {
         )}
       </Card>
 
-      <Card title={t('profile:reminders.habits')} contentClassName="gap-0">
-        {loading ? (
-          <Skeleton className="h-[156px] w-full" />
-        ) : (
-          <>
-            <ToggleRow
-              title={t('profile:reminders.water')}
-              value={settings?.notify_water ?? false}
-              onValueChange={(value) =>
-                withPermission(value, () => updateSettings.mutate({ notify_water: value }))
-              }
-            />
-            <ToggleRow
-              title={t('profile:reminders.weighIn')}
-              value={settings?.notify_weigh_in ?? false}
-              onValueChange={(value) =>
-                withPermission(value, () => updateSettings.mutate({ notify_weigh_in: value }))
-              }
-            />
-            <ToggleRow
-              title={t('profile:reminders.weeklyReport')}
-              value={settings?.notify_weekly_report ?? false}
-              onValueChange={(value) =>
-                withPermission(value, () => updateSettings.mutate({ notify_weekly_report: value }))
-              }
-            />
-            <ToggleRow
-              title={t('profile:reminders.monthlyReport')}
-              value={settings?.notify_monthly_report ?? false}
-              onValueChange={(value) =>
-                withPermission(value, () => updateSettings.mutate({ notify_monthly_report: value }))
-              }
-              divider={false}
-            />
-          </>
-        )}
-      </Card>
+      {/* With two panes, the meal reminders are the first and the habit ones the
+          second, so no row runs across the fold. */}
+      <Aside>
+        <Card title={t('profile:reminders.habits')} contentClassName="gap-0">
+          {loading ? (
+            <Skeleton className="h-[156px] w-full" />
+          ) : (
+            <>
+              <ToggleRow
+                title={t('profile:reminders.water')}
+                value={settings?.notify_water ?? false}
+                onValueChange={(value) =>
+                  withPermission(value, () => updateSettings.mutate({ notify_water: value }))
+                }
+              />
+              <ToggleRow
+                title={t('profile:reminders.weighIn')}
+                value={settings?.notify_weigh_in ?? false}
+                onValueChange={(value) =>
+                  withPermission(value, () => updateSettings.mutate({ notify_weigh_in: value }))
+                }
+              />
+              <ToggleRow
+                title={t('profile:reminders.weeklyReport')}
+                value={settings?.notify_weekly_report ?? false}
+                onValueChange={(value) =>
+                  withPermission(value, () =>
+                    updateSettings.mutate({ notify_weekly_report: value }),
+                  )
+                }
+              />
+              <ToggleRow
+                title={t('profile:reminders.monthlyReport')}
+                value={settings?.notify_monthly_report ?? false}
+                onValueChange={(value) =>
+                  withPermission(value, () =>
+                    updateSettings.mutate({ notify_monthly_report: value }),
+                  )
+                }
+                divider={false}
+              />
+            </>
+          )}
+        </Card>
+      </Aside>
     </Screen>
   )
 }

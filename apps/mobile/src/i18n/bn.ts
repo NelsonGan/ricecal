@@ -2269,6 +2269,7 @@ export const bn = {
     emptyTitle: 'একসাথে খান, লক্ষ্যে থাকুন',
     emptyBody: 'দেখুন বন্ধুরা প্রতিদিন কী খায়।',
     startGroup: 'গ্রুপ খুলুন',
+    pickGroup: 'দিনটি দেখতে একটি গ্রুপ বেছে নিন',
     back: 'গ্রুপ',
     settings: 'গ্রুপ সেটিংস',
     column: {

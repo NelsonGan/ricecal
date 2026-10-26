@@ -26,6 +26,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
+import { useOverlayInsets } from './adaptive'
 import { cn } from './cn'
 import { Icon, type IconProps } from './Icon'
 import { useNumpadOpen } from './Numpad'
@@ -255,6 +256,7 @@ function ToastSurface({
 }) {
   const { t } = useTranslation('common')
   const insets = useSafeAreaInsets()
+  const overlay = useOverlayInsets()
   const { toast, dismiss } = stage
   const palette = tones[toast?.tone ?? 'neutral']
   // With the number pad up the bottom is its keys, and a toast there takes the
@@ -273,14 +275,17 @@ function ToastSurface({
 
   return (
     <View
-      className={cn('absolute inset-x-0 px-gutter', fromTop ? 'top-0' : 'bottom-0')}
-      style={
+      className={cn('absolute px-gutter', fromTop ? 'top-0' : 'bottom-0')}
+      style={[
+        // Clear of iOS's side column, and in one pane when there are two.
+        // Both zero on a phone.
+        { left: overlay.left, right: overlay.right },
         fromTop
           ? // No `offset` at the top. It exists to clear a tab bar or a footer
             // CTA, both of which are at the bottom by definition.
             { paddingTop: insets.top + spacing.md }
-          : { paddingBottom: insets.bottom + spacing.md + offset }
-      }
+          : { paddingBottom: insets.bottom + spacing.md + offset },
+      ]}
       pointerEvents="box-none"
     >
       <ToastCard

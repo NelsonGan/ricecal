@@ -37,7 +37,19 @@ import {
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
 import { unitFor, type WeightUnit } from '@/lib/units'
-import { AppBar, Button, Card, cn, Icon, ListRow, Screen, Skeleton, Tappable, Text } from '@/ui'
+import {
+  AppBar,
+  Aside,
+  Button,
+  Card,
+  cn,
+  Icon,
+  ListRow,
+  Screen,
+  Skeleton,
+  Tappable,
+  Text,
+} from '@/ui'
 
 /**
  * The Workouts page: start one, start from a routine, and look back.
@@ -155,80 +167,84 @@ export default function WorkoutsScreen() {
         />
       )}
 
-      {/* A new routine is one more way into the plans, so it heads the list
+      {/* With two panes, starting and the routines are the first, and the
+          other ways in and the history are the second. See `Aside`. */}
+      <Aside>
+        {/* A new routine is one more way into the plans, so it heads the list
             rather than riding opposite "My routines" as a second accent button. */}
-      <Card contentClassName="gap-0 px-5 py-1">
-        <ListRow
-          title={t('workouts:routines.newTitle')}
-          leading={<Icon set="system" name="guide-book" size={28} />}
-          onPress={() => {
-            if (!routineGate.allowNew()) return
-            router.push({ pathname: '/workout/routine/[id]', params: { id: 'new' } })
-          }}
-        />
-        <ListRow
-          title={t('workouts:explore.title')}
-          leading={<Icon set="system" name="rocket" size={28} />}
-          onPress={() => router.push('/workout/templates')}
-        />
-        <ListRow
-          title={t('workouts:stats.entry')}
-          leading={<Icon set="system" name="trophy" size={28} />}
-          onPress={() => router.push('/workout/stats')}
-        />
-        <ListRow
-          title={t('workouts:library.title')}
-          leading={<Icon set="body" name="gym-bench" size={28} />}
-          onPress={() => router.push('/workout/exercises')}
-        />
-        {/* A row rather than a gear beside the title, which left the streak
+        <Card contentClassName="gap-0 px-5 py-1">
+          <ListRow
+            title={t('workouts:routines.newTitle')}
+            leading={<Icon set="system" name="guide-book" size={28} />}
+            onPress={() => {
+              if (!routineGate.allowNew()) return
+              router.push({ pathname: '/workout/routine/[id]', params: { id: 'new' } })
+            }}
+          />
+          <ListRow
+            title={t('workouts:explore.title')}
+            leading={<Icon set="system" name="rocket" size={28} />}
+            onPress={() => router.push('/workout/templates')}
+          />
+          <ListRow
+            title={t('workouts:stats.entry')}
+            leading={<Icon set="system" name="trophy" size={28} />}
+            onPress={() => router.push('/workout/stats')}
+          />
+          <ListRow
+            title={t('workouts:library.title')}
+            leading={<Icon set="body" name="gym-bench" size={28} />}
+            onPress={() => router.push('/workout/exercises')}
+          />
+          {/* A row rather than a gear beside the title, which left the streak
               pill and a button competing for the title's line. Me's settings
               list has the same row. */}
-        <ListRow
-          title={t('workouts:settings.title')}
-          leading={<Icon set="system" name="settings" size={28} />}
-          onPress={() => router.push('/workout/settings')}
-          divider={false}
-        />
-      </Card>
-
-      {/* The month is another way to read the history, so its toggle sits on
-            the history's heading and swaps only that section. */}
-      <View className="flex-row items-center justify-between pt-2">
-        <Text variant="subtitle">{t('workouts:history.title')}</Text>
-        <HistoryViewToggle calendar={calendar} onChange={setCalendar} />
-      </View>
-
-      {calendar ? (
-        <CalendarView day={day} onDay={setDay} unit={unit} outbox={outbox} onOpen={openWorkout} />
-      ) : workouts.isPending && !workouts.isPaused && !history.length ? (
-        <Card>
-          <Skeleton className="h-[120px] w-full" />
+          <ListRow
+            title={t('workouts:settings.title')}
+            leading={<Icon set="system" name="settings" size={28} />}
+            onPress={() => router.push('/workout/settings')}
+            divider={false}
+          />
         </Card>
-      ) : history.length ? (
-        <View className="gap-stack">
-          {history.map((workout) => (
-            <WorkoutCard key={workout.id} workout={workout} unit={unit} onPress={openWorkout} />
-          ))}
-          {workouts.hasNextPage ? (
-            <Button
-              variant="neutral"
-              fullWidth
-              loading={workouts.isFetchingNextPage}
-              onPress={() => workouts.fetchNextPage()}
-            >
-              {t('workouts:history.more')}
-            </Button>
-          ) : null}
+
+        {/* The month is another way to read the history, so its toggle sits on
+            the history's heading and swaps only that section. */}
+        <View className="flex-row items-center justify-between pt-2">
+          <Text variant="subtitle">{t('workouts:history.title')}</Text>
+          <HistoryViewToggle calendar={calendar} onChange={setCalendar} />
         </View>
-      ) : !workouts.data && (workouts.isPaused || workouts.isError) ? (
-        <Unavailable offline={workouts.isPaused} />
-      ) : (
-        <EmptyRow
-          icon={{ set: 'body', name: 'stopwatch' }}
-          title={t('workouts:history.emptyTitle')}
-        />
-      )}
+
+        {calendar ? (
+          <CalendarView day={day} onDay={setDay} unit={unit} outbox={outbox} onOpen={openWorkout} />
+        ) : workouts.isPending && !workouts.isPaused && !history.length ? (
+          <Card>
+            <Skeleton className="h-[120px] w-full" />
+          </Card>
+        ) : history.length ? (
+          <View className="gap-stack">
+            {history.map((workout) => (
+              <WorkoutCard key={workout.id} workout={workout} unit={unit} onPress={openWorkout} />
+            ))}
+            {workouts.hasNextPage ? (
+              <Button
+                variant="neutral"
+                fullWidth
+                loading={workouts.isFetchingNextPage}
+                onPress={() => workouts.fetchNextPage()}
+              >
+                {t('workouts:history.more')}
+              </Button>
+            ) : null}
+          </View>
+        ) : !workouts.data && (workouts.isPaused || workouts.isError) ? (
+          <Unavailable offline={workouts.isPaused} />
+        ) : (
+          <EmptyRow
+            icon={{ set: 'body', name: 'stopwatch' }}
+            title={t('workouts:history.emptyTitle')}
+          />
+        )}
+      </Aside>
 
       {starter.dialog}
 

@@ -9,7 +9,7 @@ import { PLAN_FEATURES, usePlanSummary } from '@/features/paywall'
 import { trialProgress } from '@/features/paywall/trial'
 import { CheckList } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { AppBar, Button, Card, ConfirmSheet, Icon, ProgressBar, Screen, Text } from '@/ui'
+import { AppBar, Aside, Button, Card, ConfirmSheet, Icon, ProgressBar, Screen, Text } from '@/ui'
 
 /** U6 SUBSCRIPTION */
 export default function SubscriptionScreen() {
@@ -179,21 +179,27 @@ export default function SubscriptionScreen() {
         )}
       </Card>
 
-      {/* THE WHOLE OF PRO, from the same list the paywall sells it with. It was
-          three lines written here — unlimited logging, photo scanning, the food
-          database — while the pitch had grown to ten, so the screen you read
-          after paying described a smaller product than the one you bought. See
-          `PLAN_FEATURES`. Labels only: the paywall renders each row's two
-          values beside it and a settings card has no column to put them in,
-          which is fine here — everything on this list is included, and what the
-          free tier gets instead is a question for the page that is selling. */}
-      <Card
-        title={entitled ? t('profile:subscription.included') : t('profile:subscription.whatYouGet')}
-      >
-        <CheckList
-          items={PLAN_FEATURES.map((feature) => t(`paywall:table.rows.${feature.key}.label`))}
-        />
-      </Card>
+      {/* With two panes the plan, and the switch that changes it, are the first
+          and the list of what it includes the second. See `Aside`. */}
+      <Aside>
+        {/* THE WHOLE OF PRO, from the same list the paywall sells it with. It was
+            three lines written here — unlimited logging, photo scanning, the food
+            database — while the pitch had grown to ten, so the screen you read
+            after paying described a smaller product than the one you bought. See
+            `PLAN_FEATURES`. Labels only: the paywall renders each row's two
+            values beside it and a settings card has no column to put them in,
+            which is fine here — everything on this list is included, and what the
+            free tier gets instead is a question for the page that is selling. */}
+        <Card
+          title={
+            entitled ? t('profile:subscription.included') : t('profile:subscription.whatYouGet')
+          }
+        >
+          <CheckList
+            items={PLAN_FEATURES.map((feature) => t(`paywall:table.rows.${feature.key}.label`))}
+          />
+        </Card>
+      </Aside>
 
       {canSwitch ? (
         <Button variant="ghost" fullWidth onPress={switchPlan}>

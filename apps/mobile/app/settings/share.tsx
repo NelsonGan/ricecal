@@ -9,6 +9,7 @@ import { useBack } from '@/lib/navigation'
 import { radius, slab } from '@/theme/tokens'
 import {
   AppBar,
+  Aside,
   Badge,
   type BadgeTone,
   Button,
@@ -180,61 +181,65 @@ export default function ShareAndEarnScreen() {
         </View>
       </Card>
 
-      <Card title={t('profile:shareEarn.how')}>
-        <View className="gap-3.5">
-          {([1, 2, 3] as const).map((step) => (
-            <View key={step} className="flex-row items-center gap-md" accessible>
-              {/* The numeral on the app's own raised plate, which is what makes
-                  three lines of prose read as an ordered list without a bullet
-                  in sight. Same slab the help sheet's logo sits on. */}
-              <Squish
-                depth={slab.sm}
-                radius={radius.full}
-                containerClassName="self-start"
-                slabClassName="bg-line-strong"
-                className="h-8 w-8 items-center justify-center bg-track"
-              >
-                <Text variant="caption" className="text-ink">
-                  {step}
+      {/* With two panes the offer and where to post it are the first, and the
+          steps, the claim and its rules the second. See `Aside`. */}
+      <Aside>
+        <Card title={t('profile:shareEarn.how')}>
+          <View className="gap-3.5">
+            {([1, 2, 3] as const).map((step) => (
+              <View key={step} className="flex-row items-center gap-md" accessible>
+                {/* The numeral on the app's own raised plate, which is what makes
+                    three lines of prose read as an ordered list without a bullet
+                    in sight. Same slab the help sheet's logo sits on. */}
+                <Squish
+                  depth={slab.sm}
+                  radius={radius.full}
+                  containerClassName="self-start"
+                  slabClassName="bg-line-strong"
+                  className="h-8 w-8 items-center justify-center bg-track"
+                >
+                  <Text variant="caption" className="text-ink">
+                    {step}
+                  </Text>
+                </Squish>
+                <Text variant="body" className="min-w-0 flex-1">
+                  {t(`profile:shareEarn.step${step}`)}
                 </Text>
-              </Squish>
-              <Text variant="body" className="min-w-0 flex-1">
-                {t(`profile:shareEarn.step${step}`)}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </Card>
+              </View>
+            ))}
+          </View>
+        </Card>
 
-      {/* THE CLAIM, and it is the only button on the page. Everything above is
-          a shortcut into somebody else's app; this is the one thing that
-          reaches us. */}
-      <Card title={t('profile:shareEarn.claim')}>
-        <View className="flex-row items-center gap-3">
-          <Image
-            source={DISCORD_LOGO}
-            style={{ width: 36, height: 36 }}
-            contentFit="contain"
-            transition={0}
-            accessibilityLabel={t('profile:help.logo')}
-          />
-          <Text variant="meta" className="min-w-0 flex-1">
-            {t('profile:shareEarn.claimBody')}
-          </Text>
-        </View>
-        <Button fullWidth onPress={claim}>
-          {t('profile:shareEarn.claimAction')}
-        </Button>
-      </Card>
+        {/* THE CLAIM, and it is the only button on the page. Everything above is
+            a shortcut into somebody else's app; this is the one thing that
+            reaches us. */}
+        <Card title={t('profile:shareEarn.claim')}>
+          <View className="flex-row items-center gap-3">
+            <Image
+              source={DISCORD_LOGO}
+              style={{ width: 36, height: 36 }}
+              contentFit="contain"
+              transition={0}
+              accessibilityLabel={t('profile:help.logo')}
+            />
+            <Text variant="meta" className="min-w-0 flex-1">
+              {t('profile:shareEarn.claimBody')}
+            </Text>
+          </View>
+          <Button fullWidth onPress={claim}>
+            {t('profile:shareEarn.claimAction')}
+          </Button>
+        </Card>
 
-      {/* The rules, in the smallest type on the page and last, because they are
-          what somebody checks after deciding rather than before. They are
-          still here in full: "one reward per person" and "we check the likes
-          when you claim" are the two things that would otherwise be an argument
-          in a Discord thread. */}
-      <Text variant="caption" className="text-center">
-        {t('profile:shareEarn.finePrint')}
-      </Text>
+        {/* The rules, in the smallest type on the page and last, because they are
+            what somebody checks after deciding rather than before. They are
+            still here in full: "one reward per person" and "we check the likes
+            when you claim" are the two things that would otherwise be an argument
+            in a Discord thread. */}
+        <Text variant="caption" className="text-center">
+          {t('profile:shareEarn.finePrint')}
+        </Text>
+      </Aside>
     </Screen>
   )
 }
