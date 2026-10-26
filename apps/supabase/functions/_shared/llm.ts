@@ -388,6 +388,11 @@ const PARSE_KINDS: Array<[RegExp, string]> = [
   [/Expected double-quoted/i, 'expected-name'],
   [/Unexpected end of JSON/i, 'unexpected-end'],
   [/Unexpected token/i, 'unexpected-token'],
+  // A backslash before a character JSON has no escape for, such as `\a`.
+  [/Bad escaped character/i, 'bad-escape'],
+  [/Bad Unicode escape/i, 'bad-unicode'],
+  // `-` with no digits after it, `1.` or `1e` with none after the point or the e.
+  [/No number after minus|Unterminated fractional|Exponent part is missing/i, 'bad-number'],
 ]
 
 const charClass = (c: string | undefined): string =>
@@ -395,13 +400,15 @@ const charClass = (c: string | undefined): string =>
     ? 'end'
     : '{}[]",:'.includes(c)
       ? c
-      : /\s/.test(c)
-        ? 'space'
-        : /[0-9.-]/.test(c)
-          ? 'digit'
-          : /\p{L}/u.test(c)
-            ? 'letter'
-            : 'other'
+      : c === '\\'
+        ? 'backslash'
+        : /\s/.test(c)
+          ? 'space'
+          : /[0-9.-]/.test(c)
+            ? 'digit'
+            : /\p{L}/u.test(c)
+              ? 'letter'
+              : 'other'
 
 /**
  * A description of an answer `parseAnswer` could not read, with nothing of the
@@ -415,13 +422,19 @@ export function answerShape(text: string): string {
   let objects = 0
   let depth = 0
   let inString = false
+  // Where the string that was still open at the end began. Haiku's failures read
+  // `unclosed=3` with the parse error part way in, and this says whether the
+  // quote that never closed comes before the error or after it.
+  let openedAt = -1
   for (let i = 0; i < text.length; i++) {
     const c = text[i]
     if (inString) {
       if (c === '\\') i++
       else if (c === '"') inString = false
-    } else if (c === '"' && depth > 0) inString = true
-    else if (c === '{') {
+    } else if (c === '"' && depth > 0) {
+      inString = true
+      openedAt = i
+    } else if (c === '{') {
       if (depth === 0) objects++
       depth++
     } else if (c === '}' && depth > 0) depth--
@@ -434,6 +447,7 @@ export function answerShape(text: string): string {
   // From the start of the answer, so it reads against `before` and `length`.
   let at = -1
   let atChar = 'n/a'
+  let prevChar = 'n/a'
   if (braced) {
     try {
       JSON.parse(braced)
@@ -445,6 +459,7 @@ export function answerShape(text: string): string {
       if (position !== undefined) {
         at = first + Number(position)
         atChar = charClass(text[at])
+        prevChar = at > 0 ? charClass(text[at - 1]) : 'start'
       } else {
         // V8 gives "Unexpected token" no position, only the character, so a
         // trailing comma (`]` or `}`) would read the same as a bare `NaN`.
@@ -465,6 +480,8 @@ export function answerShape(text: string): string {
     `error=${kind}`,
     `at=${at}`,
     `at-char=${atChar}`,
+    `prev-char=${prevChar}`,
+    `stuck=${inString ? openedAt : -1}`,
   ].join(' ')
 }
 
