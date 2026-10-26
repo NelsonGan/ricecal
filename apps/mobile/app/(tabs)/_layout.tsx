@@ -27,12 +27,13 @@ import {
 } from '@/features/workouts'
 import { usePushRegistration } from '@/lib/push'
 import {
-  NAV_BAR_HEIGHT,
   NavBar,
   NavInsetProvider,
   NavItem,
   ToastHost,
   useNavBarFootprint,
+  useNavBarHeight,
+  useOverlayInsets,
 } from '@/ui'
 
 /**
@@ -171,6 +172,7 @@ function WithRunningWorkout({
   const pathname = usePathname()
   const onTabs = useSegments()[0] === '(tabs)'
   const running = useHasActiveWorkout(userId) && onTabs
+  const navBarHeight = useNavBarHeight()
 
   return (
     // The bar floats over the screens, so each one is told how much of its
@@ -183,7 +185,7 @@ function WithRunningWorkout({
           own, above its add button, and the newest host draws, so this one
           stands aside there. */}
       {running && pathname !== '/today' ? (
-        <ToastHost offset={NAV_BAR_HEIGHT + WORKOUT_BAR_SPACE} />
+        <ToastHost offset={navBarHeight + WORKOUT_BAR_SPACE} />
       ) : null}
     </NavInsetProvider>
   )
@@ -199,6 +201,10 @@ const WORKOUT_BAR_SPACE = 66
 function RunningWorkout() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const navBarHeight = useNavBarHeight()
+  // Clear of the side rail on iPhone Duo, and in the trailing pane when there
+  // are two, rather than a bar to tap lying across the fold.
+  const overlay = useOverlayInsets()
   const { workout } = useLiveWorkout()
   const now = useNow(1000)
   if (!workout) return null
@@ -211,8 +217,12 @@ function RunningWorkout() {
 
   return (
     <View
-      className="absolute inset-x-0 px-gutter"
-      style={{ bottom: (insets.bottom || 12) + NAV_BAR_HEIGHT + 8 }}
+      className="absolute px-gutter"
+      style={{
+        bottom: (insets.bottom || 12) + navBarHeight + 8,
+        left: overlay.left,
+        right: overlay.right,
+      }}
       pointerEvents="box-none"
     >
       <ActiveWorkoutBar

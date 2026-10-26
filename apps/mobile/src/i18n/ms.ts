@@ -2312,6 +2312,7 @@ export const ms = {
     emptyTitle: 'Makan bersama, kekal di landasan',
     emptyBody: 'Lihat apa yang kawan makan setiap hari.',
     startGroup: 'Mulakan kumpulan',
+    pickGroup: 'Pilih kumpulan untuk melihat harinya',
     back: 'Kumpulan',
     settings: 'Tetapan kumpulan',
     column: {

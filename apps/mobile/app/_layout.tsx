@@ -36,7 +36,7 @@ import { initErrorTracking, initServices } from '@/lib/startup'
 import { fontMap } from '@/theme/fonts'
 import { storedThemePreference, storeThemePreference } from '@/theme/preference'
 import { ThemeProvider } from '@/theme/ThemeProvider'
-import { NAV_BAR_HEIGHT, NumpadProvider, TextScriptProvider, ToastProvider } from '@/ui'
+import { NumpadProvider, TextScriptProvider, ToastProvider, useNavBarHeight } from '@/ui'
 
 // Bind react-query to NetInfo at module scope so the very first query already
 // has a correct view of connectivity, rather than one render late.
@@ -115,7 +115,7 @@ export default function RootLayout() {
                             {/* Outside the navigator so a toast survives navigation — a
                           "saved" confirmation usually fires as the screen that
                           triggered it pops. */}
-                            <ToastProvider offset={NAV_BAR_HEIGHT}>
+                            <ToastScope>
                               {/* Under the toast because its one job on failure is to
                             say the link had expired. Renders nothing. */}
                               <LoginLinkHandler />
@@ -157,7 +157,7 @@ export default function RootLayout() {
                             account has earned the question. */}
                               <RatePromptSheet />
                               <RootStack />
-                            </ToastProvider>
+                            </ToastScope>
                           </RefiningProvider>
                         </PendingSnapProvider>
                       </OnboardingDraftScope>
@@ -181,6 +181,14 @@ export default function RootLayout() {
  * a switch in the preferences card without a reload. See `src/ui/TextScript.tsx`
  * for what the three answers mean and why a metric is not a word.
  */
+/**
+ * The toasts, clear of the tab bar. Its own component because the bar's height
+ * reads the safe area, and the provider for that is in the layout above.
+ */
+function ToastScope({ children }: { children: ReactNode }) {
+  return <ToastProvider offset={useNavBarHeight()}>{children}</ToastProvider>
+}
+
 function TextScriptScope({ children }: { children: ReactNode }) {
   useTranslation()
 

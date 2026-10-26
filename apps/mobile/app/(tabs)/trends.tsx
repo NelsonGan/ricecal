@@ -24,7 +24,7 @@ import {
 } from '@/features/progress'
 import { ScreenTitle } from '@/features/shared'
 import { unitFor } from '@/lib/units'
-import { Card, Icon, ListRow, Screen, SegmentedControl, Skeleton } from '@/ui'
+import { Aside, Card, Icon, ListRow, Screen, SegmentedControl, Skeleton } from '@/ui'
 
 /**
  * The Trends tab: calories, water and weight, over seven days, thirty days or a
@@ -115,16 +115,20 @@ export default function TrendsScreen() {
       />
 
       {/* Keep Reviews available even before a finished period has much data. */}
-      <Card contentClassName="gap-0 px-5 py-1">
-        <ListRow
-          title={t('reviews:entry.title')}
-          subtitle={t('reviews:entry.subtitle')}
-          leading={<Icon set="ui" name="calendar-view" size={28} />}
-          divider={false}
-          className="py-1.5"
-          onPress={() => router.push('/reviews')}
-        />
-      </Card>
+      {/* With two panes the figures and their chart are the first, and the
+          ways to look further back are the second. See `Aside`. */}
+      <Aside>
+        <Card contentClassName="gap-0 px-5 py-1">
+          <ListRow
+            title={t('reviews:entry.title')}
+            subtitle={t('reviews:entry.subtitle')}
+            leading={<Icon set="ui" name="calendar-view" size={28} />}
+            divider={false}
+            className="py-1.5"
+            onPress={() => router.push('/reviews')}
+          />
+        </Card>
+      </Aside>
 
       {loading || !buckets ? (
         // One block, not three. The panels differ in how many cards they have,
@@ -154,14 +158,16 @@ export default function TrendsScreen() {
       {/* Under every tab, and outside the loading gate: it is its own query,
           and it does not move with the range, so a range switch has no reason
           to blank it. */}
-      <HistoryCard
-        metric={metric}
-        unit={unit}
-        onEditWeight={setWeighingIn}
-        action={
-          metric === 'weight' ? <WeighInPill onPress={() => setWeighingIn(today())} /> : undefined
-        }
-      />
+      <Aside>
+        <HistoryCard
+          metric={metric}
+          unit={unit}
+          onEditWeight={setWeighingIn}
+          action={
+            metric === 'weight' ? <WeighInPill onPress={() => setWeighingIn(today())} /> : undefined
+          }
+        />
+      </Aside>
 
       <WeighInSheet
         date={weighingIn}

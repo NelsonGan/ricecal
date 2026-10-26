@@ -25,6 +25,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
+import { useOverlayInsets } from './adaptive'
 import { cn } from './cn'
 import { NumpadHost, useNumpadZone } from './Numpad'
 import { Text } from './Text'
@@ -293,6 +294,7 @@ export function SheetSurface({
   className,
 }: SheetSurfaceProps) {
   const insets = useSafeAreaInsets()
+  const overlay = useOverlayInsets()
   const { height } = useWindowDimensions()
   const center = placement === 'center'
 
@@ -532,7 +534,7 @@ export function SheetSurface({
           draw over it, so the pad a field in here opens has to be drawn in
           here. `NumpadHost` picks the nearest one above the field, which is
           this one whenever a sheet is up and `Screen`'s the rest of the time. */}
-      <NumpadHost id={numpad.id} onOpen={revealForNumpad}>
+      <NumpadHost id={numpad.id} onOpen={revealForNumpad} edges={overlay}>
         {/* Both platforms, now that `KeyboardProvider` reports the keyboard rather
           than Android's window resizing under us. It used to be iOS only, for
           exactly the reason that has gone away.
@@ -556,7 +558,7 @@ export function SheetSurface({
           // Any other panel shrinks rather than growing past the top of the
           // screen, keyboard included, since the padding above is part of this
           // view's height: the body inside gives way and scrolls.
-          style={
+          style={[
             fullHeight && !center
               ? { flex: 1, marginTop: insets.top }
               : center
@@ -565,8 +567,12 @@ export function SheetSurface({
                     flexShrink: 1,
                     marginVertical: Math.max(insets.top, insets.bottom) + spacing.md,
                   }
-                : { flexShrink: 1, marginTop: insets.top + spacing.md }
-          }
+                : { flexShrink: 1, marginTop: insets.top + spacing.md },
+            // Clear of iOS's side column on iPhone Duo, and in the trailing
+            // pane when the window has two, so a sheet never rests in the fold.
+            // Both zero on a phone.
+            { marginLeft: overlay.left, marginRight: overlay.right },
+          ]}
         >
           <Animated.View
             className={cn(

@@ -32,6 +32,8 @@ export const groups = {
   emptyTitle: 'Eat together, stay on track',
   emptyBody: 'See what friends eat each day.',
   startGroup: 'Start a group',
+  /** Beside the list on a window with room for both, before a group is opened. */
+  pickGroup: 'Pick a group to see its day',
   back: 'Groups',
   settings: 'Group settings',
   /** The board's column headings: short, since a column is a tile wide. */

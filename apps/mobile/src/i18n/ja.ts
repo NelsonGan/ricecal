@@ -2281,6 +2281,7 @@ export const ja = {
     emptyTitle: '一緒に食べて、一緒に続ける',
     emptyBody: '友だちが毎日何を食べたか見てみよう。',
     startGroup: 'グループを作る',
+    pickGroup: 'グループを選ぶと、その日の様子が見られます',
     back: 'グループ',
     settings: 'グループ設定',
     column: {
