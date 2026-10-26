@@ -15,9 +15,9 @@ import {
 import { track } from '@/lib/analytics'
 import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Icon, IconButton, Screen, useToast } from '@/ui'
+import { Aside, Button, Icon, IconButton, Screen, useToast } from '@/ui'
 import { PlanTerms } from './PlanTerms'
-import { ProPitch } from './ProPitch'
+import { ProDetails, ProPlanChoice } from './ProPitch'
 import { ProWordmark } from './ProWordmark'
 import { trackPurchaseAbandoned, trackPurchaseStarted } from './tracking'
 
@@ -166,7 +166,12 @@ export function PaywallOffer(props: PaywallOfferProps) {
           </View>
         }
       >
-        <ProPitch plan={plan} onPlanChange={selectPlan} onRestore={restore} disabled={busy} />
+        {/* With two panes what Pro adds is the first and the plan choice the
+            second, so the plans sit over the Subscribe button they feed. */}
+        <Aside>
+          <ProPlanChoice plan={plan} onPlanChange={selectPlan} disabled={busy} />
+        </Aside>
+        <ProDetails onRestore={restore} disabled={busy} />
       </Screen>
     </View>
   )

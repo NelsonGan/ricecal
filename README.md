@@ -6958,9 +6958,14 @@ never by its model name.
   phone layout is the code as written. With room for two (content 760pt or
   wider), `Screen` moves the marked parts into a second pane that scrolls on its
   own. The panes meet at the window's centre, which is the fold, so nothing
-  tappable sits in the crease. Today (summary | diary), Trends (figures | reviews
-  and history), Me (account | settings), Feed (Following | Discover) and Groups
-  (list | open board) use it.
+  tappable sits in the crease. A `footer` CTA stands under the second pane, with
+  the content it acts on. The tabs use it: Today (summary | diary, or month |
+  the chosen day's diary), Trends (figures | reviews and history), Me (account |
+  settings), Feed (Following | Discover) and Groups (list | open board). So do
+  the pushed pages with more than one card, reflowed into two phone-width
+  columns: the paywall (what Pro adds | plans over Subscribe), the meal page
+  (picture and portion | nutrition), the settings pages and the workout pages.
+  A page that is one card or one list keeps one pane.
 - **Overlays** (sheets, dialogs, toasts, the running workout's bar) take
   `useOverlayInsets()`: clear of the column, and in the trailing pane when there
   are two, even over a one-pane page, because centred they would rest in the
@@ -6970,12 +6975,13 @@ never by its model name.
   survive the width changing under it: opening the device kept the closed
   display's offset and showed a week two weeks back (`WeekPicker`, the board).
 
-Rules: put fields that open the keyboard or the number pad in the first pane,
-which is the one `Screen` reveals them in. Pushed pages have no `Aside` yet and
-span both halves, like system stack pages. React Native gets no hinge or
-fold signal, so nothing here moves when the device is half-folded: the pane
-split is what keeps controls off the crease. The Duo simulator is iOS 27.1
-only, and Argent's `fold` tool moves its hinge.
+Rules: an `Aside` counts only among `Screen`'s own children (fragments and
+arrays are looked through, components are not), so a page whose body is a
+component splits that component in two. Fields work in either pane; the number
+pad scrolls whichever one holds the field. React Native gets no hinge or fold
+signal, so nothing here moves when the device is half-folded: the pane split is
+what keeps controls off the crease. The Duo simulator is iOS 27.1 only, and
+Argent's `fold` tool moves its hinge.
 
 ### Icons
 

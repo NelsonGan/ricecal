@@ -69,7 +69,7 @@ export function windowLayout({ width, insets, adaptive }: LayoutInput): WindowLa
   return { width, left, right, tabBar, split: width - left - right >= SPLIT_MIN_WIDTH }
 }
 
-export function adaptiveLayoutApplies(): boolean {
+function adaptiveLayoutApplies(): boolean {
   return Platform.OS === 'ios' && !Platform.isPad
 }
 
@@ -79,7 +79,7 @@ export function useWindowLayout(): WindowLayout {
   return windowLayout({ width, insets: { left, right }, adaptive: adaptiveLayoutApplies() })
 }
 
-export type PaneFrame = { left: number; width: number }
+type PaneFrame = { left: number; width: number }
 
 /**
  * Where each pane sits across the window. One pane is the window inside its

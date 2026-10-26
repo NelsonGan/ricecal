@@ -31,13 +31,7 @@ export {
   type AvatarSize,
 } from './Avatar'
 // Layout for the window the app has: iPhone Duo's side column and two panes
-export {
-  type TabBarPlacement,
-  useOverlayInsets,
-  usePaneWidth,
-  useWindowLayout,
-  type WindowLayout,
-} from './adaptive'
+export { useOverlayInsets, usePaneWidth, useWindowLayout } from './adaptive'
 // Primitives
 export { Badge, type BadgeProps, type BadgeTone, CountBadge, type CountBadgeProps } from './Badge'
 export {

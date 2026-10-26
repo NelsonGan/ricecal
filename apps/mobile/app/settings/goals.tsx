@@ -33,7 +33,18 @@ import {
   WATER_GOAL_MIN_ML,
   WATER_GOAL_STEP_ML,
 } from '@/lib/water'
-import { AppBar, Button, Card, Screen, Skeleton, Slider, Stepper, Text, useToast } from '@/ui'
+import {
+  AppBar,
+  Aside,
+  Button,
+  Card,
+  Screen,
+  Skeleton,
+  Slider,
+  Stepper,
+  Text,
+  useToast,
+} from '@/ui'
 
 /** U2 GOALS */
 export default function GoalsScreen() {
@@ -248,12 +259,14 @@ export default function GoalsScreen() {
           <Card title={t('profile:goals.macroTargets')}>
             <Skeleton className="h-[72px] w-full" />
           </Card>
-          <Card title={t('profile:goals.goal')}>
-            <Skeleton className="h-[124px] w-full" />
-          </Card>
-          <Card title={t('profile:goals.other')}>
-            <Skeleton className="h-[172px] w-full" />
-          </Card>
+          <Aside>
+            <Card title={t('profile:goals.goal')}>
+              <Skeleton className="h-[124px] w-full" />
+            </Card>
+            <Card title={t('profile:goals.other')}>
+              <Skeleton className="h-[172px] w-full" />
+            </Card>
+          </Aside>
         </>
       ) : (
         <>
@@ -270,102 +283,107 @@ export default function GoalsScreen() {
             onReset={() => setBudget(budgetFields(recommended))}
           />
 
-          {/* The whole of the weight goal: where you are, where you want to be,
-              and what that costs per week. There was a lose/maintain/gain
-              control above this slider, and it could only ever agree with the
-              two weights or contradict them — asking the same question twice
-              and then having to decide which answer to believe. */}
-          <Card title={t('profile:goals.goal')}>
-            <View className="flex-row items-center justify-between">
-              <Text variant="label" className="text-muted">
-                {t('profile:goals.currentWeight')}
-              </Text>
-              <Text variant="label">
-                {showWeight(weight, unit)} {unitLabel}
-              </Text>
-            </View>
+          {/* With two panes, the budget and its typed fields are the first, and
+              the weight goal and other goals the second. The skeletons above
+              split the same way. */}
+          <Aside>
+            {/* The whole of the weight goal: where you are, where you want to be,
+                and what that costs per week. There was a lose/maintain/gain
+                control above this slider, and it could only ever agree with the
+                two weights or contradict them — asking the same question twice
+                and then having to decide which answer to believe. */}
+            <Card title={t('profile:goals.goal')}>
+              <View className="flex-row items-center justify-between">
+                <Text variant="label" className="text-muted">
+                  {t('profile:goals.currentWeight')}
+                </Text>
+                <Text variant="label">
+                  {showWeight(weight, unit)} {unitLabel}
+                </Text>
+              </View>
 
-            <View className="flex-row items-center justify-between">
-              <Text variant="label" className="text-muted">
-                {t('profile:goals.targetWeight')}
-              </Text>
-              <Text variant="label">
-                {showWeight(targetWeightPosition, unit)} {unitLabel}
-              </Text>
-            </View>
-            <Slider
-              value={targetWeightPosition}
-              onChange={changeTargetWeight}
-              min={targetRange.min}
-              max={targetRange.max}
-              step={0.5}
-              accessibilityLabel={t('profile:goals.targetWeight')}
-              // `format` draws the thumb's bubble AND the two bound labels under
-              // the track, so converting here is what turns "40.0 kg / 120.0 kg"
-              // into pounds as well. The value handed in is still kilograms.
-              format={(value) => `${showWeight(value, unit)} ${unitLabel}`}
-            />
+              <View className="flex-row items-center justify-between">
+                <Text variant="label" className="text-muted">
+                  {t('profile:goals.targetWeight')}
+                </Text>
+                <Text variant="label">
+                  {showWeight(targetWeightPosition, unit)} {unitLabel}
+                </Text>
+              </View>
+              <Slider
+                value={targetWeightPosition}
+                onChange={changeTargetWeight}
+                min={targetRange.min}
+                max={targetRange.max}
+                step={0.5}
+                accessibilityLabel={t('profile:goals.targetWeight')}
+                // `format` draws the thumb's bubble AND the two bound labels under
+                // the track, so converting here is what turns "40.0 kg / 120.0 kg"
+                // into pounds as well. The value handed in is still kilograms.
+                format={(value) => `${showWeight(value, unit)} ${unitLabel}`}
+              />
 
-            {/* The pace is what the gap between those two actually buys, and
-                without it both the direction and the taper are invisible: a user
-                two kilos out sees a budget move for no stated reason. Shown for
-                the target being edited, so it answers the drag immediately
-                rather than on save. */}
-            <View className="flex-row items-center justify-between">
-              <Text variant="label" className="text-muted">
-                {t('profile:goals.weeklyPace')}
-              </Text>
-              <Text variant="label">
-                {pace === 0
-                  ? t('profile:goals.paceHolding')
-                  : t(pace < 0 ? 'profile:goals.paceLosing' : 'profile:goals.paceGaining', {
-                      // Two decimals rather than `showWeight`'s one: a pace is a
-                      // fraction of a unit a week, and rounded to 0.1 the
-                      // difference between a gentle plan and a brisk one
-                      // disappears.
-                      value: fromKg(Math.abs(pace), unit).toFixed(2),
-                      unit: unitLabel,
-                    })}
-              </Text>
-            </View>
-          </Card>
+              {/* The pace is what the gap between those two actually buys, and
+                  without it both the direction and the taper are invisible: a user
+                  two kilos out sees a budget move for no stated reason. Shown for
+                  the target being edited, so it answers the drag immediately
+                  rather than on save. */}
+              <View className="flex-row items-center justify-between">
+                <Text variant="label" className="text-muted">
+                  {t('profile:goals.weeklyPace')}
+                </Text>
+                <Text variant="label">
+                  {pace === 0
+                    ? t('profile:goals.paceHolding')
+                    : t(pace < 0 ? 'profile:goals.paceLosing' : 'profile:goals.paceGaining', {
+                        // Two decimals rather than `showWeight`'s one: a pace is a
+                        // fraction of a unit a week, and rounded to 0.1 the
+                        // difference between a gentle plan and a brisk one
+                        // disappears.
+                        value: fromKg(Math.abs(pace), unit).toFixed(2),
+                        unit: unitLabel,
+                      })}
+                </Text>
+              </View>
+            </Card>
 
-          <Card title={t('profile:goals.other')}>
-            <Text variant="label">{t('profile:goals.waterGoal')}</Text>
-            {/* A quarter of a litre a step, which is what makes the whole range
-                22 taps rather than 55 — and it lands on every figure anybody
-                actually names. The bounds are the column's own check
-                constraint, narrowed: `daily_goals` allows 250 to 8,000, and a
-                stepper that can reach a goal nobody should be nudged towards is
-                a stepper that suggests it. */}
-            <Stepper
-              value={currentWater}
-              onChange={setWater}
-              min={WATER_GOAL_MIN_ML}
-              max={WATER_GOAL_MAX_ML}
-              step={WATER_GOAL_STEP_ML}
-              accessibilityLabel={t('profile:goals.waterGoal')}
-              decrementLabel={t('common:a11y.decrease')}
-              incrementLabel={t('common:a11y.increase')}
-              format={(value) => t('common:volume.ml', { value: millilitres(value) })}
-            />
+            <Card title={t('profile:goals.other')}>
+              <Text variant="label">{t('profile:goals.waterGoal')}</Text>
+              {/* A quarter of a litre a step, which is what makes the whole range
+                  22 taps rather than 55 — and it lands on every figure anybody
+                  actually names. The bounds are the column's own check
+                  constraint, narrowed: `daily_goals` allows 250 to 8,000, and a
+                  stepper that can reach a goal nobody should be nudged towards is
+                  a stepper that suggests it. */}
+              <Stepper
+                value={currentWater}
+                onChange={setWater}
+                min={WATER_GOAL_MIN_ML}
+                max={WATER_GOAL_MAX_ML}
+                step={WATER_GOAL_STEP_ML}
+                accessibilityLabel={t('profile:goals.waterGoal')}
+                decrementLabel={t('common:a11y.decrease')}
+                incrementLabel={t('common:a11y.increase')}
+                format={(value) => t('common:volume.ml', { value: millilitres(value) })}
+              />
 
-            <Text variant="label">{t('activity:settings.stepGoal')}</Text>
-            {/* A stepper rather than a slider, and the same bounds as the copy on
-                the health screen: a step goal is a round number people name —
-                8,000, 10,000 — not a value swept to. */}
-            <Stepper
-              value={currentSteps}
-              onChange={setSteps}
-              min={1000}
-              max={30000}
-              step={500}
-              accessibilityLabel={t('activity:settings.stepGoal')}
-              decrementLabel={t('common:a11y.decrease')}
-              incrementLabel={t('common:a11y.increase')}
-              format={count}
-            />
-          </Card>
+              <Text variant="label">{t('activity:settings.stepGoal')}</Text>
+              {/* A stepper rather than a slider, and the same bounds as the copy on
+                  the health screen: a step goal is a round number people name —
+                  8,000, 10,000 — not a value swept to. */}
+              <Stepper
+                value={currentSteps}
+                onChange={setSteps}
+                min={1000}
+                max={30000}
+                step={500}
+                accessibilityLabel={t('activity:settings.stepGoal')}
+                decrementLabel={t('common:a11y.decrease')}
+                incrementLabel={t('common:a11y.increase')}
+                format={count}
+              />
+            </Card>
+          </Aside>
         </>
       )}
     </Screen>
