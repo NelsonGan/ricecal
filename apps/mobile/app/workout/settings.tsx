@@ -101,12 +101,12 @@ export default function WorkoutSettingsScreen() {
       if (Platform.OS === 'ios') {
         const file = new File(Paths.cache, name)
         file.create({ overwrite: true })
-        file.write(csv)
+        await file.write(csv)
         await Share.share({ url: file.uri })
       } else {
         const folder = await Directory.pickDirectoryAsync()
         const file = folder.createFile(name, 'text/csv')
-        file.write(csv)
+        await file.write(csv)
         toast.show({ title: t('workouts:settings.exportSaved', { name: file.name }) })
       }
     } catch (failure) {

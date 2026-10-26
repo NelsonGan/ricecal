@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import type { TextInput } from 'react-native'
+import type { TextInputInstance } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
 import { Icon } from './Icon'
@@ -21,7 +21,7 @@ export type SearchFieldProps = Omit<TextFieldProps, 'leftSlot' | 'rightSlot'> & 
  * and a "search" return key. Food names are half Malay, and autocorrect turns
  * "kuey teow" into something else entirely.
  */
-export const SearchField = forwardRef<TextInput, SearchFieldProps>(function SearchField(
+export const SearchField = forwardRef<TextInputInstance, SearchFieldProps>(function SearchField(
   { onClear, clearLabel = 'Clear search', value, placeholder, ...rest },
   ref,
 ) {

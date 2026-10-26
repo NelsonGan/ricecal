@@ -264,7 +264,7 @@ export function ChatScreen({
               <View className="items-center py-3">
                 <Spinner />
               </View>
-            ) : null
+            ) : undefined
           }
           ListEmptyComponent={
             // The list flips this itself, on both platforms.

@@ -1,5 +1,5 @@
 import { forwardRef, type ReactNode, useCallback, useState } from 'react'
-import { TextInput, type TextInputProps, View } from 'react-native'
+import { TextInput, type TextInputInstance, type TextInputProps, View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
@@ -66,7 +66,7 @@ export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
  * of the field, and every consumer would otherwise reimplement the same two
  * handlers and forget to call through to the ones passed in.
  */
-export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
+export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function TextField(
   {
     label,
     labelAction,
@@ -132,7 +132,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   // caller's ref still has to reach the same node — the gallery focuses one
   // field from another's return key — so both are set from one callback.
   const setRef = useCallback(
-    (node: TextInput | null) => {
+    (node: TextInputInstance | null) => {
       numpad.ref.current = node
       if (typeof ref === 'function') ref(node)
       else if (ref) ref.current = node

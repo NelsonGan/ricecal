@@ -7820,7 +7820,7 @@ as bad answers.
 **`instanceof` against a platform class is a test about the runtime, not about
 the value.** `refusalFrom` in `data/refusals.ts` read a refusal off a failed
 `functions.invoke` by checking `error.context instanceof Response`, and that was
-**always false** in the app: Expo 57 ships its own fetch, so what hangs off a
+**always false** in the app: Expo ships its own fetch, so what hangs off a
 `FunctionsHttpError` is a `FetchResponse` that does not subclass the global
 `Response`.
 
@@ -7846,6 +7846,19 @@ means changing tab. `canGoBack()` asks the same chain and says yes for the same
 reason, which is why a fallback guarded by it never ran. `useBack` pops instead:
 POP is a stack's action, and a dismissal that arrives twice finds nothing to pop
 rather than taking a bite out of the screen behind.
+
+**A ref is an instance type, not the component.** Since React Native 0.88 the
+strict types are the default: `useRef<TextInput>` no longer has `focus`, and a
+`useRef<View>` will not go on a `View`. Write `TextInputInstance`,
+`ViewInstance` or `ScrollViewInstance` (all exported by `react-native`), and
+`ListViewToken` where `ViewToken` was. A list's `ListHeaderComponent` and
+friends take `undefined`, not `null`, for "nothing".
+
+**Gesture handler 3 still runs the `Gesture.Pan()` builder API, deprecated.**
+Every gesture in the app uses it (`grep -rn "Gesture\." src app` in
+`apps/mobile`), and v3's `GestureDetector` accepts it alongside the new hook
+gestures (`usePanGesture` and friends). Move them before the next major drops
+it.
 
 **NativeWind only styles React Native's own components.** A third-party one takes
 `className` as an ordinary prop and drops it silently. `Screen.tsx` registers
@@ -7885,18 +7898,21 @@ else's Swift.
 
 Nothing catches it: the peer range is `expo: *`, the SDK's own
 `bundledNativeModules` asks for `~57.0.1`, and `~` lets 57.0.2 through.
-`expo-store-review` is therefore pinned **exactly**, at `57.0.1`, and it costs
-nothing: the two versions differ only in that one function, and the JS build is
-byte for byte the same. Anything that widens the range back to `~`, a helpful
-`expo install --check` included, brings the build failure back.
+`expo-store-review` is therefore pinned **exactly**, at the version the SDK
+bundles (`58.0.2` on SDK 58). Anything that widens the range back to `~` lets
+the next patch in ahead of the core it was built for. The SDK itself lists it
+as `~58.0.2`, so `expo install --fix` on the next upgrade can write a `~` range;
+check `package.json` afterwards and put the exact pin back by hand.
 
-**React Native Firebase makes Skia 2.6.2's missing iOS header paths visible.**
-Firebase requires static frameworks, while Expo 57 asks Skia to build from source.
+**React Native Firebase makes Skia's missing iOS header paths visible.**
+Firebase requires static frameworks, while Expo asks Skia to build from source.
 Under that combination CocoaPods does not expand Skia's recursive header glob, so
 the production archive fails on `third_party/base64.h` and then the Skia headers.
-The pnpm patch adds the explicit `cpp/api`, `cpp/api/third_party` and `cpp/skia`
-roots to Skia's podspec. Keep it until Expo's supported Skia version contains the
-upstream static-framework fixes.
+The pnpm patch adds the explicit `cpp/api` and `cpp/api/third_party` roots to
+Skia's podspec. Skia 2.14.0 (SDK 58) still lists only `cpp`, `cpp/skia` and
+`cpp/dawn/include`, so the patch moved to it; the patch file is named for the
+version and pnpm refuses to install when it names one that is not in the tree.
+Keep it until Expo's supported Skia version lists those roots itself.
 
 **A screen that holds its own back cannot navigate while it holds it.**
 `usePreventRemove` refuses every removal of the screen, its own included: a
@@ -8041,12 +8057,29 @@ out to have no days in it.
 **Built with Xcode 27, the app must adopt the UIScene lifecycle or iOS 27 kills
 it at launch** (`EXC_BREAKPOINT` in
 `UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`, before any JS
-runs). On SDK 57 that is `ios.enableSceneSupport` in expo-build-properties, which
-starts React Native from Expo's `EXExpoAppSceneDelegate` instead of the app
-delegate. Its mod only accepts the stock AppDelegate, and Firebase writes
-`FirebaseApp.configure()` into the middle of the block it removes, so
-`plugins/withFirebaseOutsideStartup.js` moves that line out first. It must stay
-listed after expo-build-properties. SDK 58 does this by itself; drop both then.
+runs). SDK 58's template does it: prebuild writes a `SceneDelegate.swift` and a
+scene manifest, and React Native starts from the scene delegate rather than the
+app delegate. SDK 57 needed `ios.enableSceneSupport` and a plugin to move
+Firebase's line out of its way; both are gone.
+
+**SDK 58's AppDelegate loses `FirebaseApp.configure()` without saying so.**
+@react-native-firebase/app 26.x anchors that line on `factory.startReactNative(`,
+which the scene template no longer has, so prebuild prints "Unable to determine
+correct Firebase insertion point" and the app starts with no Firebase at all.
+`plugins/withFirebaseConfigure.js` writes it above `return super.application(…)`,
+the anchor v27 adopted, and stands aside once Firebase's plugin writes it. v27
+also drops the CocoaPods build (`disableSPM`), which is why this is a plugin and
+not an upgrade. The warning still prints; the line in the generated
+`AppDelegate.swift` is what to check. `plugins/withWatch.js` puts the watch's
+Health handoff at the end of the same class, since the template's
+`// Linking API` section is gone too.
+
+**SDK 58 turns on R8 for Android release builds; this app turns it back off.**
+`android.enableMinifyInReleaseBuilds: false` in expo-build-properties keeps
+release builds as they were on SDK 57. R8 strips classes that are only reached
+by reflection, and Firebase, RevenueCat and Health Connect all do some of that,
+so turning it on needs keep rules and a tested release build on a device, not a
+config flip in an SDK upgrade.
 
 **A purchase cannot be tested with the real store, and the flow that could not be
 run is the one that was broken.** Apple's sandbox wants a sandbox Apple ID on a
