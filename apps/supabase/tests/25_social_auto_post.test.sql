@@ -97,5 +97,28 @@ select is((select count(*)::int from public.social_posts where source_entry_id =
   'deleting a meal removes its automatic post');
 reset role;
 
+-- Sign in with Apple that shares neither a name nor an email leaves the
+-- display name empty, and the feed refuses an account with no name. Such an
+-- account with automatic posting on could not save a single meal.
+\set nameless 'a8800000-0000-4000-8000-000000000003'
+\set nameless_meal 'a8810000-0000-4000-8000-000000000008'
+insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
+values (:'nameless', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+  null, '{"provider":"apple"}', '{}');
+update public.profiles set auto_post_foods = true where id = :'nameless';
+select is((select display_name from public.profiles where id = :'nameless'), '',
+  'an Apple account with no name and no email starts with an empty name');
+select lives_ok(format(
+  $sql$insert into public.food_logs
+    (id, user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor)
+  values (%L, %L, 'Nameless rice', 200, 40, 4, 2, '1 bowl', 1)$sql$, :'nameless_meal', :'nameless'),
+  'an account with no name can still log food with automatic posting on');
+select is((select count(*)::int from public.food_logs where id = :'nameless_meal'), 1,
+  'the meal is saved');
+select is((select count(*)::int from public.social_posts where source_entry_id = :'nameless_meal'), 0,
+  'nothing is posted for an account with no name');
+select ok((select social_joined_at is null from public.profiles where id = :'nameless'),
+  'an account with no name does not join the feed');
+
 select * from finish();
 rollback;
