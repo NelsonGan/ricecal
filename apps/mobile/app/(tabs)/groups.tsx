@@ -39,7 +39,9 @@ export default function GroupsTab() {
   // the chat's, opened over it, slid the chat bar up behind the chat and then
   // down again on the way back. The list's search field still needs it.
   return (
-    <Screen scroll={false} flush keyboardAvoid={groupId ? 'none' : 'padding'}>
+    // Beside an open board the list's search field is on screen too, and it
+    // needs the shell to make way for the keyboard as it does on its own.
+    <Screen scroll={false} flush keyboardAvoid={groupId && !split ? 'none' : 'padding'}>
       {split ? (
         // With two panes the list stays, and the group opens beside it: the
         // same two levels, both on screen. Its back button closes it.

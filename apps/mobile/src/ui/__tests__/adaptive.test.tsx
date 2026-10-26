@@ -2,8 +2,9 @@ import * as ReactNative from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { render, screen, within } from '../../test-utils'
-import { overlayInsets, paneFrames, windowLayout } from '../adaptive'
 import { Aside, splitPanes } from '../Aside'
+import { overlayInsets, paneFrames, windowLayout } from '../adaptive'
+import { NavBar, NavItem } from '../BottomNav'
 import { Screen } from '../Screen'
 import { Text } from '../Text'
 
@@ -147,5 +148,57 @@ describe('Screen with an Aside', () => {
     expect(pane.getByText('Summary')).toBeOnTheScreen()
     expect(pane.queryByText('Your day')).toBeNull()
     expect(screen.getByText('Your day')).toBeOnTheScreen()
+  })
+})
+
+describe('NavBar', () => {
+  const original = ReactNative.Dimensions.get('window')
+  const show = async (width: number, right: number) => {
+    const window = { width, height: 678, scale: 3, fontScale: 1 }
+    ReactNative.Dimensions.set({ window, screen: window })
+    const metrics = {
+      frame: { x: 0, y: 0, width, height: 678 },
+      insets: { top: 0, left: 0, right, bottom: 34 },
+    }
+    await render(
+      <SafeAreaProvider initialMetrics={metrics}>
+        <NavBar>
+          <NavItem label="Today" icon={{ set: 'ui', name: 'home' }} isFocused />
+          <NavItem label="Me" icon={{ set: 'ui', name: 'profile' }} />
+        </NavBar>
+      </SafeAreaProvider>,
+    )
+  }
+  afterEach(() => ReactNative.Dimensions.set({ window: original, screen: original }))
+  // The tab list is not an accessibility element, so it is found by role in the
+  // rendered tree. Its width is a style, set only in the rail.
+  const tablist = () => {
+    type Node = { props?: Record<string, unknown>; children?: unknown[] | null }
+    const find = (node: unknown): Node | null => {
+      if (!node || typeof node !== 'object') return null
+      const n = node as Node
+      if (n.props?.accessibilityRole === 'tablist') return n
+      for (const child of n.children ?? []) {
+        const hit = find(child)
+        if (hit) return hit
+      }
+      return null
+    }
+    const tree = screen.toJSON()
+    return (Array.isArray(tree) ? tree.map(find).find(Boolean) : find(tree)) ?? null
+  }
+  const width = () => ReactNative.StyleSheet.flatten(tablist()?.props?.style as never)?.width
+
+  it('is a bar across the bottom on a phone', async () => {
+    await show(402, 0)
+    expect(tablist()).not.toBeNull()
+    expect(width()).toBeUndefined()
+  })
+
+  it('stands in the side column on iPhone Duo, items stacked', async () => {
+    await show(466, 84)
+    // The 84pt column less a margin either side.
+    expect(width()).toBe(68)
+    expect(screen.getByLabelText('Me')).toBeOnTheScreen()
   })
 })
