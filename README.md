@@ -1664,6 +1664,33 @@ card with a third of the sheet empty below it, and a plate is only as legible as
 the frame it was taken in. The log sheet, the picture picker and the recipe
 reader all use it, so a fourth camera should too.
 
+**Pinch, tap and the 1x lens.** A pinch on the feed zooms the camera itself, up
+to `MAX_ZOOM` (8x), so the photo zooms with the preview; a chip shows the zoom
+while it is above 1x and a tap on it goes back. A tap anywhere else on the feed
+focuses and exposes there, and iOS goes back to continuous focus at the centre
+once the scene changes. Both need `patches/expo-camera@58.0.12.patch`, which is
+native code: a JS-only update does not reach a build without it.
+
+**A patch to an Expo module's native code needs `buildFromSource`.** From SDK 58
+the app links most Expo modules as precompiled binaries (`ExpoCamera.xcframework`
+in `ios/Pods`, a 📦 beside the project in `gradlew projects`), so a patch to
+their Swift or Kotlin compiles into nothing and the JS half calls a function the
+binary does not have. `expo.autolinking.buildFromSource` in
+`apps/mobile/package.json` lists the ones built from the patched source; a
+module added there needs `pod install` and a fresh Gradle sync.
+
+The patch also fixes the camera opening on the ultra-wide. On a phone with one,
+expo-camera uses the virtual back camera so close-ups can switch to the macro
+lens, and sets its zoom factor to where the 1x lens takes over. Committing the
+session preset then changes the device format, which resets the factor to 1.0,
+and on that device 1.0 is the 0.5x ultra-wide. Nothing set it back, because
+`zoom` never changed. The patch watches the device's `activeFormat` and
+re-applies zoom whenever it changes, whatever changed it, and clamps the factor
+to the device's available range, since a factor outside it raises. Moving to a
+new expo-camera means checking each of those against the new version before
+dropping the patch. `zoom` is exponential on iOS and linear on Android, and
+`zoomProp` is the one place that knows.
+
 Search, scan and quick-add are ordinary writes. The other two run the cascade.
 
 There was a fourth tile, **Recipes**, and it opened a shelf of the food the user
@@ -5390,6 +5417,19 @@ for the crop instead.
 Avatars upload with a 256-pixel longest edge, enough for the largest 64-point
 avatar at four pixels per point. Meal uploads stay at 1024 pixels for the model
 and the detail view.
+
+**The cap is applied while decoding, never after.** `uploadImage` passes it as
+`maxWidth` and `maxHeight` to `ImageManipulator.manipulate`, which downsamples
+as it decodes on both platforms. The deprecated `manipulateAsync` cannot: it
+decodes at full size and resizes the bitmap afterwards, and on Android Glide
+then holds every pixel. Measured on the Pixel 10 emulator with a 200 megapixel
+album photo, a meal upload went from 0.79 GB to 1.59 GB of memory the old way
+and grew by 30 MB this way. A phone with less to spare kills the app at that
+size, and a crash Android picks has nothing for the `catch` to see.
+
+The profile photo still peaks near that figure on Android, and not because of
+this code: `allowsEditing` runs expo-image-picker's crop screen inside the app,
+and it builds the crop at the photo's full size before handing it over.
 
 On 30 September 2026, the iPhone 18 Pro simulator was tested with 64 distinct
 1024-pixel JPEGs (42 KB on average), local Supabase and MinIO. A local media proxy
