@@ -122,10 +122,21 @@ index 51baba655952d7fd07607bd08e96b0027734da80..32680d166e3f35fb28758105506ed8d5
          #if targetEnvironment(simulator)
          if AVCaptureDevice.default(for: .video) == nil {
 diff --git a/ios/Current/CameraSessionManager.swift b/ios/Current/CameraSessionManager.swift
-index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..704303364f45dca61911ef7fe903316bd7cbebcb 100644
+index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..41cbcb748fe80542cd65d5bc38df80cd76100508 100644
 --- a/ios/Current/CameraSessionManager.swift
 +++ b/ios/Current/CameraSessionManager.swift
-@@ -218,7 +218,81 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+@@ -32,6 +32,10 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+ 
+   private var captureDeviceInput: AVCaptureDeviceInput?
+   private var minZoomFactor: CGFloat = 1.0
++  // Patched (RiceCal): any change of the device's format resets videoZoomFactor to 1.0, the
++  // ultra-wide on a virtual back camera. Watching the format catches every path that changes it
++  // (a preset, a mode, a media-services reset), not only the two that call `updateZoom` directly.
++  private var formatObservation: NSKeyValueObservation?
+   private var photoOutput: AVCapturePhotoOutput?
+   private var videoFileOutput: AVCaptureMovieFileOutput?
+   private var runtimeErrorTask: Task<Void, Never>?
+@@ -218,12 +222,92 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
      do {
        try device.lockForConfiguration()
        defer { device.unlockForConfiguration() }
@@ -133,11 +144,11 @@ index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..704303364f45dca61911ef7fe903316b
 +      let target = minZoomFactor * pow(device.activeFormat.videoMaxZoomFactor / minZoomFactor, delegate.zoom)
 +      // Patched (RiceCal): clamped, because a factor outside the available range raises.
 +      device.videoZoomFactor = max(device.minAvailableVideoZoomFactor, min(target, device.maxAvailableVideoZoomFactor))
-+    } catch {
-+      log.info("\(#function): \(error.localizedDescription)")
-+    }
-+  }
-+
+     } catch {
+       log.info("\(#function): \(error.localizedDescription)")
+     }
+   }
+ 
 +  // Patched (RiceCal): how many times wider than `zoom` 0 the frame is at `zoom` 1. `zoom` is
 +  // exponential between the two, so a caller can turn a pinch scale into a `zoom` value.
 +  func maxZoomRatio() -> Double {
@@ -173,10 +184,15 @@ index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..704303364f45dca61911ef7fe903316b
 +
 +  private var subjectAreaObserver: NSObjectProtocol?
 +
-+  private func observeSubjectAreaChange(_ device: AVCaptureDevice) {
++  private func stopObservingSubjectArea() {
 +    if let subjectAreaObserver {
 +      NotificationCenter.default.removeObserver(subjectAreaObserver)
 +    }
++    subjectAreaObserver = nil
++  }
++
++  private func observeSubjectAreaChange(_ device: AVCaptureDevice) {
++    stopObservingSubjectArea()
 +    subjectAreaObserver = NotificationCenter.default.addObserver(
 +      forName: AVCaptureDevice.subjectAreaDidChangeNotification,
 +      object: device,
@@ -205,20 +221,27 @@ index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..704303364f45dca61911ef7fe903316b
 +        device.exposureMode = .continuousAutoExposure
 +      }
 +      device.isSubjectAreaChangeMonitoringEnabled = false
-     } catch {
-       log.info("\(#function): \(error.localizedDescription)")
-     }
-@@ -323,6 +397,9 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
++    } catch {
++      log.info("\(#function): \(error.localizedDescription)")
++    }
++    stopObservingSubjectArea()
++  }
++
+   func getAvailableLenses() -> [LensInfo] {
+     guard let delegate else {
+       return []
+@@ -323,6 +407,10 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
  
    deinit {
      runtimeErrorTask?.cancel()
++    formatObservation?.invalidate()
 +    if let subjectAreaObserver {
 +      NotificationCenter.default.removeObserver(subjectAreaObserver)
 +    }
    }
  
    var currentPhotoOutput: AVCapturePhotoOutput? { photoOutput }
-@@ -355,6 +432,9 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+@@ -355,6 +443,9 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
      session.beginConfiguration()
      defer {
        session.commitConfiguration()
@@ -228,7 +251,25 @@ index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..704303364f45dca61911ef7fe903316b
        delegate.emitAvailableLenses()
        delegate.configurePreviewRotation()
      }
-@@ -428,6 +508,10 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+@@ -368,6 +459,17 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+         session.addInput(deviceInput)
+         captureDeviceInput = deviceInput
+         updateZoom()
++        // Patched (RiceCal): a tap's focus observer belongs to the device it was made for.
++        stopObservingSubjectArea()
++        formatObservation?.invalidate()
++        formatObservation = device.observe(\.activeFormat, options: [.new]) { [weak self] _, _ in
++          guard let self, let queue = self.delegate?.sessionQueue else {
++            return
++          }
++          queue.async {
++            self.updateZoom()
++          }
++        }
+       }
+     } catch {
+       delegate.onMountError(["message": "Camera could not be started - \(error.localizedDescription)"])
+@@ -428,6 +530,10 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
      configureResponsiveCapture(photoOutput)
  
      session.commitConfiguration()

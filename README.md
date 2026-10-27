@@ -5408,6 +5408,15 @@ Avatars upload with a 256-pixel longest edge, enough for the largest 64-point
 avatar at four pixels per point. Meal uploads stay at 1024 pixels for the model
 and the detail view.
 
+**The cap is applied while decoding, never after.** `uploadImage` passes it as
+`maxWidth` and `maxHeight` to `ImageManipulator.manipulate`, which downsamples
+as it decodes on both platforms. The deprecated `manipulateAsync` cannot: it
+decodes at full size and resizes the bitmap afterwards, and on Android Glide
+then holds every pixel. An Android album holds 50 and 200 megapixel photos, 200
+MB to 800 MB decoded, and picking one for a meal or a profile photo ran the app
+out of memory and killed it with nothing for the `catch` to see. Camera shots
+were small enough to survive, which is why only the album crashed.
+
 On 30 September 2026, the iPhone 18 Pro simulator was tested with 64 distinct
 1024-pixel JPEGs (42 KB on average), local Supabase and MinIO. A local media proxy
 added 200 ms before each response and delivered about 400 KB/s. Three runs of
