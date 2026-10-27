@@ -8,6 +8,7 @@ import { setPersonProps, track } from '@/lib/analytics'
 import type { TablesInsert } from '@/lib/database.types'
 import type {
   AccessResult,
+  ActivityDayReading,
   HealthProvider,
   HealthReading,
   HourReading,
@@ -98,6 +99,84 @@ export type SyncProgress = {
 }
 
 type SessionRow = TablesInsert<'activity_sessions'>
+type DayRow = TablesInsert<'activity_days'>
+
+/**
+ * Whether a figure is one the table's own check would refuse.
+ *
+ * Every reading goes out in one upsert, so a single value outside a column's
+ * range fails the whole request, and `persist` stops there. One Health Connect
+ * day above 20,000 kcal kept an account from saving any day for three weeks; one
+ * workout longer than a day kept an iPhone from saving any workout, hour or
+ * weigh-in after it. A store can hold a figure no body produced (a duplicate
+ * source summed, a session nobody stopped), so the bounds here are the ones in
+ * `41_activity.sql` and must move with them.
+ *
+ * An impossible figure is treated like one that could not be read: its column
+ * is left out of the row, so the upsert keeps whatever the last good read
+ * stored (see `sessionBatches`). Null stays null, since that is a reading.
+ */
+function impossible(value: number | null, min: number, max: number): boolean {
+  return value != null && !(Number.isFinite(value) && value >= min && value <= max)
+}
+
+/** `{ [column]: value }`, or nothing when the value is impossible. */
+function fitted<K extends string>(column: K, value: number | null, min: number, max: number) {
+  return impossible(value, min, max) ? {} : ({ [column]: value } as Record<K, number | null>)
+}
+
+// By character, as `char_length` counts. A cut by UTF-16 unit can split an emoji,
+// and Postgres refuses the half surrogate that leaves, failing the whole batch.
+const clip = (text: string | null) =>
+  text == null ? null : Array.from(text).slice(0, 120).join('')
+
+/** Rows grouped by the columns they name, since PostgREST refuses a mixed batch. */
+function byShape<Row extends object>(rows: Row[]): Row[][] {
+  const batches = new Map<string, Row[]>()
+  for (const row of rows) {
+    const shape = Object.keys(row).join(',')
+    const batch = batches.get(shape)
+    if (batch) batch.push(row)
+    else batches.set(shape, [row])
+  }
+  return [...batches.values()]
+}
+
+/**
+ * Days as rows, grouped into the batches PostgREST will accept. An impossible
+ * figure is left out rather than clamped, because a clamped one would be written
+ * as if the watch had measured it, and the rest of the day is kept. Steps cannot
+ * be left out of a new row (it would default to a confident 0), so a day whose
+ * steps are impossible is not sent at all.
+ */
+export function dayBatches(
+  userId: string,
+  provider: ProviderId,
+  days: readonly ActivityDayReading[],
+): DayRow[][] {
+  const syncedAt = new Date().toISOString()
+  const rows: DayRow[] = []
+  for (const day of days) {
+    if (day.steps == null || impossible(day.steps, 0, 200_000)) continue
+    rows.push({
+      user_id: userId,
+      log_date: day.date,
+      provider,
+      ...fitted('active_kcal', day.activeKcal, 0, 20_000),
+      ...fitted('resting_kcal', day.restingKcal, 0, 20_000),
+      steps: day.steps,
+      ...fitted('distance_m', day.distanceM, 0, 1_000_000),
+      ...fitted('exercise_minutes', day.exerciseMinutes, 0, 1440),
+      ...fitted('stand_hours', day.standHours, 0, 24),
+      ...fitted('flights', day.flights, 0, 2000),
+      ...fitted('move_goal_kcal', day.moveGoalKcal, 0, 20_000),
+      ...fitted('exercise_goal_min', day.exerciseGoalMin, 0, 1440),
+      ...fitted('stand_goal_hr', day.standGoalHr, 0, 24),
+      synced_at: syncedAt,
+    })
+  }
+  return byShape(rows)
+}
 
 /**
  * Sessions as rows, grouped into the batches PostgREST will accept.
@@ -114,48 +193,54 @@ type SessionRow = TablesInsert<'activity_sessions'>
  *
  * Hence the grouping: PostgREST builds its column list from the payload and
  * rejects a batch whose objects disagree about their keys, so rows go out one
- * request per shape, at most three and usually one.
+ * request per shape, usually one.
  */
 export function sessionBatches(
   userId: string,
   provider: ProviderId,
   workouts: readonly WorkoutReading[],
 ): Array<Array<SessionRow>> {
-  const batches = new Map<string, SessionRow[]>()
+  const rows: SessionRow[] = []
 
   for (const workout of workouts) {
+    // Duration and energy cannot be left out of a new row, so a session with an
+    // impossible one is not sent (see `impossible`). A stored copy stays as it was.
+    if (impossible(workout.durationS, 0, 86_400) || impossible(workout.activeKcal, 0, 20_000)) {
+      continue
+    }
+
     // Avg and max go together because they are one reading: all three ways
     // `apple.ts` asks return both or neither. Zones are their own question,
-    // since a writer that sent a single average has nothing to band.
+    // since a writer that sent a single average has nothing to band. A pulse
+    // outside what the column holds counts as no reading.
+    const pulse =
+      workout.avgHr != null &&
+      !impossible(workout.avgHr, 20, 260) &&
+      !impossible(workout.maxHr, 20, 260)
     const heart = {
-      ...(workout.avgHr == null ? {} : { avg_hr: workout.avgHr, max_hr: workout.maxHr }),
+      ...(pulse ? { avg_hr: workout.avgHr, max_hr: workout.maxHr } : {}),
       ...(workout.hrZones == null ? {} : { hr_zones: workout.hrZones }),
     }
 
-    const row = {
+    rows.push({
       user_id: userId,
       provider,
       external_id: workout.externalId,
       log_date: workout.date,
       kind: workout.kind,
-      kind_label: workout.kindLabel,
+      kind_label: clip(workout.kindLabel),
       started_at: workout.startedAt,
       ended_at: workout.endedAt,
       duration_s: workout.durationS,
       active_kcal: workout.activeKcal,
-      distance_m: workout.distanceM,
-      elevation_m: workout.elevationM,
-      source_name: workout.sourceName,
+      ...fitted('distance_m', workout.distanceM, 0, 1_000_000),
+      ...fitted('elevation_m', workout.elevationM, -500, 20_000),
+      source_name: clip(workout.sourceName),
       ...heart,
-    }
-
-    const shape = Object.keys(heart).join(',')
-    const batch = batches.get(shape)
-    if (batch) batch.push(row)
-    else batches.set(shape, [row])
+    })
   }
 
-  return [...batches.values()]
+  return byShape(rows)
 }
 
 /**
@@ -169,26 +254,11 @@ async function persist(
   reading: HealthReading,
   window: { from: string; to: string; withHours: boolean },
 ): Promise<void> {
-  if (reading.days.length > 0) {
-    const { error } = await supabase.from('activity_days').upsert(
-      reading.days.map((day) => ({
-        user_id: userId,
-        log_date: day.date,
-        provider,
-        active_kcal: day.activeKcal,
-        resting_kcal: day.restingKcal,
-        steps: day.steps,
-        distance_m: day.distanceM,
-        exercise_minutes: day.exerciseMinutes,
-        stand_hours: day.standHours,
-        flights: day.flights,
-        move_goal_kcal: day.moveGoalKcal,
-        exercise_goal_min: day.exerciseGoalMin,
-        stand_goal_hr: day.standGoalHr,
-        synced_at: new Date().toISOString(),
-      })),
-      { onConflict: 'user_id,log_date' },
-    )
+  // One request per row shape, as for sessions below.
+  for (const batch of dayBatches(userId, provider, reading.days)) {
+    const { error } = await supabase
+      .from('activity_days')
+      .upsert(batch, { onConflict: 'user_id,log_date' })
     if (error) throw error
   }
 
@@ -420,7 +490,16 @@ function hourRows(hours: readonly HourReading[]) {
       })
     }
   }
-  return [...rows.values()]
+  // The hour's own checks, after the sum, since summing is what can overshoot.
+  // This is a replacement, so there is no column to leave out: an hour whose
+  // steps or energy is impossible is not sent, and an impossible distance is
+  // sent as unread. Otherwise `replace_activity_hours` refuses the whole window
+  // and the weigh-ins after it are skipped (see `impossible`).
+  return [...rows.values()].flatMap((row) =>
+    impossible(row.steps, 0, 100_000) || impossible(row.active_kcal, 0, 5000)
+      ? []
+      : [{ ...row, distance_m: impossible(row.distance_m, 0, 200_000) ? null : row.distance_m }],
+  )
 }
 
 /** Split at the hourly cutoff so a longer backfill never writes extra old hours. */

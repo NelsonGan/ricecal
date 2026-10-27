@@ -1,5 +1,5 @@
-import { healthSyncChunks, sessionBatches } from '@/data/health-sync'
-import type { WorkoutReading } from '@/lib/health'
+import { dayBatches, healthSyncChunks, sessionBatches } from '@/data/health-sync'
+import type { ActivityDayReading, WorkoutReading } from '@/lib/health'
 
 /**
  * What the sync is allowed to write over.
@@ -137,5 +137,117 @@ describe('assembling session rows', () => {
 
   it('has nothing to send for a window with no workouts in it', () => {
     expect(sessionBatches('user-1', 'apple_health', [])).toEqual([])
+  })
+})
+
+/**
+ * What the database refuses. Every reading goes out in one upsert, so a single
+ * value outside a column's check fails the whole request, and the sync stops
+ * there: one impossible day kept a Health Connect account from saving any day
+ * at all for three weeks, and one workout longer than a day kept an iPhone from
+ * saving any workout, hourly shape or weigh-in after it.
+ */
+describe('values the table would refuse', () => {
+  const day = (over: Partial<ActivityDayReading> = {}): ActivityDayReading => ({
+    date: '2026-10-26',
+    activeKcal: 480,
+    restingKcal: 1600,
+    steps: 9000,
+    distanceM: 6500,
+    exerciseMinutes: 35,
+    standHours: 10,
+    flights: 4,
+    moveGoalKcal: 500,
+    exerciseGoalMin: 30,
+    standGoalHr: 12,
+    ...over,
+  })
+
+  /**
+   * Left out rather than written as null, by the same rule as a heart rate that
+   * could not be read: the upsert never names the column, so a figure stored by
+   * an earlier good read stays.
+   */
+  it('leaves out an impossible figure and keeps the rest of the day', () => {
+    const batches = dayBatches('user-1', 'health_connect', [
+      day({ activeKcal: 48_000, restingKcal: -3, flights: 9000 }),
+      day({ date: '2026-10-25' }),
+      day({ date: '2026-10-24', activeKcal: Number.NaN, restingKcal: 1500, flights: 3000 }),
+    ])
+
+    const rows = batches.flat()
+    const bad = rows.find((row) => row.log_date === '2026-10-26')
+    const good = rows.find((row) => row.log_date === '2026-10-25')
+    expect(bad).not.toHaveProperty('active_kcal')
+    expect(bad).not.toHaveProperty('resting_kcal')
+    expect(bad).not.toHaveProperty('flights')
+    expect(bad?.steps).toBe(9000)
+    expect(bad?.distance_m).toBe(6500)
+    expect(good?.active_kcal).toBe(480)
+    expect(rows.find((row) => row.log_date === '2026-10-24')).not.toHaveProperty('active_kcal')
+    // Three days missing different columns go out as three requests, each of
+    // which agrees about its columns.
+    expect(batches).toHaveLength(3)
+    for (const batch of batches) {
+      expect(new Set(batch.map((row) => Object.keys(row).join(','))).size).toBe(1)
+    }
+  })
+
+  it('still writes a figure that was not read as null', () => {
+    const [[row]] = dayBatches('user-1', 'health_connect', [day({ standHours: null })])
+
+    expect(row).toHaveProperty('stand_hours', null)
+  })
+
+  it('leaves out a day whose step count cannot be true', () => {
+    const rows = dayBatches('user-1', 'health_connect', [
+      day({ steps: 250_000 }),
+      day({ date: '2026-10-25' }),
+    ]).flat()
+
+    expect(rows.map((row) => row.log_date)).toEqual(['2026-10-25'])
+  })
+
+  it('leaves out a workout longer than a day and keeps the others', () => {
+    const rows = sessionBatches('user-1', 'apple_health', [
+      workout({ externalId: 'forgotten', durationS: 3 * 86_400 }),
+      workout({ externalId: 'run' }),
+    ]).flat()
+
+    expect(rows.map((row) => row.external_id)).toEqual(['run'])
+  })
+
+  it('leaves out a workout whose energy cannot be true', () => {
+    const rows = sessionBatches('user-1', 'apple_health', [
+      workout({ externalId: 'a', activeKcal: 25_000 }),
+      workout({ externalId: 'b', activeKcal: Number.NaN }),
+      workout({ externalId: 'c' }),
+    ]).flat()
+
+    expect(rows.map((row) => row.external_id)).toEqual(['c'])
+  })
+
+  it('leaves out an impossible distance, climb or pulse', () => {
+    const row = only([workout({ distanceM: 5_000_000, elevationM: -900, maxHr: 300 })])
+
+    expect(row).not.toHaveProperty('distance_m')
+    expect(row).not.toHaveProperty('elevation_m')
+    expect(row).not.toHaveProperty('avg_hr')
+    expect(row).not.toHaveProperty('max_hr')
+    expect(row.active_kcal).toBe(720)
+  })
+
+  it('shortens a label longer than the column holds', () => {
+    const row = only([workout({ kindLabel: 'x'.repeat(200), sourceName: 'y'.repeat(130) })])
+
+    expect(row.kind_label).toHaveLength(120)
+    expect(row.source_name).toHaveLength(120)
+  })
+
+  it('never cuts a label through the middle of an emoji', () => {
+    const row = only([workout({ kindLabel: `${'x'.repeat(119)}🏸 badminton` })])
+
+    expect(row.kind_label).toBe(`${'x'.repeat(119)}🏸`)
+    expect(JSON.stringify(row.kind_label)).not.toMatch(/\\ud83c/)
   })
 })

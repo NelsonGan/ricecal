@@ -91,6 +91,30 @@ it('a measured day with no hourly records still removes disappeared source hours
   })
 })
 
+it('leaves out an impossible hour instead of failing the window and the weigh-ins after it', async () => {
+  const read = jest.fn().mockResolvedValue({
+    ...empty(),
+    hours: [
+      { date: '2026-10-02', hour: 9, steps: 100, activeKcal: 9000, distanceM: null },
+      { date: '2026-10-02', hour: 10, steps: 200, activeKcal: 12, distanceM: 900_000 },
+      { date: '2026-10-02', hour: 11, steps: 300, activeKcal: 15, distanceM: 210 },
+    ],
+    weights: [{ date: '2026-10-02', kg: 70, bodyFatPct: null }],
+  })
+  await syncRange(
+    new QueryClient(),
+    'account-a',
+    { ...demoHealth, read },
+    '2026-10-01',
+    '2026-10-03',
+  )
+  expect(supabase.rpc.mock.calls[0][1].p_hours).toEqual([
+    { log_date: '2026-10-02', hour: 10, steps: 200, active_kcal: 12, distance_m: null },
+    { log_date: '2026-10-02', hour: 11, steps: 300, active_kcal: 15, distance_m: 210 },
+  ])
+  expect(supabase.rpc).toHaveBeenCalledWith('sync_weight_readings', expect.anything())
+})
+
 it('an unavailable store or revoked access cannot erase the last good hourly data', async () => {
   const read = jest.fn().mockResolvedValue(empty())
   await syncRange(
