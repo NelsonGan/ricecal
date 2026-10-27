@@ -269,17 +269,26 @@ function PublicGroups({ onJoined }: { onJoined: (groupId: string) => void }) {
                   <Text variant="label" numberOfLines={1}>
                     {group.name}
                   </Text>
-                  <Text variant="caption">{t('members', { count: group.member_count })}</Text>
+                  {/* Full is said beside the count it follows from, and Join
+                      stays where it always is, greyed, so the row does not
+                      change shape when the tenth person joins. */}
+                  <Text variant="caption" numberOfLines={1}>
+                    {t('members', { count: group.member_count })}
+                    {group.member_count >= GROUP_CAPACITY ? (
+                      <Text variant="caption" className="font-body-bold text-hibiscus-ink">
+                        {` · ${t('full')}`}
+                      </Text>
+                    ) : null}
+                  </Text>
                 </View>
-                {group.member_count >= GROUP_CAPACITY ? (
-                  <Badge tone="neutral" size="sm">
-                    {t('full')}
-                  </Badge>
-                ) : (
-                  <Button size="sm" variant="secondary" onPress={() => void join(group.id)}>
-                    {t('join')}
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={group.member_count >= GROUP_CAPACITY}
+                  onPress={() => void join(group.id)}
+                >
+                  {t('join')}
+                </Button>
               </View>
             </Tappable>
           ))}

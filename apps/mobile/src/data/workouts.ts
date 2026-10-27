@@ -274,44 +274,63 @@ export function useWorkout(id: string | undefined) {
       ])
       const row = unwrapMaybe(summary)
       if (!row) return null
-      const setRows = unwrap(sets)
-      return {
-        ...toSummary({
-          ...row,
-          pr_count: setRows.filter((set) => recordsOf(set).length > 0).length,
-        }),
-        heartRate: toHeartRate(unwrapMaybe(heart)),
-        entries: unwrap(entries).map((entry) => ({
-          id: entry.id,
-          position: entry.position,
-          exerciseId: entry.exercise_id,
-          name: entry.exercise_name,
-          tracking: entry.tracking,
-          superset: entry.superset,
-          restS: entry.rest_s,
-          notes: entry.notes,
-          sets: setRows
-            .filter((set) => set.workout_exercise_id === entry.id)
-            .map((set) => ({
-              id: set.id ?? '',
-              position: set.position ?? 0,
-              kind: set.kind ?? 'normal',
-              weightKg: num(set.weight_kg),
-              reps: set.reps,
-              durationS: set.duration_s,
-              distanceM: num(set.distance_m),
-              rpe: num(set.rpe),
-              volumeKg: num(set.volume_kg),
-              e1rmKg: num(set.e1rm_kg),
-              records: recordsOf(set),
-            })),
-        })),
-      }
+      return workoutDetailFrom({
+        summary: row,
+        exercises: unwrap(entries),
+        sets: unwrap(sets),
+        heart: unwrapMaybe(heart),
+      })
     },
   })
 }
 
-const recordsOf = (set: Tables<'workout_set_details'>): WorkoutSet['records'] =>
+/**
+ * A workout's page drawn from the rows it is read from. The viewer's own page
+ * reads them with row security; a group member's comes from
+ * `group_workout_detail`, which hands back the same rows less the owner's
+ * notes and its records (its sets carry no record flags, so none are drawn).
+ */
+export function workoutDetailFrom(rows: {
+  summary: SummaryFields
+  exercises: Tables<'workout_exercises'>[]
+  sets: Partial<Tables<'workout_set_details'>>[]
+  heart: Parameters<typeof toHeartRate>[0]
+}): WorkoutDetail {
+  return {
+    ...toSummary({
+      ...rows.summary,
+      pr_count: rows.sets.filter((set) => recordsOf(set).length > 0).length,
+    }),
+    heartRate: toHeartRate(rows.heart),
+    entries: rows.exercises.map((entry) => ({
+      id: entry.id,
+      position: entry.position,
+      exerciseId: entry.exercise_id,
+      name: entry.exercise_name,
+      tracking: entry.tracking,
+      superset: entry.superset,
+      restS: entry.rest_s,
+      notes: entry.notes,
+      sets: rows.sets
+        .filter((set) => set.workout_exercise_id === entry.id)
+        .map((set) => ({
+          id: set.id ?? '',
+          position: set.position ?? 0,
+          kind: set.kind ?? 'normal',
+          weightKg: num(set.weight_kg),
+          reps: set.reps ?? null,
+          durationS: set.duration_s ?? null,
+          distanceM: num(set.distance_m),
+          rpe: num(set.rpe),
+          volumeKg: num(set.volume_kg),
+          e1rmKg: num(set.e1rm_kg),
+          records: recordsOf(set),
+        })),
+    })),
+  }
+}
+
+const recordsOf = (set: Partial<Tables<'workout_set_details'>>): WorkoutSet['records'] =>
   [
     set.is_weight_pr && ('weight' as const),
     set.is_e1rm_pr && ('e1rm' as const),

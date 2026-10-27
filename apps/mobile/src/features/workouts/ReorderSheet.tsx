@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 
+import { reslot } from '@/features/shared/reslot'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, Sheet, Text } from '@/ui'
 import type { Category } from './catalogue'
@@ -114,26 +115,6 @@ export function ReorderSheet({
       </View>
     </Sheet>
   )
-}
-
-/**
- * The slots with `key` moved to `to`, and everything between its old slot and
- * the new one shifted a place towards where it came from. On either thread:
- * the drag runs it on the UI thread, VoiceOver's adjust on the JS one.
- */
-function reslot(slots: Record<string, number>, key: string, to: number) {
-  'worklet'
-  const at = slots[key]
-  if (at === undefined || to === at) return slots
-  const next: Record<string, number> = {}
-  for (const other in slots) {
-    const slot = slots[other]
-    if (other === key) next[other] = to
-    else if (at < to && slot > at && slot <= to) next[other] = slot - 1
-    else if (at > to && slot < at && slot >= to) next[other] = slot + 1
-    else next[other] = slot
-  }
-  return next
 }
 
 function SortableRow({
