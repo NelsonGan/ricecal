@@ -218,6 +218,10 @@ CREATE OR REPLACE FUNCTION public.expired_meal_photos (
    limit least(greatest(p_limit, 1), 1000);
 $function$;
 
+GRANT ALL ON FUNCTION public.goals_on(date, uuid) TO authenticated;
+
+GRANT ALL ON FUNCTION public.logging_streak(uuid) TO authenticated;
+
 CREATE OR REPLACE FUNCTION public.record_social_photo_etags (
   p_etags jsonb
 )
@@ -435,3 +439,7 @@ CREATE OR REPLACE FUNCTION public.trend_days (
     limit 1
   ) g on true;
 $function$;
+-- Hand-written: `db diff` does not see a revoke. Restated from 90_views.sql and
+-- 92_trends.sql, which say why.
+REVOKE EXECUTE ON FUNCTION public.goals_on(date, uuid), public.logging_streak(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.trend_days(text, uuid), public.trend_series(text, uuid), public.trend_summary(text, uuid) FROM PUBLIC, anon;
