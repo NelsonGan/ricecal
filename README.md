@@ -519,6 +519,12 @@ copy.
 - **Grants are the outer gate.** Where a client must never write, there is no
   grant at all, not merely no policy, so a policy added later by mistake cannot
   become an entitlement or a self-approving review.
+- **Every function the app calls revokes `public, anon` and grants who may
+  call it**, invoker or definer. Postgres gives PUBLIC EXECUTE on any new
+  function and a later `grant` does not take it away. Helpers that a column
+  default or a trigger reaches (`local_today`, `compute_targets`,
+  `current_weight_kg`) keep it, since a trigger can fire as Supabase's own auth
+  role inside an account deletion.
 - **Enums for closed domains.** `supabase gen types` turns them into string
   literal unions, which keeps `Meal` in SQL and `Meal` in TypeScript the same
   set.
@@ -551,7 +557,15 @@ was checked against the code (October 2026) and is not a finding:
   columns would mean a second index that only costs writes. The routine key's
   index was a plain one and is widened instead.
 - *Unused index* on the group tables: they cover foreign keys on tables still
-  small enough to scan.
+  small enough to scan. The same holds for `food_scan_items_scan_idx` (the scan
+  eval reads items by scan), `food_logs_scan_idx` (the estimate-backlog report)
+  and `barcode_misses_code_idx` (triage of missing packets): each is read by a
+  person or a script rather than by the app, and the advisor's counters only go
+  back to the last restart. Indexes that only duplicated a primary key were
+  dropped instead (October 2026): `blocked_authors (user_id)`, and descending
+  copies of the keys of `daily_goals` and `weight_logs`, since a btree reads
+  backwards as cheaply as forwards. So was the index on
+  `food_scan_items.resolved_tier`, a column with five values.
 - *Leaked password protection*: needs the Pro plan.
 
 ### Function secrets
@@ -7925,6 +7939,41 @@ function no migration produces, and the `migrations` job fails on a change that
 is genuinely captured. When a hand-written migration has to restate a function,
 copy the block out of `schemas/` verbatim. Only what is between the `$$` markers
 counts; a note above the `create` is free.
+
+**A join into a grouped view does not narrow the view.** `daily_nutrition`
+groups `food_log_details` by user and day, and `left join daily_nutrition n on
+n.user_id = p_user_id and n.log_date = c.at` filters the user inside the view
+(a constant) but not the day (a join condition). So `day_marks`, the trend,
+activity and review ranges each summed the user's whole diary and kept a week of
+it: 49,000 buffers and 15 to 25 ms for three years of history, on the most
+called function in the app. Each of them now repeats its range beside the join
+(`and n.log_date between p_from and p_to`), which Postgres does push down, and
+reads a few hundred buffers in about a millisecond. The bound has to come from
+the arguments: one read from a CTE is a join condition again, and a `lateral`
+subquery over the view is not pushed down either. The two named-range functions
+take both the calendar and the bound from `private.range_start`, so they cannot
+disagree. Anything new that joins `daily_nutrition` needs the same line, and
+`08_reviews.test.sql` fails on a function body that joins it without one.
+
+**A predicate has to match a partial or expression index exactly to use it.**
+`record_social_photo_etags` matched `photo_path = key` while the only index on
+it is limited to approved, unquarantined posts, and matched `avatar_path = key`
+while the avatar index is on the `case` expression the social view returns. Both
+updates read their whole table on every photo signature (7,500 buffers at
+150,000 posts, 140 once each repeats the index's own predicate).
+
+**`SELECT name FROM pg_timezone_names` near the top of the slow-query list is
+PostgREST, and it is not ours to fix.** PostgREST runs it, at about 335 ms on
+this project, each time it rebuilds its schema cache, along with three catalog
+queries of 25 to 35 ms. Supabase's `pgrst_ddl_watch` event trigger asks for that
+rebuild after any `CREATE TABLE` or `ALTER TABLE` outside `pg_temp`, and
+Realtime's own maintenance makes one of each for every daily partition of
+`realtime.messages`, every half hour or so. That was 191 rebuilds in two days
+(October 2026) with no migration among them. The trigger belongs to
+`supabase_admin` and `postgres` is not a superuser, so no migration can narrow
+it. Turning the partitions off is not an option either: group chat broadcasts
+from the database with `realtime.send`, which writes there. If it ever matters,
+it goes to Supabase support, not into `schemas/`.
 
 **The Supabase CLI's remote endpoints move.** On 2.111.0, `functions deploy` and
 `gen types --project-id` both answer 404 when handed a project ref that does not

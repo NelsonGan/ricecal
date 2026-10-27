@@ -52,7 +52,12 @@ as $$
     g.kcal,
     a.active_kcal
   from calendar c
+  -- The range is repeated beside the join because it is the only half Postgres
+  -- can push into the view. `n.log_date = c.at` is a join condition, so without
+  -- it every call summed the user's whole diary to keep seven days of it: 49,000
+  -- buffers and 15 ms for three years of history, 400 buffers and 1 ms with it.
   left join public.daily_nutrition n on n.user_id = p_user_id and n.log_date = c.at
+    and n.log_date between p_from and p_to
   left join public.activity_days   a on a.user_id = p_user_id and a.log_date = c.at
   left join lateral (
     select gg.kcal

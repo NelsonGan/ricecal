@@ -19,6 +19,33 @@
 -- ---------------------------------------------------------------------------
 
 
+-- The first day of a named range (7d, 30d, 1y) ending on `p_today`. One
+-- definition because `trend_days` and `activity_days_range` each need it twice:
+-- once to lay out the calendar and once beside the `daily_nutrition` join, the
+-- only place Postgres pushes a bound into that view. Two copies of the table
+-- would let a new range draw a longer calendar over a shorter bound, and every
+-- day past the bound would read as nothing logged. Stable, not immutable:
+-- `date_trunc` on a date resolves to the timestamptz form, which reads the
+-- session time zone.
+create or replace function private.range_start(p_range text, p_today date)
+returns date
+language sql
+stable
+set search_path = ''
+as $$
+  select case p_range
+    when '7d'  then p_today - 6
+    when '30d' then p_today - 29
+    -- Twelve CALENDAR months, which is what "Last 12 months" means and what
+    -- makes the axis read A S O N D J F M A M J J. `today - 364` would put two
+    -- part-months at the ends and thirteen labels on the axis.
+    when '1y'  then (date_trunc('month', p_today) - interval '11 months')::date
+  end;
+$$;
+revoke execute on function private.range_start from public, anon;
+grant  execute on function private.range_start to authenticated, service_role;
+
+
 -- ---------------------------------------------------------------------------
 -- One row per calendar day in the range, whether anything was logged or not.
 --
@@ -53,15 +80,7 @@ set search_path = ''
 as $$
   with bounds as (
     select
-      case p_range
-        -- Seven days including today, so the strip reads M..S and ends on now.
-        when '7d'  then public.local_today(p_user_id) - 6
-        when '30d' then public.local_today(p_user_id) - 29
-        -- Twelve CALENDAR months, which is what "Last 12 months" means and what
-        -- makes the axis read A S O N D J F M A M J J. `today - 364` would put
-        -- two part-months at the ends and thirteen labels on the axis.
-        when '1y'  then (date_trunc('month', public.local_today(p_user_id)) - interval '11 months')::date
-      end as from_date,
+      private.range_start(p_range, public.local_today(p_user_id)) as from_date,
       public.local_today(p_user_id) as to_date
   ),
   calendar as (
@@ -95,7 +114,13 @@ as $$
     g.water_ml::integer,
     w.weight_kg
   from calendar c
+  -- A bound the planner can push into the view, so it sums the range and not
+  -- the whole diary (see `day_marks`). It has to be written from the arguments:
+  -- a bound read from `bounds` is a join condition and is not pushed down.
+  -- `range_start` is the same call `bounds` makes, so the two cannot disagree.
   left join public.daily_nutrition n on n.user_id = p_user_id and n.log_date    = c.at
+    and n.log_date between private.range_start(p_range, public.local_today(p_user_id))
+                       and public.local_today(p_user_id)
   left join public.daily_logs      l on l.user_id = p_user_id and l.log_date    = c.at
   left join public.weight_logs     w on w.user_id = p_user_id and w.measured_on = c.at
   left join lateral (
@@ -303,6 +328,11 @@ comment on function public.trend_summary is
 -- is under RLS, so passing somebody else's id returns nothing rather than their
 -- year. The `p_user_id` parameter exists for a future server-side job with the
 -- service role, not for the client.
+-- The revoke is not redundant: Postgres grants EXECUTE to PUBLIC on a new
+-- function, and the grant below does not take it away. Without it `anon` could
+-- call all three (row security still answered with nothing).
+revoke execute on function public.trend_days, public.trend_series, public.trend_summary
+  from public, anon;
 grant execute on function public.trend_days    to authenticated;
 grant execute on function public.trend_series  to authenticated;
 grant execute on function public.trend_summary to authenticated;

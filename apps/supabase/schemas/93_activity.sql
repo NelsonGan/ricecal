@@ -65,11 +65,7 @@ set search_path = ''
 as $$
   with bounds as (
     select
-      case p_range
-        when '7d'  then public.local_today(p_user_id) - 6
-        when '30d' then public.local_today(p_user_id) - 29
-        when '1y'  then (date_trunc('month', public.local_today(p_user_id)) - interval '11 months')::date
-      end as from_date,
+      private.range_start(p_range, public.local_today(p_user_id)) as from_date,
       public.local_today(p_user_id) as to_date
   ),
   calendar as (
@@ -114,7 +110,11 @@ as $$
   from calendar c
   cross join prefs p
   left join public.activity_days  a on a.user_id = p_user_id and a.log_date = c.at
+  -- Bounded from the arguments so the view sums the range, not the whole diary
+  -- (see `trend_days`).
   left join public.daily_nutrition n on n.user_id = p_user_id and n.log_date = c.at
+    and n.log_date between private.range_start(p_range, public.local_today(p_user_id))
+                       and public.local_today(p_user_id)
   left join lateral (
     select
       count(*)::integer                as sessions,

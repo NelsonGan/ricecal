@@ -551,7 +551,11 @@ begin
   update public.social_posts p set photo_etag = t.value
     from tags t
    where p.photo_path = t.key and p.photo_etag is null
-     and p.created_at < now() - interval '10 minutes';
+     and p.created_at < now() - interval '10 minutes'
+     -- What `social_posts_photo_idx` is limited to, which are also the only
+     -- posts `social_photo_claims` hands the signer. Without it each call read
+     -- the whole table.
+     and p.review_status = 'approved' and not p.quarantined;
   get diagnostics v_posts = row_count;
   with tags as (
     select key, value from jsonb_each_text(p_etags)
@@ -559,8 +563,13 @@ begin
   )
   update public.profiles p set photo_etag = t.value
     from tags t
-   where p.avatar_path = t.key and p.photo_etag is null
-     and p.updated_at < now() - interval '10 minutes';
+   where p.photo_etag is null
+     and p.updated_at < now() - interval '10 minutes'
+     -- Spelled as `social_profiles_avatar_idx` is, for the same reason: it is
+     -- the only avatar `social_photo_claims` admits, and the index cannot serve
+     -- a plain `avatar_path = key`.
+     and case when p.avatar_path like 'avatars/' || p.id::text || '/%' then p.avatar_path end = t.key
+     and p.review_status = 'approved' and not p.quarantined;
   get diagnostics v_avatars = row_count;
   return v_posts + v_avatars;
 end;

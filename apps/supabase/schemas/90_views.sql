@@ -339,3 +339,11 @@ as $$
     coalesce(max(r.length), 0)::integer
   from runs r;
 $$;
+
+-- Both are read by a signed-in user, `goals_on` from `suggest-meal` with the
+-- caller's token and the streak from Today. Neither revoked the EXECUTE that
+-- Postgres gives PUBLIC on a new function, so `anon` could call them too. Row
+-- security still answered a signed-out caller with nothing, but the rule here
+-- is that an RPC says who may call it, as `day_marks` does.
+revoke execute on function public.goals_on, public.logging_streak from public, anon;
+grant  execute on function public.goals_on, public.logging_streak to authenticated;

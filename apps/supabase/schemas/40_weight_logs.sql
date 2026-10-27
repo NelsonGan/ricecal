@@ -32,10 +32,9 @@ create table public.weight_logs (
   primary key (user_id, measured_on)
 );
 
--- The chart reads a trailing range; the target recompute reads the newest row.
--- Descending so both are a forward scan of the index.
-create index weight_logs_user_measured_idx
-  on public.weight_logs (user_id, measured_on desc);
+-- The chart reads a trailing range and the target recompute reads the newest
+-- row, both from the primary key. A btree reads backwards as cheaply as
+-- forwards, so a descending copy of the same columns only cost writes.
 
 create trigger weight_logs_set_updated_at
   before update on public.weight_logs
