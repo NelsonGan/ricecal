@@ -28,7 +28,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(19);
+select plan(20);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -295,6 +295,22 @@ select is(
   'one user''s review is built from their own diary and nobody else''s'
 );
 
+
+-- Every function that joins `daily_nutrition` must bound its date range beside
+-- the join. Without it the view sums the user's whole diary and the function
+-- keeps a week of it: right answers, and 49,000 buffers a call for three years
+-- of history (README, "A join into a grouped view does not narrow the view").
+-- Nothing else would notice, so this reads the function bodies.
+select is(
+  (select coalesce(array_agg(n.nspname || '.' || p.proname order by p.proname), '{}')
+     from pg_catalog.pg_proc p
+     join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+    where n.nspname in ('public', 'private')
+      and p.prosrc ~ 'join\s+public\.daily_nutrition'
+      and p.prosrc !~ '\.log_date\s+between\s'),
+  '{}'::text[],
+  'every join into daily_nutrition carries its own date bound'
+);
 
 select * from finish();
 

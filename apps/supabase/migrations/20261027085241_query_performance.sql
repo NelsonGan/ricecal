@@ -12,6 +12,29 @@ DROP INDEX public.food_scan_items_tier_idx;
 
 DROP INDEX public.weight_logs_user_measured_idx;
 
+CREATE FUNCTION private.range_start (
+  p_range text,
+  p_today date
+)
+  RETURNS date
+  LANGUAGE sql
+  STABLE
+  SET search_path TO ''
+  AS $function$
+  select case p_range
+    when '7d'  then p_today - 6
+    when '30d' then p_today - 29
+    -- Twelve CALENDAR months, which is what "Last 12 months" means and what
+    -- makes the axis read A S O N D J F M A M J J. `today - 364` would put two
+    -- part-months at the ends and thirteen labels on the axis.
+    when '1y'  then (date_trunc('month', p_today) - interval '11 months')::date
+  end;
+$function$;
+
+GRANT ALL ON FUNCTION private.range_start(text, date) TO authenticated;
+
+GRANT ALL ON FUNCTION private.range_start(text, date) TO service_role;
+
 CREATE OR REPLACE FUNCTION public.activity_days_range (
   p_range   text,
   p_user_id uuid DEFAULT auth.uid()
@@ -42,11 +65,7 @@ CREATE OR REPLACE FUNCTION public.activity_days_range (
   AS $function$
   with bounds as (
     select
-      case p_range
-        when '7d'  then public.local_today(p_user_id) - 6
-        when '30d' then public.local_today(p_user_id) - 29
-        when '1y'  then (date_trunc('month', public.local_today(p_user_id)) - interval '11 months')::date
-      end as from_date,
+      private.range_start(p_range, public.local_today(p_user_id)) as from_date,
       public.local_today(p_user_id) as to_date
   ),
   calendar as (
@@ -94,8 +113,7 @@ CREATE OR REPLACE FUNCTION public.activity_days_range (
   -- Bounded from the arguments so the view sums the range, not the whole diary
   -- (see `trend_days`).
   left join public.daily_nutrition n on n.user_id = p_user_id and n.log_date = c.at
-    and n.log_date between public.local_today(p_user_id)
-                           - case p_range when '7d' then 6 when '30d' then 29 else 366 end
+    and n.log_date between private.range_start(p_range, public.local_today(p_user_id))
                        and public.local_today(p_user_id)
   left join lateral (
     select
@@ -379,15 +397,7 @@ CREATE OR REPLACE FUNCTION public.trend_days (
   AS $function$
   with bounds as (
     select
-      case p_range
-        -- Seven days including today, so the strip reads M..S and ends on now.
-        when '7d'  then public.local_today(p_user_id) - 6
-        when '30d' then public.local_today(p_user_id) - 29
-        -- Twelve CALENDAR months, which is what "Last 12 months" means and what
-        -- makes the axis read A S O N D J F M A M J J. `today - 364` would put
-        -- two part-months at the ends and thirteen labels on the axis.
-        when '1y'  then (date_trunc('month', public.local_today(p_user_id)) - interval '11 months')::date
-      end as from_date,
+      private.range_start(p_range, public.local_today(p_user_id)) as from_date,
       public.local_today(p_user_id) as to_date
   ),
   calendar as (
@@ -423,11 +433,10 @@ CREATE OR REPLACE FUNCTION public.trend_days (
   from calendar c
   -- A bound the planner can push into the view, so it sums the range and not
   -- the whole diary (see `day_marks`). It has to be written from the arguments:
-  -- a bound read from `bounds` is a join condition and is not pushed down. A
-  -- year reaches back at most 366 days, so the loose figure there costs nothing.
+  -- a bound read from `bounds` is a join condition and is not pushed down.
+  -- `range_start` is the same call `bounds` makes, so the two cannot disagree.
   left join public.daily_nutrition n on n.user_id = p_user_id and n.log_date    = c.at
-    and n.log_date between public.local_today(p_user_id)
-                           - case p_range when '7d' then 6 when '30d' then 29 else 366 end
+    and n.log_date between private.range_start(p_range, public.local_today(p_user_id))
                        and public.local_today(p_user_id)
   left join public.daily_logs      l on l.user_id = p_user_id and l.log_date    = c.at
   left join public.weight_logs     w on w.user_id = p_user_id and w.measured_on = c.at
@@ -441,5 +450,6 @@ CREATE OR REPLACE FUNCTION public.trend_days (
 $function$;
 -- Hand-written: `db diff` does not see a revoke. Restated from 90_views.sql and
 -- 92_trends.sql, which say why.
+REVOKE EXECUTE ON FUNCTION private.range_start(text, date) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.goals_on(date, uuid), public.logging_streak(uuid) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.trend_days(text, uuid), public.trend_series(text, uuid), public.trend_summary(text, uuid) FROM PUBLIC, anon;
