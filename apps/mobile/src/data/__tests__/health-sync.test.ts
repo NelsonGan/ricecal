@@ -1,4 +1,4 @@
-import { dayRows, healthSyncChunks, sessionBatches } from '@/data/health-sync'
+import { dayBatches, healthSyncChunks, sessionBatches } from '@/data/health-sync'
 import type { ActivityDayReading, WorkoutReading } from '@/lib/health'
 
 /**
@@ -163,24 +163,47 @@ describe('values the table would refuse', () => {
     ...over,
   })
 
-  it('blanks an impossible figure and keeps the rest of the day', () => {
-    const [bad, good] = dayRows('user-1', 'health_connect', [
+  /**
+   * Left out rather than written as null, by the same rule as a heart rate that
+   * could not be read: the upsert never names the column, so a figure stored by
+   * an earlier good read stays.
+   */
+  it('leaves out an impossible figure and keeps the rest of the day', () => {
+    const batches = dayBatches('user-1', 'health_connect', [
       day({ activeKcal: 48_000, restingKcal: -3, flights: 9000 }),
       day({ date: '2026-10-25' }),
+      day({ date: '2026-10-24', activeKcal: Number.NaN, restingKcal: 1500, flights: 3000 }),
     ])
 
-    expect(bad.active_kcal).toBeNull()
-    expect(bad.resting_kcal).toBeNull()
-    expect(bad.flights).toBeNull()
-    expect(bad.steps).toBe(9000)
-    expect(good.active_kcal).toBe(480)
+    const rows = batches.flat()
+    const bad = rows.find((row) => row.log_date === '2026-10-26')
+    const good = rows.find((row) => row.log_date === '2026-10-25')
+    expect(bad).not.toHaveProperty('active_kcal')
+    expect(bad).not.toHaveProperty('resting_kcal')
+    expect(bad).not.toHaveProperty('flights')
+    expect(bad?.steps).toBe(9000)
+    expect(bad?.distance_m).toBe(6500)
+    expect(good?.active_kcal).toBe(480)
+    expect(rows.find((row) => row.log_date === '2026-10-24')).not.toHaveProperty('active_kcal')
+    // Three days missing different columns go out as three requests, each of
+    // which agrees about its columns.
+    expect(batches).toHaveLength(3)
+    for (const batch of batches) {
+      expect(new Set(batch.map((row) => Object.keys(row).join(','))).size).toBe(1)
+    }
+  })
+
+  it('still writes a figure that was not read as null', () => {
+    const [[row]] = dayBatches('user-1', 'health_connect', [day({ standHours: null })])
+
+    expect(row).toHaveProperty('stand_hours', null)
   })
 
   it('leaves out a day whose step count cannot be true', () => {
-    const rows = dayRows('user-1', 'health_connect', [
+    const rows = dayBatches('user-1', 'health_connect', [
       day({ steps: 250_000 }),
       day({ date: '2026-10-25' }),
-    ])
+    ]).flat()
 
     expect(rows.map((row) => row.log_date)).toEqual(['2026-10-25'])
   })
@@ -204,11 +227,11 @@ describe('values the table would refuse', () => {
     expect(rows.map((row) => row.external_id)).toEqual(['c'])
   })
 
-  it('blanks an impossible distance or climb and drops an impossible pulse', () => {
+  it('leaves out an impossible distance, climb or pulse', () => {
     const row = only([workout({ distanceM: 5_000_000, elevationM: -900, maxHr: 300 })])
 
-    expect(row.distance_m).toBeNull()
-    expect(row.elevation_m).toBeNull()
+    expect(row).not.toHaveProperty('distance_m')
+    expect(row).not.toHaveProperty('elevation_m')
     expect(row).not.toHaveProperty('avg_hr')
     expect(row).not.toHaveProperty('max_hr')
     expect(row.active_kcal).toBe(720)
