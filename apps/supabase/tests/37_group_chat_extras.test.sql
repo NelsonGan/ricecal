@@ -178,8 +178,10 @@ select is((select count(*)::int from public.group_messages where author_id = :'a
 -- Workouts and sports go to the chat on their own too, silently, while fresh.
 reset role;
 insert into public.workouts (id, user_id, name, started_at, ended_at, log_date, health_workout_id) values
+  -- On the day the board is read for, in the members' own time zone: a UTC
+  -- date put it on yesterday's board for the hours Malaysia is a day ahead.
   ('a3740000-0000-4000-8000-000000000001', :'ana', 'Push day', now() - interval '70 minutes',
-   now() - interval '25 minutes', (now() - interval '70 minutes')::date, 'hk-push-day'),
+   now() - interval '25 minutes', public.local_today(:'ben'), 'hk-push-day'),
   ('a3740000-0000-4000-8000-000000000002', :'ana', 'Old legs', now() - interval '3 days',
    now() - interval '3 days' + interval '40 minutes', (now() - interval '3 days')::date, null);
 select is((select count(*)::int from public.group_messages
