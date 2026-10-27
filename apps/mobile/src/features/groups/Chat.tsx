@@ -544,16 +544,18 @@ const Composer = memo(function Composer({
         </View>
       ) : null}
       <View className="flex-row items-end gap-2">
+        {/* A plain +, as WhatsApp draws it: no circle, so the field gets the
+            width. Narrow to look at, a full 44pt to a thumb. */}
         <Tappable
-          className="h-[44px] w-[44px] items-center justify-center rounded-full bg-surface-alt"
+          className="h-[44px] w-[28px] items-center justify-center"
           // Level with the send button's middle, which is taller.
           style={{ marginBottom: (SEND - 44) / 2 }}
-          hitSlop={6}
+          hitSlop={{ top: 6, bottom: 6, left: 10, right: 4 }}
           onPress={onAttach}
           accessibilityRole="button"
           accessibilityLabel={t('shareFood')}
         >
-          <Icon set="ui" name="plus" size={22} tintColor={colors.muted} />
+          <Icon set="ui" name="plus" size={20} tintColor={colors.muted} />
         </Tappable>
         <View
           className="min-h-[44px] min-w-0 flex-1 justify-center rounded-[22px] border border-line bg-surface px-4"
@@ -922,15 +924,17 @@ function FoodCard({ food, ownerId }: { food: ChatFood; ownerId: string }) {
       >
         <EntryPicture entry={food} ownerId={ownerId} iconSize={96} />
       </View>
-      <View className="gap-1.5 p-3">
-        <Text variant="label" numberOfLines={2}>
-          {food.name}
-        </Text>
-        <View className="flex-row items-baseline gap-1">
-          <Text className="font-display text-[22px] leading-[28px] text-heading">
-            {Math.round(food.kcal).toLocaleString()}
+      {/* Two lines under the photo: the name with its calories on the right,
+          then the macros. */}
+      <View className="gap-2 p-3">
+        <View className="flex-row items-baseline gap-2">
+          <Text variant="label" numberOfLines={1} className="min-w-0 flex-1">
+            {food.name}
           </Text>
-          <Text variant="caption">{t('common:unit.kcal')}</Text>
+          <Text className="font-body-black text-[16px] leading-[21px] text-heading">
+            {Math.round(food.kcal).toLocaleString()}{' '}
+            <Text variant="caption">{t('common:unit.kcal')}</Text>
+          </Text>
         </View>
         <MacroChips food={food} compact />
       </View>
