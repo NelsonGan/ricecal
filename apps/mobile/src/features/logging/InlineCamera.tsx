@@ -1,9 +1,11 @@
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Device from 'expo-device'
 import * as ImagePicker from 'expo-image-picker'
-import { type ReactNode, useCallback, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Linking, View } from 'react-native'
+import { Linking, Platform, Pressable, View } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import Animated, { FadeOut, ZoomIn } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { photoCropFill } from '@/lib/photo'
@@ -48,6 +50,35 @@ const FRAMING_MAX = 300
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
 
 const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e'] as const
+
+/**
+ * The furthest a pinch goes, as a multiple of the 1x lens. Past this every
+ * phone is cropping digitally and a plate turns to mush, which the model reads
+ * worse than a plate further away.
+ */
+const MAX_ZOOM = 8
+
+/**
+ * Below this a pinch counts as 1x: the chip that shows the zoom is hidden, so a
+ * pinch that ends under it snaps back rather than leaving a crop nobody can see.
+ */
+const ZOOMED_FROM = 1.05
+
+/** How long the focus square stays up after a tap. */
+const FOCUS_RING_MS = 900
+
+/**
+ * Turns "this many times closer than 1x" into expo-camera's `zoom`, which runs
+ * 0 to 1 and means something different on each platform: exponential up to the
+ * device's maximum on iOS, linear on Android (`zoom * max`, floored at 1x).
+ * `maxRatio` is what the patched `getMaxZoomRatioAsync` reports. See
+ * README.md, "Pinch, tap and the 1x lens".
+ */
+export function zoomProp(ratio: number, maxRatio: number, os: string = Platform.OS): number {
+  if (maxRatio <= 1 || ratio <= 1) return 0
+  const r = Math.min(ratio, maxRatio)
+  return os === 'ios' ? Math.log(r) / Math.log(maxRatio) : r / maxRatio
+}
 
 /** Which of the two things this camera is pointed at. */
 export type CaptureMode = 'meal' | 'barcode'
@@ -118,7 +149,7 @@ export function InlineCamera({
   header,
   footnote,
 }: InlineCameraProps) {
-  const { t } = useTranslation(['logging', 'common'])
+  const { t, i18n } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
   const [permission, requestPermission] = useCameraPermissions()
   // Only covers the moment between the shutter and the shot being on disk.
@@ -126,6 +157,23 @@ export function InlineCamera({
   const [capturing, setCapturing] = useState(false)
   const [facing, setFacing] = useState<'back' | 'front'>('back')
   const camera = useRef<CameraView>(null)
+  // As a multiple of the 1x lens, which is where the camera opens. The device's
+  // own ceiling is asked for once the camera is up and again at every pinch,
+  // since flipping cameras changes it.
+  const [zoom, setZoom] = useState(1)
+  // The device's whole range, which `zoomProp` needs as its base, and the part
+  // of it a pinch may use.
+  const [deviceZoom, setDeviceZoom] = useState(1)
+  const pinchFrom = useRef(1)
+  // The feed's own box, which is bigger than the viewfinder in meal mode (see
+  // `photoCropFill`). A tap is measured against it, so it is the box the focus
+  // point is a fraction of.
+  const feed = useRef({ width: 0, height: 0 })
+  // What the gestures read, as refs, so they can be built once rather than
+  // re-attached on every frame of a pinch.
+  const live = useRef({ zoom: 1, maxZoom: 1 })
+  live.current = { zoom, maxZoom: Math.min(MAX_ZOOM, deviceZoom) }
+  const [focusAt, setFocusAt] = useState<{ x: number; y: number; key: number } | null>(null)
   const scanning = mode === 'barcode'
   // Measured, because in fill mode the box is whatever the sheet has left and
   // the framing has to be sized against it. So is the header, which is a pill
@@ -165,6 +213,69 @@ export function InlineCamera({
   // dish illustration instead keeps the sheet reviewable without pretending a
   // feed exists.
   const hasCamera = Device.isDevice
+
+  // Stable, because the gestures below and `onCameraReady` both hold it.
+  const readZoomRange = useCallback(() => {
+    camera.current
+      ?.getMaxZoomRatioAsync()
+      .then((ratio) => setDeviceZoom(Math.max(1, ratio)))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!focusAt) return
+    const timer = setTimeout(() => setFocusAt(null), FOCUS_RING_MS)
+    return () => clearTimeout(timer)
+  }, [focusAt])
+
+  // The gestures sit on the feed, under the overlays: the framing and the band
+  // take no touches, and the header and the controls keep theirs.
+  const feedGesture = useMemo(() => {
+    const pinch = Gesture.Pinch()
+      .enabled(hasCamera)
+      .runOnJS(true)
+      .onStart(() => {
+        pinchFrom.current = live.current.zoom
+        readZoomRange()
+      })
+      // Hundredths, so a slow pinch does not re-render the camera and lock the
+      // device for a change nobody can see.
+      .onUpdate((event) =>
+        setZoom(
+          Math.round(clamp(pinchFrom.current * event.scale, 1, live.current.maxZoom) * 100) / 100,
+        ),
+      )
+      .onEnd(() => setZoom((current) => (current < ZOOMED_FROM ? 1 : current)))
+      .withTestId('camera-pinch')
+    const tap = Gesture.Tap()
+      .enabled(hasCamera)
+      .runOnJS(true)
+      .onEnd((event, success) => {
+        const { width, height } = feed.current
+        if (!success || !width || !height) return
+        camera.current?.focusAtPointAsync(event.x / width, event.y / height).catch(() => {})
+        setFocusAt({ x: event.x, y: event.y, key: Date.now() })
+      })
+      .withTestId('camera-tap')
+    return Gesture.Race(pinch, tap)
+  }, [readZoomRange])
+
+  // Barcode mode always uses the back camera, so the lens can change without
+  // the flip button. Each lens has its own range and starts at 1x. The range is
+  // forgotten rather than read here: a read sent now can reach the camera before
+  // it has switched and return the old lens's. The next pinch reads it.
+  const lens = scanning ? 'back' : facing
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the lens changes
+  useEffect(() => {
+    setZoom(1)
+    setDeviceZoom(1)
+  }, [lens])
+  const zoomed = zoom >= ZOOMED_FROM
+  const zoomFormat = useMemo(
+    () => new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }),
+    [i18n.language],
+  )
+  const zoomLabel = `${zoomFormat.format(zoom)}×`
 
   const capture = async () => {
     if (capturing) return
@@ -274,8 +385,9 @@ export function InlineCamera({
            See `photoCropFill` for why the shot is wider than the frame, and why
            the box is shared with the rows and screens that draw the photo back.
 
-           The camera's own `zoom` would drive the lens and take the photograph
-           with it, which is the opposite of what this is for. Both platforms
+           The camera's own `zoom` is the user's pinch, not this: it drives the
+           lens and takes the photograph with it, so it cannot be what keeps the
+           shot wider than the frame. Both platforms
            fill-centre their preview (`resizeAspectFill` on iOS, `FILL_CENTER`
            on Android), so a view laid out larger shows a proportionally tighter
            crop on either. If a preview is ever seen spilling outside the tile on
@@ -286,13 +398,26 @@ export function InlineCamera({
            keep wider than the frame, and a scanner should read what the user
            can see: cropping the preview would let a packet just off screen scan
            and hand back a product they never aimed at. */
-        <CameraView
-          ref={camera}
-          style={scanning ? { position: 'absolute', inset: 0 } : photoCropFill}
-          facing={scanning ? 'back' : facing}
-          barcodeScannerSettings={scanning ? { barcodeTypes: [...BARCODE_TYPES] } : undefined}
-          onBarcodeScanned={scanning ? ({ data }) => scanned(data) : undefined}
-        />
+        <GestureDetector gesture={feedGesture}>
+          <View
+            testID="camera-feed"
+            style={scanning ? { position: 'absolute', inset: 0 } : photoCropFill}
+            onLayout={(event) => {
+              feed.current = event.nativeEvent.layout
+            }}
+          >
+            <CameraView
+              ref={camera}
+              style={{ position: 'absolute', inset: 0 }}
+              facing={lens}
+              zoom={zoomProp(zoom, deviceZoom)}
+              onCameraReady={readZoomRange}
+              barcodeScannerSettings={scanning ? { barcodeTypes: [...BARCODE_TYPES] } : undefined}
+              onBarcodeScanned={scanning ? ({ data }) => scanned(data) : undefined}
+            />
+            {focusAt ? <FocusRing key={focusAt.key} x={focusAt.x} y={focusAt.y} /> : null}
+          </View>
+        </GestureDetector>
       ) : (
         // Lifted clear of the controls, so the illustration reads as the subject
         // of the frame rather than as something behind the shutter. The padding
@@ -335,13 +460,29 @@ export function InlineCamera({
         </View>
       ) : null}
 
-      {footnote && !scanning ? (
+      {(footnote && !scanning) || zoomed ? (
         <View
-          className="absolute inset-x-0 items-center"
+          className="absolute inset-x-0 items-center gap-2"
           style={{ bottom: controlsTop + 10 }}
-          pointerEvents="none"
+          pointerEvents="box-none"
         >
-          {footnote}
+          {/* Only while zoomed, and a tap goes back to 1x, the way the system
+              camera's zoom button does. */}
+          {zoomed ? (
+            <Pressable
+              className="rounded-full bg-inverse/70 px-3 py-1.5"
+              onPress={() => setZoom(1)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('logging:camera.resetZoom')}
+              accessibilityValue={{ text: zoomLabel }}
+            >
+              <Text variant="caption" className="text-on-inverse">
+                {zoomLabel}
+              </Text>
+            </Pressable>
+          ) : null}
+          {footnote && !scanning ? <View pointerEvents="none">{footnote}</View> : null}
         </View>
       ) : null}
 
@@ -399,6 +540,26 @@ export function InlineCamera({
         </View>
       )}
     </View>
+  )
+}
+
+/** Where a tap asked the camera to focus. Takes no touches. */
+const FOCUS_RING = 72
+
+function FocusRing({ x, y }: { x: number; y: number }) {
+  return (
+    <Animated.View
+      entering={ZoomIn.duration(160)}
+      exiting={FadeOut.duration(200)}
+      pointerEvents="none"
+      className="absolute rounded-xl border-2 border-surface/90"
+      style={{
+        left: x - FOCUS_RING / 2,
+        top: y - FOCUS_RING / 2,
+        width: FOCUS_RING,
+        height: FOCUS_RING,
+      }}
+    />
   )
 }
 

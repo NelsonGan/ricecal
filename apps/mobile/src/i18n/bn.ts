@@ -749,6 +749,7 @@ export const bn = {
       shutter: 'ছবি তুলুন',
       library: 'ছবি থেকে বাছুন',
       flip: 'ক্যামেরা বদলান',
+      resetZoom: 'জুম রিসেট করুন',
       photoOf: '{{food}} এর ছবি',
     },
 
