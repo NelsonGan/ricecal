@@ -782,6 +782,7 @@ export const fil = {
       shutter: 'Kumuha ng litrato',
       library: 'Pumili mula sa mga litrato',
       flip: 'Baligtarin ang camera',
+      resetZoom: 'I-reset ang zoom',
       photoOf: 'Litrato ng {{food}}',
     },
 

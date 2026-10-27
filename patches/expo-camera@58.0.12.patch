@@ -1,0 +1,268 @@
+diff --git a/android/src/main/java/expo/modules/camera/CameraViewModule.kt b/android/src/main/java/expo/modules/camera/CameraViewModule.kt
+index 62a1808a102174538f45599dc7e246d60e28d453..52d32cb493d590b96bc40cc2689b79555182facd 100644
+--- a/android/src/main/java/expo/modules/camera/CameraViewModule.kt
++++ b/android/src/main/java/expo/modules/camera/CameraViewModule.kt
+@@ -528,6 +528,15 @@ class CameraViewModule : Module() {
+       AsyncFunction("pausePreview") { view: ExpoCameraView ->
+         view.pausePreview()
+       }
++
++      // Patched (RiceCal): tap to focus, and the zoom range for pinch to zoom.
++      AsyncFunction("focusAtPoint") { view: ExpoCameraView, x: Float, y: Float ->
++        view.focusAtPoint(x, y)
++      }.runOnQueue(Queues.MAIN)
++
++      AsyncFunction("getMaxZoomRatio") { view: ExpoCameraView ->
++        return@AsyncFunction view.getMaxZoomRatio()
++      }.runOnQueue(Queues.MAIN)
+     }
+   }
+ 
+diff --git a/android/src/main/java/expo/modules/camera/ExpoCameraView.kt b/android/src/main/java/expo/modules/camera/ExpoCameraView.kt
+index a676d64e853b96fc838ea27165cf265929df91a1..e02ddab0055e893de0aa4643dbd8dd36ecb97d67 100644
+--- a/android/src/main/java/expo/modules/camera/ExpoCameraView.kt
++++ b/android/src/main/java/expo/modules/camera/ExpoCameraView.kt
+@@ -679,6 +679,23 @@ class ExpoCameraView(
+     }
+   }
+ 
++  // Patched (RiceCal): `x` and `y` are fractions of the preview. CameraX goes back to continuous
++  // focus once the metering action is cancelled, five seconds on.
++  fun focusAtPoint(x: Float, y: Float) {
++    val control = camera?.cameraControl ?: return
++    val point = previewView.meteringPointFactory.createPoint(
++      x.coerceIn(0f, 1f) * previewView.width,
++      y.coerceIn(0f, 1f) * previewView.height
++    )
++    val action = FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE)
++      .setAutoCancelDuration(5, java.util.concurrent.TimeUnit.SECONDS)
++      .build()
++    control.startFocusAndMetering(action)
++  }
++
++  // Patched (RiceCal): `zoom` is linear on Android, `zoom * maxZoomRatio` floored at 1.
++  fun getMaxZoomRatio(): Float = camera?.cameraInfo?.zoomState?.value?.maxZoomRatio ?: 1f
++
+   private fun setCameraZoom(value: Float) {
+     val maxZoomRatio = camera?.cameraInfo?.zoomState?.value?.maxZoomRatio ?: 1f
+     val targetZoomRatio = max(1f, min(maxZoomRatio, value.coerceIn(0f, 1f) * maxZoomRatio))
+diff --git a/build/Camera.types.d.ts b/build/Camera.types.d.ts
+index 0be9079729dcb4b2f4f8cc179b1e8a9aba77ae47..6fafe7daa789f729e6065b4f2d71491396cc27de 100644
+--- a/build/Camera.types.d.ts
++++ b/build/Camera.types.d.ts
+@@ -545,6 +545,8 @@ export interface CameraViewRef {
+     readonly takePictureRef?: (options: CameraPictureOptions) => Promise<PictureRef>;
+     readonly getAvailablePictureSizes: () => Promise<string[]>;
+     readonly getAvailableLenses: () => Promise<LensInfo[]>;
++    readonly focusAtPoint: (x: number, y: number) => Promise<void>;
++    readonly getMaxZoomRatio: () => Promise<number>;
+     readonly record: (options?: CameraRecordingOptions) => Promise<{
+         uri: string;
+     }>;
+diff --git a/build/CameraView.d.ts b/build/CameraView.d.ts
+index 11144cc15076e954168b1b13280331e1e297c08e..7589553e1c689769702859e82e745bb43e672416 100644
+--- a/build/CameraView.d.ts
++++ b/build/CameraView.d.ts
+@@ -40,6 +40,15 @@ export default class CameraView extends Component<CameraViewProps> {
+      * @platform ios
+      */
+     getAvailableLensesAsync(): Promise<LensInfo[]>;
++    /**
++     * Patched (RiceCal): focus and expose at a point given as fractions (0 to 1) of the view.
++     */
++    focusAtPointAsync(x: number, y: number): Promise<void>;
++    /**
++     * Patched (RiceCal): how far `zoom` 1 reaches, as a multiple of `zoom` 0. `zoom` is exponential
++     * between them on iOS and linear on Android.
++     */
++    getMaxZoomRatioAsync(): Promise<number>;
+     /**
+      * Returns an object with the supported features of the camera on the current device.
+      */
+diff --git a/build/CameraView.js b/build/CameraView.js
+index f00bbe0a474d6e6d364abcba3f0d2e32afc20e06..31f5d62fd7d1864993a24bb6fbaf518af3f7227b 100644
+--- a/build/CameraView.js
++++ b/build/CameraView.js
+@@ -88,6 +88,17 @@ export default class CameraView extends Component {
+         return await this._cameraRef.current?.getAvailableLenses() ?? [];
+     }
+     /**
++   * Patched (RiceCal): focus and expose at a point given as fractions (0 to 1) of the view.
++   */ async focusAtPointAsync(x, y) {
++        await this._cameraRef.current?.focusAtPoint(x, y);
++    }
++    /**
++   * Patched (RiceCal): how far `zoom` 1 reaches, as a multiple of `zoom` 0. `zoom` is exponential
++   * between them on iOS and linear on Android.
++   */ async getMaxZoomRatioAsync() {
++        return await this._cameraRef.current?.getMaxZoomRatio() ?? 1;
++    }
++    /**
+    * Returns an object with the supported features of the camera on the current device.
+    */ getSupportedFeatures() {
+         return {
+diff --git a/ios/CameraViewModule.swift b/ios/CameraViewModule.swift
+index 51baba655952d7fd07607bd08e96b0027734da80..32680d166e3f35fb28758105506ed8d510cfe3cd 100644
+--- a/ios/CameraViewModule.swift
++++ b/ios/CameraViewModule.swift
+@@ -260,6 +260,15 @@ public final class CameraViewModule: Module, ScannerResultHandler {
+         view.getAvailableLenses()
+       }
+ 
++      // Patched (RiceCal): tap to focus, and the zoom range for pinch to zoom.
++      AsyncFunction("focusAtPoint") { (view: CameraView, x: Double, y: Double) in
++        view.focus(atX: x, y: y)
++      }.runOnQueue(.main)
++
++      AsyncFunction("getMaxZoomRatio") { (view: CameraView, promise: Promise) in
++        view.maxZoomRatio { promise.resolve($0) }
++      }
++
+       AsyncFunction("takePictureRef") { (view, options: TakePictureOptions) -> PictureRef in
+         #if targetEnvironment(simulator)
+         if AVCaptureDevice.default(for: .video) == nil {
+diff --git a/ios/Current/CameraSessionManager.swift b/ios/Current/CameraSessionManager.swift
+index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..704303364f45dca61911ef7fe903316bd7cbebcb 100644
+--- a/ios/Current/CameraSessionManager.swift
++++ b/ios/Current/CameraSessionManager.swift
+@@ -218,7 +218,81 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+     do {
+       try device.lockForConfiguration()
+       defer { device.unlockForConfiguration() }
+-      device.videoZoomFactor = minZoomFactor * pow(device.activeFormat.videoMaxZoomFactor / minZoomFactor, delegate.zoom)
++      let target = minZoomFactor * pow(device.activeFormat.videoMaxZoomFactor / minZoomFactor, delegate.zoom)
++      // Patched (RiceCal): clamped, because a factor outside the available range raises.
++      device.videoZoomFactor = max(device.minAvailableVideoZoomFactor, min(target, device.maxAvailableVideoZoomFactor))
++    } catch {
++      log.info("\(#function): \(error.localizedDescription)")
++    }
++  }
++
++  // Patched (RiceCal): how many times wider than `zoom` 0 the frame is at `zoom` 1. `zoom` is
++  // exponential between the two, so a caller can turn a pinch scale into a `zoom` value.
++  func maxZoomRatio() -> Double {
++    guard let device = captureDeviceInput?.device else {
++      return 1
++    }
++    return Double(device.activeFormat.videoMaxZoomFactor / minZoomFactor)
++  }
++
++  // Patched (RiceCal): focus and expose at a point in device coordinates (0...1, landscape),
++  // then go back to continuous focus at the centre once the scene changes, as the Camera app does.
++  func focus(at devicePoint: CGPoint) {
++    guard let device = captureDeviceInput?.device else {
++      return
++    }
++    do {
++      try device.lockForConfiguration()
++      defer { device.unlockForConfiguration() }
++      if device.isFocusPointOfInterestSupported, device.isFocusModeSupported(.autoFocus) {
++        device.focusPointOfInterest = devicePoint
++        device.focusMode = .autoFocus
++      }
++      if device.isExposurePointOfInterestSupported, device.isExposureModeSupported(.continuousAutoExposure) {
++        device.exposurePointOfInterest = devicePoint
++        device.exposureMode = .continuousAutoExposure
++      }
++      device.isSubjectAreaChangeMonitoringEnabled = true
++    } catch {
++      log.info("\(#function): \(error.localizedDescription)")
++    }
++    observeSubjectAreaChange(device)
++  }
++
++  private var subjectAreaObserver: NSObjectProtocol?
++
++  private func observeSubjectAreaChange(_ device: AVCaptureDevice) {
++    if let subjectAreaObserver {
++      NotificationCenter.default.removeObserver(subjectAreaObserver)
++    }
++    subjectAreaObserver = NotificationCenter.default.addObserver(
++      forName: AVCaptureDevice.subjectAreaDidChangeNotification,
++      object: device,
++      queue: nil
++    ) { [weak self] _ in
++      guard let self, let queue = self.delegate?.sessionQueue else {
++        return
++      }
++      queue.async {
++        self.resetFocus(device)
++      }
++    }
++  }
++
++  private func resetFocus(_ device: AVCaptureDevice) {
++    let centre = CGPoint(x: 0.5, y: 0.5)
++    do {
++      try device.lockForConfiguration()
++      defer { device.unlockForConfiguration() }
++      if device.isFocusPointOfInterestSupported, device.isFocusModeSupported(.continuousAutoFocus) {
++        device.focusPointOfInterest = centre
++        device.focusMode = .continuousAutoFocus
++      }
++      if device.isExposurePointOfInterestSupported, device.isExposureModeSupported(.continuousAutoExposure) {
++        device.exposurePointOfInterest = centre
++        device.exposureMode = .continuousAutoExposure
++      }
++      device.isSubjectAreaChangeMonitoringEnabled = false
+     } catch {
+       log.info("\(#function): \(error.localizedDescription)")
+     }
+@@ -323,6 +397,9 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+ 
+   deinit {
+     runtimeErrorTask?.cancel()
++    if let subjectAreaObserver {
++      NotificationCenter.default.removeObserver(subjectAreaObserver)
++    }
+   }
+ 
+   var currentPhotoOutput: AVCapturePhotoOutput? { photoOutput }
+@@ -355,6 +432,9 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+     session.beginConfiguration()
+     defer {
+       session.commitConfiguration()
++      // Patched (RiceCal): see `startSession`. A device added to a configured session gets its
++      // format on commit, which resets the zoom set inside the configuration.
++      updateZoom()
+       delegate.emitAvailableLenses()
+       delegate.configurePreviewRotation()
+     }
+@@ -428,6 +508,10 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+     configureResponsiveCapture(photoOutput)
+ 
+     session.commitConfiguration()
++    // Patched (RiceCal): committing the preset changes the device's active format, which resets
++    // videoZoomFactor to 1.0. On a virtual back camera 1.0 is the ultra-wide, so without this the
++    // preview opens at 0.5x while `zoom` still reads 0.
++    updateZoom()
+     addErrorNotification()
+     delegate.configurePreviewRotation()
+     delegate.barcodeScanner?.maybeStartBarcodeScanning()
+diff --git a/ios/Current/CameraView.swift b/ios/Current/CameraView.swift
+index 4fcefeaf556e8a411b0f20112249b9c5a4ad862e..531b1d361352b065d27e46c8c29c144b48524115 100644
+--- a/ios/Current/CameraView.swift
++++ b/ios/Current/CameraView.swift
+@@ -262,6 +262,22 @@ public class CameraView: ExpoView, EXAppLifecycleListener, EXCameraInterface, Ca
+     return sessionManager.getAvailableLenses()
+   }
+ 
++  // Patched (RiceCal): `x` and `y` are fractions of this view. The preview layer converts them to
++  // the sensor's coordinates, which accounts for rotation and the aspect-fill crop.
++  func focus(atX x: Double, y: Double) {
++    let layerPoint = CGPoint(x: x * bounds.width, y: y * bounds.height)
++    let devicePoint = previewLayer.captureDevicePointConverted(fromLayerPoint: layerPoint)
++    sessionQueue.async {
++      self.sessionManager.focus(at: devicePoint)
++    }
++  }
++
++  func maxZoomRatio(_ completion: @escaping (Double) -> Void) {
++    sessionQueue.async {
++      completion(self.sessionManager.maxZoomRatio())
++    }
++  }
++
+   func updateResponsiveOrientation() {
+     if responsiveWhenOrientationLocked {
+       motionManager.startAccelerometerUpdates(to: OperationQueue()) { [weak self] _, error in

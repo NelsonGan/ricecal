@@ -57,7 +57,8 @@
       "workerd"
     ],
     "patchedDependencies": {
-      "@shopify/react-native-skia@2.14.0": "patches/@shopify__react-native-skia@2.14.0.patch"
+      "@shopify/react-native-skia@2.14.0": "patches/@shopify__react-native-skia@2.14.0.patch",
+      "expo-camera@58.0.12": "patches/expo-camera@58.0.12.patch"
     }
   },
   "devDependencies": {

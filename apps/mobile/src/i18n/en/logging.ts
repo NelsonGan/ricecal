@@ -212,6 +212,8 @@ export const logging = {
     shutter: 'Take a photo',
     library: 'Choose from photos',
     flip: 'Flip camera',
+    /** The zoom chip, which shows the zoom and goes back to 1x when tapped. */
+    resetZoom: 'Reset zoom',
     /** Alt text on a logged entry's photo. */
     photoOf: 'Photo of {{food}}',
   },

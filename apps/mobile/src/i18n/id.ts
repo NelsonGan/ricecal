@@ -772,6 +772,7 @@ export const id = {
       shutter: 'Ambil foto',
       library: 'Pilih dari galeri',
       flip: 'Balik kamera',
+      resetZoom: 'Atur ulang zoom',
       photoOf: 'Foto {{food}}',
     },
 

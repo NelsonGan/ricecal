@@ -93,5 +93,12 @@
     "tailwindcss": "^3.4.19",
     "test-renderer": "^1.2.0",
     "typescript": "~6.0.3"
+  },
+  "expo": {
+    "autolinking": {
+      "buildFromSource": [
+        "expo-camera"
+      ]
+    }
   }
 }
