@@ -103,7 +103,7 @@ function toDay(row: Tables<'activity_days'>): ActivityDay {
 const writer = (provider: ProviderId, name: string | null): string | null =>
   provider === 'health_connect' ? sourceLabel(name) : name
 
-function toSession(row: Tables<'activity_sessions'>): ActivitySession {
+export function toSession(row: Tables<'activity_sessions'>): ActivitySession {
   return {
     id: row.id,
     provider: row.provider,

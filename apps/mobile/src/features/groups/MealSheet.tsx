@@ -1,9 +1,10 @@
 import { format, parseISO } from 'date-fns'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import Animated, {
   Easing,
+  LinearTransition,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -70,10 +71,50 @@ export function MealSheet({
 
 /** Carbs, protein and fat, in the order and colours every chart in the app uses. */
 const MACROS = [
-  { key: 'carbs_g', label: 'common:macro.carbs', chip: 'bg-kaya-soft', dot: 'bg-kaya' },
-  { key: 'protein_g', label: 'common:macro.protein', chip: 'bg-hibiscus-soft', dot: 'bg-hibiscus' },
-  { key: 'fat_g', label: 'common:macro.fat', chip: 'bg-teh-soft', dot: 'bg-teh' },
+  { key: 'carbs_g', label: 'macro.carbs', chip: 'bg-kaya-soft', dot: 'bg-kaya' },
+  { key: 'protein_g', label: 'macro.protein', chip: 'bg-hibiscus-soft', dot: 'bg-hibiscus' },
+  { key: 'fat_g', label: 'macro.fat', chip: 'bg-teh-soft', dot: 'bg-teh' },
 ] as const
+
+/** A food's three macros as soft chips, as the meal sheet and a chat food card draw them. */
+export function MacroChips({
+  food,
+  compact = false,
+}: {
+  food: Record<(typeof MACROS)[number]['key'], number>
+  /** Narrower, for a chat card a bubble wide. */
+  compact?: boolean
+}) {
+  const { t } = useTranslation('common')
+  const size = compact ? 'text-[12px] leading-[16px]' : 'text-[13px] leading-[17px]'
+  return (
+    <View className={cn('flex-row', compact ? 'gap-1' : 'gap-2')}>
+      {MACROS.map((macro) => (
+        <View
+          key={macro.key}
+          className={cn(
+            'min-w-0 flex-1 flex-row items-center justify-center rounded-full py-1.5',
+            compact ? 'gap-1 px-1.5' : 'gap-1.5 px-2',
+            macro.chip,
+          )}
+        >
+          <View className={cn('h-2 w-2 rounded-full', macro.dot)} />
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+            className={cn('shrink font-body-bold text-body', size)}
+          >
+            {t(macro.label)}{' '}
+            <Text className={cn('font-body-black text-ink', size)}>
+              {t('unit.grams', { value: Math.round(food[macro.key]) })}
+            </Text>
+          </Text>
+        </View>
+      ))}
+    </View>
+  )
+}
 
 function EntryRow({
   entry,
@@ -92,17 +133,46 @@ function EntryRow({
     if (next !== 0) track('Group Reaction Set', { reaction: next === 1 ? 'like' : 'dislike' })
   }
   const meals = GROUP_MEALS.map((meal) => ({ value: meal, label: t(`common:meal.${meal}`) }))
+  // A photo opens to the card's full width, so a friend's plate can be seen
+  // rather than guessed at from a thumbnail; the figures stay under it. A
+  // drawing is the same drawing at any size, so it does not open.
+  const [expanded, setExpanded] = useState(false)
+  const canExpand = Boolean(entry.photo_path)
   return (
-    <View className="gap-3 rounded-tile border border-line bg-surface p-3">
-      <View className="flex-row gap-3">
-        <View
-          className={cn(
-            'h-[72px] w-[72px] overflow-hidden rounded-[14px]',
-            !entry.photo_path && MEAL_TINT[entry.meal],
-          )}
+    <Animated.View
+      layout={LinearTransition.duration(220)}
+      className="gap-3 rounded-tile border border-line bg-surface p-3"
+    >
+      {expanded ? (
+        <Tappable
+          haptics={false}
+          onPress={() => setExpanded(false)}
+          accessibilityRole="button"
+          accessibilityLabel={t('shrinkPhoto')}
+          className="aspect-square w-full overflow-hidden rounded-[14px]"
         >
-          <EntryPicture entry={entry} ownerId={ownerId} iconSize={44} />
-        </View>
+          <EntryPicture entry={entry} ownerId={ownerId} iconSize={120} />
+          <View className="absolute right-2 top-2 h-9 w-9 items-center justify-center rounded-full bg-surface/90">
+            <Icon set="ui" name="chevron-up" size={18} />
+          </View>
+        </Tappable>
+      ) : null}
+      <View className="flex-row gap-3">
+        {expanded ? null : (
+          <Tappable
+            haptics={false}
+            disabled={!canExpand}
+            onPress={() => setExpanded(true)}
+            accessibilityRole={canExpand ? 'button' : undefined}
+            accessibilityLabel={canExpand ? t('enlargePhoto') : undefined}
+            className={cn(
+              'h-[72px] w-[72px] overflow-hidden rounded-[14px]',
+              !entry.photo_path && MEAL_TINT[entry.meal],
+            )}
+          >
+            <EntryPicture entry={entry} ownerId={ownerId} iconSize={44} />
+          </Tappable>
+        )}
         <View className="min-w-0 flex-1 gap-0.5">
           <Text variant="label" numberOfLines={2}>
             {entry.name}
@@ -145,30 +215,7 @@ function EntryRow({
           </View>
         </View>
       </View>
-      <View className="flex-row gap-2">
-        {MACROS.map((macro) => (
-          <View
-            key={macro.key}
-            className={cn(
-              'min-w-0 flex-1 flex-row items-center justify-center gap-1.5 rounded-full px-2 py-1.5',
-              macro.chip,
-            )}
-          >
-            <View className={cn('h-2 w-2 rounded-full', macro.dot)} />
-            <Text
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-              className="shrink font-body-bold text-[13px] leading-[17px] text-body"
-            >
-              {t(macro.label)}{' '}
-              <Text className="font-body-black text-[13px] leading-[17px] text-ink">
-                {t('common:unit.grams', { value: Math.round(entry[macro.key]) })}
-              </Text>
-            </Text>
-          </View>
-        ))}
-      </View>
+      <MacroChips food={entry} />
       {isSelf ? (
         // No "Move to" label: the meal it is in is the raised segment, and the
         // others are where it can go. A screen reader still hears the label.
@@ -182,7 +229,7 @@ function EntryRow({
           size="sm"
         />
       ) : null}
-    </View>
+    </Animated.View>
   )
 }
 

@@ -158,11 +158,11 @@ select is(
 
 reset role;
 
--- 'b' rather than '': with no name from the provider, handle_new_user falls
--- back to the local part of b@example.test.
+-- 'B' rather than '': with no name from the provider, handle_new_user falls
+-- back to the local part of b@example.test, capitalised as a name.
 select is(
   (select display_name from public.profiles where id = :'user_b'),
-  'b',
+  'B',
   'and the row it aimed at is genuinely unchanged'
 );
 

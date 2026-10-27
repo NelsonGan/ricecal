@@ -21,21 +21,41 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  v_name text := coalesce(
+    nullif(new.raw_user_meta_data ->> 'full_name', ''),
+    nullif(new.raw_user_meta_data ->> 'name', ''));
+  v_local text;
+  v_base text;
+  v_handle text;
 begin
   -- Whatever the identity provider told us. Apple gives a name on the first
-  -- sign-in only, Google gives one every time, email/password gives none — so
-  -- the local part of the address is the last resort before an empty string,
-  -- which the onboarding name step then fills in.
-  insert into public.profiles (id, display_name)
-  values (
-    new.id,
-    coalesce(
-      nullif(new.raw_user_meta_data ->> 'full_name', ''),
-      nullif(new.raw_user_meta_data ->> 'name', ''),
-      nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
-      ''
-    )
-  )
+  -- sign-in only, Google gives one every time, email/password gives none.
+  -- Without one, the address's local part is made into a name ("nelson.gan"
+  -- becomes "Nelson Gan"), and the handle gets four random characters after
+  -- it, since a handle that was exactly the local part published the address.
+  -- Anything after a "+" is dropped from both. An empty name is filled in by
+  -- the onboarding name step.
+  if v_name is null then
+    v_local := split_part(split_part(coalesce(new.email, ''), '@', 1), '+', 1);
+    v_name := btrim(initcap(regexp_replace(v_local, '[._+-]+', ' ', 'g')));
+    v_base := lower(extensions.unaccent('extensions.unaccent'::regdictionary, v_local));
+    v_base := regexp_replace(v_base, '[^a-z0-9.]+', '.', 'g');
+    v_base := trim(both '.' from regexp_replace(v_base, '[.]+', '.', 'g'));
+    v_base := trim(both '.' from left(v_base, 19));
+    if char_length(v_base) < 3 then v_base := 'user'; end if;
+    -- 36^4 suffixes; asked again on the rare one already taken.
+    loop
+      v_handle := v_base || '.' || (
+        select string_agg(substr('abcdefghijklmnopqrstuvwxyz0123456789', 1 + floor(random() * 36)::int, 1), '')
+        from generate_series(1, 4));
+      perform pg_advisory_xact_lock(hashtextextended('profile.handle:' || v_handle, 0));
+      exit when not exists (select 1 from public.profiles p where p.handle = v_handle);
+    end loop;
+  end if;
+
+  insert into public.profiles (id, display_name, handle)
+  values (new.id, coalesce(v_name, ''), v_handle)
   on conflict (id) do nothing;
 
   insert into public.user_settings (user_id)
