@@ -3298,8 +3298,9 @@ meal share a tile and swipe sideways inside it.
   if the workout ended in the last day, so a sync backfilling months of runs
   shares none of them; demo data never is, nor the Apple Health copy of a logger
   workout. The + has a Workouts tab beside Food with the last five of both,
-  listed once. A tap on a workout card opens it (a single tap that waits out the
-  double tap, so tapping twice still hearts it).
+  listed once. A tap on a workout card opens it straight away, dimming under the
+  finger like a button; a workout card has no double-tap heart, so the tap need
+  not wait to rule one out, and its reactions are in the long-press menu.
 - **Release 1.0 still reads every message.** `body` stays required and a food
   message's body is its name and calories ("Nasi lemak (640 kcal)"), which is
   also what its push says, so an app that knows nothing of food cards draws a

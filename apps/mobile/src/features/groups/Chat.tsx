@@ -844,6 +844,7 @@ function useWorkoutName() {
  */
 function WorkoutCard({ workout }: { workout: ChatWorkout }) {
   const { t } = useTranslation(['groups', 'common'])
+  const colors = useThemeColors()
   const { width } = useWindowDimensions()
   const name = useWorkoutName()(workout)
   const cardWidth = Math.min(280, Math.round(width * 0.7))
@@ -882,6 +883,8 @@ function WorkoutCard({ workout }: { workout: ChatWorkout }) {
             {postedAt(workout.started_at, t('common:date.today'), t('common:date.yesterday'))}
           </Text>
         </View>
+        {/* It opens: the same chevron a row that goes somewhere wears. */}
+        <Icon set="ui" name="chevron-right" size={16} tintColor={colors.muted} />
       </View>
       <View className="flex-row py-3">
         {stats.map((stat, index) => (
@@ -1068,17 +1071,30 @@ function MessageGestures({
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
       onMenu(message)
     })
-  // A single tap only once a double tap and a hold have both been ruled out,
-  // so tapping twice hearts a workout card rather than opening it.
+  // A card that opens something (a workout) answers a plain tap at once, dimmed
+  // under the finger like any button, so it reads as one. Waiting out a double
+  // tap made it feel dead; its heart is in the long-press menu instead.
+  const pressed = useSharedValue(0)
   const singleTap = Gesture.Tap()
     .enabled(Boolean(onOpen))
-    .runOnJS(true)
-    .onEnd((_event, success) => {
-      if (success) onOpen?.()
+    .onBegin(() => {
+      pressed.value = withTiming(1, { duration: 80 })
     })
-  const gesture = Gesture.Race(pan, Gesture.Exclusive(doubleTap, longPress, singleTap))
+    .onFinalize(() => {
+      pressed.value = withTiming(0, { duration: 160 })
+    })
+    .onEnd((_event, success) => {
+      if (success && onOpen) runOnJS(onOpen)()
+    })
+  const gesture = Gesture.Race(
+    pan,
+    onOpen ? Gesture.Exclusive(longPress, singleTap) : Gesture.Exclusive(doubleTap, longPress),
+  )
 
-  const moving = useAnimatedStyle(() => ({ transform: [{ translateX: shift.value }] }))
+  const moving = useAnimatedStyle(() => ({
+    transform: [{ translateX: shift.value }],
+    opacity: 1 - pressed.value * 0.3,
+  }))
   const arrow = useAnimatedStyle(() => ({
     opacity: interpolate(shift.value, [12, REPLY_AT], [0, 1], 'clamp'),
     transform: [{ scale: interpolate(shift.value, [12, REPLY_AT], [0.6, 1], 'clamp') }],
