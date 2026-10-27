@@ -78,13 +78,26 @@ const LABEL = 'production'
  * about five times as many at a 5 minute refresh.
  */
 const CACHE_TTL_MS = 30 * 60 * 1000
-/** After a failed refresh, keep what we have for a minute before asking again. */
+/** After a failed fetch, keep what we have (or the code's copy) for a minute before asking again. */
 const RETRY_AFTER_FAILURE_MS = 60 * 1000
-/** Taken from the scan's own time, so it is short. */
-const FETCH_TIMEOUT_MS = 1500
+/**
+ * Taken from the scan's own time, and at most once a minute per prompt (see
+ * `missedUntil`). PostHog is in the US and the functions are not: a cold
+ * request took about a second, mostly the connection, so 1.5 s timed out often
+ * enough to serve the code's copy at random.
+ */
+const FETCH_TIMEOUT_MS = 3000
 
 type Cached = { template: string; version: number; fetchedAt: number; retryAt: number }
 const cache = new Map<PromptName, Cached>()
+/**
+ * When a prompt with nothing cached last failed, and so when to ask again.
+ * Without it, an unlabelled prompt or a PostHog outage made every call wait
+ * for its own failed fetch, up to the timeout, before sending the code's copy.
+ */
+const missedUntil = new Map<PromptName, number>()
+/** A fetch already on its way, shared by calls that start while it is out. */
+const inFlight = new Map<PromptName, Promise<{ template: string; version: number } | null>>()
 
 async function fetchPrompt(
   name: PromptName,
@@ -93,9 +106,7 @@ async function fetchPrompt(
   if (!key) return null
   try {
     const res = await fetch(
-      `${APP_HOST}/api/projects/${PROJECT_ID}/llm_prompts/name/${encodeURIComponent(
-        name,
-      )}/?label=${LABEL}`,
+      `${APP_HOST}/api/projects/${PROJECT_ID}/llm_prompts/name/${encodeURIComponent(name)}/?label=${LABEL}`,
       {
         headers: { Authorization: `Bearer ${key}` },
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -107,22 +118,31 @@ async function fetchPrompt(
       return null
     }
     const body = (await res.json()) as { prompt?: unknown; version?: unknown }
+    // An answer with no version is not used: every generation it served would
+    // name a version nobody can open.
     if (typeof body.prompt !== 'string' || !body.prompt.trim()) return null
-    return { template: body.prompt, version: typeof body.version === 'number' ? body.version : 0 }
+    if (typeof body.version !== 'number') return null
+    return { template: body.prompt, version: body.version }
   } catch (error) {
-    console.error(
-      `[prompts] ${name}: ${
-        error instanceof Error ? error.message : String(error)
-      }, using the bundled copy`,
-    )
+    const reason = error instanceof Error ? error.message : String(error)
+    console.error(`[prompts] ${name}: ${reason}, using the bundled copy`)
     return null
   }
+}
+
+function fetchShared(name: PromptName) {
+  const pending = inFlight.get(name)
+  if (pending) return pending
+  const started = fetchPrompt(name).finally(() => inFlight.delete(name))
+  inFlight.set(name, started)
+  return started
 }
 
 /**
  * The template for one part: PostHog's `production` version, cached for 30
  * minutes, kept while a refresh fails, and the code's copy when PostHog has
- * never answered this isolate.
+ * not answered this isolate. A failure is not retried for a minute, whether or
+ * not anything was cached.
  */
 async function resolvePart(
   part: PromptPart,
@@ -133,20 +153,27 @@ async function resolvePart(
     text: render(c.template),
     prompt: { name: part.name, version: c.version, source: 'posthog' as const },
   })
+  const bundled = {
+    text: part.bundled,
+    prompt: { name: part.name, version: null, source: 'bundled' as const },
+  }
   if (cached && (now - cached.fetchedAt < CACHE_TTL_MS || now < cached.retryAt)) {
     return fromCache(cached)
   }
-  const fetched = await fetchPrompt(part.name)
+  if (!cached && now < (missedUntil.get(part.name) ?? 0)) return bundled
+  const fetched = await fetchShared(part.name)
   if (fetched) {
     const fresh = { ...fetched, fetchedAt: now, retryAt: 0 }
     cache.set(part.name, fresh)
+    missedUntil.delete(part.name)
     return fromCache(fresh)
   }
   if (cached) {
     cached.retryAt = now + RETRY_AFTER_FAILURE_MS
     return fromCache(cached)
   }
-  return { text: part.bundled, prompt: { name: part.name, version: null, source: 'bundled' } }
+  missedUntil.set(part.name, now + RETRY_AFTER_FAILURE_MS)
+  return bundled
 }
 
 /** The system prompt as text, and which version of each part it was. */
@@ -161,4 +188,6 @@ export async function resolveSystem(
 /** Test hook: forget every cached prompt. */
 export function clearPromptCache(): void {
   cache.clear()
+  missedUntil.clear()
+  inFlight.clear()
 }

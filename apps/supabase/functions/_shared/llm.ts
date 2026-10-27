@@ -1586,9 +1586,7 @@ export async function pickCandidate(
           candidates
             .map(
               (c, i) =>
-                `${i}. ${c.name}${c.brand ? ` (${c.brand})` : ''} — ${c.kcal} kcal per ${
-                  c.serving_label ?? 'serving'
-                }`,
+                `${i}. ${c.name}${c.brand ? ` (${c.brand})` : ''} — ${c.kcal} kcal per ${c.serving_label ?? 'serving'}`,
             )
             .join('\n'),
       },
@@ -1631,9 +1629,8 @@ export async function estimateNutrition(
   meter: Meter,
 ): Promise<Nutrition> {
   if (mockActive()) {
-    if (mock?.fail === 'all' || mock?.fail === 'nutrition') {
+    if (mock?.fail === 'all' || mock?.fail === 'nutrition')
       throw new Error('mocked nutrition failure')
-    }
     if (mock?.nutrition === 'invalid') {
       // Atwater-inconsistent on purpose, so tests can exercise the reject path.
       return {
@@ -1674,18 +1671,14 @@ export async function estimateNutrition(
           `${item.count > 1 ? `${item.count} × ` : ''}${item.name}` +
           `, portion: ${item.serving_hint ?? '1 serving'}` +
           (item.grams
-            ? `, about ${item.grams} g${
-                item.count > 1 ? ' each' : item.count < 1 ? ' for the whole plate' : ''
-              }`
+            ? `, about ${item.grams} g${item.count > 1 ? ' each' : item.count < 1 ? ' for the whole plate' : ''}`
             : '') +
           '.' +
           // A share of the plate ("we shared it"). Everything around it describes
           // the whole plate, weights and parts both, so without saying so the
           // estimate priced all of it.
           (item.count < 1
-            ? ` The weight and the parts are for the whole plate, and the portion above is ${Math.round(
-                item.count * 100,
-              )}% of it: price that share once.`
+            ? ` The weight and the parts are for the whole plate, and the portion above is ${Math.round(item.count * 100)}% of it: price that share once.`
             : '') +
           // The visible parts pin the estimate to the actual plate: "nasi
           // campur" alone could be anything.
@@ -1699,9 +1692,7 @@ export async function estimateNutrition(
             ? ` Contains: ${item.components
                 .map(
                   (c) =>
-                    `${c.count > 1 ? `${c.count} × ` : ''}${c.name}${
-                      c.grams ? ` (${c.grams} g each)` : ''
-                    }`,
+                    `${c.count > 1 ? `${c.count} × ` : ''}${c.name}${c.grams ? ` (${c.grams} g each)` : ''}`,
                 )
                 .join(', ')}.`
             : ''),
@@ -1962,9 +1953,8 @@ export async function interpretInstruction(
   meter: Meter,
 ): Promise<Interpretation> {
   if (mockActive()) {
-    if (mock?.fail === 'all' || mock?.fail === 'interpret') {
+    if (mock?.fail === 'all' || mock?.fail === 'interpret')
       throw new Error('mocked interpret failure')
-    }
     if (mock?.interpret) return shapeInterpretation(mock.interpret)
     // Crude defaults so the flow is walkable offline: portion words become
     // factors, add and remove words become small deltas, anything else

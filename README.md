@@ -6672,11 +6672,13 @@ without a deploy.
 
 - `_shared/prompts.ts` fetches each prompt with `POSTHOG_PROMPTS_API_KEY`
   ([Function secrets](#function-secrets)) and caches it in the isolate for 30
-  minutes, so a label move reaches every call within that. A failed refresh
-  keeps the cached version for another minute. With no key, no answer within
-  1.5 seconds, an error or an empty prompt, the call sends the code's copy:
-  PostHog being down degrades a scan to the prompt this deploy shipped with,
-  never to a failure.
+  minutes, so a label move reaches every call within that. With no key, no
+  answer within 3 seconds, an error, an empty prompt or an answer without a
+  version, the call sends the cached version if there is one and the code's
+  copy if not, and PostHog is not asked about that prompt again for a minute.
+  PostHog being down costs one wait a minute per prompt and degrades a scan to
+  the prompt this deploy shipped with, never to a failure. Calls that start
+  together share one fetch.
 - The one variable is `{{icon_instruction}}`, the list of icon ids from
   `icons.ts`. It is generated from the icon files, so it is filled in by the
   code rather than kept as text in PostHog, where it would go stale the day an
