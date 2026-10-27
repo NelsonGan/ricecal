@@ -143,6 +143,7 @@ every agent working in this checkout can read and no commit can carry.
 | project ref, anon key, catalogue URL | `apps/mobile/.env.local` |
 | test account addresses, passwords and uids | `.secrets/agent-notes.md` |
 | project and org refs, store and RevenueCat identifiers | `.secrets/agent-notes.md` |
+| `POSTHOG_PROMPTS_API_KEY` (PostHog personal key, `llm_prompt:read` only) | the function secrets, and `.secrets/posthog-prompts.key` for `pnpm prompts:check` |
 | `OPENROUTER_API_KEY` (production) | the function secrets, and it cannot be read back |
 | `OPENROUTER_API_KEY` (local testing, a separate key on the same OpenRouter account) | `apps/supabase/functions/.env` |
 

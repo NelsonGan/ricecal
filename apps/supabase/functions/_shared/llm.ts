@@ -14,6 +14,7 @@ import type { Meter } from './entitlement.ts'
 import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon, unslug } from './icons.ts'
 import { reconcile, unfoldCounts } from './portion.ts'
 import type { AiSpan, Generation } from './posthog.ts'
+import { hostedSystem, isHostedSystem, type ResolvedPrompt, resolveSystem } from './prompts.ts'
 
 export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
 
@@ -574,6 +575,21 @@ export function mockActive(): boolean {
 const DEFAULT_MAX_TOKENS = 2000
 
 /**
+ * `messages` with a hosted system prompt (`hostedSystem`) turned into its text,
+ * and which version of each part was sent. A plain string is sent as it is.
+ */
+async function withSystemResolved(
+  messages: unknown[],
+): Promise<{ sent: unknown[]; prompts: ResolvedPrompt[] }> {
+  const [first, ...rest] = messages as { role?: string; content?: unknown }[]
+  if (first?.role !== 'system' || !isHostedSystem(first.content)) {
+    return { sent: messages, prompts: [] }
+  }
+  const { text, prompts } = await resolveSystem(first.content)
+  return { sent: [{ ...first, content: text }, ...rest], prompts }
+}
+
+/**
  * One OpenRouter chat call returning parsed JSON. Throws on anything else.
  *
  * Exported for `recipe.ts`, which makes two calls of its own but has no second
@@ -595,6 +611,10 @@ export async function chatJSON(
   const key = Deno.env.get('OPENROUTER_API_KEY')
   if (!key) throw new Error('OPENROUTER_API_KEY not set')
 
+  // Once per call rather than per attempt, so the fallback is asked the same
+  // prompt and the prompt's own fetch is not counted in a request's latency.
+  const { sent, prompts } = await withSystemResolved(messages)
+
   let attempts = 0
   let askedPrimary = false
   let lastFailure = ''
@@ -614,6 +634,7 @@ export async function chatJSON(
       temperature: route.temperature,
       attempt: attempts++,
       isBackupModel: route !== PRIMARY_ROUTE && askedPrimary,
+      prompts,
     }
     try {
       return await request(route, generation)
@@ -646,7 +667,7 @@ export async function chatJSON(
         'HTTP-Referer': 'https://ricecal.app',
         'X-Title': 'RiceCal',
       },
-      body: JSON.stringify(requestBody(route, messages, maxTokens, CACHED_SPANS.has(span))),
+      body: JSON.stringify(requestBody(route, sent, maxTokens, CACHED_SPANS.has(span))),
     })
     generation.httpStatus = res.status
     if (!res.ok) {
@@ -1115,9 +1136,18 @@ export const ANALYSE_PHOTO_PROMPT =
   'Otherwise respond with JSON only, matching: ' +
   itemSchema(false) +
   // One meal. Anything else is a diary with four rows for one lunch.
-  'The photo is ONE logged meal. Return ONE item, named as a local menu would print ' +
-  'it ("Korean fried chicken with rice and sides"). Only return more than one item ' +
+  'The photo is ONE logged meal. Return ONE item. Only return more than one item ' +
   "when the photo unambiguously shows separate meals — two people's plates. " +
+  // Haiku read "as a local menu would print it" as a description and named the
+  // plate after every side on it: camera names went from 38 to 57 characters
+  // on average the day it took over, many cut off at 120.
+  'The item\'s "name" is what a person would call the meal in their food diary: the ' +
+  'dish, plus at most the one or two foods that change what it is. 2 to 6 words, never ' +
+  'more than 40 characters: "Nasi lemak with fried chicken", "Chicken rice", ' +
+  '"Wonton noodles with char siu", "Nasi campur", "Acai bowl". It is a NAME, not a ' +
+  'description: never list every side, topping or garnish, never describe colour, ' +
+  'texture or plating, and never add brackets. The components already say what is ' +
+  'on the plate. ' +
   QUERY_FIELDS +
   COUNT_VS_COMPONENTS +
   // Only what is on the plate: a guessed part is a control over a number nobody
@@ -1274,7 +1304,10 @@ export async function analysePhoto(
     [
       {
         role: 'system',
-        content: note ? ANALYSE_PHOTO_PROMPT + PHOTO_NOTE_RULES : ANALYSE_PHOTO_PROMPT,
+        content: hostedSystem(
+          { name: 'analyse-photo', bundled: ANALYSE_PHOTO_PROMPT },
+          ...(note ? [{ name: 'analyse-photo-note' as const, bundled: PHOTO_NOTE_RULES }] : []),
+        ),
       },
       {
         role: 'user',
@@ -1427,7 +1460,10 @@ export async function describeMeal(
     meter,
     'describe_meal',
     [
-      { role: 'system', content: DESCRIBE_MEAL_PROMPT },
+      {
+        role: 'system',
+        content: hostedSystem({ name: 'describe-meal', bundled: DESCRIBE_MEAL_PROMPT }),
+      },
       { role: 'user', content: describeUserMessage(text) },
     ],
     2400,
@@ -1553,15 +1589,7 @@ export async function pickCandidate(
     [
       {
         role: 'system',
-        content:
-          'You match a described dish to a food catalogue. Respond with JSON only: ' +
-          '{"choice": number|null}. `choice` is the 0-based index of the entry that IS the ' +
-          'described dish, or null if none of them is. Prefer null over a near-miss: a ' +
-          'different dish with similar ingredients is NOT a match. A branded or restaurant ' +
-          'version of the SAME dish is a match — the dish is what matters, not the vendor. ' +
-          'FORM is not the vendor and does matter: a bottled, canned, instant or powdered ' +
-          'version of a drink is NOT a match for one made fresh, and the serving label is ' +
-          'what says which an entry is ("1 bottle (250 g)" against "Regular (350 ml)").',
+        content: hostedSystem({ name: 'pick-candidate', bundled: PICK_CANDIDATE_PROMPT }),
       },
       {
         role: 'user',
@@ -1652,15 +1680,7 @@ export async function estimateNutrition(
     [
       {
         role: 'system',
-        content:
-          'You estimate nutrition for a dish. Respond with JSON only: {"kcal": number, ' +
-          '"carbs_g": number, "protein_g": number, "fat_g": number, "fibre_g": number|null, ' +
-          '"sugar_g": number|null, "sodium_mg": number|null}. Values are for the stated ' +
-          'portion. null means unknown — never guess fibre, sugar or sodium as 0. ' +
-          // The weight is the one part of the question that is not a guess.
-          'When a weight is given, it is the portion: price that many grams and no more — ' +
-          'cooked rice and noodles about 1.3 kcal/g, grilled meat 1.5-2, fried chicken with ' +
-          'skin 2.5-3, vegetables 0.3, nuts and crisps 5.5. Nothing edible is over 9.',
+        content: hostedSystem({ name: 'estimate-nutrition', bundled: ESTIMATE_NUTRITION_PROMPT }),
       },
       {
         role: 'user',
@@ -1777,6 +1797,28 @@ export function shapeInterpretation(raw: unknown): Interpretation {
     ? { action: 'none', code: 'not_a_correction', reason: String(o.reason ?? 'no calorie change') }
     : { action: 'none', code: 'unusable', reason: 'not understood' }
 }
+
+/** The catalogue pick's prompt. Exported for the PostHog upload. */
+export const PICK_CANDIDATE_PROMPT =
+  'You match a described dish to a food catalogue. Respond with JSON only: ' +
+  '{"choice": number|null}. `choice` is the 0-based index of the entry that IS the ' +
+  'described dish, or null if none of them is. Prefer null over a near-miss: a ' +
+  'different dish with similar ingredients is NOT a match. A branded or restaurant ' +
+  'version of the SAME dish is a match — the dish is what matters, not the vendor. ' +
+  'FORM is not the vendor and does matter: a bottled, canned, instant or powdered ' +
+  'version of a drink is NOT a match for one made fresh, and the serving label is ' +
+  'what says which an entry is ("1 bottle (250 g)" against "Regular (350 ml)").'
+
+/** The last-resort estimate's prompt. Exported for the PostHog upload. */
+export const ESTIMATE_NUTRITION_PROMPT =
+  'You estimate nutrition for a dish. Respond with JSON only: {"kcal": number, ' +
+  '"carbs_g": number, "protein_g": number, "fat_g": number, "fibre_g": number|null, ' +
+  '"sugar_g": number|null, "sodium_mg": number|null}. Values are for the stated ' +
+  'portion. null means unknown — never guess fibre, sugar or sodium as 0. ' +
+  // The weight is the one part of the question that is not a guess.
+  'When a weight is given, it is the portion: price that many grams and no more — ' +
+  'cooked rice and noodles about 1.3 kcal/g, grilled meat 1.5-2, fried chicken with ' +
+  'skin 2.5-3, vegetables 0.3, nuts and crisps 5.5. Nothing edible is over 9.'
 
 /**
  * The fix-by-typing prompt. Exported for the eval harness.
@@ -2022,7 +2064,13 @@ export async function interpretInstruction(
         meter,
         'interpret_instruction',
         [
-          { role: 'system', content: INTERPRET_INSTRUCTION_PROMPT },
+          {
+            role: 'system',
+            content: hostedSystem({
+              name: 'interpret-instruction',
+              bundled: INTERPRET_INSTRUCTION_PROMPT,
+            }),
+          },
           { role: 'user', content: refineUserMessage(context, instruction) },
           ...(retryReason
             ? [
