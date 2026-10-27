@@ -1,6 +1,6 @@
 import { format, parseISO } from 'date-fns'
 import * as Haptics from 'expo-haptics'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -235,6 +235,24 @@ export function Thumbs({
   return isSelf ? <Tally likes={votes.likes} dislikes={votes.dislikes} /> : <Vote {...votes} />
 }
 
+/**
+ * A like or a dislike on a friend's food; the same one again takes it back.
+ * The pills use it, and a chat bubble's screen-reader actions, since the pills
+ * inside a bubble are hidden from a screen reader by the bubble itself.
+ */
+export function useVote() {
+  const task = useGroupTask()
+  const { press } = task
+  return useCallback(
+    (entryId: string, mine: -1 | 0 | 1, value: -1 | 1) => {
+      const next = mine === value ? 0 : value
+      press({ action: 'react', entryId, value: next })
+      if (next !== 0) track('Group Reaction Set', { reaction: next === 1 ? 'like' : 'dislike' })
+    },
+    [press],
+  )
+}
+
 /** A friend's food's two pills, which are the only ones that write. */
 function Vote({
   entryId,
@@ -250,12 +268,8 @@ function Vote({
   inGesture?: boolean
 }) {
   const { t } = useTranslation('groups')
-  const task = useGroupTask()
-  const react = (value: -1 | 1) => {
-    const next = mine === value ? 0 : value
-    task.press({ action: 'react', entryId, value: next })
-    if (next !== 0) track('Group Reaction Set', { reaction: next === 1 ? 'like' : 'dislike' })
-  }
+  const vote = useVote()
+  const react = (value: -1 | 1) => vote(entryId, mine, value)
   return (
     <View className="flex-row gap-2">
       <Reaction
@@ -385,11 +399,12 @@ function Reaction({
       // 36pt drawn, 44pt to a finger.
       .hitSlop(4)
       .runOnJS(true)
-      .onBegin(() => {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
-      })
+      // Felt when the tap lands rather than when the finger does, so a scroll
+      // that starts on a pill does not buzz.
       .onEnd((_event, success) => {
-        if (success) press()
+        if (!success) return
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+        press()
       })
     return (
       <GestureDetector gesture={tap}>
