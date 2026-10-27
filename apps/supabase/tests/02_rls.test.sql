@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(32);
+select plan(34);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -303,6 +303,32 @@ select is(
      and pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')),
   1,
   'but a signed-in user can read their own month'
+);
+
+-- The diary's other read RPCs, which once kept the EXECUTE that Postgres hands
+-- PUBLIC on a new function. Same pair: nobody signed out, and a signed-in user
+-- still, or Trends and the streak on Today come back empty for everybody.
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname in ('trend_days', 'trend_series', 'trend_summary', 'logging_streak', 'goals_on')
+     and (pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE')
+       or pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE'))),
+  0,
+  'the trend, streak and goal reads are not executable by PUBLIC or anon'
+);
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname in ('trend_days', 'trend_series', 'trend_summary', 'logging_streak', 'goals_on')
+     and pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')),
+  5,
+  'but a signed-in user can call all five'
 );
 
 -- It is SECURITY INVOKER, which is what makes the `p_user_id` argument safe to

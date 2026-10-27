@@ -519,6 +519,12 @@ copy.
 - **Grants are the outer gate.** Where a client must never write, there is no
   grant at all, not merely no policy, so a policy added later by mistake cannot
   become an entitlement or a self-approving review.
+- **Every function the app calls revokes `public, anon` and grants who may
+  call it**, invoker or definer. Postgres gives PUBLIC EXECUTE on any new
+  function and a later `grant` does not take it away. Helpers that a column
+  default or a trigger reaches (`local_today`, `compute_targets`,
+  `current_weight_kg`) keep it, since a trigger can fire as Supabase's own auth
+  role inside an account deletion.
 - **Enums for closed domains.** `supabase gen types` turns them into string
   literal unions, which keeps `Meal` in SQL and `Meal` in TypeScript the same
   set.
@@ -7953,6 +7959,19 @@ it is limited to approved, unquarantined posts, and matched `avatar_path = key`
 while the avatar index is on the `case` expression the social view returns. Both
 updates read their whole table on every photo signature (7,500 buffers at
 150,000 posts, 140 once each repeats the index's own predicate).
+
+**`SELECT name FROM pg_timezone_names` near the top of the slow-query list is
+PostgREST, and it is not ours to fix.** PostgREST runs it, at about 335 ms on
+this project, each time it rebuilds its schema cache, along with three catalog
+queries of 25 to 35 ms. Supabase's `pgrst_ddl_watch` event trigger asks for that
+rebuild after any `CREATE TABLE` or `ALTER TABLE` outside `pg_temp`, and
+Realtime's own maintenance makes one of each for every daily partition of
+`realtime.messages`, every half hour or so. That was 191 rebuilds in two days
+(October 2026) with no migration among them. The trigger belongs to
+`supabase_admin` and `postgres` is not a superuser, so no migration can narrow
+it. Turning the partitions off is not an option either: group chat broadcasts
+from the database with `realtime.send`, which writes there. If it ever matters,
+it goes to Supabase support, not into `schemas/`.
 
 **The Supabase CLI's remote endpoints move.** On 2.111.0, `functions deploy` and
 `gen types --project-id` both answer 404 when handed a project ref that does not

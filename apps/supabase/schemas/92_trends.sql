@@ -310,6 +310,11 @@ comment on function public.trend_summary is
 -- is under RLS, so passing somebody else's id returns nothing rather than their
 -- year. The `p_user_id` parameter exists for a future server-side job with the
 -- service role, not for the client.
+-- The revoke is not redundant: Postgres grants EXECUTE to PUBLIC on a new
+-- function, and the grant below does not take it away. Without it `anon` could
+-- call all three (row security still answered with nothing).
+revoke execute on function public.trend_days, public.trend_series, public.trend_summary
+  from public, anon;
 grant execute on function public.trend_days    to authenticated;
 grant execute on function public.trend_series  to authenticated;
 grant execute on function public.trend_summary to authenticated;
