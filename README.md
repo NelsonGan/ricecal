@@ -7221,6 +7221,15 @@ signal, so nothing here moves when the device is half-folded: the pane split is
 what keeps controls off the crease. The Duo simulator is iOS 27.1 only, and
 Argent's `fold` tool moves its hinge.
 
+**None of this reaches users unless the store build is linked against the iOS
+27.1 SDK.** iOS decides what an app supports from the SDK it was built with, and
+a binary from an older one runs in compatibility mode on the open Duo: a
+phone-sized window centred on the display, with no side column or panes. That is
+why the iOS deploy in `.github/workflows/deploy.yml` runs on GitHub's `xcode-27`
+image with Xcode 27.1 pinned; every `macos-*` image stops at Xcode 26. A local
+Xcode 27.1 build looks right on the simulator either way, so check which Xcode
+CI used before blaming the layout.
+
 ### Icons
 
 593 illustrated icons across six sets (`ui`, `system`, `body`, `food`, `dishes`,

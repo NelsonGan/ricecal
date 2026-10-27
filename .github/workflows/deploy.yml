@@ -67,7 +67,7 @@ on:
           - preview
           - development
       xcode:
-        description: Xcode version (iOS only, e.g. 26.3) — blank uses the pinned version
+        description: Xcode version (iOS only, e.g. 27.0) — blank uses the pinned version
         type: string
         default: ''
 
@@ -403,10 +403,10 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            echo 'include=[{"platform":"ios","label":"iOS","os":"macos-26","profile":"production"},{"platform":"android","label":"Android","os":"ubuntu-latest","profile":"production"}]' >> "$GITHUB_OUTPUT"
+            echo 'include=[{"platform":"ios","label":"iOS","os":"xcode-27","profile":"production"},{"platform":"android","label":"Android","os":"ubuntu-latest","profile":"production"}]' >> "$GITHUB_OUTPUT"
           else
             if [ "${{ inputs.platform }}" = "ios" ]; then
-              os="macos-26"
+              os="xcode-27"
               label="iOS"
             else
               os="ubuntu-latest"
@@ -493,9 +493,18 @@ jobs:
       # xcframework locally in 20 seconds.
       #
       # Which forces the runner too: `macos-15` ships nothing above Xcode 26.3,
-      # so no pin could have worked there. `macos-26` defaults to 26.6 and is
-      # where the `os` in the matrix above now points. Keep the two together —
-      # a version this action cannot find on the image fails the job outright.
+      # so no pin could have worked there.
+      #
+      # 26.6 then built fine, and still shipped the wrong app to iPhone Duo.
+      # iOS decides what an app supports from the SDK it was linked against,
+      # and a binary from the iOS 26 SDK runs in compatibility mode on the
+      # open Duo: a phone-sized window centred on the display, none of the
+      # Duo layout. The Duo needs the iOS 27.1 SDK, so this is Xcode 27.1,
+      # which GitHub only has on the `xcode-27` image (every `macos-*` image
+      # stops at Xcode 26). That is where the `os` in the matrix above points.
+      # Keep the two together — a version this action cannot find on the image
+      # fails the job outright — and keep the pin at least as new as the
+      # newest hardware the app adapts to.
       #
       # The dispatch input overrides it and defaults to blank rather than to a
       # version, so there is one place to change the pin and a dispatch run
@@ -504,7 +513,7 @@ jobs:
         if: matrix.platform == 'ios'
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: ${{ github.event.inputs.xcode || '26.6' }}
+          xcode-version: ${{ github.event.inputs.xcode || '27.1' }}
 
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -537,8 +546,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: apps/mobile/ios/Pods
-          key: ${{ runner.os }}-pods-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
-          restore-keys: ${{ runner.os }}-pods-
+          key: ${{ runner.os }}-xcode27-pods-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
+          restore-keys: ${{ runner.os }}-xcode27-pods-
 
       - name: Cache Gradle
         if: matrix.platform == 'android'
