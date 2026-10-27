@@ -8,8 +8,9 @@ import { QueryNotice } from '@/features/social/components'
 import { SessionExercises, SessionFigures } from '@/features/workouts'
 import { useBack } from '@/lib/navigation'
 import { unitFor } from '@/lib/units'
-import { AppBar, Aside, Card, Screen, Skeleton, Text } from '@/ui'
-import { PersonAvatarLink } from './parts'
+import { useThemeColors } from '@/theme/useTheme'
+import { AppBar, Aside, Card, Icon, Screen, Skeleton, Tappable, Text } from '@/ui'
+import { PersonAvatar, useOpenProfile } from './parts'
 
 /**
  * A group member's workout, opened from its tile on the board or its card in
@@ -32,6 +33,8 @@ export function GroupWorkoutScreen({
   const query = useGroupWorkout(groupId, source, id)
   const unit = unitFor(useSettings().data?.units)
   const view = query.data
+  const openProfile = useOpenProfile()
+  const colors = useThemeColors()
   const title = view?.workout
     ? view.workout.name
     : view?.session
@@ -40,7 +43,34 @@ export function GroupWorkoutScreen({
   return (
     <Screen
       header={
-        <AppBar title={title} titleLines={2} onBack={back} backLabel={t('common:action.back')} />
+        <AppBar
+          onBack={back}
+          backLabel={t('common:action.back')}
+          titleContent={
+            // Whose workout it is sits under its name, as a pill that opens
+            // their feed, rather than a row of its own above the figures.
+            <View className="items-center gap-1">
+              <Text variant="subtitle" className="text-center" numberOfLines={2}>
+                {title}
+              </Text>
+              {view ? (
+                <Tappable
+                  haptics={false}
+                  onPress={() => openProfile(view.owner.id)}
+                  className="flex-row items-center gap-1.5 rounded-full bg-surface-alt py-1 pl-1 pr-2.5"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('groups:openProfile', { name: view.owner.name })}
+                >
+                  <PersonAvatar person={view.owner} size="xs" />
+                  <Text variant="caption" numberOfLines={1} className="text-ink">
+                    {view.owner.name}
+                  </Text>
+                  <Icon set="ui" name="chevron-right" size={12} tintColor={colors.muted} />
+                </Tappable>
+              ) : null}
+            </View>
+          }
+        />
       }
     >
       {!view ? (
@@ -58,25 +88,15 @@ export function GroupWorkoutScreen({
             </Card>
           </>
         )
-      ) : (
+      ) : view.workout ? (
         <>
-          <View className="flex-row items-center gap-md">
-            <PersonAvatarLink person={view.owner} />
-            <Text variant="label" numberOfLines={1} className="min-w-0 flex-1">
-              {view.owner.name}
-            </Text>
-          </View>
-          {view.workout ? (
-            <>
-              <SessionFigures workout={view.workout} unit={unit} owner={false} />
-              <Aside>
-                <SessionExercises workout={view.workout} unit={unit} />
-              </Aside>
-            </>
-          ) : (
-            <WorkoutDetails session={view.session} />
-          )}
+          <SessionFigures workout={view.workout} unit={unit} owner={false} />
+          <Aside>
+            <SessionExercises workout={view.workout} unit={unit} />
+          </Aside>
         </>
+      ) : (
+        <WorkoutDetails session={view.session} />
       )}
     </Screen>
   )

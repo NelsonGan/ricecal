@@ -539,6 +539,7 @@ const MemberRow = memo(function MemberRow({
       ))}
       <WorkoutCell
         groupId={groupId}
+        ownerId={member.person.id}
         workout={member.workout}
         height={grid.tile}
         width={grid.workout}
@@ -826,11 +827,13 @@ function EmptyTile({ width, height }: { width: number; height: number }) {
  */
 function WorkoutCell({
   groupId,
+  ownerId,
   workout,
   height,
   width,
 }: {
   groupId: string
+  ownerId: string
   workout: BoardMember['workout']
   height: number
   width: number
@@ -845,7 +848,7 @@ function WorkoutCell({
   const press = () => {
     const [only] = all
     if (all.length > 1) setPicking(true)
-    else if (only) open(only)
+    else if (only) open(only, ownerId)
   }
   return (
     <>
@@ -885,7 +888,7 @@ function WorkoutCell({
             key: `${item.source}:${item.id}`,
             label: `${item.name ?? t(workoutKindKey(item.kind))} · ${shortDuration(item.duration_s)}`,
             icon: workoutIcon(item.kind),
-            onPress: () => open(item),
+            onPress: () => open(item, ownerId),
           }))}
         />
       ) : null}

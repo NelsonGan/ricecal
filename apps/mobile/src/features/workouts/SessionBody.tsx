@@ -46,7 +46,9 @@ export function SessionFigures({
   // A trace means the watch recorded it, and the burn is what it measured (the
   // edit screen's rule too). Anything else is the estimate the phone saved.
   const burnSource = heart ? 'watch' : 'estimate'
-  const note = burnNote(t, burnSource, true)
+  // The note explains the viewer's own figure ("from your weight"), which says
+  // nothing true about someone else's.
+  const note = owner ? burnNote(t, burnSource, true) : undefined
   const zones = useMemo(
     () => (heart ? traceZones(heart, birthDate ? ageFrom(birthDate) : null) : null),
     [heart, birthDate],

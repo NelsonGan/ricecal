@@ -23,14 +23,20 @@ create or replace function private.group_share_posted_food()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare v_body text;
 begin
-  v_body := private.group_food_label(new.id);
-  if v_body is null then return null; end if;
-  insert into public.group_messages(group_id, author_id, body, request_id, post_id, pushed_at)
-  select m.group_id, new.author_id, v_body,
-    md5(new.id::text || ':' || m.group_id::text)::uuid, new.id, now()
-  from public.group_members m
-  where m.user_id = new.author_id
-  on conflict (author_id, request_id) do nothing;
+  begin
+    v_body := private.group_food_label(new.id);
+    if v_body is null then return null; end if;
+    insert into public.group_messages(group_id, author_id, body, request_id, post_id, pushed_at)
+    select m.group_id, new.author_id, v_body,
+      md5(new.id::text || ':' || m.group_id::text)::uuid, new.id, now()
+    from public.group_members m
+    where m.user_id = new.author_id
+    on conflict (author_id, request_id) do nothing;
+exception when others then
+    -- Sharing is a courtesy; the meal, workout or sync it rides on is not.
+    -- A failure here is logged and the write goes ahead without it.
+    raise warning 'group chat share skipped: %', sqlerrm;
+  end;
   return null;
 end;
 $$;
@@ -46,17 +52,23 @@ create or replace function private.group_share_workout()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare v_body text;
 begin
-  if not exists (select 1 from public.profiles p where p.id = new.user_id and p.auto_post_workouts) then
-    return null;
-  end if;
-  v_body := private.group_workout_label(private.group_workout(new.id));
-  if v_body is null then return null; end if;
-  insert into public.group_messages(group_id, author_id, body, request_id, workout_id, pushed_at)
-  select m.group_id, new.user_id, v_body,
-    md5('workout:' || new.id::text || ':' || m.group_id::text)::uuid, new.id, now()
-  from public.group_members m
-  where m.user_id = new.user_id
-  on conflict (author_id, request_id) do nothing;
+  begin
+    if not exists (select 1 from public.profiles p where p.id = new.user_id and p.auto_post_workouts) then
+      return null;
+    end if;
+    v_body := private.group_workout_label(private.group_workout(new.id));
+    if v_body is null then return null; end if;
+    insert into public.group_messages(group_id, author_id, body, request_id, workout_id, pushed_at)
+    select m.group_id, new.user_id, v_body,
+      md5('workout:' || new.id::text || ':' || m.group_id::text)::uuid, new.id, now()
+    from public.group_members m
+    where m.user_id = new.user_id
+    on conflict (author_id, request_id) do nothing;
+exception when others then
+    -- Sharing is a courtesy; the meal, workout or sync it rides on is not.
+    -- A failure here is logged and the write goes ahead without it.
+    raise warning 'group chat share skipped: %', sqlerrm;
+  end;
   return null;
 end;
 $$;
@@ -68,26 +80,39 @@ create trigger group_share_workout after insert on public.workouts
 -- A workout a health store recorded, as a sync first writes it. An upsert that
 -- finds the row already there is an update and shares nothing again. One that
 -- is the copy of a logger workout saved to Apple Health is left out, since the
--- logger's own was shared already.
+-- logger's own was shared already. (A copy that syncs before the logger saves
+-- its workout at all can still be shared once; the logger's own card follows.)
 create or replace function private.group_share_activity()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare v_body text;
 begin
-  if not exists (select 1 from public.profiles p where p.id = new.user_id and p.auto_post_workouts) then
-    return null;
-  end if;
-  if exists (select 1 from public.workouts w
-             where w.user_id = new.user_id and w.health_workout_id = new.external_id) then
-    return null;
-  end if;
-  v_body := private.group_workout_label(private.group_activity(new.id));
-  if v_body is null then return null; end if;
-  insert into public.group_messages(group_id, author_id, body, request_id, activity_id, pushed_at)
-  select m.group_id, new.user_id, v_body,
-    md5('activity:' || new.id::text || ':' || m.group_id::text)::uuid, new.id, now()
-  from public.group_members m
-  where m.user_id = new.user_id
-  on conflict (author_id, request_id) do nothing;
+  begin
+    if not exists (select 1 from public.profiles p where p.id = new.user_id and p.auto_post_workouts) then
+      return null;
+    end if;
+    -- The Health copy of a logger workout: by the id the logger kept, or, for
+    -- one a watch recorded before the logger heard its id, by starting and
+    -- ending within a few minutes of it.
+    if exists (select 1 from public.workouts w
+               where w.user_id = new.user_id
+                 and (w.health_workout_id = new.external_id
+                   or (w.started_at between new.started_at - interval '5 minutes' and new.started_at + interval '5 minutes'
+                       and w.ended_at between new.ended_at - interval '5 minutes' and new.ended_at + interval '5 minutes'))) then
+      return null;
+    end if;
+    v_body := private.group_workout_label(private.group_activity(new.id));
+    if v_body is null then return null; end if;
+    insert into public.group_messages(group_id, author_id, body, request_id, activity_id, pushed_at)
+    select m.group_id, new.user_id, v_body,
+      md5('activity:' || new.id::text || ':' || m.group_id::text)::uuid, new.id, now()
+    from public.group_members m
+    where m.user_id = new.user_id
+    on conflict (author_id, request_id) do nothing;
+exception when others then
+    -- Sharing is a courtesy; the meal, workout or sync it rides on is not.
+    -- A failure here is logged and the write goes ahead without it.
+    raise warning 'group chat share skipped: %', sqlerrm;
+  end;
   return null;
 end;
 $$;

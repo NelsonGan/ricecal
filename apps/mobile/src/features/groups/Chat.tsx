@@ -654,7 +654,7 @@ const MessageRow = memo(function MessageRow({
       onMenu={onSelect}
       onReply={onReply}
       onHeart={onHeart}
-      onOpen={shared ? () => openWorkout(shared) : undefined}
+      onOpen={shared ? () => openWorkout(shared, message.author.id) : undefined}
       label={[message.mine ? t('you') : message.author.name, message.body, time].join(', ')}
     >
       {content}
@@ -1228,13 +1228,15 @@ function SharePicker({
 }) {
   const { t } = useTranslation(['groups', 'common'])
   const [tab, setTab] = useState<'food' | 'workouts'>('food')
+  // Back on food for the next opening, however this one closed: picking
+  // closes it without going through onClose.
+  useEffect(() => {
+    if (!visible) setTab('food')
+  }, [visible])
   return (
     <Sheet
       visible={visible}
-      onClose={() => {
-        onClose()
-        setTab('food')
-      }}
+      onClose={onClose}
       closeLabel={t('common:action.close')}
       title={t('share')}
     >

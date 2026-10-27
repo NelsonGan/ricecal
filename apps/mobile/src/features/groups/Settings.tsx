@@ -25,12 +25,12 @@ import {
   Card,
   ConfirmSheet,
   Icon,
-  IconButton,
   RadioGroup,
   Screen,
   SegmentedControl,
   Sheet,
   Switch,
+  Tappable,
   Text,
   TextField,
 } from '@/ui'
@@ -152,45 +152,52 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
 
           <Card title={t('settingsMembers')}>
             {/* The viewer's own row heads every board they see, so it stays
-                put; the rest are dragged into the order the board draws them. */}
-            {group.members
-              .filter((member) => member.id === viewer)
-              .map((member) => (
-                <MemberLine
-                  key={member.id}
-                  member={member}
-                  name={t('you')}
-                  leader={member.id === group.leader_id}
-                />
-              ))}
-            <SortableMembers
-              key={others.map((member) => member.id).join()}
-              members={others}
-              onReorder={(order) => task.press({ action: 'preferences', groupId, order })}
-              renderRow={(member, handle) => (
-                <MemberLine
-                  member={member}
-                  name={member.name}
-                  leader={member.id === group.leader_id}
-                  trailing={
-                    <>
-                      {isLeader ? (
-                        <IconButton
-                          size="xs"
-                          hitSlop={8}
-                          variant="ghost"
-                          onPress={() => setRemoving(member)}
-                          accessibilityLabel={`${t('remove')} ${member.name}`}
-                        >
-                          <Icon set="ui" name="close" size={16} tintColor={colors.muted} />
-                        </IconButton>
-                      ) : null}
-                      {handle}
-                    </>
-                  }
-                />
-              )}
-            />
+                put; the rest are dragged into the order the board draws them.
+                One block, so the card's gap does not open between the two and
+                every row keeps the same rhythm. */}
+            <View>
+              {group.members
+                .filter((member) => member.id === viewer)
+                .map((member) => (
+                  <View key={member.id} className="justify-center" style={{ height: ROW }}>
+                    <MemberLine
+                      member={member}
+                      name={t('you')}
+                      leader={member.id === group.leader_id}
+                    />
+                  </View>
+                ))}
+              <SortableMembers
+                key={others.map((member) => member.id).join()}
+                members={others}
+                onReorder={(order) => task.press({ action: 'preferences', groupId, order })}
+                renderRow={(member, handle) => (
+                  <MemberLine
+                    member={member}
+                    name={member.name}
+                    leader={member.id === group.leader_id}
+                    trailing={
+                      <>
+                        {isLeader ? (
+                          // Plain rather than an IconButton, whose raised edge
+                          // left room underneath and sat the cross above the
+                          // handle beside it. The same box as the handle.
+                          <Tappable
+                            className="h-[44px] w-[36px] items-center justify-center"
+                            onPress={() => setRemoving(member)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${t('remove')} ${member.name}`}
+                          >
+                            <Icon set="ui" name="close" size={14} tintColor={colors.faint} />
+                          </Tappable>
+                        ) : null}
+                        {handle}
+                      </>
+                    }
+                  />
+                )}
+              />
+            </View>
             {group.invites.map((person) => (
               <View key={person.id} className="flex-row items-center gap-md opacity-60">
                 <PersonAvatar person={person} />
@@ -326,7 +333,8 @@ function MemberLine({
         </Text>
       </View>
       {leader ? (
-        <Badge tone="kaya" size="sm">
+        // Centred on the row; a badge sits at the top of one by default.
+        <Badge tone="kaya" size="sm" className="self-center">
           {t('leaderBadge')}
         </Badge>
       ) : null}
@@ -465,7 +473,7 @@ function SortableRow({
   const handle = movable ? (
     <GestureDetector gesture={pan}>
       <View
-        className="h-[44px] w-[40px] items-center justify-center"
+        className="h-[44px] w-[36px] items-center justify-center"
         accessible
         accessibilityRole="adjustable"
         accessibilityLabel={t('reorderMember', { name: member.name })}
