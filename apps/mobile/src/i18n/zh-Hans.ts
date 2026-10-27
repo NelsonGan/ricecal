@@ -1352,6 +1352,11 @@ export const zhHans = {
           free: '{{routines}} 个',
           pro: '无限',
         },
+        groups: {
+          label: '你创建的小组',
+          free: '{{groups}} 个',
+          pro: '无限',
+        },
         recipeFill: {
           label: '用照片填好一个食物',
           free: '',
@@ -1411,6 +1416,7 @@ export const zhHans = {
         new_recipe: '保存超过 {{recipes}} 个自己的食物需要 RiceCal Pro。',
         trend_range: '往前看超过一周需要 RiceCal Pro。',
         new_routine: '保存超过 {{routines}} 个训练计划需要 RiceCal Pro。',
+        new_group: '创建超过 {{groups}} 个小组需要 RiceCal Pro。',
         workout_range: '查看 3 个月以前的训练进度需要 RiceCal Pro。',
         review: '看更早的回顾需要 RiceCal Pro。',
         nudge: 'RiceCal Pro 把上限拿掉。',

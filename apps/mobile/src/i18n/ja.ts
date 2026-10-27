@@ -1363,6 +1363,11 @@ export const ja = {
           free: '{{routines}} 件',
           pro: '無制限',
         },
+        groups: {
+          label: '作れるグループ',
+          free: '{{groups}} 個',
+          pro: '無制限',
+        },
         recipeFill: {
           label: '写真からフードを埋める',
           free: '',
@@ -1422,6 +1427,7 @@ export const ja = {
         new_recipe: '自分のフードを {{recipes}} 件より多く持つには RiceCal Pro が必要です。',
         trend_range: '1 週間より前を見るには RiceCal Pro が必要です。',
         new_routine: 'ルーティンを {{routines}} 件より多く持つには RiceCal Pro が必要です。',
+        new_group: 'グループを {{groups}} 個より多く作るには RiceCal Pro が必要です。',
         workout_range: '3 か月より前の記録を見るには RiceCal Pro が必要です。',
         review: '古い振り返りを読むには RiceCal Pro が必要です。',
         nudge: 'RiceCal Pro なら上限がなくなります。',

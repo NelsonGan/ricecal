@@ -724,6 +724,61 @@ describe('replies, food and reactions', () => {
     expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0]?.my_reaction).toBeUndefined()
   })
 
+  it('draws a thumb on a chat food card and the board together, and takes both back when refused', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(boardKey('g1'), board([entry({ likes: 2, mine: 0 })]))
+    const food = {
+      post_id: 'p1',
+      name: 'Chicken rice',
+      icon_set: null,
+      icon_name: null,
+      photo_path: null,
+      serving_label: null,
+      logged_at: '2026-10-21T04:00:00Z',
+      kcal: 610,
+      carbs_g: 78,
+      protein_g: 32,
+      fat_g: 16,
+      entry_id: 'e1',
+      likes: 1,
+      dislikes: 0,
+      mine: 0 as const,
+    }
+    client.setQueryData(messagesKey, thread({ ...message('m1'), food }))
+    const write = pending()
+    mockRpc.mockReturnValueOnce(write.request)
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    let done!: Promise<unknown>
+    await act(async () => {
+      done = result.current
+        .mutateAsync({ action: 'react', entryId: 'e1', value: 1 })
+        .catch(() => undefined)
+    })
+    // Each counts its own group: shifted by one, never copied across.
+    await waitFor(() =>
+      expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0].food).toMatchObject({
+        likes: 2,
+        mine: 1,
+      }),
+    )
+    expect(client.getQueryData<GroupBoard>(boardKey('g1'))?.members[0].entries[0]).toMatchObject({
+      likes: 3,
+      mine: 1,
+    })
+    await act(async () => {
+      write.settle({ data: null, error: { message: 'no' } })
+      await done
+    })
+    expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0].food).toMatchObject({
+      likes: 1,
+      mine: 0,
+    })
+    expect(client.getQueryData<GroupBoard>(boardKey('g1'))?.members[0].entries[0]).toMatchObject({
+      likes: 2,
+      mine: 0,
+    })
+  })
+
   it('takes a reaction back with null', async () => {
     const { wrapper } = setup()
     const { result } = await renderHook(() => useGroupAction(), { wrapper })

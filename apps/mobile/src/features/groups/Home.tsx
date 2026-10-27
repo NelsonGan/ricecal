@@ -1,17 +1,20 @@
+import { FREE_GROUPS } from '@ricecal/shared'
 import { useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RefreshControl, ScrollView, View } from 'react-native'
-import { useUserId } from '@/data'
+import { useEntitlement, useUserId } from '@/data'
 import {
   GROUP_CAPACITY,
   type GroupInvite,
   type GroupSummary,
+  groupError,
   useGroupInviteCount,
   useGroupInvites,
   useMyGroups,
   usePublicGroups,
 } from '@/data/groups'
+import { useRequirePro } from '@/features/paywall'
 import { ScreenTitle } from '@/features/shared'
 import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
@@ -60,6 +63,17 @@ export function GroupsHome({ onOpen }: { onOpen: (groupId: string) => void }) {
     }, [invites.refetch]),
   )
   const [creating, setCreating] = useState(false)
+  // A free account leads two groups at most, so a third is the paywall before
+  // the sheet opens rather than a refusal after it is filled in. Only a known
+  // free account is held back; while the answer loads, or offline, the sheet
+  // opens and create_group has the last word (which opens the paywall too).
+  const requirePro = useRequirePro()
+  const { entitled, loading, unknown } = useEntitlement()
+  const leading = (groups.data ?? []).filter((group) => group.is_leader).length
+  const atLimit = !entitled && !loading && !unknown && leading >= FREE_GROUPS
+  const startGroup = () => {
+    if (!atLimit || requirePro('new_group')) setCreating(true)
+  }
   const [invitesOpen, setInvitesOpen] = useState(false)
   const navInset = useNavInset()
   const list = groups.data ?? []
@@ -96,7 +110,7 @@ export function GroupsHome({ onOpen }: { onOpen: (groupId: string) => void }) {
               size="sm"
               variant="primary"
               accessibilityLabel={t('newGroup')}
-              onPress={() => setCreating(true)}
+              onPress={startGroup}
             >
               <Icon set="ui" name="plus" size={22} />
             </IconButton>
@@ -118,7 +132,7 @@ export function GroupsHome({ onOpen }: { onOpen: (groupId: string) => void }) {
             icon={{ set: 'food', name: 'rice-bowl' }}
             title={t('emptyTitle')}
             description={t('emptyBody')}
-            action={<Button onPress={() => setCreating(true)}>{t('startGroup')}</Button>}
+            action={<Button onPress={startGroup}>{t('startGroup')}</Button>}
           />
         </Card>
       ) : (
@@ -129,7 +143,6 @@ export function GroupsHome({ onOpen }: { onOpen: (groupId: string) => void }) {
           ))}
         </View>
       )}
-
       <PublicGroups onJoined={onOpen} />
 
       <CreateGroupSheet
@@ -340,8 +353,11 @@ function CreateGroupSheet({
       setName('')
       void askForPush(userId)
       if (typeof id === 'string') onCreated(id)
-    } catch {
-      // The task showed why; the sheet keeps the draft.
+    } catch (error) {
+      // Over the free limit the task has opened the paywall, which a sheet
+      // left open would cover. Anything else: the task showed why, and the
+      // sheet keeps the draft.
+      if (groupError(error) === 'group_limit_reached') onClose()
     }
   }
   return (
