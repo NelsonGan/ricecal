@@ -418,5 +418,23 @@ select throws_ok(format('select public.join_group(%L)', (select id from big)),
   'P0001', 'This group is full', 'the twenty-first person cannot join');
 reset role;
 
+-- A free account leads two groups at most; Pro removes the limit.
+delete from public.groups where leader_id = :'ben';
+delete from public.subscriptions where user_id = :'ben';
+select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.create_group('Groups fixture free one', null, false);
+select public.create_group('Groups fixture free two', null, false);
+select throws_ok($$select public.create_group('Groups fixture free three', null, false)$$,
+  'P0001', 'group_limit_reached', 'a free account cannot make a third group');
+reset role;
+insert into public.subscriptions (user_id, status, plan, current_period_end)
+values (:'ben', 'active', 'yearly', now() + interval '30 days')
+on conflict (user_id) do update set status = 'active', current_period_end = excluded.current_period_end;
+set local role authenticated;
+select lives_ok($$select public.create_group('Groups fixture pro three', null, false)$$,
+  'a Pro account can');
+reset role;
+
 select * from finish();
 rollback;

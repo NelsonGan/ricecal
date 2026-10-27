@@ -1366,6 +1366,11 @@ export const ta = {
           free: '{{routines}} வழக்கங்கள்',
           pro: 'வரம்பில்லை',
         },
+        groups: {
+          label: 'நீங்கள் தொடங்கும் குழுக்கள்',
+          free: '{{groups}} குழுக்கள்',
+          pro: 'வரம்பில்லை',
+        },
         recipeFill: {
           label: 'படத்திலிருந்து உணவை நிரப்பு',
           free: '',
@@ -1425,6 +1430,7 @@ export const ta = {
         new_recipe: 'சொந்த உணவுகள் {{recipes}} க்கு மேல் வைத்திருக்க RiceCal Pro தேவை.',
         trend_range: 'ஒரு வாரத்திற்கும் பின் பார்க்க RiceCal Pro தேவை.',
         new_routine: '{{routines}} க்கு மேல் வொர்க்அவுட் வழக்கங்கள் வைத்திருக்க RiceCal Pro தேவை.',
+        new_group: '{{groups}} க்கு மேல் குழுக்களை உருவாக்க RiceCal Pro தேவை.',
         workout_range: '3 மாதங்களுக்கு முந்தைய முன்னேற்றத்தைப் பார்க்க RiceCal Pro தேவை.',
         review: 'பழைய மீள்பார்வையைப் படிக்க RiceCal Pro தேவை.',
         nudge: 'RiceCal Pro வரம்புகளை நீக்குகிறது.',

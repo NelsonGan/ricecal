@@ -3262,16 +3262,30 @@ meal share a tile and swipe sideways inside it.
   the latest message (`group_chat_summary`, read on its own rather than with
   the board). The count stops at 100, so a member who never opens the chat
   does not have the whole history read on every poll.
-- **Replies.** A message is answered by swiping it right, as on WhatsApp, or from
-  its long-press menu; the composer quotes it until sent or cancelled.
+- **Replies.** A message is answered by swiping it toward the middle of the
+  screen, as on WhatsApp: someone else's to the right, your own to the left (a
+  short bubble of yours against the right edge left no room to drag right). The
+  whole row slides, face and name included, and the arrow comes in beside it,
+  never over the face; let go and it glides back rather than springing. The
+  composer quotes the message until sent or cancelled. Sending, with the
+  keyboard up, scrolls to minus the keyboard's inset rather than to 0: on iOS
+  the keyboard is the inverted list's top inset, and 0 dropped the newest
+  messages behind it.
   `group_messages.reply_to_id` points at the answered message in the same thread
   (`send_group_message` refuses one from another group) and is set null if it
   is deleted, so the reply stands on its own. The thread hands each reply a
   `reply_to` quote, left out under the same rules as the thread itself (deleted,
   quarantined, blocked either way, or reported by the viewer).
-- **Reactions** are Instagram's: one per person per message from six emoji
-  (`group_message_reactions`), a double tap for a heart, a long press for the
-  row. Counted by emoji in `group_messages`, leaving out anyone blocked either
+- **Reactions**: one per person per message from six emoji
+  (`group_message_reactions`). A double tap gives a heart, as on Instagram, and
+  the reaction pill under the bubble pops as it lands. A long press dims the
+  whole screen but that message, WhatsApp's way, with the six in a bar above it
+  (under its row when there is no room) and a ⋯ for the sheet that holds reply,
+  delete, report and block (moderation still needs both of those for anything
+  one person writes to another). It is a modal of its own with the message drawn
+  again in place on top, since the list cannot lift one row above a layer laid
+  over it; the ⋯ sheet opens once that modal has gone, as iOS will not present
+  two at once. Counted by emoji in `group_messages`, leaving out anyone blocked either
   way. Setting, changing or taking one back broadcasts `reacted` on the chat's
   topic with the message ids; an open chat refetches only when it holds one of
   them, and an app from before reactions does not listen for the event at all.
@@ -3280,6 +3294,11 @@ meal share a tile and swipe sideways inside it.
   calories and macros. The card reads the post's meal live through
   `private.group_post_food`, as the board reads the diary, so a corrected portion
   shows there too; deleting the post or the meal under it deletes the message.
+  A friend's card carries the board's like and dislike on its photo's corner, the same
+  `group_reactions` row, so a thumb given in the chat shows on the board and
+  back; your own card shows what friends said, once they have.
+  `private.group_food_reactions` appends the entry id and that group's counts
+  to the card, which an app that does not know them ignores.
   The + beside the field lists the viewer's last five food posts to send by hand,
   and that is pushed like any message. **Posting a food to the feed shares it
   into every group chat its author is in, silently** (`98_group_chat_shares.sql`):
@@ -3300,7 +3319,9 @@ meal share a tile and swipe sideways inside it.
   workout. The + has a Workouts tab beside Food with the last five of both,
   listed once. A tap on a workout card opens it straight away, dimming under the
   finger like a button; a workout card has no double-tap heart, so the tap need
-  not wait to rule one out, and its reactions are in the long-press menu.
+  not wait to rule one out, and its reactions are in the long-press bar. A
+  thumb on a food card is a gesture-handler tap rather than a Pressable, so it
+  takes the touch from the bubble's double tap instead of hearting it too.
 - **Release 1.0 still reads every message.** `body` stays required and a food
   message's body is its name and calories ("Nasi lemak (640 kcal)"), which is
   also what its push says, so an app that knows nothing of food cards draws a
@@ -3313,6 +3334,14 @@ meal share a tile and swipe sideways inside it.
   the same name again does not.
 
 ### Membership
+
+**A free account leads two groups at most.** `create_group` refuses a third
+with `group_limit_reached` while the account leads two (`free_group_limit()`),
+counting the groups it leads now, so one handed on by leaving frees its place.
+Joining is never limited. The new-group button checks the list on screen first
+and opens the paywall (`new_group`) before the sheet; the refusal opens it too,
+for a group started on another phone. Release 1.0 has neither, so a free
+account there sees its generic "something went wrong" toast at Create.
 
 Twenty members, at most twenty groups a person, enforced by a trigger that
 locks the group row so two people cannot take the last seat together. The cap
@@ -3480,9 +3509,16 @@ answers every other member's devices, leaving out anyone blocked either way.
 The push carries the body, so this is where blocks are applied to it, as
 `group_messages` does for the thread. It needs no translated copy: the group is
 the title and "Name: message" the body, as messengers write it. Its `data.chat`
-makes the tap open the group's thread over its board with the keyboard up
-(`reply=1`; a chat opened by hand leaves it down), and no banner shows while
-that group's chat or board is on screen (`showingGroupChat`).
+makes the tap open the group's thread with the keyboard up (`reply=1`; a chat
+opened by hand leaves it down), and no banner shows while that group's chat or
+board is on screen (`showingGroupChat`). The thread is pushed once over whatever
+is showing, and only after it has slid in does it switch the tab underneath to
+Groups (`showTabUnder`, a jump aimed at the tab navigator, since navigating to
+the tab would pop the chat) and raise the keyboard, so back still lands on the
+board. Navigating to Groups first and then pushing popped anything open, drew
+the board and then the chat, with the keyboard rising mid-push: three
+transitions for one tap. The thread already open is left alone, and another
+group's is replaced rather than stacked.
 
 **Nobody is pushed a message they watched arrive.** The groups function answers
 a chat message at once and sends its push three seconds later, in the
@@ -5603,15 +5639,17 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 | a recipe read out of a photograph | no | yes |
 | recipes kept | 3 | unlimited |
 | workout routines kept | 3 | unlimited |
+| groups led at once (joining is never limited) | 2 | unlimited |
 | trends | 7 days | 7d / 30d / a year |
 | workout progress bars | 3 months | a year, all time |
 | reviews | the newest week | every week and month |
 | meal photographs kept | 30 days, or 60 past a lapsed subscription | for good |
 | budget, health sync, reminders, the whole catalogue | yes | yes |
 
-Four of those numbers live in `packages/shared` for the copy to interpolate,
-and all four are enforced in Postgres: `free_daily_scans()`,
-`free_recipe_limit()`, `free_routine_limit()`, `free_photo_retention_days()`.
+Five of those numbers live in `packages/shared` for the copy to interpolate,
+and all five are enforced in Postgres: `free_daily_scans()`,
+`free_recipe_limit()`, `free_routine_limit()`, `free_group_limit()`,
+`free_photo_retention_days()`.
 A fifth,
 `lapsed_photo_grace_days()`, is Postgres-only, because the grace period is not
 advertised and a promise about it would be one more thing that cannot be
@@ -6454,7 +6492,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Group Joined | ricecal_group_joined | via: 'invite' &#124; 'public' | `src/features/groups/Home.tsx` | `respond_to_group_invite` with accept, or `join_group` from the public list, returned; each join. Declines send nothing. |
 | Group Invite Sent | ricecal_group_invite_sent | by: 'handle' &#124; 'email' | `src/features/groups/InviteSheet.tsx` | `invite_to_group` answered; each invite, typed or tapped from Suggested (always `handle`). An email counts whether or not it found an account, since the app cannot tell; a handle that finds nobody sends nothing; the push is separate and best effort. |
 | Group Nudge Sent | ricecal_group_nudge_sent | meal: 'breakfast' &#124; 'lunch' &#124; 'dinner' | `src/features/groups/Board.tsx` | `nudge_group_member` accepted the nudge; each nudge. A nudge refused for the hourly cooldown sends nothing. |
-| Group Reaction Set | ricecal_group_reaction_set | reaction: 'like' &#124; 'dislike' | `src/features/groups/MealSheet.tsx` | A like or dislike tapped on a member's food; each set, before the write settles. Clearing a reaction sends nothing. |
+| Group Reaction Set | ricecal_group_reaction_set | reaction: 'like' &#124; 'dislike' | `src/features/groups/MealSheet.tsx` | A like or dislike tapped on a member's food, in the meal sheet or on a food card in the chat (`Thumbs`); each set, before the write settles. Clearing a reaction sends nothing. |
 | Group Message Sent | ricecal_group_message_sent | none | `src/features/groups/Chat.tsx` | `send_group_message` returned; each message. Never carries the text. |
 | Meal Shared | ricecal_meal_shared | picture: 'photo' &#124; 'drawing' | `app/log/food/[id].tsx` | Meal picture share helper reports sent; each send. Android share intent cannot confirm completion. |
 | Workout Started | ricecal_workout_started | source: WorkoutSource; exercises: number | `src/features/workouts/start.tsx` | A workout is opened on the logger from empty, a routine, a template, or a past workout repeated; once per start, including one that is later discarded. `source: past` appears only in data from builds that still had "Log a past workout". |
@@ -6517,7 +6555,7 @@ user text. Extend the source type and these tables together when its domain chan
 | `method` / `LogMethod` | `camera`, `describe`, `search`, `barcode`, `recipe`, `quick_add`, `history` | `events.ts`; compare logging actions, not individual food components |
 | `method` / `SignInMethod` | `apple`, `google`, `email`, `password` | `email` means code/link. Failure coverage currently covers Apple/Google only |
 | `screen` / `PaywallScreen` | `hard`, `intro` | Paywall surfaces below; no generic screen-view event. `reminder` and `ended` appear only in data from app versions released before those two screens were deleted; no build ever navigated to them |
-| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `new_routine`, `trend_range`, `workout_range`, `review`, `nudge` | Refused capability or standing offer; trial expiration is a paywall screen value, not a feature. `suggest` appears only in data from app versions released before "what to eat next" was removed |
+| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `new_routine`, `new_group`, `trend_range`, `workout_range`, `review`, `nudge` | Refused capability or standing offer; trial expiration is a paywall screen value, not a feature. `suggest` appears only in data from app versions released before "what to eat next" was removed |
 | `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
 | `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |
 | `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder category only |

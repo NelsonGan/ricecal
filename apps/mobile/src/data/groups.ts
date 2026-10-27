@@ -1,4 +1,10 @@
-import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  type Query,
+  type QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Database, Tables } from '@/lib/database.types'
 import { onGroupChatPush } from '@/lib/groupChatPushes'
@@ -145,6 +151,15 @@ export type ChatFood = {
   carbs_g: number
   protein_g: number
   fat_g: number
+  /**
+   * The diary entry its thumbs are cast on, with this group's likes and
+   * dislikes and the viewer's own, as the board counts them. Missing from an
+   * older server and from a card drawn before the server answered.
+   */
+  entry_id?: string
+  likes?: number
+  dislikes?: number
+  mine?: -1 | 0 | 1
 }
 
 /**
@@ -1114,6 +1129,61 @@ function patchEntry(
   )
 }
 
+/**
+ * Every cached thread's cards of one food, patched in place, as `patchEntry`
+ * does the boards: a thumb given in the chat shows on the board and back.
+ */
+function patchFoodCards(
+  client: QueryClient,
+  userId: string,
+  entryId: string,
+  patch: (food: ChatFood) => ChatFood,
+) {
+  client.setQueriesData<GroupThread>(
+    { queryKey: keys.groups(userId), predicate: named('group_messages') },
+    (thread) =>
+      thread?.messages.some((message) => message.food?.entry_id === entryId)
+        ? {
+            ...thread,
+            messages: thread.messages.map((message) =>
+              message.food?.entry_id === entryId
+                ? { ...message, food: patch(message.food) }
+                : message,
+            ),
+          }
+        : thread,
+  )
+}
+
+function findFoodCard(client: QueryClient, userId: string, entryId: string): ChatFood | undefined {
+  for (const [, thread] of client.getQueriesData<GroupThread>({
+    queryKey: keys.groups(userId),
+    predicate: named('group_messages'),
+  })) {
+    const food = thread?.messages.find((message) => message.food?.entry_id === entryId)?.food
+    if (food) return food
+  }
+  return undefined
+}
+
+/**
+ * The viewer's own vote moved from one answer to another. Each board and each
+ * chat counts only its own group's members, so the counts differ by group and
+ * are shifted, never copied from one to the rest.
+ */
+function shiftVote<T extends { likes?: number; dislikes?: number; mine?: -1 | 0 | 1 }>(
+  votes: T,
+  to: -1 | 0 | 1,
+): T {
+  const from = votes.mine ?? 0
+  return {
+    ...votes,
+    likes: (votes.likes ?? 0) - (from === 1 ? 1 : 0) + (to === 1 ? 1 : 0),
+    dislikes: (votes.dislikes ?? 0) - (from === -1 ? 1 : 0) + (to === -1 ? 1 : 0),
+    mine: to,
+  }
+}
+
 function findEntry(client: QueryClient, userId: string, entryId: string): BoardEntry | undefined {
   for (const [, board] of client.getQueriesData<GroupBoard>({
     queryKey: keys.groups(userId),
@@ -1162,40 +1232,47 @@ export function useGroupAction() {
     mutationFn: perform,
     onMutate: async (input) => {
       switch (input.action) {
-        case 'react':
+        case 'react': {
+          // Drawn at once on every board and chat card of this food, and
+          // reconciled by the board's own poll and the thread's next read, so
+          // a quick like then unlike never redraws the first tap's answer over
+          // the second. A read already on its way saw the entry before this
+          // write, and would draw the old answer over it; only the threads
+          // holding this food are stopped, so a thread fetching a message
+          // that just arrived keeps it. A refusal puts each cache's own vote
+          // back, not whole boards.
+          const holds = (query: Query) =>
+            named('group_board')(query) ||
+            (named('group_messages')(query) &&
+              Boolean(
+                (query.state.data as GroupThread | undefined)?.messages.some(
+                  (message) => message.food?.entry_id === input.entryId,
+                ),
+              ))
+          await client.cancelQueries({ queryKey: root, predicate: holds })
+          const onBoard = findEntry(client, userId, input.entryId)?.mine
+          const onCard = findFoodCard(client, userId, input.entryId)?.mine
+          if (onBoard === undefined && onCard === undefined) return undefined
+          patchEntry(client, userId, input.entryId, (entry) => shiftVote(entry, input.value))
+          patchFoodCards(client, userId, input.entryId, (food) => shiftVote(food, input.value))
+          return () => {
+            if (onBoard !== undefined) {
+              patchEntry(client, userId, input.entryId, (entry) => shiftVote(entry, onBoard))
+            }
+            if (onCard !== undefined) {
+              patchFoodCards(client, userId, input.entryId, (food) => shiftVote(food, onCard))
+            }
+          }
+        }
         case 'move': {
-          // Drawn at once and reconciled by the board's own poll, so a quick
-          // like then unlike never redraws the first tap's answer over the
-          // second. A refusal restores this one entry, not whole boards.
-          // A poll already on its way read the entry before this write, and
-          // would draw the old answer over it.
+          // Drawn at once and reconciled by the board's own poll. A refusal
+          // restores this one entry, not whole boards.
           await client.cancelQueries({ queryKey: root, predicate: named('group_board') })
           const before = findEntry(client, userId, input.entryId)
           if (!before) return undefined
-          if (input.action === 'move') {
-            patchEntry(client, userId, input.entryId, (entry) => ({ ...entry, meal: input.meal }))
-            return () =>
-              patchEntry(client, userId, input.entryId, (entry) => ({
-                ...entry,
-                meal: before.meal,
-              }))
-          }
-          // The viewer's own vote moved from one answer to another. Each board
-          // counts only its own members, so the counts differ by group and are
-          // shifted, never copied from one board to the rest.
-          const shift = (entry: BoardEntry, from: BoardEntry['mine'], to: BoardEntry['mine']) => ({
-            ...entry,
-            likes: entry.likes - (from === 1 ? 1 : 0) + (to === 1 ? 1 : 0),
-            dislikes: entry.dislikes - (from === -1 ? 1 : 0) + (to === -1 ? 1 : 0),
-            mine: to,
-          })
-          patchEntry(client, userId, input.entryId, (entry) =>
-            shift(entry, entry.mine, input.value),
-          )
+          patchEntry(client, userId, input.entryId, (entry) => ({ ...entry, meal: input.meal }))
           return () =>
-            patchEntry(client, userId, input.entryId, (entry) =>
-              shift(entry, entry.mine, before.mine),
-            )
+            patchEntry(client, userId, input.entryId, (entry) => ({ ...entry, meal: before.meal }))
         }
         case 'reactMessage': {
           // Drawn at once, as a heart is on Instagram; a refusal puts the

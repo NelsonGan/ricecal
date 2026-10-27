@@ -1,27 +1,39 @@
 import { format, isToday, isYesterday, parseISO } from 'date-fns'
 import * as Haptics from 'expo-haptics'
-import { useFocusEffect, useIsFocused } from 'expo-router'
-import { memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useFocusEffect, useIsFocused, useNavigation } from 'expo-router'
+import {
+  memo,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   AppState,
   FlatList,
+  Modal,
   Platform,
   type ScrollViewProps,
   TextInput,
   useWindowDimensions,
   View,
+  type ViewInstance,
 } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardChatScrollView } from 'react-native-keyboard-controller'
 import Animated, {
+  Easing,
   interpolate,
   runOnJS,
+  type SharedValue,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withDelay,
-  withSpring,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -51,7 +63,7 @@ import { type Outgoing, useOutbox } from '@/features/shared'
 import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
-import { useBack } from '@/lib/navigation'
+import { showTabUnder, useBack } from '@/lib/navigation'
 import { dismissGroupChatNotifications, showingGroupChat } from '@/lib/notifications'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -69,7 +81,7 @@ import {
   Tappable,
   Text,
 } from '@/ui'
-import { MacroChips } from './MealSheet'
+import { MacroChips, Thumbs } from './MealSheet'
 import {
   EntryPicture,
   PersonAvatarLink,
@@ -126,8 +138,8 @@ const foodOf = (post: RecentFoodPost): ChatFood => ({
  * One thread for the group, as any group chat is. It opens on the newest page
  * and reads the one before as the viewer scrolls up; a chip marks where each
  * day starts. A message is answered by swiping it right, as on WhatsApp, and
- * reacted to with a double tap (a heart) or from the menu a long press opens,
- * as on Instagram. The + beside the field shares one of the viewer's recent
+ * reacted to with a double tap (a heart), as on Instagram, or from the emoji
+ * bar a long press opens over it, as on WhatsApp. The + beside the field shares one of the viewer's recent
  * food posts as a card.
  */
 export function ChatScreen({
@@ -146,16 +158,32 @@ export function ChatScreen({
   const { thread, loadOlder, loadingOlder } = useGroupThread(groupId, live)
   const messages = thread.data?.messages
   const task = useGroupTask()
-  const [selected, setSelected] = useState<GroupMessage | null>(null)
+  // The emoji bar a long press opens over the thread, and the sheet its ⋯ opens.
+  const [picked, setPicked] = useState<Picked | null>(null)
+  const [menu, setMenu] = useState<GroupMessage | null>(null)
+  // The ⋯ sheet waits for the dimmed layer to finish closing: two native
+  // modals at once is one too many on iOS.
+  const menuNext = useRef<GroupMessage | null>(null)
   const [replying, setReplying] = useState<GroupMessage | null>(null)
   const [picking, setPicking] = useState(false)
   const block = useBlockAuthor()
   const field = useRef<React.ComponentRef<typeof TextInput>>(null)
   const list = useRef<FlatList<ChatItem>>(null)
   // Sending lands the viewer on what they sent, as a messenger does, however
-  // far up the thread they had scrolled. Inverted, so the newest is offset 0.
+  // far up the thread they had scrolled. Inverted, so the newest is offset 0,
+  // except on iOS with the keyboard up: the keyboard is a top inset there and
+  // the newest sits at minus its height. Scrolling to 0 dropped the thread
+  // behind the keyboard on every send, which read as the chat jumping away.
+  const inset = useRef(0)
+  const onInset = useCallback((insets: { top: number }) => {
+    inset.current = insets.top
+  }, [])
   const toNewest = useCallback(
-    () => list.current?.scrollToOffset({ offset: 0, animated: true }),
+    () =>
+      list.current?.scrollToOffset({
+        offset: Platform.OS === 'ios' ? -inset.current : 0,
+        animated: true,
+      }),
     [],
   )
   // The same switch as the group's settings: off, neither this chat's
@@ -165,6 +193,31 @@ export function ChatScreen({
 
   // Pushes for this thread stay quiet while it is on screen.
   useFocusEffect(useCallback(() => showingGroupChat(groupId), [groupId]))
+
+  // Once the screen has slid in: a chat opened from its notification, which
+  // is pushed over whatever tab was showing, puts the Groups tab under itself
+  // so back lands on the board, and only then brings up the keyboard. The
+  // keyboard rising during the push, and the board drawn under it, were the
+  // dropped frames of opening a chat from a notification.
+  const navigation = useNavigation()
+  useEffect(() => {
+    let settled = false
+    const settle = () => {
+      if (settled) return
+      settled = true
+      showTabUnder(navigation as unknown as Parameters<typeof showTabUnder>[0], 'groups')
+      if (reply) field.current?.focus()
+    }
+    const unsubscribe = navigation.addListener('transitionEnd' as never, settle)
+    // A screen that is not pushed (the first one of a deep link) has no
+    // transition to end. Well past any push, so a slow phone's slide is not
+    // cut into by the keyboard.
+    const fallback = setTimeout(settle, 1500)
+    return () => {
+      unsubscribe()
+      clearTimeout(fallback)
+    }
+  }, [navigation, reply])
 
   // Opening the chat reads it once the thread is on screen, which clears the
   // bar's count: read before the first page landed, a message written in
@@ -277,6 +330,7 @@ export function ChatScreen({
     (message: GroupMessage) => react(message, message.my_reaction === '❤️' ? null : '❤️'),
     [react],
   )
+  const closePicker = useCallback(() => setPicked(null), [])
 
   // Newest first, for the inverted list: the outbox is newer than anything sent.
   // A chip goes above the first message of each day; above the oldest one held
@@ -316,7 +370,7 @@ export function ChatScreen({
           message={item}
           first={authorOf(rows[index + 1]) !== item.author.id}
           last={authorOf(rows[index - 1]) !== item.author.id}
-          onSelect={setSelected}
+          onPick={setPicked}
           onRetry={retry}
           onReply={startReply}
           onHeart={heart}
@@ -331,9 +385,14 @@ export function ChatScreen({
   const bottomInset = useSafeAreaInsets().bottom
   const renderScrollComponent = useCallback(
     (props: ScrollViewProps) => (
-      <KeyboardChatScrollView {...props} inverted offset={footerKeyboardOffset(bottomInset)} />
+      <KeyboardChatScrollView
+        {...props}
+        inverted
+        offset={footerKeyboardOffset(bottomInset)}
+        onContentInsetChange={onInset}
+      />
     ),
-    [bottomInset],
+    [bottomInset, onInset],
   )
   return (
     <Screen
@@ -372,7 +431,6 @@ export function ChatScreen({
           groupName={name}
           onSend={sendText}
           onAttach={openPicker}
-          autoFocus={reply}
           replying={replying}
           onCancelReply={cancelReply}
         />
@@ -421,29 +479,42 @@ export function ChatScreen({
           renderItem={renderItem}
         />
       )}
-      <MessageMenu
-        message={selected}
-        onClose={() => setSelected(null)}
-        onReact={(emoji) => {
-          if (!selected) return
-          react(selected, selected.my_reaction === emoji ? null : emoji)
-          setSelected(null)
+      <ReactionBar
+        picked={picked}
+        onClose={closePicker}
+        onReact={(message, emoji) => {
+          react(message, message.my_reaction === emoji ? null : emoji)
+          setPicked(null)
         }}
+        onMore={(message) => {
+          setPicked(null)
+          // Android has no onDismiss, and no trouble with one modal after another.
+          if (Platform.OS === 'ios') menuNext.current = message
+          else setMenu(message)
+        }}
+        onClosed={() => {
+          if (menuNext.current) setMenu(menuNext.current)
+          menuNext.current = null
+        }}
+      />
+      <MessageMenu
+        message={menu}
+        onClose={() => setMenu(null)}
         onReply={() => {
-          if (selected) startReply(selected)
-          setSelected(null)
+          if (menu) startReply(menu)
+          setMenu(null)
         }}
         onDelete={() => {
-          if (selected) task.press({ action: 'deleteMessage', groupId, messageId: selected.id })
-          setSelected(null)
+          if (menu) task.press({ action: 'deleteMessage', groupId, messageId: menu.id })
+          setMenu(null)
         }}
         onReport={() => {
-          if (selected) task.press({ action: 'reportMessage', groupId, messageId: selected.id })
-          setSelected(null)
+          if (menu) task.press({ action: 'reportMessage', groupId, messageId: menu.id })
+          setMenu(null)
         }}
         onBlock={() => {
-          if (selected) block.mutate(selected.author.id)
-          setSelected(null)
+          if (menu) block.mutate(menu.author.id)
+          setMenu(null)
         }}
       />
       <SharePicker
@@ -494,7 +565,6 @@ const Composer = memo(function Composer({
   groupName,
   onSend,
   onAttach,
-  autoFocus,
   replying,
   onCancelReply,
 }: {
@@ -502,7 +572,6 @@ const Composer = memo(function Composer({
   groupName: string
   onSend: (body: string) => void
   onAttach: () => void
-  autoFocus: boolean
   replying: GroupMessage | null
   onCancelReply: () => void
 }) {
@@ -569,7 +638,6 @@ const Composer = memo(function Composer({
             placeholderTextColor={colors.faint}
             multiline
             maxLength={500}
-            autoFocus={autoFocus}
             accessibilityLabel={placeholder}
             className="max-h-[120px] py-2.5 font-body text-[16px] leading-[21px] text-ink"
           />
@@ -618,11 +686,23 @@ const authorOf = (item: ChatItem | undefined) => (item && 'author' in item ? ite
 const AVATAR = 30
 const BUBBLE_INDENT = AVATAR + 8
 
+/** Where something is drawn on screen. */
+type Box = { x: number; y: number; width: number; height: number }
+/**
+ * A long-pressed message: where its bubble is on screen, where its row (its
+ * reactions and time) ends, and whether it ends its run, which shapes the
+ * bubble's corner.
+ */
+type Picked = { message: GroupMessage; bubble: Box; rowBottom: number; last: boolean }
+
+/** Swiped and let go, a row glides back rather than springing past its place. */
+const SETTLE = { duration: 180, easing: Easing.out(Easing.cubic) }
+
 const MessageRow = memo(function MessageRow({
   message,
   first,
   last,
-  onSelect,
+  onPick,
   onRetry,
   onReply,
   onHeart,
@@ -632,7 +712,7 @@ const MessageRow = memo(function MessageRow({
   groupId: string
   first: boolean
   last: boolean
-  onSelect: (message: GroupMessage) => void
+  onPick: (picked: Picked) => void
   onRetry: (requestId: string) => void
   onReply: (message: GroupMessage) => void
   onHeart: (message: GroupMessage) => void
@@ -648,12 +728,32 @@ const MessageRow = memo(function MessageRow({
   const reactions = message.reactions ?? []
   const gap = first ? 'mt-3' : 'mt-1'
   const content = <MessageContent message={message} last={last} faded={state} />
+  // The whole row slides, face and name with the bubble, as WhatsApp's does,
+  // and the reply arrow comes in on its left. Moving only the bubble slid it
+  // over the face, with the arrow drawn on top of both. Your own bubbles sit
+  // against the right edge, where a short one left no room to drag right, so
+  // they slide left instead and the arrow comes in on their right.
+  const shift = useSharedValue(0)
+  const sliding = useAnimatedStyle(() => ({ transform: [{ translateX: shift.value }] }))
+  // The bar lines up with the bubble's side and sits above its top, or below
+  // the whole row (its reactions and time too) when there is no room above.
+  const bubbleBox = useRef<ViewInstance>(null)
+  const rowBox = useRef<ViewInstance>(null)
+  const pick = useCallback(() => {
+    bubbleBox.current?.measureInWindow((x, y, width, height) =>
+      rowBox.current?.measureInWindow((_rx, rowY, _rw, rowHeight) =>
+        onPick({ message, bubble: { x, y, width, height }, rowBottom: rowY + rowHeight, last }),
+      ),
+    )
+  }, [message, onPick, last])
+  const pop = usePop(message.my_reaction ?? null, reactions.length > 0)
   // A message still on its way has no actions: it has no id to act on yet.
   const actionable = !outgoing
   const bubble = actionable ? (
     <MessageGestures
       message={message}
-      onMenu={onSelect}
+      shift={shift}
+      onMenu={pick}
       onReply={onReply}
       onHeart={onHeart}
       onOpen={shared ? () => openWorkout(shared, message.author.id) : undefined}
@@ -675,34 +775,37 @@ const MessageRow = memo(function MessageRow({
   )
   const pill =
     reactions.length > 0 ? (
-      <ReactionPill
-        reactions={reactions}
-        mine={message.my_reaction ?? null}
-        onPress={() => onSelect(message)}
-      />
+      <Animated.View style={pop}>
+        <ReactionPill reactions={reactions} mine={message.my_reaction ?? null} onPress={pick} />
+      </Animated.View>
     ) : null
   if (message.mine) {
     return (
-      <View className={cn('items-end', gap)}>
-        <View className="max-w-[78%]">{bubble}</View>
-        {pill ? <View className="-mt-1.5 mr-2">{pill}</View> : null}
-        {state === 'failed' ? (
-          <View className="mr-1 mt-1 flex-row items-center gap-1">
-            <Icon set="ui" name="warning" size={12} tintColor={colors.hibiscusInk} />
-            <Text variant="micro" className="text-hibiscus-ink">
-              {t('common:delivery.failed')}
-            </Text>
+      <Animated.View className={cn('items-end', gap)} style={sliding}>
+        <View ref={rowBox} collapsable={false} className="items-end">
+          <View ref={bubbleBox} collapsable={false} className="max-w-[78%]">
+            <ReplyArrow shift={shift} side="right" />
+            {bubble}
           </View>
-        ) : state === 'sending' ? (
-          <Text variant="micro" className="mr-1 mt-1">
-            {t('common:delivery.sending')}
-          </Text>
-        ) : last ? (
-          <Text variant="micro" className="mr-1 mt-1">
-            {time}
-          </Text>
-        ) : null}
-      </View>
+          {pill ? <View className="-mt-1.5 mr-2">{pill}</View> : null}
+          {state === 'failed' ? (
+            <View className="mr-1 mt-1 flex-row items-center gap-1">
+              <Icon set="ui" name="warning" size={12} tintColor={colors.hibiscusInk} />
+              <Text variant="micro" className="text-hibiscus-ink">
+                {t('common:delivery.failed')}
+              </Text>
+            </View>
+          ) : state === 'sending' ? (
+            <Text variant="micro" className="mr-1 mt-1">
+              {t('common:delivery.sending')}
+            </Text>
+          ) : last ? (
+            <Text variant="micro" className="mr-1 mt-1">
+              {time}
+            </Text>
+          ) : null}
+        </View>
+      </Animated.View>
     )
   }
   // The face sits level with the bottom of its bubble, as messengers draw it,
@@ -710,40 +813,101 @@ const MessageRow = memo(function MessageRow({
   // inside it; inside, the time pushed the face below the bubble it belongs to.
   // The face and the name open the author's feed.
   return (
-    <View className={gap}>
-      {first ? (
-        <Tappable
-          haptics={false}
-          className="mb-1 self-start"
-          style={{ marginLeft: BUBBLE_INDENT + 6 }}
-          onPress={() => openProfile(message.author.id)}
-          accessibilityRole="button"
-          accessibilityLabel={t('openProfile', { name: message.author.name })}
-        >
-          <Text variant="micro" className="text-ink">
-            {message.author.name}
+    <Animated.View className={gap} style={sliding}>
+      <View ref={rowBox} collapsable={false}>
+        {first ? (
+          <Tappable
+            className="mb-1 self-start"
+            style={{ marginLeft: BUBBLE_INDENT + 6 }}
+            onPress={() => openProfile(message.author.id)}
+            accessibilityRole="button"
+            accessibilityLabel={t('openProfile', { name: message.author.name })}
+          >
+            <Text variant="micro" className="text-ink">
+              {message.author.name}
+            </Text>
+          </Tappable>
+        ) : null}
+        <View className="flex-row items-end gap-2">
+          <ReplyArrow shift={shift} side="left" />
+          <View style={{ width: AVATAR }}>
+            {last ? <PersonAvatarLink person={message.author} size="xs" /> : null}
+          </View>
+          <View ref={bubbleBox} collapsable={false} className="max-w-[78%]">
+            {bubble}
+          </View>
+        </View>
+        {pill ? (
+          <View className="-mt-1.5 self-start" style={{ marginLeft: BUBBLE_INDENT + 6 }}>
+            {pill}
+          </View>
+        ) : null}
+        {last ? (
+          <Text variant="micro" className="mt-1" style={{ marginLeft: BUBBLE_INDENT + 6 }}>
+            {time}
           </Text>
-        </Tappable>
-      ) : null}
-      <View className="flex-row items-end gap-2">
-        <View style={{ width: AVATAR }}>
-          {last ? <PersonAvatarLink person={message.author} size="xs" /> : null}
-        </View>
-        <View className="max-w-[78%]">{bubble}</View>
+        ) : null}
       </View>
-      {pill ? (
-        <View className="-mt-1.5 self-start" style={{ marginLeft: BUBBLE_INDENT + 6 }}>
-          {pill}
-        </View>
-      ) : null}
-      {last ? (
-        <Text variant="micro" className="mt-1" style={{ marginLeft: BUBBLE_INDENT + 6 }}>
-          {time}
-        </Text>
-      ) : null}
-    </View>
+    </Animated.View>
   )
 })
+
+/**
+ * The reaction pill's pop when the viewer's own reaction lands, as a double
+ * tap or the bar gives it: it grows in from small when it is new, or swells
+ * and settles when it was already there. A big heart drawn over the bubble
+ * used to do this job, and it was clipped by the rows around it, covered the
+ * text it was reacting to and sprang about; Instagram's own chat pops the
+ * reaction under the bubble instead.
+ */
+function usePop(mine: string | null, shown: boolean) {
+  const reduceMotion = useReducedMotion()
+  const scale = useSharedValue(1)
+  const before = useRef({ mine, shown })
+  // Before paint, so a pill that has just appeared is never drawn full size
+  // for a frame before it shrinks to grow in.
+  useLayoutEffect(() => {
+    const was = before.current
+    before.current = { mine, shown }
+    if (reduceMotion || !mine || mine === was.mine) return
+    scale.value = withSequence(
+      withTiming(was.shown ? 1.25 : 0.4, { duration: 0 }),
+      withTiming(was.shown ? 1.25 : 1.15, { duration: 140, easing: Easing.out(Easing.quad) }),
+      withTiming(1, { duration: 140, easing: Easing.inOut(Easing.quad) }),
+    )
+  }, [mine, shown, reduceMotion, scale])
+  return useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+}
+
+/**
+ * The arrow a swipe to reply uncovers: left of someone else's face, or right of
+ * your own bubble, whichever side the row slides away from. It rides with the
+ * row and fades in as the swipe nears the point where letting go answers.
+ */
+function ReplyArrow({ shift, side }: { shift: SharedValue<number>; side: 'left' | 'right' }) {
+  const shown = useAnimatedStyle(() => {
+    const pulled = Math.abs(shift.value)
+    return {
+      opacity: interpolate(pulled, [16, REPLY_AT], [0, 1], 'clamp'),
+      transform: [{ scale: interpolate(pulled, [16, REPLY_AT], [0.7, 1], 'clamp') }],
+    }
+  })
+  return (
+    <Animated.View
+      className="absolute bottom-0 top-0 justify-center"
+      style={[{ [side]: -(ARROW + 8) }, shown]}
+      pointerEvents="none"
+    >
+      <View
+        className="items-center justify-center rounded-full bg-surface-alt"
+        style={{ width: ARROW, height: ARROW }}
+      >
+        <Icon set="ui" name="reply" size={18} />
+      </View>
+    </Animated.View>
+  )
+}
+const ARROW = 32
 
 /** A bubble's inside: the quote it answers, then its text, or a food's card. */
 function MessageContent({
@@ -770,7 +934,7 @@ function MessageContent({
     return (
       <View className={cn('gap-1', fade)}>
         {message.reply_to ? <Quote quote={message.reply_to} mine={false} /> : null}
-        <FoodCard food={message.food} ownerId={message.author.id} />
+        <FoodCard food={message.food} ownerId={message.author.id} mine={message.mine} />
       </View>
     )
   }
@@ -910,8 +1074,11 @@ function WorkoutCard({ workout }: { workout: ChatWorkout }) {
   )
 }
 
-/** A food shared into the chat: its photo across the card, then its numbers. */
-function FoodCard({ food, ownerId }: { food: ChatFood; ownerId: string }) {
+/**
+ * A food shared into the chat: its photo across the card, with a like and a
+ * dislike on its corner as the board gives them, then its numbers.
+ */
+function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mine: boolean }) {
   const { t } = useTranslation(['groups', 'common'])
   const { width } = useWindowDimensions()
   // Most of a phone's width, as the mockup's card is, and no wider on a tablet.
@@ -926,6 +1093,26 @@ function FoodCard({ food, ownerId }: { food: ChatFood; ownerId: string }) {
         style={{ height: Math.round(cardWidth * 0.75) }}
       >
         <EntryPicture entry={food} ownerId={ownerId} iconSize={96} />
+        {/* The board's own thumbs, on the photo's corner so the card keeps its
+            two lines. A friend's food takes a like or a dislike; yours shows
+            what friends said, once they have, on a pill so it reads on any photo. */}
+        {food.entry_id && (!mine || food.likes || food.dislikes) ? (
+          <View
+            className={cn(
+              'absolute right-2 top-2',
+              mine && 'rounded-full bg-surface/90 px-2.5 py-1',
+            )}
+          >
+            <Thumbs
+              entryId={food.entry_id}
+              likes={food.likes ?? 0}
+              dislikes={food.dislikes ?? 0}
+              mine={food.mine ?? 0}
+              isSelf={mine}
+              inGesture
+            />
+          </View>
+        ) : null}
       </View>
       {/* Two lines under the photo: the name with its calories on the right,
           then the macros. */}
@@ -959,7 +1146,6 @@ function ReactionPill({
   const total = reactions.reduce((sum, reaction) => sum + reaction.count, 0)
   return (
     <Tappable
-      haptics={false}
       hitSlop={6}
       onPress={onPress}
       className={cn(
@@ -985,18 +1171,18 @@ function ReactionPill({
   )
 }
 
-/** How far a bubble must be dragged right before letting go answers it. */
+/** How far a row must be dragged before letting go answers it. */
 const REPLY_AT = 56
 
 /**
- * The gestures on a sent message. A drag to the right pulls the bubble along
- * and shows the reply arrow; let go past it and the composer quotes the
- * message, as WhatsApp does. A double tap hearts it, as Instagram does, with
- * the heart popping over the bubble. A long press opens the menu. A screen
- * reader reaches all three as named actions.
+ * The gestures on a sent message. A drag toward the middle (right for someone
+ * else's, left for yours) pulls the row along and uncovers the reply arrow; let go past it and the composer quotes the
+ * message, as WhatsApp does. A double tap hearts it, as Instagram does. A long
+ * press opens the emoji bar. A screen reader reaches all three as named actions.
  */
 function MessageGestures({
   message,
+  shift,
   label,
   onMenu,
   onReply,
@@ -1005,8 +1191,10 @@ function MessageGestures({
   children,
 }: {
   message: GroupMessage
+  /** How far the row is pulled, which the row draws. */
+  shift: SharedValue<number>
   label: string
-  onMenu: (message: GroupMessage) => void
+  onMenu: () => void
   onReply: (message: GroupMessage) => void
   onHeart: (message: GroupMessage) => void
   /** What a single tap opens: a workout card's workout. Most messages open nothing. */
@@ -1014,25 +1202,24 @@ function MessageGestures({
   children: ReactNode
 }) {
   const { t } = useTranslation('groups')
-  const reduceMotion = useReducedMotion()
-  const shift = useSharedValue(0)
   const armed = useSharedValue(false)
-  const pop = useSharedValue(0)
 
   const tick = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
   }
   const reply = () => onReply(message)
+  // Toward the middle of the screen: right for someone else's, left for yours.
+  const way = message.mine ? -1 : 1
   const pan = Gesture.Pan()
-    // Rightward only, and only after a clear sideways intent, so the thread's
+    // One way only, and only after a clear sideways intent, so the thread's
     // vertical scroll is never taken.
-    .activeOffsetX(14)
-    .failOffsetX(-14)
+    .activeOffsetX(14 * way)
+    .failOffsetX(-14 * way)
     .failOffsetY([-10, 10])
     .onUpdate((event) => {
       // Follows the finger, then resists past the point where it counts.
-      const x = Math.max(0, event.translationX)
-      shift.value = x < REPLY_AT ? x : REPLY_AT + (x - REPLY_AT) * 0.25
+      const x = Math.max(0, event.translationX * way)
+      shift.value = way * (x < REPLY_AT ? x : REPLY_AT + (x - REPLY_AT) * 0.25)
       const past = x >= REPLY_AT
       if (past !== armed.value) {
         armed.value = past
@@ -1044,16 +1231,11 @@ function MessageGestures({
     })
     .onFinalize(() => {
       armed.value = false
-      shift.value = withSpring(0, { damping: 18, stiffness: 240 })
+      shift.value = withTiming(0, SETTLE)
     })
+  // Felt both ways, so taking a heart back is not a tap that did nothing.
   const heart = () => {
-    const giving = message.my_reaction !== '❤️'
-    if (giving && !reduceMotion) {
-      pop.value = 0.4
-      pop.value = withSpring(1, { damping: 10, stiffness: 260 })
-      pop.value = withDelay(500, withTiming(0, { duration: 200 }))
-    }
-    if (giving) tick()
+    tick()
     onHeart(message)
   }
   // A finger held past a tap's length fails the double tap at once, so the
@@ -1063,17 +1245,19 @@ function MessageGestures({
     .maxDuration(250)
     .maxDelay(250)
     .runOnJS(true)
-    .onEnd(heart)
+    .onEnd((_event, success) => {
+      if (success) heart()
+    })
   const longPress = Gesture.LongPress()
     .minDuration(300)
     .runOnJS(true)
     .onStart(() => {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
-      onMenu(message)
+      onMenu()
     })
   // A card that opens something (a workout) answers a plain tap at once, dimmed
   // under the finger like any button, so it reads as one. Waiting out a double
-  // tap made it feel dead; its heart is in the long-press menu instead.
+  // tap made it feel dead; its heart is in the emoji bar instead.
   const pressed = useSharedValue(0)
   const singleTap = Gesture.Tap()
     .enabled(Boolean(onOpen))
@@ -1084,79 +1268,195 @@ function MessageGestures({
       pressed.value = withTiming(0, { duration: 160 })
     })
     .onEnd((_event, success) => {
-      if (success && onOpen) runOnJS(onOpen)()
+      if (success && onOpen) {
+        runOnJS(tick)()
+        runOnJS(onOpen)()
+      }
     })
   const gesture = Gesture.Race(
     pan,
     onOpen ? Gesture.Exclusive(longPress, singleTap) : Gesture.Exclusive(doubleTap, longPress),
   )
 
-  const moving = useAnimatedStyle(() => ({
-    transform: [{ translateX: shift.value }],
-    opacity: 1 - pressed.value * 0.3,
-  }))
-  const arrow = useAnimatedStyle(() => ({
-    opacity: interpolate(shift.value, [12, REPLY_AT], [0, 1], 'clamp'),
-    transform: [{ scale: interpolate(shift.value, [12, REPLY_AT], [0.6, 1], 'clamp') }],
-  }))
-  const popped = useAnimatedStyle(() => ({
-    opacity: pop.value > 0.05 ? 1 : 0,
-    transform: [{ scale: pop.value }],
-  }))
+  const dimmed = useAnimatedStyle(() => ({ opacity: 1 - pressed.value * 0.3 }))
   return (
-    <View>
+    <GestureDetector gesture={gesture}>
       <Animated.View
-        className="absolute bottom-0 top-0 justify-center"
-        style={[{ left: -36 }, arrow]}
-        pointerEvents="none"
+        style={dimmed}
+        accessible
+        accessibilityLabel={label}
+        accessibilityRole={onOpen ? 'button' : undefined}
+        accessibilityActions={[
+          ...(onOpen ? [{ name: 'activate' as const }] : []),
+          { name: 'longpress', label: t('messageActions') },
+          { name: 'reply', label: t('reply') },
+          { name: 'heart', label: t('heart') },
+        ]}
+        onAccessibilityAction={(event) => {
+          const name = event.nativeEvent.actionName
+          if (name === 'activate') onOpen?.()
+          else if (name === 'reply') onReply(message)
+          else if (name === 'heart') onHeart(message)
+          else onMenu()
+        }}
       >
-        <View className="h-8 w-8 items-center justify-center rounded-full bg-surface-alt">
-          <Icon set="ui" name="reply" size={18} />
-        </View>
+        {children}
       </Animated.View>
-      <GestureDetector gesture={gesture}>
-        <Animated.View
-          style={moving}
-          accessible
-          accessibilityLabel={label}
-          accessibilityRole={onOpen ? 'button' : undefined}
-          accessibilityActions={[
-            ...(onOpen ? [{ name: 'activate' as const }] : []),
-            { name: 'longpress', label: t('messageActions') },
-            { name: 'reply', label: t('reply') },
-            { name: 'heart', label: t('heart') },
-          ]}
-          onAccessibilityAction={(event) => {
-            const name = event.nativeEvent.actionName
-            if (name === 'activate') onOpen?.()
-            else if (name === 'reply') onReply(message)
-            else if (name === 'heart') onHeart(message)
-            else onMenu(message)
-          }}
-        >
-          {children}
-          <Animated.View
-            pointerEvents="none"
-            className="absolute inset-0 items-center justify-center"
-            style={popped}
-          >
-            <Text className="text-[40px] leading-[48px]">❤️</Text>
-          </Animated.View>
-        </Animated.View>
-      </GestureDetector>
-    </View>
+    </GestureDetector>
   )
 }
 
+/** One emoji's key in the bar, and the bar itself: six emoji and the ⋯ after them. */
+const KEY = 40
+const BAR_W = 7 * KEY + 6 * 2 + 2 * 6 + 2
+const BAR_H = KEY + 2 * 6 + 2
+/** The room kept between the bar, its bubble and the thread's edges. */
+const BAR_GAP = 8
+
+/** The bar fades in growing from just under its size, and fades out. */
+const barIn = () => {
+  'worklet'
+  return {
+    initialValues: { opacity: 0, transform: [{ scale: 0.9 }] },
+    animations: {
+      opacity: withTiming(1, { duration: 140 }),
+      transform: [{ scale: withTiming(1, { duration: 160, easing: Easing.out(Easing.cubic) }) }],
+    },
+  }
+}
+
 /**
- * What a long press opens: the reactions in a row along the top, as Instagram
- * puts them, then reply and what moderation needs (delete your own; report or
- * block someone else's, since anything one person writes for another needs both).
+ * What a long press opens, as WhatsApp draws it: everything dims but the
+ * message, drawn again in place over the dim, and the six emoji in a row just
+ * above it (under its row when there is no room above), lined up with its
+ * side, with a ⋯ for the rest. A tap anywhere else closes it. Reply has its
+ * swipe, so the ⋯ sheet is only for what moderation needs.
+ *
+ * Its own window, as a sheet is, so the dim covers the header and the composer
+ * too; the list itself cannot lift one row above a layer laid over it.
+ */
+function ReactionBar({
+  picked,
+  onClose,
+  onReact,
+  onMore,
+  onClosed,
+}: {
+  picked: Picked | null
+  onClose: () => void
+  onReact: (message: GroupMessage, emoji: MessageReaction) => void
+  onMore: (message: GroupMessage) => void
+  /** Once the layer has gone, which on iOS is when another modal may open. */
+  onClosed: () => void
+}) {
+  const { t } = useTranslation(['groups', 'common'])
+  const colors = useThemeColors()
+  const { width, height } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+  // What it was showing, kept while it fades away.
+  const shown = useRef<Picked | null>(null)
+  if (picked) shown.current = picked
+  const current = shown.current
+  let body: ReactNode = null
+  if (current) {
+    const { message, bubble, rowBottom, last } = current
+    const side = message.mine ? bubble.x + bubble.width - BAR_W : bubble.x
+    const left = Math.max(BAR_GAP, Math.min(side, width - BAR_W - BAR_GAP))
+    const above = bubble.y - BAR_H - BAR_GAP
+    const top =
+      above >= insets.top + BAR_GAP
+        ? above
+        : Math.min(rowBottom + BAR_GAP, height - insets.bottom - BAR_H - BAR_GAP)
+    body = (
+      <>
+        <Tappable
+          haptics={false}
+          className="absolute inset-0 bg-black/40"
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel={t('common:action.close')}
+        />
+        {/* The message itself, undimmed, exactly where it sits in the thread. */}
+        <View
+          pointerEvents="none"
+          className={cn('absolute', message.mine && 'items-end')}
+          style={{ left: bubble.x, top: bubble.y, width: bubble.width }}
+          importantForAccessibility="no-hide-descendants"
+          accessibilityElementsHidden
+        >
+          <MessageContent message={message} last={last} />
+        </View>
+        <Animated.View
+          key={message.id}
+          entering={barIn}
+          className="absolute flex-row items-center gap-0.5 rounded-full border border-line bg-surface p-1.5"
+          style={[{ left, top, width: BAR_W, height: BAR_H }, BAR_SHADOW]}
+        >
+          {MESSAGE_REACTIONS.map((emoji) => {
+            const chosen = message.my_reaction === emoji
+            return (
+              <Tappable
+                key={emoji}
+                onPress={() => onReact(message, emoji)}
+                className={cn(
+                  'items-center justify-center rounded-full',
+                  chosen && 'bg-pandan-soft',
+                )}
+                style={{ width: KEY, height: KEY }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: chosen }}
+                accessibilityLabel={t('reactWith', { emoji })}
+              >
+                <Text className="text-[26px] leading-[32px]">{emoji}</Text>
+              </Tappable>
+            )
+          })}
+          <Tappable
+            onPress={() => onMore(message)}
+            className="items-center justify-center rounded-full bg-surface-alt"
+            style={{ width: KEY, height: KEY }}
+            accessibilityRole="button"
+            accessibilityLabel={t('messageActions')}
+          >
+            <Icon set="ui" name="more-horizontal" size={20} tintColor={colors.muted} />
+          </Tappable>
+        </Animated.View>
+      </>
+    )
+  }
+  return (
+    <Modal
+      visible={picked !== null}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onClose}
+      onDismiss={onClosed}
+    >
+      {/* A modal is its own window, which gesture-handler's root does not
+          reach on Android; the food card's thumbs are gesture taps. */}
+      <GestureHandlerRootView style={{ flex: 1 }}>{body}</GestureHandlerRootView>
+    </Modal>
+  )
+}
+
+const BAR_SHADOW = {
+  shadowColor: '#000',
+  shadowOpacity: 0.14,
+  shadowRadius: 14,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 6,
+}
+
+/**
+ * What the emoji bar's ⋯ opens: reply, and what moderation needs (delete your
+ * own; report or block someone else's, since anything one person writes for
+ * another needs both).
  */
 function MessageMenu({
   message,
   onClose,
-  onReact,
   onReply,
   onDelete,
   onReport,
@@ -1164,7 +1464,6 @@ function MessageMenu({
 }: {
   message: GroupMessage | null
   onClose: () => void
-  onReact: (emoji: MessageReaction) => void
   onReply: () => void
   onDelete: () => void
   onReport: () => void
@@ -1183,26 +1482,6 @@ function MessageMenu({
       description={current?.body}
     >
       <View className="gap-md">
-        <View className="flex-row justify-between rounded-full bg-surface-alt px-2 py-1.5">
-          {MESSAGE_REACTIONS.map((emoji) => {
-            const chosen = current?.my_reaction === emoji
-            return (
-              <Tappable
-                key={emoji}
-                onPress={() => onReact(emoji)}
-                className={cn(
-                  'h-12 w-12 items-center justify-center rounded-full',
-                  chosen && 'bg-pandan-soft',
-                )}
-                accessibilityRole="button"
-                accessibilityState={{ selected: chosen }}
-                accessibilityLabel={t('reactWith', { emoji })}
-              >
-                <Text className="text-[28px] leading-[34px]">{emoji}</Text>
-              </Tappable>
-            )
-          })}
-        </View>
         <Button
           fullWidth
           variant="secondary"

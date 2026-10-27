@@ -1366,6 +1366,11 @@ export const vi = {
           free: '{{routines}} giáo án',
           pro: 'Không giới hạn',
         },
+        groups: {
+          label: 'Nhóm bạn tạo',
+          free: '{{groups}} nhóm',
+          pro: 'Không giới hạn',
+        },
         recipeFill: {
           label: 'Điền món ăn từ một tấm ảnh',
           free: '',
@@ -1425,6 +1430,7 @@ export const vi = {
         new_recipe: 'Giữ hơn {{recipes}} món ăn của mình cần RiceCal Pro.',
         trend_range: 'Nhìn lại xa hơn một tuần cần RiceCal Pro.',
         new_routine: 'Giữ hơn {{routines}} giáo án tập cần RiceCal Pro.',
+        new_group: 'Tạo hơn {{groups}} nhóm cần RiceCal Pro.',
         workout_range: 'Xem tiến độ tập xa hơn 3 tháng cần RiceCal Pro.',
         review: 'Đọc một bản tổng kết cũ hơn cần RiceCal Pro.',
         nudge: 'RiceCal Pro gỡ bỏ giới hạn.',

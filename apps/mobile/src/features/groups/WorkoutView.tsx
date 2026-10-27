@@ -55,7 +55,6 @@ export function GroupWorkoutScreen({
               </Text>
               {view ? (
                 <Tappable
-                  haptics={false}
                   onPress={() => openProfile(view.owner.id)}
                   className="flex-row items-center gap-1.5 rounded-full bg-surface-alt py-1 pl-1 pr-2.5"
                   accessibilityRole="button"

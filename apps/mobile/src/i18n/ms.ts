@@ -1392,6 +1392,11 @@ export const ms = {
           free: '{{routines}} rutin',
           pro: 'Tanpa had',
         },
+        groups: {
+          label: 'Kumpulan yang anda mulakan',
+          free: '{{groups}} kumpulan',
+          pro: 'Tanpa had',
+        },
         recipeFill: {
           label: 'Isi makanan daripada gambar',
           free: '',
@@ -1452,6 +1457,7 @@ export const ms = {
         new_recipe: 'Menyimpan lebih daripada {{recipes}} makanan sendiri memerlukan RiceCal Pro.',
         trend_range: 'Melihat lebih jauh daripada seminggu memerlukan RiceCal Pro.',
         new_routine: 'Menyimpan lebih daripada {{routines}} rutin senaman memerlukan RiceCal Pro.',
+        new_group: 'Memulakan lebih daripada {{groups}} kumpulan memerlukan RiceCal Pro.',
         workout_range:
           'Melihat kemajuan senaman lebih jauh daripada 3 bulan memerlukan RiceCal Pro.',
         review: 'Membaca ulasan lama memerlukan RiceCal Pro.',

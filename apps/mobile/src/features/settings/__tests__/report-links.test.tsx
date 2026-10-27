@@ -21,13 +21,19 @@ const mockPush = jest.fn()
 const mockListeners: ((response: unknown) => void)[] = []
 const mockLaunch: { response: unknown } = { response: null }
 
+const mockHref = (href: unknown) => (typeof href === 'string' ? href : JSON.stringify(href))
+// The screen on top when a notification is tapped.
+const mockRoute: { current?: { name: string; params?: object } } = {}
+const mockNavigation = { isReady: () => true, getCurrentRoute: () => mockRoute.current }
+
 jest.mock('expo-router', () => ({
   router: {
-    push: (href: string) => mockPush(href),
-    navigate: (href: unknown) =>
-      mockPush(`navigate ${typeof href === 'string' ? href : JSON.stringify(href)}`),
+    push: (href: unknown) => mockPush(mockHref(href)),
+    navigate: (href: unknown) => mockPush(`navigate ${mockHref(href)}`),
+    replace: (href: unknown) => mockPush(`replace ${mockHref(href)}`),
     dismissTo: (href: string) => mockPush(`dismissTo ${href}`),
   },
+  useNavigationContainerRef: () => mockNavigation,
 }))
 
 // A workout is running, for the notices that open the logger.
@@ -70,6 +76,7 @@ beforeEach(() => {
   mockPush.mockReset()
   mockListeners.length = 0
   mockLaunch.response = null
+  mockRoute.current = { name: 'today' }
 })
 
 it('opens the newest weekly review from a weekly report', async () => {
@@ -129,17 +136,28 @@ it('answers the launching tap, and answers it once', async () => {
   await second.unmount()
 })
 
-it("opens a chat push on its group's thread, over that group's board", async () => {
-  const { unmount } = await mount()
-  mockListeners[0]?.({
-    notification: {
-      request: { content: { data: { kind: 'group', groupId: 'g1', chat: true } } },
-    },
-  })
+const chatPush = (groupId: string) => ({
+  notification: { request: { content: { data: { kind: 'group', groupId, chat: true } } } },
+})
+const chatHref = (id: string) =>
+  JSON.stringify({ pathname: '/group/chat', params: { id, reply: '1' } })
 
-  expect(mockPush.mock.calls.map(([href]) => href)).toEqual([
-    'navigate /groups',
-    `navigate ${JSON.stringify({ pathname: '/group/chat', params: { id: 'g1', reply: '1' } })}`,
-  ])
+it("opens a chat push on its group's thread in one push over whatever is showing", async () => {
+  const { unmount } = await mount()
+  mockListeners[0]?.(chatPush('g1'))
+
+  // Not to Groups first: that popped, drew the board, then pushed the chat.
+  expect(mockPush.mock.calls.map(([href]) => href)).toEqual([chatHref('g1')])
+  unmount()
+})
+
+it('leaves the thread alone when it is already open, and swaps in another group', async () => {
+  const { unmount } = await mount()
+  mockRoute.current = { name: 'chat', params: { id: 'g1' } }
+  mockListeners[0]?.(chatPush('g1'))
+  expect(mockPush).not.toHaveBeenCalled()
+
+  mockListeners[0]?.(chatPush('g2'))
+  expect(mockPush.mock.calls.map(([href]) => href)).toEqual([`replace ${chatHref('g2')}`])
   unmount()
 })

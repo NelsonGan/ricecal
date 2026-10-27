@@ -1351,6 +1351,11 @@ export const th = {
           free: '{{routines}} รูทีน',
           pro: 'ไม่จำกัด',
         },
+        groups: {
+          label: 'กลุ่มที่คุณสร้าง',
+          free: '{{groups}} กลุ่ม',
+          pro: 'ไม่จำกัด',
+        },
         recipeFill: {
           label: 'กรอกอาหารจากรูปถ่าย',
           free: '',
@@ -1410,6 +1415,7 @@ export const th = {
         new_recipe: 'การเก็บอาหารของตัวเองเกิน {{recipes}} อย่างต้องใช้ RiceCal Pro',
         trend_range: 'การย้อนดูเกินหนึ่งสัปดาห์ต้องใช้ RiceCal Pro',
         new_routine: 'การเก็บรูทีนออกกำลังกายเกิน {{routines}} รูทีนต้องใช้ RiceCal Pro',
+        new_group: 'การสร้างกลุ่มเกิน {{groups}} กลุ่มต้องใช้ RiceCal Pro',
         workout_range: 'การย้อนดูความคืบหน้าเกิน 3 เดือนต้องใช้ RiceCal Pro',
         review: 'การอ่านสรุปเก่ากว่านี้ต้องใช้ RiceCal Pro',
         nudge: 'RiceCal Pro ปลดขีดจำกัดออก',
