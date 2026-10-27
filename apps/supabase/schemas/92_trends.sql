@@ -95,7 +95,14 @@ as $$
     g.water_ml::integer,
     w.weight_kg
   from calendar c
+  -- A bound the planner can push into the view, so it sums the range and not
+  -- the whole diary (see `day_marks`). It has to be written from the arguments:
+  -- a bound read from `bounds` is a join condition and is not pushed down. A
+  -- year reaches back at most 366 days, so the loose figure there costs nothing.
   left join public.daily_nutrition n on n.user_id = p_user_id and n.log_date    = c.at
+    and n.log_date between public.local_today(p_user_id)
+                           - case p_range when '7d' then 6 when '30d' then 29 else 366 end
+                       and public.local_today(p_user_id)
   left join public.daily_logs      l on l.user_id = p_user_id and l.log_date    = c.at
   left join public.weight_logs     w on w.user_id = p_user_id and w.measured_on = c.at
   left join lateral (

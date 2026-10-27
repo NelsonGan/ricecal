@@ -60,7 +60,8 @@ create table public.food_scan_items (
 );
 
 create index food_scan_items_scan_idx on public.food_scan_items (scan_id);
-create index food_scan_items_tier_idx on public.food_scan_items (resolved_tier);
+-- No index on `resolved_tier`. It holds five values, so a count by tier reads
+-- the table whichever way, and the index was never used.
 -- Deleting a diary entry or an account looks up the items that point at it.
 create index food_scan_items_food_log_idx on public.food_scan_items (food_log_id);
 create index food_scan_items_user_idx on public.food_scan_items (user_id);

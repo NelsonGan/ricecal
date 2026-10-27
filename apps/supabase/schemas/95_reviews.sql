@@ -135,7 +135,10 @@ as $$
     coalesce(s.session_seconds, 0)
   from calendar c
   cross join prefs p
+  -- The range again beside the join, so the view sums this window and not the
+  -- whole diary (see `day_marks`).
   left join public.daily_nutrition n on n.user_id = p_user_id and n.log_date    = c.at
+    and n.log_date between p_from and p_to
   left join public.daily_logs      l on l.user_id = p_user_id and l.log_date    = c.at
   left join public.weight_logs     w on w.user_id = p_user_id and w.measured_on = c.at
   left join public.activity_days   a on a.user_id = p_user_id and a.log_date    = c.at
