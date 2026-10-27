@@ -3316,9 +3316,12 @@ meal share a tile and swipe sideways inside it.
 
 Twenty members, at most twenty groups a person, enforced by a trigger that
 locks the group row so two people cannot take the last seat together. The cap
-was ten, and release 1.0 still treats ten as full: on that app a group of ten
-to nineteen reads as Full and hides Invite, while the server lets it grow and
-the current app shows the true count.
+was ten, and the apps in the stores take ten as full, so the two lists where
+they offer Join (`my_group_invites`, `public_groups`) report a group of ten to
+nineteen as nine (`private.group_size_for_join`) and their Join stays live. The
+true size travels beside it as `member_total`, which the current app reads.
+What an older app cannot be helped with: a leader of ten or more has no
+Invite in its settings, and its board shows the real count.
 `groups.member_count` is kept by the same triggers, so the cap, the lists and the
 public ranking read one column instead of counting rows. A full group
 withdraws its pending invites. Private groups are invite only; public groups are
