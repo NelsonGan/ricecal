@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Device from 'expo-device'
 import * as ImagePicker from 'expo-image-picker'
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Linking, Platform, Pressable, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -57,6 +57,12 @@ const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e'] as const
  * worse than a plate further away.
  */
 export const MAX_ZOOM = 8
+
+/**
+ * Below this a pinch counts as 1x: the chip that shows the zoom is hidden, so a
+ * pinch that ends under it snaps back rather than leaving a crop nobody can see.
+ */
+const ZOOMED_FROM = 1.05
 
 /** How long the focus square stays up after a tap. */
 const FOCUS_RING_MS = 900
@@ -153,7 +159,7 @@ export function InlineCamera({
   const camera = useRef<CameraView>(null)
   // As a multiple of the 1x lens, which is where the camera opens. The device's
   // own ceiling is asked for once the camera is up and again at every pinch,
-  // since flipping to the front camera changes it.
+  // since flipping cameras changes it.
   const [zoom, setZoom] = useState(1)
   // The device's whole range, which `zoomProp` needs as its base, and the part
   // of it a pinch may use.
@@ -163,7 +169,11 @@ export function InlineCamera({
   // The feed's own box, which is bigger than the viewfinder in meal mode (see
   // `photoCropFill`). A tap is measured against it, so it is the box the focus
   // point is a fraction of.
-  const [feed, setFeed] = useState({ width: 0, height: 0 })
+  const feed = useRef({ width: 0, height: 0 })
+  // What the gestures read, as refs: a gesture can hold the callbacks of the
+  // render it was attached in, and a stale zoom would restart every pinch at 1x.
+  const live = useRef({ zoom: 1, maxZoom: 1 })
+  live.current = { zoom, maxZoom }
   const [focusAt, setFocusAt] = useState<{ x: number; y: number; key: number } | null>(null)
   const scanning = mode === 'barcode'
   // Measured, because in fill mode the box is whatever the sheet has left and
@@ -224,30 +234,46 @@ export function InlineCamera({
     .enabled(hasCamera)
     .runOnJS(true)
     .onStart(() => {
-      pinchFrom.current = zoom
+      pinchFrom.current = live.current.zoom
       readZoomRange()
     })
-    .onUpdate((event) => setZoom(clamp(pinchFrom.current * event.scale, 1, maxZoom)))
+    // Hundredths, so a slow pinch does not re-render the camera and lock the
+    // device for a change nobody can see.
+    .onUpdate((event) =>
+      setZoom(
+        Math.round(clamp(pinchFrom.current * event.scale, 1, live.current.maxZoom) * 100) / 100,
+      ),
+    )
+    .onEnd(() => setZoom((current) => (current < ZOOMED_FROM ? 1 : current)))
+    .withTestId('camera-pinch')
   const tap = Gesture.Tap()
     .enabled(hasCamera)
     .runOnJS(true)
     .onEnd((event, success) => {
-      if (!success || !feed.width || !feed.height) return
-      camera.current?.focusAtPointAsync(event.x / feed.width, event.y / feed.height).catch(() => {})
+      const { width, height } = feed.current
+      if (!success || !width || !height) return
+      camera.current?.focusAtPointAsync(event.x / width, event.y / height).catch(() => {})
       setFocusAt({ x: event.x, y: event.y, key: Date.now() })
     })
+    .withTestId('camera-tap')
   const feedGesture = Gesture.Race(pinch, tap)
 
   // Barcode mode always uses the back camera, so the lens can change without
-  // the flip button. Each lens has its own range and starts at 1x.
+  // the flip button. Each lens has its own range and starts at 1x. The range is
+  // forgotten rather than read here: a read sent now can reach the camera before
+  // it has switched and return the old lens's. The next pinch reads it.
   const lens = scanning ? 'back' : facing
-  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the lens changes, not when the reader does
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the lens changes
   useEffect(() => {
     setZoom(1)
-    readZoomRange()
+    setDeviceZoom(1)
   }, [lens])
-  const zoomed = zoom >= 1.05
-  const zoomLabel = `${new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(zoom)}×`
+  const zoomed = zoom >= ZOOMED_FROM
+  const zoomFormat = useMemo(
+    () => new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }),
+    [i18n.language],
+  )
+  const zoomLabel = `${zoomFormat.format(zoom)}×`
 
   const capture = async () => {
     if (capturing) return
@@ -372,8 +398,11 @@ export function InlineCamera({
            and hand back a product they never aimed at. */
         <GestureDetector gesture={feedGesture}>
           <View
+            testID="camera-feed"
             style={scanning ? { position: 'absolute', inset: 0 } : photoCropFill}
-            onLayout={(event) => setFeed(event.nativeEvent.layout)}
+            onLayout={(event) => {
+              feed.current = event.nativeEvent.layout
+            }}
           >
             <CameraView
               ref={camera}

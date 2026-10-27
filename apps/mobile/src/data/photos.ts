@@ -1,11 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 // Only ever for its cache, never to render. It empties the cache on the way out
 // of an account, asks it where a picture already is, and seeds it with a photo on
-// the way up. The `Image` below is React Native's, and it is here to measure a
-// file rather than to draw one.
+// the way up.
 import { Image as ImageCache } from 'expo-image'
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
-import { Image } from 'react-native'
+import { ImageManipulator, type ImageResult, SaveFormat } from 'expo-image-manipulator'
 
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
@@ -102,19 +100,6 @@ const PHOTO_COMPRESS = 0.7
 const MAX_EDGE: Record<AssetKind, number> = {
   meal: PHOTO_MAX_EDGE,
   avatar: AVATAR_MAX_EDGE,
-}
-
-/**
- * The photo's pixel size, or null when it cannot be read.
- */
-function measureImage(uri: string): Promise<{ width: number; height: number } | null> {
-  return new Promise((resolve) => {
-    Image.getSize(
-      uri,
-      (width, height) => resolve({ width, height }),
-      () => resolve(null),
-    )
-  })
 }
 
 type PhotosResponse = {
@@ -245,30 +230,34 @@ export function resolveStoredImage(key: string, shareSlug?: string): Promise<str
  * 6 MB a frame and the endpoint refuses anything over 10 MB. The cap is on the
  * longer edge, so an image already within budget is re-encoded but not upscaled.
  *
+ * The cap is applied WHILE DECODING, not after. `manipulateAsync` could only
+ * resize a bitmap it had already decoded at full size, and an Android album
+ * holds 50 and 200 megapixel photos: 200 MB to 800 MB of pixels, which ran
+ * the app out of memory and killed it with no error to catch. A bounding box
+ * of the edge on both sides caps the longer one whichever way the photo faces.
+ *
  * Shrink, ask for a URL, PUT. The key comes back from the server, which is what
  * enforces that it sits inside the caller's own folder.
  */
 async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
   const maxEdge = MAX_EDGE[kind]
-  const dims = await measureImage(localUri)
-  const actions =
-    dims === null
-      ? // Unmeasurable: cap by width, which is the pre-cap behaviour and only
-        // over-shoots the budget on a portrait shot.
-        [{ resize: { width: maxEdge } }]
-      : Math.max(dims.width, dims.height) <= maxEdge
-        ? []
-        : [
-            dims.width >= dims.height
-              ? { resize: { width: maxEdge } }
-              : { resize: { height: maxEdge } },
-          ]
-
-  const image = await manipulateAsync(localUri, actions, {
-    compress: PHOTO_COMPRESS,
-    format: SaveFormat.JPEG,
-    base64: true,
-  })
+  const context = ImageManipulator.manipulate(localUri, { maxWidth: maxEdge, maxHeight: maxEdge })
+  let image: ImageResult
+  try {
+    const rendered = await context.renderAsync()
+    try {
+      image = await rendered.saveAsync({
+        compress: PHOTO_COMPRESS,
+        format: SaveFormat.JPEG,
+        base64: true,
+      })
+    } finally {
+      rendered.release()
+    }
+  } finally {
+    // Native bitmaps, freed now rather than whenever the JS object is collected.
+    context.release()
+  }
 
   if (!image.base64) throw new Error('Could not read the photo')
   const bytes = decodeBase64(image.base64)
