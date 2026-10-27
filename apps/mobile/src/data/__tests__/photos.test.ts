@@ -67,8 +67,8 @@ describe('avatar uploads', () => {
 
   /**
    * Bounds on the decode, not a resize after it. A resize could only shrink a
-   * bitmap already decoded at full size, and a 200 megapixel Android photo is
-   * 800 MB of pixels: the app was killed before the resize ran.
+   * bitmap already decoded at full size, which for a 200 megapixel Android
+   * photo is most of a gigabyte held at once.
    */
   it('decodes within the cap and caches the uploaded bytes', async () => {
     await expect(uploadAvatar('file:///portrait.jpg')).resolves.toBe(KEY)

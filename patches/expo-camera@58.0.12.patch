@@ -122,7 +122,7 @@ index 51baba655952d7fd07607bd08e96b0027734da80..32680d166e3f35fb28758105506ed8d5
          #if targetEnvironment(simulator)
          if AVCaptureDevice.default(for: .video) == nil {
 diff --git a/ios/Current/CameraSessionManager.swift b/ios/Current/CameraSessionManager.swift
-index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..41cbcb748fe80542cd65d5bc38df80cd76100508 100644
+index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..240926a2f965b0444fad8c66ddd026b6e3e74340 100644
 --- a/ios/Current/CameraSessionManager.swift
 +++ b/ios/Current/CameraSessionManager.swift
 @@ -32,6 +32,10 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
@@ -136,7 +136,7 @@ index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..41cbcb748fe80542cd65d5bc38df80cd
    private var photoOutput: AVCapturePhotoOutput?
    private var videoFileOutput: AVCaptureMovieFileOutput?
    private var runtimeErrorTask: Task<Void, Never>?
-@@ -218,12 +222,92 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+@@ -218,12 +222,82 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
      do {
        try device.lockForConfiguration()
        defer { device.unlockForConfiguration() }
@@ -164,22 +164,31 @@ index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..41cbcb748fe80542cd65d5bc38df80cd
 +    guard let device = captureDeviceInput?.device else {
 +      return
 +    }
++    setPointOfInterest(device, devicePoint, focusMode: .autoFocus, watchScene: true)
++    observeSubjectAreaChange(device)
++  }
++
++  private func setPointOfInterest(
++    _ device: AVCaptureDevice,
++    _ point: CGPoint,
++    focusMode: AVCaptureDevice.FocusMode,
++    watchScene: Bool
++  ) {
 +    do {
 +      try device.lockForConfiguration()
 +      defer { device.unlockForConfiguration() }
-+      if device.isFocusPointOfInterestSupported, device.isFocusModeSupported(.autoFocus) {
-+        device.focusPointOfInterest = devicePoint
-+        device.focusMode = .autoFocus
++      if device.isFocusPointOfInterestSupported, device.isFocusModeSupported(focusMode) {
++        device.focusPointOfInterest = point
++        device.focusMode = focusMode
 +      }
 +      if device.isExposurePointOfInterestSupported, device.isExposureModeSupported(.continuousAutoExposure) {
-+        device.exposurePointOfInterest = devicePoint
++        device.exposurePointOfInterest = point
 +        device.exposureMode = .continuousAutoExposure
 +      }
-+      device.isSubjectAreaChangeMonitoringEnabled = true
++      device.isSubjectAreaChangeMonitoringEnabled = watchScene
 +    } catch {
 +      log.info("\(#function): \(error.localizedDescription)")
 +    }
-+    observeSubjectAreaChange(device)
 +  }
 +
 +  private var subjectAreaObserver: NSObjectProtocol?
@@ -202,56 +211,25 @@ index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..41cbcb748fe80542cd65d5bc38df80cd
 +        return
 +      }
 +      queue.async {
-+        self.resetFocus(device)
++        self.setPointOfInterest(device, CGPoint(x: 0.5, y: 0.5), focusMode: .continuousAutoFocus, watchScene: false)
++        self.stopObservingSubjectArea()
 +      }
 +    }
-+  }
-+
-+  private func resetFocus(_ device: AVCaptureDevice) {
-+    let centre = CGPoint(x: 0.5, y: 0.5)
-+    do {
-+      try device.lockForConfiguration()
-+      defer { device.unlockForConfiguration() }
-+      if device.isFocusPointOfInterestSupported, device.isFocusModeSupported(.continuousAutoFocus) {
-+        device.focusPointOfInterest = centre
-+        device.focusMode = .continuousAutoFocus
-+      }
-+      if device.isExposurePointOfInterestSupported, device.isExposureModeSupported(.continuousAutoExposure) {
-+        device.exposurePointOfInterest = centre
-+        device.exposureMode = .continuousAutoExposure
-+      }
-+      device.isSubjectAreaChangeMonitoringEnabled = false
-+    } catch {
-+      log.info("\(#function): \(error.localizedDescription)")
-+    }
-+    stopObservingSubjectArea()
 +  }
 +
    func getAvailableLenses() -> [LensInfo] {
      guard let delegate else {
        return []
-@@ -323,6 +407,10 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+@@ -323,6 +397,8 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
  
    deinit {
      runtimeErrorTask?.cancel()
 +    formatObservation?.invalidate()
-+    if let subjectAreaObserver {
-+      NotificationCenter.default.removeObserver(subjectAreaObserver)
-+    }
++    stopObservingSubjectArea()
    }
  
    var currentPhotoOutput: AVCapturePhotoOutput? { photoOutput }
-@@ -355,6 +443,9 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
-     session.beginConfiguration()
-     defer {
-       session.commitConfiguration()
-+      // Patched (RiceCal): see `startSession`. A device added to a configured session gets its
-+      // format on commit, which resets the zoom set inside the configuration.
-+      updateZoom()
-       delegate.emitAvailableLenses()
-       delegate.configurePreviewRotation()
-     }
-@@ -368,6 +459,17 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+@@ -368,6 +444,17 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
          session.addInput(deviceInput)
          captureDeviceInput = deviceInput
          updateZoom()
@@ -269,7 +247,7 @@ index 9ac259afa1a6136e94883dfb8fd5624034aaa9aa..41cbcb748fe80542cd65d5bc38df80cd
        }
      } catch {
        delegate.onMountError(["message": "Camera could not be started - \(error.localizedDescription)"])
-@@ -428,6 +530,10 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
+@@ -428,6 +515,10 @@ class CameraSessionManager: NSObject, DeviceDiscoveryDelegate {
      configureResponsiveCapture(photoOutput)
  
      session.commitConfiguration()
