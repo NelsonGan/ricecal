@@ -18,7 +18,10 @@
     // service-role key they can mint one with. See `otpToken` in
     // `apps/supabase/scripts/lib/live.mjs`.
     "EVAL_ACCESS_TOKEN",
-    "SUPABASE_SERVICE_ROLE_KEY"
+    "SUPABASE_SERVICE_ROLE_KEY",
+    // The read-only PostHog key `prompts:check` compares the hosted prompts
+    // with, the same one the edge functions read them with.
+    "POSTHOG_PROMPTS_API_KEY"
   ],
   "tasks": {
     "typecheck": {
