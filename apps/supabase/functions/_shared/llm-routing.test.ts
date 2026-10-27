@@ -194,9 +194,24 @@ Deno.test('an unreadable answer is described by its shape, never by its words', 
   assertEquals(comma.includes('error=unexpected-token at=-1 at-char=]'), true)
   const bare = answerShape('{"name":"roti canai","kcal":NaN}')
   assertEquals(bare.includes('error=unexpected-token at=-1 at-char=letter'), true)
-  // Cut off part way, with nothing closing it.
-  assertEquals(answerShape('{"items":[{"name":"roti').includes('unclosed=2'), true)
-  for (const shape of [twice, quote, late, comma, bare]) {
+  // Cut off part way, with nothing closing it, inside the string that opens at 18.
+  const cut = answerShape('{"items":[{"name":"roti')
+  assertEquals(cut.includes('unclosed=2'), true)
+  assertEquals(cut.includes('stuck=18'), true)
+  // Errors V8 positions but that used to read as `other`.
+  const badEscape = answerShape('{"name":"roti \\a canai","kcal":300}')
+  assertEquals(
+    badEscape.includes('error=bad-escape at=15 at-char=letter prev-char=backslash'),
+    true,
+  )
+  const minus = answerShape('{"name":"roti canai","kcal":-x}')
+  assertEquals(minus.includes('error=bad-number'), true)
+  assertEquals(answerShape('{"kcal":1.x}').includes('error=bad-number'), true)
+  assertEquals(answerShape('{"kcal":1ex}').includes('error=bad-number'), true)
+  assertEquals(answerShape('{"name":"\\u00zz"}').includes('error=bad-unicode'), true)
+  // A balanced answer has no string left open.
+  assertEquals(badEscape.includes('stuck=-1'), true)
+  for (const shape of [twice, quote, late, comma, bare, cut, badEscape, minus]) {
     assertEquals(/nasi|lemak|teh|tarik|ayam|roti|canai|kcal|name|Corrected|NaN/i.test(shape), false)
   }
 })
