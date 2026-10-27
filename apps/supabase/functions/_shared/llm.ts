@@ -1098,9 +1098,18 @@ export const ANALYSE_PHOTO_PROMPT =
   'Otherwise respond with JSON only, matching: ' +
   itemSchema(false) +
   // One meal. Anything else is a diary with four rows for one lunch.
-  'The photo is ONE logged meal. Return ONE item, named as a local menu would print ' +
-  'it ("Korean fried chicken with rice and sides"). Only return more than one item ' +
+  'The photo is ONE logged meal. Return ONE item. Only return more than one item ' +
   "when the photo unambiguously shows separate meals — two people's plates. " +
+  // Haiku read "as a local menu would print it" as a description and named the
+  // plate after every side on it: camera names went from 38 to 57 characters
+  // on average the day it took over, many cut off at 120.
+  'The item\'s "name" is what a person would call the meal in their food diary: the ' +
+  'dish, plus at most the one or two foods that change what it is. 2 to 6 words, never ' +
+  'more than 40 characters: "Nasi lemak with fried chicken", "Chicken rice", ' +
+  '"Wonton noodles with char siu", "Nasi campur", "Acai bowl". It is a NAME, not a ' +
+  'description: never list every side, topping or garnish, never describe colour, ' +
+  'texture or plating, and never add brackets. The components already say what is ' +
+  'on the plate. ' +
   QUERY_FIELDS +
   COUNT_VS_COMPONENTS +
   // Only what is on the plate: a guessed part is a control over a number nobody
