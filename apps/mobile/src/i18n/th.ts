@@ -754,6 +754,7 @@ export const th = {
       shutter: 'ถ่ายรูป',
       library: 'เลือกจากคลังรูป',
       flip: 'สลับกล้อง',
+      resetZoom: 'รีเซ็ตการซูม',
       photoOf: 'รูปของ {{food}}',
     },
 
