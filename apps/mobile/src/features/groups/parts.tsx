@@ -50,16 +50,29 @@ export function useOpenProfile() {
   )
 }
 
-/** Opens a group member's workout as its own page draws it. */
+/**
+ * Opens a group member's workout as its own page draws it. The viewer's own
+ * opens their own page instead, with its notes, records and menu.
+ */
 export function useOpenGroupWorkout(groupId: string) {
   const router = useRouter()
+  const viewer = useUserId()
   return useCallback(
-    (workout: { source: 'workout' | 'activity'; id: string }) =>
+    (workout: { source: 'workout' | 'activity'; id: string }, ownerId: string) => {
+      if (ownerId === viewer) {
+        router.push(
+          workout.source === 'workout'
+            ? { pathname: '/workout/[id]', params: { id: workout.id } }
+            : { pathname: '/activity/workout/[id]', params: { id: workout.id } },
+        )
+        return
+      }
       router.push({
         pathname: '/group/workout',
         params: { group: groupId, source: workout.source, id: workout.id },
-      }),
-    [router, groupId],
+      })
+    },
+    [router, groupId, viewer],
   )
 }
 

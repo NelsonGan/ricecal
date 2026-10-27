@@ -72,7 +72,9 @@ export function InviteSheet({
   useEffect(() => {
     if (!visible) return
     opened.current = Date.now()
-    void refetch()
+    // Joins a fetch that enabling the query already started, rather than
+    // cancelling it and asking again.
+    void refetch({ cancelRefetch: false })
   }, [visible, refetch])
   useEffect(() => {
     if (visible && loaded && people === null && dataUpdatedAt >= opened.current) {

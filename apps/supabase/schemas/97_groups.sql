@@ -198,24 +198,17 @@ begin
             and not exists (select 1 from nudges n where n.target_id = mb.user_id and n.meal = m.meal)
         ), '[]'::jsonb) end,
         'workout', (
-          -- The day's first workout draws the tile; `all` lists every one, for
-          -- the tap that opens them (appended, so an older app reads the rest).
-          select jsonb_build_object('name', w.name, 'kind', w.kind, 'duration_s', w.duration_s, 'count', w.total,
-            'id', w.id, 'source', w.source,
-            'all', (select jsonb_agg(jsonb_build_object('id', a.id, 'source', a.source, 'name', a.name,
-                      'kind', a.kind, 'duration_s', a.duration_s) order by a.started_at)
-                    from (
-                      select wo.id, 'workout'::text as source, wo.name, 'strength'::text as kind, wo.duration_s, wo.started_at
-                      from public.workouts wo where wo.user_id = mb.user_id and wo.log_date = p_day
-                      union all
-                      select s.id, 'activity', nullif(btrim(s.kind_label), ''), s.kind, s.duration_s, s.started_at
-                      from public.activity_sessions s
-                      where s.user_id = mb.user_id and s.log_date = p_day
-                        and not exists (select 1 from public.workouts wo where wo.user_id = mb.user_id
-                          and wo.health_workout_id = s.external_id)
-                    ) a))
+          -- The day's workouts read once: the first draws the tile, and `all`
+          -- lists every one for the tap that opens them (appended, so an older
+          -- app reads the rest unchanged).
+          select case when w.all_of is not null then
+            (w.all_of -> 0) - 'started_at'
+              || jsonb_build_object('count', jsonb_array_length(w.all_of),
+                   'all', (select jsonb_agg(e - 'started_at') from jsonb_array_elements(w.all_of) e))
+          end
           from (
-            select x.id, x.source, x.name, x.kind, x.duration_s, count(*) over () as total
+            select jsonb_agg(jsonb_build_object('id', x.id, 'source', x.source, 'name', x.name,
+                'kind', x.kind, 'duration_s', x.duration_s, 'started_at', x.started_at) order by x.started_at) as all_of
             from (
               select wo.id, 'workout'::text as source, wo.name, 'strength'::text as kind, wo.duration_s, wo.started_at
               from public.workouts wo where wo.user_id = mb.user_id and wo.log_date = p_day
@@ -229,8 +222,6 @@ begin
                 and not exists (select 1 from public.workouts wo where wo.user_id = mb.user_id
                   and wo.health_workout_id = s.external_id)
             ) x
-            order by x.started_at
-            limit 1
           ) w
         )
       ) order by mb.rank, mb.joined_at, mb.user_id)
@@ -378,7 +369,15 @@ begin
     raise exception 'Workout unavailable' using errcode = '42501', hint = 'workout_gone';
   end if;
   if p_source = 'activity' then
-    return (select jsonb_build_object('owner', private.group_person(v_owner), 'session', to_jsonb(a))
+    -- What the Activity page draws, field by field, so a column added to the
+    -- table later is not handed to the group with it. Never the store's own ids.
+    return (select jsonb_build_object('owner', private.group_person(v_owner), 'session', jsonb_build_object(
+        'id', a.id, 'user_id', a.user_id, 'provider', a.provider, 'external_id', '', 'source_name', null,
+        'log_date', a.log_date, 'kind', a.kind, 'kind_label', a.kind_label,
+        'started_at', a.started_at, 'ended_at', a.ended_at, 'duration_s', a.duration_s,
+        'active_kcal', a.active_kcal, 'distance_m', a.distance_m, 'avg_hr', a.avg_hr, 'max_hr', a.max_hr,
+        'elevation_m', a.elevation_m, 'hr_zones', a.hr_zones,
+        'created_at', a.created_at, 'updated_at', a.updated_at))
             from public.activity_sessions a where a.id = p_id);
   end if;
   return jsonb_build_object(
@@ -397,7 +396,10 @@ begin
     'sets', coalesce((
       select jsonb_agg(to_jsonb(v) order by v.exercise_position, v.position)
       from public.workout_set_values v where v.workout_id = p_id), '[]'::jsonb),
-    'heart', (select to_jsonb(h) from public.workout_heart_rates h where h.workout_id = p_id)
+    'heart', (select jsonb_build_object('workout_id', h.workout_id, 'started_at', h.started_at,
+        'interval_s', h.interval_s, 'bpm', h.bpm, 'avg_bpm', h.avg_bpm, 'max_bpm', h.max_bpm,
+        'min_bpm', h.min_bpm, 'active_kcal', h.active_kcal)
+      from public.workout_heart_rates h where h.workout_id = p_id)
   );
 end;
 $$;

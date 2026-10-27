@@ -12,6 +12,7 @@ const METRICS = {
 
 const mockPress = jest.fn()
 const mockPush = jest.fn()
+beforeEach(() => mockPush.mockClear())
 const mockRun = jest.fn(() => Promise.resolve('nudge-id'))
 let mockBoard: GroupBoard
 let mockToday = '2026-10-21'
@@ -196,4 +197,50 @@ it('moves to the new day at midnight when it was showing today', async () => {
   } finally {
     jest.useRealTimers()
   }
+})
+
+describe('the workout tile', () => {
+  const yoga = {
+    id: 'w-yoga',
+    source: 'activity' as const,
+    name: 'Yoga',
+    kind: 'yoga',
+    duration_s: 1800,
+  }
+  const lift = {
+    id: 'w-lift',
+    source: 'workout' as const,
+    name: 'Push day',
+    kind: 'strength',
+    duration_s: 2700,
+  }
+  const withWorkouts = (id: string, all: (typeof yoga | typeof lift)[]) => {
+    const target = mockBoard.members.find((m) => m.person.id === id)
+    if (target) target.workout = { ...all[0], count: all.length, all }
+  }
+
+  it('opens a friend’s one workout as its own page draws it', async () => {
+    withWorkouts('aisha', [yoga])
+    await render(board)
+    await fireEvent.press(screen.getByLabelText('Yoga, 30m'))
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/group/workout',
+      params: { group: 'g1', source: 'activity', id: 'w-yoga' },
+    })
+  })
+
+  it('opens the viewer’s own workout on their own page', async () => {
+    withWorkouts('me', [lift])
+    await render(board)
+    await fireEvent.press(screen.getByLabelText('Push day, 45m'))
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/workout/[id]', params: { id: 'w-lift' } })
+  })
+
+  it('lists several workouts to pick one from', async () => {
+    withWorkouts('aisha', [yoga, lift])
+    await render(board)
+    await fireEvent.press(screen.getByLabelText('Yoga, 30m'))
+    expect(mockPush).not.toHaveBeenCalled()
+    expect(screen.getByText('Push day · 45m')).toBeOnTheScreen()
+  })
 })

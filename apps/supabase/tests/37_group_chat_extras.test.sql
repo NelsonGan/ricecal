@@ -198,6 +198,13 @@ values (:'ana', 'apple_health', 'hk-run', current_date, 'running', now() - inter
 on conflict (user_id, provider, external_id) do update set duration_s = excluded.duration_s;
 select is((select count(*)::int from public.group_messages where activity_id = 'a3750000-0000-4000-8000-000000000001'), 2,
   'a sync that finds the run already there shares it no second time');
+-- A watch's Health copy that syncs before the logger kept its id is matched by time.
+insert into public.activity_sessions (id, user_id, provider, external_id, log_date, kind,
+  started_at, ended_at, duration_s) values
+  ('a3750000-0000-4000-8000-000000000006', :'ana', 'apple_health', 'hk-watch-copy', current_date, 'strength',
+   now() - interval '69 minutes', now() - interval '26 minutes', 2580);
+select is((select count(*)::int from public.group_messages where activity_id = 'a3750000-0000-4000-8000-000000000006'), 0,
+  'a Health copy that overlaps a logger workout is not shared again');
 update public.profiles set auto_post_workouts = false where id = :'ana';
 insert into public.activity_sessions (id, user_id, provider, external_id, log_date, kind, started_at, ended_at, duration_s)
 values ('a3750000-0000-4000-8000-000000000005', :'ana', 'apple_health', 'hk-ride', current_date, 'cycling',
@@ -235,6 +242,13 @@ select is(public.group_workout_detail((select id from g), 'workout', 'a3740000-0
   ->'summary'->'notes', 'null'::jsonb, 'but never its notes');
 select is(public.group_workout_detail((select id from g), 'activity', 'a3750000-0000-4000-8000-000000000001')
   ->'session'->>'kind', 'running', 'and a run a health store recorded');
+select is(public.group_workout_detail((select id from g), 'activity', 'a3750000-0000-4000-8000-000000000001')
+  ->'session'->>'external_id', '', 'without the health store''s own id for it');
+select ok((select (e->'workout'->>'count')::int = jsonb_array_length(e->'workout'->'all')
+    and e->'workout'->>'id' = e->'workout'->'all'->0->>'id'
+    and not (e->'workout' ? 'started_at')
+  from jsonb_array_elements(public.group_board((select id from g), public.local_today(:'ben'))->'members') e
+  where e->'person'->>'id' = :'ana'), 'the board''s tile is the first of the day''s workouts it lists');
 select is(public.group_board((select id from g), public.local_today(:'ben'))->'members'
     ->(select o - 1 from jsonb_array_elements(public.group_board((select id from g), public.local_today(:'ben'))->'members')
        with ordinality x(e, o) where e->'person'->>'id' = :'ana')::int->'workout'->>'id',
