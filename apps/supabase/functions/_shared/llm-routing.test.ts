@@ -175,6 +175,35 @@ Deno.test('the JSON is found after a paragraph of working, or inside a fence', (
   assertThrows(() => parseAnswer('Totals:\n\n{"kc'), SyntaxError)
 })
 
+Deno.test('a stray quote inside a key is taken out, and nothing else is', () => {
+  // One quote too many before a key, and one in the middle of a key.
+  assertEquals(parseAnswer('{"name":"nasi lemak",""count":1,"grams":200}'), {
+    name: 'nasi lemak',
+    count: 1,
+    grams: 200,
+  })
+  assertEquals(parseAnswer('{"items":[{"name":"roti","kc"al_low":300,"kcal_high":400}]}'), {
+    items: [{ name: 'roti', kcal_low: 300, kcal_high: 400 }],
+  })
+  // Inside a fence or after a paragraph, as Haiku answers.
+  assertEquals(parseAnswer('Here it is:\n```json\n{""a":1, ""b":2}\n```'), { a: 1, b: 2 })
+  // The caller hears how many quotes came out, and nothing when none did.
+  const heard: number[] = []
+  parseAnswer('{""a":1,""b":2}', (n) => heard.push(n))
+  parseAnswer('{"a":1}', (n) => heard.push(n))
+  assertEquals(heard, [2])
+  // A quote inside a value is a different fault, and is left to fail as before.
+  assertThrows(() => parseAnswer('{"name":"teh "tarik"","kcal":120}'), SyntaxError)
+  // So is an answer that is still broken after the quote comes out.
+  assertThrows(() => parseAnswer('{"a"b c:1}'), SyntaxError)
+  // And one with more stray quotes than any near-JSON answer has.
+  assertThrows(() => parseAnswer('{""a":1,""b":2,""c":3,""d":4}'), SyntaxError)
+  // What is thrown is the error in what the model wrote, not in a repair.
+  const error = assertThrows(() => parseAnswer('{"a"b c:1}'), SyntaxError)
+  assertEquals(error.message.includes("Expected ':' after property name"), true)
+  assertEquals(error.message.includes('position 4'), true)
+})
+
 Deno.test('an unreadable answer is described by its shape, never by its words', () => {
   // A second object after the first: what a parser fix would cover.
   const twice = answerShape('{"name":"nasi lemak"}\n\nCorrected:\n{"name":"nasi lemak ayam"}')
@@ -194,6 +223,9 @@ Deno.test('an unreadable answer is described by its shape, never by its words', 
   assertEquals(comma.includes('error=unexpected-token at=-1 at-char=]'), true)
   const bare = answerShape('{"name":"roti canai","kcal":NaN}')
   assertEquals(bare.includes('error=unexpected-token at=-1 at-char=letter'), true)
+  // A key that closed on a stray quote, which the parser now repairs.
+  const key = answerShape('{"a"b c:1}')
+  assertEquals(key.includes('error=expected-colon at=4 at-char=letter prev-char="'), true)
   // Cut off part way, with nothing closing it, inside the string that opens at 18.
   const cut = answerShape('{"items":[{"name":"roti')
   assertEquals(cut.includes('unclosed=2'), true)
