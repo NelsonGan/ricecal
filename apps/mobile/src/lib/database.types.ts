@@ -803,6 +803,56 @@ export type Database = {
           },
         ]
       }
+      group_message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'group_message_reactions_message_id_fkey'
+            columns: ['message_id']
+            isOneToOne: false
+            referencedRelation: 'group_messages'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_message_reactions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_message_reactions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'group_message_reactions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
+      }
       group_message_reports: {
         Row: {
           created_at: string
@@ -852,36 +902,55 @@ export type Database = {
       }
       group_messages: {
         Row: {
+          activity_id: string | null
           author_id: string
           body: string
           created_at: string
           group_id: string
           id: string
+          post_id: string | null
           pushed_at: string | null
           quarantined: boolean
+          reply_to_id: string | null
           request_id: string
+          workout_id: string | null
         }
         Insert: {
+          activity_id?: string | null
           author_id: string
           body: string
           created_at?: string
           group_id: string
           id?: string
+          post_id?: string | null
           pushed_at?: string | null
           quarantined?: boolean
+          reply_to_id?: string | null
           request_id: string
+          workout_id?: string | null
         }
         Update: {
+          activity_id?: string | null
           author_id?: string
           body?: string
           created_at?: string
           group_id?: string
           id?: string
+          post_id?: string | null
           pushed_at?: string | null
           quarantined?: boolean
+          reply_to_id?: string | null
           request_id?: string
+          workout_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'group_messages_activity_id_fkey'
+            columns: ['activity_id']
+            isOneToOne: false
+            referencedRelation: 'activity_sessions'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'group_messages_author_id_fkey'
             columns: ['author_id']
@@ -908,6 +977,41 @@ export type Database = {
             columns: ['group_id']
             isOneToOne: false
             referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_messages_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_post_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_messages_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_messages_reply_to_id_fkey'
+            columns: ['reply_to_id']
+            isOneToOne: false
+            referencedRelation: 'group_messages'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_messages_workout_id_fkey'
+            columns: ['workout_id']
+            isOneToOne: false
+            referencedRelation: 'workout_summaries'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_messages_workout_id_fkey'
+            columns: ['workout_id']
+            isOneToOne: false
+            referencedRelation: 'workouts'
             referencedColumns: ['id']
           },
         ]
@@ -3536,6 +3640,10 @@ export type Database = {
       group_chat_summary: { Args: { p_group_id: string }; Returns: Json }
       group_details: { Args: { p_group_id: string }; Returns: Json }
       group_invite_count: { Args: never; Returns: number }
+      group_invite_suggestions: {
+        Args: { p_group_id: string; p_limit?: number }
+        Returns: Json
+      }
       group_message_push_targets: {
         Args: { p_caller: string; p_id: string }
         Returns: {
@@ -3567,6 +3675,10 @@ export type Database = {
           meal: Database['public']['Enums']['group_meal']
           token: string
         }[]
+      }
+      group_workout_detail: {
+        Args: { p_group_id: string; p_id: string; p_source: string }
+        Returns: Json
       }
       gtin14: { Args: { code: string }; Returns: string }
       has_account_password: { Args: never; Returns: boolean }
@@ -3845,7 +3957,15 @@ export type Database = {
         }
       }
       send_group_message: {
-        Args: { p_body: string; p_group_id: string; p_request_id: string }
+        Args: {
+          p_activity_id?: string
+          p_body: string
+          p_group_id: string
+          p_post_id?: string
+          p_reply_to?: string
+          p_request_id: string
+          p_workout_id?: string
+        }
         Returns: string
       }
       set_entry_board_meal: {
@@ -3853,6 +3973,10 @@ export type Database = {
           p_entry_id: string
           p_meal: Database['public']['Enums']['group_meal']
         }
+        Returns: undefined
+      }
+      set_group_message_reaction: {
+        Args: { p_emoji: string; p_message_id: string }
         Returns: undefined
       }
       set_group_preferences: {

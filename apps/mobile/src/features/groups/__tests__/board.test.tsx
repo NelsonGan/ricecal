@@ -11,6 +11,7 @@ const METRICS = {
 }
 
 const mockPress = jest.fn()
+const mockPush = jest.fn()
 const mockRun = jest.fn(() => Promise.resolve('nudge-id'))
 let mockBoard: GroupBoard
 let mockToday = '2026-10-21'
@@ -34,6 +35,7 @@ jest.mock('@/data/groups', () => ({
     },
   }),
   useMyGroups: () => ({ data: undefined }),
+  useGroupInviteSuggestions: () => ({ data: [] }),
   useGroupAction: () => ({ mutate: jest.fn(), mutateAsync: jest.fn(), isPending: false }),
 }))
 jest.mock('../parts', () => ({
@@ -53,7 +55,7 @@ jest.mock('@/data/moderation', () => ({ useBlockAuthor: () => ({ mutate: jest.fn
 jest.mock('expo-router', () => ({
   useFocusEffect: jest.fn(),
   useIsFocused: () => true,
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }))
 
 const entry = (id: string, meal: BoardEntry['meal'], name: string): BoardEntry => ({
@@ -161,12 +163,19 @@ it('gives two people with one first name their full names', async () => {
   expect(screen.getByText('Wei Ming Lee')).toBeOnTheScreen()
 })
 
-it('folds the board after five rows and unfolds on request', async () => {
+it('draws every member, with no fold to open', async () => {
   await render(board)
-  expect(screen.queryByText('Daniel')).toBeNull()
-  await fireEvent.press(screen.getByText('Show 2 more'))
   expect(screen.getByText('Daniel')).toBeOnTheScreen()
-  expect(screen.getByText('Show less')).toBeOnTheScreen()
+  expect(screen.queryByText(/^Show \d+ more$/)).toBeNull()
+})
+
+it('opens a member’s feed profile from their face', async () => {
+  await render(board)
+  await fireEvent.press(screen.getByLabelText("Open Daniel Lim's profile"))
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: '/social/profile/[id]',
+    params: { id: 'daniel' },
+  })
 })
 
 it('shows the group’s last message and its unread count in the chat bar', async () => {

@@ -117,12 +117,46 @@ create table public.group_messages (
   request_id  uuid not null,
   quarantined boolean not null default false,
   created_at  timestamptz not null default now(),
-  -- When its push went out, so a retried send rings nobody twice.
+  -- When its push went out, so a retried send rings nobody twice. A food
+  -- shared by posting it is written with this already set: it goes to the
+  -- thread without ringing anyone.
   pushed_at   timestamptz,
-  unique (author_id, request_id)
+  -- The message this one answers, in the same thread. Deleting that one
+  -- leaves the reply standing on its own.
+  reply_to_id uuid references public.group_messages(id) on delete set null,
+  -- A food the author shared from their own posts. The card reads the post's
+  -- meal live, as the board does, and the body holds its name and calories
+  -- for a push and for an app from before food cards. Deleting the post (or
+  -- the meal under it) takes the message with it.
+  post_id     uuid references public.social_posts(id) on delete cascade,
+  -- A workout the author did: one from the app's own logger, or one a health
+  -- store recorded (a run, a game of badminton). Read live like a food, and
+  -- deleting the workout deletes the message. Never on a feed post, so it
+  -- reaches a group whether or not its author uses the feed.
+  workout_id  uuid references public.workouts(id) on delete cascade,
+  activity_id uuid references public.activity_sessions(id) on delete cascade,
+  unique (author_id, request_id),
+  -- A message shares one thing at most.
+  constraint group_messages_one_share check (num_nonnulls(post_id, workout_id, activity_id) <= 1)
 );
 -- The thread's order, which group_messages pages through by (created_at, id).
 create index group_messages_recent_idx on public.group_messages(group_id, created_at, id);
+create index group_messages_reply_idx on public.group_messages(reply_to_id) where reply_to_id is not null;
+create index group_messages_post_idx on public.group_messages(post_id) where post_id is not null;
+create index group_messages_workout_idx on public.group_messages(workout_id) where workout_id is not null;
+create index group_messages_activity_idx on public.group_messages(activity_id) where activity_id is not null;
+
+-- One reaction per person per message, as Instagram's are: a second one
+-- replaces the first. Only these, so the bar of choices and what is stored
+-- cannot drift apart.
+create table public.group_message_reactions (
+  message_id  uuid not null references public.group_messages(id) on delete cascade,
+  user_id     uuid not null references public.profiles(id) on delete cascade,
+  emoji       text not null check (emoji in ('❤️', '😂', '😮', '😢', '🔥', '👍')),
+  created_at  timestamptz not null default now(),
+  primary key (message_id, user_id)
+);
+create index group_message_reactions_user_idx on public.group_message_reactions(user_id);
 
 create table public.group_message_reports (
   message_id  uuid not null references public.group_messages(id) on delete cascade,
@@ -157,14 +191,15 @@ alter table public.group_reactions enable row level security;
 alter table public.group_nudges enable row level security;
 alter table public.group_messages enable row level security;
 alter table public.group_message_reports enable row level security;
+alter table public.group_message_reactions enable row level security;
 alter table public.group_reports enable row level security;
 alter table public.push_tokens enable row level security;
 revoke all on public.groups, public.group_members, public.group_invites, public.group_reactions,
   public.group_nudges, public.group_messages, public.group_message_reports, public.group_reports,
-  public.push_tokens from anon, authenticated;
+  public.group_message_reactions, public.push_tokens from anon, authenticated;
 grant all on public.groups, public.group_members, public.group_invites, public.group_reactions,
   public.group_nudges, public.group_messages, public.group_message_reports, public.group_reports,
-  public.push_tokens to service_role;
+  public.group_message_reactions, public.push_tokens to service_role;
 -- Server only. Besides having no client grant, a restrictive policy means a
 -- permissive one added by mistake still admits no client row.
 create policy "Server only" on public.groups as restrictive for all to anon, authenticated
@@ -180,6 +215,8 @@ create policy "Server only" on public.group_nudges as restrictive for all to ano
 create policy "Server only" on public.group_messages as restrictive for all to anon, authenticated
   using (false) with check (false);
 create policy "Server only" on public.group_message_reports as restrictive for all to anon, authenticated
+  using (false) with check (false);
+create policy "Server only" on public.group_message_reactions as restrictive for all to anon, authenticated
   using (false) with check (false);
 create policy "Server only" on public.group_reports as restrictive for all to anon, authenticated
   using (false) with check (false);
@@ -663,28 +700,91 @@ begin
 end;
 $$;
 
--- A message in the group's one thread.
-create or replace function public.send_group_message(p_group_id uuid, p_body text, p_request_id uuid)
+-- A message in the group's one thread. It may answer another message in the
+-- thread (`p_reply_to`, dropped if that one has gone), and may share one thing
+-- of the author's own: a food post (`p_post_id`), a workout from the app's
+-- logger (`p_workout_id`) or one a health store recorded (`p_activity_id`).
+-- Sharing, the body is optional and defaults to the thing's name and its
+-- calories or minutes: that is what a push says and what an app from before
+-- cards draws. All of these come after the first three, with defaults, so the
+-- three-argument call of release 1.0 still lands.
+create or replace function public.send_group_message(p_group_id uuid, p_body text, p_request_id uuid,
+  p_reply_to uuid default null, p_post_id uuid default null,
+  p_workout_id uuid default null, p_activity_id uuid default null)
 returns uuid language plpgsql security definer set search_path = '' as $$
-declare v_user uuid := private.group_require_member(p_group_id); v_id uuid;
+declare v_user uuid := private.group_require_member(p_group_id); v_id uuid; v_body text := btrim(coalesce(p_body, ''));
 begin
-  if p_body is null or char_length(btrim(p_body)) not between 1 and 500 then
-    raise exception 'Messages are 1 to 500 characters' using errcode = '22023';
-  end if;
   if p_request_id is null then
     raise exception 'Request id required' using errcode = '22023';
   end if;
   select m.id into v_id from public.group_messages m where m.author_id = v_user and m.request_id = p_request_id;
   if v_id is not null then return v_id; end if;
+  if num_nonnulls(p_post_id, p_workout_id, p_activity_id) > 1 then
+    raise exception 'Share one thing at a time' using errcode = '22023';
+  end if;
+  if p_post_id is not null then
+    if not exists (select 1 from public.social_posts p where p.id = p_post_id and p.author_id = v_user
+                     and p.kind = 'food' and p.review_status = 'approved' and not p.quarantined) then
+      raise exception 'Food unavailable' using errcode = '42501', hint = 'food_gone';
+    end if;
+    if v_body = '' then v_body := coalesce(private.group_food_label(p_post_id), ''); end if;
+  elsif p_workout_id is not null then
+    if not exists (select 1 from public.workouts w where w.id = p_workout_id and w.user_id = v_user) then
+      raise exception 'Workout unavailable' using errcode = '42501', hint = 'workout_gone';
+    end if;
+    if v_body = '' then v_body := coalesce(private.group_workout_label(private.group_workout(p_workout_id)), ''); end if;
+  elsif p_activity_id is not null then
+    if not exists (select 1 from public.activity_sessions a where a.id = p_activity_id and a.user_id = v_user) then
+      raise exception 'Workout unavailable' using errcode = '42501', hint = 'workout_gone';
+    end if;
+    if v_body = '' then v_body := coalesce(private.group_workout_label(private.group_activity(p_activity_id)), ''); end if;
+  end if;
+  if char_length(v_body) not between 1 and 500 then
+    raise exception 'Messages are 1 to 500 characters' using errcode = '22023';
+  end if;
+  -- A message answered while it was deleted or hidden is sent on its own
+  -- rather than refused: the sender's retry would carry the same reply and
+  -- fail for ever. One from another group is dropped the same way.
+  if p_reply_to is not null and not exists (
+    select 1 from public.group_messages r where r.id = p_reply_to and r.group_id = p_group_id and not r.quarantined
+  ) then
+    p_reply_to := null;
+  end if;
   if not private.social_claim(v_user, 'group_message', 120) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
-  insert into public.group_messages(group_id, author_id, body, request_id)
-  values (p_group_id, v_user, btrim(p_body), p_request_id)
+  insert into public.group_messages(group_id, author_id, body, request_id, reply_to_id, post_id, workout_id, activity_id)
+  values (p_group_id, v_user, v_body, p_request_id, p_reply_to, p_post_id, p_workout_id, p_activity_id)
   returning id into v_id;
   update public.group_members m set chat_read_at = now()
   where m.group_id = p_group_id and m.user_id = v_user;
   return v_id;
+end;
+$$;
+
+-- Sets the caller's one reaction to a message, or takes it back with null. Any
+-- message the caller can read, their own included.
+create or replace function public.set_group_message_reaction(p_message_id uuid, p_emoji text)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_user uuid := private.social_require_user(false); v_group uuid; v_author uuid;
+begin
+  select m.group_id, m.author_id into v_group, v_author from public.group_messages m
+  where m.id = p_message_id and not m.quarantined;
+  if v_group is null or not private.group_is_member(v_group, v_user)
+     or (v_author <> v_user and private.social_pair_blocked(v_author))
+     or exists (select 1 from public.group_message_reports r where r.message_id = p_message_id and r.reporter_id = v_user) then
+    raise exception 'Message unavailable' using errcode = '42501';
+  end if;
+  if p_emoji is null then
+    delete from public.group_message_reactions r where r.message_id = p_message_id and r.user_id = v_user;
+    return;
+  end if;
+  if not private.social_claim(v_user, 'group_reaction', 300) then
+    raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
+  end if;
+  insert into public.group_message_reactions(message_id, user_id, emoji) values (p_message_id, v_user, p_emoji)
+  on conflict (message_id, user_id) do update set emoji = excluded.emoji, created_at = now()
+  where public.group_message_reactions.emoji <> excluded.emoji;
 end;
 $$;
 
@@ -871,12 +971,14 @@ revoke execute on function public.create_group, public.update_group, public.invi
   public.set_group_preferences, public.set_entry_board_meal, public.set_group_reaction,
   public.nudge_group_member, public.send_group_message, public.delete_group_message,
   public.report_group_message, public.report_group, public.mark_group_chat_read,
+  public.set_group_message_reaction,
   public.register_push_token, public.unregister_push_token from public, anon;
 grant execute on function public.create_group, public.update_group, public.invite_to_group,
   public.respond_to_group_invite, public.join_group, public.leave_group, public.remove_group_member,
   public.set_group_preferences, public.set_entry_board_meal, public.set_group_reaction,
   public.nudge_group_member, public.send_group_message, public.delete_group_message,
   public.report_group_message, public.report_group, public.mark_group_chat_read,
+  public.set_group_message_reaction,
   public.register_push_token, public.unregister_push_token to authenticated, service_role;
 revoke execute on function public.group_push_targets, public.group_message_push_targets,
   public.forget_push_tokens from public, anon, authenticated;
@@ -967,7 +1069,29 @@ create trigger group_message_quarantined after update of quarantined on public.g
   for each row when (new.quarantined and not old.quarantined)
   execute function private.group_message_quarantined();
 
+-- A reaction set, changed or taken back. Its own event, which a chat from
+-- before reactions does not listen for, so that app does not refetch for it.
+-- Once per statement and group, so an account's deletion is a few broadcasts.
+create or replace function private.group_reactions_changed()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  perform private.group_chat_broadcast(m.group_id, 'reacted', jsonb_agg(distinct m.id))
+  from changed c join public.group_messages m on m.id = c.message_id group by m.group_id;
+  return null;
+end;
+$$;
+create trigger group_reactions_added after insert on public.group_message_reactions
+  referencing new table as changed
+  for each statement execute function private.group_reactions_changed();
+create trigger group_reactions_updated after update on public.group_message_reactions
+  referencing new table as changed
+  for each statement execute function private.group_reactions_changed();
+create trigger group_reactions_removed after delete on public.group_message_reactions
+  referencing old table as changed
+  for each statement execute function private.group_reactions_changed();
+
 revoke execute on function private.group_chat_broadcast, private.group_message_sent,
-  private.group_messages_removed, private.group_message_quarantined from public, anon, authenticated;
+  private.group_messages_removed, private.group_message_quarantined,
+  private.group_reactions_changed from public, anon, authenticated;
 revoke execute on function private.group_chat_listener from public, anon;
 grant execute on function private.group_chat_listener to authenticated, service_role;

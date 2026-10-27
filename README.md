@@ -2775,7 +2775,12 @@ are separate products, not prerequisites for a food following system.
 owner-only. Handle and bio live on that row beside the account name and avatar.
 The `social_profiles` view returns social identity and review state fields and applies
 report and block visibility. Every profile gets a handle from its name, with spaces
-changed to dots and a numeric suffix if the name is taken. Existing profiles
+changed to dots and a numeric suffix if the name is taken. An account that signs
+up with an email and no name from its provider is different: `handle_new_user`
+makes a name from the address's local part (`nelson.gan@…` becomes "Nelson Gan",
+anything after a `+` dropped) and gives the handle four random letters or digits
+after it (`nelson.gan.k3x9`), because a handle that was exactly the local part
+published the address to everyone who could see the profile. Existing profiles
 without a handle are backfilled. A name without usable Latin letters gets a
 short account ID instead. Accounts are discoverable unless the owner turns on
 Private profile in Edit profile. The `social_joined_at` field still records a
@@ -3257,6 +3262,50 @@ meal share a tile and swipe sideways inside it.
   the latest message (`group_chat_summary`, read on its own rather than with
   the board). The count stops at 100, so a member who never opens the chat
   does not have the whole history read on every poll.
+- **Replies.** A message is answered by swiping it right, as on WhatsApp, or from
+  its long-press menu; the composer quotes it until sent or cancelled.
+  `group_messages.reply_to_id` points at the answered message in the same thread
+  (`send_group_message` refuses one from another group) and is set null if it
+  is deleted, so the reply stands on its own. The thread hands each reply a
+  `reply_to` quote, left out under the same rules as the thread itself (deleted,
+  quarantined, blocked either way, or reported by the viewer).
+- **Reactions** are Instagram's: one per person per message from six emoji
+  (`group_message_reactions`), a double tap for a heart, a long press for the
+  row. Counted by emoji in `group_messages`, leaving out anyone blocked either
+  way. Setting, changing or taking one back broadcasts `reacted` on the chat's
+  topic with the message ids; an open chat refetches only when it holds one of
+  them, and an app from before reactions does not listen for the event at all.
+- **Food in the chat.** A food message shares one of its author's own food posts
+  (`group_messages.post_id`) and draws as a card: the photo across it, the name,
+  calories and macros. The card reads the post's meal live through
+  `private.group_post_food`, as the board reads the diary, so a corrected portion
+  shows there too; deleting the post or the meal under it deletes the message.
+  The + beside the field lists the viewer's last five food posts to send by hand,
+  and that is pushed like any message. **Posting a food to the feed shares it
+  into every group chat its author is in, silently** (`98_group_chat_shares.sql`):
+  the trigger writes the row with `pushed_at` already set, which
+  `group_message_push_targets` refuses, so nobody's phone rings for it. It still
+  counts as unread on the chat bar. A post's photo stays signable for members of
+  a group it was shared into however old the meal is (`group_photo_claims`).
+- **Workouts in the chat.** A message can share a workout instead
+  (`group_messages.workout_id` for the app's logger, `activity_id` for one a
+  health store recorded: a run, a swim, a game of badminton), drawn as a card
+  with its kind's drawing and up to three figures, read live
+  (`private.group_workout`, `private.group_activity`). Workouts do not ride on
+  feed posts, so they reach a group whether or not their owner uses the feed.
+  Both are shared silently on their own as they are first written (`save_workout`'s
+  insert, a health sync's), but only while `auto_post_workouts` is on and only
+  if the workout ended in the last day, so a sync backfilling months of runs
+  shares none of them; demo data never is, nor the Apple Health copy of a logger
+  workout. The + has a Workouts tab beside Food with the last five of both,
+  listed once. A tap on a workout card opens it (a single tap that waits out the
+  double tap, so tapping twice still hearts it).
+- **Release 1.0 still reads every message.** `body` stays required and a food
+  message's body is its name and calories ("Nasi lemak (640 kcal)"), which is
+  also what its push says, so an app that knows nothing of food cards draws a
+  line of text. Replies, food and reactions are extra fields beside the old
+  ones, and `send_group_message` takes the reply and the post as trailing
+  arguments with defaults, so the three-argument call of 1.0 still resolves.
 - **A public group's name** is read by strangers, so it can be reported too, by a
   long press in the public list: it leaves the reporter's list at once and
   everyone's at three reports. Renaming the group clears the reports; saving
@@ -3271,7 +3320,13 @@ public ranking read one column instead of counting rows. A full group
 withdraws its pending invites. Private groups are invite only; public groups are
 listed (fullest first) and anyone can join. An invite takes a handle, with or
 without its `@`, or an email address, which only finds an account that already
-exists. A handle that finds nobody says so, since handles are public; an email
+exists. The invite sheet opens short, on the keyboard with the field focused, and
+lists up to five people to invite with one tap (`group_invite_suggestions`):
+whoever the viewer follows or is followed by, mutual follows first, leaving out
+members, anyone already invited and anyone blocked either way. It reads only the
+viewer's own follow graph, which their profile already shows them. A full public
+group is listed with "Full" beside its count and its Join greyed out, so the row
+keeps its shape. A handle that finds nobody says so, since handles are public; an email
 answers the same whatever is behind it, down to the id it returns (a made-up
 one when nobody was found), so the field cannot be used to learn whether an
 address has an account. That includes asking twice: an address that finds an
@@ -3286,7 +3341,25 @@ account away. Someone blocked in either direction reads as nobody.
 Members see only the pending invites they sent themselves, and of those only
 the ones sent by handle (`group_invites.by_email`): an email invite listed would
 name whoever owns the address. The leader renames
-the group, switches it public or private, and removes members. A leader with
+the group, switches it public or private, and removes members. Each member puts
+the others in their own board order by dragging a row's handle in the settings'
+member list; the order saves as the finger lifts (`board_order`), and the
+viewer's own row stays first. A face anywhere in a group, on the board, in the
+chat or in settings, opens that person's feed profile. The board draws every
+member: ten at most is a short scroll, and a fold hid the friends whose food was
+the reason to open it.
+
+**A friend's workout opens like your own.** The board's workout tile, and a
+workout card in the chat, open `app/group/workout.tsx`: the logger's figures,
+muscles worked and every set (`SessionFigures` and `SessionExercises`, shared
+with the owner's own page), or a health store's session as the Activity page
+draws it. Workouts are owner-only, so it reads through `group_workout_detail`, a
+definer function that checks the owner is in the group with the viewer, neither
+has blocked the other, and the workout is within the board's sixty days or was
+shared into that group's chat. It never returns the owner's notes, nor records:
+scoring those reads the owner's whole history. The tile opens the day's one
+workout, or lists them when there are several (`workout.all` on the board,
+appended so release 1.0 reads the rest unchanged). A leader with
 company must name a successor to leave; the last member out deletes the group,
 and a deleted account hands its groups on through the same trigger.
 
@@ -6372,7 +6445,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Review Card Shared | ricecal_review_card_shared | kind: 'week' &#124; 'month' | `app/reviews/[id].tsx` | Card share helper reports sent; each card send. Android share intent cannot confirm completion. |
 | Group Created | ricecal_group_created | visibility: 'private' &#124; 'public' | `src/features/groups/Home.tsx` | `create_group` returned a group id; each group made. |
 | Group Joined | ricecal_group_joined | via: 'invite' &#124; 'public' | `src/features/groups/Home.tsx` | `respond_to_group_invite` with accept, or `join_group` from the public list, returned; each join. Declines send nothing. |
-| Group Invite Sent | ricecal_group_invite_sent | by: 'handle' &#124; 'email' | `src/features/groups/InviteSheet.tsx` | `invite_to_group` answered; each invite. An email counts whether or not it found an account, since the app cannot tell; a handle that finds nobody sends nothing; the push is separate and best effort. |
+| Group Invite Sent | ricecal_group_invite_sent | by: 'handle' &#124; 'email' | `src/features/groups/InviteSheet.tsx` | `invite_to_group` answered; each invite, typed or tapped from Suggested (always `handle`). An email counts whether or not it found an account, since the app cannot tell; a handle that finds nobody sends nothing; the push is separate and best effort. |
 | Group Nudge Sent | ricecal_group_nudge_sent | meal: 'breakfast' &#124; 'lunch' &#124; 'dinner' | `src/features/groups/Board.tsx` | `nudge_group_member` accepted the nudge; each nudge. A nudge refused for the hourly cooldown sends nothing. |
 | Group Reaction Set | ricecal_group_reaction_set | reaction: 'like' &#124; 'dislike' | `src/features/groups/MealSheet.tsx` | A like or dislike tapped on a member's food; each set, before the write settles. Clearing a reaction sends nothing. |
 | Group Message Sent | ricecal_group_message_sent | none | `src/features/groups/Chat.tsx` | `send_group_message` returned; each message. Never carries the text. |

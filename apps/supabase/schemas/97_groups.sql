@@ -198,17 +198,32 @@ begin
             and not exists (select 1 from nudges n where n.target_id = mb.user_id and n.meal = m.meal)
         ), '[]'::jsonb) end,
         'workout', (
-          select jsonb_build_object('name', w.name, 'kind', w.kind, 'duration_s', w.duration_s, 'count', w.total)
+          -- The day's first workout draws the tile; `all` lists every one, for
+          -- the tap that opens them (appended, so an older app reads the rest).
+          select jsonb_build_object('name', w.name, 'kind', w.kind, 'duration_s', w.duration_s, 'count', w.total,
+            'id', w.id, 'source', w.source,
+            'all', (select jsonb_agg(jsonb_build_object('id', a.id, 'source', a.source, 'name', a.name,
+                      'kind', a.kind, 'duration_s', a.duration_s) order by a.started_at)
+                    from (
+                      select wo.id, 'workout'::text as source, wo.name, 'strength'::text as kind, wo.duration_s, wo.started_at
+                      from public.workouts wo where wo.user_id = mb.user_id and wo.log_date = p_day
+                      union all
+                      select s.id, 'activity', nullif(btrim(s.kind_label), ''), s.kind, s.duration_s, s.started_at
+                      from public.activity_sessions s
+                      where s.user_id = mb.user_id and s.log_date = p_day
+                        and not exists (select 1 from public.workouts wo where wo.user_id = mb.user_id
+                          and wo.health_workout_id = s.external_id)
+                    ) a))
           from (
-            select x.name, x.kind, x.duration_s, count(*) over () as total
+            select x.id, x.source, x.name, x.kind, x.duration_s, count(*) over () as total
             from (
-              select wo.name, 'strength'::text as kind, wo.duration_s, wo.started_at
+              select wo.id, 'workout'::text as source, wo.name, 'strength'::text as kind, wo.duration_s, wo.started_at
               from public.workouts wo where wo.user_id = mb.user_id and wo.log_date = p_day
               union all
               -- A workout saved to Apple Health comes back as a session; the
               -- in-app one already stands for it. Apple writes no label, so the
               -- name is null there and the app names the kind itself.
-              select nullif(btrim(s.kind_label), ''), s.kind, s.duration_s, s.started_at
+              select s.id, 'activity', nullif(btrim(s.kind_label), ''), s.kind, s.duration_s, s.started_at
               from public.activity_sessions s
               where s.user_id = mb.user_id and s.log_date = p_day
                 and not exists (select 1 from public.workouts wo where wo.user_id = mb.user_id
@@ -259,9 +274,143 @@ begin
 end;
 $$;
 
+-- A shared food as a chat card draws it: the post's meal read live, as the
+-- board reads the diary, so a corrected portion shows in the thread too. The
+-- photo only while it is still the one the post was published with, since a
+-- replacement has not been through the post's review. Null once the post is
+-- withdrawn or hidden; the message's body still says what it was.
+--
+-- Two steps, as private.social_post_food does: joining the expanded diary view
+-- to posts made Postgres scan every meal a busy author ever logged, once per
+-- food message on the page.
+create or replace function private.group_post_food(p_post_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare v_entry uuid; v_author uuid; v_photo text; v_food jsonb;
+begin
+  select p.source_entry_id, p.author_id, p.photo_path into v_entry, v_author, v_photo
+  from public.social_posts p
+  where p.id = p_post_id and p.kind = 'food' and p.review_status = 'approved' and not p.quarantined;
+  if v_entry is null then return null; end if;
+  select jsonb_build_object(
+    'post_id', p_post_id, 'name', left(d.food_name, 160), 'icon_set', d.icon_set, 'icon_name', d.icon_name,
+    'photo_path', case when d.photo_path = v_photo then d.photo_path end,
+    'serving_label', d.serving_label, 'logged_at', d.logged_at,
+    'kcal', d.kcal, 'carbs_g', d.carbs_g, 'protein_g', d.protein_g, 'fat_g', d.fat_g)
+  into v_food
+  from public.food_log_details d
+  where d.id = v_entry and d.user_id = v_author;
+  return v_food;
+end;
+$$;
+
+-- What a food message's body says: "Nasi lemak (640 kcal)". Not translated,
+-- since one row is read by every member in their own language; a name and a
+-- number read in any of them.
+create or replace function private.group_food_label(p_post_id uuid)
+returns text language sql stable security definer set search_path = '' as $$
+  select left(f ->> 'name', 160) || ' (' || round((f ->> 'kcal')::numeric)::text || ' kcal)'
+  from (select private.group_post_food(p_post_id) as f) x
+  where f is not null;
+$$;
+
+-- A workout shared into the chat as its card draws it, read live: a workout
+-- from the app's logger with its exercises and sets, or (below) one a health
+-- store recorded. The same shape for both, `source` saying which. Only what a
+-- workout's card or its feed post shows, never its notes.
+create or replace function private.group_workout(p_workout_id uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'source', 'workout', 'id', w.id, 'name', w.name, 'kind', 'strength',
+    'started_at', w.started_at, 'duration_s', w.duration_s, 'kcal', w.kcal, 'distance_m', null,
+    'sets', (select count(*) from public.workout_set_values v where v.workout_id = w.id),
+    'exercises', (select count(*) from public.workout_exercises e where e.workout_id = w.id))
+  from public.workouts w where w.id = p_workout_id;
+$$;
+
+create or replace function private.group_activity(p_activity_id uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'source', 'activity', 'id', a.id, 'name', nullif(btrim(a.kind_label), ''), 'kind', a.kind,
+    'started_at', a.started_at, 'duration_s', a.duration_s, 'kcal', a.active_kcal,
+    'distance_m', a.distance_m, 'sets', null, 'exercises', null)
+  from public.activity_sessions a where a.id = p_activity_id;
+$$;
+
+-- What a workout message's body says: "Push day (45 min)", "Running (32 min)".
+-- A kind with no name of its own reads as its slug made into words. Not
+-- translated, as for food: one row is read by every member.
+create or replace function private.group_workout_label(p_workout jsonb)
+returns text language sql immutable set search_path = '' as $$
+  select left(coalesce(p_workout ->> 'name',
+      initcap(regexp_replace(replace(p_workout ->> 'kind', '_', ' '), '([a-z])([A-Z])', '\1 \2', 'g'))), 160)
+    || ' (' || greatest(1, round((p_workout ->> 'duration_s')::numeric / 60))::text || ' min)'
+  where p_workout is not null;
+$$;
+
+-- One workout of a fellow member's, as its detail page draws it: from the
+-- board's tile or a workout card in the chat. A definer function, as the
+-- board is, since workouts are owner-only. The owner must be in this group
+-- with the caller and not blocked either way, and the workout within the
+-- board's sixty days or shared into this group's chat. Never its notes or an
+-- exercise's notes, which are the owner's own. Nor its records: scoring them
+-- reads the owner's whole history, which this read does not need to show.
+--
+-- A logger workout comes back as the rows the app's own workout page reads
+-- (`summary`, `exercises`, `sets`, `heart`); a health store's as its session row.
+create or replace function public.group_workout_detail(p_group_id uuid, p_source text, p_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare v_user uuid := private.group_require_member(p_group_id); v_owner uuid; v_day date; v_shared boolean;
+begin
+  if p_source = 'workout' then
+    select w.user_id, w.log_date into v_owner, v_day from public.workouts w where w.id = p_id;
+    v_shared := exists (select 1 from public.group_messages m
+      where m.group_id = p_group_id and m.workout_id = p_id and not m.quarantined);
+  elsif p_source = 'activity' then
+    select a.user_id, a.log_date into v_owner, v_day from public.activity_sessions a where a.id = p_id;
+    v_shared := exists (select 1 from public.group_messages m
+      where m.group_id = p_group_id and m.activity_id = p_id and not m.quarantined);
+  else
+    raise exception 'Unknown workout source' using errcode = '22023';
+  end if;
+  if v_owner is null or not private.group_is_member(p_group_id, v_owner)
+     or (v_owner <> v_user and private.social_pair_blocked(v_owner))
+     or not (v_shared or v_day >= public.local_today(v_user) - 60) then
+    raise exception 'Workout unavailable' using errcode = '42501', hint = 'workout_gone';
+  end if;
+  if p_source = 'activity' then
+    return (select jsonb_build_object('owner', private.group_person(v_owner), 'session', to_jsonb(a))
+            from public.activity_sessions a where a.id = p_id);
+  end if;
+  return jsonb_build_object(
+    'owner', private.group_person(v_owner),
+    'summary', (
+      select jsonb_build_object('id', w.id, 'user_id', w.user_id, 'name', w.name, 'notes', null,
+        'started_at', w.started_at, 'ended_at', w.ended_at, 'duration_s', w.duration_s,
+        'log_date', w.log_date, 'routine_id', null, 'kcal', w.kcal, 'health_workout_id', null,
+        'set_count', (select count(*) from public.workout_set_values v where v.workout_id = w.id),
+        'volume_kg', coalesce((select sum(v.volume_kg) from public.workout_set_values v where v.workout_id = w.id), 0),
+        'exercises', '[]'::jsonb)
+      from public.workouts w where w.id = p_id),
+    'exercises', coalesce((
+      select jsonb_agg(to_jsonb(e) - 'notes' || jsonb_build_object('notes', null) order by e.position)
+      from public.workout_exercises e where e.workout_id = p_id), '[]'::jsonb),
+    'sets', coalesce((
+      select jsonb_agg(to_jsonb(v) order by v.exercise_position, v.position)
+      from public.workout_set_values v where v.workout_id = p_id), '[]'::jsonb),
+    'heart', (select to_jsonb(h) from public.workout_heart_rates h where h.workout_id = p_id)
+  );
+end;
+$$;
+
 -- The group's one thread, a page at a time: the latest `p_limit` messages, or
 -- those before the (`p_before_at`, `p_before_id`) cursor when scrolling up,
 -- read newest first and returned oldest first as the screen draws them.
+--
+-- Each message carries what an app from before replies, food and reactions
+-- reads (id, author, body, created_at, mine) and, beside it, the message it
+-- answers, the food or workout it shares and its reactions. The answered message is left
+-- out under the same rules as the thread (deleted, hidden, blocked, reported),
+-- and so are reactions by anyone blocked either way.
 create or replace function public.group_messages(p_group_id uuid, p_before_at timestamptz default null,
   p_before_id uuid default null, p_limit integer default 50)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
@@ -270,7 +419,29 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object(
       'id', m.id, 'author', private.group_person(m.author_id), 'body', m.body,
-      'created_at', m.created_at, 'mine', m.author_id = v_user
+      'created_at', m.created_at, 'mine', m.author_id = v_user,
+      'reply_to', (
+        select jsonb_build_object('id', r.id, 'author', private.group_person(r.author_id), 'body', r.body,
+          'is_food', r.post_id is not null, 'is_workout', num_nonnulls(r.workout_id, r.activity_id) > 0)
+        from public.group_messages r
+        where r.id = m.reply_to_id and not r.quarantined
+          and not private.social_pair_blocked(r.author_id)
+          and not exists (select 1 from public.group_message_reports x where x.message_id = r.id and x.reporter_id = v_user)
+      ),
+      'food', case when m.post_id is not null then private.group_post_food(m.post_id) end,
+      'workout', case when m.workout_id is not null then private.group_workout(m.workout_id)
+                      when m.activity_id is not null then private.group_activity(m.activity_id) end,
+      'reactions', coalesce((
+        select jsonb_agg(jsonb_build_object('emoji', x.emoji, 'count', x.total) order by x.total desc, x.first_at)
+        from (
+          select a.emoji, count(*) as total, min(a.created_at) as first_at
+          from public.group_message_reactions a
+          where a.message_id = m.id and (a.user_id = v_user or not private.social_pair_blocked(a.user_id))
+          group by a.emoji
+        ) x
+      ), '[]'::jsonb),
+      'my_reaction', (select a.emoji from public.group_message_reactions a
+        where a.message_id = m.id and a.user_id = v_user)
     ) order by m.created_at, m.id)
     from (
       select * from public.group_messages m
@@ -282,6 +453,39 @@ begin
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
       order by m.created_at desc, m.id desc limit greatest(1, least(coalesce(p_limit, 50), 100))
     ) m
+  ), '[]'::jsonb);
+end;
+$$;
+
+-- A few people to invite with one tap: whoever the caller follows or is
+-- followed by, people who follow each other first, then the most recent
+-- follow. Leaves out members, anyone already invited, anyone blocked either
+-- way and anyone hidden by moderation. Only the follow graph the caller can
+-- already see on their own profile, so it reveals nothing new.
+create or replace function public.group_invite_suggestions(p_group_id uuid, p_limit integer default 5)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare v_user uuid := private.group_require_member(p_group_id);
+begin
+  if p_limit is null or p_limit not between 1 and 20 then
+    raise exception 'Limit must be between 1 and 20' using errcode = '22023';
+  end if;
+  return coalesce((
+    select jsonb_agg(private.group_person(c.other) order by c.mutual desc, c.latest desc, c.other)
+    from (
+      select e.other, count(*) > 1 as mutual, max(e.created_at) as latest
+      from (
+        select f.followed_id as other, f.created_at from public.social_follows f where f.follower_id = v_user
+        union all
+        select f.follower_id, f.created_at from public.social_follows f where f.followed_id = v_user
+      ) e
+      join public.profiles p on p.id = e.other and not p.quarantined and p.handle is not null
+      where not exists (select 1 from public.group_members m where m.group_id = p_group_id and m.user_id = e.other)
+        and not exists (select 1 from public.group_invites i where i.group_id = p_group_id and i.invitee_id = e.other)
+        and not private.social_pair_blocked(e.other)
+      group by e.other
+      order by count(*) > 1 desc, max(e.created_at) desc, e.other
+      limit p_limit
+    ) c
   ), '[]'::jsonb);
 end;
 $$;
@@ -332,18 +536,30 @@ language sql stable security definer set search_path = '' as $$
   from keys k
   where k.owner <> (select auth.uid())
     and private.group_share((select auth.uid()), k.owner)
-    and exists (
+    and (exists (
       select 1 from public.food_logs f
       where f.user_id = k.owner and f.photo_path = k.key
         and f.log_date >= public.local_today((select auth.uid())) - 60
-    );
+    ) or exists (
+      -- A food shared into the chat of a group the two are both in stays
+      -- visible there however old the meal is.
+      -- Only while the post itself is still published: moderation that hides
+      -- a post takes its photo out of the chat as well.
+      select 1 from public.social_posts p
+      join public.group_messages gm on gm.post_id = p.id and not gm.quarantined
+      join public.group_members mm on mm.group_id = gm.group_id and mm.user_id = (select auth.uid())
+      where p.author_id = k.owner and p.photo_path = k.key
+        and p.review_status = 'approved' and not p.quarantined
+    ));
 $$;
+revoke execute on function private.group_post_food, private.group_food_label, private.group_workout,
+  private.group_activity, private.group_workout_label from public, anon, authenticated;
 revoke execute on function private.group_photo_claims, private.group_person from public, anon;
 grant execute on function private.group_photo_claims, private.group_person to authenticated, service_role;
 
 revoke execute on function public.my_groups, public.my_group_invites, public.group_invite_count,
   public.public_groups, public.group_board, public.group_messages, public.group_chat_summary,
-  public.group_details from public, anon;
+  public.group_details, public.group_invite_suggestions, public.group_workout_detail from public, anon;
 grant execute on function public.my_groups, public.my_group_invites, public.group_invite_count,
   public.public_groups, public.group_board, public.group_messages, public.group_chat_summary,
-  public.group_details to authenticated, service_role;
+  public.group_details, public.group_invite_suggestions, public.group_workout_detail to authenticated, service_role;

@@ -2,13 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'r
 import { socialRequestId } from '@/features/social/request-id'
 
 /** Something typed and sent, drawn in place before the server has it. */
-export type Outgoing = {
+export type Outgoing<M = unknown> = {
   requestId: string
   body: string
   createdAt: string
   state: 'sending' | 'failed'
   /** The server's id once it answered, which is how the real row replaces this one. */
   id?: string
+  /** Whatever else the thread sends with the body (a reply, a shared food), drawn with it. */
+  meta?: M
 }
 
 /**
@@ -57,17 +59,18 @@ function subscribe(listener: () => void) {
  * while drawing, so the two are never on screen together for a frame, and a
  * list that arrived before the request answered still replaces it.
  */
-export function useOutbox(
+export function useOutbox<M = unknown>(
   scope: string,
-  deliver: (item: Outgoing) => Promise<string | null | undefined>,
+  deliver: (item: Outgoing<M>) => Promise<string | null | undefined>,
   serverIds: ReadonlySet<string>,
 ) {
-  const items = useSyncExternalStore(subscribe, () => boxes.get(scope) ?? NONE)
+  // One scope is only ever filled by one thread, which sends one kind of meta.
+  const items = useSyncExternalStore(subscribe, () => boxes.get(scope) ?? NONE) as Outgoing<M>[]
   const latest = useRef(deliver)
   latest.current = deliver
 
   const run = useCallback(
-    async (item: Outgoing) => {
+    async (item: Outgoing<M>) => {
       if (inFlight.has(item.requestId)) return
       inFlight.add(item.requestId)
       patch(scope, item.requestId, { state: 'sending' })
@@ -84,12 +87,13 @@ export function useOutbox(
   )
 
   const send = useCallback(
-    (body: string) => {
-      const item: Outgoing = {
+    (body: string, meta?: M) => {
+      const item: Outgoing<M> = {
         requestId: socialRequestId(),
         body,
         createdAt: new Date().toISOString(),
         state: 'sending',
+        ...(meta === undefined ? {} : { meta }),
       }
       update(scope, (current) => [...current, item])
       void run(item)
@@ -100,7 +104,7 @@ export function useOutbox(
   const retry = useCallback(
     (requestId: string) => {
       const item = boxes.get(scope)?.find((other) => other.requestId === requestId)
-      if (item?.state === 'failed') void run(item)
+      if (item?.state === 'failed') void run(item as Outgoing<M>)
     },
     [scope, run],
   )

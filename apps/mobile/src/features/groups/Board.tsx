@@ -33,6 +33,7 @@ import {
 } from '@/data/groups'
 import { workoutIcon, workoutKindKey } from '@/features/activity/workoutKind'
 import { QueryNotice } from '@/features/social/components'
+import { ActionSheet } from '@/features/workouts/ActionSheet'
 import { track } from '@/lib/analytics'
 import { showingGroupChat } from '@/lib/notifications'
 import { useThemeColors } from '@/theme/useTheme'
@@ -52,14 +53,20 @@ import {
 } from '@/ui'
 import { InviteSheet } from './InviteSheet'
 import { MealSheet } from './MealSheet'
-import { EntryPicture, MEAL_TINT, PersonAvatar, shortDuration, useGroupTask } from './parts'
+import {
+  EntryPicture,
+  MEAL_TINT,
+  PersonAvatarLink,
+  shortDuration,
+  useGroupTask,
+  useOpenGroupWorkout,
+} from './parts'
 import { takeOpenDay, useOpenDay } from './store'
 import { GroupWeekStrip } from './WeekStrip'
 
 /** How far back the pager goes. The server answers no further, nor signs older photos. */
 const DAYS = 60
-/** Rows before "Show more": you and four friends. */
-const FOLDED_ROWS = 5
+/** The space between tiles and rows. */
 const GAP = 4
 /** The page's side margin. The grid has no card around it, so the tiles get the width. */
 const EDGE = 8
@@ -339,9 +346,7 @@ const BoardPage = memo(function BoardPage({
   onInvite: () => void
 }) {
   const { t } = useTranslation('groups')
-  const colors = useThemeColors()
   const board = useGroupBoard(groupId, day, enabled, live)
-  const [expanded, setExpanded] = useState(false)
   const [open, setOpen] = useState<Open | null>(null)
   const onOpen = useCallback((memberId: string, meal: GroupMeal) => setOpen({ memberId, meal }), [])
   const onClose = useCallback(() => setOpen(null), [])
@@ -371,9 +376,9 @@ const BoardPage = memo(function BoardPage({
     )
   }
 
+  // Every member, folded or not: a group holds ten at most, which is a short
+  // scroll, and a fold hid the friends whose food was the point of opening it.
   const all = board.data.members
-  const shown = expanded ? all : all.slice(0, FOLDED_ROWS)
-  const hidden = all.length - FOLDED_ROWS
 
   return (
     <Animated.ScrollView
@@ -384,7 +389,7 @@ const BoardPage = memo(function BoardPage({
     >
       <View style={{ gap: GAP }}>
         <ColumnHeaders grid={grid} />
-        {shown.map((member) => (
+        {all.map((member) => (
           <MemberRow
             key={member.person.id}
             groupId={groupId}
@@ -395,23 +400,6 @@ const BoardPage = memo(function BoardPage({
             onOpen={onOpen}
           />
         ))}
-        {hidden > 0 ? (
-          <Tappable
-            className="min-h-sm flex-row items-center justify-center gap-1"
-            onPress={() => setExpanded((value) => !value)}
-            accessibilityRole="button"
-          >
-            <Text variant="caption" className="text-pandan-ink">
-              {expanded ? t('showLess') : t('showMore', { count: hidden })}
-            </Text>
-            <Icon
-              set="ui"
-              name={expanded ? 'chevron-up' : 'chevron-down'}
-              size={16}
-              tintColor={colors.muted}
-            />
-          </Tappable>
-        ) : null}
       </View>
       {/* The group's count, not the rows: blocked members are not drawn, and a
           group of two with one blocked is not waiting for its first friend. */}
@@ -523,7 +511,7 @@ const MemberRow = memo(function MemberRow({
       style={{ gap: GAP }}
     >
       <View className="items-center gap-0.5" style={{ width: MEMBER_COLUMN }}>
-        <PersonAvatar person={member.person} />
+        <PersonAvatarLink person={member.person} />
         <Text
           variant="micro"
           className="text-ink"
@@ -549,7 +537,12 @@ const MemberRow = memo(function MemberRow({
           onOpen={onOpen}
         />
       ))}
-      <WorkoutCell workout={member.workout} height={grid.tile} width={grid.workout} />
+      <WorkoutCell
+        groupId={groupId}
+        workout={member.workout}
+        height={grid.tile}
+        width={grid.workout}
+      />
     </View>
   )
 })
@@ -827,45 +820,76 @@ function EmptyTile({ width, height }: { width: number; height: number }) {
   )
 }
 
+/**
+ * The day's first workout, and how many more. A tap opens it as its own page
+ * draws it, or, with several, a list of the day's workouts to pick one from.
+ */
 function WorkoutCell({
+  groupId,
   workout,
   height,
   width,
 }: {
+  groupId: string
   workout: BoardMember['workout']
   height: number
   width: number
 }) {
-  const { t } = useTranslation(['activity'])
+  const { t } = useTranslation(['activity', 'groups'])
+  const open = useOpenGroupWorkout(groupId)
+  const [picking, setPicking] = useState(false)
   if (!workout) return <EmptyTile width={width} height={height} />
   const name = workout.name ?? t(workoutKindKey(workout.kind))
   const duration = shortDuration(workout.duration_s)
+  const all = workout.all ?? []
+  const press = () => {
+    const [only] = all
+    if (all.length > 1) setPicking(true)
+    else if (only) open(only)
+  }
   return (
-    <View
-      className="items-center justify-center gap-0.5 rounded-[14px] bg-hibiscus-soft px-1"
-      style={{ width, height }}
-      accessible
-      accessibilityLabel={`${name}, ${duration}`}
-    >
-      <Icon {...workoutIcon(workout.kind)} size={26} />
-      <Text
-        variant="micro"
-        className="text-ink"
-        numberOfLines={1}
-        maxFontSizeMultiplier={TILE_TEXT}
+    <>
+      <Tappable
+        className="items-center justify-center gap-0.5 rounded-[14px] bg-hibiscus-soft px-1"
+        style={{ width, height }}
+        disabled={all.length === 0}
+        onPress={press}
+        accessibilityRole={all.length ? 'button' : undefined}
+        accessibilityLabel={`${name}, ${duration}`}
       >
-        {name}
-      </Text>
-      <Text
-        variant="micro"
-        className="text-[10px] leading-[12px]"
-        numberOfLines={1}
-        maxFontSizeMultiplier={TILE_TEXT}
-      >
-        {duration}
-        {workout.count > 1 ? ` +${workout.count - 1}` : ''}
-      </Text>
-    </View>
+        <Icon {...workoutIcon(workout.kind)} size={26} />
+        <Text
+          variant="micro"
+          className="text-ink"
+          numberOfLines={1}
+          maxFontSizeMultiplier={TILE_TEXT}
+        >
+          {name}
+        </Text>
+        <Text
+          variant="micro"
+          className="text-[10px] leading-[12px]"
+          numberOfLines={1}
+          maxFontSizeMultiplier={TILE_TEXT}
+        >
+          {duration}
+          {workout.count > 1 ? ` +${workout.count - 1}` : ''}
+        </Text>
+      </Tappable>
+      {all.length > 1 ? (
+        <ActionSheet
+          visible={picking}
+          onClose={() => setPicking(false)}
+          title={t('groups:column.workout')}
+          actions={all.map((item) => ({
+            key: `${item.source}:${item.id}`,
+            label: `${item.name ?? t(workoutKindKey(item.kind))} · ${shortDuration(item.duration_s)}`,
+            icon: workoutIcon(item.kind),
+            onPress: () => open(item),
+          }))}
+        />
+      ) : null}
+    </>
   )
 }
 
