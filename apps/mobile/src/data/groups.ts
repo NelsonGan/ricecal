@@ -23,7 +23,7 @@ import { type WorkoutDetail, workoutDetailFrom } from './workouts'
 export type GroupMeal = Database['public']['Enums']['group_meal']
 export const GROUP_MEALS: readonly GroupMeal[] = ['breakfast', 'lunch', 'dinner']
 /** The most people a group holds, as the database enforces it. */
-export const GROUP_CAPACITY = 10
+export const GROUP_CAPACITY = 20
 
 export type GroupPerson = {
   id: string

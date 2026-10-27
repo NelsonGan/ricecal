@@ -3195,7 +3195,7 @@ capacity without measurements.
 
 ## Groups
 
-Up to ten friends see each other's day of food on one board, so the Groups tab
+Up to twenty friends see each other's day of food on one board, so the Groups tab
 is an accountability tool rather than a second feed. It took the tab that
 Workouts had (see [Workouts](#workouts)), and the tab's icon carries the count
 of pending invites.
@@ -3313,8 +3313,11 @@ meal share a tile and swipe sideways inside it.
 
 ### Membership
 
-Ten members, at most twenty groups a person, enforced by a trigger that locks
-the group row so two people cannot take the tenth seat together.
+Twenty members, at most twenty groups a person, enforced by a trigger that
+locks the group row so two people cannot take the last seat together. The cap
+was ten, and release 1.0 still treats ten as full: on that app a group of ten
+to nineteen reads as Full and hides Invite, while the server lets it grow and
+the current app shows the true count.
 `groups.member_count` is kept by the same triggers, so the cap, the lists and the
 public ranking read one column instead of counting rows. A full group
 withdraws its pending invites. Private groups are invite only; public groups are
@@ -3346,7 +3349,7 @@ the others in their own board order by dragging a row's handle in the settings'
 member list; the order saves as the finger lifts (`board_order`), and the
 viewer's own row stays first. A face anywhere in a group, on the board, in the
 chat or in settings, opens that person's feed profile. The board draws every
-member: ten at most is a short scroll, and a fold hid the friends whose food was
+member: twenty at most is a scroll, and a fold hid the friends whose food was
 the reason to open it.
 
 **A friend's workout opens like your own.** The board's workout tile, and a
