@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewRef,
+  useReanimatedKeyboardAnimation,
 } from 'react-native-keyboard-controller'
 import Animated, {
   Easing,
@@ -162,6 +163,14 @@ export type SheetProps = {
    */
   fillBody?: boolean
   /**
+   * For a short sheet whose own field raises the keyboard: the panel stays on
+   * the bottom edge and runs on behind the keys, and only its content rises,
+   * by the keyboard's height. Lifted whole instead, a short panel left the
+   * strip behind the keyboard's rounded corners showing the scrim, so it read
+   * as floating. Bottom sheets that are not full height only.
+   */
+  behindKeyboard?: boolean
+  /**
    * `center` floats the panel in the middle of the screen as a card that fades
    * in, rather than rising from the bottom edge: within reach of either thumb,
    * and how the workout screens present everything they open. It has no drag
@@ -289,6 +298,7 @@ export function SheetSurface({
   scrollResetKey,
   fullHeight = false,
   fillBody = false,
+  behindKeyboard = false,
   placement = 'bottom',
   children,
   className,
@@ -297,6 +307,8 @@ export function SheetSurface({
   const overlay = useOverlayInsets()
   const { height } = useWindowDimensions()
   const center = placement === 'center'
+  const keysBehind = behindKeyboard && !center && !fullHeight
+  const keyboard = useReanimatedKeyboardAnimation()
 
   /**
    * The panel rises; the scrim does not.
@@ -460,6 +472,13 @@ export function SheetSurface({
    * rather than the one in `Screen`. The same two sums a screen does.
    */
   const numpad = useNumpadZone()
+  // With `behindKeyboard`, the panel's own bottom padding grows to the
+  // keyboard's height on the UI thread, so the surface reaches the screen's
+  // edge behind the keys and the content sits a gap above them.
+  const restPadding = sheetBottomPadding(insets.bottom) + numpad.height
+  const keysPadding = useAnimatedStyle(() =>
+    keysBehind ? { paddingBottom: Math.max(-keyboard.height.value + spacing.md, restPadding) } : {},
+  )
   const scroller = useRef<KeyboardAwareScrollViewRef>(null)
   const scrolled = useRef(0)
   const trackScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -547,7 +566,7 @@ export function SheetSurface({
           own content instead, so the field stays above the keys and the surface
           runs the whole way down. */}
         <KeyboardAvoidingView
-          behavior={fullHeight && !center ? undefined : 'padding'}
+          behavior={(fullHeight && !center) || keysBehind ? undefined : 'padding'}
           // Styled rather than classed: this is the one element here that is not
           // a plain RN view, and whether NativeWind reaches it is not worth
           // depending on for the layout that decides the panel's height.
@@ -607,6 +626,7 @@ export function SheetSurface({
                     paddingBottom:
                       sheetBottomPadding(insets.bottom) + (fullHeight ? 0 : numpad.height),
                   },
+              keysPadding,
             ]}
             accessibilityViewIsModal
             accessible={false}

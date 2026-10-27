@@ -91,6 +91,9 @@ export function InviteSheet({
       }}
       closeLabel={t('common:action.close')}
       title={t('inviteFriends')}
+      // Down to the screen's edge behind the keys, rather than lifted above
+      // them with a strip of scrim showing round the keyboard's corners.
+      behindKeyboard
       // `autoFocus` inside a window that has not been presented yet is
       // dropped, so the field is focused once the sheet is up (see `Sheet`).
       onShow={() => field.current?.focus()}
