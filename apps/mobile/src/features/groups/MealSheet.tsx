@@ -1,7 +1,9 @@
 import { format, parseISO } from 'date-fns'
-import { useEffect, useRef, useState } from 'react'
+import * as Haptics from 'expo-haptics'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   LinearTransition,
@@ -127,11 +129,6 @@ function EntryRow({
 }) {
   const { t } = useTranslation(['groups', 'common'])
   const task = useGroupTask()
-  const react = (value: -1 | 1) => {
-    const next = entry.mine === value ? 0 : value
-    task.press({ action: 'react', entryId: entry.id, value: next })
-    if (next !== 0) track('Group Reaction Set', { reaction: next === 1 ? 'like' : 'dislike' })
-  }
   const meals = GROUP_MEALS.map((meal) => ({ value: meal, label: t(`common:meal.${meal}`) }))
   // A photo opens to the card's full width, so a friend's plate can be seen
   // rather than guessed at from a thumbnail; the figures stay under it. A
@@ -145,7 +142,6 @@ function EntryRow({
     >
       {expanded ? (
         <Tappable
-          haptics={false}
           onPress={() => setExpanded(false)}
           accessibilityRole="button"
           accessibilityLabel={t('shrinkPhoto')}
@@ -160,7 +156,6 @@ function EntryRow({
       <View className="flex-row gap-3">
         {expanded ? null : (
           <Tappable
-            haptics={false}
             disabled={!canExpand}
             onPress={() => setExpanded(true)}
             accessibilityRole={canExpand ? 'button' : undefined}
@@ -192,26 +187,13 @@ function EntryRow({
             {/* Beside the figure rather than on a row of their own, which left
                 half the card empty. Your own food cannot be reacted to, so
                 there it is what friends said instead. */}
-            {isSelf ? (
-              <Tally likes={entry.likes} dislikes={entry.dislikes} />
-            ) : (
-              <View className="flex-row gap-2">
-                <Reaction
-                  label={t('like')}
-                  kind="up"
-                  count={entry.likes}
-                  selected={entry.mine === 1}
-                  onPress={() => react(1)}
-                />
-                <Reaction
-                  label={t('dislike')}
-                  kind="down"
-                  count={entry.dislikes}
-                  selected={entry.mine === -1}
-                  onPress={() => react(-1)}
-                />
-              </View>
-            )}
+            <Thumbs
+              entryId={entry.id}
+              likes={entry.likes}
+              dislikes={entry.dislikes}
+              mine={entry.mine}
+              isSelf={isSelf}
+            />
           </View>
         </View>
       </View>
@@ -230,6 +212,83 @@ function EntryRow({
         />
       ) : null}
     </Animated.View>
+  )
+}
+
+/**
+ * A food's like and dislike. A friend's takes either, and a second tap on the
+ * same one takes it back; your own cannot be reacted to, so there it is what
+ * friends said instead. The board's meal sheet and a chat food card both draw it.
+ */
+export function Thumbs({
+  isSelf,
+  ...votes
+}: {
+  entryId: string
+  likes: number
+  dislikes: number
+  mine: -1 | 0 | 1
+  isSelf: boolean
+  /** Inside a chat bubble's gestures; see `Reaction`. */
+  inGesture?: boolean
+}) {
+  return isSelf ? <Tally likes={votes.likes} dislikes={votes.dislikes} /> : <Vote {...votes} />
+}
+
+/**
+ * A like or a dislike on a friend's food; the same one again takes it back.
+ * The pills use it, and a chat bubble's screen-reader actions, since the pills
+ * inside a bubble are hidden from a screen reader by the bubble itself.
+ */
+export function useVote() {
+  const task = useGroupTask()
+  const { press } = task
+  return useCallback(
+    (entryId: string, mine: -1 | 0 | 1, value: -1 | 1) => {
+      const next = mine === value ? 0 : value
+      press({ action: 'react', entryId, value: next })
+      if (next !== 0) track('Group Reaction Set', { reaction: next === 1 ? 'like' : 'dislike' })
+    },
+    [press],
+  )
+}
+
+/** A friend's food's two pills, which are the only ones that write. */
+function Vote({
+  entryId,
+  likes,
+  dislikes,
+  mine,
+  inGesture = false,
+}: {
+  entryId: string
+  likes: number
+  dislikes: number
+  mine: -1 | 0 | 1
+  inGesture?: boolean
+}) {
+  const { t } = useTranslation('groups')
+  const vote = useVote()
+  const react = (value: -1 | 1) => vote(entryId, mine, value)
+  return (
+    <View className="flex-row gap-2">
+      <Reaction
+        label={t('like')}
+        kind="up"
+        count={likes}
+        selected={mine === 1}
+        onPress={() => react(1)}
+        inGesture={inGesture}
+      />
+      <Reaction
+        label={t('dislike')}
+        kind="down"
+        count={dislikes}
+        selected={mine === -1}
+        onPress={() => react(-1)}
+        inGesture={inGesture}
+      />
+    </View>
   )
 }
 
@@ -273,12 +332,20 @@ function Reaction({
   count,
   selected,
   onPress,
+  inGesture,
 }: {
   label: string
   kind: 'up' | 'down'
   count: number
   selected: boolean
   onPress: () => void
+  /**
+   * A gesture-handler tap rather than a Pressable, for a pill inside a chat
+   * bubble. Its tap claims the touch, which cancels the bubble's double tap
+   * (a heart) instead of giving both: a Pressable is invisible to the
+   * bubble's gestures, so tapping twice liked, unliked and hearted it too.
+   */
+  inGesture: boolean
 }) {
   const reduceMotion = useReducedMotion()
   const scale = useSharedValue(1)
@@ -303,20 +370,17 @@ function Reaction({
     }
     onPress()
   }
-  return (
-    <Tappable
-      haptics
-      // 36pt drawn, 44pt to a finger.
-      hitSlop={4}
-      className={cn(
-        'min-h-[36px] min-w-[60px] flex-row items-center justify-center gap-1.5 rounded-full border-2 px-3',
-        selected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
-      )}
-      onPress={press}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={`${label}, ${count}`}
-    >
+  const className = cn(
+    'min-h-[36px] min-w-[60px] flex-row items-center justify-center gap-1.5 rounded-full border-2 px-3',
+    selected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
+  )
+  const a11y = {
+    accessibilityRole: 'button' as const,
+    accessibilityState: { selected },
+    accessibilityLabel: `${label}, ${count}`,
+  }
+  const inside = (
+    <>
       <Animated.View style={hand}>
         <Icon set="system" name={`thumbs-${kind}`} size={24} />
       </Animated.View>
@@ -328,6 +392,44 @@ function Reaction({
       >
         {count}
       </Text>
+    </>
+  )
+  if (inGesture) {
+    const tap = Gesture.Tap()
+      // 36pt drawn, 44pt to a finger.
+      .hitSlop(4)
+      .runOnJS(true)
+      // Felt when the tap lands rather than when the finger does, so a scroll
+      // that starts on a pill does not buzz.
+      .onEnd((_event, success) => {
+        if (!success) return
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+        press()
+      })
+    return (
+      <GestureDetector gesture={tap}>
+        <View
+          className={className}
+          accessible
+          {...a11y}
+          accessibilityActions={[{ name: 'activate' }]}
+          onAccessibilityAction={press}
+        >
+          {inside}
+        </View>
+      </GestureDetector>
+    )
+  }
+  return (
+    <Tappable
+      haptics
+      // 36pt drawn, 44pt to a finger.
+      hitSlop={4}
+      className={className}
+      onPress={press}
+      {...a11y}
+    >
+      {inside}
     </Tappable>
   )
 }

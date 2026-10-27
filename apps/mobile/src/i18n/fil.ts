@@ -1390,6 +1390,11 @@ export const fil = {
           free: '{{routines}} routine',
           pro: 'Walang limitasyon',
         },
+        groups: {
+          label: 'Mga grupong sinimulan mo',
+          free: '{{groups}} grupo',
+          pro: 'Walang limitasyon',
+        },
         recipeFill: {
           label: 'Punan ang pagkain mula sa litrato',
           free: '',
@@ -1452,6 +1457,7 @@ export const fil = {
         trend_range: 'Kailangan ng RiceCal Pro para tumingin nang lampas sa isang linggo.',
         new_routine:
           'Kailangan ng RiceCal Pro para magtabi ng higit sa {{routines}} workout routine.',
+        new_group: 'Kailangan ng RiceCal Pro para gumawa ng higit sa {{groups}} grupo.',
         workout_range: 'Kailangan ng RiceCal Pro para makita ang progreso nang lampas sa 3 buwan.',
         review: 'Kailangan ng RiceCal Pro para magbasa ng mas lumang review.',
         nudge: 'Inaalis ng RiceCal Pro ang mga limitasyon.',

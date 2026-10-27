@@ -387,12 +387,30 @@ grant execute on function private.group_is_member, private.group_share,
 -- Writes
 -- ---------------------------------------------------------------------------
 
+-- How many groups a free account may lead. It counts the groups whose leader
+-- the account is now, not every group it ever started: one handed on by
+-- leaving frees its place. Joining is never limited by it.
+create or replace function public.free_group_limit()
+returns integer language sql immutable parallel safe set search_path = '' as $$
+  select 2;
+$$;
+
+-- The limit's message is a token the app matches on, as `routine_limit_reached`
+-- is, and it opens the paywall rather than a toast.
 create or replace function public.create_group(p_name text, p_icon_name text, p_is_public boolean)
 returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.social_require_user(false); v_group uuid;
 begin
   if p_name is null or char_length(btrim(p_name)) not between 1 and 40 then
     raise exception 'Name the group' using errcode = '22023';
+  end if;
+  if not public.is_entitled(v_user) then
+    -- One create at a time per free account, so two at once cannot both count
+    -- one group and both pass.
+    perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('group_create:' || v_user::text));
+    if (select count(*) from public.groups g where g.leader_id = v_user) >= public.free_group_limit() then
+      raise exception 'group_limit_reached' using errcode = 'P0001', hint = 'group_limit_reached';
+    end if;
   end if;
   if not private.social_claim(v_user, 'group_create', 10) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
@@ -966,6 +984,8 @@ returns void language sql security definer set search_path = '' as $$
   delete from public.push_tokens t where t.token = any(p_tokens);
 $$;
 
+revoke execute on function public.free_group_limit from public, anon;
+grant execute on function public.free_group_limit to authenticated, service_role;
 revoke execute on function public.create_group, public.update_group, public.invite_to_group,
   public.respond_to_group_invite, public.join_group, public.leave_group, public.remove_group_member,
   public.set_group_preferences, public.set_entry_board_meal, public.set_group_reaction,

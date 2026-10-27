@@ -106,3 +106,37 @@ export function useEnterApp(): () => void {
     } as typeof root)
   }, [navigation])
 }
+
+/** What `showTabUnder` reads of a navigator, so it takes any screen's `navigation`. */
+type NavigatorLike = {
+  getState():
+    | {
+        routes: {
+          name: string
+          state?: { key?: string; index?: number; routes: { name: string }[] }
+        }[]
+      }
+    | undefined
+  getParent(): NavigatorLike | undefined
+  dispatch(action: { type: string; payload: { name: string }; target: string }): void
+}
+
+/**
+ * Switch the tab bar to `tab` without leaving the screen on top of it.
+ *
+ * For a screen pushed over the tabs from outside them (a notification), so
+ * that its back lands where it belongs. `navigate('/groups')` first and then
+ * the push drew three screens in a row; this changes the tab underneath once
+ * the push is over, where nobody sees it. A jump aimed at the tab navigator
+ * itself, since navigating to the tab would pop everything above it.
+ */
+export function showTabUnder(navigation: NavigatorLike, tab: string): void {
+  for (let nav: NavigatorLike | undefined = navigation; nav; nav = nav.getParent()) {
+    const tabs = nav.getState()?.routes.find((route) => route.name === '(tabs)')?.state
+    if (!tabs) continue
+    if (tabs.key && tabs.routes[tabs.index ?? 0]?.name !== tab) {
+      nav.dispatch({ type: 'JUMP_TO', payload: { name: tab }, target: tabs.key })
+    }
+    return
+  }
+}

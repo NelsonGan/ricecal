@@ -32,4 +32,6 @@ export const SCHEMA_VERSION = '5'
 export const FREE_DAILY_SCANS = 3
 export const FREE_RECIPES = 3
 export const FREE_ROUTINES = 3
+/** Groups a free account may lead at once; joining others is never limited. */
+export const FREE_GROUPS = 2
 export const FREE_PHOTO_RETENTION_DAYS = 30

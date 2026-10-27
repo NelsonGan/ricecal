@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications'
-import { router } from 'expo-router'
+import { router, useNavigationContainerRef } from 'expo-router'
 import { useEffect } from 'react'
 
 import { useSession } from '@/data/session'
@@ -40,6 +40,10 @@ const isReport = (kind: unknown): kind is ReportKind => kind === 'weekly' || kin
  */
 export function useReportLinks(): void {
   const { userId } = useSession()
+  // Asked where the app is when a notification is tapped, rather than
+  // subscribed to it: following every navigation would redraw the tab bar's
+  // whole layout, which this hook lives in.
+  const navigation = useNavigationContainerRef()
   useEffect(() => {
     let alive = true
 
@@ -78,10 +82,22 @@ export function useReportLinks(): void {
         track('Notification Opened', {
           kind: data?.invite ? 'group_invite' : data?.chat ? 'group_message' : 'group_nudge',
         })
-        router.navigate('/groups')
+        // A message opens its thread in one push over whatever is showing; the
+        // chat puts the Groups tab under itself once it has slid in. Switching
+        // to Groups first popped anything open, drew the board, and then
+        // pushed the chat over it, three transitions for one tap. The thread
+        // already open is left as it is, and another group's is swapped.
         if (data?.chat && groupId) {
-          router.navigate({ pathname: '/group/chat', params: { id: groupId, reply: '1' } })
+          const chat = { pathname: '/group/chat', params: { id: groupId, reply: '1' } } as const
+          const route = (navigation.isReady() ? navigation.getCurrentRoute() : undefined) as
+            | { name: string; params?: { id?: string } }
+            | undefined
+          const showing = route?.name === 'chat' ? route.params?.id : undefined
+          if (!showing) router.push(chat)
+          else if (showing !== groupId) router.replace(chat)
+          return
         }
+        router.navigate('/groups')
         return
       }
       if (!isReport(kind)) return
@@ -106,11 +122,10 @@ export function useReportLinks(): void {
       if (response) Notifications.clearLastNotificationResponse()
       open(response)
     })
-
     const listener = Notifications.addNotificationResponseReceivedListener(open)
     return () => {
       alive = false
       listener.remove()
     }
-  }, [userId])
+  }, [userId, navigation])
 }

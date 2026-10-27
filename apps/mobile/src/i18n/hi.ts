@@ -1353,6 +1353,11 @@ export const hi = {
           free: '{{routines}} रूटीन',
           pro: 'असीमित',
         },
+        groups: {
+          label: 'आपके बनाए समूह',
+          free: '{{groups}} समूह',
+          pro: 'असीमित',
+        },
         recipeFill: {
           label: 'फ़ोटो से खाना भरें',
           free: '',
@@ -1412,6 +1417,7 @@ export const hi = {
         new_recipe: 'अपने {{recipes}} से ज़्यादा खाने रखने के लिए RiceCal Pro चाहिए।',
         trend_range: 'एक हफ़्ते से पीछे देखने के लिए RiceCal Pro चाहिए।',
         new_routine: '{{routines}} से ज़्यादा वर्कआउट रूटीन रखने के लिए RiceCal Pro चाहिए।',
+        new_group: '{{groups}} से ज़्यादा समूह बनाने के लिए RiceCal Pro चाहिए।',
         workout_range: '3 महीने से पीछे की वर्कआउट प्रगति देखने के लिए RiceCal Pro चाहिए।',
         review: 'पुरानी समीक्षा पढ़ने के लिए RiceCal Pro चाहिए।',
         nudge: 'RiceCal Pro सीमाएं हटा देता है।',

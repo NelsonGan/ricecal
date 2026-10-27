@@ -306,6 +306,25 @@ begin
 end;
 $$;
 
+-- A shared food's likes and dislikes as this group's board counts them (its
+-- members' votes, less anyone blocked either way), with the diary entry they
+-- are cast on and the viewer's own vote, so the chat card takes the same
+-- thumbs as the board.
+create or replace function private.group_food_reactions(p_post_id uuid, p_group_id uuid, p_user uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'entry_id', p.source_entry_id,
+    'likes', count(*) filter (where r.value = 1),
+    'dislikes', count(*) filter (where r.value = -1),
+    'mine', coalesce(max(r.value) filter (where r.user_id = p_user), 0))
+  from public.social_posts p
+  left join public.group_reactions r on r.entry_id = p.source_entry_id
+    and exists (select 1 from public.group_members m where m.group_id = p_group_id and m.user_id = r.user_id)
+    and (r.user_id = p_user or not private.social_pair_blocked(r.user_id))
+  where p.id = p_post_id and p.source_entry_id is not null
+  group by p.source_entry_id;
+$$;
+
 -- What a food message's body says: "Nasi lemak (640 kcal)". Not translated,
 -- since one row is read by every member in their own language; a name and a
 -- number read in any of them.
@@ -442,7 +461,10 @@ begin
           and not private.social_pair_blocked(r.author_id)
           and not exists (select 1 from public.group_message_reports x where x.message_id = r.id and x.reporter_id = v_user)
       ),
-      'food', case when m.post_id is not null then private.group_post_food(m.post_id) end,
+      -- The food's own fields, then its thumbs (appended, so an older app reads
+      -- the card unchanged). A withdrawn post stays null either way.
+      'food', case when m.post_id is not null then private.group_post_food(m.post_id)
+        || coalesce(private.group_food_reactions(m.post_id, p_group_id, v_user), '{}'::jsonb) end,
       'workout', case when m.workout_id is not null then private.group_workout(m.workout_id)
                       when m.activity_id is not null then private.group_activity(m.activity_id) end,
       'reactions', coalesce((
@@ -569,7 +591,8 @@ $$;
 revoke execute on function private.group_size_for_join from public, anon;
 grant execute on function private.group_size_for_join to authenticated, service_role;
 revoke execute on function private.group_post_food, private.group_food_label, private.group_workout,
-  private.group_activity, private.group_workout_label from public, anon, authenticated;
+  private.group_activity, private.group_workout_label, private.group_food_reactions
+  from public, anon, authenticated;
 revoke execute on function private.group_photo_claims, private.group_person from public, anon;
 grant execute on function private.group_photo_claims, private.group_person to authenticated, service_role;
 
