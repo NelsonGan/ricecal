@@ -243,4 +243,11 @@ describe('values the table would refuse', () => {
     expect(row.kind_label).toHaveLength(120)
     expect(row.source_name).toHaveLength(120)
   })
+
+  it('never cuts a label through the middle of an emoji', () => {
+    const row = only([workout({ kindLabel: `${'x'.repeat(119)}🏸 badminton` })])
+
+    expect(row.kind_label).toBe(`${'x'.repeat(119)}🏸`)
+    expect(JSON.stringify(row.kind_label)).not.toMatch(/\\ud83c/)
+  })
 })

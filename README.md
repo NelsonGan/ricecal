@@ -7645,9 +7645,11 @@ A figure the table's check would refuse is treated the same way. One request
 carries every day, and one refused row failed it: a Health Connect account saved
 no day for three weeks behind one day above 20,000 kcal, and an iPhone saved no
 workout behind one longer than a day. `dayBatches` and `sessionBatches` leave an
-impossible figure out of the row, and leave out a day or workout whose steps,
-duration or energy is impossible, since those columns cannot be omitted from a
-new row. Their bounds are copied from `41_activity.sql` and must move with it.
+impossible figure out of the row. A day or workout whose steps, duration or
+energy is impossible is not sent at all, since a new row without them would
+read a confident zero or be refused. Hours are a replacement, so an impossible
+hour is not sent. The bounds are copied from `41_activity.sql` and must move
+with it.
 
 **A Nitro HybridObject's `name` is the name of its class.** `sourceRevision.source`
 in `@kingstinct/react-native-healthkit` is one, so `source.name` type-checks,
