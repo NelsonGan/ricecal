@@ -1,6 +1,5 @@
 import { Image } from 'expo-image'
-import { manipulateAsync } from 'expo-image-manipulator'
-import { Image as NativeImage } from 'react-native'
+import { ImageManipulator } from 'expo-image-manipulator'
 
 import { clearImageCache, resolveStoredImage, storedImageSource, uploadAvatar } from '@/data/photos'
 
@@ -34,15 +33,25 @@ const SIGNED = `https://bucket.r2.example/${KEY}?X-Amz-Date=20260806T000000Z&X-A
 const RESIGNED = `https://bucket.r2.example/${KEY}?X-Amz-Date=20260806T010000Z&X-Amz-Signature=bbb`
 
 describe('avatar uploads', () => {
-  const manipulate = jest.mocked(manipulateAsync)
-  let getSize: jest.SpyInstance
+  const manipulate = jest.mocked(ImageManipulator.manipulate)
+  const saveAsync = jest.fn()
+  const release = jest.fn()
   let originalFetch: typeof fetch
 
   beforeEach(() => {
     originalFetch = global.fetch
     global.fetch = jest.fn().mockResolvedValue({ ok: true })
-    getSize = jest.spyOn(NativeImage, 'getSize')
-    manipulate.mockResolvedValue({
+    manipulate.mockReset()
+    release.mockClear()
+    manipulate.mockImplementation(
+      () =>
+        ({
+          renderAsync: async () => ({ saveAsync, release }),
+          release,
+        }) as never,
+    )
+    saveAsync.mockReset()
+    saveAsync.mockResolvedValue({
       uri: 'file:///small.jpg',
       width: 128,
       height: 256,
@@ -54,17 +63,20 @@ describe('avatar uploads', () => {
 
   afterEach(() => {
     global.fetch = originalFetch
-    getSize.mockRestore()
   })
 
-  it('caps the longer edge without stretching a portrait and caches the uploaded bytes', async () => {
-    getSize.mockImplementation((_uri, success) => success(1024, 2048))
+  /**
+   * Bounds on the decode, not a resize after it. A resize could only shrink a
+   * bitmap already decoded at full size, which for a 200 megapixel Android
+   * photo is most of a gigabyte held at once.
+   */
+  it('decodes within the cap and caches the uploaded bytes', async () => {
     await expect(uploadAvatar('file:///portrait.jpg')).resolves.toBe(KEY)
-    expect(manipulate).toHaveBeenCalledWith('file:///portrait.jpg', [{ resize: { height: 256 } }], {
-      compress: 0.7,
-      format: 'jpeg',
-      base64: true,
+    expect(manipulate).toHaveBeenCalledWith('file:///portrait.jpg', {
+      maxWidth: 256,
+      maxHeight: 256,
     })
+    expect(saveAsync).toHaveBeenCalledWith({ compress: 0.7, format: 'jpeg', base64: true })
     expect(global.fetch).toHaveBeenCalledWith(SIGNED, {
       method: 'PUT',
       headers: { 'Content-Type': 'image/jpeg' },
@@ -84,8 +96,7 @@ describe('avatar uploads', () => {
     ['AQ==', [1]],
     ['AQI=\n', [1, 2]],
   ])('uploads every byte of %j', async (base64, want) => {
-    getSize.mockImplementation((_uri, success) => success(100, 100))
-    manipulate.mockResolvedValueOnce({ uri: 'file:///small.jpg', width: 100, height: 100, base64 })
+    saveAsync.mockResolvedValueOnce({ uri: 'file:///small.jpg', width: 100, height: 100, base64 })
     await uploadAvatar('file:///a.jpg')
     expect(jest.mocked(global.fetch).mock.calls[0][1]?.body).toEqual(new Uint8Array(want))
   })
@@ -101,7 +112,6 @@ describe('avatar uploads', () => {
       new Error('fetch failed: UnexpectedException: The network connection was lost.')
 
     beforeEach(() => {
-      getSize.mockImplementation((_uri, success) => success(100, 100))
       supabase.functions.invoke.mockClear()
     })
 
@@ -161,10 +171,10 @@ describe('avatar uploads', () => {
     })
   })
 
-  it('does not enlarge a small avatar', async () => {
-    getSize.mockImplementation((_uri, success) => success(120, 80))
-    await uploadAvatar('file:///small-original.jpg')
-    expect(manipulate).toHaveBeenCalledWith('file:///small-original.jpg', [], expect.anything())
+  it('frees both native images, even when the save fails', async () => {
+    saveAsync.mockRejectedValueOnce(new Error('disk full'))
+    await expect(uploadAvatar('file:///a.jpg')).rejects.toThrow('disk full')
+    expect(release).toHaveBeenCalledTimes(2)
   })
 })
 

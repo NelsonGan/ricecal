@@ -751,6 +751,7 @@ export const hi = {
       shutter: 'फ़ोटो लें',
       library: 'फ़ोटो में से चुनें',
       flip: 'कैमरा बदलें',
+      resetZoom: 'ज़ूम रीसेट करें',
       photoOf: '{{food}} की फ़ोटो',
     },
 

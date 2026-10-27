@@ -20,6 +20,7 @@
 import type { Meter } from './entitlement.ts'
 import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon, unslug } from './icons.ts'
 import { chatJSON, KITCHEN, mockActive } from './llm.ts'
+import { hostedSystem } from './prompts.ts'
 
 /** Which sitting this is for. The `public.meal` enum, verbatim. */
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
@@ -489,7 +490,10 @@ export async function suggestMeals(
     meter,
     'suggest_meals',
     [
-      { role: 'system', content: SUGGEST_MEAL_PROMPT },
+      {
+        role: 'system',
+        content: hostedSystem({ name: 'suggest-meals', bundled: SUGGEST_MEAL_PROMPT }),
+      },
       { role: 'user', content: suggestUserMessage(day) },
     ],
     // Seven picks with eight fields and three reasons each. Truncated JSON does

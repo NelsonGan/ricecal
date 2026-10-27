@@ -122,7 +122,7 @@ jest.mock('expo-secure-store', () => {
 })
 
 jest.mock('expo-image-manipulator', () => ({
-  manipulateAsync: jest.fn(),
+  ImageManipulator: { manipulate: jest.fn() },
   SaveFormat: { JPEG: 'jpeg' },
 }))
 

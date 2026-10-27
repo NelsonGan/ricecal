@@ -782,6 +782,7 @@ export const ms = {
       shutter: 'Ambil gambar',
       library: 'Pilih dari galeri',
       flip: 'Tukar kamera',
+      resetZoom: 'Set semula zum',
       photoOf: 'Gambar {{food}}',
     },
 
