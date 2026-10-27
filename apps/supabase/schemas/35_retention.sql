@@ -95,9 +95,19 @@ stable
 security definer
 set search_path = ''
 as $$
+  -- Entitlement once per subscription rather than once per photograph. A Pro
+  -- account's old photographs are kept, so they are read again on every run,
+  -- and asking `is_entitled` about each one made the sweep grow with every
+  -- paying user's history: 1,381 calls to find 5 photographs on production.
+  -- `is_entitled` reads nothing but this table, so an account with no row here
+  -- is not entitled, which is what the coalesce below says.
+  with subscribers as materialized (
+    select s.user_id, s.current_period_end, public.is_entitled(s.user_id) as entitled
+    from public.subscriptions s
+  )
   select f.id, f.photo_path, f.item_name
    from public.food_logs f
-    left join public.subscriptions s on s.user_id = f.user_id
+    left join subscribers s on s.user_id = f.user_id
    where f.photo_path is not null
      -- The Worker deletes with bucket credentials. Apply the same key boundary
      -- as the photo signer before untrusted diary text can reach that credential:
@@ -109,7 +119,7 @@ as $$
      and f.logged_at < now() - pg_catalog.make_interval(
            days => public.free_photo_retention_days()
          )
-     and not public.is_entitled(f.user_id)
+     and not coalesce(s.entitled, false)
      -- Logged AFTER the paid period ended. See the note above: without this,
      -- a lapsed subscription hands the sweep every photograph the account ever
      -- took, on the night it lapses.
