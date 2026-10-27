@@ -185,6 +185,14 @@ Deno.test('a stray quote inside a key is taken out, and nothing else is', () => 
   assertEquals(parseAnswer('{"items":[{"name":"roti","kc"al_low":300,"kcal_high":400}]}'), {
     items: [{ name: 'roti', kcal_low: 300, kcal_high: 400 }],
   })
+  // In indented JSON a stray quote in the spaces opens a blank key; that one goes.
+  assertEquals(parseAnswer('{\n"  "items": [\n    {\n "     "name": "roti"\n    }\n  ]\n}'), {
+    items: [{ name: 'roti' }],
+  })
+  // A repair that would leave a key other than a plain name is not made, since
+  // valid JSON with the wrong key reads as an empty meal instead of a fallback.
+  assertThrows(() => parseAnswer('{"name":"x", "Nasi "lemak": 1}'), SyntaxError)
+  assertThrows(() => parseAnswer('{"a":1,"b"c "d":2}'), SyntaxError)
   // Inside a fence or after a paragraph, as Haiku answers.
   assertEquals(parseAnswer('Here it is:\n```json\n{""a":1, ""b":2}\n```'), { a: 1, b: 2 })
   // The caller hears how many quotes came out, and nothing when none did.
