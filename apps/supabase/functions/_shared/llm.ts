@@ -14,6 +14,7 @@ import type { Meter } from './entitlement.ts'
 import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon, unslug } from './icons.ts'
 import { reconcile, unfoldCounts } from './portion.ts'
 import type { AiSpan, Generation } from './posthog.ts'
+import { hostedSystem, isHostedSystem, type ResolvedPrompt, resolveSystem } from './prompts.ts'
 
 export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
 
@@ -557,6 +558,21 @@ export function mockActive(): boolean {
 const DEFAULT_MAX_TOKENS = 2000
 
 /**
+ * `messages` with a hosted system prompt (`hostedSystem`) turned into its text,
+ * and which version of each part was sent. A plain string is sent as it is.
+ */
+async function withSystemResolved(
+  messages: unknown[],
+): Promise<{ sent: unknown[]; prompts: ResolvedPrompt[] }> {
+  const [first, ...rest] = messages as { role?: string; content?: unknown }[]
+  if (first?.role !== 'system' || !isHostedSystem(first.content)) {
+    return { sent: messages, prompts: [] }
+  }
+  const { text, prompts } = await resolveSystem(first.content)
+  return { sent: [{ ...first, content: text }, ...rest], prompts }
+}
+
+/**
  * One OpenRouter chat call returning parsed JSON. Throws on anything else.
  *
  * Exported for `recipe.ts`, which makes two calls of its own but has no second
@@ -578,6 +594,10 @@ export async function chatJSON(
   const key = Deno.env.get('OPENROUTER_API_KEY')
   if (!key) throw new Error('OPENROUTER_API_KEY not set')
 
+  // Once per call rather than per attempt, so the fallback is asked the same
+  // prompt and the prompt's own fetch is not counted in a request's latency.
+  const { sent, prompts } = await withSystemResolved(messages)
+
   let attempts = 0
   let askedPrimary = false
   let lastFailure = ''
@@ -597,6 +617,7 @@ export async function chatJSON(
       temperature: route.temperature,
       attempt: attempts++,
       isBackupModel: route !== PRIMARY_ROUTE && askedPrimary,
+      prompts,
     }
     try {
       return await request(route, generation)
@@ -629,7 +650,7 @@ export async function chatJSON(
         'HTTP-Referer': 'https://ricecal.app',
         'X-Title': 'RiceCal',
       },
-      body: JSON.stringify(requestBody(route, messages, maxTokens, CACHED_SPANS.has(span))),
+      body: JSON.stringify(requestBody(route, sent, maxTokens, CACHED_SPANS.has(span))),
     })
     generation.httpStatus = res.status
     if (!res.ok) {
@@ -1266,7 +1287,10 @@ export async function analysePhoto(
     [
       {
         role: 'system',
-        content: note ? ANALYSE_PHOTO_PROMPT + PHOTO_NOTE_RULES : ANALYSE_PHOTO_PROMPT,
+        content: hostedSystem(
+          { name: 'analyse-photo', bundled: ANALYSE_PHOTO_PROMPT },
+          ...(note ? [{ name: 'analyse-photo-note' as const, bundled: PHOTO_NOTE_RULES }] : []),
+        ),
       },
       {
         role: 'user',
@@ -1419,7 +1443,10 @@ export async function describeMeal(
     meter,
     'describe_meal',
     [
-      { role: 'system', content: DESCRIBE_MEAL_PROMPT },
+      {
+        role: 'system',
+        content: hostedSystem({ name: 'describe-meal', bundled: DESCRIBE_MEAL_PROMPT }),
+      },
       { role: 'user', content: describeUserMessage(text) },
     ],
     2400,
@@ -1545,15 +1572,7 @@ export async function pickCandidate(
     [
       {
         role: 'system',
-        content:
-          'You match a described dish to a food catalogue. Respond with JSON only: ' +
-          '{"choice": number|null}. `choice` is the 0-based index of the entry that IS the ' +
-          'described dish, or null if none of them is. Prefer null over a near-miss: a ' +
-          'different dish with similar ingredients is NOT a match. A branded or restaurant ' +
-          'version of the SAME dish is a match — the dish is what matters, not the vendor. ' +
-          'FORM is not the vendor and does matter: a bottled, canned, instant or powdered ' +
-          'version of a drink is NOT a match for one made fresh, and the serving label is ' +
-          'what says which an entry is ("1 bottle (250 g)" against "Regular (350 ml)").',
+        content: hostedSystem({ name: 'pick-candidate', bundled: PICK_CANDIDATE_PROMPT }),
       },
       {
         role: 'user',
@@ -1567,7 +1586,9 @@ export async function pickCandidate(
           candidates
             .map(
               (c, i) =>
-                `${i}. ${c.name}${c.brand ? ` (${c.brand})` : ''} — ${c.kcal} kcal per ${c.serving_label ?? 'serving'}`,
+                `${i}. ${c.name}${c.brand ? ` (${c.brand})` : ''} — ${c.kcal} kcal per ${
+                  c.serving_label ?? 'serving'
+                }`,
             )
             .join('\n'),
       },
@@ -1610,8 +1631,9 @@ export async function estimateNutrition(
   meter: Meter,
 ): Promise<Nutrition> {
   if (mockActive()) {
-    if (mock?.fail === 'all' || mock?.fail === 'nutrition')
+    if (mock?.fail === 'all' || mock?.fail === 'nutrition') {
       throw new Error('mocked nutrition failure')
+    }
     if (mock?.nutrition === 'invalid') {
       // Atwater-inconsistent on purpose, so tests can exercise the reject path.
       return {
@@ -1644,15 +1666,7 @@ export async function estimateNutrition(
     [
       {
         role: 'system',
-        content:
-          'You estimate nutrition for a dish. Respond with JSON only: {"kcal": number, ' +
-          '"carbs_g": number, "protein_g": number, "fat_g": number, "fibre_g": number|null, ' +
-          '"sugar_g": number|null, "sodium_mg": number|null}. Values are for the stated ' +
-          'portion. null means unknown — never guess fibre, sugar or sodium as 0. ' +
-          // The weight is the one part of the question that is not a guess.
-          'When a weight is given, it is the portion: price that many grams and no more — ' +
-          'cooked rice and noodles about 1.3 kcal/g, grilled meat 1.5-2, fried chicken with ' +
-          'skin 2.5-3, vegetables 0.3, nuts and crisps 5.5. Nothing edible is over 9.',
+        content: hostedSystem({ name: 'estimate-nutrition', bundled: ESTIMATE_NUTRITION_PROMPT }),
       },
       {
         role: 'user',
@@ -1660,14 +1674,18 @@ export async function estimateNutrition(
           `${item.count > 1 ? `${item.count} × ` : ''}${item.name}` +
           `, portion: ${item.serving_hint ?? '1 serving'}` +
           (item.grams
-            ? `, about ${item.grams} g${item.count > 1 ? ' each' : item.count < 1 ? ' for the whole plate' : ''}`
+            ? `, about ${item.grams} g${
+                item.count > 1 ? ' each' : item.count < 1 ? ' for the whole plate' : ''
+              }`
             : '') +
           '.' +
           // A share of the plate ("we shared it"). Everything around it describes
           // the whole plate, weights and parts both, so without saying so the
           // estimate priced all of it.
           (item.count < 1
-            ? ` The weight and the parts are for the whole plate, and the portion above is ${Math.round(item.count * 100)}% of it: price that share once.`
+            ? ` The weight and the parts are for the whole plate, and the portion above is ${Math.round(
+                item.count * 100,
+              )}% of it: price that share once.`
             : '') +
           // The visible parts pin the estimate to the actual plate: "nasi
           // campur" alone could be anything.
@@ -1681,7 +1699,9 @@ export async function estimateNutrition(
             ? ` Contains: ${item.components
                 .map(
                   (c) =>
-                    `${c.count > 1 ? `${c.count} × ` : ''}${c.name}${c.grams ? ` (${c.grams} g each)` : ''}`,
+                    `${c.count > 1 ? `${c.count} × ` : ''}${c.name}${
+                      c.grams ? ` (${c.grams} g each)` : ''
+                    }`,
                 )
                 .join(', ')}.`
             : ''),
@@ -1769,6 +1789,28 @@ export function shapeInterpretation(raw: unknown): Interpretation {
     ? { action: 'none', code: 'not_a_correction', reason: String(o.reason ?? 'no calorie change') }
     : { action: 'none', code: 'unusable', reason: 'not understood' }
 }
+
+/** The catalogue pick's prompt. Exported for the PostHog upload. */
+export const PICK_CANDIDATE_PROMPT =
+  'You match a described dish to a food catalogue. Respond with JSON only: ' +
+  '{"choice": number|null}. `choice` is the 0-based index of the entry that IS the ' +
+  'described dish, or null if none of them is. Prefer null over a near-miss: a ' +
+  'different dish with similar ingredients is NOT a match. A branded or restaurant ' +
+  'version of the SAME dish is a match — the dish is what matters, not the vendor. ' +
+  'FORM is not the vendor and does matter: a bottled, canned, instant or powdered ' +
+  'version of a drink is NOT a match for one made fresh, and the serving label is ' +
+  'what says which an entry is ("1 bottle (250 g)" against "Regular (350 ml)").'
+
+/** The last-resort estimate's prompt. Exported for the PostHog upload. */
+export const ESTIMATE_NUTRITION_PROMPT =
+  'You estimate nutrition for a dish. Respond with JSON only: {"kcal": number, ' +
+  '"carbs_g": number, "protein_g": number, "fat_g": number, "fibre_g": number|null, ' +
+  '"sugar_g": number|null, "sodium_mg": number|null}. Values are for the stated ' +
+  'portion. null means unknown — never guess fibre, sugar or sodium as 0. ' +
+  // The weight is the one part of the question that is not a guess.
+  'When a weight is given, it is the portion: price that many grams and no more — ' +
+  'cooked rice and noodles about 1.3 kcal/g, grilled meat 1.5-2, fried chicken with ' +
+  'skin 2.5-3, vegetables 0.3, nuts and crisps 5.5. Nothing edible is over 9.'
 
 /**
  * The fix-by-typing prompt. Exported for the eval harness.
@@ -1920,8 +1962,9 @@ export async function interpretInstruction(
   meter: Meter,
 ): Promise<Interpretation> {
   if (mockActive()) {
-    if (mock?.fail === 'all' || mock?.fail === 'interpret')
+    if (mock?.fail === 'all' || mock?.fail === 'interpret') {
       throw new Error('mocked interpret failure')
+    }
     if (mock?.interpret) return shapeInterpretation(mock.interpret)
     // Crude defaults so the flow is walkable offline: portion words become
     // factors, add and remove words become small deltas, anything else
@@ -2014,7 +2057,13 @@ export async function interpretInstruction(
         meter,
         'interpret_instruction',
         [
-          { role: 'system', content: INTERPRET_INSTRUCTION_PROMPT },
+          {
+            role: 'system',
+            content: hostedSystem({
+              name: 'interpret-instruction',
+              bundled: INTERPRET_INSTRUCTION_PROMPT,
+            }),
+          },
           { role: 'user', content: refineUserMessage(context, instruction) },
           ...(retryReason
             ? [

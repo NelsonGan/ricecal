@@ -14,6 +14,7 @@
 import type { Meter } from './entitlement.ts'
 import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
 import { chatJSON, KITCHEN, mockActive, photoDataUrl } from './llm.ts'
+import { hostedSystem } from './prompts.ts'
 
 /** 'g' | 'ml' | 'piece' — the units `recipe_ingredients.unit` accepts. */
 export type RecipeUnit = 'g' | 'ml' | 'piece'
@@ -493,7 +494,10 @@ export async function readRecipePhoto(
     meter,
     'read_recipe_photo',
     [
-      { role: 'system', content: READ_RECIPE_PROMPT },
+      {
+        role: 'system',
+        content: hostedSystem({ name: 'read-recipe-photo', bundled: READ_RECIPE_PROMPT }),
+      },
       {
         role: 'user',
         content: [
@@ -573,7 +577,10 @@ export async function describeRecipe(
     meter,
     'describe_recipe',
     [
-      { role: 'system', content: DESCRIBE_RECIPE_PROMPT },
+      {
+        role: 'system',
+        content: hostedSystem({ name: 'describe-recipe', bundled: DESCRIBE_RECIPE_PROMPT }),
+      },
       { role: 'user', content: describeRecipeUserMessage(text_) },
     ],
     2000,
@@ -721,7 +728,10 @@ export async function reviewRecipe(
     meter,
     'review_recipe',
     [
-      { role: 'system', content: REVIEW_RECIPE_PROMPT },
+      {
+        role: 'system',
+        content: hostedSystem({ name: 'review-recipe', bundled: REVIEW_RECIPE_PROMPT }),
+      },
       { role: 'user', content: reviewUserMessage(recipe) },
     ],
     300,
