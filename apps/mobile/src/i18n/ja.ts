@@ -762,6 +762,7 @@ export const ja = {
       shutter: '撮影',
       library: '写真から選ぶ',
       flip: 'カメラを切り替え',
+      resetZoom: 'ズームをリセット',
       photoOf: '{{food}} の写真',
     },
 

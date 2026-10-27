@@ -755,6 +755,7 @@ export const zhHans = {
       shutter: '拍照',
       library: '从相册里选',
       flip: '切换镜头',
+      resetZoom: '重置缩放',
       photoOf: '{{food}} 的照片',
     },
 

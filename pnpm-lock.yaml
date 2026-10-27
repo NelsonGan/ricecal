@@ -8,6 +8,9 @@ patchedDependencies:
   '@shopify/react-native-skia@2.14.0':
     hash: 9c355a35db20adffe366abe29e0ee6ff85163bb865fd43adfd41252ab6f9cc72
     path: patches/@shopify__react-native-skia@2.14.0.patch
+  expo-camera@58.0.12:
+    hash: 9e54b0ec5fd5742c0c6b2aa105f07971cdbc86a0adc2fa4ad6df664004f11734
+    path: patches/expo-camera@58.0.12.patch
 
 importers:
 
@@ -123,7 +126,7 @@ importers:
         version: 58.0.11(expo@58.0.19)
       expo-camera:
         specifier: ~58.0.12
-        version: 58.0.12(@types/emscripten@1.41.5)(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+        version: 58.0.12(patch_hash=9e54b0ec5fd5742c0c6b2aa105f07971cdbc86a0adc2fa4ad6df664004f11734)(@types/emscripten@1.41.5)(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
       expo-clipboard:
         specifier: ~58.0.4
         version: 58.0.4(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
@@ -9605,7 +9608,9 @@ snapshots:
       metro-runtime: 0.87.1
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.79.6': {}
 
@@ -10953,7 +10958,7 @@ snapshots:
       resolve-from: 5.0.0
       semver: 7.8.5
 
-  expo-camera@58.0.12(@types/emscripten@1.41.5)(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0):
+  expo-camera@58.0.12(patch_hash=9e54b0ec5fd5742c0c6b2aa105f07971cdbc86a0adc2fa4ad6df664004f11734)(@types/emscripten@1.41.5)(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0):
     dependencies:
       barcode-detector: 3.2.1(@types/emscripten@1.41.5)
       expo: 58.0.19(@babel/core@7.29.7)(@expo/dom-webview@58.0.2)(@expo/metro-runtime@58.0.15)(expo-router@58.0.26)(react-dom@19.3.0(react@19.3.0))(react-native-webview@14.0.1(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@6.0.3)

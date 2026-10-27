@@ -755,6 +755,7 @@ export const zhHant = {
       shutter: '拍照',
       library: '從相簿裡選',
       flip: '切換鏡頭',
+      resetZoom: '重設縮放',
       photoOf: '{{food}} 的照片',
     },
 
