@@ -114,7 +114,12 @@ as $$
   from calendar c
   cross join prefs p
   left join public.activity_days  a on a.user_id = p_user_id and a.log_date = c.at
+  -- Bounded from the arguments so the view sums the range, not the whole diary
+  -- (see `trend_days`).
   left join public.daily_nutrition n on n.user_id = p_user_id and n.log_date = c.at
+    and n.log_date between public.local_today(p_user_id)
+                           - case p_range when '7d' then 6 when '30d' then 29 else 366 end
+                       and public.local_today(p_user_id)
   left join lateral (
     select
       count(*)::integer                as sessions,

@@ -47,9 +47,9 @@ create table public.daily_goals (
   primary key (user_id, effective_from)
 );
 
--- The only access pattern: newest row at or before some date, for one user.
-create index daily_goals_user_effective_idx
-  on public.daily_goals (user_id, effective_from desc);
+-- The only access pattern is the newest row at or before some date, for one
+-- user, and the primary key serves it scanned backwards. A descending copy of the
+-- same two columns bought nothing a btree cannot already do.
 
 create trigger daily_goals_set_updated_at
   before update on public.daily_goals

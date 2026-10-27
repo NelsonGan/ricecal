@@ -50,8 +50,9 @@ create table public.blocked_authors (
   constraint blocked_authors_not_self check (user_id <> author_id)
 );
 
--- The lookup the read policy performs on every community row.
-create index blocked_authors_user_idx on public.blocked_authors (user_id);
+-- The read policy's lookup on every community row is served by the primary
+-- key, which leads with `user_id`. A separate index on that column alone was a
+-- second copy paid on every block and unblock.
 
 alter table public.blocked_authors enable row level security;
 

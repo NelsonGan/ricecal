@@ -551,7 +551,15 @@ was checked against the code (October 2026) and is not a finding:
   columns would mean a second index that only costs writes. The routine key's
   index was a plain one and is widened instead.
 - *Unused index* on the group tables: they cover foreign keys on tables still
-  small enough to scan.
+  small enough to scan. The same holds for `food_scan_items_scan_idx` (the scan
+  eval reads items by scan), `food_logs_scan_idx` (the estimate-backlog report)
+  and `barcode_misses_code_idx` (triage of missing packets): each is read by a
+  person or a script rather than by the app, and the advisor's counters only go
+  back to the last restart. Indexes that only duplicated a primary key were
+  dropped instead (October 2026): `blocked_authors (user_id)`, and descending
+  copies of the keys of `daily_goals` and `weight_logs`, since a btree reads
+  backwards as cheaply as forwards. So was the index on
+  `food_scan_items.resolved_tier`, a column with five values.
 - *Leaked password protection*: needs the Pro plan.
 
 ### Function secrets
@@ -7925,6 +7933,26 @@ function no migration produces, and the `migrations` job fails on a change that
 is genuinely captured. When a hand-written migration has to restate a function,
 copy the block out of `schemas/` verbatim. Only what is between the `$$` markers
 counts; a note above the `create` is free.
+
+**A join into a grouped view does not narrow the view.** `daily_nutrition`
+groups `food_log_details` by user and day, and `left join daily_nutrition n on
+n.user_id = p_user_id and n.log_date = c.at` filters the user inside the view
+(a constant) but not the day (a join condition). So `day_marks`, the trend,
+activity and review ranges each summed the user's whole diary and kept a week of
+it: 49,000 buffers and 15 to 25 ms for three years of history, on the most
+called function in the app. Each of them now repeats its range beside the join
+(`and n.log_date between p_from and p_to`), which Postgres does push down, and
+reads a few hundred buffers in about a millisecond. The bound has to come from
+the arguments: one read from a CTE is a join condition again, and a `lateral`
+subquery over the view is not pushed down either. Anything new that joins
+`daily_nutrition` needs the same line.
+
+**A predicate has to match a partial or expression index exactly to use it.**
+`record_social_photo_etags` matched `photo_path = key` while the only index on
+it is limited to approved, unquarantined posts, and matched `avatar_path = key`
+while the avatar index is on the `case` expression the social view returns. Both
+updates read their whole table on every photo signature (7,500 buffers at
+150,000 posts, 140 once each repeats the index's own predicate).
 
 **The Supabase CLI's remote endpoints move.** On 2.111.0, `functions deploy` and
 `gen types --project-id` both answer 404 when handed a project ref that does not
