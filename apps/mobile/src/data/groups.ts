@@ -53,6 +53,18 @@ export type GroupInvite = {
 
 type PublicGroup = { id: string; name: string; icon_name: string; member_count: number }
 
+/**
+ * The invites and public lists report a group of ten to nineteen as nine in
+ * `member_count`, so an app from before twenty-member groups, which takes ten
+ * as full, keeps its Join live. The true size is `member_total`; a server
+ * from before it sends only the count, which was true then.
+ */
+function trueSize<T extends { member_count: number; member_total?: number }>(rows: T[]): T[] {
+  return rows.map((row) =>
+    row.member_total === undefined ? row : { ...row, member_count: row.member_total },
+  )
+}
+
 export type BoardEntry = {
   id: string
   meal: GroupMeal
@@ -256,7 +268,7 @@ export function useGroupInvites(enabled: boolean) {
   return useQuery({
     queryKey: keys.groupsRead(userId, 'my_group_invites'),
     queryFn: async ({ signal }) =>
-      (await rpc('my_group_invites', undefined, signal)) as unknown as GroupInvite[],
+      trueSize((await rpc('my_group_invites', undefined, signal)) as unknown as GroupInvite[]),
     enabled,
     ...SHORT,
   })
@@ -283,11 +295,13 @@ export function usePublicGroups(query: string) {
   return useQuery({
     queryKey: keys.groupsRead(userId, 'public_groups', { query: trimmed }),
     queryFn: async ({ signal }) =>
-      (await rpc(
-        'public_groups',
-        { p_query: trimmed || undefined, p_limit: 20 },
-        signal,
-      )) as unknown as PublicGroup[],
+      trueSize(
+        (await rpc(
+          'public_groups',
+          { p_query: trimmed || undefined, p_limit: 20 },
+          signal,
+        )) as unknown as PublicGroup[],
+      ),
     placeholderData: (previous) => previous,
     ...SHORT,
   })

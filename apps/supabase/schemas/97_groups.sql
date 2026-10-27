@@ -5,6 +5,16 @@
 -- is the board's narrow set of fields, never notes, servings history or goals.
 -- ---------------------------------------------------------------------------
 
+-- A group's size as an app from before twenty-member groups may read it in the
+-- two lists where it decides whether Join is offered. That app takes ten as
+-- full, so a group of ten to nineteen is reported as nine there and its Join
+-- stays live; a full group keeps its real count. The true size travels beside
+-- it as `member_total`, which the current app reads.
+create or replace function private.group_size_for_join(p_count smallint)
+returns integer language sql immutable set search_path = '' as $$
+  select case when p_count between 10 and 19 then 9 else p_count end;
+$$;
+
 -- A member as the app draws one.
 create or replace function private.group_person(p_user uuid)
 returns jsonb language sql stable security definer set search_path = '' as $$
@@ -63,7 +73,8 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object(
       'group_id', g.id, 'name', g.name, 'icon_name', g.icon_name,
-      'member_count', g.member_count, 'inviter', private.group_person(i.inviter_id)
+      'member_count', private.group_size_for_join(g.member_count), 'member_total', g.member_count,
+      'inviter', private.group_person(i.inviter_id)
     ) order by i.created_at desc)
     from public.group_invites i join public.groups g on g.id = i.group_id
     where i.invitee_id = v_user and not private.social_pair_blocked(i.inviter_id)
@@ -92,7 +103,8 @@ begin
   end if;
   return coalesce((
     select jsonb_agg(jsonb_build_object('id', r.id, 'name', r.name, 'icon_name', r.icon_name,
-      'member_count', r.member_count) order by r.member_count desc, r.created_at desc)
+      'member_count', private.group_size_for_join(r.member_count), 'member_total', r.member_count)
+      order by r.member_count desc, r.created_at desc)
     from (
       select g.id, g.name, g.icon_name, g.member_count, g.created_at
       from public.groups g
@@ -554,6 +566,8 @@ language sql stable security definer set search_path = '' as $$
         and p.review_status = 'approved' and not p.quarantined
     ));
 $$;
+revoke execute on function private.group_size_for_join from public, anon;
+grant execute on function private.group_size_for_join to authenticated, service_role;
 revoke execute on function private.group_post_food, private.group_food_label, private.group_workout,
   private.group_activity, private.group_workout_label from public, anon, authenticated;
 revoke execute on function private.group_photo_claims, private.group_person from public, anon;

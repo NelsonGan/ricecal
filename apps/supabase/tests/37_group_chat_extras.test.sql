@@ -288,6 +288,22 @@ select throws_ok(format('select public.group_invite_suggestions(%L)', (select id
   'only a member is offered suggestions');
 reset role;
 
+-- An app from before twenty-member groups takes ten as full, so the lists
+-- where it offers Join report a group of ten to nineteen as nine; the true
+-- size travels as member_total.
+select is(private.group_size_for_join(12::smallint), 9, 'a group with room reads as nine to an older app');
+select is(private.group_size_for_join(20::smallint), 20, 'a full group keeps its real count');
+select is(private.group_size_for_join(4::smallint), 4, 'and a small one is unchanged');
+reset role;
+update public.groups set is_public = true where id = (select id from g);
+update public.groups set member_count = 15 where id = (select id from g);
+select set_config('request.jwt.claims', json_build_object('sub', :'dee', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is((select (e->>'member_count')::int || '/' || (e->>'member_total')::int
+  from jsonb_array_elements(public.public_groups('Extras fixture')) e), '9/15',
+  'the public list keeps an older app''s Join live and gives the true size beside it');
+reset role;
+
 -- A new email account does not publish its address as its handle.
 insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
 values ('a3700000-0000-4000-8000-000000000009', '00000000-0000-0000-0000-000000000000', 'authenticated',

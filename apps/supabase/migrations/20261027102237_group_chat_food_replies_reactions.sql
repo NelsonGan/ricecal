@@ -252,6 +252,21 @@ exception when others then
 end;
 $function$;
 
+CREATE FUNCTION private.group_size_for_join (
+  p_count smallint
+)
+  RETURNS integer
+  LANGUAGE sql
+  IMMUTABLE
+  SET search_path TO ''
+  AS $function$
+  select case when p_count between 10 and 19 then 9 else p_count end;
+$function$;
+
+GRANT ALL ON FUNCTION private.group_size_for_join(smallint) TO authenticated;
+
+GRANT ALL ON FUNCTION private.group_size_for_join(smallint) TO service_role;
+
 CREATE FUNCTION private.group_workout_label (
   p_workout jsonb
 )
@@ -717,6 +732,64 @@ begin
 end;
 $function$;
 
+CREATE OR REPLACE FUNCTION public.my_group_invites()
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare v_user uuid := (select auth.uid());
+begin
+  if v_user is null then raise exception 'Sign in to continue' using errcode = '42501'; end if;
+  return coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'group_id', g.id, 'name', g.name, 'icon_name', g.icon_name,
+      'member_count', private.group_size_for_join(g.member_count), 'member_total', g.member_count,
+      'inviter', private.group_person(i.inviter_id)
+    ) order by i.created_at desc)
+    from public.group_invites i join public.groups g on g.id = i.group_id
+    where i.invitee_id = v_user and not private.social_pair_blocked(i.inviter_id)
+  ), '[]'::jsonb);
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.public_groups (
+  p_query text    DEFAULT NULL::text,
+  p_limit integer DEFAULT 20
+)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare
+  v_user uuid := (select auth.uid());
+  v_query text := nullif(btrim(coalesce(p_query, '')), '');
+begin
+  if v_user is null then raise exception 'Sign in to continue' using errcode = '42501'; end if;
+  if p_limit is null or p_limit not between 1 and 50 then
+    raise exception 'Limit must be between 1 and 50' using errcode = '22023';
+  end if;
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('id', r.id, 'name', r.name, 'icon_name', r.icon_name,
+      'member_count', private.group_size_for_join(r.member_count), 'member_total', r.member_count)
+      order by r.member_count desc, r.created_at desc)
+    from (
+      select g.id, g.name, g.icon_name, g.member_count, g.created_at
+      from public.groups g
+      where g.is_public and not g.quarantined
+        and (v_query is null or g.name ilike '%' || replace(replace(v_query, '%', ''), '_', '') || '%')
+        and not exists (select 1 from public.group_members m where m.group_id = g.id and m.user_id = v_user)
+        and not exists (select 1 from public.group_reports r where r.group_id = g.id and r.reporter_id = v_user)
+      order by g.member_count desc, g.created_at desc
+      limit p_limit
+    ) r
+  ), '[]'::jsonb);
+end;
+$function$;
+
 CREATE OR REPLACE FUNCTION public.respond_to_group_invite (
   p_group_id uuid,
   p_accept   boolean
@@ -993,3 +1066,4 @@ REVOKE EXECUTE ON FUNCTION private.group_post_food(uuid), private.group_food_lab
   private.group_workout(uuid), private.group_activity(uuid), private.group_workout_label(jsonb),
   private.group_reactions_changed(), private.group_share_posted_food(), private.group_share_workout(),
   private.group_share_activity() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION private.group_size_for_join(smallint) FROM PUBLIC, anon;
