@@ -376,7 +376,7 @@ const BoardPage = memo(function BoardPage({
     )
   }
 
-  // Every member, folded or not: a group holds ten at most, which is a short
+  // Every member, with no fold: a group holds twenty at most, which is a
   // scroll, and a fold hid the friends whose food was the point of opening it.
   const all = board.data.members
 

@@ -6,6 +6,12 @@ SET check_function_bodies = false;
 
 DROP FUNCTION public.send_group_message(p_group_id uuid, p_body text, p_request_id uuid);
 
+ALTER TABLE public.group_members
+  DROP CONSTRAINT group_members_board_order_check;
+
+ALTER TABLE public.groups
+  DROP CONSTRAINT groups_member_count_check;
+
 CREATE FUNCTION private.group_activity (
   p_activity_id uuid
 )
@@ -34,6 +40,44 @@ CREATE FUNCTION private.group_food_label (
   select left(f ->> 'name', 160) || ' (' || round((f ->> 'kcal')::numeric)::text || ' kcal)'
   from (select private.group_post_food(p_post_id) as f) x
   where f is not null;
+$function$;
+
+CREATE OR REPLACE FUNCTION private.group_member_joined()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare v_count smallint;
+begin
+  update public.groups g set member_count = g.member_count + 1
+  where g.id = new.group_id returning g.member_count into v_count;
+  delete from public.group_invites i where i.group_id = new.group_id and i.invitee_id = new.user_id;
+  if v_count >= 20 then
+    delete from public.group_invites i where i.group_id = new.group_id;
+  end if;
+  return null;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION private.group_member_joining()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare v_count smallint;
+begin
+  perform pg_advisory_xact_lock(hashtextextended('group-joining:' || new.user_id::text, 0));
+  select g.member_count into v_count from public.groups g where g.id = new.group_id for update;
+  if v_count >= 20 then
+    raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
+  end if;
+  if (select count(*) from public.group_members m where m.user_id = new.user_id) >= 20 then
+    raise exception 'You are in too many groups' using errcode = 'P0001', hint = 'too_many_groups';
+  end if;
+  return new;
+end;
 $function$;
 
 CREATE OR REPLACE FUNCTION private.group_photo_claims (
@@ -596,6 +640,115 @@ begin
 end;
 $function$;
 
+CREATE OR REPLACE FUNCTION public.invite_to_group (
+  p_group_id uuid,
+  p_target   text
+)
+  RETURNS uuid
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare
+  v_user uuid := private.group_require_member(p_group_id);
+  v_target text := lower(btrim(coalesce(p_target, '')));
+  v_email boolean := position('@' in ltrim(lower(btrim(coalesce(p_target, ''))), '@')) > 0;
+  v_invitee uuid;
+  v_id uuid;
+  v_count smallint;
+begin
+  if v_target = '' or char_length(v_target) > 254 then
+    raise exception 'Enter a username or email' using errcode = '22023';
+  end if;
+  if not private.social_claim(v_user, 'group_invite', 60) then
+    raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
+  end if;
+  -- Before the lock, so the lookup does not hold up joins. GoTrue stores
+  -- addresses lowercased, and comparing the column itself uses its index.
+  if v_email then
+    select u.id into v_invitee from auth.users u where u.email = v_target and not u.is_sso_user limit 1;
+  else
+    select p.id into v_invitee from public.profiles p where p.handle = ltrim(v_target, '@');
+  end if;
+  -- Locked with the joins, so an invite cannot slip into a group that a
+  -- concurrent join has just filled.
+  select g.member_count into v_count from public.groups g where g.id = p_group_id for update;
+  if v_count >= 20 then
+    raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
+  end if;
+  -- Someone blocked in either direction reads as nobody, so an invite cannot be
+  -- used to learn who blocked whom.
+  if v_invitee is null or v_invitee = v_user or private.social_pair_blocked(v_invitee)
+     or exists (select 1 from public.profiles p where p.id = v_invitee and p.quarantined) then
+    if v_email then return gen_random_uuid(); end if;
+    raise exception 'No account found' using errcode = 'P0001', hint = 'not_found';
+  end if;
+  if private.group_is_member(p_group_id, v_invitee) then
+    if v_email then return gen_random_uuid(); end if;
+    raise exception 'Already in this group' using errcode = 'P0001', hint = 'already_member';
+  end if;
+  -- An address must leave nothing behind that a later invite could read: a
+  -- repeat finds the invite already there, changes nothing and answers with a
+  -- made-up id, as an address with no account does. That costs a renewed push
+  -- for an address invite; the invite itself stays in the invitee's list.
+  if v_email then
+    insert into public.group_invites(group_id, invitee_id, inviter_id, by_email)
+    values (p_group_id, v_invitee, v_user, true)
+    on conflict (group_id, invitee_id) do nothing
+    returning id into v_id;
+    return coalesce(v_id, gen_random_uuid());
+  end if;
+  -- A handle takes over an invite sent to an address, so a handle after an
+  -- address looks exactly like the handle alone: its own id, on the sender's
+  -- list, pushed. Otherwise a pending invite is renewed at most hourly, which
+  -- also caps its pushes, and a renewal takes a new id.
+  insert into public.group_invites(group_id, invitee_id, inviter_id, by_email)
+  values (p_group_id, v_invitee, v_user, false)
+  on conflict (group_id, invitee_id) do update
+    set id = gen_random_uuid(), inviter_id = excluded.inviter_id, by_email = false,
+      created_at = now(), pushed_at = null
+    where public.group_invites.by_email or public.group_invites.created_at < now() - interval '1 hour'
+  returning id into v_id;
+  if v_id is null then
+    select i.id into v_id from public.group_invites i
+    where i.group_id = p_group_id and i.invitee_id = v_invitee;
+  end if;
+  return v_id;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.respond_to_group_invite (
+  p_group_id uuid,
+  p_accept   boolean
+)
+  RETURNS text
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare v_user uuid := private.social_require_user(false); v_count smallint;
+begin
+  if not exists (select 1 from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user) then
+    raise exception 'This invite is no longer available' using errcode = 'P0001', hint = 'invite_gone';
+  end if;
+  if not coalesce(p_accept, false) then
+    delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
+    return 'declined';
+  end if;
+  if private.group_is_member(p_group_id, v_user) then
+    delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
+    return 'joined';
+  end if;
+  select g.member_count into v_count from public.groups g where g.id = p_group_id for update;
+  if v_count >= 20 then
+    delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
+    return 'full';
+  end if;
+  insert into public.group_members(group_id, user_id) values (p_group_id, v_user);
+  return 'joined';
+end;
+$function$;
+
 CREATE FUNCTION public.send_group_message (
   p_group_id    uuid,
   p_body        text,
@@ -699,11 +852,36 @@ GRANT ALL ON FUNCTION public.set_group_message_reaction(uuid, text) TO authentic
 
 GRANT ALL ON FUNCTION public.set_group_message_reaction(uuid, text) TO service_role;
 
+CREATE OR REPLACE FUNCTION public.set_group_preferences (
+  p_group_id    uuid,
+  p_board_order uuid[],
+  p_notify      boolean
+)
+  RETURNS void
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare v_user uuid := private.group_require_member(p_group_id);
+begin
+  if p_board_order is not null and cardinality(p_board_order) > 20 then
+    raise exception 'Too many members' using errcode = '22023';
+  end if;
+  update public.group_members m set
+    board_order = coalesce(p_board_order, m.board_order),
+    notify = coalesce(p_notify, m.notify)
+  where m.group_id = p_group_id and m.user_id = v_user;
+end;
+$function$;
+
 CREATE TRIGGER group_share_activity
   AFTER INSERT ON public.activity_sessions
   FOR EACH ROW
   WHEN (new.ended_at > (now() - '1 day'::interval) AND new.provider <> 'demo'::public.health_provider)
   EXECUTE FUNCTION private.group_share_activity();
+
+ALTER TABLE public.group_members
+  ADD CONSTRAINT group_members_board_order_check CHECK (cardinality(board_order) <= 20);
 
 CREATE TABLE public.group_message_reactions (
   message_id uuid                     NOT NULL,
@@ -790,6 +968,9 @@ CREATE INDEX group_messages_post_idx ON public.group_messages (post_id)
 
 CREATE INDEX group_messages_reply_idx ON public.group_messages (reply_to_id)
   WHERE reply_to_id IS NOT NULL;
+
+ALTER TABLE public.groups
+  ADD CONSTRAINT groups_member_count_check CHECK (member_count >= 0 AND member_count <= 20);
 
 CREATE TRIGGER group_share_posted_food
   AFTER INSERT ON public.social_posts

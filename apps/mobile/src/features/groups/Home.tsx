@@ -271,7 +271,7 @@ function PublicGroups({ onJoined }: { onJoined: (groupId: string) => void }) {
                   </Text>
                   {/* Full is said beside the count it follows from, and Join
                       stays where it always is, greyed, so the row does not
-                      change shape when the tenth person joins. */}
+                      change shape when the last seat fills. */}
                   <Text variant="caption" numberOfLines={1}>
                     {t('members', { count: group.member_count })}
                     {group.member_count >= GROUP_CAPACITY ? (

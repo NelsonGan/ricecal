@@ -397,7 +397,7 @@ select ok(not (public.public_groups('Hawker fixture', 5)::text like '%Hawker fix
   'a reported group leaves the reporter''s list');
 reset role;
 
--- Ten is the cap.
+-- Twenty is the cap.
 select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select public.create_group('Groups fixture big', null, true);
@@ -408,14 +408,14 @@ insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, ra
 select ('a3630000-0000-4000-8000-0000000000' || lpad(n::text, 2, '0'))::uuid,
   '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
   'filler' || n || '@groups.example.test', '{}', '{}'
-from generate_series(1, 9) n;
+from generate_series(1, 19) n;
 insert into public.group_members(group_id, user_id)
 select (select id from big), ('a3630000-0000-4000-8000-0000000000' || lpad(n::text, 2, '0'))::uuid
-from generate_series(1, 9) n;
+from generate_series(1, 19) n;
 select set_config('request.jwt.claims', json_build_object('sub', :'dee', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select throws_ok(format('select public.join_group(%L)', (select id from big)),
-  'P0001', 'This group is full', 'the eleventh person cannot join');
+  'P0001', 'This group is full', 'the twenty-first person cannot join');
 reset role;
 
 select * from finish();

@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- Groups: up to ten friends who can see each other's day of food.
+-- Groups: up to twenty friends who can see each other's day of food.
 --
 -- Nothing here copies a meal. The board reads members' diary entries live
 -- through definer functions in 97_groups.sql, so an edit, a deleted entry or a
@@ -37,7 +37,7 @@ create table public.groups (
   leader_id    uuid references public.profiles(id) on delete set null,
   -- Kept by the membership triggers, so the cap, the lists and the public
   -- ranking read one column instead of counting rows for every group.
-  member_count smallint not null default 0 check (member_count between 0 and 10),
+  member_count smallint not null default 0 check (member_count between 0 and 20),
   -- Hidden from the public list after three reports of its name. Members keep
   -- using it; a report is about strangers seeing it.
   quarantined  boolean not null default false,
@@ -56,7 +56,7 @@ create table public.group_members (
   joined_at     timestamptz not null default now(),
   -- This member's own row order for the board. Ids that have left are ignored
   -- when read and anyone not listed goes after, by join date.
-  board_order   uuid[] not null default '{}' check (cardinality(board_order) <= 10),
+  board_order   uuid[] not null default '{}' check (cardinality(board_order) <= 20),
   -- Chat messages after this are unread for this member.
   chat_read_at  timestamptz not null default now(),
   notify        boolean not null default true,
@@ -323,8 +323,8 @@ $$;
 create trigger group_member_left after delete on public.group_members
   for each row execute function private.group_member_left();
 
--- Ten members, and a person in at most twenty groups. The group row is locked
--- so two people joining at once cannot both take the tenth seat, and the person
+-- Twenty members, and a person in at most twenty groups. The group row is locked
+-- so two people joining at once cannot both take the last seat, and the person
 -- is locked so two joins at once cannot both take their twentieth.
 create or replace function private.group_member_joining()
 returns trigger language plpgsql security definer set search_path = '' as $$
@@ -332,7 +332,7 @@ declare v_count smallint;
 begin
   perform pg_advisory_xact_lock(hashtextextended('group-joining:' || new.user_id::text, 0));
   select g.member_count into v_count from public.groups g where g.id = new.group_id for update;
-  if v_count >= 10 then
+  if v_count >= 20 then
     raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
   end if;
   if (select count(*) from public.group_members m where m.user_id = new.user_id) >= 20 then
@@ -353,7 +353,7 @@ begin
   update public.groups g set member_count = g.member_count + 1
   where g.id = new.group_id returning g.member_count into v_count;
   delete from public.group_invites i where i.group_id = new.group_id and i.invitee_id = new.user_id;
-  if v_count >= 10 then
+  if v_count >= 20 then
     delete from public.group_invites i where i.group_id = new.group_id;
   end if;
   return null;
@@ -470,7 +470,7 @@ begin
   -- Locked with the joins, so an invite cannot slip into a group that a
   -- concurrent join has just filled.
   select g.member_count into v_count from public.groups g where g.id = p_group_id for update;
-  if v_count >= 10 then
+  if v_count >= 20 then
     raise exception 'This group is full' using errcode = 'P0001', hint = 'group_full';
   end if;
   -- Someone blocked in either direction reads as nobody, so an invite cannot be
@@ -532,7 +532,7 @@ begin
     return 'joined';
   end if;
   select g.member_count into v_count from public.groups g where g.id = p_group_id for update;
-  if v_count >= 10 then
+  if v_count >= 20 then
     delete from public.group_invites i where i.group_id = p_group_id and i.invitee_id = v_user;
     return 'full';
   end if;
@@ -591,7 +591,7 @@ create or replace function public.set_group_preferences(p_group_id uuid, p_board
 returns void language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id);
 begin
-  if p_board_order is not null and cardinality(p_board_order) > 10 then
+  if p_board_order is not null and cardinality(p_board_order) > 20 then
     raise exception 'Too many members' using errcode = '22023';
   end if;
   update public.group_members m set
