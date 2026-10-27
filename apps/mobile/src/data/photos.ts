@@ -231,10 +231,10 @@ export function resolveStoredImage(key: string, shareSlug?: string): Promise<str
  * longer edge, so an image already within budget is re-encoded but not upscaled.
  *
  * The cap is applied WHILE DECODING, not after. `manipulateAsync` could only
- * resize a bitmap it had already decoded at full size, and an Android album
- * holds 50 and 200 megapixel photos: 200 MB to 800 MB of pixels, which ran
- * the app out of memory and killed it with no error to catch. A bounding box
- * of the edge on both sides caps the longer one whichever way the photo faces.
+ * resize a bitmap it had already decoded at full size: a 200 megapixel album
+ * photo took a meal upload on Android from 0.79 GB to 1.59 GB, against 30 MB
+ * more with the cap here. A bounding box of the edge on both sides caps the
+ * longer one whichever way the photo faces.
  *
  * Shrink, ask for a URL, PUT. The key comes back from the server, which is what
  * enforces that it sits inside the caller's own folder.

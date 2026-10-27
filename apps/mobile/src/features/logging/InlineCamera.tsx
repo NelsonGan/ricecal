@@ -56,7 +56,7 @@ const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e'] as const
  * phone is cropping digitally and a plate turns to mush, which the model reads
  * worse than a plate further away.
  */
-export const MAX_ZOOM = 8
+const MAX_ZOOM = 8
 
 /**
  * Below this a pinch counts as 1x: the chip that shows the zoom is hidden, so a
@@ -164,16 +164,15 @@ export function InlineCamera({
   // The device's whole range, which `zoomProp` needs as its base, and the part
   // of it a pinch may use.
   const [deviceZoom, setDeviceZoom] = useState(1)
-  const maxZoom = Math.min(MAX_ZOOM, deviceZoom)
   const pinchFrom = useRef(1)
   // The feed's own box, which is bigger than the viewfinder in meal mode (see
   // `photoCropFill`). A tap is measured against it, so it is the box the focus
   // point is a fraction of.
   const feed = useRef({ width: 0, height: 0 })
-  // What the gestures read, as refs: a gesture can hold the callbacks of the
-  // render it was attached in, and a stale zoom would restart every pinch at 1x.
+  // What the gestures read, as refs, so they can be built once rather than
+  // re-attached on every frame of a pinch.
   const live = useRef({ zoom: 1, maxZoom: 1 })
-  live.current = { zoom, maxZoom }
+  live.current = { zoom, maxZoom: Math.min(MAX_ZOOM, deviceZoom) }
   const [focusAt, setFocusAt] = useState<{ x: number; y: number; key: number } | null>(null)
   const scanning = mode === 'barcode'
   // Measured, because in fill mode the box is whatever the sheet has left and
@@ -215,12 +214,13 @@ export function InlineCamera({
   // feed exists.
   const hasCamera = Device.isDevice
 
-  const readZoomRange = () => {
+  // Stable, because the gestures below and `onCameraReady` both hold it.
+  const readZoomRange = useCallback(() => {
     camera.current
       ?.getMaxZoomRatioAsync()
       .then((ratio) => setDeviceZoom(Math.max(1, ratio)))
       .catch(() => {})
-  }
+  }, [])
 
   useEffect(() => {
     if (!focusAt) return
@@ -230,33 +230,35 @@ export function InlineCamera({
 
   // The gestures sit on the feed, under the overlays: the framing and the band
   // take no touches, and the header and the controls keep theirs.
-  const pinch = Gesture.Pinch()
-    .enabled(hasCamera)
-    .runOnJS(true)
-    .onStart(() => {
-      pinchFrom.current = live.current.zoom
-      readZoomRange()
-    })
-    // Hundredths, so a slow pinch does not re-render the camera and lock the
-    // device for a change nobody can see.
-    .onUpdate((event) =>
-      setZoom(
-        Math.round(clamp(pinchFrom.current * event.scale, 1, live.current.maxZoom) * 100) / 100,
-      ),
-    )
-    .onEnd(() => setZoom((current) => (current < ZOOMED_FROM ? 1 : current)))
-    .withTestId('camera-pinch')
-  const tap = Gesture.Tap()
-    .enabled(hasCamera)
-    .runOnJS(true)
-    .onEnd((event, success) => {
-      const { width, height } = feed.current
-      if (!success || !width || !height) return
-      camera.current?.focusAtPointAsync(event.x / width, event.y / height).catch(() => {})
-      setFocusAt({ x: event.x, y: event.y, key: Date.now() })
-    })
-    .withTestId('camera-tap')
-  const feedGesture = Gesture.Race(pinch, tap)
+  const feedGesture = useMemo(() => {
+    const pinch = Gesture.Pinch()
+      .enabled(hasCamera)
+      .runOnJS(true)
+      .onStart(() => {
+        pinchFrom.current = live.current.zoom
+        readZoomRange()
+      })
+      // Hundredths, so a slow pinch does not re-render the camera and lock the
+      // device for a change nobody can see.
+      .onUpdate((event) =>
+        setZoom(
+          Math.round(clamp(pinchFrom.current * event.scale, 1, live.current.maxZoom) * 100) / 100,
+        ),
+      )
+      .onEnd(() => setZoom((current) => (current < ZOOMED_FROM ? 1 : current)))
+      .withTestId('camera-pinch')
+    const tap = Gesture.Tap()
+      .enabled(hasCamera)
+      .runOnJS(true)
+      .onEnd((event, success) => {
+        const { width, height } = feed.current
+        if (!success || !width || !height) return
+        camera.current?.focusAtPointAsync(event.x / width, event.y / height).catch(() => {})
+        setFocusAt({ x: event.x, y: event.y, key: Date.now() })
+      })
+      .withTestId('camera-tap')
+    return Gesture.Race(pinch, tap)
+  }, [readZoomRange])
 
   // Barcode mode always uses the back camera, so the lens can change without
   // the flip button. Each lens has its own range and starts at 1x. The range is

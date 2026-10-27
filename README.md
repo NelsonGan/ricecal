@@ -1675,7 +1675,8 @@ expo-camera uses the virtual back camera so close-ups can switch to the macro
 lens, and sets its zoom factor to where the 1x lens takes over. Committing the
 session preset then changes the device format, which resets the factor to 1.0,
 and on that device 1.0 is the 0.5x ultra-wide. Nothing set it back, because
-`zoom` never changed. The patch re-applies zoom after every commit and clamps it
+`zoom` never changed. The patch watches the device's `activeFormat` and
+re-applies zoom whenever it changes, whatever changed it, and clamps the factor
 to the device's available range, since a factor outside it raises. Moving to a
 new expo-camera means checking each of those against the new version before
 dropping the patch. `zoom` is exponential on iOS and linear on Android, and
@@ -5412,10 +5413,14 @@ and the detail view.
 `maxWidth` and `maxHeight` to `ImageManipulator.manipulate`, which downsamples
 as it decodes on both platforms. The deprecated `manipulateAsync` cannot: it
 decodes at full size and resizes the bitmap afterwards, and on Android Glide
-then holds every pixel. An Android album holds 50 and 200 megapixel photos, 200
-MB to 800 MB decoded, and picking one for a meal or a profile photo ran the app
-out of memory and killed it with nothing for the `catch` to see. Camera shots
-were small enough to survive, which is why only the album crashed.
+then holds every pixel. Measured on the Pixel 10 emulator with a 200 megapixel
+album photo, a meal upload went from 0.79 GB to 1.59 GB of memory the old way
+and grew by 30 MB this way. A phone with less to spare kills the app at that
+size, and a crash Android picks has nothing for the `catch` to see.
+
+The profile photo still peaks near that figure on Android, and not because of
+this code: `allowsEditing` runs expo-image-picker's crop screen inside the app,
+and it builds the crop at the photo's full size before handing it over.
 
 On 30 September 2026, the iPhone 18 Pro simulator was tested with 64 distinct
 1024-pixel JPEGs (42 KB on average), local Supabase and MinIO. A local media proxy
