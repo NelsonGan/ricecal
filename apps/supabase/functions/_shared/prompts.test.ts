@@ -1,6 +1,8 @@
 import { assert, assertEquals } from 'jsr:@std/assert@1'
+import type { Meter } from './entitlement.ts'
 import { ICON_INSTRUCTION } from './icons.ts'
-import { generationEvent } from './posthog.ts'
+import { chatJSON } from './llm.ts'
+import { type AiSpan, type Generation, generationEvent } from './posthog.ts'
 import { BUNDLED_PROMPTS } from './prompt-catalog.ts'
 import {
   clearPromptCache,
@@ -172,4 +174,108 @@ Deno.test('a generation names its prompt and version', () => {
   }).properties
   assertEquals(two.prompt_source, 'mixed')
   assertEquals(two.prompt_parts, 'analyse-photo@3+analyse-photo-note@bundled')
+})
+
+Deno.test(
+  'a failure with nothing cached is not retried for a minute',
+  withKey(async () => {
+    const asked = fakePostHog(() => new Response('', { status: 404 }))
+    const system = hostedSystem({ name: 'describe-recipe', bundled: 'code' })
+    assertEquals((await resolveSystem(system, 0)).text, 'code')
+    assertEquals((await resolveSystem(system, 59_000)).text, 'code')
+    assertEquals(asked.length, 1)
+    await resolveSystem(system, 61_000)
+    assertEquals(asked.length, 2)
+  }),
+)
+
+Deno.test(
+  'calls that start together share one fetch',
+  withKey(async () => {
+    const asked = fakePostHog(() => hosted('shared', 1))
+    const system = hostedSystem({ name: 'pick-candidate', bundled: 'code' })
+    const answers = await Promise.all([resolveSystem(system), resolveSystem(system)])
+    assertEquals(
+      answers.map((a) => a.text),
+      ['shared', 'shared'],
+    )
+    assertEquals(asked.length, 1)
+  }),
+)
+
+Deno.test(
+  'an answer with no version is not used',
+  withKey(async () => {
+    fakePostHog(() => new Response(JSON.stringify({ prompt: 'no version' }), { status: 200 }))
+    const { text, prompts } = await resolveSystem(
+      hostedSystem({ name: 'review-recipe', bundled: 'code' }),
+    )
+    assertEquals(text, 'code')
+    assertEquals(prompts[0].source, 'bundled')
+  }),
+)
+
+/**
+ * `chatJSON` against a stubbed PostHog and OpenRouter: the system message
+ * OpenRouter received, and the generation the meter saw.
+ */
+async function sendThroughChat(span: AiSpan, posthog: (() => Response) | null) {
+  const previousFetch = globalThis.fetch
+  const previousKey = Deno.env.get('OPENROUTER_API_KEY')
+  Deno.env.set('OPENROUTER_API_KEY', 'test-key')
+  if (posthog) Deno.env.set('POSTHOG_PROMPTS_API_KEY', 'phx_test')
+  else Deno.env.delete('POSTHOG_PROMPTS_API_KEY')
+  clearPromptCache()
+  const bodies: Array<{ messages: Array<{ role: string; content: unknown }> }> = []
+  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+    const url = String(input instanceof Request ? input.url : input)
+    if (url.includes('posthog.com')) {
+      if (!posthog) throw new Error('PostHog asked with no key')
+      return Promise.resolve(posthog())
+    }
+    bodies.push(JSON.parse(String(init?.body)))
+    return Promise.resolve(
+      Response.json({ choices: [{ message: { content: '{"ok":1}' }, finish_reason: 'stop' }] }),
+    )
+  }) as typeof fetch
+  const generations: Generation[] = []
+  const meter: Meter = {
+    record() {},
+    spent: () => generations.length,
+    observe: (generation) => void generations.push(generation),
+  }
+  try {
+    await chatJSON(meter, span, [
+      { role: 'system', content: hostedSystem({ name: 'describe-meal', bundled: 'Code copy.' }) },
+      { role: 'user', content: 'x' },
+    ])
+  } finally {
+    globalThis.fetch = previousFetch
+    if (previousKey === undefined) Deno.env.delete('OPENROUTER_API_KEY')
+    else Deno.env.set('OPENROUTER_API_KEY', previousKey)
+    Deno.env.delete('POSTHOG_PROMPTS_API_KEY')
+    clearPromptCache()
+  }
+  const system = bodies[0].messages[0]
+  // A cached span sends the system prompt as one cache-marked text block.
+  const text = Array.isArray(system.content)
+    ? (system.content[0] as { text: string }).text
+    : (system.content as string)
+  return { role: system.role, text, generation: generations[0] }
+}
+
+// The failure this guards: a hosted system that reached OpenRouter unresolved
+// would be refused by both models, and every call in production would fail.
+Deno.test('chatJSON sends the resolved text, cached or not, and records the version', async () => {
+  for (const span of ['describe_meal', 'describe_recipe'] as const) {
+    const fromCode = await sendThroughChat(span, null)
+    assertEquals(fromCode.role, 'system')
+    assert(fromCode.text.startsWith('Code copy.'), fromCode.text)
+    assertEquals(fromCode.generation.prompts?.[0].source, 'bundled')
+
+    const fromPostHog = await sendThroughChat(span, () => hosted('Hosted copy.', 2))
+    assert(fromPostHog.text.startsWith('Hosted copy.'), fromPostHog.text)
+    assert(!fromPostHog.text.includes('hostedSystem'))
+    assertEquals(fromPostHog.generation.prompts?.[0].version, 2)
+  }
 })

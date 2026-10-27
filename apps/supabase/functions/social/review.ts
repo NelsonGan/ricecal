@@ -22,9 +22,8 @@ export function parseReviewRequest(value: unknown): ReviewRequest | null {
     !['profile', 'post', 'comment'].includes(String(body.kind)) ||
     typeof body.id !== 'string' ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.id)
-  ) {
+  )
     return null
-  }
   return body as ReviewRequest
 }
 
