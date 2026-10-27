@@ -125,7 +125,10 @@ function fitted<K extends string>(column: K, value: number | null, min: number, 
   return impossible(value, min, max) ? {} : ({ [column]: value } as Record<K, number | null>)
 }
 
-const clip = (text: string | null) => (text == null ? null : text.slice(0, 120))
+// By character, as `char_length` counts. A cut by UTF-16 unit can split an emoji,
+// and Postgres refuses the half surrogate that leaves, failing the whole batch.
+const clip = (text: string | null) =>
+  text == null ? null : Array.from(text).slice(0, 120).join('')
 
 /** Rows grouped by the columns they name, since PostgREST refuses a mixed batch. */
 function byShape<Row extends object>(rows: Row[]): Row[][] {
@@ -487,7 +490,16 @@ function hourRows(hours: readonly HourReading[]) {
       })
     }
   }
-  return [...rows.values()]
+  // The hour's own checks, after the sum, since summing is what can overshoot.
+  // This is a replacement, so there is no column to leave out: an hour whose
+  // steps or energy is impossible is not sent, and an impossible distance is
+  // sent as unread. Otherwise `replace_activity_hours` refuses the whole window
+  // and the weigh-ins after it are skipped (see `impossible`).
+  return [...rows.values()].flatMap((row) =>
+    impossible(row.steps, 0, 100_000) || impossible(row.active_kcal, 0, 5000)
+      ? []
+      : [{ ...row, distance_m: impossible(row.distance_m, 0, 200_000) ? null : row.distance_m }],
+  )
 }
 
 /** Split at the hourly cutoff so a longer backfill never writes extra old hours. */
