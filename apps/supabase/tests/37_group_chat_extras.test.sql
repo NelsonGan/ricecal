@@ -41,7 +41,8 @@ select ok(not exists (
   select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname in ('public', 'private')
     and p.proname in ('send_group_message', 'set_group_message_reaction', 'group_invite_suggestions',
-      'group_post_food', 'group_food_label', 'group_reactions_changed', 'group_share_posted_food')
+      'group_post_food', 'group_food_label', 'group_reactions_changed', 'group_share_posted_food',
+      'group_food_reactions')
     and (p.proacl is null or exists (select 1 from aclexplode(p.proacl) a where a.grantee = 0))
 ), 'none of the new functions is executable by PUBLIC');
 select ok(not has_function_privilege('authenticated', 'private.group_post_food(uuid)', 'EXECUTE'),
@@ -131,6 +132,17 @@ select is((select e->'food'->>'name' from food_msg), 'Nasi lemak',
   'a member who does not follow Ana still sees the food card');
 select is((select (e->'food'->>'kcal')::numeric from food_msg), 640::numeric, 'with its calories');
 select is((select (e->'food'->>'protein_g')::numeric from food_msg), 20::numeric, 'and macros');
+select is((select e->'food'->>'entry_id' from food_msg), :'meal'::text,
+  'with the diary entry its thumbs are cast on');
+select is((select (e->'food'->>'likes')::int from food_msg), 0, 'and no likes yet');
+select public.set_group_reaction(:'meal', 1::smallint);
+select is((select (e->'food'->>'likes')::int
+  from jsonb_array_elements(public.group_messages((select id from g))) e where e->'food' <> 'null'), 1,
+  'a like on the board counts on the chat card');
+select is((select (e->'food'->>'mine')::int
+  from jsonb_array_elements(public.group_messages((select id from g))) e where e->'food' <> 'null'), 1,
+  'and is the viewer''s own');
+select public.set_group_reaction(:'meal', 0::smallint);
 select is((select count(*)::int from public.social_photo_claims(array['meals/' || :'ana' || '/extras.jpg'])), 1,
   'and may sign its photo');
 select throws_ok(format('select public.send_group_message(%L, null, %L, null, %L)', (select id from g),

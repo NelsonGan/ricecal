@@ -1,4 +1,4 @@
-import { FREE_DAILY_SCANS, FREE_RECIPES, FREE_ROUTINES } from '@ricecal/shared'
+import { FREE_DAILY_SCANS, FREE_GROUPS, FREE_RECIPES, FREE_ROUTINES } from '@ricecal/shared'
 import { router } from 'expo-router'
 
 import i18n from '@/i18n'
@@ -205,6 +205,7 @@ export function proFeatureTitle(feature: ProFeature): string {
   return i18n.t(`paywall:limit.feature.${feature}`, {
     recipes: FREE_RECIPES,
     routines: FREE_ROUTINES,
+    groups: FREE_GROUPS,
   })
 }
 

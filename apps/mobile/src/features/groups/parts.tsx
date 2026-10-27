@@ -10,6 +10,7 @@ import {
   groupError,
   useGroupAction,
 } from '@/data/groups'
+import { openPaywall, proFeatureTitle } from '@/data/refusals'
 import { MealPhoto } from '@/features/shared'
 import { SocialPhoto } from '@/features/social/components'
 import { Avatar, Icon, type IconProps, Tappable, useToast } from '@/ui'
@@ -88,7 +89,6 @@ export function PersonAvatarLink({
   const open = useOpenProfile()
   return (
     <Tappable
-      haptics={false}
       hitSlop={6}
       onPress={() => open(person.id)}
       accessibilityRole="button"
@@ -177,6 +177,13 @@ export function useGroupTask() {
       } catch (error) {
         const reason = groupError(error)
         const { toast, t } = latest.current
+        // A free account's third group: the price, not an error. The sheet's
+        // own check usually gets there first; this is a group started on
+        // another phone, or a list that had not loaded.
+        if (reason === 'group_limit_reached') {
+          openPaywall(toast, { title: proFeatureTitle('new_group'), feature: 'new_group' })
+          throw error
+        }
         toast.show({
           title: t(`errors.${reason && reason in ERRORS ? (reason as ErrorKey) : 'generic'}`),
           tone: 'error',

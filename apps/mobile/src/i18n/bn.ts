@@ -1349,6 +1349,11 @@ export const bn = {
           free: '{{routines}}টি রুটিন',
           pro: 'সীমাহীন',
         },
+        groups: {
+          label: 'আপনার বানানো গ্রুপ',
+          free: '{{groups}}টি গ্রুপ',
+          pro: 'সীমাহীন',
+        },
         recipeFill: {
           label: 'ছবি থেকে খাবার ভরুন',
           free: '',
@@ -1408,6 +1413,7 @@ export const bn = {
         new_recipe: 'নিজের {{recipes}} এর বেশি খাবার রাখতে RiceCal Pro লাগবে।',
         trend_range: 'এক সপ্তাহের বেশি পিছনে দেখতে RiceCal Pro লাগবে।',
         new_routine: '{{routines}}টির বেশি ওয়ার্কআউট রুটিন রাখতে RiceCal Pro লাগবে।',
+        new_group: '{{groups}}টির বেশি গ্রুপ বানাতে RiceCal Pro লাগবে।',
         workout_range: '৩ মাসের আগের ওয়ার্কআউট অগ্রগতি দেখতে RiceCal Pro লাগবে।',
         review: 'পুরোনো পর্যালোচনা পড়তে RiceCal Pro লাগবে।',
         nudge: 'RiceCal Pro সীমাগুলো সরিয়ে দেয়।',

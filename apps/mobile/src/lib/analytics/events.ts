@@ -76,6 +76,8 @@ export type ProFeature =
   | 'trend_range'
   /** A fourth workout routine on a free account. */
   | 'new_routine'
+  /** A third group started on a free account. Joining one is never refused. */
+  | 'new_group'
   /** A range on the workout progress chart past three months: a year, or all time. */
   | 'workout_range'
   /** An older weekly or monthly review. The latest one is free. */

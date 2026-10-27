@@ -1358,6 +1358,11 @@ export const ko = {
           free: '{{routines}}개',
           pro: '무제한',
         },
+        groups: {
+          label: '만들 수 있는 그룹',
+          free: '{{groups}}개',
+          pro: '무제한',
+        },
         recipeFill: {
           label: '사진으로 음식 채우기',
           free: '',
@@ -1417,6 +1422,7 @@ export const ko = {
         new_recipe: '내 음식을 {{recipes}}개 넘게 두려면 RiceCal Pro가 필요합니다.',
         trend_range: '한 주보다 더 거슬러 보려면 RiceCal Pro가 필요합니다.',
         new_routine: '운동 루틴을 {{routines}}개 넘게 두려면 RiceCal Pro가 필요합니다.',
+        new_group: '그룹을 {{groups}}개 넘게 만들려면 RiceCal Pro가 필요합니다.',
         workout_range: '3개월보다 더 거슬러 보려면 RiceCal Pro가 필요합니다.',
         review: '더 오래된 돌아보기를 읽으려면 RiceCal Pro가 필요합니다.',
         nudge: 'RiceCal Pro는 한도를 없앱니다.',
