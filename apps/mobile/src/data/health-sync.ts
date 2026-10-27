@@ -102,7 +102,7 @@ type SessionRow = TablesInsert<'activity_sessions'>
 type DayRow = TablesInsert<'activity_days'>
 
 /**
- * A figure the table's own check would accept, or null.
+ * Whether a figure is one the table's own check would refuse.
  *
  * Every reading goes out in one upsert, so a single value outside a column's
  * range fails the whole request, and `persist` stops there. One Health Connect
@@ -111,47 +111,68 @@ type DayRow = TablesInsert<'activity_days'>
  * weigh-in after it. A store can hold a figure no body produced (a duplicate
  * source summed, a session nobody stopped), so the bounds here are the ones in
  * `41_activity.sql` and must move with them.
+ *
+ * An impossible figure is treated like one that could not be read: its column
+ * is left out of the row, so the upsert keeps whatever the last good read
+ * stored (see `sessionBatches`). Null stays null, since that is a reading.
  */
-function within(value: number | null, min: number, max: number): number | null {
-  return value != null && Number.isFinite(value) && value >= min && value <= max ? value : null
+function impossible(value: number | null, min: number, max: number): boolean {
+  return value != null && !(Number.isFinite(value) && value >= min && value <= max)
+}
+
+/** `{ [column]: value }`, or nothing when the value is impossible. */
+function fitted<K extends string>(column: K, value: number | null, min: number, max: number) {
+  return impossible(value, min, max) ? {} : ({ [column]: value } as Record<K, number | null>)
 }
 
 const clip = (text: string | null) => (text == null ? null : text.slice(0, 120))
 
+/** Rows grouped by the columns they name, since PostgREST refuses a mixed batch. */
+function byShape<Row extends object>(rows: Row[]): Row[][] {
+  const batches = new Map<string, Row[]>()
+  for (const row of rows) {
+    const shape = Object.keys(row).join(',')
+    const batch = batches.get(shape)
+    if (batch) batch.push(row)
+    else batches.set(shape, [row])
+  }
+  return [...batches.values()]
+}
+
 /**
- * Days as rows. An impossible figure is blanked rather than clamped, because a
- * clamped one would be written as if the watch had measured it, and the rest of
- * the day is kept. Steps cannot be blank, so a day whose steps are impossible
- * is left out.
+ * Days as rows, grouped into the batches PostgREST will accept. An impossible
+ * figure is left out rather than clamped, because a clamped one would be written
+ * as if the watch had measured it, and the rest of the day is kept. Steps cannot
+ * be left out of a new row (it would default to a confident 0), so a day whose
+ * steps are impossible is not sent at all.
  */
-export function dayRows(
+export function dayBatches(
   userId: string,
   provider: ProviderId,
   days: readonly ActivityDayReading[],
-): DayRow[] {
+): DayRow[][] {
   const syncedAt = new Date().toISOString()
-  return days.flatMap((day) => {
-    const steps = within(day.steps, 0, 200_000)
-    if (steps == null) return []
-    return [
-      {
-        user_id: userId,
-        log_date: day.date,
-        provider,
-        active_kcal: within(day.activeKcal, 0, 20_000),
-        resting_kcal: within(day.restingKcal, 0, 20_000),
-        steps,
-        distance_m: within(day.distanceM, 0, 1_000_000),
-        exercise_minutes: within(day.exerciseMinutes, 0, 1440),
-        stand_hours: within(day.standHours, 0, 24),
-        flights: within(day.flights, 0, 2000),
-        move_goal_kcal: within(day.moveGoalKcal, 0, 20_000),
-        exercise_goal_min: within(day.exerciseGoalMin, 0, 1440),
-        stand_goal_hr: within(day.standGoalHr, 0, 24),
-        synced_at: syncedAt,
-      },
-    ]
-  })
+  const rows: DayRow[] = []
+  for (const day of days) {
+    if (day.steps == null || impossible(day.steps, 0, 200_000)) continue
+    rows.push({
+      user_id: userId,
+      log_date: day.date,
+      provider,
+      ...fitted('active_kcal', day.activeKcal, 0, 20_000),
+      ...fitted('resting_kcal', day.restingKcal, 0, 20_000),
+      steps: day.steps,
+      ...fitted('distance_m', day.distanceM, 0, 1_000_000),
+      ...fitted('exercise_minutes', day.exerciseMinutes, 0, 1440),
+      ...fitted('stand_hours', day.standHours, 0, 24),
+      ...fitted('flights', day.flights, 0, 2000),
+      ...fitted('move_goal_kcal', day.moveGoalKcal, 0, 20_000),
+      ...fitted('exercise_goal_min', day.exerciseGoalMin, 0, 1440),
+      ...fitted('stand_goal_hr', day.standGoalHr, 0, 24),
+      synced_at: syncedAt,
+    })
+  }
+  return byShape(rows)
 }
 
 /**
@@ -169,35 +190,36 @@ export function dayRows(
  *
  * Hence the grouping: PostgREST builds its column list from the payload and
  * rejects a batch whose objects disagree about their keys, so rows go out one
- * request per shape, at most three and usually one.
+ * request per shape, usually one.
  */
 export function sessionBatches(
   userId: string,
   provider: ProviderId,
   workouts: readonly WorkoutReading[],
 ): Array<Array<SessionRow>> {
-  const batches = new Map<string, SessionRow[]>()
+  const rows: SessionRow[] = []
 
   for (const workout of workouts) {
-    // Duration and energy cannot be blank, so a session with an impossible one
-    // is left out (see `within`), not written as something it was not.
-    const durationS = within(workout.durationS, 0, 86_400)
-    const activeKcal = within(workout.activeKcal, 0, 20_000)
-    if (durationS == null || activeKcal == null) continue
+    // Duration and energy cannot be left out of a new row, so a session with an
+    // impossible one is not sent (see `impossible`). A stored copy stays as it was.
+    if (impossible(workout.durationS, 0, 86_400) || impossible(workout.activeKcal, 0, 20_000)) {
+      continue
+    }
 
     // Avg and max go together because they are one reading: all three ways
     // `apple.ts` asks return both or neither. Zones are their own question,
     // since a writer that sent a single average has nothing to band. A pulse
-    // outside what the column holds is treated as no reading.
+    // outside what the column holds counts as no reading.
     const pulse =
-      within(workout.avgHr, 20, 260) != null &&
-      (workout.maxHr == null || within(workout.maxHr, 20, 260) != null)
+      workout.avgHr != null &&
+      !impossible(workout.avgHr, 20, 260) &&
+      !impossible(workout.maxHr, 20, 260)
     const heart = {
-      ...(!pulse ? {} : { avg_hr: workout.avgHr, max_hr: workout.maxHr }),
+      ...(pulse ? { avg_hr: workout.avgHr, max_hr: workout.maxHr } : {}),
       ...(workout.hrZones == null ? {} : { hr_zones: workout.hrZones }),
     }
 
-    const row = {
+    rows.push({
       user_id: userId,
       provider,
       external_id: workout.externalId,
@@ -206,21 +228,16 @@ export function sessionBatches(
       kind_label: clip(workout.kindLabel),
       started_at: workout.startedAt,
       ended_at: workout.endedAt,
-      duration_s: durationS,
-      active_kcal: activeKcal,
-      distance_m: within(workout.distanceM, 0, 1_000_000),
-      elevation_m: within(workout.elevationM, -500, 20_000),
+      duration_s: workout.durationS,
+      active_kcal: workout.activeKcal,
+      ...fitted('distance_m', workout.distanceM, 0, 1_000_000),
+      ...fitted('elevation_m', workout.elevationM, -500, 20_000),
       source_name: clip(workout.sourceName),
       ...heart,
-    }
-
-    const shape = Object.keys(heart).join(',')
-    const batch = batches.get(shape)
-    if (batch) batch.push(row)
-    else batches.set(shape, [row])
+    })
   }
 
-  return [...batches.values()]
+  return byShape(rows)
 }
 
 /**
@@ -234,11 +251,11 @@ async function persist(
   reading: HealthReading,
   window: { from: string; to: string; withHours: boolean },
 ): Promise<void> {
-  const days = dayRows(userId, provider, reading.days)
-  if (days.length > 0) {
+  // One request per row shape, as for sessions below.
+  for (const batch of dayBatches(userId, provider, reading.days)) {
     const { error } = await supabase
       .from('activity_days')
-      .upsert(days, { onConflict: 'user_id,log_date' })
+      .upsert(batch, { onConflict: 'user_id,log_date' })
     if (error) throw error
   }
 
