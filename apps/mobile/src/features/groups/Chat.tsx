@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import {
   AppState,
   FlatList,
+  Keyboard,
   Modal,
   Platform,
   type ScrollViewProps,
@@ -65,7 +66,7 @@ import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { showTabUnder, useBack } from '@/lib/navigation'
 import { dismissGroupChatNotifications, showingGroupChat } from '@/lib/notifications'
-import { useThemeColors } from '@/theme/useTheme'
+import { useTheme, useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
   Button,
@@ -81,7 +82,7 @@ import {
   Tappable,
   Text,
 } from '@/ui'
-import { MacroChips, Thumbs } from './MealSheet'
+import { MacroChips, Thumbs, useVote } from './MealSheet'
 import {
   EntryPicture,
   PersonAvatarLink,
@@ -331,6 +332,7 @@ export function ChatScreen({
     [react],
   )
   const closePicker = useCallback(() => setPicked(null), [])
+  const vote = useVote()
 
   // Newest first, for the inverted list: the outbox is newer than anything sent.
   // A chip goes above the first message of each day; above the oldest one held
@@ -374,10 +376,11 @@ export function ChatScreen({
           onRetry={retry}
           onReply={startReply}
           onHeart={heart}
+          onVote={vote}
           groupId={groupId}
         />
       ),
-    [rows, retry, startReply, heart, groupId],
+    [rows, retry, startReply, heart, vote, groupId],
   )
   // The thread rises with the composer as a scroll offset rather than a smaller
   // frame. The shell's padding relaid the screen out every frame, and the
@@ -682,6 +685,10 @@ type ChatRow = GroupMessage & { outgoing?: Outgoing<SendMeta> }
 type ChatItem = ChatRow | { id: string; day: string }
 const authorOf = (item: ChatItem | undefined) => (item && 'author' in item ? item.author.id : null)
 
+/** The thread's side padding (`px-gutter`), and how much of a row a bubble may take (`max-w-[78%]`). */
+const GUTTER = 20
+const BUBBLE_MAX = 0.78
+
 /** The small face beside a bubble, and where the bubble starts after it. */
 const AVATAR = 30
 const BUBBLE_INDENT = AVATAR + 8
@@ -706,6 +713,7 @@ const MessageRow = memo(function MessageRow({
   onRetry,
   onReply,
   onHeart,
+  onVote,
   groupId,
 }: {
   message: ChatRow
@@ -716,12 +724,14 @@ const MessageRow = memo(function MessageRow({
   onRetry: (requestId: string) => void
   onReply: (message: GroupMessage) => void
   onHeart: (message: GroupMessage) => void
+  onVote: (entryId: string, mine: -1 | 0 | 1, value: -1 | 1) => void
 }) {
   const { t } = useTranslation(['groups', 'common'])
   const colors = useThemeColors()
   const openProfile = useOpenProfile()
   const openWorkout = useOpenGroupWorkout(groupId)
   const shared = message.workout
+  const food = message.food
   const time = format(parseISO(message.created_at), datePattern('time'))
   const outgoing = message.outgoing
   const state = outgoing?.state
@@ -739,12 +749,33 @@ const MessageRow = memo(function MessageRow({
   // the whole row (its reactions and time too) when there is no room above.
   const bubbleBox = useRef<ViewInstance>(null)
   const rowBox = useRef<ViewInstance>(null)
+  // The layer is a window of its own, which takes the keyboard down with it;
+  // the thread then slid down under a copy left where the message had been.
+  // So the keyboard goes first, as WhatsApp's does, and the message is
+  // measured once the thread has settled.
   const pick = useCallback(() => {
-    bubbleBox.current?.measureInWindow((x, y, width, height) =>
-      rowBox.current?.measureInWindow((_rx, rowY, _rw, rowHeight) =>
-        onPick({ message, bubble: { x, y, width, height }, rowBottom: rowY + rowHeight, last }),
-      ),
-    )
+    const measure = () =>
+      bubbleBox.current?.measureInWindow((x, y, width, height) =>
+        rowBox.current?.measureInWindow((_rx, rowY, _rw, rowHeight) =>
+          onPick({ message, bubble: { x, y, width, height }, rowBottom: rowY + rowHeight, last }),
+        ),
+      )
+    if (!Keyboard.isVisible()) {
+      measure()
+      return
+    }
+    let done = false
+    const settle = () => {
+      if (done) return
+      done = true
+      hidden.remove()
+      clearTimeout(fallback)
+      // A frame for the list's own scroll to land with the keyboard.
+      requestAnimationFrame(measure)
+    }
+    const hidden = Keyboard.addListener('keyboardDidHide', settle)
+    const fallback = setTimeout(settle, 500)
+    Keyboard.dismiss()
   }, [message, onPick, last])
   const pop = usePop(message.my_reaction ?? null, reactions.length > 0)
   // A message still on its way has no actions: it has no id to act on yet.
@@ -757,6 +788,11 @@ const MessageRow = memo(function MessageRow({
       onReply={onReply}
       onHeart={onHeart}
       onOpen={shared ? () => openWorkout(shared, message.author.id) : undefined}
+      onVote={
+        food?.entry_id && !message.mine
+          ? (value) => onVote(food.entry_id as string, food.mine ?? 0, value)
+          : undefined
+      }
       label={[message.mine ? t('you') : message.author.name, message.body, time].join(', ')}
     >
       {content}
@@ -773,12 +809,21 @@ const MessageRow = memo(function MessageRow({
   ) : (
     content
   )
+  // The reactions sit on the bubble's lower corner toward the middle of the
+  // screen, half over it, as messengers tuck them; a strip of page colour
+  // round the chip cuts it out of the bubble. Drawn over the bubble rather than
+  // in a row of their own, which left them floating loose under a tall card.
   const pill =
     reactions.length > 0 ? (
-      <Animated.View style={pop}>
+      <Animated.View
+        className="absolute"
+        style={[{ bottom: -PILL_TUCK }, message.mine ? { left: 6 } : { right: 6 }, pop]}
+      >
         <ReactionPill reactions={reactions} mine={message.my_reaction ?? null} onPress={pick} />
       </Animated.View>
     ) : null
+  // The room the tucked chip takes under the bubble, kept clear of the time.
+  const tucked = pill ? { marginTop: PILL_TUCK + 2 } : undefined
   if (message.mine) {
     return (
       <Animated.View className={cn('items-end', gap)} style={sliding}>
@@ -786,23 +831,25 @@ const MessageRow = memo(function MessageRow({
           <View ref={bubbleBox} collapsable={false} className="max-w-[78%]">
             <ReplyArrow shift={shift} side="right" />
             {bubble}
+            {pill}
           </View>
-          {pill ? <View className="-mt-1.5 mr-2">{pill}</View> : null}
           {state === 'failed' ? (
-            <View className="mr-1 mt-1 flex-row items-center gap-1">
+            <View className="mr-1 mt-1 flex-row items-center gap-1" style={tucked}>
               <Icon set="ui" name="warning" size={12} tintColor={colors.hibiscusInk} />
               <Text variant="micro" className="text-hibiscus-ink">
                 {t('common:delivery.failed')}
               </Text>
             </View>
           ) : state === 'sending' ? (
-            <Text variant="micro" className="mr-1 mt-1">
+            <Text variant="micro" className="mr-1 mt-1" style={tucked}>
               {t('common:delivery.sending')}
             </Text>
           ) : last ? (
-            <Text variant="micro" className="mr-1 mt-1">
+            <Text variant="micro" className="mr-1 mt-1" style={tucked}>
               {time}
             </Text>
+          ) : tucked ? (
+            <View style={tucked} />
           ) : null}
         </View>
       </Animated.View>
@@ -835,17 +882,19 @@ const MessageRow = memo(function MessageRow({
           </View>
           <View ref={bubbleBox} collapsable={false} className="max-w-[78%]">
             {bubble}
-          </View>
-        </View>
-        {pill ? (
-          <View className="-mt-1.5 self-start" style={{ marginLeft: BUBBLE_INDENT + 6 }}>
             {pill}
           </View>
-        ) : null}
+        </View>
         {last ? (
-          <Text variant="micro" className="mt-1" style={{ marginLeft: BUBBLE_INDENT + 6 }}>
+          <Text
+            variant="micro"
+            className="mt-1"
+            style={[{ marginLeft: BUBBLE_INDENT + 6 }, tucked]}
+          >
             {time}
           </Text>
+        ) : tucked ? (
+          <View style={tucked} />
         ) : null}
       </View>
     </Animated.View>
@@ -1149,9 +1198,10 @@ function ReactionPill({
       hitSlop={6}
       onPress={onPress}
       className={cn(
-        'flex-row items-center gap-0.5 rounded-full border px-1.5 py-0.5',
-        mine ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
+        'flex-row items-center gap-0.5 rounded-full border-2 border-canvas px-1.5 py-0.5',
+        mine ? 'bg-pandan-soft' : 'bg-surface',
       )}
+      style={PILL_SHADOW}
       accessibilityRole="button"
       accessibilityLabel={reactions
         .map((reaction) => t('reactionCount', { emoji: reaction.emoji, count: reaction.count }))
@@ -1163,12 +1213,22 @@ function ReactionPill({
         </Text>
       ))}
       {total > 1 ? (
-        <Text variant="micro" className="ml-0.5 text-ink">
+        <Text variant="micro" className="ml-0.5 font-body-bold text-muted">
           {total}
         </Text>
       ) : null}
     </Tappable>
   )
+}
+
+/** How far the reaction chip hangs below its bubble. */
+const PILL_TUCK = 16
+const PILL_SHADOW = {
+  shadowColor: '#000',
+  shadowOpacity: 0.08,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 1 },
+  elevation: 2,
 }
 
 /** How far a row must be dragged before letting go answers it. */
@@ -1188,6 +1248,7 @@ function MessageGestures({
   onReply,
   onHeart,
   onOpen,
+  onVote,
   children,
 }: {
   message: GroupMessage
@@ -1199,6 +1260,8 @@ function MessageGestures({
   onHeart: (message: GroupMessage) => void
   /** What a single tap opens: a workout card's workout. Most messages open nothing. */
   onOpen?: () => void
+  /** A friend's food card's like and dislike, as screen-reader actions. */
+  onVote?: (value: -1 | 1) => void
   children: ReactNode
 }) {
   const { t } = useTranslation('groups')
@@ -1291,12 +1354,20 @@ function MessageGestures({
           { name: 'longpress', label: t('messageActions') },
           { name: 'reply', label: t('reply') },
           { name: 'heart', label: t('heart') },
+          ...(onVote
+            ? [
+                { name: 'like', label: t('like') },
+                { name: 'dislike', label: t('dislike') },
+              ]
+            : []),
         ]}
         onAccessibilityAction={(event) => {
           const name = event.nativeEvent.actionName
           if (name === 'activate') onOpen?.()
           else if (name === 'reply') onReply(message)
           else if (name === 'heart') onHeart(message)
+          else if (name === 'like') onVote?.(1)
+          else if (name === 'dislike') onVote?.(-1)
           else onMenu()
         }}
       >
@@ -1350,7 +1421,7 @@ function ReactionBar({
   onClosed: () => void
 }) {
   const { t } = useTranslation(['groups', 'common'])
-  const colors = useThemeColors()
+  const { colors, isDark } = useTheme()
   const { width, height } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   // What it was showing, kept while it fades away.
@@ -1371,16 +1442,25 @@ function ReactionBar({
       <>
         <Tappable
           haptics={false}
-          className="absolute inset-0 bg-black/40"
+          // Darker on a dark theme, where the sheets' 40% barely shows
+          // against a near-black thread and the held message stood out little.
+          className={cn('absolute inset-0', isDark ? 'bg-black/60' : 'bg-black/40')}
           onPress={onClose}
           accessibilityRole="button"
           accessibilityLabel={t('common:action.close')}
         />
         {/* The message itself, undimmed, exactly where it sits in the thread. */}
+        {/* Laid out under the thread's own limit and pinned by its outer
+            edge, so it wraps exactly as the original: pinned to the measured
+            width, which is rounded, the text came out a line taller. */}
         <View
           pointerEvents="none"
-          className={cn('absolute', message.mine && 'items-end')}
-          style={{ left: bubble.x, top: bubble.y, width: bubble.width }}
+          className={cn('absolute', message.mine ? 'items-end' : 'items-start')}
+          style={{
+            top: bubble.y,
+            width: BUBBLE_MAX * (width - 2 * GUTTER),
+            ...(message.mine ? { right: width - bubble.x - bubble.width } : { left: bubble.x }),
+          }}
           importantForAccessibility="no-hide-descendants"
           accessibilityElementsHidden
         >
