@@ -761,6 +761,7 @@ export const vi = {
       shutter: 'Chụp ảnh',
       library: 'Chọn từ thư viện ảnh',
       flip: 'Đổi máy ảnh',
+      resetZoom: 'Đặt lại thu phóng',
       photoOf: 'Ảnh của {{food}}',
     },
 
