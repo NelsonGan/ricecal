@@ -19,6 +19,8 @@
 // Never throws, and never holds a response: each event is sent in the
 // background through `EdgeRuntime.waitUntil`.
 
+import type { ResolvedPrompt } from './prompts.ts'
+
 /**
  * The public, write-only ingestion key the app and the website ship too, so it
  * is checked in rather than kept as a function secret.
@@ -83,6 +85,8 @@ export type Generation = {
    * tells a fallback from a retry.
    */
   isBackupModel?: boolean
+  /** Which hosted prompt, and which version of it, the system message was. */
+  prompts?: ResolvedPrompt[]
   error?: string
 }
 
@@ -158,6 +162,21 @@ export function generationEvent(context: AiContext, traceId: string, generation:
     // OpenRouter reports what was charged, so PostHog should not re-price it.
     properties.$ai_total_cost_usd = (charged ?? 0) + (upstream ?? 0)
     properties.$ai_cost_passthrough = true
+  }
+  const [prompt, ...more] = generation.prompts ?? []
+  if (prompt) {
+    // Links the generation to its prompt in PostHog prompt management. The
+    // code's own copy has no PostHog version, so only its name is sent.
+    properties.$ai_prompt_name = prompt.name
+    if (prompt.version !== null) properties.$ai_prompt_version = prompt.version
+    const sources = new Set(generation.prompts?.map((p) => p.source))
+    properties.prompt_source = sources.size > 1 ? 'mixed' : prompt.source
+    // The photo prompt with a note is two prompts; both versions, in order.
+    if (more.length) {
+      properties.prompt_parts = (generation.prompts ?? [])
+        .map((p) => `${p.name}@${p.version ?? 'bundled'}`)
+        .join('+')
+    }
   }
   if (generation.error) properties.$ai_error = generation.error.slice(0, 300)
   return {

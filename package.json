@@ -33,6 +33,8 @@
     "foods:alias": "node --no-warnings apps/supabase/scripts/foods-alias.mjs",
     "foods:icons": "node --no-warnings apps/supabase/scripts/foods-icons.mjs",
     "eval:prompts": "deno run -A apps/supabase/scripts/eval-prompts.ts",
+    "prompts:check": "deno run -A --no-lock --config apps/supabase/functions/scan-meal/deno.json apps/supabase/scripts/prompts.ts check",
+    "prompts:export": "deno run -A --no-lock --config apps/supabase/functions/scan-meal/deno.json apps/supabase/scripts/prompts.ts export",
     "eval:scan": "node --no-warnings apps/supabase/scripts/scan-eval.mjs",
     "eval:recipe": "node --no-warnings apps/supabase/scripts/recipe-eval.mjs",
     "bench:photos": "node --no-warnings apps/supabase/scripts/photo-bench.mjs",

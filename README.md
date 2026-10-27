@@ -201,6 +201,9 @@ the row itself as `service_role`. It has to, because a scan also writes
 `food_scan_items`, which is the pipeline's working notes and is granted to
 `service_role` alone.
 
+**The prompts are hosted in PostHog**, with the copy in the code as the fallback
+([Hosted prompts](#hosted-prompts)).
+
 **Two models, and only the fallback is paid from OpenRouter credits.** Every
 call asks Claude Haiku 5.5 first (`PRIMARY_ROUTE` in `llm.ts`), which runs on
 our own Anthropic key through OpenRouter's BYOK. Anything that goes wrong there
@@ -578,6 +581,12 @@ Locally they go in `apps/supabase/functions/.env`, which is gitignored. Without
 them the `photos` function answers 503 in so many words rather than failing at
 the tap. A local stack still starts, still resets and still scans, because mock
 AI never reads the photo.
+
+One reads the hosted model prompts: `POSTHOG_PROMPTS_API_KEY`, a PostHog
+personal API key scoped to `llm_prompt:read` and nothing else, read by
+`functions/_shared/prompts.ts` (see [Hosted prompts](#hosted-prompts)). Unset,
+every call sends the copy of its prompt that is in the code, which is what the
+local stack does. A copy for scripts lives in `.secrets/posthog-prompts.key`.
 
 A fifth R2 value is optional and local only: `R2_ENDPOINT` overrides the
 Cloudflare host, so you can point the same signing code at any S3, including the
@@ -6222,10 +6231,11 @@ events, 815 weekly users, 338 installs) ×4.3.
 | News (`Announcement Shown`, `CTA Tapped`, `Dismissed`, `Auto Post Toggled`) | 3,000 | One launch card per account per announcement (~1,500 monthly accounts, a shown and a close each), plus the News list and the rare switch on Edit profile |
 | `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
 | `First App Open` | 1,500 | ~340 installs a week |
+| Prompt fetches (`$llm_prompt_fetched`) | 25,000 at most | Logged by PostHog for each read of a hosted prompt. The functions fetch a prompt at most once per isolate per 30 minutes, and Supabase isolates are short-lived, so the ceiling is one per model call: the `$ai_generation` count below, less its retries |
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
-| **Total** | **~272,000 (27%)** | Room for three and a half times today's audience |
+| **Total** | **~297,000 (30%)** | Room for three times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -6625,6 +6635,7 @@ scan's vision call, catalogue pick and nutrition estimate read as one trace.
 | `byok` | `usage.is_byok`: `true` when our Anthropic key paid. An `anthropic/` event with `false` means OpenRouter credits were spent on it, which the routing forbids |
 | `$ai_latency`, `$ai_http_status`, `$ai_is_error`, `$ai_error`, `finish_reason` | Seconds, status and a short error; a JSON parse failure is recorded as `model answer was not valid JSON` so the answer is never quoted |
 | `feature`, `attempt`, `is_backup_model`, `$ai_max_tokens`, `$ai_temperature` | The edge function, which request this was (0 is the first, Haiku unless it is switched off, then the fallback and its one retry), whether Qwen is answering because Haiku failed in the same call (`false` when Haiku was never asked), and the call's settings. Haiku takes no temperature, so its events carry none |
+| `$ai_prompt_name`, `$ai_prompt_version`, `prompt_source`, `prompt_parts` | Which hosted prompt the system message was and which PostHog version (see [Hosted prompts](#hosted-prompts)). `prompt_source` is `posthog`, `bundled` (the code's copy: no key, or PostHog did not answer; no version is sent) or `mixed`. A photo with a note is two prompts, so it also carries `prompt_parts`, e.g. `analyse-photo@2+analyse-photo-note@1` |
 | `$geoip_disable` | Always `true`: the request comes from Supabase's servers, whose location would otherwise overwrite the person's |
 | `distinct_id`, `$session_id`, `$ai_session_id` | The Supabase uuid the app identifies PostHog with, and the app's session from the `X-POSTHOG-SESSION-ID` header the SDK adds to Supabase requests (`addTracingHeaders`). Moderation runs as `ricecal-moderation` and creates no person |
 
@@ -6636,6 +6647,61 @@ quality is judged from `food_scan_items` and the model eval, as before. Capture
 is off on a local stack (`SUPABASE_URL` is not an https production URL). The
 functions bundle `_shared`, so a change there needs every function that imports
 it redeployed.
+
+### Hosted prompts
+
+Every model call's system prompt lives in PostHog prompt management (RiceCal
+project → AI observability → Prompts), one prompt per call, and the functions
+send whichever version the `production` label points at. A prompt can be
+changed, compared against its own `$ai_generation` events and rolled back
+without a deploy.
+
+| Prompt | Call (`$ai_span_name`) | Code copy |
+| --- | --- | --- |
+| `analyse-photo` | `analyse_photo` | `ANALYSE_PHOTO_PROMPT`, `_shared/llm.ts` |
+| `analyse-photo-note` | `analyse_photo`, appended when the person typed a note | `PHOTO_NOTE_RULES`, `_shared/llm.ts` |
+| `describe-meal` | `describe_meal` | `DESCRIBE_MEAL_PROMPT`, `_shared/llm.ts` |
+| `pick-candidate` | `pick_candidate` | `PICK_CANDIDATE_PROMPT`, `_shared/llm.ts` |
+| `estimate-nutrition` | `estimate_nutrition` | `ESTIMATE_NUTRITION_PROMPT`, `_shared/llm.ts` |
+| `interpret-instruction` | `interpret_instruction` | `INTERPRET_INSTRUCTION_PROMPT`, `_shared/llm.ts` |
+| `read-recipe-photo` | `read_recipe_photo` | `READ_RECIPE_PROMPT`, `_shared/recipe.ts` |
+| `describe-recipe` | `describe_recipe` | `DESCRIBE_RECIPE_PROMPT`, `_shared/recipe.ts` |
+| `review-recipe` | `review_recipe` | `REVIEW_RECIPE_PROMPT`, `_shared/recipe.ts` |
+| `suggest-meals` | `suggest_meals` | `SUGGEST_MEAL_PROMPT`, `_shared/suggest.ts` |
+| `moderate-submission` | `moderate_submission` | `REVIEW_PROMPT`, `social/review.ts` |
+
+- `_shared/prompts.ts` fetches each prompt with `POSTHOG_PROMPTS_API_KEY`
+  ([Function secrets](#function-secrets)) and caches it in the isolate for 30
+  minutes, so a label move reaches every call within that. With no key, no
+  answer within 3 seconds, an error, an empty prompt or an answer without a
+  version, the call sends the cached version if there is one and the code's
+  copy if not, and PostHog is not asked about that prompt again for a minute.
+  PostHog being down costs one wait a minute per prompt and degrades a scan to
+  the prompt this deploy shipped with, never to a failure. Calls that start
+  together share one fetch.
+- The one variable is `{{icon_instruction}}`, the list of icon ids from
+  `icons.ts`. It is generated from the icon files, so it is filled in by the
+  code rather than kept as text in PostHog, where it would go stale the day an
+  icon is added. `suggest-meals` says "exactly 7 picks" in its text, which is
+  `PICK_COUNT` in `suggest.ts`: change both together.
+- The route's own line (Haiku's "JSON only" instruction) is added after the
+  hosted text by `requestBody`, as before, and stays in the code.
+- Each call names its prompt where it is made (`hostedSystem(...)`), so a
+  prompt is never matched by its text.
+
+**Changing a prompt.** Make the change in the code copy first, since that is
+what the eval (`pnpm eval:prompts`, `pnpm eval:scan`), the tests and an outage
+use. Then `pnpm prompts:export <name>` prints the template exactly as PostHog
+should hold it. Publish it as a new version: paste it into the prompt in
+PostHog, or use the PostHog MCP's `llma-prompt-update` (its `edits` mode takes
+exact find-and-replace pairs against a `base_version`, which suits a one-line
+change). Run `pnpm prompts:check --label=latest <name>` to prove the new
+version matches the code, then move the `production` label to it
+(`llma-prompt-label-set`, or the prompt's page). Roll back by moving the label back. A change made in
+PostHog first is fine for a quick experiment, but copy it into the code before
+calling it done: `pnpm prompts:check` (production label against the code) is
+non-zero while the two differ. To see which version production is using, filter
+`$ai_generation` by `$ai_prompt_name` and `prompt_source`.
 
 ### Canonical revenue and automatic event table
 
