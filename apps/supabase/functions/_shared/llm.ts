@@ -363,20 +363,63 @@ export function photoDataUrl(photoBase64: string, declared = 'image/jpeg'): stri
  * models fence it in markdown despite `response_format`, and Haiku, which does
  * not honour `json_object` at all, sometimes writes a paragraph first. A
  * failure is still a SyntaxError, which `chatJSON` records without quoting.
+ *
+ * `onRepair` hears how many stray quotes `parseRepairing` took out of keys, so
+ * the caller can count the answers it saved without logging any of them.
  */
-export function parseAnswer(text: string): unknown {
+export function parseAnswer(text: string, onRepair?: (quotes: number) => void): unknown {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]
   const braced = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)
   let failure: unknown
   for (const candidate of [text, fenced, braced]) {
     if (!candidate) continue
     try {
-      return JSON.parse(candidate)
+      return parseRepairing(candidate, onRepair)
     } catch (error) {
       failure ??= error
     }
   }
   throw failure
+}
+
+/** At most this many quotes come out of one answer; past it the answer is not near-JSON. */
+const MAX_KEY_REPAIRS = 3
+
+/**
+ * `JSON.parse`, except that a stray quote inside a key is taken out. Haiku
+ * sometimes writes a key with one quote too many (`""grams": 200` or
+ * `"kc"al_low": 500`), and 2-4% of its photo answers failed on that: the
+ * production log read `error=other at-char=letter prev-char="`, and of V8's
+ * JSON errors only "Expected ':' after property name" fits, which is a key
+ * string that closed with a letter after it. Each one cost a second call to the
+ * fallback model.
+ *
+ * Only that one error, at that one place, is touched: the quote just before the
+ * letter goes, joining the letters back onto the key. If that was not the
+ * fault the answer still fails to parse and the fallback runs as before.
+ */
+function parseRepairing(candidate: string, onRepair?: (quotes: number) => void): unknown {
+  let text = candidate
+  // The first error is the one to report: it is what the model wrote.
+  let first: unknown
+  for (let repairs = 0; ; repairs++) {
+    try {
+      const value = JSON.parse(text)
+      if (repairs > 0) onRepair?.(repairs)
+      return value
+    } catch (error) {
+      first ??= error
+      const message = error instanceof Error ? error.message : ''
+      const at = Number(message.match(/Expected ':' after property name.*position (\d+)/)?.[1])
+      const strayQuote =
+        repairs < MAX_KEY_REPAIRS &&
+        Number.isInteger(at) &&
+        text[at - 1] === '"' &&
+        /\p{L}/u.test(text[at] ?? '')
+      if (!strayQuote) throw first
+      text = text.slice(0, at - 1) + text.slice(at)
+    }
+  }
 }
 
 /** What V8 says went wrong, as one of a fixed set of words. Never the message, which quotes the answer. */
@@ -386,6 +429,8 @@ const PARSE_KINDS: Array<[RegExp, string]> = [
   [/Bad control character/i, 'control-character'],
   [/Expected ',' or '[}\]]'/i, 'expected-comma'],
   [/Expected property name/i, 'expected-name'],
+  // A key string that ended before its colon, usually on a stray quote.
+  [/Expected ':' after property name/i, 'expected-colon'],
   [/Expected double-quoted/i, 'expected-name'],
   [/Unexpected end of JSON/i, 'unexpected-end'],
   [/Unexpected token/i, 'unexpected-token'],
@@ -703,7 +748,9 @@ export async function chatJSON(
       })
     }
     try {
-      return parseAnswer(text)
+      return parseAnswer(text, (quotes) =>
+        console.warn(`[llm] ${span}: ${route.model} answer repaired (stray-key-quotes=${quotes})`),
+      )
     } catch (error) {
       console.warn(`[llm] ${span}: ${route.model} answer did not parse (${answerShape(text)})`)
       throw error
