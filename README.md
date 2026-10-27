@@ -7950,8 +7950,10 @@ called function in the app. Each of them now repeats its range beside the join
 (`and n.log_date between p_from and p_to`), which Postgres does push down, and
 reads a few hundred buffers in about a millisecond. The bound has to come from
 the arguments: one read from a CTE is a join condition again, and a `lateral`
-subquery over the view is not pushed down either. Anything new that joins
-`daily_nutrition` needs the same line.
+subquery over the view is not pushed down either. The two named-range functions
+take both the calendar and the bound from `private.range_start`, so they cannot
+disagree. Anything new that joins `daily_nutrition` needs the same line, and
+`08_reviews.test.sql` fails on a function body that joins it without one.
 
 **A predicate has to match a partial or expression index exactly to use it.**
 `record_social_photo_etags` matched `photo_path = key` while the only index on

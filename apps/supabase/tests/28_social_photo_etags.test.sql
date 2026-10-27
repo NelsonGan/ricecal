@@ -52,6 +52,41 @@ select is(
 select throws_ok($$select public.record_social_photo_etags('[]')$$, '22023', null,
   'anything but an object of tags is refused');
 
+-- Only what `social_photo_claims` would hand the signer: an approved,
+-- unquarantined post, and an avatar under its owner's own prefix. The update is
+-- written to match the partial indexes, so these also pin that it still means
+-- the same rows.
+update public.social_posts set photo_etag = null, review_status = 'pending' where id = :'settled_post';
+select is(
+  public.record_social_photo_etags(jsonb_build_object('meals/' || :'writer' || '/settled.jpg', '"pending-tag"')),
+  0, 'a post waiting for review gets no tag');
+update public.social_posts set review_status = 'approved', quarantined = true where id = :'settled_post';
+select is(
+  public.record_social_photo_etags(jsonb_build_object('meals/' || :'writer' || '/settled.jpg', '"hidden-tag"')),
+  0, 'nor does a quarantined one');
+update public.social_posts set quarantined = false where id = :'settled_post';
+
+-- `set_updated_at` would stamp the avatar as new, so the setup goes around it.
+set local session_replication_role = replica;
+update public.profiles
+   set avatar_path = 'avatars/' || id || '/face.jpg', photo_etag = null,
+       review_status = 'approved', quarantined = false, updated_at = now() - interval '11 minutes'
+ where id = :'writer';
+update public.profiles
+   set avatar_path = 'avatars/' || :'writer' || '/borrowed.jpg', photo_etag = null,
+       review_status = 'approved', quarantined = false, updated_at = now() - interval '11 minutes'
+ where id = :'reader';
+set local session_replication_role = origin;
+select is(
+  public.record_social_photo_etags(jsonb_build_object(
+    'avatars/' || :'writer' || '/face.jpg', '"face-tag"',
+    'avatars/' || :'writer' || '/borrowed.jpg', '"borrowed-tag"')),
+  1, 'an approved avatar under its own prefix is recorded, one under somebody else''s is not');
+select is((select photo_etag from public.profiles where id = :'writer'), '"face-tag"',
+  'the avatar keeps the tag the signer read');
+select is((select photo_etag from public.profiles where id = :'reader'), null,
+  'an avatar path pointing into another account''s prefix is never tagged');
+
 select set_config('request.jwt.claims', json_build_object('sub', :'reader', 'role', 'authenticated')::text, true);
 update public.social_posts set photo_etag = '"settled-tag"' where id = :'settled_post';
 set local role authenticated;
