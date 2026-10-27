@@ -11,6 +11,7 @@ import {
   type GroupThread,
   groupError,
   mergeNewest,
+  reacted,
   THREAD_PAGE,
   useGroupAction,
   useGroupBoardChatLive,
@@ -591,6 +592,12 @@ describe('live chat', () => {
       p_group_id: 'g1',
       p_body: 'on my way',
       p_request_id: 'r1',
+      // Sent as null rather than left out: PostgREST finds a function by the
+      // names it is given, and the server's defaults then do the rest.
+      p_reply_to: null,
+      p_post_id: null,
+      p_workout_id: null,
+      p_activity_id: null,
     })
     await act(async () => {
       sent.settle({ data: 'm2', error: null })
@@ -670,6 +677,192 @@ it('lets a fetch already on its way land before catching up, rather than restart
   await waitFor(() => expect(ids(client)).toHaveLength(2))
   expect(mockRpc).toHaveBeenCalledTimes(2)
   unsubscribe()
+})
+
+describe('replies, food and reactions', () => {
+  it("moves the viewer's reaction and shifts the counts to match", () => {
+    const base = { ...message('m1'), reactions: [{ emoji: '❤️', count: 2 }], my_reaction: null }
+    const hearted = reacted(base, '❤️')
+    expect(hearted.reactions).toEqual([{ emoji: '❤️', count: 3 }])
+    expect(hearted.my_reaction).toBe('❤️')
+    const laughed = reacted(hearted, '😂')
+    expect(laughed.reactions).toEqual([
+      { emoji: '❤️', count: 2 },
+      { emoji: '😂', count: 1 },
+    ])
+    const none = reacted(laughed, null)
+    expect(none.reactions).toEqual([{ emoji: '❤️', count: 2 }])
+    expect(none.my_reaction).toBeNull()
+    // A message from a server older than reactions has none to shift.
+    expect(reacted(message('m2'), '🔥').reactions).toEqual([{ emoji: '🔥', count: 1 }])
+  })
+
+  it('draws a reaction at once and puts it back when refused', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, thread(message('m1')))
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    const sent = pending()
+    mockRpc.mockReturnValueOnce(sent.request)
+    let done!: Promise<unknown>
+    await act(async () => {
+      done = result.current
+        .mutateAsync({ action: 'reactMessage', groupId: 'g1', messageId: 'm1', emoji: '❤️' })
+        .catch(() => undefined)
+    })
+    expect(mockRpc).toHaveBeenCalledWith('set_group_message_reaction', {
+      p_message_id: 'm1',
+      p_emoji: '❤️',
+    })
+    const drawn = client.getQueryData<GroupThread>(messagesKey)?.messages[0]
+    expect(drawn?.my_reaction).toBe('❤️')
+    expect(drawn?.reactions).toEqual([{ emoji: '❤️', count: 1 }])
+    mockRpc.mockReturnValue(response([message('m1')]))
+    await act(async () => {
+      sent.settle({ data: null, error: { message: 'no' } })
+      await done
+    })
+    expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0]?.my_reaction).toBeUndefined()
+  })
+
+  it('takes a reaction back with null', async () => {
+    const { wrapper } = setup()
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    mockRpc.mockReturnValue(response(null))
+    await act(async () => {
+      await result.current.mutateAsync({
+        action: 'reactMessage',
+        groupId: 'g1',
+        messageId: 'm1',
+        emoji: null,
+      })
+    })
+    expect(mockRpc).toHaveBeenCalledWith('set_group_message_reaction', {
+      p_message_id: 'm1',
+      p_emoji: null,
+    })
+  })
+
+  it('refetches for a reaction on a message it holds, and ignores the rest', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, thread(message('m1')))
+    const query = watchMessages(client)
+    const unsubscribe = query.subscribe(() => undefined)
+    await renderHook(() => useGroupChatLive('g1'), { wrapper })
+
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('reacted', { ids: ['elsewhere'] }))
+    expect(mockRpc).not.toHaveBeenCalled()
+
+    mockRpc.mockReturnValue(
+      response([{ ...message('m1'), reactions: [{ emoji: '😂', count: 1 }] }]),
+    )
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('reacted', { ids: ['m1'] }))
+    await waitFor(() =>
+      expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0]?.reactions).toEqual([
+        { emoji: '😂', count: 1 },
+      ]),
+    )
+    unsubscribe()
+  })
+
+  it('rereads one older message for a reaction past the newest page', async () => {
+    const { client, wrapper } = setup()
+    const held = Array.from({ length: THREAD_PAGE + 2 }, (_, index) =>
+      message(`m${index}`, false, index),
+    )
+    client.setQueryData(messagesKey, { messages: held, more: true })
+    await renderHook(() => useGroupChatLive('g1'), { wrapper })
+    mockRpc.mockReturnValue(
+      response([{ ...message('m0', false, 0), reactions: [{ emoji: '❤️', count: 1 }] }]),
+    )
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('reacted', { ids: ['m0'] }))
+    await waitFor(() =>
+      expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0]?.reactions).toEqual([
+        { emoji: '❤️', count: 1 },
+      ]),
+    )
+    // Asked as the one message before the one after it, not as a new newest page.
+    expect(mockRpc).toHaveBeenCalledWith('group_messages', {
+      p_group_id: 'g1',
+      p_before_at: held[1]?.created_at,
+      p_before_id: 'm1',
+      p_limit: 1,
+    })
+    expect(ids(client)).toHaveLength(THREAD_PAGE + 2)
+  })
+
+  it("sends a health store's run as an activity and a logger workout as a workout", async () => {
+    const { wrapper } = setup()
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    mockRpc.mockReturnValue(response('m9'))
+    await act(async () => {
+      await result.current.mutateAsync({
+        action: 'message',
+        groupId: 'g1',
+        body: '',
+        requestId: 'r9',
+        workout: { source: 'activity', id: 'a1' },
+      })
+      await result.current.mutateAsync({
+        action: 'message',
+        groupId: 'g1',
+        body: '',
+        requestId: 'r10',
+        workout: { source: 'workout', id: 'w1' },
+      })
+    })
+    expect(mockRpc).toHaveBeenCalledWith(
+      'send_group_message',
+      expect.objectContaining({ p_activity_id: 'a1', p_workout_id: null, p_post_id: null }),
+    )
+    expect(mockRpc).toHaveBeenCalledWith(
+      'send_group_message',
+      expect.objectContaining({ p_workout_id: 'w1', p_activity_id: null }),
+    )
+  })
+
+  it('sends a reply and a shared food, and keeps both drawn once sent', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, thread(message('m1')))
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    const food = {
+      post_id: 'p1',
+      name: 'Nasi lemak',
+      icon_set: null,
+      icon_name: null,
+      photo_path: null,
+      serving_label: null,
+      logged_at: '2026-10-21T04:00:00Z',
+      kcal: 640,
+      carbs_g: 70,
+      protein_g: 20,
+      fat_g: 30,
+    }
+    const quote = { id: 'm1', author: message('m1').author, body: 'message m1', is_food: false }
+    mockRpc.mockReturnValueOnce(response('m2')).mockReturnValue(response([]))
+    await act(async () => {
+      await result.current.mutateAsync({
+        action: 'message',
+        groupId: 'g1',
+        body: '',
+        requestId: 'r1',
+        replyTo: 'm1',
+        postId: 'p1',
+        sent: { reply_to: quote, food },
+      })
+    })
+    expect(mockRpc).toHaveBeenCalledWith('send_group_message', {
+      p_group_id: 'g1',
+      p_body: '',
+      p_request_id: 'r1',
+      p_reply_to: 'm1',
+      p_post_id: 'p1',
+      p_workout_id: null,
+      p_activity_id: null,
+    })
+    const sent = client.getQueryData<GroupThread>(messagesKey)?.messages.at(-1)
+    expect(sent?.food?.name).toBe('Nasi lemak')
+    expect(sent?.reply_to?.id).toBe('m1')
+  })
 })
 
 describe('reading an open chat as messages arrive', () => {

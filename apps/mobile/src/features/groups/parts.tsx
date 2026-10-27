@@ -1,3 +1,5 @@
+import { useRouter } from 'expo-router'
+import { useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { storedImageSource, useMealPhotoUrl, useUserId } from '@/data'
@@ -10,7 +12,7 @@ import {
 } from '@/data/groups'
 import { MealPhoto } from '@/features/shared'
 import { SocialPhoto } from '@/features/social/components'
-import { Avatar, Icon, type IconProps, useToast } from '@/ui'
+import { Avatar, Icon, type IconProps, Tappable, useToast } from '@/ui'
 
 /** The drawings a group can wear, from the food set every entry already uses. */
 export const GROUP_ICONS = [
@@ -38,6 +40,68 @@ export function PersonAvatar({ person, size = 'sm' }: { person: GroupPerson; siz
   return <SocialPhoto path={person.avatar_path} avatar size={size} label={person.name} />
 }
 
+/** Opens someone's feed profile, the same screen the feed opens for them. */
+export function useOpenProfile() {
+  const router = useRouter()
+  return useCallback(
+    (personId: string) =>
+      router.push({ pathname: '/social/profile/[id]', params: { id: personId } }),
+    [router],
+  )
+}
+
+/**
+ * Opens a group member's workout as its own page draws it. The viewer's own
+ * opens their own page instead, with its notes, records and menu.
+ */
+export function useOpenGroupWorkout(groupId: string) {
+  const router = useRouter()
+  const viewer = useUserId()
+  return useCallback(
+    (workout: { source: 'workout' | 'activity'; id: string }, ownerId: string) => {
+      if (ownerId === viewer) {
+        router.push(
+          workout.source === 'workout'
+            ? { pathname: '/workout/[id]', params: { id: workout.id } }
+            : { pathname: '/activity/workout/[id]', params: { id: workout.id } },
+        )
+        return
+      }
+      router.push({
+        pathname: '/group/workout',
+        params: { group: groupId, source: workout.source, id: workout.id },
+      })
+    },
+    [router, groupId, viewer],
+  )
+}
+
+/** A face that opens its owner's feed, as a face does in the feed itself. */
+export function PersonAvatarLink({
+  person,
+  size = 'sm',
+}: {
+  person: GroupPerson
+  size?: 'xs' | 'sm'
+}) {
+  const { t } = useTranslation('groups')
+  const open = useOpenProfile()
+  return (
+    <Tappable
+      haptics={false}
+      hitSlop={6}
+      onPress={() => open(person.id)}
+      accessibilityRole="button"
+      accessibilityLabel={t('openProfile', { name: person.name })}
+    >
+      <PersonAvatar person={person} size={size} />
+    </Tappable>
+  )
+}
+
+/** What a picture needs of an entry or a shared food. */
+type Pictured = Pick<BoardEntry, 'name' | 'photo_path' | 'icon_set' | 'icon_name'>
+
 /**
  * An entry's picture: the photo when there is one, its drawing otherwise. The
  * viewer's own photos are signed as their own; a friend's go through the social
@@ -48,7 +112,7 @@ export function EntryPicture({
   ownerId,
   iconSize = 40,
 }: {
-  entry: BoardEntry
+  entry: Pictured
   ownerId: string
   iconSize?: number
 }) {
@@ -94,27 +158,40 @@ export function shortDuration(seconds: number): string {
 
 /**
  * The group mutation with its refusals turned into a toast. `run` rethrows so a
- * sheet can stay open; `press` swallows for a plain button.
+ * sheet can stay open; `press` swallows for a plain button. Both keep their
+ * identity across renders, so a list row handed one is not redrawn for it.
  */
 export function useGroupTask() {
   const mutation = useGroupAction()
   const toast = useToast()
   const { t } = useTranslation('groups')
-  const run = async (input: Parameters<typeof mutation.mutateAsync>[0]) => {
-    try {
-      return await mutation.mutateAsync(input)
-    } catch (error) {
-      const reason = groupError(error)
-      toast.show({
-        title: t(`errors.${reason && reason in ERRORS ? (reason as ErrorKey) : 'generic'}`),
-        tone: 'error',
-      })
-      throw error
-    }
-  }
-  const press = (input: Parameters<typeof mutation.mutateAsync>[0]) => {
-    void run(input).catch(() => undefined)
-  }
+  // Read when a task fails, not when the callbacks are made, so they need not
+  // change when the toast or the language does.
+  const latest = useRef({ toast, t })
+  latest.current = { toast, t }
+  const { mutateAsync } = mutation
+  const run = useCallback(
+    async (input: Parameters<typeof mutateAsync>[0]) => {
+      try {
+        return await mutateAsync(input)
+      } catch (error) {
+        const reason = groupError(error)
+        const { toast, t } = latest.current
+        toast.show({
+          title: t(`errors.${reason && reason in ERRORS ? (reason as ErrorKey) : 'generic'}`),
+          tone: 'error',
+        })
+        throw error
+      }
+    },
+    [mutateAsync],
+  )
+  const press = useCallback(
+    (input: Parameters<typeof mutateAsync>[0]) => {
+      void run(input).catch(() => undefined)
+    },
+    [run],
+  )
   return { ...mutation, run, press }
 }
 

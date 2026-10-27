@@ -1,11 +1,13 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Database } from '@/lib/database.types'
+import type { Database, Tables } from '@/lib/database.types'
 import { onGroupChatPush } from '@/lib/groupChatPushes'
 import { listen } from '@/lib/realtime'
 import { supabase } from '@/lib/supabase'
+import { type ActivitySession, toSession } from './activity'
 import { keys } from './keys'
 import { useUserId } from './session'
+import { type WorkoutDetail, workoutDetailFrom } from './workouts'
 
 /**
  * Groups read members' diaries live on the server, so nothing here copies an
@@ -21,7 +23,7 @@ import { useUserId } from './session'
 export type GroupMeal = Database['public']['Enums']['group_meal']
 export const GROUP_MEALS: readonly GroupMeal[] = ['breakfast', 'lunch', 'dinner']
 /** The most people a group holds, as the database enforces it. */
-export const GROUP_CAPACITY = 10
+export const GROUP_CAPACITY = 20
 
 export type GroupPerson = {
   id: string
@@ -51,6 +53,18 @@ export type GroupInvite = {
 
 type PublicGroup = { id: string; name: string; icon_name: string; member_count: number }
 
+/**
+ * The invites and public lists report a group of ten to nineteen as nine in
+ * `member_count`, so an app from before twenty-member groups, which takes ten
+ * as full, keeps its Join live. The true size is `member_total`; a server
+ * from before it sends only the count, which was true then.
+ */
+function trueSize<T extends { member_count: number; member_total?: number }>(rows: T[]): T[] {
+  return rows.map((row) =>
+    row.member_total === undefined ? row : { ...row, member_count: row.member_total },
+  )
+}
+
 export type BoardEntry = {
   id: string
   meal: GroupMeal
@@ -70,6 +84,15 @@ export type BoardEntry = {
   mine: -1 | 0 | 1
 }
 
+/** One of a member's workouts on a board day, enough to name it and open it. */
+export type BoardWorkout = {
+  id: string
+  source: 'workout' | 'activity'
+  name: string | null
+  kind: string
+  duration_s: number
+}
+
 export type BoardMember = {
   person: GroupPerson
   entries: BoardEntry[]
@@ -81,6 +104,8 @@ export type BoardMember = {
     kind: string
     duration_s: number
     count: number
+    /** The day's workouts, first one first, to open. Missing from an older server. */
+    all?: BoardWorkout[]
   } | null
 }
 
@@ -103,12 +128,69 @@ export type ChatSummary = {
   last: { author: GroupPerson; body: string } | null
 }
 
-export type GroupMessage = {
+/** The emoji a message can be reacted with, as the database allows them. */
+export const MESSAGE_REACTIONS = ['❤️', '😂', '😮', '😢', '🔥', '👍'] as const
+export type MessageReaction = (typeof MESSAGE_REACTIONS)[number]
+
+/** A food shared into the chat: the post's meal as it is now. */
+export type ChatFood = {
+  post_id: string
+  name: string
+  icon_set: string | null
+  icon_name: string | null
+  photo_path: string | null
+  serving_label: string | null
+  logged_at: string
+  kcal: number
+  carbs_g: number
+  protein_g: number
+  fat_g: number
+}
+
+/**
+ * A workout shared into the chat, read live: one from the app's own logger
+ * (`source: 'workout'`, with its exercises and sets) or one a health store
+ * recorded (`source: 'activity'`, a run or a game, with its distance).
+ */
+export type ChatWorkout = {
+  source: 'workout' | 'activity'
+  id: string
+  /** Its own name, or a health store's label; null for a bare kind. */
+  name: string | null
+  kind: string
+  started_at: string
+  duration_s: number
+  kcal: number | null
+  distance_m: number | null
+  sets: number | null
+  exercises: number | null
+}
+
+/** The message a reply answers, as the reply quotes it. */
+export type ChatQuote = {
   id: string
   author: GroupPerson
   body: string
+  is_food: boolean
+}
+
+export type GroupMessage = {
+  id: string
+  author: GroupPerson
+  /** Text, or for a food the name and calories, which is all an older app reads. */
+  body: string
   created_at: string
   mine: boolean
+  /**
+   * The rest is missing from a server older than replies, food and reactions,
+   * and from a message drawn before the server answered.
+   */
+  reply_to?: ChatQuote | null
+  /** Null when the post was withdrawn; the body still says what it was. */
+  food?: ChatFood | null
+  workout?: ChatWorkout | null
+  reactions?: { emoji: string; count: number }[]
+  my_reaction?: string | null
 }
 
 /** The group's one thread as far back as it has been scrolled, oldest first. */
@@ -168,6 +250,8 @@ const summaryKey = (userId: string, groupId: string) =>
   keys.groupsRead(userId, 'group_chat_summary', { groupId })
 const detailsKey = (userId: string, groupId: string) =>
   keys.groupsRead(userId, 'group_details', { groupId })
+const suggestionsKey = (userId: string, groupId: string) =>
+  keys.groupsRead(userId, 'group_invite_suggestions', { groupId })
 
 export function useMyGroups() {
   const userId = useUserId()
@@ -184,7 +268,7 @@ export function useGroupInvites(enabled: boolean) {
   return useQuery({
     queryKey: keys.groupsRead(userId, 'my_group_invites'),
     queryFn: async ({ signal }) =>
-      (await rpc('my_group_invites', undefined, signal)) as unknown as GroupInvite[],
+      trueSize((await rpc('my_group_invites', undefined, signal)) as unknown as GroupInvite[]),
     enabled,
     ...SHORT,
   })
@@ -211,11 +295,13 @@ export function usePublicGroups(query: string) {
   return useQuery({
     queryKey: keys.groupsRead(userId, 'public_groups', { query: trimmed }),
     queryFn: async ({ signal }) =>
-      (await rpc(
-        'public_groups',
-        { p_query: trimmed || undefined, p_limit: 20 },
-        signal,
-      )) as unknown as PublicGroup[],
+      trueSize(
+        (await rpc(
+          'public_groups',
+          { p_query: trimmed || undefined, p_limit: 20 },
+          signal,
+        )) as unknown as PublicGroup[],
+      ),
     placeholderData: (previous) => previous,
     ...SHORT,
   })
@@ -352,6 +438,37 @@ export function useGroupThread(groupId: string, live: boolean) {
   return { thread, loadOlder, loadingOlder }
 }
 
+/**
+ * Reads the one message just before `after` again and lays it over the held
+ * copy, for a change (a reaction) to a message older than the newest page.
+ * Only if what comes back is the same message: one hidden in between would
+ * make the page before `after` a different one.
+ */
+async function rereadMessage(
+  client: QueryClient,
+  userId: string,
+  groupId: string,
+  after: GroupMessage | undefined,
+) {
+  if (!after) return
+  try {
+    const [fresh] = (await rpc('group_messages', {
+      p_group_id: groupId,
+      p_before_at: after.created_at,
+      p_before_id: after.id,
+      p_limit: 1,
+    })) as unknown as GroupMessage[]
+    if (!fresh) return
+    patchThread(client, userId, groupId, (messages) =>
+      messages.some((message) => message.id === fresh.id)
+        ? messages.map((message) => (message.id === fresh.id ? fresh : message))
+        : messages,
+    )
+  } catch {
+    // The next open reads it.
+  }
+}
+
 /** Every message held for a group's thread, changed in place. */
 function patchThread(
   client: QueryClient,
@@ -370,14 +487,25 @@ function patchThread(
  * The viewer's own message as drawn before the server's list has it. Only the
  * author's id is read for a row of one's own, to run bubbles together.
  */
-export function ownMessage(userId: string, id: string, body: string, createdAt: string) {
+export function ownMessage(
+  userId: string,
+  id: string,
+  body: string,
+  createdAt: string,
+  extra?: Pick<GroupMessage, 'reply_to' | 'food' | 'workout'>,
+): GroupMessage {
   return {
     id,
     author: { id: userId, name: '', handle: '', avatar_path: null },
     body,
     created_at: createdAt,
     mine: true,
-  } satisfies GroupMessage
+    reply_to: extra?.reply_to ?? null,
+    food: extra?.food ?? null,
+    workout: extra?.workout ?? null,
+    reactions: [],
+    my_reaction: null,
+  }
 }
 
 /** The ids a chat broadcast names. The database sends nothing else. */
@@ -417,14 +545,15 @@ export function useGroupChatLive(groupId: string): boolean {
       if (pending) void pending.then(again, again)
       else again()
     }
-    const sending = () =>
+    const pendingOf = (action: GroupAction['action']) =>
       client
         .getMutationCache()
         .findAll({ status: 'pending' })
         .some((mutation) => {
           const input = mutation.state.variables as GroupAction | undefined
-          return input?.action === 'message' && input.groupId === groupId
+          return input?.action === action && 'groupId' in input && input.groupId === groupId
         })
+    const sending = () => pendingOf('message')
     const stop = listen(chatTopic(groupId), {
       onLive: (next) => {
         setLive(next)
@@ -444,6 +573,23 @@ export function useGroupChatLive(groupId: string): boolean {
           if (held && ids.every((id) => held.some((message) => message.id === id))) return
           if (sending()) return
           refetch()
+        } else if (event === 'reacted') {
+          // Only messages held have counts to redraw, and the viewer's own
+          // reaction is already drawn and refetches when it lands.
+          const held = client.getQueryData<GroupThread>(key)?.messages
+          if (!held || pendingOf('reactMessage')) return
+          const at = ids
+            .map((id) => held.findIndex((message) => message.id === id))
+            .filter((index) => index >= 0)
+          if (!at.length) return
+          // A refetch reads the newest page, which redraws what is in it. One
+          // scrolled back past it is read on its own, as the one message
+          // before the message after it, and patched in place.
+          const newestPage = held.length - THREAD_PAGE
+          if (at.some((index) => index >= newestPage)) refetch()
+          for (const index of at.filter((index) => index < newestPage)) {
+            void rereadMessage(client, userId, groupId, held[index + 1])
+          }
         }
       },
     })
@@ -602,6 +748,188 @@ export function useReadAsItArrives(
   }, [read, groupId, latestFromOthers, opened, watching])
 }
 
+/**
+ * People to invite with one tap: the viewer's follows and followers who are
+ * not in the group or invited yet, mutual follows first.
+ */
+export function useGroupInviteSuggestions(groupId: string, enabled: boolean) {
+  const userId = useUserId()
+  return useQuery({
+    queryKey: suggestionsKey(userId, groupId),
+    queryFn: async ({ signal }) =>
+      (await rpc(
+        'group_invite_suggestions',
+        { p_group_id: groupId, p_limit: 5 },
+        signal,
+      )) as unknown as GroupPerson[],
+    enabled,
+    ...SHORT,
+  })
+}
+
+/** A fellow member's workout, as its own page draws it. */
+export type GroupWorkoutView = {
+  owner: GroupPerson
+} & (
+  | { workout: WorkoutDetail; session?: undefined }
+  | { session: ActivitySession; workout?: undefined }
+)
+
+/**
+ * Someone's workout opened from the board or a chat card: the rows the
+ * owner's own page reads, less their notes and records, through
+ * `group_workout_detail`, which checks the two share the group.
+ */
+export function useGroupWorkout(groupId: string, source: 'workout' | 'activity', id: string) {
+  const userId = useUserId()
+  return useQuery({
+    queryKey: keys.groupsRead(userId, 'group_workout_detail', { groupId, source, id }),
+    queryFn: async ({ signal }): Promise<GroupWorkoutView> => {
+      const answer = (await rpc(
+        'group_workout_detail',
+        { p_group_id: groupId, p_source: source, p_id: id },
+        signal,
+      )) as unknown as {
+        owner: GroupPerson
+        session?: Tables<'activity_sessions'>
+        summary?: Parameters<typeof workoutDetailFrom>[0]['summary']
+        exercises?: Tables<'workout_exercises'>[]
+        sets?: Parameters<typeof workoutDetailFrom>[0]['sets']
+        heart?: Parameters<typeof workoutDetailFrom>[0]['heart']
+      }
+      if (answer.session) return { owner: answer.owner, session: toSession(answer.session) }
+      if (!answer.summary) throw new Error('Workout unavailable')
+      return {
+        owner: answer.owner,
+        workout: workoutDetailFrom({
+          summary: answer.summary,
+          exercises: answer.exercises ?? [],
+          sets: answer.sets ?? [],
+          heart: answer.heart ?? null,
+        }),
+      }
+    },
+    ...SHORT,
+  })
+}
+
+/** A food post of the viewer's own, as the chat's food picker lists it. */
+export type RecentFoodPost = {
+  id: string
+  food_name: string | null
+  icon_set: string | null
+  icon_name: string | null
+  photo_path: string | null
+  kcal: number | null
+  carbs_g: number | null
+  protein_g: number | null
+  fat_g: number | null
+  created_at: string
+  review_status: string
+  quarantined: boolean
+}
+
+/**
+ * The viewer's last five food posts that can still be shared, which the chat's
+ * + sends as food cards. One withdrawn by moderation is left out: the server
+ * refuses to share it, and the send would sit there failed.
+ */
+export function useRecentFoodPosts(enabled: boolean) {
+  const userId = useUserId()
+  return useQuery({
+    queryKey: keys.groupsRead(userId, 'recent_food_posts'),
+    queryFn: async ({ signal }) => {
+      const { data, error } = await supabase
+        .rpc('social_profile_posts', { p_user_id: userId, p_limit: 10, p_kinds: ['food'] })
+        .abortSignal(signal)
+      if (error) throw error
+      return ((data ?? []) as RecentFoodPost[])
+        .filter(
+          (post) =>
+            post.food_name !== null && post.review_status === 'approved' && !post.quarantined,
+        )
+        .slice(0, 5)
+    },
+    enabled,
+    ...SHORT,
+  })
+}
+
+/**
+ * The viewer's last five workouts to share from the chat's +: the logger's and
+ * a health store's together, newest first. A logger workout saved to Apple
+ * Health comes back as a session too, and is listed once, as the logger's.
+ * Demo data is left out, as it is from sharing on its own.
+ */
+export function useRecentWorkouts(enabled: boolean) {
+  const userId = useUserId()
+  return useQuery({
+    queryKey: keys.groupsRead(userId, 'recent_workouts'),
+    queryFn: async ({ signal }): Promise<ChatWorkout[]> => {
+      const [logged, recorded] = await Promise.all([
+        supabase
+          .from('workouts')
+          .select('id, name, started_at, duration_s, kcal, health_workout_id')
+          .eq('user_id', userId)
+          .order('started_at', { ascending: false })
+          .limit(5)
+          .abortSignal(signal),
+        supabase
+          .from('activity_sessions')
+          .select(
+            'id, kind, kind_label, started_at, duration_s, active_kcal, distance_m, external_id',
+          )
+          .eq('user_id', userId)
+          .neq('provider', 'demo')
+          .order('started_at', { ascending: false })
+          .limit(10)
+          .abortSignal(signal),
+      ])
+      if (logged.error) throw logged.error
+      if (recorded.error) throw recorded.error
+      const copies = new Set(
+        (logged.data ?? []).map((row) => row.health_workout_id).filter((id) => id !== null),
+      )
+      return [
+        ...(logged.data ?? []).map(
+          (row): ChatWorkout => ({
+            source: 'workout',
+            id: row.id,
+            name: row.name,
+            kind: 'strength',
+            started_at: row.started_at,
+            duration_s: row.duration_s ?? 0,
+            kcal: row.kcal,
+            distance_m: null,
+            sets: null,
+            exercises: null,
+          }),
+        ),
+        ...(recorded.data ?? [])
+          .filter((row) => !copies.has(row.external_id))
+          .map(
+            (row): ChatWorkout => ({
+              source: 'activity',
+              id: row.id,
+              name: row.kind_label?.trim() || null,
+              kind: row.kind,
+              started_at: row.started_at,
+              duration_s: row.duration_s,
+              kcal: row.active_kcal,
+              distance_m: row.distance_m,
+              sets: null,
+              exercises: null,
+            }),
+          ),
+      ]
+        .sort((a, b) => b.started_at.localeCompare(a.started_at))
+        .slice(0, 5)
+    },
+    enabled,
+    ...SHORT,
+  })
+}
+
 export function useGroupDetails(groupId: string) {
   const userId = useUserId()
   return useQuery({
@@ -624,7 +952,27 @@ type GroupAction =
   | { action: 'react'; entryId: string; value: -1 | 0 | 1 }
   | { action: 'move'; entryId: string; meal: GroupMeal }
   | { action: 'nudge'; groupId: string; day: string; targetId: string; meal: GroupMeal }
-  | { action: 'message'; groupId: string; body: string; requestId: string }
+  | {
+      action: 'message'
+      groupId: string
+      body: string
+      requestId: string
+      /** The message this answers. */
+      replyTo?: string
+      /** One of the viewer's own food posts to share; the body may then be empty. */
+      postId?: string
+      /** One of the viewer's own workouts to share, from the logger or a health store. */
+      workout?: Pick<ChatWorkout, 'source' | 'id'>
+      /** The quote and the card as drawn while sending, kept on the row until a refetch. */
+      sent?: Pick<GroupMessage, 'reply_to' | 'food' | 'workout'>
+    }
+  | {
+      action: 'reactMessage'
+      groupId: string
+      messageId: string
+      /** Null takes the viewer's reaction back. */
+      emoji: MessageReaction | null
+    }
   | { action: 'deleteMessage'; groupId: string; messageId: string }
   | { action: 'reportMessage'; groupId: string; messageId: string }
   | { action: 'reportGroup'; groupId: string }
@@ -711,10 +1059,19 @@ async function perform(input: GroupAction): Promise<unknown> {
         p_group_id: input.groupId,
         p_body: input.body,
         p_request_id: input.requestId,
+        p_reply_to: unset(input.replyTo),
+        p_post_id: unset(input.postId),
+        p_workout_id: unset(input.workout?.source === 'workout' ? input.workout.id : null),
+        p_activity_id: unset(input.workout?.source === 'activity' ? input.workout.id : null),
       })
       notify('message', id)
       return id
     }
+    case 'reactMessage':
+      return await rpc('set_group_message_reaction', {
+        p_message_id: input.messageId,
+        p_emoji: unset<string>(input.emoji),
+      })
     case 'deleteMessage':
       return await rpc('delete_group_message', { p_message_id: input.messageId })
     case 'reportMessage':
@@ -768,6 +1125,22 @@ function findEntry(client: QueryClient, userId: string, entryId: string): BoardE
     }
   }
   return undefined
+}
+
+/** A message with the viewer's reaction moved to `emoji`, its counts shifted to match. */
+export function reacted(message: GroupMessage, emoji: string | null): GroupMessage {
+  const from = message.my_reaction ?? null
+  if (from === emoji) return message
+  const counts = new Map((message.reactions ?? []).map((r) => [r.emoji, r.count]))
+  if (from) counts.set(from, (counts.get(from) ?? 1) - 1)
+  if (emoji) counts.set(emoji, (counts.get(emoji) ?? 0) + 1)
+  return {
+    ...message,
+    my_reaction: emoji,
+    reactions: [...counts]
+      .filter(([, count]) => count > 0)
+      .map(([key, count]) => ({ emoji: key, count })),
+  }
 }
 
 /** Puts back exactly what an optimistic write changed. */
@@ -824,6 +1197,23 @@ export function useGroupAction() {
               shift(entry, entry.mine, before.mine),
             )
         }
+        case 'reactMessage': {
+          // Drawn at once, as a heart is on Instagram; a refusal puts the
+          // message back as it was.
+          const key = messagesKey(userId, input.groupId)
+          await client.cancelQueries({ queryKey: key })
+          const before = client
+            .getQueryData<GroupThread>(key)
+            ?.messages.find((message) => message.id === input.messageId)
+          if (!before) return undefined
+          const swap = (message: GroupMessage) =>
+            message.id === input.messageId ? reacted(before, input.emoji) : message
+          patchThread(client, userId, input.groupId, (messages) => messages.map(swap))
+          return () =>
+            patchThread(client, userId, input.groupId, (messages) =>
+              messages.map((message) => (message.id === input.messageId ? before : message)),
+            )
+        }
         case 'read':
           // Reading clears the bar's count; nothing to refetch.
           client.setQueryData<ChatSummary>(
@@ -861,6 +1251,10 @@ export function useGroupAction() {
         case 'react':
         case 'move':
           return
+        case 'reactMessage':
+          // The counts others added meanwhile come with the refetch.
+          void client.invalidateQueries({ queryKey: messagesKey(userId, input.groupId) })
+          return
         case 'read':
           if (input.refresh) {
             void client.invalidateQueries({ queryKey: summaryKey(userId, input.groupId) })
@@ -881,7 +1275,10 @@ export function useGroupAction() {
             patchThread(client, userId, input.groupId, (messages) =>
               messages.some((message) => message.id === data)
                 ? messages
-                : [...messages, ownMessage(userId, data, input.body, new Date().toISOString())],
+                : [
+                    ...messages,
+                    ownMessage(userId, data, input.body, new Date().toISOString(), input.sent),
+                  ],
             )
           }
           if (input.action === 'message') {
@@ -899,7 +1296,7 @@ export function useGroupAction() {
           return
         }
         case 'invite':
-          refresh(input.groupId, 'group_details')
+          refresh(input.groupId, 'group_details', 'group_invite_suggestions')
           return
         case 'preferences':
           refresh(input.groupId, 'group_details', ...(input.order ? ['group_board'] : []))
