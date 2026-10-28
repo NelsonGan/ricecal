@@ -561,6 +561,40 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # `pod install` downloads React Native's prebuilt iOS frameworks (about
+      # 200 MB) with a bare curl: no retry, no stall timeout. The 2026-10-28
+      # release died that way, one tarball crawling at 7 KB/s for 21 minutes
+      # before the connection dropped. React Native looks in
+      # ~/Library/Caches/ReactNative first, so this fills that folder in
+      # advance with retries, a stall timeout and SHA-1 checks, and keeps it
+      # between runs. Saved straight after the prefetch rather than at the end,
+      # because a cache saved at the end of a failed job is not saved at all.
+      - name: Resolve React Native version
+        if: matrix.platform == 'ios'
+        id: rn
+        working-directory: apps/mobile
+        run: echo "version=$(node -p "require('react-native/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Restore React Native artifacts
+        if: matrix.platform == 'ios'
+        id: rn-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/Library/Caches/ReactNative
+          key: ${{ runner.os }}-rn-artifacts-${{ steps.rn.outputs.version }}
+
+      - name: Prefetch React Native artifacts
+        if: matrix.platform == 'ios'
+        run: .github/scripts/prefetch-react-native-ios.sh "${{ steps.rn.outputs.version }}"
+
+      - name: Save React Native artifacts
+        if: matrix.platform == 'ios' && steps.rn-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ~/Library/Caches/ReactNative
+          key: ${{ runner.os }}-rn-artifacts-${{ steps.rn.outputs.version }}
+
       - name: Resolve output path
         id: output
         shell: bash

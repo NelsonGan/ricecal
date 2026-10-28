@@ -7310,6 +7310,17 @@ image with Xcode 27.1 pinned; every `macos-*` image stops at Xcode 26. A local
 Xcode 27.1 build looks right on the simulator either way, so check which Xcode
 CI used before blaming the layout.
 
+**The iOS deploy fetches React Native's prebuilt frameworks itself.**
+`pod install` downloads about 200 MB of them with a bare `curl` (no retry, no
+stall timeout), and one crawled at 7 KB/s for 21 minutes and failed the
+2026-10-28 release with "Failed to download reactnative-core-…". React Native
+reads `~/Library/Caches/ReactNative` first, so
+`.github/scripts/prefetch-react-native-ios.sh` fills it before the build, with
+retries, a stall timeout, both Maven mirrors and a SHA-1 check, and the job
+keeps that folder in the Actions cache keyed on the React Native version. A
+"Cache hit" for both `reactnative-core` tarballs in the pod install log is that
+working.
+
 ### Icons
 
 593 illustrated icons across six sets (`ui`, `system`, `body`, `food`, `dishes`,
