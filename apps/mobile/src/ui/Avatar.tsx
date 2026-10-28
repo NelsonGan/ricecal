@@ -2,7 +2,7 @@ import { Image } from 'expo-image'
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
 
-import { radius as radiusScale, slab } from '@/theme/tokens'
+import { radius as radiusScale } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Icon } from './Icon'
@@ -114,12 +114,12 @@ export function Avatar({
 
   return (
     <Squish
-      // A photo is already the whole surface. Leaving the accent slab under it
-      // exposes a green strip that reads as part of the picture.
-      depth={uri ? 0 : slab.md}
+      // Flat, with or without a picture. A raised slab under a drawn face made
+      // it taller than a photo beside it, so a row of mixed faces never lined
+      // up, and a Pro ring framed the face and left the slab hanging below.
+      depth={0}
       radius={metrics.radius}
       containerClassName={cn('self-start', className)}
-      slabClassName={palette.slab}
       className={cn('items-center justify-center overflow-hidden', palette.fill)}
       accessibilityLabel={accessibilityLabel ?? name}
     >
@@ -203,10 +203,6 @@ export function AvatarGroup({
             width: box,
             height: box,
             marginLeft: shown.length ? -10 : 0,
-            // Avatars are raised on a slab, so their visible face sits `slab.md`
-            // above the bottom of their box. Without the same offset this flat
-            // tile hangs low and the row looks broken.
-            marginBottom: slab.md,
           }}
         >
           <Text variant="caption">+{overflow}</Text>
