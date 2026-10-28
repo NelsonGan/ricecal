@@ -44,3 +44,37 @@ describe('paywallDue', () => {
     expect(paywallDue(USER, NOW - NUDGE_INTERVAL_MS)).toBe(true)
   })
 })
+
+describe('reachedGoal', () => {
+  const { reachedGoal } = jest.requireActual<typeof import('../nudge')>('../nudge')
+  it('reaches a lower goal from above, and a higher one from below', () => {
+    expect(reachedGoal([{ kg: 80 }, { kg: 72 }, { kg: 69.9 }], 70)).toBe(true)
+    expect(reachedGoal([{ kg: 80 }, { kg: 71 }], 70)).toBe(false)
+    expect(reachedGoal([{ kg: 50 }, { kg: 55 }], 55)).toBe(true)
+  })
+  it('says nothing from one reading, no target, or a start on the target', () => {
+    expect(reachedGoal([{ kg: 69 }], 70)).toBe(false)
+    expect(reachedGoal([{ kg: 80 }, { kg: 60 }], 0)).toBe(false)
+    expect(reachedGoal([{ kg: 70 }, { kg: 70 }], 70)).toBe(false)
+  })
+  it('does not count staying under a goal already passed', () => {
+    // The oldest reading is already past a losing goal, so it reads as a
+    // gaining goal and a lower newest reading has not reached it.
+    expect(reachedGoal([{ kg: 68 }, { kg: 67 }], 70)).toBe(false)
+  })
+})
+
+describe('milestoneDue', () => {
+  const { milestoneDue, markMilestone } = jest.requireActual<typeof import('../nudge')>('../nudge')
+  const facts = { streakDays: 7, streakGoal: 7, weighIns: [{ kg: 80 }, { kg: 69 }], targetKg: 70 }
+  it('offers the streak first, then the goal, each once', () => {
+    expect(milestoneDue('m1', facts)).toBe('nudge_streak')
+    markMilestone('m1', 'nudge_streak')
+    expect(milestoneDue('m1', facts)).toBe('nudge_goal')
+    markMilestone('m1', 'nudge_goal')
+    expect(milestoneDue('m1', facts)).toBe(null)
+  })
+  it('waits for a streak of the full length', () => {
+    expect(milestoneDue('m2', { ...facts, streakDays: 6, weighIns: undefined })).toBe(null)
+  })
+})

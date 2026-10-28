@@ -1,4 +1,20 @@
 export const logging = {
+  /**
+   * The warning before a free account's meal photos are swept, on Today and
+   * on the list it opens. `when` is `by`, `today` or `tomorrow`.
+   */
+  photoRemovals: {
+    toast_one: '1 meal photo will be removed {{when}}',
+    toast_other: '{{count}} meal photos will be removed {{when}}',
+    by: 'by {{day}}',
+    today: 'today',
+    tomorrow: 'tomorrow',
+    show: 'Show',
+    title: 'Photos to be removed',
+    intro: 'Free accounts keep meal photos for {{days}} days. Your logged meals stay.',
+    keep: 'Keep them with Pro',
+    empty: 'No photos are due to be removed.',
+  },
   today: {
     title: 'Today',
     /**

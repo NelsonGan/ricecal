@@ -76,6 +76,24 @@ $$;
 revoke execute on function private.social_post_workout from public, anon;
 grant execute on function private.social_post_workout to authenticated, service_role;
 
+-- Whether a person is Pro, for the gold ring the app draws round their face.
+-- Only ever read through the views below, which have already decided the
+-- caller may see this profile; `is_entitled` itself stays closed to clients,
+-- since it would answer for any id. Only for somebody who has joined the feed
+-- and kept their profile public, the people whose face the feed already shows
+-- to strangers: an account that never posted, or a private one, is not listed
+-- as paying to anybody who asks the view. The caller always sees their own.
+create or replace function private.social_is_pro(p_user uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select coalesce((
+    select public.is_entitled(p.id) from public.profiles p
+     where p.id = p_user
+       and (p.id = (select auth.uid()) or (p.social_joined_at is not null and not p.is_private))
+  ), false);
+$$;
+revoke execute on function private.social_is_pro from public, anon;
+grant execute on function private.social_is_pro to authenticated, service_role;
+
 create or replace view public.social_profile_details with (security_invoker = true) as
 select p.user_id, p.handle, p.display_name, p.bio, p.avatar_path,
   p.review_status, p.review_reason, p.revision, p.quarantined,
@@ -84,7 +102,9 @@ select p.user_id, p.handle, p.display_name, p.bio, p.avatar_path,
   private.social_count(p.user_id, 'posts') as post_count,
   coalesce((select true from public.social_follows f where f.follower_id = (select auth.uid()) and f.followed_id = p.user_id limit 1), false) as is_following,
   coalesce((select true from public.social_follows f where f.followed_id = (select auth.uid()) and f.follower_id = p.user_id limit 1), false) as is_followed_by,
-  p.created_at
+  p.created_at,
+  -- Appended, so every column an older app reads keeps its place.
+  private.social_is_pro(p.user_id) as is_pro
 from public.social_profiles p;
 
 create or replace view public.social_post_details with (security_invoker = true) as
@@ -101,7 +121,8 @@ select p.id, p.author_id, a.handle, a.display_name, a.avatar_path,
   p.kind,
   workout.workout_name, workout.workout_started_at, workout.workout_duration_s,
   workout.workout_sets, workout.workout_volume_kg, workout.workout_exercises,
-  p.workout_records
+  p.workout_records,
+  private.social_is_pro(p.author_id) as author_is_pro
 from public.social_posts p
 join public.social_profiles a on a.user_id = p.author_id
 left join lateral private.social_post_food(p.id) food on true
@@ -354,7 +375,13 @@ begin
     ), page as materialized (
       select e.* from edges e order by e.created_at desc, e.other_id desc limit p_limit + 1
     )
-    select d.*, p.created_at from page p join public.social_profile_details d on d.user_id = p.other_id
+    -- Named rather than `d.*`: the view grows at its end, and this function's
+    -- columns are fixed by an older app.
+    select d.user_id, d.handle, d.display_name, d.bio, d.avatar_path,
+      d.review_status, d.review_reason, d.revision, d.quarantined,
+      d.follower_count, d.following_count, d.post_count,
+      d.is_following, d.is_followed_by, d.created_at, p.created_at
+    from page p join public.social_profile_details d on d.user_id = p.other_id
     order by p.created_at desc, p.other_id desc;
 end;
 $$;
@@ -526,7 +553,11 @@ begin
     union all
     -- Diary photos of people the caller shares a group with (97_groups.sql).
     select c.owner_id, c.photo_path, null::text, 'meal'::text
-    from private.group_photo_claims(p_keys) c;
+    from private.group_photo_claims(p_keys) c
+    union all
+    -- Pictures uploaded as a group's icon, for its members only.
+    select c.owner_id, c.photo_path, null::text, 'avatar'::text
+    from private.group_icon_claims(p_keys) c;
 end;
 $$;
 

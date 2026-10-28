@@ -3349,6 +3349,46 @@ and opens the paywall (`new_group`) before the sheet; the refusal opens it too,
 for a group started on another phone. Release 1.0 has neither, so a free
 account there sees its generic "something went wrong" toast at Create.
 
+**A group's icon is a drawing, or a picture its Pro leader uploaded.** The
+picker (`features/groups/IconPicker.tsx`) shows the seven free drawings in one
+row, then the Pro set: an upload tile and six drawings, with the rest behind
+View more. A free account sees the Pro set locked and is sent to the paywall
+(`group_icon`). Postgres refuses the same choices for a free account
+(`private.group_check_icon`, hint `pro_group_icon`); `free_group_icons()` also
+allows `chilli`, which left the app's free row so it would fit on one line and
+which an older app still offers. A group keeps the Pro icon it already wears
+when its leader's subscription lapses. The leader changes it from the icon on
+the group's settings.
+
+An uploaded picture is an ordinary avatar upload, so it lands in the
+uploader's `avatars/<id>/` folder, is sized like a face and goes with their
+account. `groups.icon_path` holds the key, `create_group` and `update_group`
+take it as a defaulted last argument (so 1.0's three and four argument calls
+still resolve), and choosing a drawing takes it away. It is signed through
+`social_photo_claims` for the group's members only
+(`private.group_icon_claims`), the people who chose to be in a group with
+whoever uploaded it, as with their meal photos. Invites and the public list
+never name it, since a leader can invite a stranger by handle and nobody
+reviews the picture. The drawing sits under the picture and
+shows wherever it cannot be signed.
+
+**A Pro member's face wears a gold ring**, wherever the app already shows that
+person: a group's members and board (`is_pro` from `private.group_person`,
+which answers only for the caller and people they share a group with, since
+the same builder draws invitees and invite suggestions), feed posts (`author_is_pro`), profiles and search
+(`is_pro` on `social_profile_details`), and the Me tab. `is_entitled` itself
+stays closed to clients, since it would answer for any id; the views reach it
+through `private.social_is_pro`, which answers only for a profile that has
+joined the feed and is public (and for the caller's own), so the view cannot be
+used to list who pays among people who never posted or keep their profile
+private. `ProRing` (`ui/ProRing.tsx`, Skia) sets the face in a metallic gold frame
+with a cream gap, scaling the face down inside its own box, so a list never
+reflows when somebody subscribes. The large sizes (Me, a profile) add a soft
+glow, a sparkle badge and a sheen that sweeps across the gold every few
+seconds; in lists the sheen is a still highlight, since an animation per face
+in a scrolling list costs more than it shows. Reduce Motion stills it. Every
+avatar is flat, so the frame encloses the whole tile.
+
 Twenty members, at most twenty groups a person, enforced by a trigger that
 locks the group row so two people cannot take the last seat together. The cap
 was ten, and the apps in the stores take ten as full, so the two lists where
@@ -5646,10 +5686,12 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 | recipes kept | 3 | unlimited |
 | workout routines kept | 3 | unlimited |
 | groups led at once (joining is never limited) | 2 | unlimited |
+| group icons | 7 drawings | 34 drawings, or an uploaded picture |
+| gold ring round your face | no | yes |
 | trends | 7 days | 7d / 30d / a year |
 | workout progress bars | 3 months | a year, all time |
 | reviews | the newest week | every week and month |
-| meal photographs kept | 30 days, or 60 past a lapsed subscription | for good |
+| meal photographs kept | 30 days, or 60 past a lapsed subscription, with a warning a few days before | for good |
 | budget, health sync, reminders, the whole catalogue | yes | yes |
 
 Five of those numbers live in `packages/shared` for the copy to interpolate,
@@ -5826,11 +5868,16 @@ screen that can say which of the buttons under a thumb declined to work.
 the one place that decides. Showing a paywall to somebody who has already paid
 is the worst thing this app can do with a refusal.
 
-**Pro is also offered without being asked for, once every two days.**
-`useProNudge` on Today, a beat after the diary appears, because an account that
-never presses a gated button would otherwise never learn there is a paid tier.
-Every paywall resets that clock, so the rule the user experiences is "at most
-one paywall every two days".
+**Pro is also offered without being asked for, on a milestone.** `useProNudge`
+on Today, a beat after the diary appears, once when a free account reaches a
+seven day logging streak (`STREAK_MILESTONE_DAYS`) and once when a weigh-in
+first reaches the goal weight from the side the oldest reading started on, with
+a toast naming the milestone. It used to be a standing offer every two days,
+whatever the user was doing; people who have just built the habit convert far
+better. Both read queries Today and the widgets already hold, so it asks the
+server for nothing. Every paywall still resets a two-day clock, so the rule the
+user experiences is still "at most one paywall every two days", and a milestone
+reached inside it is offered on a later launch if it still holds.
 
 ### Photo retention
 
@@ -5863,6 +5910,31 @@ must not be the deletion of their photographs.
 It stacks with the paid-era rule rather than replacing it: what they logged
 *while paying* is kept for ever regardless. The cliff at expiry plus sixty is
 real and bounded, at most a month of post-expiry plates in one batch.
+
+**Somebody is told a few days before their photos go.** `photo_removal_schedule`
+is `expired_meal_photos` turned round: the same key boundary and dates, saying
+when each photo of one account will be due rather than whether it is (pgTAP
+checks that what it calls past due is exactly what the sweep takes). Two things
+read it, on the same six day window, so each photo is warned about once:
+
+- **A push**, from the `photo-warnings` job in the jobs Worker, daily at 03:07
+  UTC. `photo_removal_push_targets` picks free accounts with a device and
+  photos due in six days that have not been warned in six days, marks them in
+  `photo_removal_warnings` in the same statement, and returns their devices in
+  their language. "14 meal photos will be removed by Friday", in the account's
+  zone, and nothing more: no Pro pitch, because a promotional push needs its
+  own opt-in on the App Store, and the list it opens carries the offer. A tap
+  opens that list (`data.kind: 'photos'`, which 1.0 ignores). Accounts are
+  walked in id order with a cursor, and a transaction lock makes overlapping
+  calls take turns. The Worker posts to Expo itself, so it needs no endpoint
+  and no second credential. A post Expo refuses is not retried.
+- **A toast on Today**, the same sentence with Show, once per six days per
+  account (MMKV) and three seconds in, so it never lands on a milestone
+  paywall. `upcoming_photo_removals(14)` is asked only once the account is
+  known to be free, and is half a day fresh.
+
+Show opens `app/settings/photos.tsx`, the photos by the day each goes, which
+says the meals stay, and Keep them with Pro (`photo_retention`).
 
 ### Share and Earn
 
@@ -6063,9 +6135,9 @@ names the Apple Watch there and nowhere else: the watch app is iOS only.
   is read once per run of the app, not live: the tour's toast marks itself
   offered a second in, and a live read let the card cover it a tab switch
   later. A fresh sign-in on a new phone is such a launch.
-- **Never on top of the Pro nudge.** The nudge stands aside on any launch where
-  an announcement is due or up (`announcementHasTheFloor`): an announcement is
-  once per account and the nudge has a two-day clock.
+- **Never on top of the Pro nudge.** The milestone offer stands aside on any
+  launch where an announcement is due or up (`announcementHasTheFloor`): an
+  announcement is once per account and the milestone stays owed.
 - **Only while Today is on top, online, after a fresh read.** Leaving Today
   cancels the wait and focus is asked again after the read; the read is the
   profile within 30 seconds, so a card another phone has shown is not shown
@@ -6116,6 +6188,7 @@ src/
   jobs/
     index.ts      the registry
     retention.ts  the photograph sweep
+    photo-warnings.ts the push a few days before it
     activity-hours.ts the hourly health-data sweep
 scripts/
   check-crons.mjs the registry and wrangler.jsonc must agree
@@ -6407,13 +6480,14 @@ events, 815 weekly users, 338 installs) ×4.3.
 | Workout events (`Workout Started`, `Finished`, `Discarded`, `Routine Saved`, `Workouts Imported`) | 4,000 | New with the Workouts tab, so no history: about 60 workouts a day at launch, each a start and an end, plus routine saves. An import is one event however many workouts it brings |
 | Groups (`Group Created`, `Joined`, `Invite Sent`, `Nudge Sent`, `Reaction Set`, `Message Sent`, and `Notification Opened` for a group push) | 15,000 | New with the Groups tab, so no history: assumes 300 people in groups, each reacting or chatting about once a day, plus rare creates, joins, invites and nudges (a nudge is capped by its hourly cooldown per meal). Chat messages push every other member with notifications on, so allow about one tapped chat push per member per day on top |
 | News (`Announcement Shown`, `CTA Tapped`, `Dismissed`, `Auto Post Toggled`) | 3,000 | One launch card per account per announcement (~1,500 monthly accounts, a shown and a close each), plus the News list and the rare switch on Edit profile |
+| Photo removal warnings (`Notification Opened` with `photo_removals`, and the `Paywall Shown` its list opens) | 1,000 | At most one push and one Today notice per free account per six days, only while photos are due; a tap is a fraction of those. The milestone offers that replaced the two-day nudge show fewer paywalls than it did, which more than covers this |
 | `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
 | `First App Open` | 1,500 | ~340 installs a week |
 | Prompt fetches (`$llm_prompt_fetched`) | 25,000 at most | Logged by PostHog for each read of a hosted prompt. The functions fetch a prompt at most once per isolate per 30 minutes, and Supabase isolates are short-lived, so the ceiling is one per model call: the `$ai_generation` count below, less its retries |
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
-| **Total** | **~297,000 (30%)** | Room for three times today's audience |
+| **Total** | **~298,000 (30%)** | Room for three times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -6473,7 +6547,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Entry Refined | ricecal_entry_refined | outcome: 'applied' &#124; 'not_applied' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled'; from_chip: boolean; duration_ms: number | `src/data/scan.ts` | Refinement attempt reaches its outcome; each attempt, including refusal/failure and no applied change. |
 | Food Searched | ricecal_food_searched | results: number; query_length: number | `src/features/logging/FoodSearchPanel.tsx` | Catalogue query has a settled results/empty answer for 1,200 ms after the 140 ms input debounce; changed nonempty queries only. History/own-food filtering is excluded. |
 | Food Picked | ricecal_food_picked | position: number; results: number; source?: 'history' &#124; 'recipe' | `src/features/logging/FoodSearchPanel.tsx` | Catalogue, own recipe or history result is opened; each selection. Opening a result does not prove it was logged. |
-| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or eligible nudge requests navigation, or the intro paywall mounts; repeated visits count. Nudge has a two-day per-account clock; account/entitlement changes cancel its pending timer and the clock is checked again before sending. |
+| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or eligible milestone offer requests navigation, or the intro paywall mounts; repeated visits count. A milestone offer (`nudge_streak`, `nudge_goal`) is once per account per milestone and waits out the two-day per-account paywall clock; account/entitlement changes cancel its pending timer and the clock is checked again before sending. |
 | Plan Selected | ricecal_plan_selected | screen: PaywallScreen; plan: Plan | `src/features/paywall/PaywallOffer.tsx` | Paywall plan changes; each change. The default selected plan emits nothing until changed. |
 | Purchase Started | ricecal_purchase_started | screen: PaywallScreen; plan: Plan | `src/features/paywall/tracking.ts` | An available checkout is requested; once per accepted attempt, before offering lookup/store call. A missing configuration warning emits nothing. |
 | Purchase Abandoned | ricecal_purchase_abandoned | screen: PaywallScreen; plan: Plan; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/features/paywall/tracking.ts` | Checkout/entitlement-wait path throws; once per caught attempt. A post-purchase entitlement-wait error can also reach this event. |
@@ -6484,7 +6558,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Health Connected | ricecal_health_connected | provider: string; granted: boolean; days: number | `src/data/health-sync.ts` | Connection/permission flow returns; each successful flow result, including granted false. Background health sync is excluded. |
 | Health Disconnected | ricecal_health_disconnected | provider: string | `src/data/activity.ts` | Health disconnect mutation succeeds; each success. |
 | Reminder Toggled | ricecal_reminder_toggled | meal: string; enabled: boolean | `src/data/settings.ts` | Meal reminder setting mutation succeeds; each successful write. |
-| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' &#124; 'group_nudge' &#124; 'group_invite' &#124; 'group_message' | `src/features/settings/useReportLinks.ts` | Recognized weekly/monthly report or group push response is handled; each tap. A chat push (`data.chat`) is `group_message`. Cold-launch response is cleared after reading; meal reminders are excluded. |
+| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' &#124; 'group_nudge' &#124; 'group_invite' &#124; 'group_message' &#124; 'photo_removals' | `src/features/settings/useReportLinks.ts` | Recognized weekly/monthly report, group push or photo removal warning response is handled; each tap. A chat push (`data.chat`) is `group_message`; the jobs Worker's warning (`data.kind: 'photos'`) is `photo_removals`. Cold-launch response is cleared after reading; meal reminders are excluded. |
 | Weight Logged | ricecal_weight_logged | none | `src/data/weight.ts` | Manual weight-log write succeeds; each success, without its value. Health-imported readings are excluded. |
 | Recipe Saved | ricecal_recipe_saved | is_new: boolean; ingredients: number; servings: number | `src/data/recipes.ts` | Recipe save succeeds; each new/edit save, with ingredient/serving counts only. |
 | Recipe Drafted | ricecal_recipe_drafted | source: 'photo' &#124; 'text'; outcome: 'drafted' &#124; 'empty' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled' | `src/data/recipes.ts` | Photo/text drafting reaches its outcome; each attempt, including refusals, empty and failure. It does not prove a recipe was saved. |
@@ -6561,7 +6635,7 @@ user text. Extend the source type and these tables together when its domain chan
 | `method` / `LogMethod` | `camera`, `describe`, `search`, `barcode`, `recipe`, `quick_add`, `history` | `events.ts`; compare logging actions, not individual food components |
 | `method` / `SignInMethod` | `apple`, `google`, `email`, `password` | `email` means code/link. Failure coverage currently covers Apple/Google only |
 | `screen` / `PaywallScreen` | `hard`, `intro` | Paywall surfaces below; no generic screen-view event. `reminder` and `ended` appear only in data from app versions released before those two screens were deleted; no build ever navigated to them |
-| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `new_routine`, `new_group`, `trend_range`, `workout_range`, `review`, `nudge` | Refused capability or standing offer; trial expiration is a paywall screen value, not a feature. `suggest` appears only in data from app versions released before "what to eat next" was removed |
+| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `new_routine`, `new_group`, `group_icon`, `photo_retention`, `trend_range`, `workout_range`, `review`, `nudge_streak`, `nudge_goal` | Refused capability or milestone offer; trial expiration is a paywall screen value, not a feature. `nudge` (the two-day standing offer) appears only in data from app versions before the milestone offers; `suggest` only from versions released before "what to eat next" was removed |
 | `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
 | `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |
 | `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder category only |
@@ -6605,7 +6679,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
 | Hard paywall `/paywall` | `Paywall Shown` with `screen: hard` and refused `ProFeature` | `data/refusals.ts` records before navigation; review redirects also record. Free camera allowance is three scans/day; a further refusal can reach camera trigger |
 | Intro paywall | `Paywall Shown` with `intro` as screen and trigger | `useTrackPaywallShown` records once per mounted presentation; revisits count again |
-| Standing Pro nudge | `Paywall Shown`, `screen: hard`, `trigger: nudge` | At timer scheduling: known free entitlement, tutorial already offered, profile loaded with no announcement due or claimed this launch, due per-account clock and not offered in this mounted launch. Account/entitlement changes cancel the timer; a newly eligible account schedules its own. Any recorded paywall restarts the two-day clock, which is rechecked when the timer fires |
+| Milestone Pro offer | `Paywall Shown`, `screen: hard`, `trigger: nudge_streak` or `nudge_goal` | At timer scheduling: a milestone not yet offered to this account (a 7 day logging streak, or the newest weigh-in reaching the goal weight from the side the oldest started on), known free entitlement, tutorial already offered, profile loaded with no announcement due or claimed this launch, due per-account clock and not offered in this mounted launch. Account/entitlement changes cancel the timer; a newly eligible account schedules its own. Any recorded paywall restarts the two-day clock, which is rechecked when the timer fires; a milestone reached inside it stays owed |
 | Checkout | Optional plan change, checkout attempt and caught cancellation/error | Default selection sends no Plan Selected. Purchase Started precedes offering lookup. Purchase Abandoned can include a post-purchase entitlement-wait error |
 | Restore | Returned restored/nothing or unavailable result | Restore Requested is a result event; thrown restores have no row. Restoration never adds settled revenue |
 | Automatic rating checkpoints | Crossing each 15-meal boundary; second unlocked review read, then each fifth read | Gates require five days since install, two since version change, at least 15 meals, three active days, 60 days since last ask and no ask on this version |

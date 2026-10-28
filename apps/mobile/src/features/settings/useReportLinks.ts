@@ -100,6 +100,13 @@ export function useReportLinks(): void {
         router.navigate('/groups')
         return
       }
+      // The warning before a free account's meal photos are swept, from the
+      // jobs Worker. An older app has no such kind and ignores the tap.
+      if (kind === 'photos') {
+        track('Notification Opened', { kind: 'photo_removals' })
+        router.push('/settings/photos')
+        return
+      }
       if (!isReport(kind)) return
       // The weekly and monthly reports are the app's only unprompted way back
       // in — meal reminders say something and go, and there is no push at all —

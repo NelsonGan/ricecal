@@ -103,6 +103,7 @@ export {
   type ProgressBarProps,
   type ProgressTone,
 } from './ProgressBar'
+export { ProRing, type ProRingSize } from './ProRing'
 // Layout
 export { footerKeyboardOffset, Screen, type ScreenProps } from './Screen'
 export { SearchField, type SearchFieldProps } from './SearchField'

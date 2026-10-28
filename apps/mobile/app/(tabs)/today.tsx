@@ -31,6 +31,7 @@ import {
 } from '@/features/logging'
 import { AnnouncementCard, useAnnouncementOffer } from '@/features/news'
 import { useProNudge } from '@/features/paywall'
+import { usePhotoRemovalNotice } from '@/features/photoRemovals/usePhotoRemovalNotice'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
 import { openLogger, useHasActiveWorkout, WorkoutItem, WorkoutsTile } from '@/features/workouts'
@@ -117,6 +118,7 @@ function ResumeWorkout() {
  */
 function LaunchOffers() {
   useProNudge()
+  usePhotoRemovalNotice()
   const { announcement, close } = useAnnouncementOffer()
   return <AnnouncementCard announcement={announcement} source="launch" onClose={close} />
 }

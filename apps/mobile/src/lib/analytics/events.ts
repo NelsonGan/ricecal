@@ -82,8 +82,17 @@ export type ProFeature =
   | 'workout_range'
   /** An older weekly or monthly review. The latest one is free. */
   | 'review'
-  /** The standing offer on launch, which no button refused. See `useProNudge`. */
-  | 'nudge'
+  /** A Pro drawing or an uploaded picture for a group. */
+  | 'group_icon'
+  /** Keep them with Pro, on the list of meal photos about to be swept. */
+  | 'photo_retention'
+  /**
+   * The offers on a milestone, which no button refused: a seven day logging
+   * streak, and the first time a weigh-in reaches the goal weight. See
+   * `useProNudge`. They replaced `nudge`, a standing offer every two days.
+   */
+  | 'nudge_streak'
+  | 'nudge_goal'
 
 /** Which of the two paywalls. `hard` is `/paywall`, reached from a refusal. */
 export type PaywallScreen = 'hard' | 'intro'
@@ -332,7 +341,7 @@ export type Events = {
   'Reminder Toggled': { meal: string; enabled: boolean }
   /** The only re-engagement surface in the app, so the taps are worth counting. */
   'Notification Opened': {
-    kind: 'weekly' | 'monthly' | 'group_nudge' | 'group_invite' | 'group_message'
+    kind: 'weekly' | 'monthly' | 'group_nudge' | 'group_invite' | 'group_message' | 'photo_removals'
   }
   /** Typed by the user. A reading synced from a health store is not an action. */
   'Weight Logged': NoProps

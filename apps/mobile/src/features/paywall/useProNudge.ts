@@ -1,11 +1,11 @@
-import { useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
 
-import { useEntitlement, useProfile, useSession } from '@/data'
+import { useEntitlement, useProfile, useSession, useStreak, useWeighIns } from '@/data'
+import { openPaywall, proFeatureTitle, STREAK_MILESTONE_DAYS } from '@/data/refusals'
 import { announcementHasTheFloor } from '@/features/news/useAnnouncementOffer'
 import { tutorialOffered } from '@/features/tutorial'
-import { track } from '@/lib/analytics'
-import { markPaywallSeen, paywallDue } from './nudge'
+import { useToast } from '@/ui'
+import { markMilestone, markPaywallSeen, milestoneDue, paywallDue } from './nudge'
 
 /**
  * How long Today gets to itself before the offer arrives. A paywall in the
@@ -17,52 +17,71 @@ import { markPaywallSeen, paywallDue } from './nudge'
 const DELAY_MS = 1400
 
 /**
- * The standing offer: a free account sees the paywall at most once every two
- * days.
+ * The offer on a milestone: a free account sees the paywall once when it
+ * reaches a seven day logging streak, and once when a weigh-in first reaches
+ * its goal weight.
  *
- * The only place Pro is offered without being asked for. Every other route
- * waits to be refused, so a free account that never presses a gated button is
- * never told the app has a paid tier at all.
+ * It used to be a standing offer every two days, which arrived whatever the
+ * user was doing. People who have just built the habit convert far better
+ * than people opening the app for the third time that week, so the offer now
+ * waits for the moment they have something to keep. Every other route still
+ * waits to be refused.
  *
  * A screen rather than a toast, because this one has a price on it and a toast
- * cannot be decided from. It is dismissible and lands back on the diary.
+ * cannot be decided from; the toast over it names the milestone. It is
+ * dismissible and lands back on the diary. At most one paywall every two days
+ * still holds from every route (`paywallDue`): a milestone reached inside that
+ * waits, and is offered on a later launch if it still holds.
  *
  * It waits for the entitlement: `entitled` is false while the query is in
  * flight and false when offline with nothing cached, and either would show a
  * paywall to somebody who has paid.
  *
- * Mounted by Today so the offer belongs to the screen it appears over. A tab
- * navigator keeps its screens mounted, so this is about where the timer is
- * booked rather than a guarantee about where it fires; 1.4 seconds is short
- * enough that nobody has changed tab, and the worst case is a dismissible page.
+ * Mounted by Today so the offer belongs to the screen it appears over. The
+ * streak is the query Today's own badge reads and the weigh-ins are the one
+ * the widgets already keep, so this asks the server for nothing.
  */
 export function useProNudge(): void {
-  const router = useRouter()
+  const toast = useToast()
   const { userId } = useSession()
   const { entitled, loading, unknown } = useEntitlement()
   // Booleans rather than the profile, so a refetch does not restart the delay.
   const { data: profile } = useProfile()
   const profileLoaded = profile !== undefined
+  const targetKg = Number(profile?.target_weight_kg ?? 0)
   const announcing = userId ? announcementHasTheFloor(userId, profile) : false
+  const streak = useStreak()
+  const { data: weighIns } = useWeighIns()
+  // Settled to the milestone itself, so a refetch that changes nothing does
+  // not restart the delay either.
+  const milestone =
+    userId && !streak.isPending
+      ? milestoneDue(userId, {
+          streakDays: streak.current,
+          streakGoal: STREAK_MILESTONE_DAYS,
+          weighIns,
+          targetKg,
+        })
+      : null
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const offered = useRef(false)
+  const latestToast = useRef(toast)
+  latestToast.current = toast
 
   useEffect(() => {
-    if (!userId || offered.current || timer.current) return
+    if (!userId || !milestone || offered.current || timer.current) return
     // All three mean we do not know yet, and showing a paywall to somebody who
     // has already paid is worse than never showing one.
     if (entitled || loading || unknown) return
     if (!paywallDue(userId)) return
     // Not on the launch the tour is offered on. Both are booked by Today at
     // about the same beat, so on a new free account the tour's toast landed
-    // across the paywall's buy button. The tour belongs to a first launch; the
-    // paywall has a two-day clock and loses nothing by waiting.
+    // across the paywall's buy button.
     if (!tutorialOffered(userId)) return
-    // Nor while an announcement is due or up. It is once per account and the
-    // paywall has its two-day clock, so the paywall waits for the next launch.
-    // Without the profile there is no telling, and waiting costs nothing. One
-    // put up during the delay flips `announcing`, which cancels this timer.
+    // Nor while an announcement is due or up. Without the profile there is no
+    // telling, and waiting costs nothing. One put up during the delay flips
+    // `announcing`, which cancels this timer.
     if (!profileLoaded || announcing) return
 
     timer.current = setTimeout(() => {
@@ -73,9 +92,13 @@ export function useProNudge(): void {
       // Marked when shown rather than when answered, and here as well as by the
       // screen: a push dropped because the user was already navigating would
       // otherwise leave the clock unmoved and try again next launch.
+      markMilestone(userId, milestone)
       markPaywallSeen(userId)
-      track('Paywall Shown', { screen: 'hard', trigger: 'nudge' })
-      router.push('/paywall')
+      openPaywall(latestToast.current, {
+        title: proFeatureTitle(milestone),
+        tone: 'success',
+        feature: milestone,
+      })
     }, DELAY_MS)
 
     // Eligibility and account changes cancel the old offer. Clearing the ref
@@ -84,5 +107,5 @@ export function useProNudge(): void {
       if (timer.current) clearTimeout(timer.current)
       timer.current = null
     }
-  }, [userId, entitled, loading, unknown, router, profileLoaded, announcing])
+  }, [userId, milestone, entitled, loading, unknown, profileLoaded, announcing])
 }

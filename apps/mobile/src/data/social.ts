@@ -36,6 +36,8 @@ export type SocialProfile = {
   is_followed_by: boolean
   created_at: string
   connection_created_at?: string
+  /** Drawn as a gold ring. Missing from the connection lists and an older server. */
+  is_pro?: boolean
 }
 /** What a post shares. `food` posts are meals; `workout` posts are finished workouts. */
 type SocialPostKind = Database['public']['Enums']['social_post_kind']
@@ -70,6 +72,8 @@ export type SocialPost = {
   comment_count: number
   is_liked: boolean
   is_following: boolean
+  /** The author is Pro, drawn as a gold ring. Missing from an older server. */
+  author_is_pro?: boolean
   /** A workout post's workout as it is now; null on a meal post. Never its notes. */
   workout_name: string | null
   workout_started_at: string | null

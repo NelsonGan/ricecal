@@ -183,6 +183,12 @@ export function scanLimitAhead(quota: ScanQuota | undefined): ScanLimitError | n
 }
 
 /**
+ * The logging streak that earns the milestone offer. Here because its sentence
+ * is, and `useProNudge` reads it from here.
+ */
+export const STREAK_MILESTONE_DAYS = 7
+
+/**
  * The sentence for a refused feature, naming the feature.
  *
  * It used to be one sentence for all of them, on the argument that left this app
@@ -206,6 +212,7 @@ export function proFeatureTitle(feature: ProFeature): string {
     recipes: FREE_RECIPES,
     routines: FREE_ROUTINES,
     groups: FREE_GROUPS,
+    days: STREAK_MILESTONE_DAYS,
   })
 }
 
@@ -224,7 +231,8 @@ export function openPaywall(
     title: string
     /** A second, quieter line under the title. See `announceRefusal`. */
     description?: string
-    tone?: 'warning' | 'error'
+    /** `success` for a milestone offer, which is news rather than a refusal. */
+    tone?: 'warning' | 'error' | 'success'
     feature: ProFeature
   } & RefusalOptions,
 ): void {
