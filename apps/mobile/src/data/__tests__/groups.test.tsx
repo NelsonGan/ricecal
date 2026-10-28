@@ -553,7 +553,7 @@ describe('catching up rather than reading the newest page again', () => {
     )
   })
 
-  it('keeps a removed message out of a read that started before it went', async () => {
+  it('reads again a read that was on its way when a message went', async () => {
     const { client, wrapper } = setup()
     client.setQueryData(
       messagesKey,
@@ -574,20 +574,78 @@ describe('catching up rather than reading the newest page again', () => {
     })
     await act(async () => mockListeners.get(TOPIC)?.onEvent('removed', { ids: ['m2'] }))
     expect(ids(client)).toEqual(['m1'])
+    // Read again after the removal, the server no longer has it.
+    mockRpc.mockReturnValue(response([message('m3', false, 3)]))
     await act(async () => {
       late.settle({ data: [message('m2', false, 2), message('m3', false, 3)], error: null })
       await done
     })
     expect(ids(client)).toEqual(['m1', 'm3'])
-    // And a whole read that still has it, likewise.
-    mockRpc.mockReturnValue(
-      response([message('m1', false, 1), message('m2', false, 2), message('m3', false, 3)]),
+    expect(mockRpc).toHaveBeenCalledTimes(2)
+  })
+
+  it('reads the opening page again when a removal is heard before it lands', async () => {
+    const { client, wrapper } = setup()
+    const opening = pending()
+    mockRpc.mockReturnValueOnce(opening.request)
+    await renderHook(
+      () => {
+        useGroupThread('g1', true)
+        return useGroupChatLive('g1')
+      },
+      { wrapper },
     )
-    client.setQueryData<GroupThread>(messagesKey, (current) => current && { ...current, readAt: 0 })
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1))
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('removed', { ids: ['m2'] }))
+    mockRpc.mockReturnValue(response([message('m1', false, 1)]))
+    await act(async () =>
+      opening.settle({ data: [message('m1', false, 1), message('m2', false, 2)], error: null }),
+    )
+    await waitFor(() => expect(ids(client)).toEqual(['m1']))
+    expect(mockRpc).toHaveBeenCalledTimes(2)
+  })
+
+  it('catches up from the newest message exactly once nothing can be on its way behind it', async () => {
+    const { client, wrapper } = setup()
+    const now = Date.now()
+    // First seen 20 seconds ago, and read again since: settled.
+    client.setQueryData(messagesKey, {
+      ...held(now, message('m1', false, 1)),
+      newestAt: now - 20_000,
+    })
+    await renderHook(() => useGroupThread('g1', true), { wrapper })
+    mockRpc.mockReturnValue(response([message('m1', false, 1)]))
     await act(async () => {
       await client.refetchQueries({ queryKey: messagesKey })
     })
-    expect(ids(client)).toEqual(['m1', 'm3'])
+    expect(mockRpc).toHaveBeenLastCalledWith('group_messages', {
+      p_group_id: 'g1',
+      p_limit: THREAD_PAGE,
+      p_after_at: overlap(1),
+    })
+    expect(client.getQueryData<GroupThread>(messagesKey)?.settled).toBe(true)
+    await act(async () => {
+      await client.refetchQueries({ queryKey: messagesKey })
+    })
+    expect(mockRpc).toHaveBeenLastCalledWith('group_messages', {
+      p_group_id: 'g1',
+      p_limit: THREAD_PAGE,
+      p_after_at: at(1),
+    })
+    // A new message starts the overlap again.
+    mockRpc.mockReturnValue(response([message('m2', false, 2)]))
+    await act(async () => {
+      await client.refetchQueries({ queryKey: messagesKey })
+    })
+    expect(client.getQueryData<GroupThread>(messagesKey)?.settled).toBe(false)
+    await act(async () => {
+      await client.refetchQueries({ queryKey: messagesKey })
+    })
+    expect(mockRpc).toHaveBeenLastCalledWith('group_messages', {
+      p_group_id: 'g1',
+      p_limit: THREAD_PAGE,
+      p_after_at: overlap(2),
+    })
   })
 
   it('rereads just the messages a reaction names, by id, however far back', async () => {
@@ -621,6 +679,21 @@ describe('catching up rather than reading the newest page again', () => {
       { emoji: '🔥', count: 2 },
     ])
     expect(ids(client)).toHaveLength(THREAD_PAGE + 5)
+  })
+
+  it('rereads more than a hundred named messages a hundred at a time', async () => {
+    const { client, wrapper } = setup()
+    const rows = Array.from({ length: 150 }, (_, index) => message(`m${index}`, false, index))
+    client.setQueryData(messagesKey, { ...held(Date.now(), ...rows), more: true })
+    mockRpc.mockReturnValue(response([]))
+    await renderHook(() => useGroupChatLive('g1'), { wrapper })
+    await act(async () =>
+      mockListeners.get(TOPIC)?.onEvent('reacted', { ids: rows.map((row) => row.id) }),
+    )
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2))
+    expect(
+      mockRpc.mock.calls.map(([, args]) => (args as { p_ids: string[] }).p_ids.length),
+    ).toEqual([100, 50])
   })
 
   it("leaves a message the viewer's own reaction is on its way to", async () => {
@@ -702,6 +775,25 @@ describe('a board polled while nothing changes', () => {
       await client.refetchQueries({ queryKey: boardKey('g1') })
     })
     expect(client.getQueryData<GroupBoard>(boardKey('g1'))?.members[0]?.entries[0]?.likes).toBe(3)
+  })
+
+  it('asks again without the version when the server does not know it yet', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(boardKey('g1'), { ...board([entry()]), version: 'v1' })
+    await renderHook(() => useGroupBoard('g1', '2026-10-21', true, true), { wrapper })
+    mockRpc
+      .mockReturnValueOnce(response(null, { code: 'PGRST202', message: 'no such function' }))
+      .mockReturnValue(response(board([entry({ likes: 4 })])))
+    await act(async () => {
+      await client.refetchQueries({ queryKey: boardKey('g1') })
+    })
+    expect(mockRpc).toHaveBeenLastCalledWith('group_board', {
+      p_group_id: 'g1',
+      p_day: '2026-10-21',
+    })
+    const now = client.getQueryData<GroupBoard>(boardKey('g1'))
+    expect(now?.members[0]?.entries[0]?.likes).toBe(4)
+    expect(now?.version).toBeUndefined()
   })
 
   it('asks for the whole board when it holds no version', async () => {

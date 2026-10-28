@@ -160,14 +160,20 @@ CREATE FUNCTION public.group_messages (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-declare v_user uuid := private.group_require_member(p_group_id); v_after timestamptz := p_after_at;
+declare
+  v_user uuid := private.group_require_member(p_group_id);
+  v_after timestamptz := p_after_at;
+  v_before timestamptz := coalesce(p_before_at, 'infinity');
 begin
   if p_ids is not null then
     if cardinality(p_ids) not between 1 and 100 then
       raise exception 'Between 1 and 100 ids' using errcode = '22023';
     end if;
-    -- Bounded by the earliest one named, so the index walks only that far back.
-    select greatest(v_after, min(m.created_at) - interval '1 microsecond') into v_after
+    -- Bounded by the times of the ones named, so the index walks only the
+    -- stretch of the thread they sit in, however far back that is.
+    select greatest(v_after, min(m.created_at) - interval '1 microsecond'),
+      least(v_before, max(m.created_at) + interval '1 microsecond')
+    into v_after, v_before
     from public.group_messages m where m.group_id = p_group_id and m.id = any(p_ids);
     if v_after is null then return '[]'::jsonb; end if;
   end if;
@@ -205,8 +211,7 @@ begin
       select * from public.group_messages m
       where m.group_id = p_group_id and not m.quarantined
         -- Constants on the right, so the index walks straight to the cursor.
-        and (m.created_at, m.id) < (coalesce(p_before_at, 'infinity'),
-          coalesce(p_before_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff'))
+        and (m.created_at, m.id) < (v_before, coalesce(p_before_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff'))
         and m.created_at > coalesce(v_after, '-infinity')
         and (p_ids is null or m.id = any(p_ids))
         and not private.social_pair_blocked(m.author_id)
@@ -220,7 +225,6 @@ $function$;
 GRANT ALL ON FUNCTION public.group_messages(uuid, timestamp WITH time zone, uuid, integer, timestamp WITH time zone, uuid[]) TO authenticated;
 
 GRANT ALL ON FUNCTION public.group_messages(uuid, timestamp WITH time zone, uuid, integer, timestamp WITH time zone, uuid[]) TO service_role;
-
 -- `db diff` does not carry revokes; Postgres grants EXECUTE to PUBLIC by default.
 revoke execute on function public.group_board(uuid, date, text),
   public.group_messages(uuid, timestamptz, uuid, integer, timestamptz, uuid[]) from public, anon;

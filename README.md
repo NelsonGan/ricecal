@@ -3294,9 +3294,9 @@ meal share a tile and swipe sideways inside it.
   two at once. Counted by emoji in `group_messages`, leaving out anyone blocked either
   way. Setting, changing or taking one back broadcasts `reacted` on the chat's
   topic with the message ids; an open chat rereads only the ones it holds, by
-  id in one request wherever they are (`group_messages`' `p_ids`), leaving out
-  any the viewer's own reaction is on its way to. An app from before reactions
-  does not listen for the event at all.
+  id, a hundred a request, wherever they are (`group_messages`' `p_ids`),
+  leaving out any the viewer's own reaction is on its way to. An app from
+  before reactions does not listen for the event at all.
 - **Food in the chat.** A food message shares one of its author's own food posts
   (`group_messages.post_id`) and draws as a card: the photo across it, the name,
   calories and macros. The card reads the post's meal live through
@@ -3489,26 +3489,39 @@ board does not leave and rejoin. Everything else still polls.
 - **Catching up, not rereading.** A read between whole ones asks only for
   what was written since the newest message held (`group_messages`'
   `p_after_at`), from ten seconds before it, since a message's time is when its
-  write began and a slow one can commit behind a later one already read. Each
-  comes back in place of its held copy (`mergeNewer`), so the viewer's own
-  message drawn with the phone's clock gets the server's. That is a few hundred
-  bytes per new message where rereading the newest page was 25 KB, and the page
-  was read for every message an active chat heard (October 2026: a third of
-  the project's egress, with groups' boards). The page is still read whole on
-  opening, on every rejoin and on a first join to a thread held from before the
-  chat opened, and about once a minute joined or every 30 seconds polled, for
-  what no catch-up sees: thumbs on a food card and a corrected portion (neither
-  is announced on the topic), another member blocking the viewer, a renamed
-  author. A whole read is laid over what has been scrolled through
-  (`mergeNewest`), so a long scroll back costs nothing on the next read; a
-  newest page that does not reach anything held means a gap, and the thread
-  starts again from that page, as does a catch-up that comes back a full page.
-  A message removed in place is remembered (`gone`), so a read already on its
-  way when it went cannot draw it again. A server from before `p_after_at`
-  answers `PGRST202`, and the app reads whole for ten minutes before asking
-  again. Measured on a simulator against the local stack, before catch-ups: no
-  requests while a joined chat sat idle for 20 seconds, and one per message
-  from someone else.
+  write began and a slow one can commit behind a later one already read. Once a
+  read has reached back that far ten seconds after the newest message was first
+  seen, the thread has settled and catch-ups start at that message exactly, so
+  an idle chat's poll answers `[]`. Each message comes back in place of its
+  held copy (`mergeNewer`), so the viewer's own message drawn with the phone's
+  clock gets the server's. That is a few hundred bytes per new message where
+  rereading the newest page was 25 KB, and the page was read for every message
+  an active chat heard (October 2026: a third of the project's egress, with
+  groups' boards). The page is still read whole on opening, on every rejoin and
+  on a first join to a thread held from before the chat opened, and about once
+  a minute joined or every 30 seconds polled, for what no catch-up sees: thumbs
+  on a food card and a corrected portion (neither is announced on the topic),
+  another member blocking the viewer, a renamed author. A change in place
+  restarts react-query's poll timer, so a removal or reaction rereads the
+  thread whole itself when that minute is up. A whole read is laid over what
+  has been scrolled through (`mergeNewest`), so a long scroll back costs
+  nothing on the next read; a newest page that does not reach anything held
+  means a gap, and the thread starts again from that page, as does a catch-up
+  that comes back a full page.
+- **A read that crossed a change is read again.** Every change made to a
+  thread in place (a removal, a message reread by id, the viewer's own send)
+  counts as an edit, and a read that was on its way across one is run again,
+  up to three times: the change was announced after it was written, so a read
+  started after it sees it. That is what keeps a deleted message from coming
+  back with a page fetched just before the delete, including one heard before
+  the opening page has landed. Two gaps are left on purpose: a removal in the
+  moment between the opening read and the join is heard by nobody until the
+  next whole read, and a polled chat (no channel) shows a quarantine or block
+  up to 30 seconds late rather than 5.
+- **An older server.** One from before `p_after_at` or `p_ids` answers
+  `PGRST202`; the app reads whole for ten minutes before asking again, and
+  rereads a reacted message with a whole read. A board poll that sends
+  `p_known` to one asks again without it.
 - **The sender's own message** joins the cached thread the moment
   `send_group_message` answers, so "Sending" clears without waiting for a
   refetch. Its broadcast can beat that answer, so a broadcast is ignored while
