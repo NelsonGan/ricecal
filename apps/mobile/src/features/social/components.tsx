@@ -53,6 +53,7 @@ import {
   EmptyState,
   Icon,
   IconButton,
+  ProRing,
   Sheet,
   Skeleton,
   Tappable,
@@ -726,7 +727,9 @@ export function PersonRow({
   const name = person.display_name || t('unknownPerson')
   const identity = (
     <>
-      <SocialPhoto path={person.avatar_path} visible={visible} avatar label={name} />
+      <ProRing pro={person.is_pro} size="sm">
+        <SocialPhoto path={person.avatar_path} visible={visible} avatar label={name} />
+      </ProRing>
       <View className="min-w-0 flex-1">
         <Text variant="label" numberOfLines={1}>
           {name}
@@ -1116,13 +1119,15 @@ export const PostCard = memo(function PostCard({
             .filter(Boolean)
             .join(', ')}
         >
-          <SocialPhoto
-            path={mine ? null : post.avatar_path}
-            privateUri={ownAvatar.data}
-            visible={visible}
-            avatar
-            label={authorName}
-          />
+          <ProRing pro={post.author_is_pro} size="sm">
+            <SocialPhoto
+              path={mine ? null : post.avatar_path}
+              privateUri={ownAvatar.data}
+              visible={visible}
+              avatar
+              label={authorName}
+            />
+          </ProRing>
           <View className="min-w-0 flex-1">
             <Text variant="label" numberOfLines={1}>
               {authorName}

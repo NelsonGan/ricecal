@@ -80,6 +80,8 @@ export const keys = {
   dayPlates: (userId: string, from: string, to: string) =>
     ['day-marks', userId, 'plates', from, to] as const,
   streak: (userId: string) => ['streak', userId] as const,
+  /** A free account's meal photos the sweep takes in the next fortnight. */
+  photoRemovals: (userId: string) => ['photo-removals', userId] as const,
 
   /**
    * The parts of one scanned plate.

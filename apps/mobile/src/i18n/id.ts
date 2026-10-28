@@ -655,6 +655,18 @@ export const id = {
   },
 
   logging: {
+    photoRemovals: {
+      toast_one: '{{count}} foto makanan akan dihapus {{when}}',
+      toast_other: '{{count}} foto makanan akan dihapus {{when}}',
+      by: 'paling lambat {{day}}',
+      today: 'hari ini',
+      tomorrow: 'besok',
+      show: 'Lihat',
+      title: 'Foto yang akan dihapus',
+      intro: 'Akun gratis menyimpan foto makanan selama {{days}} hari. Catatan makanan tetap ada.',
+      keep: 'Simpan dengan Pro',
+      empty: 'Tidak ada foto yang akan dihapus.',
+    },
     today: {
       title: 'Hari ini',
       backToTodayA11y: 'Kembali ke hari ini',
@@ -1444,7 +1456,10 @@ export const id = {
         new_group: 'Membuat lebih dari {{groups}} grup butuh RiceCal Pro.',
         workout_range: 'Melihat progres latihan lebih dari 3 bulan butuh RiceCal Pro.',
         review: 'Membaca ulasan yang lebih lama butuh RiceCal Pro.',
-        nudge: 'RiceCal Pro melepas batasnya.',
+        group_icon: 'Ikon grup lainnya memerlukan RiceCal Pro.',
+        photo_retention: 'Menyimpan foto makanan selamanya memerlukan RiceCal Pro.',
+        nudge_streak: '{{days}} hari berturut-turut tercatat. Lanjutkan dengan Pro.',
+        nudge_goal: 'Kamu mencapai berat target. Lanjutkan dengan Pro.',
       },
     },
 
@@ -2277,6 +2292,12 @@ export const id = {
     create: 'Buat',
     name: 'Nama grup',
     namePlaceholder: 'Makan Buddies',
+    proIcons: 'Ikon Pro',
+    viewMore: 'Lihat lebih banyak',
+    viewLess: 'Lihat lebih sedikit',
+    uploadIcon: 'Unggah gambar',
+    iconUploadFailed: 'Gambar itu tidak dapat diunggah.',
+    changeIcon: 'Ganti ikon',
     icon: 'Ikon',
     private: 'Privat',
     privateHint: 'Hanya orang yang kamu undang yang bisa gabung.',

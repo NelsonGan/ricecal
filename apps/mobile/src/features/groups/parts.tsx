@@ -13,9 +13,13 @@ import {
 import { openPaywall, proFeatureTitle } from '@/data/refusals'
 import { MealPhoto } from '@/features/shared'
 import { SocialPhoto } from '@/features/social/components'
-import { Avatar, Icon, type IconProps, Tappable, useToast } from '@/ui'
+import { Avatar, Icon, type IconProps, ProRing, Tappable, useToast } from '@/ui'
 
-/** The drawings a group can wear, from the food set every entry already uses. */
+/**
+ * The drawings any group can wear, from the food set every entry already
+ * uses. Seven, so the picker shows them in one row. `free_group_icons()` in
+ * Postgres also allows `chilli`, which an older app still offers.
+ */
 export const GROUP_ICONS = [
   'rice-bowl',
   'noodle-bowl',
@@ -24,11 +28,70 @@ export const GROUP_ICONS = [
   'avocado',
   'smoothie',
   'coffee',
-  'chilli',
 ] as const
 
-export function GroupIcon({ name, size = 40 }: { name: string; size?: number }) {
-  return <Icon {...foodIcon(name)} size={size} />
+/** The drawings only a Pro leader can give a group. */
+export const PRO_GROUP_ICONS = [
+  'sushi-roll',
+  'pizza-slice',
+  'burger',
+  'ice-cream',
+  'cupcake',
+  'chilli',
+  'doughnut',
+  'cake-slice',
+  'watermelon',
+  'strawberry',
+  'mango',
+  'pineapple',
+  'coconut',
+  'roti',
+  'porridge',
+  'prawn',
+  'crab',
+  'chicken-drumstick',
+  'beef-steak',
+  'fried-egg',
+  'pancakes',
+  'waffle',
+  'tea-cup',
+  'protein-shaker',
+  'leafy-greens',
+  'spring-roll',
+  'kuih',
+] as const
+
+/**
+ * A group's icon: its uploaded picture when it has one, its drawing
+ * otherwise. The drawing sits under the picture, so it shows while the
+ * picture is signed and stays when signing is refused (somebody outside the
+ * group, or an uploader whose account has gone).
+ *
+ * `fill` makes the picture fill its parent tile rather than a `size` square.
+ */
+export function GroupIcon({
+  name,
+  path,
+  size = 40,
+  fill = false,
+}: {
+  name: string
+  path?: string | null
+  size?: number
+  fill?: boolean
+}) {
+  if (!path) return <Icon {...foodIcon(name)} size={size} />
+  const box = fill
+    ? { width: '100%' as const, height: '100%' as const }
+    : { width: size, height: size }
+  return (
+    <View style={box} className="items-center justify-center overflow-hidden rounded-tile">
+      <Icon {...foodIcon(name)} size={fill ? 32 : size} />
+      <View className="absolute inset-0">
+        <SocialPhoto path={path} label={name} />
+      </View>
+    </View>
+  )
 }
 
 function foodIcon(name: string): IconProps {
@@ -37,8 +100,15 @@ function foodIcon(name: string): IconProps {
 
 /** A person's picture, or their initial on a coloured tile. */
 export function PersonAvatar({ person, size = 'sm' }: { person: GroupPerson; size?: 'xs' | 'sm' }) {
-  if (!person.avatar_path) return <Avatar name={person.name} size={size} fallback="initial" />
-  return <SocialPhoto path={person.avatar_path} avatar size={size} label={person.name} />
+  return (
+    <ProRing pro={person.is_pro} size={size}>
+      {person.avatar_path ? (
+        <SocialPhoto path={person.avatar_path} avatar size={size} label={person.name} />
+      ) : (
+        <Avatar name={person.name} size={size} fallback="initial" />
+      )}
+    </ProRing>
+  )
 }
 
 /** Opens someone's feed profile, the same screen the feed opens for them. */
@@ -182,6 +252,12 @@ export function useGroupTask() {
         // another phone, or a list that had not loaded.
         if (reason === 'group_limit_reached') {
           openPaywall(toast, { title: proFeatureTitle('new_group'), feature: 'new_group' })
+          throw error
+        }
+        // A Pro drawing or picture after the subscription lapsed on another
+        // phone, or before this one heard: the picker's own check missed it.
+        if (reason === 'pro_group_icon') {
+          openPaywall(toast, { title: proFeatureTitle('group_icon'), feature: 'group_icon' })
           throw error
         }
         toast.show({

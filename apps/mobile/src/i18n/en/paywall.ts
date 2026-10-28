@@ -269,11 +269,14 @@ export const paywall = {
       new_group: 'Starting more than {{groups}} groups needs RiceCal Pro.',
       workout_range: 'Workout progress past 3 months needs RiceCal Pro.',
       review: 'Reading an older review needs RiceCal Pro.',
+      group_icon: 'More group icons need RiceCal Pro.',
+      photo_retention: 'Keeping meal photos for good needs RiceCal Pro.',
       /**
-       * The standing offer, which no button refused, so the sentence is an offer
-       * rather than a refusal. See `useProNudge`.
+       * The milestone offers, which no button refused, so each sentence marks
+       * the milestone rather than a refusal. See `useProNudge`.
        */
-      nudge: 'RiceCal Pro takes the limits off.',
+      nudge_streak: '{{days}} days logged in a row. Keep going with Pro.',
+      nudge_goal: 'You reached your goal weight. Keep going with Pro.',
     },
   },
 

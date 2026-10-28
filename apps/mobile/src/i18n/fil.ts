@@ -664,6 +664,19 @@ export const fil = {
   },
 
   logging: {
+    photoRemovals: {
+      toast_one: '1 larawan ng pagkain ang mabubura {{when}}',
+      toast_other: '{{count}} larawan ng pagkain ang mabubura {{when}}',
+      by: 'bago mag-{{day}}',
+      today: 'ngayong araw',
+      tomorrow: 'bukas',
+      show: 'Tingnan',
+      title: 'Mga larawang mabubura',
+      intro:
+        'Ang mga libreng account ay nagtatago ng larawan ng pagkain nang {{days}} araw. Mananatili ang mga pagkain.',
+      keep: 'Itago gamit ang Pro',
+      empty: 'Walang larawang mabubura.',
+    },
     today: {
       title: 'Ngayon',
       backToTodayA11y: 'Bumalik sa ngayon',
@@ -1460,7 +1473,11 @@ export const fil = {
         new_group: 'Kailangan ng RiceCal Pro para gumawa ng higit sa {{groups}} grupo.',
         workout_range: 'Kailangan ng RiceCal Pro para makita ang progreso nang lampas sa 3 buwan.',
         review: 'Kailangan ng RiceCal Pro para magbasa ng mas lumang review.',
-        nudge: 'Inaalis ng RiceCal Pro ang mga limitasyon.',
+        group_icon: 'Kailangan ng RiceCal Pro para sa mas maraming group icon.',
+        photo_retention:
+          'Kailangan ng RiceCal Pro para itago ang mga larawan ng pagkain nang permanente.',
+        nudge_streak: '{{days}} araw na sunod-sunod kang nag-log. Ituloy gamit ang Pro.',
+        nudge_goal: 'Naabot mo ang target mong timbang. Ituloy gamit ang Pro.',
       },
     },
 
@@ -2299,6 +2316,12 @@ export const fil = {
     create: 'Gumawa',
     name: 'Pangalan ng grupo',
     namePlaceholder: 'Makan Buddies',
+    proIcons: 'Mga Pro icon',
+    viewMore: 'Tingnan pa',
+    viewLess: 'Bawasan',
+    uploadIcon: 'Mag-upload ng larawan',
+    iconUploadFailed: 'Hindi ma-upload ang larawang iyon.',
+    changeIcon: 'Palitan ang icon',
     icon: 'Icon',
     private: 'Pribado',
     privateHint: 'Ang mga inimbitahan mo lang ang makakasali.',

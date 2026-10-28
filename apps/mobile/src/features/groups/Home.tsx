@@ -43,6 +43,7 @@ import {
   useNavInset,
   useToast,
 } from '@/ui'
+import { type GroupIconChoice, GroupIconPicker } from './IconPicker'
 import { GROUP_ICONS, GroupIcon, PersonAvatar, useGroupTask } from './parts'
 import { GroupCardSkeleton, InviteSkeleton, PublicGroupsSkeleton } from './Skeletons'
 
@@ -173,8 +174,12 @@ function GroupCard({ group, onPress }: { group: GroupSummary; onPress: () => voi
       ].join(', ')}
     >
       <View className="flex-row items-center gap-md">
-        <View className="h-14 w-14 items-center justify-center rounded-tile bg-pandan-soft">
-          <GroupIcon name={group.icon_name} size={40} />
+        <View className="h-14 w-14 items-center justify-center overflow-hidden rounded-tile bg-pandan-soft">
+          {group.icon_path ? (
+            <GroupIcon name={group.icon_name} path={group.icon_path} fill />
+          ) : (
+            <GroupIcon name={group.icon_name} size={40} />
+          )}
         </View>
         <View className="min-w-0 flex-1 gap-1">
           <View className="flex-row items-center gap-2">
@@ -337,7 +342,7 @@ function CreateGroupSheet({
 }) {
   const { t } = useTranslation(['groups', 'common'])
   const [name, setName] = useState('')
-  const [icon, setIcon] = useState<string>(GROUP_ICONS[0])
+  const [icon, setIcon] = useState<GroupIconChoice>({ name: GROUP_ICONS[0] })
   const [privacy, setPrivacy] = useState<'private' | 'public'>('private')
   const userId = useUserId()
   const task = useGroupTask()
@@ -346,18 +351,21 @@ function CreateGroupSheet({
       const id = await task.run({
         action: 'create',
         name: name.trim(),
-        iconName: icon,
+        iconName: icon.name,
+        iconPath: icon.path ?? undefined,
         isPublic: privacy === 'public',
       })
       track('Group Created', { visibility: privacy })
       setName('')
+      setIcon({ name: GROUP_ICONS[0] })
       void askForPush(userId)
       if (typeof id === 'string') onCreated(id)
     } catch (error) {
       // Over the free limit the task has opened the paywall, which a sheet
       // left open would cover. Anything else: the task showed why, and the
       // sheet keeps the draft.
-      if (groupError(error) === 'group_limit_reached') onClose()
+      const reason = groupError(error)
+      if (reason === 'group_limit_reached' || reason === 'pro_group_icon') onClose()
     }
   }
   return (
@@ -386,27 +394,7 @@ function CreateGroupSheet({
           maxLength={40}
           autoCapitalize="words"
         />
-        <View className="gap-2">
-          <Text variant="label">{t('icon')}</Text>
-          <View className="flex-row flex-wrap gap-2">
-            {GROUP_ICONS.map((option) => (
-              <Tappable
-                key={option}
-                onPress={() => setIcon(option)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: icon === option }}
-                accessibilityLabel={`${t('icon')} ${GROUP_ICONS.indexOf(option) + 1}`}
-                className={
-                  icon === option
-                    ? 'h-14 w-14 items-center justify-center rounded-tile border-2 border-pandan bg-pandan-soft'
-                    : 'h-14 w-14 items-center justify-center rounded-tile border border-line bg-surface'
-                }
-              >
-                <GroupIcon name={option} size={36} />
-              </Tappable>
-            ))}
-          </View>
-        </View>
+        <GroupIconPicker value={icon} onChange={setIcon} beforePaywall={onClose} />
         <View className="gap-2">
           <SegmentedControl
             options={[

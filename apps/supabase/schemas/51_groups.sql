@@ -31,6 +31,10 @@ create table public.groups (
   name         text not null check (char_length(btrim(name)) between 1 and 40),
   -- A drawing from the app's food set, named like an entry's icon.
   icon_name    text not null default 'rice-bowl' check (icon_name ~ '^[a-z0-9-]{1,60}$'),
+  -- A picture the leader uploaded instead, Pro only. It sits in its uploader's
+  -- avatar folder, so deleting that account takes the bytes, and the app draws
+  -- `icon_name` whenever this is null or cannot be signed.
+  icon_path    text check (icon_path ~ '^avatars/[0-9a-f-]{36}/[A-Za-z0-9_-]{1,64}\.(jpg|png|webp)$'),
   is_public    boolean not null default false,
   -- Null only for the moment between a leader's account being deleted and the
   -- trigger below handing the group on.
@@ -395,15 +399,50 @@ returns integer language sql immutable parallel safe set search_path = '' as $$
   select 2;
 $$;
 
+-- The drawings a free account may give a group. Every other drawing, and an
+-- uploaded picture, is Pro. `chilli` left the app's free row so the row fits
+-- one line, and stays here because an app from before that still offers it.
+create or replace function public.free_group_icons()
+returns text[] language sql immutable parallel safe set search_path = '' as $$
+  select array['rice-bowl', 'noodle-bowl', 'dumpling', 'satay', 'avocado', 'smoothie', 'coffee', 'chilli'];
+$$;
+
+-- Refuses a Pro icon or an uploaded picture on a free account, with a token
+-- the app matches on to open the paywall. A picture must be in the caller's
+-- own avatar folder: the key is what the photos function will sign for every
+-- member, so naming somebody else's would hand their picture out.
+create or replace function private.group_check_icon(p_user uuid, p_icon_name text, p_icon_path text)
+returns void language plpgsql stable security definer set search_path = '' as $$
+begin
+  if nullif(p_icon_path, '') is not null and (
+    p_icon_path not like 'avatars/' || p_user::text || '/%'
+    or p_icon_path !~ '^avatars/[0-9a-f-]{36}/[A-Za-z0-9_-]{1,64}\.(jpg|png|webp)$'
+  ) then
+    raise exception 'That picture cannot be used' using errcode = '22023';
+  end if;
+  if (nullif(p_icon_path, '') is not null
+      or (nullif(p_icon_name, '') is not null and not (p_icon_name = any (public.free_group_icons()))))
+     and not public.is_entitled(p_user) then
+    raise exception 'pro_group_icon' using errcode = 'P0001', hint = 'pro_group_icon';
+  end if;
+end;
+$$;
+
 -- The limit's message is a token the app matches on, as `routine_limit_reached`
 -- is, and it opens the paywall rather than a toast.
-create or replace function public.create_group(p_name text, p_icon_name text, p_is_public boolean)
+--
+-- `p_icon_path` has a default so an app from before it, which sends three
+-- arguments, still resolves to this function.
+create or replace function public.create_group(
+  p_name text, p_icon_name text, p_is_public boolean, p_icon_path text default null
+)
 returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.social_require_user(false); v_group uuid;
 begin
   if p_name is null or char_length(btrim(p_name)) not between 1 and 40 then
     raise exception 'Name the group' using errcode = '22023';
   end if;
+  perform private.group_check_icon(v_user, p_icon_name, p_icon_path);
   if not public.is_entitled(v_user) then
     -- One create at a time per free account, so two at once cannot both count
     -- one group and both pass.
@@ -415,32 +454,47 @@ begin
   if not private.social_claim(v_user, 'group_create', 10) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
-  insert into public.groups(name, icon_name, is_public, leader_id)
-  values (btrim(p_name), coalesce(nullif(p_icon_name, ''), 'rice-bowl'), coalesce(p_is_public, false), v_user)
+  insert into public.groups(name, icon_name, icon_path, is_public, leader_id)
+  values (btrim(p_name), coalesce(nullif(p_icon_name, ''), 'rice-bowl'), nullif(p_icon_path, ''),
+    coalesce(p_is_public, false), v_user)
   returning id into v_group;
   insert into public.group_members(group_id, user_id) values (v_group, v_user);
   return v_group;
 end;
 $$;
 
--- Null leaves a field as it is.
-create or replace function public.update_group(p_group_id uuid, p_name text, p_icon_name text, p_is_public boolean)
+-- Null leaves a field as it is. An empty `p_icon_path` takes the uploaded
+-- picture away, so the drawing shows again. A drawing chosen with no path
+-- named also takes the picture away: picking a drawing is choosing it.
+create or replace function public.update_group(
+  p_group_id uuid, p_name text, p_icon_name text, p_is_public boolean, p_icon_path text default null
+)
 returns void language plpgsql security definer set search_path = '' as $$
 declare
   v_user uuid := private.group_require_member(p_group_id);
   v_old text;
+  v_old_icon text;
 begin
   if p_name is not null and char_length(btrim(p_name)) not between 1 and 40 then
     raise exception 'Name the group' using errcode = '22023';
   end if;
-  select g.name into v_old from public.groups g
+  select g.name, g.icon_name into v_old, v_old_icon from public.groups g
   where g.id = p_group_id and g.leader_id = v_user for update;
   if not found then
     raise exception 'Only the leader can change the group' using errcode = '42501';
   end if;
+  -- The icon the group already wears is never refused, so a lapsed Pro can
+  -- still rename a group that wears a Pro drawing.
+  perform private.group_check_icon(v_user,
+    case when p_icon_name is distinct from v_old_icon then p_icon_name end, p_icon_path);
   update public.groups g set
     name = coalesce(btrim(p_name), g.name),
     icon_name = coalesce(nullif(p_icon_name, ''), g.icon_name),
+    icon_path = case
+      when p_icon_path is not null then nullif(p_icon_path, '')
+      when nullif(p_icon_name, '') is not null then null
+      else g.icon_path
+    end,
     is_public = coalesce(p_is_public, g.is_public),
     -- A new name has not been reported. The same name saved again is not new,
     -- or saving it would clear its reports.
@@ -984,8 +1038,9 @@ returns void language sql security definer set search_path = '' as $$
   delete from public.push_tokens t where t.token = any(p_tokens);
 $$;
 
-revoke execute on function public.free_group_limit from public, anon;
-grant execute on function public.free_group_limit to authenticated, service_role;
+revoke execute on function public.free_group_limit, public.free_group_icons from public, anon;
+grant execute on function public.free_group_limit, public.free_group_icons to authenticated, service_role;
+revoke execute on function private.group_check_icon from public, anon, authenticated;
 revoke execute on function public.create_group, public.update_group, public.invite_to_group,
   public.respond_to_group_invite, public.join_group, public.leave_group, public.remove_group_member,
   public.set_group_preferences, public.set_entry_board_meal, public.set_group_reaction,

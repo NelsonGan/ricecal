@@ -646,6 +646,18 @@ export const ja = {
   },
 
   logging: {
+    photoRemovals: {
+      toast_one: '{{count}} 枚の食事の写真が{{when}}削除されます',
+      toast_other: '{{count}} 枚の食事の写真が{{when}}削除されます',
+      by: '{{day}}までに',
+      today: '今日',
+      tomorrow: '明日',
+      show: '見る',
+      title: '削除予定の写真',
+      intro: '無料アカウントでは食事の写真を {{days}} 日間保存します。食事の記録は残ります。',
+      keep: 'Pro で残す',
+      empty: '削除予定の写真はありません。',
+    },
     today: {
       title: '今日',
       backToTodayA11y: '今日に戻る',
@@ -1430,7 +1442,10 @@ export const ja = {
         new_group: 'グループを {{groups}} 個より多く作るには RiceCal Pro が必要です。',
         workout_range: '3 か月より前の記録を見るには RiceCal Pro が必要です。',
         review: '古い振り返りを読むには RiceCal Pro が必要です。',
-        nudge: 'RiceCal Pro なら上限がなくなります。',
+        group_icon: 'その他のグループアイコンには RiceCal Pro が必要です。',
+        photo_retention: '食事の写真をずっと残すには RiceCal Pro が必要です。',
+        nudge_streak: '{{days}} 日連続で記録しました。Pro でこの調子を続けましょう。',
+        nudge_goal: '目標体重に到達しました。Pro でこの調子を続けましょう。',
       },
     },
 
@@ -2266,6 +2281,12 @@ export const ja = {
     create: '作成',
     name: 'グループ名',
     namePlaceholder: 'Makan Buddies',
+    proIcons: 'Pro アイコン',
+    viewMore: 'もっと見る',
+    viewLess: '閉じる',
+    uploadIcon: '画像をアップロード',
+    iconUploadFailed: 'その画像をアップロードできませんでした。',
+    changeIcon: 'アイコンを変更',
     icon: 'アイコン',
     private: '非公開',
     privateHint: '招待した人だけが参加できます。',

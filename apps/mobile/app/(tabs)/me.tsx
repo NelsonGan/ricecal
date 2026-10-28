@@ -7,6 +7,7 @@ import {
   storedImageSource,
   useAvatarUrl,
   useCurrentWeight,
+  useEntitlement,
   useHealthConnection,
   useMealTimes,
   useProfile,
@@ -32,6 +33,7 @@ import {
   ConfirmSheet,
   Icon,
   ListRow,
+  ProRing,
   Screen,
   StatTile,
   Text,
@@ -68,6 +70,7 @@ export default function MeScreen() {
   const plan = usePlanSummary()
   const { data: mealTimes } = useMealTimes()
   const streak = useStreak()
+  const { entitled } = useEntitlement()
   const weight = useCurrentWeight()
   const userId = useUserId()
   const weightUnit = unitFor(settings?.units)
@@ -140,14 +143,16 @@ export default function MeScreen() {
         <View className="flex-row items-center gap-3">
           {/* Empty rather than an em dash: with no name the avatar draws a stock
               figure, and "—" would have been read out as the account's name. */}
-          <Avatar
-            name={profile?.display_name ?? ''}
-            uri={avatar?.uri}
-            cacheKey={avatar?.cacheKey}
-            accessibilityLabel={profile?.display_name || t('profile:home.noName')}
-            size="md"
-            tone="pandan"
-          />
+          <ProRing pro={entitled} size="md">
+            <Avatar
+              name={profile?.display_name ?? ''}
+              uri={avatar?.uri}
+              cacheKey={avatar?.cacheKey}
+              accessibilityLabel={profile?.display_name || t('profile:home.noName')}
+              size="md"
+              tone="pandan"
+            />
+          </ProRing>
           <View className="min-w-0 flex-1 gap-0.5">
             <Text variant="subtitle">{profile?.display_name || t('profile:home.noName')}</Text>
             <Text variant="meta">

@@ -634,6 +634,18 @@ export const bn = {
   },
 
   logging: {
+    photoRemovals: {
+      toast_one: '{{count}}টি খাবারের ছবি {{when}} মুছে ফেলা হবে',
+      toast_other: '{{count}}টি খাবারের ছবি {{when}} মুছে ফেলা হবে',
+      by: '{{day}}-এর মধ্যে',
+      today: 'আজ',
+      tomorrow: 'আগামীকাল',
+      show: 'দেখুন',
+      title: 'যে ছবিগুলো মুছে যাবে',
+      intro: 'ফ্রি অ্যাকাউন্টে খাবারের ছবি {{days}} দিন রাখা হয়। খাবারের এন্ট্রি থেকে যায়।',
+      keep: 'Pro দিয়ে রাখুন',
+      empty: 'মুছে যাওয়ার মতো কোনো ছবি নেই।',
+    },
     today: {
       title: 'আজ',
       backToTodayA11y: 'আজ পাতায় ফিরুন',
@@ -1416,7 +1428,10 @@ export const bn = {
         new_group: '{{groups}}টির বেশি গ্রুপ বানাতে RiceCal Pro লাগবে।',
         workout_range: '৩ মাসের আগের ওয়ার্কআউট অগ্রগতি দেখতে RiceCal Pro লাগবে।',
         review: 'পুরোনো পর্যালোচনা পড়তে RiceCal Pro লাগবে।',
-        nudge: 'RiceCal Pro সীমাগুলো সরিয়ে দেয়।',
+        group_icon: 'আরও গ্রুপ আইকনের জন্য RiceCal Pro লাগবে।',
+        photo_retention: 'খাবারের ছবি চিরকাল রাখতে RiceCal Pro লাগবে।',
+        nudge_streak: 'টানা {{days}} দিন লগ করেছেন। Pro দিয়ে চালিয়ে যান।',
+        nudge_goal: 'আপনি লক্ষ্য ওজনে পৌঁছেছেন। Pro দিয়ে চালিয়ে যান।',
       },
     },
 
@@ -2254,6 +2269,12 @@ export const bn = {
     create: 'তৈরি করুন',
     name: 'গ্রুপের নাম',
     namePlaceholder: 'Makan Buddies',
+    proIcons: 'Pro আইকন',
+    viewMore: 'আরও দেখুন',
+    viewLess: 'কম দেখুন',
+    uploadIcon: 'ছবি আপলোড করুন',
+    iconUploadFailed: 'ছবিটি আপলোড করা যায়নি।',
+    changeIcon: 'আইকন বদলান',
     icon: 'আইকন',
     private: 'ব্যক্তিগত',
     privateHint: 'শুধু আপনার আমন্ত্রিতরাই যোগ দিতে পারবেন।',
