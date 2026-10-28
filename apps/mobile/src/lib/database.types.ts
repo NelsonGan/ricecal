@@ -3659,6 +3659,7 @@ export type Database = {
       group_messages: {
         Args: {
           p_after_at?: string
+          p_after_id?: string
           p_before_at?: string
           p_before_id?: string
           p_group_id: string

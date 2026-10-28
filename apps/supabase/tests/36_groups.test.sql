@@ -333,7 +333,24 @@ select is(public.group_messages((select id from g), p_limit => 50,
   'an id that is not in the thread reads nothing');
 select throws_ok(format('select public.group_messages(%L, p_ids => %L::uuid[])', (select id from g), '{}'),
   '22023', null, 'an empty list of ids is refused');
+select is(jsonb_array_length(public.group_messages((select id from g), p_ids => array(
+    select ('a3620000-0000-4000-8000-1000000000' || lpad(n::text, 2, '0'))::uuid from generate_series(1, 5) n))), 5,
+  'every message named comes back, whatever p_limit says');
 reset role;
+-- Two messages in the same microsecond: a cursor on the first still reaches the second.
+insert into public.group_messages(id, group_id, author_id, body, request_id, created_at) values
+  ('a3620000-0000-4000-8000-3000000000a1', (select id from g), :'ben', 'twin a', gen_random_uuid(), '2026-01-01 00:00:00+00'),
+  ('a3620000-0000-4000-8000-3000000000b2', (select id from g), :'ben', 'twin b', gen_random_uuid(), '2026-01-01 00:00:00+00');
+set local role authenticated;
+select is((select array_agg(e->>'body') from jsonb_array_elements(public.group_messages((select id from g),
+    p_before_at => '2026-01-02', p_after_at => '2026-01-01 00:00:00+00',
+    p_after_id => 'a3620000-0000-4000-8000-3000000000a1')) e),
+  array['twin b'], 'the cursor orders by time and then id');
+select is(jsonb_array_length(public.group_messages((select id from g), p_before_at => '2026-01-02',
+    p_after_at => '2026-01-01 00:00:00+00')), 0, 'without an id, p_after_at alone is strictly after');
+reset role;
+delete from public.group_messages where body like 'twin %';
+delete from broadcasts where ids::text like '%a3620000-0000-4000-8000-3000000000%';
 delete from public.group_messages where body like 'page %';
 delete from broadcasts where ids::text like '%a3620000-0000-4000-8000-1000000000%';
 
