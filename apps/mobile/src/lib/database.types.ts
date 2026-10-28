@@ -3769,7 +3769,7 @@ export type Database = {
         Returns: string
       }
       photo_removal_push_targets: {
-        Args: { p_days?: number; p_limit?: number }
+        Args: { p_after?: string; p_days?: number; p_limit?: number }
         Returns: {
           language: string
           photo_count: number

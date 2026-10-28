@@ -218,18 +218,19 @@ export function AvatarGroup({
 
 /**
  * The bevel that makes the ring read as metal rather than as a yellow line:
- * light catches the top and left and falls off to the bottom right. The same
- * in both themes, because gold is the point and a dark-mode gold is brown.
+ * light catches the top edge and the rest is plain gold. The same in both
+ * themes, because gold is the point and a dark-mode gold is brown. Without a
+ * deep bottom edge, which read as brown on the smallest faces.
  */
-const GOLD = { light: '#FFE69A', mid: '#F2BE2E', deep: '#B8860B', shine: '#FFFBEA' } as const
+const GOLD = { light: '#FFE69A', mid: '#F2BE2E' } as const
 
 /**
  * A gold ring round a Pro member's face, for status.
  *
- * Drawn over the avatar rather than around it, so a face with a ring takes
- * exactly the room one without does and a list never reflows when somebody
- * subscribes. Static: a shimmer would be a running animation per face in a
- * scrolling list, and the bevel and the glint carry the shine on their own.
+ * Drawn on the avatar's own edge rather than outside it, so a face with a
+ * ring keeps exactly the size and alignment of one without: a list never
+ * reflows when somebody subscribes, and a row of names stays in line. Static:
+ * a shimmer would be a running animation per face in a scrolling list.
  */
 export function ProRing({
   pro,
@@ -240,44 +241,34 @@ export function ProRing({
   size?: AvatarSize
   children: ReactNode
 }) {
-  if (!pro) return <>{children}</>
   const metrics = sizes[size]
-  const inset = size === 'xs' ? 2 : 3
-  const width = size === 'xs' ? 2 : size === 'lg' ? 3 : 2.5
+  const width = size === 'xs' ? 2 : size === 'lg' ? 3.5 : 2.5
+  // The wrapper is there either way, so a ring arriving with the entitlement
+  // adds a sibling rather than remounting the face (and its image) under a
+  // new parent.
   return (
-    <View className="self-start">
+    <View>
       {children}
-      <View
-        pointerEvents="none"
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        style={{
-          position: 'absolute',
-          top: -inset,
-          left: -inset,
-          width: metrics.box + inset * 2,
-          height: metrics.box + inset * 2,
-          borderRadius: metrics.radius + inset,
-          borderWidth: width,
-          borderTopColor: GOLD.light,
-          borderLeftColor: GOLD.mid,
-          borderRightColor: GOLD.deep,
-          borderBottomColor: GOLD.deep,
-        }}
-      />
-      {/* The glint, where the light lands on the bevel. */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: -inset + width * 0.25,
-          left: metrics.box * 0.18,
-          width: Math.max(4, metrics.box * 0.16),
-          height: width * 0.6,
-          borderRadius: width,
-          backgroundColor: GOLD.shine,
-        }}
-      />
+      {pro ? (
+        <View
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: metrics.box,
+            height: metrics.box,
+            borderRadius: metrics.radius,
+            borderWidth: width,
+            borderTopColor: GOLD.light,
+            borderLeftColor: GOLD.mid,
+            borderRightColor: GOLD.mid,
+            borderBottomColor: GOLD.mid,
+          }}
+        />
+      ) : null}
     </View>
   )
 }

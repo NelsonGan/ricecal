@@ -13,8 +13,9 @@ import {
 import { useRequirePro } from '@/features/paywall'
 import { MealPhoto } from '@/features/shared'
 import { QueryNotice } from '@/features/social/components'
+import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
-import { AppBar, Button, Screen, Skeleton, Text } from '@/ui'
+import { AppBar, Button, Card, EmptyState, Screen, Skeleton, Text } from '@/ui'
 
 /** Photos to a row. Small, since this is a list of what goes rather than an album. */
 const PER_ROW = 4
@@ -32,7 +33,7 @@ export default function PhotoRemovalsScreen() {
   const { t } = useTranslation(['logging', 'common'])
   const back = useBack('/today')
   const { entitled, loading: checking, unknown } = useEntitlement()
-  const removals = usePhotoRemovals()
+  const removals = usePhotoRemovals({ fresh: true })
   const requirePro = useRequirePro()
   const rows = entitled ? [] : (removals.data ?? [])
   const days = byDay(rows)
@@ -51,7 +52,13 @@ export default function PhotoRemovalsScreen() {
       }
     >
       <View className="gap-lg pb-xl">
-        <Text variant="meta">{t('photoRemovals.intro', { days: FREE_PHOTO_RETENTION_DAYS })}</Text>
+        {/* The free window, which a Pro account (here from an older push) does
+            not have, so it is not told about it. */}
+        {entitled ? null : (
+          <Text variant="meta">
+            {t('photoRemovals.intro', { days: FREE_PHOTO_RETENTION_DAYS })}
+          </Text>
+        )}
         {/* Whether the account is free decides whether there is a list at all,
             so until that is known this waits rather than saying nothing goes. */}
         {!entitled && unknown && !removals.data ? (
@@ -70,13 +77,14 @@ export default function PhotoRemovalsScreen() {
             retry={() => removals.refetch()}
           />
         ) : rows.length === 0 ? (
-          <Text variant="body" className="py-lg text-center">
-            {t('photoRemovals.empty')}
-          </Text>
+          <EmptyState title={t('photoRemovals.empty')} icon={{ set: 'food', name: 'lunch-box' }} />
         ) : (
           days.map((day) => (
-            <View key={day.key} className="gap-2">
-              <Text variant="label">{format(day.date, 'EEEE, d MMM')}</Text>
+            <Card key={day.key}>
+              <View className="flex-row items-center justify-between">
+                <Text variant="label">{format(day.date, datePattern('weekdayDayMonthLong'))}</Text>
+                <Text variant="meta">{day.rows.length}</Text>
+              </View>
               {chunk(day.rows, PER_ROW).map((row) => (
                 <View key={row[0].id} className="flex-row gap-2">
                   {row.map((photo) => (
@@ -88,7 +96,7 @@ export default function PhotoRemovalsScreen() {
                   ))}
                 </View>
               ))}
-            </View>
+            </Card>
           ))
         )}
       </View>
@@ -100,7 +108,7 @@ function Thumb({ photo }: { photo: PhotoRemoval }) {
   const url = useMealPhotoUrl(photo.photo_path)
   const source = storedImageSource(photo.photo_path, url.data)
   return (
-    <View className="aspect-square flex-1 overflow-hidden rounded-tile bg-surface-alt">
+    <View className="aspect-square flex-1 overflow-hidden rounded-sm border border-line bg-surface-alt">
       {source ? <MealPhoto source={source} accessibilityLabel={photo.item_name ?? ''} /> : null}
     </View>
   )

@@ -18,14 +18,14 @@ const target = (overrides) => ({
 test('names the weekday the photos are gone by', () => {
   const push = warningPush(target(), now)
   assert.equal(push.title, 'Meal photos expiring')
-  assert.equal(push.body, '14 meal photos will be removed by Friday. Keep them with Pro.')
+  assert.equal(push.body, '14 meal photos will be removed by Friday.')
   assert.deepEqual(push.data, { kind: 'photos' })
 })
 
 test('says today, tomorrow and one photo plainly', () => {
   assert.equal(
     warningPush(target({ photo_count: 1, removes_by: '2026-10-28T10:00:00.000Z' }), now).body,
-    '1 meal photo will be removed today. Keep it with Pro.',
+    '1 meal photo will be removed today.',
   )
   assert.match(
     warningPush(target({ removes_by: '2026-10-29T10:00:00.000Z' }), now).body,
@@ -79,8 +79,13 @@ test('pushes each batch, forgets dead devices and stops when drained', async () 
       log: () => undefined,
       scheduledAt: now,
     })
-    assert.deepEqual(calls[0], ['photo_removal_push_targets', { p_days: 6, p_limit: 200 }])
+    assert.deepEqual(calls[0], [
+      'photo_removal_push_targets',
+      { p_days: 6, p_limit: 200, p_after: null },
+    ])
     assert.deepEqual(calls[1], ['forget_push_tokens', { p_tokens: ['ExponentPushToken[dead]'] }])
+    // The second call starts after the last account the first one returned.
+    assert.equal(calls[2][1].p_after, '11111111-1111-4111-8111-111111111111')
     assert.deepEqual(detail, { accounts: 1, sent: 1, failed: 1, batches: 2, drained: true })
   } finally {
     globalThis.fetch = realFetch

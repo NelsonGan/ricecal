@@ -87,9 +87,12 @@ CREATE OR REPLACE FUNCTION private.group_person (
     'name', coalesce(nullif(btrim(p.display_name), ''), p.handle),
     'handle', p.handle,
     'avatar_path', case when p.review_status = 'approved' and not p.quarantined then p.avatar_path end,
-    -- Drawn as a gold ring round the face. Shown to the people the group
-    -- already shows this person to, and nowhere a stranger can ask by id.
-    'is_pro', public.is_entitled(p.id)
+    -- Drawn as a gold ring round the face. Only for the caller and for people
+    -- they share a group with: this builder also draws invitees, inviters and
+    -- invite suggestions, and an invite by handle would otherwise tell anybody
+    -- whether a stranger pays.
+    'is_pro', (p.id = (select auth.uid()) or private.group_share((select auth.uid()), p.id))
+      and public.is_entitled(p.id)
   ) from public.profiles p where p.id = p_user;
 $function$;
 
@@ -373,7 +376,8 @@ $function$;
 
 CREATE FUNCTION public.photo_removal_push_targets (
   p_days  integer DEFAULT 6,
-  p_limit integer DEFAULT 200
+  p_limit integer DEFAULT 200,
+  p_after uuid    DEFAULT NULL::uuid
 )
   RETURNS TABLE (
     token       text,
@@ -392,13 +396,15 @@ begin
   if p_days is null or p_days not between 1 and 14 then
     raise exception 'Days must be between 1 and 14' using errcode = '22023';
   end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('photo_removal_push_targets'));
   return query
     with candidates as materialized (
       -- Accounts with a device and a photograph past the start of its free
       -- window, by the sweep's own index, before any per-account work.
       select distinct t.user_id
         from public.push_tokens t
-       where not public.is_entitled(t.user_id)
+       where (p_after is null or t.user_id > p_after)
+         and not public.is_entitled(t.user_id)
          and not exists (
            select 1 from public.photo_removal_warnings w
             where w.user_id = t.user_id
@@ -422,6 +428,7 @@ begin
            select 1 from public.photo_removal_schedule(
              t.user_id, now() + pg_catalog.make_interval(days => p_days))
          )
+       order by t.user_id
        limit p_limit
     ),
     due as (
@@ -447,7 +454,7 @@ begin
 end;
 $function$;
 
-GRANT ALL ON FUNCTION public.photo_removal_push_targets(integer, integer) TO service_role;
+GRANT ALL ON FUNCTION public.photo_removal_push_targets(integer, integer, uuid) TO service_role;
 
 CREATE FUNCTION public.photo_removal_schedule (
   p_user  uuid,
@@ -586,7 +593,7 @@ begin
     select c.owner_id, c.photo_path, null::text, 'meal'::text
     from private.group_photo_claims(p_keys) c
     union all
-    -- Pictures uploaded as a group's icon, for its members and invitees.
+    -- Pictures uploaded as a group's icon, for its members only.
     select c.owner_id, c.photo_path, null::text, 'avatar'::text
     from private.group_icon_claims(p_keys) c;
 end;
@@ -913,4 +920,4 @@ REVOKE EXECUTE ON FUNCTION public.create_group(text, text, boolean, text),
   private.group_icon_claims(text[]), private.social_is_pro(uuid) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION private.group_check_icon(uuid, text, text),
   public.photo_removal_schedule(uuid, timestamptz),
-  public.photo_removal_push_targets(integer, integer) FROM PUBLIC, anon, authenticated;
+  public.photo_removal_push_targets(integer, integer, uuid) FROM PUBLIC, anon, authenticated;

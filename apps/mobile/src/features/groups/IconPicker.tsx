@@ -49,6 +49,11 @@ export function GroupIconPicker({
   const requirePro = useRequirePro({ beforePaywall })
   const [expanded, setExpanded] = useState(false)
   const [uploading, setUploading] = useState(false)
+  // The drawings scale with the tiles, which share the row's width: a fixed
+  // size nearly filled the tile on a narrow phone and looked lost on a wide one.
+  const [rowWidth, setRowWidth] = useState(0)
+  const tile = rowWidth > 0 ? (rowWidth - GAP * (PER_ROW - 1)) / PER_ROW : 48
+  const iconSize = Math.round(tile * 0.66)
   const picture = value.path ? value : null
   const shownPro = expanded ? PRO_GROUP_ICONS : PRO_GROUP_ICONS.slice(0, PRO_PREVIEW)
 
@@ -79,24 +84,24 @@ export function GroupIconPicker({
   }
 
   return (
-    <View className="gap-3">
+    <View className="gap-3" onLayout={(event) => setRowWidth(event.nativeEvent.layout.width)}>
       <Text variant="label">{t('icon')}</Text>
       <IconRow>
-        {GROUP_ICONS.map((option, index) => (
+        {GROUP_ICONS.map((option) => (
           <IconTile
             key={option}
             selected={!picture && value.name === option}
-            label={`${t('icon')} ${index + 1}`}
+            label={iconLabel(option)}
             onPress={() => onChange({ name: option })}
           >
-            <GroupIcon name={option} size={32} />
+            <GroupIcon name={option} size={iconSize} />
           </IconTile>
         ))}
       </IconRow>
 
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">
-          <Text variant="label">{t('proIcons')}</Text>
+          <Text variant="label">{t('moreIcons')}</Text>
           <Badge tone="kaya" size="sm">
             Pro
           </Badge>
@@ -120,6 +125,7 @@ export function GroupIconPicker({
                 key={option}
                 selected={Boolean(picture)}
                 locked={!entitled}
+                hint={entitled ? undefined : t('needsPro')}
                 label={t('uploadIcon')}
                 onPress={() => void upload()}
               >
@@ -132,9 +138,14 @@ export function GroupIconPicker({
                     contentFit="cover"
                   />
                 ) : picture?.path ? (
-                  <GroupIcon name={value.name} path={picture.path} size={32} fill />
+                  <GroupIcon name={value.name} path={picture.path} size={iconSize} fill />
                 ) : (
-                  <Icon set="ui" name="upload" size={26} tintColor={colors.muted} />
+                  <Icon
+                    set="ui"
+                    name="upload"
+                    size={Math.round(iconSize * 0.8)}
+                    tintColor={colors.muted}
+                  />
                 )}
               </IconTile>
             ) : (
@@ -142,10 +153,11 @@ export function GroupIconPicker({
                 key={option}
                 selected={!picture && value.name === option}
                 locked={!entitled}
-                label={`${t('icon')} ${option}`}
+                hint={entitled ? undefined : t('needsPro')}
+                label={iconLabel(option)}
                 onPress={() => choosePro(option)}
               >
-                <GroupIcon name={option} size={32} />
+                <GroupIcon name={option} size={iconSize} />
               </IconTile>
             ),
           )}
@@ -156,6 +168,16 @@ export function GroupIconPicker({
 }
 
 const UPLOAD = '__upload'
+
+/** Gap between tiles, in points; `gap-1.5` below. */
+const GAP = 6
+
+/**
+ * A drawing's name read out, "sushi-roll" as "sushi roll", the way the entry
+ * picker names its pictures. Not translated: the names are the drawings' file
+ * names, and neither picker carries a word list in thirteen languages.
+ */
+const iconLabel = (name: string) => name.replace(/-/g, ' ')
 
 function rows<T>(items: readonly T[], size: number): T[][] {
   const out: T[][] = []
@@ -184,12 +206,15 @@ function IconTile({
   selected,
   locked = false,
   label,
+  hint,
   onPress,
   children,
 }: {
   selected: boolean
   locked?: boolean
   label: string
+  /** Why a locked tile opens the paywall rather than choosing. */
+  hint?: string
   onPress: () => void
   children: React.ReactNode
 }) {
@@ -198,12 +223,17 @@ function IconTile({
     <Tappable
       onPress={onPress}
       accessibilityRole="radio"
-      accessibilityState={{ selected, disabled: locked }}
+      // Not "disabled": a locked tile still does something, it explains and
+      // opens the paywall, and VoiceOver reads a disabled one as dead.
+      accessibilityState={{ selected }}
       accessibilityLabel={label}
+      accessibilityHint={hint}
+      // `rounded-sm`, not the tile radius: at this size `rounded-tile` drew
+      // near circles beside the squircle tiles everywhere else in groups.
       className={
         selected
-          ? 'aspect-square flex-1 items-center justify-center overflow-hidden rounded-tile border-2 border-pandan bg-pandan-soft'
-          : 'aspect-square flex-1 items-center justify-center overflow-hidden rounded-tile border border-line bg-surface'
+          ? 'aspect-square flex-1 items-center justify-center overflow-hidden rounded-sm border-2 border-pandan bg-pandan-soft'
+          : 'aspect-square flex-1 items-center justify-center overflow-hidden rounded-sm border border-line bg-surface'
       }
     >
       <View

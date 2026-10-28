@@ -11,7 +11,7 @@ export const logging = {
     tomorrow: 'tomorrow',
     show: 'Show',
     title: 'Photos to be removed',
-    intro: 'Free accounts keep meal photos for {{days}} days. The meals stay.',
+    intro: 'Free accounts keep meal photos for {{days}} days. Your logged meals stay.',
     keep: 'Keep them with Pro',
     empty: 'No photos are due to be removed.',
   },
