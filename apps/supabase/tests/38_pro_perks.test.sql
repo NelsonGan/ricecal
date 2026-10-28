@@ -71,6 +71,22 @@ select is((select g->>'icon_path' from jsonb_array_elements(public.my_groups()) 
   'avatars/' || :'pro' || '/icon-1.jpg', 'my_groups names the picture');
 select is((select (g->'members'->0->>'is_pro')::boolean from jsonb_array_elements(public.my_groups()) g
   where g->>'name' = 'Perks pro'), true, 'and says its Pro member is Pro');
+reset role;
+-- An invite by handle must not say whether the invitee pays.
+insert into public.subscriptions (user_id, status, plan, current_period_end)
+  values (:'peer', 'active', 'yearly', now() + interval '30 days');
+insert into public.group_invites (group_id, invitee_id, inviter_id)
+  select id, :'peer', :'pro' from public.groups where name = 'Perks pro';
+select set_config('request.jwt.claims', json_build_object('sub', :'pro', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is((select (i->>'is_pro')::boolean from jsonb_array_elements(
+    public.group_details((select id from pg))->'invites') i),
+  false, 'the invites list does not say whether a stranger pays');
+reset role;
+delete from public.group_invites where invitee_id = :'peer';
+delete from public.subscriptions where user_id = :'peer';
+select set_config('request.jwt.claims', json_build_object('sub', :'pro', 'role', 'authenticated')::text, true);
+set local role authenticated;
 select is((select count(*)::integer from public.social_photo_claims(array['avatars/' || :'pro' || '/icon-1.jpg'])),
   1, 'a member is signed the group''s picture');
 -- Picking a drawing takes the picture away.
@@ -94,7 +110,7 @@ select is((select count(*)::integer from public.social_photo_claims(array['avata
 select is((select i->>'icon_path' from jsonb_array_elements(public.my_group_invites()) i), null,
   'and the invite does not name the picture');
 select is((select (i->'inviter'->>'is_pro')::boolean from jsonb_array_elements(public.my_group_invites()) i),
-  true, 'and sees the inviter is Pro');
+  false, 'and is not told whether the inviter pays, sharing no group with them');
 select throws_ok($$select public.is_entitled(gen_random_uuid())$$, '42501', null,
   'is_entitled stays closed to clients');
 select is((select is_pro from public.social_profile_details where user_id = :'pro'), false,

@@ -555,7 +555,7 @@ begin
     select c.owner_id, c.photo_path, null::text, 'meal'::text
     from private.group_photo_claims(p_keys) c
     union all
-    -- Pictures uploaded as a group's icon, for its members and invitees.
+    -- Pictures uploaded as a group's icon, for its members only.
     select c.owner_id, c.photo_path, null::text, 'avatar'::text
     from private.group_icon_claims(p_keys) c;
 end;

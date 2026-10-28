@@ -26,13 +26,16 @@ const DAYS = 14
  * every launch for nothing. Half a day fresh, since a photo comes due by the
  * day and Today is opened many times in one.
  */
-export function usePhotoRemovals() {
+export function usePhotoRemovals(options: { fresh?: boolean } = {}) {
   const userId = useUserId()
   const { entitled, loading, unknown } = useEntitlement()
   return useQuery({
     queryKey: keys.photoRemovals(userId),
     enabled: !entitled && !loading && !unknown,
     staleTime: 12 * 60 * 60 * 1000,
+    // The list screen reads afresh each time it opens, so a photo removed
+    // or a meal deleted since the notice never shows there as a broken tile.
+    ...(options.fresh ? { refetchOnMount: 'always' as const } : {}),
     queryFn: async () =>
       unwrap(await supabase.rpc('upcoming_photo_removals', { p_days: DAYS })) as PhotoRemoval[],
   })

@@ -1476,8 +1476,8 @@ export const fil = {
         group_icon: 'Kailangan ng RiceCal Pro para sa mas maraming group icon.',
         photo_retention:
           'Kailangan ng RiceCal Pro para itago ang mga larawan ng pagkain nang permanente.',
-        nudge_streak: '{{days}} araw na sunod-sunod kang nag-log. Ituloy gamit ang Pro.',
-        nudge_goal: 'Naabot mo ang target mong timbang. Ituloy gamit ang Pro.',
+        nudge_streak: '{{days}} araw na sunod-sunod kang nag-log. Magaling.',
+        nudge_goal: 'Naabot mo ang target mong timbang. Magaling.',
       },
     },
 
@@ -2316,7 +2316,8 @@ export const fil = {
     create: 'Gumawa',
     name: 'Pangalan ng grupo',
     namePlaceholder: 'Makan Buddies',
-    proIcons: 'Mga Pro icon',
+    moreIcons: 'Iba pang icon',
+    needsPro: 'Kailangan ng RiceCal Pro',
     viewMore: 'Tingnan pa',
     viewLess: 'Bawasan',
     uploadIcon: 'Mag-upload ng larawan',

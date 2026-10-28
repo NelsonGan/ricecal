@@ -312,9 +312,17 @@ create policy "Server only" on public.photo_removal_warnings as restrictive for 
 -- twice. A push that then fails to send is lost; the app's own notice on Today
 -- still says it.
 --
--- `p_limit` bounds one call. Every account it picks has something due and a
--- device, so the job calls again until a call comes back empty.
-create or replace function public.photo_removal_push_targets(p_days integer default 6, p_limit integer default 200)
+-- `p_limit` bounds one call, and `p_after` is where the last one stopped:
+-- accounts are walked in id order, so one with photos in the window but none
+-- due (a lapsed subscriber in grace) is read once a run rather than once a
+-- batch. Every account it returns has something due and a device, and the job
+-- calls again from the last id until a call comes back empty.
+--
+-- A transaction lock makes two overlapping calls take turns, so the second
+-- sees the first one's marks and pushes nobody twice.
+create or replace function public.photo_removal_push_targets(
+  p_days integer default 6, p_limit integer default 200, p_after uuid default null
+)
 returns table (token text, user_id uuid, language text, timezone text, photo_count integer, removes_by timestamptz)
 language plpgsql security definer set search_path = '' as $$
 #variable_conflict use_column
@@ -322,13 +330,15 @@ begin
   if p_days is null or p_days not between 1 and 14 then
     raise exception 'Days must be between 1 and 14' using errcode = '22023';
   end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('photo_removal_push_targets'));
   return query
     with candidates as materialized (
       -- Accounts with a device and a photograph past the start of its free
       -- window, by the sweep's own index, before any per-account work.
       select distinct t.user_id
         from public.push_tokens t
-       where not public.is_entitled(t.user_id)
+       where (p_after is null or t.user_id > p_after)
+         and not public.is_entitled(t.user_id)
          and not exists (
            select 1 from public.photo_removal_warnings w
             where w.user_id = t.user_id
@@ -352,6 +362,7 @@ begin
            select 1 from public.photo_removal_schedule(
              t.user_id, now() + pg_catalog.make_interval(days => p_days))
          )
+       order by t.user_id
        limit p_limit
     ),
     due as (

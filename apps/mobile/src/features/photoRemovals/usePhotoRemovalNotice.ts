@@ -1,7 +1,7 @@
 import { useIsFocused, useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useProfile, useSession } from '@/data'
+import { useEntitlement, useProfile, useSession } from '@/data'
 import { usePhotoRemovals } from '@/data/photoRemovals'
 import { announcementHasTheFloor } from '@/features/news/useAnnouncementOffer'
 import { tutorialOffered } from '@/features/tutorial'
@@ -53,6 +53,10 @@ export function usePhotoRemovalNotice(): void {
   // notice keeps until the next launch.
   const { data: profile } = useProfile()
   const announcing = !userId || profile === undefined || announcementHasTheFloor(userId, profile)
+  // The rows outlive a purchase in the persisted cache, so the notice asks
+  // the tier itself rather than trusting that a Pro account has no rows.
+  const { entitled, loading, unknown } = useEntitlement()
+  const free = !entitled && !loading && !unknown
   const { data } = usePhotoRemovals()
   const summary = data ? summarize(data) : null
   const count = summary?.count ?? 0
@@ -61,7 +65,16 @@ export function usePhotoRemovalNotice(): void {
   latest.current = { t, router, toast }
 
   useEffect(() => {
-    if (!userId || !tourDone || announcing || !focused || count === 0 || !noticeDue(userId)) return
+    if (
+      !userId ||
+      !free ||
+      !tourDone ||
+      announcing ||
+      !focused ||
+      count === 0 ||
+      !noticeDue(userId)
+    )
+      return
     const timer = setTimeout(() => {
       if (!noticeDue(userId)) return
       markNoticed(userId)
@@ -75,5 +88,5 @@ export function usePhotoRemovalNotice(): void {
       })
     }, DELAY_MS)
     return () => clearTimeout(timer)
-  }, [userId, tourDone, announcing, focused, count, removesBy])
+  }, [userId, free, tourDone, announcing, focused, count, removesBy])
 }

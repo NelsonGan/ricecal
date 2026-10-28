@@ -3367,8 +3367,9 @@ reviews the picture. The drawing sits under the picture and
 shows wherever it cannot be signed.
 
 **A Pro member's face wears a gold ring**, wherever the app already shows that
-person: a group's members, invites and board (`is_pro` from
-`private.group_person`), feed posts (`author_is_pro`), profiles and search
+person: a group's members and board (`is_pro` from `private.group_person`,
+which answers only for the caller and people they share a group with, since
+the same builder draws invitees and invite suggestions), feed posts (`author_is_pro`), profiles and search
 (`is_pro` on `social_profile_details`), and the Me tab. `is_entitled` itself
 stays closed to clients, since it would answer for any id; the views reach it
 through `private.social_is_pro`, which answers only for a profile that has
@@ -5911,9 +5912,12 @@ read it, on the same six day window, so each photo is warned about once:
   photos due in six days that have not been warned in six days, marks them in
   `photo_removal_warnings` in the same statement, and returns their devices in
   their language. "14 meal photos will be removed by Friday", in the account's
-  zone; a tap opens the list (`data.kind: 'photos'`, which 1.0 ignores). The
-  Worker posts to Expo itself, so it needs no endpoint and no second
-  credential. A post Expo refuses is not retried.
+  zone, and nothing more: no Pro pitch, because a promotional push needs its
+  own opt-in on the App Store, and the list it opens carries the offer. A tap
+  opens that list (`data.kind: 'photos'`, which 1.0 ignores). Accounts are
+  walked in id order with a cursor, and a transaction lock makes overlapping
+  calls take turns. The Worker posts to Expo itself, so it needs no endpoint
+  and no second credential. A post Expo refuses is not retried.
 - **A toast on Today**, the same sentence with Show, once per six days per
   account (MMKV) and three seconds in, so it never lands on a milestone
   paywall. `upcoming_photo_removals(14)` is asked only once the account is

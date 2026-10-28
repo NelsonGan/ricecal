@@ -23,9 +23,12 @@ returns jsonb language sql stable security definer set search_path = '' as $$
     'name', coalesce(nullif(btrim(p.display_name), ''), p.handle),
     'handle', p.handle,
     'avatar_path', case when p.review_status = 'approved' and not p.quarantined then p.avatar_path end,
-    -- Drawn as a gold ring round the face. Shown to the people the group
-    -- already shows this person to, and nowhere a stranger can ask by id.
-    'is_pro', public.is_entitled(p.id)
+    -- Drawn as a gold ring round the face. Only for the caller and for people
+    -- they share a group with: this builder also draws invitees, inviters and
+    -- invite suggestions, and an invite by handle would otherwise tell anybody
+    -- whether a stranger pays.
+    'is_pro', (p.id = (select auth.uid()) or private.group_share((select auth.uid()), p.id))
+      and public.is_entitled(p.id)
   ) from public.profiles p where p.id = p_user;
 $$;
 

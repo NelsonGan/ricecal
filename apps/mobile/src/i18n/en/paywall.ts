@@ -275,8 +275,8 @@ export const paywall = {
        * The milestone offers, which no button refused, so each sentence marks
        * the milestone rather than a refusal. See `useProNudge`.
        */
-      nudge_streak: '{{days}} days logged in a row. Keep going with Pro.',
-      nudge_goal: 'You reached your goal weight. Keep going with Pro.',
+      nudge_streak: '{{days}} days logged in a row. Nice work.',
+      nudge_goal: 'You reached your goal weight. Nice work.',
     },
   },
 

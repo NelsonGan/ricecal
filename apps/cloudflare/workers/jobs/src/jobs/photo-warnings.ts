@@ -44,10 +44,13 @@ export const photoWarnings: Job = {
     let batches = 0
     let drained = false
 
+    // Where the last call stopped, so each account is read once a run.
+    let after: string | null = null
     while (batches < MAX_BATCHES) {
-      const targets = await rpc<Target[]>('photo_removal_push_targets', {
+      const targets: Target[] = await rpc<Target[]>('photo_removal_push_targets', {
         p_days: WINDOW_DAYS,
         p_limit: BATCH,
+        p_after: after,
       })
       batches += 1
       if (targets.length === 0) {
@@ -55,6 +58,7 @@ export const photoWarnings: Job = {
         break
       }
       accounts += new Set(targets.map((target) => target.user_id)).size
+      after = targets.reduce((last, target) => (target.user_id > last ? target.user_id : last), '')
 
       const messages = targets.map((target) => warningPush(target, scheduledAt))
       const gone: string[] = []
