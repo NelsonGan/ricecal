@@ -13,7 +13,6 @@
 // Authorization header itself so it can report why auth failed, rather than being
 // rejected by the platform with an opaque 401.
 
-import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 
 import { r2Configured, signPut } from '../_shared/r2.ts'

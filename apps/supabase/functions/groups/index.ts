@@ -1,4 +1,3 @@
-import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
 import { readBoundedBytes, json as sharedJson } from '../_shared/http.ts'

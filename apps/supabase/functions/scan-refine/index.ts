@@ -49,7 +49,6 @@
 //   no_change         an adjustment that named nothing on the plate
 //   failed            something threw
 
-import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
 import { dishIcon, refineQuantity, resolveItem, writeIngredients } from '../_shared/cascade.ts'

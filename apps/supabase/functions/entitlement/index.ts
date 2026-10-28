@@ -13,7 +13,6 @@
 // `verify_jwt = false` and the header is inspected here, as in every other
 // function in this directory, so a failure says which half broke.
 
-import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
 import { entitledBy, reconcileEntitlement } from '../_shared/entitlement.ts'

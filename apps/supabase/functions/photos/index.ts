@@ -7,7 +7,6 @@
 //
 // The client never holds an R2 credential. It holds a URL that stops working.
 
-import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
 import { json, readBoundedBytes } from '../_shared/http.ts'
