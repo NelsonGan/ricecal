@@ -574,6 +574,18 @@ was checked against the code (October 2026) and is not a finding:
   `food_scan_items.resolved_tier`, a column with five values.
 - *Leaked password protection*: needs the Pro plan.
 
+### Function imports come from npm, not jsr.io
+
+The deploy on a merge bundles every function on Supabase's builder, which gives
+up on a registry that takes more than ten seconds to answer. On 2026-10-28 it
+twice failed to fetch the package list for `@supabase/functions-js` from jsr.io
+("failed to bundle function"), so nothing deployed, while jsr.io answered in
+under a second from anywhere else. That import was a type file for
+`EdgeRuntime` that no function needed (all three reach it through a cast), so it
+went, and `@supabase/supabase-js` comes from npm (`npm:@supabase/supabase-js@^2`),
+the route Supabase documents. The bundles came out the same size. Tests may
+still import `jsr:@std/assert`: a test is never bundled.
+
 ### Function secrets
 
 Two belong to the catalogue, read by `functions/_shared/catalogue.ts`:
