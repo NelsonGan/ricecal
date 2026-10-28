@@ -29,7 +29,6 @@
 // on a free account and fifty on a paid one. So the same endpoint answers 402 to
 // one input and 429 to either, and the client reads the `code` in the body.
 
-import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
 import { gtin14 } from '../_shared/barcode.ts'

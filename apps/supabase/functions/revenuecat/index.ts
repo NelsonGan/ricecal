@@ -19,7 +19,6 @@
 // with no token configured the endpoint refuses every request: an unconfigured
 // secret must not be an open door onto the table that decides who has paid.
 
-import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 import { json } from '../_shared/http.ts'
 import {
