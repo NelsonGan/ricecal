@@ -665,6 +665,19 @@ export const ms = {
   },
 
   logging: {
+    photoRemovals: {
+      toast_one: '{{count}} foto makanan akan dipadam {{when}}',
+      toast_other: '{{count}} foto makanan akan dipadam {{when}}',
+      by: 'menjelang {{day}}',
+      today: 'hari ini',
+      tomorrow: 'esok',
+      show: 'Lihat',
+      title: 'Foto yang akan dipadam',
+      intro:
+        'Akaun percuma menyimpan foto makanan selama {{days}} hari. Catatan makanan anda kekal.',
+      keep: 'Simpan dengan Pro',
+      empty: 'Tiada foto yang akan dipadam.',
+    },
     today: {
       title: 'Hari ini',
       backToTodayA11y: 'Kembali ke hari ini',
@@ -1461,7 +1474,10 @@ export const ms = {
         workout_range:
           'Melihat kemajuan senaman lebih jauh daripada 3 bulan memerlukan RiceCal Pro.',
         review: 'Membaca ulasan lama memerlukan RiceCal Pro.',
-        nudge: 'RiceCal Pro membuang hadnya.',
+        group_icon: 'Lebih banyak ikon kumpulan memerlukan RiceCal Pro.',
+        photo_retention: 'Menyimpan foto makanan selamanya memerlukan RiceCal Pro.',
+        nudge_streak: '{{days}} hari berturut-turut dicatat. Syabas.',
+        nudge_goal: 'Anda mencapai berat sasaran. Syabas.',
       },
     },
 
@@ -2297,6 +2313,13 @@ export const ms = {
     create: 'Cipta',
     name: 'Nama kumpulan',
     namePlaceholder: 'Makan Buddies',
+    moreIcons: 'Lebih banyak ikon',
+    needsPro: 'Perlu RiceCal Pro',
+    viewMore: 'Lihat lagi',
+    viewLess: 'Lihat kurang',
+    uploadIcon: 'Muat naik gambar',
+    iconUploadFailed: 'Gambar itu tidak dapat dimuat naik.',
+    changeIcon: 'Tukar ikon',
     icon: 'Ikon',
     private: 'Peribadi',
     privateHint: 'Hanya orang yang anda jemput boleh sertai.',

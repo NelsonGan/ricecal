@@ -104,6 +104,8 @@ export function useLogFood() {
       queryClient.invalidateQueries({ queryKey: keys.recentFoods(userId) })
       // A first entry can start a streak, and both feed the badges.
       queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
+      // Its photo, if it had one, is no longer going to be removed.
+      queryClient.invalidateQueries({ queryKey: keys.photoRemovals(userId) })
       invalidateEatenTotals(queryClient, userId)
     },
   })
@@ -324,6 +326,10 @@ export function useUpdateEntry() {
       // a refetch per edit for nothing.
       if (patch.name !== undefined || patch.icon !== undefined) {
         queryClient.invalidateQueries({ queryKey: keys.recentFoods(userId) })
+      }
+      // A photo taken off or replaced is no longer one the sweep is about to take.
+      if (patch.photoPath !== undefined) {
+        queryClient.invalidateQueries({ queryKey: keys.photoRemovals(userId) })
       }
     },
   })

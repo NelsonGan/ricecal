@@ -24,4 +24,11 @@ export interface Env {
    * in `schemas/` where they can be read and tested.
    */
   SUPABASE_SERVICE_ROLE_KEY: string
+
+  /**
+   * Optional. Expo only asks for it once enhanced push security is on for the
+   * project; until then the photo warnings post without one. See
+   * `jobs/photo-warnings.ts`.
+   */
+  EXPO_ACCESS_TOKEN?: string
 }

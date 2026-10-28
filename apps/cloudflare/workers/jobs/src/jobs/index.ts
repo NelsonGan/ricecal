@@ -7,6 +7,7 @@
  */
 import type { Job } from '../job.ts'
 import { activityHours } from './activity-hours.ts'
+import { photoWarnings } from './photo-warnings.ts'
 import { retention } from './retention.ts'
 
-export const JOBS: Job[] = [retention, activityHours]
+export const JOBS: Job[] = [retention, activityHours, photoWarnings]

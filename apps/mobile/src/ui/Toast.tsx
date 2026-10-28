@@ -89,10 +89,32 @@ export function useToast() {
 }
 
 const tones = {
-  neutral: { fill: 'bg-inverse', title: 'text-on-inverse', body: 'text-on-inverse opacity-70' },
-  success: { fill: 'bg-inverse', title: 'text-on-inverse', body: 'text-on-inverse opacity-70' },
-  warning: { fill: 'bg-kaya', title: 'text-on-kaya', body: 'text-on-kaya opacity-70' },
-  error: { fill: 'bg-hibiscus', title: 'text-on-hibiscus', body: 'text-on-hibiscus opacity-80' },
+  neutral: {
+    fill: 'bg-inverse',
+    title: 'text-on-inverse',
+    body: 'text-on-inverse opacity-70',
+    action: 'text-inverse-accent',
+  },
+  success: {
+    fill: 'bg-inverse',
+    title: 'text-on-inverse',
+    body: 'text-on-inverse opacity-70',
+    action: 'text-inverse-accent',
+  },
+  // The mint that reads on the dark snackbar vanishes on amber and red, so a
+  // coloured toast's action is its own text colour, underlined to say "tap".
+  warning: {
+    fill: 'bg-kaya',
+    title: 'text-on-kaya',
+    body: 'text-on-kaya opacity-70',
+    action: 'text-on-kaya underline',
+  },
+  error: {
+    fill: 'bg-hibiscus',
+    title: 'text-on-hibiscus',
+    body: 'text-on-hibiscus opacity-80',
+    action: 'text-on-hibiscus underline',
+  },
 } as const
 
 /** A clear drag, or a quick flick, dismisses without making a button hard to tap. */
@@ -462,7 +484,7 @@ function ToastCard({
               }}
               onAccessibilityEscape={dismiss}
             >
-              <Text className="font-display text-[16px] leading-[20px] text-inverse-accent">
+              <Text className={cn('font-display text-[16px] leading-[20px]', palette.action)}>
                 {toast.action.label}
               </Text>
             </Tappable>

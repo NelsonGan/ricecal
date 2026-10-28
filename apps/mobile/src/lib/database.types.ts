@@ -1204,6 +1204,7 @@ export type Database = {
         Row: {
           created_at: string
           icon_name: string
+          icon_path: string | null
           id: string
           is_public: boolean
           leader_id: string | null
@@ -1214,6 +1215,7 @@ export type Database = {
         Insert: {
           created_at?: string
           icon_name?: string
+          icon_path?: string | null
           id?: string
           is_public?: boolean
           leader_id?: string | null
@@ -1224,6 +1226,7 @@ export type Database = {
         Update: {
           created_at?: string
           icon_name?: string
+          icon_path?: string | null
           id?: string
           is_public?: boolean
           leader_id?: string | null
@@ -1347,6 +1350,43 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      photo_removal_warnings: {
+        Row: {
+          user_id: string
+          warned_at: string
+        }
+        Insert: {
+          user_id: string
+          warned_at?: string
+        }
+        Update: {
+          user_id?: string
+          warned_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'photo_removal_warnings_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'photo_removal_warnings_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'social_profile_details'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'photo_removal_warnings_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'social_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -3007,6 +3047,7 @@ export type Database = {
         Row: {
           audience: Database['public']['Enums']['social_audience'] | null
           author_id: string | null
+          author_is_pro: boolean | null
           avatar_path: string | null
           caption: string | null
           carbs_g: number | null
@@ -3074,6 +3115,7 @@ export type Database = {
           handle: string | null
           is_followed_by: boolean | null
           is_following: boolean | null
+          is_pro: boolean | null
           post_count: number | null
           quarantined: boolean | null
           review_reason: string | null
@@ -3091,6 +3133,7 @@ export type Database = {
           handle?: never
           is_followed_by?: never
           is_following?: never
+          is_pro?: never
           post_count?: never
           quarantined?: boolean | null
           review_reason?: string | null
@@ -3108,6 +3151,7 @@ export type Database = {
           handle?: never
           is_followed_by?: never
           is_following?: never
+          is_pro?: never
           post_count?: never
           quarantined?: boolean | null
           review_reason?: string | null
@@ -3424,7 +3468,12 @@ export type Database = {
         }[]
       }
       create_group: {
-        Args: { p_icon_name: string; p_is_public: boolean; p_name: string }
+        Args: {
+          p_icon_name: string
+          p_icon_path?: string
+          p_is_public: boolean
+          p_name: string
+        }
         Returns: string
       }
       create_social_comment: {
@@ -3544,6 +3593,8 @@ export type Database = {
       }
       forget_push_tokens: { Args: { p_tokens: string[] }; Returns: undefined }
       free_daily_scans: { Args: never; Returns: number }
+      free_group_icons: { Args: never; Returns: string[] }
+      free_group_limit: { Args: never; Returns: number }
       free_photo_retention_days: { Args: never; Returns: number }
       free_recipe_limit: { Args: never; Returns: number }
       free_routine_limit: { Args: never; Returns: number }
@@ -3716,6 +3767,27 @@ export type Database = {
           p_target_id: string
         }
         Returns: string
+      }
+      photo_removal_push_targets: {
+        Args: { p_after?: string; p_days?: number; p_limit?: number }
+        Returns: {
+          language: string
+          photo_count: number
+          removes_by: string
+          timezone: string
+          token: string
+          user_id: string
+        }[]
+      }
+      photo_removal_schedule: {
+        Args: { p_until: string; p_user: string }
+        Returns: {
+          id: string
+          item_name: string
+          log_date: string
+          photo_path: string
+          removes_at: string
+        }[]
       }
       pro_daily_scans: { Args: never; Returns: number }
       prune_activity_hours: {
@@ -4100,6 +4172,7 @@ export type Database = {
         Returns: {
           audience: Database['public']['Enums']['social_audience'] | null
           author_id: string | null
+          author_is_pro: boolean | null
           avatar_path: string | null
           caption: string | null
           carbs_g: number | null
@@ -4177,6 +4250,7 @@ export type Database = {
         Returns: {
           audience: Database['public']['Enums']['social_audience'] | null
           author_id: string | null
+          author_is_pro: boolean | null
           avatar_path: string | null
           caption: string | null
           carbs_g: number | null
@@ -4228,6 +4302,7 @@ export type Database = {
           handle: string | null
           is_followed_by: boolean | null
           is_following: boolean | null
+          is_pro: boolean | null
           post_count: number | null
           quarantined: boolean | null
           review_reason: string | null
@@ -4253,6 +4328,7 @@ export type Database = {
         Returns: {
           audience: Database['public']['Enums']['social_audience'] | null
           author_id: string | null
+          author_is_pro: boolean | null
           avatar_path: string | null
           caption: string | null
           carbs_g: number | null
@@ -4304,6 +4380,7 @@ export type Database = {
           handle: string | null
           is_followed_by: boolean | null
           is_following: boolean | null
+          is_pro: boolean | null
           post_count: number | null
           quarantined: boolean | null
           review_reason: string | null
@@ -4330,6 +4407,7 @@ export type Database = {
           handle: string | null
           is_followed_by: boolean | null
           is_following: boolean | null
+          is_pro: boolean | null
           post_count: number | null
           quarantined: boolean | null
           review_reason: string | null
@@ -4426,10 +4504,21 @@ export type Database = {
         }[]
       }
       unregister_push_token: { Args: { p_token: string }; Returns: undefined }
+      upcoming_photo_removals: {
+        Args: { p_days?: number }
+        Returns: {
+          id: string
+          item_name: string
+          log_date: string
+          photo_path: string
+          removes_at: string
+        }[]
+      }
       update_group: {
         Args: {
           p_group_id: string
           p_icon_name: string
+          p_icon_path?: string
           p_is_public: boolean
           p_name: string
         }

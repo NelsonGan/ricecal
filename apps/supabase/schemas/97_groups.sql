@@ -22,7 +22,13 @@ returns jsonb language sql stable security definer set search_path = '' as $$
     'id', p.id,
     'name', coalesce(nullif(btrim(p.display_name), ''), p.handle),
     'handle', p.handle,
-    'avatar_path', case when p.review_status = 'approved' and not p.quarantined then p.avatar_path end
+    'avatar_path', case when p.review_status = 'approved' and not p.quarantined then p.avatar_path end,
+    -- Drawn as a gold ring round the face. Only for the caller and for people
+    -- they share a group with: this builder also draws invitees, inviters and
+    -- invite suggestions, and an invite by handle would otherwise tell anybody
+    -- whether a stranger pays.
+    'is_pro', (p.id = (select auth.uid()) or private.group_share((select auth.uid()), p.id))
+      and public.is_entitled(p.id)
   ) from public.profiles p where p.id = p_user;
 $$;
 
@@ -35,8 +41,8 @@ begin
   if v_user is null then raise exception 'Sign in to continue' using errcode = '42501'; end if;
   return coalesce((
     select jsonb_agg(jsonb_build_object(
-      'id', g.id, 'name', g.name, 'icon_name', g.icon_name, 'is_public', g.is_public,
-      'is_leader', g.leader_id = v_user,
+      'id', g.id, 'name', g.name, 'icon_name', g.icon_name, 'icon_path', g.icon_path,
+      'is_public', g.is_public, 'is_leader', g.leader_id = v_user,
       'member_count', g.member_count,
       'logged_today', (
         select count(*) from public.group_members x
@@ -178,7 +184,7 @@ begin
   )
   select jsonb_build_object(
     'group', (select jsonb_build_object('id', g.id, 'name', g.name, 'icon_name', g.icon_name,
-        'is_public', g.is_public, 'leader_id', g.leader_id, 'member_count', g.member_count)
+        'icon_path', g.icon_path, 'is_public', g.is_public, 'leader_id', g.leader_id, 'member_count', g.member_count)
       from public.groups g where g.id = p_group_id),
     'members', coalesce((
       select jsonb_agg(jsonb_build_object(
@@ -536,8 +542,8 @@ begin
   select * into v_member from public.group_members m where m.group_id = p_group_id and m.user_id = v_user;
   return (
     select jsonb_build_object(
-      'id', g.id, 'name', g.name, 'icon_name', g.icon_name, 'is_public', g.is_public,
-      'leader_id', g.leader_id, 'notify', v_member.notify,
+      'id', g.id, 'name', g.name, 'icon_name', g.icon_name, 'icon_path', g.icon_path,
+      'is_public', g.is_public, 'leader_id', g.leader_id, 'notify', v_member.notify,
       'members', (
         select jsonb_agg(private.group_person(m.user_id) order by
           m.user_id <> v_user, coalesce(array_position(v_member.board_order, m.user_id), 100), m.joined_at, m.user_id)
@@ -588,6 +594,24 @@ language sql stable security definer set search_path = '' as $$
         and p.review_status = 'approved' and not p.quarantined
     ));
 $$;
+-- A group's uploaded picture, for its members only. Nobody reviews it, so it
+-- is shown only to people who chose to be in the group with whoever uploaded
+-- it, as their meal photos are. An invite, which a leader can send to a
+-- stranger by handle, and the public list both draw the drawing instead. The
+-- owner is whoever uploaded it, read from the key as `ownsKey` does.
+create or replace function private.group_icon_claims(p_keys text[])
+returns table (owner_id uuid, photo_path text)
+language sql stable security definer set search_path = '' as $$
+  select distinct split_part(g.icon_path, '/', 2)::uuid, g.icon_path
+  from public.groups g
+  where g.icon_path = any (p_keys)
+    and exists (select 1 from public.group_members m
+                where m.group_id = g.id and m.user_id = (select auth.uid()));
+$$;
+create index if not exists groups_icon_path_idx on public.groups(icon_path) where icon_path is not null;
+revoke execute on function private.group_icon_claims from public, anon;
+grant execute on function private.group_icon_claims to authenticated, service_role;
+
 revoke execute on function private.group_size_for_join from public, anon;
 grant execute on function private.group_size_for_join to authenticated, service_role;
 revoke execute on function private.group_post_food, private.group_food_label, private.group_workout,
