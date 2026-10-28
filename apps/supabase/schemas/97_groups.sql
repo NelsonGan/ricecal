@@ -124,12 +124,19 @@ $$;
 -- reactions counted among this group's members, what the caller may nudge,
 -- and the day's first workout. Members blocked either way are left
 -- out for the caller, food and all.
-create or replace function public.group_board(p_group_id uuid, p_day date)
+--
+-- The answer carries a `version`, a hash of everything else in it. An app
+-- polling an open board hands back the one it holds as `p_known`, and while
+-- nothing has changed the answer is only `{"unchanged": true}` and that
+-- version, a few bytes instead of every member's day of food. An app from
+-- before it sends no `p_known` and reads the full board as it always did.
+create or replace function public.group_board(p_group_id uuid, p_day date, p_known text default null)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare
   v_user uuid := private.group_require_member(p_group_id);
   v_member public.group_members;
   v_result jsonb;
+  v_version text;
 begin
   if p_day is null or p_day not between public.local_today(v_user) - 60 and public.local_today(v_user) + 1 then
     raise exception 'Day unavailable' using errcode = '22023';
@@ -240,7 +247,11 @@ begin
       from members mb
     ), '[]'::jsonb)
   ) into v_result;
-  return v_result;
+  v_version := md5(v_result::text);
+  if p_known = v_version then
+    return jsonb_build_object('unchanged', true, 'version', v_version);
+  end if;
+  return v_result || jsonb_build_object('version', v_version);
 end;
 $$;
 
@@ -438,6 +449,8 @@ $$;
 -- The group's one thread, a page at a time: the latest `p_limit` messages, or
 -- those before the (`p_before_at`, `p_before_id`) cursor when scrolling up,
 -- read newest first and returned oldest first as the screen draws them.
+-- `p_after_at` keeps only what was written after it, so an open chat catching
+-- up on a new message reads that message rather than the whole newest page.
 --
 -- Each message carries what an app from before replies, food and reactions
 -- reads (id, author, body, created_at, mine) and, beside it, the message it
@@ -445,7 +458,7 @@ $$;
 -- out under the same rules as the thread (deleted, hidden, blocked, reported),
 -- and so are reactions by anyone blocked either way.
 create or replace function public.group_messages(p_group_id uuid, p_before_at timestamptz default null,
-  p_before_id uuid default null, p_limit integer default 50)
+  p_before_id uuid default null, p_limit integer default 50, p_after_at timestamptz default null)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id);
 begin
@@ -485,6 +498,7 @@ begin
         -- Constants on the right, so the index walks straight to the cursor.
         and (m.created_at, m.id) < (coalesce(p_before_at, 'infinity'),
           coalesce(p_before_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff'))
+        and m.created_at > coalesce(p_after_at, '-infinity')
         and not private.social_pair_blocked(m.author_id)
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
       order by m.created_at desc, m.id desc limit greatest(1, least(coalesce(p_limit, 50), 100))
