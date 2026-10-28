@@ -700,6 +700,67 @@ describe('catching up rather than reading the newest page again', () => {
     expect(ids(client)).toHaveLength(THREAD_PAGE + 5)
   })
 
+  it("keeps the viewer's heart on its way through a catch-up read too early to have it", async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, held(Date.now(), message('m1', false, 1)))
+    const { result } = await renderHook(
+      () => ({ action: useGroupAction(), thread: useGroupThread('g1', true) }),
+      { wrapper },
+    )
+    await opened(client, message('m1', false, 1))
+    const write = pending()
+    mockRpc.mockReturnValueOnce(write.request)
+    let done!: Promise<unknown>
+    await act(async () => {
+      done = result.current.action.mutateAsync({
+        action: 'reactMessage',
+        groupId: 'g1',
+        messageId: 'm1',
+        emoji: '❤️',
+      })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    mockRpc.mockReturnValue(response([message('m1', false, 1), message('m2', false, 2)]))
+    await act(async () => {
+      await client.refetchQueries({ queryKey: messagesKey })
+    })
+    expect(ids(client)).toEqual(['m1', 'm2'])
+    expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0]?.my_reaction).toBe('❤️')
+    await act(async () => {
+      write.settle({ data: null, error: null })
+      await done
+    })
+  })
+
+  it('reads again a read on its way when a reaction names a message it will bring', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, held(Date.now(), message('m1', false, 1)))
+    await renderHook(
+      () => {
+        useGroupThread('g1', true)
+        return useGroupChatLive('g1')
+      },
+      { wrapper },
+    )
+    await opened(client, message('m1', false, 1))
+    const late = pending()
+    mockRpc.mockReturnValueOnce(late.request)
+    let done!: Promise<unknown>
+    await act(async () => {
+      done = client.refetchQueries({ queryKey: messagesKey })
+    })
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('reacted', { ids: ['m2'] }))
+    const hearted = { ...message('m2', false, 2), reactions: [{ emoji: '❤️', count: 1 }] }
+    mockRpc.mockReturnValue(response([hearted]))
+    await act(async () => {
+      late.settle({ data: [message('m2', false, 2)], error: null })
+      await done
+    })
+    expect(client.getQueryData<GroupThread>(messagesKey)?.messages[1]?.reactions).toEqual([
+      { emoji: '❤️', count: 1 },
+    ])
+  })
+
   it('rereads more than a hundred named messages a hundred at a time', async () => {
     const { client, wrapper } = setup()
     const rows = Array.from({ length: 150 }, (_, index) => message(`m${index}`, false, index))
@@ -812,6 +873,17 @@ describe('a board polled while nothing changes', () => {
     const now = client.getQueryData<GroupBoard>(boardKey('g1'))
     expect(now?.members[0]?.entries[0]?.likes).toBe(4)
     expect(now?.version).toBeUndefined()
+  })
+
+  it('drops the version of a board it patches, so the next poll reads it whole', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(boardKey('g1'), { ...board([entry()]), version: 'v1' })
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    mockRpc.mockReturnValue(response(null))
+    await act(async () => {
+      await result.current.mutateAsync({ action: 'react', entryId: 'e1', value: 1 })
+    })
+    expect(client.getQueryData<GroupBoard>(boardKey('g1'))?.version).toBeUndefined()
   })
 
   it('asks for the whole board when it holds no version', async () => {

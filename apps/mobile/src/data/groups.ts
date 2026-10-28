@@ -361,9 +361,8 @@ export function usePublicGroups(query: string) {
  *
  * Each poll hands back the version of the board it holds, and a board nobody
  * has touched since answers `unchanged` instead of every member's day of food
- * again. A board patched here (a like, a move) keeps the version it was read
- * with: the write either changes the board on the server, and so its version,
- * or fails and is put back exactly.
+ * again. A board patched here (a like, a move) drops its version, so the next
+ * poll reads it whole and draws what the server has, whatever the write did.
  */
 export function useGroupBoard(groupId: string, day: string, enabled: boolean, live: boolean) {
   const userId = useUserId()
@@ -468,12 +467,6 @@ const OLD_SERVER_MS = 10 * 60_000
 /** How many messages `group_messages` reads by id in one call. */
 const IDS_PER_READ = 100
 
-/** The later of two message times, as Postgres orders them. */
-function laterOf(a: string | undefined, b: string | undefined): string | undefined {
-  if (!a || !b) return a ?? b
-  return micros(b) > micros(a) ? b : a
-}
-
 /** Where a catch-up starts: after this time, and after this id within it. */
 type CatchUp = { p_after_at: string; p_after_id?: string }
 
@@ -520,7 +513,10 @@ export function mergeNewer(held: GroupThread, newer: GroupMessage[]): GroupThrea
   const first = newer[0]
   const top = newer.at(-1)
   if (!first || !top) return held
-  const moved = laterOf(held.newest, top.created_at) !== held.newest
+  const moved =
+    !held.newest ||
+    micros(top.created_at) > micros(held.newest) ||
+    (micros(top.created_at) === micros(held.newest) && top.id > (held.newestId ?? ''))
   const newest = moved ? top.created_at : held.newest
   const newestId = moved ? top.id : held.newestId
   if (newer.length >= THREAD_PAGE) {
@@ -582,6 +578,24 @@ async function settledRead<T>(
   }
 }
 
+/**
+ * A page as it may be laid over the thread: a message the viewer's own reaction
+ * or thumb is on its way to keeps its held copy, drawn with that answer, which
+ * the page was read too early to have.
+ */
+function keepingOwn(
+  client: QueryClient,
+  groupId: string,
+  held: GroupThread | undefined,
+  page: GroupMessage[],
+): GroupMessage[] {
+  if (!held) return page
+  const mine = heldBack(client, groupId)
+  return page.map((message) =>
+    mine(message) ? (held.messages.find((copy) => copy.id === message.id) ?? message) : message,
+  )
+}
+
 /** Has the next read of a held thread read it whole, whatever its schedule says. */
 function dueWhole(client: QueryClient, userId: string, groupId: string) {
   client.setQueryData<GroupThread>(
@@ -635,7 +649,10 @@ export function useGroupThread(groupId: string, live: boolean) {
               // Laid over the thread as it is now: an older page may have
               // landed meanwhile. Cleared meanwhile, it is read whole.
               const held = client.getQueryData<GroupThread>(key)
-              if (held) return noted(held, mergeNewer(held, newer), startedAt, !from.p_after_id)
+              if (held) {
+                const merged = mergeNewer(held, keepingOwn(client, groupId, held, newer))
+                return noted(held, merged, startedAt, !from.p_after_id)
+              }
             } catch (error) {
               if (!unknownArguments(error)) throw error
               oldServerUntil.set(client, Date.now() + OLD_SERVER_MS)
@@ -652,7 +669,7 @@ export function useGroupThread(groupId: string, live: boolean) {
           return noted(
             held,
             {
-              ...mergeNewest(held, page),
+              ...mergeNewest(held, keepingOwn(client, groupId, held, page)),
               newest: page.at(-1)?.created_at,
               newestId: page.at(-1)?.id,
               newestAt: held?.newestAt,
@@ -719,11 +736,11 @@ export function useGroupThread(groupId: string, live: boolean) {
   return { thread, loadOlder, loadingOlder }
 }
 
-/** The group's writes of one kind still on their way. */
+/** The group writes of one kind still on their way, of one group when it is given. */
 function pendingActions<A extends GroupAction['action']>(
   client: QueryClient,
-  groupId: string,
   action: A,
+  groupId?: string,
 ): Extract<GroupAction, { action: A }>[] {
   return client
     .getMutationCache()
@@ -731,7 +748,8 @@ function pendingActions<A extends GroupAction['action']>(
     .map((mutation) => mutation.state.variables as GroupAction | undefined)
     .filter(
       (input): input is Extract<GroupAction, { action: A }> =>
-        input?.action === action && 'groupId' in input && input.groupId === groupId,
+        input?.action === action &&
+        (groupId === undefined || ('groupId' in input && input.groupId === groupId)),
     )
 }
 
@@ -741,13 +759,10 @@ function pendingActions<A extends GroupAction['action']>(
  * drawn already, and a read now could draw the old answer over it.
  */
 function heldBack(client: QueryClient, groupId: string): (message: GroupMessage) => boolean {
-  const messages = new Set<string>()
-  const entries = new Set<string>()
-  for (const mutation of client.getMutationCache().findAll({ status: 'pending' })) {
-    const input = mutation.state.variables as GroupAction | undefined
-    if (input?.action === 'reactMessage' && input.groupId === groupId) messages.add(input.messageId)
-    if (input?.action === 'react') entries.add(input.entryId)
-  }
+  const messages = new Set(
+    pendingActions(client, 'reactMessage', groupId).map((input) => input.messageId),
+  )
+  const entries = new Set(pendingActions(client, 'react').map((input) => input.entryId))
   return (message) =>
     messages.has(message.id) ||
     Boolean(message.food?.entry_id && entries.has(message.food.entry_id))
@@ -757,13 +772,23 @@ function heldBack(client: QueryClient, groupId: string): (message: GroupMessage)
  * Reads the held messages named again, by id, however far back they are, and
  * lays each over its held copy, unless the viewer's own reaction or thumb on it
  * is on its way by then. One hidden since does not come back and is left to the
- * next whole read.
+ * next whole read. None of them held yet, the change still counts as an edit:
+ * the read that will bring them may have started before it.
  */
 async function rereadMessages(client: QueryClient, userId: string, groupId: string, ids: string[]) {
-  const held = client.getQueryData<GroupThread>(messagesKey(userId, groupId))?.messages
-  if (!held) return
-  const asked = [...new Set(ids)].filter((id) => held.some((message) => message.id === id))
-  if (!asked.length) return
+  const key = messagesKey(userId, groupId)
+  const held = client.getQueryData<GroupThread>(key)?.messages
+  const asked = [...new Set(ids)].filter((id) => held?.some((message) => message.id === id))
+  if (!asked.length) {
+    if (ids.length) edited(client, userId, groupId)
+    return
+  }
+  // A server from before reading by id redraws them with a whole read.
+  const whole = () => {
+    dueWhole(client, userId, groupId)
+    void client.invalidateQueries({ queryKey: key })
+  }
+  if ((oldServerUntil.get(client) ?? 0) > Date.now()) return whole()
   const batches: string[][] = []
   for (let at = 0; at < asked.length; at += IDS_PER_READ) {
     batches.push(asked.slice(at, at + IDS_PER_READ))
@@ -786,17 +811,26 @@ async function rereadMessages(client: QueryClient, userId: string, groupId: stri
     const byId = new Map(
       fresh.filter((message) => !mine(message)).map((message) => [message.id, message]),
     )
-    if (!byId.size) return
-    patchThread(client, userId, groupId, (messages) =>
-      messages.some((message) => byId.has(message.id))
-        ? messages.map((message) => byId.get(message.id) ?? message)
-        : messages,
-    )
+    patchThread(client, userId, groupId, (messages) => {
+      // Only a copy that differs is a change: an edit makes reads on their way
+      // run again, which an identical answer gives no reason for.
+      let moved = false
+      let changed = false
+      const next = messages.map((message) => {
+        const copy = byId.get(message.id)
+        if (!copy || JSON.stringify(copy) === JSON.stringify(message)) return message
+        changed = true
+        if (copy.created_at !== message.created_at) moved = true
+        return copy
+      })
+      // The viewer's own message drawn with the phone's clock takes the
+      // server's time here, which can put it somewhere else.
+      return changed ? (moved ? next.sort(inOrder) : next) : messages
+    })
   } catch (error) {
-    // A server from before reading by id redraws them with a whole read.
     if (!unknownArguments(error)) return
-    dueWhole(client, userId, groupId)
-    void client.invalidateQueries({ queryKey: messagesKey(userId, groupId) })
+    oldServerUntil.set(client, Date.now() + OLD_SERVER_MS)
+    whole()
   }
 }
 
@@ -931,7 +965,7 @@ export function useGroupChatLive(groupId: string): boolean {
         } else if (event === 'message') {
           const held = client.getQueryData<GroupThread>(key)?.messages
           if (held && ids.every((id) => held.some((message) => message.id === id))) return
-          if (pendingActions(client, groupId, 'message').length) return
+          if (pendingActions(client, 'message', groupId).length) return
           refetch()
         } else if (event === 'reacted') {
           // A message the viewer's own reaction is on its way to is reread
@@ -1444,11 +1478,16 @@ function patchEntry(
 ) {
   client.setQueriesData<GroupBoard>(
     { queryKey: keys.groups(userId), predicate: named('group_board') },
-    (board) =>
-      board && {
+    (board) => {
+      const holds = (member: BoardMember) => member.entries.some((entry) => entry.id === entryId)
+      if (!board?.members.some(holds)) return board
+      return {
         ...board,
+        // Patched here, it is no longer the board its version names: the next
+        // poll reads it whole, so a rollback that missed is put right too.
+        version: undefined,
         members: board.members.map((member) =>
-          member.entries.some((entry) => entry.id === entryId)
+          holds(member)
             ? {
                 ...member,
                 entries: member.entries.map((entry) =>
@@ -1457,7 +1496,8 @@ function patchEntry(
               }
             : member,
         ),
-      },
+      }
+    },
   )
 }
 
@@ -1482,12 +1522,17 @@ function patchFoodCards(
   }
 }
 
-/** Each cached thread holding cards of one food, by group, with the cards' message ids. */
-function threadsWithFood(client: QueryClient, userId: string, entryId: string) {
+/**
+ * Each cached thread holding cards of one food, by group, with the cards'
+ * message ids; only the open ones when `open`, since a closed chat is read
+ * whole when it opens again.
+ */
+function threadsWithFood(client: QueryClient, userId: string, entryId: string, open = false) {
   const found = new Map<string, string[]>()
   for (const [key, thread] of client.getQueriesData<GroupThread>({
     queryKey: keys.groups(userId),
-    predicate: named('group_messages'),
+    predicate: (query) =>
+      named('group_messages')(query) && (!open || query.getObserversCount() > 0),
   })) {
     const groupId = (key[3] as { groupId?: string } | undefined)?.groupId
     const ids = thread?.messages
@@ -1499,10 +1544,24 @@ function threadsWithFood(client: QueryClient, userId: string, entryId: string) {
 }
 
 /**
- * The message reactions whose onMutate stopped a read of the thread on its way,
- * which their onSettled then makes up for.
+ * The groups whose thread read a reaction or thumb's onMutate stopped on its
+ * way, which its onSettled then makes up for. Keyed by the variables, which
+ * react-query hands both the same.
  */
-const stoppedReads = new WeakMap<GroupAction, true>()
+const stoppedReads = new WeakMap<GroupAction, string[]>()
+/** The groups of the thread queries matching `holds` that are reading now. */
+function readingThreads(
+  client: QueryClient,
+  root: readonly unknown[],
+  holds: (query: Query) => boolean,
+) {
+  return client
+    .getQueryCache()
+    .findAll({ queryKey: root, predicate: holds, fetchStatus: 'fetching' })
+    .filter(named('group_messages'))
+    .map((query) => (query.queryKey[3] as { groupId?: string } | undefined)?.groupId)
+    .filter((groupId): groupId is string => Boolean(groupId))
+}
 
 function findFoodCard(client: QueryClient, userId: string, entryId: string): ChatFood | undefined {
   for (const [, thread] of client.getQueriesData<GroupThread>({
@@ -1598,6 +1657,8 @@ export function useGroupAction() {
                   (message) => message.food?.entry_id === input.entryId,
                 ),
               ))
+          const stopped = readingThreads(client, root, holds)
+          if (stopped.length) stoppedReads.set(input, stopped)
           await client.cancelQueries({ queryKey: root, predicate: holds })
           const onBoard = findEntry(client, userId, input.entryId)?.mine
           const onCard = findFoodCard(client, userId, input.entryId)?.mine
@@ -1628,7 +1689,7 @@ export function useGroupAction() {
           // message back as it was.
           const key = messagesKey(userId, input.groupId)
           const reading = client.getQueryCache().find({ queryKey: key, exact: true })
-          if (reading?.state.fetchStatus === 'fetching') stoppedReads.set(input, true)
+          if (reading?.state.fetchStatus === 'fetching') stoppedReads.set(input, [input.groupId])
           await client.cancelQueries({ queryKey: key })
           const before = client
             .getQueryData<GroupThread>(key)
@@ -1680,8 +1741,11 @@ export function useGroupAction() {
           // The board's own poll reconciles the board. A chat card is read
           // again by id, since a catch-up taken while the thumb was on its way
           // may have drawn the old one and no later catch-up reaches back to it.
-          for (const [groupId, ids] of threadsWithFood(client, userId, input.entryId)) {
+          for (const [groupId, ids] of threadsWithFood(client, userId, input.entryId, true)) {
             void rereadMessages(client, userId, groupId, ids)
+          }
+          for (const groupId of stoppedReads.get(input) ?? []) {
+            void client.invalidateQueries({ queryKey: messagesKey(userId, groupId) })
           }
           return
         case 'move':
