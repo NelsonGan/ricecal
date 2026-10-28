@@ -3293,9 +3293,10 @@ meal share a tile and swipe sideways inside it.
   over it; the ⋯ sheet opens once that modal has gone, as iOS will not present
   two at once. Counted by emoji in `group_messages`, leaving out anyone blocked either
   way. Setting, changing or taking one back broadcasts `reacted` on the chat's
-  topic with the message ids; an open chat rereads only the ones it holds (one
-  among the last ten by a catch-up from it, one further back on its own), and
-  an app from before reactions does not listen for the event at all.
+  topic with the message ids; an open chat rereads only the ones it holds, by
+  id in one request wherever they are (`group_messages`' `p_ids`), leaving out
+  any the viewer's own reaction is on its way to. An app from before reactions
+  does not listen for the event at all.
 - **Food in the chat.** A food message shares one of its author's own food posts
   (`group_messages.post_id`) and draws as a card: the photo across it, the name,
   calories and macros. The card reads the post's meal live through
@@ -3476,33 +3477,38 @@ board does not leave and rejoin. Everything else still polls.
 - **Each join reads the thread once**, first or after a drop, since nothing
   sent while the channel was down will be heard. That is a second read on
   opening a chat, kept on purpose: the first one may have been taken before
-  the join, and it is only a catch-up. A fetch already on its way lands first rather than being
-  restarted, which would hold back the first paint. Refetch on focus is off,
+  the join, and when that first read was whole it is only a catch-up. A fetch
+  already on its way lands first rather than being restarted, which would hold
+  back the first paint. Refetch on focus is off,
   since coming back rejoins and the join reads. A join the policy refuses (a
   member removed mid-chat) is not retried, and a channel the server closes is
   rejoined after three seconds.
 - **Polling is the net, not the mechanism.** Joined, the thread is still asked
   once a minute, for a socket that died without saying so. Not joined, it is
   asked every 5 seconds.
-- **Catching up, not rereading.** Most reads of an open thread ask only for what was written
-  since the newest message held (`group_messages`' `p_after_at`), from ten
-  seconds before it, since a message's time is when its write began and a slow
-  one can commit behind a later one already read. Each comes back in place of
-  its held copy (`mergeNewer`), so the viewer's own message drawn with the
-  phone's clock gets the server's. That is a few hundred bytes per new message
-  where rereading the newest page was 25 KB, and the page was read on every
-  message an active chat heard. The newest page is still read whole on opening,
-  on a join more than 15 seconds after the last whole read, and every five
-  minutes joined or 30 seconds polled, for what no catch-up sees: a removal or
-  reaction missed while the channel was down, another member blocking the
-  viewer, a renamed author. A whole read is laid over what has been scrolled
-  through (`mergeNewest`), so a long scroll back costs nothing on the next
-  read; a newest page that does not reach anything held means a gap, and the
-  thread starts again from that page, as does a catch-up that comes back a
-  full page. A server from before `p_after_at` answers `PGRST202`, and the app
-  reads whole from then on. Measured on a simulator against the local stack,
-  before catch-ups: no requests while a joined chat sat idle for 20 seconds,
-  and one per message from someone else.
+- **Catching up, not rereading.** A read between whole ones asks only for
+  what was written since the newest message held (`group_messages`'
+  `p_after_at`), from ten seconds before it, since a message's time is when its
+  write began and a slow one can commit behind a later one already read. Each
+  comes back in place of its held copy (`mergeNewer`), so the viewer's own
+  message drawn with the phone's clock gets the server's. That is a few hundred
+  bytes per new message where rereading the newest page was 25 KB, and the page
+  was read for every message an active chat heard (October 2026: a third of
+  the project's egress, with groups' boards). The page is still read whole on
+  opening, on every rejoin and on a first join to a thread held from before the
+  chat opened, and about once a minute joined or every 30 seconds polled, for
+  what no catch-up sees: thumbs on a food card and a corrected portion (neither
+  is announced on the topic), another member blocking the viewer, a renamed
+  author. A whole read is laid over what has been scrolled through
+  (`mergeNewest`), so a long scroll back costs nothing on the next read; a
+  newest page that does not reach anything held means a gap, and the thread
+  starts again from that page, as does a catch-up that comes back a full page.
+  A message removed in place is remembered (`gone`), so a read already on its
+  way when it went cannot draw it again. A server from before `p_after_at`
+  answers `PGRST202`, and the app reads whole for ten minutes before asking
+  again. Measured on a simulator against the local stack, before catch-ups: no
+  requests while a joined chat sat idle for 20 seconds, and one per message
+  from someone else.
 - **The sender's own message** joins the cached thread the moment
   `send_group_message` answers, so "Sending" clears without waiting for a
   refetch. Its broadcast can beat that answer, so a broadcast is ignored while

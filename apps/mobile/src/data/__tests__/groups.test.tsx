@@ -499,9 +499,8 @@ describe('catching up rather than reading the newest page again', () => {
     })
   })
 
-  it('reads whole on a join long after the last whole read, and catches up on one just after', async () => {
+  it('catches up on the opening join, and reads whole on a rejoin', async () => {
     const { client, wrapper } = setup()
-    client.setQueryData(messagesKey, held(Date.now() - 60_000, message('m1', false, 1)))
     mockRpc.mockReturnValue(response([message('m1', false, 1)]))
     await renderHook(
       () => {
@@ -510,10 +509,40 @@ describe('catching up rather than reading the newest page again', () => {
       },
       { wrapper },
     )
-    // Within five minutes of a whole read, a join on its own would only catch up.
-    client.setQueryData<GroupThread>(
-      messagesKey,
-      (current) => current && { ...current, readAt: Date.now() - 60_000 },
+    // The opening read is whole, so the opening join only catches up.
+    await waitFor(() => expect(client.getQueryData<GroupThread>(messagesKey)?.readAt).toBeDefined())
+    mockRpc.mockClear()
+    await act(async () => mockListeners.get(TOPIC)?.onLive(true))
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1))
+    expect(mockRpc).toHaveBeenLastCalledWith('group_messages', {
+      p_group_id: 'g1',
+      p_limit: THREAD_PAGE,
+      p_after_at: overlap(1),
+    })
+
+    // A drop may have missed a removal or a reaction, which no catch-up sees.
+    mockRpc.mockClear()
+    await act(async () => mockListeners.get(TOPIC)?.onLive(false))
+    await act(async () => mockListeners.get(TOPIC)?.onLive(true))
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1))
+    expect(mockRpc).toHaveBeenLastCalledWith('group_messages', {
+      p_group_id: 'g1',
+      p_limit: THREAD_PAGE,
+    })
+  })
+
+  it('reads whole on the first join to a thread held from before the chat opened', async () => {
+    const { client, wrapper } = setup()
+    // Read whole 30 seconds ago, by an earlier visit: not yet due by the poll's
+    // schedule, but removals since then were heard by nobody.
+    client.setQueryData(messagesKey, held(Date.now() - 30_000, message('m1', false, 1)))
+    mockRpc.mockReturnValue(response([message('m1', false, 1)]))
+    await renderHook(
+      () => {
+        useGroupThread('g1', true)
+        return useGroupChatLive('g1')
+      },
+      { wrapper },
     )
     await act(async () => mockListeners.get(TOPIC)?.onLive(true))
     await waitFor(() =>
@@ -522,27 +551,13 @@ describe('catching up rather than reading the newest page again', () => {
         p_limit: THREAD_PAGE,
       }),
     )
-
-    mockRpc.mockClear()
-    await act(async () => mockListeners.get(TOPIC)?.onLive(false))
-    await act(async () => mockListeners.get(TOPIC)?.onLive(true))
-    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1))
-    expect(mockRpc).toHaveBeenLastCalledWith('group_messages', {
-      p_group_id: 'g1',
-      p_limit: THREAD_PAGE,
-      p_after_at: overlap(1),
-    })
   })
 
-  it('catches up from a recent message someone reacted to', async () => {
+  it('keeps a removed message out of a read that started before it went', async () => {
     const { client, wrapper } = setup()
-    const rows = Array.from({ length: 5 }, (_, index) => message(`m${index}`, false, index))
-    client.setQueryData(messagesKey, held(Date.now(), ...rows))
-    mockRpc.mockReturnValue(
-      response([
-        { ...message('m1', false, 1), reactions: [{ emoji: '🔥', count: 1 }] },
-        ...rows.slice(2),
-      ]),
+    client.setQueryData(
+      messagesKey,
+      held(Date.now(), message('m1', false, 1), message('m2', false, 2)),
     )
     await renderHook(
       () => {
@@ -551,18 +566,116 @@ describe('catching up rather than reading the newest page again', () => {
       },
       { wrapper },
     )
-    await act(async () => mockListeners.get(TOPIC)?.onEvent('reacted', { ids: ['m1'] }))
-    await waitFor(() =>
-      expect(client.getQueryData<GroupThread>(messagesKey)?.messages[1]?.reactions).toEqual([
-        { emoji: '🔥', count: 1 },
+    const late = pending()
+    mockRpc.mockReturnValueOnce(late.request)
+    let done!: Promise<unknown>
+    await act(async () => {
+      done = client.refetchQueries({ queryKey: messagesKey })
+    })
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('removed', { ids: ['m2'] }))
+    expect(ids(client)).toEqual(['m1'])
+    await act(async () => {
+      late.settle({ data: [message('m2', false, 2), message('m3', false, 3)], error: null })
+      await done
+    })
+    expect(ids(client)).toEqual(['m1', 'm3'])
+    // And a whole read that still has it, likewise.
+    mockRpc.mockReturnValue(
+      response([message('m1', false, 1), message('m2', false, 2), message('m3', false, 3)]),
+    )
+    client.setQueryData<GroupThread>(messagesKey, (current) => current && { ...current, readAt: 0 })
+    await act(async () => {
+      await client.refetchQueries({ queryKey: messagesKey })
+    })
+    expect(ids(client)).toEqual(['m1', 'm3'])
+  })
+
+  it('rereads just the messages a reaction names, by id, however far back', async () => {
+    const { client, wrapper } = setup()
+    const rows = Array.from({ length: THREAD_PAGE + 5 }, (_, index) =>
+      message(`m${index}`, false, index),
+    )
+    client.setQueryData(messagesKey, { ...held(Date.now(), ...rows), more: true })
+    mockRpc.mockReturnValue(
+      response([
+        { ...message('m0', false, 0), reactions: [{ emoji: '❤️', count: 1 }] },
+        { ...message('m53', false, 53), reactions: [{ emoji: '🔥', count: 2 }] },
       ]),
     )
+    await renderHook(() => useGroupChatLive('g1'), { wrapper })
+    await act(async () =>
+      mockListeners.get(TOPIC)?.onEvent('reacted', { ids: ['m53', 'elsewhere', 'm0'] }),
+    )
+    await waitFor(() =>
+      expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0]?.reactions).toEqual([
+        { emoji: '❤️', count: 1 },
+      ]),
+    )
+    expect(mockRpc).toHaveBeenCalledTimes(1)
     expect(mockRpc).toHaveBeenCalledWith('group_messages', {
       p_group_id: 'g1',
-      p_limit: THREAD_PAGE,
-      p_after_at: new Date(Date.UTC(2026, 9, 21, 4, 1) - 1_000).toISOString(),
+      p_ids: ['m53', 'm0'],
+      p_limit: 2,
     })
-    expect(ids(client)).toEqual(rows.map((row) => row.id))
+    expect(client.getQueryData<GroupThread>(messagesKey)?.messages[53]?.reactions).toEqual([
+      { emoji: '🔥', count: 2 },
+    ])
+    expect(ids(client)).toHaveLength(THREAD_PAGE + 5)
+  })
+
+  it("leaves a message the viewer's own reaction is on its way to", async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(
+      messagesKey,
+      held(Date.now(), message('m1', false, 1), message('m2', false, 2)),
+    )
+    const { result } = await renderHook(
+      () => ({ action: useGroupAction(), live: useGroupChatLive('g1') }),
+      { wrapper },
+    )
+    const write = pending()
+    mockRpc.mockReturnValueOnce(write.request)
+    let done!: Promise<unknown>
+    await act(async () => {
+      done = result.current.action.mutateAsync({
+        action: 'reactMessage',
+        groupId: 'g1',
+        messageId: 'm1',
+        emoji: '❤️',
+      })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    mockRpc.mockReturnValue(
+      response([{ ...message('m2', false, 2), reactions: [{ emoji: '😂', count: 1 }] }]),
+    )
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('reacted', { ids: ['m1', 'm2'] }))
+    await waitFor(() =>
+      expect(client.getQueryData<GroupThread>(messagesKey)?.messages[1]?.reactions).toEqual([
+        { emoji: '😂', count: 1 },
+      ]),
+    )
+    // Only m2 is asked for; m1 is drawn with the viewer's heart until it lands.
+    expect(mockRpc).toHaveBeenCalledWith('group_messages', {
+      p_group_id: 'g1',
+      p_ids: ['m2'],
+      p_limit: 1,
+    })
+    expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0]?.my_reaction).toBe('❤️')
+
+    mockRpc.mockReturnValue(
+      response([
+        { ...message('m1', false, 1), reactions: [{ emoji: '❤️', count: 2 }], my_reaction: '❤️' },
+      ]),
+    )
+    await act(async () => {
+      write.settle({ data: null, error: null })
+      await done
+    })
+    await waitFor(() =>
+      expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0]?.reactions).toEqual([
+        { emoji: '❤️', count: 2 },
+      ]),
+    )
   })
 })
 
@@ -1052,32 +1165,6 @@ describe('replies, food and reactions', () => {
       ]),
     )
     unsubscribe()
-  })
-
-  it('rereads one older message for a reaction past the newest page', async () => {
-    const { client, wrapper } = setup()
-    const held = Array.from({ length: THREAD_PAGE + 2 }, (_, index) =>
-      message(`m${index}`, false, index),
-    )
-    client.setQueryData(messagesKey, { messages: held, more: true })
-    await renderHook(() => useGroupChatLive('g1'), { wrapper })
-    mockRpc.mockReturnValue(
-      response([{ ...message('m0', false, 0), reactions: [{ emoji: '❤️', count: 1 }] }]),
-    )
-    await act(async () => mockListeners.get(TOPIC)?.onEvent('reacted', { ids: ['m0'] }))
-    await waitFor(() =>
-      expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0]?.reactions).toEqual([
-        { emoji: '❤️', count: 1 },
-      ]),
-    )
-    // Asked as the one message before the one after it, not as a new newest page.
-    expect(mockRpc).toHaveBeenCalledWith('group_messages', {
-      p_group_id: 'g1',
-      p_before_at: held[1]?.created_at,
-      p_before_id: 'm1',
-      p_limit: 1,
-    })
-    expect(ids(client)).toHaveLength(THREAD_PAGE + 2)
   })
 
   it("sends a health store's run as an activity and a logger workout as a workout", async () => {

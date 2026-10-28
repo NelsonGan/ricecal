@@ -151,7 +151,8 @@ CREATE FUNCTION public.group_messages (
   p_before_at timestamp with time zone DEFAULT NULL::timestamp WITH time zone,
   p_before_id uuid                     DEFAULT NULL::uuid,
   p_limit     integer                  DEFAULT 50,
-  p_after_at  timestamp with time zone DEFAULT NULL::timestamp WITH time zone
+  p_after_at  timestamp with time zone DEFAULT NULL::timestamp WITH time zone,
+  p_ids       uuid[]                   DEFAULT NULL::uuid[]
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -159,8 +160,17 @@ CREATE FUNCTION public.group_messages (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-declare v_user uuid := private.group_require_member(p_group_id);
+declare v_user uuid := private.group_require_member(p_group_id); v_after timestamptz := p_after_at;
 begin
+  if p_ids is not null then
+    if cardinality(p_ids) not between 1 and 100 then
+      raise exception 'Between 1 and 100 ids' using errcode = '22023';
+    end if;
+    -- Bounded by the earliest one named, so the index walks only that far back.
+    select greatest(v_after, min(m.created_at) - interval '1 microsecond') into v_after
+    from public.group_messages m where m.group_id = p_group_id and m.id = any(p_ids);
+    if v_after is null then return '[]'::jsonb; end if;
+  end if;
   return coalesce((
     select jsonb_agg(jsonb_build_object(
       'id', m.id, 'author', private.group_person(m.author_id), 'body', m.body,
@@ -197,7 +207,8 @@ begin
         -- Constants on the right, so the index walks straight to the cursor.
         and (m.created_at, m.id) < (coalesce(p_before_at, 'infinity'),
           coalesce(p_before_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff'))
-        and m.created_at > coalesce(p_after_at, '-infinity')
+        and m.created_at > coalesce(v_after, '-infinity')
+        and (p_ids is null or m.id = any(p_ids))
         and not private.social_pair_blocked(m.author_id)
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
       order by m.created_at desc, m.id desc limit greatest(1, least(coalesce(p_limit, 50), 100))
@@ -206,9 +217,10 @@ begin
 end;
 $function$;
 
-GRANT ALL ON FUNCTION public.group_messages(uuid, timestamp WITH time zone, uuid, integer, timestamp WITH time zone) TO authenticated;
+GRANT ALL ON FUNCTION public.group_messages(uuid, timestamp WITH time zone, uuid, integer, timestamp WITH time zone, uuid[]) TO authenticated;
 
-GRANT ALL ON FUNCTION public.group_messages(uuid, timestamp WITH time zone, uuid, integer, timestamp WITH time zone) TO service_role;
+GRANT ALL ON FUNCTION public.group_messages(uuid, timestamp WITH time zone, uuid, integer, timestamp WITH time zone, uuid[]) TO service_role;
+
 -- `db diff` does not carry revokes; Postgres grants EXECUTE to PUBLIC by default.
 revoke execute on function public.group_board(uuid, date, text),
-  public.group_messages(uuid, timestamptz, uuid, integer, timestamptz) from public, anon;
+  public.group_messages(uuid, timestamptz, uuid, integer, timestamptz, uuid[]) from public, anon;
