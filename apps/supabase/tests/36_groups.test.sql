@@ -295,6 +295,8 @@ select ('a3620000-0000-4000-8000-1000000000' || lpad(n::text, 2, '0'))::uuid, (s
   'page ' || n, ('a3620000-0000-4000-8000-2000000000' || lpad(n::text, 2, '0'))::uuid,
   now() - interval '1 hour' + n * interval '1 minute'
 from generate_series(1, 5) n;
+create temp table reported as select m.id from public.group_messages m where m.body = 'eating now!!';
+grant select on reported to authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
 set local role authenticated;
 create temp table page1 as select public.group_messages((select id from g), null, null, 3) as p;
@@ -317,6 +319,20 @@ select is(jsonb_array_length(public.group_messages((select id from g), p_limit =
 select is(jsonb_array_length(public.group_messages((select id from g), p_limit => 50,
     p_after_at => now() - interval '2 hours')), 5,
   'an old p_after_at reads every page, still without the message Ana reported');
+-- A reaction rereads just the messages it names, however far back.
+select is((select array_agg(e->>'body' order by o) from jsonb_array_elements(public.group_messages(
+    (select id from g), p_limit => 50, p_ids => array[
+      'a3620000-0000-4000-8000-100000000004', 'a3620000-0000-4000-8000-100000000001']::uuid[]))
+    with ordinality x(e, o)),
+  array['page 1', 'page 4'], 'only the messages named, oldest first');
+select is(jsonb_array_length(public.group_messages((select id from g), p_limit => 50,
+    p_ids => array(select id from reported))), 0,
+  'a named message the viewer reported stays hidden');
+select is(public.group_messages((select id from g), p_limit => 50,
+    p_ids => array['a3620000-0000-4000-8000-ffffffffffff']::uuid[]), '[]'::jsonb,
+  'an id that is not in the thread reads nothing');
+select throws_ok(format('select public.group_messages(%L, p_ids => %L::uuid[])', (select id from g), '{}'),
+  '22023', null, 'an empty list of ids is refused');
 reset role;
 delete from public.group_messages where body like 'page %';
 delete from broadcasts where ids::text like '%a3620000-0000-4000-8000-1000000000%';

@@ -3662,6 +3662,7 @@ export type Database = {
           p_before_at?: string
           p_before_id?: string
           p_group_id: string
+          p_ids?: string[]
           p_limit?: number
         }
         Returns: Json

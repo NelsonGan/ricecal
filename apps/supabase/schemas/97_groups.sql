@@ -451,6 +451,8 @@ $$;
 -- read newest first and returned oldest first as the screen draws them.
 -- `p_after_at` keeps only what was written after it, so an open chat catching
 -- up on a new message reads that message rather than the whole newest page.
+-- `p_ids` reads just the messages named, wherever they are in the thread, for
+-- a reaction to redraw; one hidden since is simply not returned.
 --
 -- Each message carries what an app from before replies, food and reactions
 -- reads (id, author, body, created_at, mine) and, beside it, the message it
@@ -458,10 +460,20 @@ $$;
 -- out under the same rules as the thread (deleted, hidden, blocked, reported),
 -- and so are reactions by anyone blocked either way.
 create or replace function public.group_messages(p_group_id uuid, p_before_at timestamptz default null,
-  p_before_id uuid default null, p_limit integer default 50, p_after_at timestamptz default null)
+  p_before_id uuid default null, p_limit integer default 50, p_after_at timestamptz default null,
+  p_ids uuid[] default null)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
-declare v_user uuid := private.group_require_member(p_group_id);
+declare v_user uuid := private.group_require_member(p_group_id); v_after timestamptz := p_after_at;
 begin
+  if p_ids is not null then
+    if cardinality(p_ids) not between 1 and 100 then
+      raise exception 'Between 1 and 100 ids' using errcode = '22023';
+    end if;
+    -- Bounded by the earliest one named, so the index walks only that far back.
+    select greatest(v_after, min(m.created_at) - interval '1 microsecond') into v_after
+    from public.group_messages m where m.group_id = p_group_id and m.id = any(p_ids);
+    if v_after is null then return '[]'::jsonb; end if;
+  end if;
   return coalesce((
     select jsonb_agg(jsonb_build_object(
       'id', m.id, 'author', private.group_person(m.author_id), 'body', m.body,
@@ -498,7 +510,8 @@ begin
         -- Constants on the right, so the index walks straight to the cursor.
         and (m.created_at, m.id) < (coalesce(p_before_at, 'infinity'),
           coalesce(p_before_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff'))
-        and m.created_at > coalesce(p_after_at, '-infinity')
+        and m.created_at > coalesce(v_after, '-infinity')
+        and (p_ids is null or m.id = any(p_ids))
         and not private.social_pair_blocked(m.author_id)
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
       order by m.created_at desc, m.id desc limit greatest(1, least(coalesce(p_limit, 50), 100))
