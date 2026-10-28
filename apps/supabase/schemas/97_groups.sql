@@ -449,10 +449,11 @@ $$;
 -- The group's one thread, a page at a time: the latest `p_limit` messages, or
 -- those before the (`p_before_at`, `p_before_id`) cursor when scrolling up,
 -- read newest first and returned oldest first as the screen draws them.
--- `p_after_at` keeps only what was written after it, so an open chat catching
--- up on a new message reads that message rather than the whole newest page.
--- `p_ids` reads just the messages named, wherever they are in the thread, for
--- a reaction to redraw; one hidden since is simply not returned.
+-- `p_after_at` (with `p_after_id`, for messages written in the same
+-- microsecond) keeps only what comes after it, so an open chat catching up on
+-- a new message reads that message rather than the whole newest page.
+-- `p_ids` reads just the messages named, up to 100, wherever they are in the
+-- thread, for a reaction to redraw; one hidden since is simply not returned.
 --
 -- Each message carries what an app from before replies, food and reactions
 -- reads (id, author, body, created_at, mine) and, beside it, the message it
@@ -461,24 +462,12 @@ $$;
 -- and so are reactions by anyone blocked either way.
 create or replace function public.group_messages(p_group_id uuid, p_before_at timestamptz default null,
   p_before_id uuid default null, p_limit integer default 50, p_after_at timestamptz default null,
-  p_ids uuid[] default null)
+  p_after_id uuid default null, p_ids uuid[] default null)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
-declare
-  v_user uuid := private.group_require_member(p_group_id);
-  v_after timestamptz := p_after_at;
-  v_before timestamptz := coalesce(p_before_at, 'infinity');
+declare v_user uuid := private.group_require_member(p_group_id);
 begin
-  if p_ids is not null then
-    if cardinality(p_ids) not between 1 and 100 then
-      raise exception 'Between 1 and 100 ids' using errcode = '22023';
-    end if;
-    -- Bounded by the times of the ones named, so the index walks only the
-    -- stretch of the thread they sit in, however far back that is.
-    select greatest(v_after, min(m.created_at) - interval '1 microsecond'),
-      least(v_before, max(m.created_at) + interval '1 microsecond')
-    into v_after, v_before
-    from public.group_messages m where m.group_id = p_group_id and m.id = any(p_ids);
-    if v_after is null then return '[]'::jsonb; end if;
+  if p_ids is not null and cardinality(p_ids) not between 1 and 100 then
+    raise exception 'Between 1 and 100 ids' using errcode = '22023';
   end if;
   return coalesce((
     select jsonb_agg(jsonb_build_object(
@@ -511,15 +500,22 @@ begin
         where a.message_id = m.id and a.user_id = v_user)
     ) order by m.created_at, m.id)
     from (
-      select * from public.group_messages m
-      where m.group_id = p_group_id and not m.quarantined
+      (select * from public.group_messages m
+      where p_ids is null and m.group_id = p_group_id and not m.quarantined
         -- Constants on the right, so the index walks straight to the cursor.
-        and (m.created_at, m.id) < (v_before, coalesce(p_before_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff'))
-        and m.created_at > coalesce(v_after, '-infinity')
-        and (p_ids is null or m.id = any(p_ids))
+        and (m.created_at, m.id) < (coalesce(p_before_at, 'infinity'),
+          coalesce(p_before_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff'))
+        and (m.created_at, m.id) > (coalesce(p_after_at, '-infinity'),
+          coalesce(p_after_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff'))
         and not private.social_pair_blocked(m.author_id)
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
-      order by m.created_at desc, m.id desc limit greatest(1, least(coalesce(p_limit, 50), 100))
+      order by m.created_at desc, m.id desc limit greatest(1, least(coalesce(p_limit, 50), 100)))
+      union all
+      -- By id through the primary key, however far apart the ones named are.
+      (select * from public.group_messages m
+      where p_ids is not null and m.id = any(p_ids) and m.group_id = p_group_id and not m.quarantined
+        and not private.social_pair_blocked(m.author_id)
+        and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user))
     ) m
   ), '[]'::jsonb);
 end;

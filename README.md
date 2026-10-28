@@ -3294,9 +3294,10 @@ meal share a tile and swipe sideways inside it.
   two at once. Counted by emoji in `group_messages`, leaving out anyone blocked either
   way. Setting, changing or taking one back broadcasts `reacted` on the chat's
   topic with the message ids; an open chat rereads only the ones it holds, by
-  id, a hundred a request, wherever they are (`group_messages`' `p_ids`),
-  leaving out any the viewer's own reaction is on its way to. An app from
-  before reactions does not listen for the event at all.
+  id, a hundred a request, wherever they are (`group_messages`' `p_ids`), each
+  laid over its held copy unless the viewer's own reaction or thumb on it is
+  still on its way. An app from before reactions does not listen for the event
+  at all.
 - **Food in the chat.** A food message shares one of its author's own food posts
   (`group_messages.post_id`) and draws as a card: the photo across it, the name,
   calories and macros. The card reads the post's meal live through
@@ -3304,7 +3305,9 @@ meal share a tile and swipe sideways inside it.
   shows there too; deleting the post or the meal under it deletes the message.
   A friend's card carries the board's like and dislike on its photo's corner, the same
   `group_reactions` row, so a thumb given in the chat shows on the board and
-  back; your own card shows what friends said, once they have.
+  back; your own card shows what friends said, once they have. A thumb given
+  on a card rereads the cards of that food by id once it lands, since a
+  catch-up taken while it was on its way may have drawn the old one.
   `private.group_food_reactions` appends the entry id and that group's counts
   to the card, which an app that does not know them ignores.
   The + beside the field lists the viewer's last five food posts to send by hand,
@@ -3491,14 +3494,16 @@ board does not leave and rejoin. Everything else still polls.
   `p_after_at`), from ten seconds before it, since a message's time is when its
   write began and a slow one can commit behind a later one already read. Once a
   read has reached back that far ten seconds after the newest message was first
-  seen, the thread has settled and catch-ups start at that message exactly, so
+  seen, the thread has settled and catch-ups start at that message exactly (its
+  time, and its id for one written in the same microsecond, `p_after_id`), so
   an idle chat's poll answers `[]`. Each message comes back in place of its
   held copy (`mergeNewer`), so the viewer's own message drawn with the phone's
   clock gets the server's. That is a few hundred bytes per new message where
   rereading the newest page was 25 KB, and the page was read for every message
   an active chat heard (October 2026: a third of the project's egress, with
-  groups' boards). The page is still read whole on opening, on every rejoin and
-  on a first join to a thread held from before the chat opened, and about once
+  groups' boards). The page is still read whole as the chat opens, however
+  fresh the copy held from a visit before, on every rejoin and on a first join
+  to a thread held from before the chat opened, and about once
   a minute joined or every 30 seconds polled, for what no catch-up sees: thumbs
   on a food card and a corrected portion (neither is announced on the topic),
   another member blocking the viewer, a renamed author. A change in place
@@ -3509,10 +3514,11 @@ board does not leave and rejoin. Everything else still polls.
   means a gap, and the thread starts again from that page, as does a catch-up
   that comes back a full page.
 - **A read that crossed a change is read again.** Every change made to a
-  thread in place (a removal, a message reread by id, the viewer's own send)
-  counts as an edit, and a read that was on its way across one is run again,
-  up to three times: the change was announced after it was written, so a read
-  started after it sees it. That is what keeps a deleted message from coming
+  thread in place (a removal, a message reread by id, a thumb on a card, the
+  viewer's own send or reaction) counts as an edit, and a read that was on its
+  way across one is run again, up to three times: the change was announced
+  after it was written, so a read started after it sees it. A read crossed all
+  three times stands, and the next read is whole. That is what keeps a deleted message from coming
   back with a page fetched just before the delete, including one heard before
   the opening page has landed. Two gaps are left on purpose: a removal in the
   moment between the opening read and the join is heard by nobody until the

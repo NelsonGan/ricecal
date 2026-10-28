@@ -407,12 +407,35 @@ describe('catching up rather than reading the newest page again', () => {
     messages,
     more: false,
     newest: messages.at(-1)?.created_at,
+    newestId: messages.at(-1)?.id,
     readAt,
   })
+  /** The chat's first read, which is whole however fresh the thread held. */
+  async function opened(client: QueryClient, ...messages: GroupMessage[]) {
+    mockRpc.mockReturnValueOnce(response(messages))
+    await act(async () => {
+      await client.refetchQueries({ queryKey: messagesKey })
+    })
+    expect(mockRpc).toHaveBeenLastCalledWith('group_messages', {
+      p_group_id: 'g1',
+      p_limit: THREAD_PAGE,
+    })
+    mockRpc.mockClear()
+  }
 
   it('catches up from ten seconds before the newest message, until a whole read is due', () => {
     const now = Date.now()
-    expect(catchUpFrom(held(now, message('m1', false, 5)), now, 60_000)).toBe(overlap(5))
+    expect(catchUpFrom(held(now, message('m1', false, 5)), now, 60_000)).toEqual({
+      p_after_at: overlap(5),
+    })
+    // Settled, it starts at the newest message exactly, ordered by id within its time.
+    expect(
+      catchUpFrom(
+        { ...held(now, message('m1', false, 5)), settled: true, newestId: 'm1' },
+        now,
+        60_000,
+      ),
+    ).toEqual({ p_after_at: at(5), p_after_id: 'm1' })
     expect(catchUpFrom(held(now - 60_000, message('m1', false, 5)), now, 60_000)).toBeNull()
     // Never read whole, or nothing to start from.
     expect(catchUpFrom(thread(message('m1', false, 5)), now, 60_000)).toBeNull()
@@ -454,6 +477,7 @@ describe('catching up rather than reading the newest page again', () => {
     const { client, wrapper } = setup()
     client.setQueryData(messagesKey, held(Date.now(), message('m1', false, 1)))
     await renderHook(() => useGroupThread('g1', true), { wrapper })
+    await opened(client, message('m1', false, 1))
     mockRpc.mockReturnValue(response([message('m1', false, 1), message('m2', false, 2)]))
     await act(async () => {
       await client.refetchQueries({ queryKey: messagesKey })
@@ -481,6 +505,7 @@ describe('catching up rather than reading the newest page again', () => {
     const { client, wrapper } = setup()
     client.setQueryData(messagesKey, held(Date.now(), message('m1', false, 1)))
     await renderHook(() => useGroupThread('g1', true), { wrapper })
+    await opened(client, message('m1', false, 1))
     mockRpc
       .mockReturnValueOnce(response(null, { code: 'PGRST202', message: 'no such function' }))
       .mockReturnValue(response([message('m1', false, 1), message('m2', false, 2)]))
@@ -575,7 +600,7 @@ describe('catching up rather than reading the newest page again', () => {
     await act(async () => mockListeners.get(TOPIC)?.onEvent('removed', { ids: ['m2'] }))
     expect(ids(client)).toEqual(['m1'])
     // Read again after the removal, the server no longer has it.
-    mockRpc.mockReturnValue(response([message('m3', false, 3)]))
+    mockRpc.mockReturnValue(response([message('m1', false, 1), message('m3', false, 3)]))
     await act(async () => {
       late.settle({ data: [message('m2', false, 2), message('m3', false, 3)], error: null })
       await done
@@ -608,22 +633,15 @@ describe('catching up rather than reading the newest page again', () => {
   it('catches up from the newest message exactly once nothing can be on its way behind it', async () => {
     const { client, wrapper } = setup()
     const now = Date.now()
-    // First seen 20 seconds ago, and read again since: settled.
+    // First seen 20 seconds ago: a read reaching back past it now settles it.
     client.setQueryData(messagesKey, {
       ...held(now, message('m1', false, 1)),
       newestAt: now - 20_000,
     })
     await renderHook(() => useGroupThread('g1', true), { wrapper })
-    mockRpc.mockReturnValue(response([message('m1', false, 1)]))
-    await act(async () => {
-      await client.refetchQueries({ queryKey: messagesKey })
-    })
-    expect(mockRpc).toHaveBeenLastCalledWith('group_messages', {
-      p_group_id: 'g1',
-      p_limit: THREAD_PAGE,
-      p_after_at: overlap(1),
-    })
+    await opened(client, message('m1', false, 1))
     expect(client.getQueryData<GroupThread>(messagesKey)?.settled).toBe(true)
+    mockRpc.mockReturnValue(response([]))
     await act(async () => {
       await client.refetchQueries({ queryKey: messagesKey })
     })
@@ -631,6 +649,7 @@ describe('catching up rather than reading the newest page again', () => {
       p_group_id: 'g1',
       p_limit: THREAD_PAGE,
       p_after_at: at(1),
+      p_after_id: 'm1',
     })
     // A new message starts the overlap again.
     mockRpc.mockReturnValue(response([message('m2', false, 2)]))
@@ -638,6 +657,7 @@ describe('catching up rather than reading the newest page again', () => {
       await client.refetchQueries({ queryKey: messagesKey })
     })
     expect(client.getQueryData<GroupThread>(messagesKey)?.settled).toBe(false)
+    expect(client.getQueryData<GroupThread>(messagesKey)?.newestId).toBe('m2')
     await act(async () => {
       await client.refetchQueries({ queryKey: messagesKey })
     })
@@ -673,7 +693,6 @@ describe('catching up rather than reading the newest page again', () => {
     expect(mockRpc).toHaveBeenCalledWith('group_messages', {
       p_group_id: 'g1',
       p_ids: ['m53', 'm0'],
-      p_limit: 2,
     })
     expect(client.getQueryData<GroupThread>(messagesKey)?.messages[53]?.reactions).toEqual([
       { emoji: '🔥', count: 2 },
@@ -727,11 +746,10 @@ describe('catching up rather than reading the newest page again', () => {
         { emoji: '😂', count: 1 },
       ]),
     )
-    // Only m2 is asked for; m1 is drawn with the viewer's heart until it lands.
+    // Both are read, but m1 keeps the viewer's heart until their own write lands.
     expect(mockRpc).toHaveBeenCalledWith('group_messages', {
       p_group_id: 'g1',
-      p_ids: ['m2'],
-      p_limit: 1,
+      p_ids: ['m1', 'm2'],
     })
     expect(client.getQueryData<GroupThread>(messagesKey)?.messages[0]?.my_reaction).toBe('❤️')
 
@@ -1205,6 +1223,8 @@ describe('replies, food and reactions', () => {
       likes: 3,
       mine: 1,
     })
+    // The card is read again once the refusal lands, as the server still has it.
+    mockRpc.mockReturnValue(response([{ ...message('m1'), food }]))
     await act(async () => {
       write.settle({ data: null, error: { message: 'no' } })
       await done

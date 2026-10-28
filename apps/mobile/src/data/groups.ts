@@ -226,6 +226,8 @@ export type GroupThread = {
    * catch-up reads from. Never a message drawn with the phone's own clock.
    */
   newest?: string
+  /** Its id, which orders messages written in the same microsecond. */
+  newestId?: string
   /** When `newest` was first read here, by the phone's clock. */
   newestAt?: number
   /**
@@ -472,6 +474,9 @@ function laterOf(a: string | undefined, b: string | undefined): string | undefin
   return micros(b) > micros(a) ? b : a
 }
 
+/** Where a catch-up starts: after this time, and after this id within it. */
+type CatchUp = { p_after_at: string; p_after_id?: string }
+
 /**
  * Where the next read of the thread may catch up from, or null when it is due
  * a whole read: nothing read whole yet, or not for `every` milliseconds.
@@ -480,11 +485,11 @@ export function catchUpFrom(
   held: GroupThread | undefined,
   now: number,
   every: number,
-): string | null {
+): CatchUp | null {
   if (!held?.newest || held.readAt === undefined || now - held.readAt >= every) return null
-  if (held.settled) return held.newest
+  if (held.settled && held.newestId) return { p_after_at: held.newest, p_after_id: held.newestId }
   const at = micros(held.newest) / 1000
-  return Number.isNaN(at) ? null : new Date(at - CATCH_UP_OVERLAP_MS).toISOString()
+  return Number.isNaN(at) ? null : { p_after_at: new Date(at - CATCH_UP_OVERLAP_MS).toISOString() }
 }
 
 /**
@@ -513,17 +518,20 @@ const inOrder = (a: GroupMessage, b: GroupMessage) => (before(a, b) ? -1 : befor
  */
 export function mergeNewer(held: GroupThread, newer: GroupMessage[]): GroupThread {
   const first = newer[0]
-  if (!first) return held
-  const newest = laterOf(held.newest, newer.at(-1)?.created_at)
+  const top = newer.at(-1)
+  if (!first || !top) return held
+  const moved = laterOf(held.newest, top.created_at) !== held.newest
+  const newest = moved ? top.created_at : held.newest
+  const newestId = moved ? top.id : held.newestId
   if (newer.length >= THREAD_PAGE) {
-    return { ...held, ...mergeNewest(held, newer), newest }
+    return { ...held, ...mergeNewest(held, newer), newest, newestId }
   }
   const fresh = new Set(newer.map((message) => message.id))
   const kept = held.messages.filter((message) => !fresh.has(message.id))
   const last = kept.at(-1)
   const messages =
     !last || before(last, first) ? [...kept, ...newer] : [...kept, ...newer].sort(inOrder)
-  return { ...held, messages, newest }
+  return { ...held, messages, newest, newestId }
 }
 
 /**
@@ -556,18 +564,21 @@ function edited(client: QueryClient, userId: string, groupId: string) {
 /**
  * Runs a read of the thread, and again while the thread was changed in place
  * under it: the change was announced after it was written, so a read started
- * after the change sees it. Three tries, then the last answer stands.
+ * after the change sees it. After three tries the last answer stands, passed
+ * through `unsettled` so the caller can see to a whole read soon.
  */
 async function settledRead<T>(
   client: QueryClient,
   userId: string,
   groupId: string,
   read: () => Promise<T>,
+  unsettled: (answer: T) => T = (answer) => answer,
 ): Promise<T> {
   for (let attempt = 1; ; attempt += 1) {
     const edits = editsOf(client, userId, groupId)
     const answer = await read()
-    if (attempt === 3 || editsOf(client, userId, groupId) === edits) return answer
+    if (editsOf(client, userId, groupId) === edits) return answer
+    if (attempt === 3) return unsettled(answer)
   }
 }
 
@@ -594,53 +605,70 @@ export function useGroupThread(groupId: string, live: boolean) {
   const userId = useUserId()
   const client = useQueryClient()
   const key = messagesKey(userId, groupId)
+  // The first read this chat makes is whole, however recently a visit before
+  // read it: what was removed or reacted to meanwhile no catch-up would see.
+  const opening = useRef(true)
   const thread = useQuery({
     queryKey: key,
-    queryFn: ({ signal }) =>
-      settledRead(client, userId, groupId, async () => {
-        const startedAt = Date.now()
-        const from = catchUpFrom(
-          client.getQueryData<GroupThread>(key),
-          startedAt,
-          live ? WHOLE_READ_LIVE_MS : WHOLE_READ_POLLED_MS,
-        )
-        if (from && (oldServerUntil.get(client) ?? 0) <= startedAt) {
-          try {
-            const newer = (await rpc(
-              'group_messages',
-              { p_group_id: groupId, p_limit: THREAD_PAGE, p_after_at: from },
-              signal,
-            )) as unknown as GroupMessage[]
-            // Laid over the thread as it is now: an older page may have
-            // landed meanwhile. Cleared meanwhile, it is read whole.
-            const held = client.getQueryData<GroupThread>(key)
-            if (held) return noted(held, mergeNewer(held, newer), startedAt, from !== held.newest)
-          } catch (error) {
-            if (!unknownArguments(error)) throw error
-            oldServerUntil.set(client, Date.now() + OLD_SERVER_MS)
+    queryFn: async ({ signal }) => {
+      const whole = opening.current
+      const answer = await settledRead(
+        client,
+        userId,
+        groupId,
+        async () => {
+          const startedAt = Date.now()
+          const from = whole
+            ? null
+            : catchUpFrom(
+                client.getQueryData<GroupThread>(key),
+                startedAt,
+                live ? WHOLE_READ_LIVE_MS : WHOLE_READ_POLLED_MS,
+              )
+          if (from && (oldServerUntil.get(client) ?? 0) <= startedAt) {
+            try {
+              const newer = (await rpc(
+                'group_messages',
+                { p_group_id: groupId, p_limit: THREAD_PAGE, ...from },
+                signal,
+              )) as unknown as GroupMessage[]
+              // Laid over the thread as it is now: an older page may have
+              // landed meanwhile. Cleared meanwhile, it is read whole.
+              const held = client.getQueryData<GroupThread>(key)
+              if (held) return noted(held, mergeNewer(held, newer), startedAt, !from.p_after_id)
+            } catch (error) {
+              if (!unknownArguments(error)) throw error
+              oldServerUntil.set(client, Date.now() + OLD_SERVER_MS)
+            }
           }
-        }
-        const page = (await rpc(
-          'group_messages',
-          { p_group_id: groupId, p_limit: THREAD_PAGE },
-          signal,
-        )) as unknown as GroupMessage[]
-        // The thread as it is now, not as it was when the read started: an
-        // older page may have landed meanwhile.
-        const held = client.getQueryData<GroupThread>(key)
-        return noted(
-          held,
-          {
-            ...mergeNewest(held, page),
-            newest: page.at(-1)?.created_at,
-            newestAt: held?.newestAt,
-            settled: held?.settled,
-            readAt: startedAt,
-          },
-          startedAt,
-          true,
-        )
-      }),
+          const page = (await rpc(
+            'group_messages',
+            { p_group_id: groupId, p_limit: THREAD_PAGE },
+            signal,
+          )) as unknown as GroupMessage[]
+          // The thread as it is now, not as it was when the read started: an
+          // older page may have landed meanwhile.
+          const held = client.getQueryData<GroupThread>(key)
+          return noted(
+            held,
+            {
+              ...mergeNewest(held, page),
+              newest: page.at(-1)?.created_at,
+              newestId: page.at(-1)?.id,
+              newestAt: held?.newestAt,
+              settled: held?.settled,
+              readAt: startedAt,
+            },
+            startedAt,
+            true,
+          )
+        },
+        // Changed under every try: the next read is whole.
+        (thread) => ({ ...thread, readAt: 0 }),
+      )
+      opening.current = false
+      return answer
+    },
     refetchInterval: live ? 60_000 : 5_000,
     // Coming back to the app rejoins the channel, and the join refetches;
     // refetching on focus as well read the thread twice.
@@ -708,41 +736,62 @@ function pendingActions<A extends GroupAction['action']>(
 }
 
 /**
- * The messages of a group's thread the viewer's own reaction is on its way to.
- * They are drawn already, and a read now could draw the old answer over them.
+ * Whether a message of a group's thread is the viewer's own to redraw: their
+ * reaction to it, or their thumb on the food it shares, is on its way. It is
+ * drawn already, and a read now could draw the old answer over it.
  */
-const reacting = (client: QueryClient, groupId: string) =>
-  new Set(pendingActions(client, groupId, 'reactMessage').map((input) => input.messageId))
+function heldBack(client: QueryClient, groupId: string): (message: GroupMessage) => boolean {
+  const messages = new Set<string>()
+  const entries = new Set<string>()
+  for (const mutation of client.getMutationCache().findAll({ status: 'pending' })) {
+    const input = mutation.state.variables as GroupAction | undefined
+    if (input?.action === 'reactMessage' && input.groupId === groupId) messages.add(input.messageId)
+    if (input?.action === 'react') entries.add(input.entryId)
+  }
+  return (message) =>
+    messages.has(message.id) ||
+    Boolean(message.food?.entry_id && entries.has(message.food.entry_id))
+}
 
 /**
- * Reads the held messages a reaction changed again, by id, however far back
- * they are, and lays each over its held copy, unless the viewer's own reaction
- * to it is on its way by then. One hidden since does not come back and is left
- * to the next whole read.
+ * Reads the held messages named again, by id, however far back they are, and
+ * lays each over its held copy, unless the viewer's own reaction or thumb on it
+ * is on its way by then. One hidden since does not come back and is left to the
+ * next whole read.
  */
 async function rereadMessages(client: QueryClient, userId: string, groupId: string, ids: string[]) {
   const held = client.getQueryData<GroupThread>(messagesKey(userId, groupId))?.messages
   if (!held) return
   const asked = [...new Set(ids)].filter((id) => held.some((message) => message.id === id))
+  if (!asked.length) return
+  const batches: string[][] = []
+  for (let at = 0; at < asked.length; at += IDS_PER_READ) {
+    batches.push(asked.slice(at, at + IDS_PER_READ))
+  }
   try {
-    for (let at = 0; at < asked.length; at += IDS_PER_READ) {
-      const named = asked.slice(at, at + IDS_PER_READ)
-      const fresh = (await rpc('group_messages', {
-        p_group_id: groupId,
-        p_ids: named,
-        p_limit: named.length,
-      })) as unknown as GroupMessage[]
-      const mine = reacting(client, groupId)
-      const byId = new Map(
-        fresh.filter((message) => !mine.has(message.id)).map((message) => [message.id, message]),
-      )
-      if (!byId.size) continue
-      patchThread(client, userId, groupId, (messages) =>
-        messages.some((message) => byId.has(message.id))
-          ? messages.map((message) => byId.get(message.id) ?? message)
-          : messages,
-      )
-    }
+    const fresh = await settledRead(client, userId, groupId, async () =>
+      (
+        await Promise.all(
+          batches.map(
+            async (named) =>
+              (await rpc('group_messages', {
+                p_group_id: groupId,
+                p_ids: named,
+              })) as unknown as GroupMessage[],
+          ),
+        )
+      ).flat(),
+    )
+    const mine = heldBack(client, groupId)
+    const byId = new Map(
+      fresh.filter((message) => !mine(message)).map((message) => [message.id, message]),
+    )
+    if (!byId.size) return
+    patchThread(client, userId, groupId, (messages) =>
+      messages.some((message) => byId.has(message.id))
+        ? messages.map((message) => byId.get(message.id) ?? message)
+        : messages,
+    )
   } catch (error) {
     // A server from before reading by id redraws them with a whole read.
     if (!unknownArguments(error)) return
@@ -760,14 +809,17 @@ function patchThread(
   userId: string,
   groupId: string,
   patch: (messages: GroupMessage[]) => GroupMessage[],
-) {
+): boolean {
+  let changed = false
   client.setQueryData<GroupThread>(messagesKey(userId, groupId), (thread) => {
     if (!thread) return thread
     const messages = patch(thread.messages)
     if (messages === thread.messages) return thread
+    changed = true
     edited(client, userId, groupId)
     return { ...thread, messages }
   })
+  return changed
 }
 
 /**
@@ -776,12 +828,12 @@ function patchThread(
  * they went.
  */
 function removeMessages(client: QueryClient, userId: string, groupId: string, ids: string[]) {
-  edited(client, userId, groupId)
-  patchThread(client, userId, groupId, (messages) =>
+  const changed = patchThread(client, userId, groupId, (messages) =>
     messages.some((message) => ids.includes(message.id))
       ? messages.filter((message) => !ids.includes(message.id))
       : messages,
   )
+  if (!changed) edited(client, userId, groupId)
 }
 
 /**
@@ -882,14 +934,9 @@ export function useGroupChatLive(groupId: string): boolean {
           if (pendingActions(client, groupId, 'message').length) return
           refetch()
         } else if (event === 'reacted') {
-          // The viewer's own reaction rereads its message when it lands.
-          const mine = reacting(client, groupId)
-          void rereadMessages(
-            client,
-            userId,
-            groupId,
-            ids.filter((id) => !mine.has(id)),
-          ).then(refetchIfDue)
+          // A message the viewer's own reaction is on its way to is reread
+          // when that lands; rereadMessages leaves it alone till then.
+          void rereadMessages(client, userId, groupId, ids).then(refetchIfDue)
         }
       },
     })
@@ -1424,21 +1471,38 @@ function patchFoodCards(
   entryId: string,
   patch: (food: ChatFood) => ChatFood,
 ) {
-  client.setQueriesData<GroupThread>(
-    { queryKey: keys.groups(userId), predicate: named('group_messages') },
-    (thread) =>
-      thread?.messages.some((message) => message.food?.entry_id === entryId)
-        ? {
-            ...thread,
-            messages: thread.messages.map((message) =>
-              message.food?.entry_id === entryId
-                ? { ...message, food: patch(message.food) }
-                : message,
-            ),
-          }
-        : thread,
-  )
+  for (const [groupId, ids] of threadsWithFood(client, userId, entryId)) {
+    patchThread(client, userId, groupId, (messages) =>
+      messages.map((message) =>
+        ids.includes(message.id) && message.food
+          ? { ...message, food: patch(message.food) }
+          : message,
+      ),
+    )
+  }
 }
+
+/** Each cached thread holding cards of one food, by group, with the cards' message ids. */
+function threadsWithFood(client: QueryClient, userId: string, entryId: string) {
+  const found = new Map<string, string[]>()
+  for (const [key, thread] of client.getQueriesData<GroupThread>({
+    queryKey: keys.groups(userId),
+    predicate: named('group_messages'),
+  })) {
+    const groupId = (key[3] as { groupId?: string } | undefined)?.groupId
+    const ids = thread?.messages
+      .filter((message) => message.food?.entry_id === entryId)
+      .map((message) => message.id)
+    if (groupId && ids?.length) found.set(groupId, ids)
+  }
+  return found
+}
+
+/**
+ * The message reactions whose onMutate stopped a read of the thread on its way,
+ * which their onSettled then makes up for.
+ */
+const stoppedReads = new WeakMap<GroupAction, true>()
 
 function findFoodCard(client: QueryClient, userId: string, entryId: string): ChatFood | undefined {
   for (const [, thread] of client.getQueriesData<GroupThread>({
@@ -1563,6 +1627,8 @@ export function useGroupAction() {
           // Drawn at once, as a heart is on Instagram; a refusal puts the
           // message back as it was.
           const key = messagesKey(userId, input.groupId)
+          const reading = client.getQueryCache().find({ queryKey: key, exact: true })
+          if (reading?.state.fetchStatus === 'fetching') stoppedReads.set(input, true)
           await client.cancelQueries({ queryKey: key })
           const before = client
             .getQueryData<GroupThread>(key)
@@ -1611,14 +1677,22 @@ export function useGroupAction() {
     onSettled: (data, error, input) => {
       switch (input.action) {
         case 'react':
+          // The board's own poll reconciles the board. A chat card is read
+          // again by id, since a catch-up taken while the thumb was on its way
+          // may have drawn the old one and no later catch-up reaches back to it.
+          for (const [groupId, ids] of threadsWithFood(client, userId, input.entryId)) {
+            void rereadMessages(client, userId, groupId, ids)
+          }
+          return
         case 'move':
           return
         case 'reactMessage':
-          // The counts others added meanwhile come with a reread of it.
-          // The message itself is read again by id, wherever it is; and the
-          // thread catches up, since onMutate stopped any read on its way.
+          // The counts others added meanwhile come with a reread of it by id,
+          // wherever it is; the thread catches up if onMutate stopped a read.
           void rereadMessages(client, userId, input.groupId, [input.messageId])
-          void client.invalidateQueries({ queryKey: messagesKey(userId, input.groupId) })
+          if (stoppedReads.get(input)) {
+            void client.invalidateQueries({ queryKey: messagesKey(userId, input.groupId) })
+          }
           return
         case 'read':
           if (input.refresh) {
