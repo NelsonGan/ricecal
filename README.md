@@ -3423,10 +3423,10 @@ answer carries a `version` (an md5 of the rest of it), and the poll hands back
 the one it holds as `p_known`: a board nobody touched answers
 `{"unchanged": true}` in about 70 bytes instead of every member's day of food
 again, which was a third of the project's egress once groups shipped. A board
-patched on the phone (a like, a move) keeps the version it was read with,
-which is safe because the write either changes the board on the server, and
-so its version, or fails and is put back exactly. An app from before it sends
-no `p_known` and reads the full board, with one extra field it ignores. The chat
+patched on the phone (a like, a move) drops its version, so the next poll
+reads it whole and draws what the server has, whether the write took or its
+rollback missed. An app from before it sends no `p_known` and reads the full
+board, with one extra field it ignores. The chat
 is live while open (below), and the invite count refreshes every five minutes
 and whenever the tab is shown, since an invite also arrives as a push. The
 pager follows the selected date rather than a position, so midnight passing
