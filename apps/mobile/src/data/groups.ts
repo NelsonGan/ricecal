@@ -36,12 +36,16 @@ export type GroupPerson = {
   name: string
   handle: string
   avatar_path: string | null
+  /** Drawn as a gold ring. Missing from an older server, which reads as not Pro. */
+  is_pro?: boolean
 }
 
 export type GroupSummary = {
   id: string
   name: string
   icon_name: string
+  /** A picture the leader uploaded, drawn instead of `icon_name`. Pro only. */
+  icon_path?: string | null
   is_public: boolean
   is_leader: boolean
   member_count: number
@@ -120,6 +124,7 @@ export type GroupBoard = {
     id: string
     name: string
     icon_name: string
+    icon_path?: string | null
     is_public: boolean
     leader_id: string | null
     member_count: number
@@ -219,6 +224,7 @@ type GroupDetails = {
   id: string
   name: string
   icon_name: string
+  icon_path?: string | null
   is_public: boolean
   leader_id: string | null
   notify: boolean
@@ -956,8 +962,17 @@ export function useGroupDetails(groupId: string) {
 }
 
 type GroupAction =
-  | { action: 'create'; name: string; iconName: string; isPublic: boolean }
-  | { action: 'update'; groupId: string; name?: string; isPublic?: boolean }
+  | { action: 'create'; name: string; iconName: string; iconPath?: string; isPublic: boolean }
+  | {
+      action: 'update'
+      groupId: string
+      name?: string
+      isPublic?: boolean
+      /** A drawing, which also takes an uploaded picture away. */
+      iconName?: string
+      /** An uploaded picture, or '' to take it away. */
+      iconPath?: string
+    }
   | { action: 'invite'; groupId: string; target: string }
   | { action: 'respond'; groupId: string; accept: boolean }
   | { action: 'join'; groupId: string }
@@ -1016,13 +1031,15 @@ async function perform(input: GroupAction): Promise<unknown> {
         p_name: input.name,
         p_icon_name: input.iconName,
         p_is_public: input.isPublic,
+        ...(input.iconPath ? { p_icon_path: input.iconPath } : {}),
       })
     case 'update':
       return await rpc('update_group', {
         p_group_id: input.groupId,
         p_name: unset(input.name),
-        p_icon_name: unset<string>(null),
+        p_icon_name: unset(input.iconName),
         p_is_public: unset(input.isPublic),
+        ...(input.iconPath !== undefined ? { p_icon_path: input.iconPath } : {}),
       })
     case 'invite': {
       const id = await rpc('invite_to_group', { p_group_id: input.groupId, p_target: input.target })

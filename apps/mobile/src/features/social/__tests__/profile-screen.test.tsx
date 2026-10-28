@@ -10,6 +10,7 @@ jest.mock('expo-router', () => ({
 }))
 jest.mock('@/data', () => ({
   useUserId: () => 'viewer',
+  useEntitlement: () => ({ entitled: false, loading: false, unknown: false }),
   useProfile: () => ({
     data: {
       id: 'viewer',

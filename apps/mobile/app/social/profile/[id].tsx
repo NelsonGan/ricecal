@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useAvatarUrl, useProfile, useUserId } from '@/data'
+import { useAvatarUrl, useEntitlement, useProfile, useUserId } from '@/data'
 import { useSocialPosts, useSocialProfile, useSocialWorkoutCount } from '@/data/social'
 import {
   ContentSafety,
@@ -14,7 +14,7 @@ import {
   SocialList,
   SocialPhoto,
 } from '@/features/social/components'
-import { Badge, Button, Icon, IconButton, Screen, Sheet, Tappable, Text } from '@/ui'
+import { Badge, Button, Icon, IconButton, ProRing, Screen, Sheet, Tappable, Text } from '@/ui'
 
 export default function ProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -36,6 +36,7 @@ function Profile({ id }: { id: string }) {
   const afterDismiss = useRef<(() => void) | null>(null)
   const person = profile.data
   const mine = id === viewer
+  const { entitled } = useEntitlement()
   const account = mine ? ownProfile.data : null
   const visible = Boolean(person || account)
   const name = person?.display_name || account?.display_name || t('unknownPerson')
@@ -46,13 +47,15 @@ function Profile({ id }: { id: string }) {
   const header = visible ? (
     <View className="gap-4 border-b-2 border-track bg-surface px-5 pb-5 pt-2">
       <View className="flex-row items-center gap-4">
-        <SocialPhoto
-          path={mine ? null : person?.avatar_path}
-          privateUri={ownAvatar.data}
-          avatar
-          size="lg"
-          label={name}
-        />
+        <ProRing pro={person?.is_pro ?? (mine && entitled)} size="lg">
+          <SocialPhoto
+            path={mine ? null : person?.avatar_path}
+            privateUri={ownAvatar.data}
+            avatar
+            size="lg"
+            label={name}
+          />
+        </ProRing>
         <View className="min-w-0 flex-1 gap-1">
           <Text variant="subtitle" numberOfLines={1}>
             {name}

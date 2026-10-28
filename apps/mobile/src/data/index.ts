@@ -72,6 +72,7 @@ export {
   pendingAsEntry,
   usePendingSnaps,
 } from './pending-snaps'
+export { type PhotoRemoval, usePhotoRemovals } from './photoRemovals'
 export {
   removeAvatar,
   removeMealPhoto,

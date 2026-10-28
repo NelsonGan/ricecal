@@ -34,6 +34,7 @@ import {
   Text,
   TextField,
 } from '@/ui'
+import { GroupIconPicker } from './IconPicker'
 import { InviteSheet } from './InviteSheet'
 import { GroupIcon, PersonAvatar, PersonAvatarLink, useGroupTask } from './parts'
 import { SettingsSkeleton } from './Skeletons'
@@ -51,6 +52,7 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
   const [inviting, setInviting] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [removing, setRemoving] = useState<GroupPerson | null>(null)
+  const [choosingIcon, setChoosingIcon] = useState(false)
   const group = details.data
   const isLeader = group?.leader_id === viewer
   const others = group?.members.filter((member) => member.id !== viewer) ?? []
@@ -91,9 +93,24 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
         <View className="gap-lg pb-xl">
           <Card>
             <View className="flex-row items-center gap-md">
-              <View className="h-14 w-14 items-center justify-center rounded-tile bg-pandan-soft">
-                <GroupIcon name={group.icon_name} size={40} />
-              </View>
+              <Tappable
+                disabled={!isLeader}
+                onPress={() => setChoosingIcon(true)}
+                accessibilityRole={isLeader ? 'button' : undefined}
+                accessibilityLabel={isLeader ? t('changeIcon') : undefined}
+                className="h-14 w-14 items-center justify-center overflow-hidden rounded-tile bg-pandan-soft"
+              >
+                {group.icon_path ? (
+                  <GroupIcon name={group.icon_name} path={group.icon_path} fill />
+                ) : (
+                  <GroupIcon name={group.icon_name} size={40} />
+                )}
+                {isLeader ? (
+                  <View className="absolute bottom-0.5 right-0.5 h-5 w-5 items-center justify-center rounded-full bg-surface">
+                    <Icon set="ui" name="edit" size={13} tintColor={colors.muted} />
+                  </View>
+                ) : null}
+              </Tappable>
               <View className="min-w-0 flex-1">
                 <Text variant="subtitle" numberOfLines={1}>
                   {group.name}
@@ -261,6 +278,27 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
           tone="danger"
         />
       )}
+      {group && isLeader ? (
+        <Sheet
+          visible={choosingIcon}
+          onClose={() => setChoosingIcon(false)}
+          closeLabel={t('common:action.close')}
+          title={t('changeIcon')}
+        >
+          <GroupIconPicker
+            value={{ name: group.icon_name, path: group.icon_path }}
+            beforePaywall={() => setChoosingIcon(false)}
+            onChange={(choice) => {
+              setChoosingIcon(false)
+              task.press(
+                choice.path
+                  ? { action: 'update', groupId, iconPath: choice.path }
+                  : { action: 'update', groupId, iconName: choice.name },
+              )
+            }}
+          />
+        </Sheet>
+      ) : null}
     </Screen>
   )
 }

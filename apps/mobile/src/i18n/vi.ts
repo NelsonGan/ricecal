@@ -645,6 +645,18 @@ export const vi = {
   },
 
   logging: {
+    photoRemovals: {
+      toast_one: '{{count}} ảnh bữa ăn sẽ bị xóa {{when}}',
+      toast_other: '{{count}} ảnh bữa ăn sẽ bị xóa {{when}}',
+      by: 'trước {{day}}',
+      today: 'hôm nay',
+      tomorrow: 'ngày mai',
+      show: 'Xem',
+      title: 'Ảnh sắp bị xóa',
+      intro: 'Tài khoản miễn phí giữ ảnh bữa ăn trong {{days}} ngày. Bữa ăn vẫn được giữ.',
+      keep: 'Giữ lại với Pro',
+      empty: 'Không có ảnh nào sắp bị xóa.',
+    },
     today: {
       title: 'Hôm nay',
       backToTodayA11y: 'Quay lại hôm nay',
@@ -1433,7 +1445,10 @@ export const vi = {
         new_group: 'Tạo hơn {{groups}} nhóm cần RiceCal Pro.',
         workout_range: 'Xem tiến độ tập xa hơn 3 tháng cần RiceCal Pro.',
         review: 'Đọc một bản tổng kết cũ hơn cần RiceCal Pro.',
-        nudge: 'RiceCal Pro gỡ bỏ giới hạn.',
+        group_icon: 'Thêm biểu tượng nhóm cần RiceCal Pro.',
+        photo_retention: 'Giữ ảnh bữa ăn mãi mãi cần RiceCal Pro.',
+        nudge_streak: 'Đã ghi {{days}} ngày liên tiếp. Tiếp tục với Pro.',
+        nudge_goal: 'Bạn đã đạt cân nặng mục tiêu. Tiếp tục với Pro.',
       },
     },
 
@@ -2268,6 +2283,12 @@ export const vi = {
     create: 'Tạo',
     name: 'Tên nhóm',
     namePlaceholder: 'Makan Buddies',
+    proIcons: 'Biểu tượng Pro',
+    viewMore: 'Xem thêm',
+    viewLess: 'Thu gọn',
+    uploadIcon: 'Tải ảnh lên',
+    iconUploadFailed: 'Không thể tải ảnh đó lên.',
+    changeIcon: 'Đổi biểu tượng',
     icon: 'Biểu tượng',
     private: 'Riêng tư',
     privateHint: 'Chỉ người bạn mời mới tham gia được.',
