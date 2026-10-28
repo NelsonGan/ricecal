@@ -3544,6 +3544,7 @@ export type Database = {
       }
       forget_push_tokens: { Args: { p_tokens: string[] }; Returns: undefined }
       free_daily_scans: { Args: never; Returns: number }
+      free_group_limit: { Args: never; Returns: number }
       free_photo_retention_days: { Args: never; Returns: number }
       free_recipe_limit: { Args: never; Returns: number }
       free_routine_limit: { Args: never; Returns: number }
@@ -3634,7 +3635,7 @@ export type Database = {
         }
       }
       group_board: {
-        Args: { p_day: string; p_group_id: string }
+        Args: { p_day: string; p_group_id: string; p_known?: string }
         Returns: Json
       }
       group_chat_summary: { Args: { p_group_id: string }; Returns: Json }
@@ -3657,6 +3658,7 @@ export type Database = {
       }
       group_messages: {
         Args: {
+          p_after_at?: string
           p_before_at?: string
           p_before_id?: string
           p_group_id: string

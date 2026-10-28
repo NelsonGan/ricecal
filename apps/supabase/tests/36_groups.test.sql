@@ -154,6 +154,18 @@ select is((
   'both of Ben''s morning plates are breakfast');
 select ok(not (public.group_board((select id from g), (select d from bday))::text like '%Private note%'),
   'the board never carries a diary note');
+-- A poll handing back the version it holds hears that nothing changed, and a
+-- stale version, or none, gets the whole board.
+create temp table board_v as
+  select public.group_board((select id from g), (select d from bday))->>'version' as v;
+select is(length((select v from board_v)), 32, 'the board carries its version');
+select is(public.group_board((select id from g), (select d from bday), (select v from board_v)),
+  jsonb_build_object('unchanged', true, 'version', (select v from board_v)),
+  'the same version answers unchanged');
+select ok(public.group_board((select id from g), (select d from bday), 'stale') ? 'members',
+  'another version answers the whole board');
+select is(public.group_board((select id from g), (select d from bday))->>'version', (select v from board_v),
+  'the version holds while nothing changes');
 
 -- Moving an entry is Ben's alone, and moves it everywhere.
 select throws_ok(format('select public.set_entry_board_meal(%L, %L)', :'moved_entry', 'lunch'), '42501', null,
@@ -163,6 +175,10 @@ select lives_ok(format('select public.set_entry_board_meal(%L, %L)', :'moved_ent
 select is((
   select e->>'meal' from jsonb_array_elements(public.group_board((select id from g), (select d from bday))->'members') m,
     jsonb_array_elements(m->'entries') e where e->>'id' = :'moved_entry'), 'lunch', 'the board follows the move');
+select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
+select ok(public.group_board((select id from g), (select d from bday), (select v from board_v)) ? 'members',
+  'a friend''s move changes the version, so a poll holding the old one reads the board again');
+select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
 
 -- Reactions: never your own, counted on the board, cleared by 0.
 select throws_ok(format('select public.set_group_reaction(%L, 1::smallint)', :'breakfast_entry'), '42501', null,
@@ -290,6 +306,17 @@ select is((select array_agg(e->>'body' order by o) from page1,
   array['page 1', 'page 2'], 'and the page before it from the cursor');
 select is(jsonb_array_length(public.group_messages((select id from g), now() - interval '2 hours', null, 3)), 0,
   'nothing before the first message');
+-- Catching up reads only what was written after the time it is handed.
+select is((select array_agg(e->>'body' order by o) from page1,
+    jsonb_array_elements(public.group_messages((select id from g), p_limit => 50,
+      p_after_at => (p->1->>'created_at')::timestamptz)) with ordinality x(e, o)),
+  array['page 5'], 'only the messages after p_after_at');
+select is(jsonb_array_length(public.group_messages((select id from g), p_limit => 50,
+    p_after_at => (select (p->2->>'created_at')::timestamptz from page1))), 0,
+  'nothing after the newest message');
+select is(jsonb_array_length(public.group_messages((select id from g), p_limit => 50,
+    p_after_at => now() - interval '2 hours')), 5,
+  'an old p_after_at reads every page, still without the message Ana reported');
 reset role;
 delete from public.group_messages where body like 'page %';
 delete from broadcasts where ids::text like '%a3620000-0000-4000-8000-1000000000%';

@@ -3293,8 +3293,9 @@ meal share a tile and swipe sideways inside it.
   over it; the ⋯ sheet opens once that modal has gone, as iOS will not present
   two at once. Counted by emoji in `group_messages`, leaving out anyone blocked either
   way. Setting, changing or taking one back broadcasts `reacted` on the chat's
-  topic with the message ids; an open chat refetches only when it holds one of
-  them, and an app from before reactions does not listen for the event at all.
+  topic with the message ids; an open chat rereads only the ones it holds (one
+  among the last ten by a catch-up from it, one further back on its own), and
+  an app from before reactions does not listen for the event at all.
 - **Food in the chat.** A food message shares one of its author's own food posts
   (`group_messages.post_id`) and draws as a card: the photo across it, the name,
   calories and macros. The card reads the post's meal live through
@@ -3413,7 +3414,15 @@ they tap back to the list. A group left elsewhere falls back to the list once
 `my_groups` has loaded. Days change by swiping the board or with the week strip
 under the header, the same strip Today uses, limited to the board's sixty days;
 each follows the other. Only the day on screen refreshes, every 30 seconds; the
-days either side are fetched once so a swipe lands on a drawn board. The chat
+days either side are fetched once so a swipe lands on a drawn board. Each
+answer carries a `version` (an md5 of the rest of it), and the poll hands back
+the one it holds as `p_known`: a board nobody touched answers
+`{"unchanged": true}` in about 70 bytes instead of every member's day of food
+again, which was a third of the project's egress once groups shipped. A board
+patched on the phone (a like, a move) keeps the version it was read with,
+which is safe because the write either changes the board on the server, and
+so its version, or fails and is put back exactly. An app from before it sends
+no `p_known` and reads the full board, with one extra field it ignores. The chat
 is live while open (below), and the invite count refreshes every five minutes
 and whenever the tab is shown, since an invite also arrives as a push. The
 pager follows the selected date rather than a position, so midnight passing
@@ -3426,8 +3435,8 @@ while its chat or its board is on screen and the app is in front. The two share
 it (`lib/realtime.ts` holds one channel per topic), so opening the chat from the
 board does not leave and rejoin. Everything else still polls.
 
-- **The chat** refetches the thread's newest page when a broadcast names a
-  message it does not have.
+- **The chat** catches up when a broadcast names a message it does not have
+  (see "Catching up" below).
 - **The board's chat bar** rereads `group_chat_summary` on every broadcast: one
   small read instead of the board with every member's day of food, one in
   flight at a time with a burst ending in one more. Measured on a simulator
@@ -3464,23 +3473,36 @@ board does not leave and rejoin. Everything else still polls.
   lingering after the last chat closed; coming back rejoins. supabase-js
   otherwise keeps an empty socket for 50 seconds, which `lib/supabase.ts` cuts
   to 5.
-- **Catching up.** Each join, first or after a drop, refetches the thread once,
-  since nothing sent while the channel was down will be heard. That is a second
-  read on opening a chat, kept on purpose: the first one may have been taken
-  before the join. A fetch already on its way lands first rather than being
+- **Each join reads the thread once**, first or after a drop, since nothing
+  sent while the channel was down will be heard. That is a second read on
+  opening a chat, kept on purpose: the first one may have been taken before
+  the join, and it is only a catch-up. A fetch already on its way lands first rather than being
   restarted, which would hold back the first paint. Refetch on focus is off,
   since coming back rejoins and the join reads. A join the policy refuses (a
   member removed mid-chat) is not retried, and a channel the server closes is
   rejoined after three seconds.
-- **Polling is the net, not the mechanism.** Joined, the thread is still read
-  once a minute, for what no message write announces (another member blocking
-  the viewer, a renamed author) and for a socket that died without saying so.
-  Not joined, it is read every 5 seconds. Each read is the newest page laid
-  over what has been scrolled through (`mergeNewest`), so a long scroll back
-  costs nothing on the next refetch; a newest page that does not reach anything
-  held means a gap, and the thread starts again from that page. Measured on a simulator
-  against the local stack: no requests while a joined chat sat idle for 20
-  seconds, and one per message from someone else.
+- **Polling is the net, not the mechanism.** Joined, the thread is still asked
+  once a minute, for a socket that died without saying so. Not joined, it is
+  asked every 5 seconds.
+- **Catching up, not rereading.** Most reads of an open thread ask only for what was written
+  since the newest message held (`group_messages`' `p_after_at`), from ten
+  seconds before it, since a message's time is when its write began and a slow
+  one can commit behind a later one already read. Each comes back in place of
+  its held copy (`mergeNewer`), so the viewer's own message drawn with the
+  phone's clock gets the server's. That is a few hundred bytes per new message
+  where rereading the newest page was 25 KB, and the page was read on every
+  message an active chat heard. The newest page is still read whole on opening,
+  on a join more than 15 seconds after the last whole read, and every five
+  minutes joined or 30 seconds polled, for what no catch-up sees: a removal or
+  reaction missed while the channel was down, another member blocking the
+  viewer, a renamed author. A whole read is laid over what has been scrolled
+  through (`mergeNewest`), so a long scroll back costs nothing on the next
+  read; a newest page that does not reach anything held means a gap, and the
+  thread starts again from that page, as does a catch-up that comes back a
+  full page. A server from before `p_after_at` answers `PGRST202`, and the app
+  reads whole from then on. Measured on a simulator against the local stack,
+  before catch-ups: no requests while a joined chat sat idle for 20 seconds,
+  and one per message from someone else.
 - **The sender's own message** joins the cached thread the moment
   `send_group_message` answers, so "Sending" clears without waiting for a
   refetch. Its broadcast can beat that answer, so a broadcast is ignored while
