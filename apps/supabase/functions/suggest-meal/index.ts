@@ -13,7 +13,6 @@
 // Pro, and it claims a scan, exactly as `scan-refine` does: discretionary,
 // repeatable at the press of a button, and with no cheaper tier underneath.
 
-import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
 import {

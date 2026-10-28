@@ -18,7 +18,6 @@
 // OPENROUTER_API_KEY unset means mock, so a local stack runs with no
 // configuration and production can never mock silently.
 
-import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
 import {

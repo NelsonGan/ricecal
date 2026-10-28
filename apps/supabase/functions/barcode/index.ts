@@ -17,7 +17,6 @@
 // fabricating zeros, and "0 g protein" against a tin of tuna is worse than an
 // honest "we do not know this one". The client offers Describe instead.
 
-import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
 import { gtin14 } from '../_shared/barcode.ts'
