@@ -3375,9 +3375,13 @@ stays closed to clients, since it would answer for any id; the views reach it
 through `private.social_is_pro`, which answers only for a profile that has
 joined the feed and is public (and for the caller's own), so the view cannot be
 used to list who pays among people who never posted or keep their profile
-private. `ProRing` in `ui/Avatar.tsx` draws it over the avatar rather
-than around it, so a list never reflows when somebody subscribes, and it is
-static: a shimmer would be an animation per face in a scrolling list.
+private. `ProRing` (`ui/ProRing.tsx`, Skia) sets the face in a metallic gold frame
+with a cream gap, scaling the face down inside its own box, so a list never
+reflows when somebody subscribes. The large sizes (Me, a profile) add a soft
+glow, a sparkle badge and a sheen that sweeps across the gold every few
+seconds; in lists the sheen is a still highlight, since an animation per face
+in a scrolling list costs more than it shows. Reduce Motion stills it. Every
+avatar is flat, so the frame encloses the whole tile.
 
 Twenty members, at most twenty groups a person, enforced by a trigger that
 locks the group row so two people cannot take the last seat together. The cap

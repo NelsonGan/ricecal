@@ -29,7 +29,6 @@ export {
   type AvatarGroupProps,
   type AvatarProps,
   type AvatarSize,
-  ProRing,
 } from './Avatar'
 // Layout for the window the app has: iPhone Duo's side column and two panes
 export { useOverlayInsets, usePaneWidth, useWindowLayout } from './adaptive'
@@ -104,6 +103,7 @@ export {
   type ProgressBarProps,
   type ProgressTone,
 } from './ProgressBar'
+export { ProRing, type ProRingSize } from './ProRing'
 // Layout
 export { footerKeyboardOffset, Screen, type ScreenProps } from './Screen'
 export { SearchField, type SearchFieldProps } from './SearchField'
