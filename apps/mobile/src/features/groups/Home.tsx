@@ -21,7 +21,6 @@ import { track } from '@/lib/analytics'
 import { ensureNotificationPermission } from '@/lib/notifications'
 import { registerPushToken } from '@/lib/push'
 import { useDebouncedValue } from '@/lib/use-debounce'
-import { slab } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AvatarGroup,
@@ -202,13 +201,9 @@ function GroupCard({ group, onPress }: { group: GroupSummary; onPress: () => voi
             max={4}
             renderAvatar={(_, index) => {
               const person = group.members[index]
-              // A picture has no slab under it, so it is lifted to sit level
-              // with the initials beside it, as the "+N" tile is.
-              return person?.avatar_path ? (
-                <View style={{ marginBottom: slab.md }}>
-                  <PersonAvatar person={person} />
-                </View>
-              ) : undefined
+              // Every face, picture or initial, so a Pro member's ring shows
+              // whichever they have.
+              return person ? <PersonAvatar person={person} /> : undefined
             }}
             className="py-1"
           />
