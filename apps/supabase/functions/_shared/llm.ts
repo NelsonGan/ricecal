@@ -364,10 +364,10 @@ export function photoDataUrl(photoBase64: string, declared = 'image/jpeg'): stri
  * not honour `json_object` at all, sometimes writes a paragraph first. A
  * failure is still a SyntaxError, which `chatJSON` records without quoting.
  *
- * `onRepair` hears how many stray quotes `parseRepairing` took out of keys, so
+ * `onRepair` hears how many keys `parseRepairing` mended, so
  * the caller can count the answers it saved without logging any of them.
  */
-export function parseAnswer(text: string, onRepair?: (quotes: number) => void): unknown {
+export function parseAnswer(text: string, onRepair?: (keys: number) => void): unknown {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]
   const braced = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)
   let failure: unknown
@@ -382,28 +382,25 @@ export function parseAnswer(text: string, onRepair?: (quotes: number) => void): 
   throw failure
 }
 
-/** At most this many quotes come out of one answer; past it the answer is not near-JSON. */
+/** At most this many keys are mended in one answer; past it the answer is not near-JSON. */
 const MAX_KEY_REPAIRS = 3
 
 /**
- * `JSON.parse`, except that a stray quote inside a key is taken out. Haiku
- * sometimes writes a key with one quote too many (`""grams": 200` or
- * `"kc"al_low": 500`), and about 2% of its photo answers failed on that (18 of
- * 744 in a day): the log read `error=other at-char=letter prev-char="`, and of V8's
- * JSON errors only "Expected ':' after property name" fits, which is a key
- * string that closed with a letter after it. Each one cost a second call to the
- * fallback model.
+ * `JSON.parse`, except that a key with a quote wrong is mended. About 3% of
+ * Haiku's photo answers failed on one (29 of 815 in a day), each logged as
+ * `error=expected-colon at-char=letter prev-char="`, and each cost a second
+ * call to the fallback model. Two faults give that error: a key that lost its
+ * closing quote (`"grams: 30, "kcal":`), which is the one Haiku makes, and a
+ * key with one quote too many (`""grams":`, `"kc"al_low":`).
  *
- * Only that one error, at that one place, is touched. When the parser read a
- * key of nothing but spaces (`  "  "grams"` in indented JSON), the stray quote is
- * the one that opened it; otherwise it is the one just before the letter. Either
- * way the key that results must be a plain snake_case name, as every key these
- * prompts ask for is: a repair that would make any other key is not made, since
+ * Only that one error, at that one place, is touched, and the key that results
+ * must be a plain snake_case name followed by its colon, as every key these
+ * prompts ask for is. A repair that would make any other key is not made, since
  * valid JSON with a wrong key would be read as a meal with nothing in it rather
  * than sent to the fallback. An answer that is not mended goes to the fallback
  * as before.
  */
-function parseRepairing(candidate: string, onRepair?: (quotes: number) => void): unknown {
+function parseRepairing(candidate: string, onRepair?: (keys: number) => void): unknown {
   let text = candidate
   // The first error is the one to report: it is what the model wrote.
   let first: unknown
@@ -416,14 +413,46 @@ function parseRepairing(candidate: string, onRepair?: (quotes: number) => void):
       first ??= error
       const message = error instanceof Error ? error.message : ''
       const at = Number(message.match(/Expected ':' after property name.*position (\d+)/)?.[1])
-      const quote = repairs < MAX_KEY_REPAIRS ? strayKeyQuote(text, at) : -1
-      if (quote < 0) throw first
-      text = text.slice(0, quote) + text.slice(quote + 1)
+      const mended = repairs < MAX_KEY_REPAIRS ? mendKey(text, at) : null
+      if (mended === null) throw first
+      text = mended
     }
   }
 }
 
 const KEY_NAME = /^[a-z_][a-z0-9_]*$/i
+
+/**
+ * The answer with the key the parser stopped in mended, or null when neither
+ * repair leaves a plain key followed by its colon.
+ */
+function mendKey(text: string, at: number): string | null {
+  const quote = strayKeyQuote(text, at)
+  if (quote >= 0) return text.slice(0, quote) + text.slice(quote + 1)
+  const close = missingKeyClose(text, at)
+  if (close >= 0) return `${text.slice(0, close)}"${text.slice(close)}`
+  return null
+}
+
+/**
+ * Where a key's closing quote belongs, when the model left it off, or -1.
+ *
+ * `"grams: 30, "kcal": 60` reads to the parser as one key, `grams: 30, `, that
+ * ends on the quote opening the next key, and it stops on that key's first
+ * letter: the same error and the same place as a stray quote. This was in fact
+ * the fault: on the first day the stray-quote repair was live it mended none of
+ * 29 failed photo answers, while a simulation of a dropped closing quote gives
+ * their logged shape exactly (`at-char=letter prev-char="`, the string left open
+ * five characters from the end). The key read must start with a plain name and
+ * its colon, and the quote goes straight after the name.
+ */
+function missingKeyClose(text: string, at: number): number {
+  if (!Number.isInteger(at) || text[at - 1] !== '"') return -1
+  const opened = text.lastIndexOf('"', at - 2)
+  if (opened < 0) return -1
+  const name = text.slice(opened + 1, at - 1).match(/^([a-z_][a-z0-9_]*)\s*:/i)?.[1]
+  return name ? opened + 1 + name.length : -1
+}
 
 /**
  * Where the stray quote is, when the parser stopped at `at` on a key that closed
@@ -769,8 +798,8 @@ export async function chatJSON(
       })
     }
     try {
-      return parseAnswer(text, (quotes) =>
-        console.warn(`[llm] ${span}: ${route.model} answer repaired (stray-key-quotes=${quotes})`),
+      return parseAnswer(text, (keys) =>
+        console.warn(`[llm] ${span}: ${route.model} answer repaired (keys=${keys})`),
       )
     } catch (error) {
       console.warn(`[llm] ${span}: ${route.model} answer did not parse (${answerShape(text)})`)
