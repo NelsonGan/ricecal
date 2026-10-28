@@ -254,7 +254,13 @@ about 2% of photos. Each one logs `answer did not parse (…)` with a shape buil
 only from lengths, counts and fixed labels (`objects=2 error=after-json` is a
 second object after the first; `error=expected-comma at-char=letter` is a quote
 left unescaped; `error=unexpected-token at-char=]` is a trailing comma), since
-the answer itself is diary content. A generic
+the answer itself is diary content. Most of that 2% is a key with one quote too
+many (`""grams":`, `"kc"al_low":`), which logs as `error=expected-colon
+at-char=letter prev-char="`. `parseAnswer` takes that quote out, at most three
+per answer and only when what is left is a plain snake_case key followed by its
+colon, and logs `answer repaired (stray-key-quotes=N)`. A wrong key would read
+as an empty meal instead of going to Qwen, so any other answer still goes to
+Qwen. A generic
 `json_schema` response format is not the fix: Haiku answers it with `{}`.
 
 `OPENROUTER_BYOK_MODEL=off` as a function secret sends everything to Qwen
