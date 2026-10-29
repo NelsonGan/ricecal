@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase'
 import { type ActivitySession, toSession } from './activity'
 import { keys } from './keys'
 import { useUserId } from './session'
+import type { ReportReason } from './types'
 import { type WorkoutDetail, workoutDetailFrom } from './workouts'
 
 /**
@@ -227,7 +228,13 @@ type GroupDetails = {
   icon_path?: string | null
   is_public: boolean
   leader_id: string | null
+  /** Pushes for chat messages and nudges. */
   notify: boolean
+  /**
+   * Pushes for the foods and workouts members share. Absent from a server
+   * older than the switch, which pushed none, so it reads as the chat switch.
+   */
+  notify_updates?: boolean
   members: GroupPerson[]
   /** The invites the viewer sent that are still waiting. */
   invites: GroupPerson[]
@@ -1051,7 +1058,8 @@ type GroupAction =
   | { action: 'join'; groupId: string }
   | { action: 'leave'; groupId: string; newLeader?: string }
   | { action: 'remove'; groupId: string; userId: string }
-  | { action: 'preferences'; groupId: string; notify?: boolean }
+  /** Both switches, always: a call naming only `notify` moves both on the server. */
+  | { action: 'preferences'; groupId: string; notify: boolean; notifyUpdates: boolean }
   | { action: 'react'; entryId: string; value: -1 | 0 | 1 }
   | { action: 'move'; entryId: string; meal: GroupMeal }
   | { action: 'nudge'; groupId: string; day: string; targetId: string; meal: GroupMeal }
@@ -1077,7 +1085,7 @@ type GroupAction =
       emoji: MessageReaction | null
     }
   | { action: 'deleteMessage'; groupId: string; messageId: string }
-  | { action: 'reportMessage'; groupId: string; messageId: string }
+  | { action: 'reportMessage'; groupId: string; messageId: string; reason: ReportReason }
   | { action: 'reportGroup'; groupId: string }
   /** `refresh` rereads the chat bar once the read lands: the chat was just open. */
   | { action: 'read'; groupId: string; refresh?: boolean }
@@ -1144,7 +1152,8 @@ async function perform(input: GroupAction): Promise<unknown> {
         p_group_id: input.groupId,
         // The board orders itself by who was active last; the stored order is unused.
         p_board_order: unset<string[]>(null),
-        p_notify: unset(input.notify),
+        p_notify: input.notify,
+        p_notify_updates: input.notifyUpdates,
       })
     case 'react':
       return await rpc('set_group_reaction', { p_entry_id: input.entryId, p_value: input.value })
@@ -1181,7 +1190,10 @@ async function perform(input: GroupAction): Promise<unknown> {
     case 'deleteMessage':
       return await rpc('delete_group_message', { p_message_id: input.messageId })
     case 'reportMessage':
-      return await rpc('report_group_message', { p_message_id: input.messageId })
+      return await rpc('report_group_message', {
+        p_message_id: input.messageId,
+        p_reason: input.reason,
+      })
     case 'reportGroup':
       return await rpc('report_group', { p_group_id: input.groupId })
     case 'read':
@@ -1398,8 +1410,8 @@ export function useGroupAction() {
           if (!before) return undefined
           client.setQueryData<GroupDetails>(key, {
             ...before,
-            ...(input.action === 'preferences' && input.notify !== undefined
-              ? { notify: input.notify }
+            ...(input.action === 'preferences'
+              ? { notify: input.notify, notify_updates: input.notifyUpdates }
               : {}),
             ...(input.action === 'update' && input.isPublic !== undefined
               ? { is_public: input.isPublic }

@@ -34,6 +34,7 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/data', () => ({
+  REPORT_REASONS: jest.requireActual('@/data/types').REPORT_REASONS,
   isRecipeLimit: () => false,
   snapshotFromRecipe: jest.fn(),
   storedImageSource: () => undefined,

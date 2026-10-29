@@ -12,6 +12,7 @@ import {
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { Database } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
+import { pushGroupUpdates } from './group-updates'
 import { keys } from './keys'
 import { useUserId } from './session'
 import type { IconRef, ReportReason } from './types'
@@ -705,6 +706,8 @@ export function useSocialAction() {
     },
     onSuccess: async (result, input) => {
       if (input.action === 'like') return
+      // A food shared to the feed is shared to the poster's groups too.
+      if (input.action === 'post') pushGroupUpdates(client, keys.groupsRead(viewer, 'my_groups'))
       if (
         ['block', 'report', 'deletePost', 'editPost', 'profile'].includes(input.action) ||
         (input.action === 'follow' && !input.following)

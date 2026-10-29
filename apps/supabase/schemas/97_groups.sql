@@ -561,6 +561,7 @@ begin
     select jsonb_build_object(
       'id', g.id, 'name', g.name, 'icon_name', g.icon_name, 'icon_path', g.icon_path,
       'is_public', g.is_public, 'leader_id', g.leader_id, 'notify', v_member.notify,
+      'notify_updates', v_member.notify_updates,
       'members', (
         select jsonb_agg(private.group_person(m.user_id) order by
           m.user_id <> v_user, private.group_last_active(m.user_id) desc nulls last, m.joined_at, m.user_id)

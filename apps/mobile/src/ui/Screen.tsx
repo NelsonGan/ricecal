@@ -107,6 +107,11 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    */
   header?: ReactNode
   /**
+   * The gap under `header`. A chat turns it off: its thread scrolls under the
+   * bar, and the gap was a blank band where messages vanished short of it.
+   */
+  headerGap?: boolean
+  /**
    * Header chrome layered over the scroll area instead of taking layout space.
    * Reserved for a full-bleed hero whose image is the header background; the
    * node owns its own absolute positioning and transition.
@@ -226,6 +231,7 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
 export function Screen({
   children,
   header,
+  headerGap = true,
   overlayHeader,
   scrollOffset,
   footer,
@@ -607,7 +613,7 @@ export function Screen({
              that separated an in-content AppBar from the first card before
              headers became sticky. */
             <View
-              className="z-10 bg-canvas px-gutter pb-stack"
+              className={cn('z-10 bg-canvas px-gutter', headerGap && 'pb-stack')}
               style={{ paddingTop: (safeAreaTop ? insets.top : 0) + spacing.gutter }}
             >
               {header}

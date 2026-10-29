@@ -219,9 +219,12 @@ function EntryRow({
  * A food's like and dislike. A friend's takes either, and a second tap on the
  * same one takes it back; your own cannot be reacted to, so there it is what
  * friends said instead. The board's meal sheet and a chat food card both draw it.
+ * `pills` draws your own as the same two pills, disabled, so a card of yours in
+ * the chat looks like everyone else's.
  */
 export function Thumbs({
   isSelf,
+  pills = false,
   ...votes
 }: {
   entryId: string
@@ -229,9 +232,11 @@ export function Thumbs({
   dislikes: number
   mine: -1 | 0 | 1
   isSelf: boolean
+  pills?: boolean
   /** Inside a chat bubble's gestures; see `Reaction`. */
   inGesture?: boolean
 }) {
+  if (isSelf && pills) return <Vote {...votes} mine={0} disabled />
   return isSelf ? <Tally likes={votes.likes} dislikes={votes.dislikes} /> : <Vote {...votes} />
 }
 
@@ -260,12 +265,14 @@ function Vote({
   dislikes,
   mine,
   inGesture = false,
+  disabled = false,
 }: {
   entryId: string
   likes: number
   dislikes: number
   mine: -1 | 0 | 1
   inGesture?: boolean
+  disabled?: boolean
 }) {
   const { t } = useTranslation('groups')
   const vote = useVote()
@@ -279,6 +286,7 @@ function Vote({
         selected={mine === 1}
         onPress={() => react(1)}
         inGesture={inGesture}
+        disabled={disabled}
       />
       <Reaction
         label={t('dislike')}
@@ -287,6 +295,7 @@ function Vote({
         selected={mine === -1}
         onPress={() => react(-1)}
         inGesture={inGesture}
+        disabled={disabled}
       />
     </View>
   )
@@ -333,6 +342,7 @@ function Reaction({
   selected,
   onPress,
   inGesture,
+  disabled = false,
 }: {
   label: string
   kind: 'up' | 'down'
@@ -346,6 +356,8 @@ function Reaction({
    * bubble's gestures, so tapping twice liked, unliked and hearted it too.
    */
   inGesture: boolean
+  /** Your own food's: the count, with nothing to press. */
+  disabled?: boolean
 }) {
   const reduceMotion = useReducedMotion()
   const scale = useSharedValue(1)
@@ -373,10 +385,11 @@ function Reaction({
   const className = cn(
     'min-h-[36px] min-w-[60px] flex-row items-center justify-center gap-1.5 rounded-full border-2 px-3',
     selected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
+    disabled && 'opacity-60',
   )
   const a11y = {
     accessibilityRole: 'button' as const,
-    accessibilityState: { selected },
+    accessibilityState: { selected, disabled },
     accessibilityLabel: `${label}, ${count}`,
   }
   const inside = (
@@ -394,6 +407,13 @@ function Reaction({
       </Text>
     </>
   )
+  if (disabled) {
+    return (
+      <View className={className} accessible {...a11y}>
+        {inside}
+      </View>
+    )
+  }
   if (inGesture) {
     const tap = Gesture.Tap()
       // 36pt drawn, 44pt to a finger.
