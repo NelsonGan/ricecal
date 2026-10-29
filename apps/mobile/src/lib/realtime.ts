@@ -17,6 +17,8 @@ export type Listener = {
   onEvent: (event: string, payload: Record<string, unknown>) => void
   /** True once joined; false while joining, after an error, or in the background. */
   onLive: (live: boolean) => void
+  /** Only a focused chat publishes presence; boards just listen for messages. */
+  presence?: { userId: string; onCount: (count: number | null) => void }
 }
 
 type Topic = {
@@ -29,6 +31,10 @@ type Topic = {
   /** Refused by the policy, so not tried again until everyone listening has left. */
   refused: boolean
   live: boolean
+  online: number | null
+  trackedUser: string | null
+  presenceUpdate: Promise<void>
+  connection: number
 }
 
 /** How long after the server closes a channel it is joined again. */
@@ -38,9 +44,40 @@ const topics = new Map<string, Topic>()
 let foreground = true
 let watching = false
 
+function setOnline(entry: Topic, count: number | null) {
+  if (entry.online === count) return
+  entry.online = count
+  for (const listener of entry.listeners) listener.presence?.onCount(count)
+}
+
+/** Serialize leaving and returning while the board keeps the shared channel. */
+function updatePresence(entry: Topic) {
+  const channel = entry.channel
+  const connection = entry.connection
+  entry.presenceUpdate = entry.presenceUpdate
+    .then(async () => {
+      if (!channel || entry.channel !== channel || !entry.live || entry.connection !== connection)
+        return
+      const userId = [...entry.listeners].find((listener) => listener.presence)?.presence?.userId
+      if ((userId ?? null) === entry.trackedUser) return
+      const result = userId ? await channel.track({ user_id: userId }) : await channel.untrack()
+      if (entry.channel !== channel || entry.connection !== connection) return
+      if (result === 'ok') entry.trackedUser = userId ?? null
+      else setOnline(entry, null)
+    })
+    .catch(() => {
+      if (entry.channel === channel && entry.connection === connection) setOnline(entry, null)
+    })
+}
+
 function setLive(entry: Topic, live: boolean) {
   if (entry.live === live) return
   entry.live = live
+  if (!live) {
+    entry.trackedUser = null
+    entry.connection += 1
+    setOnline(entry, null)
+  }
   for (const listener of entry.listeners) listener.onLive(live)
 }
 
@@ -56,6 +93,17 @@ function open(topic: string, entry: Topic) {
   channel
     .on('broadcast', { event: '*' }, ({ event, payload }) => {
       for (const listener of entry.listeners) listener.onEvent(event, payload ?? {})
+    })
+    .on('presence', { event: 'sync' }, () => {
+      if (entry.channel !== channel || !entry.live) return
+      // One person on two devices is still one person. Never store this in the query cache.
+      const users = new Set(
+        Object.values(channel.presenceState<{ user_id?: unknown }>())
+          .flat()
+          .map((presence) => presence.user_id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0),
+      )
+      setOnline(entry, users.size)
     })
     .subscribe((status, error) => {
       // A channel `close` let go of still reports its own closing.
@@ -80,6 +128,7 @@ function open(topic: string, entry: Topic) {
         return
       }
       setLive(entry, status === 'SUBSCRIBED')
+      if (status === 'SUBSCRIBED') updatePresence(entry)
     })
 }
 
@@ -159,15 +208,22 @@ export function listen(topic: string, listener: Listener): () => void {
       retry: null,
       refused: false,
       live: false,
+      online: null,
+      trackedUser: null,
+      presenceUpdate: Promise.resolve(),
+      connection: 0,
     }
     topics.set(topic, entry)
   }
   const current = entry
   current.listeners.add(listener)
   if (current.live) listener.onLive(true)
+  listener.presence?.onCount(current.online)
+  if (current.live) updatePresence(current)
   open(topic, current)
   return () => {
     if (!current.listeners.delete(listener)) return
     if (current.listeners.size === 0) close(topic, current)
+    else updatePresence(current)
   }
 }

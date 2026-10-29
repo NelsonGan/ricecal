@@ -2347,6 +2347,7 @@ export const th = {
     dislike: 'ไม่ถูกใจ',
     moveTo: 'ย้ายไป',
     chat: 'แชท',
+    online: 'ออนไลน์ {{count}} คน',
     chatEmpty: 'ยังไม่มีข้อความ ทักทายกันหน่อย',
     message: 'ส่งข้อความถึง {{name}}',
     send: 'ส่ง',

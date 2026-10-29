@@ -2370,6 +2370,7 @@ export const vi = {
     dislike: 'Không thích',
     moveTo: 'Chuyển sang',
     chat: 'Trò chuyện',
+    online: '{{count}} người trực tuyến',
     chatEmpty: 'Chưa có tin nhắn. Chào mọi người nhé.',
     message: 'Nhắn {{name}}',
     send: 'Gửi',

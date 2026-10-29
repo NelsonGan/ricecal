@@ -382,8 +382,9 @@ select is((select array_agg(b.event) from broadcasts b where b.topic = (select t
 select is((select b.ids from broadcasts b where b.event = 'message'),
   jsonb_build_array((select id from public.group_messages where group_id = (select id from g))),
   'the broadcast carries the id and nothing else');
-select policies_are('realtime', 'messages', array['Group members hear their chat'],
-  'the only way onto realtime.messages here is listening');
+select policies_are('realtime', 'messages', array['Group members hear their chat', 'Group members see who is online',
+    'Group members share their presence'],
+  'members can listen to chat broadcasts and read and publish presence');
 select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select ok(private.group_chat_listener((select t from topic)), 'a member may listen on the chat topic');

@@ -18,6 +18,7 @@ import {
   useGroupAction,
   useGroupBoardChatLive,
   useGroupChatLive,
+  useGroupChatPresence,
   useGroupThread,
   useReadAsItArrives,
 } from '../groups'
@@ -1047,5 +1048,30 @@ describe('reading an open chat as messages arrive', () => {
     expect(reads()).toBe(1)
     await act(async () => first.settle({ data: null, error: null }))
     await waitFor(() => expect(reads()).toBe(2))
+  })
+})
+
+describe('chat presence', () => {
+  it('publishes only while focused and hides counts when covered or disconnected', async () => {
+    const { result, rerender, unmount } = await renderHook(
+      ({ focused }: { focused: boolean }) => useGroupChatPresence('g1', focused),
+      { initialProps: { focused: false } },
+    )
+    expect(result.current).toBeNull()
+    expect(mockListeners.has(TOPIC)).toBe(false)
+    await rerender({ focused: true })
+    expect(mockListeners.get(TOPIC)?.presence?.userId).toBe('viewer')
+    await act(async () => mockListeners.get(TOPIC)?.presence?.onCount(2))
+    expect(result.current).toBe(2)
+    await act(async () => mockListeners.get(TOPIC)?.presence?.onCount(null))
+    expect(result.current).toBeNull()
+    await act(async () => mockListeners.get(TOPIC)?.presence?.onCount(1))
+    await rerender({ focused: false })
+    expect(result.current).toBeNull()
+    expect(mockListeners.has(TOPIC)).toBe(false)
+    await rerender({ focused: true })
+    expect(result.current).toBeNull()
+    await unmount()
+    expect(mockListeners.has(TOPIC)).toBe(false)
   })
 })

@@ -1120,6 +1120,21 @@ create policy "Group members hear their chat" on realtime.messages
     and private.group_chat_listener((select realtime.topic()))
   );
 
+-- Presence is the only client write allowed here. Message broadcasts stay server-only.
+create policy "Group members see who is online" on realtime.messages
+  for select to authenticated
+  using (
+    realtime.messages.extension = 'presence'
+    and private.group_chat_listener((select realtime.topic()))
+  );
+
+create policy "Group members share their presence" on realtime.messages
+  for insert to authenticated
+  with check (
+    realtime.messages.extension = 'presence'
+    and private.group_chat_listener((select realtime.topic()))
+  );
+
 -- Announces message ids on the group's topic, heard by an open chat and an
 -- open board's chat bar. realtime.send swallows its own errors as a warning,
 -- so a Realtime outage cannot refuse the write that called it; the open chat
