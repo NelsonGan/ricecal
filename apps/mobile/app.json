@@ -3,7 +3,7 @@
     "name": "RiceCal",
     "slug": "ricecal",
     "scheme": "ricecal",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "orientation": "portrait",
     "platforms": ["ios", "android"],
     "icon": "./assets/icon.png",
