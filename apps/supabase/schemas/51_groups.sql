@@ -1052,6 +1052,12 @@ $$;
 -- does it), so it asks after any of them and this claims every share of the
 -- caller's from the last ten minutes that has not pushed yet. Members hear it
 -- through `notify_updates`, with the same read and block rules as a message.
+--
+-- One meal is shared once into each group, so someone in two groups with the
+-- poster would hear it twice. Each device hears each thing once, through the
+-- group whose chat that member read last, which is where they are most likely
+-- to look; a group they muted updates in is not a candidate. Having read it in
+-- any of the groups is having seen it, so that member hears it from none.
 create or replace function public.group_update_push_targets(p_caller uuid)
 returns table (token text, language text, actor_name text, group_name text, group_id uuid, body text)
 language sql security definer set search_path = '' as $$
@@ -1059,13 +1065,14 @@ language sql security definer set search_path = '' as $$
     update public.group_messages m set pushed_at = now()
     where m.author_id = p_caller and m.automatic and m.pushed_at is null and not m.quarantined
       and m.created_at > now() - interval '10 minutes'
-    returning m.group_id, m.body, m.created_at
+    returning m.group_id, m.body, m.created_at, coalesce(m.post_id, m.workout_id, m.activity_id) as thing
   )
-  select t.token, coalesce(s.language, 'en'), coalesce(nullif(btrim(a.display_name), ''), a.handle),
+  select distinct on (t.token, c.thing)
+    t.token, coalesce(s.language, 'en'), coalesce(nullif(btrim(a.display_name), ''), a.handle),
     g.name, g.id, c.body
   from shared c
   join public.group_members m on m.group_id = c.group_id and m.user_id <> p_caller
-    and m.notify_updates and m.chat_read_at < c.created_at
+    and m.notify_updates
   join public.push_tokens t on t.user_id = m.user_id
   join public.groups g on g.id = c.group_id
   join public.profiles a on a.id = p_caller
@@ -1074,7 +1081,13 @@ language sql security definer set search_path = '' as $$
     select 1 from public.blocked_authors x
     where (x.user_id = p_caller and x.author_id = m.user_id)
        or (x.user_id = m.user_id and x.author_id = p_caller)
-  );
+  )
+    and not exists (
+      select 1 from shared r
+      join public.group_members mr on mr.group_id = r.group_id and mr.user_id = m.user_id
+      where r.thing = c.thing and mr.chat_read_at >= r.created_at
+    )
+  order by t.token, c.thing, m.chat_read_at desc, g.id;
 $$;
 
 create or replace function public.forget_push_tokens(p_tokens text[])

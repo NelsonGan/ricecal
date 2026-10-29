@@ -320,6 +320,39 @@ select is((select (e->>'member_count')::int || '/' || (e->>'member_total')::int
   'the public list keeps an older app''s Join live and gives the true size beside it');
 reset role;
 
+-- A friend in two of the poster's groups hears a share once, not once a group,
+-- through the group whose chat they read last.
+insert into public.group_members(group_id, user_id) values (:'other_group', :'ben');
+update public.group_members set chat_read_at = now() - interval '2 minutes' where user_id = :'ben' and group_id = (select id from g);
+update public.group_members set chat_read_at = now() - interval '1 minute' where user_id = :'ben' and group_id = :'other_group';
+insert into public.push_tokens(token, user_id, platform) values
+  ('ExponentPushToken[extras-ben-phone]', :'ben', 'ios'),
+  ('ExponentPushToken[extras-ben-pad]', :'ben', 'ios');
+update public.group_messages set pushed_at = now() where author_id = :'ana' and automatic;
+insert into public.workouts (id, user_id, name, started_at, ended_at, log_date) values
+  ('a3740000-0000-4000-8000-000000000009', :'ana', 'Leg day', now() - interval '50 minutes',
+   now() - interval '5 minutes', public.local_today(:'ana'));
+select is((select count(*)::int from public.group_messages where workout_id = 'a3740000-0000-4000-8000-000000000009'), 2,
+  'the workout is shared into both groups');
+create temp table both_pushes as select * from public.group_update_push_targets(:'ana');
+select is((select array_agg(token order by token) from both_pushes),
+  array['ExponentPushToken[extras-ben-pad]', 'ExponentPushToken[extras-ben-phone]'],
+  'each of the friend''s devices hears it once');
+select is((select array_agg(distinct group_id) from both_pushes), array[:'other_group'::uuid],
+  'through the group whose chat they read last');
+-- Ben watched the next one arrive in the first group's open chat.
+update public.group_messages set pushed_at = now() where author_id = :'ana' and automatic;
+insert into public.workouts (id, user_id, name, started_at, ended_at, log_date) values
+  ('a3740000-0000-4000-8000-00000000000a', :'ana', 'Arm day', now() - interval '40 minutes',
+   now() - interval '4 minutes', public.local_today(:'ana'));
+update public.group_members set chat_read_at = now() where user_id = :'ben' and group_id = (select id from g);
+select is((select count(*)::int from public.group_update_push_targets(:'ana')), 0,
+  'one already read in either group is not pushed through the other');
+delete from public.workouts where id = 'a3740000-0000-4000-8000-00000000000a';
+delete from public.push_tokens where token like 'ExponentPushToken[extras-ben-%';
+delete from public.workouts where id = 'a3740000-0000-4000-8000-000000000009';
+delete from public.group_members where group_id = :'other_group' and user_id = :'ben';
+
 -- A new email account does not publish its address as its handle.
 insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
 values ('a3700000-0000-4000-8000-000000000009', '00000000-0000-0000-0000-000000000000', 'authenticated',
