@@ -1004,6 +1004,7 @@ export const bn = {
 
     weight: {
       peakOn: '{{date}} এ {{value}} {{unit}}',
+      latest: 'সর্বশেষ {{value}} {{unit}}',
       latestOn: 'সর্বশেষ {{value}} {{unit}}, {{date}}',
       peakIn: '{{month}} এ {{value}} {{unit}}',
       change: '{{value}} {{unit}}',

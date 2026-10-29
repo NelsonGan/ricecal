@@ -1019,6 +1019,7 @@ export const ta = {
 
     weight: {
       peakOn: '{{date}} அன்று {{value}} {{unit}}',
+      latest: 'சமீபத்தியது {{value}} {{unit}}',
       latestOn: 'சமீபத்தியது {{value}} {{unit}}, {{date}}',
       peakIn: '{{month}} இல் {{value}} {{unit}}',
       change: '{{value}} {{unit}}',

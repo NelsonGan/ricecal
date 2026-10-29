@@ -1016,6 +1016,7 @@ export const vi = {
 
     weight: {
       peakOn: '{{value}} {{unit}} vào {{date}}',
+      latest: 'Gần nhất {{value}} {{unit}}',
       latestOn: 'Gần nhất {{value}} {{unit}} vào {{date}}',
       peakIn: '{{value}} {{unit}} trong {{month}}',
       change: '{{value}} {{unit}}',

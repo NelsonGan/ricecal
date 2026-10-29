@@ -244,6 +244,13 @@ export type RecipeIngredient = {
  * objectionable material, spam, physical harm, and somebody else's work.
  */
 export type ReportReason = 'inappropriate' | 'spam' | 'dangerous' | 'stolen'
+/** In the order every report sheet lists them: a recipe, the feed, a group chat. */
+export const REPORT_REASONS: readonly ReportReason[] = [
+  'inappropriate',
+  'spam',
+  'dangerous',
+  'stolen',
+]
 
 export type Recipe = {
   id: string

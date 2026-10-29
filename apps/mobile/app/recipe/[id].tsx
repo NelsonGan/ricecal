@@ -6,6 +6,7 @@ import { View } from 'react-native'
 
 import {
   isRecipeLimit,
+  REPORT_REASONS,
   type ReportReason,
   snapshotFromRecipe,
   storedImageSource,
@@ -566,4 +567,3 @@ export default function RecipeDetailScreen() {
  *
  * Ordered by how likely it is to be the true reason rather than by severity.
  */
-const REPORT_REASONS: readonly ReportReason[] = ['inappropriate', 'spam', 'dangerous', 'stolen']

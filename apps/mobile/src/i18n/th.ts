@@ -1007,6 +1007,7 @@ export const th = {
 
     weight: {
       peakOn: '{{value}} {{unit}} เมื่อ {{date}}',
+      latest: 'ล่าสุด {{value}} {{unit}}',
       latestOn: 'ล่าสุด {{value}} {{unit}} เมื่อ {{date}}',
       peakIn: '{{value}} {{unit}} ใน {{month}}',
       change: '{{value}} {{unit}}',

@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query'
+import { AppState } from 'react-native'
 import { pushGroupUpdates } from '../group-updates'
 import { keys } from '../keys'
 
@@ -45,4 +46,19 @@ it('never calls the function for someone in no group', async () => {
   await settle()
   expect(mockRpc).toHaveBeenCalledWith('my_groups')
   expect(mockInvoke).not.toHaveBeenCalled()
+})
+
+it('asks at once when the app is already in the background, since its timers stop', async () => {
+  client.setQueryData(myGroups, [{ id: 'g1' }])
+  // The jest preset's AppState has no real state to replace.
+  const before = Object.getOwnPropertyDescriptor(AppState, 'currentState')
+  Object.defineProperty(AppState, 'currentState', { value: 'background', configurable: true })
+  try {
+    pushGroupUpdates(client, myGroups)
+    await Promise.resolve()
+    await Promise.resolve()
+  } finally {
+    if (before) Object.defineProperty(AppState, 'currentState', before)
+  }
+  expect(mockInvoke).toHaveBeenCalledWith('groups', { body: { kind: 'updates' } })
 })

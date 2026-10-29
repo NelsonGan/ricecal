@@ -36,7 +36,7 @@ import {
   useSocialPhoto,
   useSocialProfile,
 } from '@/data/social'
-import type { IconRef, ReportReason } from '@/data/types'
+import { type IconRef, REPORT_REASONS } from '@/data/types'
 import { WorkoutPreview } from '@/features/workouts/cards'
 import { ExerciseArt } from '@/features/workouts/ExerciseArt'
 import { durationText, volumeText } from '@/features/workouts/format'
@@ -851,7 +851,6 @@ function ContentSafetyControl({
   const { t } = useTranslation(['social', 'recipes'])
   const [panel, setPanel] = useState<'menu' | 'report' | 'block' | 'extra' | null>(null)
   const afterDismiss = useRef<(() => void) | null>(null)
-  const reasons: ReportReason[] = ['inappropriate', 'spam', 'dangerous', 'stolen']
   const confirming = panel === 'block' || panel === 'extra'
   const confirmLabel = panel === 'extra' && extraAction ? extraAction.label : t('social:block')
   return (
@@ -965,7 +964,7 @@ function ContentSafetyControl({
             </Button>
           </>
         ) : panel === 'report' ? (
-          reasons.map((reason) => (
+          REPORT_REASONS.map((reason) => (
             <Button
               key={reason}
               variant="secondary"
