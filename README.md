@@ -3498,7 +3498,9 @@ it (`lib/realtime.ts` holds one channel per topic), so opening the chat from the
 board does not leave and rejoin. Everything else still polls.
 
 - **Online in the chat.** The header shows the group name and a translated count
-  from Supabase Realtime Presence, including the viewer. Only a focused chat
+  from Supabase Realtime Presence, including the viewer. A green dot gently
+  pulses in opacity on the UI thread beside a positive count; Reduce Motion
+  keeps it still, and it pauses while the app is not active. Only a focused chat
   publishes a user id; a board listens without counting as online. Multiple
   devices for the same person count once. Leaving the chat untracks even while
   the board keeps the channel; backgrounding leaves it, and a lost connection
