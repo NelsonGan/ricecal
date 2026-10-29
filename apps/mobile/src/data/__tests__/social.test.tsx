@@ -536,12 +536,6 @@ it('answers whether a meal has a post, and says so only when it knows', async ()
 
 it.each([
   {
-    name: 'read',
-    action: { action: 'read', ids: ['notification'] as string[] } as const,
-    invalidated: ['social_notifications', 'unread'],
-    preserved: ['social_feed', 'social_profile_posts', 'social_post'],
-  },
-  {
     name: 'remove follower',
     action: { action: 'removeFollower', id: 'follower' } as const,
     invalidated: [

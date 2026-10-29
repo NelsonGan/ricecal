@@ -467,7 +467,6 @@ export type SocialAction =
   | { action: 'report'; kind: SocialKind; id: string; reason: ReportReason }
   | { action: 'block' | 'unblock'; id: string }
   | { action: 'review'; kind: SocialKind; id: string }
-  | { action: 'read'; ids: string[] }
 
 export async function reviewSocial(kind: SocialKind, id: string): Promise<SocialReview> {
   const { data, error } = await supabase.functions.invoke<{ ok: boolean; status: SocialReview }>(
@@ -667,9 +666,6 @@ export function useSocialAction() {
           if (error) throw error
           break
         }
-        case 'read':
-          await rpc('mark_social_notifications_read', { p_ids: input.ids.slice(0, 100) })
-          break
         case 'review':
           return { id: input.id, status: await reviewSocial(input.kind, input.id) }
       }
@@ -756,52 +752,50 @@ export function useSocialAction() {
         ])
       } else {
         const names =
-          input.action === 'read'
-            ? ['social_notifications', 'unread']
-            : input.action === 'post' || input.action === 'postWorkout'
+          input.action === 'post' || input.action === 'postWorkout'
+            ? [
+                'social_feed',
+                'social_profile_posts',
+                'social_profile',
+                'social_workout_count',
+                'entry',
+                'workoutPost',
+              ]
+            : input.action === 'removeFollower'
               ? [
                   'social_feed',
-                  'social_profile_posts',
                   'social_profile',
-                  'social_workout_count',
-                  'entry',
-                  'workoutPost',
+                  'social_connections',
+                  'social_suggestions',
+                  'social_search_profiles',
+                  'social_notifications',
+                  'unread',
                 ]
-              : input.action === 'removeFollower'
+              : input.action === 'unblock'
                 ? [
                     'social_feed',
                     'social_profile',
+                    'social_profile_posts',
+                    'social_post',
+                    'social_workout_count',
+                    'social_comments',
                     'social_connections',
                     'social_suggestions',
                     'social_search_profiles',
+                    'social_blocked_profiles',
                     'social_notifications',
                     'unread',
                   ]
-                : input.action === 'unblock'
-                  ? [
-                      'social_feed',
-                      'social_profile',
-                      'social_profile_posts',
-                      'social_post',
-                      'social_workout_count',
-                      'social_comments',
-                      'social_connections',
-                      'social_suggestions',
-                      'social_search_profiles',
-                      'social_blocked_profiles',
-                      'social_notifications',
-                      'unread',
-                    ]
-                  : [
-                      'social_feed',
-                      'social_profile',
-                      'social_profile_posts',
-                      'social_post',
-                      'social_workout_count',
-                      'social_comments',
-                      'social_notifications',
-                      'unread',
-                    ]
+                : [
+                    'social_feed',
+                    'social_profile',
+                    'social_profile_posts',
+                    'social_post',
+                    'social_workout_count',
+                    'social_comments',
+                    'social_notifications',
+                    'unread',
+                  ]
         await refresh(names)
       }
       if (input.action === 'block' || input.action === 'unblock') {

@@ -115,7 +115,6 @@ export const groups = {
   inviteFirst: 'Invite friends to fill the board.',
   invited: 'Invited',
   settingsMembers: 'Members',
-  /** A screen reader's name for a member row's drag handle. */
   notifications: 'Notifications',
   notificationsHint: 'Nudges and chat messages.',
   muteChat: 'Mute notifications',
