@@ -416,9 +416,11 @@ export function mergeCatchUp(
   recent: GroupMessage[],
 ): GroupThread | null {
   if (!held) return null
-  if (recent.length < CATCH_UP) return mergeNewest(held, recent, CATCH_UP)
   const oldest = recent[0]
-  if (!oldest || !held.messages.some((message) => !before(message, oldest))) return null
+  // Fewer than asked for is the whole thread; a full set must meet what is held.
+  if (recent.length === CATCH_UP && oldest && !held.messages.some((m) => !before(m, oldest))) {
+    return null
+  }
   return mergeNewest(held, recent, CATCH_UP)
 }
 
@@ -617,13 +619,15 @@ export function useGroupChatLive(groupId: string): boolean {
             p_group_id: groupId,
             p_limit: CATCH_UP,
           })) as unknown as GroupMessage[]
-          let gap = false
+          // No thread yet (its first read failed or is still to come), or a
+          // gap the newest few cannot bridge: read the whole page.
+          let whole = false
           client.setQueryData<GroupThread>(key, (held) => {
             const merged = mergeCatchUp(held, recent)
-            if (!merged) gap = Boolean(held)
+            if (!merged) whole = true
             return merged ?? held
           })
-          if (gap) refetch()
+          if (whole) refetch()
         } catch {
           refetch()
         } finally {
