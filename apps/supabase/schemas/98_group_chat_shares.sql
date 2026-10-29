@@ -5,11 +5,11 @@
 -- - A workout from the app's logger, and one a health store records (a run, a
 --   swim, a game of badminton), is shared the same way.
 --
--- Nobody is pushed for any of it: the row is written with `pushed_at` already
--- set, which is what group_message_push_targets refuses, and the app sends no
--- push request for a message it did not write. It still counts as unread, like
--- any message. The request id is derived from the thing and the group, so a
--- replay of the same insert cannot share it twice.
+-- Each row is marked `automatic`. group_message_push_targets refuses those;
+-- the author's app asks for group_update_push_targets after the write instead,
+-- which pushes them to members who keep `notify_updates` on. It counts as
+-- unread like any message. The request id is derived from the thing and the
+-- group, so a replay of the same insert cannot share it twice.
 --
 -- Food rides on the feed post, since both ways a food post is made (Share to
 -- feed and Auto post foods) insert an approved row. Workouts do not, so they
@@ -26,9 +26,9 @@ begin
   begin
     v_body := private.group_food_label(new.id);
     if v_body is null then return null; end if;
-    insert into public.group_messages(group_id, author_id, body, request_id, post_id, pushed_at)
+    insert into public.group_messages(group_id, author_id, body, request_id, post_id, automatic)
     select m.group_id, new.author_id, v_body,
-      md5(new.id::text || ':' || m.group_id::text)::uuid, new.id, now()
+      md5(new.id::text || ':' || m.group_id::text)::uuid, new.id, true
     from public.group_members m
     where m.user_id = new.author_id
     on conflict (author_id, request_id) do nothing;
@@ -58,9 +58,9 @@ begin
     end if;
     v_body := private.group_workout_label(private.group_workout(new.id));
     if v_body is null then return null; end if;
-    insert into public.group_messages(group_id, author_id, body, request_id, workout_id, pushed_at)
+    insert into public.group_messages(group_id, author_id, body, request_id, workout_id, automatic)
     select m.group_id, new.user_id, v_body,
-      md5('workout:' || new.id::text || ':' || m.group_id::text)::uuid, new.id, now()
+      md5('workout:' || new.id::text || ':' || m.group_id::text)::uuid, new.id, true
     from public.group_members m
     where m.user_id = new.user_id
     on conflict (author_id, request_id) do nothing;
@@ -102,9 +102,9 @@ begin
     end if;
     v_body := private.group_workout_label(private.group_activity(new.id));
     if v_body is null then return null; end if;
-    insert into public.group_messages(group_id, author_id, body, request_id, activity_id, pushed_at)
+    insert into public.group_messages(group_id, author_id, body, request_id, activity_id, automatic)
     select m.group_id, new.user_id, v_body,
-      md5('activity:' || new.id::text || ':' || m.group_id::text)::uuid, new.id, now()
+      md5('activity:' || new.id::text || ':' || m.group_id::text)::uuid, new.id, true
     from public.group_members m
     where m.user_id = new.user_id
     on conflict (author_id, request_id) do nothing;

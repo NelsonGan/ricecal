@@ -3288,6 +3288,9 @@ meal share a tile and swipe sideways inside it.
   message can be deleted by its author, reported (hidden from the reporter at
   once, from everyone at three reports) or its author blocked, which follows the
   rule that anything one user writes for another needs a report and a block.
+  Report asks why in the same sheet, with the feed's four reasons, and
+  `group_message_reports.reason` keeps it; it is null from an older app, whose
+  `report_group_message` call names none.
   The chat bar shows the unread count since the member last read the chat and
   the latest message (`group_chat_summary`, read on its own rather than with
   the board). The count stops at 100, so a member who never opens the chat
@@ -3326,15 +3329,16 @@ meal share a tile and swipe sideways inside it.
   shows there too; deleting the post or the meal under it deletes the message.
   A friend's card carries the board's like and dislike on its photo's corner, the same
   `group_reactions` row, so a thumb given in the chat shows on the board and
-  back; your own card shows what friends said, once they have.
+  back; your own card draws the same two pills, disabled, with what friends said.
   `private.group_food_reactions` appends the entry id and that group's counts
   to the card, which an app that does not know them ignores.
   The + beside the field lists the viewer's last five food posts to send by hand,
   and that is pushed like any message. **Posting a food to the feed shares it
-  into every group chat its author is in, silently** (`98_group_chat_shares.sql`):
-  the trigger writes the row with `pushed_at` already set, which
-  `group_message_push_targets` refuses, so nobody's phone rings for it. It still
-  counts as unread on the chat bar. A post's photo stays signable for members of
+  into every group chat its author is in, as an update** (`98_group_chat_shares.sql`):
+  the trigger marks the row `automatic`, which `group_message_push_targets`
+  refuses, and it is pushed through `group_update_push_targets` instead, to
+  members with `notify_updates` on (see Notifications below). It counts as
+  unread on the chat bar like any message. A post's photo stays signable for members of
   a group it was shared into however old the meal is (`group_photo_claims`).
 - **Workouts in the chat.** A message can share a workout instead
   (`group_messages.workout_id` for the app's logger, `activity_id` for one a
@@ -3342,7 +3346,7 @@ meal share a tile and swipe sideways inside it.
   with its kind's drawing and up to three figures, read live
   (`private.group_workout`, `private.group_activity`). Workouts do not ride on
   feed posts, so they reach a group whether or not their owner uses the feed.
-  Both are shared silently on their own as they are first written (`save_workout`'s
+  Both are shared as updates on their own as they are first written (`save_workout`'s
   insert, a health sync's), but only while `auto_post_workouts` is on and only
   if the workout ended in the last day, so a sync backfilling months of runs
   shares none of them; demo data never is, nor the Apple Health copy of a logger
@@ -3568,7 +3572,8 @@ board does not leave and rejoin. Everything else still polls.
 
 ### Push: the app's first
 
-Nudges, invites and chat messages are the only notifications a server sends. The phone hands
+Nudges, invites, chat messages and food and workout updates are the only
+notifications a server sends. The phone hands
 its Expo push token to `register_push_token` on each launch where notifications
 are already allowed, and asks for permission when someone creates or joins a
 group, never at launch. The nudge or invite RPC writes first and returns an id;
@@ -3609,9 +3614,28 @@ a group's chat also clears that group's chat notifications from Notification
 Center (`dismissGroupChatNotifications`), as a messenger does. The delay costs a
 few seconds of an idle edge worker per message and no CPU.
 
-Muting is per group, one switch (`group_members.notify`) for nudges and chat
-together, in the group's settings and as the bell at the top right of the chat.
-Invites always arrive, since the invitee is not a member yet.
+**Food and workout updates push too.** A share the triggers wrote cannot be
+named by the app, which only sees its own diary or workout write succeed. So
+every write that refreshes the viewer's group boards (`invalidateGroupBoards`:
+a meal, a scan, a workout, a health sync) and a Share to feed also asks the
+groups function for kind `updates`, with no id, folded into one request per
+1.5 s burst (`pushGroupUpdates`) and never for someone in no group. The function
+waits the same three seconds and `group_update_push_targets` claims every
+`automatic` message of the caller's from the last ten minutes that has not
+pushed, answering members with `notify_updates` on under the same read and
+block rules as a message. The push reads like a message: "Name: Nasi lemak
+(640 kcal)". An app from before this sends no such request, so its users' shares
+stay unpushed, as they always were.
+
+Muting is per group, two switches: `group_members.notify` for nudges and chat,
+and `notify_updates` for food and workout updates, both on by default. The
+group's settings show both; the bell at the top right of the chat opens a sheet
+to hear everything, mute chat, mute updates, or mute all. An older app's bell
+sends only `p_notify`, and `set_group_preferences` then moves `notify_updates`
+with it, since that bell meant the whole group; for the same reason the
+migration that added `notify_updates` copied `notify` into it, so a group muted
+before then stays fully muted. Invites always arrive, since
+the invitee is not a member yet.
 
 A simulator debug build gets a sandbox APNs token, which Expo's production
 credentials reject (`BadDeviceToken` in the receipt). Delivery is tested on a
@@ -5341,6 +5365,13 @@ before the workout, so it is the same trophy the logger showed), then the name,
 note and times, and each exercise with its best set. No explanatory captions:
 anything a screen needed a sentence to explain has been made to explain
 itself or cut.
+
+**A weight range with no reading in it still shows the weight.** Weighing every
+few weeks is normal, and "No weigh-ins in this range" over a reading from last
+month read as lost data. The panel draws from the newest reading instead
+(`useWeighIns`): the line held flat from `weight_before`, the goal sentence
+from that weight, and "Latest 72.4 kg on 12 October" where the range's peak
+would be. The empty card is only for an account with no weigh-in at all.
 
 **The charts can be read off, not only looked at.** `TrendLine` takes a
 `formatValue`, which adds a few rules at round values with their figures in a

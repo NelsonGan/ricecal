@@ -431,9 +431,8 @@ Metro reload picks up an edit without reinstalling.
 - **The dev-menu bubble eats taps in the top right** — roughly x 0.84-0.95,
   y 0.10-0.22, a region much larger than the visible circle, over every `AppBar`
   action and the plate sheet's first "+". Hiding the tools button leaves the
-  region live and the app is portrait-locked, so nothing moves it. What works is
-  giving the screen a second, temporary way in (an `onPress` on a card lower
-  down), driving it, then reverting against a copy taken beforehand.
+  region live. Drag the bubble away instead: a `touch_path` that holds on it for
+  300 ms, then moves to the bottom left, parks it there and frees the top right.
 - Typing on the simulator drops characters: pass `delayMs: 160` to the keyboard
   tool.
 - Photos for the library: `xcrun simctl addmedia <udid> <file>`. There is no

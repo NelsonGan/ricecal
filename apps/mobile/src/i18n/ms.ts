@@ -1043,6 +1043,7 @@ export const ms = {
 
     weight: {
       peakOn: '{{value}} {{unit}} pada {{date}}',
+      latestOn: 'Terkini {{value}} {{unit}} pada {{date}}',
       peakIn: '{{value}} {{unit}} dalam {{month}}',
       change: '{{value}} {{unit}}',
       chart: 'Berat anda sepanjang {{span}}',
@@ -2425,9 +2426,12 @@ export const ms = {
     invited: 'Dijemput',
     settingsMembers: 'Ahli',
     notifications: 'Pemberitahuan',
-    notificationsHint: 'Cuitan dan mesej sembang.',
-    muteChat: 'Senyapkan pemberitahuan',
-    unmuteChat: 'Nyahsenyap pemberitahuan',
+    notifyChat: 'Mesej sembang dan cuitan',
+    notifyUpdates: 'Kemas kini makanan dan senaman',
+    muteNone: 'Semua pemberitahuan dihidupkan',
+    muteChatOnly: 'Senyapkan mesej sembang',
+    muteUpdatesOnly: 'Senyapkan kemas kini makanan dan senaman',
+    muteAll: 'Senyapkan semua',
     remove: 'Keluarkan',
     removeTitle: 'Keluarkan {{name}}?',
     removeBody: 'Mereka hanya boleh sertai semula jika dijemput.',

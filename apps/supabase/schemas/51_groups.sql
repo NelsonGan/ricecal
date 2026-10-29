@@ -63,7 +63,11 @@ create table public.group_members (
   board_order   uuid[] not null default '{}' check (cardinality(board_order) <= 20),
   -- Chat messages after this are unread for this member.
   chat_read_at  timestamptz not null default now(),
+  -- Pushes for chat messages and nudges.
   notify        boolean not null default true,
+  -- Pushes for the foods and workouts members share to the chat on their own
+  -- (98_group_chat_shares.sql). Its own switch, so a member can keep one kind.
+  notify_updates boolean not null default true,
   primary key (group_id, user_id)
 );
 create index group_members_user_idx on public.group_members(user_id, joined_at);
@@ -121,10 +125,12 @@ create table public.group_messages (
   request_id  uuid not null,
   quarantined boolean not null default false,
   created_at  timestamptz not null default now(),
-  -- When its push went out, so a retried send rings nobody twice. A food
-  -- shared by posting it is written with this already set: it goes to the
-  -- thread without ringing anyone.
+  -- When its push went out, so a retried send rings nobody twice.
   pushed_at   timestamptz,
+  -- Shared by the app rather than written: a food posted or a workout done
+  -- (98_group_chat_shares.sql). It pushes to members with `notify_updates`
+  -- rather than `notify`, through group_update_push_targets.
+  automatic   boolean not null default false,
   -- The message this one answers, in the same thread. Deleting that one
   -- leaves the reply standing on its own.
   reply_to_id uuid references public.group_messages(id) on delete set null,
@@ -166,6 +172,8 @@ create table public.group_message_reports (
   message_id  uuid not null references public.group_messages(id) on delete cascade,
   reporter_id uuid not null references public.profiles(id) on delete cascade,
   created_at  timestamptz not null default now(),
+  -- Null from an app that did not ask why.
+  reason      public.report_reason,
   primary key (message_id, reporter_id)
 );
 create index group_message_reports_reporter_idx on public.group_message_reports(reporter_id);
@@ -659,7 +667,10 @@ begin
 end;
 $$;
 
-create or replace function public.set_group_preferences(p_group_id uuid, p_board_order uuid[], p_notify boolean)
+-- An app from before `notify_updates` sends only `p_notify`, from a bell that
+-- meant the whole group, so that one switch moves both.
+create or replace function public.set_group_preferences(p_group_id uuid, p_board_order uuid[],
+  p_notify boolean, p_notify_updates boolean default null)
 returns void language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id);
 begin
@@ -668,7 +679,8 @@ begin
   end if;
   update public.group_members m set
     board_order = coalesce(p_board_order, m.board_order),
-    notify = coalesce(p_notify, m.notify)
+    notify = coalesce(p_notify, m.notify),
+    notify_updates = coalesce(p_notify_updates, p_notify, m.notify_updates)
   where m.group_id = p_group_id and m.user_id = v_user;
 end;
 $$;
@@ -868,8 +880,9 @@ end;
 $$;
 
 -- The message disappears for the reporter at once, and for everyone at three
--- reports.
-create or replace function public.report_group_message(p_message_id uuid)
+-- reports. The reason is optional because an older app sends none.
+create or replace function public.report_group_message(p_message_id uuid,
+  p_reason public.report_reason default null)
 returns void language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.social_require_user(false); v_group uuid;
 begin
@@ -881,7 +894,8 @@ begin
   if not private.social_claim(v_user, 'report', 30) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
-  insert into public.group_message_reports(message_id, reporter_id) values (p_message_id, v_user)
+  insert into public.group_message_reports(message_id, reporter_id, reason)
+  values (p_message_id, v_user, p_reason)
   on conflict do nothing;
   update public.group_messages m set quarantined = true
   where m.id = p_message_id
@@ -1012,7 +1026,7 @@ declare v_group uuid; v_body text; v_sent_at timestamptz;
 begin
   update public.group_messages m set pushed_at = now()
   where m.id = p_id and m.author_id = p_caller and m.pushed_at is null and not m.quarantined
-    and m.created_at > now() - interval '10 minutes'
+    and not m.automatic and m.created_at > now() - interval '10 minutes'
   returning m.group_id, m.body, m.created_at into v_group, v_body, v_sent_at;
   if v_group is null then return; end if;
   return query
@@ -1031,6 +1045,36 @@ begin
            or (x.user_id = m.user_id and x.author_id = p_caller)
       );
 end;
+$$;
+
+-- The same for the foods and workouts the caller's own logging just shared to
+-- their groups. The app cannot know which writes shared something (a trigger
+-- does it), so it asks after any of them and this claims every share of the
+-- caller's from the last ten minutes that has not pushed yet. Members hear it
+-- through `notify_updates`, with the same read and block rules as a message.
+create or replace function public.group_update_push_targets(p_caller uuid)
+returns table (token text, language text, actor_name text, group_name text, group_id uuid, body text)
+language sql security definer set search_path = '' as $$
+  with shared as (
+    update public.group_messages m set pushed_at = now()
+    where m.author_id = p_caller and m.automatic and m.pushed_at is null and not m.quarantined
+      and m.created_at > now() - interval '10 minutes'
+    returning m.group_id, m.body, m.created_at
+  )
+  select t.token, coalesce(s.language, 'en'), coalesce(nullif(btrim(a.display_name), ''), a.handle),
+    g.name, g.id, c.body
+  from shared c
+  join public.group_members m on m.group_id = c.group_id and m.user_id <> p_caller
+    and m.notify_updates and m.chat_read_at < c.created_at
+  join public.push_tokens t on t.user_id = m.user_id
+  join public.groups g on g.id = c.group_id
+  join public.profiles a on a.id = p_caller
+  left join public.user_settings s on s.user_id = m.user_id
+  where not exists (
+    select 1 from public.blocked_authors x
+    where (x.user_id = p_caller and x.author_id = m.user_id)
+       or (x.user_id = m.user_id and x.author_id = p_caller)
+  );
 $$;
 
 create or replace function public.forget_push_tokens(p_tokens text[])
@@ -1056,9 +1100,9 @@ grant execute on function public.create_group, public.update_group, public.invit
   public.set_group_message_reaction,
   public.register_push_token, public.unregister_push_token to authenticated, service_role;
 revoke execute on function public.group_push_targets, public.group_message_push_targets,
-  public.forget_push_tokens from public, anon, authenticated;
+  public.group_update_push_targets, public.forget_push_tokens from public, anon, authenticated;
 grant execute on function public.group_push_targets, public.group_message_push_targets,
-  public.forget_push_tokens to service_role;
+  public.group_update_push_targets, public.forget_push_tokens to service_role;
 
 -- ---------------------------------------------------------------------------
 -- Live chat

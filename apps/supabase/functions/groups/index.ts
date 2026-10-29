@@ -19,7 +19,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
  */
 const MESSAGE_PUSH_DELAY_MS = 3_000
 
-type Kind = 'nudge' | 'invite' | 'message'
+type Kind = 'nudge' | 'invite' | 'message' | 'updates'
 const serviceClient = () =>
   createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
 type Service = ReturnType<typeof serviceClient>
@@ -49,6 +49,11 @@ function afterResponse(work: Promise<unknown>) {
  * A chat message is answered at once and pushed after `MESSAGE_PUSH_DELAY_MS`
  * in the background, so the sender's app never waits on the delay and a phone
  * locked straight after sending cannot cut it short.
+ *
+ * `updates` carries no id. It is the foods and workouts the caller's logging
+ * just shared to their group chats, which a trigger wrote, so the app cannot
+ * name them; Postgres claims whichever have not pushed yet. Delayed like a
+ * message, for the same reason.
  */
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'use POST' }, 405)
@@ -56,21 +61,25 @@ Deno.serve(async (req: Request) => {
   if (signed instanceof Response) return json({ ok: false, error: 'not signed in' }, signed.status)
 
   let kind: Kind
-  let id: string
+  let id: string | null
   try {
     const bytes = await readBoundedBytes(req.body, 1024)
     const body = JSON.parse(new TextDecoder().decode(bytes))
-    if (!['nudge', 'invite', 'message'].includes(body?.kind) || !UUID.test(body?.id ?? '')) {
+    if (body?.kind === 'updates') {
+      kind = 'updates'
+      id = null
+    } else if (['nudge', 'invite', 'message'].includes(body?.kind) && UUID.test(body?.id ?? '')) {
+      kind = body.kind
+      id = body.id
+    } else {
       throw new Error('invalid')
     }
-    kind = body.kind
-    id = body.id
   } catch {
     return json({ ok: false, error: 'invalid notify request' }, 400)
   }
 
   const service = serviceClient()
-  if (kind === 'message') {
+  if (kind === 'message' || kind === 'updates') {
     afterResponse(
       new Promise((resolve) => setTimeout(resolve, MESSAGE_PUSH_DELAY_MS))
         .then(() => deliver(service, kind, signed.userId, id))
@@ -96,17 +105,40 @@ function unavailable(error: unknown) {
   console.error('[groups] push unavailable', error instanceof Error ? error.message : error)
 }
 
+/** Expo takes at most this many messages in one request. */
+const EXPO_BATCH = 100
+
 /** Asks Postgres who hears it, posts to Expo, and answers how many Expo took. */
-async function deliver(service: Service, kind: Kind, caller: string, id: string): Promise<number> {
+async function deliver(
+  service: Service,
+  kind: Kind,
+  caller: string,
+  id: string | null,
+): Promise<number> {
   const { data, error } =
-    kind === 'message'
-      ? await service.rpc('group_message_push_targets', { p_caller: caller, p_id: id })
-      : await service.rpc('group_push_targets', { p_caller: caller, p_kind: kind, p_id: id })
+    kind === 'updates'
+      ? await service.rpc('group_update_push_targets', { p_caller: caller })
+      : kind === 'message'
+        ? await service.rpc('group_message_push_targets', { p_caller: caller, p_id: id })
+        : await service.rpc('group_push_targets', { p_caller: caller, p_kind: kind, p_id: id })
   if (error) throw error
   const targets = (data ?? []) as (PushTarget | MessageTarget)[]
-  if (targets.length === 0) return 0
+  let sent = 0
+  // A message to twenty members with a few phones each, or a sync that shared
+  // several runs at once, can pass Expo's limit.
+  for (let start = 0; start < targets.length; start += EXPO_BATCH) {
+    sent += await post(service, kind, targets.slice(start, start + EXPO_BATCH))
+  }
+  return sent
+}
+
+async function post(
+  service: Service,
+  kind: Kind,
+  targets: (PushTarget | MessageTarget)[],
+): Promise<number> {
   const messages = targets.map((target) =>
-    kind === 'message'
+    kind === 'message' || kind === 'updates'
       ? messagePush(target as MessageTarget)
       : pushMessage(kind, target as PushTarget),
   )

@@ -1039,6 +1039,7 @@ export const fil = {
 
     weight: {
       peakOn: '{{value}} {{unit}} noong {{date}}',
+      latestOn: 'Huling {{value}} {{unit}} noong {{date}}',
       peakIn: '{{value}} {{unit}} noong {{month}}',
       change: '{{value}} {{unit}}',
       chart: 'Ang timbang mo sa {{span}}',
@@ -2428,9 +2429,12 @@ export const fil = {
     invited: 'Inimbitahan',
     settingsMembers: 'Mga miyembro',
     notifications: 'Mga notification',
-    notificationsHint: 'Mga kalabit at mensahe sa chat.',
-    muteChat: 'I-mute ang mga notification',
-    unmuteChat: 'I-unmute ang mga notification',
+    notifyChat: 'Mga mensahe sa chat at kalabit',
+    notifyUpdates: 'Mga update sa pagkain at ehersisyo',
+    muteNone: 'Naka-on lahat ng notification',
+    muteChatOnly: 'I-mute ang mga mensahe sa chat',
+    muteUpdatesOnly: 'I-mute ang mga update sa pagkain at ehersisyo',
+    muteAll: 'I-mute lahat',
     remove: 'Alisin',
     removeTitle: 'Alisin si {{name}}?',
     removeBody: 'Makakasali lang ulit sila kung iimbitahan.',

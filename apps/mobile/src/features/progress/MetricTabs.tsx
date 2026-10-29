@@ -93,9 +93,11 @@ export function MetricTabs({
       unit: water ? t(`common:volume.${water.unit}Unit`) : t('progress:metric.waterUnit'),
     },
     weight: {
+      // The newest reading before the range when the range has none: a weight
+      // from last month is still the weight.
       value:
-        summary?.weightLast != null
-          ? showWeight(summary.weightLast, unit)
+        (summary?.weightLast ?? summary?.weightBefore) != null
+          ? showWeight((summary?.weightLast ?? summary?.weightBefore) as number, unit)
           : t('progress:metric.none'),
       unit: t(UNIT_KEY[unit]),
     },

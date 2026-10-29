@@ -1028,6 +1028,7 @@ export const id = {
 
     weight: {
       peakOn: '{{value}} {{unit}} pada {{date}}',
+      latestOn: 'Terakhir {{value}} {{unit}} pada {{date}}',
       peakIn: '{{value}} {{unit}} di {{month}}',
       change: '{{value}} {{unit}}',
       chart: 'Beratmu selama {{span}}',
@@ -2404,9 +2405,12 @@ export const id = {
     invited: 'Diundang',
     settingsMembers: 'Anggota',
     notifications: 'Notifikasi',
-    notificationsHint: 'Colekan dan pesan obrolan.',
-    muteChat: 'Bisukan notifikasi',
-    unmuteChat: 'Aktifkan notifikasi',
+    notifyChat: 'Pesan obrolan dan colekan',
+    notifyUpdates: 'Kabar makanan dan olahraga',
+    muteNone: 'Semua notifikasi aktif',
+    muteChatOnly: 'Bisukan pesan obrolan',
+    muteUpdatesOnly: 'Bisukan kabar makanan dan olahraga',
+    muteAll: 'Bisukan semua',
     remove: 'Keluarkan',
     removeTitle: 'Keluarkan {{name}}?',
     removeBody: 'Mereka hanya bisa gabung lagi jika diundang.',
