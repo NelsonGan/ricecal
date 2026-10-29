@@ -1176,6 +1176,16 @@ export const id = {
       failed: 'Kami tidak bisa membuka Discord',
     },
 
+    money2time: {
+      name: 'Money2Time',
+      ad: 'Iklan',
+      card: 'Catat pengeluaranmu',
+      title: 'Saya membuat aplikasi lain',
+      body: 'Namanya Money2Time. Aplikasi ini mencatat pengeluaranmu dan menunjukkan berapa jam kerja untuk setiap pembelian. Saya harap kamu mau mencobanya.',
+      action: 'Coba Money2Time',
+      failed: 'Kami tidak dapat membuka toko aplikasi',
+    },
+
     shareEarn: {
       row: 'Bagikan dan dapatkan Pro',
       title: 'Bagikan dan dapatkan Pro',
