@@ -58,6 +58,7 @@ import {
   useRecentWorkouts,
 } from '@/data/groups'
 import { useBlockAuthor } from '@/data/moderation'
+import type { ReportReason } from '@/data/types'
 import { count, distance, duration } from '@/features/activity/format'
 import { showsDistance, workoutIcon, workoutKindKey } from '@/features/activity/workoutKind'
 import { type Outgoing, useOutbox } from '@/features/shared'
@@ -74,6 +75,7 @@ import {
   footerKeyboardOffset,
   Icon,
   IconButton,
+  RadioGroup,
   Screen,
   SegmentedControl,
   Sheet,
@@ -187,10 +189,13 @@ export function ChatScreen({
       }),
     [],
   )
-  // The same switch as the group's settings: off, neither this chat's
-  // messages nor nudges ring the phone. Unknown until the details load, and
-  // the bell waits for them rather than guess.
-  const notify = useGroupDetails(groupId).data?.notify
+  // The same two switches as the group's settings: chat messages (with
+  // nudges), and the foods and workouts members share. Unknown until the
+  // details load, and the bell waits for them rather than guess.
+  const details = useGroupDetails(groupId).data
+  const notify = details?.notify
+  const notifyUpdates = details?.notify_updates ?? notify
+  const [muting, setMuting] = useState(false)
 
   // Pushes for this thread stay quiet while it is on screen.
   useFocusEffect(useCallback(() => showingGroupChat(groupId), [groupId]))
@@ -402,19 +407,20 @@ export function ChatScreen({
       scroll={false}
       keyboardAvoid="footer"
       flush
+      headerGap={false}
       header={
         <AppBar
           onBack={back}
           backLabel={t('common:action.back')}
           action={
-            notify === undefined ? undefined : (
+            notify === undefined || notifyUpdates === undefined ? undefined : (
               <IconButton
                 size="sm"
                 variant="ghost"
-                accessibilityLabel={notify ? t('muteChat') : t('unmuteChat')}
-                onPress={() => task.press({ action: 'preferences', groupId, notify: !notify })}
+                accessibilityLabel={t('notifications')}
+                onPress={() => setMuting(true)}
               >
-                <Icon set="system" name={notify ? 'bell' : 'bell-off'} size={22} />
+                <Icon set="system" name={notify || notifyUpdates ? 'bell' : 'bell-off'} size={22} />
               </IconButton>
             )
           }
@@ -511,13 +517,23 @@ export function ChatScreen({
           if (menu) task.press({ action: 'deleteMessage', groupId, messageId: menu.id })
           setMenu(null)
         }}
-        onReport={() => {
-          if (menu) task.press({ action: 'reportMessage', groupId, messageId: menu.id })
+        onReport={(reason) => {
+          if (menu) task.press({ action: 'reportMessage', groupId, messageId: menu.id, reason })
           setMenu(null)
         }}
         onBlock={() => {
           if (menu) block.mutate(menu.author.id)
           setMenu(null)
+        }}
+      />
+      <NotifySheet
+        visible={muting}
+        notify={notify ?? true}
+        notifyUpdates={notifyUpdates ?? true}
+        onClose={() => setMuting(false)}
+        onChange={(next) => {
+          task.press({ action: 'preferences', groupId, ...next })
+          setMuting(false)
         }}
       />
       <SharePicker
@@ -1144,20 +1160,16 @@ function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mi
         <EntryPicture entry={food} ownerId={ownerId} iconSize={96} />
         {/* The board's own thumbs, on the photo's corner so the card keeps its
             two lines. A friend's food takes a like or a dislike; yours shows
-            what friends said, once they have, on a pill so it reads on any photo. */}
-        {food.entry_id && (!mine || food.likes || food.dislikes) ? (
-          <View
-            className={cn(
-              'absolute right-2 top-2',
-              mine && 'rounded-full bg-surface/90 px-2.5 py-1',
-            )}
-          >
+            the same pills with what friends said, and nothing to press. */}
+        {food.entry_id ? (
+          <View className="absolute right-2 top-2">
             <Thumbs
               entryId={food.entry_id}
               likes={food.likes ?? 0}
               dislikes={food.dislikes ?? 0}
               mine={food.mine ?? 0}
               isSelf={mine}
+              pills
               inGesture
             />
           </View>
@@ -1547,10 +1559,56 @@ const BAR_SHADOW = {
   elevation: 6,
 }
 
+type Mute = 'none' | 'chat' | 'updates' | 'all'
+
+/** The bell's choices: hear everything, or mute chat, updates or both. */
+function NotifySheet({
+  visible,
+  notify,
+  notifyUpdates,
+  onClose,
+  onChange,
+}: {
+  visible: boolean
+  notify: boolean
+  notifyUpdates: boolean
+  onClose: () => void
+  onChange: (next: { notify: boolean; notifyUpdates: boolean }) => void
+}) {
+  const { t } = useTranslation(['groups', 'common'])
+  const value: Mute = notify ? (notifyUpdates ? 'none' : 'updates') : notifyUpdates ? 'chat' : 'all'
+  return (
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      closeLabel={t('common:action.close')}
+      title={t('notifications')}
+    >
+      <RadioGroup<Mute>
+        value={value}
+        options={[
+          { value: 'none', label: t('muteNone') },
+          { value: 'chat', label: t('muteChatOnly') },
+          { value: 'updates', label: t('muteUpdatesOnly') },
+          { value: 'all', label: t('muteAll') },
+        ]}
+        onChange={(next) =>
+          onChange({
+            notify: next === 'none' || next === 'updates',
+            notifyUpdates: next === 'none' || next === 'chat',
+          })
+        }
+      />
+    </Sheet>
+  )
+}
+
+const REPORT_REASONS: readonly ReportReason[] = ['inappropriate', 'spam', 'dangerous', 'stolen']
+
 /**
  * What the emoji bar's ⋯ opens: reply, and what moderation needs (delete your
  * own; report or block someone else's, since anything one person writes for
- * another needs both).
+ * another needs both). Report asks why in the same sheet, as the feed does.
  */
 function MessageMenu({
   message,
@@ -1564,45 +1622,62 @@ function MessageMenu({
   onClose: () => void
   onReply: () => void
   onDelete: () => void
-  onReport: () => void
+  onReport: (reason: ReportReason) => void
   onBlock: () => void
 }) {
-  const { t } = useTranslation(['groups', 'common', 'social'])
+  const { t } = useTranslation(['groups', 'common', 'social', 'recipes'])
   // What the sheet was showing, kept while it slides away.
   const shown = useRef<GroupMessage | null>(null)
   if (message) shown.current = message
   const current = shown.current
+  const [reporting, setReporting] = useState(false)
+  // Back on the menu for the next message, however this one closed.
+  useEffect(() => {
+    if (!message) setReporting(false)
+  }, [message])
   return (
     <Sheet
       visible={message !== null}
       onClose={onClose}
       closeLabel={t('common:action.close')}
-      description={current?.body}
+      title={reporting ? t('social:reportTitle') : undefined}
+      description={reporting ? undefined : current?.body}
+      scrollResetKey={reporting ? 'report' : 'menu'}
     >
-      <View className="gap-md">
-        <Button
-          fullWidth
-          variant="secondary"
-          leftIcon={<Icon set="ui" name="reply" size={20} />}
-          onPress={onReply}
-        >
-          {t('reply')}
-        </Button>
-        {current?.mine ? (
-          <Button fullWidth variant="danger" onPress={onDelete}>
-            {t('deleteMessage')}
+      {reporting ? (
+        <View className="gap-md">
+          {REPORT_REASONS.map((reason) => (
+            <Button key={reason} fullWidth variant="secondary" onPress={() => onReport(reason)}>
+              {t(`recipes:report.${reason}`)}
+            </Button>
+          ))}
+        </View>
+      ) : (
+        <View className="gap-md">
+          <Button
+            fullWidth
+            variant="secondary"
+            leftIcon={<Icon set="ui" name="reply" size={20} />}
+            onPress={onReply}
+          >
+            {t('reply')}
           </Button>
-        ) : (
-          <>
-            <Button fullWidth variant="secondary" onPress={onReport}>
-              {t('report')}
+          {current?.mine ? (
+            <Button fullWidth variant="danger" onPress={onDelete}>
+              {t('deleteMessage')}
             </Button>
-            <Button fullWidth variant="danger" onPress={onBlock}>
-              {t('social:block')}
-            </Button>
-          </>
-        )}
-      </View>
+          ) : (
+            <>
+              <Button fullWidth variant="secondary" onPress={() => setReporting(true)}>
+                {t('report')}
+              </Button>
+              <Button fullWidth variant="danger" onPress={onBlock}>
+                {t('social:block')}
+              </Button>
+            </>
+          )}
+        </View>
+      )}
     </Sheet>
   )
 }

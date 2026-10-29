@@ -116,9 +116,14 @@ export const groups = {
   invited: 'Invited',
   settingsMembers: 'Members',
   notifications: 'Notifications',
-  notificationsHint: 'Nudges and chat messages.',
-  muteChat: 'Mute notifications',
-  unmuteChat: 'Unmute notifications',
+  notifyChat: 'Chat messages and nudges',
+  /** The foods and workouts members share to the chat on their own. */
+  notifyUpdates: 'Food and workout updates',
+  /** The chat's bell: what to hear from this group. */
+  muteNone: 'All notifications on',
+  muteChatOnly: 'Mute chat messages',
+  muteUpdatesOnly: 'Mute food and workout updates',
+  muteAll: 'Mute all',
   remove: 'Remove',
   removeTitle: 'Remove {{name}}?',
   removeBody: 'They can join again only if invited.',

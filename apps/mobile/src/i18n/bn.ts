@@ -1004,6 +1004,7 @@ export const bn = {
 
     weight: {
       peakOn: '{{date}} এ {{value}} {{unit}}',
+      latestOn: 'সর্বশেষ {{value}} {{unit}}, {{date}}',
       peakIn: '{{month}} এ {{value}} {{unit}}',
       change: '{{value}} {{unit}}',
       chart: '{{span}} জুড়ে আপনার ওজন',
@@ -2381,9 +2382,12 @@ export const bn = {
     invited: 'আমন্ত্রিত',
     settingsMembers: 'সদস্য',
     notifications: 'বিজ্ঞপ্তি',
-    notificationsHint: 'মনে করানো ও চ্যাট বার্তা।',
-    muteChat: 'বিজ্ঞপ্তি বন্ধ করুন',
-    unmuteChat: 'বিজ্ঞপ্তি চালু করুন',
+    notifyChat: 'চ্যাট বার্তা ও মনে করানো',
+    notifyUpdates: 'খাবার ও ব্যায়ামের আপডেট',
+    muteNone: 'সব বিজ্ঞপ্তি চালু',
+    muteChatOnly: 'চ্যাট বার্তা বন্ধ করুন',
+    muteUpdatesOnly: 'খাবার ও ব্যায়ামের আপডেট বন্ধ করুন',
+    muteAll: 'সব বন্ধ করুন',
     remove: 'সরান',
     removeTitle: '{{name}} কে সরাবেন?',
     removeBody: 'আমন্ত্রণ পেলে তবেই তারা আবার যোগ দিতে পারবেন।',

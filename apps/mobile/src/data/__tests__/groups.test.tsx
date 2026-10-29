@@ -141,6 +141,44 @@ it('sends an unchanged field as null, so the function is still found by its sign
   })
 })
 
+it('sends both notification switches, so muting chat does not mute updates too', async () => {
+  const { wrapper } = setup()
+  mockRpc.mockReturnValue(response(null))
+  const { result } = await renderHook(() => useGroupAction(), { wrapper })
+  await act(async () => {
+    await result.current.mutateAsync({
+      action: 'preferences',
+      groupId: 'g1',
+      notify: false,
+      notifyUpdates: true,
+    })
+  })
+  expect(mockRpc).toHaveBeenCalledWith('set_group_preferences', {
+    p_group_id: 'g1',
+    p_board_order: null,
+    p_notify: false,
+    p_notify_updates: true,
+  })
+})
+
+it('reports a chat message with the reason given', async () => {
+  const { wrapper } = setup()
+  mockRpc.mockReturnValue(response(null))
+  const { result } = await renderHook(() => useGroupAction(), { wrapper })
+  await act(async () => {
+    await result.current.mutateAsync({
+      action: 'reportMessage',
+      groupId: 'g1',
+      messageId: 'm1',
+      reason: 'spam',
+    })
+  })
+  expect(mockRpc).toHaveBeenCalledWith('report_group_message', {
+    p_message_id: 'm1',
+    p_reason: 'spam',
+  })
+})
+
 it('asks the groups function to push a nudge once the nudge is written', async () => {
   const { wrapper } = setup()
   mockRpc.mockReturnValue(response('nudge-id'))

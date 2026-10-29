@@ -116,6 +116,8 @@ export const progress = {
      * beside a converted number is worse than carrying no unit at all.
      */
     peakOn: '{{value}} {{unit}} on {{date}}',
+    /** Under the weight chart when the range has no reading: the newest one before it. */
+    latestOn: 'Latest {{value}} {{unit}} on {{date}}',
     peakIn: '{{value}} {{unit}} in {{month}}',
     change: '{{value}} {{unit}}',
     chart: 'Your weight over {{span}}',

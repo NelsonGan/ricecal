@@ -45,6 +45,8 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
   const group = details.data
   const isLeader = group?.leader_id === viewer
   const others = group?.members.filter((member) => member.id !== viewer) ?? []
+  // A server from before the second switch pushed no updates; the one switch it had meant both.
+  const updates = group?.notify_updates ?? group?.notify ?? true
 
   // The field follows the saved name, including a rename from another phone.
   const savedName = group?.name
@@ -142,16 +144,34 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
             ) : null}
           </Card>
 
-          <Card>
+          <Card title={t('notifications')}>
             <View className="flex-row items-center gap-md">
-              <View className="min-w-0 flex-1">
-                <Text variant="label">{t('notifications')}</Text>
-                <Text variant="meta">{t('notificationsHint')}</Text>
-              </View>
+              <Text variant="label" className="min-w-0 flex-1">
+                {t('notifyChat')}
+              </Text>
               <Switch
                 value={group.notify}
-                onValueChange={(notify) => task.press({ action: 'preferences', groupId, notify })}
-                accessibilityLabel={t('notifications')}
+                onValueChange={(notify) =>
+                  task.press({ action: 'preferences', groupId, notify, notifyUpdates: updates })
+                }
+                accessibilityLabel={t('notifyChat')}
+              />
+            </View>
+            <View className="flex-row items-center gap-md">
+              <Text variant="label" className="min-w-0 flex-1">
+                {t('notifyUpdates')}
+              </Text>
+              <Switch
+                value={updates}
+                onValueChange={(notifyUpdates) =>
+                  task.press({
+                    action: 'preferences',
+                    groupId,
+                    notify: group.notify,
+                    notifyUpdates,
+                  })
+                }
+                accessibilityLabel={t('notifyUpdates')}
               />
             </View>
           </Card>

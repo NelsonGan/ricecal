@@ -1007,6 +1007,7 @@ export const th = {
 
     weight: {
       peakOn: '{{value}} {{unit}} เมื่อ {{date}}',
+      latestOn: 'ล่าสุด {{value}} {{unit}} เมื่อ {{date}}',
       peakIn: '{{value}} {{unit}} ใน {{month}}',
       change: '{{value}} {{unit}}',
       chart: 'น้ำหนักของคุณตลอด{{span}}',
@@ -2372,9 +2373,12 @@ export const th = {
     invited: 'เชิญแล้ว',
     settingsMembers: 'สมาชิก',
     notifications: 'การแจ้งเตือน',
-    notificationsHint: 'การสะกิดและข้อความแชท',
-    muteChat: 'ปิดการแจ้งเตือน',
-    unmuteChat: 'เปิดการแจ้งเตือน',
+    notifyChat: 'ข้อความแชทและการสะกิด',
+    notifyUpdates: 'อัปเดตอาหารและการออกกำลังกาย',
+    muteNone: 'เปิดการแจ้งเตือนทั้งหมด',
+    muteChatOnly: 'ปิดเสียงข้อความแชท',
+    muteUpdatesOnly: 'ปิดเสียงอัปเดตอาหารและการออกกำลังกาย',
+    muteAll: 'ปิดเสียงทั้งหมด',
     remove: 'นำออก',
     removeTitle: 'นำ {{name}} ออก?',
     removeBody: 'จะกลับเข้ามาได้เมื่อได้รับเชิญเท่านั้น',

@@ -1006,6 +1006,7 @@ export const hi = {
 
     weight: {
       peakOn: '{{date}} को {{value}} {{unit}}',
+      latestOn: 'नवीनतम {{value}} {{unit}}, {{date}}',
       peakIn: '{{month}} में {{value}} {{unit}}',
       change: '{{value}} {{unit}}',
       chart: '{{span}} में आपका वज़न',
@@ -2376,9 +2377,12 @@ export const hi = {
     invited: 'आमंत्रित',
     settingsMembers: 'सदस्य',
     notifications: 'सूचनाएं',
-    notificationsHint: 'याद दिलाना और चैट संदेश।',
-    muteChat: 'सूचनाएं बंद करें',
-    unmuteChat: 'सूचनाएं चालू करें',
+    notifyChat: 'चैट संदेश और याद दिलाना',
+    notifyUpdates: 'खाने और व्यायाम की अपडेट',
+    muteNone: 'सभी सूचनाएं चालू',
+    muteChatOnly: 'चैट संदेश बंद करें',
+    muteUpdatesOnly: 'खाने और व्यायाम की अपडेट बंद करें',
+    muteAll: 'सब बंद करें',
     remove: 'हटाएँ',
     removeTitle: '{{name}} को हटाएँ?',
     removeBody: 'वे सिर्फ़ आमंत्रण मिलने पर फिर जुड़ सकते हैं।',
