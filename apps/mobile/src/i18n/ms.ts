@@ -1195,7 +1195,7 @@ export const ms = {
     money2time: {
       name: 'Money2Time',
       ad: 'Iklan',
-      card: 'Jejak perbelanjaan anda',
+      card: 'Jejak perbelanjaan',
       title: 'Saya buat satu lagi apl',
       body: 'Namanya Money2Time. Ia menjejak perbelanjaan anda dan menunjukkan berapa jam kerja setiap pembelian. Saya harap anda mencubanya.',
       action: 'Cuba Money2Time',

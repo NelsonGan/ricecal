@@ -1191,7 +1191,7 @@ export const fil = {
     money2time: {
       name: 'Money2Time',
       ad: 'Ad',
-      card: 'I-track ang gastos mo',
+      card: 'I-track ang gastos',
       title: 'Gumawa ako ng isa pang app',
       body: 'Money2Time ang pangalan nito. Itinatala nito ang gastos mo at ipinapakita kung ilang oras ng trabaho ang bawat binili. Sana subukan mo.',
       action: 'Subukan ang Money2Time',
