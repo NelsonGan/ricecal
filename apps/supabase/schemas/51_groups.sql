@@ -68,6 +68,13 @@ create table public.group_members (
   -- Pushes for the foods and workouts members share to the chat on their own
   -- (98_group_chat_shares.sql). Its own switch, so a member can keep one kind.
   notify_updates boolean not null default true,
+  -- For the update pushes (98_group_update_pushes.sql): shares in this group
+  -- written up to here have been pushed to this member or passed over, and
+  -- when the last update push from this group went. A new member starts at
+  -- the moment they joined; the migration that added these started everyone
+  -- already in a group at that moment too, so nothing older is pushed.
+  updates_told_until timestamptz not null default now(),
+  updates_pushed_at  timestamptz,
   primary key (group_id, user_id)
 );
 create index group_members_user_idx on public.group_members(user_id, joined_at);

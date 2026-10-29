@@ -148,8 +148,10 @@ export type WarningTarget = {
 }
 
 export function warningPush(target: WarningTarget, now: Date) {
-  const copy = COPY[target.language] ?? COPY.en
-  const lang = COPY[target.language] ? target.language : 'en'
+  // Own keys only: the language is free text an app writes, and '__proto__'
+  // or 'toString' would otherwise find the object's prototype.
+  const lang = Object.hasOwn(COPY, target.language) ? target.language : 'en'
+  const copy = COPY[lang]
   return {
     to: target.token,
     title: copy.title,

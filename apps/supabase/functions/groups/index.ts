@@ -50,10 +50,10 @@ function afterResponse(work: Promise<unknown>) {
  * in the background, so the sender's app never waits on the delay and a phone
  * locked straight after sending cannot cut it short.
  *
- * `updates` is answered and ignored. A build that went to the stores asks for
- * it after logging, from when the poster's app started food and workout
- * pushes; the jobs Worker sends those now (98_group_update_pushes.sql), and a
- * 400 here would only fill that build's logs.
+ * `updates` is answered and ignored. The 1.1.5 build asks for it after
+ * logging, from when the poster's app started food and workout pushes; the
+ * jobs Worker sends those now (98_group_update_pushes.sql), and a 400 here
+ * would only fill that build's logs.
  */
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'use POST' }, 405)

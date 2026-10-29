@@ -3618,21 +3618,31 @@ few seconds of an idle edge worker per message and no CPU.
 written by a trigger, so the poster's app cannot name it, and an app that is
 closed, offline or older would never ask; so the `group-updates` job in the
 jobs Worker sends them, once a minute (`98_group_update_pushes.sql`). One call,
-`group_update_digests`, decides everything and moves each person's cursor
-(`group_update_cursors`) in the same statement, so a run delivered twice sends
-nothing twice. A share reaches the other members of its group who keep
-`notify_updates` on, joined before it, are not blocked either way, and have not
-read it in any group's chat; it is left ten seconds first, so a chat open as it
-lands marks it read. A meal shared into two groups counts once, through the
-group whose chat that member read last, which is also the chat the push opens.
+`group_update_digests`, decides everything and moves what each member has been
+told through that group (`group_members.updates_told_until`,
+`updates_pushed_at`) in the same statement, so a run delivered twice sends
+nothing twice. It answers ninety people at a time and the job calls it again
+until a page comes back short, because PostgREST caps an answer at 1,000 rows.
+A share reaches the other members of its group who keep `notify_updates` on,
+joined after it was told up to (a new membership starts at the moment of
+joining), are not blocked either way, have a device, and have not read it in
+any group's chat. It is left half a minute first: a chat open as it lands marks
+it read, and the margin outlasts the transaction that wrote it. A meal shared
+into two groups counts once, through the group whose chat that member read
+last, which is also the chat the push opens.
 
 These are on for every meal of every member, so they are rationed: at most one
-update push per person every fifteen minutes, naming the newest thing and
-counting the rest ("Aisha: Nasi lemak (640 kcal) and 2 more"), none between
-22:00 and 07:00 in their own `profiles.timezone`, and nothing more than an hour
-old. The push carries the same payload as a chat message's, so every app
-version opens the chat on a tap. The groups function still answers kind
-`updates`, which one store build sends after logging, and does nothing with it.
+update push per person every ten minutes, from one group, naming its newest
+share and counting the rest of that group's ("Aisha: Nasi lemak (640 kcal) and
+2 more"); another group's shares wait for the next allowed push. None go
+between 22:00 and 07:00 in the member's own `profiles.timezone` (the defaults of
+`user_settings.quiet_from`/`quiet_to`, which nothing reads any more), and nothing
+more than an hour old. The push is built by the groups function's own
+`messagePush`, so it is a chat message's push from that group and every app
+version opens the chat on a tap. A run where Expo refused every push is a
+failure, so an outage or a missing `EXPO_ACCESS_TOKEN` shows. The groups
+function still answers kind `updates`, which the 1.1.5 build sends after
+logging, and does nothing with it.
 
 Muting is per group, two switches: `group_members.notify` for nudges and chat,
 and `notify_updates` for food and workout updates, both on by default. The
@@ -6378,11 +6388,13 @@ the config in both directions.
 2. the job runs, with `{ env, rpc, log, scheduledAt }`.
 3. `finish_job_run(id, ok, detail, error)`.
 
-A job that runs every minute sets `record: 'when-busy'`. It claims nothing, so
-its own work must be atomic and safe to overlap (`group_update_digests` takes an
-advisory lock), and only a run that returned a non-empty detail or threw is
-written, already closed, by `record_job_run`. Otherwise `job_runs` would gain
-1,440 rows a day saying there was nothing to do.
+A job that runs every minute sets `record: 'hourly'`. It claims nothing, so its
+own work must be atomic and safe to overlap (`group_update_digests` takes a
+non-blocking advisory lock and a run that finds it held does nothing), and
+`leaseSeconds` does not apply. Each run is added by `record_job_run` into one
+closed row per job, hour and outcome, numeric detail summed with a `runs`
+count: at most 48 rows a day where a row a minute would be 1,440, and still a
+row every hour, so a missing hour means the job stopped.
 
 A failure is recorded **and rethrown**. Thrown, it also marks the invocation
 failed in Cloudflare's Cron Events, so a broken job shows up in two independent
@@ -6441,8 +6453,12 @@ select job, started_at, finished_at, ok, error, detail
 
 Worth looking at: `ok = false`; a null `finished_at` on anything but the newest
 row, which is a run that died without closing its own record; or a gap wider than
-the job's own interval. Workers Logs and the Cron Events tab are the second
-signal, and they are independent of Postgres being reachable at all.
+the job's own interval (an hour, for `group-updates`, whose rows are hourly).
+Workers Logs and the Cron Events tab are the second signal, and they are
+independent of Postgres being reachable at all. Cron Events keeps only the last
+100 invocations per Worker, and `group-updates` makes sixty an hour, so an hourly
+or daily job's failed invocation leaves that tab within a couple of hours; its
+`job_runs` row stays.
 
 The one secret is set by hand, once per environment:
 `pnpm exec wrangler secret put SUPABASE_SERVICE_ROLE_KEY`. `SUPABASE_URL` is a

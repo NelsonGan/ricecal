@@ -65,13 +65,14 @@ export type Job = {
   /**
    * `every-run`, the default, claims each run and closes it in `job_runs`.
    *
-   * `when-busy` is for a job that runs every minute: it claims nothing, so its
+   * `hourly` is for a job that runs every minute. It claims nothing, so its
    * own work must be atomic and safe to overlap (a lock in its Postgres
-   * function), and writes a row, already closed, only for a run that returned
-   * a non-empty detail or threw. An empty detail means "nothing to do" and is
-   * not recorded, or the table would gain 1,440 rows a day saying so.
+   * function), and `leaseSeconds` does not apply. Each run is added into one
+   * `job_runs` row per hour and outcome (`record_job_run`), its numeric detail
+   * summed with a `runs` count, so the table gains at most 48 rows a day and
+   * a gap of an hour still means the job stopped.
    */
-  record?: 'every-run' | 'when-busy'
+  record?: 'every-run' | 'hourly'
 
   /**
    * A job MUST BE IDEMPOTENT. Cron delivery is at-least-once and Cloudflare
@@ -107,7 +108,7 @@ export async function runJob(job: Job, scheduledAt: Date, env: Env): Promise<voi
     else console.log(`[${job.name}] ${message}`)
   }
 
-  if (job.record === 'when-busy') return runWhenBusy(job, scheduledAt, env, rpc, log)
+  if (job.record === 'hourly') return runHourly(job, scheduledAt, env, rpc, log)
 
   const runId = await rpc<number | null>('claim_job_run', {
     p_job: job.name,
@@ -139,25 +140,36 @@ export async function runJob(job: Job, scheduledAt: Date, env: Env): Promise<voi
   }
 }
 
-async function runWhenBusy(
+async function runHourly(
   job: Job,
   scheduledAt: Date,
   env: Env,
   rpc: Rpc,
   log: JobContext['log'],
 ): Promise<void> {
+  let detail: JobDetail
   try {
-    const detail = await job.run({ env, rpc, log, scheduledAt })
-    if (Object.keys(detail).length === 0) return
-    await rpc('record_job_run', { p_job: job.name, p_ok: true, p_detail: detail })
-    log('done', detail)
+    detail = await job.run({ env, rpc, log, scheduledAt })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     // As in `runJob`: recorded before the rethrow, its own failure swallowed.
-    await rpc('record_job_run', { p_job: job.name, p_ok: false, p_error: message }).catch(
-      (recordError: unknown) =>
-        console.error(`[${job.name}] could not record the failure:`, recordError),
+    await rpc('record_job_run', {
+      p_job: job.name,
+      p_ok: false,
+      p_detail: { runs: 1 },
+      p_error: message,
+    }).catch((recordError: unknown) =>
+      console.error(`[${job.name}] could not record the failure:`, recordError),
     )
     throw error
   }
+  // A run whose work is done is not reported failed because writing it down
+  // failed: that costs the hour's count one run, and nothing else.
+  await rpc('record_job_run', {
+    p_job: job.name,
+    p_ok: true,
+    p_detail: { runs: 1, ...detail },
+  }).catch((recordError: unknown) =>
+    console.error(`[${job.name}] could not record the run:`, recordError),
+  )
 }
