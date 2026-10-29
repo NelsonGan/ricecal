@@ -372,3 +372,43 @@ it('does not let an old track response stand in for tracking the rejoined connec
   await settle()
   expect(channel.track).toHaveBeenCalledTimes(2)
 })
+
+it.each(['error', 'timed out', 'rejected'])(
+  'replaces the shared channel when untracking fails with %s',
+  async (failure) => {
+    const board = listener()
+    listen('t', board)
+    const stopChat = listen('t', present())
+    const channel = currentChannel()
+    channel.status('SUBSCRIBED')
+    await settle()
+    if (failure === 'rejected') channel.untrack.mockRejectedValue(new Error('offline'))
+    else channel.untrack.mockResolvedValue(failure)
+    stopChat()
+    await settle()
+    expect(removals).toHaveLength(1)
+    expect(board.onLive).toHaveBeenLastCalledWith(false)
+    removals[0]?.finish()
+    await settle()
+    const replacement = currentChannel()
+    expect(replacement).not.toBe(channel)
+    replacement.status('SUBSCRIBED')
+    await settle()
+    expect(replacement.track).not.toHaveBeenCalled()
+    replacement.emit('message', { ids: ['m1'] })
+    expect(board.onEvent).toHaveBeenCalledWith('message', { ids: ['m1'] })
+  },
+)
+
+it('still untracks when the track acknowledgement was lost before the chat closed', async () => {
+  listen('t', listener())
+  const stopChat = listen('t', present())
+  const channel = currentChannel()
+  channel.track.mockResolvedValue('timed out')
+  channel.status('SUBSCRIBED')
+  await settle()
+  stopChat()
+  await settle()
+  expect(channel.untrack).toHaveBeenCalledTimes(1)
+  expect(removals).toHaveLength(0)
+})
