@@ -3078,7 +3078,8 @@ refresh, while the card updates immediately and the Following feed is refreshed.
 A like is drawn at once on every cached copy of its post and put back if the
 server refuses it; it never refetches a feed, since it is the most frequent write
 and a refetch reloads every loaded page. A comment refreshes only its post. The
-unread badge polls once a minute only while Feed is on screen. Opening the inbox
+unread badge polls once a minute only while Feed is on screen. The inbox uses a
+plain envelope icon, with a badge only when the unread count is positive. Opening the inbox
 counts as seeing it: `mark_social_notifications_seen` marks everything up to the
 newest notification drawn as read, so the badge clears and one landing meanwhile
 still counts. The rows that were new keep their highlight for that visit, which
