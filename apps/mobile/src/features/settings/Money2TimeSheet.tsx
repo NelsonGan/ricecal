@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Platform, View } from 'react-native'
 
 import { track } from '@/lib/analytics'
-import { Badge, Button, Sheet, Text, useToast } from '@/ui'
+import { Button, Sheet, Text, useToast } from '@/ui'
 import { MONEY2TIME_LOGO, money2TimeStoreUrl } from './money2time'
 
 export type Money2TimeSheetProps = {
@@ -56,10 +56,6 @@ export function Money2TimeSheet({ visible, onClose }: Money2TimeSheetProps) {
           transition={0}
           accessibilityLabel={t('profile:money2time.name')}
         />
-        {/* `Badge` sets its own `self-start`, which beats this column's `items-center`. */}
-        <Badge tone="neutral" size="sm" className="self-center">
-          {t('profile:money2time.ad')}
-        </Badge>
         <Text variant="subtitle" className="text-center">
           {t('profile:money2time.title')}
         </Text>

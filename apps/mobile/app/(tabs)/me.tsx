@@ -221,12 +221,12 @@ export default function MeScreen() {
           section of the screen. */}
       <View className="gap-2.5">
         {/* `py-2` because the row brings its own vertical padding, and on top of
-          the card's it left a band of empty card above and below one line. */}
+            the card's it left a band of empty card above and below one line. */}
         <Card contentClassName="gap-0 py-2">
           {/* Somebody who has never paid has nothing to manage. The subscription
-            screen is a plan, a renewal date and a way to cancel; for them it
-            was three cards of "none" wrapped around a button to the paywall,
-            so they go straight to the paywall instead. */}
+              screen is a plan, a renewal date and a way to cancel; for them it
+              was three cards of "none" wrapped around a button to the paywall,
+              so they go straight to the paywall instead. */}
           <ListRow
             title={t('profile:home.pro')}
             subtitle={planLine}
@@ -238,9 +238,9 @@ export default function MeScreen() {
           />
         </Card>
 
-        {/* Free accounts only (see `showFreeOffers`). Share & Earn
-          is the way to Pro without paying, beside the Pro row that sells it;
-          the Money2Time card is the ad Money2Time runs for RiceCal in return. */}
+        {/* Free accounts only (see `showFreeOffers`). Share & Earn is the way to
+            Pro without paying, beside the Pro row that sells it; the Money2Time
+            card is the ad Money2Time runs for RiceCal in return. */}
         {showFreeOffers ? (
           <View className="flex-row gap-2.5">
             <Card
