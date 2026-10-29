@@ -53,8 +53,12 @@ export async function seeAnnouncements(
 }
 
 /**
- * Marks one announcement seen the moment its card is on screen, applying what
- * it enables, and puts the row the server returns into the cache.
+ * Marks a card's announcements seen the moment it is on screen, applying what
+ * each enables, and puts the row the server returns into the cache. One call
+ * per announcement, in order: the server applies a switch only when the call's
+ * id is new to the account, so a card that folds an older one (see
+ * `withMissed`) never turns the older one's switch back on for somebody who
+ * already saw it.
  *
  * In-flight profile reads are cancelled first, as `useUpdateProfile` does: one
  * that read the row before this write and landed after it would put the old
@@ -67,8 +71,14 @@ export function useSeeAnnouncement() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, enables }: { id: string; enables?: { autoPostFoods?: boolean } }) =>
-      seeAnnouncements([id], enables),
+    mutationFn: async (claims: { id: string; enables?: { autoPostFoods?: boolean } }[]) => {
+      // The last answer holds every earlier one, since they run in turn. When
+      // the last claimed nothing, an earlier row may be missing its id, so the
+      // profile is refetched instead.
+      let profile: Profile | null = null
+      for (const claim of claims) profile = await seeAnnouncements([claim.id], claim.enables)
+      return profile
+    },
     onSuccess: async (profile) => {
       const key = keys.profile(userId)
       if (!profile) {

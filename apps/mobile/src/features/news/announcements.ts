@@ -12,12 +12,12 @@
 export type AnnouncementSource = 'launch' | 'settings'
 
 /** Where a page's button leads, named for analytics. */
-export type AnnouncementCta = 'edit_profile' | 'personalisation'
+export type AnnouncementCta = 'edit_profile' | 'personalisation' | 'groups'
 
 /** One page of an announcement, swiped through in order. */
 export type AnnouncementPage = {
   /** `news:<key>` holds its title and body, and names its picture. */
-  key: 'workouts' | 'feedAutoShare' | 'photoNote'
+  key: 'workouts' | 'feedAutoShare' | 'photoNote' | 'groupsBoard' | 'groupsChat'
   /** Only where there is a switch or a screen worth going to; most pages need none. */
   cta?: AnnouncementCta
 }
@@ -30,7 +30,7 @@ export type Announcement = {
    */
   id: string
   /** `news:<key>.title` names it in the list under Me. */
-  key: 'update110'
+  key: 'update110' | 'groupsNews'
   /** YYYY-MM-DD, for the list and for ordering. */
   releaseDate: string
   /** At least one. A release with several changes is one card of pages, not several cards. */
@@ -45,9 +45,30 @@ export type Announcement = {
    * without the change. Fold the message into the newer card instead.
    */
   enables?: { autoPostFoods: true }
+  /**
+   * An older announcement whose pages follow this one's for an account that
+   * never saw it, which is how a switch it turns on still reaches a slow
+   * updater once this one is the newest. See `withMissed`.
+   */
+  folds?: string
+}
+
+/** A card as one account sees it: its pages, and every announcement they claim. */
+export type ShownAnnouncement = Announcement & {
+  /** Each announcement the card stands for, with what that one switches on. */
+  claims: { id: string; enables?: Announcement['enables'] }[]
 }
 
 export const ANNOUNCEMENTS: readonly Announcement[] = [
+  {
+    id: 'groups_2026_10',
+    key: 'groupsNews',
+    releaseDate: '2026-10-29',
+    pages: [{ key: 'groupsBoard', cta: 'groups' }, { key: 'groupsChat' }],
+    // Most accounts made before 1.1.0 had not opened it when this shipped, and
+    // only the newest card is put up: they get its pages, and its switch, here.
+    folds: 'feed_auto_share_2026_10',
+  },
   {
     // Named for its first draft, the feed page alone, which reached TestFlight
     // and no store release before the other pages joined it; so it kept the id.
@@ -106,4 +127,30 @@ export function announcementDue(
  */
 export function allAnnouncementIds(): string[] {
   return ANNOUNCEMENTS.map((announcement) => announcement.id)
+}
+
+/**
+ * The card for this account: the announcement, followed by the pages of the
+ * older one it folds when the account never saw that one. Each is claimed on
+ * its own, with its own switch, so the server turns a setting on only for an
+ * account that has not seen the announcement that turns it on.
+ *
+ * Folds nothing while the profile is unknown: a reader who had seen the older
+ * card would only be shown it again.
+ */
+export function withMissed(
+  announcement: Announcement,
+  seen: readonly string[] | undefined,
+  list: readonly Announcement[] = ANNOUNCEMENTS,
+): ShownAnnouncement {
+  const own = { id: announcement.id, enables: announcement.enables }
+  const older = announcement.folds
+    ? list.find((candidate) => candidate.id === announcement.folds)
+    : undefined
+  if (!older || !seen || seen.includes(older.id)) return { ...announcement, claims: [own] }
+  return {
+    ...announcement,
+    pages: [...announcement.pages, ...older.pages],
+    claims: [own, { id: older.id, enables: older.enables }],
+  }
 }

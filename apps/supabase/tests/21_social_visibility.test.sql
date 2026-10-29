@@ -131,6 +131,25 @@ select public.mark_social_notifications_read(:'activity_ids'::uuid[]);
 reset role;
 select is((select count(*)::int from public.social_notifications where recipient_id = :'alice' and read_at is not null), 0,
   'another account cannot mark a recipient''s activity read');
+select set_config('request.jwt.claims', json_build_object('sub', :'bob', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.mark_social_notifications_seen(now());
+reset role;
+select is((select count(*)::int from public.social_notifications where recipient_id = :'alice' and read_at is not null), 0,
+  'opening one inbox does not mark another recipient''s activity seen');
+select max(created_at) as newest_activity from public.social_notifications where recipient_id = :'alice' \gset
+select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.mark_social_notifications_seen(:'newest_activity'::timestamptz - interval '1 day');
+select ok(public.social_unread_notification_count() > 0,
+  'activity newer than what the inbox drew stays unread');
+select public.mark_social_notifications_seen(:'newest_activity'::timestamptz);
+select is(public.social_unread_notification_count(), 0,
+  'opening the inbox marks everything it drew as seen');
+select throws_ok($q$select public.mark_social_notifications_seen(null)$q$,
+  '22023', null, 'seeing the inbox needs the newest time it drew');
+reset role;
+update public.social_notifications set read_at = null where recipient_id = :'alice';
 select set_config('request.jwt.claims', json_build_object('sub', :'alice', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select public.mark_social_notifications_read(:'activity_ids'::uuid[]);

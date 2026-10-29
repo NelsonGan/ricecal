@@ -1208,7 +1208,9 @@ function ReactionPill({
         .join(', ')}
     >
       {reactions.slice(0, 3).map((reaction) => (
-        <Text key={reaction.emoji} className="text-[14px] leading-[18px]">
+        // An emoji's box is taller than Nunito's at the same size: at 18px of
+        // leading the top of every face was cut off flat.
+        <Text key={reaction.emoji} className="text-[14px] leading-[21px]">
           {reaction.emoji}
         </Text>
       ))}
@@ -1464,7 +1466,23 @@ function ReactionBar({
           importantForAccessibility="no-hide-descendants"
           accessibilityElementsHidden
         >
-          <MessageContent message={message} last={last} />
+          <View>
+            <MessageContent message={message} last={last} />
+            {/* Its reactions too, where the row tucks them: drawn over the
+                dim without them, the bubble covered the top half of the pill. */}
+            {message.reactions?.length ? (
+              <View
+                className="absolute"
+                style={[{ bottom: -PILL_TUCK }, message.mine ? { left: 6 } : { right: 6 }]}
+              >
+                <ReactionPill
+                  reactions={message.reactions}
+                  mine={message.my_reaction ?? null}
+                  onPress={() => {}}
+                />
+              </View>
+            ) : null}
+          </View>
         </View>
         <Animated.View
           key={message.id}

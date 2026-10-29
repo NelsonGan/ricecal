@@ -52,10 +52,9 @@ it('records the card in one call, and an older profile read cannot put the old r
 
   const { result, unmount } = await renderHook(useSeeAnnouncement, { wrapper })
   await act(async () => {
-    await result.current.mutateAsync({
-      id: 'feed_auto_share_2026_10',
-      enables: { autoPostFoods: true },
-    })
+    await result.current.mutateAsync([
+      { id: 'feed_auto_share_2026_10', enables: { autoPostFoods: true } },
+    ])
   })
   await unmount()
 
@@ -77,9 +76,29 @@ it('refetches rather than trusting the cache when another phone saw it first', a
 
   const { result, unmount } = await renderHook(useSeeAnnouncement, { wrapper })
   await act(async () => {
-    await result.current.mutateAsync({ id: 'feed_auto_share_2026_10' })
+    await result.current.mutateAsync([{ id: 'feed_auto_share_2026_10' }])
   })
   await unmount()
 
   expect(client.getQueryState(key)?.isInvalidated).toBe(true)
+})
+
+it('claims a folded card one announcement at a time, each with its own switch', async () => {
+  const { client, wrapper } = setup()
+  const key = keys.profile('me')
+  client.setQueryData(key, before)
+  mockRpc.mockResolvedValue({ data: after, error: null })
+  const { result, unmount } = await renderHook(useSeeAnnouncement, { wrapper })
+  await act(async () => {
+    await result.current.mutateAsync([
+      { id: 'groups_2026_10' },
+      { id: 'feed_auto_share_2026_10', enables: { autoPostFoods: true } },
+    ])
+  })
+  await unmount()
+  expect(mockRpc.mock.calls.map((call) => call[1])).toEqual([
+    { p_ids: ['groups_2026_10'], p_auto_post_foods: undefined },
+    { p_ids: ['feed_auto_share_2026_10'], p_auto_post_foods: true },
+  ])
+  expect(client.getQueryData(key)).toEqual(after)
 })

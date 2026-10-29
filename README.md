@@ -1903,6 +1903,10 @@ misses Malaysian packets" above.
    the second is what a permission dialog produces and the notification prompt
    fires at the shutter of the first scan an account ever takes.
 
+   The poll asks only for the days its scans will land on, every six seconds.
+   It used to refetch every mounted day, which re-read whole diaries the scan
+   could not touch and was a visible share of the project's egress.
+
 **Server** (`functions/scan-meal/index.ts`, cascade in `_shared/cascade.ts`,
 model calls in `_shared/llm.ts`). One vision call returns queries, per-component
 sizing and a kcal *range*, never nutrients.
@@ -2765,6 +2769,9 @@ The first implementation includes:
 
 - Following, newest first, containing the viewer and accounts they follow;
   Discover, containing public posts from other accounts they do not follow.
+  A filter in the Feed header shows everything, meals only or workouts only,
+  for both feeds; it is the `p_kinds` argument the feed already takes, so each
+  choice is its own cached feed and a server that predates it needs nothing.
 - Public identity fields in the existing Settings profile: a unique
   handle, display name, optional short bio and avatar. Accounts appear in
   discovery by default and can choose a private profile to leave search,
@@ -3071,7 +3078,11 @@ refresh, while the card updates immediately and the Following feed is refreshed.
 A like is drawn at once on every cached copy of its post and put back if the
 server refuses it; it never refetches a feed, since it is the most frequent write
 and a refetch reloads every loaded page. A comment refreshes only its post. The
-unread badge polls once a minute only while Feed is on screen. Pull-to-refresh
+unread badge polls once a minute only while Feed is on screen. Opening the inbox
+counts as seeing it: `mark_social_notifications_seen` marks everything up to the
+newest notification drawn as read, so the badge clears and one landing meanwhile
+still counts. The rows that were new keep their highlight for that visit, which
+is why there is no "Mark as read" button any more. Pull-to-refresh
 keeps the first loaded page visible while the newest one loads.
 The feed image itself stays in place on a tap. A double tap likes it and briefly
 shows a heart, and a pinch zooms the photograph while held. Only the comment
@@ -3436,10 +3447,13 @@ account away. Someone blocked in either direction reads as nobody.
 Members see only the pending invites they sent themselves, and of those only
 the ones sent by handle (`group_invites.by_email`): an email invite listed would
 name whoever owns the address. The leader renames
-the group, switches it public or private, and removes members. Each member puts
-the others in their own board order by dragging a row's handle in the settings'
-member list; the order saves as the finger lifts (`board_order`), and the
-viewer's own row stays first. A face anywhere in a group, on the board, in the
+the group, switches it public or private, and removes members. The board and the
+settings' member list put the viewer first and then whoever logged a food or a
+workout most recently (`private.group_last_active`, from the newest food's
+`logged_at` and the newest workout or health session's start). It replaced each
+member dragging their own order: `board_order` is still stored and
+`set_group_preferences` still takes it, because released apps send it, but
+nothing reads it. A face anywhere in a group, on the board, in the
 chat or in settings, opens that person's feed profile. The board draws every
 member: twenty at most is a scroll, and a fold hid the friends whose food was
 the reason to open it.
@@ -3479,8 +3493,12 @@ while its chat or its board is on screen and the app is in front. The two share
 it (`lib/realtime.ts` holds one channel per topic), so opening the chat from the
 board does not leave and rejoin. Everything else still polls.
 
-- **The chat** refetches the thread's newest page when a broadcast names a
-  message it does not have.
+- **The chat** catches up when a broadcast names a message it does not have:
+  it reads the newest ten (`CATCH_UP`) and lays them over the thread
+  (`mergeCatchUp`). Ten that do not reach anything held mean more arrived than
+  a catch-up reads, and the whole newest page is read instead. Re-reading the
+  50-message page for every message heard was about a quarter of the project's
+  egress (measured 2026-10-28: ~1,700 reads a day at ~30 KB each).
 - **The board's chat bar** rereads `group_chat_summary` on every broadcast: one
   small read instead of the board with every member's day of food, one in
   flight at a time with a burst ending in one more. Measured on a simulator
@@ -3526,7 +3544,7 @@ board does not leave and rejoin. Everything else still polls.
   member removed mid-chat) is not retried, and a channel the server closes is
   rejoined after three seconds.
 - **Polling is the net, not the mechanism.** Joined, the thread is still read
-  once a minute, for what no message write announces (another member blocking
+  every three minutes, for what no message write announces (another member blocking
   the viewer, a renamed author) and for a socket that died without saying so.
   Not joined, it is read every 5 seconds. Each read is the newest page laid
   over what has been scrolled through (`mergeNewest`), so a long scroll back
@@ -6156,6 +6174,25 @@ names the Apple Watch there and nowhere else: the watch app is iOS only.
   profile within 30 seconds, so a card another phone has shown is not shown
   again from a persisted cache.
 
+### Groups
+
+`groups_2026_10` is two pages: the board (a picture of a day of meals with a
+nudge, and a button to the Groups tab) and the chat (a shared meal with
+reactions). The pictures carry no words in their bubbles, so they read the
+same in every language.
+
+It folds the 1.1.0 card (`folds` in `announcements.ts`, `withMissed`). When it
+shipped, about two thirds of onboarded accounts on the hosted project had never
+been shown 1.1.0, and only the newest card is put up, so without the fold they
+would never meet its pages or have Auto post foods switched on. An account that
+missed 1.1.0 gets the Groups pages and then the 1.1.0 pages in one card. The
+card claims each announcement in its own `see_announcements` call, in order,
+each with its own switch: the server applies a switch only when that call's id
+is new to the account, so somebody who saw 1.1.0 on another phone and has
+since turned auto post off is not switched back on. The fold is fixed when the
+card appears, since claiming it changes the profile mid-read. With no profile
+loaded nothing is folded.
+
 ### 1.1.0, the first announcement
 
 `feed_auto_share_2026_10` is three pages: workouts (no button; on iOS the body
@@ -6671,7 +6708,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Widget water `preset` | Home-screen action preset volume | Widget action choice; no daily water total or diary history |
 | `announcement` | An id from `features/news/announcements.ts`, lowercase letters, digits and underscores (checked by `see_announcements`); currently `feed_auto_share_2026_10` | Never free text; a renamed id is a new announcement |
 | `source` / `AnnouncementSource` | `launch`, `settings` | `launch` is the card the app puts over Today; `settings` is one opened from the News list under Me |
-| `cta` / `AnnouncementCta` | `edit_profile`, `personalisation` | Where a page's button leads, named for analytics; a tap, not a changed setting |
+| `cta` / `AnnouncementCta` | `edit_profile`, `personalisation`, `groups` | Where a page's button leads, named for analytics; a tap, not a changed setting |
 | Announcement `via` | `done` ("Got it" on the last page), `close` (cross, scrim or back gesture) | Closing without a page's button |
 | Announcement `page` | The page, from 1, that the button was tapped or the card closed on | How far people read is `Dismissed` broken down by `page`; `done` is always the last page |
 | Group `visibility`, `via`, `by`, `meal`, `reaction` | `private`/`public`; `invite`/`public`; `handle`/`email` (an email address typed into the invite field); `breakfast`/`lunch`/`dinner` (the board column, not the diary's `Meal`); `like`/`dislike` | `src/lib/analytics/events.ts`; never a group name, a handle, an address, a food or a message |

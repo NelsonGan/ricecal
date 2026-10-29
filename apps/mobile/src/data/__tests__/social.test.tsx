@@ -10,6 +10,7 @@ import {
   socialEntryPost,
   socialFeedParams,
   socialPage,
+  useSeeNotifications,
   useSocialAction,
   useSocialFeed,
   useSocialPhoto,
@@ -535,12 +536,6 @@ it('answers whether a meal has a post, and says so only when it knows', async ()
 
 it.each([
   {
-    name: 'read',
-    action: { action: 'read', ids: ['notification'] as string[] } as const,
-    invalidated: ['social_notifications', 'unread'],
-    preserved: ['social_feed', 'social_profile_posts', 'social_post'],
-  },
-  {
     name: 'remove follower',
     action: { action: 'removeFollower', id: 'follower' } as const,
     invalidated: [
@@ -768,4 +763,65 @@ it('aborts an in-flight signing batch after its last observer leaves', async () 
   await unmount()
   expect(signal?.aborted).toBe(true)
   client.clear()
+})
+
+it('marks the inbox seen up to the newest row drawn and clears the badge', async () => {
+  const { client, wrapper } = setup()
+  const listKey = keys.socialRead('viewer', 'social_notifications', {})
+  const older = { id: 'n1', created_at: '2026-10-28T10:00:00.000000Z', read_at: null }
+  const newer = { id: 'n2', created_at: '2026-10-29T10:00:00.123456Z', read_at: null }
+  client.setQueryData(listKey, {
+    pages: [{ rows: [newer, older], next: null }],
+    pageParams: [null],
+  })
+  client.setQueryData(keys.socialRead('viewer', 'unread'), 2)
+  mockRpc.mockReturnValue(response(null))
+  await renderHook(() => useSeeNotifications(newer.created_at, true), { wrapper })
+  await waitFor(() => expect(client.getQueryData(keys.socialRead('viewer', 'unread'))).toBe(0))
+  expect(mockRpc).toHaveBeenCalledWith('mark_social_notifications_seen', {
+    p_through: newer.created_at,
+  })
+  const data = client.getQueryData<{ pages: { rows: { read_at: string | null }[] }[] }>(listKey)
+  expect(data?.pages[0]?.rows.every((row) => row.read_at)).toBe(true)
+})
+
+it('marks the inbox seen when only the badge counts something unread', async () => {
+  const { client, wrapper } = setup()
+  client.setQueryData(keys.socialRead('viewer', 'unread'), 3)
+  mockRpc.mockReturnValue(response(null))
+  await renderHook(() => useSeeNotifications('2026-10-29T10:00:00Z', false), { wrapper })
+  await waitFor(() =>
+    expect(mockRpc).toHaveBeenCalledWith('mark_social_notifications_seen', {
+      p_through: '2026-10-29T10:00:00Z',
+    }),
+  )
+})
+
+it('sends nothing when nothing is unread', async () => {
+  const { wrapper } = setup()
+  await renderHook(() => useSeeNotifications('2026-10-29T10:00:00Z', false), { wrapper })
+  expect(mockRpc).not.toHaveBeenCalled()
+})
+
+it('asks for one kind of post when the feed is filtered, and refreshes every filter on follow', async () => {
+  expect(socialFeedParams('following', 'workout')).toEqual({
+    p_mode: 'following',
+    p_kinds: ['workout'],
+  })
+  expect(socialFeedParams('discover')).toEqual({ p_mode: 'discover', p_kinds: ['food', 'workout'] })
+  const { client, wrapper } = setup()
+  const all = keys.socialRead('viewer', 'social_feed', socialFeedParams('following'))
+  const food = keys.socialRead('viewer', 'social_feed', socialFeedParams('following', 'food'))
+  const discover = keys.socialRead('viewer', 'social_feed', socialFeedParams('discover', 'food'))
+  for (const key of [all, food, discover]) {
+    client.setQueryData(key, { pages: [{ rows: [], next: null }], pageParams: [null] })
+  }
+  mockRpc.mockReturnValue(response(null))
+  const { result } = await renderHook(() => useSocialAction(), { wrapper })
+  await act(async () => {
+    await result.current.mutateAsync({ action: 'follow', id: 'author', following: true })
+  })
+  expect(client.getQueryState(all)?.isInvalidated).toBe(true)
+  expect(client.getQueryState(food)?.isInvalidated).toBe(true)
+  expect(client.getQueryState(discover)?.isInvalidated).toBe(false)
 })

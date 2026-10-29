@@ -19,12 +19,22 @@ jest.mock('@/data', () => ({
 jest.mock('../FeedAutoSharePreview', () => ({ FeedAutoSharePreview: () => null }))
 jest.mock('../WorkoutsPreview', () => ({ WorkoutsPreview: () => null }))
 jest.mock('../PhotoNotePreview', () => ({ PhotoNotePreview: () => null }))
+jest.mock('../GroupsPreview', () => ({
+  GroupsBoardPreview: () => null,
+  GroupsChatPreview: () => null,
+}))
 
 const METRICS = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 }
-const feed = ANNOUNCEMENTS[0]
+const byId = (id: string) => {
+  const found = ANNOUNCEMENTS.find((announcement) => announcement.id === id)
+  if (!found) throw new Error(id)
+  return found
+}
+const feed = byId('feed_auto_share_2026_10')
+const groups = byId('groups_2026_10')
 
 function AnnouncementCard(props: ComponentProps<typeof Card>) {
   return (
@@ -70,7 +80,7 @@ it('counts and marks nothing until the card is actually on screen', async () => 
     source: 'launch',
   })
   expect(mockSee).toHaveBeenCalledWith(
-    { id: feed.id, enables: { autoPostFoods: true } },
+    [{ id: feed.id, enables: { autoPostFoods: true } }],
     expect.anything(),
   )
 })
@@ -208,4 +218,43 @@ it('counts the cross as a close', async () => {
     via: 'close',
     page: 1,
   })
+})
+
+it('folds the 1.1.0 pages and their switch into the Groups card for an account that missed them', async () => {
+  await render(<AnnouncementCard announcement={groups} source="launch" onClose={jest.fn()} />)
+  await presented()
+  // Groups first, with its own button, then the three pages it folds.
+  expect(screen.getByText('news:groupsBoard.title')).toBeTruthy()
+  expect(screen.getByText('groups:title')).toBeTruthy()
+  expect(screen.getByText('news:workouts.title', { includeHiddenElements: true })).toBeTruthy()
+  expect(screen.getByText('news:photoNote.title', { includeHiddenElements: true })).toBeTruthy()
+  // One claim each, so the server switches auto post on only if 1.1.0 is new.
+  expect(mockSee).toHaveBeenCalledWith(
+    [{ id: groups.id }, { id: feed.id, enables: { autoPostFoods: true } }],
+    expect.anything(),
+  )
+})
+
+it('shows only the Groups pages, and switches nothing, for an account that saw 1.1.0', async () => {
+  mockProfile.seen_announcements = [feed.id]
+  await render(<AnnouncementCard announcement={groups} source="launch" onClose={jest.fn()} />)
+  await presented()
+  expect(screen.getByText('news:groupsChat.title', { includeHiddenElements: true })).toBeTruthy()
+  expect(screen.queryByText('news:workouts.title', { includeHiddenElements: true })).toBeNull()
+  expect(mockSee).toHaveBeenCalledWith([{ id: groups.id }], expect.anything())
+})
+
+it('opens the Groups tab from the board page', async () => {
+  mockProfile.seen_announcements = [feed.id]
+  const onClose = jest.fn()
+  await render(<AnnouncementCard announcement={groups} source="launch" onClose={onClose} />)
+  await presented()
+  await fireEvent.press(screen.getByText('groups:title'))
+  expect(track).toHaveBeenCalledWith('Announcement CTA Tapped', {
+    announcement: groups.id,
+    source: 'launch',
+    cta: 'groups',
+    page: 1,
+  })
+  expect(onClose).toHaveBeenCalled()
 })

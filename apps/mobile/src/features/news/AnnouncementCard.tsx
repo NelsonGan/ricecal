@@ -24,8 +24,11 @@ import type {
   AnnouncementCta,
   AnnouncementPage,
   AnnouncementSource,
+  ShownAnnouncement,
 } from './announcements'
+import { withMissed } from './announcements'
 import { FeedAutoSharePreview } from './FeedAutoSharePreview'
+import { GroupsBoardPreview, GroupsChatPreview } from './GroupsPreview'
 import { PhotoNotePreview } from './PhotoNotePreview'
 import { WorkoutsPreview } from './WorkoutsPreview'
 
@@ -36,6 +39,7 @@ import { WorkoutsPreview } from './WorkoutsPreview'
 const CTAS = {
   edit_profile: { route: '/settings/account', label: 'social:editProfile' },
   personalisation: { route: '/settings/personalisation', label: 'profile:personalisation.title' },
+  groups: { route: '/groups', label: 'groups:title' },
 } as const satisfies Record<AnnouncementCta, { route: Href; label: string }>
 
 /** Each page's picture, drawn from the app's own components. */
@@ -43,6 +47,8 @@ const PICTURES = {
   workouts: WorkoutsPreview,
   feedAutoShare: FeedAutoSharePreview,
   photoNote: PhotoNotePreview,
+  groupsBoard: GroupsBoardPreview,
+  groupsChat: GroupsChatPreview,
 } as const satisfies Record<AnnouncementPage['key'], ComponentType>
 
 /**
@@ -95,7 +101,7 @@ export function AnnouncementCard({
   source: AnnouncementSource
   onClose: () => void
 }) {
-  const { t } = useTranslation(['news', 'common', 'social', 'profile'])
+  const { t } = useTranslation(['news', 'common', 'social', 'profile', 'groups'])
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const overlay = useOverlayInsets()
@@ -127,19 +133,27 @@ export function AnnouncementCard({
   // it rather than after, so the second page never flashes up first. The
   // count remounts the pager, whose scroll offset would otherwise outlive it.
   const [showing, setShowing] = useState({ visible, count: 0 })
+  // What this showing draws, with any older card this account missed folded
+  // in (`withMissed`). Fixed for the showing: claiming it adds the ids to the
+  // profile, and reading the fold again then would drop pages mid-read.
+  const [card, setCard] = useState<ShownAnnouncement | null>(() =>
+    announcement ? withMissed(announcement, profile?.seen_announcements) : null,
+  )
   if (showing.visible !== visible) {
     setShowing({ visible, count: showing.count + (visible ? 1 : 0) })
     if (visible) setPage(0)
+    if (visible && announcement) setCard(withMissed(announcement, profile?.seen_announcements))
   }
 
   const onShow = () => {
-    if (!announcement) return
+    if (!announcement || !card) return
     answered.current = false
     heading.current = null
     track('Announcement Shown', { announcement: announcement.id, source })
-    if (profile?.seen_announcements?.includes(announcement.id)) return
+    const claims = card.claims.filter((claim) => !profile?.seen_announcements?.includes(claim.id))
+    if (!claims.length) return
     see.mutate(
-      { id: announcement.id, enables: announcement.enables },
+      claims,
       // Unclaimed, so the card comes back on a later launch and tries again.
       {
         onError: (error) => reportError(error, { scope: 'announcement_seen', id: announcement.id }),
@@ -158,9 +172,9 @@ export function AnnouncementCard({
     if (!visible && Platform.OS !== 'ios') runQueued()
   })
 
-  if (!shown) return null
+  if (!shown || !card) return null
 
-  const pages = shown.pages
+  const pages = card.pages
   const current = pages[Math.min(page, pages.length - 1)]
   const last = page >= pages.length - 1
 
