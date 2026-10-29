@@ -27,6 +27,7 @@ import {
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardChatScrollView } from 'react-native-keyboard-controller'
 import Animated, {
+  cubicBezier,
   Easing,
   interpolate,
   runOnJS,
@@ -94,6 +95,8 @@ import {
   useOpenProfile,
 } from './parts'
 
+const ONLINE_PULSE = { from: { opacity: 1 }, to: { opacity: 0.45 } }
+
 /** Whether the app is in front, rather than behind the notification shade or in the background. */
 function useAppActive(): boolean {
   const [active, setActive] = useState(() => AppState.currentState === 'active')
@@ -159,6 +162,8 @@ export function ChatScreen({
   const viewer = useUserId()
   const name = useMyGroups().data?.find((group) => group.id === groupId)?.name ?? ''
   const focused = useIsFocused()
+  const reduceMotion = useReducedMotion()
+  const colors = useThemeColors()
   const online = useGroupChatPresence(groupId, focused)
   const live = useGroupChatLive(groupId)
   const { thread, loadOlder, loadingOlder } = useGroupThread(groupId, live)
@@ -434,9 +439,28 @@ export function ChatScreen({
                 {name || t('chat')}
               </Text>
               {online !== null ? (
-                <Text variant="micro" accessibilityLiveRegion="polite">
-                  {t('online', { count: online })}
-                </Text>
+                <View className="flex-row items-center gap-1.5">
+                  {online > 0 ? (
+                    <Animated.View
+                      accessible={false}
+                      style={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: 4,
+                        backgroundColor: colors.pandan,
+                        animationName: reduceMotion ? 'none' : ONLINE_PULSE,
+                        animationDuration: '900ms',
+                        animationDirection: 'alternate',
+                        animationIterationCount: 'infinite',
+                        animationTimingFunction: cubicBezier(0.77, 0, 0.175, 1),
+                        animationPlayState: active ? 'running' : 'paused',
+                      }}
+                    />
+                  ) : null}
+                  <Text variant="micro" accessibilityLiveRegion="polite">
+                    {t('online', { count: online })}
+                  </Text>
+                </View>
               ) : null}
             </View>
           }
