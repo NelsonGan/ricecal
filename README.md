@@ -3336,8 +3336,8 @@ meal share a tile and swipe sideways inside it.
   and that is pushed like any message. **Posting a food to the feed shares it
   into every group chat its author is in, as an update** (`98_group_chat_shares.sql`):
   the trigger marks the row `automatic`, which `group_message_push_targets`
-  refuses, and it is pushed through `group_update_push_targets` instead, to
-  members with `notify_updates` on (see Notifications below). It counts as
+  refuses, and the jobs Worker pushes it instead, as a digest, to members with
+  `notify_updates` on (see Notifications below). It counts as
   unread on the chat bar like any message. A post's photo stays signable for members of
   a group it was shared into however old the meal is (`group_photo_claims`).
 - **Workouts in the chat.** A message can share a workout instead
@@ -3614,21 +3614,35 @@ a group's chat also clears that group's chat notifications from Notification
 Center (`dismissGroupChatNotifications`), as a messenger does. The delay costs a
 few seconds of an idle edge worker per message and no CPU.
 
-**Food and workout updates push too.** A share the triggers wrote cannot be
-named by the app, which only sees its own diary or workout write succeed. So
-every write that refreshes the viewer's group boards (`invalidateGroupBoards`:
-a meal, a scan, a workout, a health sync) and a Share to feed also asks the
-groups function for kind `updates`, with no id, folded into one request per
-1.5 s burst (`pushGroupUpdates`) and never for someone in no group. The function
-waits the same three seconds and `group_update_push_targets` claims every
-`automatic` message of the caller's from the last ten minutes that has not
-pushed, answering members with `notify_updates` on under the same read and
-block rules as a message. The push reads like a message: "Name: Nasi lemak
-(640 kcal)". A share lands once in every group its author is in, so a friend in
-two of them would hear it twice; each device hears each meal or workout once,
-through the group whose chat that friend read last, and not at all once they
-have read it in any of them. An app from before this sends no such request, so its users' shares
-stay unpushed, as they always were.
+**Food and workout updates are pushed by the server, as digests.** A share is
+written by a trigger, so the poster's app cannot name it, and an app that is
+closed, offline or older would never ask; so the `group-updates` job in the
+jobs Worker sends them, once a minute (`98_group_update_pushes.sql`). One call,
+`group_update_digests`, decides everything and moves what each member has been
+told through that group (`group_members.updates_told_until`,
+`updates_pushed_at`) in the same statement, so a run delivered twice sends
+nothing twice. It answers ninety people at a time and the job calls it again
+until a page comes back short, because PostgREST caps an answer at 1,000 rows.
+A share reaches the other members of its group who keep `notify_updates` on,
+joined after it was told up to (a new membership starts at the moment of
+joining), are not blocked either way, have a device, and have not read it in
+any group's chat. It is left half a minute first: a chat open as it lands marks
+it read, and the margin outlasts the transaction that wrote it. A meal shared
+into two groups counts once, through the group whose chat that member read
+last, which is also the chat the push opens.
+
+These are on for every meal of every member, so they are rationed: at most one
+update push per person every ten minutes, from one group, naming its newest
+share and counting the rest of that group's ("Aisha: Nasi lemak (640 kcal) and
+2 more"); another group's shares wait for the next allowed push. None go
+between 22:00 and 07:00 in the member's own `profiles.timezone` (the defaults of
+`user_settings.quiet_from`/`quiet_to`, which nothing reads any more), and nothing
+more than an hour old. The push is built by the groups function's own
+`messagePush`, so it is a chat message's push from that group and every app
+version opens the chat on a tap. A run where Expo refused every push is a
+failure, so an outage or a missing `EXPO_ACCESS_TOKEN` shows. The groups
+function still answers kind `updates`, which the 1.1.5 build sends after
+logging, and does nothing with it.
 
 Muting is per group, two switches: `group_members.notify` for nudges and chat,
 and `notify_updates` for food and workout updates, both on by default. The
@@ -6275,12 +6289,14 @@ src/
   index.ts        the dispatcher: scheduled() → the jobs whose cron just fired
   job.ts          what a job is, and the claim → run → record wrapper
   postgres.ts     the only way a job talks to Postgres
+  expo.ts         posting pushes to Expo, for every job that sends any
   env.ts          bindings, vars and the one secret
   jobs/
     index.ts      the registry
     retention.ts  the photograph sweep
     photo-warnings.ts the push a few days before it
     activity-hours.ts the hourly health-data sweep
+    group-updates.ts  the food and workout update pushes, every minute
 scripts/
   check-crons.mjs the registry and wrangler.jsonc must agree
 ```
@@ -6372,6 +6388,14 @@ the config in both directions.
 2. the job runs, with `{ env, rpc, log, scheduledAt }`.
 3. `finish_job_run(id, ok, detail, error)`.
 
+A job that runs every minute sets `record: 'hourly'`. It claims nothing, so its
+own work must be atomic and safe to overlap (`group_update_digests` takes a
+non-blocking advisory lock and a run that finds it held does nothing), and
+`leaseSeconds` does not apply. Each run is added by `record_job_run` into one
+closed row per job, hour and outcome, numeric detail summed with a `runs`
+count: at most 48 rows a day where a row a minute would be 1,440, and still a
+row every hour, so a missing hour means the job stopped.
+
 A failure is recorded **and rethrown**. Thrown, it also marks the invocation
 failed in Cloudflare's Cron Events, so a broken job shows up in two independent
 places rather than only in a table it may have been unable to write to.
@@ -6429,8 +6453,12 @@ select job, started_at, finished_at, ok, error, detail
 
 Worth looking at: `ok = false`; a null `finished_at` on anything but the newest
 row, which is a run that died without closing its own record; or a gap wider than
-the job's own interval. Workers Logs and the Cron Events tab are the second
-signal, and they are independent of Postgres being reachable at all.
+the job's own interval (an hour, for `group-updates`, whose rows are hourly).
+Workers Logs and the Cron Events tab are the second signal, and they are
+independent of Postgres being reachable at all. Cron Events keeps only the last
+100 invocations per Worker, and `group-updates` makes sixty an hour, so an hourly
+or daily job's failed invocation leaves that tab within a couple of hours; its
+`job_runs` row stays.
 
 The one secret is set by hand, once per environment:
 `pnpm exec wrangler secret put SUPABASE_SERVICE_ROLE_KEY`. `SUPABASE_URL` is a
@@ -6650,7 +6678,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Health Connected | ricecal_health_connected | provider: string; granted: boolean; days: number | `src/data/health-sync.ts` | Connection/permission flow returns; each successful flow result, including granted false. Background health sync is excluded. |
 | Health Disconnected | ricecal_health_disconnected | provider: string | `src/data/activity.ts` | Health disconnect mutation succeeds; each success. |
 | Reminder Toggled | ricecal_reminder_toggled | meal: string; enabled: boolean | `src/data/settings.ts` | Meal reminder setting mutation succeeds; each successful write. |
-| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' &#124; 'group_nudge' &#124; 'group_invite' &#124; 'group_message' &#124; 'photo_removals' | `src/features/settings/useReportLinks.ts` | Recognized weekly/monthly report, group push or photo removal warning response is handled; each tap. A chat push (`data.chat`) is `group_message`; the jobs Worker's warning (`data.kind: 'photos'`) is `photo_removals`. Cold-launch response is cleared after reading; meal reminders are excluded. |
+| Notification Opened | ricecal_notification_opened | kind: 'weekly' &#124; 'monthly' &#124; 'group_nudge' &#124; 'group_invite' &#124; 'group_message' &#124; 'photo_removals' | `src/features/settings/useReportLinks.ts` | Recognized weekly/monthly report, group push or photo removal warning response is handled; each tap. A chat push (`data.chat`) is `group_message`, and so is a food and workout update digest, which carries the same payload; the jobs Worker's warning (`data.kind: 'photos'`) is `photo_removals`. Cold-launch response is cleared after reading; meal reminders are excluded. |
 | Weight Logged | ricecal_weight_logged | none | `src/data/weight.ts` | Manual weight-log write succeeds; each success, without its value. Health-imported readings are excluded. |
 | Recipe Saved | ricecal_recipe_saved | is_new: boolean; ingredients: number; servings: number | `src/data/recipes.ts` | Recipe save succeeds; each new/edit save, with ingredient/serving counts only. |
 | Recipe Drafted | ricecal_recipe_drafted | source: 'photo' &#124; 'text'; outcome: 'drafted' &#124; 'empty' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled' | `src/data/recipes.ts` | Photo/text drafting reaches its outcome; each attempt, including refusals, empty and failure. It does not prove a recipe was saved. |

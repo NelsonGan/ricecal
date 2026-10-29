@@ -63,6 +63,18 @@ export type Job = {
   leaseSeconds?: number
 
   /**
+   * `every-run`, the default, claims each run and closes it in `job_runs`.
+   *
+   * `hourly` is for a job that runs every minute. It claims nothing, so its
+   * own work must be atomic and safe to overlap (a lock in its Postgres
+   * function), and `leaseSeconds` does not apply. Each run is added into one
+   * `job_runs` row per hour and outcome (`record_job_run`), its numeric detail
+   * summed with a `runs` count, so the table gains at most 48 rows a day and
+   * a gap of an hour still means the job stopped.
+   */
+  record?: 'every-run' | 'hourly'
+
+  /**
    * A job MUST BE IDEMPOTENT. Cron delivery is at-least-once and Cloudflare
    * retries an invocation that threw, so "did this already happen" is a
    * question every job has to be able to answer with a shrug. `claim_job_run`
@@ -96,6 +108,8 @@ export async function runJob(job: Job, scheduledAt: Date, env: Env): Promise<voi
     else console.log(`[${job.name}] ${message}`)
   }
 
+  if (job.record === 'hourly') return runHourly(job, scheduledAt, env, rpc, log)
+
   const runId = await rpc<number | null>('claim_job_run', {
     p_job: job.name,
     p_lease_seconds: job.leaseSeconds ?? DEFAULT_LEASE_SECONDS,
@@ -124,4 +138,38 @@ export async function runJob(job: Job, scheduledAt: Date, env: Env): Promise<voi
     )
     throw error
   }
+}
+
+async function runHourly(
+  job: Job,
+  scheduledAt: Date,
+  env: Env,
+  rpc: Rpc,
+  log: JobContext['log'],
+): Promise<void> {
+  let detail: JobDetail
+  try {
+    detail = await job.run({ env, rpc, log, scheduledAt })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    // As in `runJob`: recorded before the rethrow, its own failure swallowed.
+    await rpc('record_job_run', {
+      p_job: job.name,
+      p_ok: false,
+      p_detail: { runs: 1 },
+      p_error: message,
+    }).catch((recordError: unknown) =>
+      console.error(`[${job.name}] could not record the failure:`, recordError),
+    )
+    throw error
+  }
+  // A run whose work is done is not reported failed because writing it down
+  // failed: that costs the hour's count one run, and nothing else.
+  await rpc('record_job_run', {
+    p_job: job.name,
+    p_ok: true,
+    p_detail: { runs: 1, ...detail },
+  }).catch((recordError: unknown) =>
+    console.error(`[${job.name}] could not record the run:`, recordError),
+  )
 }

@@ -26,9 +26,10 @@ export default {
       return
     }
 
-    // Sequential rather than parallel. Nothing here runs more often than
-    // hourly, one at a time keeps a shared Worker's log readable, and it keeps
-    // the subrequest budget of one invocation easy to reason about. Worth
+    // Sequential rather than parallel. Each cron is its own invocation, and
+    // only `group-updates` runs every minute, so jobs that share one are the
+    // slow hourly and daily ones; one at a time keeps the log readable and the
+    // subrequest budget of one invocation easy to reason about. Worth
     // revisiting if two slow jobs ever share a schedule.
     for (const job of due) {
       await runJob(job, new Date(controller.scheduledTime), env)

@@ -13,9 +13,10 @@
 -- did it delete" are one query rather than two systems; and the claim below is
 -- the overlap guard, which needs somewhere durable to write.
 --
--- Nothing prunes it. A few dozen rows a day is under two megabytes a year against
--- a 500 MB ceiling, and a pruning job would be a scheduled task whose only
--- purpose is tidying up after the scheduled tasks.
+-- Nothing prunes it. Under a hundred rows a day (a job that runs every minute
+-- rolls up into one row an hour, `record_job_run`) is a few megabytes a year
+-- against a 500 MB ceiling, and a pruning job would be a scheduled task whose
+-- only purpose is tidying up after the scheduled tasks.
 --
 -- `service_role` only, RLS on with no policies, exactly as `food_scan_items` is:
 -- this is the scheduler's own working notes.
@@ -155,3 +156,49 @@ $$;
 
 revoke execute on function public.finish_job_run from public, anon, authenticated;
 grant execute on function public.finish_job_run to service_role;
+
+-- ---------------------------------------------------------------------------
+-- Record a run of a job that runs every minute (`record: 'hourly'` in the
+-- Worker), rolled up into one row per job, hour and outcome. A row a minute
+-- would be 1,440 a day on a table nothing prunes; this is at most 48, and a
+-- busy job still leaves a row every hour, so a gap still means it stopped.
+--
+-- Numeric detail is summed (`runs`, `devices`, `sent`, `failed`); a failure
+-- keeps the latest error. `started_at` is the hour. Such a job claims nothing,
+-- so its own work must be safe to overlap.
+-- ---------------------------------------------------------------------------
+create or replace function public.record_job_run(
+  p_job    text,
+  p_ok     boolean,
+  p_detail jsonb default null,
+  p_error  text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_hour timestamptz := pg_catalog.date_trunc('hour', pg_catalog.now());
+begin
+  update public.job_runs r
+     set finished_at = pg_catalog.now(),
+         error       = coalesce(pg_catalog.left(p_error, 2000), r.error),
+         detail      = (
+           select pg_catalog.jsonb_object_agg(k.key,
+             coalesce((r.detail ->> k.key)::numeric, 0) + coalesce((p_detail ->> k.key)::numeric, 0))
+           from (
+             select pg_catalog.jsonb_object_keys(coalesce(r.detail, '{}'::jsonb)) as key
+             union
+             select pg_catalog.jsonb_object_keys(coalesce(p_detail, '{}'::jsonb))
+           ) k
+         )
+   where r.job = p_job and r.ok = p_ok and r.started_at = v_hour;
+  if found then return; end if;
+  insert into public.job_runs (job, started_at, finished_at, ok, detail, error)
+  values (p_job, v_hour, pg_catalog.now(), p_ok, p_detail, pg_catalog.left(p_error, 2000));
+end;
+$$;
+
+revoke execute on function public.record_job_run from public, anon, authenticated;
+grant execute on function public.record_job_run to service_role;
