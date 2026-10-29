@@ -5,11 +5,13 @@ import { announceGroupChatPush } from '@/lib/groupChatPushes'
 import type { Listener } from '@/lib/realtime'
 import {
   type BoardEntry,
+  CATCH_UP,
   type ChatSummary,
   type GroupBoard,
   type GroupMessage,
   type GroupThread,
   groupError,
+  mergeCatchUp,
   mergeNewest,
   reacted,
   THREAD_PAGE,
@@ -301,6 +303,25 @@ describe('one thread, a page at a time', () => {
   /** `count` messages a minute apart, oldest first, named by their minute. */
   const run = (from: number, count: number) =>
     Array.from({ length: count }, (_, index) => message(`m${from + index}`, false, from + index))
+
+  it('lays a catch-up over the thread when it reaches back to something held', () => {
+    const held = { messages: run(0, 20), more: true }
+    const merged = mergeCatchUp(held, run(11, CATCH_UP))
+    expect(merged?.messages.map((row) => row.id)).toEqual(run(0, 21).map((row) => row.id))
+    expect(merged?.more).toBe(true)
+  })
+
+  it('asks for the whole page when a catch-up does not reach what is held', () => {
+    expect(mergeCatchUp({ messages: run(0, 20), more: true }, run(40, CATCH_UP))).toBeNull()
+    expect(mergeCatchUp(undefined, run(0, CATCH_UP))).toBeNull()
+  })
+
+  it('takes a short catch-up as the whole thread', () => {
+    expect(mergeCatchUp({ messages: run(0, 3), more: false }, run(0, 4))).toEqual({
+      messages: run(0, 4),
+      more: false,
+    })
+  })
 
   it('takes a short newest page as the whole thread', () => {
     expect(mergeNewest(undefined, run(0, 3))).toEqual({ messages: run(0, 3), more: false })
@@ -816,6 +837,32 @@ describe('replies, food and reactions', () => {
         { emoji: '😂', count: 1 },
       ]),
     )
+    unsubscribe()
+  })
+
+  it('reads only the newest few for a new message, and the whole page for a gap', async () => {
+    const { client, wrapper } = setup()
+    const held = Array.from({ length: 20 }, (_, index) => message(`m${index}`, false, index))
+    client.setQueryData(messagesKey, { messages: held, more: true })
+    const query = watchMessages(client)
+    const unsubscribe = query.subscribe(() => undefined)
+    await renderHook(() => useGroupChatLive('g1'), { wrapper })
+    const recent = Array.from({ length: CATCH_UP }, (_, index) =>
+      message(`m${index + 11}`, false, index + 11),
+    )
+    mockRpc.mockReturnValueOnce(response(recent))
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('message', { ids: ['m20'] }))
+    await waitFor(() => expect(ids(client)).toHaveLength(21))
+    expect(mockRpc).toHaveBeenCalledWith('group_messages', { p_group_id: 'g1', p_limit: CATCH_UP })
+    expect(mockRpc).toHaveBeenCalledTimes(1)
+
+    // Too many arrived for a catch-up to meet what is held: the whole page.
+    const far = Array.from({ length: CATCH_UP }, (_, index) =>
+      message(`n${index}`, false, index + 100),
+    )
+    mockRpc.mockReturnValueOnce(response(far)).mockReturnValueOnce(response(far))
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('message', { ids: ['n9'] }))
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(3))
     unsubscribe()
   })
 

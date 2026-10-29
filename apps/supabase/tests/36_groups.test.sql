@@ -147,6 +147,21 @@ select throws_ok(format('select public.group_board(%L, %L)', (select id from g),
 select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
 select is(public.group_board((select id from g), (select d from bday))->'members'->0->'person'->>'id',
   :'ana', 'the viewer is the first row');
+-- The others follow whoever logged a food or a workout last.
+reset role;
+insert into public.workouts (id, user_id, name, started_at, ended_at, log_date)
+  values ('a3600000-0000-4000-8000-0000000000f1', :'cai', 'Run', now() - interval '1 minute', now(),
+    public.local_today(:'cai'));
+set local role authenticated;
+select is(public.group_board((select id from g), (select d from bday))->'members'->1->'person'->>'id',
+  :'cai', 'the member who logged last comes straight after the viewer');
+select is(public.group_details((select id from g))->'members'->1->>'id',
+  :'cai', 'settings lists the members in the board''s order');
+-- Gone again, with the card it shared, so the chat below starts empty.
+reset role;
+delete from public.group_messages where author_id = :'cai';
+delete from public.workouts where id = 'a3600000-0000-4000-8000-0000000000f1';
+set local role authenticated;
 select is((
   select count(*)::int from jsonb_array_elements(public.group_board((select id from g), (select d from bday))->'members') m,
     jsonb_array_elements(m->'entries') e
