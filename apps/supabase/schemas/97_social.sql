@@ -522,6 +522,18 @@ begin
 end;
 $$;
 
+-- Opening the inbox counts as seeing it, so the Feed badge clears. Only up to
+-- the newest notification the app has drawn: one landing meanwhile stays unread.
+create or replace function public.mark_social_notifications_seen(p_through timestamptz)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_user uuid := private.social_require_user(false);
+begin
+  if p_through is null then raise exception 'A time is required' using errcode = '22023'; end if;
+  update public.social_notifications set read_at = now()
+    where recipient_id = v_user and read_at is null and created_at <= p_through;
+end;
+$$;
+
 create index social_posts_photo_idx on public.social_posts(photo_path)
   where photo_path is not null and review_status = 'approved' and not quarantined;
 -- Photo claims match on the view's avatar_path, which hides a path the profile
@@ -613,12 +625,12 @@ revoke execute on function public.social_profile, public.social_post, public.soc
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
   public.social_notifications, public.social_unread_notification_count,
-  public.mark_social_notifications_read,
+  public.mark_social_notifications_read, public.mark_social_notifications_seen,
   public.social_photo_claims from public, anon;
 grant execute on function public.social_profile, public.social_post, public.social_entry_post,
   public.social_workout_post, public.social_workout_count,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
   public.social_notifications, public.social_unread_notification_count,
-  public.mark_social_notifications_read,
+  public.mark_social_notifications_read, public.mark_social_notifications_seen,
   public.social_photo_claims to authenticated, service_role;

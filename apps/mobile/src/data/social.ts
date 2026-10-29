@@ -9,7 +9,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import { useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { Database } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
@@ -247,13 +247,18 @@ const personCursor = (row: SocialProfile): SocialCursor => ({
  * because the apps released before workout posts can draw nothing else.
  */
 const ALL_KINDS: SocialPostKind[] = ['food', 'workout']
+/** What the feed's filter shows: every post, or meals or workouts alone. */
+export type SocialFeedShow = 'all' | SocialPostKind
 /** The feed's parameters, which are also its cache key. */
-export const socialFeedParams = (mode: 'following' | 'discover') => ({
+export const socialFeedParams = (mode: 'following' | 'discover', show: SocialFeedShow = 'all') => ({
   p_mode: mode,
-  p_kinds: ALL_KINDS,
+  p_kinds: show === 'all' ? ALL_KINDS : [show],
 })
-export const useSocialFeed = (mode: 'following' | 'discover') =>
-  useSocialPages<SocialPost>({ name: 'social_feed', params: socialFeedParams(mode) }, timeCursor)
+export const useSocialFeed = (mode: 'following' | 'discover', show: SocialFeedShow = 'all') =>
+  useSocialPages<SocialPost>(
+    { name: 'social_feed', params: socialFeedParams(mode, show) },
+    timeCursor,
+  )
 /** One profile's posts, meals and workouts together, newest first. */
 export const useSocialPosts = (userId: string) =>
   useSocialPages<SocialPost>(
@@ -349,6 +354,59 @@ export function useSocialUnread(active: boolean) {
     ...MEMORY_OPTIONS,
   })
 }
+/**
+ * Opening the inbox counts as seeing it, so the Feed badge clears without a tap
+ * on every row. Sent once per newest notification drawn, and only up to it: one
+ * landing meanwhile still raises the badge. Sent too when only the badge says
+ * something is unread, since an unread row can sit past the first page.
+ */
+export function useSeeNotifications(newest: string | undefined, unseen: boolean) {
+  const viewer = useUserId()
+  const client = useQueryClient()
+  const online = useSocialOnline()
+  const sent = useRef<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
+  const counted = client.getQueryData<number>(keys.socialRead(viewer, 'unread')) ?? 0
+  const due = unseen || counted > 0
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `attempt` is the retry trigger, not a read
+  useEffect(() => {
+    if (!newest || !due || !online || sent.current === newest) return
+    sent.current = newest
+    let retry: ReturnType<typeof setTimeout> | undefined
+    void (async () => {
+      try {
+        await rpc('mark_social_notifications_seen', { p_through: newest })
+      } catch {
+        // Asked again shortly, while the inbox is still open.
+        sent.current = null
+        retry = setTimeout(() => setAttempt((n) => n + 1), 10_000)
+        return
+      }
+      const through = Date.parse(newest)
+      const readAt = new Date().toISOString()
+      client.setQueryData<InfiniteData<SocialPage<SocialNotification>, SocialCursor>>(
+        keys.socialRead(viewer, 'social_notifications', {}),
+        (data) =>
+          data && {
+            ...data,
+            pages: data.pages.map((page) => ({
+              ...page,
+              rows: page.rows.map((row) =>
+                !row.read_at && Date.parse(row.created_at) <= through
+                  ? { ...row, read_at: readAt }
+                  : row,
+              ),
+            })),
+          },
+      )
+      // Zero now, and counted again when the badge is next on screen, in case
+      // something arrived after `newest`.
+      client.setQueryData(keys.socialRead(viewer, 'unread'), 0)
+      await client.invalidateQueries({ queryKey: keys.socialRead(viewer, 'unread'), exact: true })
+    })()
+    return () => clearTimeout(retry)
+  }, [newest, due, online, viewer, client, attempt])
+}
 export function useSocialEntry(entryId: string) {
   const viewer = useUserId()
   return useQuery({
@@ -409,7 +467,6 @@ export type SocialAction =
   | { action: 'report'; kind: SocialKind; id: string; reason: ReportReason }
   | { action: 'block' | 'unblock'; id: string }
   | { action: 'review'; kind: SocialKind; id: string }
-  | { action: 'read'; ids: string[] }
 
 export async function reviewSocial(kind: SocialKind, id: string): Promise<SocialReview> {
   const { data, error } = await supabase.functions.invoke<{ ok: boolean; status: SocialReview }>(
@@ -609,9 +666,6 @@ export function useSocialAction() {
           if (error) throw error
           break
         }
-        case 'read':
-          await rpc('mark_social_notifications_read', { p_ids: input.ids.slice(0, 100) })
-          break
         case 'review':
           return { id: input.id, status: await reviewSocial(input.kind, input.id) }
       }
@@ -682,9 +736,9 @@ export function useSocialAction() {
         // Discover refresh can apply server eligibility after the interaction.
         markAuthorFollowed(input.id)
         await Promise.all([
+          // Every filter's copy of the Following feed: the key matches on mode alone.
           client.invalidateQueries({
-            queryKey: keys.socialRead(viewer, 'social_feed', socialFeedParams('following')),
-            exact: true,
+            queryKey: keys.socialRead(viewer, 'social_feed', { p_mode: 'following' }),
           }),
           refresh([
             'social_profile',
@@ -698,52 +752,50 @@ export function useSocialAction() {
         ])
       } else {
         const names =
-          input.action === 'read'
-            ? ['social_notifications', 'unread']
-            : input.action === 'post' || input.action === 'postWorkout'
+          input.action === 'post' || input.action === 'postWorkout'
+            ? [
+                'social_feed',
+                'social_profile_posts',
+                'social_profile',
+                'social_workout_count',
+                'entry',
+                'workoutPost',
+              ]
+            : input.action === 'removeFollower'
               ? [
                   'social_feed',
-                  'social_profile_posts',
                   'social_profile',
-                  'social_workout_count',
-                  'entry',
-                  'workoutPost',
+                  'social_connections',
+                  'social_suggestions',
+                  'social_search_profiles',
+                  'social_notifications',
+                  'unread',
                 ]
-              : input.action === 'removeFollower'
+              : input.action === 'unblock'
                 ? [
                     'social_feed',
                     'social_profile',
+                    'social_profile_posts',
+                    'social_post',
+                    'social_workout_count',
+                    'social_comments',
                     'social_connections',
                     'social_suggestions',
                     'social_search_profiles',
+                    'social_blocked_profiles',
                     'social_notifications',
                     'unread',
                   ]
-                : input.action === 'unblock'
-                  ? [
-                      'social_feed',
-                      'social_profile',
-                      'social_profile_posts',
-                      'social_post',
-                      'social_workout_count',
-                      'social_comments',
-                      'social_connections',
-                      'social_suggestions',
-                      'social_search_profiles',
-                      'social_blocked_profiles',
-                      'social_notifications',
-                      'unread',
-                    ]
-                  : [
-                      'social_feed',
-                      'social_profile',
-                      'social_profile_posts',
-                      'social_post',
-                      'social_workout_count',
-                      'social_comments',
-                      'social_notifications',
-                      'unread',
-                    ]
+                : [
+                    'social_feed',
+                    'social_profile',
+                    'social_profile_posts',
+                    'social_post',
+                    'social_workout_count',
+                    'social_comments',
+                    'social_notifications',
+                    'unread',
+                  ]
         await refresh(names)
       }
       if (input.action === 'block' || input.action === 'unblock') {
