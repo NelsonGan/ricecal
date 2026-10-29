@@ -1745,6 +1745,19 @@ export const ja = {
     done: 'OK',
     next: '次へ',
     pageOf: '{{count}}ページ中{{page}}ページ目',
+    groupsNews: {
+      title: 'グループ：友だちと一緒に食べよう',
+    },
+    groupsBoard: {
+      title: 'グループで一緒に食べよう',
+      body: '友だちが毎日何を食べたか見て、食事を抜いた人をつつけます。',
+      previewLabel: 'グループの1日の食事の例',
+    },
+    groupsChat: {
+      title: 'グループでチャット',
+      body: '食事やワークアウトをシェアして、絵文字でリアクションできます。',
+      previewLabel: 'グループチャットでシェアした食事の例',
+    },
     update110: {
       title: 'ワークアウト、フィード投稿、新しいカメラ',
     },

@@ -1780,6 +1780,19 @@ export const ms = {
     done: 'Faham',
     next: 'Seterusnya',
     pageOf: 'Halaman {{page}} daripada {{count}}',
+    groupsNews: {
+      title: 'Kumpulan: makan bersama rakan',
+    },
+    groupsBoard: {
+      title: 'Makan bersama dalam Kumpulan',
+      body: 'Lihat apa yang rakan makan setiap hari, dan cuit sesiapa yang terlepas makan.',
+      previewLabel: 'Contoh hidangan sehari dalam kumpulan',
+    },
+    groupsChat: {
+      title: 'Sembang dengan kumpulan anda',
+      body: 'Kongsi makanan dan senaman, dan beri reaksi dengan emoji.',
+      previewLabel: 'Contoh makanan yang dikongsi dalam sembang kumpulan',
+    },
     update110: {
       title: 'Senaman, siaran suapan dan kamera baharu',
     },

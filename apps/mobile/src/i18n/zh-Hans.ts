@@ -1732,6 +1732,19 @@ export const zhHans = {
     done: '知道了',
     next: '下一步',
     pageOf: '第 {{page}} 页，共 {{count}} 页',
+    groupsNews: {
+      title: '小组：和朋友一起吃',
+    },
+    groupsBoard: {
+      title: '在小组里一起吃饭',
+      body: '看看朋友每天吃什么，谁漏了一餐就提醒一下。',
+      previewLabel: '一个小组一天饮食的示例',
+    },
+    groupsChat: {
+      title: '和小组聊天',
+      body: '分享饮食和锻炼，并用表情回应。',
+      previewLabel: '在小组聊天中分享餐食的示例',
+    },
     update110: {
       title: '训练、动态发布和新相机',
     },

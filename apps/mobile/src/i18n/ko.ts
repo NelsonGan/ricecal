@@ -1738,6 +1738,19 @@ export const ko = {
     done: '확인',
     next: '다음',
     pageOf: '{{count}}페이지 중 {{page}}페이지',
+    groupsNews: {
+      title: '그룹: 친구와 함께 먹기',
+    },
+    groupsBoard: {
+      title: '그룹에서 함께 먹어요',
+      body: '친구들이 매일 무엇을 먹는지 보고, 식사를 거른 친구를 콕 찔러 보세요.',
+      previewLabel: '그룹의 하루 식사 예시',
+    },
+    groupsChat: {
+      title: '그룹과 채팅하기',
+      body: '식사와 운동을 공유하고 이모지로 반응하세요.',
+      previewLabel: '그룹 채팅에서 공유한 식사 예시',
+    },
     update110: {
       title: '운동, 피드 게시, 새 카메라',
     },

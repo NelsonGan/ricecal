@@ -1732,6 +1732,19 @@ export const zhHant = {
     done: '知道了',
     next: '下一步',
     pageOf: '第 {{page}} 頁，共 {{count}} 頁',
+    groupsNews: {
+      title: '小組：和朋友一起吃',
+    },
+    groupsBoard: {
+      title: '在小組裡一起吃飯',
+      body: '看看朋友每天吃什麼，誰漏了一餐就提醒一下。',
+      previewLabel: '一個小組一天飲食的範例',
+    },
+    groupsChat: {
+      title: '和小組聊天',
+      body: '分享飲食和鍛鍊，並用表情回應。',
+      previewLabel: '在小組聊天中分享餐點的範例',
+    },
     update110: {
       title: '訓練、動態發布和新相機',
     },
