@@ -6,9 +6,8 @@
 --   swim, a game of badminton), is shared the same way.
 --
 -- Each row is marked `automatic`. group_message_push_targets refuses those;
--- the author's app asks for group_update_push_targets after the write instead,
--- which pushes them to members who keep `notify_updates` on. It counts as
--- unread like any message. The request id is derived from the thing and the
+-- the jobs Worker pushes them instead, to members who keep `notify_updates` on
+-- (98_group_update_pushes.sql). It counts as unread like any message. The request id is derived from the thing and the
 -- group, so a replay of the same insert cannot share it twice.
 --
 -- Food rides on the feed post, since both ways a food post is made (Share to

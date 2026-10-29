@@ -19,7 +19,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
  */
 const MESSAGE_PUSH_DELAY_MS = 3_000
 
-type Kind = 'nudge' | 'invite' | 'message' | 'updates'
+type Kind = 'nudge' | 'invite' | 'message'
 const serviceClient = () =>
   createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
 type Service = ReturnType<typeof serviceClient>
@@ -50,10 +50,10 @@ function afterResponse(work: Promise<unknown>) {
  * in the background, so the sender's app never waits on the delay and a phone
  * locked straight after sending cannot cut it short.
  *
- * `updates` carries no id. It is the foods and workouts the caller's logging
- * just shared to their group chats, which a trigger wrote, so the app cannot
- * name them; Postgres claims whichever have not pushed yet. Delayed like a
- * message, for the same reason.
+ * `updates` is answered and ignored. A build that went to the stores asks for
+ * it after logging, from when the poster's app started food and workout
+ * pushes; the jobs Worker sends those now (98_group_update_pushes.sql), and a
+ * 400 here would only fill that build's logs.
  */
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'use POST' }, 405)
@@ -61,25 +61,22 @@ Deno.serve(async (req: Request) => {
   if (signed instanceof Response) return json({ ok: false, error: 'not signed in' }, signed.status)
 
   let kind: Kind
-  let id: string | null
+  let id: string
   try {
     const bytes = await readBoundedBytes(req.body, 1024)
     const body = JSON.parse(new TextDecoder().decode(bytes))
-    if (body?.kind === 'updates') {
-      kind = 'updates'
-      id = null
-    } else if (['nudge', 'invite', 'message'].includes(body?.kind) && UUID.test(body?.id ?? '')) {
-      kind = body.kind
-      id = body.id
-    } else {
+    if (body?.kind === 'updates') return json({ ok: true, queued: false }, 202)
+    if (!['nudge', 'invite', 'message'].includes(body?.kind) || !UUID.test(body?.id ?? '')) {
       throw new Error('invalid')
     }
+    kind = body.kind
+    id = body.id
   } catch {
     return json({ ok: false, error: 'invalid notify request' }, 400)
   }
 
   const service = serviceClient()
-  if (kind === 'message' || kind === 'updates') {
+  if (kind === 'message') {
     afterResponse(
       new Promise((resolve) => setTimeout(resolve, MESSAGE_PUSH_DELAY_MS))
         .then(() => deliver(service, kind, signed.userId, id))
@@ -109,23 +106,15 @@ function unavailable(error: unknown) {
 const EXPO_BATCH = 100
 
 /** Asks Postgres who hears it, posts to Expo, and answers how many Expo took. */
-async function deliver(
-  service: Service,
-  kind: Kind,
-  caller: string,
-  id: string | null,
-): Promise<number> {
+async function deliver(service: Service, kind: Kind, caller: string, id: string): Promise<number> {
   const { data, error } =
-    kind === 'updates'
-      ? await service.rpc('group_update_push_targets', { p_caller: caller })
-      : kind === 'message'
-        ? await service.rpc('group_message_push_targets', { p_caller: caller, p_id: id })
-        : await service.rpc('group_push_targets', { p_caller: caller, p_kind: kind, p_id: id })
+    kind === 'message'
+      ? await service.rpc('group_message_push_targets', { p_caller: caller, p_id: id })
+      : await service.rpc('group_push_targets', { p_caller: caller, p_kind: kind, p_id: id })
   if (error) throw error
   const targets = (data ?? []) as (PushTarget | MessageTarget)[]
   let sent = 0
-  // A message to twenty members with a few phones each, or a sync that shared
-  // several runs at once, can pass Expo's limit.
+  // A message to twenty members with a few phones each can pass Expo's limit.
   for (let start = 0; start < targets.length; start += EXPO_BATCH) {
     sent += await post(service, kind, targets.slice(start, start + EXPO_BATCH))
   }
@@ -138,7 +127,7 @@ async function post(
   targets: (PushTarget | MessageTarget)[],
 ): Promise<number> {
   const messages = targets.map((target) =>
-    kind === 'message' || kind === 'updates'
+    kind === 'message'
       ? messagePush(target as MessageTarget)
       : pushMessage(kind, target as PushTarget),
   )

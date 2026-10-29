@@ -155,3 +155,28 @@ $$;
 
 revoke execute on function public.finish_job_run from public, anon, authenticated;
 grant execute on function public.finish_job_run to service_role;
+
+-- ---------------------------------------------------------------------------
+-- Record a run in one call, for a job that runs every minute and claims
+-- nothing (`record: 'when-busy'` in the Worker). Its own work is atomic and
+-- locked, so it needs no lease, and a row a minute saying "nothing to do"
+-- would be 1,440 rows a day of noise. It writes only runs that did something
+-- or failed, already closed.
+-- ---------------------------------------------------------------------------
+create or replace function public.record_job_run(
+  p_job    text,
+  p_ok     boolean,
+  p_detail jsonb default null,
+  p_error  text default null
+)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into public.job_runs (job, finished_at, ok, detail, error)
+  values (p_job, pg_catalog.now(), p_ok, p_detail, pg_catalog.left(p_error, 2000));
+$$;
+
+revoke execute on function public.record_job_run from public, anon, authenticated;
+grant execute on function public.record_job_run to service_role;
