@@ -3504,7 +3504,8 @@ board does not leave and rejoin. Everything else still polls.
   keeps it still, and it pauses while the app is not active. Only a focused chat
   publishes a user id; a board listens without counting as online. Multiple
   devices for the same person count once. Leaving the chat untracks even while
-  the board keeps the channel; backgrounding leaves it, and a lost connection
+  the board keeps the channel; a failed untrack replaces it to clear that session.
+  Backgrounding leaves it, and a lost connection
   hides the count until Presence syncs again. Presence stays in memory and adds
   no polling. The compact header keeps the status-bar inset without the extra
   screen gutter above its controls.

@@ -33,6 +33,8 @@ type Topic = {
   live: boolean
   online: number | null
   trackedUser: string | null
+  /** A lost track acknowledgement does not prove the server left the user offline. */
+  presenceUncertain: boolean
   presenceUpdate: Promise<void>
   connection: number
 }
@@ -51,7 +53,7 @@ function setOnline(entry: Topic, count: number | null) {
 }
 
 /** Serialize leaving and returning while the board keeps the shared channel. */
-function updatePresence(entry: Topic) {
+function updatePresence(topic: string, entry: Topic) {
   const channel = entry.channel
   const connection = entry.connection
   entry.presenceUpdate = entry.presenceUpdate
@@ -59,11 +61,19 @@ function updatePresence(entry: Topic) {
       if (!channel || entry.channel !== channel || !entry.live || entry.connection !== connection)
         return
       const userId = [...entry.listeners].find((listener) => listener.presence)?.presence?.userId
-      if ((userId ?? null) === entry.trackedUser) return
-      const result = userId ? await channel.track({ user_id: userId }) : await channel.untrack()
+      if ((userId ?? null) === entry.trackedUser && !entry.presenceUncertain) return
+      const result = await (userId ? channel.track({ user_id: userId }) : channel.untrack()).catch(
+        () => 'error',
+      )
       if (entry.channel !== channel || entry.connection !== connection) return
+      entry.presenceUncertain = result !== 'ok'
       if (result === 'ok') entry.trackedUser = userId ?? null
-      else setOnline(entry, null)
+      else {
+        setOnline(entry, null)
+        // A failed untrack may leave this person online while the board keeps
+        // listening. Rejoining clears that old session without losing the board.
+        if (!userId) close(topic, entry)
+      }
     })
     .catch(() => {
       if (entry.channel === channel && entry.connection === connection) setOnline(entry, null)
@@ -75,6 +85,7 @@ function setLive(entry: Topic, live: boolean) {
   entry.live = live
   if (!live) {
     entry.trackedUser = null
+    entry.presenceUncertain = false
     entry.connection += 1
     setOnline(entry, null)
   }
@@ -128,7 +139,7 @@ function open(topic: string, entry: Topic) {
         return
       }
       setLive(entry, status === 'SUBSCRIBED')
-      if (status === 'SUBSCRIBED') updatePresence(entry)
+      if (status === 'SUBSCRIBED') updatePresence(topic, entry)
     })
 }
 
@@ -210,6 +221,7 @@ export function listen(topic: string, listener: Listener): () => void {
       live: false,
       online: null,
       trackedUser: null,
+      presenceUncertain: false,
       presenceUpdate: Promise.resolve(),
       connection: 0,
     }
@@ -219,11 +231,11 @@ export function listen(topic: string, listener: Listener): () => void {
   current.listeners.add(listener)
   if (current.live) listener.onLive(true)
   listener.presence?.onCount(current.online)
-  if (current.live) updatePresence(current)
+  if (current.live) updatePresence(topic, current)
   open(topic, current)
   return () => {
     if (!current.listeners.delete(listener)) return
     if (current.listeners.size === 0) close(topic, current)
-    else updatePresence(current)
+    else updatePresence(topic, current)
   }
 }

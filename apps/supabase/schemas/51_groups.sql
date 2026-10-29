@@ -1111,8 +1111,8 @@ begin
 end;
 $$;
 
--- Listening only. With no insert policy a client cannot broadcast on the topic
--- itself, so every message on it came from the triggers below.
+-- Clients cannot insert broadcasts, so every message event on this topic
+-- comes from the database. Presence has separate permissions below.
 create policy "Group members hear their chat" on realtime.messages
   for select to authenticated
   using (
