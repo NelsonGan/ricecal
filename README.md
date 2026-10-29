@@ -3336,8 +3336,8 @@ meal share a tile and swipe sideways inside it.
   and that is pushed like any message. **Posting a food to the feed shares it
   into every group chat its author is in, as an update** (`98_group_chat_shares.sql`):
   the trigger marks the row `automatic`, which `group_message_push_targets`
-  refuses, and it is pushed through `group_update_push_targets` instead, to
-  members with `notify_updates` on (see Notifications below). It counts as
+  refuses, and the jobs Worker pushes it instead, as a digest, to members with
+  `notify_updates` on (see Notifications below). It counts as
   unread on the chat bar like any message. A post's photo stays signable for members of
   a group it was shared into however old the meal is (`group_photo_claims`).
 - **Workouts in the chat.** A message can share a workout instead
@@ -3614,21 +3614,25 @@ a group's chat also clears that group's chat notifications from Notification
 Center (`dismissGroupChatNotifications`), as a messenger does. The delay costs a
 few seconds of an idle edge worker per message and no CPU.
 
-**Food and workout updates push too.** A share the triggers wrote cannot be
-named by the app, which only sees its own diary or workout write succeed. So
-every write that refreshes the viewer's group boards (`invalidateGroupBoards`:
-a meal, a scan, a workout, a health sync) and a Share to feed also asks the
-groups function for kind `updates`, with no id, folded into one request per
-1.5 s burst (`pushGroupUpdates`) and never for someone in no group. The function
-waits the same three seconds and `group_update_push_targets` claims every
-`automatic` message of the caller's from the last ten minutes that has not
-pushed, answering members with `notify_updates` on under the same read and
-block rules as a message. The push reads like a message: "Name: Nasi lemak
-(640 kcal)". A share lands once in every group its author is in, so a friend in
-two of them would hear it twice; each device hears each meal or workout once,
-through the group whose chat that friend read last, and not at all once they
-have read it in any of them. An app from before this sends no such request, so its users' shares
-stay unpushed, as they always were.
+**Food and workout updates are pushed by the server, as digests.** A share is
+written by a trigger, so the poster's app cannot name it, and an app that is
+closed, offline or older would never ask; so the `group-updates` job in the
+jobs Worker sends them, once a minute (`98_group_update_pushes.sql`). One call,
+`group_update_digests`, decides everything and moves each person's cursor
+(`group_update_cursors`) in the same statement, so a run delivered twice sends
+nothing twice. A share reaches the other members of its group who keep
+`notify_updates` on, joined before it, are not blocked either way, and have not
+read it in any group's chat; it is left ten seconds first, so a chat open as it
+lands marks it read. A meal shared into two groups counts once, through the
+group whose chat that member read last, which is also the chat the push opens.
+
+These are on for every meal of every member, so they are rationed: at most one
+update push per person every fifteen minutes, naming the newest thing and
+counting the rest ("Aisha: Nasi lemak (640 kcal) and 2 more"), none between
+22:00 and 07:00 in their own `profiles.timezone`, and nothing more than an hour
+old. The push carries the same payload as a chat message's, so every app
+version opens the chat on a tap. The groups function still answers kind
+`updates`, which one store build sends after logging, and does nothing with it.
 
 Muting is per group, two switches: `group_members.notify` for nudges and chat,
 and `notify_updates` for food and workout updates, both on by default. The
@@ -6275,12 +6279,14 @@ src/
   index.ts        the dispatcher: scheduled() → the jobs whose cron just fired
   job.ts          what a job is, and the claim → run → record wrapper
   postgres.ts     the only way a job talks to Postgres
+  expo.ts         posting pushes to Expo, for every job that sends any
   env.ts          bindings, vars and the one secret
   jobs/
     index.ts      the registry
     retention.ts  the photograph sweep
     photo-warnings.ts the push a few days before it
     activity-hours.ts the hourly health-data sweep
+    group-updates.ts  the food and workout update pushes, every minute
 scripts/
   check-crons.mjs the registry and wrangler.jsonc must agree
 ```
@@ -6371,6 +6377,12 @@ the config in both directions.
    flight, in which case this delivery does nothing and says so.
 2. the job runs, with `{ env, rpc, log, scheduledAt }`.
 3. `finish_job_run(id, ok, detail, error)`.
+
+A job that runs every minute sets `record: 'when-busy'`. It claims nothing, so
+its own work must be atomic and safe to overlap (`group_update_digests` takes an
+advisory lock), and only a run that returned a non-empty detail or threw is
+written, already closed, by `record_job_run`. Otherwise `job_runs` would gain
+1,440 rows a day saying there was nothing to do.
 
 A failure is recorded **and rethrown**. Thrown, it also marks the invocation
 failed in Cloudflare's Cron Events, so a broken job shows up in two independent

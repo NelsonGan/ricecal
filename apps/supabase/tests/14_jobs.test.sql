@@ -16,7 +16,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(12);
 
 -- -- GRANTS ------------------------------------------------------------------
 -- This is the scheduler's own working notes. No client has any business in it,
@@ -118,6 +118,21 @@ select is(
   true,
   'a finished run keeps its first outcome when it is closed again'
 );
+
+-- A quiet job records a run in one call, already closed.
+select public.record_job_run('quiet-job', true, '{"devices": 2}'::jsonb);
+select is(
+  (select array[(finished_at is not null)::text, ok::text, detail->>'devices']
+     from public.job_runs where job = 'quiet-job'),
+  array['true', 'true', '2'],
+  'a recorded run is closed with its outcome'
+);
+select is(
+  (select count(*)::int from public.job_runs where job = 'quiet-job' and finished_at is null), 0,
+  'and leaves nothing in flight to block a claim'
+);
+select ok(not has_function_privilege('authenticated', 'public.record_job_run(text, boolean, jsonb, text)', 'EXECUTE'),
+  'clients cannot write the job log');
 
 select * from finish();
 

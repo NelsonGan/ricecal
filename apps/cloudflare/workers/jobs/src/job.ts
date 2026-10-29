@@ -63,6 +63,17 @@ export type Job = {
   leaseSeconds?: number
 
   /**
+   * `every-run`, the default, claims each run and closes it in `job_runs`.
+   *
+   * `when-busy` is for a job that runs every minute: it claims nothing, so its
+   * own work must be atomic and safe to overlap (a lock in its Postgres
+   * function), and writes a row, already closed, only for a run that returned
+   * a non-empty detail or threw. An empty detail means "nothing to do" and is
+   * not recorded, or the table would gain 1,440 rows a day saying so.
+   */
+  record?: 'every-run' | 'when-busy'
+
+  /**
    * A job MUST BE IDEMPOTENT. Cron delivery is at-least-once and Cloudflare
    * retries an invocation that threw, so "did this already happen" is a
    * question every job has to be able to answer with a shrug. `claim_job_run`
@@ -96,6 +107,8 @@ export async function runJob(job: Job, scheduledAt: Date, env: Env): Promise<voi
     else console.log(`[${job.name}] ${message}`)
   }
 
+  if (job.record === 'when-busy') return runWhenBusy(job, scheduledAt, env, rpc, log)
+
   const runId = await rpc<number | null>('claim_job_run', {
     p_job: job.name,
     p_lease_seconds: job.leaseSeconds ?? DEFAULT_LEASE_SECONDS,
@@ -119,6 +132,29 @@ export async function runJob(job: Job, scheduledAt: Date, env: Env): Promise<voi
     // Postgres is what broke, the original error is the one worth keeping and
     // a second exception here would replace it with the wrong story.
     await rpc('finish_job_run', { p_id: runId, p_ok: false, p_error: message }).catch(
+      (recordError: unknown) =>
+        console.error(`[${job.name}] could not record the failure:`, recordError),
+    )
+    throw error
+  }
+}
+
+async function runWhenBusy(
+  job: Job,
+  scheduledAt: Date,
+  env: Env,
+  rpc: Rpc,
+  log: JobContext['log'],
+): Promise<void> {
+  try {
+    const detail = await job.run({ env, rpc, log, scheduledAt })
+    if (Object.keys(detail).length === 0) return
+    await rpc('record_job_run', { p_job: job.name, p_ok: true, p_detail: detail })
+    log('done', detail)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    // As in `runJob`: recorded before the rethrow, its own failure swallowed.
+    await rpc('record_job_run', { p_job: job.name, p_ok: false, p_error: message }).catch(
       (recordError: unknown) =>
         console.error(`[${job.name}] could not record the failure:`, recordError),
     )
