@@ -1163,10 +1163,21 @@ export const ja = {
       failed: 'Discord を開けませんでした',
     },
 
+    money2time: {
+      name: 'Money2Time',
+      ad: '広告',
+      card: '支出を記録',
+      title: 'もうひとつアプリを作りました',
+      body: 'Money2Time というアプリです。支出を記録して、買い物ごとに何時間分の労働かを表示します。よければ使ってみてください。',
+      action: 'Money2Time を試す',
+      failed: 'ストアを開けませんでした',
+    },
+
     shareEarn: {
       row: 'シェアして Pro をもらう',
       title: 'シェアして Pro をもらう',
       heroTitle: 'RiceCal を投稿して Pro を無料で',
+      card: '投稿で Pro',
       heroBody:
         '記録したお皿をみんなに見せてください。投稿のいいねが多いほど、お送りする Pro の期間も長くなります。',
 

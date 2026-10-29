@@ -1154,10 +1154,21 @@ export const zhHans = {
       failed: '我们打不开 Discord',
     },
 
+    money2time: {
+      name: 'Money2Time',
+      ad: '广告',
+      card: '记录你的开销',
+      title: '我做了另一个应用',
+      body: '它叫 Money2Time。它记录你的开销，并告诉你每笔消费相当于几小时的工作。希望你试试看。',
+      action: '试试 Money2Time',
+      failed: '无法打开应用商店',
+    },
+
     shareEarn: {
       row: '分享赚 Pro',
       title: '分享赚 Pro',
       heroTitle: '发帖介绍 RiceCal，免费拿 Pro',
+      card: '发帖拿 Pro',
       heroBody: '给大家看看你记录的一盘菜。帖子点赞越多，我们送的 Pro 就越长。',
 
       platforms: '发到这里',

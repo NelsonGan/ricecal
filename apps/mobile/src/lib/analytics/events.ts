@@ -548,6 +548,12 @@ export type Events = {
    * on, so `enabled: false` after `Announcement Shown` is somebody opting out.
    */
   'Auto Post Toggled': { kind: 'foods' | 'workouts'; enabled: boolean }
+
+  // ── Money2Time ad ────────────────────────────────────────────────────────
+  /** The Money2Time card under Me was tapped and its sheet opened. Free accounts only. */
+  'Money2Time Ad Opened': NoProps
+  /** The sheet's button handed over to the store. Not proof of an install. */
+  'Money2Time Store Opened': NoProps
 }
 
 export type EventName = keyof Events
