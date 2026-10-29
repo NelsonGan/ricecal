@@ -3757,6 +3757,10 @@ export type Database = {
         Args: { p_ids: string[] }
         Returns: undefined
       }
+      mark_social_notifications_seen: {
+        Args: { p_through: string }
+        Returns: undefined
+      }
       my_group_invites: { Args: never; Returns: Json }
       my_groups: { Args: never; Returns: Json }
       nudge_group_member: {

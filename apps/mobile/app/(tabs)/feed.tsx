@@ -5,16 +5,35 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useUserId } from '@/data'
 import { keys } from '@/data/keys'
-import { socialFeedParams, useSocialFeed, useSocialUnread } from '@/data/social'
+import {
+  type SocialFeedShow,
+  socialFeedParams,
+  useSocialFeed,
+  useSocialUnread,
+} from '@/data/social'
 import { ScreenTitle } from '@/features/shared'
 import { PostCard, SocialList } from '@/features/social/components'
-import { Aside, CountBadge, Icon, IconButton, Screen, Tabs, Text, useWindowLayout } from '@/ui'
+import {
+  Aside,
+  CountBadge,
+  cn,
+  Icon,
+  IconButton,
+  Screen,
+  Sheet,
+  Tabs,
+  Tappable,
+  Text,
+  useWindowLayout,
+} from '@/ui'
 
 export default function FeedScreen() {
   const { t } = useTranslation('social')
   const router = useRouter()
   const viewer = useUserId()
   const [mode, setMode] = useState<'following' | 'discover'>('following')
+  const [show, setShow] = useState<SocialFeedShow>('all')
+  const [filtering, setFiltering] = useState(false)
   // With two panes both feeds are on screen, one in each, and the tabs that
   // switch between them have nothing to do. See `Aside`.
   const { split } = useWindowLayout()
@@ -34,6 +53,23 @@ export default function FeedScreen() {
             title={t('feed')}
             trailing={
               <View className="flex-row items-center">
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  accessibilityLabel={`${t('feedShow')}, ${t(SHOW_LABEL[show])}`}
+                  onPress={() => setFiltering(true)}
+                >
+                  <View className="h-6 w-6 items-center justify-center">
+                    <Icon set="ui" name="filter" size={21} />
+                    {/* A filter left on would otherwise read as a quiet feed. */}
+                    {show !== 'all' ? (
+                      <View
+                        className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-pandan"
+                        accessibilityElementsHidden
+                      />
+                    ) : null}
+                  </View>
+                </IconButton>
                 <IconButton
                   size="sm"
                   variant="ghost"
@@ -91,44 +127,111 @@ export default function FeedScreen() {
     >
       {split ? (
         <>
-          <FeedColumn mode="following" titled />
+          <FeedColumn key={`following-${show}`} mode="following" show={show} titled />
           <Aside>
-            <FeedColumn mode="discover" titled />
+            <FeedColumn key={`discover-${show}`} mode="discover" show={show} titled />
           </Aside>
         </>
       ) : (
-        <FeedColumn key={mode} mode={mode} />
+        <FeedColumn key={`${mode}-${show}`} mode={mode} show={show} />
       )}
+      <FeedFilter
+        visible={filtering}
+        value={show}
+        onChange={(value) => {
+          setShow(value)
+          setFiltering(false)
+        }}
+        onClose={() => setFiltering(false)}
+      />
     </Screen>
   )
 }
 
+const SHOW_LABEL = {
+  all: 'feedShowAll',
+  food: 'feedShowFood',
+  workout: 'feedShowWorkouts',
+} as const satisfies Record<SocialFeedShow, string>
+const SHOWS = Object.keys(SHOW_LABEL) as SocialFeedShow[]
+
+/** The feed's filter: every post, meals only or workouts only, for both feeds. */
+function FeedFilter({
+  visible,
+  value,
+  onChange,
+  onClose,
+}: {
+  visible: boolean
+  value: SocialFeedShow
+  onChange: (value: SocialFeedShow) => void
+  onClose: () => void
+}) {
+  const { t } = useTranslation(['social', 'common'])
+  return (
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      title={t('feedShow')}
+      closeLabel={t('common:action.close')}
+    >
+      <View>
+        {SHOWS.map((option, index) => {
+          const selected = option === value
+          return (
+            <Tappable
+              key={option}
+              onPress={() => onChange(option)}
+              className={cn(
+                'min-h-sm flex-row items-center gap-3 py-4',
+                index > 0 && 'border-t-2 border-track',
+              )}
+              accessibilityRole="menuitem"
+              accessibilityState={{ selected }}
+            >
+              <Text
+                variant="bodyStrong"
+                className={cn('flex-1', selected ? 'text-pandan-ink' : 'font-body-bold')}
+              >
+                {t(SHOW_LABEL[option])}
+              </Text>
+              {selected ? <Icon set="ui" name="check" size={22} /> : null}
+            </Tappable>
+          )
+        })}
+      </View>
+    </Sheet>
+  )
+}
+
 /**
- * One feed. Keyed by its mode where the tabs switch it, so a switch starts the
- * new feed at its top. `titled` names it, for when the two stand side by side
- * and there are no tabs to say which is which.
+ * One feed. Keyed by its mode and filter, so a switch starts the new feed at
+ * its top. `titled` names it, for when the two stand side by side and there
+ * are no tabs to say which is which.
  */
 function FeedColumn({
   mode,
+  show,
   titled = false,
 }: {
   mode: 'following' | 'discover'
+  show: SocialFeedShow
   titled?: boolean
 }) {
   const { t } = useTranslation('social')
   const viewer = useUserId()
-  const feed = useSocialFeed(mode)
+  const feed = useSocialFeed(mode, show)
   const queryClient = useQueryClient()
   useFocusEffect(
     useCallback(() => {
       // A food can publish while this tab is mounted behind the diary. Only when
       // stale: coming straight back from a post refetched every loaded page.
       void queryClient.refetchQueries({
-        queryKey: keys.socialRead(viewer, 'social_feed', socialFeedParams(mode)),
+        queryKey: keys.socialRead(viewer, 'social_feed', socialFeedParams(mode, show)),
         exact: true,
         stale: true,
       })
-    }, [mode, queryClient, viewer]),
+    }, [mode, show, queryClient, viewer]),
   )
 
   const list = (
@@ -137,7 +240,7 @@ function FeedColumn({
       variant="feed"
       rowKey={(post) => post.id}
       renderRow={(post, visible) => <PostCard post={post} visible={visible} />}
-      empty={t(mode === 'following' ? 'emptyFollowing' : 'end')}
+      empty={t(mode === 'following' && show === 'all' ? 'emptyFollowing' : 'end')}
       end={t('end')}
     />
   )

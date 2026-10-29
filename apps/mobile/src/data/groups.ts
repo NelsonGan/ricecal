@@ -376,8 +376,12 @@ const before = (a: GroupMessage, b: GroupMessage) => {
  * is kept. A page that does not reach back to anything held leaves a gap the
  * client cannot see into, so the thread starts again from that page.
  */
-export function mergeNewest(held: GroupThread | undefined, newest: GroupMessage[]): GroupThread {
-  if (newest.length < THREAD_PAGE) return { messages: newest, more: false }
+export function mergeNewest(
+  held: GroupThread | undefined,
+  newest: GroupMessage[],
+  size = THREAD_PAGE,
+): GroupThread {
+  if (newest.length < size) return { messages: newest, more: false }
   const oldest = newest[0]
   if (!held || !oldest || !held.messages.some((message) => !before(message, oldest))) {
     return { messages: newest, more: true }
@@ -393,6 +397,29 @@ export function mergeNewest(held: GroupThread | undefined, newest: GroupMessage[
     ],
     more: held.more,
   }
+}
+
+/**
+ * How many of the newest messages a catch-up reads when Realtime announces one.
+ * Re-reading the whole 50-message page for every message heard was about a
+ * quarter of the project's egress.
+ */
+export const CATCH_UP = 10
+
+/**
+ * The newest few messages laid over the thread, or null when they do not reach
+ * back to anything held (more arrived than a catch-up reads), which needs the
+ * whole page.
+ */
+export function mergeCatchUp(
+  held: GroupThread | undefined,
+  recent: GroupMessage[],
+): GroupThread | null {
+  if (!held) return null
+  if (recent.length < CATCH_UP) return mergeNewest(held, recent, CATCH_UP)
+  const oldest = recent[0]
+  if (!oldest || !held.messages.some((message) => !before(message, oldest))) return null
+  return mergeNewest(held, recent, CATCH_UP)
 }
 
 /**
@@ -419,7 +446,9 @@ export function useGroupThread(groupId: string, live: boolean) {
       // page or a removal may have landed meanwhile.
       return mergeNewest(client.getQueryData<GroupThread>(key), newest)
     },
-    refetchInterval: live ? 60_000 : 5_000,
+    // Joined, the poll is only a net (see above): catch-ups and rejoins keep
+    // the thread current, and a minute's whole page was most of what it cost.
+    refetchInterval: live ? 180_000 : 5_000,
     // Coming back to the app rejoins the channel, and the join refetches;
     // refetching on focus as well read the thread twice.
     refetchOnWindowFocus: false,
@@ -559,12 +588,52 @@ export function useGroupChatLive(groupId: string): boolean {
     // A fetch already on its way may have read the thread before the news.
     // Restarting it would hold back the first paint, so it lands first and the
     // thread is read once more after it.
-    const refetch = () => {
+    const pendingRead = () => {
       const query = client.getQueryCache().find({ queryKey: key, exact: true })
-      const pending = query?.state.fetchStatus === 'fetching' ? query.promise : undefined
+      return query?.state.fetchStatus === 'fetching' ? query.promise : undefined
+    }
+    const refetch = () => {
+      const pending = pendingRead()
       const again = () => void client.invalidateQueries({ queryKey: key })
       if (pending) void pending.then(again, again)
       else again()
+    }
+    // A new message or a reaction near the bottom reads only the newest few
+    // and lays them in. One catch-up at a time; a burst ends with one more.
+    // It waits for a whole-page read already on its way, which may predate the
+    // news and would otherwise land after it and take the new message out
+    // again. A whole page that starts later already holds the message.
+    let catching: Promise<void> | null = null
+    let queued = false
+    const catchUp = () => {
+      if (catching) {
+        queued = true
+        return
+      }
+      catching = (async () => {
+        try {
+          await pendingRead()?.catch(() => undefined)
+          const recent = (await rpc('group_messages', {
+            p_group_id: groupId,
+            p_limit: CATCH_UP,
+          })) as unknown as GroupMessage[]
+          let gap = false
+          client.setQueryData<GroupThread>(key, (held) => {
+            const merged = mergeCatchUp(held, recent)
+            if (!merged) gap = Boolean(held)
+            return merged ?? held
+          })
+          if (gap) refetch()
+        } catch {
+          refetch()
+        } finally {
+          catching = null
+          if (queued) {
+            queued = false
+            catchUp()
+          }
+        }
+      })()
     }
     const pendingOf = (action: GroupAction['action']) =>
       client
@@ -593,7 +662,7 @@ export function useGroupChatLive(groupId: string): boolean {
           const held = client.getQueryData<GroupThread>(key)?.messages
           if (held && ids.every((id) => held.some((message) => message.id === id))) return
           if (sending()) return
-          refetch()
+          catchUp()
         } else if (event === 'reacted') {
           // Only messages held have counts to redraw, and the viewer's own
           // reaction is already drawn and refetches when it lands.
@@ -603,12 +672,12 @@ export function useGroupChatLive(groupId: string): boolean {
             .map((id) => held.findIndex((message) => message.id === id))
             .filter((index) => index >= 0)
           if (!at.length) return
-          // A refetch reads the newest page, which redraws what is in it. One
-          // scrolled back past it is read on its own, as the one message
-          // before the message after it, and patched in place.
-          const newestPage = held.length - THREAD_PAGE
-          if (at.some((index) => index >= newestPage)) refetch()
-          for (const index of at.filter((index) => index < newestPage)) {
+          // A catch-up reads the newest few, which redraws what is in them.
+          // One further back is read on its own, as the one message before
+          // the message after it, and patched in place.
+          const newest = held.length - CATCH_UP
+          if (at.some((index) => index >= newest)) catchUp()
+          for (const index of at.filter((index) => index < newest)) {
             void rereadMessage(client, userId, groupId, held[index + 1])
           }
         }
@@ -978,7 +1047,7 @@ type GroupAction =
   | { action: 'join'; groupId: string }
   | { action: 'leave'; groupId: string; newLeader?: string }
   | { action: 'remove'; groupId: string; userId: string }
-  | { action: 'preferences'; groupId: string; order?: string[]; notify?: boolean }
+  | { action: 'preferences'; groupId: string; notify?: boolean }
   | { action: 'react'; entryId: string; value: -1 | 0 | 1 }
   | { action: 'move'; entryId: string; meal: GroupMeal }
   | { action: 'nudge'; groupId: string; day: string; targetId: string; meal: GroupMeal }
@@ -1069,7 +1138,8 @@ async function perform(input: GroupAction): Promise<unknown> {
     case 'preferences':
       return await rpc('set_group_preferences', {
         p_group_id: input.groupId,
-        p_board_order: unset(input.order),
+        // The board orders itself by who was active last; the stored order is unused.
+        p_board_order: unset<string[]>(null),
         p_notify: unset(input.notify),
       })
     case 'react':
@@ -1393,7 +1463,7 @@ export function useGroupAction() {
           refresh(input.groupId, 'group_details', 'group_invite_suggestions')
           return
         case 'preferences':
-          refresh(input.groupId, 'group_details', ...(input.order ? ['group_board'] : []))
+          refresh(input.groupId, 'group_details')
           return
         case 'update':
           refresh(input.groupId, 'group_details', 'group_board')

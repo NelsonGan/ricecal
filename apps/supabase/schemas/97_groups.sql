@@ -15,6 +15,25 @@ returns integer language sql immutable set search_path = '' as $$
   select case when p_count between 10 and 19 then 9 else p_count end;
 $$;
 
+-- When a member last logged a food or a workout, which orders the board and the
+-- settings list: whoever was active most recently comes first. It replaced each
+-- member dragging their own order (`board_order`, still stored for older apps).
+-- Backdated entries count from when they are timed, not when they were saved.
+create or replace function private.group_last_active(p_user uuid)
+returns timestamptz language sql stable security definer set search_path = '' as $$
+  select greatest(
+    (select f.logged_at from public.food_logs f
+      where f.user_id = p_user and f.logged_at <= now()
+      order by f.log_date desc, f.logged_at desc limit 1),
+    (select w.started_at from public.workouts w
+      where w.user_id = p_user and w.started_at <= now()
+      order by w.started_at desc limit 1),
+    (select a.started_at from public.activity_sessions a
+      where a.user_id = p_user and a.started_at <= now()
+      order by a.log_date desc, a.started_at desc limit 1)
+  );
+$$;
+
 -- A member as the app draws one.
 create or replace function private.group_person(p_user uuid)
 returns jsonb language sql stable security definer set search_path = '' as $$
@@ -134,20 +153,18 @@ create or replace function public.group_board(p_group_id uuid, p_day date)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare
   v_user uuid := private.group_require_member(p_group_id);
-  v_member public.group_members;
   v_result jsonb;
 begin
   if p_day is null or p_day not between public.local_today(v_user) - 60 and public.local_today(v_user) + 1 then
     raise exception 'Day unavailable' using errcode = '22023';
   end if;
-  select * into v_member from public.group_members m where m.group_id = p_group_id and m.user_id = v_user;
 
   with members as materialized (
     select m.user_id, m.joined_at,
       now() at time zone coalesce(p.timezone, 'Asia/Kuala_Lumpur') as local_now,
       p.timezone,
-      case when m.user_id = v_user then 0
-           else coalesce(array_position(v_member.board_order, m.user_id), 100) end as rank,
+      case when m.user_id = v_user then 0 else 1 end as rank,
+      private.group_last_active(m.user_id) as last_active,
       b.at as breakfast_at, l.at as lunch_at, d.at as dinner_at
     from public.group_members m
     join public.profiles p on p.id = m.user_id
@@ -242,7 +259,7 @@ begin
             ) x
           ) w
         )
-      ) order by mb.rank, mb.joined_at, mb.user_id)
+      ) order by mb.rank, mb.last_active desc nulls last, mb.joined_at, mb.user_id)
       from members mb
     ), '[]'::jsonb)
   ) into v_result;
@@ -546,7 +563,7 @@ begin
       'is_public', g.is_public, 'leader_id', g.leader_id, 'notify', v_member.notify,
       'members', (
         select jsonb_agg(private.group_person(m.user_id) order by
-          m.user_id <> v_user, coalesce(array_position(v_member.board_order, m.user_id), 100), m.joined_at, m.user_id)
+          m.user_id <> v_user, private.group_last_active(m.user_id) desc nulls last, m.joined_at, m.user_id)
         from public.group_members m
         where m.group_id = p_group_id and (m.user_id = v_user or not private.social_pair_blocked(m.user_id))
       ),
@@ -618,6 +635,8 @@ revoke execute on function private.group_post_food, private.group_food_label, pr
   private.group_activity, private.group_workout_label, private.group_food_reactions
   from public, anon, authenticated;
 revoke execute on function private.group_photo_claims, private.group_person from public, anon;
+-- Only the board and settings read it, both as definer.
+revoke execute on function private.group_last_active from public, anon, authenticated;
 grant execute on function private.group_photo_claims, private.group_person to authenticated, service_role;
 
 revoke execute on function public.my_groups, public.my_group_invites, public.group_invite_count,

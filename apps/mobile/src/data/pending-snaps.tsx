@@ -268,6 +268,13 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
    * been suspended since it started. See `suspended`.
    */
   const watching = needsPolling(snaps)
+  /**
+   * The days those scans will land on. Only they are polled: asking every
+   * mounted day each six seconds re-read days the scan could not touch.
+   */
+  const polledDays = [
+    ...new Set(snaps.filter((snap) => needsPolling([snap])).map((snap) => snap.logDate)),
+  ].join()
   /** Anything at all that has not finished, which is what a return to the app asks about. */
   const unfinished = snaps.some((snap) => snap.status === 'analysing' || snap.status === 'waiting')
 
@@ -291,7 +298,13 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
         if (changed) queryClient.invalidateQueries({ queryKey: ['day'] })
         return changed ? next : current
       })
-      if (watching) queryClient.invalidateQueries({ queryKey: ['day'] })
+      if (watching) {
+        const days = new Set(polledDays.split(','))
+        queryClient.invalidateQueries({
+          queryKey: ['day'],
+          predicate: (query) => days.has(String(query.queryKey[2])),
+        })
+      }
     }
 
     const listener = AppState.addEventListener('change', (state) => {
@@ -313,7 +326,7 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
       listener.remove()
       clearInterval(timer)
     }
-  }, [queryClient, watching, unfinished, suspend])
+  }, [queryClient, watching, polledDays, unfinished, suspend])
 
   const value = useMemo(
     () => ({ snaps, add, detach, fail, noFood, remove }),

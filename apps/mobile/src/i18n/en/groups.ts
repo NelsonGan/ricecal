@@ -116,7 +116,6 @@ export const groups = {
   invited: 'Invited',
   settingsMembers: 'Members',
   /** A screen reader's name for a member row's drag handle. */
-  reorderMember: 'Move {{name}}',
   notifications: 'Notifications',
   notificationsHint: 'Nudges and chat messages.',
   muteChat: 'Mute notifications',
