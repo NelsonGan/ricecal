@@ -246,6 +246,49 @@ Deno.test('a key that lost its closing quote gets it back, and nothing else is',
   assertThrows(() => parseAnswer('{"a\\"b"c": 1}'), SyntaxError)
 })
 
+Deno.test('a key closed with something other than its quote gets the quote', () => {
+  // Haiku's failures after both earlier repairs went live: the same logged
+  // shape, and only a close written as another character gives it.
+  const whole = {
+    items: [{ name: 'nasi lemak', components: [{ name: 'sambal', grams: 30, kcal: 60 }] }],
+  }
+  for (const close of ["'", '`', '’', '”', '“', ',', ';', ':']) {
+    assertEquals(
+      parseAnswer(
+        `{"items":[{"name":"nasi lemak","components":[{"name":"sambal","grams${close}:30,"kcal":60}]}]}`,
+      ),
+      whole,
+      `close written as ${close}`,
+    )
+  }
+  // Before a string value, indented, as Haiku answers.
+  assertEquals(parseAnswer('{\n  "name”: "roti",\n  "kcal": 300\n}'), { name: 'roti', kcal: 300 })
+  // The caller hears which repair it was, so a night's logs say which fault it is.
+  const heard: string[] = []
+  parseAnswer('{"name\': "roti", "kcal": 300}', (n, via) => heard.push(`${n} ${via}`))
+  parseAnswer('{"name: "roti", ""kcal": 300}', (n, via) => heard.push(`${n} ${via}`))
+  assertEquals(heard, ['1 replaced', '2 inserted,stray'])
+  // An escaped close is left: `"gram\":` is the same text with a letter lost,
+  // and taking the backslash out would make a key named `gram`.
+  assertThrows(() => parseAnswer('{"name\\": "roti", "kcal": 300}'), SyntaxError)
+  // What failed says which fault it was, by class and never by the key.
+  const shape = (s: string) => answerShape(s).match(/key-end=(\S+)/)?.[1]
+  assertEquals(shape('{"name\\": "roti", "kcal": 300}'), 'backslash')
+  assertEquals(shape('{"name}: "roti", "kcal": 300}'), '}')
+  // A key that closed and then had no colon.
+  assertEquals(shape('{"name"roti", "kcal": 300}'), 'end')
+  assertEquals(shape('{"Nasi lemak: 1, "kcal": 300}'), 'space')
+  assertEquals(shape('{"2 pieces: 1, "kcal": 300}'), 'none')
+  assertEquals(shape('{"name":"teh "tarik"","kcal":120}'), 'n/a')
+  // Only one stand-in, and only straight before the colon.
+  assertThrows(() => parseAnswer('{"name\'\': "roti", "kcal": 300}'), SyntaxError)
+  assertThrows(() => parseAnswer('{"name\' x: "roti", "kcal": 300}'), SyntaxError)
+  // A brace or bracket is not a quote someone mistyped.
+  assertThrows(() => parseAnswer('{"name}: "roti", "kcal": 300}'), SyntaxError)
+  // Nor is a missing colon: `"name"roti"` has a key and no colon, and is left.
+  assertThrows(() => parseAnswer('{"name"roti", "kcal": 300}'), SyntaxError)
+})
+
 Deno.test('an unreadable answer is described by its shape, never by its words', () => {
   // A second object after the first: what a parser fix would cover.
   const twice = answerShape('{"name":"nasi lemak"}\n\nCorrected:\n{"name":"nasi lemak ayam"}')
