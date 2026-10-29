@@ -1056,7 +1056,8 @@ $$;
 -- One meal is shared once into each group, so someone in two groups with the
 -- poster would hear it twice. Each device hears each thing once, through the
 -- group whose chat that member read last, which is where they are most likely
--- to look; a group they muted or already read it in is not a candidate.
+-- to look; a group they muted updates in is not a candidate. Having read it in
+-- any of the groups is having seen it, so that member hears it from none.
 create or replace function public.group_update_push_targets(p_caller uuid)
 returns table (token text, language text, actor_name text, group_name text, group_id uuid, body text)
 language sql security definer set search_path = '' as $$
@@ -1071,7 +1072,7 @@ language sql security definer set search_path = '' as $$
     g.name, g.id, c.body
   from shared c
   join public.group_members m on m.group_id = c.group_id and m.user_id <> p_caller
-    and m.notify_updates and m.chat_read_at < c.created_at
+    and m.notify_updates
   join public.push_tokens t on t.user_id = m.user_id
   join public.groups g on g.id = c.group_id
   join public.profiles a on a.id = p_caller
@@ -1081,6 +1082,11 @@ language sql security definer set search_path = '' as $$
     where (x.user_id = p_caller and x.author_id = m.user_id)
        or (x.user_id = m.user_id and x.author_id = p_caller)
   )
+    and not exists (
+      select 1 from shared r
+      join public.group_members mr on mr.group_id = r.group_id and mr.user_id = m.user_id
+      where r.thing = c.thing and mr.chat_read_at >= r.created_at
+    )
   order by t.token, c.thing, m.chat_read_at desc, g.id;
 $$;
 
