@@ -1165,6 +1165,16 @@ export const vi = {
       failed: 'Chúng tôi không mở được Discord',
     },
 
+    money2time: {
+      name: 'Money2Time',
+      ad: 'Quảng cáo',
+      card: 'Theo dõi chi tiêu',
+      title: 'Mình đã làm thêm một ứng dụng',
+      body: 'Nó tên là Money2Time. Ứng dụng theo dõi chi tiêu và cho bạn biết mỗi món đồ tốn bao nhiêu giờ làm việc. Mong bạn dùng thử.',
+      action: 'Dùng thử Money2Time',
+      failed: 'Không thể mở cửa hàng ứng dụng',
+    },
+
     shareEarn: {
       row: 'Chia sẻ và nhận Pro',
       title: 'Chia sẻ và nhận Pro',

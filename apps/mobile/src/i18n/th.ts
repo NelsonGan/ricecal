@@ -1153,6 +1153,16 @@ export const th = {
       failed: 'เราเปิด Discord ไม่ได้',
     },
 
+    money2time: {
+      name: 'Money2Time',
+      ad: 'โฆษณา',
+      card: 'บันทึกรายจ่ายของคุณ',
+      title: 'เราทำแอปอีกตัวหนึ่ง',
+      body: 'ชื่อ Money2Time แอปนี้บันทึกรายจ่ายและบอกว่าแต่ละอย่างที่ซื้อเท่ากับทำงานกี่ชั่วโมง ลองใช้ดูนะ',
+      action: 'ลองใช้ Money2Time',
+      failed: 'เปิดสโตร์ไม่ได้',
+    },
+
     shareEarn: {
       row: 'แชร์แล้วได้ Pro',
       title: 'แชร์แล้วได้ Pro',

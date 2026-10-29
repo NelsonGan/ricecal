@@ -1158,6 +1158,16 @@ export const ko = {
       failed: 'Discord를 열지 못했습니다',
     },
 
+    money2time: {
+      name: 'Money2Time',
+      ad: '광고',
+      card: '지출 기록하기',
+      title: '앱을 하나 더 만들었어요',
+      body: '이름은 Money2Time이에요. 지출을 기록하고 구매할 때마다 몇 시간의 노동인지 보여 줘요. 한번 써 보세요.',
+      action: 'Money2Time 써 보기',
+      failed: '스토어를 열 수 없어요',
+    },
+
     shareEarn: {
       row: '공유하고 Pro 받기',
       title: '공유하고 Pro 받기',

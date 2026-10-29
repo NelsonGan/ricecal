@@ -1188,6 +1188,16 @@ export const fil = {
       failed: 'Hindi namin mabuksan ang Discord',
     },
 
+    money2time: {
+      name: 'Money2Time',
+      ad: 'Ad',
+      card: 'I-track ang gastos mo',
+      title: 'Gumawa ako ng isa pang app',
+      body: 'Money2Time ang pangalan nito. Itinatala nito ang gastos mo at ipinapakita kung ilang oras ng trabaho ang bawat binili. Sana subukan mo.',
+      action: 'Subukan ang Money2Time',
+      failed: 'Hindi namin mabuksan ang store',
+    },
+
     shareEarn: {
       row: 'Mag-share at kumita ng Pro',
       title: 'Mag-share at kumita ng Pro',

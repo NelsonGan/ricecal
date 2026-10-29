@@ -5981,6 +5981,13 @@ also why the threshold is *likes* rather than installs: installs need
 attribution to count at all, while likes are on the post itself, where both
 sides can see them.
 
+**Free accounts only.** Its card sits under the Pro row on Me, beside a card
+advertising Money2Time (the mirror of the RiceCal ad Money2Time shows its own
+free users), and both stay hidden until the entitlement answers no, so a
+subscriber never sees them. The Money2Time card opens a sheet before the store,
+so a stray tap on something marked "Ad" does not leave the app. Its store links
+are in `src/features/settings/money2time.ts`.
+
 ### Reminders
 
 **All local.** (Group nudges, invites and chat messages are pushed by a server; see
@@ -6530,6 +6537,7 @@ events, 815 weekly users, 338 installs) ×4.3.
 | Workout events (`Workout Started`, `Finished`, `Discarded`, `Routine Saved`, `Workouts Imported`) | 4,000 | New with the Workouts tab, so no history: about 60 workouts a day at launch, each a start and an end, plus routine saves. An import is one event however many workouts it brings |
 | Groups (`Group Created`, `Joined`, `Invite Sent`, `Nudge Sent`, `Reaction Set`, `Message Sent`, and `Notification Opened` for a group push) | 15,000 | New with the Groups tab, so no history: assumes 300 people in groups, each reacting or chatting about once a day, plus rare creates, joins, invites and nudges (a nudge is capped by its hourly cooldown per meal). Chat messages push every other member with notifications on, so allow about one tapped chat push per member per day on top |
 | News (`Announcement Shown`, `CTA Tapped`, `Dismissed`, `Auto Post Toggled`) | 3,000 | One launch card per account per announcement (~1,500 monthly accounts, a shown and a close each), plus the News list and the rare switch on Edit profile |
+| Money2Time ad (`Money2Time Ad Opened`, `Store Opened`) | 500 | Free accounts tapping a card under Me; a few percent of ~1,500 monthly accounts, a handful of times each |
 | Photo removal warnings (`Notification Opened` with `photo_removals`, and the `Paywall Shown` its list opens) | 1,000 | At most one push and one Today notice per free account per six days, only while photos are due; a tap is a fraction of those. The milestone offers that replaced the two-day nudge show fewer paywalls than it did, which more than covers this |
 | `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
 | `First App Open` | 1,500 | ~340 installs a week |
@@ -6537,7 +6545,7 @@ events, 815 weekly users, 338 installs) ×4.3.
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
-| **Total** | **~298,000 (30%)** | Room for three times today's audience |
+| **Total** | **~298,500 (30%)** | Room for three times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -6562,10 +6570,10 @@ eligible for delivery; its presence here is not proof of ingestion or billing.
 
 | Surface / operation | Definitions | Destinations / counting rule |
 | --- | --- | --- |
-| Native app custom events | 65 | All 65 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
+| Native app custom events | 67 | All 67 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
 | Website decisions | 6 | Same PostHog project (page views as `$pageview`); five namespaced GA4 events plus manually managed `page_view` in the shared property |
 | Native screen views | 0 | No `$screen` or `screen_view` emitter; Firebase automatic screen reporting is disabled. Session replay shows navigation |
-| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 65 custom app definitions |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 67 custom app definitions |
 | Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
 | Per-install engagement events | 2 | `First App Open` once per install and `Daily App Open` once per local day; every other event is repeatable product use |
 
@@ -6642,6 +6650,8 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Announcement CTA Tapped | ricecal_announcement_cta_tapped | announcement: string; source: AnnouncementSource; cta: AnnouncementCta; page: number | `src/features/news/AnnouncementCard.tsx` | A page's button is tapped; each tap, before the destination screen opens, with the page it was on. It does not prove anything was changed there. |
 | Announcement Dismissed | ricecal_announcement_dismissed | announcement: string; source: AnnouncementSource; via: 'done' &#124; 'close'; page: number | `src/features/news/AnnouncementCard.tsx` | The card closes without a page's button: "Got it" on the last page (`done`), or the cross, scrim or back gesture on any (`close`); once per close, with the page it closed on. Next and swiping between pages send nothing. |
 | Auto Post Toggled | ricecal_auto_post_toggled | kind: 'foods' &#124; 'workouts'; enabled: boolean | `app/settings/account.tsx` | An Auto post foods or workouts switch on Edit profile is saved; each successful write. Onboarding's default and an announcement switching it on send nothing. |
+| Money2Time Ad Opened | ricecal_money2_time_ad_opened | none | `app/(tabs)/me.tsx` | The Money2Time card under Me is tapped and its sheet opens; each tap. Only free accounts see the card, once the entitlement has answered. |
+| Money2Time Store Opened | ricecal_money2_time_store_opened | none | `src/features/settings/Money2TimeSheet.tsx` | The sheet's button hands over to the App Store, Google Play or the website; each tap, before the store opens. It does not prove an install. |
 <!-- analytics-app-events:end -->
 
 ### Common context and provider conversion
@@ -6658,7 +6668,7 @@ that instant.
 
 | Contract | PostHog | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 65 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 67 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
@@ -7122,7 +7132,7 @@ includes the optimistic camera/describe insert; it is not a persisted-meal total
 Investigate a new name, a sharp volume change, unexpected free-text properties,
 missing identity, or purchase events from a second producer.
 
-Automated checks: the inventory test (`inventory.test.ts`) checks all 65 names,
+Automated checks: the inventory test (`inventory.test.ts`) checks all 67 names,
 exact GA4 mappings, typed payloads, source-file existence and a nonempty
 trigger column, and forbids app-side settled revenue fields; `engagement.test.ts`
 covers install detection and the once-a-day claim; `posthog.test.ts` covers the
