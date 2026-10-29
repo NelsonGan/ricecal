@@ -154,6 +154,20 @@ export const profile = {
   },
 
   /**
+   * The Money2Time ad under Me, for free accounts. `name` is the app's name
+   * and stays in English in every language.
+   */
+  money2time: {
+    name: 'Money2Time',
+    ad: 'Ad',
+    card: 'Track your spending',
+    title: 'I made another app',
+    body: "It's called Money2Time. It tracks your spending and shows what each purchase costs in hours of work. I'd love for you to give it a try.",
+    action: 'Try Money2Time',
+    failed: 'We could not open the store',
+  },
+
+  /**
    * Share & Earn Pro.
    *
    * The reward is named first and the threshold second on every rung: "1 month of
@@ -171,6 +185,8 @@ export const profile = {
     row: 'Share and earn Pro',
     title: 'Share and earn Pro',
     heroTitle: 'Post about RiceCal, get Pro free',
+    /** Under the row on its card in Me, one line at half the screen's width. */
+    card: 'Get Pro for a post',
     heroBody:
       'Show people a plate you logged. The more your post is liked, the longer the Pro we send you.',
 

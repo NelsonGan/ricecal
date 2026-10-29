@@ -1192,10 +1192,21 @@ export const ms = {
       failed: 'Kami tidak dapat membuka Discord',
     },
 
+    money2time: {
+      name: 'Money2Time',
+      ad: 'Iklan',
+      card: 'Jejak perbelanjaan',
+      title: 'Saya buat satu lagi apl',
+      body: 'Namanya Money2Time. Ia menjejak perbelanjaan anda dan menunjukkan berapa jam kerja setiap pembelian. Saya harap anda mencubanya.',
+      action: 'Cuba Money2Time',
+      failed: 'Kami tidak dapat membuka kedai apl',
+    },
+
     shareEarn: {
       row: 'Kongsi dan dapat Pro',
       title: 'Kongsi dan dapat Pro',
       heroTitle: 'Pos tentang RiceCal, dapat Pro',
+      card: 'Pos, dapat Pro',
       heroBody:
         'Tunjukkan orang pinggan yang anda rekod. Semakin banyak hantaran anda disukai, semakin lama Pro yang kami hantar.',
 

@@ -1,4 +1,5 @@
 import { format, parseISO } from 'date-fns'
+import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -19,8 +20,9 @@ import {
 } from '@/data'
 import { signOut } from '@/data/auth'
 import { usePlanSummary } from '@/features/paywall'
-import { HelpSheet } from '@/features/settings'
+import { HelpSheet, MONEY2TIME_LOGO, Money2TimeSheet } from '@/features/settings'
 import { ScreenTitle, SettingRow } from '@/features/shared'
+import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { askForRating } from '@/lib/rating'
 import { showWeight, UNIT_KEY, unitFor } from '@/lib/units'
@@ -28,6 +30,7 @@ import { useThemeColors } from '@/theme/useTheme'
 import {
   Aside,
   Avatar,
+  Badge,
   Button,
   Card,
   ConfirmSheet,
@@ -70,13 +73,18 @@ export default function MeScreen() {
   const plan = usePlanSummary()
   const { data: mealTimes } = useMealTimes()
   const streak = useStreak()
-  const { entitled } = useEntitlement()
+  const entitlement = useEntitlement()
+  const { entitled } = entitlement
   const weight = useCurrentWeight()
   const userId = useUserId()
   const weightUnit = unitFor(settings?.units)
   const health = useHealthConnection()
   const [confirmSignOut, setConfirmSignOut] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [money2TimeOpen, setMoney2TimeOpen] = useState(false)
+  // Only on a settled no. `unknown` is the offline case with nothing cached,
+  // and a subscriber there would otherwise be shown the free offers.
+  const showFreeOffers = !entitled && !entitlement.loading && !entitlement.unknown
 
   /**
    * Every switch on `/settings/reminders`, and it has to stay every switch.
@@ -208,40 +216,78 @@ export default function MeScreen() {
         />
       </Card>
 
-      {/* `gap-0` because this card holds TWO rows now, and a `ListRow` carries its
-          own divider: at the card's default gap the line under the first row
-          reads as an underline of that row with a band of empty card beneath it,
-          rather than as the seam between two. Same reason the settings card
-          below does it. */}
-      <Card contentClassName="gap-0">
-        {/* Somebody who has never paid has nothing to manage. The subscription
-            screen is a plan, a renewal date and a way to cancel; for them it
-            was three cards of "none" wrapped around a button to the paywall,
-            so they go straight to the paywall instead. */}
-        <ListRow
-          title={t('profile:home.pro')}
-          subtitle={planLine}
-          leading={<Icon set="system" name="crown" size={42} />}
-          onPress={() => router.push(plan.state === 'none' ? '/paywall' : '/settings/subscription')}
-        />
-        {/* THE OTHER WAY TO GET PRO, and it belongs in this card rather than
-            down among the settings for exactly that reason: the row above it is
-            the way you pay for it, and this is the way you do not. Somewhere in
-            the list between reminders and units it would read as a setting, and
-            nobody goes looking for a way to earn something in a settings list.
+      {/* One group with the offers under it, at the gap between the two offer
+          cards, so they read as the Pro card's options rather than as the next
+          section of the screen. */}
+      <View className="gap-2.5">
+        {/* `py-2` because the row brings its own vertical padding, and on top of
+            the card's it left a band of empty card above and below one line. */}
+        <Card contentClassName="gap-0 py-2">
+          {/* Somebody who has never paid has nothing to manage. The subscription
+              screen is a plan, a renewal date and a way to cancel; for them it
+              was three cards of "none" wrapped around a button to the paywall,
+              so they go straight to the paywall instead. */}
+          <ListRow
+            title={t('profile:home.pro')}
+            subtitle={planLine}
+            leading={<Icon set="system" name="crown" size={42} />}
+            divider={false}
+            onPress={() =>
+              router.push(plan.state === 'none' ? '/paywall' : '/settings/subscription')
+            }
+          />
+        </Card>
 
-            Shown to subscribers too. A monthly plan can earn a year and a
-            yearly one can earn lifetime, so there is no tier this is pointless
-            for; the copy is about posting rather than about unlocking, which
-            keeps it true for somebody who has already paid. */}
-        <ListRow
-          title={t('profile:shareEarn.row')}
-          subtitle={t('profile:shareEarn.heroTitle')}
-          leading={<Icon set="system" name="gift" size={42} />}
-          divider={false}
-          onPress={() => router.push('/settings/share')}
-        />
-      </Card>
+        {/* Free accounts only (see `showFreeOffers`). Share & Earn is the way to
+            Pro without paying, beside the Pro row that sells it; the Money2Time
+            card is the ad Money2Time runs for RiceCal in return. */}
+        {showFreeOffers ? (
+          <View className="flex-row gap-2.5">
+            <Card
+              className="min-w-0 flex-1"
+              contentClassName="flex-1 gap-1 py-3"
+              accessibilityRole="button"
+              onPress={() => router.push('/settings/share')}
+            >
+              <Icon set="system" name="gift" size={36} />
+              <Text variant="label" numberOfLines={2}>
+                {t('profile:shareEarn.row')}
+              </Text>
+              <Text variant="caption" numberOfLines={1}>
+                {t('profile:shareEarn.card')}
+              </Text>
+            </Card>
+            <Card
+              className="min-w-0 flex-1"
+              contentClassName="flex-1 gap-1 py-3"
+              accessibilityRole="button"
+              onPress={() => {
+                track('Money2Time Ad Opened', {})
+                setMoney2TimeOpen(true)
+              }}
+            >
+              <View className="flex-row items-start justify-between gap-1">
+                <Image
+                  source={MONEY2TIME_LOGO}
+                  style={{ width: 36, height: 36, borderRadius: 10 }}
+                  contentFit="cover"
+                  transition={0}
+                  accessible={false}
+                />
+                <Badge tone="neutral" size="sm">
+                  {t('profile:money2time.ad')}
+                </Badge>
+              </View>
+              <Text variant="label" numberOfLines={2}>
+                {t('profile:money2time.name')}
+              </Text>
+              <Text variant="caption" numberOfLines={1}>
+                {t('profile:money2time.card')}
+              </Text>
+            </Card>
+          </View>
+        ) : null}
+      </View>
 
       {/* With two panes the account is the first and its settings the second.
           See `Aside`. */}
@@ -384,6 +430,10 @@ export default function MeScreen() {
       </Aside>
 
       <HelpSheet visible={helpOpen} onClose={() => setHelpOpen(false)} />
+      <Money2TimeSheet
+        visible={showFreeOffers && money2TimeOpen}
+        onClose={() => setMoney2TimeOpen(false)}
+      />
 
       {/* Confirmed, because signing out of an app whose data lives on a server
           is not destructive but very much feels like it. */}
