@@ -1,7 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
 
-import { pushGroupUpdates } from './group-updates'
-
 /**
  * Every query key in the app.
  *
@@ -238,7 +236,6 @@ export function invalidateEatenTotals(queryClient: QueryClient, userId: string):
  * shows on the viewer's own row without waiting for the board's next poll.
  * Only the boards on screen refetch; the rest are marked stale. `lists` also
  * refreshes the group list, whose "logged today" counts food and nothing else.
- * It also asks for the push of anything those writes shared to a group chat.
  */
 export function invalidateGroupBoards(
   queryClient: QueryClient,
@@ -250,6 +247,4 @@ export function invalidateGroupBoards(
     predicate: (query) =>
       query.queryKey[2] === 'group_board' || (lists && query.queryKey[2] === 'my_groups'),
   })
-  // The same writes are what share a food or a workout to the chats.
-  pushGroupUpdates(queryClient, keys.groupsRead(userId, 'my_groups'))
 }

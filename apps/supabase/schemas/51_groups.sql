@@ -68,6 +68,13 @@ create table public.group_members (
   -- Pushes for the foods and workouts members share to the chat on their own
   -- (98_group_chat_shares.sql). Its own switch, so a member can keep one kind.
   notify_updates boolean not null default true,
+  -- For the update pushes (98_group_update_pushes.sql): shares in this group
+  -- written up to here have been pushed to this member or passed over, and
+  -- when the last update push from this group went. A new member starts at
+  -- the moment they joined; the migration that added these started everyone
+  -- already in a group at that moment too, so nothing older is pushed.
+  updates_told_until timestamptz not null default now(),
+  updates_pushed_at  timestamptz,
   primary key (group_id, user_id)
 );
 create index group_members_user_idx on public.group_members(user_id, joined_at);
@@ -128,8 +135,9 @@ create table public.group_messages (
   -- When its push went out, so a retried send rings nobody twice.
   pushed_at   timestamptz,
   -- Shared by the app rather than written: a food posted or a workout done
-  -- (98_group_chat_shares.sql). It pushes to members with `notify_updates`
-  -- rather than `notify`, through group_update_push_targets.
+  -- (98_group_chat_shares.sql). Never pushed as a message; the jobs Worker
+  -- pushes it to members with `notify_updates` (98_group_update_pushes.sql),
+  -- and `pushed_at` stays null.
   automatic   boolean not null default false,
   -- The message this one answers, in the same thread. Deleting that one
   -- leaves the reply standing on its own.
@@ -1047,49 +1055,6 @@ begin
 end;
 $$;
 
--- The same for the foods and workouts the caller's own logging just shared to
--- their groups. The app cannot know which writes shared something (a trigger
--- does it), so it asks after any of them and this claims every share of the
--- caller's from the last ten minutes that has not pushed yet. Members hear it
--- through `notify_updates`, with the same read and block rules as a message.
---
--- One meal is shared once into each group, so someone in two groups with the
--- poster would hear it twice. Each device hears each thing once, through the
--- group whose chat that member read last, which is where they are most likely
--- to look; a group they muted updates in is not a candidate. Having read it in
--- any of the groups is having seen it, so that member hears it from none.
-create or replace function public.group_update_push_targets(p_caller uuid)
-returns table (token text, language text, actor_name text, group_name text, group_id uuid, body text)
-language sql security definer set search_path = '' as $$
-  with shared as (
-    update public.group_messages m set pushed_at = now()
-    where m.author_id = p_caller and m.automatic and m.pushed_at is null and not m.quarantined
-      and m.created_at > now() - interval '10 minutes'
-    returning m.group_id, m.body, m.created_at, coalesce(m.post_id, m.workout_id, m.activity_id) as thing
-  )
-  select distinct on (t.token, c.thing)
-    t.token, coalesce(s.language, 'en'), coalesce(nullif(btrim(a.display_name), ''), a.handle),
-    g.name, g.id, c.body
-  from shared c
-  join public.group_members m on m.group_id = c.group_id and m.user_id <> p_caller
-    and m.notify_updates
-  join public.push_tokens t on t.user_id = m.user_id
-  join public.groups g on g.id = c.group_id
-  join public.profiles a on a.id = p_caller
-  left join public.user_settings s on s.user_id = m.user_id
-  where not exists (
-    select 1 from public.blocked_authors x
-    where (x.user_id = p_caller and x.author_id = m.user_id)
-       or (x.user_id = m.user_id and x.author_id = p_caller)
-  )
-    and not exists (
-      select 1 from shared r
-      join public.group_members mr on mr.group_id = r.group_id and mr.user_id = m.user_id
-      where r.thing = c.thing and mr.chat_read_at >= r.created_at
-    )
-  order by t.token, c.thing, m.chat_read_at desc, g.id;
-$$;
-
 create or replace function public.forget_push_tokens(p_tokens text[])
 returns void language sql security definer set search_path = '' as $$
   delete from public.push_tokens t where t.token = any(p_tokens);
@@ -1113,9 +1078,9 @@ grant execute on function public.create_group, public.update_group, public.invit
   public.set_group_message_reaction,
   public.register_push_token, public.unregister_push_token to authenticated, service_role;
 revoke execute on function public.group_push_targets, public.group_message_push_targets,
-  public.group_update_push_targets, public.forget_push_tokens from public, anon, authenticated;
+  public.forget_push_tokens from public, anon, authenticated;
 grant execute on function public.group_push_targets, public.group_message_push_targets,
-  public.group_update_push_targets, public.forget_push_tokens to service_role;
+  public.forget_push_tokens to service_role;
 
 -- ---------------------------------------------------------------------------
 -- Live chat

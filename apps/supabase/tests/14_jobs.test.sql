@@ -16,7 +16,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(13);
 
 -- -- GRANTS ------------------------------------------------------------------
 -- This is the scheduler's own working notes. No client has any business in it,
@@ -118,6 +118,27 @@ select is(
   true,
   'a finished run keeps its first outcome when it is closed again'
 );
+
+-- An every-minute job adds its runs into one closed row per hour and outcome.
+select public.record_job_run('minute-job', true, '{"runs": 1, "devices": 2}'::jsonb);
+select public.record_job_run('minute-job', true, '{"runs": 1, "devices": 3}'::jsonb);
+select public.record_job_run('minute-job', false, '{"runs": 1}'::jsonb, 'expo push 401');
+select is(
+  (select detail from public.job_runs where job = 'minute-job' and ok),
+  '{"runs": 2, "devices": 5}'::jsonb,
+  'runs in the same hour are summed into one row'
+);
+select is(
+  (select array[count(*)::text, max(error)] from public.job_runs where job = 'minute-job' and not ok),
+  array['1', 'expo push 401'],
+  'and a failure gets its own row with the error'
+);
+select is(
+  (select count(*)::int from public.job_runs where job = 'minute-job' and finished_at is null), 0,
+  'leaving nothing in flight to block a claim'
+);
+select ok(not has_function_privilege('authenticated', 'public.record_job_run(text, boolean, jsonb, text)', 'EXECUTE'),
+  'clients cannot write the job log');
 
 select * from finish();
 

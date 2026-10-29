@@ -755,6 +755,8 @@ export type Database = {
           joined_at: string
           notify: boolean
           notify_updates: boolean
+          updates_pushed_at: string | null
+          updates_told_until: string
           user_id: string
         }
         Insert: {
@@ -764,6 +766,8 @@ export type Database = {
           joined_at?: string
           notify?: boolean
           notify_updates?: boolean
+          updates_pushed_at?: string | null
+          updates_told_until?: string
           user_id: string
         }
         Update: {
@@ -773,6 +777,8 @@ export type Database = {
           joined_at?: string
           notify?: boolean
           notify_updates?: boolean
+          updates_pushed_at?: string | null
+          updates_told_until?: string
           user_id?: string
         }
         Relationships: [
@@ -3736,15 +3742,17 @@ export type Database = {
           token: string
         }[]
       }
-      group_update_push_targets: {
-        Args: { p_caller: string }
+      group_update_digests: {
+        Args: { p_limit?: number }
         Returns: {
           actor_name: string
           body: string
           group_id: string
           group_name: string
           language: string
+          more: number
           token: string
+          user_id: string
         }[]
       }
       group_workout_detail: {
@@ -3827,6 +3835,15 @@ export type Database = {
         Returns: undefined
       }
       recipe_review_hourly_limit: { Args: never; Returns: number }
+      record_job_run: {
+        Args: {
+          p_detail?: Json
+          p_error?: string
+          p_job: string
+          p_ok: boolean
+        }
+        Returns: undefined
+      }
       record_social_photo_etags: { Args: { p_etags: Json }; Returns: number }
       register_push_token: {
         Args: { p_platform: string; p_token: string }
