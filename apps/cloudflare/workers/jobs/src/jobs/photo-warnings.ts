@@ -54,7 +54,6 @@ export const photoWarnings: Job = {
       const pushed = await sendPushes(
         env,
         targets.map((target) => warningPush(target, scheduledAt)),
-        log,
       )
       sent += pushed.sent
       failed += pushed.failed

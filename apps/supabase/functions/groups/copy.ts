@@ -117,7 +117,9 @@ export type PushTarget = {
 }
 
 export function pushMessage(kind: 'nudge' | 'invite', target: PushTarget) {
-  const copy = COPY[target.language] ?? COPY.en
+  // Own keys only: the language is free text an app writes, and '__proto__'
+  // or 'toString' would otherwise find the object's prototype.
+  const copy = Object.hasOwn(COPY, target.language) ? COPY[target.language] : COPY.en
   // A missing name gets a word rather than a blank.
   const name = target.actor_name?.trim() || 'RiceCal'
   const title = kind === 'nudge' ? copy.nudge(name) : copy.invite(name)

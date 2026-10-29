@@ -1,10 +1,13 @@
 /**
- * The food and workout update push, in each member's own language. It reads
- * like a chat message from the group, "Ana: Nasi lemak (640 kcal)", because
- * that is what it opens, with how many more there are when it stands for
- * several. The names and the share's own line are data; only the count needs
- * words.
+ * The food and workout update push. It is a chat message's push from the
+ * group, built by the groups function's own `messagePush` so the two cannot
+ * drift: the app matches that payload to open the chat, stack it with the
+ * chat's other pushes and clear it when the chat opens. When it stands for
+ * several shares the line says how many more, which is the only part needing
+ * words of its own.
  */
+import { type MessageTarget, messagePush } from '../../../../../supabase/functions/groups/copy.ts'
+
 const MORE: Record<string, (count: number) => string> = {
   en: (n) => `and ${n} more`,
   ms: (n) => `dan ${n} lagi`,
@@ -21,30 +24,20 @@ const MORE: Record<string, (count: number) => string> = {
   bn: (n) => `আরও ${n}টি`,
 }
 
-export type UpdateTarget = {
-  token: string
+export type UpdateTarget = MessageTarget & {
+  user_id: string
   language: string
-  group_id: string
-  group_name: string
-  actor_name: string | null
-  body: string
   more: number
 }
 
 export function updatePush(target: UpdateTarget) {
-  const more = MORE[target.language] ?? MORE.en
-  // A missing name gets a word rather than a blank, as a chat push does.
-  const name = target.actor_name?.trim() || 'RiceCal'
-  const line = `${name}: ${target.body}`
-  return {
-    to: target.token,
-    title: target.group_name,
-    body: target.more > 0 ? `${line} ${more(target.more)}` : line,
-    sound: 'default',
-    // The same payload as a chat message's push, so every app version opens
-    // the group's chat on a tap.
-    data: { kind: 'group', groupId: target.group_id, chat: true },
-  }
+  // Own keys only: the language is free text an app writes, and '__proto__'
+  // or 'toString' would otherwise find the object's prototype.
+  const more = Object.hasOwn(MORE, target.language) ? MORE[target.language] : MORE.en
+  return messagePush({
+    ...target,
+    body: target.more > 0 ? `${target.body} ${more(target.more)}` : target.body,
+  })
 }
 
 export const UPDATE_LANGUAGES = Object.keys(MORE)

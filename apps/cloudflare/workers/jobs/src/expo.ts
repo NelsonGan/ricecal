@@ -9,14 +9,20 @@
  * A chunk Expo refuses is counted as failed and not retried: the jobs that
  * send pushes mark them sent in Postgres first, so a retry would need its own
  * record of what is owed, and every push here has the app itself as a backup.
+ * A job decides whether a run with failures is itself a failure.
  */
 import type { Env } from './env.ts'
-import type { JobContext } from './job.ts'
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send'
 
 /** Expo's ceiling on messages in one request. */
 const EXPO_CHUNK = 100
+
+/**
+ * Long enough for a slow answer, short enough that a stalled Expo cannot keep
+ * an every-minute job running into the next one.
+ */
+const EXPO_TIMEOUT_MS = 20_000
 
 export type PushMessage = { to: string } & Record<string, unknown>
 
@@ -29,11 +35,7 @@ export type PushResult = {
   gone: string[]
 }
 
-export async function sendPushes(
-  env: Env,
-  messages: PushMessage[],
-  log: JobContext['log'],
-): Promise<PushResult> {
+export async function sendPushes(env: Env, messages: PushMessage[]): Promise<PushResult> {
   const result: PushResult = { sent: 0, failed: 0, gone: [] }
   const headers: Record<string, string> = {
     Accept: 'application/json',
@@ -47,8 +49,13 @@ export async function sendPushes(
         method: 'POST',
         headers,
         body: JSON.stringify(chunk),
+        signal: AbortSignal.timeout(EXPO_TIMEOUT_MS),
       })
-      if (!response.ok) throw new Error(`expo push ${response.status}`)
+      // Expo says why in the body (an error code such as a missing access
+      // token), which is the part worth having in the log.
+      if (!response.ok) {
+        throw new Error(`expo push ${response.status}: ${(await response.text()).slice(0, 300)}`)
+      }
       const tickets = ((await response.json()) as { data?: Ticket[] })?.data ?? []
       chunk.forEach((message, index) => {
         const ticket = tickets[index]
@@ -59,7 +66,7 @@ export async function sendPushes(
       })
     } catch (error) {
       result.failed += chunk.length
-      log('could not post a chunk of pushes', {
+      console.error('[expo] could not post a chunk of pushes', {
         size: chunk.length,
         error: error instanceof Error ? error.message : String(error),
       })

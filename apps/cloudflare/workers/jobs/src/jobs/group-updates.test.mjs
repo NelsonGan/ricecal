@@ -3,8 +3,10 @@ import test from 'node:test'
 import { runJob } from '../job.ts'
 import { groupUpdates } from './group-updates.ts'
 import { UPDATE_LANGUAGES, updatePush } from './group-updates-copy.ts'
+import { WARNING_LANGUAGES } from './photo-warnings-copy.ts'
 
 const target = (overrides) => ({
+  user_id: '11111111-1111-4111-8111-111111111111',
   token: 'ExponentPushToken[a]',
   language: 'en',
   group_id: '22222222-2222-4222-8222-222222222222',
@@ -15,7 +17,43 @@ const target = (overrides) => ({
   ...overrides,
 })
 
-test('reads like a chat message from the group, and opens its chat', () => {
+const env = { SUPABASE_URL: 'https://example.test', SUPABASE_SERVICE_ROLE_KEY: 'key' }
+
+/**
+ * PostgREST and Expo in one stub. `digests` answers each call in turn; Expo
+ * answers DeviceNotRegistered for a token ending `[dead]`, or `expoStatus`.
+ */
+function stub({ digests = [], expoStatus = 200 } = {}) {
+  const rpcs = []
+  const posted = []
+  const real = globalThis.fetch
+  globalThis.fetch = async (url, init) => {
+    const href = String(url)
+    if (href.includes('/rest/v1/rpc/')) {
+      const name = href.split('/rpc/')[1]
+      rpcs.push([name, JSON.parse(init.body)])
+      if (name === 'group_update_digests')
+        return new Response(JSON.stringify(digests.shift() ?? []))
+      return new Response('')
+    }
+    const body = JSON.parse(init.body)
+    posted.push(body)
+    if (expoStatus !== 200)
+      return new Response('{"errors":[{"code":"UNAUTHORIZED"}]}', { status: expoStatus })
+    return new Response(
+      JSON.stringify({
+        data: body.map((m) =>
+          m.to.endsWith('[dead]')
+            ? { status: 'error', details: { error: 'DeviceNotRegistered' } }
+            : { status: 'ok' },
+        ),
+      }),
+    )
+  }
+  return { rpcs, posted, restore: () => (globalThis.fetch = real) }
+}
+
+test('is a chat push from the group, which opens its chat', () => {
   const push = updatePush(target())
   assert.equal(push.title, 'Makan Buddies')
   assert.equal(push.body, 'Aisha: Nasi lemak (640 kcal)')
@@ -28,12 +66,19 @@ test('reads like a chat message from the group, and opens its chat', () => {
 
 test('counts the rest when it stands for several, in any language', () => {
   assert.equal(updatePush(target({ more: 2 })).body, 'Aisha: Nasi lemak (640 kcal) and 2 more')
-  assert.equal(updatePush(target({ more: 2, language: 'xx' })).body.endsWith('and 2 more'), true)
   assert.equal(updatePush(target({ actor_name: ' ' })).body, 'RiceCal: Nasi lemak (640 kcal)')
+  // A language an app wrote that is no language, prototype keys included.
+  for (const language of ['xx', '__proto__', 'toString', 'constructor']) {
+    assert.equal(
+      updatePush(target({ more: 2, language })).body.endsWith('and 2 more'),
+      true,
+      language,
+    )
+  }
 })
 
-test('carries every app language, with no dashes in a sentence', () => {
-  assert.equal(UPDATE_LANGUAGES.length, 13)
+test('carries the same languages as the other pushes, with no dashes', () => {
+  assert.deepEqual([...UPDATE_LANGUAGES].sort(), [...WARNING_LANGUAGES].sort())
   for (const language of UPDATE_LANGUAGES) {
     const body = updatePush(target({ language, more: 3 })).body
     assert.ok(body.includes('3'), language)
@@ -41,101 +86,75 @@ test('carries every app language, with no dashes in a sentence', () => {
   }
 })
 
-/** Expo's answer: a dead device for any token ending `[dead]`. */
-function fakeExpo() {
-  const posted = []
-  const real = globalThis.fetch
-  globalThis.fetch = async (_url, init) => {
-    const body = JSON.parse(init.body)
-    posted.push(body)
-    return new Response(
-      JSON.stringify({
-        data: body.map((m) =>
-          m.to.endsWith('[dead]')
-            ? { status: 'error', details: { error: 'DeviceNotRegistered' } }
-            : { status: 'ok' },
-        ),
-      }),
-    )
-  }
-  return { posted, restore: () => (globalThis.fetch = real) }
-}
-
-test('posts what the digest returns and forgets dead devices', async () => {
-  const expo = fakeExpo()
-  const calls = []
+test('posts each page and forgets dead devices, stopping at a short page', async () => {
+  const full = Array.from({ length: 90 }, (_, i) =>
+    target({ user_id: `u${i}`, token: `ExponentPushToken[${i}]` }),
+  )
+  const s = stub({ digests: [full, [target({ token: 'ExponentPushToken[dead]' })]] })
   try {
     const detail = await groupUpdates.run({
-      env: {},
-      rpc: async (name, args) => {
-        calls.push([name, args])
-        return name === 'group_update_digests'
-          ? [target(), target({ token: 'ExponentPushToken[dead]' })]
-          : null
-      },
+      env,
+      rpc: rpcOf(),
       log: () => undefined,
       scheduledAt: new Date(),
     })
-    assert.equal(expo.posted[0].length, 2)
-    assert.deepEqual(calls[1], ['forget_push_tokens', { p_tokens: ['ExponentPushToken[dead]'] }])
-    assert.deepEqual(detail, { devices: 2, sent: 1, failed: 1 })
-  } finally {
-    expo.restore()
-  }
-})
-
-test('an idle minute posts nothing and writes no job_runs row', async () => {
-  const expo = fakeExpo()
-  const calls = []
-  const realFetch = globalThis.fetch
-  // PostgREST, as `postgres.ts` calls it.
-  globalThis.fetch = async (url, init) => {
-    if (String(url).includes('/rest/v1/rpc/')) {
-      calls.push(String(url).split('/rpc/')[1])
-      return new Response(String(url).endsWith('group_update_digests') ? '[]' : '')
-    }
-    return realFetch(url, init)
-  }
-  try {
-    await runJob(groupUpdates, new Date(), {
-      SUPABASE_URL: 'https://example.test',
-      SUPABASE_SERVICE_ROLE_KEY: 'key',
-    })
-    assert.deepEqual(calls, ['group_update_digests'])
-    assert.equal(expo.posted.length, 0)
-  } finally {
-    globalThis.fetch = realFetch
-    expo.restore()
-  }
-})
-
-test('a busy minute is recorded, closed, in one call', async () => {
-  const calls = []
-  const real = globalThis.fetch
-  globalThis.fetch = async (url, init) => {
-    if (String(url).includes('/rest/v1/rpc/')) {
-      calls.push([String(url).split('/rpc/')[1], JSON.parse(init.body)])
-      return new Response(
-        String(url).endsWith('group_update_digests') ? JSON.stringify([target()]) : '',
-      )
-    }
-    return new Response(JSON.stringify({ data: [{ status: 'ok' }] }))
-  }
-  try {
-    await runJob(groupUpdates, new Date(), {
-      SUPABASE_URL: 'https://example.test',
-      SUPABASE_SERVICE_ROLE_KEY: 'key',
-    })
     assert.deepEqual(
-      calls.map(([name]) => name),
+      s.rpcs.map(([name]) => name),
+      ['group_update_digests', 'group_update_digests', 'forget_push_tokens'],
+    )
+    assert.deepEqual(s.rpcs[0][1], { p_limit: 90 })
+    assert.deepEqual(s.rpcs[2][1], { p_tokens: ['ExponentPushToken[dead]'] })
+    assert.equal(s.posted.length, 2)
+    assert.deepEqual(detail, { people: 91, devices: 91, sent: 90, failed: 1 })
+  } finally {
+    s.restore()
+  }
+})
+
+test('every push refused is a failure, with Expo’s reason in the log', async () => {
+  const s = stub({ digests: [[target()]], expoStatus: 401 })
+  const errors = []
+  const realError = console.error
+  console.error = (...args) => errors.push(args)
+  try {
+    await assert.rejects(runJob(groupUpdates, new Date(), env), /refused all 1 update pushes/)
+    assert.match(JSON.stringify(errors[0]), /401.*UNAUTHORIZED/)
+    const recorded = s.rpcs.find(([name]) => name === 'record_job_run')[1]
+    assert.equal(recorded.p_ok, false)
+    assert.deepEqual(recorded.p_detail, { runs: 1 })
+  } finally {
+    console.error = realError
+    s.restore()
+  }
+})
+
+test('an idle minute posts nothing and adds one run to the hour', async () => {
+  const s = stub()
+  try {
+    await runJob(groupUpdates, new Date(), env)
+    assert.deepEqual(
+      s.rpcs.map(([name]) => name),
       ['group_update_digests', 'record_job_run'],
     )
-    assert.deepEqual(calls[1][1], {
+    assert.deepEqual(s.rpcs[1][1], {
       p_job: 'group-updates',
       p_ok: true,
-      p_detail: { devices: 1, sent: 1, failed: 0 },
+      p_detail: { runs: 1, people: 0, devices: 0, sent: 0, failed: 0 },
     })
+    assert.equal(s.posted.length, 0)
   } finally {
-    globalThis.fetch = real
+    s.restore()
   }
 })
+
+/** The job's own `rpc`, through the stubbed fetch, as `postgres.ts` makes it. */
+function rpcOf() {
+  return async (name, args) => {
+    const response = await fetch(`https://example.test/rest/v1/rpc/${name}`, {
+      method: 'POST',
+      body: JSON.stringify(args ?? {}),
+    })
+    const body = await response.text()
+    return body ? JSON.parse(body) : null
+  }
+}
