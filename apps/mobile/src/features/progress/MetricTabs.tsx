@@ -75,6 +75,9 @@ export function MetricTabs({
   // Once, not once per field: the figure and the unit are two halves of one
   // decision about which unit this average is best read in.
   const water = summary ? volume(summary.water) : null
+  // The newest reading before the range when the range has none: a weight
+  // from last month is still the weight.
+  const weight = summary?.weightLast ?? summary?.weightBefore
 
   const figures: Record<TrendMetric, { value: string; unit: string }> = {
     calories: {
@@ -93,12 +96,7 @@ export function MetricTabs({
       unit: water ? t(`common:volume.${water.unit}Unit`) : t('progress:metric.waterUnit'),
     },
     weight: {
-      // The newest reading before the range when the range has none: a weight
-      // from last month is still the weight.
-      value:
-        (summary?.weightLast ?? summary?.weightBefore) != null
-          ? showWeight((summary?.weightLast ?? summary?.weightBefore) as number, unit)
-          : t('progress:metric.none'),
+      value: weight != null ? showWeight(weight, unit) : t('progress:metric.none'),
       unit: t(UNIT_KEY[unit]),
     },
   }

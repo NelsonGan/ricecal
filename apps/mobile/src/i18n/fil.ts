@@ -1039,6 +1039,7 @@ export const fil = {
 
     weight: {
       peakOn: '{{value}} {{unit}} noong {{date}}',
+      latest: 'Huling {{value}} {{unit}}',
       latestOn: 'Huling {{value}} {{unit}} noong {{date}}',
       peakIn: '{{value}} {{unit}} noong {{month}}',
       change: '{{value}} {{unit}}',

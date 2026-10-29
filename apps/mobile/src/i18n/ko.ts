@@ -1011,6 +1011,7 @@ export const ko = {
 
     weight: {
       peakOn: '{{date}}의 {{value}} {{unit}}',
+      latest: '최근 {{value}} {{unit}}',
       latestOn: '최근 {{value}} {{unit}}, {{date}}',
       peakIn: '{{month}}의 {{value}} {{unit}}',
       change: '{{value}} {{unit}}',

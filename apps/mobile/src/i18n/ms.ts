@@ -1043,6 +1043,7 @@ export const ms = {
 
     weight: {
       peakOn: '{{value}} {{unit}} pada {{date}}',
+      latest: 'Terkini {{value}} {{unit}}',
       latestOn: 'Terkini {{value}} {{unit}} pada {{date}}',
       peakIn: '{{value}} {{unit}} dalam {{month}}',
       change: '{{value}} {{unit}}',

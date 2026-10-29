@@ -1028,6 +1028,7 @@ export const id = {
 
     weight: {
       peakOn: '{{value}} {{unit}} pada {{date}}',
+      latest: 'Terakhir {{value}} {{unit}}',
       latestOn: 'Terakhir {{value}} {{unit}} pada {{date}}',
       peakIn: '{{value}} {{unit}} di {{month}}',
       change: '{{value}} {{unit}}',

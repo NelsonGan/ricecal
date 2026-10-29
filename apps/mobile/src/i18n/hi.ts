@@ -1006,6 +1006,7 @@ export const hi = {
 
     weight: {
       peakOn: '{{date}} को {{value}} {{unit}}',
+      latest: 'नवीनतम {{value}} {{unit}}',
       latestOn: 'नवीनतम {{value}} {{unit}}, {{date}}',
       peakIn: '{{month}} में {{value}} {{unit}}',
       change: '{{value}} {{unit}}',

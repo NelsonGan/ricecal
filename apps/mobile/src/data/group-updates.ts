@@ -1,4 +1,5 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
+import { AppState } from 'react-native'
 
 import { supabase } from '@/lib/supabase'
 
@@ -10,7 +11,21 @@ import { supabase } from '@/lib/supabase'
 const SETTLE_MS = 1_500
 const GROUPS_STALE_MS = 5 * 60_000
 
-let pending: ReturnType<typeof setTimeout> | null = null
+const away = (state?: string | null) => state === 'background' || state === 'inactive'
+
+let pending: { timer: ReturnType<typeof setTimeout>; send: () => void } | null = null
+
+// iOS suspends timers in the background, and the server only claims shares
+// from the last ten minutes: a meal logged just before locking the phone would
+// wait past that. Leaving the app sends what is waiting instead.
+AppState.addEventListener('change', (state) => {
+  if (away(state) && pending) {
+    clearTimeout(pending.timer)
+    const { send: flush } = pending
+    pending = null
+    flush()
+  }
+})
 
 /**
  * Asks the groups function to push the foods and workouts the viewer's own
@@ -23,11 +38,20 @@ let pending: ReturnType<typeof setTimeout> | null = null
  * rather than imported because `keys.ts` calls this.
  */
 export function pushGroupUpdates(queryClient: QueryClient, myGroupsKey: QueryKey): void {
-  if (pending) clearTimeout(pending)
-  pending = setTimeout(() => {
+  if (pending) clearTimeout(pending.timer)
+  const flush = () => void send(queryClient, myGroupsKey).catch(() => undefined)
+  if (away(AppState.currentState)) {
     pending = null
-    void send(queryClient, myGroupsKey).catch(() => undefined)
-  }, SETTLE_MS)
+    flush()
+    return
+  }
+  pending = {
+    timer: setTimeout(() => {
+      pending = null
+      flush()
+    }, SETTLE_MS),
+    send: flush,
+  }
 }
 
 async function send(queryClient: QueryClient, myGroupsKey: QueryKey) {

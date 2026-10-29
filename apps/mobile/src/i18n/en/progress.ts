@@ -117,6 +117,7 @@ export const progress = {
      */
     peakOn: '{{value}} {{unit}} on {{date}}',
     /** Under the weight chart when the range has no reading: the newest one before it. */
+    latest: 'Latest {{value}} {{unit}}',
     latestOn: 'Latest {{value}} {{unit}} on {{date}}',
     peakIn: '{{value}} {{unit}} in {{month}}',
     change: '{{value}} {{unit}}',

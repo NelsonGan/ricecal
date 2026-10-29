@@ -48,14 +48,16 @@ const QUARTER = 3
 export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPanelProps) {
   const { t } = useTranslation(['progress', 'common'])
   const { data: profile } = useProfile()
-  // The newest reading, for a range with none in it: weighing every few weeks
-  // is normal, and "no weigh-ins" over a reading from last month read as lost.
-  const latest = useWeighIns().data?.at(-1) ?? null
+  // A range with no reading still has a weight: the newest one before it
+  // (`weightBefore`). Weighing every few weeks is normal, and "no weigh-ins"
+  // over a reading from last month read as lost. The weigh-ins list only adds
+  // its date, so the panel does not wait on it.
+  const latestOn = useWeighIns().data?.at(-1)?.date ?? null
 
   const labels = bucketLabels(buckets, range, (index) => t('progress:range.week', { index }))
   const unitLabel = t(UNIT_KEY[unit])
 
-  if (!summary || (summary.weighIns === 0 && !latest)) {
+  if (!summary || (summary.weighIns === 0 && summary.weightBefore === null)) {
     return (
       <Card>
         <EmptyState
@@ -70,7 +72,7 @@ export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPan
     )
   }
 
-  const current = summary.weightLast ?? latest?.kg ?? null
+  const current = summary.weightLast ?? summary.weightBefore
   /** Signed, oldest to newest. Null with a single reading — one point is not a trend. */
   const change =
     summary.weightFirst !== null && current !== null && summary.weighIns > 1
@@ -135,13 +137,18 @@ export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPan
             </Text>
             <Text variant="meta" numberOfLines={2}>
               {summary.weightPeak === null || summary.weightPeakOn === null
-                ? latest
+                ? current !== null && latestOn
                   ? t('progress:weight.latestOn', {
-                      value: showWeight(latest.kg, unit),
+                      value: showWeight(current, unit),
                       unit: unitLabel,
-                      date: format(parseISO(latest.date), datePattern('dayMonthLong')),
+                      date: format(parseISO(latestOn), datePattern('dayMonthLong')),
                     })
-                  : t('progress:weight.emptyTitle')
+                  : current !== null
+                    ? t('progress:weight.latest', {
+                        value: showWeight(current, unit),
+                        unit: unitLabel,
+                      })
+                    : t('progress:weight.emptyTitle')
                 : range === '1y'
                   ? t('progress:weight.peakIn', {
                       value: showWeight(summary.weightPeak, unit),

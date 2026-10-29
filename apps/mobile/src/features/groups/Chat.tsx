@@ -58,7 +58,7 @@ import {
   useRecentWorkouts,
 } from '@/data/groups'
 import { useBlockAuthor } from '@/data/moderation'
-import type { ReportReason } from '@/data/types'
+import { REPORT_REASONS, type ReportReason } from '@/data/types'
 import { count, distance, duration } from '@/features/activity/format'
 import { showsDistance, workoutIcon, workoutKindKey } from '@/features/activity/workoutKind'
 import { type Outgoing, useOutbox } from '@/features/shared'
@@ -1602,8 +1602,6 @@ function NotifySheet({
     </Sheet>
   )
 }
-
-const REPORT_REASONS: readonly ReportReason[] = ['inappropriate', 'spam', 'dangerous', 'stolen']
 
 /**
  * What the emoji bar's ⋯ opens: reply, and what moderation needs (delete your

@@ -1008,6 +1008,7 @@ export const zhHans = {
 
     weight: {
       peakOn: '{{date}} 的 {{value}} {{unit}}',
+      latest: '最近一次 {{value}} {{unit}}',
       latestOn: '最近一次 {{value}} {{unit}}，{{date}}',
       peakIn: '{{month}} 的 {{value}} {{unit}}',
       change: '{{value}} {{unit}}',

@@ -1017,6 +1017,7 @@ export const ja = {
 
     weight: {
       peakOn: '{{date}} の {{value}} {{unit}}',
+      latest: '最新 {{value}} {{unit}}',
       latestOn: '最新 {{value}} {{unit}}（{{date}}）',
       peakIn: '{{month}} の {{value}} {{unit}}',
       change: '{{value}} {{unit}}',
