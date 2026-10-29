@@ -19,7 +19,7 @@
     "@expo-google-fonts/nunito": "^0.4.2",
     "@expo/metro-runtime": "~58.0.15",
     "@kingstinct/react-native-healthkit": "^14.0.2",
-    "@posthog/react-native-plugin": "^2.12.5",
+    "@posthog/react-native-plugin": "^2.12.7",
     "@react-native-community/netinfo": "12.0.1",
     "@react-native-firebase/analytics": "^26.4.0",
     "@react-native-firebase/app": "^26.4.0",
