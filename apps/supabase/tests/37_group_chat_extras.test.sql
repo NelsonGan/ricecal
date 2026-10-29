@@ -340,6 +340,15 @@ select is((select array_agg(token order by token) from both_pushes),
   'each of the friend''s devices hears it once');
 select is((select array_agg(distinct group_id) from both_pushes), array[:'other_group'::uuid],
   'through the group whose chat they read last');
+-- Ben watched the next one arrive in the first group's open chat.
+update public.group_messages set pushed_at = now() where author_id = :'ana' and automatic;
+insert into public.workouts (id, user_id, name, started_at, ended_at, log_date) values
+  ('a3740000-0000-4000-8000-00000000000a', :'ana', 'Arm day', now() - interval '40 minutes',
+   now() - interval '4 minutes', public.local_today(:'ana'));
+update public.group_members set chat_read_at = now() where user_id = :'ben' and group_id = (select id from g);
+select is((select count(*)::int from public.group_update_push_targets(:'ana')), 0,
+  'one already read in either group is not pushed through the other');
+delete from public.workouts where id = 'a3740000-0000-4000-8000-00000000000a';
 delete from public.push_tokens where token like 'ExponentPushToken[extras-ben-%';
 delete from public.workouts where id = 'a3740000-0000-4000-8000-000000000009';
 delete from public.group_members where group_id = :'other_group' and user_id = :'ben';

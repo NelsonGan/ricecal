@@ -30,7 +30,7 @@ CREATE OR REPLACE FUNCTION public.group_update_push_targets (
     g.name, g.id, c.body
   from shared c
   join public.group_members m on m.group_id = c.group_id and m.user_id <> p_caller
-    and m.notify_updates and m.chat_read_at < c.created_at
+    and m.notify_updates
   join public.push_tokens t on t.user_id = m.user_id
   join public.groups g on g.id = c.group_id
   join public.profiles a on a.id = p_caller
@@ -40,5 +40,10 @@ CREATE OR REPLACE FUNCTION public.group_update_push_targets (
     where (x.user_id = p_caller and x.author_id = m.user_id)
        or (x.user_id = m.user_id and x.author_id = p_caller)
   )
+    and not exists (
+      select 1 from shared r
+      join public.group_members mr on mr.group_id = r.group_id and mr.user_id = m.user_id
+      where r.thing = c.thing and mr.chat_read_at >= r.created_at
+    )
   order by t.token, c.thing, m.chat_read_at desc, g.id;
 $function$;
