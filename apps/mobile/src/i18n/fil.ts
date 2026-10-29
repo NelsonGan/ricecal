@@ -1781,6 +1781,19 @@ export const fil = {
     done: 'Sige',
     next: 'Susunod',
     pageOf: 'Pahina {{page}} ng {{count}}',
+    groupsNews: {
+      title: 'Mga grupo: kumain kasama ang mga kaibigan',
+    },
+    groupsBoard: {
+      title: 'Kumain nang sabay sa Mga grupo',
+      body: 'Tingnan ang kinakain ng mga kaibigan araw-araw, at kalabitin ang sinumang lumaktaw ng kain.',
+      previewLabel: 'Halimbawa ng mga pagkain ng isang grupo sa isang araw',
+    },
+    groupsChat: {
+      title: 'Mag-chat sa iyong grupo',
+      body: 'Ibahagi ang pagkain at ehersisyo, at mag-react gamit ang emoji.',
+      previewLabel: 'Halimbawa ng pagkaing ibinahagi sa chat ng grupo',
+    },
     update110: {
       title: 'Workout, post sa feed at bagong camera',
     },

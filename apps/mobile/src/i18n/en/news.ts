@@ -16,6 +16,21 @@ export const news = {
   next: 'Next',
   /** The dots under a card's pages, read by VoiceOver and TalkBack. */
   pageOf: 'Page {{page}} of {{count}}',
+  groupsNews: {
+    /** Its row in the News list. */
+    title: 'Groups: eat with friends',
+  },
+  groupsBoard: {
+    /** "Groups" and "nudge" are the Groups tab's and the board's own words. */
+    title: 'Eat together in Groups',
+    body: 'See what friends eat each day, and nudge anyone who misses a meal.',
+    previewLabel: "An example of a group's meals for the day",
+  },
+  groupsChat: {
+    title: 'Chat with your group',
+    body: 'Share meals and workouts, and react with an emoji.',
+    previewLabel: 'An example of a meal shared in a group chat',
+  },
   update110: {
     /** Its row in the News list. Each page has its own title. */
     title: 'Workouts, feed posts and a new camera',

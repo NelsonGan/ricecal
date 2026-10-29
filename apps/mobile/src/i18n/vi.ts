@@ -1750,6 +1750,19 @@ export const vi = {
     done: 'Đã hiểu',
     next: 'Tiếp',
     pageOf: 'Trang {{page}} / {{count}}',
+    groupsNews: {
+      title: 'Nhóm: ăn cùng bạn bè',
+    },
+    groupsBoard: {
+      title: 'Cùng ăn trong Nhóm',
+      body: 'Xem bạn bè ăn gì mỗi ngày, và nhắc ai bỏ bữa.',
+      previewLabel: 'Ví dụ các bữa ăn trong ngày của một nhóm',
+    },
+    groupsChat: {
+      title: 'Trò chuyện với nhóm',
+      body: 'Chia sẻ món ăn và bài tập, và thả cảm xúc bằng emoji.',
+      previewLabel: 'Ví dụ món ăn được chia sẻ trong trò chuyện nhóm',
+    },
     update110: {
       title: 'Tập luyện, đăng bảng tin và camera mới',
     },

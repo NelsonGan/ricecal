@@ -45,11 +45,11 @@ it('puts the newest announcement up after a fresh read, without writing anything
   expect(mockFetchQuery).toHaveBeenCalledWith(
     expect.objectContaining({ queryKey: ['profile', 'me'], staleTime: 30_000 }),
   )
-  expect(latest?.announcement?.id).toBe('feed_auto_share_2026_10')
+  expect(latest?.announcement?.id).toBe('groups_2026_10')
 })
 
 it('shows nothing when the fresh read says another phone has shown it', async () => {
-  mockFetchQuery.mockResolvedValue({ ...unseen, seen_announcements: ['feed_auto_share_2026_10'] })
+  mockFetchQuery.mockResolvedValue({ ...unseen, seen_announcements: ['groups_2026_10'] })
   await render(<Probe />)
   await act(() => jest.advanceTimersByTimeAsync(1300))
   expect(latest?.announcement).toBeNull()
@@ -95,7 +95,7 @@ it('waits out the launch the tour is offered on, even once the tour marks itself
 it.each([
   [
     'the account has seen it',
-    () => (mockState.profile = { ...unseen, seen_announcements: ['feed_auto_share_2026_10'] }),
+    () => (mockState.profile = { ...unseen, seen_announcements: ['groups_2026_10'] }),
   ],
   ['the phone is offline', () => (mockState.online = false)],
   ['Today is under another screen', () => (mockState.focused = false)],

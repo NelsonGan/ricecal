@@ -1762,6 +1762,19 @@ export const id = {
     done: 'Oke',
     next: 'Lanjut',
     pageOf: 'Halaman {{page}} dari {{count}}',
+    groupsNews: {
+      title: 'Grup: makan bersama teman',
+    },
+    groupsBoard: {
+      title: 'Makan bersama di Grup',
+      body: 'Lihat apa yang dimakan teman setiap hari, dan colek siapa pun yang melewatkan makan.',
+      previewLabel: 'Contoh makanan sehari dalam grup',
+    },
+    groupsChat: {
+      title: 'Obrolan dengan grup Anda',
+      body: 'Bagikan makanan dan latihan, lalu beri reaksi dengan emoji.',
+      previewLabel: 'Contoh makanan yang dibagikan di obrolan grup',
+    },
     update110: {
       title: 'Latihan, posting linimasa, dan kamera baru',
     },

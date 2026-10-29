@@ -4,6 +4,7 @@ import {
   allAnnouncementIds,
   announcementDue,
   announcementsNewestFirst,
+  withMissed,
 } from '../announcements'
 
 const pages: Announcement['pages'] = [{ key: 'workouts' }]
@@ -56,4 +57,27 @@ it('switches auto post on with the 1.1.0 announcement, whose feed page links to 
     ['feedAutoShare', 'edit_profile'],
     ['photoNote', 'personalisation'],
   ])
+})
+
+it('makes the Groups card the newest, and folds the 1.1.0 card into it only for an account that missed it', () => {
+  const groups = ANNOUNCEMENTS.find((a) => a.id === 'groups_2026_10')
+  if (!groups) throw new Error('groups')
+  expect(announcementDue(onboarded([]))?.id).toBe('groups_2026_10')
+  const missed = withMissed(groups, [])
+  expect(missed.pages.map((page) => page.key)).toEqual([
+    'groupsBoard',
+    'groupsChat',
+    'workouts',
+    'feedAutoShare',
+    'photoNote',
+  ])
+  expect(missed.claims).toEqual([
+    { id: 'groups_2026_10', enables: undefined },
+    { id: 'feed_auto_share_2026_10', enables: { autoPostFoods: true } },
+  ])
+  const seen = withMissed(groups, ['feed_auto_share_2026_10'])
+  expect(seen.pages.map((page) => page.key)).toEqual(['groupsBoard', 'groupsChat'])
+  expect(seen.claims).toEqual([{ id: 'groups_2026_10', enables: undefined }])
+  // Unknown profile: nothing folded, nothing switched.
+  expect(withMissed(groups, undefined).claims).toHaveLength(1)
 })

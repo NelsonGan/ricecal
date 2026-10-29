@@ -6173,6 +6173,25 @@ names the Apple Watch there and nowhere else: the watch app is iOS only.
   profile within 30 seconds, so a card another phone has shown is not shown
   again from a persisted cache.
 
+### Groups
+
+`groups_2026_10` is two pages: the board (a picture of a day of meals with a
+nudge, and a button to the Groups tab) and the chat (a shared meal with
+reactions). The pictures carry no words in their bubbles, so they read the
+same in every language.
+
+It folds the 1.1.0 card (`folds` in `announcements.ts`, `withMissed`). When it
+shipped, about two thirds of onboarded accounts on the hosted project had never
+been shown 1.1.0, and only the newest card is put up, so without the fold they
+would never meet its pages or have Auto post foods switched on. An account that
+missed 1.1.0 gets the Groups pages and then the 1.1.0 pages in one card. The
+card claims each announcement in its own `see_announcements` call, in order,
+each with its own switch: the server applies a switch only when that call's id
+is new to the account, so somebody who saw 1.1.0 on another phone and has
+since turned auto post off is not switched back on. The fold is fixed when the
+card appears, since claiming it changes the profile mid-read. With no profile
+loaded nothing is folded.
+
 ### 1.1.0, the first announcement
 
 `feed_auto_share_2026_10` is three pages: workouts (no button; on iOS the body
@@ -6688,7 +6707,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Widget water `preset` | Home-screen action preset volume | Widget action choice; no daily water total or diary history |
 | `announcement` | An id from `features/news/announcements.ts`, lowercase letters, digits and underscores (checked by `see_announcements`); currently `feed_auto_share_2026_10` | Never free text; a renamed id is a new announcement |
 | `source` / `AnnouncementSource` | `launch`, `settings` | `launch` is the card the app puts over Today; `settings` is one opened from the News list under Me |
-| `cta` / `AnnouncementCta` | `edit_profile`, `personalisation` | Where a page's button leads, named for analytics; a tap, not a changed setting |
+| `cta` / `AnnouncementCta` | `edit_profile`, `personalisation`, `groups` | Where a page's button leads, named for analytics; a tap, not a changed setting |
 | Announcement `via` | `done` ("Got it" on the last page), `close` (cross, scrim or back gesture) | Closing without a page's button |
 | Announcement `page` | The page, from 1, that the button was tapped or the card closed on | How far people read is `Dismissed` broken down by `page`; `done` is always the last page |
 | Group `visibility`, `via`, `by`, `meal`, `reaction` | `private`/`public`; `invite`/`public`; `handle`/`email` (an email address typed into the invite field); `breakfast`/`lunch`/`dinner` (the board column, not the diary's `Meal`); `like`/`dislike` | `src/lib/analytics/events.ts`; never a group name, a handle, an address, a food or a message |
