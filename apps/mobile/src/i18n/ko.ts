@@ -2354,6 +2354,7 @@ export const ko = {
     dislike: '별로예요',
     moveTo: '이동',
     chat: '채팅',
+    online: '{{count}}명 온라인',
     chatEmpty: '아직 메시지가 없어요. 인사해 보세요.',
     message: '{{name}}에 메시지 보내기',
     send: '보내기',

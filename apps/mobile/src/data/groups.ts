@@ -576,6 +576,22 @@ function broadcastIds(payload: Record<string, unknown>): string[] {
 /** The group's private Realtime topic, shared by its open chat and its board's chat bar. */
 const chatTopic = (groupId: string) => `group-chat:${groupId}`
 
+/** Counts distinct people in the focused chat, including the viewer, only while connected. */
+export function useGroupChatPresence(groupId: string, focused: boolean): number | null {
+  const userId = useUserId()
+  const [online, setOnline] = useState<number | null>(null)
+  useEffect(() => {
+    setOnline(null)
+    if (!focused || !userId) return
+    return listen(chatTopic(groupId), {
+      onEvent: () => {},
+      onLive: () => {},
+      presence: { userId, onCount: setOnline },
+    })
+  }, [groupId, userId, focused])
+  return focused ? online : null
+}
+
 /**
  * Keeps an open chat current over the group's private Realtime channel, and
  * answers whether it is joined, which is what slows the poll to a minute.

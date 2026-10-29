@@ -50,6 +50,7 @@ import {
   type RecentFoodPost,
   useGroupAction,
   useGroupChatLive,
+  useGroupChatPresence,
   useGroupDetails,
   useGroupThread,
   useMyGroups,
@@ -157,6 +158,8 @@ export function ChatScreen({
   const back = useBack('/groups')
   const viewer = useUserId()
   const name = useMyGroups().data?.find((group) => group.id === groupId)?.name ?? ''
+  const focused = useIsFocused()
+  const online = useGroupChatPresence(groupId, focused)
   const live = useGroupChatLive(groupId)
   const { thread, loadOlder, loadingOlder } = useGroupThread(groupId, live)
   const messages = thread.data?.messages
@@ -256,7 +259,6 @@ export function ChatScreen({
   // A message from someone else that lands while the thread is in front of the
   // viewer is read there and then, so its push, sent a few seconds later, does
   // not ring this phone about what its owner just watched arrive.
-  const focused = useIsFocused()
   const active = useAppActive()
   useReadAsItArrives(
     groupId,
@@ -408,8 +410,10 @@ export function ChatScreen({
       keyboardAvoid="footer"
       flush
       headerGap={false}
+      headerTopGap={false}
       header={
         <AppBar
+          className="pt-0"
           onBack={back}
           backLabel={t('common:action.back')}
           action={
@@ -429,7 +433,11 @@ export function ChatScreen({
               <Text variant="label" numberOfLines={1}>
                 {name || t('chat')}
               </Text>
-              <Text variant="micro">{t('chat')}</Text>
+              {online !== null ? (
+                <Text variant="micro" accessibilityLiveRegion="polite">
+                  {t('online', { count: online })}
+                </Text>
+              ) : null}
             </View>
           }
         />

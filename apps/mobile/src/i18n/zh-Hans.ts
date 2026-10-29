@@ -2347,6 +2347,7 @@ export const zhHans = {
     dislike: '踩',
     moveTo: '移到',
     chat: '聊天',
+    online: '{{count}} 人在线',
     chatEmpty: '还没有消息，打个招呼吧。',
     message: '发消息给 {{name}}',
     send: '发送',

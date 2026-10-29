@@ -5,6 +5,9 @@ type FakeChannel = {
   config: unknown
   emit: (event: string, payload: Record<string, unknown>) => void
   status: (status: string, error?: Error) => void
+  sync: (state: Record<string, Array<{ user_id?: unknown }>>) => void
+  track: jest.Mock
+  untrack: jest.Mock
 }
 
 const channels: FakeChannel[] = []
@@ -16,14 +19,24 @@ jest.mock('../supabase', () => ({
   supabase: {
     channel: (topic: string, options: { config: unknown }) => {
       let onBroadcast: (message: { event: string; payload: Record<string, unknown> }) => void
+      let onSync: () => void
+      let presence: Record<string, Array<{ user_id?: unknown }>> = {}
       let onStatus: (status: string, error?: Error) => void
       const fake = {
         topic: `realtime:${topic}`,
         config: options.config,
         emit: (event: string, payload: Record<string, unknown>) => onBroadcast({ event, payload }),
         status: (status: string, error?: Error) => onStatus(status, error),
-        on: (_type: string, _filter: unknown, callback: typeof onBroadcast) => {
-          onBroadcast = callback
+        track: jest.fn().mockResolvedValue('ok'),
+        untrack: jest.fn().mockResolvedValue('ok'),
+        presenceState: () => presence,
+        sync: (state: typeof presence) => {
+          presence = state
+          onSync()
+        },
+        on: (type: string, _filter: unknown, callback: typeof onBroadcast) => {
+          if (type === 'presence') onSync = callback as unknown as () => void
+          else onBroadcast = callback
           return fake
         },
         subscribe: (callback: typeof onStatus) => {
@@ -214,4 +227,148 @@ it('leaves a topic whose leave the server refused to polling, and still sleeps i
 
   appStateHandler?.('background')
   expect(mockDisconnect).toHaveBeenCalledTimes(1)
+})
+
+function currentChannel(): FakeChannel {
+  const channel = channels[0]
+  if (!channel) throw new Error('Expected a channel')
+  return channel
+}
+
+const present = (userId = 'viewer') => ({
+  ...listener(),
+  presence: { userId, onCount: jest.fn() },
+})
+
+it('tracks after joining and counts people once across devices, using the full sync state', async () => {
+  const each = present()
+  listen('t', each)
+  const channel = currentChannel()
+  expect(channel.track).not.toHaveBeenCalled()
+  expect(each.presence.onCount).toHaveBeenLastCalledWith(null)
+  channel.status('SUBSCRIBED')
+  await settle()
+  expect(channel.track).toHaveBeenCalledWith({ user_id: 'viewer' })
+  channel.sync({
+    a: [{ user_id: 'viewer' }],
+    b: [{ user_id: 'friend' }, { user_id: 'friend' }],
+    c: [{}, { user_id: 123 }, { user_id: '' }],
+  })
+  expect(each.presence.onCount).toHaveBeenLastCalledWith(2)
+  channel.sync({ a: [{ user_id: 'viewer' }] })
+  expect(each.presence.onCount).toHaveBeenLastCalledWith(1)
+})
+
+it('does not count a board as online and untracks when a chat leaves the shared channel', async () => {
+  listen('t', listener())
+  const channel = currentChannel()
+  channel.status('SUBSCRIBED')
+  await settle()
+  expect(channel.track).not.toHaveBeenCalled()
+  const stop = listen('t', present())
+  await settle()
+  expect(channel.track).toHaveBeenCalledTimes(1)
+  stop()
+  await settle()
+  expect(channel.untrack).toHaveBeenCalledTimes(1)
+  expect(removals).toHaveLength(0)
+})
+
+it('shares tracking between chat listeners and gives late listeners the current count', async () => {
+  const first = present()
+  const stop = listen('t', first)
+  const channel = currentChannel()
+  channel.status('SUBSCRIBED')
+  await settle()
+  channel.sync({ a: [{ user_id: 'viewer' }] })
+  const second = present()
+  listen('t', second)
+  await settle()
+  expect(second.presence.onCount).toHaveBeenLastCalledWith(1)
+  expect(channel.track).toHaveBeenCalledTimes(1)
+  stop()
+  await settle()
+  expect(channel.untrack).not.toHaveBeenCalled()
+})
+
+it('clears the count on a dropped connection and tracks again after rejoining', async () => {
+  const each = present()
+  listen('t', each)
+  const channel = currentChannel()
+  channel.status('SUBSCRIBED')
+  await settle()
+  channel.sync({ a: [{ user_id: 'viewer' }] })
+  channel.status('CHANNEL_ERROR')
+  expect(each.presence.onCount).toHaveBeenLastCalledWith(null)
+  channel.status('SUBSCRIBED')
+  await settle()
+  expect(channel.track).toHaveBeenCalledTimes(2)
+})
+
+it('clears the count in the background and tracks on a fresh channel when returning', async () => {
+  const each = present()
+  listen('t', each)
+  currentChannel().status('SUBSCRIBED')
+  await settle()
+  currentChannel().sync({ a: [{ user_id: 'viewer' }] })
+  appStateHandler?.('background')
+  expect(each.presence.onCount).toHaveBeenLastCalledWith(null)
+  removals[0]?.finish()
+  await settle()
+  appStateHandler?.('active')
+  currentChannel().status('SUBSCRIBED')
+  await settle()
+  expect(currentChannel().track).toHaveBeenCalledWith({ user_id: 'viewer' })
+})
+
+it('finishes a pending track before untracking when a chat closes over the board', async () => {
+  listen('t', listener())
+  const stop = listen('t', present())
+  const channel = currentChannel()
+  let finish!: (result: string) => void
+  channel.track.mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
+  channel.status('SUBSCRIBED')
+  await settle()
+  stop()
+  await settle()
+  expect(channel.untrack).not.toHaveBeenCalled()
+  finish('ok')
+  await settle()
+  expect(channel.untrack).toHaveBeenCalledTimes(1)
+})
+
+it('keeps message delivery working when presence tracking fails', async () => {
+  const each = present()
+  listen('t', each)
+  const channel = currentChannel()
+  channel.track.mockRejectedValue(new Error('connection dropped'))
+  channel.status('SUBSCRIBED')
+  await settle()
+  expect(each.presence.onCount).toHaveBeenLastCalledWith(null)
+  channel.emit('message', { ids: ['m1'] })
+  expect(each.onEvent).toHaveBeenCalledWith('message', { ids: ['m1'] })
+})
+
+it('does not let an old track response stand in for tracking the rejoined connection', async () => {
+  listen('t', present())
+  const channel = currentChannel()
+  let finish: (result: string) => void = () => {}
+  channel.track.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
+  channel.status('SUBSCRIBED')
+  await settle()
+  channel.status('CHANNEL_ERROR')
+  channel.status('SUBSCRIBED')
+  finish('ok')
+  await settle()
+  expect(channel.track).toHaveBeenCalledTimes(2)
 })

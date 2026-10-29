@@ -2368,6 +2368,7 @@ export const ja = {
     dislike: 'よくないね',
     moveTo: '移動',
     chat: 'チャット',
+    online: '{{count}}人がオンライン',
     chatEmpty: 'まだメッセージはありません。あいさつしよう。',
     message: '{{name}}にメッセージ',
     send: '送信',

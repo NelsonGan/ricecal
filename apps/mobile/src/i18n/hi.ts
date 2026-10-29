@@ -2351,6 +2351,7 @@ export const hi = {
     dislike: 'नापसंद',
     moveTo: 'यहाँ ले जाएँ',
     chat: 'चैट',
+    online: '{{count}} ऑनलाइन',
     chatEmpty: 'अभी कोई संदेश नहीं। नमस्ते कहें।',
     message: '{{name}} को संदेश',
     send: 'भेजें',

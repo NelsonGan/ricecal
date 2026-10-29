@@ -75,6 +75,7 @@ export const groups = {
   dislike: 'Dislike',
   moveTo: 'Move to',
   chat: 'Chat',
+  online: '{{count}} online',
   chatEmpty: 'No messages yet. Say hi.',
   message: 'Message {{name}}',
   send: 'Send',
