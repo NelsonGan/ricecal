@@ -423,6 +423,19 @@ function parseRepairing(candidate: string, onRepair?: (keys: number) => void): u
 const KEY_NAME = /^[a-z_][a-z0-9_]*$/i
 
 /**
+ * Where the key the parser stopped after began: the quote before the one at
+ * `at - 1`. -1 when that quote is escaped, since it is then inside the key
+ * rather than its start, and a repair measured from it could pass a key like
+ * `no"te` as a plain name.
+ */
+function keyOpened(text: string, at: number): number {
+  const opened = text.lastIndexOf('"', at - 2)
+  let slashes = 0
+  while (opened - 1 - slashes >= 0 && text[opened - 1 - slashes] === '\\') slashes++
+  return slashes % 2 === 0 ? opened : -1
+}
+
+/**
  * The answer with the key the parser stopped in mended, or null when neither
  * repair leaves a plain key followed by its colon.
  */
@@ -441,14 +454,14 @@ function mendKey(text: string, at: number): string | null {
  * ends on the quote opening the next key, and it stops on that key's first
  * letter: the same error and the same place as a stray quote. This was in fact
  * the fault: on the first day the stray-quote repair was live it mended none of
- * 29 failed photo answers, while a simulation of a dropped closing quote gives
- * their logged shape exactly (`at-char=letter prev-char="`, the string left open
+ * the 27 photo answers that failed, while a simulation of a dropped closing
+ * quote gives their logged shape exactly (`at-char=letter prev-char="`, the string left open
  * five characters from the end). The key read must start with a plain name and
  * its colon, and the quote goes straight after the name.
  */
 function missingKeyClose(text: string, at: number): number {
   if (!Number.isInteger(at) || text[at - 1] !== '"') return -1
-  const opened = text.lastIndexOf('"', at - 2)
+  const opened = keyOpened(text, at)
   if (opened < 0) return -1
   const name = text.slice(opened + 1, at - 1).match(/^([a-z_][a-z0-9_]*)\s*:/i)?.[1]
   return name ? opened + 1 + name.length : -1
@@ -461,7 +474,7 @@ function missingKeyClose(text: string, at: number): number {
  */
 function strayKeyQuote(text: string, at: number): number {
   if (!Number.isInteger(at) || text[at - 1] !== '"' || !/[a-z_]/i.test(text[at] ?? '')) return -1
-  const opened = text.lastIndexOf('"', at - 2)
+  const opened = keyOpened(text, at)
   const end = text.indexOf('"', at)
   if (opened < 0 || end < 0 || !/^\s*:/.test(text.slice(end + 1))) return -1
   const read = text.slice(opened + 1, at - 1)
