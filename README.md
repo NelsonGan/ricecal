@@ -3078,7 +3078,8 @@ refresh, while the card updates immediately and the Following feed is refreshed.
 A like is drawn at once on every cached copy of its post and put back if the
 server refuses it; it never refetches a feed, since it is the most frequent write
 and a refetch reloads every loaded page. A comment refreshes only its post. The
-unread badge polls once a minute only while Feed is on screen. Opening the inbox
+unread badge polls once a minute only while Feed is on screen. The inbox uses a
+plain envelope icon, with a badge only when the unread count is positive. Opening the inbox
 counts as seeing it: `mark_social_notifications_seen` marks everything up to the
 newest notification drawn as read, so the badge clears and one landing meanwhile
 still counts. The rows that were new keep their highlight for that visit, which
@@ -3497,6 +3498,17 @@ while its chat or its board is on screen and the app is in front. The two share
 it (`lib/realtime.ts` holds one channel per topic), so opening the chat from the
 board does not leave and rejoin. Everything else still polls.
 
+- **Online in the chat.** The header shows the group name and a translated count
+  from Supabase Realtime Presence, including the viewer. A green dot gently
+  pulses in opacity on the UI thread beside a positive count; Reduce Motion
+  keeps it still, and it pauses while the app is not active. Only a focused chat
+  publishes a user id; a board listens without counting as online. Multiple
+  devices for the same person count once. Leaving the chat untracks even while
+  the board keeps the channel; a failed untrack replaces it to clear that session.
+  Backgrounding leaves it, and a lost connection
+  hides the count until Presence syncs again. Presence stays in memory and adds
+  no polling. The compact header keeps the status-bar inset without the extra
+  screen gutter above its controls.
 - **The chat** catches up when a broadcast names a message it does not have:
   it reads the newest ten (`CATCH_UP`) and lays them over the thread
   (`mergeCatchUp`). Ten that do not reach anything held mean more arrived than
@@ -3524,11 +3536,13 @@ board does not leave and rejoin. Everything else still polls.
   so a body never reaches a device that must not read it, and a member removed
   while the chat is open hears ids it can no longer turn into anything. A
   removed id is taken out of the thread in place, with no request.
-- **Who may listen** is one policy on `realtime.messages`:
+- **Who may listen.** Broadcasts and Presence use
   `private.group_chat_listener(realtime.topic())`, true only for a member of the
-  topic's group, and false rather than an error for anything malformed. There is
-  no insert policy, so a client cannot broadcast on the topic. `db diff` does not
-  see policies on `realtime.messages`, so the migration restates it by hand.
+  topic's group, and false rather than an error for anything malformed. There are
+  separate member-only read and insert policies for the `presence` extension.
+  Clients still cannot insert a `broadcast`, so message events remain server-only.
+  `db diff` does not see policies on `realtime.messages`, so migrations restate
+  these declarations from `51_groups.sql` by hand.
 - **One channel and as little socket as possible** (`lib/realtime.ts`). Screens
   share a channel per topic; the last one out leaves it, and a topic asked for
   again while its leave is in flight waits for it, since supabase-js would hand

@@ -2356,6 +2356,7 @@ export const bn = {
     dislike: 'অপছন্দ',
     moveTo: 'সরিয়ে নিন',
     chat: 'চ্যাট',
+    online: '{{count}} জন অনলাইনে',
     chatEmpty: 'এখনো কোনো বার্তা নেই। হাই বলুন।',
     message: '{{name}} কে বার্তা',
     send: 'পাঠান',

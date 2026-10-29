@@ -87,7 +87,7 @@ export default function FeedScreen() {
                   onPress={() => router.push('/social/notifications')}
                 >
                   <View className="h-6 w-6 items-center justify-center">
-                    <Icon set="ui" name="notification" size={22} />
+                    <Icon set="ui" name="mail" size={22} />
                     <CountBadge
                       count={unreadCount}
                       className="absolute -right-2 -top-2 h-5 min-w-5 px-1"

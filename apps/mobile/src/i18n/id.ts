@@ -2379,6 +2379,7 @@ export const id = {
     dislike: 'Tidak suka',
     moveTo: 'Pindah ke',
     chat: 'Obrolan',
+    online: '{{count}} online',
     chatEmpty: 'Belum ada pesan. Sapa dulu.',
     message: 'Kirim pesan ke {{name}}',
     send: 'Kirim',

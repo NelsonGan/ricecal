@@ -2400,6 +2400,7 @@ export const ms = {
     dislike: 'Tidak suka',
     moveTo: 'Alih ke',
     chat: 'Sembang',
+    online: '{{count}} dalam talian',
     chatEmpty: 'Belum ada mesej. Sapalah.',
     message: 'Mesej {{name}}',
     send: 'Hantar',

@@ -2403,6 +2403,7 @@ export const fil = {
     dislike: 'Ayaw',
     moveTo: 'Ilipat sa',
     chat: 'Chat',
+    online: '{{count}} online',
     chatEmpty: 'Wala pang mensahe. Bumati ka.',
     message: 'Mensahe sa {{name}}',
     send: 'Ipadala',
