@@ -240,6 +240,10 @@ Deno.test('a key that lost its closing quote gets it back, and nothing else is',
   // A key that is not a plain name is left to fail, as is one with no colon after it.
   assertThrows(() => parseAnswer('{"Nasi lemak: 1, "kcal": 300}'), SyntaxError)
   assertThrows(() => parseAnswer('{"name "roti", "kcal": 300}'), SyntaxError)
+  // A quote escaped inside a key is part of the key, not where it starts, so
+  // neither repair may measure from it and pass `no"te` as a plain name.
+  assertThrows(() => parseAnswer('{"no\\"te: 1, "kcal": 2}'), SyntaxError)
+  assertThrows(() => parseAnswer('{"a\\"b"c": 1}'), SyntaxError)
 })
 
 Deno.test('an unreadable answer is described by its shape, never by its words', () => {
