@@ -1111,12 +1111,27 @@ begin
 end;
 $$;
 
--- Listening only. With no insert policy a client cannot broadcast on the topic
--- itself, so every message on it came from the triggers below.
+-- Clients cannot insert broadcasts, so every message event on this topic
+-- comes from the database. Presence has separate permissions below.
 create policy "Group members hear their chat" on realtime.messages
   for select to authenticated
   using (
     realtime.messages.extension = 'broadcast'
+    and private.group_chat_listener((select realtime.topic()))
+  );
+
+-- Presence is the only client write allowed here. Message broadcasts stay server-only.
+create policy "Group members see who is online" on realtime.messages
+  for select to authenticated
+  using (
+    realtime.messages.extension = 'presence'
+    and private.group_chat_listener((select realtime.topic()))
+  );
+
+create policy "Group members share their presence" on realtime.messages
+  for insert to authenticated
+  with check (
+    realtime.messages.extension = 'presence'
     and private.group_chat_listener((select realtime.topic()))
   );
 

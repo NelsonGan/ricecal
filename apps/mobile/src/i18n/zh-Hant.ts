@@ -2347,6 +2347,7 @@ export const zhHant = {
     dislike: '倒讚',
     moveTo: '移到',
     chat: '聊天',
+    online: '{{count}} 人在線',
     chatEmpty: '還沒有訊息，打個招呼吧。',
     message: '傳訊息給 {{name}}',
     send: '傳送',

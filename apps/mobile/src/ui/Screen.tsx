@@ -111,6 +111,8 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * bar, and the gap was a blank band where messages vanished short of it.
    */
   headerGap?: boolean
+  /** Keep only the status-bar clearance above a compact chat header. */
+  headerTopGap?: boolean
   /**
    * Header chrome layered over the scroll area instead of taking layout space.
    * Reserved for a full-bleed hero whose image is the header background; the
@@ -232,6 +234,7 @@ export function Screen({
   children,
   header,
   headerGap = true,
+  headerTopGap = true,
   overlayHeader,
   scrollOffset,
   footer,
@@ -614,7 +617,9 @@ export function Screen({
              headers became sticky. */
             <View
               className={cn('z-10 bg-canvas px-gutter', headerGap && 'pb-stack')}
-              style={{ paddingTop: (safeAreaTop ? insets.top : 0) + spacing.gutter }}
+              style={{
+                paddingTop: (safeAreaTop ? insets.top : 0) + (headerTopGap ? spacing.gutter : 0),
+              }}
             >
               {header}
             </View>
