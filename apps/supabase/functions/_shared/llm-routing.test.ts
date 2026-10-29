@@ -212,6 +212,40 @@ Deno.test('a stray quote inside a key is taken out, and nothing else is', () => 
   assertEquals(error.message.includes('position 4'), true)
 })
 
+Deno.test('a key that lost its closing quote gets it back, and nothing else is', () => {
+  // What Haiku writes: the parser reads `grams: 30, ` as the key, up to the
+  // quote that opens the next one, and stops on that key's first letter.
+  const whole = {
+    items: [{ name: 'nasi lemak', components: [{ name: 'sambal', grams: 30, kcal: 60 }] }],
+  }
+  assertEquals(
+    parseAnswer(
+      '{"items":[{"name":"nasi lemak","components":[{"name":"sambal","grams:30,"kcal":60}]}]}',
+    ),
+    whole,
+  )
+  // With spaces, and before a string value rather than a number.
+  assertEquals(
+    parseAnswer(
+      '{"items": [{"name": "nasi lemak", "components": [{"name: "sambal", "grams": 30, "kcal": 60}]}]}',
+    ),
+    whole,
+  )
+  // The last key in an object, so what it swallowed ends in braces.
+  assertEquals(parseAnswer('{"a": {"fat_g: 4}, "b": 1}'), { a: { fat_g: 4 }, b: 1 })
+  // The caller hears it as a repair, the same as a stray quote.
+  const heard: number[] = []
+  parseAnswer('{"name: "roti", "kcal": 300}', (n) => heard.push(n))
+  assertEquals(heard, [1])
+  // A key that is not a plain name is left to fail, as is one with no colon after it.
+  assertThrows(() => parseAnswer('{"Nasi lemak: 1, "kcal": 300}'), SyntaxError)
+  assertThrows(() => parseAnswer('{"name "roti", "kcal": 300}'), SyntaxError)
+  // A quote escaped inside a key is part of the key, not where it starts, so
+  // neither repair may measure from it and pass `no"te` as a plain name.
+  assertThrows(() => parseAnswer('{"no\\"te: 1, "kcal": 2}'), SyntaxError)
+  assertThrows(() => parseAnswer('{"a\\"b"c": 1}'), SyntaxError)
+})
+
 Deno.test('an unreadable answer is described by its shape, never by its words', () => {
   // A second object after the first: what a parser fix would cover.
   const twice = answerShape('{"name":"nasi lemak"}\n\nCorrected:\n{"name":"nasi lemak ayam"}')
