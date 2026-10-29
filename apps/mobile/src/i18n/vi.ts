@@ -1179,6 +1179,7 @@ export const vi = {
       row: 'Chia sẻ và nhận Pro',
       title: 'Chia sẻ và nhận Pro',
       heroTitle: 'Đăng bài về RiceCal, nhận Pro',
+      card: 'Đăng bài nhận Pro',
       heroBody:
         'Cho mọi người xem một đĩa bạn đã ghi. Bài đăng càng nhiều lượt thích, Pro chúng tôi tặng càng dài.',
 

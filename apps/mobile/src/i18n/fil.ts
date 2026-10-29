@@ -1202,6 +1202,7 @@ export const fil = {
       row: 'Mag-share at kumita ng Pro',
       title: 'Mag-share at kumita ng Pro',
       heroTitle: 'Mag-post sa RiceCal, libreng Pro',
+      card: 'Mag-post, may Pro',
       heroBody:
         'Ipakita sa mga tao ang platong ni-log mo. Habang dumarami ang like ng post mo, humahaba ang Pro na ipapadala namin.',
 

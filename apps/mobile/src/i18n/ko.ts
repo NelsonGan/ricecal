@@ -1172,6 +1172,7 @@ export const ko = {
       row: '공유하고 Pro 받기',
       title: '공유하고 Pro 받기',
       heroTitle: 'RiceCal 글 올리고 Pro 무료로',
+      card: '글 올리고 Pro',
       heroBody:
         '기록한 한 접시를 사람들에게 보여주세요. 게시물의 좋아요가 많을수록 보내드리는 Pro 기간도 길어집니다.',
 

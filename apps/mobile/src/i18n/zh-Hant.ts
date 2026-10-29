@@ -1168,6 +1168,7 @@ export const zhHant = {
       row: '分享賺 Pro',
       title: '分享賺 Pro',
       heroTitle: '發文介紹 RiceCal，免費拿 Pro',
+      card: '發文拿 Pro',
       heroBody: '給大家看看你記錄的一盤菜。貼文按讚越多，我們送的 Pro 就越長。',
 
       platforms: '發到這裡',

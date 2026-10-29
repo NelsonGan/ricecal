@@ -1168,6 +1168,7 @@ export const zhHans = {
       row: '分享赚 Pro',
       title: '分享赚 Pro',
       heroTitle: '发帖介绍 RiceCal，免费拿 Pro',
+      card: '发帖拿 Pro',
       heroBody: '给大家看看你记录的一盘菜。帖子点赞越多，我们送的 Pro 就越长。',
 
       platforms: '发到这里',

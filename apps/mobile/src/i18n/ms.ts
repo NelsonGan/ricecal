@@ -1206,6 +1206,7 @@ export const ms = {
       row: 'Kongsi dan dapat Pro',
       title: 'Kongsi dan dapat Pro',
       heroTitle: 'Pos tentang RiceCal, dapat Pro',
+      card: 'Pos, dapat Pro',
       heroBody:
         'Tunjukkan orang pinggan yang anda rekod. Semakin banyak hantaran anda disukai, semakin lama Pro yang kami hantar.',
 

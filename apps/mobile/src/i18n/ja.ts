@@ -1177,6 +1177,7 @@ export const ja = {
       row: 'シェアして Pro をもらう',
       title: 'シェアして Pro をもらう',
       heroTitle: 'RiceCal を投稿して Pro を無料で',
+      card: '投稿で Pro',
       heroBody:
         '記録したお皿をみんなに見せてください。投稿のいいねが多いほど、お送りする Pro の期間も長くなります。',
 
