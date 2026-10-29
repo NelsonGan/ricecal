@@ -364,10 +364,11 @@ export function photoDataUrl(photoBase64: string, declared = 'image/jpeg'): stri
  * not honour `json_object` at all, sometimes writes a paragraph first. A
  * failure is still a SyntaxError, which `chatJSON` records without quoting.
  *
- * `onRepair` hears how many keys `parseRepairing` mended, so
- * the caller can count the answers it saved without logging any of them.
+ * `onRepair` hears how many keys `parseRepairing` mended and which repair
+ * mended each, so the caller can count the answers it saved without logging
+ * any of them.
  */
-export function parseAnswer(text: string, onRepair?: (keys: number) => void): unknown {
+export function parseAnswer(text: string, onRepair?: OnRepair): unknown {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]
   const braced = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)
   let failure: unknown
@@ -400,25 +401,34 @@ const MAX_KEY_REPAIRS = 3
  * than sent to the fallback. An answer that is not mended goes to the fallback
  * as before.
  */
-function parseRepairing(candidate: string, onRepair?: (keys: number) => void): unknown {
+function parseRepairing(candidate: string, onRepair?: OnRepair): unknown {
   let text = candidate
   // The first error is the one to report: it is what the model wrote.
   let first: unknown
-  for (let repairs = 0; ; repairs++) {
+  const via: KeyRepair[] = []
+  for (;;) {
     try {
       const value = JSON.parse(text)
-      if (repairs > 0) onRepair?.(repairs)
+      if (via.length > 0) onRepair?.(via.length, via)
       return value
     } catch (error) {
       first ??= error
       const message = error instanceof Error ? error.message : ''
       const at = Number(message.match(/Expected ':' after property name.*position (\d+)/)?.[1])
-      const mended = repairs < MAX_KEY_REPAIRS ? mendKey(text, at) : null
+      const mended = via.length < MAX_KEY_REPAIRS ? mendKey(text, at) : null
       if (mended === null) throw first
-      text = mended
+      text = mended.text
+      via.push(mended.via)
     }
   }
 }
+
+/**
+ * Which repair mended a key, for the log line that counts them. A label, never
+ * the key: the next night's triage reads these to see which fault Haiku makes.
+ */
+type KeyRepair = 'stray' | 'inserted' | 'replaced'
+type OnRepair = (keys: number, via: KeyRepair[]) => void
 
 const KEY_NAME = /^[a-z_][a-z0-9_]*$/i
 
@@ -439,32 +449,54 @@ function keyOpened(text: string, at: number): number {
  * The answer with the key the parser stopped in mended, or null when neither
  * repair leaves a plain key followed by its colon.
  */
-function mendKey(text: string, at: number): string | null {
+function mendKey(text: string, at: number): { text: string; via: KeyRepair } | null {
   const quote = strayKeyQuote(text, at)
-  if (quote >= 0) return text.slice(0, quote) + text.slice(quote + 1)
-  const close = missingKeyClose(text, at)
-  if (close >= 0) return `${text.slice(0, close)}"${text.slice(close)}`
-  return null
+  if (quote >= 0) return { text: text.slice(0, quote) + text.slice(quote + 1), via: 'stray' }
+  return mendKeyClose(text, at)
 }
 
 /**
- * Where a key's closing quote belongs, when the model left it off, or -1.
+ * What a model writes where a key's closing quote belongs, when it is not the
+ * quote: another kind of quote, or the punctuation either side of it.
+ */
+const CLOSE_STAND_INS = new Set(["'", '`', '‘', '’', '“', '”', ',', ';', ':'])
+
+/**
+ * The answer with a key's closing quote put right, or null.
  *
  * `"grams: 30, "kcal": 60` reads to the parser as one key, `grams: 30, `, that
  * ends on the quote opening the next key, and it stops on that key's first
- * letter: the same error and the same place as a stray quote. This was in fact
- * the fault: on the first day the stray-quote repair was live it mended none of
- * the 27 photo answers that failed, while a simulation of a dropped closing
- * quote gives their logged shape exactly (`at-char=letter prev-char="`, the string left open
- * five characters from the end). The key read must start with a plain name and
- * its colon, and the quote goes straight after the name.
+ * letter: the same error and the same place as a stray quote. So does a close
+ * written as something else: `"grams': 30`, `"grams”: 30`, `"grams,: 30`. A
+ * dropped quote was the first guess, and on its first day live it mended none
+ * of the 22 answers that failed this way, while a fuzz of every one-character
+ * fault found that only a close written as another character (or escaped) gives
+ * their logged shape and escapes both earlier repairs.
+ *
+ * The key read must start with a plain name, and what follows the name must be
+ * the colon, or one stand-in for the quote and then the colon.
  */
-function missingKeyClose(text: string, at: number): number {
-  if (!Number.isInteger(at) || text[at - 1] !== '"') return -1
+function mendKeyClose(text: string, at: number): { text: string; via: KeyRepair } | null {
+  if (!Number.isInteger(at) || text[at - 1] !== '"') return null
   const opened = keyOpened(text, at)
-  if (opened < 0) return -1
-  const name = text.slice(opened + 1, at - 1).match(/^([a-z_][a-z0-9_]*)\s*:/i)?.[1]
-  return name ? opened + 1 + name.length : -1
+  if (opened < 0) return null
+  const read = text.slice(opened + 1, at - 1)
+  const name = read.match(/^[a-z_][a-z0-9_]*/i)?.[0]
+  if (!name) return null
+  const end = opened + 1 + name.length
+  const after = read.slice(name.length)
+  const colonAt = (from: number) => /^\s*:/.test(after.slice(from))
+  // An escaped close, `"grams\": 30`, is left alone: `"gram\": 30` is the same
+  // text with a letter lost, and taking the backslash out would make a key
+  // called `gram`. `key-end=backslash` in the failure line says if it happens.
+  //
+  // `"grams': 30`: something else where the quote goes.
+  if (CLOSE_STAND_INS.has(after[0] ?? '') && colonAt(1)) {
+    return { text: `${text.slice(0, end)}"${text.slice(end + 1)}`, via: 'replaced' }
+  }
+  // `"grams: 30`: no quote at all.
+  if (colonAt(0)) return { text: `${text.slice(0, end)}"${text.slice(end)}`, via: 'inserted' }
+  return null
 }
 
 /**
@@ -591,7 +623,29 @@ export function answerShape(text: string): string {
     `at-char=${atChar}`,
     `prev-char=${prevChar}`,
     `stuck=${inString ? openedAt : -1}`,
+    `key-end=${kind === 'expected-colon' ? keyEnd(text, at) : 'n/a'}`,
   ].join(' ')
+}
+
+/**
+ * For a key the parser stopped in, what comes straight after its leading name,
+ * as a class: `colon` for a dropped closing quote, `quote` for another kind of
+ * quote in its place, `backslash` for an escaped one, `none` when the key does
+ * not start with a plain name. Says which fault a failure was, without the key.
+ */
+function keyEnd(text: string, at: number): string {
+  if (text[at - 1] !== '"') return 'n/a'
+  const opened = keyOpened(text, at)
+  // An escaped quote inside the key, which is what an escaped close looks like.
+  if (opened < 0) return 'backslash'
+  const read = text.slice(opened + 1, at - 1)
+  const name = read.match(/^[a-z_][a-z0-9_]*/i)?.[0]
+  if (!name) return 'none'
+  const after = read.slice(name.length)
+  if (/^\s*:/.test(after)) return 'colon'
+  const c = after[0]
+  if (c !== undefined && "'`‘’“”".includes(c)) return 'quote'
+  return c === ',' || c === ';' ? c : charClass(c)
 }
 
 /** `messages` with `instruction` at the end of their system prompt. */
@@ -811,8 +865,10 @@ export async function chatJSON(
       })
     }
     try {
-      return parseAnswer(text, (keys) =>
-        console.warn(`[llm] ${span}: ${route.model} answer repaired (keys=${keys})`),
+      return parseAnswer(text, (keys, via) =>
+        console.warn(
+          `[llm] ${span}: ${route.model} answer repaired (keys=${keys} via=${via.join(',')})`,
+        ),
       )
     } catch (error) {
       console.warn(`[llm] ${span}: ${route.model} answer did not parse (${answerShape(text)})`)
