@@ -27,8 +27,8 @@ export interface Env {
 
   /**
    * Optional. Expo only asks for it once enhanced push security is on for the
-   * project; until then the photo warnings post without one. See
-   * `jobs/photo-warnings.ts`.
+   * project; until then the photo warnings and group updates post without
+   * one. See `expo.ts`.
    */
   EXPO_ACCESS_TOKEN?: string
 }
