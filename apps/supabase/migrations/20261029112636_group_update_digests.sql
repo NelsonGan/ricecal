@@ -51,7 +51,7 @@ CREATE FUNCTION public.group_update_digests()
 
   with candidate as (
     select m.user_id, s.group_id, s.author_id, s.body, s.created_at, m.chat_read_at,
-      coalesce(s.post_id, s.workout_id, s.activity_id) as thing
+      coalesce(s.post_id, s.workout_id, s.activity_id, s.id) as thing
     from public.group_messages s
     join public.group_members m on m.group_id = s.group_id and m.user_id <> s.author_id
       and m.notify_updates
@@ -65,11 +65,14 @@ CREATE FUNCTION public.group_update_digests()
         where (x.user_id = s.author_id and x.author_id = m.user_id)
            or (x.user_id = m.user_id and x.author_id = s.author_id)
       )
+      -- Its copies in other groups were written in the same statement, so the
+      -- window bounds the search to the index rather than all history.
       and not exists (
         select 1 from public.group_messages r
         join public.group_members rm on rm.group_id = r.group_id and rm.user_id = m.user_id
-        where r.automatic and coalesce(r.post_id, r.workout_id, r.activity_id)
-            = coalesce(s.post_id, s.workout_id, s.activity_id)
+        where r.automatic and r.created_at > now() - interval '2 hours'
+          and coalesce(r.post_id, r.workout_id, r.activity_id, r.id)
+            = coalesce(s.post_id, s.workout_id, s.activity_id, s.id)
           and rm.chat_read_at >= r.created_at
       )
   ),
