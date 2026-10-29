@@ -185,6 +185,8 @@ export const profile = {
     row: 'Share and earn Pro',
     title: 'Share and earn Pro',
     heroTitle: 'Post about RiceCal, get Pro free',
+    /** Under the row on its card in Me, one line at half the screen's width. */
+    card: 'Get Pro for a post',
     heroBody:
       'Show people a plate you logged. The more your post is liked, the longer the Pro we send you.',
 

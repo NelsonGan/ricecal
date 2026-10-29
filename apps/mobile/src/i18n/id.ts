@@ -1190,6 +1190,7 @@ export const id = {
       row: 'Bagikan dan dapatkan Pro',
       title: 'Bagikan dan dapatkan Pro',
       heroTitle: 'Posting tentang RiceCal, dapat Pro',
+      card: 'Posting, dapat Pro',
       heroBody:
         'Tunjukkan ke orang-orang piring yang kamu catat. Makin banyak postinganmu disukai, makin lama Pro yang kami kirim.',
 

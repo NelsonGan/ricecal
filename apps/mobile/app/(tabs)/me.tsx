@@ -216,69 +216,78 @@ export default function MeScreen() {
         />
       </Card>
 
-      <Card contentClassName="gap-0">
-        {/* Somebody who has never paid has nothing to manage. The subscription
+      {/* One group with the offers under it, at the gap between the two offer
+          cards, so they read as the Pro card's options rather than as the next
+          section of the screen. */}
+      <View className="gap-2.5">
+        {/* `py-2` because the row brings its own vertical padding, and on top of
+          the card's it left a band of empty card above and below one line. */}
+        <Card contentClassName="gap-0 py-2">
+          {/* Somebody who has never paid has nothing to manage. The subscription
             screen is a plan, a renewal date and a way to cancel; for them it
             was three cards of "none" wrapped around a button to the paywall,
             so they go straight to the paywall instead. */}
-        <ListRow
-          title={t('profile:home.pro')}
-          subtitle={planLine}
-          leading={<Icon set="system" name="crown" size={42} />}
-          divider={false}
-          onPress={() => router.push(plan.state === 'none' ? '/paywall' : '/settings/subscription')}
-        />
-      </Card>
+          <ListRow
+            title={t('profile:home.pro')}
+            subtitle={planLine}
+            leading={<Icon set="system" name="crown" size={42} />}
+            divider={false}
+            onPress={() =>
+              router.push(plan.state === 'none' ? '/paywall' : '/settings/subscription')
+            }
+          />
+        </Card>
 
-      {/* Free accounts only (see `showFreeOffers`). Share & Earn
+        {/* Free accounts only (see `showFreeOffers`). Share & Earn
           is the way to Pro without paying, beside the Pro row that sells it;
           the Money2Time card is the ad Money2Time runs for RiceCal in return. */}
-      {showFreeOffers ? (
-        <View className="flex-row gap-2.5">
-          <Card
-            className="min-w-0 flex-1"
-            contentClassName="flex-1 gap-1.5 p-4"
-            accessibilityRole="button"
-            onPress={() => router.push('/settings/share')}
-          >
-            <Icon set="system" name="gift" size={36} />
-            <Text variant="label" numberOfLines={2}>
-              {t('profile:shareEarn.row')}
-            </Text>
-            <Text variant="caption" numberOfLines={2}>
-              {t('profile:shareEarn.heroTitle')}
-            </Text>
-          </Card>
-          <Card
-            className="min-w-0 flex-1"
-            contentClassName="flex-1 gap-1.5 p-4"
-            accessibilityRole="button"
-            onPress={() => {
-              track('Money2Time Ad Opened', {})
-              setMoney2TimeOpen(true)
-            }}
-          >
-            <View className="flex-row items-start justify-between gap-1">
-              <Image
-                source={MONEY2TIME_LOGO}
-                style={{ width: 36, height: 36, borderRadius: 10 }}
-                contentFit="cover"
-                transition={0}
-                accessible={false}
-              />
-              <Badge tone="neutral" size="sm">
-                {t('profile:money2time.ad')}
-              </Badge>
-            </View>
-            <Text variant="label" numberOfLines={2}>
-              {t('profile:money2time.name')}
-            </Text>
-            <Text variant="caption" numberOfLines={2}>
-              {t('profile:money2time.card')}
-            </Text>
-          </Card>
-        </View>
-      ) : null}
+        {showFreeOffers ? (
+          <View className="flex-row gap-2.5">
+            <Card
+              className="min-w-0 flex-1"
+              contentClassName="flex-1 gap-1 py-3"
+              accessibilityRole="button"
+              onPress={() => router.push('/settings/share')}
+            >
+              <Icon set="system" name="gift" size={36} />
+              <Text variant="label" numberOfLines={2}>
+                {t('profile:shareEarn.row')}
+              </Text>
+              <Text variant="caption" numberOfLines={1}>
+                {t('profile:shareEarn.card')}
+              </Text>
+            </Card>
+            <Card
+              className="min-w-0 flex-1"
+              contentClassName="flex-1 gap-1 py-3"
+              accessibilityRole="button"
+              onPress={() => {
+                track('Money2Time Ad Opened', {})
+                setMoney2TimeOpen(true)
+              }}
+            >
+              <View className="flex-row items-start justify-between gap-1">
+                <Image
+                  source={MONEY2TIME_LOGO}
+                  style={{ width: 36, height: 36, borderRadius: 10 }}
+                  contentFit="cover"
+                  transition={0}
+                  accessible={false}
+                />
+                <Badge tone="neutral" size="sm">
+                  {t('profile:money2time.ad')}
+                </Badge>
+              </View>
+              <Text variant="label" numberOfLines={2}>
+                {t('profile:money2time.name')}
+              </Text>
+              <Text variant="caption" numberOfLines={1}>
+                {t('profile:money2time.card')}
+              </Text>
+            </Card>
+          </View>
+        ) : null}
+      </View>
 
       {/* With two panes the account is the first and its settings the second.
           See `Aside`. */}
