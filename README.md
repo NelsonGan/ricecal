@@ -7158,6 +7158,7 @@ Verified 2026-10-12; credentials remain in the dashboards and local ignored file
 | RevenueCat project | RiceCal `projeb2883d3`, dashboard `eb2883d3` |
 | Store apps | iOS `app14d94549cb`; Android `app8b52836439`; Test Store `app36022b58af` |
 | PostHog destination | RiceCal project `659954`, US Cloud, timezone `Asia/Kuala_Lumpur`; app and website share it |
+| Native PostHog transport | `@posthog/react-native-plugin` minimum `2.12.7`, with `posthog-android` `3.72.9` and OkHttp `4.12.1` to block the eight compromised eMudhra intermediate certificates. Requires a new Android binary and a user update; an OTA update cannot replace OkHttp |
 | RevenueCat → PostHog | RevenueCat's PostHog integration: US region, gross USD, default `rc_*` event names, subscriber attributes not sent as person properties (each would be a billable `$set`), paywall and web-funnel events off, no sandbox key. Its API key is the public project token. The Mixpanel integration was deleted |
 | GA4 destination | RiceCal property `553863111`, account `350740029`, Firebase project `ricecal`; property reports MYR |
 | GA4 reporting controls | 14-month event and user retention; Google Signals off; ads personalization allowed in 0 of 307 regions; 45 custom dimensions and 11 custom metrics, including website definitions |
