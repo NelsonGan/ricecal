@@ -754,6 +754,7 @@ export type Database = {
           group_id: string
           joined_at: string
           notify: boolean
+          notify_updates: boolean
           user_id: string
         }
         Insert: {
@@ -762,6 +763,7 @@ export type Database = {
           group_id: string
           joined_at?: string
           notify?: boolean
+          notify_updates?: boolean
           user_id: string
         }
         Update: {
@@ -770,6 +772,7 @@ export type Database = {
           group_id?: string
           joined_at?: string
           notify?: boolean
+          notify_updates?: boolean
           user_id?: string
         }
         Relationships: [
@@ -857,16 +860,19 @@ export type Database = {
         Row: {
           created_at: string
           message_id: string
+          reason: Database['public']['Enums']['report_reason'] | null
           reporter_id: string
         }
         Insert: {
           created_at?: string
           message_id: string
+          reason?: Database['public']['Enums']['report_reason'] | null
           reporter_id: string
         }
         Update: {
           created_at?: string
           message_id?: string
+          reason?: Database['public']['Enums']['report_reason'] | null
           reporter_id?: string
         }
         Relationships: [
@@ -904,6 +910,7 @@ export type Database = {
         Row: {
           activity_id: string | null
           author_id: string
+          automatic: boolean
           body: string
           created_at: string
           group_id: string
@@ -918,6 +925,7 @@ export type Database = {
         Insert: {
           activity_id?: string | null
           author_id: string
+          automatic?: boolean
           body: string
           created_at?: string
           group_id: string
@@ -932,6 +940,7 @@ export type Database = {
         Update: {
           activity_id?: string | null
           author_id?: string
+          automatic?: boolean
           body?: string
           created_at?: string
           group_id?: string
@@ -3727,6 +3736,17 @@ export type Database = {
           token: string
         }[]
       }
+      group_update_push_targets: {
+        Args: { p_caller: string }
+        Returns: {
+          actor_name: string
+          body: string
+          group_id: string
+          group_name: string
+          language: string
+          token: string
+        }[]
+      }
       group_workout_detail: {
         Args: { p_group_id: string; p_id: string; p_source: string }
         Returns: Json
@@ -3835,7 +3855,10 @@ export type Database = {
       }
       report_group: { Args: { p_group_id: string }; Returns: undefined }
       report_group_message: {
-        Args: { p_message_id: string }
+        Args: {
+          p_message_id: string
+          p_reason?: Database['public']['Enums']['report_reason']
+        }
         Returns: undefined
       }
       report_social_content: {
@@ -4056,7 +4079,12 @@ export type Database = {
         Returns: undefined
       }
       set_group_preferences: {
-        Args: { p_board_order: string[]; p_group_id: string; p_notify: boolean }
+        Args: {
+          p_board_order: string[]
+          p_group_id: string
+          p_notify: boolean
+          p_notify_updates?: boolean
+        }
         Returns: undefined
       }
       set_group_reaction: {

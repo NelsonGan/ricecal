@@ -8,6 +8,7 @@ import {
   type TrendSummary,
   today,
   useProfile,
+  useWeighIns,
 } from '@/data'
 import { datePattern } from '@/lib/dates'
 import { goalDate } from '@/lib/nutrition'
@@ -47,11 +48,16 @@ const QUARTER = 3
 export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPanelProps) {
   const { t } = useTranslation(['progress', 'common'])
   const { data: profile } = useProfile()
+  // A range with no reading still has a weight: the newest one before it
+  // (`weightBefore`). Weighing every few weeks is normal, and "no weigh-ins"
+  // over a reading from last month read as lost. The weigh-ins list only adds
+  // its date, so the panel does not wait on it.
+  const latestOn = useWeighIns().data?.at(-1)?.date ?? null
 
   const labels = bucketLabels(buckets, range, (index) => t('progress:range.week', { index }))
   const unitLabel = t(UNIT_KEY[unit])
 
-  if (!summary || summary.weighIns === 0) {
+  if (!summary || (summary.weighIns === 0 && summary.weightBefore === null)) {
     return (
       <Card>
         <EmptyState
@@ -66,7 +72,7 @@ export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPan
     )
   }
 
-  const current = summary.weightLast
+  const current = summary.weightLast ?? summary.weightBefore
   /** Signed, oldest to newest. Null with a single reading — one point is not a trend. */
   const change =
     summary.weightFirst !== null && current !== null && summary.weighIns > 1
@@ -131,7 +137,18 @@ export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPan
             </Text>
             <Text variant="meta" numberOfLines={2}>
               {summary.weightPeak === null || summary.weightPeakOn === null
-                ? t('progress:weight.emptyTitle')
+                ? current !== null && latestOn
+                  ? t('progress:weight.latestOn', {
+                      value: showWeight(current, unit),
+                      unit: unitLabel,
+                      date: format(parseISO(latestOn), datePattern('dayMonthLong')),
+                    })
+                  : current !== null
+                    ? t('progress:weight.latest', {
+                        value: showWeight(current, unit),
+                        unit: unitLabel,
+                      })
+                    : t('progress:weight.emptyTitle')
                 : range === '1y'
                   ? t('progress:weight.peakIn', {
                       value: showWeight(summary.weightPeak, unit),
@@ -163,21 +180,25 @@ export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPan
           )}
         </View>
 
-        <TrendLine
-          points={buckets.map((bucket, index) => ({
-            key: bucket.start,
-            label: labels[index],
-            // The year's axis names every other month; the readout names each.
-            title: range === '1y' ? format(parseISO(bucket.start), 'LLLL') : undefined,
-            value: bucket.weight,
-          }))}
-          // Where the line starts. Without it a range opening on an unweighed
-          // day begins partway across the card.
-          carryFrom={summary.weightBefore}
-          formatValue={(value) => `${showWeight(value, unit)} ${unitLabel}`}
-          unitFactor={fromKg(1, unit)}
-          accessibilityLabel={t('progress:weight.chart', { span: t(SPAN_KEY[range]) })}
-        />
+        {/* With no reading in the range a line would be one held value with
+            nothing on it; the sentence above already says the weight. */}
+        {summary.weighIns === 0 ? null : (
+          <TrendLine
+            points={buckets.map((bucket, index) => ({
+              key: bucket.start,
+              label: labels[index],
+              // The year's axis names every other month; the readout names each.
+              title: range === '1y' ? format(parseISO(bucket.start), 'LLLL') : undefined,
+              value: bucket.weight,
+            }))}
+            // Where the line starts. Without it a range opening on an unweighed
+            // day begins partway across the card.
+            carryFrom={summary.weightBefore}
+            formatValue={(value) => `${showWeight(value, unit)} ${unitLabel}`}
+            unitFactor={fromKg(1, unit)}
+            accessibilityLabel={t('progress:weight.chart', { span: t(SPAN_KEY[range]) })}
+          />
+        )}
       </Card>
 
       <Card>

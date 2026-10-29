@@ -280,13 +280,16 @@ select is(public.group_chat_summary((select id from g)),
   'and the chat bar counts it unread and shows it');
 select ok(not public.group_board((select id from g), (select d from bday)) ? 'chat',
   'the board itself carries no chat');
-select lives_ok(format('select public.report_group_message(%L)',
-  public.group_messages((select id from g))->0->>'id'), 'Ana reports it');
+create temp table reported as select (public.group_messages((select id from g))->0->>'id')::uuid as id;
+select lives_ok(format('select public.report_group_message(%L, %L)', (select id from reported), 'spam'),
+  'Ana reports it as spam');
 select is(jsonb_array_length(public.group_messages((select id from g))), 0,
   'a reported message disappears for the reporter');
 select is(public.group_chat_summary((select id from g)), '{"unread": 0, "last": null}'::jsonb,
   'and from the chat bar');
 reset role;
+select is((select reason from public.group_message_reports where message_id = (select id from reported)),
+  'spam'::public.report_reason, 'the report keeps its reason');
 
 -- The thread is read a page at a time from the newest back.
 insert into public.group_messages(id, group_id, author_id, body, request_id, created_at)
@@ -347,10 +350,45 @@ update public.group_members set chat_read_at = now() - interval '1 second' where
 select is((select array_agg(t.token) from public.group_message_push_targets(:'ben', 'a3620000-0000-4000-8000-0000000000ab') t),
   array['ExponentPushToken[groups-ana]'], 'one who last read it before the message is');
 delete from public.group_messages where id = 'a3620000-0000-4000-8000-0000000000ab';
+-- Food and workout updates have their own switch. Cai muted chat but keeps
+-- updates; Ana keeps both until she turns updates off.
+update public.group_members set chat_read_at = now() - interval '1 minute' where group_id = (select id from g);
+insert into public.group_messages(id, group_id, author_id, body, request_id, automatic)
+values ('a3620000-0000-4000-8000-0000000000ac', (select id from g), :'ben', 'Nasi lemak (640 kcal)',
+  'a3620000-0000-4000-8000-000000000004', true);
+select is((select count(*)::int from public.group_message_push_targets(:'ben', 'a3620000-0000-4000-8000-0000000000ac')), 0,
+  'an update is not pushed as a chat message');
+select is((select array_agg(t.token order by t.token) from public.group_update_push_targets(:'ben') t),
+  array['ExponentPushToken[groups-ana]', 'ExponentPushToken[groups-cai]'],
+  'it rings members with updates on, whatever their chat switch says');
+select is((select count(*)::int from public.group_update_push_targets(:'ben')), 0, 'and only once');
+update public.group_messages set pushed_at = null where id = 'a3620000-0000-4000-8000-0000000000ac';
+select is((select count(*)::int from public.group_update_push_targets(:'ana')), 0,
+  'nobody can push someone else''s updates');
+select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.set_group_preferences((select id from g), null, null, false);
+reset role;
+select is((select array[notify, notify_updates] from public.group_members where group_id = (select id from g) and user_id = :'ana'),
+  array[true, false], 'a member can turn updates off and keep chat');
+select is((select array_agg(t.token) from public.group_update_push_targets(:'ben') t),
+  array['ExponentPushToken[groups-cai]'], 'and hears no updates');
+set local role authenticated;
+select public.set_group_preferences((select id from g), null, false, null);
+reset role;
+select is((select array[notify, notify_updates] from public.group_members where group_id = (select id from g) and user_id = :'ana'),
+  array[false, false], 'the one switch an older app sends mutes the whole group');
+set local role authenticated;
+select public.set_group_preferences((select id from g), null, true);
+reset role;
+select is((select array[notify, notify_updates] from public.group_members where group_id = (select id from g) and user_id = :'ana'),
+  array[true, true], 'and unmutes it');
+delete from public.group_messages where id = 'a3620000-0000-4000-8000-0000000000ac';
 delete from public.push_tokens where token like 'ExponentPushToken[groups-%';
 -- Their own broadcasts are not what the live chat checks below count.
 delete from broadcasts where ids @> '["a3620000-0000-4000-8000-0000000000aa"]'
-  or ids @> '["a3620000-0000-4000-8000-0000000000ab"]';
+  or ids @> '["a3620000-0000-4000-8000-0000000000ab"]'
+  or ids @> '["a3620000-0000-4000-8000-0000000000ac"]';
 
 -- Live chat: each write is announced on the group's private topic by id alone,
 -- and only a member may listen there.

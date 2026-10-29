@@ -105,7 +105,7 @@ select throws_ok(format('select public.set_group_message_reaction(%L, %L)', (sel
   '42501', null, 'a non-member cannot react');
 reset role;
 
--- Ana posts a meal: it goes to both her groups' chats without a push.
+-- Ana posts a meal: it goes to both her groups' chats as an update.
 insert into public.food_logs (id, user_id, log_date, logged_at, item_name, item_icon_set, item_icon_name,
   base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor, photo_path)
 values (:'meal', :'ana', public.local_today(:'ana'), now(), 'Nasi lemak', 'dishes', 'nasi-lemak',
@@ -116,11 +116,11 @@ create temp table post as select public.create_social_post(:'meal', '', 'followe
 reset role;
 select is((select count(*)::int from public.group_messages where post_id = (select id from post)), 2,
   'a posted food is shared into each of the author''s groups');
-select ok((select bool_and(pushed_at is not null) from public.group_messages where post_id = (select id from post)),
-  'already marked pushed, so it rings nobody');
+select ok((select bool_and(automatic and pushed_at is null) from public.group_messages where post_id = (select id from post)),
+  'marked automatic and not pushed yet');
 select is((select count(*)::int from public.group_message_push_targets(:'ana',
   (select id from public.group_messages where post_id = (select id from post) and group_id = (select id from g)))), 0,
-  'and the push lookup refuses it');
+  'and the chat message lookup refuses it');
 select is((select body from public.group_messages where post_id = (select id from post) limit 1),
   'Nasi lemak (640 kcal)', 'its body is the name and calories, for a push and for an older app');
 
@@ -169,13 +169,15 @@ select lives_ok(format('select public.send_group_message(%L, null, %L, null, %L)
 reset role;
 select is((select pushed_at from public.group_messages where request_id = 'a3730000-0000-4000-8000-000000000006'),
   null, 'a food sent by hand is pushed like any message');
+select is((select automatic from public.group_messages where request_id = 'a3730000-0000-4000-8000-000000000006'),
+  false, 'and is not an update');
 
 -- Deleting the meal takes the post, and so the food messages, with it.
 delete from public.food_logs where id = :'meal';
 select is((select count(*)::int from public.group_messages where author_id = :'ana' and body like 'Nasi lemak%'), 0,
   'a deleted meal leaves no food message behind');
 
--- Workouts and sports go to the chat on their own too, silently, while fresh.
+-- Workouts and sports go to the chat on their own too, while fresh.
 reset role;
 insert into public.workouts (id, user_id, name, started_at, ended_at, log_date, health_workout_id) values
   -- On the day the board is read for, in the members' own time zone: a UTC
@@ -185,8 +187,8 @@ insert into public.workouts (id, user_id, name, started_at, ended_at, log_date, 
   ('a3740000-0000-4000-8000-000000000002', :'ana', 'Old legs', now() - interval '3 days',
    now() - interval '3 days' + interval '40 minutes', (now() - interval '3 days')::date, null);
 select is((select count(*)::int from public.group_messages
-  where workout_id = 'a3740000-0000-4000-8000-000000000001' and pushed_at is not null), 2,
-  'a workout just finished is shared into each group, without a push');
+  where workout_id = 'a3740000-0000-4000-8000-000000000001' and automatic), 2,
+  'a workout just finished is shared into each group as an update');
 select is((select body from public.group_messages where workout_id = 'a3740000-0000-4000-8000-000000000001' limit 1),
   'Push day (45 min)', 'its body is the name and minutes');
 select is((select count(*)::int from public.group_messages where workout_id = 'a3740000-0000-4000-8000-000000000002'), 0,
