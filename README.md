@@ -3624,7 +3624,10 @@ waits the same three seconds and `group_update_push_targets` claims every
 `automatic` message of the caller's from the last ten minutes that has not
 pushed, answering members with `notify_updates` on under the same read and
 block rules as a message. The push reads like a message: "Name: Nasi lemak
-(640 kcal)". An app from before this sends no such request, so its users' shares
+(640 kcal)". A share lands once in every group its author is in, so a friend in
+two of them would hear it twice; each device hears each meal or workout once,
+through the group whose chat that friend read last, and not at all once they
+have read it in any of them. An app from before this sends no such request, so its users' shares
 stay unpushed, as they always were.
 
 Muting is per group, two switches: `group_members.notify` for nudges and chat,
