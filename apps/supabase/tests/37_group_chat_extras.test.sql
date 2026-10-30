@@ -104,6 +104,22 @@ set local role authenticated;
 select throws_ok(format('select public.set_group_message_reaction(%L, %L)', (select id from first_msg), '❤️'),
   '42501', null, 'a non-member cannot react');
 reset role;
+-- Chat reactions have an hourly allowance of their own: board thumbs used to
+-- share it, and 300 of them refused every emoji for the rest of the hour.
+insert into public.social_rate_limits(user_id, action, bucket, used)
+values (:'ana', 'group_reaction', date_trunc('hour', now()), 600)
+on conflict (user_id, action) do update set bucket = excluded.bucket, used = excluded.used;
+select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select lives_ok(format('select public.set_group_message_reaction(%L, %L)', (select id from first_msg), '😂'),
+  'a chat reaction still lands after an hour of board thumbs');
+reset role;
+update public.social_rate_limits set used = 300
+where user_id = :'ana' and action = 'group_message_reaction';
+set local role authenticated;
+select lives_ok(format('select public.set_group_message_reaction(%L, %L)', (select id from first_msg), '😂'),
+  'and the reaction already there spends nothing, so a repeat is never refused');
+reset role;
 
 -- Ana posts a meal: it goes to both her groups' chats as an update.
 insert into public.food_logs (id, user_id, log_date, logged_at, item_name, item_icon_set, item_icon_name,

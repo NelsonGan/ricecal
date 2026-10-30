@@ -871,7 +871,14 @@ begin
     delete from public.group_message_reactions r where r.message_id = p_message_id and r.user_id = v_user;
     return;
   end if;
-  if not private.social_claim(v_user, 'group_reaction', 300) then
+  -- Setting the reaction already there changes nothing, so it spends nothing.
+  if exists (select 1 from public.group_message_reactions r
+             where r.message_id = p_message_id and r.user_id = v_user and r.emoji = p_emoji) then
+    return;
+  end if;
+  -- Its own allowance: board thumbs (set_group_reaction) once shared this one,
+  -- and an hour of them refused every emoji.
+  if not private.social_claim(v_user, 'group_message_reaction', 300) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
   insert into public.group_message_reactions(message_id, user_id, emoji) values (p_message_id, v_user, p_emoji)
