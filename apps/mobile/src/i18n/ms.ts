@@ -826,13 +826,6 @@ export const ms = {
       pastNoMatchBody: 'Tiada apa yang anda pernah makan sepadan dengan itu.',
       pastOfflineBody:
         'Diari anda berada di pelayan. Ini akan dimuatkan sebaik anda kembali dalam talian.',
-      place: {
-        mamak: 'Mamak',
-        kopitiam: 'Kopitiam',
-        hawker: 'Gerai',
-        packaged: 'Berbungkus',
-        home: 'Masakan rumah',
-      },
       emptyTitle: 'Tiada hidangan dengan nama itu',
       emptyBody: 'Cuba perkataan yang lebih pendek, atau kurangkan perkataannya.',
       offlineTitle: 'Tiada sambungan',

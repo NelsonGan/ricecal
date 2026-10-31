@@ -267,14 +267,6 @@ export const logging = {
     /** There is a history; nothing in it matches what was typed. */
     pastNoMatchBody: 'Nothing you have eaten matches that.',
     pastOfflineBody: 'Your diary lives on the server. This will load once you are back online.',
-    /** Where a dish is usually eaten. Shown under its name in a result. */
-    place: {
-      mamak: 'Mamak',
-      kopitiam: 'Kopitiam',
-      hawker: 'Hawker',
-      packaged: 'Packaged',
-      home: 'Home cooked',
-    },
     emptyTitle: 'No dish by that name',
     emptyBody: 'Try a shorter word, or fewer of them.',
     /**

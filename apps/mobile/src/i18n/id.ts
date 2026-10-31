@@ -813,13 +813,6 @@ export const id = {
       pastEmptyBody: 'Makanan yang Anda catat muncul di sini, siap ditambahkan lagi.',
       pastNoMatchBody: 'Tidak ada yang pernah Anda makan cocok dengan itu.',
       pastOfflineBody: 'Catatan Anda ada di server. Ini akan dimuat begitu Anda kembali online.',
-      place: {
-        mamak: 'Mamak',
-        kopitiam: 'Kopitiam',
-        hawker: 'Kaki lima',
-        packaged: 'Kemasan',
-        home: 'Masakan rumah',
-      },
       emptyTitle: 'Tidak ada hidangan dengan nama itu',
       emptyBody: 'Coba kata yang lebih pendek, atau kurangi katanya.',
       offlineTitle: 'Tidak ada koneksi',
