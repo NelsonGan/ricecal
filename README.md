@@ -3330,6 +3330,10 @@ meal share a tile and swipe sideways inside it.
   way. Setting, changing or taking one back broadcasts `reacted` on the chat's
   topic with the message ids; an open chat refetches only when it holds one of
   them, and an app from before reactions does not listen for the event at all.
+  A person may set 300 an hour (`group_message_reaction`), counted apart from
+  the board's thumbs (`group_reaction`, 600), which once shared the count and
+  refused every emoji after an hour of thumbs. Setting the one already there
+  is a no-op and spends nothing.
 - **Food in the chat.** A food message shares one of its author's own food posts
   (`group_messages.post_id`) and draws as a card: the photo across it, the name,
   calories and macros. The card reads the post's meal live through

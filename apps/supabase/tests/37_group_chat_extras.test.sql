@@ -104,6 +104,53 @@ set local role authenticated;
 select throws_ok(format('select public.set_group_message_reaction(%L, %L)', (select id from first_msg), '❤️'),
   '42501', null, 'a non-member cannot react');
 reset role;
+-- Chat reactions have an hourly allowance of their own: board thumbs used to
+-- share it, and 300 of them refused every emoji for the rest of the hour.
+insert into public.social_rate_limits(user_id, action, bucket, used)
+values (:'ana', 'group_reaction', date_trunc('hour', now()), 600)
+on conflict (user_id, action) do update set bucket = excluded.bucket, used = excluded.used;
+select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select lives_ok(format('select public.set_group_message_reaction(%L, %L)', (select id from first_msg), '😂'),
+  'a chat reaction still lands after an hour of board thumbs');
+reset role;
+update public.social_rate_limits set used = 300
+where user_id = :'ana' and action = 'group_message_reaction';
+-- now() is fixed for this transaction, so make an accidental rewrite visible.
+update public.group_message_reactions set created_at = now() - interval '1 minute'
+where message_id = (select id from first_msg) and user_id = :'ana';
+create temp table reaction_before as
+  select r.created_at, (select count(*) from broadcasts) as broadcasts
+  from public.group_message_reactions r where r.message_id = (select id from first_msg) and r.user_id = :'ana';
+set local role authenticated;
+select lives_ok(format('select public.set_group_message_reaction(%L, %L)', (select id from first_msg), '😂'),
+  'and the reaction already there spends nothing, so a repeat is never refused');
+reset role;
+select is((select used from public.social_rate_limits where user_id = :'ana' and action = 'group_message_reaction'),
+  300, 'a repeat does not change the hourly count');
+select is((select count(*) from broadcasts), (select broadcasts from reaction_before),
+  'a repeat broadcasts nothing');
+select is((select r.created_at from public.group_message_reactions r
+           where r.message_id = (select id from first_msg) and r.user_id = :'ana'),
+  (select created_at from reaction_before), 'a repeat does not rewrite the reaction');
+set local role authenticated;
+select throws_ok(format('select public.set_group_message_reaction(%L, %L)', (select id from first_msg), '❤️'),
+  'P0001', 'Try again later', 'a changed emoji is still refused at the chat allowance');
+select lives_ok(format('select public.set_group_message_reaction(%L, null)', (select id from first_msg)),
+  'a reaction can still be removed at the chat allowance');
+select throws_ok(format('select public.set_group_message_reaction(%L, %L)', (select id from first_msg), '😂'),
+  'P0001', 'Try again later', 'removing a reaction does not refund its allowance');
+reset role;
+update public.social_rate_limits set bucket = date_trunc('hour', now()) - interval '1 hour'
+where user_id = :'ana' and action = 'group_message_reaction';
+set local role authenticated;
+select lives_ok(format('select public.set_group_message_reaction(%L, %L)', (select id from first_msg), '😂'),
+  'chat reactions resume in the next hour');
+reset role;
+select is((select used from public.social_rate_limits where user_id = :'ana' and action = 'group_message_reaction'),
+  1, 'the new hour starts a fresh chat count');
+select is((select used from public.social_rate_limits where user_id = :'ana' and action = 'group_reaction'),
+  600, 'chat writes never change the board count');
 
 -- Ana posts a meal: it goes to both her groups' chats as an update.
 insert into public.food_logs (id, user_id, log_date, logged_at, item_name, item_icon_set, item_icon_name,
@@ -135,7 +182,13 @@ select is((select (e->'food'->>'protein_g')::numeric from food_msg), 20::numeric
 select is((select e->'food'->>'entry_id' from food_msg), :'meal'::text,
   'with the diary entry its thumbs are cast on');
 select is((select (e->'food'->>'likes')::int from food_msg), 0, 'and no likes yet');
-select public.set_group_reaction(:'meal', 1::smallint);
+reset role;
+insert into public.social_rate_limits(user_id, action, bucket, used)
+values (:'ben', 'group_message_reaction', date_trunc('hour', now()), 300)
+on conflict (user_id, action) do update set bucket = excluded.bucket, used = excluded.used;
+set local role authenticated;
+select lives_ok(format('select public.set_group_reaction(%L, 1::smallint)', :'meal'),
+  'a board thumb still lands after the chat allowance is exhausted');
 select is((select (e->'food'->>'likes')::int
   from jsonb_array_elements(public.group_messages((select id from g))) e where e->'food' <> 'null'), 1,
   'a like on the board counts on the chat card');
