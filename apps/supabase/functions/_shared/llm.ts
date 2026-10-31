@@ -390,9 +390,10 @@ const MAX_KEY_REPAIRS = 3
  * `JSON.parse`, except that a key with a quote wrong is mended. About 3% of
  * Haiku's photo answers failed on one (29 of 815 in a day), each logged as
  * `error=expected-colon at-char=letter prev-char="`, and each cost a second
- * call to the fallback model. Two faults give that error: a key that lost its
- * closing quote (`"grams: 30, "kcal":`), which is the one Haiku makes, and a
- * key with one quote too many (`""grams":`, `"kc"al_low":`).
+ * call to the fallback model. A missing closing quote (`"grams: 30, "kcal":`),
+ * a quote too many (`""grams":`, `"kc"al_low":`), and a closing quote written as
+ * punctuation (`"grams': 30`) can all give that error. The logged shape alone
+ * does not establish which fault the model made.
  *
  * Only that one error, at that one place, is touched, and the key that results
  * must be a plain snake_case name followed by its colon, as every key these
@@ -446,7 +447,7 @@ function keyOpened(text: string, at: number): number {
 }
 
 /**
- * The answer with the key the parser stopped in mended, or null when neither
+ * The answer with the key the parser stopped in mended, or null when no
  * repair leaves a plain key followed by its colon.
  */
 function mendKey(text: string, at: number): { text: string; via: KeyRepair } | null {
