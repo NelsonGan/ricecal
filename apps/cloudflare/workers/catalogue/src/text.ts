@@ -97,7 +97,7 @@ export function ftsQuery(q: string): string | null {
 }
 
 /**
- * The query as an OR of its own overlapping trigrams.
+ * The query's own overlapping trigrams, for the fuzzy arm to OR together.
  *
  * The fuzzy arm, and the one thing that needed rebuilding rather than porting.
  * `pg_trgm` scored SIMILARITY; FTS5's trigram tokenizer only matches
@@ -105,11 +105,22 @@ export function ftsQuery(q: string): string | null {
  * spelling — "nasi lemk" is not inside "nasi lemak". Splitting the query into
  * trigrams and letting bm25 rank by how many of them a row shares reconstructs
  * similarity out of the primitive that does exist.
+ *
+ * Unquoted, because the Worker keeps only the rarest of them and quotes those
+ * in SQL. See TRIGRAM_DOC_BUDGET.
  */
-export function trigramQuery(qn: string): string | null {
-  if (qn.length < 3) return null
+export function trigrams(qn: string): string[] {
+  // By code point, as the tokenizer counts. Slicing the UTF-16 string cut a
+  // character outside the BMP (CJK Extension B, say) in half, and half a
+  // character is in no index.
+  //
+  // Without the words `ftsQuery` drops too: " of" and "wit" match thousands of
+  // dishes and name none of them, so they only spend TRIGRAM_DOC_BUDGET. A
+  // query that is nothing but such words keeps them, having nothing else.
+  const words = qn.split(' ').filter((w) => !STOPWORDS.has(w))
+  const chars = Array.from(words.length ? words.join(' ') : qn)
+  if (chars.length < 3) return []
   const grams = new Set<string>()
-  for (let i = 0; i <= qn.length - 3; i++) grams.add(qn.slice(i, i + 3))
-  const usable = [...grams].filter((g) => g.trim().length > 0).slice(0, MAX_TRIGRAMS)
-  return usable.length ? usable.map(quote).join(' OR ') : null
+  for (let i = 0; i <= chars.length - 3; i++) grams.add(chars.slice(i, i + 3).join(''))
+  return [...grams].filter((g) => g.trim().length > 0).slice(0, MAX_TRIGRAMS)
 }

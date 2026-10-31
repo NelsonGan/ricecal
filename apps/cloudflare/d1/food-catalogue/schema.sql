@@ -234,3 +234,11 @@ create virtual table if not exists food_trgm using fts5(
   content = '',
   tokenize = "trigram remove_diacritics 1"
 );
+
+-- How many rows hold each trigram, read straight off `food_trgm`'s index. It
+-- stores nothing and so can never go stale. The Worker uses it to send the
+-- fuzzy arm only a query's rarest trigrams: ORing all of them matched a third
+-- of the catalogue on a common query and was most of the database's reads.
+-- See TRIGRAM_DOC_BUDGET in the Worker. Created before the Worker that reads
+-- it is deployed, since CI applies this file first.
+create virtual table if not exists food_trgm_vocab using fts5vocab(food_trgm, 'row');
