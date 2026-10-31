@@ -797,13 +797,6 @@ export const ko = {
       pastEmptyBody: '기록한 식사가 여기 모여, 바로 다시 추가할 수 있어요.',
       pastNoMatchBody: '드셨던 것 중에 맞는 것이 없어요.',
       pastOfflineBody: '기록은 서버에 있어요. 다시 연결되면 바로 불러옵니다.',
-      place: {
-        mamak: '마막',
-        kopitiam: '코피티암',
-        hawker: '노점',
-        packaged: '포장 식품',
-        home: '집밥',
-      },
       emptyTitle: '그런 이름의 음식이 없습니다',
       emptyBody: '더 짧은 단어로, 또는 단어 수를 줄여 보세요.',
       offlineTitle: '연결이 없습니다',
