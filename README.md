@@ -730,6 +730,17 @@ tokenizer only matches substrings, and a misspelling is by definition not a
 substring of the right spelling. The Worker splits the query into trigrams and
 lets bm25 rank by how many a row shares.
 
+It sends only the rarest of them. Every trigram ORed together matched a third
+of the catalogue on a common query, and bm25 scores every match before the
+limit applies, so that one arm was 89% of D1's rows read. `food_trgm_vocab`
+(an `fts5vocab` view of the index, which stores nothing) gives each trigram's
+document count, and the arm adds trigrams rarest first until
+`TRIGRAM_DOC_BUDGET` is spent. A typo's trigrams hold no rows and cost nothing,
+and the stopwords the full-text arm drops are dropped here too. Lowering the
+budget is a ranking change: run `pnpm foods:gate` first. A database without the
+table (a PR preview before merge has applied `schema.sql`) gets the old OR of
+every trigram rather than a failed search, and the Worker logs that it did.
+
 The two exact arms match a stored normalized column, `food.name_norm` and
 `food_alias.alias_norm`, each indexed. Written as `lower(name) = ?` they were
 two bugs in one expression: no index can serve that, so every search
