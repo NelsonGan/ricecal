@@ -24,7 +24,7 @@
  */
 
 import { verifyUser } from './auth.ts'
-import { ftsQuery, gtin14, normalize, trigramQuery } from './text.ts'
+import { ftsQuery, gtin14, normalize, quote, trigrams } from './text.ts'
 
 export interface Env {
   DB: D1Database
@@ -114,12 +114,31 @@ const D1_MAX_BOUND_PARAMS = 100
 /**
  * The longest search string worth honouring. A real dish name is well under it;
  * a 20 KB string is a way to make one request cost what a thousand should.
- * `ftsQuery` ORs every term and `trigramQuery` ORs one arm per character, so an
+ * `ftsQuery` ORs every term and the trigram arm ORs one per character, so an
  * unbounded query expands into an FTS5 MATCH with thousands of clauses, each an
  * index scan D1 bills by rows read, and distinct long strings miss the cache
  * every time.
  */
 const MAX_QUERY_CHARS = 100
+
+/**
+ * How many index entries the fuzzy arm may match, roughly, before it stops
+ * adding trigrams. D1 bills it at about two rows read per match, because bm25
+ * has to score and sort every match before `limit` applies.
+ *
+ * Sending every trigram was 89% of the catalogue's reads: "chicken rice" is ten
+ * trigrams, each in 1,000 to 5,000 dishes, and their OR matched 14,000 of 53,000
+ * rows for one keystroke. The rarest few carry the ranking anyway (bm25 weights
+ * a trigram by how few rows hold it), so the arm takes trigrams rarest first
+ * until their document counts pass this. Over the gate's thirty queries that
+ * read 2.7 times fewer rows (43,000 to 12,000 for "chicken rice", 91,000 to
+ * 7,000 for a sentence-length one) with the gate's ranks unchanged.
+ *
+ * 2,000 and 3,000 cost "ayam gorng" its top spot: the trigrams that tell
+ * Ayam Goreng from Cakar Ayam (" go", "orn") are common ones, and a budget that
+ * tight stops before them. Run `pnpm foods:gate` before lowering it.
+ */
+const TRIGRAM_DOC_BUDGET = 4000
 
 /** One dish with its portions and aliases, shaped like the old `food_details`. */
 async function foodDetails(env: Env, ids: string[]): Promise<Map<string, FoodRow>> {
@@ -173,6 +192,46 @@ async function foodDetails(env: Env, ids: string[]): Promise<Map<string, FoodRow
   return byId
 }
 
+/**
+ * The fuzzy arm: the rarest trigrams first, until TRIGRAM_DOC_BUDGET.
+ *
+ * `food_trgm_vocab` gives each trigram's document count, and a trigram no row
+ * holds (which is what a typo makes) is absent from it and so never spends the
+ * budget. When no trigram is in it, `""` matches nothing; a NULL expression
+ * would be an FTS5 syntax error and fail the whole batch.
+ *
+ * Without `vocab` it ORs every trigram, the shape this replaced, for a database
+ * that does not have the table yet.
+ */
+function trigramArm(env: Env, grams: string[], vocab: boolean): D1PreparedStatement {
+  if (!vocab) {
+    return env.DB.prepare(
+      `select m.food_id as id
+         from (select rowid, bm25(food_trgm) as r from food_trgm
+                where food_trgm match ? order by r limit 200) t
+         join fts_map m on m.rowid = t.rowid
+        order by t.r`,
+    ).bind(grams.map(quote).join(' OR '))
+  }
+  return env.DB.prepare(
+    `with picked as (
+       select term, doc,
+              sum(doc) over (order by doc, term rows unbounded preceding) as spent
+         from food_trgm_vocab
+        where term in (select value from json_each(?))
+     ),
+     expr as (
+       select coalesce(group_concat('"' || replace(term, '"', '""') || '"', ' OR '), '""') as e
+         from picked where spent - doc < ?
+     )
+     select m.food_id as id
+       from (select t.rowid, bm25(food_trgm) as r from food_trgm t, expr
+              where food_trgm match expr.e order by r limit 200) t
+       join fts_map m on m.rowid = t.rowid
+      order by t.r`,
+  ).bind(JSON.stringify(grams), TRIGRAM_DOC_BUDGET)
+}
+
 async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
   // Bound the input before it becomes an FTS5 MATCH expression: normalize, both
   // FTS arms and the trigram split all scale with its length. See
@@ -182,7 +241,8 @@ async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
   if (!qn) return []
 
   const match = ftsQuery(bounded)
-  const trgm = trigramQuery(qn)
+  const grams = trigrams(qn)
+  const trgm = grams.length > 0
 
   // One round trip for all four arms. D1 charges per query and each is an index
   // scan, so this is the difference between four sequential hops and one.
@@ -192,26 +252,38 @@ async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
   // scanned its whole table on every search, and `lower()` is not the folding
   // the query went through, so "Chicken Rice (Nasi Ayam)" could not be reached
   // by typing its own words.
-  const statements = [
-    env.DB.prepare('select id from food where name_norm = ? limit 200').bind(qn),
-    env.DB.prepare(
-      'select distinct food_id as id from food_alias where alias_norm = ? limit 200',
-    ).bind(qn),
-    match
-      ? env.DB.prepare(
-          `select m.food_id as id from food_fts f join fts_map m on m.rowid = f.rowid
-            where food_fts match ? order by bm25(food_fts, 10.0, 2.0, 5.0) limit 200`,
-        ).bind(match)
-      : null,
-    trgm
-      ? env.DB.prepare(
-          `select m.food_id as id from food_trgm t join fts_map m on m.rowid = t.rowid
-            where food_trgm match ? order by bm25(food_trgm) limit 200`,
-        ).bind(trgm)
-      : null,
-  ]
-  const live = statements.filter((s): s is D1PreparedStatement => s !== null)
-  const results = await env.DB.batch(live)
+  const statements = (vocab: boolean) =>
+    [
+      env.DB.prepare('select id from food where name_norm = ? limit 200').bind(qn),
+      env.DB.prepare(
+        'select distinct food_id as id from food_alias where alias_norm = ? limit 200',
+      ).bind(qn),
+      // Both full-text arms rank inside a subquery and join `fts_map` after the
+      // limit, so the map is read for the 200 kept rather than for every match.
+      match
+        ? env.DB.prepare(
+            `select m.food_id as id
+               from (select rowid, bm25(food_fts, 10.0, 2.0, 5.0) as r from food_fts
+                      where food_fts match ? order by r limit 200) f
+               join fts_map m on m.rowid = f.rowid
+              order by f.r`,
+          ).bind(match)
+        : null,
+      trgm ? trigramArm(env, grams, vocab) : null,
+    ].filter((s): s is D1PreparedStatement => s !== null)
+
+  // A batch fails as a whole, so a database without `food_trgm_vocab` would
+  // fail every search. That database exists: a PR's preview Worker reads the
+  // production catalogue before merge has applied schema.sql, and so would a
+  // hotfix deployed ahead of it. Searching the old, dearer way beats a 500.
+  let results: D1Result[]
+  try {
+    results = await env.DB.batch(statements(true))
+  } catch (error) {
+    if (!String(error).includes('food_trgm_vocab')) throw error
+    console.error('catalogue worker: food_trgm_vocab missing, apply schema.sql', error)
+    results = await env.DB.batch(statements(false))
+  }
 
   const arms: Array<[number, string[]]> = []
   let cursor = 0
