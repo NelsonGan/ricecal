@@ -259,8 +259,9 @@ wrong, which logs as `error=expected-colon at-char=letter prev-char="`. Three
 faults log that way: a key with a quote too many (`""grams":`, `"kc"al_low":`),
 a key missing its closing quote (`"grams: 30, "kcal":`), and a closing quote
 written as something else (`"grams': 30`, `"grams”: 30`, `"grams,: 30`). The
-first two were mended in turn and neither repair fired once in production, which
-leaves the third. `parseAnswer` mends all three, at most three keys per answer
+first two were mended in turn and neither repair fired in the observed production
+window, so the third is a candidate, not yet confirmed from a model answer.
+`parseAnswer` mends all three, at most three keys per answer
 and only when the result is a plain snake_case key followed by its colon, and
 logs `answer repaired (keys=N via=…)` naming each repair (`stray`, `inserted`,
 `replaced`). An escaped close (`"grams\":`) is not mended, since `"gram\":` is

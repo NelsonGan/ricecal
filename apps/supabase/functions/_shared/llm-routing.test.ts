@@ -247,12 +247,12 @@ Deno.test('a key that lost its closing quote gets it back, and nothing else is',
 })
 
 Deno.test('a key closed with something other than its quote gets the quote', () => {
-  // Haiku's failures after both earlier repairs went live: the same logged
-  // shape, and only a close written as another character gives it.
+  // A closing quote written as punctuation also gives the logged shape, but
+  // the production answer is private, so this remains a candidate cause.
   const whole = {
     items: [{ name: 'nasi lemak', components: [{ name: 'sambal', grams: 30, kcal: 60 }] }],
   }
-  for (const close of ["'", '`', '’', '”', '“', ',', ';', ':']) {
+  for (const close of ["'", '`', '‘', '’', '”', '“', ',', ';', ':']) {
     assertEquals(
       parseAnswer(
         `{"items":[{"name":"nasi lemak","components":[{"name":"sambal","grams${close}:30,"kcal":60}]}]}`,
@@ -287,6 +287,51 @@ Deno.test('a key closed with something other than its quote gets the quote', () 
   assertThrows(() => parseAnswer('{"name}: "roti", "kcal": 300}'), SyntaxError)
   // Nor is a missing colon: `"name"roti"` has a key and no colon, and is left.
   assertThrows(() => parseAnswer('{"name"roti", "kcal": 300}'), SyntaxError)
+})
+
+Deno.test('the three-key ceiling includes every repair kind and reports only a complete repair', () => {
+  const heard: string[] = []
+  const report = (keys: number, via: string[]) => heard.push(`${keys} ${via}`)
+  assertEquals(parseAnswer('{"name\': "roti", "kcal: 300, ""count": 1}', report), {
+    name: 'roti',
+    kcal: 300,
+    count: 1,
+  })
+  assertEquals(heard, ['3 replaced,inserted,stray'])
+  heard.length = 0
+  assertThrows(
+    () => parseAnswer('{"name\': "roti", "kcal: 300, ""count": 1, "grams”: 120}', report),
+    SyntaxError,
+  )
+  assertEquals(heard, [])
+})
+
+Deno.test('a replaced closing quote saves the fallback call and logs no meal content', async () => {
+  const warn = console.warn
+  const lines: string[] = []
+  console.warn = (...args: unknown[]) => void lines.push(args.map(String).join(' '))
+  try {
+    const repaired = await withAnswers([answer('{"name”: "roti canai", "kcal": 300}')])
+    assertEquals(repaired.result, { name: 'roti canai', kcal: 300 })
+    assertEquals(repaired.sent.length, 1)
+    assertEquals(
+      lines.some((line) => line.includes('answer repaired (keys=1 via=replaced)')),
+      true,
+    )
+    // An unsafe repair still asks the fallback rather than keeping a partial answer.
+    const refused = await withAnswers([
+      answer('{"name\\": "roti canai", "kcal": 300}'),
+      answer('{"ok": 5}'),
+    ])
+    assertEquals(refused.result, { ok: 5 })
+    assertEquals(refused.sent.length, 2)
+    assertEquals(
+      lines.some((line) => /roti|canai/.test(line)),
+      false,
+    )
+  } finally {
+    console.warn = warn
+  }
 })
 
 Deno.test('an unreadable answer is described by its shape, never by its words', () => {
