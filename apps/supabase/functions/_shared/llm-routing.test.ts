@@ -246,6 +246,94 @@ Deno.test('a key that lost its closing quote gets it back, and nothing else is',
   assertThrows(() => parseAnswer('{"a\\"b"c": 1}'), SyntaxError)
 })
 
+Deno.test('a key closed with something other than its quote gets the quote', () => {
+  // A closing quote written as punctuation also gives the logged shape, but
+  // the production answer is private, so this remains a candidate cause.
+  const whole = {
+    items: [{ name: 'nasi lemak', components: [{ name: 'sambal', grams: 30, kcal: 60 }] }],
+  }
+  for (const close of ["'", '`', '‘', '’', '”', '“', ',', ';', ':']) {
+    assertEquals(
+      parseAnswer(
+        `{"items":[{"name":"nasi lemak","components":[{"name":"sambal","grams${close}:30,"kcal":60}]}]}`,
+      ),
+      whole,
+      `close written as ${close}`,
+    )
+  }
+  // Before a string value, indented, as Haiku answers.
+  assertEquals(parseAnswer('{\n  "name”: "roti",\n  "kcal": 300\n}'), { name: 'roti', kcal: 300 })
+  // The caller hears which repair it was, so a night's logs say which fault it is.
+  const heard: string[] = []
+  parseAnswer('{"name\': "roti", "kcal": 300}', (n, via) => heard.push(`${n} ${via}`))
+  parseAnswer('{"name: "roti", ""kcal": 300}', (n, via) => heard.push(`${n} ${via}`))
+  assertEquals(heard, ['1 replaced', '2 inserted,stray'])
+  // An escaped close is left: `"gram\":` is the same text with a letter lost,
+  // and taking the backslash out would make a key named `gram`.
+  assertThrows(() => parseAnswer('{"name\\": "roti", "kcal": 300}'), SyntaxError)
+  // What failed says which fault it was, by class and never by the key.
+  const shape = (s: string) => answerShape(s).match(/key-end=(\S+)/)?.[1]
+  assertEquals(shape('{"name\\": "roti", "kcal": 300}'), 'backslash')
+  assertEquals(shape('{"name}: "roti", "kcal": 300}'), '}')
+  // A key that closed and then had no colon.
+  assertEquals(shape('{"name"roti", "kcal": 300}'), 'end')
+  assertEquals(shape('{"Nasi lemak: 1, "kcal": 300}'), 'space')
+  assertEquals(shape('{"2 pieces: 1, "kcal": 300}'), 'none')
+  assertEquals(shape('{"name":"teh "tarik"","kcal":120}'), 'n/a')
+  // Only one stand-in, and only straight before the colon.
+  assertThrows(() => parseAnswer('{"name\'\': "roti", "kcal": 300}'), SyntaxError)
+  assertThrows(() => parseAnswer('{"name\' x: "roti", "kcal": 300}'), SyntaxError)
+  // A brace or bracket is not a quote someone mistyped.
+  assertThrows(() => parseAnswer('{"name}: "roti", "kcal": 300}'), SyntaxError)
+  // Nor is a missing colon: `"name"roti"` has a key and no colon, and is left.
+  assertThrows(() => parseAnswer('{"name"roti", "kcal": 300}'), SyntaxError)
+})
+
+Deno.test('the three-key ceiling includes every repair kind and reports only a complete repair', () => {
+  const heard: string[] = []
+  const report = (keys: number, via: string[]) => heard.push(`${keys} ${via}`)
+  assertEquals(parseAnswer('{"name\': "roti", "kcal: 300, ""count": 1}', report), {
+    name: 'roti',
+    kcal: 300,
+    count: 1,
+  })
+  assertEquals(heard, ['3 replaced,inserted,stray'])
+  heard.length = 0
+  assertThrows(
+    () => parseAnswer('{"name\': "roti", "kcal: 300, ""count": 1, "grams”: 120}', report),
+    SyntaxError,
+  )
+  assertEquals(heard, [])
+})
+
+Deno.test('a replaced closing quote saves the fallback call and logs no meal content', async () => {
+  const warn = console.warn
+  const lines: string[] = []
+  console.warn = (...args: unknown[]) => void lines.push(args.map(String).join(' '))
+  try {
+    const repaired = await withAnswers([answer('{"name”: "roti canai", "kcal": 300}')])
+    assertEquals(repaired.result, { name: 'roti canai', kcal: 300 })
+    assertEquals(repaired.sent.length, 1)
+    assertEquals(
+      lines.some((line) => line.includes('answer repaired (keys=1 via=replaced)')),
+      true,
+    )
+    // An unsafe repair still asks the fallback rather than keeping a partial answer.
+    const refused = await withAnswers([
+      answer('{"name\\": "roti canai", "kcal": 300}'),
+      answer('{"ok": 5}'),
+    ])
+    assertEquals(refused.result, { ok: 5 })
+    assertEquals(refused.sent.length, 2)
+    assertEquals(
+      lines.some((line) => /roti|canai/.test(line)),
+      false,
+    )
+  } finally {
+    console.warn = warn
+  }
+})
+
 Deno.test('an unreadable answer is described by its shape, never by its words', () => {
   // A second object after the first: what a parser fix would cover.
   const twice = answerShape('{"name":"nasi lemak"}\n\nCorrected:\n{"name":"nasi lemak ayam"}')
