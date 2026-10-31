@@ -255,13 +255,20 @@ only from lengths, counts and fixed labels (`objects=2 error=after-json` is a
 second object after the first; `error=expected-comma at-char=letter` is a quote
 left unescaped; `error=unexpected-token at-char=]` is a trailing comma), since
 the answer itself is diary content. Nearly all of it is one key with a quote
-wrong, which logs as `error=expected-colon at-char=letter prev-char="`. It is
-a key missing its closing quote (`"grams: 30, "kcal":`). A key with a quote too
-many (`""grams":`, `"kc"al_low":`) logs the same way, though in production none
-has been. `parseAnswer` mends either, at most three keys per answer and only when the result is a plain
-snake_case key followed by its colon, and logs `answer repaired (keys=N)`. A
-wrong key would read as an empty meal instead of going to Qwen, so any other
-answer still goes to Qwen. A generic
+wrong, which logs as `error=expected-colon at-char=letter prev-char="`. Three
+faults log that way: a key with a quote too many (`""grams":`, `"kc"al_low":`),
+a key missing its closing quote (`"grams: 30, "kcal":`), and a closing quote
+written as something else (`"grams': 30`, `"grams”: 30`, `"grams,: 30`). The
+first two were mended in turn and neither repair fired in the observed production
+window, so the third is a candidate, not yet confirmed from a model answer.
+`parseAnswer` mends all three, at most three keys per answer
+and only when the result is a plain snake_case key followed by its colon, and
+logs `answer repaired (keys=N via=…)` naming each repair (`stray`, `inserted`,
+`replaced`). An escaped close (`"grams\":`) is not mended, since `"gram\":` is
+the same text with a letter lost. What a failed key had after its name is in
+the failure line as `key-end=` (`colon`, `quote`, `backslash`, a punctuation
+mark, or `none`). A wrong key would read as an empty meal instead of going to
+Qwen, so any other answer still goes to Qwen. A generic
 `json_schema` response format is not the fix: Haiku answers it with `{}`.
 
 `OPENROUTER_BYOK_MODEL=off` as a function secret sends everything to Qwen
