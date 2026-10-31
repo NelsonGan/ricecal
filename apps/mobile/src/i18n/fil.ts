@@ -824,13 +824,6 @@ export const fil = {
       pastEmptyBody: 'Lilitaw dito ang mga pagkaing itinatala mo, handang idagdag muli.',
       pastNoMatchBody: 'Walang tumutugma diyan sa mga nakain mo.',
       pastOfflineBody: 'Nasa server ang talaan mo. Magloload ito pagbalik mo online.',
-      place: {
-        mamak: 'Mamak',
-        kopitiam: 'Kopitiam',
-        hawker: 'Karinderya',
-        packaged: 'Nakabalot',
-        home: 'Lutong bahay',
-      },
       emptyTitle: 'Walang ulam na ganoon ang pangalan',
       emptyBody: 'Subukan ang mas maikling salita, o bawasan ang mga ito.',
       offlineTitle: 'Walang koneksyon',

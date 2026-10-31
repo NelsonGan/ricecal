@@ -803,13 +803,6 @@ export const ja = {
       pastEmptyBody: '記録した食事がここに並び、すぐにまた追加できます。',
       pastNoMatchBody: '食べたもののなかに一致するものはありません。',
       pastOfflineBody: '記録はサーバーにあります。オンラインに戻ればすぐ読み込まれます。',
-      place: {
-        mamak: 'ママック',
-        kopitiam: 'コピティアム',
-        hawker: '屋台',
-        packaged: '市販品',
-        home: '家庭料理',
-      },
       emptyTitle: 'その名前の料理はありません',
       emptyBody: 'もっと短い言葉か、語数を減らして試してください。',
       offlineTitle: '接続がありません',

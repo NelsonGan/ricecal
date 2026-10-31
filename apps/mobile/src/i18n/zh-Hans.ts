@@ -795,13 +795,6 @@ export const zhHans = {
       pastEmptyBody: '你记录过的餐会出现在这里，随时可以再加一次。',
       pastNoMatchBody: '你吃过的东西里没有匹配的。',
       pastOfflineBody: '你的记录在服务器上。恢复联网后就会载入。',
-      place: {
-        mamak: '嘛嘛档',
-        kopitiam: '咖啡店',
-        hawker: '小贩中心',
-        packaged: '包装食品',
-        home: '家常菜',
-      },
       emptyTitle: '没有叫这个名字的菜',
       emptyBody: '换个短一点的词，或者少打几个字。',
       offlineTitle: '没有网络',
