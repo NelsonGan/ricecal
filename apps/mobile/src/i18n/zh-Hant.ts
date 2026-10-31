@@ -795,13 +795,6 @@ export const zhHant = {
       pastEmptyBody: '你記錄過的餐會出現在這裡，隨時可以再加一次。',
       pastNoMatchBody: '你吃過的東西裡沒有相符的。',
       pastOfflineBody: '你的紀錄在伺服器上。恢復連線後就會載入。',
-      place: {
-        mamak: '嘛嘛檔',
-        kopitiam: '咖啡店',
-        hawker: '小販中心',
-        packaged: '包裝食品',
-        home: '家常菜',
-      },
       emptyTitle: '沒有叫這個名字的菜',
       emptyBody: '換個短一點的詞，或者少打幾個字。',
       offlineTitle: '沒有網路',

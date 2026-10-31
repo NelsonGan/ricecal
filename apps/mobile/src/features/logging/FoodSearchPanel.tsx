@@ -399,7 +399,7 @@ export function FoodSearchPanel({
                   icon={food.icon}
                   value={food.macros.kcal}
                   unit={t('common:unit.kcal')}
-                  detail={`${t(`logging:search.place.${food.place}`)} · ${food.servingLabel}`}
+                  detail={food.servingLabel}
                   onPress={() => {
                     // 1-based rank, which is the live version of what
                     // `pnpm foods:gate` grades against thirty fixed queries: a

@@ -7218,7 +7218,9 @@ rules may need an hour to propagate.
 
 ### Live PostHog dashboards
 
-DASHBOARDS_PLACEHOLDER
+| Dashboard | Insight | Verified configuration |
+| --- | --- | --- |
+| [App: Activation & Retention](https://us.posthog.com/project/659954/dashboard/2200226) | [Daily new users by source](https://us.posthog.com/project/659954/insights/EJJjjN3e) | Verified 2026-10-30: daily line chart with source legend, unique users (`dau`) of `Onboarding Completed`, event breakdown `referral_source`, last 30 days, timezone `Asia/Kuala_Lumpur`, internal/test users excluded. Sources are self-reported onboarding answers; counts represent onboarding completions rather than installs. The current day is partial. |
 
 ### Monitoring usage and verification
 

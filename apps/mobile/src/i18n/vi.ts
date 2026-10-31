@@ -802,13 +802,6 @@ export const vi = {
       pastEmptyBody: 'Các bữa bạn ghi sẽ hiện ở đây, sẵn sàng để thêm lại.',
       pastNoMatchBody: 'Không có món nào bạn từng ăn khớp với từ đó.',
       pastOfflineBody: 'Nhật ký của bạn nằm trên máy chủ. Nó sẽ tải ngay khi bạn có mạng trở lại.',
-      place: {
-        mamak: 'Quán mamak',
-        kopitiam: 'Quán cà phê',
-        hawker: 'Hàng rong',
-        packaged: 'Đóng gói',
-        home: 'Nấu ở nhà',
-      },
       emptyTitle: 'Không có món nào tên như vậy',
       emptyBody: 'Thử một từ ngắn hơn, hoặc bớt từ đi.',
       offlineTitle: 'Không có kết nối',
