@@ -428,7 +428,7 @@ function parseRepairing(candidate: string, onRepair?: OnRepair): unknown {
  * Which repair mended a key, for the log line that counts them. A label, never
  * the key: the next night's triage reads these to see which fault Haiku makes.
  */
-type KeyRepair = 'stray' | 'inserted' | 'replaced'
+type KeyRepair = 'stray' | 'inserted' | 'replaced' | 'restarted'
 type OnRepair = (keys: number, via: KeyRepair[]) => void
 
 const KEY_NAME = /^[a-z_][a-z0-9_]*$/i
@@ -453,7 +453,36 @@ function keyOpened(text: string, at: number): number {
 function mendKey(text: string, at: number): { text: string; via: KeyRepair } | null {
   const quote = strayKeyQuote(text, at)
   if (quote >= 0) return { text: text.slice(0, quote) + text.slice(quote + 1), via: 'stray' }
-  return mendKeyClose(text, at)
+  return mendKeyClose(text, at) ?? mendFalseStart(text, at)
+}
+
+/**
+ * What a false start may hold: the separator, bracket or number tail the model
+ * wrote twice. No letter, so taking it out can never take out a name or a word.
+ */
+const FALSE_START = /^[\s,:.\d{}[\]-]{1,8}$/
+
+/**
+ * The answer with a key the model started twice put right, or null.
+ *
+ * Every Haiku failure after the close repairs shipped logged `key-end=none`:
+ * the key the parser stopped after held no name, so neither of them applies. A
+ * fuzz of short repeats over a photo answer gives that shape, unmended, only
+ * when the model writes a separator or the end of a value again before a key:
+ * `"composite", ", "items":`, `"grams": 200, "0, "kcal":`, `[{"[{"name":`. The
+ * parser reads `, ` as a key, closed by the quote that opens the real one.
+ *
+ * The false start must hold no letter and the real key must be a plain name
+ * followed by its colon. It goes, with its opening quote; the real key keeps its own.
+ */
+function mendFalseStart(text: string, at: number): { text: string; via: KeyRepair } | null {
+  if (!Number.isInteger(at) || text[at - 1] !== '"' || !/[a-z_]/i.test(text[at] ?? '')) return null
+  const opened = keyOpened(text, at)
+  if (opened < 0 || !FALSE_START.test(text.slice(opened + 1, at - 1))) return null
+  const end = text.indexOf('"', at)
+  if (end < 0 || !KEY_NAME.test(text.slice(at, end)) || !/^\s*:/.test(text.slice(end + 1)))
+    return null
+  return { text: text.slice(0, opened) + text.slice(at - 1), via: 'restarted' }
 }
 
 /**

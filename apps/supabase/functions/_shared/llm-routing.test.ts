@@ -246,6 +246,33 @@ Deno.test('a key that lost its closing quote gets it back, and nothing else is',
   assertThrows(() => parseAnswer('{"a\\"b"c": 1}'), SyntaxError)
 })
 
+Deno.test('a key the model started twice loses the false start', () => {
+  // Every Haiku failure after #269 shipped logged `key-end=none`: the key the
+  // parser stopped after held no name at all. A fuzz of short repeats finds the
+  // model writing a separator twice, which opens a key of punctuation that ends
+  // on the quote of the real one.
+  const whole = { scene: 'composite', items: [{ name: 'roti', grams: 200, kcal: 340 }] }
+  for (const answer of [
+    '{"scene": "composite", ", "items": [{"name": "roti", "grams": 200, "kcal": 340}]}',
+    '{"scene":"composite",","items":[{"name":"roti","grams":200,"kcal":340}]}',
+    '{"scene": "composite", "items": [{"name": "roti", "grams": 200, "0, "kcal": 340}]}',
+    '{"scene":"composite","items":[{"[{"name":"roti","grams":200,"kcal":340}]}',
+    '{"scene":"composite","items":[{":[{"name":"roti","grams":200,"kcal":340}]}',
+  ]) {
+    assertEquals(parseAnswer(answer), whole, answer)
+  }
+  // The caller hears it as its own repair.
+  const heard: string[] = []
+  parseAnswer('{"scene": "composite", ", "items": []}', (n, via) => heard.push(`${n} ${via}`))
+  assertEquals(heard, ['1 restarted'])
+  // A false start with a letter in it may be data, so it is left to fail.
+  assertThrows(() => parseAnswer('{"name": "roti", "x, "kcal": 340}'), SyntaxError)
+  assertThrows(() => parseAnswer('{"name": "roti", "2 pcs, "kcal": 340}'), SyntaxError)
+  // So is one followed by something other than a plain key and its colon.
+  assertThrows(() => parseAnswer('{"name": "roti", ", "kcal" 340}'), SyntaxError)
+  assertThrows(() => parseAnswer('{"name": "roti", ", "Kcal value": 340}'), SyntaxError)
+})
+
 Deno.test('a key closed with something other than its quote gets the quote', () => {
   // A closing quote written as punctuation also gives the logged shape, but
   // the production answer is private, so this remains a candidate cause.
