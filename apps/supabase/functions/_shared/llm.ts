@@ -391,8 +391,9 @@ const MAX_KEY_REPAIRS = 3
  * Haiku's photo answers failed on one (29 of 815 in a day), each logged as
  * `error=expected-colon at-char=letter prev-char="`, and each cost a second
  * call to the fallback model. A missing closing quote (`"grams: 30, "kcal":`),
- * a quote too many (`""grams":`, `"kc"al_low":`), and a closing quote written as
- * punctuation (`"grams': 30`) can all give that error. The logged shape alone
+ * a quote too many (`""grams":`, `"kc"al_low":`), a closing quote written as
+ * punctuation (`"grams': 30`), and a separator written twice before a key
+ * (`"composite", ", "items":`) can all give that error. The logged shape alone
  * does not establish which fault the model made.
  *
  * Only that one error, at that one place, is touched, and the key that results
@@ -428,7 +429,7 @@ function parseRepairing(candidate: string, onRepair?: OnRepair): unknown {
  * Which repair mended a key, for the log line that counts them. A label, never
  * the key: the next night's triage reads these to see which fault Haiku makes.
  */
-type KeyRepair = 'stray' | 'inserted' | 'replaced'
+type KeyRepair = 'stray' | 'inserted' | 'replaced' | 'restarted'
 type OnRepair = (keys: number, via: KeyRepair[]) => void
 
 const KEY_NAME = /^[a-z_][a-z0-9_]*$/i
@@ -453,7 +454,37 @@ function keyOpened(text: string, at: number): number {
 function mendKey(text: string, at: number): { text: string; via: KeyRepair } | null {
   const quote = strayKeyQuote(text, at)
   if (quote >= 0) return { text: text.slice(0, quote) + text.slice(quote + 1), via: 'stray' }
-  return mendKeyClose(text, at)
+  return mendKeyClose(text, at) ?? mendFalseStart(text, at)
+}
+
+/**
+ * What a false start may hold: the separator, bracket or number tail the model
+ * wrote twice. No letter, so taking it out can never take out a name or a word.
+ */
+const FALSE_START = /^[\s,:.\d{}[\]-]{1,8}$/
+
+/**
+ * The answer with a key the model started twice put right, or null.
+ *
+ * Every Haiku failure after the close repairs shipped logged `key-end=none`:
+ * the key the parser stopped after held no name, so neither of them applies. A
+ * fuzz of short repeats over a photo answer gives that shape, unmended, only
+ * when the model writes a separator or the end of a value again before a key:
+ * `"composite", ", "items":`, `"grams": 200, "0, "kcal":`, `[{"[{"name":`. The
+ * parser reads `, ` as a key, closed by the quote that opens the real one.
+ *
+ * The false start must hold no letter and the real key must be a plain name
+ * followed by its colon. It goes, with its opening quote; the real key keeps
+ * its own.
+ */
+function mendFalseStart(text: string, at: number): { text: string; via: KeyRepair } | null {
+  if (!Number.isInteger(at) || text[at - 1] !== '"' || !/[a-z_]/i.test(text[at] ?? '')) return null
+  const opened = keyOpened(text, at)
+  if (opened < 0 || !FALSE_START.test(text.slice(opened + 1, at - 1))) return null
+  const end = text.indexOf('"', at)
+  if (end < 0 || !KEY_NAME.test(text.slice(at, end)) || !/^\s*:/.test(text.slice(end + 1)))
+    return null
+  return { text: text.slice(0, opened) + text.slice(at - 1), via: 'restarted' }
 }
 
 /**
