@@ -267,8 +267,8 @@ inferred from the shape, not seen in an answer. `parseAnswer` mends all four, at
 most three keys per answer and only when the result is a plain snake_case key
 followed by its colon (a false start must also hold no letter), and logs
 `answer repaired (keys=N via=…)` naming each repair (`stray`, `inserted`,
-`replaced`, `restarted`). An escaped close (`"grams\":`) is not mended, since `"gram\":` is
-the same text with a letter lost. What a failed key had after its name is in
+`replaced`, `restarted`). An escaped close (`"grams\":`) is not mended, since
+`"gram\":` is the same text with a letter lost. What a failed key had after its name is in
 the failure line as `key-end=` (`colon`, `quote`, `backslash`, a punctuation
 mark, or `none`). A wrong key would read as an empty meal instead of going to
 Qwen, so any other answer still goes to Qwen. A generic

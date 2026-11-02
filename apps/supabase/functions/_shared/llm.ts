@@ -391,8 +391,9 @@ const MAX_KEY_REPAIRS = 3
  * Haiku's photo answers failed on one (29 of 815 in a day), each logged as
  * `error=expected-colon at-char=letter prev-char="`, and each cost a second
  * call to the fallback model. A missing closing quote (`"grams: 30, "kcal":`),
- * a quote too many (`""grams":`, `"kc"al_low":`), and a closing quote written as
- * punctuation (`"grams': 30`) can all give that error. The logged shape alone
+ * a quote too many (`""grams":`, `"kc"al_low":`), a closing quote written as
+ * punctuation (`"grams': 30`), and a separator written twice before a key
+ * (`"composite", ", "items":`) can all give that error. The logged shape alone
  * does not establish which fault the model made.
  *
  * Only that one error, at that one place, is touched, and the key that results
@@ -473,7 +474,8 @@ const FALSE_START = /^[\s,:.\d{}[\]-]{1,8}$/
  * parser reads `, ` as a key, closed by the quote that opens the real one.
  *
  * The false start must hold no letter and the real key must be a plain name
- * followed by its colon. It goes, with its opening quote; the real key keeps its own.
+ * followed by its colon. It goes, with its opening quote; the real key keeps
+ * its own.
  */
 function mendFalseStart(text: string, at: number): { text: string; via: KeyRepair } | null {
   if (!Number.isInteger(at) || text[at - 1] !== '"' || !/[a-z_]/i.test(text[at] ?? '')) return null
