@@ -8675,6 +8675,20 @@ scene manifest, and React Native starts from the scene delegate rather than the
 app delegate. SDK 57 needed `ios.enableSceneSupport` and a plugin to move
 Firebase's line out of its way; both are gone.
 
+**Built with Xcode 27, Nitro kills the app at launch on every iOS below 18**
+unless `patches/react-native-nitro-modules@0.36.3.patch` is applied. Xcode 27's
+libc++ compiles `std::make_exception_ptr` into a call to
+`std::exception_ptr::__from_native_exception_pointer`, which only iOS 18's
+system libc++ has, whatever the deployment target says. dyld refuses the binary
+before any code runs (`Namespace DYLD, Code 4, Symbol missing`), so nothing
+reaches PostHog or Supabase: 1.1.5, the first release built with Xcode 27.1,
+was never opened on iOS 17, and an iOS 17 user saw only the splash for a
+moment, every launch, even after reinstalling. The patch builds those exceptions
+with `throw` and `std::current_exception()` instead, which is upstream's fix
+(margelo/nitro#1652, #1824). Drop it once Nitro ships 0.37.2 or later, and check
+any new Nitro version with `nm -u libNitroModules.a | grep
+__from_native_exception_pointer` on a Release build: it must print nothing.
+
 **SDK 58's AppDelegate loses `FirebaseApp.configure()` without saying so.**
 @react-native-firebase/app 26.x anchors that line on `factory.startReactNative(`,
 which the scene template no longer has, so prebuild prints "Unable to determine

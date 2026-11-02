@@ -1,0 +1,73 @@
+diff --git a/cpp/core/Promise.cpp b/cpp/core/Promise.cpp
+index 8f80ea94711300e54b9c6c0d9e86dc68d52b9b0e..a330604fd9e412c46c999e588b332e076dfe9fa4 100644
+--- a/cpp/core/Promise.cpp
++++ b/cpp/core/Promise.cpp
+@@ -11,8 +11,12 @@ namespace margelo::nitro {
+ 
+ Promise<void>::~Promise() {
+   if (isPending()) [[unlikely]] {
+-    std::runtime_error error("Timeouted: Promise<void> was destroyed!");
+-    reject(std::make_exception_ptr(error));
++    // Not std::make_exception_ptr: with Xcode 27's libc++ it links a symbol that only iOS 18+ has, so dyld kills the app at launch on older iOS (margelo/nitro#1652).
++    try {
++      throw std::runtime_error("Timeouted: Promise<void> was destroyed!");
++    } catch (...) {
++      reject(std::current_exception());
++    }
+   }
+ }
+ 
+diff --git a/cpp/core/Promise.hpp b/cpp/core/Promise.hpp
+index 07eac1180a23d2ac0ccc4a9bc88ac9ea7f7f799d..fad544e6cc521bf0cc883da29e7f18c21f9e8bee 100644
+--- a/cpp/core/Promise.hpp
++++ b/cpp/core/Promise.hpp
+@@ -36,7 +36,12 @@ public:
+   ~Promise() {
+     if (isPending()) [[unlikely]] {
+       auto message = std::string("Timeouted: Promise<") + TypeInfo::getFriendlyTypename<TResult>() + "> was destroyed!";
+-      reject(std::make_exception_ptr(std::runtime_error(message)));
++      // Not std::make_exception_ptr: with Xcode 27's libc++ it links a symbol that only iOS 18+ has, so dyld kills the app at launch on older iOS (margelo/nitro#1652).
++      try {
++        throw std::runtime_error(message);
++      } catch (...) {
++        reject(std::current_exception());
++      }
+     }
+   }
+ 
+diff --git a/cpp/jsi/JSIConverter+Exception.hpp b/cpp/jsi/JSIConverter+Exception.hpp
+index f327bd2f3eccee7203b89f4d5a1da634f482269b..54854f2272032d7bfad8bb8c337d8f0a044d3b7e 100644
+--- a/cpp/jsi/JSIConverter+Exception.hpp
++++ b/cpp/jsi/JSIConverter+Exception.hpp
+@@ -28,7 +28,12 @@ struct JSIConverter<std::exception_ptr> final {
+     jsi::Object object = error.asObject(runtime);
+     std::string name = object.getProperty(runtime, PropNameIDCache::get(runtime, "name")).asString(runtime).utf8(runtime);
+     std::string message = object.getProperty(runtime, PropNameIDCache::get(runtime, "message")).asString(runtime).utf8(runtime);
+-    return std::make_exception_ptr(std::runtime_error(name + ": " + message));
++    // Not std::make_exception_ptr: with Xcode 27's libc++ it links a symbol that only iOS 18+ has, so dyld kills the app at launch on older iOS (margelo/nitro#1652).
++    try {
++      throw std::runtime_error(name + ": " + message);
++    } catch (...) {
++      return std::current_exception();
++    }
+   }
+   static inline jsi::Value toJSI(jsi::Runtime& runtime, const std::exception_ptr& exception) {
+     if (exception == nullptr) [[unlikely]] {
+diff --git a/ios/utils/RuntimeError.hpp b/ios/utils/RuntimeError.hpp
+index 1b721154a8e095933b94e58cd29c5f663d83f2d9..151ea121eae40686b8f6fb1166470581f2a73f61 100644
+--- a/ios/utils/RuntimeError.hpp
++++ b/ios/utils/RuntimeError.hpp
+@@ -14,7 +14,12 @@
+ namespace margelo::nitro {
+ 
+ static inline std::exception_ptr makeException(const std::string& message) {
+-  return std::make_exception_ptr(std::runtime_error(message));
++  // Not std::make_exception_ptr: with Xcode 27's libc++ it links a symbol that only iOS 18+ has, so dyld kills the app at launch on older iOS (margelo/nitro#1652).
++  try {
++    throw std::runtime_error(message);
++  } catch (...) {
++    return std::current_exception();
++  }
+ }
+ 
+ static inline std::string getExceptionMessage(const std::exception_ptr& exception) {
