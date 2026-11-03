@@ -212,3 +212,29 @@ it('syncs without the person when their profile cannot be read', async () => {
     expect.objectContaining({ age: null, basalKcal: null }),
   )
 })
+
+it('drops an hour outside the read window instead of failing the sync and the weigh-ins after it', async () => {
+  const read = jest.fn().mockResolvedValue({
+    ...empty(),
+    hours: [
+      { date: '2026-09-30', hour: 23, steps: 40, activeKcal: 0, distanceM: null },
+      { date: '2026-10-02', hour: 9, steps: 100, activeKcal: 0, distanceM: null },
+      { date: '2026-10-04', hour: 0, steps: 12, activeKcal: 0, distanceM: null },
+    ],
+    weights: [{ date: '2026-10-02', kg: 70, bodyFatPct: null }],
+  })
+  await syncRange(
+    new QueryClient(),
+    'account-a',
+    { ...demoHealth, read },
+    '2026-10-01',
+    '2026-10-03',
+  )
+  expect(supabase.rpc).toHaveBeenCalledWith('replace_activity_hours', {
+    p_user_id: 'account-a',
+    p_from: '2026-10-01',
+    p_to: '2026-10-03',
+    p_hours: [{ log_date: '2026-10-02', hour: 9, steps: 100, active_kcal: 0, distance_m: null }],
+  })
+  expect(supabase.rpc).toHaveBeenCalledWith('sync_weight_readings', expect.anything())
+})
