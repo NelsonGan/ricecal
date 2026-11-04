@@ -797,6 +797,7 @@ export const fil = {
       permissionSettings: 'Buksan ang Settings',
       shutter: 'Kumuha ng litrato',
       library: 'Pumili mula sa mga litrato',
+      libraryFailed: 'Hindi mabuksan ang litratong iyon',
       flip: 'Baligtarin ang camera',
       resetZoom: 'I-reset ang zoom',
       photoOf: 'Litrato ng {{food}}',

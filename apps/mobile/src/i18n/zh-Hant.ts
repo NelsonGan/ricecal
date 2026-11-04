@@ -769,6 +769,7 @@ export const zhHant = {
       permissionSettings: '開啟設定',
       shutter: '拍照',
       library: '從相簿裡選',
+      libraryFailed: '無法打開這張照片',
       flip: '切換鏡頭',
       resetZoom: '重設縮放',
       photoOf: '{{food}} 的照片',

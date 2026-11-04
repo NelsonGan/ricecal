@@ -775,6 +775,7 @@ export const vi = {
       permissionSettings: 'Mở Cài đặt',
       shutter: 'Chụp ảnh',
       library: 'Chọn từ thư viện ảnh',
+      libraryFailed: 'Không mở được ảnh này',
       flip: 'Đổi máy ảnh',
       resetZoom: 'Đặt lại thu phóng',
       photoOf: 'Ảnh của {{food}}',

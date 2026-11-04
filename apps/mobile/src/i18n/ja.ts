@@ -776,6 +776,7 @@ export const ja = {
       permissionSettings: '設定を開く',
       shutter: '撮影',
       library: '写真から選ぶ',
+      libraryFailed: 'その写真を開けませんでした',
       flip: 'カメラを切り替え',
       resetZoom: 'ズームをリセット',
       photoOf: '{{food}} の写真',

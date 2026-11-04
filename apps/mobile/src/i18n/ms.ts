@@ -797,6 +797,7 @@ export const ms = {
       permissionSettings: 'Buka Tetapan',
       shutter: 'Ambil gambar',
       library: 'Pilih dari galeri',
+      libraryFailed: 'Foto itu tidak dapat dibuka',
       flip: 'Tukar kamera',
       resetZoom: 'Set semula zum',
       photoOf: 'Gambar {{food}}',

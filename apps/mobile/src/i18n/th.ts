@@ -768,6 +768,7 @@ export const th = {
       permissionSettings: 'เปิดการตั้งค่า',
       shutter: 'ถ่ายรูป',
       library: 'เลือกจากคลังรูป',
+      libraryFailed: 'เปิดรูปนี้ไม่ได้',
       flip: 'สลับกล้อง',
       resetZoom: 'รีเซ็ตการซูม',
       photoOf: 'รูปของ {{food}}',

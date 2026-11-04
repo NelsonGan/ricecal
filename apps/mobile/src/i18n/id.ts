@@ -786,6 +786,7 @@ export const id = {
       permissionSettings: 'Buka Pengaturan',
       shutter: 'Ambil foto',
       library: 'Pilih dari galeri',
+      libraryFailed: 'Foto itu tidak bisa dibuka',
       flip: 'Balik kamera',
       resetZoom: 'Atur ulang zoom',
       photoOf: 'Foto {{food}}',

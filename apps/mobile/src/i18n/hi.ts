@@ -765,6 +765,7 @@ export const hi = {
       permissionSettings: 'सेटिंग्स खोलें',
       shutter: 'फ़ोटो लें',
       library: 'फ़ोटो में से चुनें',
+      libraryFailed: 'वह फ़ोटो नहीं खुल सकी',
       flip: 'कैमरा बदलें',
       resetZoom: 'ज़ूम रीसेट करें',
       photoOf: '{{food}} की फ़ोटो',
