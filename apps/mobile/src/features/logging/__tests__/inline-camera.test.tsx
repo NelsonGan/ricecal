@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import '@/i18n'
 import { ThemeProvider } from '@/theme/ThemeProvider'
+import { ToastProvider } from '@/ui'
 import { InlineCamera, zoomProp } from '../InlineCamera'
 
 /**
@@ -24,7 +25,9 @@ function Providers({ children }: { children: ReactNode }) {
         insets: { top: 47, left: 0, right: 0, bottom: 34 },
       }}
     >
-      <ThemeProvider>{children}</ThemeProvider>
+      <ThemeProvider>
+        <ToastProvider>{children}</ToastProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   )
 }
@@ -179,12 +182,40 @@ describe('on a device', () => {
     await fireEvent(screen.getByTestId('camera-feed'), 'layout', {
       nativeEvent: { layout: { width: 400, height: 200 } },
     })
-    act(() =>
+    await act(() =>
       fireGestureHandler(getByGestureTestId('camera-tap'), [
         { state: State.BEGAN, x: 100, y: 50 },
         { state: State.END, x: 100, y: 50 },
       ]),
     )
     expect(focusAtPointAsync).toHaveBeenCalledWith(0.25, 0.25)
+  })
+})
+
+describe('choosing from photos', () => {
+  const picker = jest.requireMock('expo-image-picker') as {
+    launchImageLibraryAsync: jest.Mock
+  }
+
+  it('says the photo could not be opened when the picker rejects', async () => {
+    // What iOS answers for a HEIC that is still in iCloud. Before, the
+    // rejection went unhandled and the tap did nothing at all.
+    picker.launchImageLibraryAsync.mockRejectedValueOnce(new Error('Failed to read picked image'))
+    const onCapture = jest.fn()
+    await render(<InlineCamera fill mode="meal" onCapture={onCapture} onScanned={jest.fn()} />)
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose from photos' }))
+    expect(await screen.findByText('Could not open that photo')).toBeOnTheScreen()
+    expect(onCapture).not.toHaveBeenCalled()
+  })
+
+  it('hands a picked photo on', async () => {
+    picker.launchImageLibraryAsync.mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ uri: 'file:///plate.jpg' }],
+    })
+    const onCapture = jest.fn()
+    await render(<InlineCamera fill mode="meal" onCapture={onCapture} onScanned={jest.fn()} />)
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose from photos' }))
+    expect(onCapture).toHaveBeenCalledWith('file:///plate.jpg')
   })
 })

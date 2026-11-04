@@ -227,6 +227,8 @@ export const logging = {
     permissionSettings: 'Open Settings',
     shutter: 'Take a photo',
     library: 'Choose from photos',
+    /** The library picker failed, usually a photo still in iCloud. */
+    libraryFailed: 'Could not open that photo',
     flip: 'Flip camera',
     /** The zoom chip, which shows the zoom and goes back to 1x when tapped. */
     resetZoom: 'Reset zoom',
