@@ -16,6 +16,10 @@
 -- switch as workout posts (`auto_post_workouts`, on unless turned off) and the
 -- same freshness rule: only one that ended in the last day. A health sync
 -- backfilling months of runs shares none of them, and neither does demo data.
+--
+-- Each member chooses per group whether their own are shared there at all
+-- (`group_members.share_updates`, on unless turned off in the group's settings).
+-- Sharing one by hand from the chat's + is not affected.
 -- ---------------------------------------------------------------------------
 
 create or replace function private.group_share_posted_food()
@@ -29,7 +33,7 @@ begin
     select m.group_id, new.author_id, v_body,
       md5(new.id::text || ':' || m.group_id::text)::uuid, new.id, true
     from public.group_members m
-    where m.user_id = new.author_id
+    where m.user_id = new.author_id and m.share_updates
     on conflict (author_id, request_id) do nothing;
 exception when others then
     -- Sharing is a courtesy; the meal, workout or sync it rides on is not.
@@ -61,7 +65,7 @@ begin
     select m.group_id, new.user_id, v_body,
       md5('workout:' || new.id::text || ':' || m.group_id::text)::uuid, new.id, true
     from public.group_members m
-    where m.user_id = new.user_id
+    where m.user_id = new.user_id and m.share_updates
     on conflict (author_id, request_id) do nothing;
 exception when others then
     -- Sharing is a courtesy; the meal, workout or sync it rides on is not.
@@ -105,7 +109,7 @@ begin
     select m.group_id, new.user_id, v_body,
       md5('activity:' || new.id::text || ':' || m.group_id::text)::uuid, new.id, true
     from public.group_members m
-    where m.user_id = new.user_id
+    where m.user_id = new.user_id and m.share_updates
     on conflict (author_id, request_id) do nothing;
 exception when others then
     -- Sharing is a courtesy; the meal, workout or sync it rides on is not.

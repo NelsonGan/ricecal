@@ -380,7 +380,7 @@ grant select on topic to authenticated;
 select is((select array_agg(b.event) from broadcasts b where b.topic = (select t from topic)),
   array['message'], 'a sent message is broadcast on the group''s topic');
 select is((select b.ids from broadcasts b where b.event = 'message'),
-  jsonb_build_array((select id from public.group_messages where group_id = (select id from g))),
+  jsonb_build_array((select id from public.group_messages where group_id = (select id from g) and event is null)),
   'the broadcast carries the id and nothing else');
 select policies_are('realtime', 'messages', array['Group members hear their chat', 'Group members see who is online',
     'Group members share their presence'],

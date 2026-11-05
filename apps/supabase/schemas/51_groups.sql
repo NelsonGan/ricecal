@@ -68,6 +68,11 @@ create table public.group_members (
   -- Pushes for the foods and workouts members share to the chat on their own
   -- (98_group_chat_shares.sql). Its own switch, so a member can keep one kind.
   notify_updates boolean not null default true,
+  -- Whether this member's own foods and workouts are shared into this group's
+  -- chat on their own (98_group_chat_shares.sql). Sharing by hand from the +
+  -- is not affected. Per group, so a member can keep one group to friends who
+  -- want every meal and another to the occasional message.
+  share_updates  boolean not null default true,
   -- For the update pushes (98_group_update_pushes.sql): shares in this group
   -- written up to here have been pushed to this member or passed over, and
   -- when the last update push from this group went. A new member starts at
@@ -153,9 +158,26 @@ create table public.group_messages (
   -- reaches a group whether or not its author uses the feed.
   workout_id  uuid references public.workouts(id) on delete cascade,
   activity_id uuid references public.activity_sessions(id) on delete cascade,
+  -- One of the author's own foods (a recipe, "My Food" on screen), shared so
+  -- the others can open it and keep a copy. The card reads it live and hands
+  -- members its share slug, the same bearer credential a link carries.
+  recipe_id   uuid references public.recipes(id) on delete cascade,
+  -- Something that happened rather than something said, drawn as a quiet line
+  -- in the middle of the thread: `joined` (the author joined the group) or
+  -- `liked` (the author liked `entry_id`, a fellow member's food). Written only
+  -- by triggers, never pushed, never unread, and left out of the thread for an
+  -- app that does not ask for them (group_messages' `p_events`).
+  event       text check (event in ('joined', 'liked')),
+  entry_id    uuid references public.food_logs(id) on delete cascade,
   unique (author_id, request_id),
   -- A message shares one thing at most.
-  constraint group_messages_one_share check (num_nonnulls(post_id, workout_id, activity_id) <= 1)
+  constraint group_messages_one_share check (num_nonnulls(post_id, workout_id, activity_id, recipe_id) <= 1),
+  -- An event shares nothing and answers nothing; only a like names a food.
+  constraint group_messages_event_shape check (
+    (event is null and entry_id is null)
+    or (event is not null and num_nonnulls(post_id, workout_id, activity_id, recipe_id) = 0
+        and (entry_id is not null) = (event = 'liked'))
+  )
 );
 -- The thread's order, which group_messages pages through by (created_at, id).
 create index group_messages_recent_idx on public.group_messages(group_id, created_at, id);
@@ -163,6 +185,8 @@ create index group_messages_reply_idx on public.group_messages(reply_to_id) wher
 create index group_messages_post_idx on public.group_messages(post_id) where post_id is not null;
 create index group_messages_workout_idx on public.group_messages(workout_id) where workout_id is not null;
 create index group_messages_activity_idx on public.group_messages(activity_id) where activity_id is not null;
+create index group_messages_recipe_idx on public.group_messages(recipe_id) where recipe_id is not null;
+create index group_messages_entry_idx on public.group_messages(entry_id) where entry_id is not null;
 
 -- One reaction per person per message, as Instagram's are: a second one
 -- replaces the first. Only these, so the bar of choices and what is stored
@@ -376,11 +400,62 @@ begin
   if v_count >= 20 then
     delete from public.group_invites i where i.group_id = new.group_id;
   end if;
+  -- "Aisha joined", in the chat. Not for the first member, who made the group.
+  -- One line per member: joining again moves it rather than adding another,
+  -- and not within a day of the last, so leaving and joining a public group
+  -- in a loop cannot fill its chat.
+  if v_count > 1 and not exists (
+    select 1 from public.group_messages m
+    where m.group_id = new.group_id and m.author_id = new.user_id and m.event = 'joined'
+      and m.created_at > now() - interval '1 day'
+  ) then
+    begin
+      delete from public.group_messages m
+      where m.group_id = new.group_id and m.author_id = new.user_id and m.event = 'joined';
+      insert into public.group_messages(group_id, author_id, body, request_id, event)
+      values (new.group_id, new.user_id, 'joined', gen_random_uuid(), 'joined');
+    exception when others then
+      -- The line in the chat is a courtesy; joining is not.
+      raise warning 'group join event skipped: %', sqlerrm;
+    end;
+  end if;
   return null;
 end;
 $$;
 create trigger group_member_joined after insert on public.group_members
   for each row execute function private.group_member_joined();
+
+-- A like on a fellow member's food, as a quiet line in the chat of every group
+-- the two share, since the board of each counts it. Taking the like back, or
+-- turning it into a dislike, takes the line away. Dislikes are never told.
+-- One line per like per group: the request id is derived from the three.
+create or replace function private.group_reaction_event()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_entry uuid := coalesce(new.entry_id, old.entry_id); v_user uuid := coalesce(new.user_id, old.user_id);
+begin
+  begin
+    if tg_op <> 'INSERT' and old.value = 1 and (tg_op = 'DELETE' or new.value <> 1) then
+      delete from public.group_messages m
+      where m.entry_id = v_entry and m.author_id = v_user and m.event = 'liked';
+    end if;
+    if tg_op <> 'DELETE' and new.value = 1 and (tg_op = 'INSERT' or old.value <> 1) then
+      insert into public.group_messages(group_id, author_id, body, request_id, event, entry_id)
+      select a.group_id, v_user, left(coalesce(nullif(btrim(coalesce(f.display_label, f.item_name)), ''), 'food'), 160),
+        md5('liked:' || v_entry::text || ':' || a.group_id::text)::uuid, 'liked', v_entry
+      from public.food_logs f
+      join public.group_members b on b.user_id = f.user_id
+      join public.group_members a on a.group_id = b.group_id and a.user_id = v_user
+      where f.id = v_entry
+      on conflict (author_id, request_id) do nothing;
+    end if;
+  exception when others then
+    raise warning 'group like event skipped: %', sqlerrm;
+  end;
+  return null;
+end;
+$$;
+create trigger group_reaction_event after insert or update of value or delete on public.group_reactions
+  for each row execute function private.group_reaction_event();
 
 -- Blocking someone ends any pending invite between the two.
 create or replace function private.group_block_after()
@@ -396,7 +471,8 @@ create trigger group_block_after after insert on public.blocked_authors
   for each row execute function private.group_block_after();
 
 revoke execute on function private.group_entry_meal, private.group_meal_due, private.group_member_left,
-  private.group_member_joining, private.group_member_joined, private.group_block_after
+  private.group_member_joining, private.group_member_joined, private.group_block_after,
+  private.group_reaction_event
   from public, anon, authenticated;
 revoke execute on function private.group_is_member, private.group_share,
   private.group_require_member from public, anon;
@@ -676,9 +752,10 @@ end;
 $$;
 
 -- An app from before `notify_updates` sends only `p_notify`, from a bell that
--- meant the whole group, so that one switch moves both.
+-- meant the whole group, so that one switch moves both. `p_share_updates` is
+-- left alone when null, which is what every app from before it sends.
 create or replace function public.set_group_preferences(p_group_id uuid, p_board_order uuid[],
-  p_notify boolean, p_notify_updates boolean default null)
+  p_notify boolean, p_notify_updates boolean default null, p_share_updates boolean default null)
 returns void language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id);
 begin
@@ -688,7 +765,8 @@ begin
   update public.group_members m set
     board_order = coalesce(p_board_order, m.board_order),
     notify = coalesce(p_notify, m.notify),
-    notify_updates = coalesce(p_notify_updates, p_notify, m.notify_updates)
+    notify_updates = coalesce(p_notify_updates, p_notify, m.notify_updates),
+    share_updates = coalesce(p_share_updates, m.share_updates)
   where m.group_id = p_group_id and m.user_id = v_user;
 end;
 $$;
@@ -802,7 +880,7 @@ $$;
 -- three-argument call of release 1.0 still lands.
 create or replace function public.send_group_message(p_group_id uuid, p_body text, p_request_id uuid,
   p_reply_to uuid default null, p_post_id uuid default null,
-  p_workout_id uuid default null, p_activity_id uuid default null)
+  p_workout_id uuid default null, p_activity_id uuid default null, p_recipe_id uuid default null)
 returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id); v_id uuid; v_body text := btrim(coalesce(p_body, ''));
 begin
@@ -811,7 +889,7 @@ begin
   end if;
   select m.id into v_id from public.group_messages m where m.author_id = v_user and m.request_id = p_request_id;
   if v_id is not null then return v_id; end if;
-  if num_nonnulls(p_post_id, p_workout_id, p_activity_id) > 1 then
+  if num_nonnulls(p_post_id, p_workout_id, p_activity_id, p_recipe_id) > 1 then
     raise exception 'Share one thing at a time' using errcode = '22023';
   end if;
   if p_post_id is not null then
@@ -830,6 +908,12 @@ begin
       raise exception 'Workout unavailable' using errcode = '42501', hint = 'workout_gone';
     end if;
     if v_body = '' then v_body := coalesce(private.group_workout_label(private.group_activity(p_activity_id)), ''); end if;
+  elsif p_recipe_id is not null then
+    -- Only one of the sender's own: sharing hands the group its share slug.
+    if not exists (select 1 from public.recipes r where r.id = p_recipe_id and r.owner_id = v_user) then
+      raise exception 'Food unavailable' using errcode = '42501', hint = 'recipe_gone';
+    end if;
+    if v_body = '' then v_body := coalesce(private.group_recipe_label(p_recipe_id), ''); end if;
   end if;
   if char_length(v_body) not between 1 and 500 then
     raise exception 'Messages are 1 to 500 characters' using errcode = '22023';
@@ -839,14 +923,16 @@ begin
   -- fail for ever. One from another group is dropped the same way.
   if p_reply_to is not null and not exists (
     select 1 from public.group_messages r where r.id = p_reply_to and r.group_id = p_group_id and not r.quarantined
+      and r.event is null
   ) then
     p_reply_to := null;
   end if;
   if not private.social_claim(v_user, 'group_message', 120) then
     raise exception 'Try again later' using errcode = 'P0001', hint = 'rate_limited';
   end if;
-  insert into public.group_messages(group_id, author_id, body, request_id, reply_to_id, post_id, workout_id, activity_id)
-  values (p_group_id, v_user, v_body, p_request_id, p_reply_to, p_post_id, p_workout_id, p_activity_id)
+  insert into public.group_messages(group_id, author_id, body, request_id, reply_to_id, post_id, workout_id,
+    activity_id, recipe_id)
+  values (p_group_id, v_user, v_body, p_request_id, p_reply_to, p_post_id, p_workout_id, p_activity_id, p_recipe_id)
   returning id into v_id;
   update public.group_members m set chat_read_at = now()
   where m.group_id = p_group_id and m.user_id = v_user;
@@ -861,7 +947,7 @@ returns void language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.social_require_user(false); v_group uuid; v_author uuid;
 begin
   select m.group_id, m.author_id into v_group, v_author from public.group_messages m
-  where m.id = p_message_id and not m.quarantined;
+  where m.id = p_message_id and not m.quarantined and m.event is null;
   if v_group is null or not private.group_is_member(v_group, v_user)
      or (v_author <> v_user and private.social_pair_blocked(v_author))
      or exists (select 1 from public.group_message_reports r where r.message_id = p_message_id and r.reporter_id = v_user) then
@@ -890,7 +976,8 @@ $$;
 create or replace function public.delete_group_message(p_message_id uuid)
 returns void language plpgsql security definer set search_path = '' as $$
 begin
-  delete from public.group_messages m where m.id = p_message_id and m.author_id = (select auth.uid());
+  delete from public.group_messages m
+  where m.id = p_message_id and m.author_id = (select auth.uid()) and m.event is null;
 end;
 $$;
 
@@ -902,7 +989,7 @@ returns void language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := private.social_require_user(false); v_group uuid;
 begin
   select m.group_id into v_group from public.group_messages m
-  where m.id = p_message_id and m.author_id <> v_user;
+  where m.id = p_message_id and m.author_id <> v_user and m.event is null;
   if v_group is null or not private.group_is_member(v_group, v_user) then
     raise exception 'Message unavailable' using errcode = '42501';
   end if;
@@ -1041,7 +1128,7 @@ declare v_group uuid; v_body text; v_sent_at timestamptz;
 begin
   update public.group_messages m set pushed_at = now()
   where m.id = p_id and m.author_id = p_caller and m.pushed_at is null and not m.quarantined
-    and not m.automatic and m.created_at > now() - interval '10 minutes'
+    and not m.automatic and m.event is null and m.created_at > now() - interval '10 minutes'
   returning m.group_id, m.body, m.created_at into v_group, v_body, v_sent_at;
   if v_group is null then return; end if;
   return query
@@ -1154,7 +1241,11 @@ $$;
 create or replace function private.group_message_sent()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  perform private.group_chat_broadcast(new.group_id, 'message', jsonb_build_array(new.id));
+  -- An event goes out under its own name, which an app from before events
+  -- does not listen for, so it does not read the thread for a line it is not
+  -- shown.
+  perform private.group_chat_broadcast(new.group_id,
+    case when new.event is null then 'message' else 'event' end, jsonb_build_array(new.id));
   return null;
 end;
 $$;
