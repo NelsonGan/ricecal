@@ -280,7 +280,7 @@ async function persist(
       p_user_id: userId,
       p_from: window.from,
       p_to: window.to,
-      p_hours: hourRows(reading.hours),
+      p_hours: hourRows(reading.hours, window),
     })
     if (error) throw error
   }
@@ -462,7 +462,7 @@ export async function syncRange(
  * touch one row twice and Postgres refuses the whole statement, every sync, for
  * as long as that day is in the window.
  */
-function hourRows(hours: readonly HourReading[]) {
+function hourRows(hours: readonly HourReading[], window: { from: string; to: string }) {
   const rows = new Map<
     string,
     {
@@ -474,6 +474,10 @@ function hourRows(hours: readonly HourReading[]) {
     }
   >()
   for (const hour of hours) {
+    // The server refuses the whole window for one hour outside it, and the
+    // weigh-ins after it with it. iOS had such an hour (#201); one Android 1.1.5
+    // phone sends one too, so the guard sits here for every provider.
+    if (hour.date < window.from || hour.date > window.to) continue
     const key = `${hour.date}T${hour.hour}`
     const row = rows.get(key)
     if (row) {
