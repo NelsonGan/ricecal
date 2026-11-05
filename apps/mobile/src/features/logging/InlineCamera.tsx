@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { photoCropFill } from '@/lib/photo'
 import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Icon, IconButton, Squish, sheetBottomPadding, Text } from '@/ui'
+import { Button, Icon, IconButton, Squish, sheetBottomPadding, Text, useToast } from '@/ui'
 
 /**
  * How tall the viewfinder is when it is NOT filling a sheet.
@@ -150,6 +150,7 @@ export function InlineCamera({
   footnote,
 }: InlineCameraProps) {
   const { t, i18n } = useTranslation(['logging', 'common'])
+  const toast = useToast()
   const colors = useThemeColors()
   const [permission, requestPermission] = useCameraPermissions()
   // Only covers the moment between the shutter and the shot being on disk.
@@ -289,12 +290,23 @@ export function InlineCamera({
     onCapture(photo?.uri)
   }
 
+  // The picker rejects when iOS cannot hand the photo over, most often a HEIC
+  // still in iCloud ("Cannot load representation of type public.heic"). Left
+  // uncaught, the tap did nothing at all and the rejection went unhandled.
+  // Only the picker is caught: a fault in `onCapture` is not a photo that
+  // could not be opened, and must still reach error tracking.
   const pickFromLibrary = async () => {
     if (capturing) return
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.6,
-    })
+    let result: ImagePicker.ImagePickerResult
+    try {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.6,
+      })
+    } catch {
+      toast.show({ title: t('logging:camera.libraryFailed'), tone: 'error' })
+      return
+    }
     if (result.canceled) return
     onCapture(result.assets[0]?.uri)
   }

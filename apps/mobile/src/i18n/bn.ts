@@ -763,6 +763,7 @@ export const bn = {
       permissionSettings: 'সেটিংস খুলুন',
       shutter: 'ছবি তুলুন',
       library: 'ছবি থেকে বাছুন',
+      libraryFailed: 'ছবিটি খোলা যায়নি',
       flip: 'ক্যামেরা বদলান',
       resetZoom: 'জুম রিসেট করুন',
       photoOf: '{{food}} এর ছবি',

@@ -769,6 +769,7 @@ export const zhHans = {
       permissionSettings: '打开设置',
       shutter: '拍照',
       library: '从相册里选',
+      libraryFailed: '无法打开这张照片',
       flip: '切换镜头',
       resetZoom: '重置缩放',
       photoOf: '{{food}} 的照片',
