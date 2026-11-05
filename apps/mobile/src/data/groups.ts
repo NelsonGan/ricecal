@@ -187,6 +187,37 @@ export type ChatWorkout = {
   exercises: number | null
 }
 
+/**
+ * One of a member's own foods (a recipe, "My Food" on screen) shared into the
+ * chat, read live. Its share slug opens it, as a link would, and keeps a copy.
+ */
+export type ChatRecipe = {
+  id: string
+  name: string
+  photo_path: string | null
+  icon_set: string | null
+  icon_name: string | null
+  servings: number
+  share_slug: string
+  /** One serving's figures. */
+  kcal: number
+  carbs_g: number
+  protein_g: number
+  fat_g: number
+}
+
+/**
+ * Something that happened rather than something said, drawn as a quiet line:
+ * the author joined, or liked a fellow member's food.
+ */
+export type ChatEvent =
+  | { kind: 'joined'; food?: null }
+  | {
+      kind: 'liked'
+      /** Null once the food is gone from under it. */
+      food: { entry_id: string; name: string; owner: GroupPerson } | null
+    }
+
 /** The message a reply answers, as the reply quotes it. */
 export type ChatQuote = {
   id: string
@@ -210,9 +241,16 @@ export type GroupMessage = {
   /** Null when the post was withdrawn; the body still says what it was. */
   food?: ChatFood | null
   workout?: ChatWorkout | null
+  /** Null when the food was deleted; the body still says what it was. */
+  recipe?: ChatRecipe | null
+  /** Set on a join or a like line, which takes no reply, reaction or menu. */
+  event?: ChatEvent | null
   reactions?: { emoji: string; count: number }[]
   my_reaction?: string | null
 }
+
+/** One person's reaction to a message, for the sheet that lists who reacted. */
+export type MessageReactor = { emoji: string; person: GroupPerson; mine: boolean }
 
 /** The group's one thread as far back as it has been scrolled, oldest first. */
 export type GroupThread = {
@@ -235,6 +273,12 @@ type GroupDetails = {
    * older than the switch, which pushed none, so it reads as the chat switch.
    */
   notify_updates?: boolean
+  /**
+   * Whether the viewer's own foods and workouts are shared into this group's
+   * chat on their own. Absent from a server older than the switch, which
+   * always shared them.
+   */
+  share_updates?: boolean
   members: GroupPerson[]
   /** The invites the viewer sent that are still waiting. */
   invites: GroupPerson[]
@@ -448,7 +492,7 @@ export function useGroupThread(groupId: string, live: boolean) {
     queryFn: async ({ signal }) => {
       const newest = (await rpc(
         'group_messages',
-        { p_group_id: groupId, p_limit: THREAD_PAGE },
+        { p_group_id: groupId, p_limit: THREAD_PAGE, p_events: true },
         signal,
       )) as unknown as GroupMessage[]
       // The thread as it is now, not as it was when the read started: an older
@@ -477,6 +521,7 @@ export function useGroupThread(groupId: string, live: boolean) {
         p_before_at: oldest.created_at,
         p_before_id: oldest.id,
         p_limit: THREAD_PAGE,
+        p_events: true,
       })) as unknown as GroupMessage[]
       // Only onto the thread it was asked from: a refetch that started the
       // thread again meanwhile has its own oldest message.
@@ -516,6 +561,7 @@ async function rereadMessage(
       p_before_at: after.created_at,
       p_before_id: after.id,
       p_limit: 1,
+      p_events: true,
     })) as unknown as GroupMessage[]
     if (!fresh) return
     patchThread(client, userId, groupId, (messages) =>
@@ -551,7 +597,7 @@ export function ownMessage(
   id: string,
   body: string,
   createdAt: string,
-  extra?: Pick<GroupMessage, 'reply_to' | 'food' | 'workout'>,
+  extra?: Pick<GroupMessage, 'reply_to' | 'food' | 'workout' | 'recipe'>,
 ): GroupMessage {
   return {
     id,
@@ -562,6 +608,7 @@ export function ownMessage(
     reply_to: extra?.reply_to ?? null,
     food: extra?.food ?? null,
     workout: extra?.workout ?? null,
+    recipe: extra?.recipe ?? null,
     reactions: [],
     my_reaction: null,
   }
@@ -641,6 +688,7 @@ export function useGroupChatLive(groupId: string): boolean {
           const recent = (await rpc('group_messages', {
             p_group_id: groupId,
             p_limit: CATCH_UP,
+            p_events: true,
           })) as unknown as GroupMessage[]
           // No thread yet (its first read failed or is still to come), or a
           // gap the newest few cannot bridge: read the whole page.
@@ -685,7 +733,9 @@ export function useGroupChatLive(groupId: string): boolean {
               ? messages.filter((message) => !ids.includes(message.id))
               : messages,
           )
-        } else if (event === 'message') {
+        } else if (event === 'message' || event === 'event') {
+          // An event (a join or a like line) is drawn like a message; its own
+          // name keeps an app from before events from reading for it.
           const held = client.getQueryData<GroupThread>(key)?.messages
           if (held && ids.every((id) => held.some((message) => message.id === id))) return
           if (sending()) return
@@ -884,6 +934,36 @@ export function useGroupInviteSuggestions(groupId: string, enabled: boolean) {
   })
 }
 
+/**
+ * Who reacted to one message and with what, for the sheet a tap on its
+ * reactions opens. Read when the sheet opens, and again whenever the
+ * message's counts change while it is open.
+ */
+export function useMessageReactors(groupId: string, messageId: string | null, version: string) {
+  const userId = useUserId()
+  return useQuery({
+    queryKey: keys.groupsRead(userId, 'group_message_reactors', {
+      groupId,
+      messageId: messageId ?? '',
+      version,
+    }),
+    queryFn: async ({ signal }) =>
+      (await rpc(
+        'group_message_reactors',
+        { p_message_id: messageId as string },
+        signal,
+      )) as unknown as MessageReactor[],
+    enabled: Boolean(messageId),
+    // A reaction changed under the open sheet keeps the list drawn while it
+    // rereads; another message's list is never drawn for this one.
+    placeholderData: (previous, query) =>
+      (query?.queryKey[3] as { messageId?: string } | undefined)?.messageId === messageId
+        ? previous
+        : undefined,
+    ...SHORT,
+  })
+}
+
 /** A fellow member's workout, as its own page draws it. */
 export type GroupWorkoutView = {
   owner: GroupPerson
@@ -1074,8 +1154,17 @@ type GroupAction =
   | { action: 'join'; groupId: string }
   | { action: 'leave'; groupId: string; newLeader?: string }
   | { action: 'remove'; groupId: string; userId: string }
-  /** Both switches, always: a call naming only `notify` moves both on the server. */
-  | { action: 'preferences'; groupId: string; notify: boolean; notifyUpdates: boolean }
+  /**
+   * Both switches, always: a call naming only `notify` moves both on the
+   * server. `shareUpdates` is left alone when not given.
+   */
+  | {
+      action: 'preferences'
+      groupId: string
+      notify: boolean
+      notifyUpdates: boolean
+      shareUpdates?: boolean
+    }
   | { action: 'react'; entryId: string; value: -1 | 0 | 1 }
   | { action: 'move'; entryId: string; meal: GroupMeal }
   | { action: 'nudge'; groupId: string; day: string; targetId: string; meal: GroupMeal }
@@ -1090,8 +1179,10 @@ type GroupAction =
       postId?: string
       /** One of the viewer's own workouts to share, from the logger or a health store. */
       workout?: Pick<ChatWorkout, 'source' | 'id'>
+      /** One of the viewer's own foods (recipes) to share. */
+      recipeId?: string
       /** The quote and the card as drawn while sending, kept on the row until a refetch. */
-      sent?: Pick<GroupMessage, 'reply_to' | 'food' | 'workout'>
+      sent?: Pick<GroupMessage, 'reply_to' | 'food' | 'workout' | 'recipe'>
     }
   | {
       action: 'reactMessage'
@@ -1170,6 +1261,7 @@ async function perform(input: GroupAction): Promise<unknown> {
         p_board_order: unset<string[]>(null),
         p_notify: input.notify,
         p_notify_updates: input.notifyUpdates,
+        p_share_updates: unset(input.shareUpdates),
       })
     case 'react':
       return await rpc('set_group_reaction', { p_entry_id: input.entryId, p_value: input.value })
@@ -1194,6 +1286,7 @@ async function perform(input: GroupAction): Promise<unknown> {
         p_post_id: unset(input.postId),
         p_workout_id: unset(input.workout?.source === 'workout' ? input.workout.id : null),
         p_activity_id: unset(input.workout?.source === 'activity' ? input.workout.id : null),
+        p_recipe_id: unset(input.recipeId),
       })
       notify('message', id)
       return id
@@ -1427,7 +1520,13 @@ export function useGroupAction() {
           client.setQueryData<GroupDetails>(key, {
             ...before,
             ...(input.action === 'preferences'
-              ? { notify: input.notify, notify_updates: input.notifyUpdates }
+              ? {
+                  notify: input.notify,
+                  notify_updates: input.notifyUpdates,
+                  ...(input.shareUpdates !== undefined
+                    ? { share_updates: input.shareUpdates }
+                    : {}),
+                }
               : {}),
             ...(input.action === 'update' && input.isPublic !== undefined
               ? { is_public: input.isPublic }
@@ -1448,8 +1547,10 @@ export function useGroupAction() {
         case 'move':
           return
         case 'reactMessage':
-          // The counts others added meanwhile come with the refetch.
+          // The counts others added meanwhile come with the refetch, and an
+          // open list of who reacted may have been read before this landed.
           void client.invalidateQueries({ queryKey: messagesKey(userId, input.groupId) })
+          refresh(input.groupId, 'group_message_reactors')
           return
         case 'read':
           if (input.refresh) {

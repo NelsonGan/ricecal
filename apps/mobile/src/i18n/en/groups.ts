@@ -92,10 +92,19 @@ export const groups = {
   heart: 'Heart',
   reactWith: 'React with {{emoji}}',
   reactionCount: '{{emoji}} {{count}}',
-  shareFood: 'Share a food or workout',
+  /** The sheet a tap on a message's reactions opens, listing who reacted. */
+  reactionsTitle_one: '{{count}} reaction',
+  reactionsTitle_other: '{{count}} reactions',
+  /** Its first filter, before one per emoji. */
+  reactionsAll: 'All',
+  /** Under the viewer's own row in that list. */
+  tapToRemove: 'Tap to remove',
   share: 'Share',
   tabFood: 'Food',
   tabWorkouts: 'Workouts',
+  /** The viewer's own foods (recipes), as the chat's + offers them. */
+  tabMyFood: 'My Food',
+  shareMyFoodEmpty: 'Foods you write show here.',
   shareFoodEmpty: 'Foods you post show here.',
   shareWorkoutEmpty: 'Workouts you log or record show here.',
   /** The figures on a workout card in the chat, each over its value. */
@@ -105,6 +114,16 @@ export const groups = {
   statSets: 'Sets',
   statActive: 'Active',
   shareThis: 'Share {{name}}',
+  /** Under a shared food of someone's own: a serving's calories, and how many it feeds. */
+  recipePerServing: '{{kcal}} kcal a serving',
+  /** Quiet lines in the chat for what happened rather than what was said. */
+  eventJoined: '{{name}} joined',
+  eventJoinedYou: 'You joined',
+  eventLiked: "{{name}} liked {{owner}}'s {{food}}",
+  eventLikedYours: '{{name}} liked your {{food}}',
+  eventLikedByYou: "You liked {{owner}}'s {{food}}",
+  /** A like whose food has since been deleted. */
+  eventLikedGone: '{{name}} liked a food',
   openProfile: "Open {{name}}'s profile",
   enlargePhoto: 'Enlarge photo',
   shrinkPhoto: 'Shrink photo',
@@ -116,6 +135,12 @@ export const groups = {
   inviteFirst: 'Invite friends to fill the board.',
   invited: 'Invited',
   settingsMembers: 'Members',
+  /** The leader's card: the group's name and who may join. */
+  settingsGroup: 'Group',
+  /** The viewer's own foods and workouts, shared here as they log them. */
+  sharing: 'Sharing',
+  shareUpdates: 'Post my foods and workouts',
+  shareUpdatesHint: 'New ones go to this chat as you log them.',
   notifications: 'Notifications',
   notifyChat: 'Chat messages and nudges',
   /** The foods and workouts members share to the chat on their own. */

@@ -159,6 +159,8 @@ it('sends both notification switches, so muting chat does not mute updates too',
     p_board_order: null,
     p_notify: false,
     p_notify_updates: true,
+    // The bell leaves the sharing switch alone.
+    p_share_updates: null,
   })
 })
 
@@ -447,6 +449,7 @@ describe('one thread, a page at a time', () => {
       p_before_at: message('m100', false, 100).created_at,
       p_before_id: 'm100',
       p_limit: THREAD_PAGE,
+      p_events: true,
     })
     await act(async () => older.settle({ data: run(90, 10), error: null }))
     await waitFor(() => expect(ids(client)?.[0]).toBe('m90'))
@@ -658,6 +661,7 @@ describe('live chat', () => {
       p_post_id: null,
       p_workout_id: null,
       p_activity_id: null,
+      p_recipe_id: null,
     })
     await act(async () => {
       sent.settle({ data: 'm2', error: null })
@@ -879,6 +883,23 @@ describe('replies, food and reactions', () => {
     unsubscribe()
   })
 
+  it('reads a join or like line in as it is announced, under its own event name', async () => {
+    const { client, wrapper } = setup()
+    const held = Array.from({ length: 20 }, (_, index) => message(`m${index}`, false, index))
+    client.setQueryData(messagesKey, { messages: held, more: true })
+    const query = watchMessages(client)
+    const unsubscribe = query.subscribe(() => undefined)
+    await renderHook(() => useGroupChatLive('g1'), { wrapper })
+    const joined = { ...message('m20', false, 20), event: { kind: 'joined' as const } }
+    mockRpc.mockReturnValueOnce(response([...held.slice(11), joined]))
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('event', { ids: ['m20'] }))
+    await waitFor(() => expect(ids(client)).toHaveLength(21))
+    expect(client.getQueryData<GroupThread>(messagesKey)?.messages.at(-1)?.event?.kind).toBe(
+      'joined',
+    )
+    unsubscribe()
+  })
+
   it('reads only the newest few for a new message, and the whole page for a gap', async () => {
     const { client, wrapper } = setup()
     const held = Array.from({ length: 20 }, (_, index) => message(`m${index}`, false, index))
@@ -892,7 +913,11 @@ describe('replies, food and reactions', () => {
     mockRpc.mockReturnValueOnce(response(recent))
     await act(async () => mockListeners.get(TOPIC)?.onEvent('message', { ids: ['m20'] }))
     await waitFor(() => expect(ids(client)).toHaveLength(21))
-    expect(mockRpc).toHaveBeenCalledWith('group_messages', { p_group_id: 'g1', p_limit: CATCH_UP })
+    expect(mockRpc).toHaveBeenCalledWith('group_messages', {
+      p_group_id: 'g1',
+      p_limit: CATCH_UP,
+      p_events: true,
+    })
     expect(mockRpc).toHaveBeenCalledTimes(1)
 
     // Too many arrived for a catch-up to meet what is held: the whole page.
@@ -927,6 +952,7 @@ describe('replies, food and reactions', () => {
       p_before_at: held[1]?.created_at,
       p_before_id: 'm1',
       p_limit: 1,
+      p_events: true,
     })
     expect(ids(client)).toHaveLength(THREAD_PAGE + 2)
   })
@@ -999,6 +1025,7 @@ describe('replies, food and reactions', () => {
       p_post_id: 'p1',
       p_workout_id: null,
       p_activity_id: null,
+      p_recipe_id: null,
     })
     const sent = client.getQueryData<GroupThread>(messagesKey)?.messages.at(-1)
     expect(sent?.food?.name).toBe('Nasi lemak')
