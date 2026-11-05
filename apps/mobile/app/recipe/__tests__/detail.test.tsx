@@ -52,7 +52,11 @@ jest.mock('@/data', () => ({
 
 jest.mock('@/data/refusals', () => ({ openPaywall: jest.fn() }))
 jest.mock('@/features/paywall', () => ({ useRequirePro: () => jest.fn(() => true) }))
-jest.mock('@/features/recipes', () => ({ RecipeSteps: () => null, ShareSheet: () => null }))
+jest.mock('@/features/recipes', () => ({
+  RecipeSteps: () => null,
+  ShareSheet: () => null,
+  useCopyRecipe: () => ({ copy: jest.fn(), busy: false }),
+}))
 jest.mock('@/features/shared', () => ({ MealPhoto: () => null }))
 jest.mock('@/lib/navigation', () => ({ useBack: () => jest.fn() }))
 

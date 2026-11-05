@@ -284,14 +284,14 @@ begin
     'unread', (select count(*) from (
       select 1 from public.group_messages m
       where m.group_id = p_group_id and m.created_at > v_read_at
-        and m.author_id <> v_user and not m.quarantined
+        and m.author_id <> v_user and not m.quarantined and m.event is null
         and not private.social_pair_blocked(m.author_id)
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
       limit 100) u),
     'last', (
       select jsonb_build_object('author', private.group_person(m.author_id), 'body', m.body)
       from public.group_messages m
-      where m.group_id = p_group_id and not m.quarantined
+      where m.group_id = p_group_id and not m.quarantined and m.event is null
         and not private.social_pair_blocked(m.author_id)
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
       order by m.created_at desc limit 1
@@ -302,24 +302,27 @@ $$;
 
 -- A shared food as a chat card draws it: the post's meal read live, as the
 -- board reads the diary, so a corrected portion shows in the thread too. The
--- photo only while it is still the one the post was published with, since a
--- replacement has not been through the post's review. Null once the post is
--- withdrawn or hidden; the message's body still says what it was.
+-- photo is the diary's as it is now, as the board shows it, so one added after
+-- the meal was logged (and posted without one) shows in the chat too. Only
+-- group members read this, and the board already shows them that photo; the
+-- feed post keeps only the photo it was published with, since strangers read
+-- that. Null once the post is withdrawn or hidden; the message's body still
+-- says what it was.
 --
 -- Two steps, as private.social_post_food does: joining the expanded diary view
 -- to posts made Postgres scan every meal a busy author ever logged, once per
 -- food message on the page.
 create or replace function private.group_post_food(p_post_id uuid)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
-declare v_entry uuid; v_author uuid; v_photo text; v_food jsonb;
+declare v_entry uuid; v_author uuid; v_food jsonb;
 begin
-  select p.source_entry_id, p.author_id, p.photo_path into v_entry, v_author, v_photo
+  select p.source_entry_id, p.author_id into v_entry, v_author
   from public.social_posts p
   where p.id = p_post_id and p.kind = 'food' and p.review_status = 'approved' and not p.quarantined;
   if v_entry is null then return null; end if;
   select jsonb_build_object(
     'post_id', p_post_id, 'name', left(d.food_name, 160), 'icon_set', d.icon_set, 'icon_name', d.icon_name,
-    'photo_path', case when d.photo_path = v_photo then d.photo_path end,
+    'photo_path', d.photo_path,
     'serving_label', d.serving_label, 'logged_at', d.logged_at,
     'kcal', d.kcal, 'carbs_g', d.carbs_g, 'protein_g', d.protein_g, 'fat_g', d.fat_g)
   into v_food
@@ -355,6 +358,37 @@ create or replace function private.group_food_label(p_post_id uuid)
 returns text language sql stable security definer set search_path = '' as $$
   select left(f ->> 'name', 160) || ' (' || round((f ->> 'kcal')::numeric)::text || ' kcal)'
   from (select private.group_post_food(p_post_id) as f) x
+  where f is not null;
+$$;
+
+-- One of a member's own foods (a recipe) shared into the chat, as its card
+-- draws it: read live, so a corrected recipe shows corrected. The share slug
+-- is what opens it, and lets a member keep a copy (save_shared_recipe_copy):
+-- sharing into a group is sharing its link with the group.
+create or replace function private.group_recipe(p_recipe_id uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'id', r.id, 'name', r.name, 'photo_path', r.photo_path, 'icon_set', r.icon_set,
+    'icon_name', r.icon_name, 'servings', r.servings, 'share_slug', r.share_slug,
+    'kcal', round(coalesce(t.kcal, 0) / greatest(r.servings, 1))::integer,
+    'carbs_g', round(coalesce(t.carbs_g, 0) / greatest(r.servings, 1), 1),
+    'protein_g', round(coalesce(t.protein_g, 0) / greatest(r.servings, 1), 1),
+    'fat_g', round(coalesce(t.fat_g, 0) / greatest(r.servings, 1), 1))
+  from public.recipes r
+  left join lateral (
+    select sum(i.kcal_per_unit * i.amount) as kcal, sum(i.carbs_g_per_unit * i.amount) as carbs_g,
+      sum(i.protein_g_per_unit * i.amount) as protein_g, sum(i.fat_g_per_unit * i.amount) as fat_g
+    from public.recipe_ingredients i where i.recipe_id = r.id
+  ) t on true
+  where r.id = p_recipe_id;
+$$;
+
+-- What a recipe message's body says, as for food: "Ayam masak merah (520 kcal)",
+-- per serving.
+create or replace function private.group_recipe_label(p_recipe_id uuid)
+returns text language sql stable security definer set search_path = '' as $$
+  select left(f ->> 'name', 160) || ' (' || (f ->> 'kcal') || ' kcal)'
+  from (select private.group_recipe(p_recipe_id) as f) x
   where f is not null;
 $$;
 
@@ -468,7 +502,7 @@ $$;
 -- out under the same rules as the thread (deleted, hidden, blocked, reported),
 -- and so are reactions by anyone blocked either way.
 create or replace function public.group_messages(p_group_id uuid, p_before_at timestamptz default null,
-  p_before_id uuid default null, p_limit integer default 50)
+  p_before_id uuid default null, p_limit integer default 50, p_events boolean default false)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id);
 begin
@@ -478,7 +512,8 @@ begin
       'created_at', m.created_at, 'mine', m.author_id = v_user,
       'reply_to', (
         select jsonb_build_object('id', r.id, 'author', private.group_person(r.author_id), 'body', r.body,
-          'is_food', r.post_id is not null, 'is_workout', num_nonnulls(r.workout_id, r.activity_id) > 0)
+          'is_food', r.post_id is not null, 'is_workout', num_nonnulls(r.workout_id, r.activity_id) > 0,
+          'is_recipe', r.recipe_id is not null)
         from public.group_messages r
         where r.id = m.reply_to_id and not r.quarantined
           and not private.social_pair_blocked(r.author_id)
@@ -490,6 +525,18 @@ begin
         || coalesce(private.group_food_reactions(m.post_id, p_group_id, v_user), '{}'::jsonb) end,
       'workout', case when m.workout_id is not null then private.group_workout(m.workout_id)
                       when m.activity_id is not null then private.group_activity(m.activity_id) end,
+      -- Not one the viewer reported: its link would answer nothing, and the
+      -- body still says what it was.
+      'recipe', case when m.recipe_id is not null and not exists (
+          select 1 from public.recipe_reports x where x.recipe_id = m.recipe_id and x.reporter_id = v_user)
+        then private.group_recipe(m.recipe_id) end,
+      -- Only asked for by an app that draws them (`p_events`), so only ever
+      -- present for one. A like names the food and whose it is, read live.
+      'event', case when m.event is not null then jsonb_build_object('kind', m.event,
+        'food', case when m.event = 'liked' then (
+          select jsonb_build_object('entry_id', f.id, 'name', left(coalesce(f.display_label, f.item_name), 160),
+            'owner', private.group_person(f.user_id))
+          from public.food_logs f where f.id = m.entry_id) end) end,
       'reactions', coalesce((
         select jsonb_agg(jsonb_build_object('emoji', x.emoji, 'count', x.total) order by x.total desc, x.first_at)
         from (
@@ -505,6 +552,12 @@ begin
     from (
       select * from public.group_messages m
       where m.group_id = p_group_id and not m.quarantined
+        and (m.event is null or (p_events
+          -- A like of the food of someone the viewer blocked, or who blocked
+          -- them, is about that person, and is left out as their messages are.
+          and (m.event <> 'liked' or not exists (
+            select 1 from public.food_logs f
+            where f.id = m.entry_id and f.user_id <> v_user and private.social_pair_blocked(f.user_id)))))
         -- Constants on the right, so the index walks straight to the cursor.
         and (m.created_at, m.id) < (coalesce(p_before_at, 'infinity'),
           coalesce(p_before_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff'))
@@ -512,6 +565,31 @@ begin
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
       order by m.created_at desc, m.id desc limit greatest(1, least(coalesce(p_limit, 50), 100))
     ) m
+  ), '[]'::jsonb);
+end;
+$$;
+
+-- Who reacted to one message, and with what, for the sheet a tap on its
+-- reactions opens (as WhatsApp's does): the viewer first, then the newest.
+-- Under the same rules as the counts: the message must be one the viewer can
+-- read, and anyone blocked either way is left out.
+create or replace function public.group_message_reactors(p_message_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare v_user uuid := (select auth.uid()); v_group uuid; v_author uuid;
+begin
+  select m.group_id, m.author_id into v_group, v_author from public.group_messages m
+  where m.id = p_message_id and not m.quarantined and m.event is null;
+  if v_group is null or v_user is null or not private.group_is_member(v_group, v_user)
+     or (v_author <> v_user and private.social_pair_blocked(v_author))
+     or exists (select 1 from public.group_message_reports r where r.message_id = p_message_id and r.reporter_id = v_user) then
+    raise exception 'Message unavailable' using errcode = '42501';
+  end if;
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('emoji', a.emoji, 'person', private.group_person(a.user_id),
+        'mine', a.user_id = v_user)
+      order by a.user_id <> v_user, a.created_at desc)
+    from public.group_message_reactions a
+    where a.message_id = p_message_id and (a.user_id = v_user or not private.social_pair_blocked(a.user_id))
   ), '[]'::jsonb);
 end;
 $$;
@@ -561,7 +639,7 @@ begin
     select jsonb_build_object(
       'id', g.id, 'name', g.name, 'icon_name', g.icon_name, 'icon_path', g.icon_path,
       'is_public', g.is_public, 'leader_id', g.leader_id, 'notify', v_member.notify,
-      'notify_updates', v_member.notify_updates,
+      'notify_updates', v_member.notify_updates, 'share_updates', v_member.share_updates,
       'members', (
         select jsonb_agg(private.group_person(m.user_id) order by
           m.user_id <> v_user, private.group_last_active(m.user_id) desc nulls last, m.joined_at, m.user_id)
@@ -610,8 +688,21 @@ language sql stable security definer set search_path = '' as $$
       join public.group_members mm on mm.group_id = gm.group_id and mm.user_id = (select auth.uid())
       where p.author_id = k.owner and p.photo_path = k.key
         and p.review_status = 'approved' and not p.quarantined
+    ) or exists (
+      -- The card shows the diary's photo as it is now (private.group_post_food),
+      -- which for a photo added after posting is not the post's own.
+      select 1 from public.food_logs f
+      join public.social_posts p on p.source_entry_id = f.id
+        and p.review_status = 'approved' and not p.quarantined
+      join public.group_messages gm on gm.post_id = p.id and not gm.quarantined
+      join public.group_members mm on mm.group_id = gm.group_id and mm.user_id = (select auth.uid())
+      where f.user_id = k.owner and f.photo_path = k.key
     ));
 $$;
+-- The photo claims look a member's photo up by owner and key; most entries
+-- have no photo, so only those that do are indexed.
+create index if not exists food_logs_user_photo_idx on public.food_logs(user_id, photo_path)
+  where photo_path is not null;
 -- A group's uploaded picture, for its members only. Nobody reviews it, so it
 -- is shown only to people who chose to be in the group with whoever uploaded
 -- it, as their meal photos are. An invite, which a leader can send to a
@@ -633,7 +724,8 @@ grant execute on function private.group_icon_claims to authenticated, service_ro
 revoke execute on function private.group_size_for_join from public, anon;
 grant execute on function private.group_size_for_join to authenticated, service_role;
 revoke execute on function private.group_post_food, private.group_food_label, private.group_workout,
-  private.group_activity, private.group_workout_label, private.group_food_reactions
+  private.group_activity, private.group_workout_label, private.group_food_reactions,
+  private.group_recipe, private.group_recipe_label
   from public, anon, authenticated;
 revoke execute on function private.group_photo_claims, private.group_person from public, anon;
 -- Only the board and settings read it, both as definer.
@@ -642,7 +734,9 @@ grant execute on function private.group_photo_claims, private.group_person to au
 
 revoke execute on function public.my_groups, public.my_group_invites, public.group_invite_count,
   public.public_groups, public.group_board, public.group_messages, public.group_chat_summary,
-  public.group_details, public.group_invite_suggestions, public.group_workout_detail from public, anon;
+  public.group_details, public.group_invite_suggestions, public.group_workout_detail,
+  public.group_message_reactors from public, anon;
 grant execute on function public.my_groups, public.my_group_invites, public.group_invite_count,
   public.public_groups, public.group_board, public.group_messages, public.group_chat_summary,
-  public.group_details, public.group_invite_suggestions, public.group_workout_detail to authenticated, service_role;
+  public.group_details, public.group_invite_suggestions, public.group_workout_detail,
+  public.group_message_reactors to authenticated, service_role;

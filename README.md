@@ -3347,12 +3347,22 @@ meal share a tile and swipe sideways inside it.
   A person may set 300 an hour (`group_message_reaction`), counted apart from
   the board's thumbs (`group_reaction`, 600), which once shared the count and
   refused every emoji after an hour of thumbs. Setting the one already there
-  is a no-op and spends nothing.
+  is a no-op and spends nothing. A tap on the reactions under a bubble lists
+  who reacted, as WhatsApp does: a chip for all and one per emoji, then a row
+  per person, the viewer's own first, where a tap takes it back
+  (`group_message_reactors`, read when the sheet opens and again as the counts
+  move; blocks and reports apply as they do to the counts).
 - **Food in the chat.** A food message shares one of its author's own food posts
   (`group_messages.post_id`) and draws as a card: the photo across it, the name,
   calories and macros. The card reads the post's meal live through
   `private.group_post_food`, as the board reads the diary, so a corrected portion
   shows there too; deleting the post or the meal under it deletes the message.
+  Its photo is the diary's as it is now, as the board shows it, not the one the
+  post was published with: a meal posted before its photo was added showed its
+  drawing in the chat for ever while the board showed the photo. The feed post
+  itself still keeps only the photo it was published with, since strangers read
+  it; members already see the diary photo on the board, and `group_photo_claims`
+  lets them sign it however old the meal is once it is shared into their chat.
   A friend's card carries the board's like and dislike on its photo's corner, the same
   `group_reactions` row, so a thumb given in the chat shows on the board and
   back; your own card draws the same two pills, disabled, with what friends said.
@@ -3363,7 +3373,12 @@ meal share a tile and swipe sideways inside it.
   into every group chat its author is in, as an update** (`98_group_chat_shares.sql`):
   the trigger marks the row `automatic`, which `group_message_push_targets`
   refuses, and the jobs Worker pushes it instead, as a digest, to members with
-  `notify_updates` on (see Notifications below). It counts as
+  `notify_updates` on (see Notifications below). Each member chooses per group
+  whether their own are shared there at all: "Post my foods and workouts" in the
+  group's settings (`group_members.share_updates`, on by default), which every
+  sharing trigger reads; sharing by hand from the + is not affected, and an app
+  from before the switch never sends it (`set_group_preferences` leaves it
+  alone on null). It counts as
   unread on the chat bar like any message. A post's photo stays signable for members of
   a group it was shared into however old the meal is (`group_photo_claims`).
 - **Workouts in the chat.** A message can share a workout instead
@@ -3382,6 +3397,28 @@ meal share a tile and swipe sideways inside it.
   not wait to rule one out, and its reactions are in the long-press bar. A
   thumb on a food card is a gesture-handler tap rather than a Pressable, so it
   takes the touch from the bubble's double tap instead of hearting it too.
+- **A food of one's own in the chat.** The + offers three tiles, Food, Workouts
+  and My Food, and under the one chosen a two-column grid of the viewer's recent
+  ones. My Food is their own written foods (recipes); sharing one
+  (`group_messages.recipe_id`, only the sender's own) draws a card read live
+  through `private.group_recipe`: photo, name, a serving's calories, how many
+  it feeds. It hands members the recipe's `share_slug`, so sharing into a group
+  is sharing its link with the group: a tap opens it as a link does (a private
+  recipe included) and "Save to my foods" keeps a copy through
+  `save_shared_recipe_copy`, gated as the recipe page is (`useCopyRecipe`).
+  Deleting the recipe deletes the message. Its body is "Name (520 kcal)" for a
+  push and an older app.
+- **Joins and likes as quiet lines.** A member joining writes a `joined` row
+  (not the one who made the group), and a like of a fellow member's food a
+  `liked` row in each group the two share (`group_messages.event`, with the
+  entry in `entry_id`; taking the like back or turning it into a dislike
+  deletes it, and a dislike is never told). The app draws them as a centred
+  pill and a small line, as a messenger draws its notices. They are written by
+  triggers only, never pushed, never unread, never the chat bar's preview, and
+  take no reply, reaction, report or delete. `group_messages` returns them only
+  to an app that passes `p_events`, so a released app never sees one, and they
+  are broadcast as `event` rather than `message`, which a released app does
+  not listen for.
 - **Release 1.0 still reads every message.** `body` stays required and a food
   message's body is its name and calories ("Nasi lemak (640 kcal)"), which is
   also what its push says, so an app that knows nothing of food cards draws a

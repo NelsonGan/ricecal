@@ -47,6 +47,8 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
   const others = group?.members.filter((member) => member.id !== viewer) ?? []
   // A server from before the second switch pushed no updates; the one switch it had meant both.
   const updates = group?.notify_updates ?? group?.notify ?? true
+  // A server from before this switch always shared them.
+  const sharing = group?.share_updates ?? true
 
   // The field follows the saved name, including a rename from another phone.
   const savedName = group?.name
@@ -81,6 +83,10 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
           <SettingsSkeleton />
         )
       ) : (
+        // The group itself, then the viewer's own switches (sharing before
+        // hearing), short enough to stay above the fold, then who is in it, a
+        // list up to twenty long. What only the leader changes after that, and
+        // leaving last, as a messenger's group info is laid out.
         <View className="gap-lg pb-xl">
           <Card>
             <View className="flex-row items-center gap-md">
@@ -106,74 +112,46 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
                 <Text variant="subtitle" numberOfLines={1}>
                   {group.name}
                 </Text>
-                <Text variant="meta">{t('members', { count: group.members.length })}</Text>
+                <Text variant="meta">
+                  {t('members', { count: group.members.length })} ·{' '}
+                  {group.is_public ? t('public') : t('private')}
+                </Text>
               </View>
             </View>
-            {isLeader ? (
-              <>
-                <View className="flex-row items-center gap-2">
-                  <View className="min-w-0 flex-1">
-                    <TextField
-                      value={name}
-                      onChangeText={setName}
-                      maxLength={40}
-                      accessibilityLabel={t('name')}
-                    />
-                  </View>
-                  {name.trim() && name.trim() !== group.name ? (
-                    <Button
-                      size="sm"
-                      onPress={() => task.press({ action: 'update', groupId, name: name.trim() })}
-                    >
-                      {t('save')}
-                    </Button>
-                  ) : null}
-                </View>
-                <SegmentedControl
-                  options={[
-                    { value: 'private', label: t('private') },
-                    { value: 'public', label: t('public') },
-                  ]}
-                  value={group.is_public ? 'public' : 'private'}
-                  onChange={(value) =>
-                    task.press({ action: 'update', groupId, isPublic: value === 'public' })
-                  }
-                />
-                <Text variant="meta">{group.is_public ? t('publicHint') : t('privateHint')}</Text>
-              </>
-            ) : null}
+          </Card>
+
+          <Card title={t('sharing')}>
+            <SwitchRow
+              label={t('shareUpdates')}
+              hint={t('shareUpdatesHint')}
+              value={sharing}
+              onChange={(shareUpdates) =>
+                task.press({
+                  action: 'preferences',
+                  groupId,
+                  notify: group.notify,
+                  notifyUpdates: updates,
+                  shareUpdates,
+                })
+              }
+            />
           </Card>
 
           <Card title={t('notifications')}>
-            <View className="flex-row items-center gap-md">
-              <Text variant="label" className="min-w-0 flex-1">
-                {t('notifyChat')}
-              </Text>
-              <Switch
-                value={group.notify}
-                onValueChange={(notify) =>
-                  task.press({ action: 'preferences', groupId, notify, notifyUpdates: updates })
-                }
-                accessibilityLabel={t('notifyChat')}
-              />
-            </View>
-            <View className="flex-row items-center gap-md">
-              <Text variant="label" className="min-w-0 flex-1">
-                {t('notifyUpdates')}
-              </Text>
-              <Switch
-                value={updates}
-                onValueChange={(notifyUpdates) =>
-                  task.press({
-                    action: 'preferences',
-                    groupId,
-                    notify: group.notify,
-                    notifyUpdates,
-                  })
-                }
-                accessibilityLabel={t('notifyUpdates')}
-              />
-            </View>
+            <SwitchRow
+              label={t('notifyChat')}
+              value={group.notify}
+              onChange={(notify) =>
+                task.press({ action: 'preferences', groupId, notify, notifyUpdates: updates })
+              }
+            />
+            <SwitchRow
+              label={t('notifyUpdates')}
+              value={updates}
+              onChange={(notifyUpdates) =>
+                task.press({ action: 'preferences', groupId, notify: group.notify, notifyUpdates })
+              }
+            />
           </Card>
 
           <Card title={t('settingsMembers')}>
@@ -238,6 +216,40 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
               </Button>
             ) : null}
           </Card>
+
+          {isLeader ? (
+            <Card title={t('settingsGroup')}>
+              <View className="flex-row items-center gap-2">
+                <View className="min-w-0 flex-1">
+                  <TextField
+                    value={name}
+                    onChangeText={setName}
+                    maxLength={40}
+                    accessibilityLabel={t('name')}
+                  />
+                </View>
+                {name.trim() && name.trim() !== group.name ? (
+                  <Button
+                    size="sm"
+                    onPress={() => task.press({ action: 'update', groupId, name: name.trim() })}
+                  >
+                    {t('save')}
+                  </Button>
+                ) : null}
+              </View>
+              <SegmentedControl
+                options={[
+                  { value: 'private', label: t('private') },
+                  { value: 'public', label: t('public') },
+                ]}
+                value={group.is_public ? 'public' : 'private'}
+                onChange={(value) =>
+                  task.press({ action: 'update', groupId, isPublic: value === 'public' })
+                }
+              />
+              <Text variant="meta">{group.is_public ? t('publicHint') : t('privateHint')}</Text>
+            </Card>
+          ) : null}
 
           <Button fullWidth variant="danger" onPress={() => setLeaving(true)}>
             {t('leave')}
@@ -378,6 +390,29 @@ function MemberLine({
         </Badge>
       ) : null}
       {trailing}
+    </View>
+  )
+}
+
+/** A switch with its label, and a line under the label when it needs one. */
+function SwitchRow({
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string
+  hint?: string
+  value: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <View className="flex-row items-center gap-md">
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text variant="label">{label}</Text>
+        {hint ? <Text variant="meta">{hint}</Text> : null}
+      </View>
+      <Switch value={value} onValueChange={onChange} accessibilityLabel={label} />
     </View>
   )
 }

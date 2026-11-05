@@ -1,6 +1,6 @@
 import { format, isToday, isYesterday, parseISO } from 'date-fns'
 import * as Haptics from 'expo-haptics'
-import { useFocusEffect, useIsFocused, useNavigation } from 'expo-router'
+import { useFocusEffect, useIsFocused, useNavigation, useRouter } from 'expo-router'
 import {
   memo,
   type ReactNode,
@@ -39,10 +39,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useUserId } from '@/data'
+import { type Recipe, storedImageSource, useMealPhotoUrl, useRecipes, useUserId } from '@/data'
 import {
+  type ChatEvent,
   type ChatFood,
   type ChatQuote,
+  type ChatRecipe,
   type ChatWorkout,
   type GroupMessage,
   MESSAGE_REACTIONS,
@@ -54,6 +56,7 @@ import {
   useGroupChatPresence,
   useGroupDetails,
   useGroupThread,
+  useMessageReactors,
   useMyGroups,
   useReadAsItArrives,
   useRecentFoodPosts,
@@ -63,7 +66,8 @@ import { useBlockAuthor } from '@/data/moderation'
 import { REPORT_REASONS, type ReportReason } from '@/data/types'
 import { count, distance, duration } from '@/features/activity/format'
 import { showsDistance, workoutIcon, workoutKindKey } from '@/features/activity/workoutKind'
-import { type Outgoing, useOutbox } from '@/features/shared'
+import { useCopyRecipe } from '@/features/recipes'
+import { MealPhoto, type Outgoing, useOutbox } from '@/features/shared'
 import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
@@ -77,11 +81,12 @@ import {
   footerKeyboardOffset,
   Icon,
   IconButton,
+  type IconProps,
   RadioGroup,
   Screen,
-  SegmentedControl,
   Sheet,
   Skeleton,
+  SkeletonRow,
   Spinner,
   Tappable,
   Text,
@@ -89,6 +94,7 @@ import {
 import { MacroChips, Thumbs, useVote } from './MealSheet'
 import {
   EntryPicture,
+  PersonAvatar,
   PersonAvatarLink,
   useGroupTask,
   useOpenGroupWorkout,
@@ -110,7 +116,12 @@ function useAppActive(): boolean {
 }
 
 /** What a send carries besides its text, drawn with it while it is on its way. */
-type SendMeta = { replyTo?: ChatQuote; food?: ChatFood; workout?: ChatWorkout }
+type SendMeta = {
+  replyTo?: ChatQuote
+  food?: ChatFood
+  workout?: ChatWorkout
+  recipe?: ChatRecipe
+}
 
 /** The quote a reply draws of the message it answers. */
 const quoteOf = (message: GroupMessage): ChatQuote => ({
@@ -133,6 +144,21 @@ const foodOf = (post: RecentFoodPost): ChatFood => ({
   carbs_g: post.carbs_g ?? 0,
   protein_g: post.protein_g ?? 0,
   fat_g: post.fat_g ?? 0,
+})
+
+/** One of the viewer's own foods (recipes) as the card it becomes once sent. */
+const recipeOf = (recipe: Recipe): ChatRecipe => ({
+  id: recipe.id,
+  name: recipe.name,
+  photo_path: recipe.photoPath ?? null,
+  icon_set: recipe.icon?.set ?? null,
+  icon_name: recipe.icon?.name ?? null,
+  servings: recipe.servings,
+  share_slug: recipe.shareSlug,
+  kcal: recipe.perServing.kcal,
+  carbs_g: recipe.perServing.carbs,
+  protein_g: recipe.perServing.protein,
+  fat_g: recipe.perServing.fat,
 })
 
 /**
@@ -172,6 +198,8 @@ export function ChatScreen({
   // The emoji bar a long press opens over the thread, and the sheet its ⋯ opens.
   const [picked, setPicked] = useState<Picked | null>(null)
   const [menu, setMenu] = useState<GroupMessage | null>(null)
+  // The message whose reactions are being listed, by id so its counts follow the thread.
+  const [reactorsOf, setReactorsOf] = useState<string | null>(null)
   // The ⋯ sheet waits for the dimmed layer to finish closing: two native
   // modals at once is one too many on iOS.
   const menuNext = useRef<GroupMessage | null>(null)
@@ -290,10 +318,12 @@ export function ChatScreen({
         replyTo: item.meta?.replyTo?.id,
         postId: item.meta?.food?.post_id,
         workout: item.meta?.workout,
+        recipeId: item.meta?.recipe?.id,
         sent: {
           reply_to: item.meta?.replyTo ?? null,
           food: item.meta?.food ?? null,
           workout: item.meta?.workout ?? null,
+          recipe: item.meta?.recipe ?? null,
         },
       })
       track('Group Message Sent', {})
@@ -315,7 +345,7 @@ export function ChatScreen({
   // written is answered by what is shared, rather than left to quote whatever
   // is typed next.
   const share = useCallback(
-    (shared: Pick<SendMeta, 'food' | 'workout'>) => {
+    (shared: Pick<SendMeta, 'food' | 'workout' | 'recipe'>) => {
       setPicking(false)
       send('', { ...shared, ...(replying ? { replyTo: quoteOf(replying) } : {}) })
       setReplying(null)
@@ -325,6 +355,7 @@ export function ChatScreen({
   )
   const sendFood = useCallback((post: RecentFoodPost) => share({ food: foodOf(post) }), [share])
   const sendWorkout = useCallback((workout: ChatWorkout) => share({ workout }), [share])
+  const sendRecipe = useCallback((recipe: Recipe) => share({ recipe: recipeOf(recipe) }), [share])
 
   const openPicker = useCallback(() => setPicking(true), [])
   const cancelReply = useCallback(() => setReplying(null), [])
@@ -357,6 +388,7 @@ export function ChatScreen({
           reply_to: item.meta?.replyTo ?? null,
           food: item.meta?.food ?? null,
           workout: item.meta?.workout ?? null,
+          recipe: item.meta?.recipe ?? null,
         }),
         outgoing: item,
       })),
@@ -377,6 +409,8 @@ export function ChatScreen({
     ({ item, index }: { item: ChatItem; index: number }) =>
       'day' in item ? (
         <DayChip day={item.day} />
+      ) : item.event ? (
+        <EventLine message={item} event={item.event} />
       ) : (
         // Inverted: the row above is the next one in the array. A day chip
         // between two messages starts a new run, as it has no author.
@@ -389,6 +423,7 @@ export function ChatScreen({
           onReply={startReply}
           onHeart={heart}
           onVote={vote}
+          onReactors={setReactorsOf}
           groupId={groupId}
         />
       ),
@@ -558,6 +593,18 @@ export function ChatScreen({
           setMenu(null)
         }}
       />
+      <ReactorsSheet
+        groupId={groupId}
+        message={messages?.find((message) => message.id === reactorsOf) ?? null}
+        onClose={() => setReactorsOf(null)}
+        onRemove={(message) => {
+          react(message, null)
+          // Theirs was the only one left: nothing to list.
+          if ((message.reactions ?? []).reduce((sum, r) => sum + r.count, 0) <= 1) {
+            setReactorsOf(null)
+          }
+        }}
+      />
       <NotifySheet
         visible={muting}
         notify={notify ?? true}
@@ -573,6 +620,7 @@ export function ChatScreen({
         onClose={() => setPicking(false)}
         onPickFood={sendFood}
         onPickWorkout={sendWorkout}
+        onPickRecipe={sendRecipe}
       />
     </Screen>
   )
@@ -598,6 +646,45 @@ function DayChip({ day }: { day: string }) {
       <View className="rounded-full bg-surface-alt px-3 py-1">
         <Text variant="micro">{label}</Text>
       </View>
+    </View>
+  )
+}
+
+/**
+ * Something that happened rather than something said: a member joining, or
+ * liking a fellow member's food. A quiet line in the middle of the thread, as
+ * a messenger draws its own notices, with nothing to reply to or react to.
+ */
+function EventLine({ message, event }: { message: GroupMessage; event: ChatEvent }) {
+  const { t } = useTranslation('groups')
+  const colors = useThemeColors()
+  const viewer = useUserId()
+  const name = message.mine ? t('you') : message.author.name
+  if (event.kind === 'joined') {
+    return (
+      <View className="items-center py-2">
+        <View className="rounded-full bg-surface-alt px-3 py-1">
+          <Text variant="micro">
+            {message.mine ? t('eventJoinedYou') : t('eventJoined', { name })}
+          </Text>
+        </View>
+      </View>
+    )
+  }
+  const food = event.food
+  const label = !food
+    ? t('eventLikedGone', { name })
+    : food.owner.id === viewer
+      ? t('eventLikedYours', { name, food: food.name })
+      : message.mine
+        ? t('eventLikedByYou', { owner: food.owner.name, food: food.name })
+        : t('eventLiked', { name, owner: food.owner.name, food: food.name })
+  return (
+    <View className="flex-row items-center justify-center gap-1.5 px-6 py-1.5">
+      <Icon set="system" name="thumbs-up" size={14} tintColor={colors.muted} />
+      <Text variant="micro" numberOfLines={2} className="shrink text-center">
+        {label}
+      </Text>
     </View>
   )
 }
@@ -673,7 +760,7 @@ const Composer = memo(function Composer({
           hitSlop={{ top: 6, bottom: 6, left: 10, right: 4 }}
           onPress={onAttach}
           accessibilityRole="button"
-          accessibilityLabel={t('shareFood')}
+          accessibilityLabel={t('share')}
         >
           <Icon set="ui" name="plus" size={20} tintColor={colors.muted} />
         </Tappable>
@@ -731,7 +818,10 @@ const Composer = memo(function Composer({
 type ChatRow = GroupMessage & { outgoing?: Outgoing<SendMeta> }
 /** A message, or the chip that starts a day. */
 type ChatItem = ChatRow | { id: string; day: string }
-const authorOf = (item: ChatItem | undefined) => (item && 'author' in item ? item.author.id : null)
+// A day chip or an event line has no author of a run, so either side of one
+// starts a new run.
+const authorOf = (item: ChatItem | undefined) =>
+  item && 'author' in item && !item.event ? item.author.id : null
 
 /** The thread's side padding (`px-gutter`), and how much of a row a bubble may take (`max-w-[78%]`). */
 const GUTTER = 20
@@ -762,10 +852,13 @@ const MessageRow = memo(function MessageRow({
   onReply,
   onHeart,
   onVote,
+  onReactors,
   groupId,
 }: {
   message: ChatRow
   groupId: string
+  /** A tap on the reactions under the bubble: who reacted, with what. */
+  onReactors: (messageId: string) => void
   first: boolean
   last: boolean
   onPick: (picked: Picked) => void
@@ -778,8 +871,10 @@ const MessageRow = memo(function MessageRow({
   const colors = useThemeColors()
   const openProfile = useOpenProfile()
   const openWorkout = useOpenGroupWorkout(groupId)
+  const router = useRouter()
   const shared = message.workout
   const food = message.food
+  const recipe = message.recipe
   const time = format(parseISO(message.created_at), datePattern('time'))
   const outgoing = message.outgoing
   const state = outgoing?.state
@@ -835,7 +930,19 @@ const MessageRow = memo(function MessageRow({
       onMenu={pick}
       onReply={onReply}
       onHeart={onHeart}
-      onOpen={shared ? () => openWorkout(shared, message.author.id) : undefined}
+      onOpen={
+        shared
+          ? () => openWorkout(shared, message.author.id)
+          : recipe
+            ? // Your own by its id; anyone else's by its link, which is what
+              // lets a member read a food that is not public.
+              () =>
+                router.push({
+                  pathname: '/recipe/[id]',
+                  params: { id: message.mine ? recipe.id : recipe.share_slug },
+                })
+            : undefined
+      }
       onVote={
         food?.entry_id && !message.mine
           ? (value) => onVote(food.entry_id as string, food.mine ?? 0, value)
@@ -867,7 +974,11 @@ const MessageRow = memo(function MessageRow({
         className="absolute"
         style={[{ bottom: -PILL_TUCK }, message.mine ? { left: 6 } : { right: 6 }, pop]}
       >
-        <ReactionPill reactions={reactions} mine={message.my_reaction ?? null} onPress={pick} />
+        <ReactionPill
+          reactions={reactions}
+          mine={message.my_reaction ?? null}
+          onPress={() => onReactors(message.id)}
+        />
       </Animated.View>
     ) : null
   // The room the tucked chip takes under the bubble, kept clear of the time.
@@ -1022,6 +1133,14 @@ function MessageContent({
       <View className={cn('gap-1', fade)}>
         {message.reply_to ? <Quote quote={message.reply_to} mine={false} /> : null}
         <WorkoutCard workout={message.workout} />
+      </View>
+    )
+  }
+  if (message.recipe) {
+    return (
+      <View className={cn('gap-1', fade)}>
+        {message.reply_to ? <Quote quote={message.reply_to} mine={false} /> : null}
+        <RecipeCard recipe={message.recipe} mine={message.mine} />
       </View>
     )
   }
@@ -1220,6 +1339,135 @@ function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mi
           </Text>
         </View>
         <MacroChips food={food} compact />
+      </View>
+    </View>
+  )
+}
+
+/**
+ * A food's picture from a member's own foods (a recipe): the photo when there
+ * is one, its drawing otherwise. Somebody else's photo is signed through its
+ * share slug, as the food's own page signs it, since the food may be private.
+ */
+function RecipePicture({
+  recipe,
+  mine,
+  iconSize,
+}: {
+  recipe: Pick<ChatRecipe, 'name' | 'photo_path' | 'icon_set' | 'icon_name' | 'share_slug'>
+  mine: boolean
+  iconSize: number
+}) {
+  const photo = useMealPhotoUrl(
+    recipe.photo_path ?? undefined,
+    mine ? undefined : recipe.share_slug,
+  )
+  const source = storedImageSource(recipe.photo_path ?? undefined, photo.data)
+  if (source) return <MealPhoto source={source} accessibilityLabel={recipe.name} />
+  return (
+    <View className="h-full w-full items-center justify-center">
+      <Icon
+        {...((recipe.icon_set && recipe.icon_name
+          ? { set: recipe.icon_set, name: recipe.icon_name }
+          : { set: 'food', name: 'cooking-pot' }) as IconProps)}
+        size={iconSize}
+      />
+    </View>
+  )
+}
+
+/**
+ * One of a member's own foods (a recipe) shared into the chat: its photo, its
+ * name, a serving's calories and how many it feeds. A tap opens it. A friend's
+ * has an Add button that keeps a copy among the viewer's own foods; it is a
+ * gesture tap so it takes the touch from the card's own tap.
+ */
+function RecipeCard({ recipe, mine }: { recipe: ChatRecipe; mine: boolean }) {
+  const { t } = useTranslation(['groups', 'recipes'])
+  const colors = useThemeColors()
+  const { width } = useWindowDimensions()
+  const cardWidth = Math.min(280, Math.round(width * 0.7))
+  const { copy, busy } = useCopyRecipe()
+  // Saved once from this card, it says so and takes no more taps: each tap is
+  // another copy on the viewer's shelf. A ref as well as the state, since two
+  // quick taps both land before the state does.
+  // The gesture can call an `add` from an earlier render, so the guard is the
+  // ref, which stays held once a copy has been made.
+  const [saved, setSaved] = useState(false)
+  const holding = useRef(false)
+  const add = () => {
+    if (holding.current) return
+    holding.current = true
+    void copy({ recipeId: recipe.id, shareSlug: recipe.share_slug }).then((newId) => {
+      if (newId) setSaved(true)
+      else holding.current = false
+    })
+  }
+  const tap = Gesture.Tap()
+    .hitSlop(4)
+    .runOnJS(true)
+    .onEnd((_event, success) => {
+      if (!success) return
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+      add()
+    })
+  return (
+    <View
+      className="overflow-hidden rounded-[18px] border border-line bg-surface"
+      style={{ width: cardWidth }}
+    >
+      <View
+        className={cn('w-full overflow-hidden', !recipe.photo_path && 'bg-kaya-soft')}
+        style={{ height: Math.round(cardWidth * 0.62) }}
+      >
+        <RecipePicture recipe={recipe} mine={mine} iconSize={88} />
+      </View>
+      <View className="gap-2 p-3">
+        <View className="gap-0.5">
+          <Text variant="label" numberOfLines={2}>
+            {recipe.name}
+          </Text>
+          <Text variant="meta" numberOfLines={1}>
+            {t('recipePerServing', { kcal: count(recipe.kcal) })} ·{' '}
+            {t('recipes:servings', { count: recipe.servings })}
+          </Text>
+        </View>
+        {mine ? null : (
+          <GestureDetector gesture={tap}>
+            <View
+              className={cn(
+                'min-h-[40px] flex-row items-center justify-center gap-1.5 rounded-full border-2 px-3',
+                saved ? 'border-pandan-soft bg-pandan-soft' : 'border-pandan',
+                busy && 'opacity-60',
+              )}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={
+                saved ? t('recipes:detail.savedCopy') : t('recipes:detail.saveCopy')
+              }
+              accessibilityState={{ busy, disabled: saved }}
+              accessibilityActions={[{ name: 'activate' }]}
+              onAccessibilityAction={add}
+            >
+              {busy ? (
+                <Spinner size="small" />
+              ) : (
+                <Icon
+                  set="ui"
+                  name={saved ? 'check' : 'plus'}
+                  size={16}
+                  tintColor={colors.pandanInk}
+                />
+              )}
+              <Text
+                numberOfLines={1}
+                className="shrink font-body-bold text-[15px] leading-[20px] text-pandan-ink"
+              >
+                {saved ? t('recipes:detail.savedCopy') : t('recipes:detail.saveCopy')}
+              </Text>
+            </View>
+          </GestureDetector>
+        )}
       </View>
     </View>
   )
@@ -1591,6 +1839,133 @@ const BAR_SHADOW = {
   elevation: 6,
 }
 
+/**
+ * Who reacted to a message, as WhatsApp lists them from a tap on its
+ * reactions: a chip for all of them and one for each emoji, then a row per
+ * person with their emoji. The viewer's own row comes first, and a tap on it
+ * takes the reaction back.
+ */
+function ReactorsSheet({
+  groupId,
+  message,
+  onClose,
+  onRemove,
+}: {
+  groupId: string
+  message: GroupMessage | null
+  onClose: () => void
+  onRemove: (message: GroupMessage) => void
+}) {
+  const { t } = useTranslation(['groups', 'common'])
+  // What the sheet was showing, kept while it slides away.
+  const shown = useRef<GroupMessage | null>(null)
+  if (message) shown.current = message
+  const current = shown.current
+  const counts = current?.reactions ?? []
+  const total = counts.reduce((sum, reaction) => sum + reaction.count, 0)
+  // Reread whenever the counts move, so a reaction landing while it is open shows.
+  const version = counts.map((reaction) => `${reaction.emoji}${reaction.count}`).join(',')
+  const reactors = useMessageReactors(groupId, message?.id ?? null, version)
+  const [filter, setFilter] = useState<string | null>(null)
+  useEffect(() => {
+    if (!message) setFilter(null)
+  }, [message])
+  // The viewer's own row follows their reaction as drawn, which moves the
+  // moment they tap, rather than a list read before the write landed.
+  const listed = (reactors.data ?? [])
+    .flatMap((r) =>
+      !r.mine ? [r] : current?.my_reaction ? [{ ...r, emoji: current.my_reaction }] : [],
+    )
+    .filter((r) => !filter || r.emoji === filter)
+  return (
+    <Sheet
+      visible={message !== null}
+      onClose={onClose}
+      closeLabel={t('common:action.close')}
+      title={t('reactionsTitle', { count: total })}
+    >
+      <View className="gap-md">
+        <View className="flex-row flex-wrap gap-2">
+          {[{ emoji: null, count: total }, ...counts].map((chip) => {
+            const chosen = filter === chip.emoji
+            return (
+              <Tappable
+                key={chip.emoji ?? 'all'}
+                onPress={() => setFilter(chip.emoji)}
+                className={cn(
+                  'min-h-[36px] flex-row items-center gap-1.5 rounded-full px-3.5',
+                  chosen ? 'bg-pandan-soft' : 'bg-surface-alt',
+                )}
+                accessibilityRole="button"
+                accessibilityState={{ selected: chosen }}
+              >
+                {chip.emoji ? (
+                  <Text className="text-[16px] leading-[22px]">{chip.emoji}</Text>
+                ) : (
+                  <Text variant="label" className={chosen ? 'text-pandan-ink' : undefined}>
+                    {t('reactionsAll')}
+                  </Text>
+                )}
+                <Text variant="label" className={chosen ? 'text-pandan-ink' : 'text-muted'}>
+                  {chip.count}
+                </Text>
+              </Tappable>
+            )
+          })}
+        </View>
+        {reactors.isLoading ? (
+          <View className="gap-3">
+            {[0, 1, 2].map((key) => (
+              <SkeletonRow key={key} />
+            ))}
+          </View>
+        ) : !reactors.data && reactors.isError ? (
+          <QueryNotice error paused={false} retry={() => reactors.refetch()} />
+        ) : (
+          <View>
+            {listed.map((reactor, index) => {
+              const row = (
+                <View
+                  key={reactor.person.id}
+                  className={cn(
+                    'min-h-[60px] flex-row items-center gap-md py-2',
+                    index > 0 && 'border-t border-line',
+                  )}
+                >
+                  <PersonAvatar person={reactor.person} />
+                  <View className="min-w-0 flex-1">
+                    <Text variant="label" numberOfLines={1}>
+                      {reactor.mine ? t('you') : reactor.person.name}
+                    </Text>
+                    {reactor.mine ? (
+                      <Text variant="caption" numberOfLines={1}>
+                        {t('tapToRemove')}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text className="text-[22px] leading-[30px]">{reactor.emoji}</Text>
+                </View>
+              )
+              return reactor.mine && current ? (
+                <Tappable
+                  key={reactor.person.id}
+                  onPress={() => onRemove(current)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t('you')}, ${reactor.emoji}, ${t('tapToRemove')}`}
+                >
+                  {row}
+                </Tappable>
+              ) : (
+                <View key={reactor.person.id}>{row}</View>
+              )
+            })}
+          </View>
+        )}
+      </View>
+    </Sheet>
+  )
+}
+
 type Mute = 'none' | 'chat' | 'updates' | 'all'
 
 /** The bell's choices: hear everything, or mute chat, updates or both. */
@@ -1712,29 +2087,55 @@ function MessageMenu({
   )
 }
 
+type ShareKind = 'food' | 'workouts' | 'recipes'
+
 /**
- * The + beside the field: the viewer's last five food posts, or their last
- * five workouts (logged in the app or recorded by a health store), one tap to
- * share. Opens on food, the thing most shared.
+ * The + beside the field: three tiles (Food, Workout, My Food), and under the
+ * one chosen a grid of the viewer's recent ones of that kind, one tap to
+ * share. Food is a recent post, a workout one logged in the app or recorded
+ * by a health store, My Food one of their own written foods. Opens on food,
+ * the thing most shared.
  */
 function SharePicker({
   visible,
   onClose,
   onPickFood,
   onPickWorkout,
+  onPickRecipe,
 }: {
   visible: boolean
   onClose: () => void
   onPickFood: (post: RecentFoodPost) => void
   onPickWorkout: (workout: ChatWorkout) => void
+  onPickRecipe: (recipe: Recipe) => void
 }) {
   const { t } = useTranslation(['groups', 'common'])
-  const [tab, setTab] = useState<'food' | 'workouts'>('food')
+  const [kind, setKind] = useState<ShareKind>('food')
   // Back on food for the next opening, however this one closed: picking
   // closes it without going through onClose.
   useEffect(() => {
-    if (!visible) setTab('food')
+    if (!visible) setKind('food')
   }, [visible])
+  const tiles: { kind: ShareKind; label: string; icon: IconProps; tint: string }[] = [
+    {
+      kind: 'food',
+      label: t('tabFood'),
+      icon: { set: 'dishes', name: 'nasi-lemak' },
+      tint: 'bg-pandan-soft',
+    },
+    {
+      kind: 'workouts',
+      label: t('tabWorkouts'),
+      icon: workoutIcon('strength') as IconProps,
+      tint: 'bg-hibiscus-soft',
+    },
+    {
+      kind: 'recipes',
+      label: t('tabMyFood'),
+      icon: { set: 'food', name: 'cooking-pot' },
+      tint: 'bg-kaya-soft',
+    },
+  ]
   return (
     <Sheet
       visible={visible}
@@ -1742,76 +2143,128 @@ function SharePicker({
       closeLabel={t('common:action.close')}
       title={t('share')}
     >
-      <View className="gap-md">
-        <SegmentedControl
-          options={[
-            { value: 'food', label: t('tabFood') },
-            { value: 'workouts', label: t('tabWorkouts') },
-          ]}
-          value={tab}
-          onChange={setTab}
-          accessibilityLabel={t('share')}
-        />
-        {tab === 'food' ? (
+      <View className="gap-lg">
+        <View className="flex-row gap-3" accessibilityRole="tablist">
+          {tiles.map((tile) => {
+            const chosen = kind === tile.kind
+            return (
+              <Tappable
+                key={tile.kind}
+                onPress={() => setKind(tile.kind)}
+                className={cn(
+                  'aspect-square min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[20px] border-2',
+                  tile.tint,
+                  chosen ? 'border-pandan' : 'border-transparent',
+                )}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: chosen }}
+                accessibilityLabel={tile.label}
+              >
+                <Icon {...tile.icon} size={52} />
+                <Text variant="label" numberOfLines={1} className="px-1">
+                  {tile.label}
+                </Text>
+              </Tappable>
+            )
+          })}
+        </View>
+        {kind === 'food' ? (
           <FoodChoices visible={visible} onPick={onPickFood} />
-        ) : (
+        ) : kind === 'workouts' ? (
           <WorkoutChoices visible={visible} onPick={onPickWorkout} />
+        ) : (
+          <RecipeChoices visible={visible} onPick={onPickRecipe} />
         )}
       </View>
     </Sheet>
   )
 }
 
-/** Three grey rows while a list of choices loads. */
+/** Four grey cards while a grid of choices loads. */
 function ChoicesSkeleton() {
   return (
-    <View className="gap-3">
-      {[0, 1, 2].map((key) => (
-        <View key={key} className="flex-row items-center gap-3">
-          <Skeleton rounded={false} width={56} height={56} className="rounded-[14px]" />
-          <Skeleton width={160} height={14} />
+    <View className="flex-row flex-wrap gap-3">
+      {[0, 1, 2, 3].map((key) => (
+        <View key={key} className="gap-2" style={{ width: '47%' }}>
+          <Skeleton rounded={false} width="100%" height={96} className="rounded-[16px]" />
+          <Skeleton width={110} height={12} />
         </View>
       ))}
     </View>
   )
 }
 
-/** One thing to share: its picture, name, when, and a figure on the right. */
+/** A grid of things to share, two to a row. */
+function ChoiceGrid({ children }: { children: ReactNode }) {
+  return <View className="flex-row flex-wrap justify-between gap-y-3">{children}</View>
+}
+
+/** One thing to share: its picture across the top, its name, and when or how much under it. */
 function Choice({
   picture,
+  tint,
   name,
-  when,
-  figure,
-  first,
+  detail,
   onPress,
 }: {
   picture: ReactNode
+  /** The fill behind a drawing, when there is no photo. */
+  tint: string
   name: string
-  when: string
-  figure: string
-  first: boolean
+  detail: string
   onPress: () => void
 }) {
   const { t } = useTranslation('groups')
   return (
     <Tappable
       onPress={onPress}
-      className={cn('flex-row items-center gap-3 py-2.5', !first && 'border-t border-line')}
+      className="overflow-hidden rounded-[16px] border border-line bg-surface"
+      style={{ width: '48.5%' }}
       accessibilityRole="button"
       accessibilityLabel={t('shareThis', { name })}
     >
-      {picture}
-      <View className="min-w-0 flex-1">
+      <View className={cn('h-[96px] w-full overflow-hidden', tint)}>{picture}</View>
+      <View className="gap-0.5 px-2.5 py-2">
         <Text variant="label" numberOfLines={1}>
           {name}
         </Text>
         <Text variant="meta" numberOfLines={1}>
-          {when}
+          {detail}
         </Text>
       </View>
-      <Text variant="label">{figure}</Text>
     </Tappable>
   )
+}
+
+/** What a list of choices shows while it loads, fails, or is empty, or null to draw it. */
+function choicesState(
+  query: {
+    isLoading: boolean
+    isError: boolean
+    fetchStatus: string
+    data?: unknown[]
+    refetch: () => unknown
+  },
+  empty: string,
+): ReactNode | null {
+  if (query.isLoading) return <ChoicesSkeleton />
+  if (!query.data && (query.isError || query.fetchStatus === 'paused')) {
+    return (
+      <QueryNotice
+        error={query.isError}
+        paused={query.fetchStatus === 'paused'}
+        retry={() => query.refetch()}
+      />
+    )
+  }
+  if (!query.data?.length) {
+    return (
+      <Text variant="meta" className="py-md text-center">
+        {empty}
+      </Text>
+    )
+  }
+  return null
 }
 
 function FoodChoices({
@@ -1824,46 +2277,21 @@ function FoodChoices({
   const { t } = useTranslation(['groups', 'common'])
   const viewer = useUserId()
   const posts = useRecentFoodPosts(visible)
-  if (posts.isLoading) return <ChoicesSkeleton />
-  if (!posts.data && (posts.isError || posts.fetchStatus === 'paused')) {
-    return (
-      <QueryNotice
-        error={posts.isError}
-        paused={posts.fetchStatus === 'paused'}
-        retry={() => posts.refetch()}
-      />
-    )
-  }
-  if (!posts.data?.length) {
-    return (
-      <Text variant="meta" className="py-md text-center">
-        {t('shareFoodEmpty')}
-      </Text>
-    )
-  }
+  const state = choicesState(posts, t('shareFoodEmpty'))
+  if (state) return state
   return (
-    <View>
-      {posts.data.map((post, index) => (
+    <ChoiceGrid>
+      {(posts.data ?? []).map((post) => (
         <Choice
           key={post.id}
-          first={index === 0}
           onPress={() => onPick(post)}
           name={post.food_name ?? ''}
-          when={postedAt(post.created_at, t('common:date.today'), t('common:date.yesterday'))}
-          figure={`${count(post.kcal ?? 0)} ${t('common:unit.kcal')}`}
-          picture={
-            <View
-              className={cn(
-                'h-14 w-14 overflow-hidden rounded-[14px]',
-                !post.photo_path && 'bg-pandan-soft',
-              )}
-            >
-              <EntryPicture entry={foodOf(post)} ownerId={viewer} iconSize={36} />
-            </View>
-          }
+          detail={`${count(post.kcal ?? 0)} ${t('common:unit.kcal')} · ${postedAt(post.created_at, t('common:date.today'), t('common:date.yesterday'))}`}
+          tint={post.photo_path ? 'bg-surface-alt' : 'bg-pandan-soft'}
+          picture={<EntryPicture entry={foodOf(post)} ownerId={viewer} iconSize={56} />}
         />
       ))}
-    </View>
+    </ChoiceGrid>
   )
 }
 
@@ -1877,41 +2305,56 @@ function WorkoutChoices({
   const { t } = useTranslation(['groups', 'common'])
   const workouts = useRecentWorkouts(visible)
   const nameOf = useWorkoutName()
-  if (workouts.isLoading) return <ChoicesSkeleton />
-  if (!workouts.data && (workouts.isError || workouts.fetchStatus === 'paused')) {
-    return (
-      <QueryNotice
-        error={workouts.isError}
-        paused={workouts.fetchStatus === 'paused'}
-        retry={() => workouts.refetch()}
-      />
-    )
-  }
-  if (!workouts.data?.length) {
-    return (
-      <Text variant="meta" className="py-md text-center">
-        {t('shareWorkoutEmpty')}
-      </Text>
-    )
-  }
+  const state = choicesState(workouts, t('shareWorkoutEmpty'))
+  if (state) return state
   return (
-    <View>
-      {workouts.data.map((workout, index) => (
+    <ChoiceGrid>
+      {(workouts.data ?? []).map((workout) => (
         <Choice
           key={`${workout.source}:${workout.id}`}
-          first={index === 0}
           onPress={() => onPick(workout)}
           name={nameOf(workout)}
-          when={postedAt(workout.started_at, t('common:date.today'), t('common:date.yesterday'))}
-          figure={duration(workout.duration_s)}
+          detail={`${duration(workout.duration_s)} · ${postedAt(workout.started_at, t('common:date.today'), t('common:date.yesterday'))}`}
+          tint="bg-hibiscus-soft"
           picture={
-            <View className="h-14 w-14 items-center justify-center rounded-[14px] bg-hibiscus-soft">
-              <Icon {...workoutIcon(workout.kind)} size={36} />
+            <View className="h-full w-full items-center justify-center">
+              <Icon {...workoutIcon(workout.kind)} size={56} />
             </View>
           }
         />
       ))}
-    </View>
+    </ChoiceGrid>
+  )
+}
+
+/** The viewer's own foods (recipes), newest first: the few they would share. */
+const RECIPE_CHOICES = 6
+
+function RecipeChoices({
+  visible,
+  onPick,
+}: {
+  visible: boolean
+  onPick: (recipe: Recipe) => void
+}) {
+  const { t } = useTranslation(['groups', 'common'])
+  const recipes = useRecipes('mine')
+  const state = choicesState(recipes, t('shareMyFoodEmpty'))
+  if (!visible) return null
+  if (state) return state
+  return (
+    <ChoiceGrid>
+      {(recipes.data ?? []).slice(0, RECIPE_CHOICES).map((recipe) => (
+        <Choice
+          key={recipe.id}
+          onPress={() => onPick(recipe)}
+          name={recipe.name}
+          detail={t('recipePerServing', { kcal: count(recipe.perServing.kcal) })}
+          tint={recipe.photoPath ? 'bg-surface-alt' : 'bg-kaya-soft'}
+          picture={<RecipePicture recipe={recipeOf(recipe)} mine iconSize={56} />}
+        />
+      ))}
+    </ChoiceGrid>
   )
 }
 
