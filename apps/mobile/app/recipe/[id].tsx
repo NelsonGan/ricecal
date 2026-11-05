@@ -1,11 +1,9 @@
-import { FREE_RECIPES } from '@ricecal/shared'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
-  isRecipeLimit,
   REPORT_REASONS,
   type ReportReason,
   snapshotFromRecipe,
@@ -16,14 +14,10 @@ import {
   useMealPhotoUrl,
   useRecipe,
   useRecipeIngredients,
-  useRecipeQuota,
   useReportRecipe,
-  useSaveRecipeCopy,
   useSelectedDate,
 } from '@/data'
-import { openPaywall } from '@/data/refusals'
-import { useRequirePro } from '@/features/paywall'
-import { RecipeSteps, ShareSheet } from '@/features/recipes'
+import { RecipeSteps, ShareSheet, useCopyRecipe } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { energyShare } from '@/lib/nutrition'
@@ -77,9 +71,7 @@ export default function RecipeDetailScreen() {
 
   const { selectedDate } = useSelectedDate()
   const logFood = useLogFood()
-  const requirePro = useRequirePro()
-  const saveCopy = useSaveRecipeCopy()
-  const quota = useRecipeQuota()
+  const { copy: copyRecipe, busy: copying } = useCopyRecipe()
   const remove = useDeleteRecipe()
   const report = useReportRecipe()
   const block = useBlockAuthor()
@@ -217,36 +209,8 @@ export default function RecipeDetailScreen() {
   }
 
   const copy = async () => {
-    // A saved copy is a food of yours — it lands on your shelf, it is yours to
-    // edit, and the database counts it against the same three. So the gate is
-    // here as well as on the plus button, or "save somebody else's" would be
-    // the way round the ceiling, and the user would meet a trigger's error
-    // message instead of a paywall.
-    if (quota.atLimit && !requirePro('new_recipe')) return
-    let newId: string
-    try {
-      newId = await saveCopy.mutateAsync({ recipeId: recipe.id, shareSlug: sharedSlug })
-    } catch (error) {
-      // The trigger refusing, rather than the write failing. Reachable even
-      // past the guard above: the count this screen read can be a shelf out of
-      // date — another phone saved a third recipe a minute ago — and "could not
-      // save that" would send somebody to try again at a ceiling that is not
-      // going to move. Same answer as the recipe form gives.
-      if (isRecipeLimit(error)) {
-        // Through `openPaywall` rather than three lines here, so the toast comes
-        // from the top like every other one that opens this screen — the
-        // paywall's buy button is a footer, and a bottom toast lands on it.
-        openPaywall(toast, {
-          title: t('recipes:edit.limitReached', { count: FREE_RECIPES }),
-          feature: 'new_recipe',
-        })
-        return
-      }
-      toast.show({ title: t('recipes:detail.saveCopyFailed'), tone: 'error' })
-      return
-    }
-    toast.show({ title: t('recipes:detail.savedCopy'), tone: 'success' })
-    router.replace({ pathname: '/recipe/[id]', params: { id: newId } })
+    const newId = await copyRecipe({ recipeId: recipe.id, shareSlug: sharedSlug })
+    if (newId) router.replace({ pathname: '/recipe/[id]', params: { id: newId } })
   }
 
   return (
@@ -301,7 +265,7 @@ export default function RecipeDetailScreen() {
             <Button fullWidth loading={logFood.isPending} onPress={addToDay}>
               {t('recipes:detail.addToDay')}
             </Button>
-            <Button fullWidth variant="secondary" loading={saveCopy.isPending} onPress={copy}>
+            <Button fullWidth variant="secondary" loading={copying} onPress={copy}>
               {t('recipes:detail.saveCopy')}
             </Button>
           </View>

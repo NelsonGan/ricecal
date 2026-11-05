@@ -755,6 +755,7 @@ export type Database = {
           joined_at: string
           notify: boolean
           notify_updates: boolean
+          share_updates: boolean
           updates_pushed_at: string | null
           updates_told_until: string
           user_id: string
@@ -766,6 +767,7 @@ export type Database = {
           joined_at?: string
           notify?: boolean
           notify_updates?: boolean
+          share_updates?: boolean
           updates_pushed_at?: string | null
           updates_told_until?: string
           user_id: string
@@ -777,6 +779,7 @@ export type Database = {
           joined_at?: string
           notify?: boolean
           notify_updates?: boolean
+          share_updates?: boolean
           updates_pushed_at?: string | null
           updates_told_until?: string
           user_id?: string
@@ -919,11 +922,14 @@ export type Database = {
           automatic: boolean
           body: string
           created_at: string
+          entry_id: string | null
+          event: string | null
           group_id: string
           id: string
           post_id: string | null
           pushed_at: string | null
           quarantined: boolean
+          recipe_id: string | null
           reply_to_id: string | null
           request_id: string
           workout_id: string | null
@@ -934,11 +940,14 @@ export type Database = {
           automatic?: boolean
           body: string
           created_at?: string
+          entry_id?: string | null
+          event?: string | null
           group_id: string
           id?: string
           post_id?: string | null
           pushed_at?: string | null
           quarantined?: boolean
+          recipe_id?: string | null
           reply_to_id?: string | null
           request_id: string
           workout_id?: string | null
@@ -949,11 +958,14 @@ export type Database = {
           automatic?: boolean
           body?: string
           created_at?: string
+          entry_id?: string | null
+          event?: string | null
           group_id?: string
           id?: string
           post_id?: string | null
           pushed_at?: string | null
           quarantined?: boolean
+          recipe_id?: string | null
           reply_to_id?: string | null
           request_id?: string
           workout_id?: string | null
@@ -988,6 +1000,20 @@ export type Database = {
             referencedColumns: ['user_id']
           },
           {
+            foreignKeyName: 'group_messages_entry_id_fkey'
+            columns: ['entry_id']
+            isOneToOne: false
+            referencedRelation: 'food_log_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_messages_entry_id_fkey'
+            columns: ['entry_id']
+            isOneToOne: false
+            referencedRelation: 'food_logs'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'group_messages_group_id_fkey'
             columns: ['group_id']
             isOneToOne: false
@@ -1006,6 +1032,20 @@ export type Database = {
             columns: ['post_id']
             isOneToOne: false
             referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_messages_recipe_id_fkey'
+            columns: ['recipe_id']
+            isOneToOne: false
+            referencedRelation: 'recipe_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_messages_recipe_id_fkey'
+            columns: ['recipe_id']
+            isOneToOne: false
+            referencedRelation: 'recipes'
             referencedColumns: ['id']
           },
           {
@@ -3721,10 +3761,12 @@ export type Database = {
           token: string
         }[]
       }
+      group_message_reactors: { Args: { p_message_id: string }; Returns: Json }
       group_messages: {
         Args: {
           p_before_at?: string
           p_before_id?: string
+          p_events?: boolean
           p_group_id: string
           p_limit?: number
         }
@@ -4078,6 +4120,7 @@ export type Database = {
           p_body: string
           p_group_id: string
           p_post_id?: string
+          p_recipe_id?: string
           p_reply_to?: string
           p_request_id: string
           p_workout_id?: string
@@ -4101,6 +4144,7 @@ export type Database = {
           p_group_id: string
           p_notify: boolean
           p_notify_updates?: boolean
+          p_share_updates?: boolean
         }
         Returns: undefined
       }
