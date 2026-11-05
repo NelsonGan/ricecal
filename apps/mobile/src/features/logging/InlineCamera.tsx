@@ -293,18 +293,22 @@ export function InlineCamera({
   // The picker rejects when iOS cannot hand the photo over, most often a HEIC
   // still in iCloud ("Cannot load representation of type public.heic"). Left
   // uncaught, the tap did nothing at all and the rejection went unhandled.
+  // Only the picker is caught: a fault in `onCapture` is not a photo that
+  // could not be opened, and must still reach error tracking.
   const pickFromLibrary = async () => {
     if (capturing) return
+    let result: ImagePicker.ImagePickerResult
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
+      result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.6,
       })
-      if (result.canceled) return
-      onCapture(result.assets[0]?.uri)
     } catch {
       toast.show({ title: t('logging:camera.libraryFailed'), tone: 'error' })
+      return
     }
+    if (result.canceled) return
+    onCapture(result.assets[0]?.uri)
   }
 
   /**
