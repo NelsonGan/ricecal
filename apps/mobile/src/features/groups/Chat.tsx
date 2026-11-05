@@ -1388,8 +1388,20 @@ function RecipeCard({ recipe, mine }: { recipe: ChatRecipe; mine: boolean }) {
   const { width } = useWindowDimensions()
   const cardWidth = Math.min(280, Math.round(width * 0.7))
   const { copy, busy } = useCopyRecipe()
+  // Saved once from this card, it says so and takes no more taps: each tap is
+  // another copy on the viewer's shelf. A ref as well as the state, since two
+  // quick taps both land before the state does.
+  // The gesture can call an `add` from an earlier render, so the guard is the
+  // ref, which stays held once a copy has been made.
+  const [saved, setSaved] = useState(false)
+  const holding = useRef(false)
   const add = () => {
-    if (!busy) void copy({ recipeId: recipe.id, shareSlug: recipe.share_slug })
+    if (holding.current) return
+    holding.current = true
+    void copy({ recipeId: recipe.id, shareSlug: recipe.share_slug }).then((newId) => {
+      if (newId) setSaved(true)
+      else holding.current = false
+    })
   }
   const tap = Gesture.Tap()
     .hitSlop(4)
@@ -1416,7 +1428,7 @@ function RecipeCard({ recipe, mine }: { recipe: ChatRecipe; mine: boolean }) {
             {recipe.name}
           </Text>
           <Text variant="meta" numberOfLines={1}>
-            {t('recipePerServing', { kcal: Math.round(recipe.kcal).toLocaleString() })} ·{' '}
+            {t('recipePerServing', { kcal: count(recipe.kcal) })} ·{' '}
             {t('recipes:servings', { count: recipe.servings })}
           </Text>
         </View>
@@ -1424,23 +1436,34 @@ function RecipeCard({ recipe, mine }: { recipe: ChatRecipe; mine: boolean }) {
           <GestureDetector gesture={tap}>
             <View
               className={cn(
-                'min-h-[40px] flex-row items-center justify-center gap-1.5 rounded-full border-2 border-pandan px-3',
+                'min-h-[40px] flex-row items-center justify-center gap-1.5 rounded-full border-2 px-3',
+                saved ? 'border-pandan-soft bg-pandan-soft' : 'border-pandan',
                 busy && 'opacity-60',
               )}
               accessible
               accessibilityRole="button"
-              accessibilityLabel={t('recipes:detail.saveCopy')}
-              accessibilityState={{ busy }}
+              accessibilityLabel={
+                saved ? t('recipes:detail.savedCopy') : t('recipes:detail.saveCopy')
+              }
+              accessibilityState={{ busy, disabled: saved }}
               accessibilityActions={[{ name: 'activate' }]}
               onAccessibilityAction={add}
             >
               {busy ? (
                 <Spinner size="small" />
               ) : (
-                <Icon set="ui" name="plus" size={16} tintColor={colors.pandanInk} />
+                <Icon
+                  set="ui"
+                  name={saved ? 'check' : 'plus'}
+                  size={16}
+                  tintColor={colors.pandanInk}
+                />
               )}
-              <Text className="font-body-bold text-[15px] leading-[20px] text-pandan-ink">
-                {t('recipes:detail.saveCopy')}
+              <Text
+                numberOfLines={1}
+                className="shrink font-body-bold text-[15px] leading-[20px] text-pandan-ink"
+              >
+                {saved ? t('recipes:detail.savedCopy') : t('recipes:detail.saveCopy')}
               </Text>
             </View>
           </GestureDetector>
