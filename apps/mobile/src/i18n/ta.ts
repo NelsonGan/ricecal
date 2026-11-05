@@ -778,6 +778,7 @@ export const ta = {
       permissionSettings: 'அமைப்புகளைத் திற',
       shutter: 'படம் எடு',
       library: 'படங்களிலிருந்து தேர்ந்தெடு',
+      libraryFailed: 'அந்தப் படத்தைத் திறக்க முடியவில்லை',
       flip: 'கேமராவை மாற்று',
       resetZoom: 'பெரிதாக்கத்தை மீட்டமை',
       photoOf: '{{food}} இன் படம்',

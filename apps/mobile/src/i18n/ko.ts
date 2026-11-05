@@ -770,6 +770,7 @@ export const ko = {
       permissionSettings: '설정 열기',
       shutter: '사진 찍기',
       library: '사진에서 고르기',
+      libraryFailed: '그 사진을 열 수 없어요',
       flip: '카메라 전환',
       resetZoom: '줌 초기화',
       photoOf: '{{food}} 사진',
