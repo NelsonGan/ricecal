@@ -2,24 +2,9 @@ import { router } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import {
-  TREND_RANGES,
-  type TrendRange,
-  today,
-  useSettings,
-  useTrendSeries,
-  useTrendSummary,
-  useUpdateSettings,
-} from '@/data'
+import { TREND_RANGES, type TrendRange, useSettings, useTrendSeries, useTrendSummary } from '@/data'
 import { useRequirePro } from '@/features/paywall'
-import {
-  IntakeCard,
-  problemOf,
-  WaterCard,
-  WeighInSheet,
-  WeightCard,
-  WorkoutsCard,
-} from '@/features/progress'
+import { IntakeCard, problemOf, WaterCard, WeightCard, WorkoutsCard } from '@/features/progress'
 import { ScreenTitle } from '@/features/shared'
 import { unitFor } from '@/lib/units'
 import { Aside, Card, Icon, ListRow, Screen, SegmentedControl } from '@/ui'
@@ -46,13 +31,10 @@ export default function TrendsScreen() {
 
   const [range, setRange] = useState<TrendRange>('7d')
   const requirePro = useRequirePro()
-  /** Which day the weigh-in sheet is on, and null when it is shut. */
-  const [weighingIn, setWeighingIn] = useState<string | null>(null)
 
   const series = useTrendSeries(range)
   const summary = useTrendSummary(range)
   const { data: settings } = useSettings()
-  const updateSettings = useUpdateSettings()
 
   const unit = unitFor(settings?.units)
 
@@ -114,7 +96,7 @@ export default function TrendsScreen() {
       {/* With two panes, eating and training are the first, and the body and
           the ways to look further back are the second. See `Aside`. */}
       <Aside>
-        <WeightCard {...cards} unit={unit} onAdd={() => setWeighingIn(today())} />
+        <WeightCard {...cards} unit={unit} />
         <WaterCard {...cards} />
 
         <Card contentClassName="gap-0 px-5 py-1">
@@ -128,18 +110,6 @@ export default function TrendsScreen() {
           />
         </Card>
       </Aside>
-
-      <WeighInSheet
-        date={weighingIn}
-        onClose={() => setWeighingIn(null)}
-        unit={unit}
-        // The sheet's kg/lb switch is the app's unit preference, not a local
-        // display toggle. Flipping it here changes it in Settings too, which is
-        // the only behaviour that does not surprise somebody the second time.
-        onUnitChange={(next) =>
-          updateSettings.mutate({ units: next === 'lb' ? 'imperial' : 'metric' })
-        }
-      />
     </Screen>
   )
 }

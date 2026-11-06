@@ -156,6 +156,8 @@ export function WaterRow({
       className="flex-row items-center gap-3"
       onPress={() => onPress(day.date)}
       accessibilityRole="button"
+      // A full bar is the mark of a day that met the goal, so the words are
+      // said to a screen reader and not drawn.
       accessibilityLabel={[value, dayName, met ? t('progress:history.goalMet') : null]
         .filter(Boolean)
         .join(', ')}
@@ -181,14 +183,6 @@ export function WaterRow({
           animateOnMount={false}
           className="w-full"
         />
-        {met ? (
-          <View className="flex-row items-center gap-1">
-            <Icon set="ui" name="check" size={14} />
-            <Text variant="micro" className="text-pandan-ink">
-              {t('progress:history.goalMet')}
-            </Text>
-          </View>
-        ) : null}
       </View>
     </Tappable>
   )

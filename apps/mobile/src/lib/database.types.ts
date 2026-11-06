@@ -4062,6 +4062,35 @@ export type Database = {
           weight_last: number
         }[]
       }
+      review_workout_periods: {
+        Args: { p_kind: string }
+        Returns: {
+          duration_s: number
+          starts_on: string
+          workouts: number
+        }[]
+      }
+      review_workout_records: {
+        Args: { p_kind: string; p_limit?: number; p_start: string }
+        Returns: {
+          exercise_id: string
+          exercise_name: string
+          reps: number
+          weight_kg: number
+        }[]
+      }
+      review_workouts: {
+        Args: { p_kind: string; p_start: string }
+        Returns: {
+          active_days: number
+          duration_s: number
+          prev_workouts: number
+          sets: number
+          trained_on: string[]
+          volume_kg: number
+          workouts: number
+        }[]
+      }
       save_recipe_copy: { Args: { p_recipe_id: string }; Returns: string }
       save_shared_recipe_copy: {
         Args: { p_share_slug: string }

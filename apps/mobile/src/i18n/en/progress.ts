@@ -123,6 +123,10 @@ export const progress = {
    */
   history: {
     title: 'History',
+    /** Each metric's own page, opened from its Trends card. */
+    caloriesTitle: 'Calorie history',
+    waterTitle: 'Water history',
+    weightTitle: 'Weight history',
     /** Beside a day's heading: everything eaten that day. */
     dayTotal: '{{value}} kcal',
     /** A water month's heading, beside the month: the average of days logged. */

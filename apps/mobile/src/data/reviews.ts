@@ -6,7 +6,16 @@ import { unwrap } from './client'
 import { keys } from './keys'
 import { toIcon } from './mappers'
 import { useUserId } from './session'
-import type { ReviewBucket, ReviewKind, ReviewMeal, ReviewPeriod, ReviewSummary } from './types'
+import type {
+  ReviewBucket,
+  ReviewKind,
+  ReviewMeal,
+  ReviewPeriod,
+  ReviewPeriodWorkouts,
+  ReviewRecord,
+  ReviewSummary,
+  ReviewWorkouts,
+} from './types'
 
 type PeriodRow = Database['public']['Functions']['review_periods']['Returns'][number]
 type SummaryRow = Database['public']['Functions']['review_summary']['Returns'][number]
@@ -187,5 +196,73 @@ export function useReviewMeals(kind: ReviewKind, start: string) {
           }),
         ) as MealRow[]
       ).map(toMeal),
+  })
+}
+
+type WorkoutsRow = Database['public']['Functions']['review_workouts']['Returns'][number]
+type RecordRow = Database['public']['Functions']['review_workout_records']['Returns'][number]
+type WorkoutPeriodRow = Database['public']['Functions']['review_workout_periods']['Returns'][number]
+
+/**
+ * One period's training. Its own request beside the summary rather than
+ * columns on `review_summary`, whose shape a released app reads; keyed under
+ * `workouts`, so a workout saved or edited refreshes it.
+ */
+export function useReviewWorkouts(kind: ReviewKind, start: string) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.reviewWorkouts(userId, kind, start),
+    enabled: start.length > 0,
+    queryFn: async (): Promise<ReviewWorkouts | null> => {
+      const rows = unwrap(
+        await supabase.rpc('review_workouts', { p_kind: kind, p_start: start }),
+      ) as WorkoutsRow[]
+      const row = rows[0]
+      if (!row) return null
+      return {
+        workouts: row.workouts,
+        activeDays: row.active_days,
+        durationS: row.duration_s,
+        volumeKg: orZero(row.volume_kg),
+        sets: row.sets,
+        prevWorkouts: row.prev_workouts,
+        trainedOn: row.trained_on ?? [],
+      }
+    },
+  })
+}
+
+/** The heaviest new bests of a period, one per exercise. */
+export function useReviewWorkoutRecords(kind: ReviewKind, start: string) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.reviewWorkoutRecords(userId, kind, start),
+    enabled: start.length > 0,
+    queryFn: async (): Promise<ReviewRecord[]> =>
+      (
+        unwrap(
+          await supabase.rpc('review_workout_records', { p_kind: kind, p_start: start }),
+        ) as RecordRow[]
+      ).map((row) => ({
+        exerciseId: row.exercise_id,
+        name: row.exercise_name,
+        weightKg: Number(row.weight_kg),
+        reps: row.reps,
+      })),
+  })
+}
+
+/** Workouts for every row of the reviews list. */
+export function useReviewWorkoutPeriods(kind: ReviewKind) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.reviewWorkoutPeriods(userId, kind),
+    queryFn: async (): Promise<ReviewPeriodWorkouts[]> =>
+      (
+        unwrap(await supabase.rpc('review_workout_periods', { p_kind: kind })) as WorkoutPeriodRow[]
+      ).map((row) => ({ start: row.starts_on, workouts: row.workouts, durationS: row.duration_s })),
   })
 }

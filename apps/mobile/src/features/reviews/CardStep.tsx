@@ -5,6 +5,7 @@ import { View } from 'react-native'
 import type { ReviewBucket, ReviewKind, ReviewSummary } from '@/data'
 import { StatRow } from '@/features/shared'
 import { showChange, type WeightUnit } from '@/lib/units'
+import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Card, cn, Icon, Text } from '@/ui'
 import { Shareable } from './ShareableCards'
 
@@ -13,6 +14,8 @@ export type CardStepProps = {
   summary: ReviewSummary
   buckets: readonly ReviewBucket[]
   unit: WeightUnit
+  /** Workouts in the period. Above zero, they take the streak's place. */
+  workouts?: number
 }
 
 /**
@@ -27,8 +30,9 @@ export type CardStepProps = {
  * No Share button and no wordmark of its own. Every card in a story is shareable
  * and `Shareable` puts the app's mark under each one.
  */
-export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
+export function CardStep({ title, summary, buckets, unit, workouts = 0 }: CardStepProps) {
   const { t } = useTranslation(['reviews', 'common'])
+  const colors = useThemeColors()
 
   const goal = summary.kcalGoal
   const average = summary.kcal
@@ -79,7 +83,12 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
 
             {delta === null ? null : (
               <Badge tone={delta >= 0 ? 'pandan' : 'kaya'} className="px-3 py-1.5">
-                <Icon set="body" name={delta >= 0 ? 'trend-down' : 'trend-up'} size={16} />
+                <Icon
+                  set="ui"
+                  name={delta >= 0 ? 'arrow-down' : 'arrow-up'}
+                  size={14}
+                  tintColor={delta >= 0 ? colors.pandanInk : colors.kayaInk}
+                />
                 <Text
                   variant="caption"
                   numberOfLines={1}
@@ -127,11 +136,19 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
                 total: summary.days,
               }),
             },
-            {
-              key: 'streak',
-              label: t('reviews:card.streak'),
-              value: t('reviews:card.streakValue', { count: summary.streakDays }),
-            },
+            // Somebody who trained reads the week as eating AND training, and
+            // the count says the second; for everybody else the streak stays.
+            workouts > 0
+              ? {
+                  key: 'workouts',
+                  label: t('reviews:card.workouts'),
+                  value: workouts.toLocaleString(),
+                }
+              : {
+                  key: 'streak',
+                  label: t('reviews:card.streak'),
+                  value: t('reviews:card.streakValue', { count: summary.streakDays }),
+                },
             {
               // Short on purpose. "WEIGHT CHANGE" wraps to two lines on a 393pt
               // phone, and a two-line label under one of three stats pushes its

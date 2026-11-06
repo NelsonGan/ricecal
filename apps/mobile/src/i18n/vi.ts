@@ -1017,6 +1017,9 @@ export const vi = {
     },
     history: {
       title: 'Lịch sử',
+      caloriesTitle: 'Lịch sử calo',
+      waterTitle: 'Lịch sử uống nước',
+      weightTitle: 'Lịch sử cân nặng',
       dayTotal: '{{value}} kcal',
       waterAverage: 'trung bình {{amount}}',
       goalMet: 'Đạt mục tiêu',
@@ -1611,18 +1614,15 @@ export const vi = {
 
   reviews: {
     title: 'Tổng kết',
-
     entry: {
       title: 'Tổng kết',
       subtitle: 'Nhìn lại một tuần hoặc một tháng',
     },
-
     kind: {
       week: 'Hằng tuần',
       month: 'Hằng tháng',
       label: 'Độ dài tổng kết',
     },
-
     list: {
       weekMeta: 'Tuần {{index}}',
       weekSummary: '{{kcal}} kcal mỗi ngày, ghi {{done}} trên {{total}}',
@@ -1630,9 +1630,15 @@ export const vi = {
       monthSummary: '{{kcal}} kcal mỗi ngày',
       monthSummaryWeight: '{{kcal}} kcal mỗi ngày, {{weight}}',
       summaryEmpty: 'Không có ghi chép',
+      kcal: 'kcal',
+      workouts_one: 'buổi tập',
+      workouts_other: 'buổi tập',
+      workoutCount_one: '{{count}} buổi tập',
+      workoutCount_other: '{{count}} buổi tập',
+      latestWeek: 'TUẦN GẦN NHẤT',
+      latestMonth: 'THÁNG GẦN NHẤT',
       a11y: '{{title}}, {{meta}}, {{summary}}',
       a11yLocked: '{{title}}, {{meta}}, {{summary}}, Pro',
-
       emptyWeekTitle: 'Chưa có tuần nào để nhìn lại',
       emptyWeekBody:
         'Một tuần xuất hiện ở đây khi nó kết thúc và bạn đã ghi ít nhất bốn ngày của tuần đó.',
@@ -1640,19 +1646,16 @@ export const vi = {
       emptyMonthBody:
         'Một tháng xuất hiện ở đây khi nó kết thúc và bạn đã ghi ít nhất mười hai ngày của tháng đó.',
     },
-
     share: {
       card: 'Chia sẻ {{card}}',
       preview: 'Thẻ đúng như lúc nó được gửi đi',
     },
-
     story: {
       close: 'Đóng',
       share: 'Chia sẻ',
       missingTitle: 'Bản tổng kết đó không có ở đây',
       missingBody: 'Có thể đó là một tuần quá ít dữ liệu để nhìn lại.',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: 'kcal mỗi ngày',
@@ -1664,18 +1667,29 @@ export const vi = {
       streak: 'CHUỖI',
       streakValue_one: '{{count}} ngày',
       streakValue_other: '{{count}} ngày',
+      workouts: 'BUỔI TẬP',
       weightChange: 'CÂN NẶNG',
       noWeight: '—',
       shareText: '{{period}}: {{kcal}} kcal mỗi ngày, ghi {{done}} trên {{total}} ngày. RiceCal',
     },
-
+    training: {
+      title: 'TẬP LUYỆN',
+      unit_one: 'buổi tập',
+      unit_other: 'buổi tập',
+      vsWeek: '{{delta}} so với tuần trước',
+      vsMonth: '{{delta}} so với tháng trước',
+      time: 'THỜI GIAN',
+      volume: 'KHỐI LƯỢNG',
+      bests: 'KỶ LỤC MỚI',
+      best: '{{weight}} × {{reps}}',
+      days: 'Tập {{done}} trên {{total}} ngày',
+    },
     food: {
       title: 'NHỮNG ĐĨA LỚN NHẤT',
       macros: 'DƯỠNG CHẤT MỖI NGÀY',
       grams: '{{value}} g',
       share: '{{value}}% năng lượng',
     },
-
     calories: {
       average: 'TRUNG BÌNH MỖI NGÀY',
       kcal: 'kcal',
@@ -1685,14 +1699,13 @@ export const vi = {
       noGoal: 'Khi đó chưa có hạn mức hằng ngày nào.',
       everyDay: 'MỖI NGÀY',
       everyWeek: 'MỖI TUẦN',
-      chart: 'Calo mỗi ngày, chia theo tinh bột, đạm và chất béo',
+      chart: 'Calo mỗi ngày so với mục tiêu',
       lightest: '{{day}}, NHẸ NHẤT',
       heaviest: '{{day}}, NẶNG NHẤT',
       pastWeeks: 'NĂM TUẦN GẦN NHẤT',
       pastMonths: 'NĂM THÁNG GẦN NHẤT',
       noData: '—',
     },
-
     body: {
       weight: 'CÂN NẶNG',
       weighIns_one: 'Một lần cân',

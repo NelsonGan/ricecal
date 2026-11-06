@@ -1,5 +1,4 @@
 import { format, parseISO } from 'date-fns'
-import { useLocalSearchParams } from 'expo-router'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, View } from 'react-native'
@@ -8,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   type HistoryMetric,
   type MealDay,
+  today,
   useHistory,
   useSettings,
   useTrimHistoryOnLeave,
@@ -15,43 +15,42 @@ import {
   type WaterDay,
   type WeightReading,
 } from '@/data'
+import { datePattern } from '@/lib/dates'
+import { useBack } from '@/lib/navigation'
+import { showChange, UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
+import { volume } from '@/lib/water'
+import { spacing } from '@/theme/tokens'
+import { AppBar, Button, Card, EmptyState, Screen, Skeleton, Spinner, Text } from '@/ui'
 import {
-  HISTORY_METRICS,
   MealRow,
   RowGap,
   useDayName,
   useOpenDay,
   useOpenEntry,
   WaterRow,
-  WeighInSheet,
   WeightRow,
-} from '@/features/progress'
-import { datePattern } from '@/lib/dates'
-import { useBack } from '@/lib/navigation'
-import { SessionGate } from '@/lib/SessionGate'
-import { showChange, UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
-import { volume } from '@/lib/water'
-import { spacing } from '@/theme/tokens'
-import {
-  AppBar,
-  Button,
-  Card,
-  EmptyState,
-  Screen,
-  SegmentedControl,
-  Skeleton,
-  Spinner,
-  Text,
-} from '@/ui'
+} from './History'
+import { WeighInSheet } from './WeighInSheet'
+import { WeighInPill } from './WeightCard'
 
 /** One card on the page: a heading, a figure beside it, and its rows. */
 type Group = { key: string; title: string; figure?: string; rows: ReactNode[] }
 
-const asMetric = (value: string | undefined): HistoryMetric =>
-  HISTORY_METRICS.includes(value as HistoryMetric) ? (value as HistoryMetric) : 'calories'
+/** Each page's name, as a map so a renamed key is a compile error. */
+const TITLE_KEY = {
+  calories: 'progress:history.caloriesTitle',
+  water: 'progress:history.waterTitle',
+  weight: 'progress:history.weightTitle',
+} as const satisfies Record<HistoryMetric, string>
 
 /**
- * Everything behind the Trends charts, newest first, read like a statement.
+ * Everything behind one Trends card, newest first, read like a statement.
+ *
+ * One page per metric, opened from that card's heading, rather than one page
+ * with tabs: somebody who tapped the weight card came for weigh-ins, and a tab
+ * strip over them was a second way to arrive somewhere they had already
+ * chosen. The weight page carries the Add button, which is where a missing
+ * reading is noticed.
  *
  * Meals come one card per day, with the day's total on the heading, because a
  * day is what the diary and the calorie chart both count in. Water and weight
@@ -61,25 +60,10 @@ const asMetric = (value: string | undefined): HistoryMetric =>
  * A list rather than the screen's usual scroll view: a year of meals is a
  * thousand rows, and only the cards on screen should be drawn.
  */
-export default function HistoryRoute() {
-  return (
-    <SessionGate>
-      <HistoryScreen />
-    </SessionGate>
-  )
-}
-
-function HistoryScreen() {
+export function HistoryScreen({ metric }: { metric: HistoryMetric }) {
   const { t } = useTranslation(['progress', 'common'])
   const back = useBack('/(tabs)/trends')
   const insets = useSafeAreaInsets()
-  const params = useLocalSearchParams<{ metric?: string }>()
-  const [metric, setMetric] = useState(() => asMetric(params.metric))
-  // A link into a History screen that is already open reuses it with new
-  // params, and `useState` only reads them once.
-  useEffect(() => {
-    if (params.metric) setMetric(asMetric(params.metric))
-  }, [params.metric])
   /** Which day the weigh-in sheet is on, and null when it is shut. */
   const [weighingIn, setWeighingIn] = useState<string | null>(null)
 
@@ -115,9 +99,12 @@ function HistoryScreen() {
     <Screen
       header={
         <AppBar
-          title={t('progress:history.title')}
+          title={t(TITLE_KEY[metric])}
           onBack={back}
           backLabel={t('common:action.back')}
+          action={
+            metric === 'weight' ? <WeighInPill onPress={() => setWeighingIn(today())} /> : undefined
+          }
         />
       }
       scroll={false}
@@ -145,18 +132,6 @@ function HistoryScreen() {
           </Card>
         )}
         ItemSeparatorComponent={Gap}
-        ListHeaderComponent={
-          <SegmentedControl
-            options={HISTORY_METRICS.map((value) => ({
-              value,
-              label: t(`progress:metric.${value}`),
-            }))}
-            value={metric}
-            onChange={setMetric}
-            accessibilityLabel={t('progress:history.title')}
-          />
-        }
-        ListHeaderComponentStyle={{ marginBottom: spacing.stack }}
         ListEmptyComponent={
           history.offline ? (
             <Card>

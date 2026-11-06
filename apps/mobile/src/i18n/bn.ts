@@ -1004,6 +1004,9 @@ export const bn = {
     },
     history: {
       title: 'ইতিহাস',
+      caloriesTitle: 'ক্যালোরির ইতিহাস',
+      waterTitle: 'পানির ইতিহাস',
+      weightTitle: 'ওজনের ইতিহাস',
       dayTotal: '{{value}} kcal',
       waterAverage: 'গড় {{amount}}',
       goalMet: 'লক্ষ্যে পৌঁছেছে',
@@ -1593,18 +1596,15 @@ export const bn = {
 
   reviews: {
     title: 'পর্যালোচনা',
-
     entry: {
       title: 'পর্যালোচনা',
       subtitle: 'একটি সপ্তাহ বা মাস ফিরে দেখুন',
     },
-
     kind: {
       week: 'সাপ্তাহিক',
       month: 'মাসিক',
       label: 'পর্যালোচনার দৈর্ঘ্য',
     },
-
     list: {
       weekMeta: 'সপ্তাহ {{index}}',
       weekSummary: 'দিনে {{kcal}} kcal, {{total}} এর মধ্যে {{done}} লেখা',
@@ -1612,27 +1612,30 @@ export const bn = {
       monthSummary: 'দিনে {{kcal}} kcal',
       monthSummaryWeight: 'দিনে {{kcal}} kcal, {{weight}}',
       summaryEmpty: 'কিছুই লেখা হয়নি',
+      kcal: 'kcal',
+      workouts_one: 'ওয়ার্কআউট',
+      workouts_other: 'ওয়ার্কআউট',
+      workoutCount_one: '{{count}}টি ওয়ার্কআউট',
+      workoutCount_other: '{{count}}টি ওয়ার্কআউট',
+      latestWeek: 'সর্বশেষ সপ্তাহ',
+      latestMonth: 'সর্বশেষ মাস',
       a11y: '{{title}}, {{meta}}, {{summary}}',
       a11yLocked: '{{title}}, {{meta}}, {{summary}}, Pro',
-
       emptyWeekTitle: 'ফিরে দেখার মতো কোনো সপ্তাহ এখনো নেই',
       emptyWeekBody: 'একটি সপ্তাহ শেষ হলে এবং আপনি তার অন্তত চারটি দিন লিখলে সেটি এখানে আসে।',
       emptyMonthTitle: 'ফিরে দেখার মতো কোনো মাস এখনো নেই',
       emptyMonthBody: 'একটি মাস শেষ হলে এবং আপনি তার অন্তত বারোটি দিন লিখলে সেটি এখানে আসে।',
     },
-
     share: {
       card: '{{card}} ভাগ করুন',
       preview: 'কার্ডটি ঠিক যেমন পাঠানো হবে',
     },
-
     story: {
       close: 'বন্ধ করুন',
       share: 'ভাগ করুন',
       missingTitle: 'সেই পর্যালোচনা এখানে নেই',
       missingBody: 'হয়তো এটি এমন একটি সপ্তাহ ছিল যাতে ফিরে দেখার মতো খুব কমই ছিল।',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: 'দিনে kcal',
@@ -1644,18 +1647,29 @@ export const bn = {
       streak: 'টানা',
       streakValue_one: '{{count}} দিন',
       streakValue_other: '{{count}} দিন',
+      workouts: 'ওয়ার্কআউট',
       weightChange: 'ওজন',
       noWeight: '—',
       shareText: '{{period}}: দিনে {{kcal}} kcal, {{total}} এর মধ্যে {{done}} দিন লেখা। RiceCal',
     },
-
+    training: {
+      title: 'অনুশীলন',
+      unit_one: 'ওয়ার্কআউট',
+      unit_other: 'ওয়ার্কআউট',
+      vsWeek: 'গত সপ্তাহের তুলনায় {{delta}}',
+      vsMonth: 'গত মাসের তুলনায় {{delta}}',
+      time: 'সময়',
+      volume: 'ভলিউম',
+      bests: 'নতুন সেরা',
+      best: '{{weight}} × {{reps}}',
+      days: '{{total}} দিনের মধ্যে {{done}} দিন অনুশীলন',
+    },
     food: {
       title: 'সবচেয়ে বড় থালা',
       macros: 'দিনে ম্যাক্রো',
       grams: '{{value}} g',
       share: 'শক্তির {{value}}%',
     },
-
     calories: {
       average: 'দিনে গড়',
       kcal: 'kcal',
@@ -1665,14 +1679,13 @@ export const bn = {
       noGoal: 'তখন কোনো দৈনিক হিসাব চালু ছিল না।',
       everyDay: 'প্রতিদিন',
       everyWeek: 'প্রতি সপ্তাহে',
-      chart: 'দিনে ক্যালরি, কার্বস, প্রোটিন ও চর্বিতে ভাগ করা',
+      chart: 'প্রতিদিনের ক্যালোরি, আপনার লক্ষ্যের সাপেক্ষে',
       lightest: '{{day}}, সবচেয়ে কম',
       heaviest: '{{day}}, সবচেয়ে বেশি',
       pastWeeks: 'গত পাঁচ সপ্তাহ',
       pastMonths: 'গত পাঁচ মাস',
       noData: '—',
     },
-
     body: {
       weight: 'ওজন',
       weighIns_one: 'একবার ওজন মাপা',

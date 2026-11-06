@@ -434,6 +434,30 @@ export type WorkoutTrendSummary = {
  */
 export type ReviewKind = 'week' | 'month'
 
+/** One review period's training. */
+export type ReviewWorkouts = {
+  workouts: number
+  activeDays: number
+  durationS: number
+  volumeKg: number
+  sets: number
+  /** The period before, of the same kind: last week, or last month. */
+  prevWorkouts: number
+  /** Days with a workout, oldest first. */
+  trainedOn: string[]
+}
+
+/** An exercise that set a weight record in a review period, at its heaviest. */
+export type ReviewRecord = {
+  exerciseId: string
+  name: string
+  weightKg: number
+  reps: number | null
+}
+
+/** Workouts on one row of the reviews list. */
+export type ReviewPeriodWorkouts = { start: string; workouts: number; durationS: number }
+
 export const REVIEW_KINDS = ['week', 'month'] as const satisfies readonly ReviewKind[]
 
 /**

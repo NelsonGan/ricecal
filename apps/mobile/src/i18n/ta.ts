@@ -1020,6 +1020,9 @@ export const ta = {
     },
     history: {
       title: 'வரலாறு',
+      caloriesTitle: 'கலோரி வரலாறு',
+      waterTitle: 'தண்ணீர் வரலாறு',
+      weightTitle: 'எடை வரலாறு',
       dayTotal: '{{value}} kcal',
       waterAverage: 'சராசரி {{amount}}',
       goalMet: 'இலக்கு எட்டப்பட்டது',
@@ -1611,18 +1614,15 @@ export const ta = {
 
   reviews: {
     title: 'மீள்பார்வை',
-
     entry: {
       title: 'மீள்பார்வை',
       subtitle: 'ஒரு வாரத்தையோ மாதத்தையோ திரும்பிப் பாருங்கள்',
     },
-
     kind: {
       week: 'வாராந்திரம்',
       month: 'மாதாந்திரம்',
       label: 'மீள்பார்வை நீளம்',
     },
-
     list: {
       weekMeta: 'வாரம் {{index}}',
       weekSummary: 'நாளுக்கு {{kcal}} kcal, {{total}} இல் {{done}} பதிவு',
@@ -1630,28 +1630,31 @@ export const ta = {
       monthSummary: 'நாளுக்கு {{kcal}} kcal',
       monthSummaryWeight: 'நாளுக்கு {{kcal}} kcal, {{weight}}',
       summaryEmpty: 'பதிவு இல்லை',
+      kcal: 'kcal',
+      workouts_one: 'வொர்க்அவுட்',
+      workouts_other: 'வொர்க்அவுட்கள்',
+      workoutCount_one: '{{count}} வொர்க்அவுட்',
+      workoutCount_other: '{{count}} வொர்க்அவுட்கள்',
+      latestWeek: 'சமீபத்திய வாரம்',
+      latestMonth: 'சமீபத்திய மாதம்',
       a11y: '{{title}}, {{meta}}, {{summary}}',
       a11yLocked: '{{title}}, {{meta}}, {{summary}}, Pro',
-
       emptyWeekTitle: 'திரும்பிப் பார்க்க இன்னும் வாரம் இல்லை',
       emptyWeekBody: 'ஒரு வாரம் முடிந்து, அதில் குறைந்தது நான்கு நாட்களைப் பதிவு செய்திருந்தால் அது இங்கே தோன்றும்.',
       emptyMonthTitle: 'திரும்பிப் பார்க்க இன்னும் மாதம் இல்லை',
       emptyMonthBody:
         'ஒரு மாதம் முடிந்து, அதில் குறைந்தது பன்னிரண்டு நாட்களைப் பதிவு செய்திருந்தால் அது இங்கே தோன்றும்.',
     },
-
     share: {
       card: '{{card}} பகிர்',
       preview: 'அனுப்பப்படும் அதே அட்டை',
     },
-
     story: {
       close: 'மூடு',
       share: 'பகிர்',
       missingTitle: 'அந்த மீள்பார்வை இங்கே இல்லை',
       missingBody: 'திரும்பிப் பார்க்கும் அளவுக்கு மிகக் குறைவாக இருந்த வாரமாக இருக்கலாம்.',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: 'நாளுக்கு kcal',
@@ -1663,18 +1666,29 @@ export const ta = {
       streak: 'தொடர்ச்சி',
       streakValue_one: '{{count}} நாள்',
       streakValue_other: '{{count}} நாட்கள்',
+      workouts: 'வொர்க்அவுட்கள்',
       weightChange: 'எடை',
       noWeight: '—',
       shareText: '{{period}}: நாளுக்கு {{kcal}} kcal, {{total}} இல் {{done}} நாட்கள் பதிவு. RiceCal',
     },
-
+    training: {
+      title: 'பயிற்சி',
+      unit_one: 'வொர்க்அவுட்',
+      unit_other: 'வொர்க்அவுட்கள்',
+      vsWeek: 'கடந்த வாரத்தை விட {{delta}}',
+      vsMonth: 'கடந்த மாதத்தை விட {{delta}}',
+      time: 'நேரம்',
+      volume: 'வால்யூம்',
+      bests: 'புதிய சாதனைகள்',
+      best: '{{weight}} × {{reps}}',
+      days: '{{total}} நாட்களில் {{done}} நாள் பயிற்சி',
+    },
     food: {
       title: 'மிகப் பெரிய தட்டுகள்',
       macros: 'நாளுக்கான மேக்ரோக்கள்',
       grams: '{{value}} g',
       share: 'ஆற்றலில் {{value}}%',
     },
-
     calories: {
       average: 'நாள் சராசரி',
       kcal: 'kcal',
@@ -1684,14 +1698,13 @@ export const ta = {
       noGoal: 'அப்போது தினசரி வரவு எதுவும் இல்லை.',
       everyDay: 'ஒவ்வொரு நாளும்',
       everyWeek: 'ஒவ்வொரு வாரமும்',
-      chart: 'நாளொன்றுக்கு கலோரிகள், கார்ப்ஸ், புரதம், கொழுப்பு எனப் பிரித்து',
+      chart: 'தினசரி கலோரி, உங்கள் இலக்குடன் ஒப்பிட்டு',
       lightest: '{{day}}, மிகக் குறைவு',
       heaviest: '{{day}}, மிக அதிகம்',
       pastWeeks: 'கடந்த ஐந்து வாரங்கள்',
       pastMonths: 'கடந்த ஐந்து மாதங்கள்',
       noData: '—',
     },
-
     body: {
       weight: 'எடை',
       weighIns_one: 'ஒரு அளவீடு',

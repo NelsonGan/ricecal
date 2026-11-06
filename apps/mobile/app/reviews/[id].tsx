@@ -9,6 +9,8 @@ import {
   useReviewPeriods,
   useReviewSeries,
   useReviewSummary,
+  useReviewWorkoutRecords,
+  useReviewWorkouts,
   useSettings,
   useUserId,
 } from '@/data'
@@ -23,6 +25,7 @@ import {
   type ReviewStep,
   reviewSteps,
   ShareableCards,
+  TrainingStep,
 } from '@/features/reviews'
 import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
@@ -76,6 +79,8 @@ export default function ReviewScreen() {
   const summary = useReviewSummary(kind, start)
   const series = useReviewSeries(kind, start)
   const meals = useReviewMeals(kind, start)
+  const training = useReviewWorkouts(kind, start)
+  const records = useReviewWorkoutRecords(kind, start)
 
   /**
    * One `Review Opened` per review, once the period is actually known.
@@ -151,7 +156,14 @@ export default function ReviewScreen() {
   const loading =
     locked ||
     resolving ||
-    (start !== '' && (summary.isPending || series.isPending || meals.isPending))
+    (start !== '' &&
+      (summary.isPending ||
+        series.isPending ||
+        meals.isPending ||
+        // Training is waited for so its card does not land a beat later and push
+        // the food down, but only while it is pending: a failure leaves the
+        // review without it rather than without everything.
+        (training.isPending && !training.isError)))
   const found = summary.data
 
   if (loading) {
@@ -180,10 +192,29 @@ export default function ReviewScreen() {
   const title = periodShortTitle(kind, found.start, found.end)
   const buckets = series.data ?? []
   const dishes = meals.data ?? []
-  const steps = reviewSteps(found, dishes.length)
+  const trained = training.data ?? null
+  const steps = reviewSteps(found, dishes.length, trained?.workouts ?? 0)
 
   const draw: Record<ReviewStep, ReactNode> = {
-    card: <CardStep title={title} summary={found} buckets={buckets} unit={unit} />,
+    card: (
+      <CardStep
+        title={title}
+        summary={found}
+        buckets={buckets}
+        unit={unit}
+        workouts={trained?.workouts ?? 0}
+      />
+    ),
+    training: trained ? (
+      <TrainingStep
+        kind={kind}
+        start={found.start}
+        end={found.end}
+        training={trained}
+        records={records.data ?? []}
+        unit={unit}
+      />
+    ) : null,
     food: <FoodStep summary={found} meals={dishes} />,
     calories: (
       <CaloriesStep kind={kind} summary={found} buckets={buckets} periods={periods.data ?? []} />

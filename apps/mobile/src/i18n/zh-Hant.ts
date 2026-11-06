@@ -1008,6 +1008,9 @@ export const zhHant = {
     },
     history: {
       title: '歷史',
+      caloriesTitle: '熱量記錄',
+      waterTitle: '飲水記錄',
+      weightTitle: '體重記錄',
       dayTotal: '{{value}} 大卡',
       waterAverage: '平均 {{amount}}',
       goalMet: '達成目標',
@@ -1595,18 +1598,15 @@ export const zhHant = {
 
   reviews: {
     title: '回顧',
-
     entry: {
       title: '回顧',
       subtitle: '回看一週或者一個月',
     },
-
     kind: {
       week: '每週',
       month: '每月',
       label: '回顧長度',
     },
-
     list: {
       weekMeta: '第 {{index}} 週',
       weekSummary: '每天 {{kcal}} 大卡，{{total}} 天裡記了 {{done}} 天',
@@ -1614,27 +1614,30 @@ export const zhHant = {
       monthSummary: '每天 {{kcal}} 大卡',
       monthSummaryWeight: '每天 {{kcal}} 大卡，{{weight}}',
       summaryEmpty: '沒有紀錄',
+      kcal: 'kcal',
+      workouts_one: '次訓練',
+      workouts_other: '次訓練',
+      workoutCount_one: '訓練 {{count}} 次',
+      workoutCount_other: '訓練 {{count}} 次',
+      latestWeek: '最近一週',
+      latestMonth: '最近一個月',
       a11y: '{{title}}，{{meta}}，{{summary}}',
       a11yLocked: '{{title}}，{{meta}}，{{summary}}，Pro',
-
       emptyWeekTitle: '還沒有可以回看的週',
       emptyWeekBody: '一週結束、而且你記了至少四天之後，它才會出現在這裡。',
       emptyMonthTitle: '還沒有可以回看的月',
       emptyMonthBody: '一個月結束、而且你記了至少十二天之後，它才會出現在這裡。',
     },
-
     share: {
       card: '分享{{card}}',
       preview: '這張卡片送出去就是這樣',
     },
-
     story: {
       close: '關閉',
       share: '分享',
       missingTitle: '這份回顧不在這裡',
       missingBody: '那一週裡的內容可能太少，不夠回看。',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: '大卡每天',
@@ -1646,18 +1649,29 @@ export const zhHant = {
       streak: '連續',
       streakValue_one: '{{count}} 天',
       streakValue_other: '{{count}} 天',
+      workouts: '訓練',
       weightChange: '體重',
       noWeight: '—',
       shareText: '{{period}}：每天 {{kcal}} 大卡，{{total}} 天裡記了 {{done}} 天。RiceCal',
     },
-
+    training: {
+      title: '訓練',
+      unit_one: '次',
+      unit_other: '次',
+      vsWeek: '比上週 {{delta}}',
+      vsMonth: '比上月 {{delta}}',
+      time: '時間',
+      volume: '訓練量',
+      bests: '新紀錄',
+      best: '{{weight}} × {{reps}}',
+      days: '{{total}} 天中訓練 {{done}} 天',
+    },
     food: {
       title: '吃得最多的幾盤',
       macros: '每日營養素',
       grams: '{{value}} 公克',
       share: '占能量的 {{value}}%',
     },
-
     calories: {
       average: '每日平均',
       kcal: '大卡',
@@ -1667,14 +1681,13 @@ export const zhHant = {
       noGoal: '那時候還沒有每日額度。',
       everyDay: '每一天',
       everyWeek: '每一週',
-      chart: '每日熱量，按碳水、蛋白質和脂肪拆分',
+      chart: '每日熱量與目標',
       lightest: '{{day}}，最少',
       heaviest: '{{day}}，最多',
       pastWeeks: '最近五週',
       pastMonths: '最近五個月',
       noData: '—',
     },
-
     body: {
       weight: '體重',
       weighIns_one: '量測一次',

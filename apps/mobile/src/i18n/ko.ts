@@ -1012,6 +1012,9 @@ export const ko = {
     },
     history: {
       title: '기록',
+      caloriesTitle: '칼로리 기록',
+      waterTitle: '물 기록',
+      weightTitle: '체중 기록',
       dayTotal: '{{value}} kcal',
       waterAverage: '평균 {{amount}}',
       goalMet: '목표 달성',
@@ -1601,18 +1604,15 @@ export const ko = {
 
   reviews: {
     title: '돌아보기',
-
     entry: {
       title: '돌아보기',
       subtitle: '한 주나 한 달을 되짚어 보기',
     },
-
     kind: {
       week: '주간',
       month: '월간',
       label: '돌아보기 길이',
     },
-
     list: {
       weekMeta: '{{index}}주',
       weekSummary: '하루 {{kcal}} kcal, {{total}}일 중 {{done}}일 기록',
@@ -1620,27 +1620,30 @@ export const ko = {
       monthSummary: '하루 {{kcal}} kcal',
       monthSummaryWeight: '하루 {{kcal}} kcal, {{weight}}',
       summaryEmpty: '기록 없음',
+      kcal: 'kcal',
+      workouts_one: '회',
+      workouts_other: '회',
+      workoutCount_one: '운동 {{count}}회',
+      workoutCount_other: '운동 {{count}}회',
+      latestWeek: '최근 주',
+      latestMonth: '최근 달',
       a11y: '{{title}}, {{meta}}, {{summary}}',
       a11yLocked: '{{title}}, {{meta}}, {{summary}}, Pro',
-
       emptyWeekTitle: '아직 돌아볼 주가 없습니다',
       emptyWeekBody: '한 주가 끝나고 그중 나흘 이상을 기록했다면 여기에 올라옵니다.',
       emptyMonthTitle: '아직 돌아볼 달이 없습니다',
       emptyMonthBody: '한 달이 끝나고 그중 열이틀 이상을 기록했다면 여기에 올라옵니다.',
     },
-
     share: {
       card: '{{card}} 공유',
       preview: '보내질 모습 그대로의 카드',
     },
-
     story: {
       close: '닫기',
       share: '공유',
       missingTitle: '그 돌아보기는 여기 없습니다',
       missingBody: '돌아보기에는 내용이 너무 적었던 주일 수 있습니다.',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: '하루 kcal',
@@ -1652,18 +1655,29 @@ export const ko = {
       streak: '연속',
       streakValue_one: '{{count}}일',
       streakValue_other: '{{count}}일',
+      workouts: '운동',
       weightChange: '몸무게',
       noWeight: '—',
       shareText: '{{period}}: 하루 {{kcal}} kcal, {{total}}일 중 {{done}}일 기록. RiceCal',
     },
-
+    training: {
+      title: '운동',
+      unit_one: '회',
+      unit_other: '회',
+      vsWeek: '지난주 대비 {{delta}}',
+      vsMonth: '지난달 대비 {{delta}}',
+      time: '시간',
+      volume: '볼륨',
+      bests: '새 최고 기록',
+      best: '{{weight}} × {{reps}}',
+      days: '{{total}}일 중 {{done}}일 운동',
+    },
     food: {
       title: '가장 큰 한 접시',
       macros: '하루 영양소',
       grams: '{{value}} g',
       share: '에너지의 {{value}}%',
     },
-
     calories: {
       average: '하루 평균',
       kcal: 'kcal',
@@ -1673,14 +1687,13 @@ export const ko = {
       noGoal: '그때는 하루 예산이 없었습니다.',
       everyDay: '매일',
       everyWeek: '매주',
-      chart: '하루 칼로리, 탄수화물, 단백질, 지방으로 나눔',
+      chart: '하루 칼로리와 목표',
       lightest: '{{day}}, 가장 적음',
       heaviest: '{{day}}, 가장 많음',
       pastWeeks: '최근 다섯 주',
       pastMonths: '최근 다섯 달',
       noData: '—',
     },
-
     body: {
       weight: '몸무게',
       weighIns_one: '측정 1회',

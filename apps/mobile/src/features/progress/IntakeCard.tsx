@@ -111,7 +111,7 @@ export function IntakeCard({
           className="w-[210px]"
         />
       }
-      onOpen={() => router.push({ pathname: '/history', params: { metric: 'calories' } })}
+      onOpen={() => router.push('/history/calories')}
       loading={loading || !buckets}
       problem={problem}
       onRetry={onRetry}
