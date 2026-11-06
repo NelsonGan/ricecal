@@ -20,8 +20,6 @@ export type WeightCardProps = {
   problem?: 'offline' | 'unreachable' | null
   onRetry?: () => void
   unit: WeightUnit
-  /** Opens the weigh-in sheet on today. The sheet itself is the screen's. */
-  onAdd: () => void
 }
 
 /**
@@ -41,7 +39,6 @@ export function WeightCard({
   problem,
   onRetry,
   unit,
-  onAdd,
 }: WeightCardProps) {
   const { t } = useTranslation(['progress', 'common'])
   const { data: profile } = useProfile()
@@ -79,8 +76,7 @@ export function WeightCard({
     <TrendCard
       icon={{ set: 'body', name: 'weighing-scale' }}
       title={t('progress:metric.weight')}
-      onOpen={() => router.push({ pathname: '/history', params: { metric: 'weight' } })}
-      action={<WeighInPill onPress={onAdd} />}
+      onOpen={() => router.push('/history/weight')}
       loading={loading || !buckets}
       problem={problem}
       onRetry={onRetry}
@@ -123,9 +119,9 @@ export function WeightCard({
           )}
 
           {remaining === null || target === null ? null : (
-            <View className="flex-row items-center gap-2 border-track border-t-2 pt-3">
-              <Icon set="body" name="target" size={20} />
-              <Text variant="label" className="min-w-0 flex-1" numberOfLines={2}>
+            <View className="flex-row items-center gap-2">
+              <Icon set="body" name="target" size={18} />
+              <Text variant="meta" className="min-w-0 flex-1" numberOfLines={2}>
                 {remaining < 0.1
                   ? t('progress:weight.atGoal')
                   : t('progress:weight.toGoal', {
@@ -153,8 +149,8 @@ export function WeightCard({
 }
 
 /**
- * The way to add a reading, on the card's heading where somebody notices one
- * is missing. A pill rather than a full-width button under the card.
+ * The way to add a reading, in the weight history's bar, over the list where
+ * somebody notices one is missing. A pill rather than a full-width button.
  */
 export function WeighInPill({ onPress }: { onPress: () => void }) {
   const { t } = useTranslation('progress')

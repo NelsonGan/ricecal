@@ -1029,6 +1029,9 @@ export const id = {
     },
     history: {
       title: 'Riwayat',
+      caloriesTitle: 'Riwayat kalori',
+      waterTitle: 'Riwayat air',
+      weightTitle: 'Riwayat berat',
       dayTotal: '{{value}} kkal',
       waterAverage: 'rata-rata {{amount}}',
       goalMet: 'Target tercapai',
@@ -1622,18 +1625,15 @@ export const id = {
 
   reviews: {
     title: 'Ulasan',
-
     entry: {
       title: 'Ulasan',
       subtitle: 'Lihat kembali sepekan atau sebulan',
     },
-
     kind: {
       week: 'Mingguan',
       month: 'Bulanan',
       label: 'Panjang ulasan',
     },
-
     list: {
       weekMeta: 'Minggu {{index}}',
       weekSummary: '{{kcal}} kkal per hari, {{done}} dari {{total}} dicatat',
@@ -1641,9 +1641,15 @@ export const id = {
       monthSummary: '{{kcal}} kkal per hari',
       monthSummaryWeight: '{{kcal}} kkal per hari, {{weight}}',
       summaryEmpty: 'Tidak ada catatan',
+      kcal: 'kcal',
+      workouts_one: 'latihan',
+      workouts_other: 'latihan',
+      workoutCount_one: '{{count}} latihan',
+      workoutCount_other: '{{count}} latihan',
+      latestWeek: 'MINGGU TERAKHIR',
+      latestMonth: 'BULAN TERAKHIR',
       a11y: '{{title}}, {{meta}}, {{summary}}',
       a11yLocked: '{{title}}, {{meta}}, {{summary}}, Pro',
-
       emptyWeekTitle: 'Belum ada minggu untuk dilihat kembali',
       emptyWeekBody:
         'Satu minggu muncul di sini setelah selesai dan kamu mencatat setidaknya empat harinya.',
@@ -1651,19 +1657,16 @@ export const id = {
       emptyMonthBody:
         'Satu bulan muncul di sini setelah selesai dan kamu mencatat setidaknya dua belas harinya.',
     },
-
     share: {
       card: 'Bagikan {{card}}',
       preview: 'Kartunya seperti yang akan dikirim',
     },
-
     story: {
       close: 'Tutup',
       share: 'Bagikan',
       missingTitle: 'Ulasan itu tidak ada di sini',
       missingBody: 'Mungkin itu minggu yang isinya terlalu sedikit untuk dilihat kembali.',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: 'kkal per hari',
@@ -1675,19 +1678,30 @@ export const id = {
       streak: 'RENTETAN',
       streakValue_one: '{{count}} hari',
       streakValue_other: '{{count}} hari',
+      workouts: 'LATIHAN',
       weightChange: 'BERAT',
       noWeight: '—',
       shareText:
         '{{period}}: {{kcal}} kkal per hari, {{done}} dari {{total}} hari dicatat. RiceCal',
     },
-
+    training: {
+      title: 'LATIHAN',
+      unit_one: 'latihan',
+      unit_other: 'latihan',
+      vsWeek: '{{delta}} dibanding minggu lalu',
+      vsMonth: '{{delta}} dibanding bulan lalu',
+      time: 'WAKTU',
+      volume: 'VOLUME',
+      bests: 'REKOR BARU',
+      best: '{{weight}} × {{reps}}',
+      days: 'Berlatih {{done}} dari {{total}} hari',
+    },
     food: {
       title: 'PIRING TERBESAR',
       macros: 'MAKRO PER HARI',
       grams: '{{value}} g',
       share: '{{value}}% dari energi',
     },
-
     calories: {
       average: 'RATA-RATA PER HARI',
       kcal: 'kkal',
@@ -1697,14 +1711,13 @@ export const id = {
       noGoal: 'Belum ada jatah harian yang berlaku saat itu.',
       everyDay: 'SETIAP HARI',
       everyWeek: 'SETIAP MINGGU',
-      chart: 'Kalori per hari, dipecah menurut karbo, protein dan lemak',
+      chart: 'Kalori per hari dibanding targetmu',
       lightest: '{{day}}, TERINGAN',
       heaviest: '{{day}}, TERBERAT',
       pastWeeks: 'LIMA MINGGU TERAKHIR',
       pastMonths: 'LIMA BULAN TERAKHIR',
       noData: '—',
     },
-
     body: {
       weight: 'BERAT',
       weighIns_one: 'Satu penimbangan',

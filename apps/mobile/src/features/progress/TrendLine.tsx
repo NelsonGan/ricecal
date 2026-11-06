@@ -65,6 +65,11 @@ export type TrendLineProps = {
   /** The least headroom above and below, in the chart's units: half a kilogram for weight. */
   minPad?: number
   /**
+   * Whether a tap or a drag reads a point. Off on a review card, where a tap
+   * shares the card and the scale and goal labels are all the reading needed.
+   */
+  interactive?: boolean
+  /**
    * The last reading from BEFORE the range, which the line starts from.
    *
    * Without it a week that opens on an unweighed day begins partway across, and
@@ -150,6 +155,7 @@ export function TrendLine({
   dotTone,
   fromZero = false,
   minPad = 0.5,
+  interactive = true,
   carryFrom,
   height = 128,
   formatValue,
@@ -353,13 +359,13 @@ export function TrendLine({
   // scroll view the chart sits in. Off without `formatValue`, which has nothing
   // to say about a point.
   const scrub = Gesture.Pan()
-    .enabled(Boolean(formatValue))
+    .enabled(Boolean(formatValue) && interactive)
     .activeOffsetX([-6, 6])
     .failOffsetY([-12, 12])
     .onStart((event) => runOnJS(scrubTo)(event.x))
     .onUpdate((event) => runOnJS(scrubTo)(event.x))
   const tap = Gesture.Tap()
-    .enabled(Boolean(formatValue))
+    .enabled(Boolean(formatValue) && interactive)
     .onEnd((event) => runOnJS(tapAt)(event.x))
   const gesture = Gesture.Race(scrub, tap)
 

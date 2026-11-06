@@ -1008,6 +1008,9 @@ export const zhHans = {
     },
     history: {
       title: '历史',
+      caloriesTitle: '热量记录',
+      waterTitle: '饮水记录',
+      weightTitle: '体重记录',
       dayTotal: '{{value}} 千卡',
       waterAverage: '平均 {{amount}}',
       goalMet: '达成目标',
@@ -1595,18 +1598,15 @@ export const zhHans = {
 
   reviews: {
     title: '回顾',
-
     entry: {
       title: '回顾',
       subtitle: '回看一周或者一个月',
     },
-
     kind: {
       week: '每周',
       month: '每月',
       label: '回顾长度',
     },
-
     list: {
       weekMeta: '第 {{index}} 周',
       weekSummary: '每天 {{kcal}} 千卡，{{total}} 天里记了 {{done}} 天',
@@ -1614,27 +1614,30 @@ export const zhHans = {
       monthSummary: '每天 {{kcal}} 千卡',
       monthSummaryWeight: '每天 {{kcal}} 千卡，{{weight}}',
       summaryEmpty: '没有记录',
+      kcal: 'kcal',
+      workouts_one: '次训练',
+      workouts_other: '次训练',
+      workoutCount_one: '训练 {{count}} 次',
+      workoutCount_other: '训练 {{count}} 次',
+      latestWeek: '最近一周',
+      latestMonth: '最近一个月',
       a11y: '{{title}}，{{meta}}，{{summary}}',
       a11yLocked: '{{title}}，{{meta}}，{{summary}}，Pro',
-
       emptyWeekTitle: '还没有可以回看的周',
       emptyWeekBody: '一周结束、并且你记了至少四天之后，它才会出现在这里。',
       emptyMonthTitle: '还没有可以回看的月',
       emptyMonthBody: '一个月结束、并且你记了至少十二天之后，它才会出现在这里。',
     },
-
     share: {
       card: '分享{{card}}',
       preview: '这张卡片发出去就是这样',
     },
-
     story: {
       close: '关闭',
       share: '分享',
       missingTitle: '这份回顾不在这里',
       missingBody: '那一周里的内容可能太少，不足以回看。',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: '千卡每天',
@@ -1646,18 +1649,29 @@ export const zhHans = {
       streak: '连续',
       streakValue_one: '{{count}} 天',
       streakValue_other: '{{count}} 天',
+      workouts: '训练',
       weightChange: '体重',
       noWeight: '—',
       shareText: '{{period}}：每天 {{kcal}} 千卡，{{total}} 天里记了 {{done}} 天。RiceCal',
     },
-
+    training: {
+      title: '训练',
+      unit_one: '次',
+      unit_other: '次',
+      vsWeek: '比上周 {{delta}}',
+      vsMonth: '比上月 {{delta}}',
+      time: '时长',
+      volume: '训练量',
+      bests: '新纪录',
+      best: '{{weight}} × {{reps}}',
+      days: '{{total}} 天中训练 {{done}} 天',
+    },
     food: {
       title: '吃得最多的几盘',
       macros: '每日营养素',
       grams: '{{value}} 克',
       share: '占能量的 {{value}}%',
     },
-
     calories: {
       average: '每日平均',
       kcal: '千卡',
@@ -1667,14 +1681,13 @@ export const zhHans = {
       noGoal: '那时候还没有每日额度。',
       everyDay: '每一天',
       everyWeek: '每一周',
-      chart: '每日热量，按碳水、蛋白质和脂肪拆分',
+      chart: '每日热量与目标',
       lightest: '{{day}}，最少',
       heaviest: '{{day}}，最多',
       pastWeeks: '最近五周',
       pastMonths: '最近五个月',
       noData: '—',
     },
-
     body: {
       weight: '体重',
       weighIns_one: '称重一次',

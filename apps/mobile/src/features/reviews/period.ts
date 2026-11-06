@@ -87,12 +87,20 @@ export function weekOfYear(start: string): number {
  * which means days with food in them, which means there is a card, a dish list
  * and a calorie chart to draw.
  */
-export type ReviewStep = 'card' | 'food' | 'calories' | 'body'
+export type ReviewStep = 'card' | 'training' | 'food' | 'calories' | 'body'
 
-export function reviewSteps(summary: ReviewSummary | null, meals: number): ReviewStep[] {
+export function reviewSteps(
+  summary: ReviewSummary | null,
+  meals: number,
+  workouts = 0,
+): ReviewStep[] {
   if (!summary) return []
 
   const steps: ReviewStep[] = ['card']
+  // Second, beside the headline: a period somebody trained in is read for the
+  // training as much as for the food. Absent without a workout, so a food-only
+  // account never sees an empty training card.
+  if (workouts > 0) steps.push('training')
   if (meals > 0) steps.push('food')
   steps.push('calories')
   // Either a scale or a watch is enough for a body step; neither is not.

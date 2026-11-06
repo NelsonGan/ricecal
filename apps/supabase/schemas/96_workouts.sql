@@ -1041,3 +1041,194 @@ comment on function public.trend_workout_summary(text) is
 
 revoke all on function public.trend_workout_summary(text) from public, anon;
 grant execute on function public.trend_workout_summary(text) to authenticated;
+
+
+-- ---------------------------------------------------------------------------
+-- Training in a weekly or monthly review: the same `(kind, start)` every
+-- review function takes (95_reviews.sql), so the period ends where
+-- `review_end` says and this file sorts after it.
+--
+-- `trained_on` is the days with a workout, which the review draws as a strip
+-- of seven (or a month of) dots. `prev_workouts` is the period before, of the
+-- same kind: the previous week, or the previous calendar month, both whole.
+-- ---------------------------------------------------------------------------
+create or replace function public.review_workouts(p_kind text, p_start date)
+returns table (
+  workouts       integer,
+  active_days    integer,
+  duration_s     integer,
+  volume_kg      numeric,
+  sets           integer,
+  prev_workouts  integer,
+  trained_on     date[]
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with bounds as (
+    select
+      p_start as from_date,
+      public.review_end(p_kind, p_start) as to_date,
+      case p_kind
+        when 'week'  then p_start - 7
+        when 'month' then (p_start - interval '1 month')::date
+      end as prev_from
+  ),
+  per_workout as (
+    select
+      w.id,
+      w.log_date,
+      w.duration_s,
+      coalesce(t.volume_kg, 0) as volume_kg,
+      coalesce(t.sets, 0)      as sets
+    from public.workouts w
+    left join (
+      select v.workout_id, sum(v.volume_kg) as volume_kg, count(*) as sets
+      from public.workout_set_values v
+      where v.user_id = (select auth.uid())
+        and v.log_date between (select b.prev_from from bounds b) and (select b.to_date from bounds b)
+      group by v.workout_id
+    ) t on t.workout_id = w.id
+    where w.user_id = (select auth.uid())
+      and w.log_date between (select b.prev_from from bounds b) and (select b.to_date from bounds b)
+  )
+  select
+    (count(p.id) filter (where p.log_date >= b.from_date))::integer,
+    (count(distinct p.log_date) filter (where p.log_date >= b.from_date))::integer,
+    coalesce(sum(p.duration_s) filter (where p.log_date >= b.from_date), 0)::integer,
+    coalesce(sum(p.volume_kg) filter (where p.log_date >= b.from_date), 0),
+    coalesce(sum(p.sets) filter (where p.log_date >= b.from_date), 0)::integer,
+    (count(p.id) filter (where p.log_date < b.from_date))::integer,
+    coalesce(
+      array_agg(distinct p.log_date order by p.log_date) filter (where p.log_date >= b.from_date),
+      '{}'
+    )
+  from bounds b
+  left join per_workout p on true
+  group by b.from_date;
+$$;
+
+comment on function public.review_workouts(text, date) is
+  'One review period''s training as one row: workouts, active days, seconds, '
+  'volume and sets, the workouts of the period before, and the days trained.';
+
+revoke all on function public.review_workouts(text, date) from public, anon;
+grant execute on function public.review_workouts(text, date) to authenticated;
+
+
+-- ---------------------------------------------------------------------------
+-- The heaviest new bests of one review period: one row per exercise that set
+-- a weight record in it, at its heaviest such set, heaviest first.
+--
+-- Weight records only. They are the ones a lifter quotes ("72.5 for 8"), and
+-- a list mixing a volume record on one row with a rep record on the next read
+-- as three different sports. This scores the whole history through
+-- `workout_set_details`, as the history list does, and is asked once a review.
+-- ---------------------------------------------------------------------------
+create or replace function public.review_workout_records(
+  p_kind  text,
+  p_start date,
+  p_limit integer default 3
+)
+returns table (
+  exercise_id    text,
+  exercise_name  text,
+  weight_kg      numeric,
+  reps           integer
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with best as (
+    select distinct on (d.exercise_id)
+      d.exercise_id,
+      e.exercise_name,
+      d.weight_kg,
+      d.reps
+    from public.workout_set_details d
+    join public.workouts w on w.id = d.workout_id
+    join public.workout_exercises e on e.id = d.workout_exercise_id
+    where d.user_id = (select auth.uid())
+      and d.is_weight_pr
+      and w.log_date between p_start and public.review_end(p_kind, p_start)
+    order by d.exercise_id, d.weight_kg desc, d.reps desc nulls last
+  )
+  select b.exercise_id, b.exercise_name, b.weight_kg, b.reps
+  from best b
+  order by b.weight_kg desc, b.exercise_name
+  limit least(greatest(p_limit, 0), 10);
+$$;
+
+comment on function public.review_workout_records(text, date, integer) is
+  'The exercises that set a weight record in one review period, each at its '
+  'heaviest record set, heaviest first.';
+
+revoke all on function public.review_workout_records(text, date, integer) from public, anon;
+grant execute on function public.review_workout_records(text, date, integer) to authenticated;
+
+
+-- ---------------------------------------------------------------------------
+-- Workouts for every row of the reviews list, over the same window
+-- `review_periods` lists: three months of finished weeks or six of months.
+-- Its own function rather than a column on `review_periods`, whose shape a
+-- released app reads.
+-- ---------------------------------------------------------------------------
+create or replace function public.review_workout_periods(p_kind text)
+returns table (
+  starts_on   date,
+  workouts    integer,
+  duration_s  integer
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with bounds as (
+    select
+      case p_kind
+        when 'week'  then date_trunc('week',  public.local_today((select auth.uid())) - interval '3 months')::date
+        when 'month' then date_trunc('month', public.local_today((select auth.uid())) - interval '6 months')::date
+      end as from_date,
+      case p_kind
+        when 'week'  then date_trunc('week',  public.local_today((select auth.uid())))::date - 1
+        when 'month' then date_trunc('month', public.local_today((select auth.uid())))::date - 1
+      end as to_date
+  ),
+  calendar as (
+    select gs::date as starts_on
+    from bounds b,
+      generate_series(
+        b.from_date,
+        b.to_date,
+        case p_kind when 'week' then interval '1 week' else interval '1 month' end
+      ) as gs
+  ),
+  per_workout as (
+    select
+      case p_kind
+        when 'week' then date_trunc('week', w.log_date)::date
+        else date_trunc('month', w.log_date)::date
+      end as starts_on,
+      w.duration_s
+    from public.workouts w
+    where w.user_id = (select auth.uid())
+      and w.log_date between (select b.from_date from bounds b) and (select b.to_date from bounds b)
+  )
+  select c.starts_on, count(p.starts_on)::integer, coalesce(sum(p.duration_s), 0)::integer
+  from calendar c
+  left join per_workout p on p.starts_on = c.starts_on
+  group by c.starts_on
+  order by c.starts_on desc;
+$$;
+
+comment on function public.review_workout_periods(text) is
+  'Workouts and seconds trained for every finished week (three months back) or '
+  'month (six months back), newest first: the figures on the reviews list.';
+
+revoke all on function public.review_workout_periods(text) from public, anon;
+grant execute on function public.review_workout_periods(text) to authenticated;

@@ -122,6 +122,9 @@ export {
   useReviewPeriods,
   useReviewSeries,
   useReviewSummary,
+  useReviewWorkoutPeriods,
+  useReviewWorkoutRecords,
+  useReviewWorkouts,
 } from './reviews'
 export {
   type EntryIngredient,

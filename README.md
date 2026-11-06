@@ -4185,8 +4185,12 @@ pointing at the Workouts page instead of an empty chart.
 ## History behind the charts
 
 Trends says what a range came to; History says what it was made of. The heading
-of each Trends card opens `/history` on that metric, every entry newest first,
-read like a statement, through `useHistory` in `data/history.ts`.
+of each Trends card opens that metric's own page, `/history/calories`,
+`/history/water` or `/history/weight`, every entry newest first, read like a
+statement, through `useHistory` in `data/history.ts`. One page each rather than
+one page with tabs: somebody who tapped the weight card came for weigh-ins, and
+a tab strip over them was a second way to choose what they already had. The
+old `/history?metric=` link redirects to the matching page.
 
 **Each metric keeps the grain it is stored at.** A meal is a row, from
 `food_log_details`. Water is one row per day, from `daily_logs`, because
@@ -4219,8 +4223,10 @@ diary's selected one. Moving the selected day to reach an old meal was tried
 and left the diary there, so the next meal logged from the nav bar's "+" was
 filed on that old day. A water row opens its day on Today, through `dismissTo`:
 from `/history`, `navigate` pushed a second copy of the tabs. A weigh-in opens
-the weigh-in sheet on its day; a new one is the Add pill on the Trends weight
-card.
+the weigh-in sheet on its day; a new one is the Add pill in the weight history's
+bar, over the list where a missing reading is noticed. A water day draws its
+bar against the goal in force that day and no "Goal met" line: a full bar
+already says it, and a screen reader still hears it.
 
 **It is not behind the paywall.** The free tier's seven days limit the charts, but
 every row here is a diary entry the free diary already shows on its own day.
@@ -4257,9 +4263,28 @@ seeing, while making the route into the feature invisible to exactly the person
 who had not found it yet.
 
 **How many sections a review has is data.** `reviewSteps` reads the summary: the
-card, the food and the calories always hold, and the body section exists only if
-there was a weigh-in or a watch. A month before the health store was connected is
+card, the food and the calories always hold, the training section exists only
+if there was a workout, and the body section only if there was a weigh-in or a
+watch. A month before the health store was connected is
 three sections rather than four, of which the last would be dashes.
+
+**Training is the second section.** A period with any workout gets a Training
+card under the headline one: the count against the period before, time and
+volume, a dot per day (a week's seven, or the month as its calendar) and the
+exercises that set a weight record, each at its heaviest. It reads three
+functions in `96_workouts.sql` that take the same `(kind, start)` as the rest:
+`review_workouts`, `review_workout_records` and, for the list's rows,
+`review_workout_periods`. They are separate from `review_summary` and
+`review_periods`, whose shapes a released app reads, and their keys sit under
+`workouts`, so a saved workout refreshes them. The headline card's third figure
+is the workout count in place of the streak whenever there was one.
+
+**The list leads with the newest period.** It is drawn as its own card with
+calories, workouts and the weight change large; older rows carry the same
+figures in a line, each behind the drawing its Trends card wears. Workouts are
+left off every row for an account that has not trained in the window. The
+"every day" chart in a review is the Trends line: a dot a column, the budget
+dashed, a day over it in kaya.
 
 **A tap on a card shares it.** Every card draws itself into a picture through
 Skia's `makeImageFromView` and offers it in a sheet with a Share button. The

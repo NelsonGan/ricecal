@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { ReviewBucket, ReviewKind, ReviewPeriod, ReviewSummary } from '@/data'
-import { StackedBars } from '@/features/progress'
-import { energyShare } from '@/lib/nutrition'
+import { TrendLine } from '@/features/progress'
+import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Card, Icon, ProgressBar, Text } from '@/ui'
 import { PeriodBars } from './PeriodBars'
 import { underGoalShare } from './period'
@@ -35,6 +35,7 @@ const COMPARED = 5
  */
 export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepProps) {
   const { t } = useTranslation(['reviews', 'progress'])
+  const colors = useThemeColors()
 
   const goal = summary.kcalGoal
   const average = summary.kcal
@@ -73,7 +74,12 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
 
             {delta === null ? null : (
               <Badge tone={delta >= 0 ? 'pandan' : 'kaya'} className="px-3 py-1.5">
-                <Icon set="body" name={delta >= 0 ? 'trend-down' : 'trend-up'} size={16} />
+                <Icon
+                  set="ui"
+                  name={delta >= 0 ? 'arrow-down' : 'arrow-up'}
+                  size={14}
+                  tintColor={delta >= 0 ? colors.pandanInk : colors.kayaInk}
+                />
                 <Text
                   variant="caption"
                   numberOfLines={1}
@@ -125,22 +131,26 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
         >
           {/* `mt-1` on top of the card's own gap: sixteen points under a
               heading, the same standoff every card in a story gives its own. */}
-          <StackedBars
+          {/* A line with a dot a column and the budget as the dashed rule, the
+              same chart as Trends, so the two read alike. A column nobody
+              logged is skipped rather than drawn as a fast. */}
+          <TrendLine
             className="mt-1"
             height={118}
-            bars={buckets.map((bucket, position) => ({
+            gaps="join"
+            goal={goal}
+            minPad={50}
+            interactive={false}
+            dotTone={(value) => (goal !== null && value > goal ? 'kaya' : 'pandan')}
+            points={buckets.map((bucket, position) => ({
               key: bucket.start,
               label:
                 kind === 'week'
                   ? format(parseISO(bucket.start), 'EEEEE')
                   : t('progress:range.week', { index: position + 1 }),
-              value: bucket.kcal,
-              share: energyShare({
-                carbs: bucket.carbs ?? 0,
-                protein: bucket.protein ?? 0,
-                fat: bucket.fat ?? 0,
-              }),
+              value: bucket.kcal === null ? null : Math.round(bucket.kcal),
             }))}
+            formatValue={(value) => Math.round(value).toLocaleString()}
             accessibilityLabel={t('reviews:calories.chart')}
           />
 

@@ -1007,6 +1007,9 @@ export const th = {
     },
     history: {
       title: 'ประวัติ',
+      caloriesTitle: 'ประวัติแคลอรี่',
+      waterTitle: 'ประวัติการดื่มน้ำ',
+      weightTitle: 'ประวัติน้ำหนัก',
       dayTotal: '{{value}} แคล',
       waterAverage: 'เฉลี่ย {{amount}}',
       goalMet: 'ถึงเป้าหมาย',
@@ -1594,18 +1597,15 @@ export const th = {
 
   reviews: {
     title: 'สรุป',
-
     entry: {
       title: 'สรุป',
       subtitle: 'ย้อนดูหนึ่งสัปดาห์หรือหนึ่งเดือน',
     },
-
     kind: {
       week: 'รายสัปดาห์',
       month: 'รายเดือน',
       label: 'ความยาวของสรุป',
     },
-
     list: {
       weekMeta: 'สัปดาห์ที่ {{index}}',
       weekSummary: '{{kcal}} แคลต่อวัน บันทึก {{done}} จาก {{total}}',
@@ -1613,27 +1613,30 @@ export const th = {
       monthSummary: '{{kcal}} แคลต่อวัน',
       monthSummaryWeight: '{{kcal}} แคลต่อวัน {{weight}}',
       summaryEmpty: 'ไม่มีบันทึก',
+      kcal: 'kcal',
+      workouts_one: 'ครั้ง',
+      workouts_other: 'ครั้ง',
+      workoutCount_one: 'ออกกำลังกาย {{count}} ครั้ง',
+      workoutCount_other: 'ออกกำลังกาย {{count}} ครั้ง',
+      latestWeek: 'สัปดาห์ล่าสุด',
+      latestMonth: 'เดือนล่าสุด',
       a11y: '{{title}} {{meta}} {{summary}}',
       a11yLocked: '{{title}} {{meta}} {{summary}} Pro',
-
       emptyWeekTitle: 'ยังไม่มีสัปดาห์ให้ย้อนดู',
       emptyWeekBody: 'สัปดาห์จะมาปรากฏตรงนี้เมื่อมันจบลงและคุณบันทึกอย่างน้อยสี่วันของสัปดาห์นั้น',
       emptyMonthTitle: 'ยังไม่มีเดือนให้ย้อนดู',
       emptyMonthBody: 'เดือนจะมาปรากฏตรงนี้เมื่อมันจบลงและคุณบันทึกอย่างน้อยสิบสองวันของเดือนนั้น',
     },
-
     share: {
       card: 'แชร์{{card}}',
       preview: 'การ์ดตามที่จะถูกส่งออกไป',
     },
-
     story: {
       close: 'ปิด',
       share: 'แชร์',
       missingTitle: 'สรุปนั้นไม่ได้อยู่ที่นี่',
       missingBody: 'อาจเป็นสัปดาห์ที่มีข้อมูลน้อยเกินกว่าจะย้อนดูได้',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: 'แคลต่อวัน',
@@ -1645,18 +1648,29 @@ export const th = {
       streak: 'ต่อเนื่อง',
       streakValue_one: '{{count}} วัน',
       streakValue_other: '{{count}} วัน',
+      workouts: 'ออกกำลังกาย',
       weightChange: 'น้ำหนัก',
       noWeight: '—',
       shareText: '{{period}}: {{kcal}} แคลต่อวัน บันทึก {{done}} จาก {{total}} วัน RiceCal',
     },
-
+    training: {
+      title: 'การฝึก',
+      unit_one: 'ครั้ง',
+      unit_other: 'ครั้ง',
+      vsWeek: '{{delta}} เทียบกับสัปดาห์ก่อน',
+      vsMonth: '{{delta}} เทียบกับเดือนก่อน',
+      time: 'เวลา',
+      volume: 'วอลุ่ม',
+      bests: 'สถิติใหม่',
+      best: '{{weight}} × {{reps}}',
+      days: 'ฝึก {{done}} จาก {{total}} วัน',
+    },
     food: {
       title: 'จานที่ใหญ่ที่สุด',
       macros: 'สารอาหารหลักต่อวัน',
       grams: '{{value}} ก.',
       share: '{{value}}% ของพลังงาน',
     },
-
     calories: {
       average: 'เฉลี่ยต่อวัน',
       kcal: 'แคล',
@@ -1666,14 +1680,13 @@ export const th = {
       noGoal: 'ตอนนั้นยังไม่มีโควตาต่อวัน',
       everyDay: 'ทุกวัน',
       everyWeek: 'ทุกสัปดาห์',
-      chart: 'แคลอรีต่อวัน แยกตามคาร์บ โปรตีน และไขมัน',
+      chart: 'แคลอรี่ต่อวันเทียบกับเป้าหมาย',
       lightest: '{{day}} น้อยที่สุด',
       heaviest: '{{day}} มากที่สุด',
       pastWeeks: 'ห้าสัปดาห์ล่าสุด',
       pastMonths: 'ห้าเดือนล่าสุด',
       noData: '—',
     },
-
     body: {
       weight: 'น้ำหนัก',
       weighIns_one: 'ชั่งหนึ่งครั้ง',

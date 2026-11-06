@@ -6,9 +6,9 @@
  * disagree about a range. The workouts card reads its own, which are bucketed
  * the same way in Postgres.
  *
- * Two charts are exported for the other callers reading the same metrics: a
- * review draws calories stacked by energy and weight as a line that holds its
- * gaps, and an exercise's page draws its best sets as a line. A second copy of
+ * The line chart is exported for the other callers reading the same metrics:
+ * a review draws calories and weight with it, and an exercise's page its best
+ * sets. A second copy of
  * either would disagree with Trends the first time one was corrected.
  */
 export {
@@ -22,9 +22,9 @@ export {
   WaterRow,
   WeightRow,
 } from './History'
+export { HistoryScreen } from './HistoryScreen'
 export { IntakeCard, type IntakeCardProps } from './IntakeCard'
-export { type StackedBar, StackedBars, type StackedBarsProps } from './StackedBars'
-export { problemOf } from './TrendCard'
+export { problemOf, TrendChip } from './TrendCard'
 export { TrendLine, type TrendLineProps, type TrendPoint, type TrendTone } from './TrendLine'
 export { WaterCard, type WaterCardProps } from './WaterCard'
 export { WeighInSheet, type WeighInSheetProps } from './WeighInSheet'

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useThemeColors } from '@/theme/useTheme'
+import { type ThemeColors, useThemeColors } from '@/theme/useTheme'
 import { Badge, type BadgeTone, Card, Icon, type IconProps, Skeleton, Tappable, Text } from '@/ui'
 
 export type TrendCardProps = {
@@ -165,10 +165,19 @@ export function TrendChip({
   direction?: 'up' | 'down'
   label: string
 }) {
+  const colors = useThemeColors()
   return (
     <Badge tone={tone} size="sm" className="flex-row items-center gap-1 px-2.5 py-1.5">
+      {/* A plain arrow in the pill's own ink. The illustrated trend arrows are
+          red going down and green going up, which on a green "212 under" pill
+          said bad and good at once. */}
       {direction ? (
-        <Icon set="body" name={direction === 'up' ? 'trend-up' : 'trend-down'} size={14} />
+        <Icon
+          set="ui"
+          name={direction === 'up' ? 'arrow-up' : 'arrow-down'}
+          size={13}
+          tintColor={colors[ARROW_INK[tone]]}
+        />
       ) : null}
       <Text variant="caption" className={CHIP_INK[tone]} numberOfLines={1}>
         {label}
@@ -176,6 +185,14 @@ export function TrendChip({
     </Badge>
   )
 }
+
+const ARROW_INK = {
+  pandan: 'pandanInk',
+  kaya: 'kayaInk',
+  hibiscus: 'hibiscusInk',
+  water: 'waterInk',
+  neutral: 'muted',
+} as const satisfies Record<BadgeTone, keyof ThemeColors>
 
 const CHIP_INK: Record<BadgeTone, string> = {
   pandan: 'text-pandan-ink',

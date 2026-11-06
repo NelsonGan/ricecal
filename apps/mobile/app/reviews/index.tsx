@@ -2,7 +2,13 @@ import { router } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { type ReviewKind, useEntitlement, useReviewPeriods, useSettings } from '@/data'
+import {
+  type ReviewKind,
+  useEntitlement,
+  useReviewPeriods,
+  useReviewWorkoutPeriods,
+  useSettings,
+} from '@/data'
 import { useRequirePro } from '@/features/paywall'
 import { ReviewRow, reviewId } from '@/features/reviews'
 import { useBack } from '@/lib/navigation'
@@ -35,12 +41,30 @@ export default function ReviewsScreen() {
 
   const [kind, setKind] = useState<ReviewKind>('week')
   const periods = useReviewPeriods(kind)
+  const training = useReviewWorkoutPeriods(kind)
   const { data: settings } = useSettings()
   const { entitled, loading: checkingPlan, unknown: planUnknown } = useEntitlement()
   const requirePro = useRequirePro()
   const unit = unitFor(settings?.units)
 
   const listed = periods.data ?? []
+  /**
+   * Workouts per period, or null on every row for an account that has not
+   * trained in the window: a food-only list with a nought on every row is a
+   * column of noise. Waits for nothing; the rows draw without it and gain the
+   * figure when it lands.
+   */
+  const workoutsOn = new Map(training.data?.map((row) => [row.start, row.workouts]) ?? [])
+  const trains = training.data?.some((row) => row.workouts > 0) ?? false
+  const workoutsFor = (start: string) => (trains ? (workoutsOn.get(start) ?? 0) : null)
+  const open = (index: number) => {
+    // `requirePro` rather than the `entitled` above, because it is the one that
+    // knows the difference between "not subscribed" and "we could not find
+    // out", and offline, a locked row must say the second rather than the first.
+    if (!isFree(index) && !requirePro('review')) return
+    const period = listed[index]
+    if (period) router.push(`/reviews/${reviewId(period.kind, period.start)}`)
+  }
 
   /**
    * The one review a free account may open: the newest finished week.
@@ -88,26 +112,34 @@ export default function ReviewsScreen() {
           />
         </Card>
       ) : (
-        <Card contentClassName="gap-0 p-card">
-          {listed.map((period, index) => (
-            <ReviewRow
-              key={period.start}
-              period={period}
-              unit={unit}
-              latest={index === 0}
-              locked={!isFree(index)}
-              divider={index < listed.length - 1}
-              onPress={() => {
-                // `requirePro` rather than the `entitled` above, because it is
-                // the one that knows the difference between "not subscribed"
-                // and "we could not find out" — and offline, a locked row must
-                // say the second rather than the first.
-                if (!isFree(index) && !requirePro('review')) return
-                router.push(`/reviews/${reviewId(period.kind, period.start)}`)
-              }}
-            />
-          ))}
-        </Card>
+        <>
+          {/* The newest period as its own card, the figures large: it is the one
+              somebody came here to open. */}
+          <ReviewRow
+            featured
+            period={listed[0]}
+            unit={unit}
+            latest
+            locked={!isFree(0)}
+            workouts={workoutsFor(listed[0].start)}
+            onPress={() => open(0)}
+          />
+          {listed.length > 1 ? (
+            <Card contentClassName="gap-0 p-card">
+              {listed.slice(1).map((period, offset) => (
+                <ReviewRow
+                  key={period.start}
+                  period={period}
+                  unit={unit}
+                  locked={!isFree(offset + 1)}
+                  workouts={workoutsFor(period.start)}
+                  divider={offset < listed.length - 2}
+                  onPress={() => open(offset + 1)}
+                />
+              ))}
+            </Card>
+          ) : null}
+        </>
       )}
     </Screen>
   )

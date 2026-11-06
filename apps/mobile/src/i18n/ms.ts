@@ -1044,6 +1044,9 @@ export const ms = {
     },
     history: {
       title: 'Sejarah',
+      caloriesTitle: 'Sejarah kalori',
+      waterTitle: 'Sejarah air',
+      weightTitle: 'Sejarah berat',
       dayTotal: '{{value}} kcal',
       waterAverage: 'purata {{amount}}',
       goalMet: 'Sasaran dicapai',
@@ -1640,18 +1643,15 @@ export const ms = {
 
   reviews: {
     title: 'Ulasan',
-
     entry: {
       title: 'Ulasan',
       subtitle: 'Imbas kembali seminggu atau sebulan',
     },
-
     kind: {
       week: 'Mingguan',
       month: 'Bulanan',
       label: 'Panjang ulasan',
     },
-
     list: {
       weekMeta: 'Minggu {{index}}',
       weekSummary: '{{kcal}} kcal sehari, {{done}} daripada {{total}} direkod',
@@ -1659,9 +1659,15 @@ export const ms = {
       monthSummary: '{{kcal}} kcal sehari',
       monthSummaryWeight: '{{kcal}} kcal sehari, {{weight}}',
       summaryEmpty: 'Tiada rekod',
+      kcal: 'kcal',
+      workouts_one: 'senaman',
+      workouts_other: 'senaman',
+      workoutCount_one: '{{count}} senaman',
+      workoutCount_other: '{{count}} senaman',
+      latestWeek: 'MINGGU TERKINI',
+      latestMonth: 'BULAN TERKINI',
       a11y: '{{title}}, {{meta}}, {{summary}}',
       a11yLocked: '{{title}}, {{meta}}, {{summary}}, Pro',
-
       emptyWeekTitle: 'Belum ada minggu untuk diimbas kembali',
       emptyWeekBody:
         'Satu minggu muncul di sini selepas ia tamat dan anda merekod sekurang-kurangnya empat harinya.',
@@ -1669,19 +1675,16 @@ export const ms = {
       emptyMonthBody:
         'Satu bulan muncul di sini selepas ia tamat dan anda merekod sekurang-kurangnya dua belas harinya.',
     },
-
     share: {
       card: 'Kongsi {{card}}',
       preview: 'Kad itu seperti ia akan dihantar',
     },
-
     story: {
       close: 'Tutup',
       share: 'Kongsi',
       missingTitle: 'Ulasan itu tiada di sini',
       missingBody: 'Ia mungkin minggu yang terlalu sedikit isinya untuk diimbas kembali.',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: 'kcal sehari',
@@ -1693,19 +1696,30 @@ export const ms = {
       streak: 'RENTETAN',
       streakValue_one: '{{count}} hari',
       streakValue_other: '{{count}} hari',
+      workouts: 'SENAMAN',
       weightChange: 'BERAT',
       noWeight: '—',
       shareText:
         '{{period}}: {{kcal}} kcal sehari, {{done}} daripada {{total}} hari direkod. RiceCal',
     },
-
+    training: {
+      title: 'LATIHAN',
+      unit_one: 'senaman',
+      unit_other: 'senaman',
+      vsWeek: '{{delta}} berbanding minggu lalu',
+      vsMonth: '{{delta}} berbanding bulan lalu',
+      time: 'MASA',
+      volume: 'VOLUM',
+      bests: 'REKOD BAHARU',
+      best: '{{weight}} × {{reps}}',
+      days: 'Berlatih {{done}} daripada {{total}} hari',
+    },
     food: {
       title: 'PINGGAN TERBESAR',
       macros: 'MAKRO SEHARI',
       grams: '{{value}} g',
       share: '{{value}}% daripada tenaga',
     },
-
     calories: {
       average: 'PURATA SEHARI',
       kcal: 'kcal',
@@ -1715,14 +1729,13 @@ export const ms = {
       noGoal: 'Tiada bajet harian berkuat kuasa ketika itu.',
       everyDay: 'SETIAP HARI',
       everyWeek: 'SETIAP MINGGU',
-      chart: 'Kalori sehari, dipecahkan mengikut karbo, protein dan lemak',
+      chart: 'Kalori sehari berbanding sasaran anda',
       lightest: '{{day}}, PALING RINGAN',
       heaviest: '{{day}}, PALING BERAT',
       pastWeeks: 'LIMA MINGGU LEPAS',
       pastMonths: 'LIMA BULAN LEPAS',
       noData: '—',
     },
-
     body: {
       weight: 'BERAT',
       weighIns_one: 'Satu timbangan',

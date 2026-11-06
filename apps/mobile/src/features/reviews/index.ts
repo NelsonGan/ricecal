@@ -30,3 +30,4 @@ export {
   type ShareableCardsProps,
   type ShareableProps,
 } from './ShareableCards'
+export { TrainingStep, type TrainingStepProps } from './TrainingStep'

@@ -7,6 +7,7 @@ import { TrendLine } from '@/features/progress'
 import { BarChart } from '@/features/shared'
 import { showChange, showWeight, type WeightUnit } from '@/lib/units'
 import { volume } from '@/lib/water'
+import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Card, Divider, Icon, Text } from '@/ui'
 import { Shareable } from './ShareableCards'
 
@@ -31,6 +32,7 @@ export type BodyStepProps = {
  */
 export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
   const { t } = useTranslation(['reviews', 'common', 'progress'])
+  const colors = useThemeColors()
 
   const hasWeight = summary.weighIns > 0 && summary.weightLast !== null
   const hasSteps = summary.activeDays > 0
@@ -66,9 +68,10 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
               {summary.weightChange === null ? null : (
                 <Badge tone={summary.weightChange <= 0 ? 'pandan' : 'kaya'} className="px-3 py-1.5">
                   <Icon
-                    set="body"
-                    name={summary.weightChange <= 0 ? 'trend-down' : 'trend-up'}
-                    size={16}
+                    set="ui"
+                    name={summary.weightChange <= 0 ? 'arrow-down' : 'arrow-up'}
+                    size={14}
+                    tintColor={summary.weightChange <= 0 ? colors.pandanInk : colors.kayaInk}
                   />
                   <Text
                     variant="caption"

@@ -1017,6 +1017,9 @@ export const ja = {
     },
     history: {
       title: '履歴',
+      caloriesTitle: 'カロリーの履歴',
+      waterTitle: '水分の履歴',
+      weightTitle: '体重の履歴',
       dayTotal: '{{value}} kcal',
       waterAverage: '平均 {{amount}}',
       goalMet: '目標達成',
@@ -1608,18 +1611,15 @@ export const ja = {
 
   reviews: {
     title: '振り返り',
-
     entry: {
       title: '振り返り',
       subtitle: '1 週間や 1 か月を振り返る',
     },
-
     kind: {
       week: '週次',
       month: '月次',
       label: '振り返りの長さ',
     },
-
     list: {
       weekMeta: '第 {{index}} 週',
       weekSummary: '1 日 {{kcal}} kcal、{{total}} 日中 {{done}} 日記録',
@@ -1627,27 +1627,30 @@ export const ja = {
       monthSummary: '1 日 {{kcal}} kcal',
       monthSummaryWeight: '1 日 {{kcal}} kcal、{{weight}}',
       summaryEmpty: '記録なし',
+      kcal: 'kcal',
+      workouts_one: '回',
+      workouts_other: '回',
+      workoutCount_one: 'ワークアウト {{count}} 回',
+      workoutCount_other: 'ワークアウト {{count}} 回',
+      latestWeek: '直近の週',
+      latestMonth: '直近の月',
       a11y: '{{title}}、{{meta}}、{{summary}}',
       a11yLocked: '{{title}}、{{meta}}、{{summary}}、Pro',
-
       emptyWeekTitle: '振り返れる週はまだありません',
       emptyWeekBody: '週が終わり、そのうち 4 日以上を記録していれば、ここに並びます。',
       emptyMonthTitle: '振り返れる月はまだありません',
       emptyMonthBody: '月が終わり、そのうち 12 日以上を記録していれば、ここに並びます。',
     },
-
     share: {
       card: '{{card}}をシェア',
       preview: '送られるままのカード',
     },
-
     story: {
       close: '閉じる',
       share: 'シェア',
       missingTitle: 'その振り返りはここにありません',
       missingBody: '振り返るには中身が少なすぎた週かもしれません。',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: '1 日あたり kcal',
@@ -1659,18 +1662,29 @@ export const ja = {
       streak: '連続',
       streakValue_one: '{{count}} 日',
       streakValue_other: '{{count}} 日',
+      workouts: 'ワークアウト',
       weightChange: '体重',
       noWeight: '—',
       shareText: '{{period}}：1 日 {{kcal}} kcal、{{total}} 日中 {{done}} 日記録。RiceCal',
     },
-
+    training: {
+      title: 'トレーニング',
+      unit_one: '回',
+      unit_other: '回',
+      vsWeek: '先週比 {{delta}}',
+      vsMonth: '先月比 {{delta}}',
+      time: '時間',
+      volume: 'ボリューム',
+      bests: '自己ベスト更新',
+      best: '{{weight}} × {{reps}}',
+      days: '{{total}} 日中 {{done}} 日トレーニング',
+    },
     food: {
       title: 'いちばん大きかった一皿',
       macros: '1 日のマクロ',
       grams: '{{value}} g',
       share: 'エネルギーの {{value}}%',
     },
-
     calories: {
       average: '1 日平均',
       kcal: 'kcal',
@@ -1680,14 +1694,13 @@ export const ja = {
       noGoal: '当時は 1 日の枠がありませんでした。',
       everyDay: '毎日',
       everyWeek: '毎週',
-      chart: '1 日のカロリー、炭水化物、たんぱく質、脂質の内訳',
+      chart: '1日あたりのカロリーと目標',
       lightest: '{{day}}、最少',
       heaviest: '{{day}}、最多',
       pastWeeks: '直近 5 週',
       pastMonths: '直近 5 か月',
       noData: '—',
     },
-
     body: {
       weight: '体重',
       weighIns_one: '計測 1 回',
