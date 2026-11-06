@@ -214,8 +214,19 @@ export type ChatEvent =
   | { kind: 'joined'; food?: null }
   | {
       kind: 'liked'
-      /** Null once the food is gone from under it. */
-      food: { entry_id: string; name: string; owner: GroupPerson } | null
+      /**
+       * Null once the food is gone from under it. The picture fields are
+       * missing from a server older than the line's photo, so read them as
+       * optional.
+       */
+      food: {
+        entry_id: string
+        name: string
+        owner: GroupPerson
+        photo_path?: string | null
+        icon_set?: string | null
+        icon_name?: string | null
+      } | null
     }
 
 /** The message a reply answers, as the reply quotes it. */

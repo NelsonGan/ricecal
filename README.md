@@ -2783,8 +2783,9 @@ the server records that reference and accepts no client-supplied author or food.
 Feed takes the second bottom tab. **My foods** moves into the Nutrition
 settings card on Me, retaining both the personal and community recipe shelves.
 Existing recipe routes and database contracts survive; the old recipes tab
-route redirects to Settings. Feed and recipes are separate concepts: a post says what somebody ate,
-while a recipe describes food somebody can make and log.
+route redirects to Settings. Feed and recipes are separate concepts: a post
+says what somebody ate, while a recipe describes food somebody can make and
+log.
 
 The first implementation includes:
 
@@ -3412,13 +3413,18 @@ meal share a tile and swipe sideways inside it.
   (not the one who made the group), and a like of a fellow member's food a
   `liked` row in each group the two share (`group_messages.event`, with the
   entry in `entry_id`; taking the like back or turning it into a dislike
-  deletes it, and a dislike is never told). The app draws them as a centred
-  pill and a small line, as a messenger draws its notices. They are written by
-  triggers only, never pushed, never unread, never the chat bar's preview, and
-  take no reply, reaction, report or delete. `group_messages` returns them only
-  to an app that passes `p_events`, so a released app never sees one, and they
-  are broadcast as `event` rather than `message`, which a released app does
-  not listen for.
+  deletes it, and a dislike is never told). The app draws each as one centred
+  line with no pill, as a messenger draws its notices: the actor's avatar with
+  a small clay thumbs-up or wave in its corner, then the sentence, cut short
+  with an ellipsis. A like puts the food's picture just before its name,
+  wherever the language places the name, so its food carries the board's
+  `photo_path`, `icon_set` and `icon_name` beside its name and owner. The
+  drawing sits under the photo, since a member's photo older than the board's
+  sixty days is refused. They are written by triggers only, never pushed,
+  never unread, never the chat bar's preview, and take no reply, reaction,
+  report or delete. `group_messages` returns them only to an app that passes
+  `p_events`, so a released app never sees one, and they are broadcast as
+  `event` rather than `message`, which a released app does not listen for.
 - **Release 1.0 still reads every message.** `body` stays required and a food
   message's body is its name and calories ("Nasi lemak (640 kcal)"), which is
   also what its push says, so an app that knows nothing of food cards draws a
@@ -4460,9 +4466,9 @@ routines they start from and the records they set. Today is what went in;
 Workouts is what was done. It was the second tab until Groups needed the room;
 now it is a page, opened from a small tile beside the water card on Today and
 from the first row of the Activity settings on Me. Its URL stays `/workouts`,
-so the Live Activity, the watch and old notification links still land on it. The minimised
-bar of a running workout floats over the tabs only; the page has its own Resume
-button.
+so the Live Activity, the watch and old notification links still land on it.
+The minimised bar of a running workout floats over the tabs only; the page has
+its own Resume button.
 
 ```
 app/workouts.tsx              streak, start button, routines, history, and a

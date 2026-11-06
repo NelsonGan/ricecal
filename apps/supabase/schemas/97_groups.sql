@@ -531,12 +531,16 @@ begin
           select 1 from public.recipe_reports x where x.recipe_id = m.recipe_id and x.reporter_id = v_user)
         then private.group_recipe(m.recipe_id) end,
       -- Only asked for by an app that draws them (`p_events`), so only ever
-      -- present for one. A like names the food and whose it is, read live.
+      -- present for one. A like names the food and whose it is, read live, with
+      -- the photo or drawing the board shows for it so the line can show it too.
       'event', case when m.event is not null then jsonb_build_object('kind', m.event,
         'food', case when m.event = 'liked' then (
           select jsonb_build_object('entry_id', f.id, 'name', left(coalesce(f.display_label, f.item_name), 160),
-            'owner', private.group_person(f.user_id))
-          from public.food_logs f where f.id = m.entry_id) end) end,
+            'owner', private.group_person(f.user_id),
+            'photo_path', d.photo_path, 'icon_set', d.icon_set, 'icon_name', d.icon_name)
+          from public.food_logs f
+          join public.food_log_details d on d.id = f.id
+          where f.id = m.entry_id) end) end,
       'reactions', coalesce((
         select jsonb_agg(jsonb_build_object('emoji', x.emoji, 'count', x.total) order by x.total desc, x.first_at)
         from (

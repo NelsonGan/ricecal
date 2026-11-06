@@ -2,6 +2,7 @@ import { format, isToday, isYesterday, parseISO } from 'date-fns'
 import * as Haptics from 'expo-haptics'
 import { useFocusEffect, useIsFocused, useNavigation, useRouter } from 'expo-router'
 import {
+  Fragment,
   memo,
   type ReactNode,
   useCallback,
@@ -47,6 +48,7 @@ import {
   type ChatRecipe,
   type ChatWorkout,
   type GroupMessage,
+  type GroupPerson,
   MESSAGE_REACTIONS,
   type MessageReaction,
   ownMessage,
@@ -655,17 +657,35 @@ function DayChip({ day }: { day: string }) {
   )
 }
 
-/** Where the actor's name falls in a notice, so it can be set bold without a second string per language. */
+/** Where the actor's name and the food fall in a notice, so each can be drawn apart without a second string per language. */
 const NAME_MARK = '\u2063'
+const FOOD_MARK = '\u2064'
+
+/** The liked food's picture, in the sentence just before its name. */
+const EVENT_FOOD = 16
+/**
+ * The actor's face: the chat's own avatar, shrunk to the food's size so the two
+ * pictures in a line weigh the same and neither outgrows the caption.
+ */
+const EVENT_FACE = EVENT_FOOD
+/** The thumbs-up or wave tucked into the face's corner. */
+const EVENT_BADGE = 10
+/**
+ * Lowers the picture onto the line's middle. A view inside text sits on the
+ * baseline, which left it riding above the letters beside it.
+ */
+const EVENT_FOOD_DROP = 3
 
 /**
  * Something that happened rather than something said: a member joining, or
  * liking a fellow member's food. A quiet line in the middle of the thread, as
  * a messenger draws its own notices, with nothing to reply to or react to.
  *
- * No chip behind it: a filled shape read as one more message. The emoji is part
- * of the text rather than an icon beside it, so a notice that wraps stays
- * centred with its emoji on the first line.
+ * No chip behind it: a filled shape read as one more message. The face says who
+ * at a glance and its badge says what; a like shows the food's own picture
+ * before its name, wherever the language puts the name. One line at most, cut
+ * short with an ellipsis, so a long food name never turns a notice into a
+ * paragraph.
  */
 function EventLine({
   message,
@@ -691,35 +711,123 @@ function EventLine({
       : !food
         ? t('eventLikedGone', { name })
         : food.owner.id === viewer
-          ? t('eventLikedYours', { name, food: food.name })
+          ? t('eventLikedYours', { name, food: FOOD_MARK })
           : message.mine
-            ? t('eventLikedByYou', { owner: food.owner.name, food: food.name })
-            : t('eventLiked', { name, owner: food.owner.name, food: food.name })
-  const label = text.split(NAME_MARK).join(actor)
-  // Another member's name is set bold; your own "You" stays plain, as it does in
-  // the strings that write it out. Each notice names its actor at most once.
-  const [before, ...after] = message.mine ? [label] : text.split(NAME_MARK)
-  // A run of notices packs close as one block, with more room around the block
-  // than a new run of messages gets, so it never sits tight under a time.
+            ? t('eventLikedByYou', { owner: food.owner.name, food: FOOD_MARK })
+            : t('eventLiked', { name, owner: food.owner.name, food: FOOD_MARK })
+  const label = text
+    .split(NAME_MARK)
+    .join(actor)
+    .split(FOOD_MARK)
+    .join(food?.name ?? '')
+  // The actor and the food stand out from the muted rest. Your own notices write
+  // "You" into the string itself, so only another member's name is marked.
+  const parts = text.split(/([\u2063\u2064])/).filter(Boolean)
+  // A run of notices reads as one block, with more room around the block than a
+  // new run of messages gets, so it never sits tight under a time. Inside it,
+  // enough room that one line's badge does not crowd the next line's face.
   return (
-    <View className={cn('items-center px-8', afterEvent ? 'mt-1' : 'mt-4', !beforeEvent && 'mb-1')}>
+    <View
+      className={cn(
+        // Barely inset inside the thread's gutter: a face and a photo leave the
+        // words less room, and a wide inset cut most food names short.
+        'flex-row items-center justify-center gap-2 px-2',
+        afterEvent ? 'mt-2.5' : 'mt-4',
+        !beforeEvent && 'mb-1',
+      )}
+      accessible
+      accessibilityLabel={label}
+    >
+      <EventFace person={message.author} kind={event.kind} />
       <Text
         variant="caption"
-        numberOfLines={2}
-        className="text-center font-body-bold"
-        accessibilityLabel={label}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        className="shrink font-body-bold"
       >
-        {event.kind === 'joined' ? '👋 ' : '👍 '}
-        {before}
-        {after.length > 0 ? (
-          <>
-            <Text variant="caption" className="text-body">
+        {parts.map((part) =>
+          part === NAME_MARK ? (
+            <Text key="name" variant="caption" className="text-body">
               {actor}
             </Text>
-            {after.join(actor)}
-          </>
-        ) : null}
+          ) : part === FOOD_MARK && food ? (
+            <Fragment key="food">
+              <EventFood food={food} />{' '}
+              <Text variant="caption" className="text-body">
+                {food.name}
+              </Text>
+            </Fragment>
+          ) : (
+            part
+          ),
+        )}
       </Text>
+    </View>
+  )
+}
+
+/** The actor's avatar with a small badge for what they did. */
+function EventFace({ person, kind }: { person: GroupPerson; kind: ChatEvent['kind'] }) {
+  return (
+    <View style={{ width: EVENT_FACE, height: EVENT_FACE }}>
+      {/* The chat's smallest avatar, scaled, so a photo, an initial and the Pro
+          frame all come out as they do beside a message. */}
+      <View style={EVENT_FACE_SCALE}>
+        <PersonAvatar person={person} size="xs" />
+      </View>
+      <View className="absolute" style={{ right: -EVENT_BADGE / 3, bottom: -EVENT_BADGE / 3 }}>
+        <Icon
+          set="system"
+          name={kind === 'joined' ? 'wave-cute' : 'thumbs-up-cute'}
+          size={EVENT_BADGE}
+        />
+      </View>
+    </View>
+  )
+}
+
+/** `PersonAvatar` at `xs` is 30pt; this draws it at `EVENT_FACE` around the same centre. */
+const EVENT_FACE_SCALE = {
+  position: 'absolute' as const,
+  left: (EVENT_FACE - 30) / 2,
+  top: (EVENT_FACE - 30) / 2,
+  transform: [{ scale: EVENT_FACE / 30 }],
+}
+
+/**
+ * The liked food's photo, or its drawing. The drawing sits under the photo, so
+ * it shows while the photo is signed and stays when signing is refused, as it
+ * is for a member's meal older than the board's sixty days.
+ */
+function EventFood({ food }: { food: NonNullable<Extract<ChatEvent, { kind: 'liked' }>['food']> }) {
+  return (
+    <View
+      className="items-center justify-center overflow-hidden rounded-full bg-surface-alt"
+      style={{
+        width: EVENT_FOOD,
+        height: EVENT_FOOD,
+        transform: [{ translateY: EVENT_FOOD_DROP }],
+      }}
+    >
+      <Icon
+        {...((food.icon_set && food.icon_name
+          ? { set: food.icon_set, name: food.icon_name }
+          : { set: 'food', name: 'cooking-pot' }) as IconProps)}
+        size={EVENT_FOOD - 2}
+      />
+      {food.photo_path ? (
+        <View className="absolute inset-0">
+          <EntryPicture
+            entry={{
+              name: food.name,
+              photo_path: food.photo_path,
+              icon_set: null,
+              icon_name: null,
+            }}
+            ownerId={food.owner.id}
+          />
+        </View>
+      ) : null}
     </View>
   )
 }
