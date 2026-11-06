@@ -4282,9 +4282,11 @@ is the workout count in place of the streak whenever there was one.
 **The list leads with the newest period.** It is drawn as its own card with
 calories, workouts and the weight change large; older rows carry the same
 figures in a line, each behind the drawing its Trends card wears. Workouts are
-left off every row for an account that has not trained in the window. The
-"every day" chart in a review is the Trends line: a dot a column, the budget
-dashed, a day over it in kaya.
+left off every row for an account that has not trained in the window. Every chart in
+a review is the Trends line: calories every day, the last five periods and steps
+a day each draw a dot a column with their goal dashed, the current period the
+solid dot at the end. The fat comparison bars are gone; drawn from a floor they
+made a hundred calories look like half the week.
 
 **A tap on a card shares it.** Every card draws itself into a picture through
 Skia's `makeImageFromView` and offers it in a sheet with a Share button. The
