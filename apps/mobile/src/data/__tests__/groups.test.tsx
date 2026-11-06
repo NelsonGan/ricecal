@@ -724,6 +724,83 @@ it("leaves a broadcast to the viewer's own send while it is on its way", async (
   unsubscribe()
 })
 
+describe("the viewer's own like line", () => {
+  const liked = (id: string, entryId = 'e1'): GroupMessage => ({
+    ...message(id, true, 5),
+    body: 'Chicken rice',
+    event: {
+      kind: 'liked',
+      food: {
+        entry_id: entryId,
+        name: 'Chicken rice',
+        owner: { id: 'friend', name: 'Aisha', handle: 'aisha', avatar_path: null },
+      },
+    },
+  })
+
+  it('is read into an open chat as soon as the like lands, with no broadcast', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, thread(message('m1')))
+    const { result } = await renderHook(
+      () => ({ action: useGroupAction(), live: useGroupChatLive('g1') }),
+      { wrapper },
+    )
+    await act(async () => mockListeners.get(TOPIC)?.onLive(true))
+    mockRpc.mockReset()
+    mockRpc
+      .mockReturnValueOnce(response(null))
+      .mockReturnValue(response([message('m1'), liked('l1')]))
+    await act(async () => {
+      await result.current.action.mutateAsync({ action: 'react', entryId: 'e1', value: 1 })
+    })
+    // The echo is never heard: the like's own answer is what reads the line.
+    await waitFor(() => expect(ids(client)).toEqual(['m1', 'l1']))
+    expect(mockRpc).toHaveBeenLastCalledWith('group_messages', {
+      p_group_id: 'g1',
+      p_limit: CATCH_UP,
+      p_events: true,
+    })
+  })
+
+  it('leaves the echo of a like on its way, which reads the line when it lands', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, thread(message('m1')))
+    const { result } = await renderHook(
+      () => ({ action: useGroupAction(), live: useGroupChatLive('g1') }),
+      { wrapper },
+    )
+    const write = pending()
+    mockRpc.mockReturnValueOnce(write.request)
+    let done!: Promise<unknown>
+    await act(async () => {
+      done = result.current.action.mutateAsync({ action: 'react', entryId: 'e1', value: 1 })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    // The echo, ahead of the answer.
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('event', { ids: ['l1'] }))
+    expect(mockRpc).toHaveBeenCalledTimes(1)
+
+    mockRpc.mockReturnValue(response([message('m1'), liked('l1')]))
+    await act(async () => {
+      write.settle({ data: null, error: null })
+      await done
+    })
+    await waitFor(() => expect(ids(client)).toEqual(['m1', 'l1']))
+    expect(mockRpc).toHaveBeenCalledTimes(2)
+  })
+
+  it('takes the line out as soon as the like is taken back', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, thread(message('m1'), liked('l1'), liked('l2', 'e2')))
+    mockRpc.mockReturnValue(response(null))
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    await act(async () => {
+      await result.current.mutateAsync({ action: 'react', entryId: 'e1', value: 0 })
+    })
+    await waitFor(() => expect(ids(client)).toEqual(['m1', 'l2']))
+  })
+})
+
 it('lets a fetch already on its way land before catching up, rather than restarting it', async () => {
   const { client, wrapper } = setup()
   const first = pending()
