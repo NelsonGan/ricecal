@@ -400,6 +400,32 @@ export type TrendSummary = {
   weighIns: number
 }
 
+/** One column of the Trends workout chart: the same columns as `TrendBucket`. */
+export type WorkoutTrendBucket = {
+  start: string
+  end: string
+  /** Calendar days in the column, which is short for the oldest 30d block. */
+  days: number
+  workouts: number
+  /** Days with at least one workout. Two in a day is still one day. */
+  activeDays: number
+  durationS: number
+  volumeKg: number
+  sets: number
+}
+
+/** A range's workouts as one row, beside the range of the same length before it. */
+export type WorkoutTrendSummary = {
+  from: string
+  to: string
+  workouts: number
+  activeDays: number
+  durationS: number
+  volumeKg: number
+  sets: number
+  previous: { workouts: number; activeDays: number; durationS: number; volumeKg: number }
+}
+
 /**
  * A review is of a finished week or a finished month. The kind travels with
  * every request and answer, because a period is identified by its first day and

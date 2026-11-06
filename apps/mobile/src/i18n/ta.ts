@@ -670,6 +670,11 @@ export const ta = {
       kcalLeft: 'மீதி KCAL',
       kcalOver: 'அதிக KCAL',
       kcalOfGoal: '/{{goal}} KCAL',
+      grams: '{{value}}g',
+      proteinLeft: 'மீதமுள்ள புரதம்',
+      proteinOver: 'கூடுதல் புரதம்',
+      proteinOfGoal: '/{{goal}}G புரதம்',
+      proteinA11y: '{{goal}} கிராமில் {{value}} கிராம் புரதம்',
       showGoals: 'அன்றைய வரவைக் காட்டு',
       showLeft: 'மீதியைக் காட்டு',
       dayHeading: 'உங்கள் நாள்',
@@ -935,19 +940,14 @@ export const ta = {
 
   progress: {
     title: 'போக்கு',
-
     ofDays: '{{total}} இல் {{done}}',
-
+    focus: 'கண்காணிப்பு',
     metric: {
       calories: 'கலோரிகள்',
       water: 'தண்ணீர்',
       weight: 'எடை',
-      caloriesUnit: 'சராசரி',
-      waterUnit: 'ml',
-      none: '—',
-      a11y: '{{metric}}, {{value}}',
+      protein: 'புரதம்',
     },
-
     range: {
       label: 'வரம்பு',
       '7d': '7நா',
@@ -957,90 +957,52 @@ export const ta = {
       span30d: 'கடந்த 30 நாட்கள்',
       span1y: 'கடந்த 12 மாதங்கள்',
       week: 'வா {{index}}',
-      weekLong: 'வாரம் {{index}}',
     },
-
     calories: {
-      goalNote: 'இலக்கு நாளுக்கு {{goal}} kcal',
-      goalNoteWeekly: 'வாராந்திர சராசரி, இலக்கு நாளுக்கு {{goal}}',
-      goalNoteMonthly: 'மாத சராசரி, இலக்கு நாளுக்கு {{goal}}',
-      noGoal: 'இன்னும் தினசரி வரவு அமைக்கப்படவில்லை',
+      unit: 'kcal ஒரு நாளுக்கு',
+      value: '{{value}} kcal',
       under: '{{value}} குறைவு',
       over: '{{value}} அதிகம்',
-      chart: 'நாளொன்றுக்கு கலோரிகள், கார்ப்ஸ், புரதம், கொழுப்பு எனப் பிரித்து',
-
+      chart: '{{span}}: தினசரி கலோரி, உங்கள் இலக்குடன் ஒப்பிட்டு',
+      share: '{{macro}} {{value}}%',
       grams: '{{value}} g',
-      shareOfIntake: 'உட்கொண்டதில் {{value}}%',
-
-      goalTitle: 'உங்கள் இலக்குடன் ஒப்பிட்டு',
-      daysUnder: '{{goal}} க்குக் கீழ் உள்ள நாட்கள்',
-      daysLogged: 'முழுமையாகப் பதிவான நாட்கள்',
-
-      notableTitle: 'குறிப்பிடத்தக்க மாதங்கள்',
-      monthAverage: 'சராசரி {{value}}',
-
-      emptyTitle: 'இந்த வரம்பில் உணவு எதுவும் இல்லை',
-      emptyBody: 'ஏதாவது பதிவு செய்யுங்கள், அந்த நாளிலிருந்தே பட்டைகள் நிரம்பும்.',
+      empty: 'இந்தக் காலத்தில் உணவு எதுவும் பதிவு செய்யப்படவில்லை.',
     },
-
+    protein: {
+      unit: 'g ஒரு நாளுக்கு',
+      above: '{{value}} g அதிகம்',
+      short: '{{value}} g குறைவு',
+      chart: '{{span}}: தினசரி புரதம், உங்கள் இலக்குடன் ஒப்பிட்டு',
+    },
+    workouts: {
+      title: 'உடற்பயிற்சி',
+      unit_one: 'வொர்க்அவுட்',
+      unit_other: 'வொர்க்அவுட்கள்',
+      vs7d: 'கடந்த வாரத்தை விட {{delta}}',
+      vs30d: 'முந்தைய 30 நாட்களை விட {{delta}}',
+      vs1y: 'முந்தைய ஆண்டை விட {{delta}}',
+      chart: '{{span}}: பயிற்சி நேரம்',
+      latest: 'சமீபத்தியவை',
+      startTitle: 'உங்கள் வொர்க்அவுட்களைக் கண்காணியுங்கள்',
+      startBody: 'ஒரு அமர்வைப் பதிவு செய்யுங்கள், உங்கள் பயிற்சி இங்கே தெரியும்.',
+    },
     water: {
-      dayNote: 'ஒவ்வொரு நெடுவரிசையும் ஒரு நாள், உங்கள் இலக்குடன் ஒப்பிட்டு',
-      weeklyNote: 'ஒவ்வொரு நெடுவரிசையும் ஒரு வாரம், இலக்குடன் ஒப்பிட்ட சராசரி',
-      monthlyNote: 'ஒவ்வொரு நெடுவரிசையும் ஒரு மாதம், இலக்குடன் ஒப்பிட்ட சராசரி',
-      goalPill: 'இலக்கு {{amount}}',
+      unit: '{{unit}} ஒரு நாளுக்கு',
+      goalDays: '{{total}} நாட்களில் {{done}} நாள் இலக்கு எட்டியது',
       chart: 'நாளொன்றுக்குத் தண்ணீர், இலக்கு {{amount}} உடன் ஒப்பிட்டு',
-
-      reached: 'இலக்கு எட்டப்பட்டது',
-      short: 'இலக்கை எட்டவில்லை',
-
-      goalDays: 'இலக்கு நாட்கள்',
-      bestDay: 'சிறந்த நாள்',
-      bestMonth: 'சிறந்த மாதம்',
-      yearAverage: 'ஆண்டு சராசரி',
-      total: 'மொத்தம்',
-
-      todayTitle: 'இன்று',
-
-      habitTitle: 'பழக்கம்',
-      daysAtLeast: '{{amount}} அல்லது அதற்கு மேல் உள்ள நாட்கள்',
-      daysLogged: 'பதிவான நாட்கள்',
-      monthsAveraging: '{{amount}}+ சராசரி உள்ள மாதங்கள்',
-      monthsLogged: 'பதிவான மாதங்கள்',
-
-      emptyTitle: 'இந்த வரம்பில் தண்ணீர் பதிவு இல்லை',
-      emptyBody: 'இன்று பக்கத்தில் ஒரு பானத்தைப் பதிவு செய்யுங்கள், இது நிரம்பும்.',
+      empty: 'இந்தக் காலத்தில் தண்ணீர் எதுவும் பதிவு செய்யப்படவில்லை.',
     },
-
     weight: {
-      peakOn: '{{date}} அன்று {{value}} {{unit}}',
-      latest: 'சமீபத்தியது {{value}} {{unit}}',
-      latestOn: 'சமீபத்தியது {{value}} {{unit}}, {{date}}',
-      peakIn: '{{month}} இல் {{value}} {{unit}}',
       change: '{{value}} {{unit}}',
       chart: '{{span}} இல் உங்கள் எடை',
-
       thisWeek: 'இந்த வாரம்',
-      thisMonth: 'இந்த மாதம்',
-      thisYear: 'இந்த ஆண்டு',
-      average7: '7 நாள் சராசரி',
-      average30: '30 நாள் சராசரி',
-      lightest: 'மிகக் குறைவு',
-      weighIns: 'எடை அளவீடுகள்',
-      monthsLogged: 'பதிவான மாதங்கள்',
-
       toGoal: 'உங்கள் {{target}} {{unit}} இலக்கிற்கு இன்னும் {{value}} {{unit}}',
-      noTarget: 'இலக்கு எடை அமைக்கப்படவில்லை',
       atGoal: 'உங்கள் இலக்கு எடையில் உள்ளீர்கள்',
       weeksAway: 'சுமார் {{count}} வாரங்கள்',
-
+      empty: 'இன்னும் எடை எதுவும் பதிவு செய்யப்படவில்லை.',
       add: 'சேர்',
-      weekByWeek: 'வாரம் வாரமாக',
-      byQuarter: 'காலாண்டு வாரியாக',
-      quarter: '{{from}} முதல் {{to}} வரை',
-
       reading: '{{value}} {{unit}}',
       firstReading: 'முதல்',
-
       sheetTitle: 'எடையைச் சேர்',
       sheetEditTitle: '{{date}} அன்றைய அளவீடு',
       thisMorning: 'இன்று காலை',
@@ -1055,14 +1017,9 @@ export const ta = {
       removeTitle: 'இந்த அளவீட்டை நீக்கவா?',
       removeBody:
         'வரைபடத்தில் இந்த நாள் போய்விடும். இதுவே சமீபத்தியதாக இருந்தால், உங்கள் வரவு அதற்கு முந்தையதற்குத் திரும்பும்.',
-
-      emptyTitle: 'இந்த வரம்பில் எடை அளவீடு இல்லை',
-      emptyBody: 'ஒரு அளவீடு ஒரு புள்ளியை வரையும். இரண்டு ஒரு கோட்டை வரையும்.',
     },
-
     history: {
       title: 'வரலாறு',
-      viewFull: 'முழுமையாகப் பார்',
       dayTotal: '{{value}} kcal',
       waterAverage: 'சராசரி {{amount}}',
       goalMet: 'இலக்கு எட்டப்பட்டது',
@@ -1283,6 +1240,9 @@ export const ta = {
       light: 'வெளிச்சம்',
       dark: 'இருள்',
       auto: 'தானாக',
+      focus: 'கவனம்',
+      focusCalories: 'கலோரி',
+      focusProtein: 'புரதம்',
     },
 
     subscription: {

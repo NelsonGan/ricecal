@@ -687,6 +687,11 @@ export const ms = {
       kcalLeft: 'BAKI KCAL',
       kcalOver: 'KCAL LEBIH',
       kcalOfGoal: '/{{goal}} KCAL',
+      grams: '{{value}}g',
+      proteinLeft: 'BAKI PROTEIN',
+      proteinOver: 'LEBIH PROTEIN',
+      proteinOfGoal: '/{{goal}}G PROTEIN',
+      proteinA11y: '{{value}} daripada {{goal}} gram protein',
       showGoals: 'Tunjuk peruntukan hari ini',
       showLeft: 'Tunjuk apa yang tinggal',
       dayHeading: 'Hari anda',
@@ -959,19 +964,14 @@ export const ms = {
 
   progress: {
     title: 'Trend',
-
     ofDays: '{{done}} daripada {{total}}',
-
+    focus: 'Jejak',
     metric: {
       calories: 'Kalori',
       water: 'Air',
       weight: 'Berat',
-      caloriesUnit: 'purata',
-      waterUnit: 'ml',
-      none: '—',
-      a11y: '{{metric}}, {{value}}',
+      protein: 'Protein',
     },
-
     range: {
       label: 'Julat',
       '7d': '7H',
@@ -981,90 +981,52 @@ export const ms = {
       span30d: '30 hari lalu',
       span1y: '12 bulan lalu',
       week: 'Mg {{index}}',
-      weekLong: 'Minggu {{index}}',
     },
-
     calories: {
-      goalNote: 'Sasaran {{goal}} kcal sehari',
-      goalNoteWeekly: 'Purata mingguan, sasaran {{goal}} sehari',
-      goalNoteMonthly: 'Purata bulanan, sasaran {{goal}} sehari',
-      noGoal: 'Belum ada bajet harian ditetapkan',
+      unit: 'kcal sehari',
+      value: '{{value}} kcal',
       under: '{{value}} kurang',
       over: '{{value}} lebih',
-      chart: 'Kalori sehari, dipecahkan mengikut karbo, protein dan lemak',
-
+      chart: 'Kalori sehari dalam {{span}}, berbanding sasaran anda',
+      share: '{{macro}} {{value}}%',
       grams: '{{value}} g',
-      shareOfIntake: '{{value}}% daripada pengambilan',
-
-      goalTitle: 'BERBANDING SASARAN ANDA',
-      daysUnder: 'Hari bawah {{goal}}',
-      daysLogged: 'Hari direkod sepenuhnya',
-
-      notableTitle: 'BULAN YANG MENONJOL',
-      monthAverage: 'purata {{value}}',
-
-      emptyTitle: 'Tiada hidangan dalam julat ini',
-      emptyBody: 'Rekod sesuatu dan bar itu akan terisi dari hari anda melakukannya.',
+      empty: 'Tiada makanan dicatat dalam julat ini.',
     },
-
+    protein: {
+      unit: 'g sehari',
+      above: '{{value}} g lebih',
+      short: '{{value}} g kurang',
+      chart: 'Protein sehari dalam {{span}}, berbanding sasaran anda',
+    },
+    workouts: {
+      title: 'Senaman',
+      unit_one: 'senaman',
+      unit_other: 'senaman',
+      vs7d: '{{delta}} berbanding minggu lalu',
+      vs30d: '{{delta}} berbanding 30 hari sebelumnya',
+      vs1y: '{{delta}} berbanding tahun sebelumnya',
+      chart: 'Masa bersenam dalam {{span}}',
+      latest: 'TERKINI',
+      startTitle: 'Jejaki senaman anda',
+      startBody: 'Catat satu sesi dan latihan anda muncul di sini.',
+    },
     water: {
-      dayNote: 'Setiap lajur ialah satu hari berbanding sasaran anda',
-      weeklyNote: 'Setiap lajur ialah satu minggu, dipuratakan berbanding sasaran anda',
-      monthlyNote: 'Setiap lajur ialah satu bulan, dipuratakan berbanding sasaran anda',
-      goalPill: 'sasaran {{amount}}',
+      unit: '{{unit}} sehari',
+      goalDays: '{{done}} daripada {{total}} hari capai sasaran',
       chart: 'Air sehari berbanding sasaran {{amount}}',
-
-      reached: 'Sasaran dicapai',
-      short: 'Kurang daripada sasaran',
-
-      goalDays: 'HARI SASARAN',
-      bestDay: 'HARI TERBAIK',
-      bestMonth: 'BULAN TERBAIK',
-      yearAverage: 'PURATA TAHUN',
-      total: 'JUMLAH',
-
-      todayTitle: 'HARI INI',
-
-      habitTitle: 'TABIAT',
-      daysAtLeast: 'Hari pada {{amount}} atau lebih',
-      daysLogged: 'Hari direkod',
-      monthsAveraging: 'Bulan purata {{amount}}+',
-      monthsLogged: 'Bulan direkod',
-
-      emptyTitle: 'Tiada air direkod dalam julat ini',
-      emptyBody: 'Rekod satu minuman pada Hari ini dan ini akan terisi.',
+      empty: 'Tiada air dicatat dalam julat ini.',
     },
-
     weight: {
-      peakOn: '{{value}} {{unit}} pada {{date}}',
-      latest: 'Terkini {{value}} {{unit}}',
-      latestOn: 'Terkini {{value}} {{unit}} pada {{date}}',
-      peakIn: '{{value}} {{unit}} dalam {{month}}',
       change: '{{value}} {{unit}}',
       chart: 'Berat anda sepanjang {{span}}',
-
       thisWeek: 'MINGGU INI',
-      thisMonth: 'BULAN INI',
-      thisYear: 'TAHUN INI',
-      average7: 'PURATA 7 HARI',
-      average30: 'PURATA 30 HARI',
-      lightest: 'PALING RINGAN',
-      weighIns: 'TIMBANGAN',
-      monthsLogged: 'BULAN DIREKOD',
-
       toGoal: '{{value}} {{unit}} lagi ke sasaran {{target}} {{unit}} anda',
-      noTarget: 'Tiada berat sasaran ditetapkan',
       atGoal: 'Pada berat sasaran anda',
       weeksAway: '~{{count}} minggu',
-
+      empty: 'Belum ada berat dicatat.',
       add: 'Tambah',
-      weekByWeek: 'MINGGU DEMI MINGGU',
-      byQuarter: 'MENGIKUT SUKU',
-      quarter: '{{from}} hingga {{to}}',
-
       reading: '{{value}} {{unit}}',
       firstReading: 'Pertama',
-
       sheetTitle: 'Tambah berat',
       sheetEditTitle: 'Timbangan pada {{date}}',
       thisMorning: 'Pagi ini',
@@ -1079,14 +1041,9 @@ export const ms = {
       removeTitle: 'Buang bacaan ini?',
       removeBody:
         'Carta itu kehilangan hari ini. Jika ia yang terkini, bajet anda kembali kepada yang sebelumnya.',
-
-      emptyTitle: 'Tiada timbangan dalam julat ini',
-      emptyBody: 'Satu bacaan melukis satu titik. Dua melukis satu garis.',
     },
-
     history: {
       title: 'Sejarah',
-      viewFull: 'Lihat penuh',
       dayTotal: '{{value}} kcal',
       waterAverage: 'purata {{amount}}',
       goalMet: 'Sasaran dicapai',
@@ -1310,6 +1267,9 @@ export const ms = {
       light: 'Cerah',
       dark: 'Gelap',
       auto: 'Auto',
+      focus: 'FOKUS PADA',
+      focusCalories: 'Kalori',
+      focusProtein: 'Protein',
     },
 
     subscription: {

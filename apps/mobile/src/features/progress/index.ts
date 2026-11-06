@@ -1,25 +1,19 @@
 /**
- * Trends: three tabs over one range.
+ * Trends: four cards over one range.
  *
- * The screen in `app/(tabs)/trends.tsx` owns the two queries and the three bits
- * of state (range, metric, and which day the weigh-in sheet is on) and hands the
- * answers down. None of the panels fetches, so switching tabs cannot cost a
- * request and the tiles cannot disagree with the panel under them.
+ * The screen in `app/(tabs)/trends.tsx` owns the diary's two queries and hands
+ * them to the calorie, weight and water cards, so those three can never
+ * disagree about a range. The workouts card reads its own, which are bucketed
+ * the same way in Postgres.
  *
- * Most of the charts are deliberately not exported. Each encodes a decision about
- * its own metric: a water column's height is always the goal, a calorie column is
- * stacked by energy rather than grams, a weight line holds its gaps rather than
- * spanning them.
- *
- * Two are exported, for the one caller reading the same metrics: a review draws
- * calories stacked by energy and weight as a line that holds its gaps. A second
- * copy of either would disagree with Trends the first time one was corrected.
+ * Two charts are exported for the other callers reading the same metrics: a
+ * review draws calories stacked by energy and weight as a line that holds its
+ * gaps, and an exercise's page draws its best sets as a line. A second copy of
+ * either would disagree with Trends the first time one was corrected.
  */
-export { CaloriesPanel, type CaloriesPanelProps } from './CaloriesPanel'
 export {
   DayBand,
-  HistoryCard,
-  type HistoryCardProps,
+  HISTORY_METRICS,
   MealRow,
   RowGap,
   useDayName,
@@ -28,9 +22,11 @@ export {
   WaterRow,
   WeightRow,
 } from './History'
-export { MetricTabs, type MetricTabsProps, TREND_METRICS, type TrendMetric } from './MetricTabs'
+export { IntakeCard, type IntakeCardProps } from './IntakeCard'
 export { type StackedBar, StackedBars, type StackedBarsProps } from './StackedBars'
-export { TrendLine, type TrendLineProps, type TrendPoint } from './TrendLine'
-export { WaterPanel, type WaterPanelProps } from './WaterPanel'
+export { problemOf } from './TrendCard'
+export { TrendLine, type TrendLineProps, type TrendPoint, type TrendTone } from './TrendLine'
+export { WaterCard, type WaterCardProps } from './WaterCard'
 export { WeighInSheet, type WeighInSheetProps } from './WeighInSheet'
-export { WeighInPill, WeightPanel, type WeightPanelProps } from './WeightPanel'
+export { WeighInPill, WeightCard, type WeightCardProps } from './WeightCard'
+export { WorkoutsCard } from './WorkoutsCard'

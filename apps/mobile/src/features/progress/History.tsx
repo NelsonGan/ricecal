@@ -9,8 +9,6 @@ import {
   ENTRY_FOOD_ID,
   type Entry,
   type HistoryMetric,
-  type MealDay,
-  useHistory,
   useSelectedDate,
   type WaterDay,
   type WeightReading,
@@ -20,11 +18,14 @@ import { datePattern } from '@/lib/dates'
 import { eatenQuantity, portionLabel } from '@/lib/portions'
 import { showChange, showWeight, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { volume, waterProgress } from '@/lib/water'
-import { useThemeColors } from '@/theme/useTheme'
-import { Badge, Card, cn, Icon, ProgressBar, Skeleton, Tappable, Text } from '@/ui'
+import { Badge, cn, Icon, ProgressBar, Tappable, Text } from '@/ui'
 
-/** Rows the Trends card shows before "View full". Enough to recognise a day. */
-const PREVIEW_ROWS = 5
+/** The three lists `/history` switches between, in the order its tabs read. */
+export const HISTORY_METRICS = [
+  'calories',
+  'water',
+  'weight',
+] as const satisfies readonly HistoryMetric[]
 
 /**
  * "Today", "Yesterday", then the date, with the year only when it is not this
@@ -266,124 +267,4 @@ function Tile({ tone, children }: { tone?: 'water'; children: ReactNode }) {
 /** The hairline every list card in the app puts between rows. */
 export function RowGap({ first, children }: { first: boolean; children: ReactNode }) {
   return <View className={cn('py-2.5', !first && 'border-track border-t-2')}>{children}</View>
-}
-
-export type HistoryCardProps = {
-  metric: HistoryMetric
-  unit: WeightUnit
-  /** Opens the weigh-in sheet on a day. Only the weight card's rows use it. */
-  onEditWeight?: (date: string) => void
-  /** Opposite the heading. The weight card's "Add". */
-  action?: ReactNode
-}
-
-/**
- * The newest few entries under a Trends tab, and the way into all of them.
- *
- * The charts say what a range came to; this says what it was made of. It is
- * not bounded by the range above it: the newest entries are the ones somebody
- * checks, whichever range is drawn, and the whole list is one tap away.
- */
-export function HistoryCard({ metric, unit, onEditWeight, action }: HistoryCardProps) {
-  const { t } = useTranslation(['progress', 'common'])
-  const history = useHistory(metric)
-  const dayName = useDayName()
-  const openEntry = useOpenEntry()
-  const openDay = useOpenDay()
-  const colors = useThemeColors()
-
-  // Nothing ever logged: the panel above already says so, in its own words.
-  if (history.isSuccess && history.items.length === 0) return null
-
-  let rows: ReactNode[] = []
-  if (metric === 'calories') {
-    let left = PREVIEW_ROWS
-    for (const day of history.items as MealDay[]) {
-      if (left <= 0) break
-      const shown = day.entries.slice(0, left)
-      left -= shown.length
-      rows.push(
-        <View key={day.date} className="gap-0 pt-2">
-          <DayBand
-            label={dayName(day.date)}
-            total={t('progress:history.dayTotal', { value: day.kcal.toLocaleString() })}
-          />
-          {shown.map((entry, index) => (
-            <RowGap key={entry.id} first={index === 0}>
-              <MealRow entry={entry} onPress={openEntry} />
-            </RowGap>
-          ))}
-        </View>,
-      )
-    }
-  } else if (metric === 'water') {
-    rows = (history.items as WaterDay[]).slice(0, PREVIEW_ROWS).map((day, index) => (
-      <RowGap key={day.date} first={index === 0}>
-        <WaterRow day={day} dayName={dayName(day.date)} onPress={openDay} />
-      </RowGap>
-    ))
-  } else {
-    rows = (history.items as WeightReading[]).slice(0, PREVIEW_ROWS).map((reading, index) => (
-      <RowGap key={reading.date} first={index === 0}>
-        <WeightRow
-          reading={reading}
-          dayName={dayName(reading.date)}
-          unit={unit}
-          onPress={(date) => onEditWeight?.(date)}
-        />
-      </RowGap>
-    ))
-  }
-
-  return (
-    <Card contentClassName="gap-0 px-4 pb-1 pt-4">
-      {/* No hairline under the heading, unlike the diary's list: the first day
-          band is already the line, and both read as a double rule. */}
-      <View className="min-h-sm flex-row items-center justify-between gap-3 pb-1">
-        <Text variant="subtitle" className="shrink" numberOfLines={1}>
-          {t('progress:history.title')}
-        </Text>
-        {action}
-      </View>
-
-      {history.offline ? (
-        // A wait rather than a failure: a paused request resumes by itself.
-        <Text variant="meta" className="py-3">
-          {t('common:offline.title')}
-        </Text>
-      ) : history.failed ? (
-        // A line rather than a vanished card: a card that silently goes on a
-        // failed request reads as "you have never logged anything".
-        <View className="flex-row items-center justify-between gap-3 py-3">
-          <Text variant="meta" className="min-w-0 shrink">
-            {t('progress:history.failed')}
-          </Text>
-          <Tappable onPress={() => history.refetch()} accessibilityRole="button" hitSlop={8}>
-            <Text variant="label" className="text-pandan-ink">
-              {t('common:action.retry')}
-            </Text>
-          </Tappable>
-        </View>
-      ) : history.items.length === 0 ? (
-        <View className="gap-3 py-3">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </View>
-      ) : (
-        rows
-      )}
-
-      <Tappable
-        className="flex-row items-center justify-center gap-1 border-track border-t-2 py-3"
-        onPress={() => router.push({ pathname: '/history', params: { metric } })}
-        accessibilityRole="button"
-      >
-        <Text variant="label" className="text-pandan-ink">
-          {t('progress:history.viewFull')}
-        </Text>
-        <Icon set="ui" name="chevron-right" size={16} tintColor={colors.pandanInk} />
-      </Tappable>
-    </Card>
-  )
 }

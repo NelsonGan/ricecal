@@ -123,3 +123,14 @@ export function useUpdateMealTime() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: keys.mealTimes(userId) }),
   })
 }
+
+/** The number that leads the Today ring and the first Trends card. */
+export type TrackFocus = 'calories' | 'protein'
+
+/**
+ * The account's focus, read defensively: the column is text, and anything it
+ * does not recognise (a value a newer app wrote) reads as calories.
+ */
+export function focusOf(settings: Pick<Settings, 'track_focus'> | null | undefined): TrackFocus {
+  return settings?.track_focus === 'protein' ? 'protein' : 'calories'
+}

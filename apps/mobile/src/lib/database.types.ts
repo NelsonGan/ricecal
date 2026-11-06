@@ -2386,6 +2386,7 @@ export type Database = {
           quiet_to: string
           share_with_family: boolean
           step_goal: number
+          track_focus: string
           units: Database['public']['Enums']['unit_system']
           updated_at: string
           user_id: string
@@ -2408,6 +2409,7 @@ export type Database = {
           quiet_to?: string
           share_with_family?: boolean
           step_goal?: number
+          track_focus?: string
           units?: Database['public']['Enums']['unit_system']
           updated_at?: string
           user_id: string
@@ -2430,6 +2432,7 @@ export type Database = {
           quiet_to?: string
           share_with_family?: boolean
           step_goal?: number
+          track_focus?: string
           units?: Database['public']['Enums']['unit_system']
           updated_at?: string
           user_id?: string
@@ -4594,6 +4597,35 @@ export type Database = {
           weight_last: number
           weight_peak: number
           weight_peak_on: string
+        }[]
+      }
+      trend_workout_summary: {
+        Args: { p_range: string }
+        Returns: {
+          active_days: number
+          duration_s: number
+          from_date: string
+          prev_active_days: number
+          prev_duration_s: number
+          prev_volume_kg: number
+          prev_workouts: number
+          sets: number
+          to_date: string
+          volume_kg: number
+          workouts: number
+        }[]
+      }
+      trend_workouts: {
+        Args: { p_range: string }
+        Returns: {
+          active_days: number
+          bucket_end: string
+          bucket_start: string
+          days: number
+          duration_s: number
+          sets: number
+          volume_kg: number
+          workouts: number
         }[]
       }
       unregister_push_token: { Args: { p_token: string }; Returns: undefined }
