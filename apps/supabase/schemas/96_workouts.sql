@@ -872,16 +872,17 @@ grant execute on function public.workout_exercise_totals(date, date) to authenti
 -- the line divides by: the oldest block of thirty days is two days, and this
 -- month is a few days old.
 --
--- The bucketing is `trend_days`' (a day on 7d, seven-day blocks counted back
--- from today on 30d, calendar months on 1y). It is restated here rather than
--- read from `trend_days`, which would sum a range of the diary to throw it
--- away; `activity_days_range` restates it for the same reason. Change all
--- three together.
+-- The bucketing is `trend_days`', grain and all (null is the range's own: a
+-- day on 7d, seven-day blocks counted back from today on 30d, calendar months
+-- on 1y; the app asks for days on 30d and weeks on 1y). It is restated here
+-- rather than read from `trend_days`, which would sum a range of the diary to
+-- throw it away; `activity_days_range` restates the range's own for the same
+-- reason. Change all three together.
 --
 -- Only what the card draws. Every column of a function a released app calls
 -- is one it calls forever, so the rest waits until something reads it.
 -- ---------------------------------------------------------------------------
-create or replace function public.trend_workouts(p_range text)
+create or replace function public.trend_workouts(p_range text, p_grain text default null)
 returns table (
   bucket_start  date,
   bucket_end    date,
@@ -901,9 +902,9 @@ as $$
   calendar as (
     select
       series::date as at,
-      case p_range
-        when '1y'  then date_trunc('month', series)::date
-        when '30d' then greatest(b.from_date, b.to_date - ((b.to_date - series::date) / 7) * 7 - 6)
+      case coalesce(p_grain, case p_range when '1y' then 'month' when '30d' then 'week' end)
+        when 'month' then date_trunc('month', series)::date
+        when 'week'  then greatest(b.from_date, b.to_date - ((b.to_date - series::date) / 7) * 7 - 6)
         else series::date
       end as in_bucket
     from bounds b
@@ -927,13 +928,14 @@ as $$
   order by c.in_bucket;
 $$;
 
-comment on function public.trend_workouts(text) is
-  'Seconds trained per column of a Trends chart (a day for 7d, a seven-day '
-  'block for 30d, a calendar month for 1y) with the column''s length in days, '
-  'oldest first, empty columns included.';
+comment on function public.trend_workouts(text, text) is
+  'Seconds trained per column of a Trends chart (p_grain day, week or month; '
+  'null is the range''s own, a day for 7d, a seven-day block for 30d, a '
+  'calendar month for 1y) with the column''s length in days, oldest first, '
+  'empty columns included.';
 
-revoke all on function public.trend_workouts(text) from public, anon;
-grant execute on function public.trend_workouts(text) to authenticated;
+revoke all on function public.trend_workouts(text, text) from public, anon;
+grant execute on function public.trend_workouts(text, text) to authenticated;
 
 
 -- ---------------------------------------------------------------------------

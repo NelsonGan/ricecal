@@ -7,7 +7,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(19);
 
 \set lifter '99999999-9999-4999-8999-9999999999a1'
 
@@ -41,6 +41,46 @@ select results_eq(
   $$select workouts, prev_workouts from public.trend_workout_summary('7d')$$,
   $$values (0, 0)$$,
   'an empty range still answers one row of zeros'
+);
+
+-- The app asks for its own column: a day on thirty days, a week on a year.
+-- Without one, each range keeps the column a released app draws.
+select is(
+  (select count(*)::integer from public.trend_workouts('30d', 'day')),
+  30,
+  'thirty days by the day is thirty columns'
+);
+
+select is(
+  (select count(*)::integer from public.trend_series('30d', :'lifter'::uuid, 'day')),
+  30,
+  'and trend_series draws the same thirty'
+);
+
+select is(
+  (select count(*)::integer from public.trend_series('30d', :'lifter'::uuid)),
+  5,
+  'with no grain, thirty days is still five blocks for an app that asks for none'
+);
+
+select ok(
+  (select bool_and(days between 1 and 7) and max(bucket_end) = public.local_today()
+     and sum(days) = public.local_today() - private.range_start('1y', public.local_today()) + 1
+   from public.trend_workouts('1y', 'week')),
+  'a year by the week is blocks of at most seven days covering the year, ending today'
+);
+
+select is(
+  (select array_agg(bucket_start order by bucket_start)
+     from public.trend_series('1y', :'lifter'::uuid, 'week')),
+  (select array_agg(bucket_start order by bucket_start) from public.trend_workouts('1y', 'week')),
+  'trend_series and trend_workouts draw the same weeks'
+);
+
+select is(
+  (select days from public.trend_workouts('1y', 'week') order by bucket_start desc limit 1),
+  7,
+  'the newest week is a whole one'
 );
 
 -- Two workouts today, one an hour each with 2 x 60 kg x 5, and one eight days
@@ -127,9 +167,15 @@ select is(
 reset role;
 
 select ok(
-  not has_function_privilege('anon', 'public.trend_workouts(text)', 'execute')
+  not has_function_privilege('anon', 'public.trend_workouts(text, text)', 'execute')
     and not has_function_privilege('anon', 'public.trend_workout_summary(text)', 'execute'),
   'anon cannot call either'
+);
+
+select ok(
+  not has_function_privilege('anon', 'public.trend_series(text, uuid, text)', 'execute')
+    and not has_function_privilege('anon', 'public.trend_days(text, uuid, text)', 'execute'),
+  'nor the diary''s trend functions'
 );
 
 select * from finish();

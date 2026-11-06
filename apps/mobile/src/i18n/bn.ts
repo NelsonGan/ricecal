@@ -940,6 +940,7 @@ export const bn = {
       span30d: 'গত ৩০ দিন',
       span1y: 'গত ১২ মাস',
       week: 'সপ্তা {{index}}',
+      between: '{{from}} থেকে {{to}}',
     },
     calories: {
       unit: 'kcal প্রতিদিন',

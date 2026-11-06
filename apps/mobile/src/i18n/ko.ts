@@ -947,6 +947,7 @@ export const ko = {
       span30d: '최근 30일',
       span1y: '최근 12개월',
       week: '{{index}}주',
+      between: '{{from}}~{{to}}',
     },
     calories: {
       unit: 'kcal/일',
