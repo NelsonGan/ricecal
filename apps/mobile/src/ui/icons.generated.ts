@@ -533,6 +533,7 @@ export const icons = {
     'theme-light': require('../../assets/icons/system/theme-light.png'),
     'thumbs-down': require('../../assets/icons/system/thumbs-down.png'),
     'thumbs-up': require('../../assets/icons/system/thumbs-up.png'),
+    'thumbs-up-cute': require('../../assets/icons/system/thumbs-up-cute.png'),
     ticket: require('../../assets/icons/system/ticket.png'),
     trophy: require('../../assets/icons/system/trophy.png'),
     'user-add': require('../../assets/icons/system/user-add.png'),
@@ -541,6 +542,7 @@ export const icons = {
     wallet: require('../../assets/icons/system/wallet.png'),
     watch: require('../../assets/icons/system/watch.png'),
     wave: require('../../assets/icons/system/wave.png'),
+    'wave-cute': require('../../assets/icons/system/wave-cute.png'),
   },
   ui: {
     archive: require('../../assets/icons/ui/archive.png'),

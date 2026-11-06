@@ -120,6 +120,10 @@ select is((select count(*)::int from liked), 1, 'a like is a line in the chat');
 select is((select e->'author'->>'id' from liked), :'ben', 'by whoever liked it');
 select is((select e->'event'->'food'->>'name' from liked), 'Nasi lemak', 'naming the food');
 select is((select e->'event'->'food'->'owner'->>'id' from liked), :'ana', 'and whose it is');
+select is((select e->'event'->'food'->>'icon_name' from liked), 'nasi-lemak',
+  'with the drawing the board shows for it');
+select is((select e->'event'->'food'->'photo_path' from liked), 'null'::jsonb,
+  'and no photo when the meal has none');
 reset role;
 select is((select count(*)::int from public.group_messages where event = 'liked' and group_id = :'other_group'), 0,
   'only in a group the two share');
