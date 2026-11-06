@@ -206,6 +206,22 @@ export function useWorkouts() {
 }
 
 /**
+ * The newest few workouts, for the Trends card. Not the first page of
+ * `useWorkouts`: that one is kept for five minutes, so a workout saved from
+ * the watch or another phone left the card's list a session behind the chart
+ * above it, which reads its own default-staleness query.
+ */
+export function useLatestWorkouts(limit: number) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.latestWorkouts(userId, limit),
+    queryFn: async (): Promise<WorkoutSummary[]> =>
+      unwrap(await supabase.rpc('workout_history', { p_offset: 0, p_limit: limit })).map(toSummary),
+  })
+}
+
+/**
  * One day's workouts. Today's row shows no records, and leaving the count out
  * lets the planner skip scoring them: 0.3 ms rather than 270 on a long
  * history. The Workouts page's calendar draws history cards, which show them,

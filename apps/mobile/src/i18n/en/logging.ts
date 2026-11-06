@@ -29,6 +29,15 @@ export const logging = {
      * rather than the word "of", matching the macro bars.
      */
     kcalOfGoal: '/{{goal}} KCAL',
+    /**
+     * The ring for somebody whose focus is protein (Language and units). The
+     * figure carries its unit, so the caption only has to say which way.
+     */
+    grams: '{{value}}g',
+    proteinLeft: 'PROTEIN LEFT',
+    proteinOver: 'PROTEIN OVER',
+    proteinOfGoal: '/{{goal}}G PROTEIN',
+    proteinA11y: '{{value}} of {{goal}} grams of protein',
     showGoals: 'Show the day’s allowance',
     showLeft: 'Show what is left',
     /**

@@ -655,6 +655,11 @@ export const bn = {
       kcalLeft: 'বাকি KCAL',
       kcalOver: 'বেশি KCAL',
       kcalOfGoal: '/{{goal}} KCAL',
+      grams: '{{value}}g',
+      proteinLeft: 'প্রোটিন বাকি',
+      proteinOver: 'প্রোটিন বেশি',
+      proteinOfGoal: '/{{goal}}G প্রোটিন',
+      proteinA11y: '{{goal}} গ্রামের মধ্যে {{value}} গ্রাম প্রোটিন',
       showGoals: 'দিনের হিসাব দেখান',
       showLeft: 'যা বাকি তা দেখান',
       dayHeading: 'আপনার দিন',
@@ -920,19 +925,14 @@ export const bn = {
 
   progress: {
     title: 'প্রবণতা',
-
     ofDays: '{{total}} এর মধ্যে {{done}}',
-
+    focus: 'ট্র্যাক',
     metric: {
       calories: 'ক্যালরি',
       water: 'পানি',
       weight: 'ওজন',
-      caloriesUnit: 'গড়',
-      waterUnit: 'ml',
-      none: '—',
-      a11y: '{{metric}}, {{value}}',
+      protein: 'প্রোটিন',
     },
-
     range: {
       label: 'সীমা',
       '7d': '৭দি',
@@ -942,90 +942,52 @@ export const bn = {
       span30d: 'গত ৩০ দিন',
       span1y: 'গত ১২ মাস',
       week: 'সপ্তা {{index}}',
-      weekLong: 'সপ্তাহ {{index}}',
     },
-
     calories: {
-      goalNote: 'লক্ষ্য দিনে {{goal}} kcal',
-      goalNoteWeekly: 'সাপ্তাহিক গড়, লক্ষ্য দিনে {{goal}}',
-      goalNoteMonthly: 'মাসিক গড়, লক্ষ্য দিনে {{goal}}',
-      noGoal: 'এখনো দৈনিক হিসাব ঠিক করা হয়নি',
+      unit: 'kcal প্রতিদিন',
+      value: '{{value}} kcal',
       under: '{{value}} কম',
       over: '{{value}} বেশি',
-      chart: 'দিনে ক্যালরি, কার্বস, প্রোটিন ও চর্বিতে ভাগ করা',
-
+      chart: '{{span}}: প্রতিদিনের ক্যালোরি, আপনার লক্ষ্যের সাপেক্ষে',
+      share: '{{macro}} {{value}}%',
       grams: '{{value}} g',
-      shareOfIntake: 'গ্রহণের {{value}}%',
-
-      goalTitle: 'আপনার লক্ষ্যের সাপেক্ষে',
-      daysUnder: '{{goal}} এর নিচের দিন',
-      daysLogged: 'পুরোপুরি লেখা দিন',
-
-      notableTitle: 'উল্লেখযোগ্য মাস',
-      monthAverage: 'গড় {{value}}',
-
-      emptyTitle: 'এই সীমায় কোনো খাবার নেই',
-      emptyBody: 'কিছু লিখুন, যেদিন লিখবেন সেদিন থেকেই দণ্ডগুলো ভরবে।',
+      empty: 'এই সময়ে কোনো খাবার লগ করা হয়নি।',
     },
-
+    protein: {
+      unit: 'g প্রতিদিন',
+      above: '{{value}} g বেশি',
+      short: '{{value}} g কম',
+      chart: '{{span}}: প্রতিদিনের প্রোটিন, আপনার লক্ষ্যের সাপেক্ষে',
+    },
+    workouts: {
+      title: 'ওয়ার্কআউট',
+      unit_one: 'ওয়ার্কআউট',
+      unit_other: 'ওয়ার্কআউট',
+      vs7d: 'গত সপ্তাহের তুলনায় {{delta}}',
+      vs30d: 'আগের ৩০ দিনের তুলনায় {{delta}}',
+      vs1y: 'আগের বছরের তুলনায় {{delta}}',
+      chart: '{{span}}: অনুশীলনের সময়',
+      latest: 'সাম্প্রতিক',
+      startTitle: 'আপনার ওয়ার্কআউট ট্র্যাক করুন',
+      startBody: 'একটি সেশন লগ করুন, আপনার অনুশীলন এখানে দেখা যাবে।',
+    },
     water: {
-      dayNote: 'প্রতিটি স্তম্ভ একটি দিন, আপনার লক্ষ্যের সাপেক্ষে',
-      weeklyNote: 'প্রতিটি স্তম্ভ একটি সপ্তাহ, লক্ষ্যের সাপেক্ষে গড়',
-      monthlyNote: 'প্রতিটি স্তম্ভ একটি মাস, লক্ষ্যের সাপেক্ষে গড়',
-      goalPill: 'লক্ষ্য {{amount}}',
+      unit: '{{unit}} প্রতিদিন',
+      goalDays: '{{total}} দিনের মধ্যে {{done}} দিন লক্ষ্য পূরণ',
       chart: 'দিনে পানি, {{amount}} লক্ষ্যের সাপেক্ষে',
-
-      reached: 'লক্ষ্যে পৌঁছেছে',
-      short: 'লক্ষ্যের কম',
-
-      goalDays: 'লক্ষ্যের দিন',
-      bestDay: 'সেরা দিন',
-      bestMonth: 'সেরা মাস',
-      yearAverage: 'বছরের গড়',
-      total: 'মোট',
-
-      todayTitle: 'আজ',
-
-      habitTitle: 'অভ্যাস',
-      daysAtLeast: '{{amount}} বা তার বেশি দিন',
-      daysLogged: 'লেখা দিন',
-      monthsAveraging: '{{amount}}+ গড়ের মাস',
-      monthsLogged: 'লেখা মাস',
-
-      emptyTitle: 'এই সীমায় কোনো পানি লেখা হয়নি',
-      emptyBody: 'আজ পাতায় একটি পানীয় লিখুন, এটি ভরে যাবে।',
+      empty: 'এই সময়ে কোনো পানি লগ করা হয়নি।',
     },
-
     weight: {
-      peakOn: '{{date}} এ {{value}} {{unit}}',
-      latest: 'সর্বশেষ {{value}} {{unit}}',
-      latestOn: 'সর্বশেষ {{value}} {{unit}}, {{date}}',
-      peakIn: '{{month}} এ {{value}} {{unit}}',
       change: '{{value}} {{unit}}',
       chart: '{{span}} জুড়ে আপনার ওজন',
-
       thisWeek: 'এই সপ্তাহে',
-      thisMonth: 'এই মাসে',
-      thisYear: 'এই বছরে',
-      average7: '৭ দিনের গড়',
-      average30: '৩০ দিনের গড়',
-      lightest: 'সবচেয়ে কম',
-      weighIns: 'ওজন মাপা',
-      monthsLogged: 'লেখা মাস',
-
       toGoal: 'আপনার {{target}} {{unit}} লক্ষ্যে পৌঁছাতে আরও {{value}} {{unit}}',
-      noTarget: 'কোনো লক্ষ্য ওজন ঠিক করা নেই',
       atGoal: 'আপনি আপনার লক্ষ্য ওজনে আছেন',
       weeksAway: 'প্রায় {{count}} সপ্তাহ',
-
+      empty: 'এখনো কোনো ওজন লগ করা হয়নি।',
       add: 'যোগ করুন',
-      weekByWeek: 'সপ্তাহে সপ্তাহে',
-      byQuarter: 'ত্রৈমাসিক অনুযায়ী',
-      quarter: '{{from}} থেকে {{to}}',
-
       reading: '{{value}} {{unit}}',
       firstReading: 'প্রথম',
-
       sheetTitle: 'ওজন যোগ করুন',
       sheetEditTitle: '{{date}} এর ওজন মাপা',
       thisMorning: 'আজ সকালে',
@@ -1039,14 +1001,9 @@ export const bn = {
       remove: 'এই পাঠটি সরান',
       removeTitle: 'এই পাঠটি সরাবেন?',
       removeBody: 'লেখচিত্র থেকে এই দিনটি চলে যাবে। এটিই সর্বশেষ হলে আপনার হিসাব তার আগেরটিতে ফিরে যাবে।',
-
-      emptyTitle: 'এই সীমায় কোনো ওজন মাপা নেই',
-      emptyBody: 'একটি পাঠ একটি বিন্দু আঁকে। দুটি একটি রেখা আঁকে।',
     },
-
     history: {
       title: 'ইতিহাস',
-      viewFull: 'পুরো দেখুন',
       dayTotal: '{{value}} kcal',
       waterAverage: 'গড় {{amount}}',
       goalMet: 'লক্ষ্যে পৌঁছেছে',
@@ -1266,6 +1223,9 @@ export const bn = {
       light: 'উজ্জ্বল',
       dark: 'অন্ধকার',
       auto: 'স্বয়ংক্রিয়',
+      focus: 'যা ট্র্যাক করবেন',
+      focusCalories: 'ক্যালোরি',
+      focusProtein: 'প্রোটিন',
     },
 
     subscription: {

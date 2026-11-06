@@ -1,4 +1,4 @@
-import { router, useIsFocused } from 'expo-router'
+import { router } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -13,40 +13,39 @@ import {
 } from '@/data'
 import { useRequirePro } from '@/features/paywall'
 import {
-  CaloriesPanel,
-  HistoryCard,
-  MetricTabs,
-  type TrendMetric,
-  WaterPanel,
-  WeighInPill,
+  IntakeCard,
+  problemOf,
+  WaterCard,
   WeighInSheet,
-  WeightPanel,
+  WeightCard,
+  WorkoutsCard,
 } from '@/features/progress'
 import { ScreenTitle } from '@/features/shared'
 import { unitFor } from '@/lib/units'
-import { Aside, Card, Icon, ListRow, Screen, SegmentedControl, Skeleton } from '@/ui'
+import { Aside, Card, Icon, ListRow, Screen, SegmentedControl } from '@/ui'
 
 /**
- * The Trends tab: calories, water and weight, over seven days, thirty days or a
- * year, and under them the entries those figures were made from.
+ * The Trends tab: calories, workouts, weight and water over seven days, thirty
+ * days or a year, one card each, all on one scroll.
  *
- * Two controls, and they are deliberately different objects. The RANGE is a
- * segmented control beside the title, because it governs the whole screen —
- * including the three figures in the tiles below it. The METRIC is those tiles,
- * because each one is a number as well as a choice, and a number is not
- * something a tab strip can carry.
+ * One scroll rather than a tab per metric, because the useful questions here
+ * cross metrics: did the weeks I trained more eat closer to budget, did the
+ * weight move the month the calories did. Every card draws a line on the same
+ * columns, so the four can be read down the page against each other.
  *
- * Both queries live here rather than in the panels. One range is one pair of
- * requests whichever tab is showing, so switching tabs is instant and the tile
- * a user just tapped cannot say something different from the panel it opened.
+ * Each card is a figure, a pill that says whether it was good, and a line;
+ * its heading opens the entries behind it. The RANGE is the one control and
+ * governs the whole screen.
+ *
+ * The diary's two queries live here rather than in the cards, so the calorie,
+ * weight and water cards never disagree about a range. Workouts read their own
+ * (see `WorkoutsCard`).
  */
 export default function TrendsScreen() {
   const { t } = useTranslation(['progress', 'common', 'reviews'])
-  const focused = useIsFocused()
 
   const [range, setRange] = useState<TrendRange>('7d')
   const requirePro = useRequirePro()
-  const [metric, setMetric] = useState<TrendMetric>('calories')
   /** Which day the weigh-in sheet is on, and null when it is shut. */
   const [weighingIn, setWeighingIn] = useState<string | null>(null)
 
@@ -61,12 +60,23 @@ export default function TrendsScreen() {
    * Both queries, or neither.
    *
    * Waiting on the series alone was a visible bug: it is the smaller answer and
-   * lands first, so the panel rendered with a null summary — which every panel
-   * reads as "nothing logged in this range" and draws as an empty state. The
-   * range switch flashed "No meals in this range" before the meals appeared.
+   * lands first, so a card rendered with a null summary, which reads as
+   * "nothing logged in this range". The range switch flashed an empty state
+   * before the meals appeared.
    */
   const loading = series.isPending || summary.isPending
-  const buckets = series.data
+  const problem = problemOf([series, summary])
+  const cards = {
+    range,
+    buckets: series.data,
+    summary: summary.data,
+    loading,
+    problem,
+    onRetry: () => {
+      void series.refetch()
+      void summary.refetch()
+    },
+  }
 
   return (
     <Screen>
@@ -84,10 +94,6 @@ export default function TrendsScreen() {
              * all three segments and refuses the two it cannot serve rather than
              * hiding them: a hidden option is a feature nobody knows they are
              * missing, and a greyed-out one gives them nowhere to go.
-             *
-             * Seven days is not an arbitrary slice: the strip on Today is a week
-             * and the review is a week, so a free user is shown the week and
-             * offered the shape only a month or a year can carry.
              */
             onChange={(next) => {
               if (next !== '7d' && !requirePro('trend_range')) return
@@ -102,22 +108,15 @@ export default function TrendsScreen() {
         }
       />
 
-      {/* The same gate as the panel below. The tiles are the tab control so
-          they stay put, but their figures belong to the range being switched
-          away from until the new one lands — three numbers that were true a
-          moment ago and are not any more. */}
-      <MetricTabs
-        value={metric}
-        onChange={setMetric}
-        summary={summary.data}
-        loading={loading}
-        unit={unit}
-      />
+      <IntakeCard {...cards} />
+      <WorkoutsCard range={range} unit={unit} />
 
-      {/* Keep Reviews available even before a finished period has much data. */}
-      {/* With two panes the figures and their chart are the first, and the
-          ways to look further back are the second. See `Aside`. */}
+      {/* With two panes, eating and training are the first, and the body and
+          the ways to look further back are the second. See `Aside`. */}
       <Aside>
+        <WeightCard {...cards} unit={unit} onAdd={() => setWeighingIn(today())} />
+        <WaterCard {...cards} />
+
         <Card contentClassName="gap-0 px-5 py-1">
           <ListRow
             title={t('reviews:entry.title')}
@@ -128,45 +127,6 @@ export default function TrendsScreen() {
             onPress={() => router.push('/reviews')}
           />
         </Card>
-      </Aside>
-
-      {loading || !buckets ? (
-        // One block, not three. The panels differ in how many cards they have,
-        // and a skeleton that guesses wrong is a layout that jumps twice.
-        <Card>
-          <Skeleton className="h-[260px] w-full" />
-        </Card>
-      ) : metric === 'calories' ? (
-        <CaloriesPanel range={range} buckets={buckets} summary={summary.data ?? null} />
-      ) : metric === 'water' ? (
-        <WaterPanel
-          range={range}
-          buckets={buckets}
-          summary={summary.data ?? null}
-          paused={!focused}
-        />
-      ) : (
-        <WeightPanel
-          range={range}
-          buckets={buckets}
-          summary={summary.data ?? null}
-          unit={unit}
-          onEdit={setWeighingIn}
-        />
-      )}
-
-      {/* Under every tab, and outside the loading gate: it is its own query,
-          and it does not move with the range, so a range switch has no reason
-          to blank it. */}
-      <Aside>
-        <HistoryCard
-          metric={metric}
-          unit={unit}
-          onEditWeight={setWeighingIn}
-          action={
-            metric === 'weight' ? <WeighInPill onPress={() => setWeighingIn(today())} /> : undefined
-          }
-        />
       </Aside>
 
       <WeighInSheet

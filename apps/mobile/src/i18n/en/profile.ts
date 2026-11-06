@@ -338,6 +338,10 @@ export const profile = {
     light: 'Light',
     dark: 'Dark',
     auto: 'Auto',
+    /** What the ring on Today and the first Trends card are about. */
+    focus: 'FOCUS ON',
+    focusCalories: 'Calories',
+    focusProtein: 'Protein',
   },
 
   subscription: {

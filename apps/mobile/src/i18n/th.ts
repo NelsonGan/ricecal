@@ -660,6 +660,11 @@ export const th = {
       kcalLeft: 'แคลที่เหลือ',
       kcalOver: 'แคลที่เกิน',
       kcalOfGoal: '/{{goal}} แคล',
+      grams: '{{value}}g',
+      proteinLeft: 'โปรตีนที่เหลือ',
+      proteinOver: 'โปรตีนเกิน',
+      proteinOfGoal: '/{{goal}}G โปรตีน',
+      proteinA11y: 'โปรตีน {{value}} จาก {{goal}} กรัม',
       showGoals: 'แสดงโควตาของวันนี้',
       showLeft: 'แสดงส่วนที่เหลือ',
       dayHeading: 'วันของคุณ',
@@ -923,19 +928,14 @@ export const th = {
 
   progress: {
     title: 'แนวโน้ม',
-
     ofDays: '{{done}} จาก {{total}}',
-
+    focus: 'ติดตาม',
     metric: {
       calories: 'แคลอรี',
       water: 'น้ำ',
       weight: 'น้ำหนัก',
-      caloriesUnit: 'เฉลี่ย',
-      waterUnit: 'มล.',
-      none: '—',
-      a11y: '{{metric}} {{value}}',
+      protein: 'โปรตีน',
     },
-
     range: {
       label: 'ช่วง',
       '7d': '7 วัน',
@@ -945,90 +945,52 @@ export const th = {
       span30d: '30 วันล่าสุด',
       span1y: '12 เดือนล่าสุด',
       week: 'สัปดาห์ {{index}}',
-      weekLong: 'สัปดาห์ที่ {{index}}',
     },
-
     calories: {
-      goalNote: 'เป้าหมาย {{goal}} แคลต่อวัน',
-      goalNoteWeekly: 'เฉลี่ยรายสัปดาห์ เป้าหมาย {{goal}} ต่อวัน',
-      goalNoteMonthly: 'เฉลี่ยรายเดือน เป้าหมาย {{goal}} ต่อวัน',
-      noGoal: 'ยังไม่ได้ตั้งโควตาต่อวัน',
+      unit: 'kcal/วัน',
+      value: '{{value}} kcal',
       under: 'ต่ำกว่า {{value}}',
       over: 'เกิน {{value}}',
-      chart: 'แคลอรีต่อวัน แยกตามคาร์บ โปรตีน และไขมัน',
-
+      chart: 'แคลอรี่ต่อวันใน{{span}} เทียบกับเป้าหมาย',
+      share: '{{macro}} {{value}}%',
       grams: '{{value}} ก.',
-      shareOfIntake: '{{value}}% ของที่กิน',
-
-      goalTitle: 'เทียบกับเป้าหมายของคุณ',
-      daysUnder: 'วันที่ต่ำกว่า {{goal}}',
-      daysLogged: 'วันที่บันทึกครบ',
-
-      notableTitle: 'เดือนที่น่าสนใจ',
-      monthAverage: 'เฉลี่ย {{value}}',
-
-      emptyTitle: 'ไม่มีมื้ออาหารในช่วงนี้',
-      emptyBody: 'บันทึกสักอย่าง แล้วแท่งจะเริ่มเติมจากวันนั้น',
+      empty: 'ไม่มีมื้ออาหารที่บันทึกในช่วงนี้',
     },
-
+    protein: {
+      unit: 'g/วัน',
+      above: 'เกิน {{value}} g',
+      short: 'ขาด {{value}} g',
+      chart: 'โปรตีนต่อวันใน{{span}} เทียบกับเป้าหมาย',
+    },
+    workouts: {
+      title: 'ออกกำลังกาย',
+      unit_one: 'ครั้ง',
+      unit_other: 'ครั้ง',
+      vs7d: '{{delta}} เทียบกับสัปดาห์ก่อน',
+      vs30d: '{{delta}} เทียบกับ 30 วันก่อนหน้า',
+      vs1y: '{{delta}} เทียบกับปีก่อน',
+      chart: 'เวลาฝึกใน{{span}}',
+      latest: 'ล่าสุด',
+      startTitle: 'บันทึกการออกกำลังกาย',
+      startBody: 'บันทึกหนึ่งเซสชัน แล้วการฝึกของคุณจะแสดงที่นี่',
+    },
     water: {
-      dayNote: 'แต่ละแท่งคือหนึ่งวันเทียบกับเป้าหมายของคุณ',
-      weeklyNote: 'แต่ละแท่งคือหนึ่งสัปดาห์ เฉลี่ยเทียบกับเป้าหมายของคุณ',
-      monthlyNote: 'แต่ละแท่งคือหนึ่งเดือน เฉลี่ยเทียบกับเป้าหมายของคุณ',
-      goalPill: 'เป้าหมาย {{amount}}',
+      unit: '{{unit}}/วัน',
+      goalDays: 'ถึงเป้า {{done}} จาก {{total}} วัน',
       chart: 'น้ำต่อวันเทียบกับเป้าหมาย {{amount}}',
-
-      reached: 'ถึงเป้าหมาย',
-      short: 'ยังไม่ถึงเป้าหมาย',
-
-      goalDays: 'วันที่ถึงเป้า',
-      bestDay: 'วันที่ดีที่สุด',
-      bestMonth: 'เดือนที่ดีที่สุด',
-      yearAverage: 'เฉลี่ยทั้งปี',
-      total: 'รวม',
-
-      todayTitle: 'วันนี้',
-
-      habitTitle: 'นิสัย',
-      daysAtLeast: 'วันที่ถึง {{amount}} ขึ้นไป',
-      daysLogged: 'วันที่บันทึก',
-      monthsAveraging: 'เดือนที่เฉลี่ย {{amount}} ขึ้นไป',
-      monthsLogged: 'เดือนที่บันทึก',
-
-      emptyTitle: 'ไม่มีบันทึกการดื่มน้ำในช่วงนี้',
-      emptyBody: 'บันทึกหนึ่งแก้วในหน้าวันนี้ แล้วตรงนี้จะเติมเอง',
+      empty: 'ไม่มีการบันทึกน้ำในช่วงนี้',
     },
-
     weight: {
-      peakOn: '{{value}} {{unit}} เมื่อ {{date}}',
-      latest: 'ล่าสุด {{value}} {{unit}}',
-      latestOn: 'ล่าสุด {{value}} {{unit}} เมื่อ {{date}}',
-      peakIn: '{{value}} {{unit}} ใน {{month}}',
       change: '{{value}} {{unit}}',
       chart: 'น้ำหนักของคุณตลอด{{span}}',
-
       thisWeek: 'สัปดาห์นี้',
-      thisMonth: 'เดือนนี้',
-      thisYear: 'ปีนี้',
-      average7: 'เฉลี่ย 7 วัน',
-      average30: 'เฉลี่ย 30 วัน',
-      lightest: 'เบาที่สุด',
-      weighIns: 'จำนวนครั้งที่ชั่ง',
-      monthsLogged: 'เดือนที่บันทึก',
-
       toGoal: 'อีก {{value}} {{unit}} ถึงเป้าหมาย {{target}} {{unit}} ของคุณ',
-      noTarget: 'ยังไม่ได้ตั้งน้ำหนักเป้าหมาย',
       atGoal: 'ถึงน้ำหนักเป้าหมายแล้ว',
       weeksAway: 'ราว {{count}} สัปดาห์',
-
+      empty: 'ยังไม่มีการบันทึกน้ำหนัก',
       add: 'เพิ่ม',
-      weekByWeek: 'รายสัปดาห์',
-      byQuarter: 'รายไตรมาส',
-      quarter: '{{from}} ถึง {{to}}',
-
       reading: '{{value}} {{unit}}',
       firstReading: 'ครั้งแรก',
-
       sheetTitle: 'เพิ่มน้ำหนัก',
       sheetEditTitle: 'การชั่งเมื่อ {{date}}',
       thisMorning: 'เช้านี้',
@@ -1042,14 +1004,9 @@ export const th = {
       remove: 'ลบค่าที่อ่านนี้',
       removeTitle: 'ลบค่าที่อ่านนี้ไหม',
       removeBody: 'กราฟจะหายไปหนึ่งวัน ถ้านี่เป็นครั้งล่าสุด โควตาของคุณจะกลับไปใช้ค่าก่อนหน้า',
-
-      emptyTitle: 'ไม่มีการชั่งในช่วงนี้',
-      emptyBody: 'ค่าหนึ่งค่าวาดได้หนึ่งจุด สองค่าจึงจะวาดเป็นเส้น',
     },
-
     history: {
       title: 'ประวัติ',
-      viewFull: 'ดูแบบเต็ม',
       dayTotal: '{{value}} แคล',
       waterAverage: 'เฉลี่ย {{amount}}',
       goalMet: 'ถึงเป้าหมาย',
@@ -1268,6 +1225,9 @@ export const th = {
       light: 'สว่าง',
       dark: 'มืด',
       auto: 'อัตโนมัติ',
+      focus: 'เน้นที่',
+      focusCalories: 'แคลอรี่',
+      focusProtein: 'โปรตีน',
     },
 
     subscription: {

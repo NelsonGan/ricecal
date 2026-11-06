@@ -31,7 +31,7 @@ export const SPAN_KEY = {
  * would drop it half the time.
  */
 export function bucketLabels(
-  buckets: readonly TrendBucket[],
+  buckets: readonly Pick<TrendBucket, 'start' | 'end'>[],
   range: TrendRange,
   weekLabel: (index: number) => string,
 ): string[] {
@@ -47,19 +47,3 @@ export function bucketLabels(
 
 /** Label every other month. Twelve names do not fit; six do, with room to spare. */
 const MONTH_LABEL_EVERY = 2
-
-/**
- * Splits a series into fixed-size groups, oldest first.
- *
- * Used twice, both times to fold a chart's columns into a shorter list beside
- * it: the year's twelve months into four quarters, and nothing else — the
- * thirty-day view's weeks are already the buckets. A trailing group shorter than
- * `size` is kept, because a partial quarter is still a quarter that happened.
- */
-export function chunk<T>(items: readonly T[], size: number): T[][] {
-  const groups: T[][] = []
-  for (let index = 0; index < items.length; index += size) {
-    groups.push(items.slice(index, index + size))
-  }
-  return groups
-}

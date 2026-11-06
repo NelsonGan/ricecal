@@ -662,6 +662,11 @@ export const ko = {
       kcalLeft: '남은 KCAL',
       kcalOver: '초과 KCAL',
       kcalOfGoal: '/{{goal}} KCAL',
+      grams: '{{value}}g',
+      proteinLeft: '단백질 남음',
+      proteinOver: '단백질 초과',
+      proteinOfGoal: '/{{goal}}G 단백질',
+      proteinA11y: '단백질 {{goal}}g 중 {{value}}g',
       showGoals: '그날의 예산 보기',
       showLeft: '남은 양 보기',
       dayHeading: '나의 하루',
@@ -927,19 +932,14 @@ export const ko = {
 
   progress: {
     title: '추이',
-
     ofDays: '{{total}}일 중 {{done}}일',
-
+    focus: '추적 항목',
     metric: {
       calories: '칼로리',
       water: '물',
       weight: '몸무게',
-      caloriesUnit: '평균',
-      waterUnit: 'ml',
-      none: '—',
-      a11y: '{{metric}}, {{value}}',
+      protein: '단백질',
     },
-
     range: {
       label: '기간',
       '7d': '7일',
@@ -949,90 +949,52 @@ export const ko = {
       span30d: '최근 30일',
       span1y: '최근 12개월',
       week: '{{index}}주',
-      weekLong: '{{index}}번째 주',
     },
-
     calories: {
-      goalNote: '목표 하루 {{goal}} kcal',
-      goalNoteWeekly: '주 평균, 목표는 하루 {{goal}}',
-      goalNoteMonthly: '월 평균, 목표는 하루 {{goal}}',
-      noGoal: '아직 하루 예산이 정해지지 않았습니다',
+      unit: 'kcal/일',
+      value: '{{value}} kcal',
       under: '{{value}} 적음',
       over: '{{value}} 많음',
-      chart: '하루 칼로리, 탄수화물, 단백질, 지방으로 나눔',
-
+      chart: '{{span}} 하루 칼로리와 목표',
+      share: '{{macro}} {{value}}%',
       grams: '{{value}} g',
-      shareOfIntake: '섭취의 {{value}}%',
-
-      goalTitle: '목표와 비교',
-      daysUnder: '{{goal}} 아래인 날',
-      daysLogged: '온전히 기록한 날',
-
-      notableTitle: '눈에 띄는 달',
-      monthAverage: '평균 {{value}}',
-
-      emptyTitle: '이 기간에 식사 기록이 없습니다',
-      emptyBody: '무언가 기록하면 그날부터 막대가 채워집니다.',
+      empty: '이 기간에 기록한 식사가 없어요.',
     },
-
+    protein: {
+      unit: 'g/일',
+      above: '{{value}} g 초과',
+      short: '{{value}} g 부족',
+      chart: '{{span}} 하루 단백질과 목표',
+    },
+    workouts: {
+      title: '운동',
+      unit_one: '회',
+      unit_other: '회',
+      vs7d: '지난주 대비 {{delta}}',
+      vs30d: '이전 30일 대비 {{delta}}',
+      vs1y: '전년 대비 {{delta}}',
+      chart: '{{span}} 운동 시간',
+      latest: '최근',
+      startTitle: '운동을 기록해 보세요',
+      startBody: '세션을 기록하면 여기에 표시돼요.',
+    },
     water: {
-      dayNote: '기둥 하나가 하루이며 목표와 비교합니다',
-      weeklyNote: '기둥 하나가 한 주의 평균이며 목표와 비교합니다',
-      monthlyNote: '기둥 하나가 한 달의 평균이며 목표와 비교합니다',
-      goalPill: '목표 {{amount}}',
+      unit: '{{unit}}/일',
+      goalDays: '{{total}}일 중 {{done}}일 달성',
       chart: '하루 물 섭취, 목표 {{amount}}과 비교',
-
-      reached: '목표 달성',
-      short: '목표 미달',
-
-      goalDays: '달성 일수',
-      bestDay: '가장 많은 날',
-      bestMonth: '가장 많은 달',
-      yearAverage: '연 평균',
-      total: '합계',
-
-      todayTitle: '오늘',
-
-      habitTitle: '습관',
-      daysAtLeast: '{{amount}} 이상인 날',
-      daysLogged: '기록한 날',
-      monthsAveraging: '평균 {{amount}} 이상인 달',
-      monthsLogged: '기록한 달',
-
-      emptyTitle: '이 기간에 물 기록이 없습니다',
-      emptyBody: '오늘 화면에서 한 잔 기록하면 여기가 채워집니다.',
+      empty: '이 기간에 기록한 물이 없어요.',
     },
-
     weight: {
-      peakOn: '{{date}}의 {{value}} {{unit}}',
-      latest: '최근 {{value}} {{unit}}',
-      latestOn: '최근 {{value}} {{unit}}, {{date}}',
-      peakIn: '{{month}}의 {{value}} {{unit}}',
       change: '{{value}} {{unit}}',
       chart: '{{span}} 동안의 몸무게',
-
       thisWeek: '이번 주',
-      thisMonth: '이번 달',
-      thisYear: '올해',
-      average7: '7일 평균',
-      average30: '30일 평균',
-      lightest: '가장 가벼움',
-      weighIns: '측정 횟수',
-      monthsLogged: '기록한 달',
-
       toGoal: '목표 {{target}} {{unit}}까지 {{value}} {{unit}} 남음',
-      noTarget: '목표 몸무게가 없습니다',
       atGoal: '목표 몸무게에 도달했습니다',
       weeksAway: '약 {{count}}주',
-
+      empty: '아직 기록한 체중이 없어요.',
       add: '추가',
-      weekByWeek: '주별',
-      byQuarter: '분기별',
-      quarter: '{{from}}부터 {{to}}까지',
-
       reading: '{{value}} {{unit}}',
       firstReading: '처음',
-
       sheetTitle: '몸무게 추가',
       sheetEditTitle: '{{date}}의 측정',
       thisMorning: '오늘 아침',
@@ -1047,14 +1009,9 @@ export const ko = {
       removeTitle: '이 측정값을 삭제할까요?',
       removeBody:
         '차트에서 이 날이 사라집니다. 가장 최근 값이라면 예산은 그 이전 값으로 돌아갑니다.',
-
-      emptyTitle: '이 기간에 측정이 없습니다',
-      emptyBody: '한 번은 점 하나, 두 번이면 선이 됩니다.',
     },
-
     history: {
       title: '기록',
-      viewFull: '전체 보기',
       dayTotal: '{{value}} kcal',
       waterAverage: '평균 {{amount}}',
       goalMet: '목표 달성',
@@ -1275,6 +1232,9 @@ export const ko = {
       light: '밝게',
       dark: '어둡게',
       auto: '자동',
+      focus: '집중 항목',
+      focusCalories: '칼로리',
+      focusProtein: '단백질',
     },
 
     subscription: {

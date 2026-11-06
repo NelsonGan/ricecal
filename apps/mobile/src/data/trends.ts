@@ -5,10 +5,18 @@ import { supabase } from '@/lib/supabase'
 import { unwrap } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
-import type { TrendBucket, TrendRange, TrendSummary } from './types'
+import type {
+  TrendBucket,
+  TrendRange,
+  TrendSummary,
+  WorkoutTrendBucket,
+  WorkoutTrendSummary,
+} from './types'
 
 type SeriesRow = Database['public']['Functions']['trend_series']['Returns'][number]
 type SummaryRow = Database['public']['Functions']['trend_summary']['Returns'][number]
+type WorkoutRow = Database['public']['Functions']['trend_workouts']['Returns'][number]
+type WorkoutSummaryRow = Database['public']['Functions']['trend_workout_summary']['Returns'][number]
 
 /**
  * A `numeric` column, as a number or as nothing.
@@ -136,6 +144,65 @@ export function useTrendSummary(range: TrendRange) {
       const rows = unwrap(await supabase.rpc('trend_summary', { p_range: range })) as SummaryRow[]
       const row = rows[0]
       return row ? toSummary(row) : null
+    },
+  })
+}
+
+/**
+ * Workouts in the same columns as `useTrendSeries`, so the workout line sits
+ * on the axis the calorie and weight lines use. Its own request rather than
+ * columns on `trend_series`: an old app reads that shape, and a meal logged
+ * should not refetch the workouts nor a workout the diary.
+ */
+export function useTrendWorkouts(range: TrendRange) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.trendWorkouts(userId, range),
+    queryFn: async (): Promise<WorkoutTrendBucket[]> =>
+      (unwrap(await supabase.rpc('trend_workouts', { p_range: range })) as WorkoutRow[]).map(
+        (row) => ({
+          start: row.bucket_start,
+          end: row.bucket_end,
+          days: row.days,
+          workouts: row.workouts,
+          activeDays: row.active_days,
+          durationS: row.duration_s,
+          // `numeric`, so a string over the wire. See `num`.
+          volumeKg: orZero(row.volume_kg),
+          sets: row.sets,
+        }),
+      ),
+  })
+}
+
+/** The range's workout totals, and the same range just before it. */
+export function useTrendWorkoutSummary(range: TrendRange) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.trendWorkoutSummary(userId, range),
+    queryFn: async (): Promise<WorkoutTrendSummary | null> => {
+      const rows = unwrap(
+        await supabase.rpc('trend_workout_summary', { p_range: range }),
+      ) as WorkoutSummaryRow[]
+      const row = rows[0]
+      if (!row) return null
+      return {
+        from: row.from_date,
+        to: row.to_date,
+        workouts: row.workouts,
+        activeDays: row.active_days,
+        durationS: row.duration_s,
+        volumeKg: orZero(row.volume_kg),
+        sets: row.sets,
+        previous: {
+          workouts: row.prev_workouts,
+          activeDays: row.prev_active_days,
+          durationS: row.prev_duration_s,
+          volumeKg: orZero(row.prev_volume_kg),
+        },
+      }
     },
   })
 }

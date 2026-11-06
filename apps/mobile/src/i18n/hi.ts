@@ -657,6 +657,11 @@ export const hi = {
       kcalLeft: 'बचा KCAL',
       kcalOver: 'ऊपर KCAL',
       kcalOfGoal: '/{{goal}} KCAL',
+      grams: '{{value}}g',
+      proteinLeft: 'प्रोटीन बाक़ी',
+      proteinOver: 'प्रोटीन ज़्यादा',
+      proteinOfGoal: '/{{goal}}G प्रोटीन',
+      proteinA11y: '{{goal}} में से {{value}} ग्राम प्रोटीन',
       showGoals: 'दिन का हिसाब दिखाएं',
       showLeft: 'जो बचा है वह दिखाएं',
       dayHeading: 'आपका दिन',
@@ -922,19 +927,14 @@ export const hi = {
 
   progress: {
     title: 'रुझान',
-
     ofDays: '{{total}} में से {{done}}',
-
+    focus: 'ट्रैक',
     metric: {
       calories: 'कैलोरी',
       water: 'पानी',
       weight: 'वज़न',
-      caloriesUnit: 'औसत',
-      waterUnit: 'ml',
-      none: '—',
-      a11y: '{{metric}}, {{value}}',
+      protein: 'प्रोटीन',
     },
-
     range: {
       label: 'अवधि',
       '7d': '7दि',
@@ -944,90 +944,52 @@ export const hi = {
       span30d: 'पिछले 30 दिन',
       span1y: 'पिछले 12 महीने',
       week: 'सप्ता {{index}}',
-      weekLong: 'सप्ताह {{index}}',
     },
-
     calories: {
-      goalNote: 'लक्ष्य रोज़ {{goal}} kcal',
-      goalNoteWeekly: 'साप्ताहिक औसत, लक्ष्य रोज़ {{goal}}',
-      goalNoteMonthly: 'मासिक औसत, लक्ष्य रोज़ {{goal}}',
-      noGoal: 'अभी रोज़ का हिसाब तय नहीं है',
+      unit: 'kcal प्रतिदिन',
+      value: '{{value}} kcal',
       under: '{{value}} कम',
       over: '{{value}} ज़्यादा',
-      chart: 'रोज़ की कैलोरी, कार्ब्स, प्रोटीन और वसा में बंटी हुई',
-
+      chart: '{{span}} में रोज़ की कैलोरी, आपके लक्ष्य के मुक़ाबले',
+      share: '{{macro}} {{value}}%',
       grams: '{{value}} g',
-      shareOfIntake: 'कुल का {{value}}%',
-
-      goalTitle: 'आपके लक्ष्य के मुक़ाबले',
-      daysUnder: '{{goal}} से कम वाले दिन',
-      daysLogged: 'पूरे दर्ज दिन',
-
-      notableTitle: 'ख़ास महीने',
-      monthAverage: 'औसत {{value}}',
-
-      emptyTitle: 'इस अवधि में कोई भोजन नहीं',
-      emptyBody: 'कुछ दर्ज करें और जिस दिन किया उसी दिन से पट्टियां भरने लगेंगी।',
+      empty: 'इस अवधि में कोई भोजन लॉग नहीं हुआ।',
     },
-
+    protein: {
+      unit: 'g प्रतिदिन',
+      above: '{{value}} g ज़्यादा',
+      short: '{{value}} g कम',
+      chart: '{{span}} में रोज़ का प्रोटीन, आपके लक्ष्य के मुक़ाबले',
+    },
+    workouts: {
+      title: 'वर्कआउट',
+      unit_one: 'वर्कआउट',
+      unit_other: 'वर्कआउट',
+      vs7d: 'पिछले हफ़्ते से {{delta}}',
+      vs30d: 'पिछले 30 दिनों से {{delta}}',
+      vs1y: 'पिछले साल से {{delta}}',
+      chart: '{{span}} में ट्रेनिंग का समय',
+      latest: 'हाल के',
+      startTitle: 'अपने वर्कआउट ट्रैक करें',
+      startBody: 'एक सेशन लॉग करें और आपकी ट्रेनिंग यहाँ दिखेगी।',
+    },
     water: {
-      dayNote: 'हर खंभा एक दिन है, आपके लक्ष्य के मुक़ाबले',
-      weeklyNote: 'हर खंभा एक हफ़्ता है, लक्ष्य के मुक़ाबले औसत',
-      monthlyNote: 'हर खंभा एक महीना है, लक्ष्य के मुक़ाबले औसत',
-      goalPill: 'लक्ष्य {{amount}}',
+      unit: '{{unit}} प्रतिदिन',
+      goalDays: '{{total}} में से {{done}} दिन लक्ष्य पूरा',
       chart: 'रोज़ का पानी, लक्ष्य {{amount}} के मुक़ाबले',
-
-      reached: 'लक्ष्य पूरा',
-      short: 'लक्ष्य से कम',
-
-      goalDays: 'लक्ष्य वाले दिन',
-      bestDay: 'सबसे अच्छा दिन',
-      bestMonth: 'सबसे अच्छा महीना',
-      yearAverage: 'साल का औसत',
-      total: 'कुल',
-
-      todayTitle: 'आज',
-
-      habitTitle: 'आदत',
-      daysAtLeast: '{{amount}} या उससे ज़्यादा वाले दिन',
-      daysLogged: 'दर्ज दिन',
-      monthsAveraging: '{{amount}}+ औसत वाले महीने',
-      monthsLogged: 'दर्ज महीने',
-
-      emptyTitle: 'इस अवधि में पानी दर्ज नहीं हुआ',
-      emptyBody: 'आज पर एक गिलास दर्ज करें और यह भर जाएगा।',
+      empty: 'इस अवधि में कोई पानी लॉग नहीं हुआ।',
     },
-
     weight: {
-      peakOn: '{{date}} को {{value}} {{unit}}',
-      latest: 'नवीनतम {{value}} {{unit}}',
-      latestOn: 'नवीनतम {{value}} {{unit}}, {{date}}',
-      peakIn: '{{month}} में {{value}} {{unit}}',
       change: '{{value}} {{unit}}',
       chart: '{{span}} में आपका वज़न',
-
       thisWeek: 'इस हफ़्ते',
-      thisMonth: 'इस महीने',
-      thisYear: 'इस साल',
-      average7: '7 दिन औसत',
-      average30: '30 दिन औसत',
-      lightest: 'सबसे कम',
-      weighIns: 'तौल',
-      monthsLogged: 'दर्ज महीने',
-
       toGoal: 'आपके {{target}} {{unit}} लक्ष्य तक {{value}} {{unit}} बाक़ी',
-      noTarget: 'कोई लक्ष्य वज़न तय नहीं',
       atGoal: 'आप अपने लक्ष्य वज़न पर हैं',
       weeksAway: 'क़रीब {{count}} हफ़्ते',
-
+      empty: 'अभी तक कोई वज़न लॉग नहीं हुआ।',
       add: 'जोड़ें',
-      weekByWeek: 'हफ़्ते दर हफ़्ते',
-      byQuarter: 'तिमाही से',
-      quarter: '{{from}} से {{to}}',
-
       reading: '{{value}} {{unit}}',
       firstReading: 'पहली',
-
       sheetTitle: 'वज़न जोड़ें',
       sheetEditTitle: '{{date}} की तौल',
       thisMorning: 'आज सुबह',
@@ -1042,14 +1004,9 @@ export const hi = {
       removeTitle: 'यह रीडिंग हटाएं?',
       removeBody:
         'चार्ट से यह दिन चला जाएगा। अगर यह सबसे नई थी, तो आपका हिसाब उससे पहले वाले पर लौट जाएगा।',
-
-      emptyTitle: 'इस अवधि में कोई तौल नहीं',
-      emptyBody: 'एक रीडिंग एक बिंदु बनाती है। दो एक रेखा बनाती हैं।',
     },
-
     history: {
       title: 'इतिहास',
-      viewFull: 'पूरा देखें',
       dayTotal: '{{value}} kcal',
       waterAverage: 'औसत {{amount}}',
       goalMet: 'लक्ष्य पूरा',
@@ -1270,6 +1227,9 @@ export const hi = {
       light: 'हल्का',
       dark: 'गहरा',
       auto: 'अपने आप',
+      focus: 'किस पर ध्यान',
+      focusCalories: 'कैलोरी',
+      focusProtein: 'प्रोटीन',
     },
 
     subscription: {

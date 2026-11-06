@@ -16,9 +16,9 @@ import {
   type WeightReading,
 } from '@/data'
 import {
+  HISTORY_METRICS,
   MealRow,
   RowGap,
-  TREND_METRICS,
   useDayName,
   useOpenDay,
   useOpenEntry,
@@ -48,7 +48,7 @@ import {
 type Group = { key: string; title: string; figure?: string; rows: ReactNode[] }
 
 const asMetric = (value: string | undefined): HistoryMetric =>
-  TREND_METRICS.includes(value as HistoryMetric) ? (value as HistoryMetric) : 'calories'
+  HISTORY_METRICS.includes(value as HistoryMetric) ? (value as HistoryMetric) : 'calories'
 
 /**
  * Everything behind the Trends charts, newest first, read like a statement.
@@ -147,7 +147,7 @@ function HistoryScreen() {
         ItemSeparatorComponent={Gap}
         ListHeaderComponent={
           <SegmentedControl
-            options={TREND_METRICS.map((value) => ({
+            options={HISTORY_METRICS.map((value) => ({
               value,
               label: t(`progress:metric.${value}`),
             }))}
