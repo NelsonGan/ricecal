@@ -19,8 +19,19 @@ import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
 import { showChange, UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
 import { volume } from '@/lib/water'
-import { spacing } from '@/theme/tokens'
-import { AppBar, Button, Card, EmptyState, Screen, Skeleton, Spinner, Text } from '@/ui'
+import { radius, spacing } from '@/theme/tokens'
+import {
+  AppBar,
+  Button,
+  Card,
+  EmptyState,
+  Icon,
+  Screen,
+  Skeleton,
+  Spinner,
+  Squish,
+  Text,
+} from '@/ui'
 import {
   MealRow,
   RowGap,
@@ -31,7 +42,6 @@ import {
   WeightRow,
 } from './History'
 import { WeighInSheet } from './WeighInSheet'
-import { WeighInPill } from './WeightCard'
 
 /** One card on the page: a heading, a figure beside it, and its rows. */
 type Group = { key: string; title: string; figure?: string; rows: ReactNode[] }
@@ -296,4 +306,32 @@ function byMonth<T extends { date: string }>(items: readonly T[]): [string, T[]]
     else months.push([month, [item]])
   }
   return months
+}
+
+/**
+ * The way to add a reading, in the weight history's bar, over the list where
+ * somebody notices one is missing. A pill rather than a full-width button.
+ */
+function WeighInPill({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation('progress')
+
+  return (
+    <Squish
+      depth={0}
+      radius={radius.full}
+      slabClassName="bg-transparent"
+      className="min-h-sm flex-row items-center gap-1.5 bg-track px-3"
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={t('weight.sheetTitle')}
+    >
+      <Icon set="ui" name="plus" size={15} />
+      {/* `label` rather than the display face at 15px. Baloo carries ascender
+          space this string does not use, so centring the two boxes left the
+          word sitting visibly below the icon beside it. */}
+      <Text variant="label" className="text-pandan-ink">
+        {t('weight.add')}
+      </Text>
+    </Squish>
+  )
 }

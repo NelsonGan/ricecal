@@ -932,8 +932,6 @@ export const ko = {
 
   progress: {
     title: '추이',
-    ofDays: '{{total}}일 중 {{done}}일',
-    focus: '추적 항목',
     metric: {
       calories: '칼로리',
       water: '물',
@@ -974,6 +972,7 @@ export const ko = {
       vs30d: '이전 30일 대비 {{delta}}',
       vs1y: '전년 대비 {{delta}}',
       chart: '{{span}} 운동 시간',
+      perDay: '하루 {{value}}',
       latest: '최근',
       startTitle: '운동을 기록해 보세요',
       startBody: '세션을 기록하면 여기에 표시돼요.',
@@ -1011,7 +1010,6 @@ export const ko = {
         '차트에서 이 날이 사라집니다. 가장 최근 값이라면 예산은 그 이전 값으로 돌아갑니다.',
     },
     history: {
-      title: '기록',
       caloriesTitle: '칼로리 기록',
       waterTitle: '물 기록',
       weightTitle: '체중 기록',
@@ -1692,7 +1690,6 @@ export const ko = {
       heaviest: '{{day}}, 가장 많음',
       pastWeeks: '최근 다섯 주',
       pastMonths: '최근 다섯 달',
-      noData: '—',
     },
     body: {
       weight: '몸무게',

@@ -929,8 +929,6 @@ export const zhHant = {
 
   progress: {
     title: '趨勢',
-    ofDays: '{{total}} 天裡有 {{done}} 天',
-    focus: '追蹤',
     metric: {
       calories: '熱量',
       water: '喝水',
@@ -971,6 +969,7 @@ export const zhHant = {
       vs30d: '比前 30 天 {{delta}}',
       vs1y: '比前一年 {{delta}}',
       chart: '{{span}}訓練時間',
+      perDay: '每天 {{value}}',
       latest: '最近',
       startTitle: '記錄你的訓練',
       startBody: '記錄一次訓練，就會顯示在這裡。',
@@ -1007,7 +1006,6 @@ export const zhHant = {
       removeBody: '圖表會少掉這一天。如果這是最近一次，你的額度會回到上一次的。',
     },
     history: {
-      title: '歷史',
       caloriesTitle: '熱量記錄',
       waterTitle: '飲水記錄',
       weightTitle: '體重記錄',
@@ -1686,7 +1684,6 @@ export const zhHant = {
       heaviest: '{{day}}，最多',
       pastWeeks: '最近五週',
       pastMonths: '最近五個月',
-      noData: '—',
     },
     body: {
       weight: '體重',

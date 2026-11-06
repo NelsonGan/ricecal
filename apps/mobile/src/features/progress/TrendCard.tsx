@@ -3,20 +3,29 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { type ThemeColors, useThemeColors } from '@/theme/useTheme'
-import { Badge, type BadgeTone, Card, Icon, type IconProps, Skeleton, Tappable, Text } from '@/ui'
+import {
+  Badge,
+  type BadgeTone,
+  Card,
+  cn,
+  Icon,
+  type IconProps,
+  Skeleton,
+  Tappable,
+  Text,
+} from '@/ui'
 
 export type TrendCardProps = {
-  icon: IconProps
-  title: string
   /**
-   * Drawn in place of the icon and title: the first card's Calories and
-   * Protein switch, which names the card as it picks it.
+   * The card's name: an icon and a title, or a control drawn in their place,
+   * which is how the first card's Calories and Protein switch names the card
+   * as it picks it.
    */
-  heading?: ReactNode
+  heading: { icon: IconProps; title: string } | ReactNode
   /** Where the heading leads: the entries behind the figure. */
-  onOpen?: () => void
-  /** Replaces the arrow: the weight card's Add pill. */
-  action?: ReactNode
+  onOpen: () => void
+  /** What the arrow opens, read out: "Calorie history". */
+  openLabel: string
   /** The range's figure, its unit, and the pill that says whether it was good. */
   figure?: { value: string; unit: string }
   chip?: ReactNode
@@ -43,11 +52,9 @@ export type TrendCardProps = {
  * word.
  */
 export function TrendCard({
-  icon,
-  title,
   heading,
   onOpen,
-  action,
+  openLabel,
   figure,
   chip,
   loading = false,
@@ -58,54 +65,41 @@ export function TrendCard({
   const { t } = useTranslation('common')
   const colors = useThemeColors()
 
-  const arrow = <Icon set="ui" name="chevron-right" size={20} tintColor={colors.faint} />
-  const named = (
-    <View className="min-w-0 shrink flex-row items-center gap-2">
-      <Icon {...icon} size={22} />
-      <Text variant="subtitle" numberOfLines={1} className="min-w-0 shrink">
-        {title}
-      </Text>
-    </View>
+  const arrow = (
+    <Tappable
+      onPress={onOpen}
+      accessibilityRole="button"
+      accessibilityLabel={openLabel}
+      hitSlop={12}
+    >
+      <Icon set="ui" name="chevron-right" size={20} tintColor={colors.faint} />
+    </Tappable>
   )
 
   return (
-    <Card contentClassName="gap-3">
-      {heading ? (
-        // A control cannot sit inside a pressable row, so here only the
-        // arrow opens the entries.
-        <View className="min-h-sm flex-row items-center justify-between gap-3">
-          {heading}
-          {action ??
-            (onOpen ? (
-              <Tappable
-                onPress={onOpen}
-                accessibilityRole="button"
-                accessibilityLabel={title}
-                hitSlop={12}
-              >
-                {arrow}
-              </Tappable>
-            ) : null)}
-        </View>
-      ) : onOpen && !action ? (
+    <Card>
+      {isNamed(heading) ? (
+        // The whole row opens the entries, as a list row does.
         <Tappable
           onPress={onOpen}
           accessibilityRole="button"
+          accessibilityLabel={openLabel}
           className="min-h-sm flex-row items-center justify-between gap-3"
         >
-          {named}
-          {arrow}
+          <View className="min-w-0 shrink flex-row items-center gap-2">
+            <Icon {...heading.icon} size={22} />
+            <Text variant="subtitle" numberOfLines={1} className="min-w-0 shrink">
+              {heading.title}
+            </Text>
+          </View>
+          <Icon set="ui" name="chevron-right" size={20} tintColor={colors.faint} />
         </Tappable>
       ) : (
+        // A control cannot sit inside a pressable row, so here only the arrow
+        // opens the entries.
         <View className="min-h-sm flex-row items-center justify-between gap-3">
-          {onOpen ? (
-            <Tappable onPress={onOpen} accessibilityRole="button" hitSlop={8} className="shrink">
-              {named}
-            </Tappable>
-          ) : (
-            named
-          )}
-          {action}
+          {heading}
+          {arrow}
         </View>
       )}
 
@@ -131,13 +125,13 @@ export function TrendCard({
         <>
           {figure ? (
             <View className="flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2">
-              <View className="flex-row items-baseline gap-1.5">
-                {/* No `leading-`: the display face's line box is what keeps the
-                    figure and its unit on one baseline. */}
-                <Text className="font-display text-[34px] text-heading" numberOfLines={1}>
+              {/* `shrink` on the group and the unit, so a long translated
+                  unit gives up width rather than running past the card. */}
+              <View className="min-w-0 shrink flex-row items-baseline gap-1.5">
+                <Text variant="displayMd" numberOfLines={1}>
                   {figure.value}
                 </Text>
-                <Text variant="meta" numberOfLines={1}>
+                <Text variant="meta" numberOfLines={1} className="shrink">
                   {figure.unit}
                 </Text>
               </View>
@@ -149,6 +143,13 @@ export function TrendCard({
       )}
     </Card>
   )
+}
+
+/** An icon and a title, rather than a control drawn in their place. */
+function isNamed(
+  heading: TrendCardProps['heading'],
+): heading is { icon: IconProps; title: string } {
+  return typeof heading === 'object' && heading !== null && 'title' in heading && 'icon' in heading
 }
 
 /**
@@ -167,7 +168,7 @@ export function TrendChip({
 }) {
   const colors = useThemeColors()
   return (
-    <Badge tone={tone} size="sm" className="flex-row items-center gap-1 px-2.5 py-1.5">
+    <Badge tone={tone} size="sm" className="max-w-full flex-row items-center gap-1 px-2.5 py-1.5">
       {/* A plain arrow in the pill's own ink. The illustrated trend arrows are
           red going down and green going up, which on a green "212 under" pill
           said bad and good at once. */}
@@ -179,7 +180,7 @@ export function TrendChip({
           tintColor={colors[ARROW_INK[tone]]}
         />
       ) : null}
-      <Text variant="caption" className={CHIP_INK[tone]} numberOfLines={1}>
+      <Text variant="caption" className={cn('shrink', CHIP_INK[tone])} numberOfLines={1}>
         {label}
       </Text>
     </Badge>

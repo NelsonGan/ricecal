@@ -15,8 +15,7 @@ import {
 import { durationText } from '@/features/workouts/format'
 import { compactVolume } from '@/features/workouts/progress'
 import { UNIT_KEY, type WeightUnit } from '@/lib/units'
-import { useThemeColors } from '@/theme/useTheme'
-import { Card, Icon, ListRow, Tappable, Text } from '@/ui'
+import { Card, Icon, ListRow, Text } from '@/ui'
 import { bucketLabels, SPAN_KEY } from './axis'
 import { useDayName } from './History'
 import { problemOf, TrendCard, TrendChip } from './TrendCard'
@@ -37,7 +36,7 @@ const VERSUS_KEY = {
 
 /**
  * Training on the Trends screen: how many workouts, against the period before,
- * the time trained over the range, and the newest sessions.
+ * the minutes trained a day across the range, and the newest sessions.
  *
  * Time rather than a count for the line: it carries both how often and how
  * long, and on the week view a count is a row of noughts and ones. The count
@@ -63,23 +62,30 @@ export function WorkoutsCard({ range, unit }: { range: TrendRange; unit: WeightU
     history.isSuccess &&
     latest.length === 0 &&
     (totals?.workouts ?? 0) === 0 &&
-    (totals?.previous.workouts ?? 0) === 0
+    (totals?.prevWorkouts ?? 0) === 0
 
   // Somebody who only tracks food sees one line here, not an empty chart.
   if (neverTrained) return <StartCard />
 
-  const delta = totals ? totals.workouts - totals.previous.workouts : 0
+  const delta = totals ? totals.workouts - totals.prevWorkouts : 0
   const buckets = series.data
-  const peakMinutes = Math.max(0, ...(buckets ?? []).map((bucket) => bucket.durationS / 60))
+  /**
+   * Minutes trained a day in each column, not the column's total. The columns
+   * are not the same length: the oldest block of thirty days is two days and
+   * this month is a few days old, and a total drew both as a slump.
+   */
+  const perDay = (bucket: { durationS: number; days: number }) =>
+    Math.round(bucket.durationS / 60 / Math.max(1, bucket.days))
+  const peakMinutes = Math.max(0, ...(buckets ?? []).map(perDay))
   const labels = buckets
     ? bucketLabels(buckets, range, (index) => t('progress:range.week', { index }))
     : []
 
   return (
     <TrendCard
-      icon={{ set: 'body', name: 'dumbbell' }}
-      title={t('progress:workouts.title')}
+      heading={{ icon: { set: 'body', name: 'dumbbell' }, title: t('progress:workouts.title') }}
       onOpen={() => router.push('/workout/stats')}
+      openLabel={tw('workouts:stats.title')}
       loading={loading}
       problem={problemOf([series, summary])}
       onRetry={() => {
@@ -100,7 +106,8 @@ export function WorkoutsCard({ range, unit }: { range: TrendRange; unit: WeightU
             tone={delta > 0 ? 'pandan' : 'neutral'}
             direction={delta > 0 ? 'up' : 'down'}
             label={t(VERSUS_KEY[range], {
-              delta: delta > 0 ? `+${delta}` : `${delta}`,
+              // A true minus, as `showChange` prints beside it on the weight card.
+              delta: delta > 0 ? `+${delta}` : `\u2212${Math.abs(delta)}`,
             })}
           />
         )
@@ -115,9 +122,14 @@ export function WorkoutsCard({ range, unit }: { range: TrendRange; unit: WeightU
             key: bucket.start,
             label: labels[index],
             title: range === '1y' ? format(parseISO(bucket.start), 'LLLL') : undefined,
-            value: Math.round(bucket.durationS / 60),
+            value: perDay(bucket),
           }))}
-          formatValue={(minutes) => durationText(tw, minutes * 60)}
+          // A day on the week view is its own figure; elsewhere it is an average.
+          formatValue={(minutes) =>
+            range === '7d'
+              ? durationText(tw, minutes * 60)
+              : t('progress:workouts.perDay', { value: durationText(tw, minutes * 60) })
+          }
           // Past two hours the rules land on round hours, "4 h" rather than
           // "4 h 10 min", which is what fits beside the line.
           unitFactor={peakMinutes >= 120 ? 1 / 60 : 1}
@@ -167,6 +179,8 @@ function LatestRow({
       subtitle={`${dayName(workout.date)} · ${durationText(t, workout.durationS)}`}
       divider={divider}
       className="py-2"
+      // The figures are read-only, and the chevron is what says the row opens.
+      chevron
       onPress={() => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })}
       trailing={
         <View className="flex-row items-center gap-2">
@@ -189,25 +203,23 @@ function LatestRow({
   )
 }
 
-/** The whole card for somebody who has never logged a workout: one row to start. */
+/**
+ * The whole card for somebody who has never logged a workout: one row to
+ * start, built as the Reviews row at the foot of Trends is.
+ */
 function StartCard() {
   const { t } = useTranslation(['progress'])
-  const colors = useThemeColors()
 
   return (
-    <Card contentClassName="gap-0 py-3">
-      <Tappable
+    <Card contentClassName="gap-0 px-5 py-1">
+      <ListRow
+        title={t('progress:workouts.startTitle')}
+        subtitle={t('progress:workouts.startBody')}
+        leading={<Icon set="body" name="dumbbell" size={28} />}
+        divider={false}
+        className="py-1.5"
         onPress={() => router.push('/workouts')}
-        accessibilityRole="button"
-        className="min-h-sm flex-row items-center gap-3"
-      >
-        <Icon set="body" name="dumbbell" size={28} />
-        <View className="min-w-0 flex-1 gap-0.5">
-          <Text variant="label">{t('progress:workouts.startTitle')}</Text>
-          <Text variant="meta">{t('progress:workouts.startBody')}</Text>
-        </View>
-        <Icon set="ui" name="chevron-right" size={18} tintColor={colors.faint} />
-      </Tappable>
+      />
     </Card>
   )
 }

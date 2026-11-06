@@ -940,8 +940,6 @@ export const ta = {
 
   progress: {
     title: 'போக்கு',
-    ofDays: '{{total}} இல் {{done}}',
-    focus: 'கண்காணிப்பு',
     metric: {
       calories: 'கலோரிகள்',
       water: 'தண்ணீர்',
@@ -982,6 +980,7 @@ export const ta = {
       vs30d: 'முந்தைய 30 நாட்களை விட {{delta}}',
       vs1y: 'முந்தைய ஆண்டை விட {{delta}}',
       chart: '{{span}}: பயிற்சி நேரம்',
+      perDay: 'நாளுக்கு {{value}}',
       latest: 'சமீபத்தியவை',
       startTitle: 'உங்கள் வொர்க்அவுட்களைக் கண்காணியுங்கள்',
       startBody: 'ஒரு அமர்வைப் பதிவு செய்யுங்கள், உங்கள் பயிற்சி இங்கே தெரியும்.',
@@ -1019,7 +1018,6 @@ export const ta = {
         'வரைபடத்தில் இந்த நாள் போய்விடும். இதுவே சமீபத்தியதாக இருந்தால், உங்கள் வரவு அதற்கு முந்தையதற்குத் திரும்பும்.',
     },
     history: {
-      title: 'வரலாறு',
       caloriesTitle: 'கலோரி வரலாறு',
       waterTitle: 'தண்ணீர் வரலாறு',
       weightTitle: 'எடை வரலாறு',
@@ -1703,7 +1701,6 @@ export const ta = {
       heaviest: '{{day}}, மிக அதிகம்',
       pastWeeks: 'கடந்த ஐந்து வாரங்கள்',
       pastMonths: 'கடந்த ஐந்து மாதங்கள்',
-      noData: '—',
     },
     body: {
       weight: 'எடை',

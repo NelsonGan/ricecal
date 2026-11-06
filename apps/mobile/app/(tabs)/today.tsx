@@ -370,8 +370,8 @@ function TodayContent() {
   /**
    * Somebody tracking protein rather than the budget sees grams on the ring:
    * eaten against the day's protein target, never extended by movement, and
-   * in one colour, since going past a protein target is the point rather than
-   * a warning. The macro lines beside it still carry calories.
+   * always hibiscus, protein's colour in the macro line beside it. It does not
+   * change colour past the target: going past it is the point, not a warning. The macro lines beside it still carry calories.
    */
   const protein = focusOf(settings) === 'protein'
   const proteinGoal = targets?.protein ?? 0
@@ -613,7 +613,7 @@ function TodayContent() {
                     <CalorieRing
                       value={eaten.protein}
                       goal={proteinGoal}
-                      tone="pandan"
+                      tone="hibiscus"
                       accessibilityLabel={t('logging:today.proteinA11y', {
                         value: Math.round(eaten.protein),
                         goal: Math.round(proteinGoal),

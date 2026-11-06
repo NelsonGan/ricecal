@@ -925,8 +925,6 @@ export const bn = {
 
   progress: {
     title: 'প্রবণতা',
-    ofDays: '{{total}} এর মধ্যে {{done}}',
-    focus: 'ট্র্যাক',
     metric: {
       calories: 'ক্যালরি',
       water: 'পানি',
@@ -967,6 +965,7 @@ export const bn = {
       vs30d: 'আগের ৩০ দিনের তুলনায় {{delta}}',
       vs1y: 'আগের বছরের তুলনায় {{delta}}',
       chart: '{{span}}: অনুশীলনের সময়',
+      perDay: 'প্রতিদিন {{value}}',
       latest: 'সাম্প্রতিক',
       startTitle: 'আপনার ওয়ার্কআউট ট্র্যাক করুন',
       startBody: 'একটি সেশন লগ করুন, আপনার অনুশীলন এখানে দেখা যাবে।',
@@ -1003,7 +1002,6 @@ export const bn = {
       removeBody: 'লেখচিত্র থেকে এই দিনটি চলে যাবে। এটিই সর্বশেষ হলে আপনার হিসাব তার আগেরটিতে ফিরে যাবে।',
     },
     history: {
-      title: 'ইতিহাস',
       caloriesTitle: 'ক্যালোরির ইতিহাস',
       waterTitle: 'পানির ইতিহাস',
       weightTitle: 'ওজনের ইতিহাস',
@@ -1684,7 +1682,6 @@ export const bn = {
       heaviest: '{{day}}, সবচেয়ে বেশি',
       pastWeeks: 'গত পাঁচ সপ্তাহ',
       pastMonths: 'গত পাঁচ মাস',
-      noData: '—',
     },
     body: {
       weight: 'ওজন',

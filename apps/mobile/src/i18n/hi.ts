@@ -927,8 +927,6 @@ export const hi = {
 
   progress: {
     title: 'रुझान',
-    ofDays: '{{total}} में से {{done}}',
-    focus: 'ट्रैक',
     metric: {
       calories: 'कैलोरी',
       water: 'पानी',
@@ -969,6 +967,7 @@ export const hi = {
       vs30d: 'पिछले 30 दिनों से {{delta}}',
       vs1y: 'पिछले साल से {{delta}}',
       chart: '{{span}} में ट्रेनिंग का समय',
+      perDay: '{{value}} प्रतिदिन',
       latest: 'हाल के',
       startTitle: 'अपने वर्कआउट ट्रैक करें',
       startBody: 'एक सेशन लॉग करें और आपकी ट्रेनिंग यहाँ दिखेगी।',
@@ -1006,7 +1005,6 @@ export const hi = {
         'चार्ट से यह दिन चला जाएगा। अगर यह सबसे नई थी, तो आपका हिसाब उससे पहले वाले पर लौट जाएगा।',
     },
     history: {
-      title: 'इतिहास',
       caloriesTitle: 'कैलोरी का इतिहास',
       waterTitle: 'पानी का इतिहास',
       weightTitle: 'वज़न का इतिहास',
@@ -1690,7 +1688,6 @@ export const hi = {
       heaviest: '{{day}}, सबसे ज़्यादा',
       pastWeeks: 'पिछले पांच हफ़्ते',
       pastMonths: 'पिछले पांच महीने',
-      noData: '—',
     },
     body: {
       weight: 'वज़न',

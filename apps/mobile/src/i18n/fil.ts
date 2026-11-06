@@ -960,8 +960,6 @@ export const fil = {
 
   progress: {
     title: 'Mga trend',
-    ofDays: '{{done}} sa {{total}}',
-    focus: 'I-track',
     metric: {
       calories: 'Calories',
       water: 'Tubig',
@@ -1002,6 +1000,7 @@ export const fil = {
       vs30d: '{{delta}} kumpara sa nakaraang 30 araw',
       vs1y: '{{delta}} kumpara sa nakaraang taon',
       chart: 'Oras ng training sa {{span}}',
+      perDay: '{{value}} kada araw',
       latest: 'PINAKABAGO',
       startTitle: 'I-track ang mga workout mo',
       startBody: 'Mag-log ng session at lalabas dito ang training mo.',
@@ -1039,7 +1038,6 @@ export const fil = {
         'Mawawala sa chart ang araw na ito. Kung ito ang pinakahuli, babalik ang badyet mo sa nauna.',
     },
     history: {
-      title: 'Kasaysayan',
       caloriesTitle: 'Kasaysayan ng calories',
       waterTitle: 'Kasaysayan ng tubig',
       weightTitle: 'Kasaysayan ng timbang',
@@ -1735,7 +1733,6 @@ export const fil = {
       heaviest: '{{day}}, PINAKAMABIGAT',
       pastWeeks: 'HULING LIMANG LINGGO',
       pastMonths: 'HULING LIMANG BUWAN',
-      noData: '—',
     },
     body: {
       weight: 'TIMBANG',

@@ -119,7 +119,6 @@ export default function ReviewsScreen() {
             featured
             period={listed[0]}
             unit={unit}
-            latest
             locked={!isFree(0)}
             workouts={workoutsFor(listed[0].start)}
             onPress={() => open(0)}

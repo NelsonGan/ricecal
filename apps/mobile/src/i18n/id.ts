@@ -949,8 +949,6 @@ export const id = {
 
   progress: {
     title: 'Tren',
-    ofDays: '{{done}} dari {{total}}',
-    focus: 'Pantau',
     metric: {
       calories: 'Kalori',
       water: 'Air',
@@ -991,6 +989,7 @@ export const id = {
       vs30d: '{{delta}} dibanding 30 hari sebelumnya',
       vs1y: '{{delta}} dibanding tahun sebelumnya',
       chart: 'Waktu latihan selama {{span}}',
+      perDay: '{{value}} per hari',
       latest: 'TERBARU',
       startTitle: 'Catat latihanmu',
       startBody: 'Catat satu sesi dan latihanmu muncul di sini.',
@@ -1028,7 +1027,6 @@ export const id = {
         'Grafiknya kehilangan hari ini. Kalau ini yang terbaru, jatahmu kembali ke yang sebelumnya.',
     },
     history: {
-      title: 'Riwayat',
       caloriesTitle: 'Riwayat kalori',
       waterTitle: 'Riwayat air',
       weightTitle: 'Riwayat berat',
@@ -1716,7 +1714,6 @@ export const id = {
       heaviest: '{{day}}, TERBERAT',
       pastWeeks: 'LIMA MINGGU TERAKHIR',
       pastMonths: 'LIMA BULAN TERAKHIR',
-      noData: '—',
     },
     body: {
       weight: 'BERAT',

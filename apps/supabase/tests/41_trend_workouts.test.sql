@@ -1,13 +1,13 @@
 -- ---------------------------------------------------------------------------
 -- Workouts on the Trends screen (`trend_workouts`, `trend_workout_summary`):
--- the columns match the other trend charts, a day with two workouts is one
--- active day, and the range before is counted beside the range, never in it.
+-- the columns match the other trend charts and carry their own length, and
+-- the range before is counted beside the range, never in it.
 -- ---------------------------------------------------------------------------
 begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(12);
 
 \set lifter '99999999-9999-4999-8999-9999999999a1'
 
@@ -37,9 +37,9 @@ select is(
   'a year is twelve months'
 );
 
-select is(
-  (select workouts from public.trend_workout_summary('7d')),
-  0,
+select results_eq(
+  $$select workouts, prev_workouts from public.trend_workout_summary('7d')$$,
+  $$values (0, 0)$$,
   'an empty range still answers one row of zeros'
 );
 
@@ -66,46 +66,33 @@ from (values
 ) as w(n, id, day);
 
 select is(
-  (select workouts from public.trend_workouts('7d') where bucket_start = public.local_today()),
-  2,
-  'both of today''s workouts land in today''s column'
-);
-
-select is(
-  (select active_days from public.trend_workouts('7d') where bucket_start = public.local_today()),
-  1,
-  'and they are one active day'
-);
-
-select is(
   (select duration_s from public.trend_workouts('7d') where bucket_start = public.local_today()),
   7200,
-  'with their time added up'
+  'both of today''s workouts land in today''s column, their time added up'
 );
 
 select is(
-  (select volume_kg from public.trend_workouts('7d') where bucket_start = public.local_today()),
-  1200::numeric,
-  'and their volume'
+  (select days from public.trend_workouts('7d') where bucket_start = public.local_today()),
+  1,
+  'a column of the week is one day long'
 );
 
 select is(
-  (select sum(workouts)::integer from public.trend_workouts('7d')),
-  2,
+  (select sum(days)::integer from public.trend_workouts('30d')),
+  30,
+  'and the thirty-day columns add up to thirty days, the oldest one short'
+);
+
+select is(
+  (select sum(duration_s)::integer from public.trend_workouts('7d')),
+  7200,
   'the workout eight days ago is not in the week'
 );
 
 select results_eq(
-  $$select workouts, active_days, duration_s, sets from public.trend_workout_summary('7d')$$,
-  $$values (2, 1, 7200, 4)$$,
-  'the week''s summary is the week''s workouts'
-);
-
-select results_eq(
-  $$select prev_workouts, prev_active_days, prev_duration_s, prev_volume_kg
-      from public.trend_workout_summary('7d')$$,
-  $$values (1, 1, 3600, 600::numeric)$$,
-  'and the week before is counted beside it'
+  $$select workouts, prev_workouts from public.trend_workout_summary('7d')$$,
+  $$values (2, 1)$$,
+  'the week''s two, and the week before''s one beside them'
 );
 
 select is(

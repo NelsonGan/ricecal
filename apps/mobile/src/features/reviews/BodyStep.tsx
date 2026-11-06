@@ -3,11 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { ReviewBucket, ReviewKind, ReviewSummary } from '@/data'
-import { TrendLine } from '@/features/progress'
-import { showChange, showWeight, type WeightUnit } from '@/lib/units'
+import { TrendChip, TrendLine } from '@/features/progress'
+import { fromKg, showChange, showWeight, type WeightUnit } from '@/lib/units'
 import { volume } from '@/lib/water'
-import { useThemeColors } from '@/theme/useTheme'
-import { Badge, Card, Divider, Icon, Text } from '@/ui'
+import { Card, Divider, Text } from '@/ui'
 import { Shareable } from './ShareableCards'
 
 export type BodyStepProps = {
@@ -31,7 +30,6 @@ export type BodyStepProps = {
  */
 export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
   const { t } = useTranslation(['reviews', 'common', 'progress'])
-  const colors = useThemeColors()
 
   const hasWeight = summary.weighIns > 0 && summary.weightLast !== null
   const hasSteps = summary.activeDays > 0
@@ -65,26 +63,21 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
               </View>
 
               {summary.weightChange === null ? null : (
-                <Badge tone={summary.weightChange <= 0 ? 'pandan' : 'kaya'} className="px-3 py-1.5">
-                  <Icon
-                    set="ui"
-                    name={summary.weightChange <= 0 ? 'arrow-down' : 'arrow-up'}
-                    size={14}
-                    tintColor={summary.weightChange <= 0 ? colors.pandanInk : colors.kayaInk}
-                  />
-                  <Text
-                    variant="caption"
-                    numberOfLines={1}
-                    className={summary.weightChange <= 0 ? 'text-pandan-ink' : 'text-kaya-ink'}
-                  >
-                    {`${showChange(summary.weightChange, unit)} ${t(`common:unit.${unit}`)}`}
-                  </Text>
-                </Badge>
+                <TrendChip
+                  tone={summary.weightChange <= 0 ? 'pandan' : 'kaya'}
+                  direction={summary.weightChange <= 0 ? 'down' : 'up'}
+                  label={`${showChange(summary.weightChange, unit)} ${t(`common:unit.${unit}`)}`}
+                />
               )}
             </View>
 
             <TrendLine
-              height={78}
+              height={104}
+              // The same scale the other lines in a review carry, in the
+              // reader's unit; a tap still shares the card.
+              formatValue={(value) => `${showWeight(value, unit)} ${t(`common:unit.${unit}`)}`}
+              unitFactor={fromKg(1, unit)}
+              interactive={false}
               points={buckets.map((bucket) => ({
                 key: bucket.start,
                 label: '',
@@ -145,7 +138,7 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
             {/* A line from zero with the step goal dashed: a day on or over
                 it is pandan, one short of it kaya, as on Trends. */}
             <TrendLine
-              height={78}
+              height={104}
               fromZero
               goal={summary.stepGoal || null}
               minPad={500}

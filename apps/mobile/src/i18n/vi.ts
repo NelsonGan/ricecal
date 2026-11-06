@@ -937,8 +937,6 @@ export const vi = {
 
   progress: {
     title: 'Xu hướng',
-    ofDays: '{{done}} trên {{total}}',
-    focus: 'Theo dõi',
     metric: {
       calories: 'Calo',
       water: 'Nước',
@@ -979,6 +977,7 @@ export const vi = {
       vs30d: '{{delta}} so với 30 ngày trước đó',
       vs1y: '{{delta}} so với năm trước',
       chart: 'Thời gian tập trong {{span}}',
+      perDay: '{{value}} mỗi ngày',
       latest: 'GẦN ĐÂY',
       startTitle: 'Theo dõi buổi tập',
       startBody: 'Ghi một buổi tập và quá trình tập của bạn sẽ hiện ở đây.',
@@ -1016,7 +1015,6 @@ export const vi = {
         'Biểu đồ mất ngày này. Nếu đây là lần mới nhất, hạn mức của bạn quay về lần trước đó.',
     },
     history: {
-      title: 'Lịch sử',
       caloriesTitle: 'Lịch sử calo',
       waterTitle: 'Lịch sử uống nước',
       weightTitle: 'Lịch sử cân nặng',
@@ -1704,7 +1702,6 @@ export const vi = {
       heaviest: '{{day}}, NẶNG NHẤT',
       pastWeeks: 'NĂM TUẦN GẦN NHẤT',
       pastMonths: 'NĂM THÁNG GẦN NHẤT',
-      noData: '—',
     },
     body: {
       weight: 'CÂN NẶNG',

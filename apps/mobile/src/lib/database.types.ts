@@ -4065,7 +4065,6 @@ export type Database = {
       review_workout_periods: {
         Args: { p_kind: string }
         Returns: {
-          duration_s: number
           starts_on: string
           workouts: number
         }[]
@@ -4082,10 +4081,8 @@ export type Database = {
       review_workouts: {
         Args: { p_kind: string; p_start: string }
         Returns: {
-          active_days: number
           duration_s: number
           prev_workouts: number
-          sets: number
           trained_on: string[]
           volume_kg: number
           workouts: number
@@ -4631,30 +4628,17 @@ export type Database = {
       trend_workout_summary: {
         Args: { p_range: string }
         Returns: {
-          active_days: number
-          duration_s: number
-          from_date: string
-          prev_active_days: number
-          prev_duration_s: number
-          prev_volume_kg: number
           prev_workouts: number
-          sets: number
-          to_date: string
-          volume_kg: number
           workouts: number
         }[]
       }
       trend_workouts: {
         Args: { p_range: string }
         Returns: {
-          active_days: number
           bucket_end: string
           bucket_start: string
           days: number
           duration_s: number
-          sets: number
-          volume_kg: number
-          workouts: number
         }[]
       }
       unregister_push_token: { Args: { p_token: string }; Returns: undefined }
