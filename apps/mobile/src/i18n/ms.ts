@@ -979,6 +979,7 @@ export const ms = {
       span30d: '30 hari lalu',
       span1y: '12 bulan lalu',
       week: 'Mg {{index}}',
+      between: '{{from}} hingga {{to}}',
     },
     calories: {
       unit: 'kcal sehari',

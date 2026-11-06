@@ -21,8 +21,10 @@ export const progress = {
     span7d: 'Last 7 days',
     span30d: 'Last 30 days',
     span1y: 'Last 12 months',
-    /** The axis under a 30-day chart, whose columns are seven-day blocks. */
+    /** A review chart's axis, whose columns are seven-day blocks. */
     week: 'Wk {{index}}',
+    /** A week on the year's chart, as its readout names it: "2 Nov to 8 Nov". */
+    between: '{{from}} to {{to}}',
   },
 
   calories: {

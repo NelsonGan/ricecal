@@ -4555,7 +4555,7 @@ export type Database = {
         Returns: number
       }
       trend_days: {
-        Args: { p_range: string; p_user_id?: string }
+        Args: { p_grain?: string; p_range: string; p_user_id?: string }
         Returns: {
           at: string
           bucket: string
@@ -4571,7 +4571,7 @@ export type Database = {
         }[]
       }
       trend_series: {
-        Args: { p_range: string; p_user_id?: string }
+        Args: { p_grain?: string; p_range: string; p_user_id?: string }
         Returns: {
           bucket_end: string
           bucket_start: string
@@ -4633,7 +4633,7 @@ export type Database = {
         }[]
       }
       trend_workouts: {
-        Args: { p_range: string }
+        Args: { p_grain?: string; p_range: string }
         Returns: {
           bucket_end: string
           bucket_start: string

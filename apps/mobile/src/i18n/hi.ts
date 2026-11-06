@@ -942,6 +942,7 @@ export const hi = {
       span30d: 'पिछले 30 दिन',
       span1y: 'पिछले 12 महीने',
       week: 'सप्ता {{index}}',
+      between: '{{from}} से {{to}}',
     },
     calories: {
       unit: 'kcal प्रतिदिन',

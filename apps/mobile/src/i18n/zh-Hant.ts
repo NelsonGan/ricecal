@@ -944,6 +944,7 @@ export const zhHant = {
       span30d: '最近 30 天',
       span1y: '最近 12 個月',
       week: '第 {{index}} 週',
+      between: '{{from}} 至 {{to}}',
     },
     calories: {
       unit: 'kcal/天',
