@@ -410,7 +410,12 @@ export function ChatScreen({
       'day' in item ? (
         <DayChip day={item.day} />
       ) : item.event ? (
-        <EventLine message={item} event={item.event} />
+        <EventLine
+          message={item}
+          event={item.event}
+          afterEvent={isEvent(rows[index + 1])}
+          beforeEvent={isEvent(rows[index - 1])}
+        />
       ) : (
         // Inverted: the row above is the next one in the array. A day chip
         // between two messages starts a new run, as it has no author.
@@ -650,40 +655,70 @@ function DayChip({ day }: { day: string }) {
   )
 }
 
+/** Where the actor's name falls in a notice, so it can be set bold without a second string per language. */
+const NAME_MARK = '\u2063'
+
 /**
  * Something that happened rather than something said: a member joining, or
  * liking a fellow member's food. A quiet line in the middle of the thread, as
  * a messenger draws its own notices, with nothing to reply to or react to.
+ *
+ * No chip behind it: a filled shape read as one more message. The emoji is part
+ * of the text rather than an icon beside it, so a notice that wraps stays
+ * centred with its emoji on the first line.
  */
-function EventLine({ message, event }: { message: GroupMessage; event: ChatEvent }) {
+function EventLine({
+  message,
+  event,
+  afterEvent,
+  beforeEvent,
+}: {
+  message: GroupMessage
+  event: ChatEvent
+  afterEvent: boolean
+  beforeEvent: boolean
+}) {
   const { t } = useTranslation('groups')
-  const colors = useThemeColors()
   const viewer = useUserId()
-  const name = message.mine ? t('you') : message.author.name
-  if (event.kind === 'joined') {
-    return (
-      <View className="items-center py-2">
-        <View className="rounded-full bg-surface-alt px-3 py-1">
-          <Text variant="micro">
-            {message.mine ? t('eventJoinedYou') : t('eventJoined', { name })}
-          </Text>
-        </View>
-      </View>
-    )
-  }
-  const food = event.food
-  const label = !food
-    ? t('eventLikedGone', { name })
-    : food.owner.id === viewer
-      ? t('eventLikedYours', { name, food: food.name })
-      : message.mine
-        ? t('eventLikedByYou', { owner: food.owner.name, food: food.name })
-        : t('eventLiked', { name, owner: food.owner.name, food: food.name })
+  const actor = message.mine ? t('you') : message.author.name
+  const name = NAME_MARK
+  const food = event.kind === 'liked' ? event.food : null
+  const text =
+    event.kind === 'joined'
+      ? message.mine
+        ? t('eventJoinedYou')
+        : t('eventJoined', { name })
+      : !food
+        ? t('eventLikedGone', { name })
+        : food.owner.id === viewer
+          ? t('eventLikedYours', { name, food: food.name })
+          : message.mine
+            ? t('eventLikedByYou', { owner: food.owner.name, food: food.name })
+            : t('eventLiked', { name, owner: food.owner.name, food: food.name })
+  const label = text.split(NAME_MARK).join(actor)
+  // Another member's name is set bold; your own "You" stays plain, as it does in
+  // the strings that write it out. Each notice names its actor at most once.
+  const [before, ...after] = message.mine ? [label] : text.split(NAME_MARK)
+  // A run of notices packs close as one block, with more room around the block
+  // than a new run of messages gets, so it never sits tight under a time.
   return (
-    <View className="flex-row items-center justify-center gap-1.5 px-6 py-1.5">
-      <Icon set="system" name="thumbs-up" size={14} tintColor={colors.muted} />
-      <Text variant="micro" numberOfLines={2} className="shrink text-center">
-        {label}
+    <View className={cn('items-center px-8', afterEvent ? 'mt-1' : 'mt-4', !beforeEvent && 'mb-1')}>
+      <Text
+        variant="caption"
+        numberOfLines={2}
+        className="text-center font-body-bold"
+        accessibilityLabel={label}
+      >
+        {event.kind === 'joined' ? '👋 ' : '👍 '}
+        {before}
+        {after.length > 0 ? (
+          <>
+            <Text variant="caption" className="text-body">
+              {actor}
+            </Text>
+            {after.join(actor)}
+          </>
+        ) : null}
       </Text>
     </View>
   )
@@ -822,6 +857,7 @@ type ChatItem = ChatRow | { id: string; day: string }
 // starts a new run.
 const authorOf = (item: ChatItem | undefined) =>
   item && 'author' in item && !item.event ? item.author.id : null
+const isEvent = (item: ChatItem | undefined) => Boolean(item && 'author' in item && item.event)
 
 /** The thread's side padding (`px-gutter`), and how much of a row a bubble may take (`max-w-[78%]`). */
 const GUTTER = 20

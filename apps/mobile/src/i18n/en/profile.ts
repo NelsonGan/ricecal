@@ -31,7 +31,11 @@ export const profile = {
     proNone: 'Free plan',
     metric: 'Metric',
     imperial: 'Imperial',
-    settings: 'SETTINGS',
+    /** The headings of the four settings cards on Me. One word each where it can be. */
+    groupNutrition: 'NUTRITION',
+    groupActivity: 'ACTIVITY',
+    groupPreferences: 'PREFERENCES',
+    groupSupport: 'SUPPORT',
     personalisation: 'Personalisation',
     goals: 'Goals and targets',
     goalsValue: '{{kcal}} kcal',

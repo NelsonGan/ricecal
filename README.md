@@ -2780,8 +2780,8 @@ Everyone or Followers. With automatic posting off, only pressing Post creates a 
 does not undo the meal. The source is one committed entry owned by the caller;
 the server records that reference and accepts no client-supplied author or food.
 
-Feed takes the second bottom tab. **My foods** moves into the Settings card on
-Me, retaining both the personal and community recipe shelves. Existing recipe
+Feed takes the second bottom tab. **My foods** moves into the Nutrition settings
+card on Me, retaining both the personal and community recipe shelves. Existing recipe
 routes and database contracts survive; the old recipes tab route redirects to
 Settings. Feed and recipes are separate concepts: a post says what somebody ate,
 while a recipe describes food somebody can make and log.
@@ -4459,7 +4459,7 @@ Gym sessions logged set by set, the way Hevy and Strong do it, plus the
 routines they start from and the records they set. Today is what went in;
 Workouts is what was done. It was the second tab until Groups needed the room;
 now it is a page, opened from a small tile beside the water card on Today and
-from the first row of Settings on Me. Its URL stays `/workouts`, so the Live
+from the first row of the Activity settings on Me. Its URL stays `/workouts`, so the Live
 Activity, the watch and old notification links still land on it. The minimised
 bar of a running workout floats over the tabs only; the page has its own Resume
 button.

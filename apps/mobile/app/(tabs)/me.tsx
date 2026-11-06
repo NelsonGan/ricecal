@@ -292,17 +292,13 @@ export default function MeScreen() {
       {/* With two panes the account is the first and its settings the second.
           See `Aside`. */}
       <Aside>
-        <Card title={t('profile:home.settings')} contentClassName="gap-0">
-          <SettingRow
-            icon={{ set: 'body', name: 'dumbbell' }}
-            title={t('common:nav.workouts')}
-            onPress={() => router.push('/workouts')}
-          />
-          <SettingRow
-            icon={{ set: 'food', name: 'cooking-pot' }}
-            title={t('social:myFoods')}
-            onPress={() => router.push('/settings/foods')}
-          />
+        {/* Four short cards rather than one card of twelve rows, each a thing
+          somebody came here for: what they eat, how they move, how the app
+          behaves, and help. A setting is found by its heading first.
+
+          `pb-2` because the last row brings its own padding, and on top of the
+          card's it left an empty band under every card. */}
+        <Card title={t('profile:home.groupNutrition')} contentClassName="gap-0 pb-2">
           <SettingRow
             icon={{ set: 'body', name: 'target' }}
             title={t('profile:home.goals')}
@@ -315,27 +311,30 @@ export default function MeScreen() {
             }
             onPress={() => router.push('/settings/goals')}
           />
-          {/* Above the reminders rather than below them: the times set here are
-            the hours a reminder fires at, so this is the row that decides what
-            the next one means.
-
-            No value beside it. The other rows summarise themselves in a word —
-            a budget, a count, a pair of units — and four meal times do not fit
-            in that space; naming only breakfast would be picking one at
-            random. */}
           <SettingRow
-            icon={{ set: 'system', name: 'clock' }}
-            title={t('profile:home.personalisation')}
-            onPress={() => router.push('/settings/personalisation')}
+            icon={{ set: 'food', name: 'cooking-pot' }}
+            title={t('social:myFoods')}
+            divider={false}
+            onPress={() => router.push('/settings/foods')}
           />
-          {/* Under personalisation and above reminders: it is a thing about this
-            body rather than a notification preference, and the row it sits next
-            to — meal times — is the other place the app is told about a daily
-            rhythm. */}
-          {/* With a value, like every row around it. This one had none, on the
-            screen where the answer — is anything connected at all? — is the
-            whole reason to open it. The other rows summarise themselves in a
-            word and so can this: the store's name, or that there isn't one. */}
+        </Card>
+
+        <Card title={t('profile:home.groupActivity')} contentClassName="gap-0 pb-2">
+          <SettingRow
+            icon={{ set: 'body', name: 'dumbbell' }}
+            title={t('common:nav.workouts')}
+            onPress={() => router.push('/workouts')}
+          />
+          {/* The Workouts page has this row too, at the foot of its list. Here as
+            well because this is where every other setting is looked for. */}
+          <SettingRow
+            icon={{ set: 'system', name: 'settings' }}
+            title={t('workouts:settings.title')}
+            onPress={() => router.push('/workout/settings')}
+          />
+          {/* With a value, like every row around it: whether anything is
+            connected at all is the whole reason to open it, so it says the
+            store's name, or that there isn't one. */}
           <SettingRow
             icon={{ set: 'system', name: 'watch' }}
             title={t('activity:settings.title')}
@@ -346,7 +345,23 @@ export default function MeScreen() {
                   ? t(`activity:provider.${health.data.provider}`)
                   : t('profile:home.healthOff')
             }
+            divider={false}
             onPress={() => router.push('/settings/health')}
+          />
+        </Card>
+
+        <Card title={t('profile:home.groupPreferences')} contentClassName="gap-0 pb-2">
+          {/* Above the reminders rather than below them: the meal times set here
+            are the hours a reminder fires at, so this is the row that decides
+            what the next one means.
+
+            No value beside it. The other rows summarise themselves in a word,
+            and four meal times do not fit in that space; naming only breakfast
+            would be picking one at random. */}
+          <SettingRow
+            icon={{ set: 'system', name: 'clock' }}
+            title={t('profile:home.personalisation')}
+            onPress={() => router.push('/settings/personalisation')}
           />
           <SettingRow
             icon={{ set: 'system', name: 'bell' }}
@@ -358,17 +373,14 @@ export default function MeScreen() {
             icon={{ set: 'system', name: 'contrast' }}
             title={t('profile:home.units')}
             value={settings ? t(`profile:home.${settings.units}`) : undefined}
+            divider={false}
             onPress={() => router.push('/settings/preferences')}
           />
-          {/* The Workouts page has this row too, at the foot of its list. Here as
-            well because this is where every other setting is looked for. */}
-          <SettingRow
-            icon={{ set: 'system', name: 'settings' }}
-            title={t('workouts:settings.title')}
-            onPress={() => router.push('/workout/settings')}
-          />
+        </Card>
+
+        <Card title={t('profile:home.groupSupport')} contentClassName="gap-0 pb-2">
           {/* The tour's permanent home.
-            It is offered once on Today, as a toast that dismisses itself — so
+            It is offered once on Today, as a toast that dismisses itself, so
             somebody who looked away has no other way back to it, and "once" is
             only an acceptable rule because this row exists. */}
           <SettingRow
@@ -385,8 +397,7 @@ export default function MeScreen() {
           />
           {/* A sheet rather than a route, because there is no help centre in the
             app: the row explains where support actually happens and opens
-            Discord. It pointed at the preferences screen, which is the row
-            above it wearing a different name. */}
+            Discord. */}
           <SettingRow
             icon={{ set: 'system', name: 'help' }}
             title={t('profile:home.help')}
