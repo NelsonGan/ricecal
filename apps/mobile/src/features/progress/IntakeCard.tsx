@@ -1,4 +1,3 @@
-import { format, parseISO } from 'date-fns'
 import { router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
@@ -15,7 +14,7 @@ import {
 } from '@/data'
 import { energyShare } from '@/lib/nutrition'
 import { cn, SegmentedControl, Text } from '@/ui'
-import { bucketLabels, SPAN_KEY } from './axis'
+import { pointNames, SPAN_KEY } from './axis'
 import { TrendCard, TrendChip } from './TrendCard'
 import { TrendLine } from './TrendLine'
 
@@ -74,8 +73,8 @@ export function IntakeCard({
     return against === null ? true : protein ? value >= against : value <= against
   }
 
-  const labels = buckets
-    ? bucketLabels(buckets, range, (index) => t('progress:range.week', { index }))
+  const names = buckets
+    ? pointNames(buckets, range, (from, to) => t('progress:range.between', { from, to }))
     : []
   const split = energyShare({
     carbs: summary?.carbs ?? 0,
@@ -156,8 +155,7 @@ export function IntakeCard({
               const value = protein ? bucket.protein : bucket.kcal
               return {
                 key: bucket.start,
-                label: labels[index],
-                title: range === '1y' ? format(parseISO(bucket.start), 'LLLL') : undefined,
+                ...names[index],
                 value: value === null ? null : Math.round(value),
               }
             })}

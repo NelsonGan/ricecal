@@ -312,6 +312,22 @@ export type TrendRange = '7d' | '30d' | '1y'
 
 export const TREND_RANGES = ['7d', '30d', '1y'] as const satisfies readonly TrendRange[]
 
+/** What one point of a Trends line stands for. */
+export type TrendGrain = 'day' | 'week' | 'month'
+
+/**
+ * Each range's point. A day wherever the days fit on the card, so thirty days
+ * is thirty readings rather than five averages. A year of days is 365 points
+ * three to a millimetre, too close to read or pick with a finger, so the year
+ * is the one range that averages, by the week: 52 points, still four times the
+ * twelve months it once drew.
+ */
+export const TREND_GRAIN = {
+  '7d': 'day',
+  '30d': 'day',
+  '1y': 'week',
+} as const satisfies Record<TrendRange, TrendGrain>
+
 /**
  * One column of a Trends chart: a day, a seven-day block, or a calendar month.
  * Carries the calorie, water and weight cards' numbers, because the three are

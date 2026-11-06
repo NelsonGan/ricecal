@@ -1,9 +1,9 @@
-import { format, parseISO } from 'date-fns'
 import { router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
+  TREND_GRAIN,
   type TrendRange,
   useLatestWorkouts,
   useTrendWorkoutSummary,
@@ -16,7 +16,7 @@ import { durationText } from '@/features/workouts/format'
 import { compactVolume } from '@/features/workouts/progress'
 import { UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { Card, Icon, ListRow, Text } from '@/ui'
-import { bucketLabels, SPAN_KEY } from './axis'
+import { pointNames, SPAN_KEY } from './axis'
 import { useDayName } from './History'
 import { problemOf, TrendCard, TrendChip } from './TrendCard'
 import { TrendLine } from './TrendLine'
@@ -70,15 +70,15 @@ export function WorkoutsCard({ range, unit }: { range: TrendRange; unit: WeightU
   const delta = totals ? totals.workouts - totals.prevWorkouts : 0
   const buckets = series.data
   /**
-   * Minutes trained a day in each column, not the column's total. The columns
-   * are not the same length: the oldest block of thirty days is two days and
-   * this month is a few days old, and a total drew both as a slump.
+   * Minutes trained a day in each column, not the column's total. The weeks of
+   * a year are not the same length: the oldest is however many days the
+   * twelfth month back has left, and a total drew it as a slump.
    */
   const perDay = (bucket: { durationS: number; days: number }) =>
     Math.round(bucket.durationS / 60 / Math.max(1, bucket.days))
   const peakMinutes = Math.max(0, ...(buckets ?? []).map(perDay))
-  const labels = buckets
-    ? bucketLabels(buckets, range, (index) => t('progress:range.week', { index }))
+  const names = buckets
+    ? pointNames(buckets, range, (from, to) => t('progress:range.between', { from, to }))
     : []
 
   return (
@@ -120,13 +120,12 @@ export function WorkoutsCard({ range, unit }: { range: TrendRange; unit: WeightU
           minPad={15}
           points={buckets.map((bucket, index) => ({
             key: bucket.start,
-            label: labels[index],
-            title: range === '1y' ? format(parseISO(bucket.start), 'LLLL') : undefined,
+            ...names[index],
             value: perDay(bucket),
           }))}
-          // A day on the week view is its own figure; elsewhere it is an average.
+          // A day is its own figure; a week is an average of its days.
           formatValue={(minutes) =>
-            range === '7d'
+            TREND_GRAIN[range] === 'day'
               ? durationText(tw, minutes * 60)
               : t('progress:workouts.perDay', { value: durationText(tw, minutes * 60) })
           }

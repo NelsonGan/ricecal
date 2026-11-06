@@ -4132,6 +4132,20 @@ the weeks with more training eat closer to budget, did the weight move the
 month the calories did. Every line sits on the same columns, so the cards can
 be read down the page against each other.
 
+**A point is a day wherever the days fit.** `TREND_GRAIN` asks the server for a
+day on 7D and 30D and for a seven-day block (counted back from today) on 1Y:
+thirty readings rather than five weekly averages, and about fifty weeks rather
+than twelve months. A year of days would be 365 points three to a millimetre,
+too close to read or pick with a finger, so the year is the one range that
+averages. The grain is an optional `p_grain` on `trend_days`, `trend_series`
+and `trend_workouts`; left out, each range answers with the columns an older
+app draws (a day, a block, a month), so a released app is unchanged. The axis
+names what fits (weekdays; dates thinned from today; the month under the week
+holding its first day) and the readout names the point in full ("Fri 23 Oct",
+"22 Aug to 28 Aug"). Past about eighteen points of width a column, rings touch,
+so `TrendLine` draws each reading as a small solid dot instead, keeping its
+colour.
+
 **Every chart is `TrendLine`.** Bars were tried first and the stacked calorie
 columns said less than the line: a bar is read as an amount and a line as a
 direction, and direction is the question here. What changes per metric is a few
@@ -4170,16 +4184,16 @@ target is the point, not a warning.
 
 **Workouts read their own columns.** `trend_workouts` and
 `trend_workout_summary` bucket training exactly as `trend_days` buckets the
-diary (a day, seven-day blocks counted back from today, calendar months), so
-the workout line sits under the calorie line. They are separate RPCs rather
+diary (a day, seven-day blocks counted back from today, calendar months, at
+the same `p_grain`), so the workout line sits under the calorie line. They are separate RPCs rather
 than columns on `trend_series`: an old app reads that shape, and a meal logged
 should not refetch training. Their keys sit under `workouts`, so every saved,
 edited or imported workout invalidates them. The headline is the count beside
 the range of the same length before it; the line is minutes trained a day in
 each column, which carries both how often and how long. A day rather than a
-column's total, because the columns differ in length: the oldest block of
-thirty days is two days, and the year's newest month is only days old, and a
-total drew both as a slump. The functions return only what the card reads,
+column's total, because the weeks of a year differ in length (the oldest is
+whatever the twelfth month back has left), and a total drew the short one as a
+slump. The functions return only what the card reads,
 since every column of a function a released app calls is called forever. The newest three sessions come from their own
 small `workout_history` call (`useLatestWorkouts`), not the Workouts page's
 first page, which is kept for five minutes and left the list a session behind
