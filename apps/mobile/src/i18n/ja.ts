@@ -953,6 +953,7 @@ export const ja = {
       span30d: '直近 30 日',
       span1y: '直近 12 か月',
       week: '第{{index}}週',
+      between: '{{from}}〜{{to}}',
     },
     calories: {
       unit: 'kcal/日',

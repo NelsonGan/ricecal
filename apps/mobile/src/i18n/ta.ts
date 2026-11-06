@@ -955,6 +955,7 @@ export const ta = {
       span30d: 'கடந்த 30 நாட்கள்',
       span1y: 'கடந்த 12 மாதங்கள்',
       week: 'வா {{index}}',
+      between: '{{from}} முதல் {{to}} வரை',
     },
     calories: {
       unit: 'kcal ஒரு நாளுக்கு',

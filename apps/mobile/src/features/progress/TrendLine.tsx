@@ -114,6 +114,14 @@ export type TrendLineProps = {
 const STROKE = 3
 const DOT = 3.5
 const LAST_DOT = 5
+/**
+ * Below this many points of width a column, a ring and its neighbours touch,
+ * and thirty of them read as a chain rather than a line. Each reading is then
+ * a small solid dot, which keeps its colour (a day over the budget) without
+ * covering the line.
+ */
+const RING_ROOM = 18
+const SMALL_DOT = 2.5
 /** The readout's narrowest width. */
 const TIP_W = 92
 /** The gutter the scale's values sit in. */
@@ -202,6 +210,7 @@ export function TrendLine({
   // With a scale, its values get a gutter of their own on the right, so they
   // never sit on the newest point, which is always at the right edge.
   const plotWidth = formatValue ? Math.max(0, width - SCALE_W) : width
+  const dense = plotWidth / Math.max(1, points.length) < RING_ROOM
 
   // Worked out once per data and size. Scrubbing re-renders on every step, and
   // rebuilt each time it took every path, rule and label with it.
@@ -453,7 +462,8 @@ export function TrendLine({
                   // The newest reading is the one the card's headline quotes, so
                   // it is solid and larger: the one the eye should find without
                   // counting from either end. The rest are rings, light enough
-                  // that the line reads first.
+                  // that the line reads first, or small dots where rings would
+                  // touch (`RING_ROOM`).
                   (
                     emphasis === undefined
                       ? index === measured.length - 1
@@ -465,6 +475,14 @@ export function TrendLine({
                       cy={entry.y}
                       r={LAST_DOT}
                       color={dotColors(entry.value, entry.point, true)}
+                    />
+                  ) : dense ? (
+                    <Circle
+                      key={entry.point.key}
+                      cx={entry.x}
+                      cy={entry.y}
+                      r={SMALL_DOT}
+                      color={dotColors(entry.value, entry.point, false)}
                     />
                   ) : (
                     <Group key={entry.point.key}>

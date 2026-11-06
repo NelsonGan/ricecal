@@ -975,6 +975,7 @@ export const fil = {
       span30d: 'Huling 30 araw',
       span1y: 'Huling 12 buwan',
       week: 'Ling {{index}}',
+      between: '{{from}} hanggang {{to}}',
     },
     calories: {
       unit: 'kcal kada araw',

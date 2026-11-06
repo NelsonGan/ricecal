@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, format, parseISO } from 'date-fns'
+import { differenceInCalendarDays } from 'date-fns'
 import { router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
@@ -7,7 +7,7 @@ import { bodyFrom, type TrendBucket, type TrendRange, type TrendSummary, useProf
 import { goalDate } from '@/lib/nutrition'
 import { fromKg, showWeight, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { Icon, Text } from '@/ui'
-import { bucketLabels, SPAN_KEY } from './axis'
+import { pointNames, SPAN_KEY } from './axis'
 import { TrendCard, TrendChip } from './TrendCard'
 import { TrendLine } from './TrendLine'
 
@@ -67,8 +67,8 @@ export function WeightCard({
     target <= Math.max(...readings) + reach
       ? target
       : null
-  const labels = buckets
-    ? bucketLabels(buckets, range, (index) => t('progress:range.week', { index }))
+  const names = buckets
+    ? pointNames(buckets, range, (from, to) => t('progress:range.between', { from, to }))
     : []
 
   return (
@@ -108,8 +108,7 @@ export function WeightCard({
               goal={goalLine}
               points={buckets.map((bucket, index) => ({
                 key: bucket.start,
-                label: labels[index],
-                title: range === '1y' ? format(parseISO(bucket.start), 'LLLL') : undefined,
+                ...names[index],
                 value: bucket.weight,
               }))}
               carryFrom={summary.weightBefore}

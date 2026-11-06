@@ -59,7 +59,11 @@ grant  execute on function private.range_start to authenticated, service_role;
 -- ---------------------------------------------------------------------------
 create or replace function public.trend_days(
   p_range   text,
-  p_user_id uuid default auth.uid()
+  p_user_id uuid default auth.uid(),
+  -- The column a day folds into: 'day', 'week' (seven-day blocks counted back
+  -- from today) or 'month'. Null is the range's own, which is what an app from
+  -- before this parameter draws: a day on 7d, a week on 30d, a month on 1y.
+  p_grain   text default null
 )
 returns table (
   at            date,
@@ -86,14 +90,14 @@ as $$
   calendar as (
     select
       series::date as at,
-      case p_range
-        when '1y'  then date_trunc('month', series)::date
+      case coalesce(p_grain, case p_range when '1y' then 'month' when '30d' then 'week' end)
+        when 'month' then date_trunc('month', series)::date
         -- Seven-day blocks counted BACK from today, not ISO weeks. Thirty days
         -- of ISO weeks is five or six groups depending on which weekday today
         -- is, and a chart whose column count moves with the day of the week is
-        -- a chart nobody can label. This is always five, and the oldest one is
-        -- short.
-        when '30d' then greatest(b.from_date, b.to_date - ((b.to_date - series::date) / 7) * 7 - 6)
+        -- a chart nobody can label. The newest is always a whole week, and the
+        -- oldest one is short.
+        when 'week'  then greatest(b.from_date, b.to_date - ((b.to_date - series::date) / 7) * 7 - 6)
         else series::date
       end as in_bucket
     from bounds b
@@ -149,7 +153,11 @@ comment on function public.trend_days is
 -- ---------------------------------------------------------------------------
 create or replace function public.trend_series(
   p_range   text,
-  p_user_id uuid default auth.uid()
+  p_user_id uuid default auth.uid(),
+  -- As `trend_days`: null is the range's own column, which a released app
+  -- reads. The app asks for a day on 30d and a week on 1y, so a month is a
+  -- line of thirty readings rather than five averages.
+  p_grain   text default null
 )
 returns table (
   bucket_start      date,
@@ -218,15 +226,16 @@ as $$
     (array_agg(d.weight_kg order by d.at desc) filter (where d.weight_kg is not null))[1],
     min(d.weight_kg),
     count(d.weight_kg)::integer
-  from public.trend_days(p_range, p_user_id) d
+  from public.trend_days(p_range, p_user_id, p_grain) d
   group by d.bucket
   order by d.bucket;
 $$;
 
 comment on function public.trend_series is
-  'One row per column of a Trends chart — a day for 7d, a seven-day block for '
-  '30d, a calendar month for 1y — carrying the calorie, water and weight '
-  'numbers for all three tabs so a tab switch needs no second request.';
+  'One row per column of a Trends chart: a day, a seven-day block counted back '
+  'from today, or a calendar month (p_grain; null is the range''s own, a day '
+  'for 7d, a block for 30d, a month for 1y), carrying the calorie, water and '
+  'weight numbers so the cards need no second request.';
 
 
 -- ---------------------------------------------------------------------------

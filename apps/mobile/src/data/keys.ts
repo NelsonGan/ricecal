@@ -125,8 +125,13 @@ export const keys = {
 
   weighIns: (userId: string) => ['weigh-ins', userId] as const,
 
-  /** The chart columns for one range of the Trends screen. */
-  trendSeries: (userId: string, range: string) => ['trends', userId, range, 'series'] as const,
+  /**
+   * The chart columns for one range of the Trends screen, at one grain. The
+   * grain is in the key so a cache persisted by an app that drew weeks on 30d
+   * is never laid out on an axis of days.
+   */
+  trendSeries: (userId: string, range: string, grain: string) =>
+    ['trends', userId, range, 'series', grain] as const,
   /** The same range folded to one row: the metric tiles and the footnotes. */
   trendSummary: (userId: string, range: string) => ['trends', userId, range, 'summary'] as const,
   /**
@@ -203,8 +208,8 @@ export const keys = {
    * `trends`: a saved, edited or imported workout invalidates `workoutsAll`,
    * and a meal does not move them.
    */
-  trendWorkouts: (userId: string, range: string) =>
-    ['workouts', userId, 'trend', range, 'series'] as const,
+  trendWorkouts: (userId: string, range: string, grain: string) =>
+    ['workouts', userId, 'trend', range, 'series', grain] as const,
   trendWorkoutSummary: (userId: string, range: string) =>
     ['workouts', userId, 'trend', range, 'summary'] as const,
   latestWorkouts: (userId: string, limit: number) => ['workouts', userId, 'latest', limit] as const,
