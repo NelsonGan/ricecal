@@ -6,7 +6,6 @@ import type { ReviewBucket, ReviewKind, ReviewPeriod, ReviewSummary } from '@/da
 import { TrendLine } from '@/features/progress'
 import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Card, Icon, ProgressBar, Text } from '@/ui'
-import { PeriodBars } from './PeriodBars'
 import { underGoalShare } from './period'
 import { Shareable } from './ShareableCards'
 
@@ -186,16 +185,24 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
             }
             contentClassName="gap-3 p-card"
           >
-            <PeriodBars
+            {/* The same line as every other chart here: one dot a period,
+                this one the solid dot at the end, the budget dashed. Fat bars
+                from a floor read as amounts and made a 100 kcal difference
+                look like half the week. */}
+            <TrendLine
               className="mt-1"
               height={104}
-              bars={compared.map((period) => ({
+              gaps="join"
+              goal={goal}
+              minPad={50}
+              interactive={false}
+              dotTone={(value) => (goal !== null && value > goal ? 'kaya' : 'pandan')}
+              points={compared.map((period) => ({
                 key: period.start,
                 label: format(parseISO(period.start), kind === 'week' ? 'd MMM' : 'LLL'),
-                value: period.kcal === null ? t('reviews:calories.noData') : thousands(period.kcal),
-                height: barHeight(period.kcal, compared),
-                current: period.start === summary.start,
+                value: period.kcal === null ? null : Math.round(period.kcal),
               }))}
+              formatValue={(value) => Math.round(value).toLocaleString()}
               accessibilityLabel={
                 kind === 'week' ? t('reviews:calories.pastWeeks') : t('reviews:calories.pastMonths')
               }
@@ -205,33 +212,6 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
       ) : null}
     </>
   )
-}
-
-/** "1.96k", which is what fits over a fifth of a card. */
-function thousands(kcal: number): string {
-  return `${(kcal / 1000).toFixed(2)}k`
-}
-
-/**
- * How tall one comparison bar is, measured against the SPREAD of the five
- * rather than from zero.
- *
- * Five weeks of one person's eating sit within a few hundred calories of each
- * other, so bars drawn from zero are five rectangles of the same height and the
- * chart says nothing the figures above it did not. The floor is a tenth of the
- * spread below the smallest, which keeps the lightest period a short bar rather
- * than no bar. A period with nothing logged has no height at all and draws as
- * the stub `PeriodBars` gives it.
- */
-function barHeight(kcal: number | null, all: readonly ReviewPeriod[]): number {
-  if (kcal === null) return 0
-
-  const values = all.map((period) => period.kcal).filter((value): value is number => value !== null)
-  const peak = Math.max(...values)
-  const low = Math.min(...values)
-  const floor = low - (peak - low) * 0.4
-  const span = peak - floor || 1
-  return (kcal - floor) / span
 }
 
 /**

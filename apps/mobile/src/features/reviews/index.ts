@@ -11,7 +11,6 @@ export { BodyStep, type BodyStepProps } from './BodyStep'
 export { CaloriesStep, type CaloriesStepProps } from './CaloriesStep'
 export { CardStep, type CardStepProps } from './CardStep'
 export { FoodStep, type FoodStepProps } from './FoodStep'
-export { type PeriodBar, PeriodBars, type PeriodBarsProps } from './PeriodBars'
 export {
   LATEST,
   parseReviewId,
