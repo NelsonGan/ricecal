@@ -661,12 +661,15 @@ function DayChip({ day }: { day: string }) {
 const NAME_MARK = '\u2063'
 const FOOD_MARK = '\u2064'
 
-/** The actor's face: the chat's own avatar, shrunk so it sits on one caption line. */
-const EVENT_FACE = 20
-/** The thumbs-up or wave tucked into the face's corner. */
-const EVENT_BADGE = 12
 /** The liked food's picture, in the sentence just before its name. */
 const EVENT_FOOD = 16
+/**
+ * The actor's face: the chat's own avatar, shrunk to the food's size so the two
+ * pictures in a line weigh the same and neither outgrows the caption.
+ */
+const EVENT_FACE = EVENT_FOOD
+/** The thumbs-up or wave tucked into the face's corner. */
+const EVENT_BADGE = 10
 /**
  * Lowers the picture onto the line's middle. A view inside text sits on the
  * baseline, which left it riding above the letters beside it.
