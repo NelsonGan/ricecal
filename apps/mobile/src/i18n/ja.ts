@@ -667,6 +667,11 @@ export const ja = {
       kcalLeft: '残り KCAL',
       kcalOver: '超過 KCAL',
       kcalOfGoal: '/{{goal}} KCAL',
+      grams: '{{value}}g',
+      proteinLeft: 'たんぱく質 残り',
+      proteinOver: 'たんぱく質 超過',
+      proteinOfGoal: '/{{goal}}G たんぱく質',
+      proteinA11y: 'たんぱく質 {{goal}} g 中 {{value}} g',
       showGoals: 'その日の枠を表示',
       showLeft: '残りを表示',
       dayHeading: 'あなたの1日',
@@ -933,19 +938,12 @@ export const ja = {
 
   progress: {
     title: 'トレンド',
-
-    ofDays: '{{total}} 日中 {{done}} 日',
-
     metric: {
       calories: 'カロリー',
       water: '水分',
       weight: '体重',
-      caloriesUnit: '平均',
-      waterUnit: 'ml',
-      none: '—',
-      a11y: '{{metric}}、{{value}}',
+      protein: 'たんぱく質',
     },
-
     range: {
       label: '期間',
       '7d': '7日',
@@ -955,90 +953,53 @@ export const ja = {
       span30d: '直近 30 日',
       span1y: '直近 12 か月',
       week: '第{{index}}週',
-      weekLong: '第 {{index}} 週',
     },
-
     calories: {
-      goalNote: '目標 1 日 {{goal}} kcal',
-      goalNoteWeekly: '週平均、目標は 1 日 {{goal}}',
-      goalNoteMonthly: '月平均、目標は 1 日 {{goal}}',
-      noGoal: '1 日の枠がまだ設定されていません',
+      unit: 'kcal/日',
+      value: '{{value}} kcal',
       under: '{{value}} 少ない',
       over: '{{value}} 多い',
-      chart: '1 日のカロリー、炭水化物、たんぱく質、脂質の内訳',
-
+      chart: '{{span}}の1日あたりのカロリーと目標',
+      share: '{{macro}} {{value}}%',
       grams: '{{value}} g',
-      shareOfIntake: '摂取の {{value}}%',
-
-      goalTitle: '目標との比較',
-      daysUnder: '{{goal}} を下回った日数',
-      daysLogged: '完全に記録した日数',
-
-      notableTitle: '目立った月',
-      monthAverage: '平均 {{value}}',
-
-      emptyTitle: 'この期間に食事の記録はありません',
-      emptyBody: '何か記録すれば、その日からバーが埋まります。',
+      empty: 'この期間の食事記録はありません。',
     },
-
+    protein: {
+      unit: 'g/日',
+      above: '{{value}} g 超過',
+      short: '{{value}} g 不足',
+      chart: '{{span}}の1日あたりのたんぱく質と目標',
+    },
+    workouts: {
+      title: 'ワークアウト',
+      unit_one: '回',
+      unit_other: '回',
+      vs7d: '先週比 {{delta}}',
+      vs30d: '前の 30 日比 {{delta}}',
+      vs1y: '前年比 {{delta}}',
+      chart: '{{span}}のトレーニング時間',
+      perDay: '1日あたり {{value}}',
+      latest: '最近',
+      startTitle: 'ワークアウトを記録しよう',
+      startBody: 'セッションを記録すると、ここに表示されます。',
+    },
     water: {
-      dayNote: '1 本の柱が 1 日、目標との比較です',
-      weeklyNote: '1 本の柱が 1 週間の平均、目標との比較です',
-      monthlyNote: '1 本の柱が 1 か月の平均、目標との比較です',
-      goalPill: '目標 {{amount}}',
+      unit: '{{unit}}/日',
+      goalDays: '{{total}} 日中 {{done}} 日達成',
       chart: '1 日の水分、目標 {{amount}} との比較',
-
-      reached: '目標達成',
-      short: '目標に届かず',
-
-      goalDays: '達成日数',
-      bestDay: '最多の日',
-      bestMonth: '最多の月',
-      yearAverage: '年平均',
-      total: '合計',
-
-      todayTitle: '今日',
-
-      habitTitle: '習慣',
-      daysAtLeast: '{{amount}} 以上の日数',
-      daysLogged: '記録した日数',
-      monthsAveraging: '平均 {{amount}} 以上の月数',
-      monthsLogged: '記録した月数',
-
-      emptyTitle: 'この期間に水分の記録はありません',
-      emptyBody: '「今日」で 1 杯記録すれば、ここが埋まります。',
+      empty: 'この期間の水分記録はありません。',
     },
-
     weight: {
-      peakOn: '{{date}} の {{value}} {{unit}}',
-      latest: '最新 {{value}} {{unit}}',
-      latestOn: '最新 {{value}} {{unit}}（{{date}}）',
-      peakIn: '{{month}} の {{value}} {{unit}}',
       change: '{{value}} {{unit}}',
       chart: '{{span}}の体重',
-
       thisWeek: '今週',
-      thisMonth: '今月',
-      thisYear: '今年',
-      average7: '7 日平均',
-      average30: '30 日平均',
-      lightest: '最軽量',
-      weighIns: '計測回数',
-      monthsLogged: '記録した月数',
-
       toGoal: '目標の {{target}} {{unit}} まであと {{value}} {{unit}}',
-      noTarget: '目標体重が設定されていません',
       atGoal: '目標体重に到達しています',
       weeksAway: '約 {{count}} 週間',
-
+      empty: 'まだ体重の記録がありません。',
       add: '追加',
-      weekByWeek: '週ごと',
-      byQuarter: '四半期ごと',
-      quarter: '{{from}} から {{to}}',
-
       reading: '{{value}} {{unit}}',
       firstReading: '最初',
-
       sheetTitle: '体重を追加',
       sheetEditTitle: '{{date}} の計測',
       thisMorning: '今朝',
@@ -1052,14 +1013,11 @@ export const ja = {
       remove: 'この記録を削除',
       removeTitle: 'この記録を削除しますか',
       removeBody: 'グラフからこの日が消えます。これが最新なら、枠はその前の値に戻ります。',
-
-      emptyTitle: 'この期間に計測はありません',
-      emptyBody: '1 回で点が 1 つ。2 回で線になります。',
     },
-
     history: {
-      title: '履歴',
-      viewFull: '全件表示',
+      caloriesTitle: 'カロリーの履歴',
+      waterTitle: '水分の履歴',
+      weightTitle: '体重の履歴',
       dayTotal: '{{value}} kcal',
       waterAverage: '平均 {{amount}}',
       goalMet: '目標達成',
@@ -1280,6 +1238,9 @@ export const ja = {
       light: 'ライト',
       dark: 'ダーク',
       auto: '自動',
+      focus: '重視する項目',
+      focusCalories: 'カロリー',
+      focusProtein: 'たんぱく質',
     },
 
     subscription: {
@@ -1648,18 +1609,15 @@ export const ja = {
 
   reviews: {
     title: '振り返り',
-
     entry: {
       title: '振り返り',
       subtitle: '1 週間や 1 か月を振り返る',
     },
-
     kind: {
       week: '週次',
       month: '月次',
       label: '振り返りの長さ',
     },
-
     list: {
       weekMeta: '第 {{index}} 週',
       weekSummary: '1 日 {{kcal}} kcal、{{total}} 日中 {{done}} 日記録',
@@ -1667,27 +1625,30 @@ export const ja = {
       monthSummary: '1 日 {{kcal}} kcal',
       monthSummaryWeight: '1 日 {{kcal}} kcal、{{weight}}',
       summaryEmpty: '記録なし',
+      kcal: 'kcal',
+      workouts_one: '回',
+      workouts_other: '回',
+      workoutCount_one: 'ワークアウト {{count}} 回',
+      workoutCount_other: 'ワークアウト {{count}} 回',
+      latestWeek: '直近の週',
+      latestMonth: '直近の月',
       a11y: '{{title}}、{{meta}}、{{summary}}',
       a11yLocked: '{{title}}、{{meta}}、{{summary}}、Pro',
-
       emptyWeekTitle: '振り返れる週はまだありません',
       emptyWeekBody: '週が終わり、そのうち 4 日以上を記録していれば、ここに並びます。',
       emptyMonthTitle: '振り返れる月はまだありません',
       emptyMonthBody: '月が終わり、そのうち 12 日以上を記録していれば、ここに並びます。',
     },
-
     share: {
       card: '{{card}}をシェア',
       preview: '送られるままのカード',
     },
-
     story: {
       close: '閉じる',
       share: 'シェア',
       missingTitle: 'その振り返りはここにありません',
       missingBody: '振り返るには中身が少なすぎた週かもしれません。',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: '1 日あたり kcal',
@@ -1699,18 +1660,29 @@ export const ja = {
       streak: '連続',
       streakValue_one: '{{count}} 日',
       streakValue_other: '{{count}} 日',
+      workouts: 'ワークアウト',
       weightChange: '体重',
       noWeight: '—',
       shareText: '{{period}}：1 日 {{kcal}} kcal、{{total}} 日中 {{done}} 日記録。RiceCal',
     },
-
+    training: {
+      title: 'トレーニング',
+      unit_one: '回',
+      unit_other: '回',
+      vsWeek: '先週比 {{delta}}',
+      vsMonth: '先月比 {{delta}}',
+      time: '時間',
+      volume: 'ボリューム',
+      bests: '自己ベスト更新',
+      best: '{{weight}} × {{reps}}',
+      days: '{{total}} 日中 {{done}} 日トレーニング',
+    },
     food: {
       title: 'いちばん大きかった一皿',
       macros: '1 日のマクロ',
       grams: '{{value}} g',
       share: 'エネルギーの {{value}}%',
     },
-
     calories: {
       average: '1 日平均',
       kcal: 'kcal',
@@ -1720,14 +1692,12 @@ export const ja = {
       noGoal: '当時は 1 日の枠がありませんでした。',
       everyDay: '毎日',
       everyWeek: '毎週',
-      chart: '1 日のカロリー、炭水化物、たんぱく質、脂質の内訳',
+      chart: '1日あたりのカロリーと目標',
       lightest: '{{day}}、最少',
       heaviest: '{{day}}、最多',
       pastWeeks: '直近 5 週',
       pastMonths: '直近 5 か月',
-      noData: '—',
     },
-
     body: {
       weight: '体重',
       weighIns_one: '計測 1 回',

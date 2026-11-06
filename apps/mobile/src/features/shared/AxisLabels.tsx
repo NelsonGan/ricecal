@@ -12,7 +12,7 @@ export type AxisLabel = {
 
 /**
  * The dates under a chart, as many as fit with room between them. Shared by
- * `BarChart` and `TrendLine`, so the two thin their labels the same way.
+ * `TrendLine`, so every chart thins its labels the same way.
  */
 export function AxisLabels({ labels, span }: { labels: readonly AxisLabel[]; span: number }) {
   const { fontScale } = useWindowDimensions()

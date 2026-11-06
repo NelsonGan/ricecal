@@ -129,6 +129,11 @@ describe('how many steps a story has', () => {
   it('has no steps at all without a summary', () => {
     expect(reviewSteps(null, 5)).toEqual([])
   })
+
+  it('puts training second when the period had a workout, and leaves it out when not', () => {
+    expect(reviewSteps(summary(), 5, 3)).toEqual(['card', 'training', 'food', 'calories', 'body'])
+    expect(reviewSteps(summary(), 5, 0)).not.toContain('training')
+  })
 })
 
 describe('the share of the period spent under budget', () => {

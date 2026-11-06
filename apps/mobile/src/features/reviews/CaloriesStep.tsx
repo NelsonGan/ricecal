@@ -3,10 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { ReviewBucket, ReviewKind, ReviewPeriod, ReviewSummary } from '@/data'
-import { StackedBars } from '@/features/progress'
-import { energyShare } from '@/lib/nutrition'
-import { Badge, Card, Icon, ProgressBar, Text } from '@/ui'
-import { PeriodBars } from './PeriodBars'
+import { TrendChip, TrendLine } from '@/features/progress'
+import { Card, ProgressBar, Text } from '@/ui'
 import { underGoalShare } from './period'
 import { Shareable } from './ShareableCards'
 
@@ -29,9 +27,9 @@ const COMPARED = 5
  *
  * The comparison chart draws EVERY period in its window, including the ones too
  * thin to have a review of their own. That is the reason `review_periods`
- * returns `qualifies` as a column rather than filtering: a light week is still
- * a bar on this chart, and a chart with a hole in it and no explanation is
- * worse than one showing a short week honestly.
+ * returns every period rather than filtering: a light week is still a dot on
+ * this line, and a line with a hole in it and no explanation is worse than one
+ * showing a short week honestly.
  */
 export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepProps) {
   const { t } = useTranslation(['reviews', 'progress'])
@@ -72,18 +70,15 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
             </View>
 
             {delta === null ? null : (
-              <Badge tone={delta >= 0 ? 'pandan' : 'kaya'} className="px-3 py-1.5">
-                <Icon set="body" name={delta >= 0 ? 'trend-down' : 'trend-up'} size={16} />
-                <Text
-                  variant="caption"
-                  numberOfLines={1}
-                  className={delta >= 0 ? 'text-pandan-ink' : 'text-kaya-ink'}
-                >
-                  {delta >= 0
+              <TrendChip
+                tone={delta >= 0 ? 'pandan' : 'kaya'}
+                direction={delta >= 0 ? 'down' : 'up'}
+                label={
+                  delta >= 0
                     ? t('reviews:calories.under', { value: delta.toLocaleString() })
-                    : t('reviews:calories.over', { value: Math.abs(delta).toLocaleString() })}
-                </Text>
-              </Badge>
+                    : t('reviews:calories.over', { value: Math.abs(delta).toLocaleString() })
+                }
+              />
             )}
           </View>
 
@@ -125,22 +120,26 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
         >
           {/* `mt-1` on top of the card's own gap: sixteen points under a
               heading, the same standoff every card in a story gives its own. */}
-          <StackedBars
+          {/* A line with a dot a column and the budget as the dashed rule, the
+              same chart as Trends, so the two read alike. A column nobody
+              logged is skipped rather than drawn as a fast. */}
+          <TrendLine
             className="mt-1"
             height={118}
-            bars={buckets.map((bucket, position) => ({
+            gaps="join"
+            goal={goal}
+            minPad={50}
+            interactive={false}
+            dotTone={(value) => (goal !== null && value > goal ? 'kaya' : 'pandan')}
+            points={buckets.map((bucket, position) => ({
               key: bucket.start,
               label:
                 kind === 'week'
                   ? format(parseISO(bucket.start), 'EEEEE')
                   : t('progress:range.week', { index: position + 1 }),
-              value: bucket.kcal,
-              share: energyShare({
-                carbs: bucket.carbs ?? 0,
-                protein: bucket.protein ?? 0,
-                fat: bucket.fat ?? 0,
-              }),
+              value: bucket.kcal === null ? null : Math.round(bucket.kcal),
             }))}
+            formatValue={(value) => Math.round(value).toLocaleString()}
             accessibilityLabel={t('reviews:calories.chart')}
           />
 
@@ -176,16 +175,25 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
             }
             contentClassName="gap-3 p-card"
           >
-            <PeriodBars
+            {/* The same line as every other chart here: one dot a period,
+                this one the solid dot at the end, the budget dashed. Fat bars
+                from a floor read as amounts and made a 100 kcal difference
+                look like half the week. */}
+            <TrendLine
               className="mt-1"
-              height={104}
-              bars={compared.map((period) => ({
+              height={118}
+              gaps="join"
+              goal={goal}
+              minPad={50}
+              interactive={false}
+              dotTone={(value) => (goal !== null && value > goal ? 'kaya' : 'pandan')}
+              emphasis={summary.start}
+              points={compared.map((period) => ({
                 key: period.start,
                 label: format(parseISO(period.start), kind === 'week' ? 'd MMM' : 'LLL'),
-                value: period.kcal === null ? t('reviews:calories.noData') : thousands(period.kcal),
-                height: barHeight(period.kcal, compared),
-                current: period.start === summary.start,
+                value: period.kcal === null ? null : Math.round(period.kcal),
               }))}
+              formatValue={(value) => Math.round(value).toLocaleString()}
               accessibilityLabel={
                 kind === 'week' ? t('reviews:calories.pastWeeks') : t('reviews:calories.pastMonths')
               }
@@ -195,33 +203,6 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
       ) : null}
     </>
   )
-}
-
-/** "1.96k", which is what fits over a fifth of a card. */
-function thousands(kcal: number): string {
-  return `${(kcal / 1000).toFixed(2)}k`
-}
-
-/**
- * How tall one comparison bar is, measured against the SPREAD of the five
- * rather than from zero.
- *
- * Five weeks of one person's eating sit within a few hundred calories of each
- * other, so bars drawn from zero are five rectangles of the same height and the
- * chart says nothing the figures above it did not. The floor is a tenth of the
- * spread below the smallest, which keeps the lightest period a short bar rather
- * than no bar. A period with nothing logged has no height at all and draws as
- * the stub `PeriodBars` gives it.
- */
-function barHeight(kcal: number | null, all: readonly ReviewPeriod[]): number {
-  if (kcal === null) return 0
-
-  const values = all.map((period) => period.kcal).filter((value): value is number => value !== null)
-  const peak = Math.max(...values)
-  const low = Math.min(...values)
-  const floor = low - (peak - low) * 0.4
-  const span = peak - floor || 1
-  return (kcal - floor) / span
 }
 
 /**

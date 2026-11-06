@@ -6,7 +6,6 @@
  * or targets. A `FoodRow` could not go in the design system without dragging
  * the domain in with it.
  */
-export { type Bar, BarChart, type BarChartProps } from './BarChart'
 export {
   type Budget,
   BudgetEditor,

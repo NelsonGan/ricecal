@@ -17,7 +17,7 @@ import {
   type WorkoutWeek,
 } from '@/data'
 import { useRequirePro } from '@/features/paywall'
-import { BarChart } from '@/features/shared'
+import { TrendLine } from '@/features/progress'
 import {
   type Bucket,
   compactVolume,
@@ -147,9 +147,9 @@ function Totals({ unit }: { unit: WeightUnit }) {
         accessibilityLabel={t('workouts:stats.weeks')}
       />
       {periods ? (
-        <PeriodBars
-          // A new range is a new set of bars, and a bar tapped in the old one
-          // would name a different period in the new.
+        <PeriodLine
+          // A new range is a new line, and a point read in the old one would
+          // name a different period in the new.
           key={`${shownRange}-${periods.bucket}`}
           periods={periods.rows}
           bucket={periods.bucket}
@@ -255,7 +255,12 @@ function periodValue(period: WorkoutWeek, metric: WeekMetric): number {
   }
 }
 
-function PeriodBars({
+/**
+ * The totals over the range as a line with a dot a period, the same chart as
+ * Trends: the newest period is the solid dot at the end, and a tap or a drag
+ * names any other. Bars from zero made a light week look like a missing one.
+ */
+function PeriodLine({
   periods,
   bucket,
   metric,
@@ -268,16 +273,12 @@ function PeriodBars({
 }) {
   const { t } = useTranslation(['workouts', 'common', 'progress'])
   const last = periods[periods.length - 1]
-  // A tapped bar takes over the headline, named by its period; nothing tapped
-  // is the current one.
-  const [selected, setSelected] = useState<number | null>(null)
-  const shown = selected === null ? last : periods[selected]
   const show = (value: number) =>
     metric === 'duration'
       ? durationText(t, value)
       : metric === 'volume'
         ? volumeText(t, value, unit)
-        : String(value)
+        : String(Math.round(value))
   const name = (period: WorkoutWeek) =>
     format(
       parseISO(period.week),
@@ -297,42 +298,53 @@ function PeriodBars({
         ? t('workouts:stats.thisMonth')
         : t('workouts:stats.thisYear')
 
-  // The scale's steps in a unit a person counts in: hours once the tallest
-  // bar is an hour and a half, minutes below that, and whole pounds or
-  // kilograms.
+  // The scale's steps in a unit a person counts in: hours once the highest
+  // point is an hour and a half, minutes below that, and whole pounds or
+  // kilograms. `unitFactor` is what turns the stored figure into that unit.
   const peak = Math.max(0, ...periods.map((period) => periodValue(period, metric)))
-  const axis =
+  const scale =
     metric === 'duration'
       ? peak >= 5400
-        ? { unit: 3600, format: (s: number) => t('workouts:duration.hours', { hours: s / 3600 }) }
-        : { unit: 60, format: (s: number) => t('workouts:duration.minutes', { minutes: s / 60 }) }
+        ? {
+            factor: 1 / 3600,
+            pad: 1800,
+            tick: (s: number) => t('workouts:duration.hours', { hours: Math.round(s / 360) / 10 }),
+          }
+        : {
+            factor: 1 / 60,
+            pad: 600,
+            tick: (s: number) => t('workouts:duration.minutes', { minutes: Math.round(s / 60) }),
+          }
       : metric === 'volume'
         ? {
-            unit: unit === 'lb' ? KG_PER_LB : 1,
-            format: (kg: number) => compactVolume(kg, unit),
+            factor: unit === 'lb' ? 1 / KG_PER_LB : 1,
+            pad: 100,
+            tick: (kg: number) => compactVolume(kg, unit),
           }
-        : { format: (value: number) => String(value) }
+        : { factor: 1, pad: 1, tick: (value: number) => String(Math.round(value)) }
 
   return (
     <View className="gap-2">
-      {/* The figure is the period drawn in full colour: this one, or the one tapped. */}
       <View className="gap-0.5">
-        <Text variant="overlineSm">{selected === null || !shown ? current : name(shown)}</Text>
-        <Text variant="displayMd">{shown ? show(periodValue(shown, metric)) : '0'}</Text>
+        <Text variant="overlineSm">{current}</Text>
+        <Text variant="displayMd">{last ? show(periodValue(last, metric)) : '0'}</Text>
       </View>
-      <BarChart
+      <TrendLine
         height={140}
-        others="soft"
-        selected={selected}
-        onSelect={setSelected}
-        axis={axis}
-        bars={periods.map((period, index) => ({
+        tone="hibiscus"
+        fromZero
+        wholeTicks={metric === 'workouts' || metric === 'sets'}
+        minPad={scale.pad}
+        unitFactor={scale.factor}
+        points={periods.map((period) => ({
           key: period.week,
-          tick: tick(period),
+          label: tick(period),
+          title: name(period),
           value: periodValue(period, metric),
-          highlight: index === periods.length - 1,
-          a11yLabel: `${name(period)}, ${show(periodValue(period, metric))}`,
         }))}
+        formatValue={show}
+        formatTick={scale.tick}
+        accessibilityLabel={t(WEEK_KEY[metric])}
       />
     </View>
   )

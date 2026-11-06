@@ -198,6 +198,23 @@ export const keys = {
   workoutWeeks: (userId: string, weeks: number) => ['workouts', userId, 'weeks', weeks] as const,
   workoutMonths: (userId: string, months: number | null) =>
     ['workouts', userId, 'months', months] as const,
+  /**
+   * Workouts on the Trends screen, one range at a time. Under `workouts`, not
+   * `trends`: a saved, edited or imported workout invalidates `workoutsAll`,
+   * and a meal does not move them.
+   */
+  trendWorkouts: (userId: string, range: string) =>
+    ['workouts', userId, 'trend', range, 'series'] as const,
+  trendWorkoutSummary: (userId: string, range: string) =>
+    ['workouts', userId, 'trend', range, 'summary'] as const,
+  latestWorkouts: (userId: string, limit: number) => ['workouts', userId, 'latest', limit] as const,
+  /** A review's training, under `workouts` so a saved workout reaches it. */
+  reviewWorkouts: (userId: string, kind: string, start: string) =>
+    ['workouts', userId, 'review', kind, start] as const,
+  reviewWorkoutRecords: (userId: string, kind: string, start: string) =>
+    ['workouts', userId, 'review', kind, start, 'records'] as const,
+  reviewWorkoutPeriods: (userId: string, kind: string) =>
+    ['workouts', userId, 'review-periods', kind] as const,
   exerciseTotals: (userId: string, from: string, to: string) =>
     ['workouts', userId, 'exercise-totals', from, to] as const,
   exerciseBests: (userId: string, exerciseId: string | null) =>

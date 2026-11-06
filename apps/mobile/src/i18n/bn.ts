@@ -655,6 +655,11 @@ export const bn = {
       kcalLeft: 'বাকি KCAL',
       kcalOver: 'বেশি KCAL',
       kcalOfGoal: '/{{goal}} KCAL',
+      grams: '{{value}}g',
+      proteinLeft: 'প্রোটিন বাকি',
+      proteinOver: 'প্রোটিন বেশি',
+      proteinOfGoal: '/{{goal}}G প্রোটিন',
+      proteinA11y: '{{goal}} গ্রামের মধ্যে {{value}} গ্রাম প্রোটিন',
       showGoals: 'দিনের হিসাব দেখান',
       showLeft: 'যা বাকি তা দেখান',
       dayHeading: 'আপনার দিন',
@@ -920,19 +925,12 @@ export const bn = {
 
   progress: {
     title: 'প্রবণতা',
-
-    ofDays: '{{total}} এর মধ্যে {{done}}',
-
     metric: {
       calories: 'ক্যালরি',
       water: 'পানি',
       weight: 'ওজন',
-      caloriesUnit: 'গড়',
-      waterUnit: 'ml',
-      none: '—',
-      a11y: '{{metric}}, {{value}}',
+      protein: 'প্রোটিন',
     },
-
     range: {
       label: 'সীমা',
       '7d': '৭দি',
@@ -942,90 +940,53 @@ export const bn = {
       span30d: 'গত ৩০ দিন',
       span1y: 'গত ১২ মাস',
       week: 'সপ্তা {{index}}',
-      weekLong: 'সপ্তাহ {{index}}',
     },
-
     calories: {
-      goalNote: 'লক্ষ্য দিনে {{goal}} kcal',
-      goalNoteWeekly: 'সাপ্তাহিক গড়, লক্ষ্য দিনে {{goal}}',
-      goalNoteMonthly: 'মাসিক গড়, লক্ষ্য দিনে {{goal}}',
-      noGoal: 'এখনো দৈনিক হিসাব ঠিক করা হয়নি',
+      unit: 'kcal প্রতিদিন',
+      value: '{{value}} kcal',
       under: '{{value}} কম',
       over: '{{value}} বেশি',
-      chart: 'দিনে ক্যালরি, কার্বস, প্রোটিন ও চর্বিতে ভাগ করা',
-
+      chart: '{{span}}: প্রতিদিনের ক্যালোরি, আপনার লক্ষ্যের সাপেক্ষে',
+      share: '{{macro}} {{value}}%',
       grams: '{{value}} g',
-      shareOfIntake: 'গ্রহণের {{value}}%',
-
-      goalTitle: 'আপনার লক্ষ্যের সাপেক্ষে',
-      daysUnder: '{{goal}} এর নিচের দিন',
-      daysLogged: 'পুরোপুরি লেখা দিন',
-
-      notableTitle: 'উল্লেখযোগ্য মাস',
-      monthAverage: 'গড় {{value}}',
-
-      emptyTitle: 'এই সীমায় কোনো খাবার নেই',
-      emptyBody: 'কিছু লিখুন, যেদিন লিখবেন সেদিন থেকেই দণ্ডগুলো ভরবে।',
+      empty: 'এই সময়ে কোনো খাবার লগ করা হয়নি।',
     },
-
+    protein: {
+      unit: 'g প্রতিদিন',
+      above: '{{value}} g বেশি',
+      short: '{{value}} g কম',
+      chart: '{{span}}: প্রতিদিনের প্রোটিন, আপনার লক্ষ্যের সাপেক্ষে',
+    },
+    workouts: {
+      title: 'ওয়ার্কআউট',
+      unit_one: 'ওয়ার্কআউট',
+      unit_other: 'ওয়ার্কআউট',
+      vs7d: 'গত সপ্তাহের তুলনায় {{delta}}',
+      vs30d: 'আগের ৩০ দিনের তুলনায় {{delta}}',
+      vs1y: 'আগের বছরের তুলনায় {{delta}}',
+      chart: '{{span}}: অনুশীলনের সময়',
+      perDay: 'প্রতিদিন {{value}}',
+      latest: 'সাম্প্রতিক',
+      startTitle: 'আপনার ওয়ার্কআউট ট্র্যাক করুন',
+      startBody: 'একটি সেশন লগ করুন, আপনার অনুশীলন এখানে দেখা যাবে।',
+    },
     water: {
-      dayNote: 'প্রতিটি স্তম্ভ একটি দিন, আপনার লক্ষ্যের সাপেক্ষে',
-      weeklyNote: 'প্রতিটি স্তম্ভ একটি সপ্তাহ, লক্ষ্যের সাপেক্ষে গড়',
-      monthlyNote: 'প্রতিটি স্তম্ভ একটি মাস, লক্ষ্যের সাপেক্ষে গড়',
-      goalPill: 'লক্ষ্য {{amount}}',
+      unit: '{{unit}} প্রতিদিন',
+      goalDays: '{{total}} দিনের মধ্যে {{done}} দিন লক্ষ্য পূরণ',
       chart: 'দিনে পানি, {{amount}} লক্ষ্যের সাপেক্ষে',
-
-      reached: 'লক্ষ্যে পৌঁছেছে',
-      short: 'লক্ষ্যের কম',
-
-      goalDays: 'লক্ষ্যের দিন',
-      bestDay: 'সেরা দিন',
-      bestMonth: 'সেরা মাস',
-      yearAverage: 'বছরের গড়',
-      total: 'মোট',
-
-      todayTitle: 'আজ',
-
-      habitTitle: 'অভ্যাস',
-      daysAtLeast: '{{amount}} বা তার বেশি দিন',
-      daysLogged: 'লেখা দিন',
-      monthsAveraging: '{{amount}}+ গড়ের মাস',
-      monthsLogged: 'লেখা মাস',
-
-      emptyTitle: 'এই সীমায় কোনো পানি লেখা হয়নি',
-      emptyBody: 'আজ পাতায় একটি পানীয় লিখুন, এটি ভরে যাবে।',
+      empty: 'এই সময়ে কোনো পানি লগ করা হয়নি।',
     },
-
     weight: {
-      peakOn: '{{date}} এ {{value}} {{unit}}',
-      latest: 'সর্বশেষ {{value}} {{unit}}',
-      latestOn: 'সর্বশেষ {{value}} {{unit}}, {{date}}',
-      peakIn: '{{month}} এ {{value}} {{unit}}',
       change: '{{value}} {{unit}}',
       chart: '{{span}} জুড়ে আপনার ওজন',
-
       thisWeek: 'এই সপ্তাহে',
-      thisMonth: 'এই মাসে',
-      thisYear: 'এই বছরে',
-      average7: '৭ দিনের গড়',
-      average30: '৩০ দিনের গড়',
-      lightest: 'সবচেয়ে কম',
-      weighIns: 'ওজন মাপা',
-      monthsLogged: 'লেখা মাস',
-
       toGoal: 'আপনার {{target}} {{unit}} লক্ষ্যে পৌঁছাতে আরও {{value}} {{unit}}',
-      noTarget: 'কোনো লক্ষ্য ওজন ঠিক করা নেই',
       atGoal: 'আপনি আপনার লক্ষ্য ওজনে আছেন',
       weeksAway: 'প্রায় {{count}} সপ্তাহ',
-
+      empty: 'এখনো কোনো ওজন লগ করা হয়নি।',
       add: 'যোগ করুন',
-      weekByWeek: 'সপ্তাহে সপ্তাহে',
-      byQuarter: 'ত্রৈমাসিক অনুযায়ী',
-      quarter: '{{from}} থেকে {{to}}',
-
       reading: '{{value}} {{unit}}',
       firstReading: 'প্রথম',
-
       sheetTitle: 'ওজন যোগ করুন',
       sheetEditTitle: '{{date}} এর ওজন মাপা',
       thisMorning: 'আজ সকালে',
@@ -1039,14 +1000,11 @@ export const bn = {
       remove: 'এই পাঠটি সরান',
       removeTitle: 'এই পাঠটি সরাবেন?',
       removeBody: 'লেখচিত্র থেকে এই দিনটি চলে যাবে। এটিই সর্বশেষ হলে আপনার হিসাব তার আগেরটিতে ফিরে যাবে।',
-
-      emptyTitle: 'এই সীমায় কোনো ওজন মাপা নেই',
-      emptyBody: 'একটি পাঠ একটি বিন্দু আঁকে। দুটি একটি রেখা আঁকে।',
     },
-
     history: {
-      title: 'ইতিহাস',
-      viewFull: 'পুরো দেখুন',
+      caloriesTitle: 'ক্যালোরির ইতিহাস',
+      waterTitle: 'পানির ইতিহাস',
+      weightTitle: 'ওজনের ইতিহাস',
       dayTotal: '{{value}} kcal',
       waterAverage: 'গড় {{amount}}',
       goalMet: 'লক্ষ্যে পৌঁছেছে',
@@ -1266,6 +1224,9 @@ export const bn = {
       light: 'উজ্জ্বল',
       dark: 'অন্ধকার',
       auto: 'স্বয়ংক্রিয়',
+      focus: 'যা ট্র্যাক করবেন',
+      focusCalories: 'ক্যালোরি',
+      focusProtein: 'প্রোটিন',
     },
 
     subscription: {
@@ -1633,18 +1594,15 @@ export const bn = {
 
   reviews: {
     title: 'পর্যালোচনা',
-
     entry: {
       title: 'পর্যালোচনা',
       subtitle: 'একটি সপ্তাহ বা মাস ফিরে দেখুন',
     },
-
     kind: {
       week: 'সাপ্তাহিক',
       month: 'মাসিক',
       label: 'পর্যালোচনার দৈর্ঘ্য',
     },
-
     list: {
       weekMeta: 'সপ্তাহ {{index}}',
       weekSummary: 'দিনে {{kcal}} kcal, {{total}} এর মধ্যে {{done}} লেখা',
@@ -1652,27 +1610,30 @@ export const bn = {
       monthSummary: 'দিনে {{kcal}} kcal',
       monthSummaryWeight: 'দিনে {{kcal}} kcal, {{weight}}',
       summaryEmpty: 'কিছুই লেখা হয়নি',
+      kcal: 'kcal',
+      workouts_one: 'ওয়ার্কআউট',
+      workouts_other: 'ওয়ার্কআউট',
+      workoutCount_one: '{{count}}টি ওয়ার্কআউট',
+      workoutCount_other: '{{count}}টি ওয়ার্কআউট',
+      latestWeek: 'সর্বশেষ সপ্তাহ',
+      latestMonth: 'সর্বশেষ মাস',
       a11y: '{{title}}, {{meta}}, {{summary}}',
       a11yLocked: '{{title}}, {{meta}}, {{summary}}, Pro',
-
       emptyWeekTitle: 'ফিরে দেখার মতো কোনো সপ্তাহ এখনো নেই',
       emptyWeekBody: 'একটি সপ্তাহ শেষ হলে এবং আপনি তার অন্তত চারটি দিন লিখলে সেটি এখানে আসে।',
       emptyMonthTitle: 'ফিরে দেখার মতো কোনো মাস এখনো নেই',
       emptyMonthBody: 'একটি মাস শেষ হলে এবং আপনি তার অন্তত বারোটি দিন লিখলে সেটি এখানে আসে।',
     },
-
     share: {
       card: '{{card}} ভাগ করুন',
       preview: 'কার্ডটি ঠিক যেমন পাঠানো হবে',
     },
-
     story: {
       close: 'বন্ধ করুন',
       share: 'ভাগ করুন',
       missingTitle: 'সেই পর্যালোচনা এখানে নেই',
       missingBody: 'হয়তো এটি এমন একটি সপ্তাহ ছিল যাতে ফিরে দেখার মতো খুব কমই ছিল।',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: 'দিনে kcal',
@@ -1684,18 +1645,29 @@ export const bn = {
       streak: 'টানা',
       streakValue_one: '{{count}} দিন',
       streakValue_other: '{{count}} দিন',
+      workouts: 'ওয়ার্কআউট',
       weightChange: 'ওজন',
       noWeight: '—',
       shareText: '{{period}}: দিনে {{kcal}} kcal, {{total}} এর মধ্যে {{done}} দিন লেখা। RiceCal',
     },
-
+    training: {
+      title: 'অনুশীলন',
+      unit_one: 'ওয়ার্কআউট',
+      unit_other: 'ওয়ার্কআউট',
+      vsWeek: 'গত সপ্তাহের তুলনায় {{delta}}',
+      vsMonth: 'গত মাসের তুলনায় {{delta}}',
+      time: 'সময়',
+      volume: 'ভলিউম',
+      bests: 'নতুন সেরা',
+      best: '{{weight}} × {{reps}}',
+      days: '{{total}} দিনের মধ্যে {{done}} দিন অনুশীলন',
+    },
     food: {
       title: 'সবচেয়ে বড় থালা',
       macros: 'দিনে ম্যাক্রো',
       grams: '{{value}} g',
       share: 'শক্তির {{value}}%',
     },
-
     calories: {
       average: 'দিনে গড়',
       kcal: 'kcal',
@@ -1705,14 +1677,12 @@ export const bn = {
       noGoal: 'তখন কোনো দৈনিক হিসাব চালু ছিল না।',
       everyDay: 'প্রতিদিন',
       everyWeek: 'প্রতি সপ্তাহে',
-      chart: 'দিনে ক্যালরি, কার্বস, প্রোটিন ও চর্বিতে ভাগ করা',
+      chart: 'প্রতিদিনের ক্যালোরি, আপনার লক্ষ্যের সাপেক্ষে',
       lightest: '{{day}}, সবচেয়ে কম',
       heaviest: '{{day}}, সবচেয়ে বেশি',
       pastWeeks: 'গত পাঁচ সপ্তাহ',
       pastMonths: 'গত পাঁচ মাস',
-      noData: '—',
     },
-
     body: {
       weight: 'ওজন',
       weighIns_one: 'একবার ওজন মাপা',

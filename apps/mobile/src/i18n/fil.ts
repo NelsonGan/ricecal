@@ -686,6 +686,11 @@ export const fil = {
       kcalLeft: 'KCAL NA NATITIRA',
       kcalOver: 'KCAL NA LAMPAS',
       kcalOfGoal: '/{{goal}} KCAL',
+      grams: '{{value}}g',
+      proteinLeft: 'PROTINA NA KULANG',
+      proteinOver: 'PROTINA NA LAMPAS',
+      proteinOfGoal: '/{{goal}}G PROTINA',
+      proteinA11y: '{{value}} sa {{goal}} gramo ng protina',
       showGoals: 'Ipakita ang badyet ng araw',
       showLeft: 'Ipakita ang natitira',
       dayHeading: 'Ang araw mo',
@@ -955,19 +960,12 @@ export const fil = {
 
   progress: {
     title: 'Mga trend',
-
-    ofDays: '{{done}} sa {{total}}',
-
     metric: {
       calories: 'Calories',
       water: 'Tubig',
       weight: 'Timbang',
-      caloriesUnit: 'avg',
-      waterUnit: 'ml',
-      none: '—',
-      a11y: '{{metric}}, {{value}}',
+      protein: 'Protina',
     },
-
     range: {
       label: 'Saklaw',
       '7d': '7A',
@@ -977,90 +975,53 @@ export const fil = {
       span30d: 'Huling 30 araw',
       span1y: 'Huling 12 buwan',
       week: 'Ling {{index}}',
-      weekLong: 'Linggo {{index}}',
     },
-
     calories: {
-      goalNote: 'Target {{goal}} kcal kada araw',
-      goalNoteWeekly: 'Average bawat linggo, target {{goal}} kada araw',
-      goalNoteMonthly: 'Average bawat buwan, target {{goal}} kada araw',
-      noGoal: 'Wala pang naitakdang badyet kada araw',
+      unit: 'kcal kada araw',
+      value: '{{value}} kcal',
       under: '{{value}} kulang',
       over: '{{value}} lampas',
-      chart: 'Calories kada araw, hinati sa carbs, protina at taba',
-
+      chart: 'Calories kada araw sa {{span}}, laban sa target mo',
+      share: '{{macro}} {{value}}%',
       grams: '{{value}} g',
-      shareOfIntake: '{{value}}% ng nakain',
-
-      goalTitle: 'LABAN SA TARGET MO',
-      daysUnder: 'Araw na mas mababa sa {{goal}}',
-      daysLogged: 'Araw na buong naka-log',
-
-      notableTitle: 'MGA KAPANSIN-PANSING BUWAN',
-      monthAverage: '{{value}} avg',
-
-      emptyTitle: 'Walang pagkain sa saklaw na ito',
-      emptyBody: 'Mag-log ng kahit ano at mapupuno ang mga bar mula sa araw na ginawa mo iyon.',
+      empty: 'Walang na-log na pagkain sa panahong ito.',
     },
-
+    protein: {
+      unit: 'g kada araw',
+      above: '{{value}} g lampas',
+      short: '{{value}} g kulang',
+      chart: 'Protina kada araw sa {{span}}, laban sa target mo',
+    },
+    workouts: {
+      title: 'Mga workout',
+      unit_one: 'workout',
+      unit_other: 'workout',
+      vs7d: '{{delta}} kumpara noong nakaraang linggo',
+      vs30d: '{{delta}} kumpara sa nakaraang 30 araw',
+      vs1y: '{{delta}} kumpara sa nakaraang taon',
+      chart: 'Oras ng training sa {{span}}',
+      perDay: '{{value}} kada araw',
+      latest: 'PINAKABAGO',
+      startTitle: 'I-track ang mga workout mo',
+      startBody: 'Mag-log ng session at lalabas dito ang training mo.',
+    },
     water: {
-      dayNote: 'Bawat haligi ay isang araw laban sa target mo',
-      weeklyNote: 'Bawat haligi ay isang linggo, ina-average laban sa target mo',
-      monthlyNote: 'Bawat haligi ay isang buwan, ina-average laban sa target mo',
-      goalPill: 'target {{amount}}',
+      unit: '{{unit}} kada araw',
+      goalDays: '{{done}} sa {{total}} araw na naabot ang target',
       chart: 'Tubig kada araw laban sa target na {{amount}}',
-
-      reached: 'Naabot ang target',
-      short: 'Kulang sa target',
-
-      goalDays: 'ARAW NA TARGET',
-      bestDay: 'PINAKAMAHUSAY NA ARAW',
-      bestMonth: 'PINAKAMAHUSAY NA BUWAN',
-      yearAverage: 'AVG NG TAON',
-      total: 'KABUUAN',
-
-      todayTitle: 'NGAYON',
-
-      habitTitle: 'UGALI',
-      daysAtLeast: 'Araw na {{amount}} pataas',
-      daysLogged: 'Araw na naka-log',
-      monthsAveraging: 'Buwan na nag-a-average ng {{amount}}+',
-      monthsLogged: 'Buwan na naka-log',
-
-      emptyTitle: 'Walang tubig na naka-log sa saklaw na ito',
-      emptyBody: 'Mag-record ng inumin sa Ngayon at mapupuno ito.',
+      empty: 'Walang na-log na tubig sa panahong ito.',
     },
-
     weight: {
-      peakOn: '{{value}} {{unit}} noong {{date}}',
-      latest: 'Huling {{value}} {{unit}}',
-      latestOn: 'Huling {{value}} {{unit}} noong {{date}}',
-      peakIn: '{{value}} {{unit}} noong {{month}}',
       change: '{{value}} {{unit}}',
       chart: 'Ang timbang mo sa {{span}}',
-
       thisWeek: 'NGAYONG LINGGO',
-      thisMonth: 'NGAYONG BUWAN',
-      thisYear: 'NGAYONG TAON',
-      average7: 'AVG NG 7 ARAW',
-      average30: 'AVG NG 30 ARAW',
-      lightest: 'PINAKAMAGAAN',
-      weighIns: 'BILANG NG TIMBANG',
-      monthsLogged: 'BUWAN NA NAKA-LOG',
-
       toGoal: '{{value}} {{unit}} pa sa target mong {{target}} {{unit}}',
-      noTarget: 'Walang naitakdang target na timbang',
       atGoal: 'Nasa target mong timbang',
       weeksAway: '~{{count}} linggo',
-
+      empty: 'Wala pang na-log na timbang.',
       add: 'Idagdag',
-      weekByWeek: 'LINGGO KADA LINGGO',
-      byQuarter: 'KADA QUARTER',
-      quarter: '{{from}} hanggang {{to}}',
-
       reading: '{{value}} {{unit}}',
       firstReading: 'Una',
-
       sheetTitle: 'Magdagdag ng timbang',
       sheetEditTitle: 'Pagtimbang noong {{date}}',
       thisMorning: 'Ngayong umaga',
@@ -1075,14 +1036,11 @@ export const fil = {
       removeTitle: 'Alisin ang basang ito?',
       removeBody:
         'Mawawala sa chart ang araw na ito. Kung ito ang pinakahuli, babalik ang badyet mo sa nauna.',
-
-      emptyTitle: 'Walang pagtimbang sa saklaw na ito',
-      emptyBody: 'Isang basa ay isang tuldok. Dalawa ang gumuguhit ng linya.',
     },
-
     history: {
-      title: 'Kasaysayan',
-      viewFull: 'Tingnan nang buo',
+      caloriesTitle: 'Kasaysayan ng calories',
+      waterTitle: 'Kasaysayan ng tubig',
+      weightTitle: 'Kasaysayan ng timbang',
       dayTotal: '{{value}} kcal',
       waterAverage: '{{amount}} avg',
       goalMet: 'Naabot ang target',
@@ -1306,6 +1264,9 @@ export const fil = {
       light: 'Maliwanag',
       dark: 'Madilim',
       auto: 'Awto',
+      focus: 'I-FOCUS SA',
+      focusCalories: 'Calories',
+      focusProtein: 'Protina',
     },
 
     subscription: {
@@ -1681,18 +1642,15 @@ export const fil = {
 
   reviews: {
     title: 'Mga review',
-
     entry: {
       title: 'Mga review',
       subtitle: 'Balikan ang isang linggo o isang buwan',
     },
-
     kind: {
       week: 'Lingguhan',
       month: 'Buwanan',
       label: 'Haba ng review',
     },
-
     list: {
       weekMeta: 'Linggo {{index}}',
       weekSummary: '{{kcal}} kcal kada araw, {{done}} sa {{total}} ang naka-log',
@@ -1700,9 +1658,15 @@ export const fil = {
       monthSummary: '{{kcal}} kcal kada araw',
       monthSummaryWeight: '{{kcal}} kcal kada araw, {{weight}}',
       summaryEmpty: 'Walang naka-log',
+      kcal: 'kcal',
+      workouts_one: 'workout',
+      workouts_other: 'workout',
+      workoutCount_one: '{{count}} workout',
+      workoutCount_other: '{{count}} workout',
+      latestWeek: 'PINAKABAGONG LINGGO',
+      latestMonth: 'PINAKABAGONG BUWAN',
       a11y: '{{title}}, {{meta}}, {{summary}}',
       a11yLocked: '{{title}}, {{meta}}, {{summary}}, Pro',
-
       emptyWeekTitle: 'Wala pang linggong mababalikan',
       emptyWeekBody:
         'Lilitaw dito ang isang linggo kapag natapos na ito at ni-log mo ang hindi bababa sa apat na araw nito.',
@@ -1710,19 +1674,16 @@ export const fil = {
       emptyMonthBody:
         'Lilitaw dito ang isang buwan kapag natapos na ito at ni-log mo ang hindi bababa sa labindalawang araw nito.',
     },
-
     share: {
       card: 'Ibahagi ang {{card}}',
       preview: 'Ang card gaya ng ipapadala ito',
     },
-
     story: {
       close: 'Isara',
       share: 'Ibahagi',
       missingTitle: 'Wala rito ang review na iyon',
       missingBody: 'Baka isa itong linggong masyadong kaunti ang laman para balikan.',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: 'kcal kada araw',
@@ -1734,19 +1695,30 @@ export const fil = {
       streak: 'STREAK',
       streakValue_one: '{{count}} araw',
       streakValue_other: '{{count}} araw',
+      workouts: 'MGA WORKOUT',
       weightChange: 'TIMBANG',
       noWeight: '—',
       shareText:
         '{{period}}: {{kcal}} kcal kada araw, {{done}} sa {{total}} araw ang naka-log. RiceCal',
     },
-
+    training: {
+      title: 'TRAINING',
+      unit_one: 'workout',
+      unit_other: 'workout',
+      vsWeek: '{{delta}} kumpara noong nakaraang linggo',
+      vsMonth: '{{delta}} kumpara noong nakaraang buwan',
+      time: 'ORAS',
+      volume: 'VOLUME',
+      bests: 'MGA BAGONG BEST',
+      best: '{{weight}} × {{reps}}',
+      days: 'Nag-training sa {{done}} sa {{total}} araw',
+    },
     food: {
       title: 'ANG PINAKAMALALAKING PLATO',
       macros: 'MACROS KADA ARAW',
       grams: '{{value}} g',
       share: '{{value}}% ng enerhiya',
     },
-
     calories: {
       average: 'AVERAGE KADA ARAW',
       kcal: 'kcal',
@@ -1756,14 +1728,12 @@ export const fil = {
       noGoal: 'Walang badyet kada araw na umiiral noon.',
       everyDay: 'ARAW-ARAW',
       everyWeek: 'LINGGO-LINGGO',
-      chart: 'Calories kada araw, hinati sa carbs, protina at taba',
+      chart: 'Calories kada araw laban sa target mo',
       lightest: '{{day}}, PINAKAMAGAAN',
       heaviest: '{{day}}, PINAKAMABIGAT',
       pastWeeks: 'HULING LIMANG LINGGO',
       pastMonths: 'HULING LIMANG BUWAN',
-      noData: '—',
     },
-
     body: {
       weight: 'TIMBANG',
       weighIns_one: 'Isang pagtimbang',

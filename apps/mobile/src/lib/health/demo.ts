@@ -282,7 +282,7 @@ export const demoHealth: HealthProvider = {
      * table the user's own weigh-ins live in.
      *
      * Nothing is lost: weight already has a way in that works on a simulator,
-     * which is the field on the Trends tab.
+     * which is the Add pill on the weight history page.
      */
     return { days, workouts, hours, weights: [], deviceName: 'Demo watch' }
   },

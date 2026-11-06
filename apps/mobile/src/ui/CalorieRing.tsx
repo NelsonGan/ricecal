@@ -26,6 +26,8 @@ export type CalorieRingProps = {
    * measuring anything else.
    */
   tone?: 'pandan' | 'kaya' | 'hibiscus' | 'water'
+  /** What a screen reader says. Defaults to calories; a ring in grams says grams. */
+  accessibilityLabel?: string
   className?: string
 }
 
@@ -48,6 +50,7 @@ export function CalorieRing({
   size = 196,
   thickness = 21,
   tone,
+  accessibilityLabel,
   className,
 }: CalorieRingProps) {
   const colors = useThemeColors()
@@ -105,8 +108,8 @@ export function CalorieRing({
         className="absolute items-center justify-center"
         style={{ width: size - thickness * 2 - 12 }}
         accessibilityRole="progressbar"
-        accessibilityLabel={`${value} of ${goal} kcal`}
-        accessibilityValue={{ min: 0, max: goal, now: value }}
+        accessibilityLabel={accessibilityLabel ?? `${value} of ${goal} kcal`}
+        accessibilityValue={{ min: 0, max: Math.round(goal), now: Math.round(value) }}
       >
         <Text
           className="font-display text-heading"

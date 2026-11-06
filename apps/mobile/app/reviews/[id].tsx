@@ -9,6 +9,8 @@ import {
   useReviewPeriods,
   useReviewSeries,
   useReviewSummary,
+  useReviewWorkoutRecords,
+  useReviewWorkouts,
   useSettings,
   useUserId,
 } from '@/data'
@@ -23,6 +25,7 @@ import {
   type ReviewStep,
   reviewSteps,
   ShareableCards,
+  TrainingStep,
 } from '@/features/reviews'
 import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
@@ -43,7 +46,8 @@ import { AppBar, Aside, Card, EmptyState, Screen, Skeleton } from '@/ui'
  * when the review was opened from the list.
  *
  * How many sections there are is data. `reviewSteps` decides from what came back,
- * so a month before the watch arrived is three sections rather than four.
+ * so a month without a workout has no training section and one before the
+ * watch arrived has no body section.
  */
 export default function ReviewScreen() {
   const { t } = useTranslation(['reviews', 'common'])
@@ -76,6 +80,8 @@ export default function ReviewScreen() {
   const summary = useReviewSummary(kind, start)
   const series = useReviewSeries(kind, start)
   const meals = useReviewMeals(kind, start)
+  const training = useReviewWorkouts(kind, start)
+  const records = useReviewWorkoutRecords(kind, start)
 
   /**
    * One `Review Opened` per review, once the period is actually known.
@@ -151,7 +157,15 @@ export default function ReviewScreen() {
   const loading =
     locked ||
     resolving ||
-    (start !== '' && (summary.isPending || series.isPending || meals.isPending))
+    (start !== '' &&
+      (summary.isPending ||
+        series.isPending ||
+        meals.isPending ||
+        // Training is waited for so its card does not land a beat later and push
+        // the food down, but only while a request is actually out. Offline it
+        // is paused rather than pending forever, and a review cached before
+        // training existed must still open; a failure shows it without one.
+        (training.isPending && training.fetchStatus === 'fetching')))
   const found = summary.data
 
   if (loading) {
@@ -180,10 +194,29 @@ export default function ReviewScreen() {
   const title = periodShortTitle(kind, found.start, found.end)
   const buckets = series.data ?? []
   const dishes = meals.data ?? []
-  const steps = reviewSteps(found, dishes.length)
+  const trained = training.data ?? null
+  const steps = reviewSteps(found, dishes.length, trained?.workouts ?? 0)
 
   const draw: Record<ReviewStep, ReactNode> = {
-    card: <CardStep title={title} summary={found} buckets={buckets} unit={unit} />,
+    card: (
+      <CardStep
+        title={title}
+        summary={found}
+        buckets={buckets}
+        unit={unit}
+        workouts={trained?.workouts ?? 0}
+      />
+    ),
+    training: trained ? (
+      <TrainingStep
+        kind={kind}
+        start={found.start}
+        end={found.end}
+        training={trained}
+        records={records.data ?? []}
+        unit={unit}
+      />
+    ) : null,
     food: <FoodStep summary={found} meals={dishes} />,
     calories: (
       <CaloriesStep kind={kind} summary={found} buckets={buckets} periods={periods.data ?? []} />
