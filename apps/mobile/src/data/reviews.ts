@@ -222,10 +222,8 @@ export function useReviewWorkouts(kind: ReviewKind, start: string) {
       if (!row) return null
       return {
         workouts: row.workouts,
-        activeDays: row.active_days,
         durationS: row.duration_s,
         volumeKg: orZero(row.volume_kg),
-        sets: row.sets,
         prevWorkouts: row.prev_workouts,
         trainedOn: row.trained_on ?? [],
       }
@@ -263,6 +261,6 @@ export function useReviewWorkoutPeriods(kind: ReviewKind) {
     queryFn: async (): Promise<ReviewPeriodWorkouts[]> =>
       (
         unwrap(await supabase.rpc('review_workout_periods', { p_kind: kind })) as WorkoutPeriodRow[]
-      ).map((row) => ({ start: row.starts_on, workouts: row.workouts, durationS: row.duration_s })),
+      ).map((row) => ({ start: row.starts_on, workouts: row.workouts })),
   })
 }

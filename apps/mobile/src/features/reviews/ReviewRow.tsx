@@ -9,10 +9,8 @@ import { periodTitle, weekOfYear } from './period'
 
 export type ReviewRowProps = {
   period: ReviewPeriod
-  /** For the change on a monthly row. The list reads the preference once. */
+  /** For the weight change on the row. The list reads the preference once. */
   unit: WeightUnit
-  /** The newest one, whose sparkline is drawn in the accent rather than grey. */
-  latest?: boolean
   /**
    * Behind the paywall for this account.
    *
@@ -43,17 +41,16 @@ export type ReviewRowProps = {
  * One row of the reviews list: what the period was called, what it came to, and a
  * sparkline of the days inside it.
  *
- * The sparkline is why the row is taller than a list item. The sentence beside it
- * is an average and a count, neither of which can show that the week was four
+ * The sparkline is why the row is taller than a list item. The figures beside it
+ * are an average and a count, neither of which can show that the week was four
  * heavy days and three missing ones; the bars can, in the width of a thumbnail.
  *
- * Only the newest row draws them in colour. A list where every row is green has
+ * Only the newest, featured period draws them in colour. A list where every row is green has
  * no emphasis in it, and the newest review is the one somebody came here to open.
  */
 export function ReviewRow({
   period,
   unit,
-  latest = false,
   locked = false,
   workouts = null,
   featured = false,
@@ -133,7 +130,15 @@ export function ReviewRow({
         ]),
     ...(weight === null
       ? []
-      : [{ key: 'weight', icon: 'weighing-scale' as const, value: weight, unit: '' }]),
+      : [
+          {
+            key: 'weight',
+            icon: 'weighing-scale' as const,
+            // The unit on its own line on the featured card, like the other two.
+            value: showChange(period.weightChange ?? 0, unit),
+            unit: t(`common:unit.${unit}`),
+          },
+        ]),
   ]
 
   const chevron = locked ? (
@@ -144,63 +149,63 @@ export function ReviewRow({
 
   if (featured) {
     return (
-      <Card contentClassName="gap-4 p-card">
-        <Tappable
-          onPress={onPress}
-          accessibilityRole="button"
-          accessibilityLabel={label}
-          className="gap-4"
-        >
-          {/* The title gets the whole width: "28 September to 4 October"
+      // The card itself is the press, so its padding takes the tap too and
+      // the whole card squishes.
+      <Card
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        contentClassName="gap-4"
+      >
+        {/* The title gets the whole width: "28 September to 4 October"
               beside a sparkline was an ellipsis. The sparkline sits with the
               week's number instead, which is the line with room. */}
-          <View className="gap-1">
-            <View className="flex-row items-center justify-between gap-md">
-              <Text variant="overlineSm" numberOfLines={1} className="shrink">
-                {period.kind === 'week'
-                  ? t('reviews:list.latestWeek')
-                  : t('reviews:list.latestMonth')}
-              </Text>
-              {chevron}
-            </View>
-            <Text variant="subtitle" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
-              {title}
+        <View className="gap-1">
+          <View className="flex-row items-center justify-between gap-md">
+            <Text variant="overlineSm" numberOfLines={1} className="shrink">
+              {period.kind === 'week'
+                ? t('reviews:list.latestWeek')
+                : t('reviews:list.latestMonth')}
             </Text>
-            <View className="flex-row items-end justify-between gap-md">
-              <Text variant="meta" numberOfLines={1} className="shrink">
-                {meta}
-              </Text>
-              <Sparkline marks={period.marks} latest={latest} />
-            </View>
+            {chevron}
           </View>
+          <Text variant="subtitle" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+            {title}
+          </Text>
+          <View className="flex-row items-end justify-between gap-md">
+            <Text variant="meta" numberOfLines={1} className="shrink">
+              {meta}
+            </Text>
+            <Sparkline marks={period.marks} accent />
+          </View>
+        </View>
 
-          <View className="flex-row border-track border-t-2 pt-4">
-            {figures.map((figure, index) => (
-              <View
-                key={figure.key}
-                className={cn(
-                  'min-w-0 flex-1 items-center gap-1',
-                  index > 0 && 'border-track border-l-2',
-                )}
+        <View className="flex-row border-track border-t-2 pt-4">
+          {figures.map((figure, index) => (
+            <View
+              key={figure.key}
+              className={cn(
+                'min-w-0 flex-1 items-center gap-1',
+                index > 0 && 'border-track border-l-2',
+              )}
+            >
+              <Icon set="body" name={figure.icon} size={22} />
+              <Text
+                className="font-display text-[24px] text-ink"
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
               >
-                <Icon set="body" name={figure.icon} size={22} />
-                <Text
-                  className="font-display text-[24px] text-ink"
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.75}
-                >
-                  {figure.value}
+                {figure.value}
+              </Text>
+              {figure.unit ? (
+                <Text variant="micro" numberOfLines={1}>
+                  {figure.unit}
                 </Text>
-                {figure.unit ? (
-                  <Text variant="micro" numberOfLines={1}>
-                    {figure.unit}
-                  </Text>
-                ) : null}
-              </View>
-            ))}
-          </View>
-        </Tappable>
+              ) : null}
+            </View>
+          ))}
+        </View>
       </Card>
     )
   }
@@ -215,16 +220,16 @@ export function ReviewRow({
       >
         <View className="min-w-0 flex-1 gap-1">
           <View className="gap-0">
-            <Text variant="label" className="text-ink" numberOfLines={1}>
+            <Text variant="label" numberOfLines={1}>
               {title}
             </Text>
             <Text variant="meta" numberOfLines={1}>
               {meta}
             </Text>
           </View>
-          {/* One line: the icons name the figures, so only calories keeps a
-              unit word. With "workouts" spelled out the weight wrapped onto a
-              line of its own beside the sparkline. */}
+          {/* One line: the icons name the figures, so the workout count goes
+              without its word. Spelled out, it wrapped the weight onto a line
+              of its own beside the sparkline. */}
           <View className="flex-row items-center gap-3">
             {figures.map((figure) => (
               <View key={figure.key} className="flex-row items-center gap-1">
@@ -232,13 +237,13 @@ export function ReviewRow({
                 <Text variant="caption" className="text-ink" numberOfLines={1}>
                   {figure.value}
                 </Text>
-                {figure.key === 'kcal' ? <Text variant="micro">{figure.unit}</Text> : null}
+                {figure.key === 'workouts' ? null : <Text variant="micro">{figure.unit}</Text>}
               </View>
             ))}
           </View>
         </View>
 
-        <Sparkline marks={period.marks} latest={latest} />
+        <Sparkline marks={period.marks} accent={false} />
 
         {/* Tinted, as `ListRow` does it: the chevron is chrome, and the
             illustration's own blue is the one colour on the row that means
@@ -258,7 +263,7 @@ type FigureIcon = 'flame-burn' | 'dumbbell' | 'weighing-scale'
 /** Height of the tallest bar. Small enough that the row stays a list row. */
 const SPARK_HEIGHT = 34
 
-function Sparkline({ marks, latest }: { marks: readonly (number | null)[]; latest: boolean }) {
+function Sparkline({ marks, accent }: { marks: readonly (number | null)[]; accent: boolean }) {
   const peak = Math.max(...marks.map((mark) => mark ?? 0), 1)
 
   // Materialised with an id rather than keyed on the index, the way
@@ -280,7 +285,7 @@ function Sparkline({ marks, latest }: { marks: readonly (number | null)[]; lates
           key={tick.id}
           className={cn(
             'w-[5px] rounded-full',
-            tick.value === null ? 'bg-line' : latest ? 'bg-pandan' : 'bg-line-strong',
+            tick.value === null ? 'bg-line' : accent ? 'bg-pandan' : 'bg-line-strong',
           )}
           // A day with nothing logged draws as a stub rather than as nothing,
           // so the gaps in a patchy week are visible as gaps.

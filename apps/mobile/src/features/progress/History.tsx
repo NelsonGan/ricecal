@@ -20,7 +20,7 @@ import { showChange, showWeight, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { volume, waterProgress } from '@/lib/water'
 import { Badge, cn, Icon, ProgressBar, Tappable, Text } from '@/ui'
 
-/** The three lists `/history` switches between, in the order its tabs read. */
+/** The three history pages, which the old `/history?metric=` link chooses between. */
 export const HISTORY_METRICS = [
   'calories',
   'water',
@@ -75,8 +75,7 @@ export function useOpenEntry() {
  * Opens a day on Today, for a row that is a whole day rather than an entry.
  *
  * `dismissTo` rather than `navigate`: from the History screen a navigate pushed
- * a second copy of the tabs on top of it, with no way back. From the Trends
- * card it is a tab switch either way.
+ * a second copy of the tabs on top of it, with no way back.
  */
 export function useOpenDay() {
   const { setSelectedDate } = useSelectedDate()
@@ -87,24 +86,6 @@ export function useOpenDay() {
       router.dismissTo('/(tabs)/today')
     },
     [setSelectedDate],
-  )
-}
-
-/**
- * A day's heading inside a list card: the day, and what it came to.
- *
- * A tinted band rather than an overline, so the eye finds where one day stops
- * without reading. The total is the day's, not the rows', which is why meal
- * pages always end on a whole day.
- */
-export function DayBand({ label, total }: { label: string; total?: string }) {
-  return (
-    <View className="flex-row items-center justify-between gap-3 rounded-sm bg-track px-3 py-1.5">
-      <Text variant="caption" className="min-w-0 shrink text-body" numberOfLines={1}>
-        {label}
-      </Text>
-      {total ? <Text variant="caption">{total}</Text> : null}
-    </View>
   )
 }
 

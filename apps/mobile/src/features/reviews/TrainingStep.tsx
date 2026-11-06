@@ -36,11 +36,9 @@ export function TrainingStep({ kind, start, end, training, records, unit }: Trai
 
   return (
     <Shareable title={t('reviews:training.title')}>
-      <Card contentClassName="gap-4 p-card">
-        <View className="flex-row items-center gap-2">
-          <Icon set="body" name="dumbbell" size={22} />
-          <Text variant="overline">{t('reviews:training.title')}</Text>
-        </View>
+      {/* A bare overline like every other card in a review. */}
+      <Card contentClassName="gap-4">
+        <Text variant="overline">{t('reviews:training.title')}</Text>
 
         <View className="flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <View className="flex-row items-baseline gap-2">
@@ -56,7 +54,8 @@ export function TrainingStep({ kind, start, end, training, records, unit }: Trai
               tone={delta > 0 ? 'pandan' : 'neutral'}
               direction={delta > 0 ? 'up' : 'down'}
               label={t(kind === 'week' ? 'reviews:training.vsWeek' : 'reviews:training.vsMonth', {
-                delta: delta > 0 ? `+${delta}` : `${delta}`,
+                // A true minus, as `showChange` prints elsewhere in a review.
+                delta: delta > 0 ? `+${delta}` : `\u2212${Math.abs(delta)}`,
               })}
             />
           )}
@@ -138,7 +137,15 @@ function DayDots({
   const size = kind === 'week' ? 14 : 10
   // Blanks before the 1st: Monday is 1, so a month opening on a Thursday has three.
   const lead = kind === 'month' ? getISODay(first) - 1 : 0
-  const cells: (string | null)[] = [...Array.from({ length: lead }, () => null), ...days]
+  const cells = [
+    ...Array.from({ length: lead }, (_, index) => ({ key: `lead-${index}`, day: null })),
+    ...days.map((day) => ({ key: day, day })),
+  ] as { key: string; day: string | null }[]
+  // Padded to whole weeks so the last row's cells stay a seventh wide.
+  while (cells.length % 7) cells.push({ key: `tail-${cells.length}`, day: null })
+  const weeks = Array.from({ length: cells.length / 7 }, (_, row) =>
+    cells.slice(row * 7, row * 7 + 7),
+  )
   const weekdays = Array.from({ length: 7 }, (_, index) =>
     format(addDays(parseISO('2024-01-01'), index), 'EEEEE'),
   )
@@ -162,22 +169,25 @@ function DayDots({
           </Text>
         ))}
       </View>
-      <View className="flex-row flex-wrap" style={{ rowGap: kind === 'week' ? 0 : 6 }}>
-        {cells.map((day, index) => (
-          <View
-            key={day ?? `lead-${index}`}
-            className="items-center"
-            style={{ width: `${100 / 7}%` }}
-          >
-            {day === null ? null : (
-              <View
-                className={cn(
-                  'rounded-full',
-                  trained.has(day) ? 'bg-hibiscus' : 'border-2 border-line-strong',
+      {/* Rows of seven equal cells, each its own row: seven cells a seventh
+          wide wrapped the last one onto a line of its own wherever the
+          widths rounded up past the row. */}
+      <View style={{ gap: kind === 'week' ? 0 : 6 }}>
+        {weeks.map((week) => (
+          <View key={week[0]?.key ?? 'week'} className="flex-row">
+            {week.map((cell) => (
+              <View key={cell.key} className="flex-1 items-center">
+                {cell.day === null ? null : (
+                  <View
+                    className={cn(
+                      'rounded-full',
+                      trained.has(cell.day) ? 'bg-hibiscus' : 'border-2 border-line-strong',
+                    )}
+                    style={{ width: size, height: size }}
+                  />
                 )}
-                style={{ width: size, height: size }}
-              />
-            )}
+              </View>
+            ))}
           </View>
         ))}
       </View>

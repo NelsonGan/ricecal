@@ -3,9 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { ReviewBucket, ReviewKind, ReviewPeriod, ReviewSummary } from '@/data'
-import { TrendLine } from '@/features/progress'
-import { useThemeColors } from '@/theme/useTheme'
-import { Badge, Card, Icon, ProgressBar, Text } from '@/ui'
+import { TrendChip, TrendLine } from '@/features/progress'
+import { Card, ProgressBar, Text } from '@/ui'
 import { underGoalShare } from './period'
 import { Shareable } from './ShareableCards'
 
@@ -28,13 +27,12 @@ const COMPARED = 5
  *
  * The comparison chart draws EVERY period in its window, including the ones too
  * thin to have a review of their own. That is the reason `review_periods`
- * returns `qualifies` as a column rather than filtering: a light week is still
- * a bar on this chart, and a chart with a hole in it and no explanation is
- * worse than one showing a short week honestly.
+ * returns every period rather than filtering: a light week is still a dot on
+ * this line, and a line with a hole in it and no explanation is worse than one
+ * showing a short week honestly.
  */
 export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepProps) {
   const { t } = useTranslation(['reviews', 'progress'])
-  const colors = useThemeColors()
 
   const goal = summary.kcalGoal
   const average = summary.kcal
@@ -72,23 +70,15 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
             </View>
 
             {delta === null ? null : (
-              <Badge tone={delta >= 0 ? 'pandan' : 'kaya'} className="px-3 py-1.5">
-                <Icon
-                  set="ui"
-                  name={delta >= 0 ? 'arrow-down' : 'arrow-up'}
-                  size={14}
-                  tintColor={delta >= 0 ? colors.pandanInk : colors.kayaInk}
-                />
-                <Text
-                  variant="caption"
-                  numberOfLines={1}
-                  className={delta >= 0 ? 'text-pandan-ink' : 'text-kaya-ink'}
-                >
-                  {delta >= 0
+              <TrendChip
+                tone={delta >= 0 ? 'pandan' : 'kaya'}
+                direction={delta >= 0 ? 'down' : 'up'}
+                label={
+                  delta >= 0
                     ? t('reviews:calories.under', { value: delta.toLocaleString() })
-                    : t('reviews:calories.over', { value: Math.abs(delta).toLocaleString() })}
-                </Text>
-              </Badge>
+                    : t('reviews:calories.over', { value: Math.abs(delta).toLocaleString() })
+                }
+              />
             )}
           </View>
 
@@ -191,12 +181,13 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
                 look like half the week. */}
             <TrendLine
               className="mt-1"
-              height={104}
+              height={118}
               gaps="join"
               goal={goal}
               minPad={50}
               interactive={false}
               dotTone={(value) => (goal !== null && value > goal ? 'kaya' : 'pandan')}
+              emphasis={summary.start}
               points={compared.map((period) => ({
                 key: period.start,
                 label: format(parseISO(period.start), kind === 'week' ? 'd MMM' : 'LLL'),

@@ -4,12 +4,7 @@
 export const progress = {
   title: 'Trends',
 
-  /** "5 of 7". Shared by every card that counts something over the range. */
-  ofDays: '{{done}} of {{total}}',
-  /** The first card's switch, read out: what the account follows. */
-  focus: 'Track',
-
-  /** Each card's heading, and the tabs on `/history`. */
+  /** Each card's heading, and the first card's switch. */
   metric: {
     calories: 'Calories',
     water: 'Water',
@@ -65,6 +60,8 @@ export const progress = {
     vs30d: '{{delta}} vs previous 30 days',
     vs1y: '{{delta}} vs previous year',
     chart: 'Time trained over {{span}}',
+    /** The readout over a week or a month, which averages its days. */
+    perDay: '{{value}} a day',
     latest: 'LATEST',
     /** The whole card for somebody who has never logged a workout. */
     startTitle: 'Track your workouts',
@@ -117,12 +114,12 @@ export const progress = {
   },
 
   /**
-   * Every entry behind the charts, newest first, on `/history`. A meal is a
+   * Every entry behind a chart, newest first, one page a metric
+   * (`/history/<metric>`), opened from that Trends card's arrow. A meal is a
    * row, water is a day's total, and a weigh-in is a day's reading, because
-   * that is how each is stored. Each Trends card's heading opens it.
+   * that is how each is stored.
    */
   history: {
-    title: 'History',
     /** Each metric's own page, opened from its Trends card. */
     caloriesTitle: 'Calorie history',
     waterTitle: 'Water history',

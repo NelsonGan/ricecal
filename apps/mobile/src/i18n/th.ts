@@ -928,8 +928,6 @@ export const th = {
 
   progress: {
     title: 'แนวโน้ม',
-    ofDays: '{{done}} จาก {{total}}',
-    focus: 'ติดตาม',
     metric: {
       calories: 'แคลอรี',
       water: 'น้ำ',
@@ -970,6 +968,7 @@ export const th = {
       vs30d: '{{delta}} เทียบกับ 30 วันก่อนหน้า',
       vs1y: '{{delta}} เทียบกับปีก่อน',
       chart: 'เวลาฝึกใน{{span}}',
+      perDay: '{{value}}/วัน',
       latest: 'ล่าสุด',
       startTitle: 'บันทึกการออกกำลังกาย',
       startBody: 'บันทึกหนึ่งเซสชัน แล้วการฝึกของคุณจะแสดงที่นี่',
@@ -1006,7 +1005,6 @@ export const th = {
       removeBody: 'กราฟจะหายไปหนึ่งวัน ถ้านี่เป็นครั้งล่าสุด โควตาของคุณจะกลับไปใช้ค่าก่อนหน้า',
     },
     history: {
-      title: 'ประวัติ',
       caloriesTitle: 'ประวัติแคลอรี่',
       waterTitle: 'ประวัติการดื่มน้ำ',
       weightTitle: 'ประวัติน้ำหนัก',
@@ -1685,7 +1683,6 @@ export const th = {
       heaviest: '{{day}} มากที่สุด',
       pastWeeks: 'ห้าสัปดาห์ล่าสุด',
       pastMonths: 'ห้าเดือนล่าสุด',
-      noData: '—',
     },
     body: {
       weight: 'น้ำหนัก',

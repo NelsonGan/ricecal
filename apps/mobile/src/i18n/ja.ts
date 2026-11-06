@@ -938,8 +938,6 @@ export const ja = {
 
   progress: {
     title: 'トレンド',
-    ofDays: '{{total}} 日中 {{done}} 日',
-    focus: '記録の対象',
     metric: {
       calories: 'カロリー',
       water: '水分',
@@ -980,6 +978,7 @@ export const ja = {
       vs30d: '前の 30 日比 {{delta}}',
       vs1y: '前年比 {{delta}}',
       chart: '{{span}}のトレーニング時間',
+      perDay: '1日あたり {{value}}',
       latest: '最近',
       startTitle: 'ワークアウトを記録しよう',
       startBody: 'セッションを記録すると、ここに表示されます。',
@@ -1016,7 +1015,6 @@ export const ja = {
       removeBody: 'グラフからこの日が消えます。これが最新なら、枠はその前の値に戻ります。',
     },
     history: {
-      title: '履歴',
       caloriesTitle: 'カロリーの履歴',
       waterTitle: '水分の履歴',
       weightTitle: '体重の履歴',
@@ -1699,7 +1697,6 @@ export const ja = {
       heaviest: '{{day}}、最多',
       pastWeeks: '直近 5 週',
       pastMonths: '直近 5 か月',
-      noData: '—',
     },
     body: {
       weight: '体重',

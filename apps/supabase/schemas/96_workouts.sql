@@ -866,9 +866,11 @@ grant execute on function public.workout_exercise_totals(date, date) to authenti
 
 
 -- ---------------------------------------------------------------------------
--- Workouts on the Trends screen: the same totals as the weekly bars, folded
--- into the columns `trend_series` draws, so a workout line sits under the same
--- axis as the calorie and weight lines above it.
+-- Workouts on the Trends screen: time trained, folded into the columns
+-- `trend_series` draws, so the workout line sits under the same axis as the
+-- calorie and weight lines above it. `days` is each column's length, which
+-- the line divides by: the oldest block of thirty days is two days, and this
+-- month is a few days old.
 --
 -- The bucketing is `trend_days`' (a day on 7d, seven-day blocks counted back
 -- from today on 30d, calendar months on 1y). It is restated here rather than
@@ -876,19 +878,15 @@ grant execute on function public.workout_exercise_totals(date, date) to authenti
 -- away; `activity_days_range` restates it for the same reason. Change all
 -- three together.
 --
--- Per day first, then per bucket, so a day with two workouts is one active day
--- and the bucket's day count stays the calendar's.
+-- Only what the card draws. Every column of a function a released app calls
+-- is one it calls forever, so the rest waits until something reads it.
 -- ---------------------------------------------------------------------------
 create or replace function public.trend_workouts(p_range text)
 returns table (
   bucket_start  date,
   bucket_end    date,
   days          integer,
-  workouts      integer,
-  active_days   integer,
-  duration_s    integer,
-  volume_kg     numeric,
-  sets          integer
+  duration_s    integer
 )
 language sql
 stable
@@ -912,20 +910,8 @@ as $$
     cross join generate_series(b.from_date, b.to_date, interval '1 day') as series
   ),
   per_day as (
-    select
-      w.log_date,
-      count(*)::integer                     as workouts,
-      sum(w.duration_s)::integer            as duration_s,
-      coalesce(sum(t.volume_kg), 0)         as volume_kg,
-      coalesce(sum(t.sets), 0)::integer     as sets
+    select w.log_date, sum(w.duration_s)::integer as duration_s
     from public.workouts w
-    left join (
-      select v.workout_id, sum(v.volume_kg) as volume_kg, count(*) as sets
-      from public.workout_set_values v
-      where v.user_id = (select auth.uid())
-        and v.log_date >= (select b.from_date from bounds b)
-      group by v.workout_id
-    ) t on t.workout_id = w.id
     where w.user_id = (select auth.uid())
       and w.log_date between (select b.from_date from bounds b) and (select b.to_date from bounds b)
     group by w.log_date
@@ -934,11 +920,7 @@ as $$
     c.in_bucket,
     max(c.at),
     count(*)::integer,
-    coalesce(sum(d.workouts), 0)::integer,
-    count(d.log_date)::integer,
-    coalesce(sum(d.duration_s), 0)::integer,
-    coalesce(sum(d.volume_kg), 0),
-    coalesce(sum(d.sets), 0)::integer
+    coalesce(sum(d.duration_s), 0)::integer
   from calendar c
   left join per_day d on d.log_date = c.at
   group by c.in_bucket
@@ -946,34 +928,25 @@ as $$
 $$;
 
 comment on function public.trend_workouts(text) is
-  'Workouts, active days, seconds, volume and sets per column of a Trends chart '
-  '(a day for 7d, a seven-day block for 30d, a calendar month for 1y), oldest '
-  'first, empty columns included.';
+  'Seconds trained per column of a Trends chart (a day for 7d, a seven-day '
+  'block for 30d, a calendar month for 1y) with the column''s length in days, '
+  'oldest first, empty columns included.';
 
 revoke all on function public.trend_workouts(text) from public, anon;
 grant execute on function public.trend_workouts(text) to authenticated;
 
 
 -- ---------------------------------------------------------------------------
--- The same range as one row, beside the range of the same length before it,
--- which is what the Trends card's "+2 vs the previous 30 days" reads.
+-- How many workouts in a Trends range, beside the range of the same length
+-- before it, which is what the card's "+2 vs previous 30 days" reads.
 --
 -- The previous range of a year starts twelve calendar months before this one
 -- and ends on this day a year ago, so the two windows are the same length.
 -- ---------------------------------------------------------------------------
 create or replace function public.trend_workout_summary(p_range text)
 returns table (
-  from_date         date,
-  to_date           date,
-  workouts          integer,
-  active_days       integer,
-  duration_s        integer,
-  volume_kg         numeric,
-  sets              integer,
-  prev_workouts     integer,
-  prev_active_days  integer,
-  prev_duration_s   integer,
-  prev_volume_kg    numeric
+  workouts       integer,
+  prev_workouts  integer
 )
 language sql
 stable
@@ -988,9 +961,6 @@ as $$
         when '1y' then (r.from_date - interval '12 months')::date
         else r.from_date - (r.to_date - r.from_date + 1)
       end as prev_from,
-      -- The same point a year ago, not the end of last year's twelfth month:
-      -- this year's twelfth month is only partway through, and a whole one
-      -- beside it read as a fall in training on every day but the last.
       case p_range
         when '1y' then (r.to_date - interval '12 months')::date
         else r.from_date - 1
@@ -1000,44 +970,20 @@ as $$
         private.range_start(p_range, public.local_today((select auth.uid()))) as from_date,
         public.local_today((select auth.uid())) as to_date
     ) r
-  ),
-  per_workout as (
-    select
-      w.log_date,
-      w.duration_s,
-      coalesce(t.volume_kg, 0) as volume_kg,
-      coalesce(t.sets, 0)      as sets
-    from public.workouts w
-    left join (
-      select v.workout_id, sum(v.volume_kg) as volume_kg, count(*) as sets
-      from public.workout_set_values v
-      where v.user_id = (select auth.uid())
-        and v.log_date >= (select b.prev_from from bounds b)
-      group by v.workout_id
-    ) t on t.workout_id = w.id
-    where w.user_id = (select auth.uid())
-      and w.log_date between (select b.prev_from from bounds b) and (select b.to_date from bounds b)
   )
   select
-    b.from_date,
-    b.to_date,
-    (count(p.log_date) filter (where p.log_date >= b.from_date))::integer,
-    (count(distinct p.log_date) filter (where p.log_date >= b.from_date))::integer,
-    coalesce(sum(p.duration_s) filter (where p.log_date >= b.from_date), 0)::integer,
-    coalesce(sum(p.volume_kg) filter (where p.log_date >= b.from_date), 0),
-    coalesce(sum(p.sets) filter (where p.log_date >= b.from_date), 0)::integer,
-    (count(p.log_date) filter (where p.log_date <= b.prev_to))::integer,
-    (count(distinct p.log_date) filter (where p.log_date <= b.prev_to))::integer,
-    coalesce(sum(p.duration_s) filter (where p.log_date <= b.prev_to), 0)::integer,
-    coalesce(sum(p.volume_kg) filter (where p.log_date <= b.prev_to), 0)
+    (count(w.id) filter (where w.log_date >= b.from_date))::integer,
+    (count(w.id) filter (where w.log_date <= b.prev_to))::integer
   from bounds b
-  left join per_workout p on true
-  group by b.from_date, b.to_date;
+  left join public.workouts w
+    on w.user_id = (select auth.uid())
+   and w.log_date between b.prev_from and b.to_date
+  group by b.from_date;
 $$;
 
 comment on function public.trend_workout_summary(text) is
-  'A named Trends range (7d, 30d, 1y) as one row of workout totals, beside the '
-  'same totals for the range of the same length just before it.';
+  'Workouts in a named Trends range (7d, 30d, 1y), and in the range of the '
+  'same length just before it.';
 
 revoke all on function public.trend_workout_summary(text) from public, anon;
 grant execute on function public.trend_workout_summary(text) to authenticated;
@@ -1055,10 +1001,8 @@ grant execute on function public.trend_workout_summary(text) to authenticated;
 create or replace function public.review_workouts(p_kind text, p_start date)
 returns table (
   workouts       integer,
-  active_days    integer,
   duration_s     integer,
   volume_kg      numeric,
-  sets           integer,
   prev_workouts  integer,
   trained_on     date[]
 )
@@ -1081,14 +1025,13 @@ as $$
       w.id,
       w.log_date,
       w.duration_s,
-      coalesce(t.volume_kg, 0) as volume_kg,
-      coalesce(t.sets, 0)      as sets
+      coalesce(t.volume_kg, 0) as volume_kg
     from public.workouts w
     left join (
-      select v.workout_id, sum(v.volume_kg) as volume_kg, count(*) as sets
+      select v.workout_id, sum(v.volume_kg) as volume_kg
       from public.workout_set_values v
       where v.user_id = (select auth.uid())
-        and v.log_date between (select b.prev_from from bounds b) and (select b.to_date from bounds b)
+        and v.log_date between (select b.from_date from bounds b) and (select b.to_date from bounds b)
       group by v.workout_id
     ) t on t.workout_id = w.id
     where w.user_id = (select auth.uid())
@@ -1096,10 +1039,8 @@ as $$
   )
   select
     (count(p.id) filter (where p.log_date >= b.from_date))::integer,
-    (count(distinct p.log_date) filter (where p.log_date >= b.from_date))::integer,
     coalesce(sum(p.duration_s) filter (where p.log_date >= b.from_date), 0)::integer,
     coalesce(sum(p.volume_kg) filter (where p.log_date >= b.from_date), 0),
-    coalesce(sum(p.sets) filter (where p.log_date >= b.from_date), 0)::integer,
     (count(p.id) filter (where p.log_date < b.from_date))::integer,
     coalesce(
       array_agg(distinct p.log_date order by p.log_date) filter (where p.log_date >= b.from_date),
@@ -1111,8 +1052,8 @@ as $$
 $$;
 
 comment on function public.review_workouts(text, date) is
-  'One review period''s training as one row: workouts, active days, seconds, '
-  'volume and sets, the workouts of the period before, and the days trained.';
+  'One review period''s training as one row: workouts, seconds and volume, the '
+  'workouts of the period before, and the days trained.';
 
 revoke all on function public.review_workouts(text, date) from public, anon;
 grant execute on function public.review_workouts(text, date) to authenticated;
@@ -1179,9 +1120,8 @@ grant execute on function public.review_workout_records(text, date, integer) to 
 -- ---------------------------------------------------------------------------
 create or replace function public.review_workout_periods(p_kind text)
 returns table (
-  starts_on   date,
-  workouts    integer,
-  duration_s  integer
+  starts_on  date,
+  workouts   integer
 )
 language sql
 stable
@@ -1213,13 +1153,12 @@ as $$
       case p_kind
         when 'week' then date_trunc('week', w.log_date)::date
         else date_trunc('month', w.log_date)::date
-      end as starts_on,
-      w.duration_s
+      end as starts_on
     from public.workouts w
     where w.user_id = (select auth.uid())
       and w.log_date between (select b.from_date from bounds b) and (select b.to_date from bounds b)
   )
-  select c.starts_on, count(p.starts_on)::integer, coalesce(sum(p.duration_s), 0)::integer
+  select c.starts_on, count(p.starts_on)::integer
   from calendar c
   left join per_workout p on p.starts_on = c.starts_on
   group by c.starts_on
@@ -1227,8 +1166,8 @@ as $$
 $$;
 
 comment on function public.review_workout_periods(text) is
-  'Workouts and seconds trained for every finished week (three months back) or '
-  'month (six months back), newest first: the figures on the reviews list.';
+  'Workouts for every finished week (three months back) or month (six months '
+  'back), newest first: the figure on each row of the reviews list.';
 
 revoke all on function public.review_workout_periods(text) from public, anon;
 grant execute on function public.review_workout_periods(text) to authenticated;

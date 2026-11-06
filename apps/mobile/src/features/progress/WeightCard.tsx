@@ -6,8 +6,7 @@ import { View } from 'react-native'
 import { bodyFrom, type TrendBucket, type TrendRange, type TrendSummary, useProfile } from '@/data'
 import { goalDate } from '@/lib/nutrition'
 import { fromKg, showWeight, UNIT_KEY, type WeightUnit } from '@/lib/units'
-import { radius } from '@/theme/tokens'
-import { Icon, Squish, Text } from '@/ui'
+import { Icon, Text } from '@/ui'
 import { bucketLabels, SPAN_KEY } from './axis'
 import { TrendCard, TrendChip } from './TrendCard'
 import { TrendLine } from './TrendLine'
@@ -74,9 +73,12 @@ export function WeightCard({
 
   return (
     <TrendCard
-      icon={{ set: 'body', name: 'weighing-scale' }}
-      title={t('progress:metric.weight')}
+      heading={{
+        icon: { set: 'body', name: 'weighing-scale' },
+        title: t('progress:metric.weight'),
+      }}
       onOpen={() => router.push('/history/weight')}
+      openLabel={t('progress:history.weightTitle')}
       loading={loading || !buckets}
       problem={problem}
       onRetry={onRetry}
@@ -103,7 +105,6 @@ export function WeightCard({
               with nothing on it; the figure above already says the weight. */}
           {summary.weighIns === 0 ? null : (
             <TrendLine
-              tone="teh"
               goal={goalLine}
               points={buckets.map((bucket, index) => ({
                 key: bucket.start,
@@ -145,33 +146,5 @@ export function WeightCard({
         </>
       )}
     </TrendCard>
-  )
-}
-
-/**
- * The way to add a reading, in the weight history's bar, over the list where
- * somebody notices one is missing. A pill rather than a full-width button.
- */
-export function WeighInPill({ onPress }: { onPress: () => void }) {
-  const { t } = useTranslation('progress')
-
-  return (
-    <Squish
-      depth={0}
-      radius={radius.full}
-      slabClassName="bg-transparent"
-      className="min-h-sm flex-row items-center gap-1.5 bg-track px-3"
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={t('weight.sheetTitle')}
-    >
-      <Icon set="ui" name="plus" size={15} />
-      {/* `label` rather than the display face at 15px. Baloo carries ascender
-          space this string does not use, so centring the two boxes left the
-          word sitting visibly below the icon beside it. */}
-      <Text variant="label" className="text-pandan-ink">
-        {t('weight.add')}
-      </Text>
-    </Squish>
   )
 }

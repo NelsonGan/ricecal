@@ -964,8 +964,6 @@ export const ms = {
 
   progress: {
     title: 'Trend',
-    ofDays: '{{done}} daripada {{total}}',
-    focus: 'Jejak',
     metric: {
       calories: 'Kalori',
       water: 'Air',
@@ -1006,6 +1004,7 @@ export const ms = {
       vs30d: '{{delta}} berbanding 30 hari sebelumnya',
       vs1y: '{{delta}} berbanding tahun sebelumnya',
       chart: 'Masa bersenam dalam {{span}}',
+      perDay: '{{value}} sehari',
       latest: 'TERKINI',
       startTitle: 'Jejaki senaman anda',
       startBody: 'Catat satu sesi dan latihan anda muncul di sini.',
@@ -1043,7 +1042,6 @@ export const ms = {
         'Carta itu kehilangan hari ini. Jika ia yang terkini, bajet anda kembali kepada yang sebelumnya.',
     },
     history: {
-      title: 'Sejarah',
       caloriesTitle: 'Sejarah kalori',
       waterTitle: 'Sejarah air',
       weightTitle: 'Sejarah berat',
@@ -1734,7 +1732,6 @@ export const ms = {
       heaviest: '{{day}}, PALING BERAT',
       pastWeeks: 'LIMA MINGGU LEPAS',
       pastMonths: 'LIMA BULAN LEPAS',
-      noData: '—',
     },
     body: {
       weight: 'BERAT',

@@ -8,7 +8,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(9);
 
 \set lifter '99999999-9999-4999-8999-9999999999b1'
 
@@ -26,9 +26,9 @@ select (date_trunc('week', public.local_today()) - interval '1 week')::date as m
 grant select on week to authenticated;
 
 select results_eq(
-  $$select workouts, active_days, prev_workouts, cardinality(trained_on)
+  $$select workouts, prev_workouts, cardinality(trained_on)
       from public.review_workouts('week', (select monday from week))$$,
-  $$values (0, 0, 0, 0)$$,
+  $$values (0, 0, 0)$$,
   'a week with no training is one row of zeros'
 );
 
@@ -61,12 +61,6 @@ select is(
 );
 
 select is(
-  (select active_days from public.review_workouts('week', (select monday from week))),
-  2,
-  'on two days'
-);
-
-select is(
   (select prev_workouts from public.review_workouts('week', (select monday from week))),
   1,
   'and the week before has its one beside them'
@@ -75,7 +69,7 @@ select is(
 select is(
   (select trained_on from public.review_workouts('week', (select monday from week))),
   array[(select monday + 1 from week), (select monday + 3 from week)],
-  'the days trained, in order'
+  'on two days, in order'
 );
 
 select is(

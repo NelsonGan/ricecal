@@ -45,9 +45,9 @@ export function WaterCard({ range, buckets, summary, loading, problem, onRetry }
 
   return (
     <TrendCard
-      icon={{ set: 'body', name: 'water-drop' }}
-      title={t('progress:metric.water')}
+      heading={{ icon: { set: 'body', name: 'water-drop' }, title: t('progress:metric.water') }}
       onOpen={() => router.push('/history/water')}
+      openLabel={t('progress:history.waterTitle')}
       loading={loading || !buckets}
       problem={problem}
       onRetry={onRetry}

@@ -9,7 +9,7 @@ import type { Units } from '@/data'
  * and saved unchanged drifts by a gram every time. One pair of functions, one
  * constant, and the rounding happens once, at the point of display.
  *
- * In `lib` rather than beside the weight panel because onboarding asks the same
+ * In `lib` rather than beside the weight card because onboarding asks the same
  * question before any of those screens exist.
  */
 const LB_PER_KG = 2.2046226218

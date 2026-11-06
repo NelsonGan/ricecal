@@ -317,7 +317,7 @@ export function useAddWater(date: string) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: keys.day(userId, date) })
-      // The water tab counts this drink in its bars, its average and its goal
+      // The water card counts this drink in its line, its average and its goal
       // days. Not optimistic, unlike the tank itself: nothing on Trends is
       // under the finger, so it can wait for the row.
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })

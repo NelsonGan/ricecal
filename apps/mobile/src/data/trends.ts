@@ -48,15 +48,10 @@ type SharedRow = Pick<
   | 'fat_g_avg'
   | 'days_logged'
   | 'kcal_goal'
-  | 'days_under_goal'
   | 'water_avg'
   | 'water_total'
-  | 'water_best'
   | 'water_goal_days'
-  | 'water_habit_days'
-  | 'water_logged_days'
   | 'water_goal'
-  | 'weight_avg'
   | 'weigh_ins'
 >
 
@@ -70,17 +65,12 @@ function toShared(row: SharedRow) {
     fat: num(row.fat_g_avg),
     daysLogged: orZero(row.days_logged),
     kcalGoal: num(row.kcal_goal),
-    daysUnderGoal: orZero(row.days_under_goal),
 
     water: orZero(row.water_avg),
     waterTotal: orZero(row.water_total),
-    waterBest: orZero(row.water_best),
     waterGoalDays: orZero(row.water_goal_days),
-    waterHabitDays: orZero(row.water_habit_days),
-    waterLoggedDays: orZero(row.water_logged_days),
     waterGoal: orZero(row.water_goal),
 
-    weightAvg: num(row.weight_avg),
     weighIns: orZero(row.weigh_ins),
   }
 }
@@ -91,20 +81,15 @@ function toBucket(row: SeriesRow): TrendBucket {
     end: row.bucket_end,
     ...toShared(row),
     weight: num(row.weight_last),
-    weightMin: num(row.weight_min),
   }
 }
 
 function toSummary(row: SummaryRow): TrendSummary {
   return {
-    from: row.from_date,
-    to: row.to_date,
     ...toShared(row),
     weightBefore: num(row.weight_before),
     weightFirst: num(row.weight_first),
     weightLast: num(row.weight_last),
-    weightPeak: num(row.weight_peak),
-    weightPeakOn: row.weight_peak_on,
   }
 }
 
@@ -113,9 +98,9 @@ function toSummary(row: SummaryRow): TrendSummary {
  *
  * One row per column — a day on `7d`, a seven-day block on `30d`, a calendar
  * month on `1y` — and each row carries the calorie, water AND weight numbers.
- * That is deliberate: the three tabs are three readings of one range, so
- * switching between them must not go back to the server. Only the range switch
- * does.
+ * That is deliberate: the three cards are three readings of one range and
+ * must never disagree about it, so they come back in one request. Only the
+ * range switch goes back to the server.
  */
 export function useTrendSeries(range: TrendRange) {
   const userId = useUserId()
@@ -128,7 +113,7 @@ export function useTrendSeries(range: TrendRange) {
 }
 
 /**
- * The same range as one row: the three metric tiles, and each chart's footnote.
+ * The same range as one row: each card's figure and pill.
  *
  * Not folded out of `useTrendSeries` in the client. A range average has to
  * weight each bucket by the days actually logged in it, and on `30d` the oldest
@@ -165,18 +150,13 @@ export function useTrendWorkouts(range: TrendRange) {
           start: row.bucket_start,
           end: row.bucket_end,
           days: row.days,
-          workouts: row.workouts,
-          activeDays: row.active_days,
           durationS: row.duration_s,
-          // `numeric`, so a string over the wire. See `num`.
-          volumeKg: orZero(row.volume_kg),
-          sets: row.sets,
         }),
       ),
   })
 }
 
-/** The range's workout totals, and the same range just before it. */
+/** The range's workout count, and the same range just before it. */
 export function useTrendWorkoutSummary(range: TrendRange) {
   const userId = useUserId()
 
@@ -188,21 +168,7 @@ export function useTrendWorkoutSummary(range: TrendRange) {
       ) as WorkoutSummaryRow[]
       const row = rows[0]
       if (!row) return null
-      return {
-        from: row.from_date,
-        to: row.to_date,
-        workouts: row.workouts,
-        activeDays: row.active_days,
-        durationS: row.duration_s,
-        volumeKg: orZero(row.volume_kg),
-        sets: row.sets,
-        previous: {
-          workouts: row.prev_workouts,
-          activeDays: row.prev_active_days,
-          durationS: row.prev_duration_s,
-          volumeKg: orZero(row.prev_volume_kg),
-        },
-      }
+      return { workouts: row.workouts, prevWorkouts: row.prev_workouts }
     },
   })
 }

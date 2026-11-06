@@ -173,8 +173,6 @@ export const reviews = {
     heaviest: '{{day}}, HEAVIEST',
     pastWeeks: 'LAST FIVE WEEKS',
     pastMonths: 'LAST FIVE MONTHS',
-    /** A bar for a period nobody logged. The axis label still names it. */
-    noData: '—',
   },
 
   /** The body and the movement. */

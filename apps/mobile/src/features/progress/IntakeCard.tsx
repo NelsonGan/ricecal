@@ -47,7 +47,7 @@ export function IntakeCard({
   problem,
   onRetry,
 }: IntakeCardProps) {
-  const { t } = useTranslation(['progress', 'common'])
+  const { t } = useTranslation(['progress', 'common', 'profile'])
   const { data: settings } = useSettings()
   const updateSettings = useUpdateSettings()
   const { data: targets } = useTargets()
@@ -96,8 +96,6 @@ export function IntakeCard({
 
   return (
     <TrendCard
-      icon={{ set: 'body', name: 'flame-burn' }}
-      title={t(protein ? 'progress:metric.protein' : 'progress:metric.calories')}
       heading={
         <SegmentedControl
           size="sm"
@@ -107,11 +105,12 @@ export function IntakeCard({
           ]}
           value={focus}
           onChange={(next: TrackFocus) => updateSettings.mutate({ track_focus: next })}
-          accessibilityLabel={t('progress:focus')}
+          accessibilityLabel={t('profile:preferences.focus')}
           className="w-[210px]"
         />
       }
       onOpen={() => router.push('/history/calories')}
+      openLabel={t('progress:history.caloriesTitle')}
       loading={loading || !buckets}
       problem={problem}
       onRetry={onRetry}

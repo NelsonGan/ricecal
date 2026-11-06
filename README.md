@@ -4175,8 +4175,12 @@ the workout line sits under the calorie line. They are separate RPCs rather
 than columns on `trend_series`: an old app reads that shape, and a meal logged
 should not refetch training. Their keys sit under `workouts`, so every saved,
 edited or imported workout invalidates them. The headline is the count beside
-the range of the same length before it; the line is time trained, which carries
-both how often and how long. The newest three sessions come from their own
+the range of the same length before it; the line is minutes trained a day in
+each column, which carries both how often and how long. A day rather than a
+column's total, because the columns differ in length: the oldest block of
+thirty days is two days, and the year's newest month is only days old, and a
+total drew both as a slump. The functions return only what the card reads,
+since every column of a function a released app calls is called forever. The newest three sessions come from their own
 small `workout_history` call (`useLatestWorkouts`), not the Workouts page's
 first page, which is kept for five minutes and left the list a session behind
 the chart above it. Somebody who has never logged a workout sees one row

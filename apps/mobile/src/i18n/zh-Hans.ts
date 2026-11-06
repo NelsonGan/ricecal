@@ -929,8 +929,6 @@ export const zhHans = {
 
   progress: {
     title: '趋势',
-    ofDays: '{{total}} 天里有 {{done}} 天',
-    focus: '追踪',
     metric: {
       calories: '热量',
       water: '喝水',
@@ -971,6 +969,7 @@ export const zhHans = {
       vs30d: '比前 30 天 {{delta}}',
       vs1y: '比前一年 {{delta}}',
       chart: '{{span}}训练时长',
+      perDay: '每天 {{value}}',
       latest: '最近',
       startTitle: '记录你的训练',
       startBody: '记录一次训练，就会显示在这里。',
@@ -1007,7 +1006,6 @@ export const zhHans = {
       removeBody: '图表会少掉这一天。如果这是最近一次，你的额度会回到上一次的。',
     },
     history: {
-      title: '历史',
       caloriesTitle: '热量记录',
       waterTitle: '饮水记录',
       weightTitle: '体重记录',
@@ -1686,7 +1684,6 @@ export const zhHans = {
       heaviest: '{{day}}，最多',
       pastWeeks: '最近五周',
       pastMonths: '最近五个月',
-      noData: '—',
     },
     body: {
       weight: '体重',

@@ -25,17 +25,16 @@ export type TrendPoint = {
   label: string
   /** What the readout calls the point, when the axis label is short or blank. */
   title?: string
-  /** Null where the range has a column but nobody weighed in. Held, not spanned. */
+  /** Null where the range has a column with nothing in it. See `gaps` for how it draws. */
   value: number | null
 }
 
 /** The palette colours a line can be drawn in, each with the darker one its newest dot takes. */
-export type TrendTone = 'pandan' | 'water' | 'teh' | 'hibiscus' | 'kaya'
+export type TrendTone = 'pandan' | 'water' | 'hibiscus' | 'kaya'
 
 const TONES = {
   pandan: ['pandan', 'pandanSlab'],
   water: ['water', 'waterSlab'],
-  teh: ['teh', 'tehSlab'],
   hibiscus: ['hibiscus', 'hibiscusSlab'],
   kaya: ['kaya', 'kayaSlab'],
 } as const satisfies Record<TrendTone, readonly [keyof ThemeColors, keyof ThemeColors]>
@@ -66,6 +65,12 @@ export type TrendLineProps = {
   minPad?: number
   /** Rule the scale in whole steps of at least one, for a count. */
   wholeTicks?: boolean
+  /**
+   * The point drawn as the solid dot. The newest reading by default; a review
+   * names its own period, which is not the newest one drawn when it had
+   * nothing logged.
+   */
+  emphasis?: string
   /**
    * Whether a tap or a drag reads a point. Off on a review card, where a tap
    * shares the card and the scale and goal labels are all the reading needed.
@@ -109,7 +114,7 @@ export type TrendLineProps = {
 const STROKE = 3
 const DOT = 3.5
 const LAST_DOT = 5
-/** The readout's width. */
+/** The readout's narrowest width. */
 const TIP_W = 92
 /** The gutter the scale's values sit in. */
 const SCALE_W = 56
@@ -129,6 +134,9 @@ function roundTicks(low: number, high: number, whole = false): number[] {
   const nice = whole && power < 10 ? [1, 2, 5, 10] : [1, 2, 2.5, 5, 10]
   const found = (nice.find((each) => each * power >= rough) ?? 10) * power
   const step = whole ? Math.max(1, found) : found
+  // A flat series with no headroom has no spread to divide, and a step of
+  // zero would never reach the top.
+  if (!(step > 0)) return []
   const ticks: number[] = []
   for (let tick = Math.ceil(low / step) * step; tick <= high + 1e-9; tick += step) {
     ticks.push(Math.round(tick * 1000) / 1000)
@@ -152,7 +160,7 @@ function roundTicks(low: number, high: number, whole = false): number[] {
  * apart from the measured ones.
  *
  * Skia, because the alternative is a hundred absolutely-positioned Views. No
- * animation: a line that draws itself in on every tab switch cannot be compared
+ * animation: a line that draws itself in on every range switch cannot be compared
  * against the one before it.
  */
 export function TrendLine({
@@ -165,6 +173,7 @@ export function TrendLine({
   minPad = 0.5,
   interactive = true,
   wholeTicks = false,
+  emphasis,
   carryFrom,
   height = 128,
   formatValue,
@@ -179,6 +188,8 @@ export function TrendLine({
   // The point being read, by key, so new data (another range, another metric)
   // does not leave a readout over whichever point now sits at the old spot.
   const [selected, setSelected] = useState<string | null>(null)
+  /** The readout's own width, once drawn, so it can be kept inside the card. */
+  const [tipWidth, setTipWidth] = useState(TIP_W)
   const pointsKey = points.map((point) => `${point.key}:${point.value}`).join(',')
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the data changes
   useEffect(() => setSelected(null), [pointsKey])
@@ -443,7 +454,11 @@ export function TrendLine({
                   // it is solid and larger: the one the eye should find without
                   // counting from either end. The rest are rings, light enough
                   // that the line reads first.
-                  index === measured.length - 1 ? (
+                  (
+                    emphasis === undefined
+                      ? index === measured.length - 1
+                      : entry.point.key === emphasis
+                  ) ? (
                     <Circle
                       key={entry.point.key}
                       cx={entry.x}
@@ -504,18 +519,23 @@ export function TrendLine({
           ) : null}
           {picked && formatValue ? (
             // The point under the finger, named over it and kept inside the card.
+            // In the inverse colours every tooltip in the app uses, and as wide
+            // as its words: a fixed width cut "1 h 25 min a day" and a long
+            // month name short.
             <View
               pointerEvents="none"
-              className="absolute top-0 items-center rounded-sm bg-heading px-2 py-1"
+              onLayout={(event) => setTipWidth(event.nativeEvent.layout.width)}
+              className="absolute top-0 items-center rounded-sm bg-inverse px-2 py-1"
               style={{
-                left: Math.max(0, Math.min(width - TIP_W, picked.x - TIP_W / 2)),
-                width: TIP_W,
+                left: Math.max(0, Math.min(width - tipWidth, picked.x - tipWidth / 2)),
+                minWidth: TIP_W,
+                maxWidth: width,
               }}
             >
-              <Text variant="micro" className="text-canvas" numberOfLines={1}>
+              <Text variant="micro" className="text-on-inverse" numberOfLines={1}>
                 {picked.point.title ?? picked.point.label}
               </Text>
-              <Text variant="label" className="text-canvas" numberOfLines={1}>
+              <Text variant="label" className="text-on-inverse" numberOfLines={1}>
                 {formatValue(picked.value)}
               </Text>
             </View>
