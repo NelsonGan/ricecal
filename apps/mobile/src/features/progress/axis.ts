@@ -44,31 +44,21 @@ export function pointNames(
   const grain = TREND_GRAIN[range]
   const day = (date: string, pattern: Parameters<typeof datePattern>[0]) =>
     format(parseISO(date), datePattern(pattern))
-  return buckets.map((bucket, index) => {
+  return buckets.map((bucket) => {
     if (grain === 'day') {
       return {
         label: range === '7d' ? format(parseISO(bucket.end), 'EEE') : day(bucket.end, 'dayMonth'),
         title: day(bucket.end, 'weekdayDayMonth'),
       }
     }
-    if (grain === 'week') {
-      // Named for the month whose first day falls in it. Blocks are counted
-      // back from today rather than starting on a weekday, so the first is
-      // wherever in the block it lands, and no block of seven holds two.
-      const end = parseISO(bucket.end)
-      const first = new Date(end.getFullYear(), end.getMonth(), 1)
-      return {
-        label: first >= parseISO(bucket.start) ? format(first, datePattern('month')) : '',
-        title: between(day(bucket.start, 'dayMonth'), day(bucket.end, 'dayMonth')),
-      }
-    }
-    const fromEnd = buckets.length - 1 - index
+    // Named for the month whose first day falls in it. Blocks are counted
+    // back from today rather than starting on a weekday, so the first is
+    // wherever in the block it lands, and no block of seven holds two.
+    const end = parseISO(bucket.end)
+    const first = new Date(end.getFullYear(), end.getMonth(), 1)
     return {
-      label: fromEnd % MONTH_LABEL_EVERY === 0 ? format(parseISO(bucket.start), 'LLL') : '',
-      title: format(parseISO(bucket.start), 'LLLL'),
+      label: first >= parseISO(bucket.start) ? format(first, datePattern('month')) : '',
+      title: between(day(bucket.start, 'dayMonth'), day(bucket.end, 'dayMonth')),
     }
   })
 }
-
-/** Label every other month. Twelve names do not fit; six do, with room to spare. */
-const MONTH_LABEL_EVERY = 2

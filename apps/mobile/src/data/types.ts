@@ -312,15 +312,18 @@ export type TrendRange = '7d' | '30d' | '1y'
 
 export const TREND_RANGES = ['7d', '30d', '1y'] as const satisfies readonly TrendRange[]
 
-/** What one point of a Trends line stands for. */
-export type TrendGrain = 'day' | 'week' | 'month'
+/**
+ * What one point of a Trends line stands for. The server also folds by month
+ * (`p_grain`), which only an app from before grains draws.
+ */
+export type TrendGrain = 'day' | 'week'
 
 /**
  * Each range's point. A day wherever the days fit on the card, so thirty days
  * is thirty readings rather than five averages. A year of days is 365 points
  * three to a millimetre, too close to read or pick with a finger, so the year
- * is the one range that averages, by the week: 52 points, still four times the
- * twelve months it once drew.
+ * is the one range that averages, by the week: about fifty points, four times
+ * the twelve months it once drew.
  */
 export const TREND_GRAIN = {
   '7d': 'day',
