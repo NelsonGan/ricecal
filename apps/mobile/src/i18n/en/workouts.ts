@@ -398,14 +398,14 @@ export const workouts = {
     title: 'Progress',
     entry: 'Progress and records',
     weeks: 'Training',
-    /** How far back the bars go. Year and All time are Pro. */
+    /** How far back the line goes. Year and All time are Pro. */
     range: {
       label: 'Time range',
       '3m': 'Last 3 months',
       '1y': 'Year',
       all: 'All time',
     },
-    /** The headline over the bars when none is tapped, for month and year bars. */
+    /** The headline over the line, for month and year points. */
     thisMonth: 'This month',
     thisYear: 'This year',
     metric: {

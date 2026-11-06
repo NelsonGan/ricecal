@@ -4587,7 +4587,7 @@ reordering, a rest timer per exercise and generated warm-up sets, and marks a
 record the moment a set beats one. A saved workout can be
 opened, edited, deleted, repeated, shared as text or saved as a routine. Every
 exercise has a page with its history, charts, bests, rep records and muscle
-split. This week's totals, bars over three months (free) or a year and all
+split. This week's totals, a line over three months (free) or a year and all
 time (Pro), a 30-day muscle split, a calendar and the personal-records list are
 on the progress screen; the week streak sits beside the tab's title, as the day
 streak does on Today. The toggle on the title's other side is Today's too: it
@@ -4812,7 +4812,7 @@ the same flag on every one of 5,000 sets as before.
   one row is the heaviest weight again.
 - **The streak is in weeks**, ending this week or last. A daily streak punishes
   exactly the rest days a program prescribes.
-- **The progress bars** are `workout_weeks(13)` for three months,
+- **The progress line** is `workout_weeks(13)` for three months,
   `workout_months(12)` for a year, and `workout_months()` for all time: every
   month from the first workout's (or eleven months back, if that is earlier) to
   this one, empty ones included. A year passes its length so only that year's
@@ -5573,15 +5573,12 @@ sessions side by side were twenty clipped stubs: `spreadLabels` in
 that lands on the oldest too, and checks the gaps where the end labels land
 after being pulled inside the axis, since a step judged at the centres let the
 dates at either end sit on their neighbours. `AxisLabels` draws the row for
-`TrendLine` and for a `BarChart` whose bars carry a `tick`, which the workout
-progress page uses instead of its old first-and-last pair. The shareable review card
-passes no `formatValue` and stays a picture. `BarChart` takes `selected` and
-`onSelect`, and the workout progress page puts the tapped period's figure in its
-headline; each selectable bar carries its own VoiceOver name. It also takes an
-`axis`: about three round steps (`axisTicks`) counted in a unit the reader uses
-(minutes or hours, kilograms or pounds, whole workouts), drawn as faint rules
-behind the bars with their figures in a gutter on the right, and no figure on
-zero, where it would sit on the dates under the chart.
+`TrendLine`, which every chart in the app now is: Trends, reviews and the
+workout progress page, whose bars it replaced. On that page the headline is
+the current period and a tap or a drag names any other; the scale counts in a
+unit the reader uses (minutes or hours, kilograms or pounds), and a count is
+ruled in whole steps (`wholeTicks`) so no rule reads "2.5 workouts". A review
+card passes `interactive={false}`, so a tap still shares it.
 
 ### Against Hevy and Strong
 
@@ -5936,7 +5933,7 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 | group icons | 7 drawings | 34 drawings, or an uploaded picture |
 | gold ring round your face | no | yes |
 | trends | 7 days | 7d / 30d / a year |
-| workout progress bars | 3 months | a year, all time |
+| workout progress chart | 3 months | a year, all time |
 | reviews | the newest week | every week and month |
 | meal photographs kept | 30 days, or 60 past a lapsed subscription, with a warning a few days before | for good |
 | budget, health sync, reminders, the whole catalogue | yes | yes |

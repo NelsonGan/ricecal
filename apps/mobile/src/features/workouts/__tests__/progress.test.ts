@@ -1,4 +1,3 @@
-import { axisTicks } from '@/features/shared/axis'
 import { compactVolume, KG_PER_LB, type PeriodTotals, periodsFor } from '../progress'
 
 const month = (week: string, workouts = 0): PeriodTotals => ({
@@ -65,30 +64,6 @@ describe('periodsFor', () => {
       sets: 45,
     })
     expect(rows[3].workouts).toBe(3)
-  })
-})
-
-describe('axisTicks', () => {
-  it('rules a handful of workouts in whole ones', () => {
-    expect(axisTicks(3)).toEqual([0, 1, 2, 3])
-    expect(axisTicks(1)).toEqual([0, 1])
-    expect(axisTicks(7)).toEqual([0, 5, 10])
-  })
-
-  it('reaches just past the tallest bar in round steps', () => {
-    expect(axisTicks(12_400)).toEqual([0, 5000, 10_000, 15_000])
-    expect(axisTicks(260)).toEqual([0, 100, 200, 300])
-  })
-
-  it('steps in the unit given, so minutes and pounds come out round', () => {
-    // 95 minutes in seconds: steps of 50 minutes.
-    expect(axisTicks(95 * 60, 60)).toEqual([0, 3000, 6000])
-    const pounds = axisTicks(2000 * KG_PER_LB, KG_PER_LB).map((kg) => Math.round(kg / KG_PER_LB))
-    expect(pounds).toEqual([0, 1000, 2000])
-  })
-
-  it('draws no scale for nothing', () => {
-    expect(axisTicks(0)).toEqual([])
   })
 })
 
