@@ -2386,6 +2386,7 @@ export type Database = {
           quiet_to: string
           share_with_family: boolean
           step_goal: number
+          track_focus: string
           units: Database['public']['Enums']['unit_system']
           updated_at: string
           user_id: string
@@ -2408,6 +2409,7 @@ export type Database = {
           quiet_to?: string
           share_with_family?: boolean
           step_goal?: number
+          track_focus?: string
           units?: Database['public']['Enums']['unit_system']
           updated_at?: string
           user_id: string
@@ -2430,6 +2432,7 @@ export type Database = {
           quiet_to?: string
           share_with_family?: boolean
           step_goal?: number
+          track_focus?: string
           units?: Database['public']['Enums']['unit_system']
           updated_at?: string
           user_id?: string
@@ -4059,6 +4062,32 @@ export type Database = {
           weight_last: number
         }[]
       }
+      review_workout_periods: {
+        Args: { p_kind: string }
+        Returns: {
+          starts_on: string
+          workouts: number
+        }[]
+      }
+      review_workout_records: {
+        Args: { p_kind: string; p_limit?: number; p_start: string }
+        Returns: {
+          exercise_id: string
+          exercise_name: string
+          reps: number
+          weight_kg: number
+        }[]
+      }
+      review_workouts: {
+        Args: { p_kind: string; p_start: string }
+        Returns: {
+          duration_s: number
+          prev_workouts: number
+          trained_on: string[]
+          volume_kg: number
+          workouts: number
+        }[]
+      }
       save_recipe_copy: { Args: { p_recipe_id: string }; Returns: string }
       save_shared_recipe_copy: {
         Args: { p_share_slug: string }
@@ -4594,6 +4623,22 @@ export type Database = {
           weight_last: number
           weight_peak: number
           weight_peak_on: string
+        }[]
+      }
+      trend_workout_summary: {
+        Args: { p_range: string }
+        Returns: {
+          prev_workouts: number
+          workouts: number
+        }[]
+      }
+      trend_workouts: {
+        Args: { p_range: string }
+        Returns: {
+          bucket_end: string
+          bucket_start: string
+          days: number
+          duration_s: number
         }[]
       }
       unregister_push_token: { Args: { p_token: string }; Returns: undefined }

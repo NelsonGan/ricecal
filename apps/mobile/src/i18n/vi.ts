@@ -666,6 +666,11 @@ export const vi = {
       kcalLeft: 'KCAL CÒN LẠI',
       kcalOver: 'KCAL VƯỢT',
       kcalOfGoal: '/{{goal}} KCAL',
+      grams: '{{value}}g',
+      proteinLeft: 'ĐẠM CÒN LẠI',
+      proteinOver: 'ĐẠM VƯỢT',
+      proteinOfGoal: '/{{goal}}G ĐẠM',
+      proteinA11y: '{{value}} trên {{goal}} gam đạm',
       showGoals: 'Hiện hạn mức của ngày',
       showLeft: 'Hiện phần còn lại',
       dayHeading: 'Ngày của bạn',
@@ -932,19 +937,12 @@ export const vi = {
 
   progress: {
     title: 'Xu hướng',
-
-    ofDays: '{{done}} trên {{total}}',
-
     metric: {
       calories: 'Calo',
       water: 'Nước',
       weight: 'Cân nặng',
-      caloriesUnit: 'trung bình',
-      waterUnit: 'ml',
-      none: '—',
-      a11y: '{{metric}}, {{value}}',
+      protein: 'Đạm',
     },
-
     range: {
       label: 'Khoảng',
       '7d': '7N',
@@ -954,90 +952,53 @@ export const vi = {
       span30d: '30 ngày qua',
       span1y: '12 tháng qua',
       week: 'T {{index}}',
-      weekLong: 'Tuần {{index}}',
     },
-
     calories: {
-      goalNote: 'Mục tiêu {{goal}} kcal mỗi ngày',
-      goalNoteWeekly: 'Trung bình tuần, mục tiêu {{goal}} mỗi ngày',
-      goalNoteMonthly: 'Trung bình tháng, mục tiêu {{goal}} mỗi ngày',
-      noGoal: 'Chưa đặt hạn mức hằng ngày',
+      unit: 'kcal mỗi ngày',
+      value: '{{value}} kcal',
       under: 'thấp hơn {{value}}',
       over: 'cao hơn {{value}}',
-      chart: 'Calo mỗi ngày, chia theo tinh bột, đạm và chất béo',
-
+      chart: 'Calo mỗi ngày trong {{span}}, so với mục tiêu',
+      share: '{{macro}} {{value}}%',
       grams: '{{value}} g',
-      shareOfIntake: '{{value}}% lượng nạp vào',
-
-      goalTitle: 'SO VỚI MỤC TIÊU CỦA BẠN',
-      daysUnder: 'Số ngày dưới {{goal}}',
-      daysLogged: 'Số ngày ghi đầy đủ',
-
-      notableTitle: 'NHỮNG THÁNG ĐÁNG CHÚ Ý',
-      monthAverage: 'trung bình {{value}}',
-
-      emptyTitle: 'Không có bữa ăn nào trong khoảng này',
-      emptyBody: 'Ghi một món và các cột sẽ hiện ra từ ngày bạn ghi.',
+      empty: 'Không có bữa ăn nào được ghi trong khoảng này.',
     },
-
+    protein: {
+      unit: 'g mỗi ngày',
+      above: 'hơn {{value}} g',
+      short: 'thiếu {{value}} g',
+      chart: 'Đạm mỗi ngày trong {{span}}, so với mục tiêu',
+    },
+    workouts: {
+      title: 'Tập luyện',
+      unit_one: 'buổi tập',
+      unit_other: 'buổi tập',
+      vs7d: '{{delta}} so với tuần trước',
+      vs30d: '{{delta}} so với 30 ngày trước đó',
+      vs1y: '{{delta}} so với năm trước',
+      chart: 'Thời gian tập trong {{span}}',
+      perDay: '{{value}} mỗi ngày',
+      latest: 'GẦN ĐÂY',
+      startTitle: 'Theo dõi buổi tập',
+      startBody: 'Ghi một buổi tập và quá trình tập của bạn sẽ hiện ở đây.',
+    },
     water: {
-      dayNote: 'Mỗi cột là một ngày so với mục tiêu của bạn',
-      weeklyNote: 'Mỗi cột là một tuần, lấy trung bình so với mục tiêu của bạn',
-      monthlyNote: 'Mỗi cột là một tháng, lấy trung bình so với mục tiêu của bạn',
-      goalPill: 'mục tiêu {{amount}}',
+      unit: '{{unit}} mỗi ngày',
+      goalDays: '{{done}}/{{total}} ngày đạt mục tiêu',
       chart: 'Nước mỗi ngày so với mục tiêu {{amount}}',
-
-      reached: 'Đạt mục tiêu',
-      short: 'Chưa đạt mục tiêu',
-
-      goalDays: 'NGÀY ĐẠT',
-      bestDay: 'NGÀY CAO NHẤT',
-      bestMonth: 'THÁNG CAO NHẤT',
-      yearAverage: 'TB NĂM',
-      total: 'TỔNG',
-
-      todayTitle: 'HÔM NAY',
-
-      habitTitle: 'THÓI QUEN',
-      daysAtLeast: 'Số ngày đạt {{amount}} trở lên',
-      daysLogged: 'Số ngày có ghi',
-      monthsAveraging: 'Số tháng trung bình {{amount}}+',
-      monthsLogged: 'Số tháng có ghi',
-
-      emptyTitle: 'Không có ghi chép uống nước trong khoảng này',
-      emptyBody: 'Ghi một lần uống ở Hôm nay và phần này sẽ được lấp đầy.',
+      empty: 'Không có nước nào được ghi trong khoảng này.',
     },
-
     weight: {
-      peakOn: '{{value}} {{unit}} vào {{date}}',
-      latest: 'Gần nhất {{value}} {{unit}}',
-      latestOn: 'Gần nhất {{value}} {{unit}} vào {{date}}',
-      peakIn: '{{value}} {{unit}} trong {{month}}',
       change: '{{value}} {{unit}}',
       chart: 'Cân nặng của bạn qua {{span}}',
-
       thisWeek: 'TUẦN NÀY',
-      thisMonth: 'THÁNG NÀY',
-      thisYear: 'NĂM NAY',
-      average7: 'TB 7 NGÀY',
-      average30: 'TB 30 NGÀY',
-      lightest: 'NHẸ NHẤT',
-      weighIns: 'SỐ LẦN CÂN',
-      monthsLogged: 'SỐ THÁNG CÓ GHI',
-
       toGoal: 'còn {{value}} {{unit}} tới mục tiêu {{target}} {{unit}} của bạn',
-      noTarget: 'Chưa đặt cân nặng mục tiêu',
       atGoal: 'Đã đạt cân nặng mục tiêu',
       weeksAway: 'khoảng {{count}} tuần',
-
+      empty: 'Chưa có cân nặng nào được ghi.',
       add: 'Thêm',
-      weekByWeek: 'THEO TỪNG TUẦN',
-      byQuarter: 'THEO QUÝ',
-      quarter: '{{from}} tới {{to}}',
-
       reading: '{{value}} {{unit}}',
       firstReading: 'Lần đầu',
-
       sheetTitle: 'Thêm cân nặng',
       sheetEditTitle: 'Lần cân ngày {{date}}',
       thisMorning: 'Sáng nay',
@@ -1052,14 +1013,11 @@ export const vi = {
       removeTitle: 'Xoá số đo này?',
       removeBody:
         'Biểu đồ mất ngày này. Nếu đây là lần mới nhất, hạn mức của bạn quay về lần trước đó.',
-
-      emptyTitle: 'Không có lần cân nào trong khoảng này',
-      emptyBody: 'Một số đo vẽ được một điểm. Hai số đo mới vẽ được một đường.',
     },
-
     history: {
-      title: 'Lịch sử',
-      viewFull: 'Xem đầy đủ',
+      caloriesTitle: 'Lịch sử calo',
+      waterTitle: 'Lịch sử uống nước',
+      weightTitle: 'Lịch sử cân nặng',
       dayTotal: '{{value}} kcal',
       waterAverage: 'trung bình {{amount}}',
       goalMet: 'Đạt mục tiêu',
@@ -1282,6 +1240,9 @@ export const vi = {
       light: 'Sáng',
       dark: 'Tối',
       auto: 'Tự động',
+      focus: 'TẬP TRUNG VÀO',
+      focusCalories: 'Calo',
+      focusProtein: 'Đạm',
     },
 
     subscription: {
@@ -1651,18 +1612,15 @@ export const vi = {
 
   reviews: {
     title: 'Tổng kết',
-
     entry: {
       title: 'Tổng kết',
       subtitle: 'Nhìn lại một tuần hoặc một tháng',
     },
-
     kind: {
       week: 'Hằng tuần',
       month: 'Hằng tháng',
       label: 'Độ dài tổng kết',
     },
-
     list: {
       weekMeta: 'Tuần {{index}}',
       weekSummary: '{{kcal}} kcal mỗi ngày, ghi {{done}} trên {{total}}',
@@ -1670,9 +1628,15 @@ export const vi = {
       monthSummary: '{{kcal}} kcal mỗi ngày',
       monthSummaryWeight: '{{kcal}} kcal mỗi ngày, {{weight}}',
       summaryEmpty: 'Không có ghi chép',
+      kcal: 'kcal',
+      workouts_one: 'buổi tập',
+      workouts_other: 'buổi tập',
+      workoutCount_one: '{{count}} buổi tập',
+      workoutCount_other: '{{count}} buổi tập',
+      latestWeek: 'TUẦN GẦN NHẤT',
+      latestMonth: 'THÁNG GẦN NHẤT',
       a11y: '{{title}}, {{meta}}, {{summary}}',
       a11yLocked: '{{title}}, {{meta}}, {{summary}}, Pro',
-
       emptyWeekTitle: 'Chưa có tuần nào để nhìn lại',
       emptyWeekBody:
         'Một tuần xuất hiện ở đây khi nó kết thúc và bạn đã ghi ít nhất bốn ngày của tuần đó.',
@@ -1680,19 +1644,16 @@ export const vi = {
       emptyMonthBody:
         'Một tháng xuất hiện ở đây khi nó kết thúc và bạn đã ghi ít nhất mười hai ngày của tháng đó.',
     },
-
     share: {
       card: 'Chia sẻ {{card}}',
       preview: 'Thẻ đúng như lúc nó được gửi đi',
     },
-
     story: {
       close: 'Đóng',
       share: 'Chia sẻ',
       missingTitle: 'Bản tổng kết đó không có ở đây',
       missingBody: 'Có thể đó là một tuần quá ít dữ liệu để nhìn lại.',
     },
-
     card: {
       brand: 'RiceCal',
       kcalADay: 'kcal mỗi ngày',
@@ -1704,18 +1665,29 @@ export const vi = {
       streak: 'CHUỖI',
       streakValue_one: '{{count}} ngày',
       streakValue_other: '{{count}} ngày',
+      workouts: 'BUỔI TẬP',
       weightChange: 'CÂN NẶNG',
       noWeight: '—',
       shareText: '{{period}}: {{kcal}} kcal mỗi ngày, ghi {{done}} trên {{total}} ngày. RiceCal',
     },
-
+    training: {
+      title: 'TẬP LUYỆN',
+      unit_one: 'buổi tập',
+      unit_other: 'buổi tập',
+      vsWeek: '{{delta}} so với tuần trước',
+      vsMonth: '{{delta}} so với tháng trước',
+      time: 'THỜI GIAN',
+      volume: 'KHỐI LƯỢNG',
+      bests: 'KỶ LỤC MỚI',
+      best: '{{weight}} × {{reps}}',
+      days: 'Tập {{done}} trên {{total}} ngày',
+    },
     food: {
       title: 'NHỮNG ĐĨA LỚN NHẤT',
       macros: 'DƯỠNG CHẤT MỖI NGÀY',
       grams: '{{value}} g',
       share: '{{value}}% năng lượng',
     },
-
     calories: {
       average: 'TRUNG BÌNH MỖI NGÀY',
       kcal: 'kcal',
@@ -1725,14 +1697,12 @@ export const vi = {
       noGoal: 'Khi đó chưa có hạn mức hằng ngày nào.',
       everyDay: 'MỖI NGÀY',
       everyWeek: 'MỖI TUẦN',
-      chart: 'Calo mỗi ngày, chia theo tinh bột, đạm và chất béo',
+      chart: 'Calo mỗi ngày so với mục tiêu',
       lightest: '{{day}}, NHẸ NHẤT',
       heaviest: '{{day}}, NẶNG NHẤT',
       pastWeeks: 'NĂM TUẦN GẦN NHẤT',
       pastMonths: 'NĂM THÁNG GẦN NHẤT',
-      noData: '—',
     },
-
     body: {
       weight: 'CÂN NẶNG',
       weighIns_one: 'Một lần cân',

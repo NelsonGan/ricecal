@@ -122,6 +122,9 @@ export {
   useReviewPeriods,
   useReviewSeries,
   useReviewSummary,
+  useReviewWorkoutPeriods,
+  useReviewWorkoutRecords,
+  useReviewWorkouts,
 } from './reviews'
 export {
   type EntryIngredient,
@@ -134,7 +137,14 @@ export {
 } from './scan'
 export { SelectedDateProvider, useSelectedDate } from './selected-date'
 export { SessionProvider, useSession, useUserId } from './session'
-export { useMealTimes, useSettings, useUpdateMealTime, useUpdateSettings } from './settings'
+export {
+  focusOf,
+  type TrackFocus,
+  useMealTimes,
+  useSettings,
+  useUpdateMealTime,
+  useUpdateSettings,
+} from './settings'
 export { type DescribeInput, useDescribeFood, useSnapFood } from './snap'
 export {
   ENTRY_FOOD_ID,
@@ -160,7 +170,12 @@ export {
   useStoreEntitlement,
   useSubscription,
 } from './subscription'
-export { useTrendSeries, useTrendSummary } from './trends'
+export {
+  useTrendSeries,
+  useTrendSummary,
+  useTrendWorkoutSummary,
+  useTrendWorkouts,
+} from './trends'
 export * from './types'
 export { useCurrentWeight, useDeleteWeighIn, useLogWeight, useWeighIns } from './weight'
 export {
@@ -203,6 +218,7 @@ export {
   useExerciseRepBests,
   useExerciseTotals,
   useLastSets,
+  useLatestWorkouts,
   useRoutines,
   useSaveCustomExercise,
   useSaveRoutine,

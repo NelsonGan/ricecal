@@ -26,6 +26,12 @@ create table public.user_settings (
   energy                 public.energy_unit not null default 'kcal',
   -- BCP 47. Matches the i18next resource bundle names; 'en' today.
   language               text not null default 'en',
+  -- Which number leads: the ring on Today and the first card on Trends.
+  -- Calories for most; protein for somebody counting grams and not the budget.
+  -- Text with a check rather than an enum, so a third choice is a widened
+  -- check and not a type an old app cannot read.
+  track_focus            text not null default 'calories'
+                           check (track_focus in ('calories', 'protein')),
 
   -- Notifications -----------------------------------------------------------
   notify_water           boolean not null default true,

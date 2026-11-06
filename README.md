@@ -27,6 +27,7 @@ project works is here.
 - [The diary screen](#the-diary-screen)
 - [Water](#water)
 - [Home screen widgets](#home-screen-widgets)
+- [Trends](#trends)
 - [History behind the charts](#history-behind-the-charts)
 - [Weekly and monthly reviews](#weekly-and-monthly-reviews)
 - [Activity and health](#activity-and-health)
@@ -3862,7 +3863,7 @@ two waves at different speeds so it reads as liquid rather than as a moving
 graph, and tips its surface left and right when the card first appears and on
 every drink. Everything else is drawn on it, in the top-right corner: the figure,
 small, and an Add button beside it. On Today it is 60pt tall, enough for that
-readout and a band of water; Trends draws it at `TANK_HEIGHT`. A short bar inside
+readout and a band of water. A short bar inside
 the card with the button beside it was tried and reverted: the tank as the card
 is the design.
 
@@ -4120,13 +4121,80 @@ it cannot be filed against the account that follows.
 
 ---
 
+## Trends
+
+Four cards on one scroll, over one range (7D, 30D, 1Y; free accounts get the
+week): what was eaten, training, weight and water. Each card is the same three
+rows, a heading that opens the entries behind it, the range's figure with a pill
+saying whether it went well, and a line with a dot on every column. One scroll
+rather than a tab per metric, because the useful questions cross metrics: did
+the weeks with more training eat closer to budget, did the weight move the
+month the calories did. Every line sits on the same columns, so the cards can
+be read down the page against each other.
+
+**Every chart is `TrendLine`.** Bars were tried first and the stacked calorie
+columns said less than the line: a bar is read as an amount and a line as a
+direction, and direction is the question here. What changes per metric is a few
+props, each of which records a decision:
+
+- `gaps`: a column with no value. Weight `hold`s the last reading (the scale
+  was not stood on); calories `join` straight to the next real value (a day of
+  no entries is not a day of no food, and holding it would claim it was the day
+  before).
+- `goal`: a dashed rule, always inside the scale. Weight passes its target only
+  when it is near the readings; a goal ten kilograms off flattens a month of
+  real movement into a level line.
+- `fromZero`: water and minutes trained start at zero, since the distance from
+  nothing is the point. Weight and calories zoom to their spread.
+- `dotTone`: a calorie column over the budget in force that column is kaya and
+  one under is pandan, the colours a gain and a loss are everywhere else. For
+  protein the judgement flips. Weight's pill paints a gain kaya and a loss
+  pandan the same way.
+
+Each card says why it has no figures rather than waiting forever: "Waiting for
+a connection" for a request held offline, or "Could not reach
+RiceCal" with Try again for one that failed (`problemOf`).
+
+The workout comparison windows are the same length. On 1Y the year before runs
+from twelve months before the first month to this day a year ago, not to the
+end of a whole twelfth month, which put every day but the last of the month
+behind.
+
+**Calories or protein.** `user_settings.track_focus` picks which leads the first
+card and the ring on Today. It is a switch on the card itself and in Language
+and units, and it follows the account rather than the phone. Protein is judged
+against today's target (`daily_goals` history only carries calories into the
+trend rows); calories against the budget in force each day. On Today a protein
+ring is never extended by movement and never turns hibiscus: past a protein
+target is the point, not a warning.
+
+**Workouts read their own columns.** `trend_workouts` and
+`trend_workout_summary` bucket training exactly as `trend_days` buckets the
+diary (a day, seven-day blocks counted back from today, calendar months), so
+the workout line sits under the calorie line. They are separate RPCs rather
+than columns on `trend_series`: an old app reads that shape, and a meal logged
+should not refetch training. Their keys sit under `workouts`, so every saved,
+edited or imported workout invalidates them. The headline is the count beside
+the range of the same length before it; the line is minutes trained a day in
+each column, which carries both how often and how long. A day rather than a
+column's total, because the columns differ in length: the oldest block of
+thirty days is two days, and the year's newest month is only days old, and a
+total drew both as a slump. The functions return only what the card reads,
+since every column of a function a released app calls is called forever. The newest three sessions come from their own
+small `workout_history` call (`useLatestWorkouts`), not the Workouts page's
+first page, which is kept for five minutes and left the list a session behind
+the chart above it. Somebody who has never logged a workout sees one row
+pointing at the Workouts page instead of an empty chart.
+
 ## History behind the charts
 
-Trends says what a range came to; History says what it was made of. A card under
-every Trends tab lists the newest few entries for that metric, and "View full"
-opens `/history`, every entry newest first, read like a statement. Both read
-`useHistory` in `data/history.ts` through one key, so the screen opens on rows
-the card already fetched.
+Trends says what a range came to; History says what it was made of. The heading
+of each Trends card opens that metric's own page, `/history/calories`,
+`/history/water` or `/history/weight`, every entry newest first, read like a
+statement, through `useHistory` in `data/history.ts`. One page each rather than
+one page with tabs: somebody who tapped the weight card came for weigh-ins, and
+a tab strip over them was a second way to choose what they already had. The
+old `/history?metric=` link redirects to the matching page.
 
 **Each metric keeps the grain it is stored at.** A meal is a row, from
 `food_log_details`. Water is one row per day, from `daily_logs`, because
@@ -4149,7 +4217,7 @@ reading ever. Water days are judged against the goal in force that day, since
 (`trendsAll`) refreshes the list too, with no extra line in any mutation.
 Closing `/history` trims the query back to its first page: an infinite query
 refetches every page it holds, and a year scrolled once would otherwise be
-re-read behind the Trends card after every meal. A fetch still in flight is
+re-read after every meal. A fetch still in flight is
 cancelled before the trim (it would land on top of it) and asked for again
 afterwards, since a cancel puts back the answer from before the write.
 
@@ -4159,9 +4227,10 @@ diary's selected one. Moving the selected day to reach an old meal was tried
 and left the diary there, so the next meal logged from the nav bar's "+" was
 filed on that old day. A water row opens its day on Today, through `dismissTo`:
 from `/history`, `navigate` pushed a second copy of the tabs. A weigh-in opens
-the weigh-in sheet on its day, which is why the weight tab's old "Recent weigh
-ins" card is gone: the History card is the same list, editable the same way,
-with the Add pill on its heading.
+the weigh-in sheet on its day; a new one is the Add pill in the weight history's
+bar, over the list where a missing reading is noticed. A water day draws its
+bar against the goal in force that day and no "Goal met" line: a full bar
+already says it, and a screen reader still hears it.
 
 **It is not behind the paywall.** The free tier's seven days limit the charts, but
 every row here is a diary entry the free diary already shows on its own day.
@@ -4170,8 +4239,8 @@ every row here is a diary entry the free diary already shows on its own day.
 
 ## Weekly and monthly reviews
 
-A finished week or month, read as one column of cards. A compact row directly
-below Trends' Calories, Water and Weight tiles leads to `/reviews`, which lists
+A finished week or month, read as one column of cards. A compact row at the
+foot of Trends, under the four cards, leads to `/reviews`, which lists
 the periods worth opening, and one of
 them opens `/reviews/[id]` (`week-2026-08-03` or `month-2026-07-01`, the kind and
 the first day, from which the server works out the rest).
@@ -4198,9 +4267,30 @@ seeing, while making the route into the feature invisible to exactly the person
 who had not found it yet.
 
 **How many sections a review has is data.** `reviewSteps` reads the summary: the
-card, the food and the calories always hold, and the body section exists only if
-there was a weigh-in or a watch. A month before the health store was connected is
+card, the food and the calories always hold, the training section exists only
+if there was a workout, and the body section only if there was a weigh-in or a
+watch. A month before the health store was connected is
 three sections rather than four, of which the last would be dashes.
+
+**Training is the second section.** A period with any workout gets a Training
+card under the headline one: the count against the period before, time and
+volume, a dot per day (a week's seven, or the month as its calendar) and the
+exercises that set a weight record, each at its heaviest. It reads three
+functions in `96_workouts.sql` that take the same `(kind, start)` as the rest:
+`review_workouts`, `review_workout_records` and, for the list's rows,
+`review_workout_periods`. They are separate from `review_summary` and
+`review_periods`, whose shapes a released app reads, and their keys sit under
+`workouts`, so a saved workout refreshes them. The headline card's third figure
+is the workout count in place of the streak whenever there was one.
+
+**The list leads with the newest period.** It is drawn as its own card with
+calories, workouts and the weight change large; older rows carry the same
+figures in a line, each behind the drawing its Trends card wears. Workouts are
+left off every row for an account that has not trained in the window. Every chart in
+a review is the Trends line: calories every day, the last five periods and steps
+a day each draw a dot a column with their goal dashed, the current period the
+solid dot at the end. The fat comparison bars are gone; drawn from a floor they
+made a hundred calories look like half the week.
 
 **A tap on a card shares it.** Every card draws itself into a picture through
 Skia's `makeImageFromView` and offers it in a sheet with a Share button. The
@@ -4501,7 +4591,7 @@ reordering, a rest timer per exercise and generated warm-up sets, and marks a
 record the moment a set beats one. A saved workout can be
 opened, edited, deleted, repeated, shared as text or saved as a routine. Every
 exercise has a page with its history, charts, bests, rep records and muscle
-split. This week's totals, bars over three months (free) or a year and all
+split. This week's totals, a line over three months (free) or a year and all
 time (Pro), a 30-day muscle split, a calendar and the personal-records list are
 on the progress screen; the week streak sits beside the tab's title, as the day
 streak does on Today. The toggle on the title's other side is Today's too: it
@@ -4726,7 +4816,7 @@ the same flag on every one of 5,000 sets as before.
   one row is the heaviest weight again.
 - **The streak is in weeks**, ending this week or last. A daily streak punishes
   exactly the rest days a program prescribes.
-- **The progress bars** are `workout_weeks(13)` for three months,
+- **The progress line** is `workout_weeks(13)` for three months,
   `workout_months(12)` for a year, and `workout_months()` for all time: every
   month from the first workout's (or eleven months back, if that is earlier) to
   this one, empty ones included. A year passes its length so only that year's
@@ -5487,15 +5577,12 @@ sessions side by side were twenty clipped stubs: `spreadLabels` in
 that lands on the oldest too, and checks the gaps where the end labels land
 after being pulled inside the axis, since a step judged at the centres let the
 dates at either end sit on their neighbours. `AxisLabels` draws the row for
-`TrendLine` and for a `BarChart` whose bars carry a `tick`, which the workout
-progress page uses instead of its old first-and-last pair. The shareable review card
-passes no `formatValue` and stays a picture. `BarChart` takes `selected` and
-`onSelect`, and the workout progress page puts the tapped period's figure in its
-headline; each selectable bar carries its own VoiceOver name. It also takes an
-`axis`: about three round steps (`axisTicks`) counted in a unit the reader uses
-(minutes or hours, kilograms or pounds, whole workouts), drawn as faint rules
-behind the bars with their figures in a gutter on the right, and no figure on
-zero, where it would sit on the dates under the chart.
+`TrendLine`, which every chart in the app now is: Trends, reviews and the
+workout progress page, whose bars it replaced. On that page the headline is
+the current period and a tap or a drag names any other; the scale counts in a
+unit the reader uses (minutes or hours, kilograms or pounds), and a count is
+ruled in whole steps (`wholeTicks`) so no rule reads "2.5 workouts". A review
+card passes `interactive={false}`, so a tap still shares it.
 
 ### Against Hevy and Strong
 
@@ -5850,7 +5937,7 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 | group icons | 7 drawings | 34 drawings, or an uploaded picture |
 | gold ring round your face | no | yes |
 | trends | 7 days | 7d / 30d / a year |
-| workout progress bars | 3 months | a year, all time |
+| workout progress chart | 3 months | a year, all time |
 | reviews | the newest week | every week and month |
 | meal photographs kept | 30 days, or 60 past a lapsed subscription, with a warning a few days before | for good |
 | budget, health sync, reminders, the whole catalogue | yes | yes |
@@ -7485,7 +7572,7 @@ never by its model name.
   own. The panes meet at the window's centre, which is the fold, so nothing
   tappable sits in the crease. A `footer` CTA stands under the second pane, with
   the content it acts on. The tabs use it: Today (summary | diary, or month |
-  the chosen day's diary), Trends (figures | reviews and history), Me (account |
+  the chosen day's diary), Trends (eating and training | weight, water and reviews), Me (account |
   settings), Feed (Following | Discover) and Groups (list | open board). So do
   the pushed pages with more than one card, reflowed into two phone-width
   columns: the paywall (what Pro adds | plans over Subscribe), the meal page

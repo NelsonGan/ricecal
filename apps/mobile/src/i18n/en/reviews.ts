@@ -42,6 +42,16 @@ export const reviews = {
     monthSummaryWeight: '{{kcal}} kcal a day, {{weight}}',
     /** A period with a budget but nothing logged. Should not be listed at all. */
     summaryEmpty: 'Nothing logged',
+    /** The figures on a row: "1,859 kcal", "4 workouts". */
+    kcal: 'kcal',
+    workouts_one: 'workout',
+    workouts_other: 'workouts',
+    /** The workouts read out, after the row's summary. */
+    workoutCount_one: '{{count}} workout',
+    workoutCount_other: '{{count}} workouts',
+    /** Over the newest period, drawn as its own card. */
+    latestWeek: 'LATEST WEEK',
+    latestMonth: 'LATEST MONTH',
     a11y: '{{title}}, {{meta}}, {{summary}}',
     /**
      * The same row with a padlock on it.
@@ -99,6 +109,8 @@ export const reviews = {
     streak: 'STREAK',
     streakValue_one: '{{count}} day',
     streakValue_other: '{{count}} days',
+    /** In the streak's place, for a period with any training in it. */
+    workouts: 'WORKOUTS',
     /**
      * Short on purpose. "WEIGHT CHANGE" wraps to two lines beside two labels
      * that do not, which pushes one of the three figures out of line with the
@@ -114,6 +126,23 @@ export const reviews = {
      * twice and hoping the two agreed.
      */
     shareText: '{{period}}: {{kcal}} kcal a day, {{done}} of {{total}} days logged. RiceCal',
+  },
+
+  /** The training: a card for a period with any workout in it. */
+  training: {
+    title: 'TRAINING',
+    unit_one: 'workout',
+    unit_other: 'workouts',
+    /** `delta` arrives signed: "+1", "-2". */
+    vsWeek: '{{delta}} vs last week',
+    vsMonth: '{{delta}} vs last month',
+    time: 'TIME',
+    volume: 'VOLUME',
+    /** Over the exercises that set a weight record in the period. */
+    bests: 'NEW BESTS',
+    best: '{{weight}} × {{reps}}',
+    /** The dots, read out. */
+    days: 'Trained on {{done}} of {{total}} days',
   },
 
   /** The food. */
@@ -134,7 +163,7 @@ export const reviews = {
     noGoal: 'No daily budget was in force then.',
     everyDay: 'EVERY DAY',
     everyWeek: 'EVERY WEEK',
-    chart: 'Calories a day, split by carbs, protein and fat',
+    chart: 'Calories a day against your goal',
     /**
      * The weekday is abbreviated by the caller, not spelled out. "THURSDAY,
      * LIGHTEST" is two words too long for half a card and truncated to
@@ -144,8 +173,6 @@ export const reviews = {
     heaviest: '{{day}}, HEAVIEST',
     pastWeeks: 'LAST FIVE WEEKS',
     pastMonths: 'LAST FIVE MONTHS',
-    /** A bar for a period nobody logged. The axis label still names it. */
-    noData: '—',
   },
 
   /** The body and the movement. */

@@ -281,8 +281,8 @@ type ItemOf = { calories: MealDay; water: WaterDay; weight: WeightReading }
 /**
  * One metric's history, a page at a time.
  *
- * The Trends card reads the first page and the History screen reads them all,
- * through the same key, so "View full" opens on rows that are already there.
+ * Each history page reads it for its own metric, under the `trends` key, so a
+ * write that moves a chart refreshes the list behind it too.
  */
 export function useHistory<M extends HistoryMetric>(metric: M) {
   const userId = useUserId()
@@ -313,9 +313,6 @@ export function useHistory<M extends HistoryMetric>(metric: M) {
     items,
     get isPending() {
       return query.isPending
-    },
-    get isSuccess() {
-      return query.isSuccess
     },
     get isFetching() {
       return query.isFetching
@@ -352,8 +349,8 @@ export function useHistory<M extends HistoryMetric>(metric: M) {
  *
  * An infinite query refetches every page it holds, in order, whenever it is
  * invalidated. Scroll a year back once and every meal logged afterwards would
- * re-read that year behind the Trends card, which only ever shows a handful of
- * rows.
+ * re-read that year in the background, and reopening the page would wait for
+ * all of it.
  */
 export function useTrimHistoryOnLeave() {
   const userId = useUserId()
@@ -364,8 +361,8 @@ export function useTrimHistoryOnLeave() {
       for (const metric of Object.keys(FETCHERS) as HistoryMetric[]) {
         const queryKey = keys.history(userId, metric)
         const data = queryClient.getQueryData<InfiniteData<unknown, string | null>>(queryKey)
-        // One page or none is already the shape the Trends card wants, and
-        // cancelling it would take a first load away from that card.
+        // One page or none is already the shape a reopened page starts from,
+        // and cancelling it would take a first load away.
         if (!data || data.pages.length <= 1) continue
 
         const fetching = queryClient.getQueryState(queryKey)?.fetchStatus === 'fetching'

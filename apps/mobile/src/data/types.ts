@@ -314,8 +314,8 @@ export const TREND_RANGES = ['7d', '30d', '1y'] as const satisfies readonly Tren
 
 /**
  * One column of a Trends chart: a day, a seven-day block, or a calendar month.
- * Carries all three tabs' numbers, because the tabs are three readings of one
- * range and switching must not go back to the server.
+ * Carries the calorie, water and weight cards' numbers, because the three are
+ * readings of one range and come back in one request.
  *
  * Null and zero are not interchangeable: a null `kcal` is a bucket with nothing
  * logged in it and draws as a gap, where a zero `water` is a real measurement.
@@ -337,33 +337,20 @@ export type TrendBucket = {
   daysLogged: number
   /** The budget in force on the bucket's last day. */
   kcalGoal: number | null
-  daysUnderGoal: number
 
   /** Millilitres a day, averaged across the whole bucket. */
   water: number
   waterTotal: number
-  waterBest: number
   waterGoalDays: number
-  /**
-   * Days that cleared three quarters of the goal, which is the habit card's
-   * line. Counted in the database, because on a thirty-day range a bucket is a
-   * week and the client could only ask whether the week averaged above it.
-   */
-  waterHabitDays: number
-  waterLoggedDays: number
   waterGoal: number
 
   /** The newest reading in the bucket — where the line lands. Null if none. */
   weight: number | null
-  weightAvg: number | null
-  weightMin: number | null
   weighIns: number
 }
 
-/** A whole range as one row: the three metric tiles, and each chart's footnote. */
+/** A whole range as one row: each card's figure and pill. */
 export type TrendSummary = {
-  from: string
-  to: string
   days: number
 
   kcal: number | null
@@ -372,17 +359,12 @@ export type TrendSummary = {
   fat: number | null
   daysLogged: number
   kcalGoal: number | null
-  daysUnderGoal: number
 
   /** Millilitres a day, averaged across the range. */
   water: number
-  /** Millilitres over the whole range, and the fullest single day of it. */
+  /** Millilitres over the whole range: zero is a range with no water logged. */
   waterTotal: number
-  waterBest: number
   waterGoalDays: number
-  /** Days that cleared three quarters of the goal. See `TrendBucket`. */
-  waterHabitDays: number
-  waterLoggedDays: number
   waterGoal: number
 
   /**
@@ -393,12 +375,20 @@ export type TrendSummary = {
   /** The oldest and newest readings in the range, which is what the change is. */
   weightFirst: number | null
   weightLast: number | null
-  weightAvg: number | null
-  /** The heaviest reading and the day of it, which the chart's subtitle names. */
-  weightPeak: number | null
-  weightPeakOn: string | null
   weighIns: number
 }
+
+/** One column of the Trends workout chart: the same columns as `TrendBucket`. */
+export type WorkoutTrendBucket = {
+  start: string
+  end: string
+  /** Calendar days in the column, which is short for the oldest 30d block. */
+  days: number
+  durationS: number
+}
+
+/** A range's workout count, beside the range of the same length before it. */
+export type WorkoutTrendSummary = { workouts: number; prevWorkouts: number }
 
 /**
  * A review is of a finished week or a finished month. The kind travels with
@@ -407,6 +397,28 @@ export type TrendSummary = {
  * server works the period's end out of.
  */
 export type ReviewKind = 'week' | 'month'
+
+/** One review period's training. */
+export type ReviewWorkouts = {
+  workouts: number
+  durationS: number
+  volumeKg: number
+  /** The period before, of the same kind: last week, or last month. */
+  prevWorkouts: number
+  /** Days with a workout, oldest first. */
+  trainedOn: string[]
+}
+
+/** An exercise that set a weight record in a review period, at its heaviest. */
+export type ReviewRecord = {
+  exerciseId: string
+  name: string
+  weightKg: number
+  reps: number | null
+}
+
+/** Workouts on one row of the reviews list. */
+export type ReviewPeriodWorkouts = { start: string; workouts: number }
 
 export const REVIEW_KINDS = ['week', 'month'] as const satisfies readonly ReviewKind[]
 

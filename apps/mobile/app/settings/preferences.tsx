@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSettings, useUpdateSettings } from '@/data'
+import { focusOf, type TrackFocus, useSettings, useUpdateSettings } from '@/data'
 import { LanguageAiNote, LanguageHelpButton } from '@/features/shared'
 import { currentLanguage, LANGUAGES, type Language, setLanguage } from '@/i18n'
 import { useBack } from '@/lib/navigation'
@@ -108,6 +108,22 @@ export default function PreferencesScreen() {
           onChange={setPreference}
           accessibilityLabel={t('preferences.appearance')}
         />
+      </Card>
+
+      {/* What leads: the ring on Today and the first card on Trends. For
+          somebody counting protein and not the budget. */}
+      <Card title={t('preferences.focus')}>
+        {segment(
+          <SegmentedControl
+            options={[
+              { value: 'calories', label: t('preferences.focusCalories') },
+              { value: 'protein', label: t('preferences.focusProtein') },
+            ]}
+            value={focusOf(settings)}
+            onChange={(focus: TrackFocus) => updateSettings.mutate({ track_focus: focus })}
+            accessibilityLabel={t('preferences.focus')}
+          />,
+        )}
       </Card>
 
       {/* No privacy card. "Share with family" and "Anonymous food data" were both

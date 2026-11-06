@@ -8,6 +8,7 @@ import {
   dateKey,
   ENTRY_FOOD_ID,
   type Entry,
+  focusOf,
   useActivityDay,
   useActivitySessions,
   useDayLog,
@@ -367,6 +368,16 @@ function TodayContent() {
   const over = left < 0
 
   /**
+   * Somebody tracking protein rather than the budget sees grams on the ring:
+   * eaten against the day's protein target, never extended by movement, and
+   * always hibiscus, protein's colour in the macro line beside it. It does not
+   * change colour past the target: going past it is the point, not a warning. The macro lines beside it still carry calories.
+   */
+  const protein = focusOf(settings) === 'protein'
+  const proteinGoal = targets?.protein ?? 0
+  const proteinLeft = Math.round(proteinGoal - eaten.protein)
+
+  /**
    * Two litres until told otherwise. Unlike the calorie budget this does not wait
    * for onboarding: it is the same figure for every body, and `daily_goals`
    * defaults the column to it.
@@ -598,20 +609,48 @@ function TodayContent() {
                     showGoals ? t('logging:today.showLeft') : t('logging:today.showGoals')
                   }
                 >
-                  <CalorieRing
-                    value={eaten.kcal}
-                    goal={budget}
-                    size={stackedSummary ? 154 : 112}
-                    thickness={12}
-                    centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
-                    centerCaption={
-                      showGoals
-                        ? t('logging:today.kcalOfGoal', { goal: budget.toLocaleString() })
-                        : over
-                          ? t('logging:today.kcalOver')
-                          : t('logging:today.kcalLeft')
-                    }
-                  />
+                  {protein ? (
+                    <CalorieRing
+                      value={eaten.protein}
+                      goal={proteinGoal}
+                      tone="hibiscus"
+                      accessibilityLabel={t('logging:today.proteinA11y', {
+                        value: Math.round(eaten.protein),
+                        goal: Math.round(proteinGoal),
+                      })}
+                      size={stackedSummary ? 154 : 112}
+                      thickness={12}
+                      centerLabel={t('logging:today.grams', {
+                        value: Math.round(
+                          showGoals ? eaten.protein : Math.abs(proteinLeft),
+                        ).toLocaleString(),
+                      })}
+                      centerCaption={
+                        showGoals
+                          ? t('logging:today.proteinOfGoal', {
+                              goal: Math.round(proteinGoal).toLocaleString(),
+                            })
+                          : proteinLeft < 0
+                            ? t('logging:today.proteinOver')
+                            : t('logging:today.proteinLeft')
+                      }
+                    />
+                  ) : (
+                    <CalorieRing
+                      value={eaten.kcal}
+                      goal={budget}
+                      size={stackedSummary ? 154 : 112}
+                      thickness={12}
+                      centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
+                      centerCaption={
+                        showGoals
+                          ? t('logging:today.kcalOfGoal', { goal: budget.toLocaleString() })
+                          : over
+                            ? t('logging:today.kcalOver')
+                            : t('logging:today.kcalLeft')
+                      }
+                    />
+                  )}
                   {/* Sharing the row with the ring, so it asks for the space the
                     ring leaves. One line per macro, eaten against the goal, so
                     the three rows stand no taller than the ring. */}

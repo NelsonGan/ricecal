@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { ReviewBucket, ReviewKind, ReviewSummary } from '@/data'
+import { TrendChip } from '@/features/progress'
 import { StatRow } from '@/features/shared'
 import { showChange, type WeightUnit } from '@/lib/units'
-import { Badge, Card, cn, Icon, Text } from '@/ui'
+import { Card, cn, Text } from '@/ui'
 import { Shareable } from './ShareableCards'
 
 export type CardStepProps = {
@@ -13,6 +14,8 @@ export type CardStepProps = {
   summary: ReviewSummary
   buckets: readonly ReviewBucket[]
   unit: WeightUnit
+  /** Workouts in the period. Above zero, they take the streak's place. */
+  workouts?: number
 }
 
 /**
@@ -27,8 +30,8 @@ export type CardStepProps = {
  * No Share button and no wordmark of its own. Every card in a story is shareable
  * and `Shareable` puts the app's mark under each one.
  */
-export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
-  const { t } = useTranslation(['reviews', 'common'])
+export function CardStep({ title, summary, buckets, unit, workouts = 0 }: CardStepProps) {
+  const { t } = useTranslation(['reviews', 'common', 'progress'])
 
   const goal = summary.kcalGoal
   const average = summary.kcal
@@ -78,20 +81,17 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
             </View>
 
             {delta === null ? null : (
-              <Badge tone={delta >= 0 ? 'pandan' : 'kaya'} className="px-3 py-1.5">
-                <Icon set="body" name={delta >= 0 ? 'trend-down' : 'trend-up'} size={16} />
-                <Text
-                  variant="caption"
-                  numberOfLines={1}
-                  className={delta >= 0 ? 'text-pandan-ink' : 'text-kaya-ink'}
-                >
-                  {delta === 0
+              <TrendChip
+                tone={delta >= 0 ? 'pandan' : 'kaya'}
+                direction={delta === 0 ? undefined : delta > 0 ? 'down' : 'up'}
+                label={
+                  delta === 0
                     ? t('reviews:card.onBudget')
                     : delta > 0
                       ? t('reviews:card.under', { value: delta.toLocaleString() })
-                      : t('reviews:card.over', { value: Math.abs(delta).toLocaleString() })}
-                </Text>
-              </Badge>
+                      : t('reviews:card.over', { value: Math.abs(delta).toLocaleString() })
+                }
+              />
             )}
           </View>
         </View>
@@ -109,7 +109,9 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
                   nothing under it has to be counted rather than read: which of
                   them is Saturday is the whole question somebody asks of a gap. */}
               <Text variant="micro" numberOfLines={1}>
-                {markLabel(summary.kind, bucket.start, position)}
+                {markLabel(summary.kind, bucket.start, position, (index) =>
+                  t('progress:range.week', { index }),
+                )}
               </Text>
             </View>
           ))}
@@ -127,11 +129,19 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
                 total: summary.days,
               }),
             },
-            {
-              key: 'streak',
-              label: t('reviews:card.streak'),
-              value: t('reviews:card.streakValue', { count: summary.streakDays }),
-            },
+            // Somebody who trained reads the week as eating AND training, and
+            // the count says the second; for everybody else the streak stays.
+            workouts > 0
+              ? {
+                  key: 'workouts',
+                  label: t('reviews:card.workouts'),
+                  value: workouts.toLocaleString(),
+                }
+              : {
+                  key: 'streak',
+                  label: t('reviews:card.streak'),
+                  value: t('reviews:card.streakValue', { count: summary.streakDays }),
+                },
             {
               // Short on purpose. "WEIGHT CHANGE" wraps to two lines on a 393pt
               // phone, and a two-line label under one of three stats pushes its
@@ -153,12 +163,17 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
 /**
  * What goes under one block: a weekday initial, or a week number.
  *
- * A month has four or five blocks rather than seven, and "W1" is the only thing
- * either of them can be called — the ISO week's own number would be 32 for the
- * first week of August, which is a fact about the year rather than about the
- * month being read.
+ * A month has four or five blocks rather than seven, and "Wk 1" is what each
+ * is called, as on the charts under it; the ISO week's own number would be 32
+ * for the first week of August, which is a fact about the year rather than
+ * about the month being read.
  */
-function markLabel(kind: ReviewKind, start: string, position: number): string {
+function markLabel(
+  kind: ReviewKind,
+  start: string,
+  position: number,
+  week: (index: number) => string,
+): string {
   if (kind === 'week') return format(parseISO(start), 'EEEEE')
-  return `W${position + 1}`
+  return week(position + 1)
 }
